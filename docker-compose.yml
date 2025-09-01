@@ -1,0 +1,107 @@
+services:
+  # booksy.usermanagement.api:
+  #   image: booksy-usermanagement-api:latest
+  #   build:
+  #     context: .
+  #     dockerfile: src/BoundedContexts/UserManagement/Booksy.UserManagement.API/Dockerfile
+  #   environment:
+  #     - ASPNETCORE_ENVIRONMENT=Development
+  #     - ASPNETCORE_URLS=https://+:443;http://+:80
+  #     # Updated connection string with correct credentials
+  #     - ConnectionStrings__DefaultConnection=Host=postgres;Port=5432;Database=booksy_user_management;Username=booksy_admin;Password=Booksy@2024!;Include Error Detail=true
+  #     - ConnectionStrings__Redis=redis:6379
+  #     - ConnectionStrings__RabbitMQ=amqp://guest:guest@rabbitmq:5672
+  #   ports:
+  #     - "5001:80"
+  #     - "7001:443"
+  #   depends_on:
+  #     postgres:
+  #       condition: service_healthy
+  #     redis:
+  #       condition: service_started
+  #     rabbitmq:
+  #       condition: service_started
+  #   networks:
+  #     - booksy-network
+  #   restart: unless-stopped
+
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      # Use consistent credentials
+      - POSTGRES_USER=booksy_admin
+      - POSTGRES_PASSWORD=Booksy@2024!
+      - POSTGRES_DB=booksy_user_management
+      - POSTGRES_INITDB_ARGS=--encoding=UTF-8 --lc-collate=C --lc-ctype=C
+    ports:
+      - "54321:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./deployment/scripts/database/init-db.sql:/docker-entrypoint-initdb.d/init-db.sql
+    networks:
+      - booksy-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U booksy_admin -d booksy_user_management"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  pgadmin:
+    image: dpage/pgadmin4
+    environment:
+      - PGADMIN_DEFAULT_EMAIL=admin@booksy.com
+      - PGADMIN_DEFAULT_PASSWORD=Booksy@2024!
+      - PGADMIN_CONFIG_SERVER_MODE=False
+    ports:
+      - "5050:80"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - booksy-network
+    restart: unless-stopped
+
+  redis:
+    image: redis:7-alpine
+    command: redis-server --requirepass Redis@2024!
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    networks:
+      - booksy-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "redis-cli", "--raw", "incr", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+
+  rabbitmq:
+    image: rabbitmq:3.13.7-management
+    environment:
+      - RABBITMQ_DEFAULT_USER=booksy_admin
+      - RABBITMQ_DEFAULT_PASS=Booksy@2024!
+    ports:
+      - "56721:5672"
+      - "15672:15672"
+    volumes:
+      - rabbitmq_data:/var/lib/rabbitmq
+    networks:
+      - booksy-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "rabbitmqctl", "status"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+volumes:
+  postgres_data:
+  redis_data:
+  rabbitmq_data:
+
+networks:
+  booksy-network:
+    driver: bridge

@@ -1,0 +1,16 @@
+﻿# Dockerfile.migrations
+FROM mcr.microsoft.com/dotnet/sdk:9.0 AS migrations
+WORKDIR /app
+
+# Install EF Core tools
+RUN dotnet tool install --global dotnet-ef
+ENV PATH="$PATH:/root/.dotnet/tools"
+
+# Copy project files
+COPY . .
+
+# Set the startup project
+WORKDIR /app/src/UserManagement/Booksy.UserManagement.Infrastructure
+
+# Entry point for running migrations
+ENTRYPOINT ["dotnet", "ef", "database", "update", "--startup-project", "../Booksy.UserManagement.API/Booksy.UserManagement.API.csproj"]

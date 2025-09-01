@@ -1,0 +1,94 @@
+
+
+# services:
+#   # booksy.usermanagement.api:
+#   #   environment:
+#   #     - ASPNETCORE_ENVIRONMENT=Development
+#   #     - ASPNETCORE_HTTP_PORTS=8080
+#   #     - ASPNETCORE_HTTPS_PORTS=8081
+#   #     - ConnectionStrings__DefaultConnection=Host=postgres;Port=5432;Database=booksy_user_management;Username=booksy_user;Password=Booksy@2024!
+#   #     - ConnectionStrings__RedisConnection=redis:6379,password=Redis@2024!
+#   #   ports:
+#   #     - "5001:8080"
+#   #     - "5002:8081"
+#   #   volumes:
+#   #     - ${APPDATA}/Microsoft/UserSecrets:/home/app/.microsoft/usersecrets:ro
+#   #     - ${APPDATA}/Microsoft/UserSecrets:/root/.microsoft/usersecrets:ro
+#   #     - ${APPDATA}/ASP.NET/Https:/home/app/.aspnet/https:ro
+#   #     - ${APPDATA}/ASP.NET/Https:/root/.aspnet/https:ro
+#   #   depends_on:
+#   #     - postgres
+#   #     - redis
+
+#   # booksy.booking.api:
+#   #   environment:
+#   #     - ASPNETCORE_ENVIRONMENT=Development
+#   #     - ASPNETCORE_HTTP_PORTS=8080
+#   #     - ASPNETCORE_HTTPS_PORTS=8081
+#   #     - ConnectionStrings__DefaultConnection=Host=postgres;Port=5432;Database=booksy_booking;Username=booksy_user;Password=Booksy@2024!
+#   #     - ConnectionStrings__RedisConnection=redis:6379,password=Redis@2024!
+#   #     - UserManagement__BaseUrl=http://booksy.usermanagement.api:8080
+#   #   ports:
+#   #     - "5003:8080"
+#   #     - "5004:8081"
+#   #   volumes:
+#   #     - ${APPDATA}/Microsoft/UserSecrets:/home/app/.microsoft/usersecrets:ro
+#   #     - ${APPDATA}/Microsoft/UserSecrets:/root/.microsoft/usersecrets:ro
+#   #     - ${APPDATA}/ASP.NET/Https:/home/app/.aspnet/https:ro
+#   #     - ${APPDATA}/ASP.NET/Https:/root/.aspnet/https:ro
+#   #   depends_on:
+#   #     - postgres
+#   #     - redis
+#   #     - booksy.usermanagement.api
+
+#   # booksy.serviceprovider.api:
+#   #   environment:
+#   #     - ASPNETCORE_ENVIRONMENT=Development
+#   #     - ASPNETCORE_HTTP_PORTS=8080
+#   #     - ASPNETCORE_HTTPS_PORTS=8081
+#   #     - ConnectionStrings__DefaultConnection=Host=postgres;Port=5432;Database=booksy_service_provider;Username=booksy_user;Password=Booksy@2024!
+#   #     - ConnectionStrings__RedisConnection=redis:6379,password=Redis@2024!
+#   #     - UserManagement__BaseUrl=http://booksy.usermanagement.api:8080
+#   #     - Booking__BaseUrl=http://booksy.booking.api:8080
+#   #   ports:
+#   #     - "5005:8080"
+#   #     - "5006:8081"
+#   #   volumes:
+#   #     - ${APPDATA}/Microsoft/UserSecrets:/home/app/.microsoft/usersecrets:ro
+#   #     - ${APPDATA}/Microsoft/UserSecrets:/root/.microsoft/usersecrets:ro
+#   #     - ${APPDATA}/ASP.NET/Https:/home/app/.aspnet/https:ro
+#   #     - ${APPDATA}/ASP.NET/Https:/root/.aspnet/https:ro
+#   #   depends_on:
+#   #     - postgres
+#   #     - redis
+#   #     - booksy.usermanagement.api
+
+#   postgres:
+#     environment:
+#       - POSTGRES_USER=booksy_user
+#       - POSTGRES_PASSWORD=Booksy@2024!
+#       - POSTGRES_DB=booksy_main
+#     ports:
+#       - "5432:5432"
+#     volumes:
+#       - postgres_data:/var/lib/postgresql/data
+
+#   # PgAdmin for PostgreSQL Management (optional)
+#   pgadmin:
+#     image: dpage/pgadmin4
+#     environment:
+#       - PGADMIN_DEFAULT_EMAIL=admin@booksy.com
+#       - PGADMIN_DEFAULT_PASSWORD=admin
+#     ports:
+#       - "5050:80"
+#     depends_on:
+#       - postgres
+#     networks:
+#       - booksy-network
+
+#   redis:
+#     command: redis-server --requirepass Redis@2024!
+#     ports:
+#       - "6379:6379"
+#     volumes:
+#       - redis_data:/data

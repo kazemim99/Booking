@@ -1,0 +1,6 @@
+@Booksy.Gateway_HostAddress = http://localhost:5206
+
+GET {{Booksy.Gateway_HostAddress}}/weatherforecast/
+Accept: application/json
+
+###

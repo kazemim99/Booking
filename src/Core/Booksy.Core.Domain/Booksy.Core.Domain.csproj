@@ -1,0 +1,52 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+	<PropertyGroup>
+		<TargetFramework>net9.0</TargetFramework>
+		<Nullable>enable</Nullable>
+		<ImplicitUsings>enable</ImplicitUsings>
+		<TreatWarningsAsErrors>true</TreatWarningsAsErrors>
+		    <TargetFramework>net9.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
+    <GenerateDocumentationFile>true</GenerateDocumentationFile>
+
+	</PropertyGroup>
+
+	<ItemGroup>
+	  <Compile Remove="Application\**" />
+	  <Compile Remove="Domain\**" />
+	  <Compile Remove="EventStore\**" />
+	  <Compile Remove="Infrastructure\**" />
+	  <EmbeddedResource Remove="Application\**" />
+	  <EmbeddedResource Remove="Domain\**" />
+	  <EmbeddedResource Remove="EventStore\**" />
+	  <EmbeddedResource Remove="Infrastructure\**" />
+	  <None Remove="Application\**" />
+	  <None Remove="Domain\**" />
+	  <None Remove="EventStore\**" />
+	  <None Remove="Infrastructure\**" />
+	</ItemGroup>
+
+	<ItemGroup>
+	  <Compile Include="Domain\Utilities\Converters.cs" />
+	  <Compile Include="Domain\Utilities\Guard.cs" />
+	</ItemGroup>
+
+
+	<ItemGroup>
+		<PackageReference Include="FluentValidation" Version="12.0.0" />
+		<PackageReference Include="Microsoft.AspNetCore.Http" Version="2.3.0" />
+		<PackageReference Include="Microsoft.AspNetCore.Http.Abstractions" Version="2.3.0" />
+		<PackageReference Include="Microsoft.EntityFrameworkCore" Version="9.0.0" />
+		<PackageReference Include="Microsoft.Extensions.Logging" Version="9.0.0" />
+		<PackageReference Include="FluentValidation.DependencyInjectionExtensions" Version="12.0.0" />
+		<PackageReference Include="MediatR" Version="12.2.0" />
+		<PackageReference Include="Microsoft.Extensions.Options.ConfigurationExtensions" Version="9.0.0" />
+		<PackageReference Include="System.Text.Json" Version="9.0.0" />
+		<PackageReference Include="Npgsql.EntityFrameworkCore.PostgreSQL" Version="9.0.0" />
+		<PackageReference Include="EFCore.NamingConventions" Version="9.0.0" />
+
+	</ItemGroup>
+
+</Project>
