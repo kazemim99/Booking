@@ -1,12 +1,7 @@
 // ========================================
 // Program.cs
 // ========================================
-using Booksy.Core.Application.Abstractions.Services;
-using Booksy.Infrastructure.Core.EventBus;
-using Booksy.Infrastructure.Core.EventBus.Abstractions;
-using Booksy.Infrastructure.Core.Services;
 using Booksy.UserManagement.API.Extensions;
-using Booksy.UserManagement.API.Middleware;
 using Booksy.UserManagement.Application.DependencyInjection;
 using Booksy.UserManagement.Infrastructure.DependencyInjection;
 using Booksy.UserManagement.Infrastructure.Persistence.Context;
@@ -17,12 +12,12 @@ using Microsoft.AspNetCore.Mvc.ApiExplorer;
 using Microsoft.AspNetCore.Mvc.Versioning;
 using Serilog;
 using Booksy.Infrastructure.Security.Authorization;
-using Booksy.Infrastructure.Security.Authentication;
-using Booksy.Infrastructure.Core.Caching;
 using Booksy.Infrastructure.Security;
 using System.Text.Json.Serialization;
 using System.Text.Json;
-
+using Booksy.Infrastructure.Core.DependencyInjection;
+using Booksy.API.Middleware;
+using Booksy.API.Extensions;
 var builder = WebApplication.CreateBuilder(args);
 
 // Configure Serilog
@@ -69,6 +64,10 @@ builder.Services.AddControllers(options =>
 });
 ;
 
+
+builder.Services.ConfigureApiOptions();
+
+
 // API Versioning
 builder.Services.AddApiVersioning(options =>
 {
@@ -93,6 +92,8 @@ builder.Services.AddSwaggerConfiguration(builder.Configuration);
 // Add Authentication & Authorization
 builder.Services.AddPolicyAuthorization();
 
+
+
 // Add Rate Limiting
 builder.Services.AddSecurity(builder.Configuration);
 
@@ -114,10 +115,6 @@ builder.Services.AddUserManagementApplication();
 builder.Services.AddUserManagementInfrastructure(builder.Configuration);
 
 // Add Core Infrastructure
-builder.Services.AddScoped<ICurrentUserService, CurrentUserService>();
-builder.Services.AddScoped<IDateTimeProvider, DateTimeProvider>();
-builder.Services.AddSingleton<IDomainEventDispatcher, DomainEventDispatcher>();
-
 // Add MediatR
 builder.Services.AddMediatR(cfg =>
 {

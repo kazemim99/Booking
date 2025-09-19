@@ -1,24 +1,14 @@
 ﻿// ========================================
-// Booksy.UserManagement.Domain/Enums/UserStatus.cs
+// Booksy.UserManagement.Domain/Events/UserDeactivatedEvent.cs
 // ========================================
 using Booksy.Core.Domain.Base;
+using Booksy.Core.Domain.ValueObjects;
 
 namespace Booksy.UserManagement.Domain.Events
 {
-    public sealed class UserDeactivatedEvent : DomainEvent
-    {
-        public UserId UserId { get; }
-        public string Reason { get; }
-        public DateTime DeactivatedAt { get; }
-
-        public UserDeactivatedEvent(UserId userId, string reason, DateTime deactivatedAt)
-            : base("User", userId.ToString())
-        {
-            UserId = userId;
-            Reason = reason;
-            DeactivatedAt = deactivatedAt;
-        }
-    }
+    public sealed record UserDeactivatedEvent(
+        UserId UserId,
+        string Reason,
+        DateTime DeactivatedAt
+    ) : DomainEvent("User", UserId.ToString());
 }
-
-

@@ -1,12 +1,7 @@
-﻿// ========================================
-// Security Services
-// ========================================
-
-// Booksy.UserManagement.Infrastructure/Services/Security/PasswordHasher.cs
-using Booksy.UserManagement.Application.Services.Interfaces;
-using Booksy.Core.Application.Services;
-using Booksy.UserManagement.Domain.ValueObjects;
+﻿using Booksy.UserManagement.Application.Services.Interfaces;
 using Microsoft.Extensions.Logging;
+using Booksy.Core.Domain.ValueObjects;
+using Booksy.Infrastructure.Core.Persistence.Base;
 
 namespace Booksy.UserManagement.Infrastructure.Services.Application
 {

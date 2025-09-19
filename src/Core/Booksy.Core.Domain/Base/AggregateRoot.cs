@@ -78,7 +78,7 @@ namespace Booksy.Core.Domain.Base
         /// Checks a business rule and throws an exception if it's broken
         /// </summary>
         /// <param name="rule">The business rule to check</param>
-        protected static void CheckRule(IBusinessRule rule)
+        public static void CheckRule(IBusinessRule rule)
         {
             if (rule.IsBroken())
             {
@@ -115,16 +115,6 @@ namespace Booksy.Core.Domain.Base
                     currentState);
             }
         }
-    }
-
-
-    /// <summary>
-    /// Base class for aggregate roots with default Guid identifier
-    /// </summary>
-    public abstract class AggregateRoot : AggregateRoot<Guid>, IAggregateRoot
-    {
-        protected AggregateRoot() : base() { }
-        protected AggregateRoot(Guid id) : base(id) { }
     }
 }
 

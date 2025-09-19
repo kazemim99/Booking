@@ -5,8 +5,8 @@ using Booksy.UserManagement.Domain.Entities;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 using Microsoft.EntityFrameworkCore;
 using System.Text.Json;
-using Booksy.Core.Domain.Domain.ValueObjects;
-using Booksy.UserManagement.Domain.ValueObjects;
+
+using Booksy.Core.Domain.ValueObjects;
 
 namespace Booksy.UserManagement.Infrastructure.Persistence.Configurations
 {

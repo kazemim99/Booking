@@ -2,6 +2,7 @@
 // Booksy.UserManagement.Domain/Exceptions/UserManagementDomainException.cs
 // ========================================
 using Booksy.Core.Domain.Abstractions.Services;
+using Booksy.Core.Domain.ValueObjects;
 
 namespace Booksy.UserManagement.Domain.Services
 {

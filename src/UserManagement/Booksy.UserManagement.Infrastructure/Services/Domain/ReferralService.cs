@@ -3,8 +3,8 @@
 // ========================================
 
 // Booksy.UserManagement.Infrastructure/Services/Security/PasswordHasher.cs
+using Booksy.Core.Domain.ValueObjects;
 using Booksy.UserManagement.Application.Services.Interfaces;
-using Booksy.UserManagement.Domain.ValueObjects;
 using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.Configuration;
 

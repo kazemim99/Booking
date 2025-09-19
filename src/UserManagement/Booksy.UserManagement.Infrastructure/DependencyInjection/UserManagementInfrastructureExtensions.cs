@@ -20,6 +20,8 @@ using Booksy.UserManagement.Infrastructure.Persistence;
 using Booksy.Infrastructure.Core.EventBus.Abstractions;
 using Booksy.Infrastructure.Core.Persistence.Base;
 using Microsoft.Extensions.Logging;
+using Booksy.UserManagement.Application.Abstractions.Queries;
+using Booksy.UserManagement.Infrastructure.Queries;
 
 namespace Booksy.UserManagement.Infrastructure.DependencyInjection
 {
@@ -56,6 +58,8 @@ namespace Booksy.UserManagement.Infrastructure.DependencyInjection
                 }
             });
 
+
+
             // Register Unit of Work
             //services.AddScoped<IUnitOfWork>(provider => provider.GetRequiredService<UserManagementDbContext>());
             services.AddScoped<IUnitOfWork>(provider =>
@@ -70,8 +74,13 @@ namespace Booksy.UserManagement.Infrastructure.DependencyInjection
 
 
             // Register Repositories
-            services.AddScoped<IUserWriteRepository, UserWriteRepository>();
-            services.AddScoped<IUserReadRepository, UserReadRepository>();
+
+            services.AddScoped<ISeeder,UserManagementDatabaseSeeder>();
+
+
+            services.AddScoped<IUserRepository, UserRepository>();
+            services.AddScoped<IUserRepository, UserRepository>();
+            services.AddScoped<IUserQueryRepository, UserQueryRepository>();
 
 
             // Register context-specific infrastructure
@@ -83,8 +92,7 @@ namespace Booksy.UserManagement.Infrastructure.DependencyInjection
             // Add cached repository decorator if caching is enabled
             if (configuration.GetValue<bool>("CacheSettings:Enabled"))
             {
-                services.AddScoped<IUserReadRepository, CachedUserReadRepository>();
-                //services.Decorate<IUserReadRepository, CachedUserReadRepository>();
+                services.AddScoped<IUserRepository, CachedUserRepository>();
             }
 
             // Register Security Services
@@ -140,7 +148,7 @@ namespace Booksy.UserManagement.Infrastructure.DependencyInjection
         {
             using var scope = serviceProvider.CreateScope();
             var context = scope.ServiceProvider.GetRequiredService<UserManagementDbContext>();
-            var seeder = scope.ServiceProvider.GetRequiredService<UserManagementDatabaseSeeder>();
+            var seeder = scope.ServiceProvider.GetRequiredService<ISeeder>();
 
             // Apply migrations
             await context.Database.MigrateAsync();

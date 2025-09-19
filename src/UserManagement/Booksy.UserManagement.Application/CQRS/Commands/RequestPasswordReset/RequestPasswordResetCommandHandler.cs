@@ -10,23 +10,23 @@ namespace Booksy.UserManagement.Application.CQRS.Commands.RequestPasswordReset
 {
     public sealed class RequestPasswordResetCommandHandler : ICommandHandler<RequestPasswordResetCommand>
     {
-        private readonly IUserWriteRepository _userWriteRepository;
-        private readonly IUserReadRepository _userReadRepository;
+        private readonly IUserRepository _userRepository;
+        
         private readonly IUnitOfWork _unitOfWork;
         private readonly IEmailTemplateService _emailService;
         private readonly IAuditUserService _auditService;
         private readonly ILogger<RequestPasswordResetCommandHandler> _logger;
 
         public RequestPasswordResetCommandHandler(
-            IUserWriteRepository userWriteRepository,
-            IUserReadRepository userReadRepository,
+            IUserRepository userWriteRepository,
+            
             IUnitOfWork unitOfWork,
             IEmailTemplateService emailService,
             IAuditUserService auditService,
             ILogger<RequestPasswordResetCommandHandler> logger)
         {
-            _userWriteRepository = userWriteRepository;
-            _userReadRepository = userReadRepository;
+            _userRepository = userWriteRepository;
+            
             _unitOfWork = unitOfWork;
             _emailService = emailService;
             _auditService = auditService;
@@ -40,7 +40,7 @@ namespace Booksy.UserManagement.Application.CQRS.Commands.RequestPasswordReset
             _logger.LogInformation("Processing password reset request for email: {Email}", request.Email);
 
             var email = Email.From(request.Email);
-            var user = await _userReadRepository.GetByEmailAsync(email, cancellationToken);
+            var user = await _userRepository.GetByEmailAsync(email, cancellationToken);
 
             if (user == null)
             {
@@ -50,7 +50,7 @@ namespace Booksy.UserManagement.Application.CQRS.Commands.RequestPasswordReset
 
             user.RequestPasswordReset();
 
-            await _userWriteRepository.UpdateUserAsync(user, cancellationToken);
+            await _userRepository.UpdateAsync(user, cancellationToken);
             await _unitOfWork.CommitAndPublishEventsAsync(cancellationToken);
 
             // Send password reset email

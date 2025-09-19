@@ -1,7 +1,7 @@
 ﻿// ========================================
 // Booksy.UserManagement.Infrastructure/Testing/Builders/UserBuilder.cs
 // ========================================
-using Booksy.Core.Domain.Domain.ValueObjects;
+
 using Booksy.Core.Domain.ValueObjects;
 using Booksy.UserManagement.Domain.Entities;
 using Booksy.UserManagement.Domain.Enums;
@@ -313,7 +313,7 @@ namespace Booksy.UserManagement.Infrastructure.Testing.Builders
             if (address != null)
             {
                 profile.UpdateContactInfo(
-                    PhoneNumber.Create("+15551234567"),
+                    PhoneNumber.From("+15551234567"),
                     null,
                     address);
             }

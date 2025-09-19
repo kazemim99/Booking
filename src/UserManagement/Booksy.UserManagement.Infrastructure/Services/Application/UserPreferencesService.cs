@@ -1,30 +1,27 @@
 ﻿
 
 // Booksy.UserManagement.Infrastructure/Services/Application/UserPreferencesService.cs
+using Booksy.Core.Domain.ValueObjects;
 using Booksy.UserManagement.Application.Services.Interfaces;
 using Booksy.UserManagement.Domain.Repositories;
-using Booksy.UserManagement.Domain.ValueObjects;
 
 namespace Booksy.UserManagement.Infrastructure.Services.Application
 {
     public class UserPreferencesService : IUserPreferencesService
     {
-        private readonly IUserReadRepository _userReadRepository;
-        private readonly IUserWriteRepository _userWriteRepository;
+        private readonly IUserRepository _userRepository;
 
         public UserPreferencesService(
-            IUserReadRepository userReadRepository,
-            IUserWriteRepository userWriteRepository)
+            IUserRepository userWriteRepository)
         {
-            _userReadRepository = userReadRepository;
-            _userWriteRepository = userWriteRepository;
+            _userRepository = userWriteRepository;
         }
 
         public async Task<Dictionary<string, string>> GetPreferencesAsync(
             UserId userId,
             CancellationToken cancellationToken = default)
         {
-            var user = await _userReadRepository.GetByIdAsync(userId, cancellationToken);
+            var user = await _userRepository.GetByIdAsync(userId, cancellationToken);
             return user?.Profile?.Preferences ?? new Dictionary<string, string>();
         }
 
@@ -34,12 +31,12 @@ namespace Booksy.UserManagement.Infrastructure.Services.Application
             string value,
             CancellationToken cancellationToken = default)
         {
-            var user = await _userReadRepository.GetByIdAsync(userId, cancellationToken);
+            var user = await _userRepository.GetByIdAsync(userId, cancellationToken);
             if (user == null)
                 throw new InvalidOperationException($"User {userId} not found");
 
             user.Profile.SetPreference(key, value);
-            await _userWriteRepository.UpdateAsync(user, cancellationToken);
+            await _userRepository.UpdateAsync(user, cancellationToken);
         }
 
         public async Task SetPreferencesAsync(
@@ -47,7 +44,7 @@ namespace Booksy.UserManagement.Infrastructure.Services.Application
             Dictionary<string, string> preferences,
             CancellationToken cancellationToken = default)
         {
-            var user = await _userReadRepository.GetByIdAsync(userId, cancellationToken);
+            var user = await _userRepository.GetByIdAsync(userId, cancellationToken);
             if (user == null)
                 throw new InvalidOperationException($"User {userId} not found");
 
@@ -56,7 +53,7 @@ namespace Booksy.UserManagement.Infrastructure.Services.Application
                 user.Profile.SetPreference(preference.Key, preference.Value);
             }
 
-            await _userWriteRepository.UpdateAsync(user, cancellationToken);
+            await _userRepository.UpdateAsync(user, cancellationToken);
         }
 
         public async Task RemovePreferenceAsync(
@@ -64,14 +61,14 @@ namespace Booksy.UserManagement.Infrastructure.Services.Application
             string key,
             CancellationToken cancellationToken = default)
         {
-            var user = await _userReadRepository.GetByIdAsync(userId, cancellationToken);
+            var user = await _userRepository.GetByIdAsync(userId, cancellationToken);
             if (user == null)
                 throw new InvalidOperationException($"User {userId} not found");
 
             if (user.Profile.Preferences.ContainsKey(key))
             {
                 user.Profile.Preferences.Remove(key);
-                await _userWriteRepository.UpdateAsync(user, cancellationToken);
+                await _userRepository.UpdateAsync(user, cancellationToken);
             }
         }
 
@@ -79,12 +76,12 @@ namespace Booksy.UserManagement.Infrastructure.Services.Application
             UserId userId,
             CancellationToken cancellationToken = default)
         {
-            var user = await _userReadRepository.GetByIdAsync(userId, cancellationToken);
+            var user = await _userRepository.GetByIdAsync(userId, cancellationToken);
             if (user == null)
                 throw new InvalidOperationException($"User {userId} not found");
 
             user.Profile.Preferences.Clear();
-            await _userWriteRepository.UpdateAsync(user, cancellationToken);
+            await _userRepository.UpdateAsync(user, cancellationToken);
         }
     }
 }

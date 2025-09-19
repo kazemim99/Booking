@@ -1,31 +1,15 @@
 ﻿// ========================================
-// Booksy.UserManagement.Domain/Enums/UserStatus.cs
+// Booksy.UserManagement.Domain/Events/PasswordResetRequestedEvent.cs
 // ========================================
 using Booksy.Core.Domain.Base;
 using Booksy.Core.Domain.ValueObjects;
 
 namespace Booksy.UserManagement.Domain.Events
 {
-    public sealed class PasswordResetRequestedEvent : DomainEvent
-    {
-        public UserId UserId { get; }
-        public Email Email { get; }
-        public string ResetToken { get; }
-        public DateTime ExpiresAt { get; }
-
-        public PasswordResetRequestedEvent(
-            UserId userId,
-            Email email,
-            string resetToken,
-            DateTime expiresAt)
-            : base("User", userId.ToString())
-        {
-            UserId = userId;
-            Email = email;
-            ResetToken = resetToken;
-            ExpiresAt = expiresAt;
-        }
-    }
+    public sealed record PasswordResetRequestedEvent(
+        UserId UserId,
+        Email Email,
+        string ResetToken,
+        DateTime ExpiresAt
+    ) : DomainEvent("User", UserId.ToString());
 }
-
-

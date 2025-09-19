@@ -43,14 +43,14 @@ public sealed class RabbitMqEventBus : IEventBus, IDisposable
 
     public void Subscribe<TEvent, THandler>()
         where TEvent : IDomainEvent
-        where THandler : IEventHandler<TEvent>
+        where THandler : IDomainEventHandler<TEvent>
     {
         throw new NotImplementedException();
     }
 
     public void Unsubscribe<TEvent, THandler>()
         where TEvent : IDomainEvent
-        where THandler : IEventHandler<TEvent>
+        where THandler : IDomainEventHandler<TEvent>
     {
         throw new NotImplementedException();
     }

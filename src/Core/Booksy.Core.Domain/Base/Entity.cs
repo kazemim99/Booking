@@ -9,12 +9,16 @@ namespace Booksy.Core.Domain.Base
     /// Base class for domain entities
     /// </summary>
     /// <typeparam name="TId">The type of the entity's identifier</typeparam>
-    public abstract class Entity<TId> : IEntity<TId>, IEquatable<Entity<TId>>
+    public abstract class Entity<TId> : IEntity<TId>, IEquatable<Entity<TId>>, IAuditableEntity,ISoftDelete
         where TId : notnull
     {
         private int? _requestedHashCode;
-
-        public TId Id { get; protected set; } = default!;
+        public bool IsDeleted { get; set; }
+        public TId Id { get; set; } = default!;
+        public DateTime CreatedAt { get; set; }
+        public string? CreatedBy { get; set; }
+        public DateTime? LastModifiedAt { get; set; }
+        public string? LastModifiedBy { get; set; }
 
         protected Entity() { }
 
@@ -77,6 +81,26 @@ namespace Booksy.Core.Domain.Base
         public override string ToString()
         {
             return $"{GetType().Name} [Id={Id}]";
+        }
+
+        public void SetCreatedAt(DateTime utcNow)
+        {
+            this.CreatedAt = utcNow;
+        }
+
+        public void SetCreatedBy(string v)
+        {
+            CreatedBy = v;
+        }
+
+        public void SetLastModifiedAt(DateTime utcNow)
+        {
+            LastModifiedAt = utcNow;
+        }
+
+        public void SetLastModifiedBy(string v)
+        {
+            LastModifiedBy = v;
         }
     }
 

@@ -1,7 +1,4 @@
-﻿// ========================================
-// Controllers/V1/UsersController.cs
-// ========================================
-using Booksy.Core.Application.DTOs;
+﻿using Booksy.Core.Application.DTOs;
 using Booksy.UserManagement.API.Models.Requests;
 using Booksy.UserManagement.API.Models.Responses;
 using MediatR;
@@ -12,13 +9,13 @@ using System.ComponentModel.DataAnnotations;
 using Booksy.UserManagement.Application.CQRS.Commands.ActivateUser;
 using Booksy.UserManagement.Application.CQRS.Commands.ChangePassword;
 using Booksy.UserManagement.Application.CQRS.Commands.RegisterUser;
-using Booksy.UserManagement.Application.CQRS.Queries.GetPaginatedUsers;
 using Booksy.UserManagement.Application.CQRS.Queries.GetUserById;
-using Booksy.UserManagement.Application.CQRS.Queries.GetUsersByStatus;
-using Booksy.UserManagement.Application.CQRS.Queries.SearchUsers;
 using Booksy.UserManagement.Application.DTOs;
 using Booksy.UserManagement.Domain.Enums;
 using Booksy.UserManagement.Application.CQRS.Commands.UpldateUserProfile;
+using Booksy.UserManagement.Application.Queries.GetUsersByStatus;
+using Booksy.API.Extensions;
+using static Booksy.API.Middleware.ExceptionHandlingMiddleware;
 
 namespace Booksy.UserManagement.API.Controllers.V1;
 
@@ -29,7 +26,7 @@ namespace Booksy.UserManagement.API.Controllers.V1;
 [ApiVersion("1.0")]
 [Route("api/v{version:apiVersion}/[controller]")]
 [Produces("application/json")]
-[ProducesResponseType(typeof(ErrorResult), StatusCodes.Status500InternalServerError)]
+[ProducesResponseType(typeof(ApiErrorResult), StatusCodes.Status500InternalServerError)]
 public class UsersController : ControllerBase
 {
     private readonly ISender _mediator;
@@ -53,8 +50,8 @@ public class UsersController : ControllerBase
     [AllowAnonymous]
     [EnableRateLimiting("registration")]
     [ProducesResponseType(typeof(UserResponse), StatusCodes.Status201Created)]
-    [ProducesResponseType(typeof(ErrorResult), StatusCodes.Status400BadRequest)]
-    [ProducesResponseType(typeof(ErrorResult), StatusCodes.Status409Conflict)]
+    [ProducesResponseType(typeof(ApiErrorResult), StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(typeof(ApiErrorResult), StatusCodes.Status409Conflict)]
     public async Task<IActionResult> RegisterUser(
         [FromBody][Required] RegisterUserRequest request,
         CancellationToken cancellationToken = default)
@@ -108,89 +105,67 @@ public class UsersController : ControllerBase
     }
 
     /// <summary>
-    /// Gets a paginated list of users (Admin only)
+    /// Search users with advanced filtering and pagination
     /// </summary>
-    /// <param name="request">Pagination and filter parameters</param>
-    /// <returns>Paginated list of users</returns>
-    /// <response code="200">Users retrieved successfully</response>
-    /// <response code="401">Not authenticated</response>
-    /// <response code="403">Not authorized (admin only)</response>
-    [HttpGet]
-    [Authorize(Policy = "AdminOnly")]
-    [ProducesResponseType(typeof(PagedResult<UserResponse>), StatusCodes.Status200OK)]
-    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
-    [ProducesResponseType(StatusCodes.Status403Forbidden)]
-    public async Task<IActionResult> GetUsers(
-        [FromQuery] GetUsersRequest request,
-        CancellationToken cancellationToken = default)
-    {
-        var query = new GetPaginatedUsersQuery(
-           request.Status,
-            request.UserType)
-        {
-            PageSize = request.PageSize,
-            PageNumber = request.PageNumber,
-            SortBy = new List<SortingDescriptor>
-               {
-                   new SortingDescriptor
-                   {
-                       Direction = request.SortDirection,
-                       FieldName = request.SortBy
-                   }
-               },
-        };
-
-        var result = await _mediator.Send(query, cancellationToken);
-
-        var response = new PagedResult<UserResponse>
-        (
-            result.Items.Select(MapToUserResponse).ToList(),
-            result.TotalCount,
-          result.PageNumber,
-            result.PageSize
-        );
-
-        return Ok(response);
-    }
-
-    /// <summary>
-    /// Searches for users by name or email (Admin only)
-    /// </summary>
-    /// <param name="searchTerm">Search term</param>
-    /// <param name="maxResults">Maximum number of results (default: 50)</param>
-    /// <returns>List of matching users</returns>
-    /// <response code="200">Search completed successfully</response>
+    /// <param name="request">Search parameters including pagination</param>
+    /// <param name="cancellationToken">Cancellation token</param>
+    /// <returns>Paginated search results</returns>
+    /// <response code="200">Users found successfully</response>
+    /// <response code="400">Invalid search parameters</response>
     /// <response code="401">Not authenticated</response>
     /// <response code="403">Not authorized (admin only)</response>
     [HttpGet("search")]
     [Authorize(Policy = "AdminOnly")]
-    [ProducesResponseType(typeof(IEnumerable<UserResponse>), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(PagedResult<SearchUsersResponse>), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     [ProducesResponseType(StatusCodes.Status403Forbidden)]
-    public async Task<IActionResult> SearchUsers(
-        [FromQuery][Required] string searchTerm,
-        [FromQuery] int maxResults = 50,
+    public async Task<ActionResult<PagedResult<SearchUsersResponse>>> SearchUsers(
+        [FromQuery] SearchUsersRequest request,
         CancellationToken cancellationToken = default)
     {
-        if (string.IsNullOrWhiteSpace(searchTerm) || searchTerm.Length < 2)
-        {
-            return BadRequest(new ErrorResult("Search term must be at least 2 characters", "INVALID_SEARCH_TERM"));
-        }
+        // Convert API request to application query (single line!)
+        var query = request.ToQuery();
 
-        var query = new SearchUsersQuery(searchTerm);
+        // Execute query through MediatR
         var result = await _mediator.Send(query, cancellationToken);
 
-        var response = new PagedResult<UserResponse>
-             (
-                 result.Items.Select(MapToUserResponse).ToList(),
-                 result.TotalCount,
-               result.PageNumber,
-                 result.PageSize
-             );
-        
-        
-        return Ok(response);
+        // Transform to API response model
+        var response = result.Map(searchResult => new SearchUsersResponse
+        {
+            Id = searchResult.UserId,
+            Email = searchResult.Email,
+            FirstName = searchResult.FirstName,
+            LastName = searchResult.LastName,
+            FullName = searchResult.FullName,
+            PhoneNumber = searchResult.PhoneNumber,
+            Status = searchResult.Status.ToString(),
+            Type = searchResult.Type.ToString(),
+            IsLocked = searchResult.IsLocked,
+            TwoFactorEnabled = searchResult.TwoFactorEnabled,
+            AvatarUrl = searchResult.AvatarUrl,
+            City = searchResult.City,
+            Country = searchResult.Country,
+            RegisteredAt = searchResult.RegisteredAt,
+            ActivatedAt = searchResult.ActivatedAt,
+            LastLoginAt = searchResult.LastLoginAt,
+            FailedLoginAttempts = searchResult.FailedLoginAttempts,
+            Roles = searchResult.Roles.Select(r => new UserRoleResponse
+            {
+                Name = r.Name,
+                AssignedAt = r.AssignedAt,
+                ExpiresAt = r.ExpiresAt,
+                IsExpired = r.IsExpired
+            }).ToList(),
+            PrimaryRole = searchResult.PrimaryRole,
+            DisplayName = searchResult.DisplayName,
+            StatusDescription = searchResult.StatusDescription
+        });
+
+        // Return with proper pagination headers
+        return this.PaginatedOk(response);
     }
+
 
     /// <summary>
     /// Activates a user account
@@ -204,8 +179,8 @@ public class UsersController : ControllerBase
     [HttpPost("{id:guid}/activate")]
     [Authorize]
     [ProducesResponseType(typeof(MessageResponse), StatusCodes.Status200OK)]
-    [ProducesResponseType(typeof(ErrorResult), StatusCodes.Status400BadRequest)]
-    [ProducesResponseType(typeof(ErrorResult), StatusCodes.Status404NotFound)]
+    [ProducesResponseType(typeof(ApiErrorResult), StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(typeof(ApiErrorResult), StatusCodes.Status404NotFound)]
     public async Task<IActionResult> ActivateUser(
         [FromRoute] Guid id,
         [FromBody][Required] ActivateUserRequest request,
@@ -230,8 +205,8 @@ public class UsersController : ControllerBase
     [HttpPut("{id:guid}/profile")]
     [Authorize]
     [ProducesResponseType(typeof(UserDetailsResponse), StatusCodes.Status200OK)]
-    [ProducesResponseType(typeof(ErrorResult), StatusCodes.Status400BadRequest)]
-    [ProducesResponseType(typeof(ErrorResult), StatusCodes.Status404NotFound)]
+    [ProducesResponseType(typeof(ApiErrorResult), StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(typeof(ApiErrorResult), StatusCodes.Status404NotFound)]
     [ProducesResponseType(StatusCodes.Status403Forbidden)]
     public async Task<IActionResult> UpdateUserProfile(
         [FromRoute] Guid id,
@@ -276,8 +251,8 @@ public class UsersController : ControllerBase
     [HttpPost("{id:guid}/change-password")]
     [Authorize]
     [ProducesResponseType(typeof(MessageResponse), StatusCodes.Status200OK)]
-    [ProducesResponseType(typeof(ErrorResult), StatusCodes.Status400BadRequest)]
-    [ProducesResponseType(typeof(ErrorResult), StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(typeof(ApiErrorResult), StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(typeof(ApiErrorResult), StatusCodes.Status401Unauthorized)]
     [ProducesResponseType(StatusCodes.Status403Forbidden)]
     public async Task<IActionResult> ChangePassword(
         [FromRoute] Guid id,
@@ -312,7 +287,7 @@ public class UsersController : ControllerBase
     [HttpPost("{id:guid}/deactivate")]
     [Authorize(Policy = "AdminOnly")]
     [ProducesResponseType(typeof(MessageResponse), StatusCodes.Status200OK)]
-    [ProducesResponseType(typeof(ErrorResult), StatusCodes.Status404NotFound)]
+    [ProducesResponseType(typeof(ApiErrorResult), StatusCodes.Status404NotFound)]
     [ProducesResponseType(StatusCodes.Status403Forbidden)]
     public async Task<IActionResult> DeactivateUser(
         [FromRoute] Guid id,
@@ -340,9 +315,9 @@ public class UsersController : ControllerBase
     [HttpDelete("{id:guid}")]
     [Authorize(Policy = "SysAdminOnly")]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
-    [ProducesResponseType(typeof(ErrorResult), StatusCodes.Status404NotFound)]
+    [ProducesResponseType(typeof(ApiErrorResult), StatusCodes.Status404NotFound)]
     [ProducesResponseType(StatusCodes.Status403Forbidden)]
-    [ProducesResponseType(typeof(ErrorResult), StatusCodes.Status409Conflict)]
+    [ProducesResponseType(typeof(ApiErrorResult), StatusCodes.Status409Conflict)]
     public async Task<IActionResult> DeleteUser(
         [FromRoute] Guid id,
         CancellationToken cancellationToken = default)
@@ -355,35 +330,32 @@ public class UsersController : ControllerBase
     }
 
     /// <summary>
-    /// Gets users by status (Admin only)
+    /// Gets users filtered by status
     /// </summary>
     /// <param name="status">User status to filter by</param>
+    /// <param name="maxResults">Maximum number of results (default: 100, max: 1000)</param>
     /// <returns>List of users with the specified status</returns>
     /// <response code="200">Users retrieved successfully</response>
+    /// <response code="400">Invalid status provided</response>
     /// <response code="401">Not authenticated</response>
     /// <response code="403">Not authorized (admin only)</response>
     [HttpGet("by-status/{status}")]
     [Authorize(Policy = "AdminOnly")]
-    [ProducesResponseType(typeof(IEnumerable<UserResponse>), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(IReadOnlyList<GetUsersByStatusResult>), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     [ProducesResponseType(StatusCodes.Status403Forbidden)]
     public async Task<IActionResult> GetUsersByStatus(
-        [FromRoute] string status,
+        [FromRoute] UserStatus status,
+        [FromQuery] int maxResults = 100,
         CancellationToken cancellationToken = default)
     {
-        var query = new GetUsersByStatusQuery(Enum.Parse<UserStatus>(status));
+        var query = new GetUsersByStatusQuery(status, maxResults);
         var result = await _mediator.Send(query, cancellationToken);
 
-        var response = new PagedResult<UserResponse>
-        (
-            result.Items.Select(MapToUserResponse).ToList(),
-            result.TotalCount,
-          result.PageNumber,
-            result.PageSize
-        );
-
-        return Ok(response);
+        return Ok(result);
     }
+
 
     #region Private Helper Methods
 

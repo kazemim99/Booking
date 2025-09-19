@@ -1,0 +1,41 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net9.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Folder Include="Persistence\EventSourcing\" />
+    <Folder Include="Persistence\Migrations\" />
+    <Folder Include="Services\External\" />
+  </ItemGroup>
+
+
+	<ItemGroup>
+		<PackageReference Include="Microsoft.EntityFrameworkCore" Version="9.0.8" />
+		<PackageReference Include="Microsoft.Extensions.Configuration" Version="9.0.8" />
+		<PackageReference Include="Npgsql.EntityFrameworkCore.PostgreSQL" Version="9.0.0" />
+		<PackageReference Include="Microsoft.EntityFrameworkCore.Design" Version="9.0.8">
+			<PrivateAssets>all</PrivateAssets>
+			<IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+		</PackageReference>
+		<PackageReference Include="Microsoft.Extensions.Caching.Memory" Version="9.0.8" />
+		<PackageReference Include="Microsoft.Extensions.Hosting.Abstractions" Version="9.0.8" />
+		<PackageReference Include="Microsoft.Extensions.Logging.Abstractions" Version="9.0.8" />
+		<PackageReference Include="Microsoft.Extensions.DependencyInjection.Abstractions" Version="9.0.8" />
+		<PackageReference Include="Microsoft.Extensions.Configuration.Abstractions" Version="9.0.8" />
+		<PackageReference Include="Microsoft.Extensions.Diagnostics.HealthChecks.EntityFrameworkCore" Version="9.0.8" />
+		<PackageReference Include="Scrutor" Version="6.1.0" />
+		<PackageReference Include="System.Text.Json" Version="9.0.8" />
+	</ItemGroup>
+	
+  <ItemGroup>
+    <ProjectReference Include="..\..\..\Core\Booksy.Core.Domain\Booksy.Core.Domain.csproj" />
+    <ProjectReference Include="..\..\..\Infrastructure\Booksy.Infrastructure.Core\Booksy.Infrastructure.Core.csproj" />
+    <ProjectReference Include="..\Booksy.ServiceCatalog.Application\Booksy.ServiceCatalog.Application.csproj" />
+    <ProjectReference Include="..\Booksy.ServiceCatalog.Domain\Booksy.ServiceCatalog.Domain.csproj" />
+  </ItemGroup>
+
+</Project>

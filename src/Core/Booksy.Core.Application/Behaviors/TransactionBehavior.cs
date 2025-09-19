@@ -60,17 +60,8 @@ namespace Booksy.Core.Application.Behaviors
             try
             {
 
-
                 return await _unitOfWork.ExecuteInTransactionAsync(async () => await next(), cancellationToken);
-
-                //await _unitOfWork.BeginTransactionAsync(cancellationToken);
-
-
-                //await _unitOfWork.CommitTransactionAsync(cancellationToken);
-
-                //_logger.LogDebug("Transaction committed for {RequestName}", requestName);
-
-                //return response;
+                
             }
             catch (Exception ex)
             {

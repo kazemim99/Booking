@@ -1,5 +1,4 @@
-﻿using Booksy.Core.Domain.Abstractions;
-using Booksy.Core.Domain.Abstractions.Entities;
+﻿using Booksy.Core.Domain.Base;
 
 namespace Booksy.Core.Application.Abstractions.Persistence;
 
@@ -9,7 +8,7 @@ namespace Booksy.Core.Application.Abstractions.Persistence;
 /// <typeparam name="TAggregate">The aggregate type</typeparam>
 /// <typeparam name="TId">The identifier type</typeparam>
 public interface IRepository<TAggregate, in TId>
-    where TAggregate : class, IAggregateRoot
+    where TAggregate : AggregateRoot<TId>
     where TId : notnull
 {
     /// <summary>

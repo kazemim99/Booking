@@ -9,18 +9,18 @@ namespace Booksy.UserManagement.Application.CQRS.Commands.AuthenticateUser
 {
     public sealed class AuthenticateUserCommandHandler : ICommandHandler<AuthenticateUserCommand, AuthenticateUserResult>
     {
-        private readonly IUserWriteRepository _userWriteRepository;
+        private readonly IUserRepository _userRepository;
         private readonly IJwtTokenService _jwtTokenService;
         private readonly IAuditUserService _auditService;
         private readonly ILogger<AuthenticateUserCommandHandler> _logger;
 
         public AuthenticateUserCommandHandler(
-            IUserWriteRepository userWriteRepository,
+            IUserRepository userWriteRepository,
             IJwtTokenService jwtTokenService,
             IAuditUserService auditService,
             ILogger<AuthenticateUserCommandHandler> logger)
         {
-            _userWriteRepository = userWriteRepository;
+            _userRepository = userWriteRepository;
             _jwtTokenService = jwtTokenService;
             _auditService = auditService;
             _logger = logger;
@@ -34,7 +34,7 @@ namespace Booksy.UserManagement.Application.CQRS.Commands.AuthenticateUser
 
             var email = Email.From(request.Email);
 
-            var user = await _userWriteRepository.GetByEmailAsync(email, cancellationToken);
+            var user = await _userRepository.GetByEmailAsync(email, cancellationToken);
             if (user == null)
             {
                 await _auditService.LogFailedLoginAsync(
@@ -54,7 +54,7 @@ namespace Booksy.UserManagement.Application.CQRS.Commands.AuthenticateUser
                     request.IpAddress,
                     request.UserAgent);
 
-                await _userWriteRepository.UpdateUserAsync(user, cancellationToken);
+                await _userRepository.UpdateAsync(user, cancellationToken);
 
                 // Generate JWT token
                 var tokenExpirationHours = request.RememberMe ? 168 : 24; // 7 days or 1 day

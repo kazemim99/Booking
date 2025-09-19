@@ -1,47 +1,78 @@
-﻿// ========================================
-// Booksy.UserManagement.Application/Queries/GetUserById/GetUserByIdQuery.cs
-// ========================================
+﻿using Booksy.UserManagement.Application.Abstractions.Queries;
+using Booksy.UserManagement.Domain.Specifications;
 
-using Booksy.Core.Application.Extensions;
-
-
-namespace Booksy.UserManagement.Application.CQRS.Queries.GetUsersByStatus
+namespace Booksy.UserManagement.Application.Queries.GetUsersByStatus
 {
-    public sealed class GetUsersByStatusQueryHandler : IQueryHandler<GetUsersByStatusQuery, PagedResult<GetUsersByStatusResult>>
+    /// <summary>
+    /// Handler for retrieving users filtered by status
+    /// </summary>
+    public sealed class GetUsersByStatusQueryHandler
+        : IQueryHandler<GetUsersByStatusQuery, IReadOnlyList<GetUsersByStatusResult>>
     {
-        private readonly IUserReadRepository _userReadRepository;
+        private readonly IUserQueryRepository _userQueryRepository;
         private readonly ILogger<GetUsersByStatusQueryHandler> _logger;
 
         public GetUsersByStatusQueryHandler(
-            IUserReadRepository userReadRepository,
+            IUserQueryRepository userQueryRepository,
             ILogger<GetUsersByStatusQueryHandler> logger)
         {
-            _userReadRepository = userReadRepository;
-            _logger = logger;
+            _userQueryRepository = userQueryRepository ?? throw new ArgumentNullException(nameof(userQueryRepository));
+            _logger = logger ?? throw new ArgumentNullException(nameof(logger));
         }
 
-        public async Task<PagedResult<GetUsersByStatusResult>> Handle(
+        public async Task<IReadOnlyList<GetUsersByStatusResult>> Handle(
             GetUsersByStatusQuery request,
             CancellationToken cancellationToken)
         {
-            _logger.LogDebug("Fetching users with status: {Status}", request.Status);
+            _logger.LogInformation(
+                "Retrieving users with status {Status}, max results: {MaxResults}",
+                request.Status,
+                request.MaxResults);
 
-            var users = _userReadRepository.GetQueryable().Where(c=>c.Status == request.Status);
-
-            return await users.Select(user => new GetUsersByStatusResult
+            try
             {
-                UserId = user.Id.Value,
-                Email = user.Email.Value,
-                FullName = user.Profile.GetFullName(),
-                DisplayName = user.Profile.GetDisplayName(),
-                Status = user.Status.ToString(),
-                Type = user.Type.ToString(),
-                RegisteredAt = user.RegisteredAt,
-                LastLoginAt = user.LastLoginAt,
-                IsLocked = user.IsLocked(),
-                AvatarUrl = user.Profile.AvatarUrl
-            }).ToPagedResultAsync(request,cancellationToken);
+                // Create specification for filtering
+                var specification = new UsersByStatusSpecification(
+                    request.Status,
+                    request.MaxResults);
 
+                // Execute query with projection
+                var results = await _userQueryRepository.GetListAsync(
+                    specification,
+                    user => new GetUsersByStatusResult
+                    {
+                        UserId = user.Id.Value,
+                        Email = user.Email.Value,
+                        FirstName = user.Profile.FirstName,
+                        LastName = user.Profile.LastName,
+                        FullName = user.Profile.FirstName + " " + user.Profile.LastName,
+                        PhoneNumber = user.Profile.PhoneNumber != null ? user.Profile.PhoneNumber.Value : null,
+                        Status = user.Status,
+                        Type = user.Type,
+                        Roles = user.Roles.Select(r => r.Name).ToList(),
+                        RegisteredAt = user.RegisteredAt,
+                        ActivatedAt = user.ActivatedAt,
+                        LastLoginAt = user.LastLoginAt,
+                        IsLocked = user.LockedUntil.HasValue && user.LockedUntil > DateTime.UtcNow,
+                        TwoFactorEnabled = user.TwoFactorEnabled,
+                        AvatarUrl = user.Profile.AvatarUrl
+                    },
+                    cancellationToken);
+
+                _logger.LogInformation(
+                    "Successfully retrieved {UserCount} users with status {Status}",
+                    results.Count,
+                    request.Status);
+
+                return results;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex,
+                    "Error occurred while retrieving users with status {Status}",
+                    request.Status);
+                throw;
+            }
         }
     }
 }

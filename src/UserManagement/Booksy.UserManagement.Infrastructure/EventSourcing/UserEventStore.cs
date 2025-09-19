@@ -3,12 +3,12 @@
 // ========================================
 using Microsoft.Extensions.Logging;
 using Booksy.Core.Domain.Abstractions.Events;
-using Booksy.UserManagement.Domain.ValueObjects;
 using Booksy.UserManagement.Infrastructure.Persistence.Context;
 using Microsoft.EntityFrameworkCore;
 using System.Text.Json;
 using Booksy.UserManagement.Infrastructure.Persistence.Configurations;
 using Booksy.Infrastructure.Core.Persistence.EventStore;
+using Booksy.Core.Domain.ValueObjects;
 
 namespace Booksy.UserManagement.Infrastructure.EventSourcing
 {
@@ -48,14 +48,13 @@ namespace Booksy.UserManagement.Infrastructure.EventSourcing
                 version++;
                 var storedEvent = new StoredEvent
                 (
-                     Guid.NewGuid(),
+                     Guid.NewGuid().ToString(),
                     aggregateId.Value.ToString(),
                     "User",
                     domainEvent.GetType().Name,
                     JsonSerializer.Serialize(domainEvent),
                     version,
-                    domainEvent.OccurredAt,
-                    aggregateId.Value.ToString()
+                    domainEvent.OccurredAt
                 );
 
                 storedEvents.Add(storedEvent);
@@ -136,7 +135,7 @@ namespace Booksy.UserManagement.Infrastructure.EventSourcing
                 .ToList();
         }
 
-       public async Task<IEnumerable<StoredEvent>> GetEventHistoryAsync(UserId aggregateId, CancellationToken cancellationToken)
+        public async Task<IEnumerable<StoredEvent>> GetEventHistoryAsync(UserId aggregateId, CancellationToken cancellationToken)
         {
             return await _context.Set<StoredEvent>()
                 .Where(e => e.AggregateId == aggregateId.Value.ToString())
@@ -145,8 +144,8 @@ namespace Booksy.UserManagement.Infrastructure.EventSourcing
         }
 
 
-      
-       
+
+
     }
 }
 

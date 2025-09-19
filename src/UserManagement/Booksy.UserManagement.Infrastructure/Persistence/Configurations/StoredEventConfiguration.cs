@@ -46,9 +46,7 @@ namespace Booksy.UserManagement.Infrastructure.Persistence.Configurations
                 .HasColumnName("timestamp")
                 .IsRequired();
 
-            builder.Property(e => e.UserId)
-                .HasColumnName("user_id")
-                .HasMaxLength(100);
+      
 
        
 
@@ -66,8 +64,6 @@ namespace Booksy.UserManagement.Infrastructure.Persistence.Configurations
             builder.HasIndex(e => e.Timestamp)
                 .HasDatabaseName("ix_event_store_timestamp");
 
-            builder.HasIndex(e => e.UserId)
-                .HasDatabaseName("ix_event_store_user_id");
 
         }
     }

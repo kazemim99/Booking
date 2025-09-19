@@ -2,7 +2,7 @@
 // Booksy.UserManagement.Domain/Entities/UserRole.cs
 // ========================================
 using Booksy.Core.Domain.Base;
-using Booksy.UserManagement.Domain.ValueObjects;
+using Booksy.Core.Domain.ValueObjects;
 
 namespace Booksy.UserManagement.Domain.Entities
 {

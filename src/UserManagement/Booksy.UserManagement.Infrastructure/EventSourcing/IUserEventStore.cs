@@ -2,8 +2,8 @@
 // Booksy.UserManagement.Infrastructure/Persistence/EventSourcing/EventSourcedUserRepository.cs
 // ========================================
 using Booksy.Core.Domain.Abstractions.Events;
+using Booksy.Core.Domain.ValueObjects;
 using Booksy.Infrastructure.Core.Persistence.EventStore;
-using Booksy.UserManagement.Domain.ValueObjects;
 
 namespace Booksy.UserManagement.Infrastructure.EventSourcing
 {

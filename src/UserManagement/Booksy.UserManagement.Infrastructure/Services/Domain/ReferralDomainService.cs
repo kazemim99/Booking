@@ -1,7 +1,7 @@
 ﻿
 // Booksy.UserManagement.Infrastructure/Services/Domain/ReferralDomainService.cs
+using Booksy.Core.Domain.ValueObjects;
 using Booksy.UserManagement.Domain.Services;
-using Booksy.UserManagement.Domain.ValueObjects;
 using Microsoft.Extensions.Caching.Memory;
 
 namespace Booksy.UserManagement.Infrastructure.Services.Domain

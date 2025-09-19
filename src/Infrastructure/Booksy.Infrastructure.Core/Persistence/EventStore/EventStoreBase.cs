@@ -51,7 +51,7 @@ public abstract class EventStoreBase<TAggregateId> : IEventStore<TAggregateId> w
         long version,
         CancellationToken cancellationToken = default);
 
-    public abstract Task<Snapshot?> GetLatestSnapshotAsync(
+    public abstract Task<EventStoreSnapshot?> GetLatestSnapshotAsync(
         TAggregateId aggregateId,
         string aggregateType,
         CancellationToken cancellationToken = default);

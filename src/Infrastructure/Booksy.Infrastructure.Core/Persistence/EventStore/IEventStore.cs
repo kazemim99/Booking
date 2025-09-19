@@ -58,7 +58,7 @@ public interface IEventStore<TId> where TId : notnull
     /// <summary>
     /// Gets the latest snapshot for an aggregate
     /// </summary>
-    Task<Snapshot?> GetLatestSnapshotAsync(
+    Task<EventStoreSnapshot?> GetLatestSnapshotAsync(
         TId aggregateId,
         string aggregateType,
         CancellationToken cancellationToken = default);

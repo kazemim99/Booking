@@ -26,12 +26,12 @@ public interface IEventBus
     /// </summary>
     void Subscribe<TEvent, THandler>()
         where TEvent : IDomainEvent
-        where THandler : IEventHandler<TEvent>;
+        where THandler : IDomainEventHandler<TEvent>;
 
     /// <summary>
     /// Unsubscribes from a specific event type
     /// </summary>
     void Unsubscribe<TEvent, THandler>()
         where TEvent : IDomainEvent
-        where THandler : IEventHandler<TEvent>;
+        where THandler : IDomainEventHandler<TEvent>;
 }

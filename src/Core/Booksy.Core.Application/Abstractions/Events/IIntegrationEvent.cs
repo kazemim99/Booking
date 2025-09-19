@@ -47,34 +47,25 @@ namespace Booksy.Core.Application.Abstractions.Events
     /// <summary>
     /// Base implementation of integration event
     /// </summary>
-    public abstract class IntegrationEvent : IIntegrationEvent
+    public abstract record IntegrationEvent : IIntegrationEvent
     {
-        public Guid EventId { get; }
-        public DateTime OccurredAt { get; }
-        public int EventVersion { get; protected set; }
-        public string? SourceContext { get; protected set; }
-        public string? CorrelationId { get; set; }
-        public string? CausationId { get; set; }
-        public string? UserId { get; set; }
+        public Guid EventId { get; init; } = Guid.NewGuid();
+        public DateTime OccurredAt { get; init; } = DateTime.UtcNow;
+        public int EventVersion { get; protected init; } = 1;
+        public string? SourceContext { get; protected init; }
+        public string? CorrelationId { get; init; }
+        public string? CausationId { get; init; }
+        public string? UserId { get; init; }
 
-        protected IntegrationEvent()
-        {
-            EventId = Guid.NewGuid();
-            OccurredAt = DateTime.UtcNow;
-            EventVersion = 1;
-        }
+        protected IntegrationEvent() { }
 
-        protected IntegrationEvent(string sourceContext) : this()
+        protected IntegrationEvent(string sourceContext)
         {
             SourceContext = sourceContext;
         }
 
-        /// <summary>
-        /// Creates metadata dictionary for event storage
-        /// </summary>
-        public virtual Dictionary<string, object> GetMetadata()
-        {
-            return new Dictionary<string, object>
+        public virtual Dictionary<string, object> GetMetadata() =>
+            new()
             {
                 ["EventId"] = EventId,
                 ["EventType"] = GetType().Name,
@@ -85,6 +76,5 @@ namespace Booksy.Core.Application.Abstractions.Events
                 ["CausationId"] = CausationId ?? string.Empty,
                 ["UserId"] = UserId ?? string.Empty
             };
-        }
     }
 }

@@ -13,9 +13,9 @@ namespace Booksy.UserManagement.Infrastructure.Services.Domain
 {
     public class UserValidationService : IUserValidationService
     {
-        private readonly IUserReadRepository _userRepository;
+        private readonly IUserRepository _userRepository;
 
-        public UserValidationService(IUserReadRepository userRepository)
+        public UserValidationService(IUserRepository userRepository)
         {
             _userRepository = userRepository;
         }

@@ -1,1 +1,2 @@
-﻿global using Booksy.UserManagement.Domain.Aggregates;
+﻿
+global using Booksy.UserManagement.Domain.Aggregates;

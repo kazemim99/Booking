@@ -1,8 +1,6 @@
 ﻿// ========================================
 // Models/Responses/UserResponse.cs
 // ========================================
-using Booksy.UserManagement.Application.CQRS.Commands.RegisterUser;
-using Booksy.UserManagement.Application.CQRS.Queries.GetUserById;
 
 namespace Booksy.UserManagement.API.Models.Responses;
 
@@ -18,11 +16,5 @@ public class UserResponse
     public string UserType { get; set; } = string.Empty;
     public string Status { get; set; } = string.Empty;
     public DateTime RegisteredAt { get; set; }
-}
-
-public class PagedRespon<T>
-{
-    public List<T> Items { get; set; }
-    public int ItemCount { get; set; }
 }
 

@@ -6,10 +6,11 @@ using Microsoft.Extensions.Logging;
 using Booksy.UserManagement.Infrastructure.Persistence.Context;
 using Booksy.UserManagement.Infrastructure.Testing.Builders;
 using Booksy.Core.Domain.ValueObjects;
+using Booksy.Infrastructure.Core.Persistence.Base;
 
 namespace Booksy.UserManagement.Infrastructure.Persistence.Seeders
 {
-    public class UserManagementDatabaseSeeder
+    public class UserManagementDatabaseSeeder : ISeeder
     {
         private readonly UserManagementDbContext _context;
         private readonly ILogger<UserManagementDatabaseSeeder> _logger;

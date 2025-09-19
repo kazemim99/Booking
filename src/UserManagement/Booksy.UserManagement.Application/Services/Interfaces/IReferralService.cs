@@ -4,7 +4,7 @@
 
 // Booksy.UserManagement.Application/EventHandlers/DomainEventHandlers/UserRegisteredEventHandler.cs
 // Booksy.UserManagement.Application/Services/Interfaces/IReferralService.cs
-using Booksy.UserManagement.Domain.ValueObjects;
+using Booksy.Core.Domain.ValueObjects;
 
 namespace Booksy.UserManagement.Application.Services.Interfaces
 {

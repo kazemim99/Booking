@@ -2,6 +2,7 @@
 // Persistence/EventStore/IEventStore.cs
 // ========================================
 using Booksy.Core.Domain.Abstractions.Entities;
+using Booksy.Core.Domain.Base;
 using Microsoft.Extensions.Logging;
 
 namespace Booksy.Infrastructure.Core.Persistence.EventStore;
@@ -10,7 +11,7 @@ namespace Booksy.Infrastructure.Core.Persistence.EventStore;
 /// Base repository for event-sourced aggregates
 /// </summary>
 public abstract class EventSourcedRepository<TAggregate, TId>
-    where TAggregate : class, IAggregateRoot, IEntity<TId>
+    where TAggregate :  AggregateRoot<TId>
     where TId : notnull
 {
     protected readonly IEventStore<TId> EventStore;
@@ -23,7 +24,7 @@ public abstract class EventSourcedRepository<TAggregate, TId>
         Logger = logger;
     }
 
-    public async Task<TAggregate?> GetByIdAsync(TId id, CancellationToken cancellationToken = default)
+    public virtual async  Task<TAggregate?> GetByIdAsync(TId id, CancellationToken cancellationToken = default)
     {
         var aggregateId = GetAggregateId(id);
 
@@ -44,7 +45,7 @@ public abstract class EventSourcedRepository<TAggregate, TId>
         return aggregate;
     }
 
-    public async Task SaveAsync(TAggregate aggregate, CancellationToken cancellationToken = default)
+    public virtual async Task SaveAsync(TAggregate aggregate, CancellationToken cancellationToken = default)
     {
         var aggregateId = GetAggregateIdFromAggregate(aggregate);
         var expectedVersion = await EventStore.GetAggregateVersionAsync(aggregateId, AggregateTypeName, cancellationToken);

@@ -1,10 +1,4 @@
-﻿// ========================================
-// Event Handlers - Domain Events
-// ========================================
-
-// Booksy.UserManagement.Application/EventHandlers/DomainEventHandlers/UserRegisteredEventHandler.cs
-// Booksy.UserManagement.Application/DTOs/UserProfileDto.cs
-namespace Booksy.UserManagement.Application.DTOs
+﻿namespace Booksy.UserManagement.Application.DTOs
 {
     public sealed class AddressDto
     {

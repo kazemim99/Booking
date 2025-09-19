@@ -1,19 +1,8 @@
-﻿// ========================================
-// Event Handlers - Domain Events
-// ========================================
-
-// Booksy.UserManagement.Application/EventHandlers/DomainEventHandlers/UserRegisteredEventHandler.cs
-
-// ========================================
-// Event Handlers - Domain Events
-// ========================================
-
-// Booksy.UserManagement.Application/EventHandlers/DomainEventHandlers/UserRegisteredEventHandler.cs
-using Booksy.Core.Application.Abstractions.Events;
+﻿using Booksy.Core.Application.Abstractions.Events;
 
 namespace Booksy.UserManagement.Application.Abstractions.Events
 {
-    public sealed class UserDeactivatedIntegrationEvent : IntegrationEvent
+    public sealed record UserDeactivatedIntegrationEvent : IntegrationEvent
     {
         public Guid UserId { get; }
         public string Email { get; }

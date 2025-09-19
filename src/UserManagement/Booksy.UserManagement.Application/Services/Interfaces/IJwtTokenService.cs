@@ -4,7 +4,6 @@
 
 // Booksy.UserManagement.Application/EventHandlers/DomainEventHandlers/UserRegisteredEventHandler.cs
 using Booksy.Core.Domain.ValueObjects;
-using Booksy.UserManagement.Domain.ValueObjects;
 using System.Security.Claims;
 
 namespace Booksy.UserManagement.Application.Services.Interfaces

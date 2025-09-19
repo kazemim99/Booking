@@ -1,0 +1,20 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net9.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Folder Include="Aggregates\ServiceAggregate\Specifications\" />
+    <Folder Include="Rules\" />
+    <Folder Include="Specifications\" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\..\Core\Booksy.Core.Application\Booksy.Core.Application.csproj" />
+    <ProjectReference Include="..\..\..\Core\Booksy.Core.Domain\Booksy.Core.Domain.csproj" />
+  </ItemGroup>
+
+</Project>

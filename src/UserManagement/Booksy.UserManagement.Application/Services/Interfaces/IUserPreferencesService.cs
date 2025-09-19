@@ -3,7 +3,7 @@
 // ========================================
 
 // Booksy.UserManagement.Application/EventHandlers/DomainEventHandlers/UserRegisteredEventHandler.cs
-using Booksy.UserManagement.Domain.ValueObjects;
+using Booksy.Core.Domain.ValueObjects;
 
 namespace Booksy.UserManagement.Application.Services.Interfaces
 {

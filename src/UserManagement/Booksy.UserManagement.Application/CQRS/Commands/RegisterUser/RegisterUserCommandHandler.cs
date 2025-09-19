@@ -18,9 +18,8 @@ namespace Booksy.UserManagement.Application.CQRS.Commands.RegisterUser
     /// </summary>
     public sealed class RegisterUserCommandHandler : ICommandHandler<RegisterUserCommand, RegisterUserResult>
     {
-        private readonly IUserWriteRepository _userWriteRepository;
-        private readonly IUserReadRepository _userReadRepository;
-        private readonly IUnitOfWork _unitOfWork;
+        private readonly IUserRepository _userRepository;
+        private readonly IPasswordHasher _passwordHasher;        
         private readonly IUserValidationService _validationService;
         private readonly IEmailTemplateService _emailService;
         private readonly IReferralService _referralService;
@@ -28,23 +27,22 @@ namespace Booksy.UserManagement.Application.CQRS.Commands.RegisterUser
         private readonly ILogger<RegisterUserCommandHandler> _logger;
 
         public RegisterUserCommandHandler(
-            IUserWriteRepository userWriteRepository,
-            IUserReadRepository userReadRepository,
-            IUnitOfWork unitOfWork,
+            IUserRepository userWriteRepository,
             IUserValidationService validationService,
             IEmailTemplateService emailService,
             IReferralService referralService,
             IAuditUserService auditService,
-            ILogger<RegisterUserCommandHandler> logger)
+            ILogger<RegisterUserCommandHandler> logger,
+            IPasswordHasher passwordHasher)
         {
-            _userWriteRepository = userWriteRepository;
-            _userReadRepository = userReadRepository;
-            _unitOfWork = unitOfWork;
+            _userRepository = userWriteRepository;
+
             _validationService = validationService;
             _emailService = emailService;
             _referralService = referralService;
             _auditService = auditService;
             _logger = logger;
+            _passwordHasher = passwordHasher;
         }
 
         public async Task<RegisterUserResult> Handle(
@@ -57,12 +55,16 @@ namespace Booksy.UserManagement.Application.CQRS.Commands.RegisterUser
 
                 // Validate email availability
                 var email = Email.From(request.Email);
-                var emailExists = await _userReadRepository.ExistsByEmailAsync(email, cancellationToken);
+                var emailExists = await _validationService.IsEmailAvailableAsync(email, cancellationToken);
 
                 if (emailExists)
                 {
                     throw new UserAlreadyExistsException(email);
                 }
+
+                var hashedPassword =  _passwordHasher.HashPassword(request.Password);
+                var password = HashedPassword.Create(hashedPassword);
+
 
                 // Create user profile
                 var profile = UserProfile.Create(
@@ -75,7 +77,7 @@ namespace Booksy.UserManagement.Application.CQRS.Commands.RegisterUser
                 // Set contact information
                 if (!string.IsNullOrWhiteSpace(request.PhoneNumber))
                 {
-                    var phoneNumber = PhoneNumber.Create(request.PhoneNumber);
+                    var phoneNumber = PhoneNumber.From(request.PhoneNumber);
                     Address? address = null;
 
                     if (request.Address != null)
@@ -113,11 +115,9 @@ namespace Booksy.UserManagement.Application.CQRS.Commands.RegisterUser
                     }
                 }
 
-                // Create hashed password
-                var hashedPassword = HashedPassword.Create(request.Password);
 
                 // Register user
-                var user = User.Register(email, hashedPassword, profile, request.UserType);
+                var user = User.Register(email, password, profile, request.UserType);
 
                 // Handle referral if provided
                 if (!string.IsNullOrWhiteSpace(request.ReferralCode))
@@ -126,8 +126,7 @@ namespace Booksy.UserManagement.Application.CQRS.Commands.RegisterUser
                 }
 
                 // Persist user
-                await _userWriteRepository.AddUserAsync(user, cancellationToken);
-                await _unitOfWork.CommitAndPublishEventsAsync(cancellationToken);
+                await _userRepository.SaveAsync(user, cancellationToken);
 
                 // Send welcome email if requested
                 if (request.SendWelcomeEmail)

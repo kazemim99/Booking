@@ -2,6 +2,9 @@
 // CQRS/MediatorExtensions.cs
 // ========================================
 using Booksy.Core.Application.Behaviors;
+using Booksy.Core.Application.DTOs;
+using Booksy.Core.Application.Validators;
+using FluentValidation;
 using MediatR;
 using Microsoft.Extensions.DependencyInjection;
 
@@ -34,6 +37,10 @@ public static class MediatorExtensions
         services.AddScoped(typeof(IPipelineBehavior<,>), typeof(PerformanceBehavior<,>));
         services.AddScoped(typeof(IPipelineBehavior<,>), typeof(TransactionBehavior<,>));
         services.AddScoped(typeof(IPipelineBehavior<,>), typeof(CachingBehavior<,>));
+
+        services.AddValidatorsFromAssemblies(AppDomain.CurrentDomain.GetAssemblies());
+
+        services.AddTransient<IValidator<PaginationRequest>, PaginationRequestValidator>();
 
         return services;
     }

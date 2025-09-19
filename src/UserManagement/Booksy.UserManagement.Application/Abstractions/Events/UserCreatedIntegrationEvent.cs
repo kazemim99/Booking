@@ -13,7 +13,7 @@ using Booksy.Core.Application.Abstractions.Events;
 
 namespace Booksy.UserManagement.Application.Abstractions.Events
 {
-    public sealed class UserCreatedIntegrationEvent : IntegrationEvent
+    public sealed record UserCreatedIntegrationEvent : IntegrationEvent
     {
         public Guid UserId { get; }
         public string Email { get; }

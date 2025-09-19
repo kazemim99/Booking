@@ -1,21 +1,22 @@
 ﻿// ========================================
 // Booksy.UserManagement.Application/Queries/GetUserById/GetUserByIdQuery.cs
 // ========================================
-using Booksy.UserManagement.Domain.ValueObjects;
+using Booksy.Core.Domain.ValueObjects;
 
 namespace Booksy.UserManagement.Application.CQRS.Queries.GetUserById
 {
     public sealed class GetUserByIdQueryHandler : IQueryHandler<GetUserByIdQuery, UserDetailsViewModel>
     {
-        private readonly IUserReadRepository _userReadRepository;
+        
         private readonly ILogger<GetUserByIdQueryHandler> _logger;
-
+        private readonly IUserRepository _userRepository;
         public GetUserByIdQueryHandler(
-            IUserReadRepository userReadRepository,
-            ILogger<GetUserByIdQueryHandler> logger)
+
+            ILogger<GetUserByIdQueryHandler> logger, IUserRepository userRepository)
         {
-            _userReadRepository = userReadRepository;
+
             _logger = logger;
+            _userRepository = userRepository;
         }
 
         public async Task<UserDetailsViewModel> Handle(
@@ -25,7 +26,7 @@ namespace Booksy.UserManagement.Application.CQRS.Queries.GetUserById
             _logger.LogDebug("Fetching user details for UserId: {UserId}", request.UserId);
 
             var userId = UserId.From(request.UserId);
-            var user = await _userReadRepository.GetByIdAsync(userId, cancellationToken);
+            var user = await _userRepository.GetByIdAsync(userId, cancellationToken);
 
             if (user == null)
             {

@@ -61,7 +61,7 @@ public sealed class InMemoryEventBus : IEventBus
 
     public void Subscribe<TEvent, THandler>()
         where TEvent : IDomainEvent
-        where THandler : IEventHandler<TEvent>
+        where THandler : IDomainEventHandler<TEvent>
     {
         var eventName = typeof(TEvent).Name;
         var handlerType = typeof(THandler);
@@ -80,7 +80,7 @@ public sealed class InMemoryEventBus : IEventBus
 
     public void Unsubscribe<TEvent, THandler>()
         where TEvent : IDomainEvent
-        where THandler : IEventHandler<TEvent>
+        where THandler : IDomainEventHandler<TEvent>
     {
         var eventName = typeof(TEvent).Name;
         var handlerType = typeof(THandler);

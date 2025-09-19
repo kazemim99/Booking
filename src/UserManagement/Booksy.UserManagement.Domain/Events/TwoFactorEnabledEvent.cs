@@ -1,22 +1,13 @@
 ﻿// ========================================
-// Booksy.UserManagement.Domain/Enums/UserStatus.cs
+// Booksy.UserManagement.Domain/Events/TwoFactorEnabledEvent.cs
 // ========================================
 using Booksy.Core.Domain.Base;
+using Booksy.Core.Domain.ValueObjects;
 
 namespace Booksy.UserManagement.Domain.Events
 {
-    public sealed class TwoFactorEnabledEvent : DomainEvent
-    {
-        public UserId UserId { get; }
-        public DateTime EnabledAt { get; }
-
-        public TwoFactorEnabledEvent(UserId userId, DateTime enabledAt)
-            : base("User", userId.ToString())
-        {
-            UserId = userId;
-            EnabledAt = enabledAt;
-        }
-    }
+    public sealed record TwoFactorEnabledEvent(
+        UserId UserId,
+        DateTime EnabledAt
+    ) : DomainEvent("User", UserId.ToString());
 }
-
-

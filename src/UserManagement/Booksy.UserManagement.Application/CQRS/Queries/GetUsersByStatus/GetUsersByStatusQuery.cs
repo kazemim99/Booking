@@ -1,12 +1,9 @@
-﻿// ========================================
-// Booksy.UserManagement.Application/Queries/GetUserById/GetUserByIdQuery.cs
-// ========================================
-using Booksy.UserManagement.Application.CQRS.Queries.GetPaginatedUsers;
+﻿// 📁 Booksy.UserManagement.Application/Queries/GetUsersByStatus/GetUsersByStatusQuery.cs
 using Booksy.UserManagement.Domain.Enums;
 
-namespace Booksy.UserManagement.Application.CQRS.Queries.GetUsersByStatus
+namespace Booksy.UserManagement.Application.Queries.GetUsersByStatus
 {
     public sealed record GetUsersByStatusQuery(
-        UserStatus Status) :PaginationRequest, IQuery<PagedResult<GetUsersByStatusResult>>;
+        UserStatus Status,
+        int MaxResults = 100) : IQuery<IReadOnlyList<GetUsersByStatusResult>>;
 }
-

@@ -3,19 +3,16 @@
 // ========================================
 
 
+using Booksy.Core.Domain.ValueObjects;
+using Booksy.UserManagement.Domain.Aggregates;
+
 namespace Booksy.UserManagement.Domain.Events
 {
-    public sealed class PasswordChangedEvent : DomainEvent
+    public sealed record PasswordChangedEvent(UserId UserId, DateTime ChangedAt) : 
+        DomainEvent("User", UserId.ToString())
     {
-        public UserId UserId { get; }
-        public DateTime ChangedAt { get; }
 
-        public PasswordChangedEvent(UserId userId, DateTime changedAt)
-            : base("User", userId.ToString())
-        {
-            UserId = userId;
-            ChangedAt = changedAt;
-        }
+       
     }
 }
 

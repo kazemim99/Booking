@@ -6,7 +6,7 @@ namespace Booksy.Core.Domain.Base
     /// <summary>
     /// Base class for domain events
     /// </summary>
-    public abstract class DomainEvent : IDomainEvent
+    public abstract record DomainEvent : IDomainEvent
     {
         public Guid EventId { get; }
         public DateTime OccurredAt { get; }

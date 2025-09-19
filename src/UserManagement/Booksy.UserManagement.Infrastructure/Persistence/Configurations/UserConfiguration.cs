@@ -5,8 +5,8 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 using Booksy.UserManagement.Domain.Aggregates;
 using Booksy.UserManagement.Domain.Entities;
-using Booksy.UserManagement.Domain.ValueObjects;
 using System.Text.Json;
+using Booksy.Core.Domain.ValueObjects;
 
 namespace Booksy.UserManagement.Infrastructure.Persistence.Configurations
 {
@@ -36,25 +36,6 @@ namespace Booksy.UserManagement.Infrastructure.Persistence.Configurations
                 .HasDefaultValue(0)
                 .IsRequired();
 
-            /* 
-            // Option 2: Using PostgreSQL's xmin system column (Automatic, no migrations needed)
-            // Uncomment this and comment out Option 1 if you prefer using xmin
-            builder.UseXminAsConcurrencyToken();
-            
-            // Then ignore the Version property since xmin handles it
-            builder.Ignore(u => u.Version);
-            */
-
-            /*
-            // Option 3: Using a RowVersion timestamp (Manual timestamp approach)
-            // Add this property to your User entity: public DateTime RowVersion { get; private set; }
-            builder.Property(u => u.RowVersion)
-                .HasColumnName("row_version")
-                .IsConcurrencyToken()
-                .HasDefaultValue(DateTime.UtcNow)
-                .ValueGeneratedOnAddOrUpdate()
-                .IsRequired();
-            */
 
             // Value Objects
             builder.OwnsOne(u => u.Email, email =>

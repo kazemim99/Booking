@@ -1,31 +1,27 @@
 ﻿// ========================================
 // Booksy.UserManagement.Application/Commands/ActivateUser/ActivateUserCommand.cs
 // ========================================
-using Booksy.UserManagement.Domain.ValueObjects;
+using Booksy.Core.Domain.ValueObjects;
+using Booksy.UserManagement.Application.Services.Interfaces;
 using MediatR;
 
 namespace Booksy.UserManagement.Application.CQRS.Commands.ChangePassword
 {
     public sealed class ChangePasswordCommandHandler : ICommandHandler<ChangePasswordCommand>
     {
-        private readonly IUserWriteRepository _userWriteRepository;
-        private readonly IUserReadRepository _userReadRepository;
-        private readonly IUnitOfWork _unitOfWork;
+        private readonly IUserRepository _userRepository;
         private readonly IEmailTemplateService _emailService;
         private readonly IAuditUserService _auditService;
         private readonly ILogger<ChangePasswordCommandHandler> _logger;
 
         public ChangePasswordCommandHandler(
-            IUserWriteRepository userWriteRepository,
-            IUserReadRepository userReadRepository,
+            IUserRepository userWriteRepository,
             IUnitOfWork unitOfWork,
             IEmailTemplateService emailService,
             IAuditUserService auditService,
             ILogger<ChangePasswordCommandHandler> logger)
         {
-            _userWriteRepository = userWriteRepository;
-            _userReadRepository = userReadRepository;
-            _unitOfWork = unitOfWork;
+            _userRepository = userWriteRepository;
             _emailService = emailService;
             _auditService = auditService;
             _logger = logger;
@@ -38,7 +34,7 @@ namespace Booksy.UserManagement.Application.CQRS.Commands.ChangePassword
             _logger.LogInformation("Changing password for user: {UserId}", request.UserId);
 
             var userId = UserId.From(request.UserId);
-            var user = await _userReadRepository.GetByIdAsync(userId, cancellationToken);
+            var user = await _userRepository.GetByIdAsync(userId, cancellationToken);
 
             if (user == null)
             {
@@ -53,8 +49,7 @@ namespace Booksy.UserManagement.Application.CQRS.Commands.ChangePassword
                 user.RevokeAllRefreshTokens();
             }
 
-            await _userWriteRepository.UpdateUserAsync(user, cancellationToken);
-            await _unitOfWork.CommitAndPublishEventsAsync(cancellationToken);
+            await _userRepository.UpdateAsync(user, cancellationToken);
 
             // Send notification email
             await SendPasswordChangedEmailAsync(user.Email.Value, user.Profile.FirstName, cancellationToken);

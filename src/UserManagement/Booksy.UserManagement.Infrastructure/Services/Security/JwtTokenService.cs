@@ -4,7 +4,6 @@
 
 // Booksy.UserManagement.Infrastructure/Services/Security/PasswordHasher.cs
 using Booksy.UserManagement.Application.Services.Interfaces;
-using Booksy.UserManagement.Domain.ValueObjects;
 using Microsoft.Extensions.Configuration;
 using Microsoft.IdentityModel.Tokens;
 using System.IdentityModel.Tokens.Jwt;

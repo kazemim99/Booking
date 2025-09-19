@@ -23,11 +23,10 @@ namespace Booksy.UserManagement.Infrastructure.Migrations
 
             NpgsqlModelBuilderExtensions.UseIdentityByDefaultColumns(modelBuilder);
 
-            modelBuilder.Entity("Booksy.Infrastructure.Core.Persistence.EventStore.StoredEvent", b =>
+            modelBuilder.Entity("Booksy.Core.Domain.EventStore.StoredEvent", b =>
                 {
-                    b.Property<Guid>("EventId")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("uuid")
+                    b.Property<string>("EventId")
+                        .HasColumnType("text")
                         .HasColumnName("id");
 
                     b.Property<string>("AggregateId")
@@ -57,11 +56,6 @@ namespace Booksy.UserManagement.Infrastructure.Migrations
                         .HasColumnType("timestamp without time zone")
                         .HasColumnName("timestamp");
 
-                    b.Property<string>("UserId")
-                        .HasMaxLength(100)
-                        .HasColumnType("character varying(100)")
-                        .HasColumnName("user_id");
-
                     b.Property<long>("Version")
                         .HasColumnType("bigint")
                         .HasColumnName("event_version");
@@ -76,9 +70,6 @@ namespace Booksy.UserManagement.Infrastructure.Migrations
 
                     b.HasIndex("Timestamp")
                         .HasDatabaseName("ix_event_store_timestamp");
-
-                    b.HasIndex("UserId")
-                        .HasDatabaseName("ix_event_store_user_id");
 
                     b.HasIndex("AggregateId", "Version")
                         .IsUnique()
@@ -112,6 +103,9 @@ namespace Booksy.UserManagement.Infrastructure.Migrations
                         .HasColumnType("integer")
                         .HasDefaultValue(0)
                         .HasColumnName("failed_login_attempts");
+
+                    b.Property<bool>("IsDeleted")
+                        .HasColumnType("boolean");
 
                     b.Property<DateTime?>("LastLoginAt")
                         .HasColumnType("timestamp without time zone")
@@ -193,6 +187,9 @@ namespace Booksy.UserManagement.Infrastructure.Migrations
                         .HasColumnType("timestamp without time zone")
                         .HasColumnName("created_at");
 
+                    b.Property<string>("CreatedBy")
+                        .HasColumnType("text");
+
                     b.Property<DateTime?>("DateOfBirth")
                         .HasColumnType("timestamp without time zone")
                         .HasColumnName("date_of_birth");
@@ -207,6 +204,15 @@ namespace Booksy.UserManagement.Infrastructure.Migrations
                         .HasMaxLength(50)
                         .HasColumnType("character varying(50)")
                         .HasColumnName("gender");
+
+                    b.Property<bool>("IsDeleted")
+                        .HasColumnType("boolean");
+
+                    b.Property<DateTime?>("LastModifiedAt")
+                        .HasColumnType("timestamp without time zone");
+
+                    b.Property<string>("LastModifiedBy")
+                        .HasColumnType("text");
 
                     b.Property<string>("LastName")
                         .IsRequired()
@@ -269,9 +275,24 @@ namespace Booksy.UserManagement.Infrastructure.Migrations
                         .HasColumnType("character varying(100)")
                         .HasColumnName("assigned_by");
 
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp without time zone");
+
+                    b.Property<string>("CreatedBy")
+                        .HasColumnType("text");
+
                     b.Property<DateTime?>("ExpiresAt")
                         .HasColumnType("timestamp without time zone")
                         .HasColumnName("expires_at");
+
+                    b.Property<bool>("IsDeleted")
+                        .HasColumnType("boolean");
+
+                    b.Property<DateTime?>("LastModifiedAt")
+                        .HasColumnType("timestamp without time zone");
+
+                    b.Property<string>("LastModifiedBy")
+                        .HasColumnType("text");
 
                     b.Property<string>("Metadata")
                         .IsRequired()

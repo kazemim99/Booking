@@ -4,12 +4,13 @@
 
 // Booksy.UserManagement.Application/EventHandlers/DomainEventHandlers/UserRegisteredEventHandler.cs
 using Booksy.Core.Application.Abstractions.Events;
+using Booksy.Infrastructure.Core.EventBus.Abstractions;
 using Booksy.UserManagement.Domain.Events;
 
 
 namespace Booksy.UserManagement.Application.EventHandlers
 {
-    public sealed class UserActivatedEventHandler : IEventHandler<UserActivatedEvent>
+    public sealed class UserActivatedEventHandler : IDomainEventHandler<UserActivatedEvent>
     {
         private readonly IEmailTemplateService _emailService;
         private readonly ILogger<UserActivatedEventHandler> _logger;

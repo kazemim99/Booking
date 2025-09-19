@@ -1,0 +1,35 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net9.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Folder Include="Commands\Provider\UpdateProviderSettings\" />
+    <Folder Include="Commands\Provider\SetBusinessHours\" />
+    <Folder Include="Commands\Provider\RemoveStaff\" />
+    <Folder Include="Commands\Service\DeactivateService\" />
+    <Folder Include="Commands\Service\UpdateServicePricing\" />
+    <Folder Include="Queries\Provider\GetPaginatedProviders\" />
+    <Folder Include="Queries\Service\GetServicesByCategory\" />
+    <Folder Include="Queries\Service\GetServicesByProvider\" />
+    <Folder Include="Queries\Service\SearchServices\" />
+    <Folder Include="Services\Implementations\" />
+    <Folder Include="Validators\FluentValidation\" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Autofac.Extensions.DependencyInjection" Version="10.0.0" />
+    <PackageReference Include="AutoMapper" Version="15.0.1" />
+    <PackageReference Include="FluentValidation" Version="12.0.0" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\..\Core\Booksy.Core.Application\Booksy.Core.Application.csproj" />
+    <ProjectReference Include="..\..\..\Infrastructure\Booksy.Infrastructure.Core\Booksy.Infrastructure.Core.csproj" />
+    <ProjectReference Include="..\Booksy.ServiceCatalog.Domain\Booksy.ServiceCatalog.Domain.csproj" />
+  </ItemGroup>
+
+</Project>
