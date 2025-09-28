@@ -4,6 +4,7 @@
 using Booksy.Core.Application.Abstractions.Events;
 using Booksy.Infrastructure.Core.EventBus.Abstractions;
 using Booksy.Infrastructure.Core.Persistence.Outbox;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 using System.Text.Json;
 
@@ -18,11 +19,11 @@ namespace Booksy.Infrastructure.Core.EventBus;
 /// </summary>
 public sealed class IntegrationEventPublisher : IIntegrationEventPublisher
 {
-    private readonly IOutboxProcessor _outboxProcessor;
+    private readonly IOutboxProcessor<DbContext> _outboxProcessor;
     private readonly ILogger<IntegrationEventPublisher> _logger;
 
     public IntegrationEventPublisher(
-        IOutboxProcessor outboxProcessor,
+        IOutboxProcessor<DbContext> outboxProcessor,
         ILogger<IntegrationEventPublisher> logger)
     {
         _outboxProcessor = outboxProcessor;
@@ -33,19 +34,18 @@ public sealed class IntegrationEventPublisher : IIntegrationEventPublisher
         IIntegrationEvent integrationEvent,
         CancellationToken cancellationToken = default)
     {
-        //var message = new OutboxMessage
-        //{
-        //    Id = integrationEvent.EventId,
-        //    Type = integrationEvent.EventType,
-        //    AggregateId = integrationEvent.AggregateId,
-        //    Payload = JsonSerializer.Serialize(integrationEvent),
-        //    OccurredOn = integrationEvent.OccurredOn,
-        //    ProcessedOn = null
-        //};
+        var message = new OutboxMessage
+        {
+            Id = integrationEvent.EventId,
+            Type = integrationEvent.GetType().ToString(),
+            Payload = JsonSerializer.Serialize(integrationEvent),
+            OccurredOn = integrationEvent.OccurredAt,
+            ProcessedOn = null
+        };
 
-        //await _outboxProcessor.AddMessageAsync(message, cancellationToken);
+        await _outboxProcessor.AddMessageAsync(message, cancellationToken);
 
-        //_logger.LogInformation("Integration event {EventType} added to outbox", integrationEvent.EventType);
+        _logger.LogInformation("Integration event {EventType} added to outbox", integrationEvent.GetType().ToString());
     }
 
     public async Task PublishBatchAsync(

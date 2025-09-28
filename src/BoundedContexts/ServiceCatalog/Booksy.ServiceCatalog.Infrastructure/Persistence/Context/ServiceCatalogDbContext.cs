@@ -16,11 +16,13 @@ namespace Booksy.ServiceCatalog.Infrastructure.Persistence.Context
         private readonly IDateTimeProvider _dateTimeProvider;
 
 
-      
+
         public ServiceCatalogDbContext(
-            DbContextOptions<ServiceCatalogDbContext> options)
+            DbContextOptions<ServiceCatalogDbContext> options, ICurrentUserService currentUserService, IDateTimeProvider dateTimeProvider)
             : base(options)
         {
+            _currentUserService = currentUserService;
+            _dateTimeProvider = dateTimeProvider;
         }
 
         // Aggregate Roots
@@ -35,6 +37,25 @@ namespace Booksy.ServiceCatalog.Infrastructure.Persistence.Context
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
+
+            foreach (var entityType in modelBuilder.Model.GetEntityTypes())
+            {
+                var clrType = entityType.ClrType;
+
+                // Check if it's an aggregate root
+                if (typeof(IAggregateRoot).IsAssignableFrom(clrType))
+                {
+                    // Ignore the DomainEvents property
+                    var property = clrType.GetProperty("DomainEvents");
+                    if (property != null)
+                    {
+                        entityType.RemoveProperty(property.Name);
+                    }
+                }
+            }
+
+
+
             modelBuilder.ApplyConfigurationsFromAssembly(typeof(ProviderConfiguration).Assembly);
 
 

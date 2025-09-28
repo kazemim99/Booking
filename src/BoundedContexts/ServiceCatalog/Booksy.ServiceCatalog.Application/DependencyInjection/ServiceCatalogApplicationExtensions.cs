@@ -6,6 +6,9 @@ using Microsoft.Extensions.DependencyInjection;
 using Booksy.ServiceCatalog.Application.Services.Interfaces;
 using System.Reflection;
 using Booksy.ServiceCatalog.Application.Mappings;
+using Booksy.ServiceCatalog.Domain.Repositories;
+using Booksy.ServiceCatalog.Application.Abstractions.Queries;
+using Booksy.Infrastructure.Core.CQRS;
 
 namespace Booksy.ServiceCatalog.Application.DependencyInjection
 {
@@ -13,16 +16,9 @@ namespace Booksy.ServiceCatalog.Application.DependencyInjection
     {
         public static IServiceCollection AddServiceCatalogApplication(this IServiceCollection services)
         {
-            var assembly = Assembly.GetExecutingAssembly();
 
-            // Register MediatR
-            services.AddMediatR(cfg => cfg.RegisterServicesFromAssembly(assembly));
-
-            // Register FluentValidation
-            services.AddValidatorsFromAssembly(assembly);
-
-            // Register Application Services
-            //services.AddScoped<IServiceCatalogIntegrationService, ServiceCatalogIntegrationService>();
+            services.AddMediatorWithBehaviors(typeof(ServiceCatalogApplicationExtensions).Assembly);
+         
 
             // Register AutoMapper
             services.AddAutoMapper(cfg=> { 

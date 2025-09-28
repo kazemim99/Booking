@@ -6,4 +6,6 @@ public class ProviderResponse
     public string BusinessName { get; set; } = string.Empty;
     public string Status { get; set; } = string.Empty;
     public string Message { get; set; } = string.Empty;
+    public dynamic Type { get; internal set; }
+    public dynamic RegisteredAt { get; internal set; }
 }

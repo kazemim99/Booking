@@ -13,17 +13,17 @@
 
 	<ItemGroup>
 
-		<PackageReference Include="Microsoft.EntityFrameworkCore.Design" Version="9.0.0">
+		<PackageReference Include="Microsoft.EntityFrameworkCore.Design"  Version="9.0.4">
 			<IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
 			<PrivateAssets>all</PrivateAssets>
 		</PackageReference>
 		
 		
 		<!-- ASP.NET Core -->
-		<PackageReference Include="Microsoft.AspNetCore.Authentication.JwtBearer" Version="9.0.0" />
+		<PackageReference Include="Microsoft.AspNetCore.Authentication.JwtBearer"  Version="9.0.4" />
 		<PackageReference Include="Microsoft.AspNetCore.Mvc.Versioning" Version="5.1.0" />
 		<PackageReference Include="Microsoft.AspNetCore.Mvc.Versioning.ApiExplorer" Version="5.1.0" />
-		<PackageReference Include="Microsoft.Extensions.Diagnostics.HealthChecks.EntityFrameworkCore" Version="9.0.8" />
+		<PackageReference Include="Microsoft.Extensions.Diagnostics.HealthChecks.EntityFrameworkCore" Version="9.0.4" />
 
 		<!-- Swagger/OpenAPI -->
 		<PackageReference Include="Swashbuckle.AspNetCore" Version="6.5.0" />
@@ -39,8 +39,8 @@
 
 		<!-- Health Checks -->
 		<PackageReference Include="AspNetCore.HealthChecks.SqlServer" Version="8.0.0" />
-		<PackageReference Include="AspNetCore.HealthChecks.Redis" Version="9.0.0" />
-		<PackageReference Include="AspNetCore.HealthChecks.RabbitMQ" Version="9.0.0" />
+		<PackageReference Include="AspNetCore.HealthChecks.Redis"  Version="9.0.0" />
+		<PackageReference Include="AspNetCore.HealthChecks.RabbitMQ"  Version="9.0.0" />
 		<PackageReference Include="AspNetCore.HealthChecks.UI.Client" Version="8.0.0" />
 
 		<!-- Monitoring -->

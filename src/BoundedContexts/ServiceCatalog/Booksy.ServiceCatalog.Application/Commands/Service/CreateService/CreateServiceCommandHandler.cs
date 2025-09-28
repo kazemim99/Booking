@@ -37,7 +37,7 @@ namespace Booksy.ServiceCatalog.Application.Commands.Service.CreateService
             _logger.LogInformation("Creating new service for provider: {ProviderId}", request.ProviderId);
 
             // Validate provider exists and is active
-            var providerId = ProviderId.From(request.ProviderId);
+            var providerId = ProviderId.Create(request.ProviderId);
             var provider = await _providerReadRepository.GetByIdAsync(providerId, cancellationToken);
             if (provider == null)
             {
@@ -91,13 +91,7 @@ namespace Booksy.ServiceCatalog.Application.Commands.Service.CreateService
                 service.SetImage(request.ImageUrl);
             }
 
-            if (request.Tags?.Any() == true)
-            {
-                foreach (var tag in request.Tags)
-                {
-                    service.AddTag(tag);
-                }
-            }
+           
 
             // Save to repository
             await _serviceWriteRepository.SaveServiceAsync(service, cancellationToken);

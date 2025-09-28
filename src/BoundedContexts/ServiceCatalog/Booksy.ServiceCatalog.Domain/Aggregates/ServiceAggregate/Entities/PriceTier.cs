@@ -16,7 +16,7 @@ namespace Booksy.ServiceCatalog.Domain.Entities
         public bool IsActive { get; private set; }
         public int SortOrder { get; private set; }
         public Dictionary<string, string> Attributes { get; private set; } = new();
-        public DateTime CreatedAt { get; private set; }
+        public ServiceId ServiceId { get; private set; }
 
         // Private constructor for EF Core
         private PriceTier() : base() { }
@@ -32,7 +32,6 @@ namespace Booksy.ServiceCatalog.Domain.Entities
                 IsDefault = false,
                 IsActive = true,
                 SortOrder = 0,
-                CreatedAt = DateTime.UtcNow
             };
         }
 

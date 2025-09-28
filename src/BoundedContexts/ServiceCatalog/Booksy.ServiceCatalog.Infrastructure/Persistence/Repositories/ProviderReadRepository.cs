@@ -91,7 +91,7 @@ namespace Booksy.ServiceCatalog.Infrastructure.Persistence.Repositories
                 .Include(p => p.BusinessHours)
                 .Where(p =>
                     p.Profile.BusinessName.ToLower().Contains(normalizedSearchTerm) ||
-                    p.Profile.Description.ToLower().Contains(normalizedSearchTerm) ||
+                    p.Profile.BusinessDescription.ToLower().Contains(normalizedSearchTerm) ||
                     p.Address.City.ToLower().Contains(normalizedSearchTerm))
                 .ToListAsync(cancellationToken);
         }

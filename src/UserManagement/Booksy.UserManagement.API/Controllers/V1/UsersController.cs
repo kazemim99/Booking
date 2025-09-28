@@ -16,6 +16,7 @@ using Booksy.UserManagement.Application.CQRS.Commands.UpldateUserProfile;
 using Booksy.UserManagement.Application.Queries.GetUsersByStatus;
 using Booksy.API.Extensions;
 using static Booksy.API.Middleware.ExceptionHandlingMiddleware;
+using Booksy.API.Middleware;
 
 namespace Booksy.UserManagement.API.Controllers.V1;
 
@@ -48,7 +49,7 @@ public class UsersController : ControllerBase
     /// <response code="409">User already exists</response>
     [HttpPost]
     [AllowAnonymous]
-    [EnableRateLimiting("registration")]
+    [Booksy.API.Middleware.EnableRateLimiting("registration")]
     [ProducesResponseType(typeof(UserResponse), StatusCodes.Status201Created)]
     [ProducesResponseType(typeof(ApiErrorResult), StatusCodes.Status400BadRequest)]
     [ProducesResponseType(typeof(ApiErrorResult), StatusCodes.Status409Conflict)]

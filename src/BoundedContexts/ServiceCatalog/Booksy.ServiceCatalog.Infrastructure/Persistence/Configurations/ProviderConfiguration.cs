@@ -2,7 +2,9 @@
 using Booksy.ServiceCatalog.Domain.Aggregates;
 using Booksy.ServiceCatalog.Domain.ValueObjects;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.ChangeTracking;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
+using System.Text.Json;
 
 namespace Booksy.ServiceCatalog.Infrastructure.Persistence.Configurations
 {
@@ -17,7 +19,7 @@ namespace Booksy.ServiceCatalog.Infrastructure.Persistence.Configurations
             builder.Property(p => p.Id)
                 .HasConversion(
                     id => id.Value,
-                    value =>  ProviderId.From(value))
+                    value =>  ProviderId.Create(value))
                 .IsRequired();
 
             // Owner ID
@@ -28,17 +30,65 @@ namespace Booksy.ServiceCatalog.Infrastructure.Persistence.Configurations
                 .IsRequired()
                 .HasColumnName("OwnerId");
 
-            // Business Profile (Value Object)
+            // ✅ BUSINESS PROFILE (Owned Entity)
             builder.OwnsOne(p => p.Profile, profile =>
             {
+                // Primary properties
                 profile.Property(bp => bp.BusinessName)
-                    .HasMaxLength(200)
+                    .HasColumnName("BusinessName")
                     .IsRequired()
-                    .HasColumnName("BusinessName");
+                    .HasMaxLength(200);
 
-                profile.Property(bp => bp.Description)
-                    .HasMaxLength(1000)
-                    .HasColumnName("Description");
+                profile.Property(bp => bp.BusinessDescription)
+                    .HasColumnName("BusinessDescription")
+                    .IsRequired()
+                    .HasMaxLength(2000);
+
+                profile.Property(bp => bp.Website)
+                    .HasColumnName("BusinessWebsite")
+                    .HasMaxLength(500);
+
+                profile.Property(bp => bp.LogoUrl)
+                    .HasColumnName("BusinessLogoUrl")
+                    .HasMaxLength(500);
+
+                // ✅ SocialMedia as JSON (Dictionary<string, string>)
+                profile.Property(bp => bp.SocialMedia)
+                    .HasColumnName("BusinessSocialMedia")
+                    .HasColumnType("jsonb")  // Use 'nvarchar(max)' for SQL Server
+                    .HasConversion(
+                        dict => JsonSerializer.Serialize(dict, (JsonSerializerOptions?)null),
+                        json => JsonSerializer.Deserialize<Dictionary<string, string>>(json, (JsonSerializerOptions?)null)
+                                ?? new Dictionary<string, string>(),
+                        new ValueComparer<Dictionary<string, string>>(
+                            (c1, c2) => c1!.SequenceEqual(c2!),
+                            c => c.Aggregate(0, (a, v) => HashCode.Combine(a, v.GetHashCode())),
+                            c => c.ToDictionary(x => x.Key, x => x.Value)
+                        ))
+                    .IsRequired(false);
+
+                // ✅ Tags as JSON (List<string>)
+                profile.Property(bp => bp.Tags)
+                    .HasColumnName("BusinessTags")
+                    .HasColumnType("jsonb")  // Use 'nvarchar(max)' for SQL Server
+                    .HasConversion(
+                        tags => JsonSerializer.Serialize(tags, (JsonSerializerOptions?)null),
+                        json => JsonSerializer.Deserialize<List<string>>(json, (JsonSerializerOptions?)null)
+                                ?? new List<string>(),
+                        new ValueComparer<List<string>>(
+                            (c1, c2) => c1!.SequenceEqual(c2!),
+                            c => c.Aggregate(0, (a, v) => HashCode.Combine(a, v.GetHashCode())),
+                            c => c.ToList()
+                        ))
+                    .IsRequired(false);
+
+                profile.Property(bp => bp.LastUpdatedAt)
+                    .HasColumnName("BusinessProfileLastUpdatedAt")
+                    .IsRequired()
+                    .HasColumnType("timestamp with time zone");
+
+                // Ignore the Id property of BusinessProfile since it's an owned entity
+                profile.Ignore(bp => bp.Id);
             });
 
             // Contact Info (Value Object)

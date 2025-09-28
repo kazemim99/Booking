@@ -27,7 +27,7 @@ namespace Booksy.ServiceCatalog.Application.Commands.Provider.UpdateBusinessProf
         {
             _logger.LogInformation("Updating business profile for provider: {ProviderId}", request.ProviderId);
 
-            var providerId = ProviderId.From(request.ProviderId);
+            var providerId = ProviderId.Create(request.ProviderId);
             var provider = await _providerReadRepository.GetByIdAsync(providerId, cancellationToken);
 
             if (provider == null)
@@ -40,23 +40,7 @@ namespace Booksy.ServiceCatalog.Application.Commands.Provider.UpdateBusinessProf
                 provider.Profile.UpdateLogo(request.LogoUrl);
             }
 
-            if (request.Tags?.Any() == true)
-            {
-                // Clear existing tags and add new ones
-                provider.Profile.Tags.Clear();
-                foreach (var tag in request.Tags)
-                {
-                    provider.Profile.AddTag(tag);
-                }
-            }
-
-            if (request.SocialMedia?.Any() == true)
-            {
-                foreach (var social in request.SocialMedia)
-                {
-                    provider.Profile.AddSocialMedia(social.Key, social.Value);
-                }
-            }
+         
 
             await _providerWriteRepository.UpdateProviderAsync(provider, cancellationToken);
 
@@ -65,7 +49,7 @@ namespace Booksy.ServiceCatalog.Application.Commands.Provider.UpdateBusinessProf
             return new UpdateBusinessProfileResult(
                 ProviderId: provider.Id.Value,
                 BusinessName: provider.Profile.BusinessName,
-                Description: provider.Profile.Description,
+                Description: provider.Profile.BusinessDescription,
                 UpdatedAt: DateTime.UtcNow);
         }
     }

@@ -1,9 +1,4 @@
-﻿// ========================================
-// Booksy.UserManagement.Application/Queries/GetUserById/GetUserByIdQuery.cs
-// ========================================
-// ========================================
-// Booksy.UserManagement.Application/Queries/GetUserById/UserDetailsViewModel.cs
-// ========================================
+﻿
 namespace Booksy.UserManagement.Application.CQRS.Queries.GetUserById
 {
     public sealed class AddressViewModel

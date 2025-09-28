@@ -1,4 +1,5 @@
-﻿using Booksy.ServiceCatalog.Domain.Aggregates;
+﻿using Booksy.Infrastructure.Core.Persistence.Base;
+using Booksy.ServiceCatalog.Domain.Aggregates;
 using Booksy.ServiceCatalog.Domain.Enums;
 using Booksy.ServiceCatalog.Domain.ValueObjects;
 using Booksy.ServiceCatalog.Infrastructure.Persistence.Context;
@@ -7,7 +8,7 @@ using Microsoft.Extensions.Logging;
 
 namespace Booksy.ServiceCatalog.Infrastructure.Persistence.Seeders
 {
-    public sealed class ServiceCatalogDatabaseSeeder
+    public sealed class ServiceCatalogDatabaseSeeder : ISeeder
     {
         private readonly ServiceCatalogDbContext _context;
         private readonly ILogger<ServiceCatalogDatabaseSeeder> _logger;
@@ -24,12 +25,7 @@ namespace Booksy.ServiceCatalog.Infrastructure.Persistence.Seeders
         {
             try
             {
-                if (await _context.Providers.AnyAsync(cancellationToken))
-                {
-                    _logger.LogInformation("ServiceCatalog database already seeded");
-                    return;
-                }
-
+             
                 await SeedProvidersAsync(cancellationToken);
                 await SeedServicesAsync(cancellationToken);
 
@@ -45,6 +41,13 @@ namespace Booksy.ServiceCatalog.Infrastructure.Persistence.Seeders
 
         private async Task SeedProvidersAsync(CancellationToken cancellationToken)
         {
+
+
+            if (await _context.Providers.AnyAsync(cancellationToken))
+            {
+                return;
+            }
+
             var providers = new[]
             {
                 CreateSampleProvider(
@@ -79,9 +82,9 @@ namespace Booksy.ServiceCatalog.Infrastructure.Persistence.Seeders
             string city,
             string email)
         {
-            var ownerId =  UserId.From(Guid.NewGuid());
-            var emailValue = Email.From(email);
-            var phoneValue = PhoneNumber.From("5551234567");
+            var ownerId = UserId.From(Guid.NewGuid());
+            var emailValue = Email.Create(email);
+            var phoneValue = PhoneNumber.Create("5551234567");
 
             var contactInfo = ContactInfo.Create(
                 emailValue,
@@ -109,6 +112,17 @@ namespace Booksy.ServiceCatalog.Infrastructure.Persistence.Seeders
 
         private async Task SeedServicesAsync(CancellationToken cancellationToken)
         {
+            try
+            {
+
+           
+            if (await _context.Services.AnyAsync(cancellationToken))
+            {
+                _logger.LogInformation("ServiceCatalog database already seeded");
+                return;
+            }
+
+
             var providers = await _context.Providers.ToListAsync(cancellationToken);
             var services = new List<Service>();
 
@@ -118,6 +132,20 @@ namespace Booksy.ServiceCatalog.Infrastructure.Persistence.Seeders
             }
 
             await _context.Services.AddRangeAsync(services, cancellationToken);
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Error Type: {ex.GetType().Name}");
+                Console.WriteLine($"Error Message: {ex.Message}");
+                Console.WriteLine($"Stack Trace: {ex.StackTrace}");
+
+                if (ex.InnerException != null)
+                {
+                    Console.WriteLine($"Inner Exception: {ex.InnerException.Message}");
+                    Console.WriteLine($"Inner Stack Trace: {ex.InnerException.StackTrace}");
+                }
+                throw;
+            }
         }
 
         private List<Service> CreateSampleServicesForProvider(Provider provider)

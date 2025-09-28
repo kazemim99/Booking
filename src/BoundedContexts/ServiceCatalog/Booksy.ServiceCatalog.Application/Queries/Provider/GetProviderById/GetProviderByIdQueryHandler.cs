@@ -1,4 +1,5 @@
 ﻿using Booksy.Core.Application.Abstractions.CQRS;
+using Booksy.ServiceCatalog.Application.DTOs.Provider;
 using Booksy.ServiceCatalog.Domain.Repositories;
 using Booksy.ServiceCatalog.Domain.ValueObjects;
 using Microsoft.Extensions.Logging;
@@ -27,7 +28,7 @@ namespace Booksy.ServiceCatalog.Application.Queries.Provider.GetProviderById
         {
             _logger.LogInformation("Getting provider details for ID: {ProviderId}", request.ProviderId);
 
-            var providerId = ProviderId.From(request.ProviderId);
+            var providerId = ProviderId.Create(request.ProviderId);
             var provider = await _providerRepository.GetByIdAsync(providerId, cancellationToken);
 
             if (provider == null)
@@ -38,43 +39,15 @@ namespace Booksy.ServiceCatalog.Application.Queries.Provider.GetProviderById
 
             var viewModel = new ProviderDetailsViewModel
             {
+
                 Id = provider.Id.Value,
                 OwnerId = provider.OwnerId.Value,
                 BusinessName = provider.Profile.BusinessName,
-                Description = provider.Profile.Description,
-                Website = provider.Profile.Website,
+                Description = provider.Profile.BusinessDescription,
                 LogoUrl = provider.Profile.LogoUrl,
                 Status = provider.Status,
                 Type = provider.Type,
-                Email = provider.ContactInfo.Email.Value,
-                PrimaryPhone = provider.ContactInfo.PrimaryPhone.Value,
-                SecondaryPhone = provider.ContactInfo.SecondaryPhone?.Value,
-                Address = new AddressViewModel
-                {
-                    Street = provider.Address.Street,
-                    City = provider.Address.City,
-                    State = provider.Address.State,
-                    PostalCode = provider.Address.PostalCode,
-                    Country = provider.Address.Country,
-                    Latitude = provider.Address.Latitude,
-                    Longitude = provider.Address.Longitude
-                },
-                RequiresApproval = provider.RequiresApproval,
-                AllowOnlineBooking = provider.AllowOnlineBooking,
-                OffersMobileServices = provider.OffersMobileServices,
-                RegisteredAt = provider.RegisteredAt,
-                ActivatedAt = provider.ActivatedAt,
-                VerifiedAt = provider.VerifiedAt,
-                LastActiveAt = provider.LastActiveAt,
-                Tags = provider.Profile.Tags,
-                SocialMedia = provider.Profile.SocialMedia,
-                BusinessHours = provider.BusinessHours.Select(bh => new BusinessHoursViewModel
-                {
-                    DayOfWeek = bh.DayOfWeek,
-                    IsOpen = bh.IsOpen,
-                    OpenTime = bh.OperatingHours?.StartTime,
-                    CloseTime = bh.OperatingHours?.EndTime
-                }).ToList()
+                
             };
 
             if (request.IncludeStaff)

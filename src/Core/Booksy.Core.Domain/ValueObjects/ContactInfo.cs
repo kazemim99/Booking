@@ -1,97 +1,55 @@
-﻿//using Booksy.Core.Domain.Base;
+﻿
 
 
-//namespace Booksy.Core.Domain.ValueObjects;
+using Booksy.Core.Domain.Base;
+using Booksy.Core.Domain.ValueObjects;
+using Microsoft.EntityFrameworkCore.ChangeTracking;
 
-///// <summary>
-///// Represents contact information including email and optional phone number
-///// </summary>
-//public sealed class ContactInfo : ValueObject
-//{
-//    /// <summary>
-//    /// Gets the email address (required)
-//    /// </summary>
-//    public Email Email { get; }
+namespace Booksy.ServiceCatalog.Domain.ValueObjects
+{
+    public sealed class ContactInfo : ValueObject
+    {
+        private ContactInfo()
+        {
 
-//    /// <summary>
-//    /// Gets the phone number (optional)
-//    /// </summary>
-//    public PhoneNumber? Phone { get; }
+        }
+        public Email? Email { get; }
+        public PhoneNumber? PrimaryPhone { get; }
+        public PhoneNumber? SecondaryPhone { get; }
+        public string? Website { get; }
+        public string? FacebookPage { get; }
+        public string? InstagramHandle { get; }
 
-//    /// <summary>
-//    /// Initializes a new instance of the ContactInfo class
-//    /// </summary>
-//    /// <param name="email">The email address (required)</param>
-//    /// <param name="phone">The phone number (optional)</param>
-//    /// <exception cref="ArgumentNullException">Thrown when email is null</exception>
-//    public ContactInfo(Email email, PhoneNumber? phone = null)
-//    {
-//        Email = email ?? throw new ArgumentNullException(nameof(email));
-//        Phone = phone;
-//    }
+        private ContactInfo(Email? email, PhoneNumber? primaryPhone, PhoneNumber? secondaryPhone = null, string? website = null, string? facebookPage = null, string? instagramHandle = null)
+        {
+            Email = email;
+            PrimaryPhone = primaryPhone;
+            SecondaryPhone = secondaryPhone;
+            Website = website;
+            FacebookPage = facebookPage;
+            InstagramHandle = instagramHandle;
+        }
 
-//    /// <summary>
-//    /// Gets a formatted display string of the contact information
-//    /// </summary>
-//    /// <returns>Formatted contact information</returns>
-//    public string GetDisplayString()
-//    {
-//        if (Phone != null)
-//        {
-//            return $"Email: {Email}, Phone: {Phone}";
-//        }
+        public static ContactInfo Create(Email? email, PhoneNumber primaryPhone, PhoneNumber? secondaryPhone = null, string? website = null, string? facebookPage = null, string? instagramHandle = null)
+            => new(email, primaryPhone, secondaryPhone, website, facebookPage, instagramHandle);
 
-//        return $"Email: {Email}";
-//    }
+        public ContactInfo UpdateWebsite(string website)
+            => new(Email, PrimaryPhone, SecondaryPhone, website, FacebookPage, InstagramHandle);
 
-//    /// <summary>
-//    /// Gets a compact display string of the contact information
-//    /// </summary>
-//    /// <returns>Compact contact information</returns>
-//    public string GetCompactDisplay()
-//    {
-//        if (Phone != null)
-//        {
-//            return $"{Email} | {Phone}";
-//        }
+        public ContactInfo UpdateSocialMedia(string? facebookPage, string? instagramHandle)
+            => new(Email, PrimaryPhone, SecondaryPhone, Website, facebookPage, instagramHandle);
 
-//        return Email.Value;
-//    }
+        public ContactInfo UpdateSecondaryPhone(PhoneNumber? secondaryPhone)
+            => new(Email, PrimaryPhone, secondaryPhone, Website, FacebookPage, InstagramHandle);
 
-//    /// <summary>
-//    /// Returns the formatted contact information string
-//    /// </summary>
-//    /// <returns>The complete contact information display</returns>
-//    public override string ToString()
-//    {
-//        return GetDisplayString(); // 🎯 Key implementation!
-//    }
-
-//    /// <summary>
-//    /// Checks if phone number is available
-//    /// </summary>
-//    /// <returns>True if phone number is present, false otherwise</returns>
-//    public bool HasPhone() => Phone != null;
-
-//    /// <summary>
-//    /// Gets the primary contact method (always email)
-//    /// </summary>
-//    /// <returns>The email address</returns>
-//    public string GetPrimaryContact() => Email.Value;
-
-//    /// <summary>
-//    /// Gets the secondary contact method if available
-//    /// </summary>
-//    /// <returns>The phone number display string or null</returns>
-//    public string? GetSecondaryContact() => Phone?.ToString();
-
-//    /// <summary>
-//    /// Gets the atomic values for equality comparison
-//    /// </summary>
-//    /// <returns>Email and phone (if present) for equality</returns>
-//    protected override IEnumerable<object> GetAtomicValues()
-//    {
-//        yield return Email;
-//        if (Phone != null) yield return Phone;
-//    }
-//}
+        protected override IEnumerable<object> GetAtomicValues()
+        {
+            yield return Email!.Value;
+            if (PrimaryPhone != null) yield return PrimaryPhone;
+            if (SecondaryPhone != null) yield return SecondaryPhone;
+            if (Website != null) yield return Website;
+            if (FacebookPage != null) yield return FacebookPage;
+            if (InstagramHandle != null) yield return InstagramHandle;
+        }
+    }
+}

@@ -51,8 +51,6 @@ namespace Booksy.ServiceCatalog.Application.Services.Implementations
                 MinAdvanceBookingHours = service.MinAdvanceBookingHours,
                 MaxConcurrentBookings = service.MaxConcurrentBookings,
                 ImageUrl = service.ImageUrl,
-                Tags = service.Tags,
-                QualifiedStaff = service.QualifiedStaff.Select(s => s).ToList(),
                 CreatedAt = service.CreatedAt,
                 ActivatedAt = service.ActivatedAt
             };
@@ -78,7 +76,6 @@ namespace Booksy.ServiceCatalog.Application.Services.Implementations
                 Duration = service.Duration.Value,
                 Status = service.Status,
                 ImageUrl = service.ImageUrl,
-                Tags = service.Tags
             }).ToList();
         }
 
@@ -101,7 +98,6 @@ namespace Booksy.ServiceCatalog.Application.Services.Implementations
                 Duration = service.Duration.Value,
                 Status = service.Status,
                 ImageUrl = service.ImageUrl,
-                Tags = service.Tags
             }).ToList();
         }
 
@@ -122,7 +118,6 @@ namespace Booksy.ServiceCatalog.Application.Services.Implementations
                 Duration = service.Duration.Value,
                 Status = service.Status,
                 ImageUrl = service.ImageUrl,
-                Tags = service.Tags
             }).ToList();
         }
 

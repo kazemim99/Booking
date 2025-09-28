@@ -1,11 +1,15 @@
 ﻿using Booksy.Core.Application.Abstractions.Persistence;
+using Booksy.Infrastructure.Core.DependencyInjection;
 using Booksy.Infrastructure.Core.Persistence.Base;
+using Booksy.ServiceCatalog.Application.Abstractions.Queries;
 using Booksy.ServiceCatalog.Application.Services.Implementations;
 using Booksy.ServiceCatalog.Application.Services.Interfaces;
 using Booksy.ServiceCatalog.Domain.Repositories;
 using Booksy.ServiceCatalog.Domain.Services;
 using Booksy.ServiceCatalog.Infrastructure.Persistence.Context;
 using Booksy.ServiceCatalog.Infrastructure.Persistence.Repositories;
+using Booksy.ServiceCatalog.Infrastructure.Persistence.Seeders;
+using Booksy.ServiceCatalog.Infrastructure.Queries;
 using Booksy.ServiceCatalog.Infrastructure.Services.Domain;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
@@ -20,6 +24,9 @@ namespace Booksy.ServiceCatalog.Infrastructure.DependencyInjection
             this IServiceCollection services,
             IConfiguration configuration)
         {
+
+            services.AddInfrastructureCore(configuration);
+
             // Database Context
             services.AddDbContext<ServiceCatalogDbContext>(options =>
             {
@@ -47,7 +54,9 @@ namespace Booksy.ServiceCatalog.Infrastructure.DependencyInjection
                 }
             });
 
+            services.AddScoped<DbContext>();
 
+            services.AddScoped<ISeeder, ServiceCatalogDatabaseSeeder>();
             // Unit of Work
             services.AddScoped<IUnitOfWork>(provider =>
                 new EfCoreUnitOfWork<ServiceCatalogDbContext>(
@@ -65,6 +74,7 @@ namespace Booksy.ServiceCatalog.Infrastructure.DependencyInjection
             services.AddScoped<IServiceApplicationService, ServiceApplicationService>();
             services.AddScoped<IBusinessValidationService, BusinessValidationService>();
             services.AddScoped<IProviderRegistrationService, ProviderRegistrationService>();
+            services.AddScoped<IServiceQueryRepository, ServiceQueryRepository>();
 
 
             // Domain Services
@@ -79,6 +89,7 @@ namespace Booksy.ServiceCatalog.Infrastructure.DependencyInjection
                     name: "servicecatalog-db",
                     failureStatus: Microsoft.Extensions.Diagnostics.HealthChecks.HealthStatus.Unhealthy,
                     tags: new[] { "db", "servicecatalog" });
+
 
             return services;
         }

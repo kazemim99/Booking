@@ -2,6 +2,7 @@
 using Booksy.Infrastructure.Core.EventBus.Abstractions;
 using Booksy.Infrastructure.Core.Persistence.Outbox;
 using Booksy.UserManagement.Infrastructure.Persistence.Context;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 
 namespace Booksy.UserManagement.Infrastructure.Persistence

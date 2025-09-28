@@ -11,7 +11,5 @@ namespace Booksy.ServiceCatalog.Application.Commands.Provider.UpdateBusinessProf
         string Description,
         string? Website = null,
         string? LogoUrl = null,
-        List<string>? Tags = null,
-        Dictionary<string, string>? SocialMedia = null,
         Guid? IdempotencyKey = null) : ICommand<UpdateBusinessProfileResult>;
 }

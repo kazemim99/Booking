@@ -39,7 +39,7 @@ namespace Booksy.UserManagement.Application.CQRS.Commands.RequestPasswordReset
         {
             _logger.LogInformation("Processing password reset request for email: {Email}", request.Email);
 
-            var email = Email.From(request.Email);
+            var email = Email.Create(request.Email);
             var user = await _userRepository.GetByEmailAsync(email, cancellationToken);
 
             if (user == null)

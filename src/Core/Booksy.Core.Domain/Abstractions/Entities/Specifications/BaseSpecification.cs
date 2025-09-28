@@ -16,6 +16,7 @@ public abstract class BaseSpecification<T> : IAdvancedSpecification<T>
 
     public virtual Expression<Func<T, bool>>? Criteria { get; private set; }
     public List<Expression<Func<T, object>>> Includes { get; } = new();
+
     public List<string> IncludeStrings { get; } = new();
     public Expression<Func<T, object>>? GroupBy { get; private set; }
 
@@ -40,7 +41,7 @@ public abstract class BaseSpecification<T> : IAdvancedSpecification<T>
     /// <summary>
     /// Add an ascending order expression
     /// </summary>
-    public IOrderableSpecification<T> OrderByAscending(Expression<Func<T, object>> orderExpression)
+    public IOrderableSpecification<T> AddOrderBy(Expression<Func<T, object>> orderExpression)
     {
         _orderExpressions.Clear(); // Clear existing orders for primary order
         _orderExpressions.Add(new OrderExpression<T>(orderExpression, OrderDirection.Ascending, false));
@@ -50,7 +51,7 @@ public abstract class BaseSpecification<T> : IAdvancedSpecification<T>
     /// <summary>
     /// Add a descending order expression
     /// </summary>
-    public IOrderableSpecification<T> OrderByDescending(Expression<Func<T, object>> orderExpression)
+    public IOrderableSpecification<T> AddOrderByDescending(Expression<Func<T, object>> orderExpression)
     {
         _orderExpressions.Clear(); // Clear existing orders for primary order
         _orderExpressions.Add(new OrderExpression<T>(orderExpression, OrderDirection.Descending, false));
@@ -60,7 +61,7 @@ public abstract class BaseSpecification<T> : IAdvancedSpecification<T>
     /// <summary>
     /// Add a then-by ascending order expression
     /// </summary>
-    public IOrderableSpecification<T> ThenByAscending(Expression<Func<T, object>> orderExpression)
+    public IOrderableSpecification<T> AddThenBy(Expression<Func<T, object>> orderExpression)
     {
         _orderExpressions.Add(new OrderExpression<T>(orderExpression, OrderDirection.Ascending, true));
         return this;
@@ -69,30 +70,11 @@ public abstract class BaseSpecification<T> : IAdvancedSpecification<T>
     /// <summary>
     /// Add a then-by descending order expression
     /// </summary>
-    public IOrderableSpecification<T> ThenByDescending(Expression<Func<T, object>> orderExpression)
+    public IOrderableSpecification<T> AddThenByDescending(Expression<Func<T, object>> orderExpression)
     {
         _orderExpressions.Add(new OrderExpression<T>(orderExpression, OrderDirection.Descending, true));
         return this;
     }
-
-    /// <summary>
-    /// Protected method for derived classes to add order expressions
-    /// </summary>
-    protected void AddOrderBy(Expression<Func<T, object>> orderExpression, OrderDirection direction = OrderDirection.Ascending)
-    {
-        var isSubsequent = _orderExpressions.Any();
-        _orderExpressions.Add(new OrderExpression<T>(orderExpression, direction, isSubsequent));
-    }
-
-    /// <summary>
-    /// Protected method for derived classes to add descending order expressions
-    /// </summary>
-    protected void AddOrderByDescending(Expression<Func<T, object>> orderExpression)
-    {
-        AddOrderBy(orderExpression, OrderDirection.Descending);
-    }
-
-
 
 
     protected virtual void ApplyPaging(int skip, int take)
@@ -132,21 +114,8 @@ public abstract class BaseSpecification<T> : IAdvancedSpecification<T>
         ArgumentNullException.ThrowIfNull(criteria);
         Criteria = criteria;
     }
-
-
-    //protected virtual void ApplyOrderBy(Expression<Func<T, object>> orderByExpression)
-    //{
-    //    ArgumentNullException.ThrowIfNull(orderByExpression);
-    //    OrderBy = orderByExpression;
-    //}
-
-    //protected virtual void ApplyOrderByDescending(Expression<Func<T, object>> orderByDescendingExpression)
-    //{
-    //    ArgumentNullException.ThrowIfNull(orderByDescendingExpression);
-    //    OrderByDescending = orderByDescendingExpression;
-    //}
-
-
+ 
+ 
     protected virtual void ApplyGroupBy(Expression<Func<T, object>> groupByExpression)
     {
         ArgumentNullException.ThrowIfNull(groupByExpression);

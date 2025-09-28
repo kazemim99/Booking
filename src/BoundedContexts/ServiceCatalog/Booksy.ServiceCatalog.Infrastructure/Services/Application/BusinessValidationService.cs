@@ -1,10 +1,10 @@
 ﻿// ========================================
 // Booksy.ServiceCatalog.Application/Services/Implementations/BusinessValidationService.cs
 // ========================================
+using Booksy.Core.Domain.Exceptions;
 using Booksy.ServiceCatalog.Application.Commands.Provider.RegisterProvider;
 using Booksy.ServiceCatalog.Application.Commands.Service.CreateService;
 using Booksy.ServiceCatalog.Application.Services.Interfaces;
-using Booksy.ServiceCatalog.Domain.Enums;
 using FluentValidation;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
@@ -34,8 +34,12 @@ namespace Booksy.ServiceCatalog.Application.Services.Implementations
                 var validationResult = await validator.ValidateAsync(command, cancellationToken);
                 if (!validationResult.IsValid)
                 {
-                    var errors = string.Join(", ", validationResult.Errors.Select(e => e.ErrorMessage));
-                    throw new ValidationException($"Registration validation failed: {errors}");
+                    var errors = validationResult.Errors
+                        .GroupBy(e => e.PropertyName)
+                        .ToDictionary(
+                            g => g.Key,
+                            g => g.Select(e => e.ErrorMessage).ToArray());
+                    throw new DomainValidationException($"Registration validation failed", errors);
                 }
             }
 
@@ -53,8 +57,13 @@ namespace Booksy.ServiceCatalog.Application.Services.Implementations
                 var validationResult = await validator.ValidateAsync(command, cancellationToken);
                 if (!validationResult.IsValid)
                 {
-                    var errors = string.Join(", ", validationResult.Errors.Select(e => e.ErrorMessage));
-                    throw new ValidationException($"Service validation failed: {errors}");
+ var errors = validationResult.Errors
+                        .GroupBy(e => e.PropertyName)
+                        .ToDictionary(
+                            g => g.Key,
+                            g => g.Select(e => e.ErrorMessage).ToArray());       
+                    
+                    throw new DomainValidationException($"Registration validation failed", errors);
                 }
             }
 
@@ -136,13 +145,13 @@ namespace Booksy.ServiceCatalog.Application.Services.Implementations
             // Rule: Premium services must have higher minimum price
             if (command.ServiceType == ServiceType.Premium && command.BasePrice < 100)
             {
-                throw new ValidationException("Premium services must have a base price of at least $100");
+                throw new DomainValidationException("Premium services must have a base price of at least $100");
             }
 
             // Rule: Mobile services have duration limits
             if (command.AvailableAsMobile && command.DurationMinutes > 240) // 4 hours
             {
-                throw new ValidationException("Mobile services cannot exceed 4 hours duration");
+                throw new DomainValidationException("Mobile services cannot exceed 4 hours duration");
             }
         }
     }

@@ -100,7 +100,7 @@ namespace Booksy.ServiceCatalog.Application.Services.Implementations
 
             // Business rules for activation
             var hasRequiredInfo = !string.IsNullOrEmpty(provider.Profile.BusinessName) &&
-                                 !string.IsNullOrEmpty(provider.Profile.Description) &&
+                                 !string.IsNullOrEmpty(provider.Profile.BusinessDescription) &&
                                  provider.ContactInfo != null &&
                                  provider.Address != null;
 
@@ -119,7 +119,7 @@ namespace Booksy.ServiceCatalog.Application.Services.Implementations
                 Profile = new BusinessProfileDto
                 {
                     BusinessName = provider.Profile.BusinessName,
-                    Description = provider.Profile.Description,
+                    Description = provider.Profile.BusinessDescription,
                     Website = provider.Profile.Website,
                     LogoUrl = provider.Profile.LogoUrl,
                     SocialMedia = provider.Profile.SocialMedia,

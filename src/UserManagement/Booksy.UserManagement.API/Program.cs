@@ -114,12 +114,7 @@ builder.Services.AddCors(options =>
 builder.Services.AddUserManagementApplication();
 builder.Services.AddUserManagementInfrastructure(builder.Configuration);
 
-// Add Core Infrastructure
-// Add MediatR
-builder.Services.AddMediatR(cfg =>
-{
-    cfg.RegisterServicesFromAssembly(typeof(UserManagementApplicationExtensions).Assembly);
-});
+
 
 AppContext.SetSwitch("Npgsql.EnableLegacyTimestampBehavior", true);
 
@@ -129,8 +124,6 @@ builder.Services.AddHealthChecks()
     .AddDbContextCheck<UserManagementDbContext>()
     .AddRedis(builder.Configuration.GetConnectionString("Redis") ?? string.Empty);
 
-
-    builder.Services.AddInfrastructureCore(builder.Configuration);
 
 // Add Response Compression
 builder.Services.AddResponseCompression();
@@ -195,8 +188,7 @@ app.MapControllers();
 if (app.Environment.IsDevelopment())
 {
     using var scope = app.Services.CreateScope();
-    var seeder = scope.ServiceProvider.GetRequiredService<UserManagementDatabaseSeeder>();
-    await seeder.SeedAsync();
+    var seeder = scope.ServiceProvider.InitializeDatabaseAsync();
 }
 
 app.Run();

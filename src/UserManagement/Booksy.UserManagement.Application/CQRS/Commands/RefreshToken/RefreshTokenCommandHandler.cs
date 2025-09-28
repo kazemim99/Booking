@@ -48,6 +48,7 @@ namespace Booksy.UserManagement.Application.CQRS.Commands.RefreshToken
             // Generate new access token
             var accessToken = _jwtTokenService.GenerateAccessToken(
                 user.Id,
+                user.Type,
                 user.Email,
                 user.Profile.GetDisplayName(),
                 user.Roles.Select(r => r.Name).ToList(),

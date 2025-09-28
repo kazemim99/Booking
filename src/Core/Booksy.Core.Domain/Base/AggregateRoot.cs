@@ -6,6 +6,7 @@ using Booksy.Core.Domain.Abstractions.Events;
 using Booksy.Core.Domain.Abstractions.Rules;
 using Booksy.Core.Domain.Exceptions;
 using System.ComponentModel.DataAnnotations;
+using System.ComponentModel.DataAnnotations.Schema;
 
 namespace Booksy.Core.Domain.Base
 {
@@ -26,6 +27,7 @@ namespace Booksy.Core.Domain.Base
             protected set => _version = value;
         }
 
+        [NotMapped]
         public IReadOnlyList<IDomainEvent> DomainEvents => _domainEvents.AsReadOnly();
 
         protected AggregateRoot() : base() { }

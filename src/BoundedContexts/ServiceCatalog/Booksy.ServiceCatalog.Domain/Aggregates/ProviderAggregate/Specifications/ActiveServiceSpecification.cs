@@ -16,8 +16,7 @@ namespace Booksy.ServiceCatalog.Domain.Specifications
         public static Expression<Func<Service, bool>> IsActiveAndBookable()
         {
             return service => service.Status == ServiceStatus.Active &&
-                            service.AllowOnlineBooking &&
-                            service.QualifiedStaff.Any();
+                            service.AllowOnlineBooking;
         }
 
         public static Expression<Func<Service, bool>> IsActiveInCategory(ServiceCategory category)

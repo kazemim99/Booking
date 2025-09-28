@@ -1,19 +1,29 @@
 ﻿// ========================================
 // Middleware/ExceptionHandlingMiddleware.cs
-// ========================================
 using System.Net;
 using System.Text.Json;
 using Booksy.Core.Application.Exceptions;
 using Booksy.Core.Domain.Exceptions;
 using FluentValidation;
-using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Hosting;
-using Microsoft.Extensions.Logging;
-using ApplicationException = Booksy.Core.Application.Exceptions.ApplicationException;
 
 namespace Booksy.API.Middleware;
 
-public partial class ExceptionHandlingMiddleware
+
+public class ApiErrorResult
+{
+    public string Message { get; set; }
+    public string? Code { get; set; }
+    public Dictionary<string, string[]>? Errors { get; set; }
+
+    public ApiErrorResult(string message, string? code = null)
+    {
+        Message = message;
+        Code = code;
+    }
+}
+
+public class ExceptionHandlingMiddleware
 {
     private readonly RequestDelegate _next;
     private readonly ILogger<ExceptionHandlingMiddleware> _logger;
@@ -28,6 +38,9 @@ public partial class ExceptionHandlingMiddleware
         _logger = logger;
         _environment = environment;
     }
+
+
+
 
     public async Task InvokeAsync(HttpContext context)
     {
@@ -120,7 +133,7 @@ public partial class ExceptionHandlingMiddleware
                 errorResponse = new ApiErrorResult(externalEx.Message, externalEx.ErrorCode);
                 break;
 
-            case ApplicationException appEx:
+            case Core.Application.Exceptions.ApplicationException appEx:
                 response.StatusCode = (int)HttpStatusCode.BadRequest;
                 errorResponse = new ApiErrorResult(appEx.Message, appEx.ErrorCode);
                 break;

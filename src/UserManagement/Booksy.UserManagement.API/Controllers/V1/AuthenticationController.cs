@@ -13,6 +13,7 @@ using LoginRequest = Booksy.UserManagement.API.Models.Requests.LoginRequest;
 using Booksy.UserManagement.Application.CQRS.Commands.RefreshToken;
 using Booksy.UserManagement.Application.CQRS.Commands.RequestPasswordReset;
 using static Booksy.API.Middleware.ExceptionHandlingMiddleware;
+using Booksy.API.Middleware;
 
 
 namespace Booksy.UserManagement.API.Controllers.V1;
@@ -37,7 +38,7 @@ public class AuthenticationController : ControllerBase
     /// </summary>
     [HttpPost("login")]
     [AllowAnonymous]
-    [EnableRateLimiting("authentication")]
+    [Booksy.API.Middleware.EnableRateLimiting("authentication")]
     [ProducesResponseType(typeof(AuthenticationResponse), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ApiErrorResult), StatusCodes.Status401Unauthorized)]
     public async Task<IActionResult> Login([FromBody] LoginRequest request)
@@ -114,7 +115,7 @@ public class AuthenticationController : ControllerBase
     /// </summary>
     [HttpPost("forgot-password")]
     [AllowAnonymous]
-    [EnableRateLimiting("password-reset")]
+    [Booksy.API.Middleware.EnableRateLimiting("password-reset")]
     [ProducesResponseType(StatusCodes.Status200OK)]
     public async Task<IActionResult> ForgotPassword([FromBody] Models.Requests.ForgotPasswordRequest request)
     {

@@ -49,10 +49,11 @@ namespace Booksy.ServiceCatalog.Application.Commands.Provider.RegisterProvider
             }
 
             // Create value objects
-            var email = Email.From(request.Email);
-            var primaryPhone = PhoneNumber.From(request.PrimaryPhone);
+            
+            var email = String.IsNullOrEmpty(request.Email) ? null : Email.Create(request.Email);
+            var primaryPhone = PhoneNumber.Create(request.PrimaryPhone);
             var secondaryPhone = !string.IsNullOrEmpty(request.SecondaryPhone)
-                ? PhoneNumber.From(request.SecondaryPhone)
+                ? PhoneNumber.Create(request.SecondaryPhone)
                 : null;
 
             var contactInfo = ContactInfo.Create(

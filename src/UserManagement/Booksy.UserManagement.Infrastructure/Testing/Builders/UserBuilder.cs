@@ -15,7 +15,7 @@ namespace Booksy.UserManagement.Infrastructure.Testing.Builders
     /// </summary>
     public class UserBuilder
     {
-        private Email _email = Email.From("test@example.com");
+        private Email _email = Email.Create("test@example.com");
         private HashedPassword _password = HashedPassword.Create("Test@123!");
         private UserProfile? _profile;
         private UserType _type = UserType.Customer;
@@ -46,7 +46,7 @@ namespace Booksy.UserManagement.Infrastructure.Testing.Builders
         /// </summary>
         public UserBuilder WithEmail(string email)
         {
-            _email = Email.From(email);
+            _email = Email.Create(email);
             return this;
         }
 
@@ -313,7 +313,7 @@ namespace Booksy.UserManagement.Infrastructure.Testing.Builders
             if (address != null)
             {
                 profile.UpdateContactInfo(
-                    PhoneNumber.From("+15551234567"),
+                    PhoneNumber.Create("+15551234567"),
                     null,
                     address);
             }

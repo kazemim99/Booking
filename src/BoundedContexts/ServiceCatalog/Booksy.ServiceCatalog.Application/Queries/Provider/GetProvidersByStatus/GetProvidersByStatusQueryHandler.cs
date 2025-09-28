@@ -31,7 +31,7 @@ namespace Booksy.ServiceCatalog.Application.Queries.Provider.GetProvidersByStatu
                 {
                     Id = provider.Id.Value,
                     BusinessName = provider.Profile.BusinessName,
-                    Description = provider.Profile.Description,
+                    Description = provider.Profile.BusinessDescription,
                     Status = provider.Status,
                     Type = provider.Type,
                     City = provider.Address.City,

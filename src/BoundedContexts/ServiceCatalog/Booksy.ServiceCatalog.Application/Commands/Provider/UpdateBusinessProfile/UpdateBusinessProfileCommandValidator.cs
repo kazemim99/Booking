@@ -32,12 +32,7 @@ namespace Booksy.ServiceCatalog.Application.Commands.Provider.UpdateBusinessProf
                     .WithMessage("Website must be a valid URL");
             });
 
-            When(x => x.Tags != null, () =>
-            {
-                RuleFor(x => x.Tags)
-                    .Must(tags => tags!.Count <= 20)
-                    .WithMessage("Maximum 20 tags allowed");
-            });
+         
         }
 
         private static bool BeValidUrl(string? url)

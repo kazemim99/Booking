@@ -32,7 +32,7 @@ namespace Booksy.UserManagement.Application.CQRS.Commands.AuthenticateUser
         {
             _logger.LogInformation("Authenticating user: {Email}", request.Email);
 
-            var email = Email.From(request.Email);
+            var email = Email.Create(request.Email);
 
             var user = await _userRepository.GetByEmailAsync(email, cancellationToken);
             if (user == null)
@@ -60,6 +60,7 @@ namespace Booksy.UserManagement.Application.CQRS.Commands.AuthenticateUser
                 var tokenExpirationHours = request.RememberMe ? 168 : 24; // 7 days or 1 day
                 var accessToken = _jwtTokenService.GenerateAccessToken(
                     user.Id,
+                    user.Type,
                     user.Email,
                     user.Profile.GetDisplayName(),
                     authResult.Roles,

@@ -33,16 +33,16 @@ namespace Booksy.ServiceCatalog.Application.Commands.Provider.UpdateContactInfo
         {
             _logger.LogInformation("Updating contact info for provider: {ProviderId}", request.ProviderId);
 
-            var providerId = ProviderId.From(request.ProviderId);
+            var providerId = ProviderId.Create(request.ProviderId);
             var provider = await _providerReadRepository.GetByIdAsync(providerId, cancellationToken);
 
             if (provider == null)
                 throw new InvalidProviderException("Provider not found");
 
-            var email = Email.From(request.Email);
-            var primaryPhone = PhoneNumber.From(request.PrimaryPhone);
+            var email = Email.Create(request.Email);
+            var primaryPhone = PhoneNumber.Create(request.PrimaryPhone);
             var secondaryPhone = !string.IsNullOrEmpty(request.SecondaryPhone)
-                ? PhoneNumber.From(request.SecondaryPhone)
+                ? PhoneNumber.Create(request.SecondaryPhone)
                 : null;
 
             var contactInfo = ContactInfo.Create(

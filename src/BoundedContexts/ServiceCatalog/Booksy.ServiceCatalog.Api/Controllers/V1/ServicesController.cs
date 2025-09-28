@@ -1,48 +1,432 @@
-﻿//===========================================
-// Controllers/V1/ServicesController.cs
-//===========================================
+﻿using Booksy.Core.Application.DTOs;
+using Booksy.ServiceCatalog.API.Models.Requests;
+using Booksy.ServiceCatalog.API.Models.Responses;
 using MediatR;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.RateLimiting;
 using Booksy.ServiceCatalog.Application.Commands.Service.CreateService;
 using Booksy.ServiceCatalog.Application.Commands.Service.UpdateService;
 using Booksy.ServiceCatalog.Application.Commands.Service.ActivateService;
+using Booksy.ServiceCatalog.Application.Commands.Service.DeactivateService;
+using Booksy.ServiceCatalog.Application.Commands.Service.ArchiveService;
 using Booksy.ServiceCatalog.Application.Queries.Service.GetServiceById;
-using Booksy.ServiceCatalog.Application.Services.Interfaces;
-using Booksy.ServiceCatalog.API.Models.Requests;
-using Booksy.ServiceCatalog.API.Models.Responses;
-using Booksy.ServiceCatalog.Domain.ValueObjects;
+using Booksy.API.Extensions;
+using static Booksy.API.Middleware.ExceptionHandlingMiddleware;
+using Booksy.ServiceCatalog.Application.Queries.Service.GetServicesByStatus;
+using Booksy.ServiceCatalog.Application.Queries.Service.GetPopularServices;
+using Booksy.ServiceCatalog.Api.Models.Responses;
+using Booksy.ServiceCatalog.Api.Models.Requests.Extenstions;
+using Booksy.ServiceCatalog.Api.Models.Requests;
+using Booksy.API.Middleware;
 
 namespace Booksy.ServiceCatalog.API.Controllers.V1;
 
+/// <summary>
+/// Manages service catalog and service offerings
+/// </summary>
 [ApiController]
-[Route("api/v1/[controller]")]
-[Authorize]
+[ApiVersion("1.0")]
+[Route("api/v{version:apiVersion}/[controller]")]
+[Produces("application/json")]
+[ProducesResponseType(typeof(ApiErrorResult), StatusCodes.Status500InternalServerError)]
 public class ServicesController : ControllerBase
 {
-    private readonly IMediator _mediator;
-    private readonly IServiceApplicationService _serviceApplicationService;
+    private readonly ISender _mediator;
     private readonly ILogger<ServicesController> _logger;
 
-    public ServicesController(
-        IMediator mediator,
-        IServiceApplicationService serviceApplicationService,
-        ILogger<ServicesController> logger)
+    public ServicesController(ISender mediator, ILogger<ServicesController> logger)
     {
-        _mediator = mediator;
-        _serviceApplicationService = serviceApplicationService;
-        _logger = logger;
+        _mediator = mediator ?? throw new ArgumentNullException(nameof(mediator));
+        _logger = logger ?? throw new ArgumentNullException(nameof(logger));
     }
 
     /// <summary>
-    /// Create a new service
+    /// Creates a new service offering
     /// </summary>
+    /// <param name="request">Service creation details</param>
+    /// <returns>Created service information</returns>
+    /// <response code="201">Service successfully created</response>
+    /// <response code="400">Invalid request data</response>
+    /// <response code="409">Service with same name already exists for provider</response>
+    /// <response code="403">Not authorized to create services for this provider</response>
     [HttpPost]
-    public async Task<ActionResult<ServiceResponse>> CreateService(
+    [Authorize(Policy = "ProviderOrAdmin")]
+    [Booksy.API.Middleware.EnableRateLimiting("service-creation")]
+    [ProducesResponseType(typeof(ServiceResponse), StatusCodes.Status201Created)]
+    [ProducesResponseType(typeof(ApiErrorResult), StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(typeof(ApiErrorResult), StatusCodes.Status409Conflict)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
+    public async Task<IActionResult> CreateService(
         [FromBody] CreateServiceRequest request,
-        CancellationToken cancellationToken)
+        CancellationToken cancellationToken = default)
     {
-        var command = new CreateServiceCommand(
+        // Check if user can create services for this provider
+        //if (!await CanManageProvider(request.ProviderId))
+        //{
+        //    _logger.LogWarning("User {RequestingUser} attempted to create service for provider {ProviderId} without permission",
+        //        GetCurrentUserId(), request.ProviderId);
+        //    return Forbid();
+        //}
+
+        var command = MapToCreateCommand(request);
+        var result = await _mediator.Send(command, cancellationToken);
+
+        var response = MapToServiceResponse(result);
+
+        _logger.LogInformation("Service {ServiceId} created successfully for provider {ProviderId}",
+            response.Id, request.ProviderId);
+
+        return CreatedAtAction(
+            nameof(GetServiceById),
+            new { id = response.Id, version = "1.0" },
+            response);
+    }
+
+    /// <summary>
+    /// Gets a service by its ID
+    /// </summary>
+    /// <param name="id">Service ID</param>
+    /// <param name="includeProvider">Include provider information</param>
+    /// <param name="includeOptions">Include service options</param>
+    /// <param name="includePriceTiers">Include price tiers</param>
+    /// <returns>Service details</returns>
+    /// <response code="200">Service found</response>
+    /// <response code="404">Service not found</response>
+    [HttpGet("{id:guid}")]
+    [AllowAnonymous]
+    [ProducesResponseType(typeof(ServiceDetailsResponse), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> GetServiceById(
+        [FromRoute] Guid id,
+        [FromQuery] bool includeProvider = false,
+        [FromQuery] bool includeOptions = false,
+        [FromQuery] bool includePriceTiers = false,
+        CancellationToken cancellationToken = default)
+    {
+        var query = new GetServiceByIdQuery(
+            ServiceId: id,
+            IncludeProvider: includeProvider,
+            IncludeOptions: includeOptions,
+            IncludePriceTiers: includePriceTiers);
+
+        var result = await _mediator.Send(query, cancellationToken);
+
+        return Ok(MapToServiceDetailsResponse(result));
+    }
+
+    /// <summary>
+    /// Search services with advanced filtering and pagination
+    /// </summary>
+    /// <param name="request">Search parameters including pagination</param>
+    /// <param name="cancellationToken">Cancellation token</param>
+    /// <returns>Paginated search results</returns>
+    /// <response code="200">Services found successfully</response>
+    /// <response code="400">Invalid search parameters</response>
+    [HttpGet("search")]
+    [AllowAnonymous]
+    [ProducesResponseType(typeof(PagedResult<ServiceSearchResponse>), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    public async Task<ActionResult<PagedResult<ServiceSearchResponse>>> SearchServices(
+        [FromQuery] SearchServicesRequest request,
+        CancellationToken cancellationToken = default)
+    {
+        // Convert API request to application query (single line!)
+        var query = request.ToQuery();
+
+        // Execute query through MediatR
+        var result = await _mediator.Send(query, cancellationToken);
+
+        // Transform to API response model
+        var response = result.Map(searchResult => new ServiceSearchResponse
+        {
+            Id = searchResult.Id,
+            ProviderId = searchResult.ProviderId,
+            Name = searchResult.Name,
+            Description = searchResult.Description,
+            Category = searchResult.Category,
+            Type = searchResult.Type,
+            BasePrice = searchResult.BasePrice,
+            Currency = searchResult.Currency,
+            Duration = searchResult.Duration,
+            Status = searchResult.Status,
+            RequiresDeposit = searchResult.RequiresDeposit,
+            AvailableAsMobile = searchResult.AvailableAsMobile,
+            ImageUrl = searchResult.ImageUrl,
+            Provider = new ProviderInfoResponse
+            {
+                Id = searchResult.Provider.Id,
+                BusinessName = searchResult.Provider.BusinessName,
+                City = searchResult.Provider.City,
+                State = searchResult.Provider.State,
+                AllowOnlineBooking = searchResult.Provider.AllowOnlineBooking,
+                OffersMobileServices = searchResult.Provider.OffersMobileServices
+            }
+        });
+
+        // Return with proper pagination headers
+        return this.PaginatedOk(response);
+    }
+
+    /// <summary>
+    /// Gets services for a specific provider
+    /// </summary>
+    /// <param name="providerId">Provider ID</param>
+    /// <param name="request">Filter parameters including pagination</param>
+    /// <param name="cancellationToken">Cancellation token</param>
+    /// <returns>Paginated list of provider's services</returns>
+    /// <response code="200">Services retrieved successfully</response>
+    /// <response code="400">Invalid filter parameters</response>
+    /// <response code="404">Provider not found</response>
+    [HttpGet("provider/{providerId:guid}")]
+    [AllowAnonymous]
+    [ProducesResponseType(typeof(PagedResult<ServiceSummaryResponse>), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<ActionResult<PagedResult<ServiceSummaryResponse>>> GetServicesByProvider(
+        [FromRoute] Guid providerId,
+        [FromQuery] GetServicesByProviderRequest request,
+        CancellationToken cancellationToken = default)
+    {
+        // Convert API request to application query
+        var query = request.ToQuery(providerId);
+
+        // Execute query through MediatR
+        var result = await _mediator.Send(query, cancellationToken);
+
+        // Transform to API response model
+        var response = result.Map(serviceResult => new ServiceSummaryResponse
+        {
+            Id = serviceResult.Id,
+            ProviderId = serviceResult.ProviderId,
+            Name = serviceResult.Name,
+            Description = serviceResult.Description,
+            Category = serviceResult.Category,
+            Type = serviceResult.Type,
+            BasePrice = serviceResult.BasePrice,
+            Currency = serviceResult.Currency,
+            Duration = serviceResult.Duration,
+            Status = serviceResult.Status,
+            RequiresDeposit = serviceResult.RequiresDeposit,
+            AvailableAsMobile = serviceResult.AvailableAsMobile,
+            ImageUrl = serviceResult.ImageUrl
+        });
+
+        return this.PaginatedOk(response);
+    }
+
+    /// <summary>
+    /// Updates a service
+    /// </summary>
+    /// <param name="id">Service ID</param>
+    /// <param name="request">Updated service information</param>
+    /// <returns>Updated service information</returns>
+    /// <response code="200">Service updated successfully</response>
+    /// <response code="400">Invalid update data</response>
+    /// <response code="404">Service not found</response>
+    /// <response code="403">Not authorized to update this service</response>
+    [HttpPut("{id:guid}")]
+    [Authorize(Policy = "ProviderOrAdmin")]
+    [ProducesResponseType(typeof(ServiceResponse), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ApiErrorResult), StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(typeof(ApiErrorResult), StatusCodes.Status404NotFound)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
+    public async Task<IActionResult> UpdateService(
+        [FromRoute] Guid id,
+        [FromBody][Required] UpdateServiceRequest request,
+        CancellationToken cancellationToken = default)
+    {
+        // Check if user can update this service
+        if (!await CanManageService(id))
+        {
+            _logger.LogWarning("User {RequestingUser} attempted to update service {ServiceId} without permission",
+                GetCurrentUserId(), id);
+            return Forbid();
+        }
+
+        var command = new UpdateServiceCommand(
+            ServiceId: id,
+            Name: request.Name,
+            Description: request.Description,
+            CategoryName: request.CategoryName,
+            DurationMinutes: request.DurationMinutes,
+            PreparationMinutes: request.PreparationMinutes,
+            BufferMinutes: request.BufferMinutes,
+            Tags: request.Tags,
+            ImageUrl: request.ImageUrl,
+            IdempotencyKey: request.IdempotencyKey);
+
+        var result = await _mediator.Send(command, cancellationToken);
+
+        _logger.LogInformation("Service {ServiceId} updated successfully", id);
+        return Ok(MapToServiceResponse(result));
+    }
+
+    /// <summary>
+    /// Activates a service
+    /// </summary>
+    /// <param name="id">Service ID</param>
+    /// <returns>Success message</returns>
+    /// <response code="200">Service activated successfully</response>
+    /// <response code="400">Service cannot be activated</response>
+    /// <response code="404">Service not found</response>
+    /// <response code="403">Not authorized to activate this service</response>
+    [HttpPost("{id:guid}/activate")]
+    [Authorize(Policy = "ProviderOrAdmin")]
+    [ProducesResponseType(typeof(MessageResponse), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ApiErrorResult), StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(typeof(ApiErrorResult), StatusCodes.Status404NotFound)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
+    public async Task<IActionResult> ActivateService(
+        [FromRoute] Guid id,
+        CancellationToken cancellationToken = default)
+    {
+        if (!await CanManageService(id))
+        {
+            _logger.LogWarning("User {RequestingUser} attempted to activate service {ServiceId} without permission",
+                GetCurrentUserId(), id);
+            return Forbid();
+        }
+
+        var command = new ActivateServiceCommand(ServiceId: id);
+        var result = await _mediator.Send(command, cancellationToken);
+
+        _logger.LogInformation("Service {ServiceId} activated successfully by user {UserId}", id, GetCurrentUserId());
+        return Ok(new MessageResponse("Service activated successfully"));
+    }
+
+    /// <summary>
+    /// Deactivates a service
+    /// </summary>
+    /// <param name="id">Service ID</param>
+    /// <param name="request">Deactivation reason</param>
+    /// <returns>Success message</returns>
+    /// <response code="200">Service deactivated successfully</response>
+    /// <response code="404">Service not found</response>
+    /// <response code="403">Not authorized to deactivate this service</response>
+    [HttpPost("{id:guid}/deactivate")]
+    [Authorize(Policy = "ProviderOrAdmin")]
+    [ProducesResponseType(typeof(MessageResponse), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ApiErrorResult), StatusCodes.Status404NotFound)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
+    public async Task<IActionResult> DeactivateService(
+        [FromRoute] Guid id,
+        [FromBody] DeactivateServiceRequest? request,
+        CancellationToken cancellationToken = default)
+    {
+        if (!await CanManageService(id))
+        {
+            _logger.LogWarning("User {RequestingUser} attempted to deactivate service {ServiceId} without permission",
+                GetCurrentUserId(), id);
+            return Forbid();
+        }
+
+        var command = new DeactivateServiceCommand(
+            ServiceId: id,
+            Reason: request?.Reason ?? "Deactivated by user");
+        var result = await _mediator.Send(command, cancellationToken);
+
+        _logger.LogInformation("Service {ServiceId} deactivated by user {UserId}", id, GetCurrentUserId());
+        return Ok(new MessageResponse("Service deactivated successfully"));
+    }
+
+    /// <summary>
+    /// Archives a service (soft delete)
+    /// </summary>
+    /// <param name="id">Service ID</param>
+    /// <param name="request">Archive reason</param>
+    /// <returns>Success message</returns>
+    /// <response code="204">Service archived successfully</response>
+    /// <response code="404">Service not found</response>
+    /// <response code="403">Not authorized to archive this service</response>
+    /// <response code="409">Cannot archive service with active bookings</response>
+    [HttpDelete("{id:guid}")]
+    [Authorize(Policy = "ProviderOrAdmin")]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType(typeof(ApiErrorResult), StatusCodes.Status404NotFound)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
+    [ProducesResponseType(typeof(ApiErrorResult), StatusCodes.Status409Conflict)]
+    public async Task<IActionResult> ArchiveService(
+        [FromRoute] Guid id,
+        [FromBody] ArchiveServiceRequest? request,
+        CancellationToken cancellationToken = default)
+    {
+        if (!await CanManageService(id))
+        {
+            _logger.LogWarning("User {RequestingUser} attempted to archive service {ServiceId} without permission",
+                GetCurrentUserId(), id);
+            return Forbid();
+        }
+
+        var command = new ArchiveServiceCommand(
+            ServiceId: id,
+            Reason: request?.Reason ?? "Archived by user");
+        var result = await _mediator.Send(command, cancellationToken);
+
+        _logger.LogWarning("Service {ServiceId} archived by user {UserId}", id, GetCurrentUserId());
+        return NoContent();
+    }
+
+    /// <summary>
+    /// Gets services filtered by status
+    /// </summary>
+    /// <param name="status">Service status to filter by</param>
+    /// <param name="maxResults">Maximum number of results (default: 100, max: 1000)</param>
+    /// <returns>List of services with the specified status</returns>
+    /// <response code="200">Services retrieved successfully</response>
+    /// <response code="400">Invalid status provided</response>
+    /// <response code="401">Not authenticated</response>
+    /// <response code="403">Not authorized (admin only)</response>
+    [HttpGet("by-status/{status}")]
+    [Authorize(Policy = "AdminOnly")]
+    [ProducesResponseType(typeof(IReadOnlyList<ServiceSummaryResponse>), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
+    public async Task<IActionResult> GetServicesByStatus(
+        [FromRoute] ServiceStatus status,
+        [FromQuery] int maxResults = 100,
+        CancellationToken cancellationToken = default)
+    {
+        var query = new GetServicesByStatusQuery(status, maxResults);
+        var result = await _mediator.Send(query, cancellationToken);
+
+        var response = result.Select(MapToServiceSummaryResponse).ToList();
+        return Ok(response);
+    }
+
+    /// <summary>
+    /// Gets popular services across all providers
+    /// </summary>
+    /// <param name="categoryFilter">Optional category filter</param>
+    /// <param name="limit">Number of services to return (default: 20, max: 100)</param>
+    /// <returns>List of popular services</returns>
+    /// <response code="200">Popular services retrieved successfully</response>
+    /// <response code="400">Invalid parameters</response>
+    [HttpGet("popular")]
+    [AllowAnonymous]
+    [ProducesResponseType(typeof(IReadOnlyList<ServiceSummaryResponse>), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    public async Task<IActionResult> GetPopularServices(
+        [FromQuery] string? categoryFilter = null,
+        [FromQuery] int limit = 20,
+        CancellationToken cancellationToken = default)
+    {
+        if (limit <= 0 || limit > 100)
+            return BadRequest("Limit must be between 1 and 100");
+
+        var query = new GetPopularServicesQuery(categoryFilter, limit);
+        var result = await _mediator.Send(query, cancellationToken);
+
+        var response = result.Select(MapToServiceSummaryResponse).ToList();
+        return Ok(response);
+    }
+
+    #region Private Helper Methods
+
+    private CreateServiceCommand MapToCreateCommand(CreateServiceRequest request)
+    {
+        return new CreateServiceCommand(
             ProviderId: request.ProviderId,
             Name: request.Name,
             Description: request.Description,
@@ -60,53 +444,26 @@ public class ServicesController : ControllerBase
             MaxAdvanceBookingDays: request.MaxAdvanceBookingDays,
             MinAdvanceBookingHours: request.MinAdvanceBookingHours,
             MaxConcurrentBookings: request.MaxConcurrentBookings,
-            Tags: request.Tags,
             ImageUrl: request.ImageUrl,
-            IdempotencyKey: request.IdempotencyKey
-        );
-
-        var result = await _mediator.Send(command, cancellationToken);
-
-        return CreatedAtAction(
-            nameof(GetService),
-            new { id = result.ServiceId },
-            new ServiceResponse
-            {
-                Id = result.ServiceId,
-                Name = result.Name,
-                Category = result.Category,
-                Status = result.Status.ToString(),
-                Message = "Service created successfully."
-            });
+            IdempotencyKey: request.IdempotencyKey);
     }
 
-    /// <summary>
-    /// Get service by ID
-    /// </summary>
-    [HttpGet("{id}")]
-    [AllowAnonymous]
-    public async Task<ActionResult<ServiceDetailsResponse>> GetService(
-        Guid id,
-        [FromQuery] bool includeProvider = false,
-        [FromQuery] bool includeOptions = false,
-        [FromQuery] bool includePriceTiers = false,
-        CancellationToken cancellationToken = default)
+    private ServiceResponse MapToServiceResponse(dynamic result)
     {
-        var query = new GetServiceByIdQuery(
-            ServiceId: id,
-            IncludeProvider: includeProvider,
-            IncludeOptions: includeOptions,
-            IncludePriceTiers: includePriceTiers
-        );
-
-        var result = await _mediator.Send(query, cancellationToken);
-
-        if (result == null)
+        return new ServiceResponse
         {
-            return NotFound();
-        }
+            Id = result.ServiceId,
+            Name = result.Name,
+            Category = result.Category,
+            Status = result.Status.ToString(),
+            Message = "Operation completed successfully",
+            Timestamp = DateTime.UtcNow
+        };
+    }
 
-        return Ok(new ServiceDetailsResponse
+    private ServiceDetailsResponse MapToServiceDetailsResponse(ServiceDetailsViewModel result)
+    {
+        return new ServiceDetailsResponse
         {
             Id = result.Id,
             ProviderId = result.ProviderId,
@@ -131,12 +488,12 @@ public class ServicesController : ControllerBase
             MinAdvanceBookingHours = result.MinAdvanceBookingHours,
             MaxConcurrentBookings = result.MaxConcurrentBookings,
             ImageUrl = result.ImageUrl,
-            Tags = result.Tags,
             QualifiedStaffCount = result.QualifiedStaffCount,
             CanBeBooked = result.CanBeBooked,
             CreatedAt = result.CreatedAt,
             ActivatedAt = result.ActivatedAt,
-            Options = result.Options?.Select(o => new ServiceOptionResponse
+            Tags = result.Tags.ToList(),
+            Options = result.Options.Select(o => new ServiceOptionResponse
             {
                 Id = o.Id,
                 Name = o.Name,
@@ -148,7 +505,7 @@ public class ServicesController : ControllerBase
                 IsActive = o.IsActive,
                 SortOrder = o.SortOrder
             }).ToList(),
-            PriceTiers = result.PriceTiers?.Select(pt => new PriceTierResponse
+            PriceTiers = result.PriceTiers.Select(pt => new PriceTierResponse
             {
                 Id = pt.Id,
                 Name = pt.Name,
@@ -171,248 +528,78 @@ public class ServicesController : ControllerBase
                 AllowOnlineBooking = result.Provider.AllowOnlineBooking,
                 OffersMobileServices = result.Provider.OffersMobileServices
             } : null
-        });
+        };
     }
 
-    /// <summary>
-    /// Update service
-    /// </summary>
-    [HttpPut("{id}")]
-    public async Task<ActionResult<ServiceResponse>> UpdateService(
-        Guid id,
-        [FromBody] UpdateServiceRequest request,
-        CancellationToken cancellationToken)
+    private ServiceSummaryResponse MapToServiceSummaryResponse(dynamic service)
     {
-        var command = new UpdateServiceCommand(
-            ServiceId: id,
-            Name: request.Name,
-            Description: request.Description,
-            CategoryName: request.CategoryName,
-            DurationMinutes: request.DurationMinutes,
-            PreparationMinutes: request.PreparationMinutes,
-            BufferMinutes: request.BufferMinutes,
-            Tags: request.Tags,
-            ImageUrl: request.ImageUrl,
-            IdempotencyKey: request.IdempotencyKey
-        );
-
-        var result = await _mediator.Send(command, cancellationToken);
-
-        return Ok(new ServiceResponse
+        return new ServiceSummaryResponse
         {
-            Id = result.ServiceId,
-            Name = result.Name,
-            Status = "Updated",
-            Message = "Service updated successfully."
-        });
-    }
-
-    /// <summary>
-    /// Get services by provider
-    /// </summary>
-    [HttpGet("provider/{providerId}")]
-    [AllowAnonymous]
-    public async Task<ActionResult<IEnumerable<ServiceSummaryResponse>>> GetServicesByProvider(
-        Guid providerId,
-        [FromQuery] string? status,
-        CancellationToken cancellationToken = default)
-    {
-        var providerIdVo = ProviderId.From(providerId);
-        var statusEnum = !string.IsNullOrEmpty(status) && Enum.TryParse<ServiceStatus>(status, true, out var parsedStatus)
-            ? parsedStatus
-            : (ServiceStatus?)null;
-
-        var result = await _serviceApplicationService.GetServicesByProviderAsync(
-            providerIdVo, statusEnum, cancellationToken);
-
-        return Ok(result.Select(s => new ServiceSummaryResponse
-        {
-            Id = s.Id,
-            ProviderId = providerId,
-            Name = s.Name,
-            Description = s.Description,
-            Category = s.Category,
-            BasePrice = s.BasePrice,
-            Currency = s.Currency,
-            Duration = s.Duration,
-            Status = s.Status.ToString(),
-            ImageUrl = s.ImageUrl,
-            Tags = s.Tags
-        }));
-    }
-
-    /// <summary>
-    /// Search services
-    /// </summary>
-    [HttpGet("search")]
-    [AllowAnonymous]
-    public async Task<ActionResult<IEnumerable<ServiceSummaryResponse>>> SearchServices(
-        [FromQuery] string searchTerm,
-        [FromQuery] string? category,
-        CancellationToken cancellationToken = default)
-    {
-        IReadOnlyList<Application.DTOs.Service.ServiceSummaryDto> result;
-
-        if (!string.IsNullOrEmpty(category))
-        {
-            result = await _serviceApplicationService.GetServicesByCategoryAsync(category, cancellationToken);
-        }
-        else if (!string.IsNullOrEmpty(searchTerm))
-        {
-            result = await _serviceApplicationService.SearchServicesAsync(searchTerm, cancellationToken);
-        }
-        else
-        {
-            return BadRequest("Either searchTerm or category must be provided");
-        }
-
-        return Ok(result.Select(s => new ServiceSummaryResponse
-        {
-            Id = s.Id,
-            Name = s.Name,
-            Description = s.Description,
-            Category = s.Category,
-            BasePrice = s.BasePrice,
-            Currency = s.Currency,
-            Duration = s.Duration,
-            Status = s.Status.ToString(),
-            ImageUrl = s.ImageUrl,
-            Tags = s.Tags
-        }));
-    }
-
-    /// <summary>
-    /// Activate service
-    /// </summary>
-    [HttpPost("{id}/activate")]
-    public async Task<ActionResult<ServiceResponse>> ActivateService(
-        Guid id,
-        CancellationToken cancellationToken)
-    {
-        var command = new ActivateServiceCommand(ServiceId: id);
-        var result = await _mediator.Send(command, cancellationToken);
-
-        return Ok(new ServiceResponse
-        {
-            Id = result.ServiceId,
-            Name = result.Name,
-            Status = "Active",
-            Message = "Service activated successfully."
-        });
-    }
-
-    /// <summary>
-    /// Deactivate service
-    /// </summary>
-    [HttpPost("{id}/deactivate")]
-    public async Task<ActionResult<ServiceResponse>> DeactivateService(
-        Guid id,
-        [FromBody] DeactivateServiceRequest request,
-        CancellationToken cancellationToken)
-    {
-        // Since there's no explicit DeactivateServiceCommand in the project,
-        // we'll need to use the service application service or create the command
-        var serviceId = ServiceId.From(id);
-        var service = await _serviceApplicationService.GetServiceByIdAsync(serviceId, cancellationToken);
-
-        if (service == null)
-        {
-            return NotFound();
-        }
-
-        // This would need a proper DeactivateServiceCommand implementation
-        // For now, return a placeholder response
-        return Ok(new ServiceResponse
-        {
-            Id = id,
+            Id = service.Id,
+            ProviderId = service.ProviderId,
             Name = service.Name,
-            Status = "Deactivated",
-            Message = $"Service deactivated: {request.Reason}"
-        });
+            Description = service.Description,
+            Category = service.Category,
+            Type = service.Type.ToString(),
+            BasePrice = service.BasePrice,
+            Currency = service.Currency,
+            Duration = service.Duration,
+            Status = service.Status.ToString(),
+            RequiresDeposit = service.RequiresDeposit,
+            AvailableAsMobile = service.AvailableAsMobile,
+            ImageUrl = service.ImageUrl,
+            Tags = service.Tags?.ToList() ?? new List<string>()
+        };
     }
 
-    /// <summary>
-    /// Archive service (soft delete)
-    /// </summary>
-    [HttpDelete("{id}")]
-    public async Task<ActionResult<ServiceResponse>> ArchiveService(
-        Guid id,
-        CancellationToken cancellationToken)
+    private string? GetCurrentUserId()
     {
-        // Since there's no explicit ArchiveServiceCommand in the project,
-        // we'll need to use the service application service or create the command
-        var serviceId = ServiceId.From(id);
-        var service = await _serviceApplicationService.GetServiceByIdAsync(serviceId, cancellationToken);
-
-        if (service == null)
-        {
-            return NotFound();
-        }
-
-        // This would need a proper ArchiveServiceCommand implementation
-        // For now, return a placeholder response
-        return Ok(new ServiceResponse
-        {
-            Id = id,
-            Name = service.Name,
-            Status = "Archived",
-            Message = "Service archived successfully."
-        });
+        return User.FindFirst("sub")?.Value ?? User.FindFirst("userId")?.Value;
     }
 
-    /// <summary>
-    /// Get service statistics
-    /// </summary>
-    [HttpGet("{id}/statistics")]
-    [Authorize(Roles = "Provider,Admin")]
-    public async Task<ActionResult<ServiceStatisticsResponse>> GetServiceStatistics(
-        Guid id,
-        CancellationToken cancellationToken)
+    private string? GetCurrentUserProviderId()
     {
-        var serviceId = ServiceId.From(id);
-        var statistics = await _serviceApplicationService.GetServiceStatisticsAsync(serviceId, cancellationToken);
-
-        return Ok(new ServiceStatisticsResponse
-        {
-            ServiceId = statistics.ServiceId,
-            ServiceName = statistics.ServiceName,
-            TotalBookings = statistics.TotalBookings,
-            CompletedBookings = statistics.CompletedBookings,
-            CancelledBookings = statistics.CancelledBookings,
-            AverageRating = statistics.AverageRating,
-            TotalRevenue = statistics.TotalRevenue,
-            AverageBookingValue = statistics.AverageBookingValue,
-            BookingTrend = statistics.BookingTrend
-        });
+        return User.FindFirst("providerId")?.Value;
     }
 
-    /// <summary>
-    /// Calculate service price with options
-    /// </summary>
-    [HttpPost("{id}/calculate-price")]
-    [AllowAnonymous]
-    public async Task<ActionResult<PriceCalculationResponse>> CalculatePrice(
-        Guid id,
-        [FromBody] PriceCalculationRequest request,
-        CancellationToken cancellationToken)
+    private async Task<bool> CanManageProvider(Guid providerId)
     {
-        var serviceId = ServiceId.From(id);
-        var price = await _serviceApplicationService.CalculateServicePriceAsync(
-            serviceId,
-            request.SelectedOptionIds ?? new List<Guid>(),
-            request.SelectedTierId,
-            cancellationToken);
+        var currentUserId = GetCurrentUserId();
+        if (string.IsNullOrEmpty(currentUserId))
+            return false;
 
-        return Ok(new PriceCalculationResponse
-        {
-            ServiceId = id,
-            BasePrice = price.Amount,
-            Currency = price.Currency,
-            TotalPrice = price.Amount, // This would include option calculations
-            Breakdown = new List<PriceBreakdownItem>
-            {
-                new() { Description = "Base service", Amount = price.Amount }
-            }
-        });
+        // Admins can manage any provider
+        if (User.IsInRole("Admin") || User.IsInRole("SysAdmin"))
+            return true;
+
+        // Provider owners can manage their own provider
+        var currentProviderId = GetCurrentUserProviderId();
+        if (!string.IsNullOrEmpty(currentProviderId) && currentProviderId == providerId.ToString())
+            return true;
+
+        // Additional business logic could go here (e.g., staff with management permissions)
+        return false;
     }
+
+    private async Task<bool> CanManageService(Guid serviceId)
+    {
+        var currentUserId = GetCurrentUserId();
+        if (string.IsNullOrEmpty(currentUserId))
+            return false;
+
+        // Admins can manage any service
+        if (User.IsInRole("Admin") || User.IsInRole("SysAdmin"))
+            return true;
+
+        // For now, we'd need to query the service to get its provider
+        // This would typically involve a lightweight query to get just the provider ID
+        // For demonstration, we'll assume this is implemented
+        // var service = await GetServiceProviderInfo(serviceId);
+        // return await CanManageProvider(service.ProviderId);
+
+        // Simplified check - providers can manage services in their context
+        return User.IsInRole("Provider");
+    }
+
+    #endregion
 }

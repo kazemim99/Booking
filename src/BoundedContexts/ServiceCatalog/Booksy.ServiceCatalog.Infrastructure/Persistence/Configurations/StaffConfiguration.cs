@@ -27,10 +27,10 @@ namespace Booksy.ServiceCatalog.Infrastructure.Persistence.Configurations
                 .HasMaxLength(100);
 
             builder.Property(s => s.Email)
-       .HasConversion(email => email.Value, value => Email.From(value));
+       .HasConversion(email => email.Value, value => Email.Create(value));
 
             builder.Property(s => s.Phone)
-.HasConversion(phone => phone.Value, value => PhoneNumber.From(value));
+.HasConversion(phone => phone.Value, value => PhoneNumber.Create(value));
 
 
 

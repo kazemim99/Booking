@@ -10,6 +10,7 @@ using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using System.Text;
 using Booksy.Core.Domain.ValueObjects;
+using Booksy.UserManagement.Domain.Enums;
 
 namespace Booksy.UserManagement.Infrastructure.Services.Security
 {
@@ -32,6 +33,7 @@ namespace Booksy.UserManagement.Infrastructure.Services.Security
 
         public string GenerateAccessToken(
             UserId userId,
+            UserType userType,
             Email email,
             string displayName,
             IEnumerable<string> roles,
@@ -42,6 +44,7 @@ namespace Booksy.UserManagement.Infrastructure.Services.Security
                 new(ClaimTypes.NameIdentifier, userId.Value.ToString()),
                 new(ClaimTypes.Email, email.Value),
                 new(ClaimTypes.Name, displayName),
+                new("user_type", userType.ToString()),
                 new(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString()),
                 new(JwtRegisteredClaimNames.Iat, DateTimeOffset.UtcNow.ToUnixTimeSeconds().ToString(), ClaimValueTypes.Integer64)
             };

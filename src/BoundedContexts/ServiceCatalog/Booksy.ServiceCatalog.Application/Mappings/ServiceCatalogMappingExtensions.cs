@@ -17,7 +17,7 @@ namespace Booksy.ServiceCatalog.Application.Mappings
             {
                 Id = provider.Id.Value,
                 BusinessName = provider.Profile.BusinessName,
-                Description = provider.Profile.Description,
+                Description = provider.Profile.BusinessDescription,
                 Status = provider.Status,
                 Type = provider.Type,
                 LogoUrl = provider.Profile.LogoUrl,
@@ -49,13 +49,13 @@ namespace Booksy.ServiceCatalog.Application.Mappings
                 RequiresDeposit = service.RequiresDeposit,
                 AvailableAsMobile = service.AvailableAsMobile,
                 ImageUrl = service.ImageUrl,
-                Tags = service.Tags,
+               
                 CanBeBooked = service.CanBeBooked(),
                 CreatedAt = service.CreatedAt
             };
         }
 
-        public static ContactInfoDto ToDto(this ContactInfo contactInfo)
+        public static ContactInfoDto ToDto(this Domain.ValueObjects.ContactInfo contactInfo)
         {
             return new ContactInfoDto
             {

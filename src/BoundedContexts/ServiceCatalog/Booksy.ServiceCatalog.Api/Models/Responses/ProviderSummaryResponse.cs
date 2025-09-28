@@ -14,4 +14,9 @@ public class ProviderSummaryResponse
     public bool AllowOnlineBooking { get; set; }
     public bool OffersMobileServices { get; set; }
     public List<string>? Tags { get; set; }
+    public dynamic IsVerified { get; internal set; }
+    public dynamic TotalReviews { get; internal set; }
+    public dynamic ServiceCount { get; internal set; }
+    public dynamic RegisteredAt { get; internal set; }
+    public dynamic AverageRating { get; internal set; }
 }

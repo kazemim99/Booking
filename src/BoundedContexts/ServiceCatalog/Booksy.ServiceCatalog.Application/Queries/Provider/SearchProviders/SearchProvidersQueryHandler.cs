@@ -1,13 +1,17 @@
-﻿// ========================================
-// Booksy.ServiceCatalog.Application/Queries/Provider/SearchProviders/SearchProvidersQueryHandler.cs
-// ========================================
+﻿
 using Booksy.Core.Application.Abstractions.CQRS;
+using Booksy.Core.Application.DTOs;
+using Booksy.ServiceCatalog.Application.DTOs.Provider;
 using Booksy.ServiceCatalog.Domain.Repositories;
+using Booksy.ServiceCatalog.Domain.Specifications.Provider;
 using Microsoft.Extensions.Logging;
 
 namespace Booksy.ServiceCatalog.Application.Queries.Provider.SearchProviders
 {
-    public sealed class SearchProvidersQueryHandler : IQueryHandler<SearchProvidersQuery, IReadOnlyList<ProviderSearchResultViewModel>>
+    /// <summary>
+    /// Handler following User Management pattern with specifications and generic pagination
+    /// </summary>
+    public sealed class SearchProvidersQueryHandler : IQueryHandler<SearchProvidersQuery, PagedResult<ProviderSearchItem>>
     {
         private readonly IProviderReadRepository _providerRepository;
         private readonly ILogger<SearchProvidersQueryHandler> _logger;
@@ -20,41 +24,89 @@ namespace Booksy.ServiceCatalog.Application.Queries.Provider.SearchProviders
             _logger = logger;
         }
 
-        public async Task<IReadOnlyList<ProviderSearchResultViewModel>> Handle(
+        public async Task<PagedResult<ProviderSearchItem>> Handle(
             SearchProvidersQuery request,
             CancellationToken cancellationToken)
         {
-            _logger.LogInformation("Searching providers with term: {SearchTerm}", request.SearchTerm);
+            _logger.LogDebug("Processing provider search with filters: {@Filters}", new
+            {
+                request.SearchTerm,
+                request.Type,
+                request.City,
+                request.State,
+                request.Country,
+                request.AllowsOnlineBooking,
+                request.OffersMobileServices,
+                request.VerifiedOnly,
+                request.MinRating,
+                request.IncludeInactive,
+            });
 
-            var allProviders = await _providerRepository.SearchAsync(request.SearchTerm, cancellationToken);
+            try
+            {
+                // Create business specification (no pagination logic!)
+                var specification = new SearchProvidersSpecification(
+                    searchTerm: request.SearchTerm,
+                    type: request.Type,
+                    city: request.City,
+                    state: request.State,
+                    country: request.Country,
+                    allowsOnlineBooking: request.AllowsOnlineBooking,
+                    offersMobileServices: request.OffersMobileServices,
+                    verifiedOnly: request.VerifiedOnly,
+                    minRating: request.MinRating,
+                    includeInactive: request.IncludeInactive);
 
-            var filteredProviders = allProviders.Where(provider =>
-                (request.ProviderType == null || provider.Type == request.ProviderType) &&
-                (request.City == null || provider.Address.City.Contains(request.City, StringComparison.OrdinalIgnoreCase)) &&
-                (request.State == null || provider.Address.State.Contains(request.State, StringComparison.OrdinalIgnoreCase)) &&
-                (request.OffersMobileServices == null || provider.OffersMobileServices == request.OffersMobileServices));
 
-            var result = filteredProviders
-                .Take(request.MaxResults ?? 50)
-                .Select(provider => new ProviderSearchResultViewModel
-                {
-                    Id = provider.Id.Value,
-                    BusinessName = provider.Profile.BusinessName,
-                    Description = provider.Profile.Description,
-                    Type = provider.Type,
-                    LogoUrl = provider.Profile.LogoUrl,
-                    Address = $"{provider.Address.City}, {provider.Address.State}",
-                    Email = provider.ContactInfo.Email.Value,
-                    PrimaryPhone = provider.ContactInfo.PrimaryPhone.Value,
-                    Website = provider.ContactInfo.Website,
-                    AllowOnlineBooking = provider.AllowOnlineBooking,
-                    OffersMobileServices = provider.OffersMobileServices,
-                    Tags = provider.Profile.Tags,
-                    LastActiveAt = provider.LastActiveAt
-                })
+                // Use generic pagination extension - One line handles everything!
+                var result = await _providerRepository.GetPaginatedAsync(
+                    specification,
+                    request.Pagination,
+                    provider => new ProviderSearchItem(
+                         provider.Id.Value,
+                         provider.Profile.BusinessName,
+                        provider.Profile.BusinessDescription,
+                         provider.Type,
+                        provider.Status,
+                            provider.Address.City,
+                        provider.Address.State,
+                        provider.Address.Country,
+                        provider.Profile.LogoUrl,
+                        provider.AllowOnlineBooking,
+                        provider.OffersMobileServices,
+                        provider.AverageRating,
+                                provider.Services.Count,
+                         DateTime.UtcNow.Year - provider.RegisteredAt.Year,
+                        provider.Status == ProviderStatus.Verified,
+                       //OperatingHours: GetFormattedOperatingHours(provider.BusinessHours),
+                       provider.RegisteredAt,
+                        provider.LastActiveAt),
+                    cancellationToken);
+
+                _logger.LogInformation("Provider search completed. Found {TotalCount} providers, returning page {PageNumber} of {PageSize}",
+                    result.TotalCount, request.Pagination.PageNumber, request.Pagination.PageSize);
+
+                return result;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error occurred during provider search with query: {@Query}", request);
+                throw;
+            }
+        }
+
+        private static string? GetFormattedOperatingHours(Dictionary<DayOfWeek, BusinessHoursDto?> businessHours)
+        {
+            if (!businessHours.Any(bh => bh.Value != null))
+                return null;
+
+            var openDays = businessHours
+                .Where(bh => bh.Value != null)
+                .Select(bh => $"{bh.Key}: {bh.Value.OpenTime:HH:mm}-{bh.Value.CloseTime:HH:mm}")
                 .ToList();
 
-            return result;
+            return string.Join(", ", openDays);
         }
     }
 }
+

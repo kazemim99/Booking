@@ -1,4 +1,6 @@
-﻿namespace Booksy.ServiceCatalog.API.Models.Responses;
+﻿using Booksy.ServiceCatalog.Api.Models.Responses;
+
+namespace Booksy.ServiceCatalog.API.Models.Responses;
 
 public class ProviderDetailsResponse
 {
@@ -16,4 +18,15 @@ public class ProviderDetailsResponse
     public List<string>? Tags { get; set; }
     public DateTime RegisteredAt { get; set; }
     public DateTime? LastActiveAt { get; set; }
+    public Guid OwnerId { get; internal set; }
+    public string? WebsiteUrl { get; internal set; }
+    public bool IsVerified { get; internal set; }
+    public int TotalReviews { get; internal set; }
+    public decimal AverageRating { get; internal set; }
+    public int ServiceCount { get; internal set; }
+    public int StaffCount { get; internal set; }
+    public int YearsInBusiness { get; internal set; }
+    public DateTime? ActivatedAt { get; internal set; }
+    public List<ServiceSummaryResponse> Services { get; internal set; }
+    public List<StaffMemberResponse>? Staff { get; internal set; }
 }

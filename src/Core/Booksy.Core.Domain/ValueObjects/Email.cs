@@ -17,7 +17,7 @@ public sealed class Email : ValueObject
     /// Gets the email address value
     /// </summary>
     public string Value { get; }
-    public static Email From(string value) => new(value);
+    public static Email Create(string value) => new(value);
 
     /// <summary>
     /// Initializes a new instance of the Email class
@@ -48,6 +48,11 @@ public sealed class Email : ValueObject
     protected override IEnumerable<object> GetAtomicValues()
     {
         yield return Value;
+    }
+
+    public static Email From(object email)
+    {
+        throw new NotImplementedException();
     }
 }
 

@@ -10,12 +10,9 @@
     <Folder Include="Commands\Provider\UpdateProviderSettings\" />
     <Folder Include="Commands\Provider\SetBusinessHours\" />
     <Folder Include="Commands\Provider\RemoveStaff\" />
-    <Folder Include="Commands\Service\DeactivateService\" />
     <Folder Include="Commands\Service\UpdateServicePricing\" />
     <Folder Include="Queries\Provider\GetPaginatedProviders\" />
     <Folder Include="Queries\Service\GetServicesByCategory\" />
-    <Folder Include="Queries\Service\GetServicesByProvider\" />
-    <Folder Include="Queries\Service\SearchServices\" />
     <Folder Include="Services\Implementations\" />
     <Folder Include="Validators\FluentValidation\" />
   </ItemGroup>

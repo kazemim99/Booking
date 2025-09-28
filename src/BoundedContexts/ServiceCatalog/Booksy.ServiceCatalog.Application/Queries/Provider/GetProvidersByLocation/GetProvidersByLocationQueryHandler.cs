@@ -1,11 +1,15 @@
-﻿using Booksy.Core.Application.Abstractions.CQRS;
-using Booksy.ServiceCatalog.Application.Queries.Provider.GetProviderById;
+﻿
+
+using Booksy.Core.Application.Abstractions.CQRS;
+using Booksy.Core.Application.DTOs;
+using Booksy.ServiceCatalog.Application.DTOs.Provider;
 using Booksy.ServiceCatalog.Domain.Repositories;
+using Booksy.ServiceCatalog.Domain.Specifications.Provider;
 using Microsoft.Extensions.Logging;
 
 namespace Booksy.ServiceCatalog.Application.Queries.Provider.GetProvidersByLocation
 {
-    public sealed class GetProvidersByLocationQueryHandler : IQueryHandler<GetProvidersByLocationQuery, IReadOnlyList<ProviderLocationViewModel>>
+    public sealed class GetProvidersByLocationQueryHandler : IQueryHandler<GetProvidersByLocationQuery, PagedResult<ProviderLocationItem>>
     {
         private readonly IProviderReadRepository _providerRepository;
         private readonly ILogger<GetProvidersByLocationQueryHandler> _logger;
@@ -18,67 +22,77 @@ namespace Booksy.ServiceCatalog.Application.Queries.Provider.GetProvidersByLocat
             _logger = logger;
         }
 
-        public async Task<IReadOnlyList<ProviderLocationViewModel>> Handle(
+        public async Task<PagedResult<ProviderLocationItem>> Handle(
             GetProvidersByLocationQuery request,
             CancellationToken cancellationToken)
         {
-            _logger.LogInformation(
-                "Getting providers by location: Lat={Latitude}, Lng={Longitude}, Radius={RadiusKm}km",
+            _logger.LogDebug("Processing providers by location: Lat={Latitude}, Lng={Longitude}, Radius={RadiusKm}",
                 request.Latitude, request.Longitude, request.RadiusKm);
 
-            var providers = await _providerRepository.GetByLocationAsync(
-                request.Latitude,
-                request.Longitude,
-                request.RadiusKm,
-                cancellationToken);
+            try
+            {
+                // Create location-based specification
+                var specification = new ProvidersByLocationSpecification(
+                    latitude: request.Latitude,
+                    longitude: request.Longitude,
+                    radiusKm: request.RadiusKm,
+                    type: request.Type,
+                    offersMobileServices: request.OffersMobileServices);
 
-            var filteredProviders = providers.Where(provider =>
-                (request.ProviderType == null || provider.Type == request.ProviderType) &&
-                (request.OffersMobileServices == null || provider.OffersMobileServices == request.OffersMobileServices));
 
-            var result = filteredProviders
-                .Take(request.MaxResults ?? 50)
-                .Select(provider => new ProviderLocationViewModel
-                {
-                    Id = provider.Id.Value,
-                    BusinessName = provider.Profile.BusinessName,
-                    Description = provider.Profile.Description,
-                    Type = provider.Type,
-                    LogoUrl = provider.Profile.LogoUrl,
-                    Address = new AddressViewModel
-                    {
-                        Street = provider.Address.Street,
-                        City = provider.Address.City,
-                        State = provider.Address.State,
-                        Country = provider.Address.Country,
-                        Latitude = provider.Address.Latitude,
-                        Longitude = provider.Address.Longitude
-                    },
-                    Email = provider.ContactInfo.Email.Value,
-                    PrimaryPhone = provider.ContactInfo.PrimaryPhone.Value,
-                    Website = provider.ContactInfo.Website,
-                    AllowOnlineBooking = provider.AllowOnlineBooking,
-                    OffersMobileServices = provider.OffersMobileServices,
-                    Tags = provider.Profile.Tags,
-                    Distance = CalculateDistance(
-                        request.Latitude, request.Longitude,
-                        provider.Address.Latitude ?? 0, provider.Address.Longitude ?? 0)
-                })
-                .OrderBy(p => p.Distance)
-                .ToList();
+                // Use generic pagination extension
+                var result = await _providerRepository.GetPaginatedAsync(
+                    specification,
+                    request.Pagination,
+                    provider => new ProviderLocationItem(
+                        provider.Id.Value,
+                        provider.Profile.BusinessName,
+                        provider.Profile.BusinessDescription,
+                        provider.Type,
+                       provider.Status,
+                      new AddressInfo(
+                             provider.Address.Street,
+                           provider.Address.City,
+                            provider.Address.State,
+                            provider.Address.PostalCode,
+                            provider.Address.Country),
+                       new CoordinatesInfo(
+                             provider.Address.Latitude.Value,
+                             provider.Address.Longitude.Value),
+                        CalculateDistance(
+                            request.Latitude, request.Longitude,
+                            provider.Address.Latitude.Value, provider.Address.Longitude.Value),
+                         provider.Profile.LogoUrl,
+                      provider.AllowOnlineBooking,
+                        provider.OffersMobileServices,
+                        provider.AverageRating,
+                         provider.Services.Count),
+                    cancellationToken);
 
-            return result;
+                _logger.LogInformation("Location search completed. Found {TotalCount} providers within {RadiusKm}km",
+                    result.TotalCount, request.RadiusKm);
+
+                return result;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error occurred during location-based provider search");
+                throw;
+            }
         }
 
-        private static double CalculateDistance(double lat1, double lng1, double lat2, double lng2)
+        private static double CalculateDistance(double lat1, double lon1, double lat2, double lon2)
         {
             // Haversine formula for calculating distance between two points
-            const double R = 6371; // Earth's radius in km
+            const double R = 6371; // Earth's radius in kilometers
+
             var dLat = ToRadians(lat2 - lat1);
-            var dLng = ToRadians(lng2 - lng1);
+            var dLon = ToRadians(lon2 - lon1);
+
             var a = Math.Sin(dLat / 2) * Math.Sin(dLat / 2) +
                     Math.Cos(ToRadians(lat1)) * Math.Cos(ToRadians(lat2)) *
-                    Math.Sin(dLng / 2) * Math.Sin(dLng / 2);
+                    Math.Sin(dLon / 2) * Math.Sin(dLon / 2);
+
             var c = 2 * Math.Atan2(Math.Sqrt(a), Math.Sqrt(1 - a));
             return R * c;
         }

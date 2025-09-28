@@ -32,7 +32,7 @@ namespace Booksy.ServiceCatalog.Application.Commands.Provider.ActivateProvider
         {
             _logger.LogInformation("Activating provider: {ProviderId}", request.ProviderId);
 
-            var providerId = ProviderId.From(request.ProviderId);
+            var providerId = ProviderId.Create(request.ProviderId);
             var provider = await _providerReadRepository.GetByIdAsync(providerId, cancellationToken);
 
             if (provider == null)

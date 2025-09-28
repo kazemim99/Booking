@@ -13,17 +13,18 @@ namespace Booksy.Infrastructure.Core.Persistence.Outbox;
 /// <summary>
 /// Implementation of outbox processor for reliable event publishing
 /// </summary>
-public class OutboxProcessor<TContext> : IOutboxProcessor where TContext : DbContext
+public class OutboxProcessor<TDbContext> : IOutboxProcessor<TDbContext>
+    where TDbContext : DbContext
 {
-    private readonly TContext _context;
+    private readonly TDbContext _context;
     private readonly IEventBus _eventBus;
-    private readonly ILogger<OutboxProcessor<TContext>> _logger;
+    private readonly ILogger<OutboxProcessor<TDbContext>> _logger;
     private readonly int _maxRetries;
 
     public OutboxProcessor(
-        TContext context,
+        TDbContext context,
         IEventBus eventBus,
-        ILogger<OutboxProcessor<TContext>> logger)
+        ILogger<OutboxProcessor<TDbContext>> logger)
     {
         _context = context;
         _eventBus = eventBus;

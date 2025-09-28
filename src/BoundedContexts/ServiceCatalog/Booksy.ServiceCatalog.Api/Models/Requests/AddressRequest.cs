@@ -33,3 +33,10 @@ public class AddressRequest
     [Range(-180, 180)]
     public double? Longitude { get; set; }
 }
+
+public sealed class ArchiveServiceRequest
+{
+    [StringLength(500, ErrorMessage = "Reason cannot exceed 500 characters")]
+    public string? Reason { get; set; }
+}
+    

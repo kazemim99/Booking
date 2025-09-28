@@ -54,7 +54,7 @@ namespace Booksy.UserManagement.Application.CQRS.Commands.RegisterUser
                 _logger.LogInformation("Processing user registration for email: {Email}", request.Email);
 
                 // Validate email availability
-                var email = Email.From(request.Email);
+                var email = Email.Create(request.Email);
                 var emailExists = await _validationService.IsEmailAvailableAsync(email, cancellationToken);
 
                 if (emailExists)
@@ -77,7 +77,7 @@ namespace Booksy.UserManagement.Application.CQRS.Commands.RegisterUser
                 // Set contact information
                 if (!string.IsNullOrWhiteSpace(request.PhoneNumber))
                 {
-                    var phoneNumber = PhoneNumber.From(request.PhoneNumber);
+                    var phoneNumber = PhoneNumber.Create(request.PhoneNumber);
                     Address? address = null;
 
                     if (request.Address != null)

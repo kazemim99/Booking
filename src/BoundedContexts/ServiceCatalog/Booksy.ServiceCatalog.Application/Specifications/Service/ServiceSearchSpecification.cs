@@ -26,8 +26,7 @@ namespace Booksy.ServiceCatalog.Application.Specifications.Service
                 var term = searchTerm.Trim().ToLower();
                 AddCriteria(service =>
                     service.Name.ToLower().Contains(term) ||
-                    service.Description.ToLower().Contains(term) ||
-                    service.Tags.Any(tag => tag.ToLower().Contains(term)));
+                    service.Description.ToLower().Contains(term));
             }
 
             // Category filter
@@ -61,15 +60,9 @@ namespace Booksy.ServiceCatalog.Application.Specifications.Service
                 AddCriteria(service => service.AvailableAsMobile == availableAsMobile.Value);
             }
 
-            // Tag filters
-            if (tags != null && tags.Any())
-            {
-                AddCriteria(service => tags.Any(tag =>
-                    service.Tags.Contains(tag, StringComparer.OrdinalIgnoreCase)));
-            }
+          
 
             // Include qualified staff for bookability check
-            AddInclude(s => s.QualifiedStaff);
         }
     }
 }

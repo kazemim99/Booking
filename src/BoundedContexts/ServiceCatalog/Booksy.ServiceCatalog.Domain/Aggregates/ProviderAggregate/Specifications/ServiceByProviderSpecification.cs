@@ -35,8 +35,7 @@ namespace Booksy.ServiceCatalog.Domain.Specifications
         {
             return service => service.ProviderId == providerId &&
                             service.Status == ServiceStatus.Active &&
-                            service.AllowOnlineBooking &&
-                            service.QualifiedStaff.Any();
+                            service.AllowOnlineBooking;
         }
     }
 }

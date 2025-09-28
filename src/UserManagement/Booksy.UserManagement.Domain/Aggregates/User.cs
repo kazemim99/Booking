@@ -7,6 +7,7 @@ using Booksy.UserManagement.Domain.Entities;
 using Booksy.UserManagement.Domain.Enums;
 using Booksy.UserManagement.Domain.Events;
 using Booksy.UserManagement.Domain.Exceptions;
+using static System.Runtime.InteropServices.JavaScript.JSType;
 
 namespace Booksy.UserManagement.Domain.Aggregates
 {
@@ -59,6 +60,26 @@ namespace Booksy.UserManagement.Domain.Aggregates
         // Private constructor for EF Core
         private User() : base() { }
 
+
+        public static User Register(Email email,
+            HashedPassword password,
+            UserType type = UserType.Customer)
+        {
+            var user = new User
+            {
+                Id = UserId.CreateNew(),
+                Email = email,
+                Password = password,
+                Type = type,
+                Status = UserStatus.Pending,
+                RegisteredAt = DateTime.UtcNow,
+                FailedLoginAttempts = 0,
+                TwoFactorEnabled = false,
+                ActivationToken = ActivationToken.Generate()
+            };
+
+            return user;
+        }
         // Factory method for creating new users
         public static User Register(
             Email email,

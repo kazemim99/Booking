@@ -17,6 +17,7 @@ namespace Booksy.ServiceCatalog.Domain.Aggregates
     public sealed class Provider : AggregateRoot<ProviderId>, IAuditableEntity
     {
         private readonly List<Staff> _staff = new();
+        private readonly List<Service> _service = new();
         private readonly List<BusinessHours> _businessHours = new();
 
         // Core Identity
@@ -44,6 +45,7 @@ namespace Booksy.ServiceCatalog.Domain.Aggregates
 
         // Collections
         public IReadOnlyList<Staff> Staff => _staff.AsReadOnly();
+        public IReadOnlyList<Service> Services => _service.AsReadOnly();
         public IReadOnlyList<BusinessHours> BusinessHours => _businessHours.AsReadOnly();
 
         // Audit Properties
@@ -51,6 +53,7 @@ namespace Booksy.ServiceCatalog.Domain.Aggregates
         public string? CreatedBy { get; set; }
         public DateTime? LastModifiedAt { get; set; }
         public string? LastModifiedBy { get; set; }
+        public decimal AverageRating { get; internal set; }
 
         // Private constructor for EF Core
         private Provider() : base() { }
@@ -233,6 +236,16 @@ namespace Booksy.ServiceCatalog.Domain.Aggregates
         public bool HasActiveStaff()
         {
             return _staff.Any(s => s.IsActive);
+        }
+
+        public void SetSatus(ProviderStatus providerStatus)
+        {
+            Status = providerStatus;
+        }
+
+        public void SetAllowOnlineBooking(bool allow)
+        {
+            AllowOnlineBooking = allow;
         }
     }
 }

@@ -13,5 +13,8 @@ namespace Booksy.ServiceCatalog.Application.Queries.Provider.GetProviderById
         public string Currency { get; set; } = string.Empty;
         public int Duration { get; set; }
         public ServiceStatus Status { get; set; }
+        public Guid ProviderId { get; set; }
+        public string Type { get; set; }
+        public string ImageUrl { get; set; }
     }
 }

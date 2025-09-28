@@ -1,11 +1,7 @@
 ﻿using Booksy.Infrastructure.Core.Persistence.Base;
-using Booksy.UserManagement.Infrastructure.Persistence;
-using Booksy.UserManagement.Infrastructure.Persistence.Context;
-using Booksy.UserManagement.Infrastructure.Persistence.Seeders;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.Logging;
 
 namespace Booksy.API.Extensions;
 
@@ -49,7 +45,8 @@ public static class DatabaseExtensions
     /// <summary>
     /// Ensures the database is created (for development)
     /// </summary>
-    public static async Task EnsureDatabaseCreatedAsync<T>(this WebApplication app) where T : class
+    public static async Task EnsureDatabaseCreatedAsync<T,TContext>(this WebApplication app) where T : class
+        where TContext : DbContext
     {
         using var scope = app.Services.CreateScope();
         var services = scope.ServiceProvider;
@@ -57,7 +54,7 @@ public static class DatabaseExtensions
 
         try
         {
-            var context = services.GetRequiredService<UserManagementDbContext>();
+            var context = services.GetRequiredService<TContext>();
 
             logger.LogInformation("Ensuring database is created...");
             await context.Database.EnsureCreatedAsync();

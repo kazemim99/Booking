@@ -16,7 +16,7 @@ namespace Booksy.ServiceCatalog.Domain.Entities
         public bool IsActive { get; private set; }
         public int SortOrder { get; private set; }
         public DateTime CreatedAt { get; private set; }
-
+        public ServiceId ServiceId { get; private set; }
         // Private constructor for EF Core
         private ServiceOption() : base() { }
 

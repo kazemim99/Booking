@@ -30,7 +30,7 @@ namespace Booksy.ServiceCatalog.Application.Queries.Provider.GetProviderStatisti
         {
             _logger.LogInformation("Getting statistics for provider: {ProviderId}", request.ProviderId);
 
-            var providerId = ProviderId.From(request.ProviderId);
+            var providerId = ProviderId.Create(request.ProviderId);
             var provider = await _providerRepository.GetByIdAsync(providerId, cancellationToken);
 
             if (provider == null)

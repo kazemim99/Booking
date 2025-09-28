@@ -36,7 +36,12 @@ public static class PolicyAuthorizationExtensions
             options.AddPolicy("ClientOrProvider", policy =>
                 policy.RequireAssertion(context =>
                     context.User.HasClaim(c => c.Type == "user_type" &&
-                        (c.Value == "Client" || c.Value == "Provider"))));
+                        (c.Value == "Client" || c.Value == "Provider"))));   
+            
+            options.AddPolicy("ProviderOrAdmin", policy => 
+                policy.RequireAssertion(context =>
+                    context.User.HasClaim(c => c.Type == "user_type" &&
+                        (c.Value == "Admin" || c.Value == "Provider"))));
 
             // Feature-based policies
             options.AddPolicy("CanManageUsers", policy =>

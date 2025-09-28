@@ -7,7 +7,7 @@ namespace Booksy.ServiceCatalog.Domain.Entities
     public sealed class BusinessProfile : Entity<Guid>
     {
         public string BusinessName { get; private set; }
-        public string Description { get; private set; }
+        public string BusinessDescription { get; private set; }
         public string? Website { get; private set; }
         public string? LogoUrl { get; private set; }
         public Dictionary<string, string> SocialMedia { get; private set; } = new();
@@ -17,13 +17,13 @@ namespace Booksy.ServiceCatalog.Domain.Entities
         // Private constructor for EF Core
         private BusinessProfile() : base() { }
 
-        internal static BusinessProfile Create(string businessName, string description, string? website = null)
+        public static BusinessProfile Create(string businessName, string description, string? website = null)
         {
             return new BusinessProfile
             {
                 Id = Guid.NewGuid(),
                 BusinessName = businessName,
-                Description = description,
+                BusinessDescription = description,
                 Website = website,
                 LastUpdatedAt = DateTime.UtcNow
             };

@@ -3,12 +3,14 @@
 // ========================================
 // Persistence/Outbox/IOutboxProcessor.cs
 // ========================================
+using Microsoft.EntityFrameworkCore;
+
 namespace Booksy.Infrastructure.Core.Persistence.Outbox;
 
 /// <summary>
 /// Processes outbox messages for reliable event publishing
 /// </summary>
-public interface IOutboxProcessor
+public interface IOutboxProcessor<TDbContext> where TDbContext : DbContext
 {
     /// <summary>
     /// Adds a message to the outbox

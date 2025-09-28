@@ -19,7 +19,8 @@ namespace Booksy.ServiceCatalog.Domain.ValueObjects
         }
 
         public static ServiceId New() => new(Guid.NewGuid());
-        public static ServiceId From(Guid value) => new(value);
+        public static ServiceId Create(Guid value) => new(value);
+        public static ServiceId Create(string value) => new(new Guid(value));
 
         public override string ToString() => Value.ToString();
 
@@ -30,6 +31,6 @@ namespace Booksy.ServiceCatalog.Domain.ValueObjects
 
         // Implicit conversions
         public static implicit operator Guid(ServiceId serviceId) => serviceId.Value;
-        public static implicit operator ServiceId(Guid value) => From(value);
+        public static implicit operator ServiceId(Guid value) => Create(value);
     }
 }

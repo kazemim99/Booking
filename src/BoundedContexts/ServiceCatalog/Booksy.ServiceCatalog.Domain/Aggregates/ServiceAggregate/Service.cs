@@ -42,7 +42,8 @@ namespace Booksy.ServiceCatalog.Domain.Aggregates
 
         // Metadata
         public string? ImageUrl { get; private set; }
-        public List<string> Tags { get; private set; } = new();
+
+
         public Dictionary<string, string> Metadata { get; private set; } = new();
 
         // Timestamps
@@ -56,6 +57,8 @@ namespace Booksy.ServiceCatalog.Domain.Aggregates
         public IReadOnlyList<ServiceOption> Options => _options.AsReadOnly();
         public IReadOnlyList<PriceTier> PriceTiers => _priceTiers.AsReadOnly();
         public IReadOnlyList<Guid> QualifiedStaff => _qualifiedStaff.AsReadOnly();
+
+        public Provider Provider { get; private set; }
 
         // Private constructor for EF Core
         private Service() : base() { }
@@ -252,19 +255,7 @@ namespace Booksy.ServiceCatalog.Domain.Aggregates
             MaxConcurrentBookings = maxConcurrent;
         }
 
-        // Metadata Management
-        public void AddTag(string tag)
-        {
-            if (!Tags.Contains(tag, StringComparer.OrdinalIgnoreCase))
-            {
-                Tags.Add(tag);
-            }
-        }
-
-        public void RemoveTag(string tag)
-        {
-            Tags.RemoveAll(t => t.Equals(tag, StringComparison.OrdinalIgnoreCase));
-        }
+       
 
         public void SetMetadata(string key, string value)
         {

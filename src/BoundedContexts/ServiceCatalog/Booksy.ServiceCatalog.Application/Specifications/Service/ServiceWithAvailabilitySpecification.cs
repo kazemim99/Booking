@@ -19,8 +19,7 @@ namespace Booksy.ServiceCatalog.Application.Specifications.Service
             // Base availability criteria
             AddCriteria(service =>
                 service.Status == ServiceStatus.Active &&
-                service.AllowOnlineBooking &&
-                service.QualifiedStaff.Any());
+                service.AllowOnlineBooking);
 
             // Duration filter
             if (maxDurationMinutes.HasValue)
@@ -28,13 +27,7 @@ namespace Booksy.ServiceCatalog.Application.Specifications.Service
                 AddCriteria(service => service.Duration.Value <= maxDurationMinutes.Value);
             }
 
-            // Staff availability filter
-            if (staffId.HasValue)
-            {
-                var staffValueId = staffId.Value;
-                AddCriteria(service => service.QualifiedStaff.Any(staff => staff == staffValueId));
-            }
-
+        
             // Advance booking limits check
             if (advanceBookingCheck && requestedDateTime.HasValue)
             {
@@ -48,7 +41,6 @@ namespace Booksy.ServiceCatalog.Application.Specifications.Service
             }
 
             // Include qualified staff for evaluation
-            AddInclude(s => s.QualifiedStaff);
       
         }
 

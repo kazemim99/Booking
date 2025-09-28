@@ -22,6 +22,7 @@ using Booksy.Infrastructure.Core.Persistence.Base;
 using Microsoft.Extensions.Logging;
 using Booksy.UserManagement.Application.Abstractions.Queries;
 using Booksy.UserManagement.Infrastructure.Queries;
+using Booksy.Infrastructure.Core.DependencyInjection;
 
 namespace Booksy.UserManagement.Infrastructure.DependencyInjection
 {
@@ -31,6 +32,10 @@ namespace Booksy.UserManagement.Infrastructure.DependencyInjection
             this IServiceCollection services,
             IConfiguration configuration)
         {
+
+
+            services.AddInfrastructureCore(configuration);
+
             // Add DbContext
             services.AddDbContext<UserManagementDbContext>(options =>
             {
@@ -58,6 +63,7 @@ namespace Booksy.UserManagement.Infrastructure.DependencyInjection
                 }
             });
 
+            services.AddScoped<DbContext>(provider => provider.GetRequiredService<UserManagementDbContext>());
 
 
             // Register Unit of Work
@@ -85,7 +91,7 @@ namespace Booksy.UserManagement.Infrastructure.DependencyInjection
 
             // Register context-specific infrastructure
             //services.AddScoped<IUnitOfWork, UserManagementUnitOfWork>();
-            services.AddScoped<IOutboxProcessor, UserManagementOutboxProcessor>();
+            //services.AddScoped(typeof(IOutboxProcessor<>), typeof(UserManagementOutboxProcessor));
 
 
 

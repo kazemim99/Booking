@@ -18,8 +18,7 @@ namespace Booksy.ServiceCatalog.Application.Specifications.Service
             // Base criteria for bookable services
             AddCriteria(service =>
                 service.Status == ServiceStatus.Active &&
-                service.AllowOnlineBooking &&
-                service.QualifiedStaff.Any());
+                service.AllowOnlineBooking);
 
             // Provider filter
             if (providerId.HasValue)
@@ -52,7 +51,6 @@ namespace Booksy.ServiceCatalog.Application.Specifications.Service
             }
 
             // Include necessary related data
-            AddInclude(s => s.QualifiedStaff);
 
         }
 

@@ -29,7 +29,7 @@ namespace Booksy.ServiceCatalog.Application.Queries.Service.GetServiceById
         {
             _logger.LogInformation("Getting service details for ID: {ServiceId}", request.ServiceId);
 
-            var serviceId = ServiceId.From(request.ServiceId);
+            var serviceId = ServiceId.Create(request.ServiceId);
             var service = await _serviceRepository.GetByIdAsync(serviceId, cancellationToken);
 
             if (service == null)
@@ -63,8 +63,7 @@ namespace Booksy.ServiceCatalog.Application.Queries.Service.GetServiceById
                 MinAdvanceBookingHours = service.MinAdvanceBookingHours,
                 MaxConcurrentBookings = service.MaxConcurrentBookings,
                 ImageUrl = service.ImageUrl,
-                Tags = service.Tags,
-                QualifiedStaffCount = service.QualifiedStaff.Count,
+              
                 CanBeBooked = service.CanBeBooked(),
                 CreatedAt = service.CreatedAt,
                 ActivatedAt = service.ActivatedAt
@@ -110,7 +109,7 @@ namespace Booksy.ServiceCatalog.Application.Queries.Service.GetServiceById
                     {
                         Id = provider.Id.Value,
                         BusinessName = provider.Profile.BusinessName,
-                        Description = provider.Profile.Description,
+                        Description = provider.Profile.BusinessDescription,
                         Type = provider.Type,
                         LogoUrl = provider.Profile.LogoUrl,
                         City = provider.Address.City,

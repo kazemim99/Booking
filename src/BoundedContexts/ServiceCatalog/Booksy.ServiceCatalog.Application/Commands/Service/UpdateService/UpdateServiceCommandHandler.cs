@@ -32,7 +32,7 @@ namespace Booksy.ServiceCatalog.Application.Commands.Service.UpdateService
         {
             _logger.LogInformation("Updating service: {ServiceId}", request.ServiceId);
 
-            var serviceId = ServiceId.From(request.ServiceId);
+            var serviceId = ServiceId.Create(request.ServiceId);
             var service = await _serviceReadRepository.GetByIdAsync(serviceId, cancellationToken);
 
             if (service == null)
@@ -55,20 +55,7 @@ namespace Booksy.ServiceCatalog.Application.Commands.Service.UpdateService
                 service.SetImage(request.ImageUrl);
             }
 
-            // Update tags
-            if (request.Tags?.Any() == true)
-            {
-                // Clear existing tags and add new ones
-                foreach (var existingTag in service.Tags.ToList())
-                {
-                    service.RemoveTag(existingTag);
-                }
-
-                foreach (var tag in request.Tags)
-                {
-                    service.AddTag(tag);
-                }
-            }
+        
 
             await _serviceWriteRepository.UpdateServiceAsync(service, cancellationToken);
 

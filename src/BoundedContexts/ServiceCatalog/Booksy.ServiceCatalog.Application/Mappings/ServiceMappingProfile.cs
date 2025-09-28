@@ -19,8 +19,7 @@ namespace Booksy.ServiceCatalog.Application.Mappings
                 .ForMember(dest => dest.Currency, opt => opt.MapFrom(src => src.BasePrice.Currency))
                 .ForMember(dest => dest.Duration, opt => opt.MapFrom(src => src.Duration.Value))
                 .ForMember(dest => dest.PreparationTime, opt => opt.MapFrom(src => src.PreparationTime != null ? src.PreparationTime.Value : (int?)null))
-                .ForMember(dest => dest.BufferTime, opt => opt.MapFrom(src => src.BufferTime != null ? src.BufferTime.Value : (int?)null))
-                .ForMember(dest => dest.QualifiedStaff, opt => opt.MapFrom(src => src.QualifiedStaff.Select(s => s)));
+                .ForMember(dest => dest.BufferTime, opt => opt.MapFrom(src => src.BufferTime != null ? src.BufferTime.Value : (int?)null));
 
             CreateMap<ServiceOption, ServiceOptionDto>()
                 .ForMember(dest => dest.AdditionalPrice, opt => opt.MapFrom(src => src.AdditionalPrice.Amount))

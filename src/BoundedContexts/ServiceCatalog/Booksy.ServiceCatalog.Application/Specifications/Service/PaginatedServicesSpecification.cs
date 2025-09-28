@@ -68,8 +68,7 @@ namespace Booksy.ServiceCatalog.Application.Specifications.Service
                 var term = searchTerm.Trim().ToLower();
                 AddCriteria(service =>
                     service.Name.ToLower().Contains(term) ||
-                    service.Description.ToLower().Contains(term) ||
-                    service.Tags.Any(tag => tag.ToLower().Contains(term)));
+                    service.Description.ToLower().Contains(term));
             }
 
             // Mobile availability filter
@@ -84,8 +83,6 @@ namespace Booksy.ServiceCatalog.Application.Specifications.Service
                 AddCriteria(service => service.RequiresDeposit == requiresDeposit.Value);
             }
 
-            // Add necessary includes
-            AddInclude(s => s.QualifiedStaff);
 
             ApplyPaging((pageNumber - 1) * pageSize, pageSize);
         }

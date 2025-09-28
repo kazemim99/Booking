@@ -13,6 +13,9 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using StackExchange.Redis;
 using Booksy.Infrastructure.Core.Caching;
+using Booksy.Infrastructure.Core.Persistence.Outbox;
+using Booksy.Core.Application.Abstractions.Persistence;
+using Booksy.Infrastructure.Core.Persistence.Base;
 
 namespace Booksy.Infrastructure.Core.DependencyInjection;
 
@@ -48,12 +51,12 @@ public static class InfrastructureCoreExtensions
         services.AddCaching(configuration);
 
         // Add Persistence
-        //services.AddScoped(typeof(IReadRepository<,>), typeof(ReadRepositoryBase<,>));
+        services.AddScoped(typeof(IQueryRepositoryBase<,>), typeof(QueryRepositoryBase<,>));
         //services.AddScoped(typeof(IWriteRepository<,>), typeof(EfWriteRepositoryBase<,,>));
         //services.AddScoped<IUnitOfWork, EfCoreUnitOfWork>();
 
         //// Add Outbox
-        //services.AddScoped<IOutboxProcessor, OutboxProcessor>();
+        services.AddScoped(typeof(IOutboxProcessor<>), typeof(OutboxProcessor<>));
 
         return services;
     }

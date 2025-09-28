@@ -7,6 +7,7 @@ using Booksy.UserManagement.Infrastructure.Persistence.Context;
 using Booksy.UserManagement.Infrastructure.Testing.Builders;
 using Booksy.Core.Domain.ValueObjects;
 using Booksy.Infrastructure.Core.Persistence.Base;
+using System.Threading;
 
 namespace Booksy.UserManagement.Infrastructure.Persistence.Seeders
 {
@@ -23,7 +24,7 @@ namespace Booksy.UserManagement.Infrastructure.Persistence.Seeders
             _logger = logger;
         }
 
-        public async Task SeedAsync()
+        public async Task SeedAsync(CancellationToken cancellationToken = default)
         {
             try
             {

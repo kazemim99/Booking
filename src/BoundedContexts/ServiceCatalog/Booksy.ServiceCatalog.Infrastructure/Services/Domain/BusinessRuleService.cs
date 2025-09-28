@@ -97,13 +97,15 @@ namespace Booksy.ServiceCatalog.Infrastructure.Services.Domain
             {
                 // This would typically involve checking staff qualifications, certifications, etc.
                 // For now, implementing basic logic
-                var service = await _serviceReadRepository.GetByIdAsync(serviceId, cancellationToken);
-                if (service == null)
-                    return false;
+                //var service = await _serviceReadRepository.GetByIdAsync(serviceId, cancellationToken);
+                //if (service == null)
+                //    return false;
 
-                // Check if staff is qualified to provide this service
-                // This would be implemented based on your business rules
-                return service.QualifiedStaff.Contains(staffId);
+                //// Check if staff is qualified to provide this service
+                //// This would be implemented based on your business rules
+                //return service.QualifiedStaff.Contains(staffId);
+
+                return false;
             }
             catch (Exception ex)
             {

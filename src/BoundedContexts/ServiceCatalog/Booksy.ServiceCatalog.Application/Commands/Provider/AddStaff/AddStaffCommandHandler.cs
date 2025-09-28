@@ -33,14 +33,14 @@ namespace Booksy.ServiceCatalog.Application.Commands.Provider.AddStaff
         {
             _logger.LogInformation("Adding staff to provider: {ProviderId}", request.ProviderId);
 
-            var providerId = ProviderId.From(request.ProviderId);
+            var providerId = ProviderId.Create(request.ProviderId);
             var provider = await _providerReadRepository.GetByIdAsync(providerId, cancellationToken);
 
             if (provider == null)
                 throw new InvalidProviderException("Provider not found");
 
-            var email = Email.From(request.Email);
-            var phone = !string.IsNullOrEmpty(request.Phone) ? PhoneNumber.From(request.Phone) : null;
+            var email = Email.Create(request.Email);
+            var phone = !string.IsNullOrEmpty(request.Phone) ? PhoneNumber.Create(request.Phone) : null;
 
             provider.AddStaff(request.FirstName, request.LastName, email, request.Role, phone);
 

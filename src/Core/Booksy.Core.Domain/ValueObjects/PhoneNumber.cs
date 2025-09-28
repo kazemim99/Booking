@@ -29,7 +29,7 @@ namespace Booksy.Core.Domain.ValueObjects
             NationalNumber = nationalNumber;
         }
 
-        public static PhoneNumber From(string phoneNumber)
+        public static PhoneNumber Create(string phoneNumber)
         {
             if (string.IsNullOrWhiteSpace(phoneNumber))
                 throw new DomainValidationException("PhoneNumber", "Phone number is required");

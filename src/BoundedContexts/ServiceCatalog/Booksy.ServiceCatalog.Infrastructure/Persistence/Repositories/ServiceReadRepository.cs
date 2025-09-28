@@ -66,8 +66,7 @@ namespace Booksy.ServiceCatalog.Infrastructure.Persistence.Repositories
                 .Include(s => s.PriceTiers)
                 .Where(s =>
                     s.Name.ToLower().Contains(normalizedSearchTerm) ||
-                    s.Description.ToLower().Contains(normalizedSearchTerm) ||
-                    s.Tags.Any(tag => tag.ToLower().Contains(normalizedSearchTerm)))
+                    s.Description.ToLower().Contains(normalizedSearchTerm))
                 .ToListAsync(cancellationToken);
         }
 
@@ -178,7 +177,6 @@ namespace Booksy.ServiceCatalog.Infrastructure.Persistence.Repositories
             return await DbSet
                 .Include(s => s.Options)
                 .Include(s => s.PriceTiers)
-                .Where(s => s.Tags.Contains(tag))
                 .ToListAsync(cancellationToken);
         }
 

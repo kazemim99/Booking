@@ -27,7 +27,6 @@ namespace Booksy.ServiceCatalog.Application.Commands.Service.CreateService
         int MaxAdvanceBookingDays = 90,
         int MinAdvanceBookingHours = 1,
         int MaxConcurrentBookings = 1,
-        List<string>? Tags = null,
         string? ImageUrl = null,
         Guid? IdempotencyKey = null) : ICommand<CreateServiceResult>;
 }
