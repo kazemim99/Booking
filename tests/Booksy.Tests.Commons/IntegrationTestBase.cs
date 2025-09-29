@@ -4,6 +4,7 @@
 using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
+using Newtonsoft.Json;
 using System.Net.Http.Headers;
 using System.Net.Http.Json;
 
@@ -124,7 +125,10 @@ public abstract class IntegrationTestBase<TFactory, TDbContext, TStartup>
 
     protected async Task<TResponse?> GetResponseAsync<TResponse>(HttpResponseMessage response)
     {
-        return await response.Content.ReadFromJsonAsync<TResponse>();
+
+        var reson = await response.Content.ReadAsStringAsync();
+
+        return JsonConvert.DeserializeObject<TResponse>(reson);
     }
 
 

@@ -9,7 +9,7 @@ namespace Booksy.ServiceCatalog.Application.Commands.Service.CreateService
     /// <summary>
     /// Command to create a new service offering
     /// </summary>
-    public sealed record CreateServiceCommand(
+    public  record CreateServiceCommand(
         Guid ProviderId,
         string Name,
         string Description,

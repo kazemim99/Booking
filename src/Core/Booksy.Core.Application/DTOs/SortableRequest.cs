@@ -9,27 +9,27 @@ public sealed class PagedResult<T>
     /// <summary>
     /// The items in this page
     /// </summary>
-    public IReadOnlyList<T> Items { get; }
+    public IReadOnlyList<T> Items { get; set; }
 
     /// <summary>
     /// Current page number (1-based)
     /// </summary>
-    public int PageNumber { get; }
+    public int PageNumber { get; set; }
 
     /// <summary>
     /// Number of items per page
     /// </summary>
-    public int PageSize { get; }
+    public int PageSize { get; set; }
 
     /// <summary>
     /// Total number of pages
     /// </summary>
-    public int TotalPages { get; }
+    public int TotalPages { get; set; }
 
     /// <summary>
     /// Total number of items across all pages
     /// </summary>
-    public int TotalCount { get; }
+    public int TotalCount { get; set; }
 
     /// <summary>
     /// Number of items in the current page

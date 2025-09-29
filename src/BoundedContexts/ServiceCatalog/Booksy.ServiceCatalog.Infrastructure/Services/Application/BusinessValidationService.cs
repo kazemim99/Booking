@@ -42,9 +42,6 @@ namespace Booksy.ServiceCatalog.Application.Services.Implementations
                     throw new DomainValidationException($"Registration validation failed", errors);
                 }
             }
-
-            // Additional business validation
-            await ValidateBusinessRulesAsync(command);
         }
 
         public async Task ValidateServiceCreationAsync(CreateServiceCommand command, CancellationToken cancellationToken = default)
@@ -126,17 +123,7 @@ namespace Booksy.ServiceCatalog.Application.Services.Implementations
             return validationResult.Errors.Select(e => e.ErrorMessage);
         }
 
-        private async Task ValidateBusinessRulesAsync(RegisterProviderCommand command)
-        {
-            // Custom business rules for provider registration
-            await Task.CompletedTask;
-
-            // Rule: Certain provider types require additional verification
-            if (command.ProviderType == ProviderType.Medical || command.ProviderType == ProviderType.Clinic)
-            {
-                // Would integrate with verification services
-            }
-        }
+       
 
         private async Task ValidateServiceBusinessRulesAsync(CreateServiceCommand command)
         {

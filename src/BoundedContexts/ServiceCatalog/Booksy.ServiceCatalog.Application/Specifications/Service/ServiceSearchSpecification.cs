@@ -60,9 +60,10 @@ namespace Booksy.ServiceCatalog.Application.Specifications.Service
                 AddCriteria(service => service.AvailableAsMobile == availableAsMobile.Value);
             }
 
-          
+
 
             // Include qualified staff for bookability check
         }
     }
+
 }

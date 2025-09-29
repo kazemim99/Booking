@@ -14,7 +14,7 @@ namespace Booksy.ServiceCatalog.Application.Queries.Provider.SearchProviders
 {
     public sealed record SearchProvidersQuery(
         string? SearchTerm = null,
-        ProviderType? Type = null,
+        BusinessSize? Type = null,
         string? City = null,
         string? State = null,
         string? Country = null,

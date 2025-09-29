@@ -171,7 +171,7 @@ namespace Booksy.ServiceCatalog.Infrastructure.Persistence.Configurations
                 .IsRequired()
                 .HasMaxLength(50);
 
-            builder.Property(p => p.Type)
+            builder.Property(p => p.Size)
                 .HasConversion<string>()
                 .IsRequired()
                 .HasMaxLength(50);
@@ -228,7 +228,7 @@ namespace Booksy.ServiceCatalog.Infrastructure.Persistence.Configurations
             builder.HasIndex(p => p.Status)
                 .HasDatabaseName("IX_Providers_Status");
 
-            builder.HasIndex(p => p.Type)
+            builder.HasIndex(p => p.Size)
                 .HasDatabaseName("IX_Providers_Type");
         }
     }

@@ -26,7 +26,7 @@ namespace Booksy.ServiceCatalog.Domain.Aggregates
 
         // Status & Type
         public ProviderStatus Status { get; private set; }
-        public ProviderType Type { get; private set; }
+        public BusinessSize Size { get; private set; }
 
         // Business Information
         public ContactInfo ContactInfo { get; private set; }
@@ -63,7 +63,7 @@ namespace Booksy.ServiceCatalog.Domain.Aggregates
             UserId ownerId,
             string businessName,
             string description,
-            ProviderType type,
+            BusinessSize type,
             ContactInfo contactInfo,
             BusinessAddress address)
         {
@@ -76,7 +76,7 @@ namespace Booksy.ServiceCatalog.Domain.Aggregates
                 OwnerId = ownerId,
                 Profile = profile,
                 Status = ProviderStatus.PendingVerification,
-                Type = type,
+                Size = type,
                 ContactInfo = contactInfo,
                 Address = address,
                 RequiresApproval = false,
@@ -85,11 +85,12 @@ namespace Booksy.ServiceCatalog.Domain.Aggregates
                 RegisteredAt = DateTime.UtcNow
             };
 
+
             provider.RaiseDomainEvent(new ProviderRegisteredEvent(
                 provider.Id,
                 provider.OwnerId,
                 provider.Profile.BusinessName,
-                provider.Type,
+                provider.Size,
                 provider.RegisteredAt));
 
             return provider;

@@ -46,12 +46,12 @@ namespace Booksy.ServiceCatalog.Infrastructure.Persistence.Repositories
                 .ToListAsync(cancellationToken);
         }
 
-        public async Task<IReadOnlyList<Provider>> GetByTypeAsync(ProviderType type, CancellationToken cancellationToken = default)
+        public async Task<IReadOnlyList<Provider>> GetByTypeAsync(BusinessSize type, CancellationToken cancellationToken = default)
         {
             return await DbSet
                 .Include(p => p.Staff)
                 .Include(p => p.BusinessHours)
-                .Where(p => p.Type == type)
+                .Where(p => p.Size == type)
                 .ToListAsync(cancellationToken);
         }
 
@@ -100,7 +100,7 @@ namespace Booksy.ServiceCatalog.Infrastructure.Persistence.Repositories
             int pageNumber,
             int pageSize,
             ProviderStatus? status = null,
-            ProviderType? type = null,
+            BusinessSize? type = null,
             CancellationToken cancellationToken = default)
         {
             var query = DbSet
@@ -112,7 +112,7 @@ namespace Booksy.ServiceCatalog.Infrastructure.Persistence.Repositories
                 query = query.Where(p => p.Status == status.Value);
 
             if (type.HasValue)
-                query = query.Where(p => p.Type == type.Value);
+                query = query.Where(p => p.Size == type.Value);
 
             var totalCount = await query.CountAsync(cancellationToken);
             var items = await query

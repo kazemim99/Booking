@@ -19,7 +19,7 @@ namespace Booksy.ServiceCatalog.Application.Mappings
                 BusinessName = provider.Profile.BusinessName,
                 Description = provider.Profile.BusinessDescription,
                 Status = provider.Status,
-                Type = provider.Type,
+                Type = provider.Size,
                 LogoUrl = provider.Profile.LogoUrl,
                 City = provider.Address.City,
                 State = provider.Address.State,

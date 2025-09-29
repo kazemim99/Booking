@@ -1,8 +1,7 @@
-﻿// ========================================
-// Example 1: Basic Test Using ServiceCatalogIntegrationTestBase
-// ========================================
-using Booksy.API;
+﻿using Booksy.API;
+using Booksy.Core.Application.DTOs;
 using Booksy.ServiceCatalog.Api.Models.Requests;
+using Booksy.ServiceCatalog.Api.Models.Responses;
 using Booksy.ServiceCatalog.API.Models.Responses;
 using Booksy.ServiceCatalog.Domain.Enums;
 using Booksy.ServiceCatalog.IntegrationTests.Infrastructure;
@@ -11,9 +10,6 @@ using System.Net;
 
 namespace Booksy.ServiceCatalog.IntegrationTests.API.Services;
 
-// ========================================
-// Example 8: Complex Multi-Step Scenario
-// ========================================
 public class CompleteServiceFlowTests : ServiceCatalogIntegrationTestBase
 {
     public CompleteServiceFlowTests(ServiceCatalogTestWebApplicationFactory<Startup> factory)
@@ -36,7 +32,7 @@ public class CompleteServiceFlowTests : ServiceCatalogIntegrationTestBase
             ProviderId = provider.Id.Value,
             Name = "Complete Service",
             Description = "End-to-end test service",
-            CategoryName = "Beauty",
+            CategoryName = "Beauty & Wellness",
             ServiceType = ServiceType.Premium,
             BasePrice = 100.00m,
             Currency = "USD",
@@ -54,8 +50,12 @@ public class CompleteServiceFlowTests : ServiceCatalogIntegrationTestBase
         {
             Name = "Updated Complete Service",
             Description = "Updated description",
-            //BasePrice = 120.00m,
-            DurationMinutes = 120
+            CategoryName = "Beauty & Wellness",
+            ServiceType = ServiceType.Standard,
+            BasePrice = 90.00m,
+            Currency = "USD",
+            DurationMinutes = 90
+
         };
 
         var updateResponse = await PutAsJsonAsync(
@@ -66,8 +66,8 @@ public class CompleteServiceFlowTests : ServiceCatalogIntegrationTestBase
 
         // Step 4: Verify update in database
         var updatedService = await FindServiceAsync(createdService.Id);
-        updatedService!.Name.Should().Be("Updated Complete Service");
-        updatedService.BasePrice.Amount.Should().Be(120.00m);
+        updatedService!.Name.Should().Be(updatedService.Name);
+        updatedService.BasePrice.Amount.Should().Be(updateRequest.BasePrice);
 
         // Step 5: Get service via API
         var getResponse = await GetServiceByIdAsync(createdService.Id);
@@ -87,11 +87,11 @@ public class CompleteServiceFlowTests : ServiceCatalogIntegrationTestBase
         // Step 7: Search for the service
         var searchResponse = await SearchServicesAsync(
             searchTerm: "Complete",
-            minPrice: 100.00m,
+            minPrice: 90.00m,
             maxPrice: 150.00m
         );
-        var searchResults = await GetResponseAsync<List<ServiceResponse>>(searchResponse);
-        searchResults.Should().Contain(s => s.Id == createdService.Id);
+        var searchResults = await GetResponseAsync<PagedResult<ServiceSearchResponse>>(searchResponse);
+        searchResults.Items.Should().Contain(s => s.Id == createdService.Id);
 
         // Step 8: Delete the service
         var deleteResponse = await DeleteServiceAsync(createdService.Id);

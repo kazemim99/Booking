@@ -110,7 +110,7 @@ namespace Booksy.ServiceCatalog.Application.Queries.Service.GetServiceById
                         Id = provider.Id.Value,
                         BusinessName = provider.Profile.BusinessName,
                         Description = provider.Profile.BusinessDescription,
-                        Type = provider.Type,
+                        Type = provider.Size,
                         LogoUrl = provider.Profile.LogoUrl,
                         City = provider.Address.City,
                         State = provider.Address.State,

@@ -29,7 +29,7 @@ namespace Booksy.ServiceCatalog.Domain.Specifications
             }
 
             // Category filter
-            if (category == null)
+            if (category != null)
             {
                 AddCriteria(service => service.Category.Name == category);
             }

@@ -3,6 +3,7 @@
 // ========================================
 using Booksy.Core.Application.Abstractions.CQRS;
 using Booksy.Core.Application.Abstractions.Persistence;
+using Booksy.ServiceCatalog.Application.Specifications.Service;
 using Booksy.ServiceCatalog.Domain.Exceptions;
 using Booksy.ServiceCatalog.Domain.Repositories;
 using Booksy.ServiceCatalog.Domain.ValueObjects;
@@ -33,7 +34,10 @@ namespace Booksy.ServiceCatalog.Application.Commands.Service.ActivateService
             _logger.LogInformation("Activating service: {ServiceId}", request.ServiceId);
 
             var serviceId = ServiceId.Create(request.ServiceId);
-            var service = await _serviceReadRepository.GetByIdAsync(serviceId, cancellationToken);
+
+            var spec = new ServiceGetByIdSpecification(serviceId);
+            var service = await _serviceReadRepository.GetSingleAsync(spec, cancellationToken);
+
 
             if (service == null)
                 throw new InvalidServiceException("Service not found");

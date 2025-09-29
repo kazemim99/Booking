@@ -74,6 +74,7 @@ public abstract class ServiceCatalogIntegrationTestBase
     protected async Task<Service?> FindServiceAsync(Guid serviceId)
     {
         return await DbContext.Services
+            .AsNoTracking()
             .Include(s => s.Options)
             .Include(s => s.PriceTiers)
             .FirstOrDefaultAsync(s => s.Id == ServiceId.Create(serviceId));
@@ -216,7 +217,7 @@ public abstract class ServiceCatalogIntegrationTestBase
             UserId.From(Guid.NewGuid()),
             businessName,
             $"Description for {businessName}",
-            Domain.Enums.ProviderType.Salon,
+            Domain.Enums.BusinessSize.Individual,
             ContactInfo.Create(
                 Email.Create(email),
                 PhoneNumber.Create("+1234567890")
@@ -272,7 +273,7 @@ public abstract class ServiceCatalogIntegrationTestBase
             UserId.From(Guid.NewGuid()),
             "Test Provider",
             "Test provider description",
-            Domain.Enums.ProviderType.Salon,
+            Domain.Enums.BusinessSize.Individual,
             ContactInfo.Create(
                 Email.Create("provider@test.com"),
                 PhoneNumber.Create("+1234567890")

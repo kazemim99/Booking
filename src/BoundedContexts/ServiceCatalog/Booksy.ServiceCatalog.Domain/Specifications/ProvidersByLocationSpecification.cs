@@ -12,7 +12,7 @@ namespace Booksy.ServiceCatalog.Domain.Specifications.Provider
             double latitude,
             double longitude,
             double radiusKm,
-            ProviderType? type = null,
+            BusinessSize? type = null,
             bool? offersMobileServices = null)
         {
             // Only active providers
@@ -21,7 +21,7 @@ namespace Booksy.ServiceCatalog.Domain.Specifications.Provider
             // Provider type filter
             if (type.HasValue)
             {
-                AddCriteria(provider => provider.Type == type.Value);
+                AddCriteria(provider => provider.Size == type.Value);
             }
 
             // Mobile services filter

@@ -127,7 +127,7 @@ namespace Booksy.ServiceCatalog.Application.Services.Implementations
                     LastUpdatedAt = provider.Profile.LastUpdatedAt
                 },
                 Status = provider.Status,
-                Type = provider.Type,
+                Type = provider.Size,
                 RequiresApproval = provider.RequiresApproval,
                 AllowOnlineBooking = provider.AllowOnlineBooking,
                 OffersMobileServices = provider.OffersMobileServices,

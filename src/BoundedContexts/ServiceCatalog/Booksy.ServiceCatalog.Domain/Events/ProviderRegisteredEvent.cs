@@ -9,6 +9,6 @@ namespace Booksy.ServiceCatalog.Domain.Events
         ProviderId ProviderId,
         UserId OwnerId,
         string BusinessName,
-        ProviderType ProviderType,
+        BusinessSize ProviderType,
         DateTime RegisteredAt) : DomainEvent;
 }

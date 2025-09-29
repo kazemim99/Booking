@@ -46,7 +46,7 @@ namespace Booksy.ServiceCatalog.Application.Queries.Provider.GetProviderById
                 Description = provider.Profile.BusinessDescription,
                 LogoUrl = provider.Profile.LogoUrl,
                 Status = provider.Status,
-                Type = provider.Type,
+                Type = provider.Size,
                 
             };
 

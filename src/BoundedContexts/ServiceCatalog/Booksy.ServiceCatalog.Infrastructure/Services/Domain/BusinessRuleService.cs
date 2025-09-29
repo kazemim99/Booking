@@ -152,11 +152,12 @@ namespace Booksy.ServiceCatalog.Infrastructure.Services.Domain
             try
             {
                 // Business rules for maximum services based on provider type
-                return provider.Type switch
+                return provider.Size switch
                 {
-                    ProviderType.Individual => 20,
-                    ProviderType.Salon => 50,
-                    ProviderType.Professional => 200,
+                    BusinessSize.Individual => 20,
+                    BusinessSize.SmallBusiness => 50,
+                    BusinessSize.MediumBusiness => 200,
+                    BusinessSize.Enterprise => 500,
                     _ => 10
                 };
             }

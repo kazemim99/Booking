@@ -249,10 +249,13 @@ public class ServicesController : ControllerBase
             Name: request.Name,
             Description: request.Description,
             CategoryName: request.CategoryName,
+            request.ServiceType,
+            request.BasePrice,
+            request.Currency,
             DurationMinutes: request.DurationMinutes,
             PreparationMinutes: request.PreparationMinutes,
             BufferMinutes: request.BufferMinutes,
-            Tags: request.Tags,
+            request.RequiresDeposit, 
             ImageUrl: request.ImageUrl,
             IdempotencyKey: request.IdempotencyKey);
 
@@ -448,7 +451,19 @@ public class ServicesController : ControllerBase
             IdempotencyKey: request.IdempotencyKey);
     }
 
-    private ServiceResponse MapToServiceResponse(dynamic result)
+
+    private ServiceResponse MapToServiceResponse(UpdateServiceResult result)
+    {
+        return new ServiceResponse
+        {
+            Id = result.ServiceId,
+            Name = result.Name,
+            Message = "Updated Complete Service",
+            Timestamp = DateTime.UtcNow
+        };
+    }
+
+    private ServiceResponse MapToServiceResponse(CreateServiceResult result)
     {
         return new ServiceResponse
         {

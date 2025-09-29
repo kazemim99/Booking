@@ -53,12 +53,7 @@ namespace Booksy.ServiceCatalog.Application.Commands.Service.UpdateService
                     .WithMessage("Buffer time cannot exceed 1 hour");
             });
 
-            When(x => x.Tags != null, () =>
-            {
-                RuleFor(x => x.Tags)
-                    .Must(tags => tags!.Count <= 10)
-                    .WithMessage("Maximum 10 tags allowed");
-            });
+         
 
             When(x => !string.IsNullOrEmpty(x.ImageUrl), () =>
             {
