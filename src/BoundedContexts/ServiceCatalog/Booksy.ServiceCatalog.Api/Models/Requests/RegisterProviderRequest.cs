@@ -31,7 +31,7 @@ public sealed class RegisterProviderRequest
     /// Provider type
     /// </summary>
     [Required(ErrorMessage = "Provider type is required")]
-    public BusinessSize Type { get; set; }
+    public ProviderType Type { get; set; }
 
     /// <summary>
     /// Contact information

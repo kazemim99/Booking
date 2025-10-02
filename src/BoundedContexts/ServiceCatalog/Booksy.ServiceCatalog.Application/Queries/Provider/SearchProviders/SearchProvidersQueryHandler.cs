@@ -66,7 +66,7 @@ namespace Booksy.ServiceCatalog.Application.Queries.Provider.SearchProviders
                          provider.Id.Value,
                          provider.Profile.BusinessName,
                         provider.Profile.BusinessDescription,
-                         provider.Size,
+                         provider.ProviderType,
                         provider.Status,
                             provider.Address.City,
                         provider.Address.State,

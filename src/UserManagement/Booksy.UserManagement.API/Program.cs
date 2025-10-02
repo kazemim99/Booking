@@ -65,7 +65,7 @@ builder.Services.AddControllers(options =>
 ;
 
 
-builder.Services.ConfigureApiOptions();
+builder.Services.ConfigureApiOptions(builder.Environment);
 
 
 // API Versioning
@@ -103,7 +103,8 @@ builder.Services.AddCors(options =>
     options.AddPolicy("AllowSpecificOrigins",
         policy =>
         {
-            policy.WithOrigins(builder.Configuration.GetSection("Cors:AllowedOrigins").Get<string[]>() ?? new[] { "*" })
+            policy.WithOrigins(builder.Configuration
+                .GetSection("Cors:AllowedOrigins").Get<string[]>() ?? new[] { "*" })
                   .AllowAnyHeader()
                   .AllowAnyMethod()
                   .AllowCredentials();

@@ -68,6 +68,11 @@ namespace Booksy.ServiceCatalog.Infrastructure.Migrations
                         .HasColumnType("uuid")
                         .HasColumnName("OwnerId");
 
+                    b.Property<string>("ProviderType")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("character varying(50)");
+
                     b.Property<DateTime>("RegisteredAt")
                         .HasColumnType("timestamp without time zone");
 
@@ -77,11 +82,6 @@ namespace Booksy.ServiceCatalog.Infrastructure.Migrations
                         .HasDefaultValue(false);
 
                     b.Property<string>("Status")
-                        .IsRequired()
-                        .HasMaxLength(50)
-                        .HasColumnType("character varying(50)");
-
-                    b.Property<string>("Type")
                         .IsRequired()
                         .HasMaxLength(50)
                         .HasColumnType("character varying(50)");
@@ -98,11 +98,11 @@ namespace Booksy.ServiceCatalog.Infrastructure.Migrations
                         .IsUnique()
                         .HasDatabaseName("IX_Providers_OwnerId");
 
+                    b.HasIndex("ProviderType")
+                        .HasDatabaseName("IX_Providers_Type");
+
                     b.HasIndex("Status")
                         .HasDatabaseName("IX_Providers_Status");
-
-                    b.HasIndex("Type")
-                        .HasDatabaseName("IX_Providers_Type");
 
                     b.ToTable("Providers", "ServiceCatalog");
                 });

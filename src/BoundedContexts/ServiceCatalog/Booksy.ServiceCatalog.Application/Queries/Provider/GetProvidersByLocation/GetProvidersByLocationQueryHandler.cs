@@ -48,7 +48,7 @@ namespace Booksy.ServiceCatalog.Application.Queries.Provider.GetProvidersByLocat
                         provider.Id.Value,
                         provider.Profile.BusinessName,
                         provider.Profile.BusinessDescription,
-                        provider.Size,
+                        provider.ProviderType,
                        provider.Status,
                       new AddressInfo(
                              provider.Address.Street,

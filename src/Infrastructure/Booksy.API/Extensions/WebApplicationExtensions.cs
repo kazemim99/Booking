@@ -1,5 +1,8 @@
-﻿using Microsoft.AspNetCore.Mvc;
+﻿using Booksy.Core.Domain.Infrastructure.Configuration;
+using Microsoft.AspNetCore.Hosting;
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Hosting;
 
 namespace Booksy.API.Extensions;
 
@@ -8,7 +11,7 @@ public static class WebApplicationExtensions
     /// <summary>
     /// Configure API behavior options for pagination
     /// </summary>
-    public static IServiceCollection ConfigureApiOptions(this IServiceCollection services)
+    public static IServiceCollection ConfigureApiOptions(this IServiceCollection services, IWebHostEnvironment env)
     {
         services.Configure<ApiBehaviorOptions>(options =>
         {
@@ -32,6 +35,14 @@ public static class WebApplicationExtensions
             };
         });
 
+
+        services.Configure<ApiResponseOptions>(options =>
+        {
+            options.ApiPathPrefix = "/api";
+            options.WriteIndented = env.IsDevelopment();
+            options.ApiVersion = "1.0";
+            options.IncludeMetadata = true;
+        });
         return services;
     }
 }

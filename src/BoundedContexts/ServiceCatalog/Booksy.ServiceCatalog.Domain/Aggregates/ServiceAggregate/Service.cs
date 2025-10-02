@@ -137,7 +137,7 @@ namespace Booksy.ServiceCatalog.Domain.Aggregates
                 throw new InvalidServiceException("Service is already active");
 
             // Business rule: Service must have at least one qualified staff member
-            if (Provider.Size != BusinessSize.Individual && !_qualifiedStaff.Any())
+            if (Provider.ProviderType != ProviderType.Individual && !_qualifiedStaff.Any())
                 throw new InvalidServiceException("Service must have at least one qualified staff member to be activated");
 
             Status = ServiceStatus.Active;

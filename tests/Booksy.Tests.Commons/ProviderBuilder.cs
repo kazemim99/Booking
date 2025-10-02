@@ -18,7 +18,7 @@ public class ProviderBuilder
     private UserId? _ownerId;
     private string? _businessName;
     private string? _description;
-    private BusinessSize _providerType = BusinessSize.Individual;
+    private ProviderType _providerType = ProviderType.Individual;
     private ContactInfo? _contactInfo;
     private BusinessAddress? _address;
     private ProviderStatus _status = ProviderStatus.Active;
@@ -53,7 +53,7 @@ public class ProviderBuilder
         return this;
     }
 
-    public ProviderBuilder WithType(BusinessSize providerType)
+    public ProviderBuilder WithType(ProviderType providerType)
     {
         _providerType = providerType;
         return this;

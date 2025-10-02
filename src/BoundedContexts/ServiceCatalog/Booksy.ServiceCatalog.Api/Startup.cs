@@ -17,13 +17,19 @@ using Booksy.ServiceCatalog.Application.DependencyInjection;
 using Booksy.ServiceCatalog.Infrastructure.DependencyInjection;
 using Booksy.ServiceCatalog.Api.Extensions;
 using Booksy.ServiceCatalog.Infrastructure.Persistence.Context;
+using Booksy.Core.Domain.Infrastructure.Middleware;
 
 namespace Booksy.API
 {
     public class Startup
     {
         public IConfiguration Configuration { get; }
-        public Startup(IConfiguration configuration) => Configuration = configuration;
+        private IWebHostEnvironment Environment {get;}
+        public Startup(IConfiguration configuration, IWebHostEnvironment environment)
+        {
+            Configuration = configuration;
+            Environment = environment;
+        }
 
         public void ConfigureServices(IServiceCollection services)
         {
@@ -53,7 +59,7 @@ namespace Booksy.API
                 options.JsonSerializerOptions.ReadCommentHandling = JsonCommentHandling.Skip;
             });
 
-            services.ConfigureApiOptions();
+            services.ConfigureApiOptions(Environment);
 
             // API Versioning
             services.AddApiVersioning(options =>
@@ -142,6 +148,7 @@ namespace Booksy.API
             // Auth
             app.UseAuthentication();
             app.UseAuthorization();
+            app.UseMiddleware<ApiResponseMiddleware>();
 
 
             app.UseEndpoints(endpoints =>

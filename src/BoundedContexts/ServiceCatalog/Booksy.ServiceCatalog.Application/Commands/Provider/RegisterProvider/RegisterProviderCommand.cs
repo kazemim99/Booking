@@ -14,7 +14,7 @@ namespace Booksy.ServiceCatalog.Application.Commands.Provider.RegisterProvider
         Guid OwnerId,
         string BusinessName,
         string Description,
-        BusinessSize ProviderType,
+        ProviderType ProviderType,
         string PrimaryPhone,
         string? SecondaryPhone,
         string? Website,

@@ -18,9 +18,9 @@ namespace Booksy.ServiceCatalog.Api.Models.Requests.Extenstions
         public static SearchProvidersQuery ToQuery(this SearchProvidersRequest request)
         {
             // Parse enum values safely
-            BusinessSize? type = null;
+            ProviderType? type = null;
             if (!string.IsNullOrEmpty(request.Type) &&
-                Enum.TryParse<BusinessSize>(request.Type, true, out var parsedType))
+                Enum.TryParse<ProviderType>(request.Type, true, out var parsedType))
             {
                 type = parsedType;
             }
@@ -52,9 +52,9 @@ namespace Booksy.ServiceCatalog.Api.Models.Requests.Extenstions
         public static GetProvidersByLocationQuery ToQuery(this GetProvidersByLocationRequest request)
         {
             // Parse enum values safely
-            BusinessSize? type = null;
+            ProviderType? type = null;
             if (!string.IsNullOrEmpty(request.Type) &&
-                Enum.TryParse<BusinessSize>(request.Type, true, out var parsedType))
+                Enum.TryParse<ProviderType>(request.Type, true, out var parsedType))
             {
                 type = parsedType;
             }

@@ -18,12 +18,12 @@ namespace Booksy.UserManagement.Infrastructure.Migrations
 #pragma warning disable 612, 618
             modelBuilder
                 .HasDefaultSchema("user_management")
-                .HasAnnotation("ProductVersion", "9.0.8")
+                .HasAnnotation("ProductVersion", "9.0.4")
                 .HasAnnotation("Relational:MaxIdentifierLength", 63);
 
             NpgsqlModelBuilderExtensions.UseIdentityByDefaultColumns(modelBuilder);
 
-            modelBuilder.Entity("Booksy.Core.Domain.EventStore.StoredEvent", b =>
+            modelBuilder.Entity("Booksy.Infrastructure.Core.Persistence.EventStore.StoredEvent", b =>
                 {
                     b.Property<string>("EventId")
                         .HasColumnType("text")
@@ -671,19 +671,17 @@ namespace Booksy.UserManagement.Infrastructure.Migrations
                                 .HasForeignKey("UserProfileId");
                         });
 
-                    b.OwnsOne("Booksy.Core.Domain.Domain.ValueObjects.PhoneNumber", "AlternatePhoneNumber", b1 =>
+                    b.OwnsOne("Booksy.Core.Domain.ValueObjects.PhoneNumber", "AlternatePhoneNumber", b1 =>
                         {
                             b1.Property<Guid>("UserProfileId")
                                 .HasColumnType("uuid");
 
                             b1.Property<string>("CountryCode")
-                                .IsRequired()
                                 .HasMaxLength(10)
                                 .HasColumnType("character varying(10)")
                                 .HasColumnName("alternate_phone_country_code");
 
                             b1.Property<string>("NationalNumber")
-                                .IsRequired()
                                 .HasMaxLength(40)
                                 .HasColumnType("character varying(40)")
                                 .HasColumnName("alternate_phone_national_number");
@@ -696,19 +694,17 @@ namespace Booksy.UserManagement.Infrastructure.Migrations
                                 .HasForeignKey("UserProfileId");
                         });
 
-                    b.OwnsOne("Booksy.Core.Domain.Domain.ValueObjects.PhoneNumber", "PhoneNumber", b1 =>
+                    b.OwnsOne("Booksy.Core.Domain.ValueObjects.PhoneNumber", "PhoneNumber", b1 =>
                         {
                             b1.Property<Guid>("UserProfileId")
                                 .HasColumnType("uuid");
 
                             b1.Property<string>("CountryCode")
-                                .IsRequired()
                                 .HasMaxLength(10)
                                 .HasColumnType("character varying(10)")
                                 .HasColumnName("phone_country_code");
 
                             b1.Property<string>("NationalNumber")
-                                .IsRequired()
                                 .HasMaxLength(40)
                                 .HasColumnType("character varying(40)")
                                 .HasColumnName("phone_national_number");

@@ -11,7 +11,7 @@ namespace Booksy.ServiceCatalog.Application.DTOs.Provider
         public string BusinessName { get; set; } = string.Empty;
         public string Description { get; set; } = string.Empty;
         public ProviderStatus Status { get; set; }
-        public BusinessSize Type { get; set; }
+        public ProviderType Type { get; set; }
         public string? LogoUrl { get; set; }
         public string City { get; set; } = string.Empty;
         public string State { get; set; } = string.Empty;

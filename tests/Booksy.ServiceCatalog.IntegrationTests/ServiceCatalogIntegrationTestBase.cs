@@ -217,7 +217,7 @@ public abstract class ServiceCatalogIntegrationTestBase
             UserId.From(Guid.NewGuid()),
             businessName,
             $"Description for {businessName}",
-            Domain.Enums.BusinessSize.Individual,
+            Domain.Enums.ProviderType.Individual,
             ContactInfo.Create(
                 Email.Create(email),
                 PhoneNumber.Create("+1234567890")
@@ -273,7 +273,7 @@ public abstract class ServiceCatalogIntegrationTestBase
             UserId.From(Guid.NewGuid()),
             "Test Provider",
             "Test provider description",
-            Domain.Enums.BusinessSize.Individual,
+            Domain.Enums.ProviderType.Individual,
             ContactInfo.Create(
                 Email.Create("provider@test.com"),
                 PhoneNumber.Create("+1234567890")

@@ -1,29 +1,17 @@
-﻿// ========================================
-// Middleware/ExceptionHandlingMiddleware.cs
+﻿// Booksy.API/Middleware/ExceptionHandlingMiddleware.cs
 using System.Net;
 using System.Text.Json;
 using Booksy.Core.Application.Exceptions;
 using Booksy.Core.Domain.Exceptions;
 using FluentValidation;
+using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Hosting;
+using Microsoft.Extensions.Logging;
+using ApplicationException = Booksy.Core.Application.Exceptions.ApplicationException;
 
 namespace Booksy.API.Middleware;
 
-
-public class ApiErrorResult
-{
-    public string Message { get; set; }
-    public string? Code { get; set; }
-    public Dictionary<string, string[]>? Errors { get; set; }
-
-    public ApiErrorResult(string message, string? code = null)
-    {
-        Message = message;
-        Code = code;
-    }
-}
-
-public class ExceptionHandlingMiddleware
+public partial class ExceptionHandlingMiddleware
 {
     private readonly RequestDelegate _next;
     private readonly ILogger<ExceptionHandlingMiddleware> _logger;
@@ -38,9 +26,6 @@ public class ExceptionHandlingMiddleware
         _logger = logger;
         _environment = environment;
     }
-
-
-
 
     public async Task InvokeAsync(HttpContext context)
     {
@@ -63,10 +48,9 @@ public class ExceptionHandlingMiddleware
 
         var errorResponse = new ApiErrorResult("An error occurred while processing your request");
 
-        // Handle exceptions in order of specificity (most specific first)
+        // Handle exceptions in order of specificity
         switch (exception)
         {
-            // Domain exceptions (most specific domain exceptions first)
             case BusinessRuleViolationException businessEx:
                 response.StatusCode = (int)HttpStatusCode.BadRequest;
                 errorResponse = new ApiErrorResult(businessEx.Message, businessEx.ErrorCode)
@@ -81,9 +65,7 @@ public class ExceptionHandlingMiddleware
                 response.StatusCode = (int)HttpStatusCode.BadRequest;
                 errorResponse = new ApiErrorResult(validationEx.Message, validationEx.ErrorCode)
                 {
-                    Errors = validationEx.ValidationErrors.ToDictionary(
-                        kvp => kvp.Key,
-                        kvp => kvp.Value)
+                    Errors = (Dictionary<string, string[]>)validationEx.ValidationErrors
                 };
                 break;
 
@@ -99,15 +81,9 @@ public class ExceptionHandlingMiddleware
 
             case DomainException domainEx:
                 response.StatusCode = domainEx.HttpStatusCode;
-                errorResponse = new ApiErrorResult(domainEx.Message, domainEx.ErrorCode)
-                {
-                    Errors = domainEx.ExtensionData?.ToDictionary(
-                        kvp => kvp.Key,
-                        kvp => new[] { kvp.Value?.ToString() ?? string.Empty })
-                };
+                errorResponse = new ApiErrorResult(domainEx.Message, domainEx.ErrorCode);
                 break;
 
-            // Application exceptions (most specific application exceptions first)
             case NotFoundException notFoundEx:
                 response.StatusCode = (int)HttpStatusCode.NotFound;
                 errorResponse = new ApiErrorResult(notFoundEx.Message, notFoundEx.ErrorCode);
@@ -133,12 +109,11 @@ public class ExceptionHandlingMiddleware
                 errorResponse = new ApiErrorResult(externalEx.Message, externalEx.ErrorCode);
                 break;
 
-            case Core.Application.Exceptions.ApplicationException appEx:
+            case ApplicationException appEx:
                 response.StatusCode = (int)HttpStatusCode.BadRequest;
                 errorResponse = new ApiErrorResult(appEx.Message, appEx.ErrorCode);
                 break;
 
-            // FluentValidation exceptions
             case ValidationException fluentEx:
                 response.StatusCode = (int)HttpStatusCode.BadRequest;
                 errorResponse = new ApiErrorResult("Validation failed", "VALIDATION_ERROR")
@@ -151,7 +126,6 @@ public class ExceptionHandlingMiddleware
                 };
                 break;
 
-            // System exceptions
             case UnauthorizedAccessException:
                 response.StatusCode = (int)HttpStatusCode.Unauthorized;
                 errorResponse = new ApiErrorResult("Unauthorized", "UNAUTHORIZED");
@@ -168,7 +142,7 @@ public class ExceptionHandlingMiddleware
                 break;
 
             case OperationCanceledException:
-                response.StatusCode = 499; // Client Closed Request
+                response.StatusCode = 499;
                 errorResponse = new ApiErrorResult("Request was cancelled", "CANCELLED");
                 break;
 
@@ -186,9 +160,7 @@ public class ExceptionHandlingMiddleware
                 response.StatusCode = (int)HttpStatusCode.InternalServerError;
                 if (_environment.IsDevelopment())
                 {
-                    errorResponse = new ApiErrorResult(
-                        exception.Message,
-                        "INTERNAL_ERROR")
+                    errorResponse = new ApiErrorResult(exception.Message, "INTERNAL_ERROR")
                     {
                         Errors = new Dictionary<string, string[]>
                         {
@@ -206,14 +178,48 @@ public class ExceptionHandlingMiddleware
                 break;
         }
 
-        var jsonResponse = JsonSerializer.Serialize(errorResponse, new JsonSerializerOptions
+        // ✅ Wrap error in same format as success responses
+        var wrappedErrorResponse = new
+        {
+            success = false,
+            statusCode = response.StatusCode,
+            message = errorResponse.Message,
+            data = (object?)null,
+            error = new
+            {
+                code = errorResponse.Code,
+                message = errorResponse.Message,
+                errors = errorResponse.Errors
+            },
+            metadata = new
+            {
+                requestId = context.TraceIdentifier,
+                timestamp = DateTimeOffset.UtcNow,
+                path = context.Request.Path.Value,
+                method = context.Request.Method
+            }
+        };
+
+        var jsonResponse = JsonSerializer.Serialize(wrappedErrorResponse, new JsonSerializerOptions
         {
             PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
-            WriteIndented = true
+            WriteIndented = _environment.IsDevelopment()
         });
 
         await response.WriteAsync(jsonResponse);
     }
+
+    // Keep existing ApiErrorResult class
+    public class ApiErrorResult
+    {
+        public string Message { get; set; }
+        public string? Code { get; set; }
+        public Dictionary<string, string[]>? Errors { get; set; }
+
+        public ApiErrorResult(string message, string? code = null)
+        {
+            Message = message;
+            Code = code;
+        }
+    }
 }
-
-

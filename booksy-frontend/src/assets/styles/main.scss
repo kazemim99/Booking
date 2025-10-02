@@ -1,0 +1,57 @@
+@import './variables.scss';
+@import './reset.scss';
+@import './utilities.scss';
+@import './rtl';
+
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+html[dir='rtl'] {
+  direction: rtl;
+}
+
+html[dir='ltr'] {
+  direction: ltr;
+}
+
+body.rtl {
+  font-family: 'Cairo', 'Tajawal', sans-serif;
+}
+html,
+body {
+  height: 100%;
+  font-family: $font-family-base;
+  font-size: $font-size-base;
+  line-height: $line-height-base;
+  color: $text-color;
+  background-color: $bg-color;
+}
+
+#app {
+  width: 100%;
+  height: 100%;
+}
+
+a {
+  color: $primary-color;
+  text-decoration: none;
+  transition: color 0.2s;
+
+  &:hover {
+    color: darken($primary-color, 10%);
+  }
+}
+
+button {
+  font-family: inherit;
+  cursor: pointer;
+}
+
+input,
+textarea,
+select {
+  font-family: inherit;
+}

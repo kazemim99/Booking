@@ -1,0 +1,70 @@
+// src/modules/provider/mocks/provider.mock.ts
+import { ProviderType, type RegisterProviderRequest } from '../types/provider.types'
+
+export const mockProviders: RegisterProviderRequest[] = [
+  {
+    ownerId: '3fa85f64-5717-4562-b3fc-2c963f66afa6',
+    businessName: 'Elite Hair Salon',
+    description: 'Premium hair styling and beauty services for all occasions.',
+    type: ProviderType.Individual,
+    email: 'contact@elitehairsalon.com',
+    primaryPhone: '+31612345678',
+    secondaryPhone: '+31687654321',
+    websiteUrl: 'https://www.elitehairsalon.com',
+    addressLine1: 'Kalverstraat 123',
+    city: 'Amsterdam',
+    state: 'North Holland',
+    postalCode: '1012 NX',
+    country: 'Netherlands',
+    latitude: 52.3676,
+    longitude: 4.9041,
+    requiresApproval: false,
+    allowOnlineBooking: false,
+    offersMobileServices: false,
+  },
+  {
+    ownerId: '7d3c8f91-2b4a-4e89-9f12-8a6b5c4d3e2f',
+    businessName: 'TechFix Solutions',
+    description: 'Professional computer and mobile device repair services.',
+    type: ProviderType.Individual,
+    email: 'info@techfix.nl',
+    primaryPhone: '+31623456789',
+    secondaryPhone: undefined,
+    websiteUrl: '',
+    addressLine1: 'Hoofdstraat 45',
+    city: 'Rotterdam',
+    state: 'South Holland',
+    postalCode: '3011 AB',
+    country: 'Netherlands',
+    latitude: 51.9225,
+    longitude: 4.47917,
+    requiresApproval: false,
+    allowOnlineBooking: false,
+    offersMobileServices: false,
+  },
+  {
+    ownerId: '9a2b8c7d-6e5f-4a3b-2c1d-0e9f8a7b6c5d',
+    businessName: 'FitLife Personal Training',
+    description: 'One-on-one personal training sessions.',
+    type: ProviderType.Individual,
+    email: 'trainer@fitlife.com',
+    primaryPhone: '+31634567890',
+    secondaryPhone: undefined,
+    websiteUrl: 'https://fitlife-training.nl',
+    addressLine1: 'Sportlaan 78',
+    city: 'Utrecht',
+    state: 'Utrecht',
+    postalCode: '3582 KL',
+    country: 'Netherlands',
+    latitude: 52.0907,
+    longitude: 5.1214,
+    requiresApproval: false,
+    allowOnlineBooking: false,
+    offersMobileServices: false,
+  },
+]
+
+// Helper to get random mock provider
+export function getRandomMockProvider(): RegisterProviderRequest {
+  return mockProviders[Math.floor(Math.random() * mockProviders.length)]
+}

@@ -1,0 +1,223 @@
+// src/assets/styles/_rtl.scss
+
+// RTL mixin definition
+@mixin rtl {
+  .rtl-styles {
+    [dir='rtl'] & {
+      @content;
+    }
+  }
+}
+
+.my-component {
+  margin-left: 10px;
+
+  @include rtl {
+    margin-left: 0;
+    margin-right: 10px;
+  }
+}
+
+@mixin ltr {
+  [dir='ltr'] &,
+  .ltr &,
+  :not([dir='rtl']) & {
+    @content;
+  }
+}
+
+@mixin padding-start($value) {
+  padding-left: $value;
+
+  @include rtl {
+    padding-left: 0;
+    padding-right: $value;
+  }
+}
+
+@mixin padding-end($value) {
+  padding-right: $value;
+
+  @include rtl {
+    padding-right: 0;
+    padding-left: $value;
+  }
+}
+
+@mixin margin-start($value) {
+  margin-left: $value;
+
+  @include rtl {
+    margin-left: 0;
+    margin-right: $value;
+  }
+}
+
+@mixin margin-end($value) {
+  margin-right: $value;
+
+  @include rtl {
+    margin-right: 0;
+    margin-left: $value;
+  }
+}
+
+@mixin border-radius-start($value) {
+  border-top-left-radius: $value;
+  border-bottom-left-radius: $value;
+
+  @include rtl {
+    border-top-left-radius: 0;
+    border-bottom-left-radius: 0;
+    border-top-right-radius: $value;
+    border-bottom-right-radius: $value;
+  }
+}
+
+@mixin border-radius-end($value) {
+  border-top-right-radius: $value;
+  border-bottom-right-radius: $value;
+
+  @include rtl {
+    border-top-right-radius: 0;
+    border-bottom-right-radius: 0;
+    border-top-left-radius: $value;
+    border-bottom-left-radius: $value;
+  }
+}
+
+@mixin start($value) {
+  left: $value;
+
+  @include rtl {
+    left: auto;
+    right: $value;
+  }
+}
+
+@mixin end($value) {
+  right: $value;
+
+  @include rtl {
+    right: auto;
+    left: $value;
+  }
+}
+
+@mixin text-align-start {
+  text-align: left;
+
+  @include rtl {
+    text-align: right;
+  }
+}
+
+@mixin text-align-end {
+  text-align: right;
+
+  @include rtl {
+    text-align: left;
+  }
+}
+
+@mixin float-start {
+  float: left;
+
+  @include rtl {
+    float: right;
+  }
+}
+
+@mixin float-end {
+  float: right;
+
+  @include rtl {
+    float: left;
+  }
+}
+
+@mixin transform-x($value) {
+  transform: translateX($value);
+
+  @include rtl {
+    transform: translateX(-$value);
+  }
+}
+
+@mixin border-start($value) {
+  border-left: $value;
+
+  @include rtl {
+    border-left: none;
+    border-right: $value;
+  }
+}
+
+@mixin border-end($value) {
+  border-right: $value;
+
+  @include rtl {
+    border-right: none;
+    border-left: $value;
+  }
+}
+
+@mixin flex-direction-row {
+  flex-direction: row;
+
+  @include rtl {
+    flex-direction: row-reverse;
+  }
+}
+
+@mixin flex-direction-row-reverse {
+  flex-direction: row-reverse;
+
+  @include rtl {
+    flex-direction: row;
+  }
+}
+
+@mixin background-position-x-start {
+  background-position-x: left;
+
+  @include rtl {
+    background-position-x: right;
+  }
+}
+
+@mixin background-position-x-end {
+  background-position-x: right;
+
+  @include rtl {
+    background-position-x: left;
+  }
+}
+
+.text-start {
+  @include text-align-start;
+}
+
+.text-end {
+  @include text-align-end;
+}
+
+.float-start {
+  @include float-start;
+}
+
+.float-end {
+  @include float-end;
+}
+
+.rtl-flip {
+  @include rtl {
+    transform: scaleX(-1);
+  }
+}
+
+.rtl-rotate-180 {
+  @include rtl {
+    transform: rotate(180deg);
+  }
+}

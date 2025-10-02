@@ -10,6 +10,6 @@ namespace Booksy.ServiceCatalog.Application.IntegrationEvents
         Guid ProviderId,
         Guid OwnerId,
         string BusinessName,
-        BusinessSize ProviderType,
+        ProviderType ProviderType,
         DateTime RegisteredAt) : IntegrationEvent;
 }

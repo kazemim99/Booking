@@ -4,7 +4,6 @@ using Booksy.ServiceCatalog.API.Models.Responses;
 using MediatR;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.AspNetCore.RateLimiting;
 using Booksy.ServiceCatalog.Application.Commands.Provider.RegisterProvider;
 using Booksy.ServiceCatalog.Application.Commands.Provider.ActivateProvider;
 using Booksy.ServiceCatalog.Application.Queries.Provider.GetProviderById;
@@ -13,6 +12,7 @@ using Booksy.API.Extensions;
 using Booksy.ServiceCatalog.Api.Models.Responses;
 using Booksy.ServiceCatalog.Api.Models.Requests.Extenstions;
 using Booksy.API.Middleware;
+using static Booksy.API.Middleware.ExceptionHandlingMiddleware;
 
 namespace Booksy.ServiceCatalog.API.Controllers.V1;
 
@@ -43,7 +43,7 @@ public class ProvidersController : ControllerBase
     /// <response code="201">Provider successfully created</response>
     /// <response code="400">Invalid request data</response>
     /// <response code="409">Provider already exists</response>
-    [HttpPost]
+    [HttpPost("register")]
     [AllowAnonymous]
     [Booksy.API.Middleware.EnableRateLimiting("provider-registration")]
     [ProducesResponseType(typeof(ProviderResponse), StatusCodes.Status201Created)]

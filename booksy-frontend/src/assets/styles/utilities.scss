@@ -1,0 +1,95 @@
+@import './variables.scss';
+
+// Spacing utilities
+@for $i from 0 through 10 {
+  .mt-#{$i} {
+    margin-top: $spacing-unit * $i !important;
+  }
+  .mb-#{$i} {
+    margin-bottom: $spacing-unit * $i !important;
+  }
+  .ml-#{$i} {
+    margin-left: $spacing-unit * $i !important;
+  }
+  .mr-#{$i} {
+    margin-right: $spacing-unit * $i !important;
+  }
+  .pt-#{$i} {
+    padding-top: $spacing-unit * $i !important;
+  }
+  .pb-#{$i} {
+    padding-bottom: $spacing-unit * $i !important;
+  }
+  .pl-#{$i} {
+    padding-left: $spacing-unit * $i !important;
+  }
+  .pr-#{$i} {
+    padding-right: $spacing-unit * $i !important;
+  }
+}
+
+// Display utilities
+.d-none {
+  display: none !important;
+}
+.d-block {
+  display: block !important;
+}
+.d-flex {
+  display: flex !important;
+}
+.d-inline-flex {
+  display: inline-flex !important;
+}
+
+// Flex utilities
+.flex-row {
+  flex-direction: row !important;
+}
+.flex-column {
+  flex-direction: column !important;
+}
+.justify-start {
+  justify-content: flex-start !important;
+}
+.justify-end {
+  justify-content: flex-end !important;
+}
+.justify-center {
+  justify-content: center !important;
+}
+.justify-between {
+  justify-content: space-between !important;
+}
+.align-start {
+  align-items: flex-start !important;
+}
+.align-end {
+  align-items: flex-end !important;
+}
+.align-center {
+  align-items: center !important;
+}
+
+// Text utilities
+.text-left {
+  text-align: left !important;
+}
+.text-center {
+  text-align: center !important;
+}
+.text-right {
+  text-align: right !important;
+}
+.text-primary {
+  color: $primary-color !important;
+}
+.text-secondary {
+  color: $text-secondary !important;
+}
+.text-success {
+  color: $success-color !important;
+}
+.text-error {
+  color: $error-color !important;
+}

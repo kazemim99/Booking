@@ -8,7 +8,7 @@ public sealed class ProviderDetailsViewModel
     public Guid OwnerId { get; init; }
     public string BusinessName { get; init; }
     public string Description { get; init; }
-    public BusinessSize Type { get; init; }
+    public ProviderType Type { get; init; }
     public ProviderStatus Status { get; init; }
     public ContactInfo ContactInfo { get; init; }
     public AddressInfo Address { get; init; }

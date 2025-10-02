@@ -3,7 +3,7 @@
     public Guid Id { get; init; }
     public string BusinessName { get; init; }
     public string Description { get; init; }
-    public BusinessSize Type { get; init; }
+    public ProviderType Type { get; init; }
     public ProviderStatus Status { get; init; }
     public string City { get; init; }
     public string State { get; init; }
@@ -24,7 +24,7 @@
         Guid id,
         string businessName,
         string description,
-        BusinessSize type,
+        ProviderType type,
         ProviderStatus status,
         string city,
         string state,

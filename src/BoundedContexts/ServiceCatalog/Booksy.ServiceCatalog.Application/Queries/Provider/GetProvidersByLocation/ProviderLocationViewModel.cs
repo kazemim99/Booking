@@ -8,7 +8,7 @@ namespace Booksy.ServiceCatalog.Application.Queries.Provider.GetProvidersByLocat
         public Guid Id { get; set; }
         public string BusinessName { get; set; } = string.Empty;
         public string Description { get; set; } = string.Empty;
-        public BusinessSize Type { get; set; }
+        public ProviderType Type { get; set; }
         public string? LogoUrl { get; set; }
         public AddressViewModel Address { get; set; } = new();
         public string Email { get; set; } = string.Empty;

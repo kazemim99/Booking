@@ -53,21 +53,21 @@ namespace Booksy.ServiceCatalog.Infrastructure.Persistence.Seeders
                 CreateSampleProvider(
                     "Bella's Beauty Salon",
                     "Full-service beauty salon offering hair, nails, and skincare",
-                    BusinessSize.Individual,
+                    ProviderType.Individual,
                     "New York",
                     "bella@beautysalon.com"),
 
                 CreateSampleProvider(
                     "Mike's Barbershop",
                     "Traditional barbershop with modern techniques",
-                    BusinessSize.SmallBusiness,
+                    ProviderType.Salon,
                     "Los Angeles",
                     "mike@barbershop.com"),
 
                 CreateSampleProvider(
                     "Wellness Spa & Massage",
                     "Luxury spa offering massage therapy and wellness treatments",
-                    BusinessSize.MediumBusiness,
+                    ProviderType.Spa,
                     "Miami",
                     "info@wellnessspa.com")
             };
@@ -78,7 +78,7 @@ namespace Booksy.ServiceCatalog.Infrastructure.Persistence.Seeders
         private Provider CreateSampleProvider(
             string businessName,
             string description,
-            BusinessSize type,
+            ProviderType type,
             string city,
             string email)
         {
@@ -151,7 +151,7 @@ namespace Booksy.ServiceCatalog.Infrastructure.Persistence.Seeders
         private List<Service> CreateSampleServicesForProvider(Provider provider)
         {
             var services = new List<Service>();
-            var baseServices = GetBaseServicesByProviderType(provider.Size);
+            var baseServices = GetBaseServicesByProviderType(provider.ProviderType);
 
             foreach (var (name, description, price, duration) in baseServices)
             {
@@ -174,24 +174,24 @@ namespace Booksy.ServiceCatalog.Infrastructure.Persistence.Seeders
             return services;
         }
 
-        private List<(string Name, string Description, decimal Price, int Duration)> GetBaseServicesByProviderType(BusinessSize type)
+        private List<(string Name, string Description, decimal Price, int Duration)> GetBaseServicesByProviderType(ProviderType type)
         {
             return type switch
             {
-                BusinessSize.Individual => new List<(string, string, decimal, int)>
+                ProviderType.Individual => new List<(string, string, decimal, int)>
                 {
                     ("Men's Haircut", "Professional men's haircut and styling", 35m, 30),
                     ("Beard Trim", "Precision beard trimming and shaping", 20m, 15),
                     ("Hot Towel Shave", "Traditional hot towel shave experience", 45m, 45)
                 },
-                BusinessSize.SmallBusiness => new List<(string, string, decimal, int)>
+                ProviderType.Salon => new List<(string, string, decimal, int)>
                 {
                     ("Women's Cut & Style", "Haircut with professional styling", 65m, 60),
                     ("Hair Color", "Professional hair coloring service", 120m, 120),
                     ("Manicure", "Classic manicure with nail care", 30m, 45),
                     ("Pedicure", "Relaxing pedicure treatment", 40m, 60)
                 },
-                BusinessSize.MediumBusiness => new List<(string, string, decimal, int)>
+                ProviderType.Spa => new List<(string, string, decimal, int)>
                 {
                     ("Swedish Massage", "Full body relaxation massage", 90m, 60),
                     ("Deep Tissue Massage", "Therapeutic deep tissue treatment", 110m, 60),
