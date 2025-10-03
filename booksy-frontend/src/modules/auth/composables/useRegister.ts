@@ -24,8 +24,17 @@ export function useRegister() {
           'Welcome to Booksy! Your account has been created.',
         )
 
-        // Redirect to home
-        await router.push('/')
+        // ✅ Redirect based on user type
+        if (data.userType === 'Provider') {
+          // Provider users go to provider onboarding to complete their profile
+          await router.push({
+            name: 'ProviderOnboarding',
+            query: { welcome: 'true' },
+          })
+        } else {
+          // Customer users go to home page
+          await router.push('/')
+        }
 
         return true
       } else {

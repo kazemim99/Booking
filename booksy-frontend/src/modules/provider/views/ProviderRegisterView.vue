@@ -696,15 +696,13 @@ const handleSubmit = async () => {
 
   try {
     const result = await providerStore.registerProvider(formData)
-
-    // ✅ Only navigate if registration was successful
+    debugger
     if (result && !providerStore.error) {
       router.push({
-        name: 'ProviderDashboard',
-        query: { registered: 'true' },
+        name: 'ProviderOnboarding',
+        query: { welcome: 'true' },
       })
     } else {
-      // ✅ Show error if registration failed
       window.scrollTo({ top: 0, behavior: 'smooth' })
     }
   } catch (err: unknown) {

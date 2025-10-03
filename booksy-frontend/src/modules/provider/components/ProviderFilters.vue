@@ -227,6 +227,8 @@ const emit = defineEmits<{
 
 // Local state
 const localFilters = ref<ProviderSearchFilters>({
+  pageNumber: 1,
+  pageSize: 20,
   searchTerm: '',
   city: '',
   state: '',
@@ -291,6 +293,8 @@ const handleApply = () => {
 
 const handleClearAll = () => {
   localFilters.value = {
+    pageNumber: 1,
+    pageSize: 20,
     searchTerm: '',
     city: '',
     state: '',
@@ -307,7 +311,7 @@ const handleClearAll = () => {
   emit('clear')
 
   if (props.autoApply) {
-    emit('apply', {})
+    emit('apply', { pageNumber: 1, pageSize: 20 })
   }
 }
 
@@ -340,7 +344,10 @@ const setMinRating = (rating: number) => {
 }
 
 const getCleanFilters = (): ProviderSearchFilters => {
-  const filters: ProviderSearchFilters = {}
+  const filters: ProviderSearchFilters = {
+    pageNumber: localFilters.value.pageNumber,
+    pageSize: localFilters.value.pageSize,
+  }
 
   if (localFilters.value.searchTerm?.trim()) {
     filters.searchTerm = localFilters.value.searchTerm.trim()
