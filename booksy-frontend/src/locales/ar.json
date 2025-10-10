@@ -1,11 +1,14 @@
 {
+  "app": {
+    "name": "Booksy"
+  },
   "auth": {
     "welcomeBack": "مرحباً بعودتك",
     "signInToAccount": "قم بتسجيل الدخول إلى حسابك",
     "createAccount": "إنشاء حساب",
     "joinToday": "انضم إلى Booksy اليوم",
     "emailAddress": "عنوان البريد الإلكتروني",
-    "emailPlaceholder": "you@example.com",
+    "emailPlaceholder": "you{'@'}example.com",
     "password": "كلمة المرور",
     "passwordPlaceholder": "أدخل كلمة المرور",
     "createPasswordPlaceholder": "قم بإنشاء كلمة مرور قوية",
@@ -20,6 +23,13 @@
     "optional": "(اختياري)",
     "rememberMe": "تذكرني",
     "forgotPassword": "نسيت كلمة المرور؟",
+    "resetPassword": "إعادة تعيين كلمة المرور",
+    "resetPasswordInstructions": "أدخل بريدك الإلكتروني وسنرسل لك رابطًا لإعادة تعيين كلمة المرور.",
+    "backToLogin": "العودة إلى تسجيل الدخول",
+    "checkEmail": "تحقق من بريدك الإلكتروني",
+    "checkEmailInstructions": "لقد أرسلنا رابط إعادة تعيين كلمة المرور إلى بريدك الإلكتروني.",
+    "resetPasswordSuccess": "تم إعادة تعيين كلمة المرور بنجاح",
+    "resetPasswordSuccessInstructions": "تم إعادة تعيين كلمة المرور الخاصة بك. يمكنك الآن تسجيل الدخول باستخدام كلمة المرور الجديدة.",
     "signIn": "تسجيل الدخول",
     "signUp": "التسجيل",
     "signingIn": "جارٍ تسجيل الدخول...",
@@ -30,7 +40,67 @@
     "customer": "عميل",
     "provider": "مزود خدمة",
     "iAccept": "أوافق على",
-    "termsConditions": "الشروط والأحكام"
+    "termsConditions": "الشروط والأحكام",
+    "orContinueWith": "أو أكمل باستخدام",
+    "continue": "متابعة",
+    "verifying": "جارٍ التحقق...",
+    "enterYourPhone": "أدخل رقم هاتفك للمتابعة",
+    "phoneLoginDescription": "سنرسل رمز التحقق إلى هاتفك",
+    "preferEmail": "تفضل استخدام البريد الإلكتروني؟",
+    "emailLogin": "تسجيل الدخول بالبريد الإلكتروني",
+    "phoneLogin": "تسجيل الدخول بالهاتف",
+    "unifiedLoginTitle": "مرحبًا بك في Booksy",
+    "unifiedLoginSubtitle": "قم بتسجيل الدخول أو إنشاء حساب للمتابعة",
+    "socialLogin": {
+      "google": "أكمل باستخدام Google",
+      "facebook": "أكمل باستخدام Facebook",
+      "apple": "أكمل باستخدام Apple"
+    },
+    "errors": {
+      "loginFailed": "فشل تسجيل الدخول. يرجى التحقق من بيانات الاعتماد الخاصة بك والمحاولة مرة أخرى.",
+      "registrationFailed": "فشل التسجيل. يرجى التحقق من معلوماتك والمحاولة مرة أخرى.",
+      "passwordMismatch": "كلمات المرور غير متطابقة",
+      "invalidEmail": "يرجى إدخال عنوان بريد إلكتروني صالح",
+      "invalidPassword": "يجب أن تتكون كلمة المرور من 6 أحرف على الأقل",
+      "accountLocked": "تم قفل حسابك. يرجى الاتصال بالدعم.",
+      "tooManyAttempts": "عدد كبير جدًا من المحاولات الفاشلة. حاول مرة أخرى لاحقًا.",
+      "requiredField": "هذا الحقل مطلوب"
+    },
+    "success": {
+      "loginSuccess": "تم تسجيل الدخول بنجاح! مرحبًا بعودتك.",
+      "registrationSuccess": "تم التسجيل بنجاح! مرحبًا بك في Booksy.",
+      "passwordResetSuccess": "تم إعادة تعيين كلمة المرور الخاصة بك بنجاح."
+    },
+    "validation": {
+      "requiredField": "هذا الحقل مطلوب",
+      "invalidEmail": "يرجى إدخال عنوان بريد إلكتروني صالح",
+      "passwordTooShort": "يجب أن تكون كلمة المرور 8 أحرف على الأقل",
+      "passwordRequirements": "يجب أن تحتوي كلمة المرور على حرف كبير واحد على الأقل، وحرف صغير واحد، ورقم واحد",
+      "passwordsDoNotMatch": "كلمات المرور غير متطابقة",
+      "invalidPhoneNumber": "يرجى إدخال رقم هاتف صالح",
+      "acceptTerms": "يجب عليك قبول الشروط والأحكام"
+    },
+    "phoneVerification": {
+      "welcome": "ابدأ رحلتك مع Booksy",
+      "enterPhone": "أدخل رقم هاتفك",
+      "enterPhoneDescription": "سنرسل لك رمز تحقق لتأكيد رقمك",
+      "phoneNumberLabel": "رقم الهاتف",
+      "phoneNumberPlaceholder": "أدخل رقم هاتفك",
+      "sendCode": "إرسال الرمز",
+      "verifyCode": "تحقق من هاتفك",
+      "verifyCodeDescription": "أدخل الرمز المكون من 6 أرقام الذي أرسلناه إلى {phone}",
+      "enterCodeLabel": "رمز التحقق",
+      "resendCode": "إعادة إرسال الرمز",
+      "resendIn": "إعادة إرسال الرمز خلال {seconds} ث",
+      "changePhoneNumber": "تغيير رقم الهاتف",
+      "attemptsRemaining": "{count} محاولات متبقية | {count} محاولة متبقية",
+      "verificationSuccess": "تم التحقق بنجاح!",
+      "verificationSuccessDescription": "تم التحقق من هاتفك. لنتابع إعداد حسابك.",
+      "continue": "متابعة",
+      "haveAccount": "لديك حساب بالفعل؟",
+      "needHelp": "تحتاج مساعدة؟",
+      "successToast": "تم التحقق من الهاتف بنجاح!"
+    }
   },
   "validation": {
     "checkFollowing": "يرجى التحقق من التالي:"

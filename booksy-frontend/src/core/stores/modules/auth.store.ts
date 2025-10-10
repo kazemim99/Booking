@@ -1,13 +1,17 @@
 // src/core/stores/modules/auth.store.ts
+import { User } from '@/modules/user-management/types/user.types'
 import { defineStore } from 'pinia'
 import { computed, ref } from 'vue'
-import type { User } from '@/core/types/auth.types'
+import { useRouter } from 'vue-router'
+import { authApi } from '@/modules/auth/api/auth.api'
 
 interface ValidationErrors {
   [key: string]: string[]
 }
 
 export const useAuthStore = defineStore('auth', () => {
+  const router = useRouter()
+
   // State
   const token = ref<string | null>(null)
   const refreshToken = ref<string | null>(null)
@@ -18,11 +22,8 @@ export const useAuthStore = defineStore('auth', () => {
 
   // Getters
   const isAuthenticated = computed(() => !!token.value && !!user.value)
-
   const currentUser = computed(() => user.value)
-
   const userRoles = computed(() => user.value?.roles || [])
-
   const userName = computed(() => {
     if (!user.value) return 'Guest'
     return user.value.fullName || user.value.email || 'User'
@@ -78,7 +79,6 @@ export const useAuthStore = defineStore('auth', () => {
    */
   function clearError() {
     error.value = null
-    validationErrors.value = {}
   }
 
   /**
@@ -106,145 +106,65 @@ export const useAuthStore = defineStore('auth', () => {
    * Check if user has a specific role
    */
   function hasRole(role: string): boolean {
-    if (!user.value || !user.value.roles) return false
-    return user.value.roles.includes(role)
+    return userRoles.value.includes(role)
   }
 
   /**
    * Check if user has any of the specified roles
    */
   function hasAnyRole(roles: string[]): boolean {
-    if (!user.value || !user.value.roles) return false
-    return roles.some((role) => user.value!.roles!.includes(role))
+    return roles.some((role) => userRoles.value.includes(role))
   }
 
   /**
    * Check if user has all of the specified roles
    */
   function hasAllRoles(roles: string[]): boolean {
-    if (!user.value || !user.value.roles) return false
-    return roles.every((role) => user.value!.roles!.includes(role))
+    return roles.every((role) => userRoles.value.includes(role))
   }
 
   /**
    * Check if user has a specific permission
    */
   function hasPermission(permission: string): boolean {
-    if (!user.value || !user.value.permissions) return false
-    return user.value.permissions.includes(permission)
+    return user.value?.permissions?.includes(permission) ?? false
   }
 
   /**
-   * Login user
+   * Redirect user to appropriate dashboard based on role
    */
-  async function login(credentials: { email: string; password: string; rememberMe?: boolean }) {
-    try {
-      setLoading(true)
-      clearError()
-      clearValidationErrors()
-
-      // TODO: Replace with actual API call
-      // const response = await authApi.login(credentials)
-
-      // Mock response for demonstration
-      const response = {
-        token: 'mock-token-' + Date.now(),
-        refreshToken: 'mock-refresh-token-' + Date.now(),
-        user: {
-          id: '1',
-          email: credentials.email,
-          fullName: 'John Doe',
-          roles: ['User'],
-          permissions: ['read:profile', 'update:profile'],
-          avatarUrl: null,
-          status: 'Active',
-          createdAt: new Date().toISOString(),
-          updatedAt: new Date().toISOString(),
-        } as User,
-      }
-
-      setToken(response.token)
-      setRefreshToken(response.refreshToken)
-      setUser(response.user)
-
-      return true
-    } catch (err: unknown) {
-      let errorMessage = 'Login failed'
-      if (typeof err === 'object' && err !== null) {
-        // @ts-expect-error: dynamic error shape
-        errorMessage = err.response?.data?.message || err.message || 'Login failed'
-        // @ts-expect-error: dynamic error shape
-        if (err.response?.data?.errors) {
-          // @ts-expect-error: dynamic error shape
-          setValidationErrors(err.response.data.errors)
-        }
-      }
-      setError(errorMessage)
-      return false
-    } finally {
-      setLoading(false)
+  function redirectToDashboard() {
+    if (!user.value || !user.value.roles) {
+      router.push({ name: 'Login' })
+      return
     }
+
+    const roles = user.value.roles
+
+    // Admin redirect
+    if (roles.includes('Admin') || roles.includes('Administrator') || roles.includes('SysAdmin')) {
+      router.push({ path: '/admin/dashboard' })
+      return
+    }
+
+    // Provider redirect
+    if (roles.includes('Provider') || roles.includes('ServiceProvider')) {
+      router.push({ path: '/provider/dashboard' })
+      return
+    }
+
+    // Customer/Client redirect
+    if (roles.includes('Customer') || roles.includes('Client')) {
+      router.push({ path: '/customer/dashboard' })
+      return
+    }
+
+    // Default fallback
+    router.push({ path: '/' })
   }
 
-  /**
-   * Register new user
-   */
-  async function register(userData: {
-    email: string
-    password: string
-    firstName: string
-    lastName: string
-    phoneNumber?: string
-    userType: string
-  }) {
-    try {
-      setLoading(true)
-      clearError()
-      clearValidationErrors()
 
-      // TODO: Replace with actual API call
-      // const response = await authApi.register(userData)
 
-      // Mock response for demonstration
-      const response = {
-        token: 'mock-token-' + Date.now(),
-        refreshToken: 'mock-refresh-token-' + Date.now(),
-        user: {
-          id: '1',
-          email: userData.email,
-          fullName: `${userData.firstName} ${userData.lastName}`,
-          roles: [userData.userType === 'Provider' ? 'Provider' : 'Customer'],
-          permissions: ['read:profile', 'update:profile'],
-          avatarUrl: null,
-          status: 'Active',
-          createdAt: new Date().toISOString(),
-          updatedAt: new Date().toISOString(),
-        } as User,
-      }
-
-      setToken(response.token)
-      setRefreshToken(response.refreshToken)
-      setUser(response.user)
-
-      return true
-    } catch (err: unknown) {
-      let errorMessage = 'Registration failed'
-      if (typeof err === 'object' && err !== null) {
-        // @ts-expect-error: dynamic error shape
-        errorMessage = err.response?.data?.message || err.message || 'Registration failed'
-        // @ts-expect-error: dynamic error shape
-        if (err.response?.data?.errors) {
-          // @ts-expect-error: dynamic error shape
-          setValidationErrors(err.response.data.errors)
-        }
-      }
-      setError(errorMessage)
-
-      return false
-    } finally {
-      setLoading(false)
-    }
-  }
 
   /**
    * Logout user
@@ -253,20 +173,26 @@ export const useAuthStore = defineStore('auth', () => {
     try {
       setLoading(true)
 
-      // TODO: Call API to invalidate token if needed
-      // await authApi.logout()
+      // Call logout endpoint
+      await authApi.logout()
 
       setToken(null)
       setRefreshToken(null)
       setUser(null)
       clearError()
       clearValidationErrors()
+      // Clear provider data
+      localStorage.removeItem('provider_id')
+
+      router.push({ name: 'Login' })
     } catch (err: unknown) {
       console.error('Logout error:', err)
-      // Clear local state anyway
       setToken(null)
       setRefreshToken(null)
       setUser(null)
+      // Clear provider data
+      localStorage.removeItem('provider_id')
+      router.push({ name: 'Login' })
     } finally {
       setLoading(false)
     }
@@ -281,17 +207,18 @@ export const useAuthStore = defineStore('auth', () => {
         throw new Error('No refresh token available')
       }
 
-      // TODO: Replace with actual API call
-      // const response = await authApi.refresh(refreshToken.value)
+      const response = await authApi.refreshToken({
+        refreshToken: refreshToken.value,
+      })
 
-      // Mock response
-      const response = {
-        token: 'new-mock-token-' + Date.now(),
-        refreshToken: 'new-mock-refresh-token-' + Date.now(),
+      if (!response.success) {
+        throw new Error('Token refresh failed')
       }
 
-      setToken(response.token)
-      setRefreshToken(response.refreshToken)
+      const { tokens } = response.data!
+
+      setToken(tokens.accessToken)
+      setRefreshToken(tokens.refreshToken)
 
       return true
     } catch (err: unknown) {
@@ -323,7 +250,6 @@ export const useAuthStore = defineStore('auth', () => {
       }
     } catch (err) {
       console.error('Failed to load auth state from storage:', err)
-      // Clear corrupted data
       localStorage.removeItem('auth_token')
       localStorage.removeItem('refresh_token')
       localStorage.removeItem('user')
@@ -347,9 +273,8 @@ export const useAuthStore = defineStore('auth', () => {
     if (!token.value) return true
 
     try {
-      // Decode JWT token (basic implementation)
       const payload = JSON.parse(atob(token.value.split('.')[1]))
-      const exp = payload.exp * 1000 // Convert to milliseconds
+      const exp = payload.exp * 1000
       return Date.now() >= exp
     } catch {
       return true
@@ -387,8 +312,7 @@ export const useAuthStore = defineStore('auth', () => {
     hasAnyRole,
     hasAllRoles,
     hasPermission,
-    login,
-    register,
+    redirectToDashboard,
     logout,
     refresh,
     loadFromStorage,

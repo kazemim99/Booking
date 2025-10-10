@@ -49,11 +49,7 @@ public sealed class Email : ValueObject
     {
         yield return Value;
     }
-
-    public static Email From(object email)
-    {
-        throw new NotImplementedException();
-    }
+  
 }
 
 

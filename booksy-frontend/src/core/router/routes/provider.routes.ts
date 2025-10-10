@@ -1,4 +1,5 @@
-import type { RouteRecordRaw } from 'vue-router'
+import type { RouteRecordRaw, NavigationGuardNext, RouteLocationNormalized } from 'vue-router'
+import { useProviderStore } from '@/modules/provider/stores/provider.store'
 
 const providerRoutes: RouteRecordRaw[] = [
   // Public Provider Pages (customer-facing)
@@ -20,15 +21,18 @@ const providerRoutes: RouteRecordRaw[] = [
       title: 'Provider Details',
     },
   },
+
+  // Provider Registration (after phone verification)
   {
-    path: '/providers/register',
-    name: 'ProviderRegister',
-    component: () => import('@/modules/provider/views/ProviderRegisterView.vue'),
+    path: '/provider/registration',
+    name: 'ProviderRegistration',
+    component: () => import('@/modules/provider/views/registration/ProviderRegistrationView.vue'),
     meta: {
       requiresAuth: true,
-      title: 'Become a Provider',
+      title: 'Complete Your Provider Profile',
     },
   },
+
 
   // Provider Portal (provider-only, uses ProviderLayout)
   {
@@ -37,7 +41,7 @@ const providerRoutes: RouteRecordRaw[] = [
     component: () => import('@/modules/provider/layouts/ProviderLayout.vue'),
     meta: {
       requiresAuth: true,
-      roles: ['Provider', 'Admin'],
+      roles: ['Provider', 'ServiceProvider'], // ✅ Only Providers
     },
     children: [
       // Dashboard
@@ -60,6 +64,28 @@ const providerRoutes: RouteRecordRaw[] = [
         name: 'ProviderProfile',
         component: () => import('@/modules/provider/views/ProviderProfileView.vue'),
         meta: { title: 'Business Profile' },
+        beforeEnter: async (_to: RouteLocationNormalized, _from: RouteLocationNormalized, next: NavigationGuardNext) => {
+          const providerStore = useProviderStore()
+          if (!providerStore.currentProvider) {
+            await providerStore.loadCurrentProvider()
+          }
+
+          const p = providerStore.currentProvider
+          const isComplete = !!(
+            p &&
+            p.profile.businessName &&
+            p.profile.description &&
+            p.contactInfo.email &&
+            p.contactInfo.primaryPhone &&
+            p.address.addressLine1 &&
+            p.businessHours && p.businessHours.length > 0
+          )
+
+          if (!isComplete) {
+            return next({ name: 'ProviderOnboarding' })
+          }
+          next()
+        },
       },
       {
         path: 'profile/business-info',
@@ -70,21 +96,21 @@ const providerRoutes: RouteRecordRaw[] = [
       {
         path: 'hours',
         name: 'ProviderBusinessHours',
-        component: () => import('@/modules/provider/views/profile/BusinessHoursView.vue'),
+        component: () => import('@/modules/provider/views/hours/BusinessHoursView.vue'),
         meta: { title: 'Business Hours' },
       },
       {
         path: 'gallery',
         name: 'ProviderGallery',
-        component: () => import('@/modules/provider/views/profile/MediaGalleryView.vue'),
+        component: () => import('@/modules/provider/views/gallery/GalleryView.vue'),
         meta: { title: 'Photo Gallery' },
       },
 
-      // Services (Future)
+      // Services
       {
         path: 'services',
         name: 'ProviderServices',
-        component: () => import('@/modules/provider/views/services/ServiceListView.vue'),
+        component: () => import('@/modules/provider/views/services/ServiceCatalogView.vue'),
         meta: { title: 'Manage Services' },
       },
 

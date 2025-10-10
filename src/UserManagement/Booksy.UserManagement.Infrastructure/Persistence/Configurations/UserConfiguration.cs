@@ -29,6 +29,23 @@ namespace Booksy.UserManagement.Infrastructure.Persistence.Configurations
             // CONCURRENCY CONFIGURATION FOR POSTGRESQL
             // ===========================
 
+
+
+            builder.OwnsOne(u => u.PhoneNumber, pn =>
+            {
+                pn.Property(p => p.Value)
+                    .HasColumnName("PhoneNumber")
+                    .HasMaxLength(20);
+
+                pn.Property(p => p.CountryCode)
+                    .HasColumnName("CountryCode")
+                    .HasMaxLength(5);
+
+                pn.Property(p => p.NationalNumber)
+                    .HasColumnName("NationalNumber")
+                    .HasMaxLength(15);
+            });
+
             // Option 1: Using integer Version (RECOMMENDED - Most explicit and portable)
             builder.Property(u => u.Version)
                 .HasColumnName("version")
@@ -36,8 +53,6 @@ namespace Booksy.UserManagement.Infrastructure.Persistence.Configurations
                 .HasDefaultValue(0)
                 .IsRequired();
 
-
-            // Value Objects
             builder.OwnsOne(u => u.Email, email =>
             {
                 email.Property(e => e.Value)
@@ -49,6 +64,7 @@ namespace Booksy.UserManagement.Infrastructure.Persistence.Configurations
                     .IsUnique()
                     .HasDatabaseName("ix_users_email");
             });
+
 
             builder.OwnsOne(u => u.Password, password =>
             {

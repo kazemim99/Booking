@@ -13,7 +13,7 @@ public class UserProfileResponse
     public string? PhoneNumber { get; set; }
     public string UserType { get; set; } = string.Empty;
     public string Status { get; set; } = string.Empty;
-    public string? ProfilePictureUrl { get; set; }
+    public string? AvatarUrl { get; set; }
     public string? Bio { get; set; }
     public DateTime RegisteredAt { get; set; }
     public DateTime? LastLoginAt { get; set; }

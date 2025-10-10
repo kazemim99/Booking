@@ -1,14 +1,28 @@
-interface ApiConfig {
-  baseURL: string
-  timeout: number
-  withCredentials: boolean
-}
+/**
+ * Microservices Configuration
+ * Each microservice has its own base URL following DDD principles
+ *
+ * Architecture:
+ * - ServiceCategory API (port 5010): Handles providers, services, bookings, schedules
+ * - UserManagement API (port 5021): Handles authentication, users, profiles
+ */
+export const microservices = {
+  serviceCategory: {
+    baseURL: import.meta.env.VITE_SERVICE_CATEGORY_API_URL || 'http://localhost:5010/api',
+    timeout: 30000,
+    withCredentials: true,
+  },
+  userManagement: {
+    baseURL: import.meta.env.VITE_USER_MANAGEMENT_API_URL || 'https://localhost:5021/api',
+    timeout: 30000,
+    withCredentials: true,
+  },
+} as const
 
-export const apiConfig: ApiConfig = {
-  baseURL: import.meta.env.VITE_API_BASE_URL || 'https://localhost:5000/api',
-  timeout: 30000, // 30 seconds
-  withCredentials: true,
-}
+/**
+ * @deprecated Legacy configuration - use microservices.serviceCategory or microservices.userManagement directly
+ */
+export const apiConfig = microservices.serviceCategory
 
 export const apiEndpoints = {
   // Auth endpoints

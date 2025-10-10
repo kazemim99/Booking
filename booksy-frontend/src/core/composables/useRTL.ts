@@ -2,7 +2,7 @@
 import { ref, computed, watch } from 'vue'
 
 export type Direction = 'ltr' | 'rtl'
-export type Language = 'en' | 'ar' | 'he' | 'fa' | 'ur'
+export type Language = 'fa' | 'en' | 'ar' | 'he' | 'ur'
 
 interface RTLLanguages {
   [key: string]: boolean
@@ -15,8 +15,8 @@ const RTL_LANGUAGES: RTLLanguages = {
   ur: true, // Urdu
 }
 
-const currentLanguage = ref<Language>('en')
-const isRTL = ref<boolean>(false)
+const currentLanguage = ref<Language>('fa')
+const isRTL = ref<boolean>(true)
 
 export function useRTL() {
   const direction = computed<Direction>(() => (isRTL.value ? 'rtl' : 'ltr'))

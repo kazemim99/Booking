@@ -8,9 +8,9 @@ using Microsoft.Extensions.Logging;
 using System.Net.Mail;
 using System.Net;
 
-namespace Booksy.UserManagement.Infrastructure.Services.External
+namespace Booksy.Infrastructure.External.Notifications
 {
-    public class EmailService
+    public class EmailService: IEmailService
     {
         private readonly IConfiguration _configuration;
         private readonly ILogger<EmailService> _logger;
@@ -69,14 +69,14 @@ namespace Booksy.UserManagement.Infrastructure.Services.External
                     Credentials = new NetworkCredential(_smtpUsername, _smtpPassword)
                 };
 
-                await client.SendMailAsync(message, cancellationToken);
+                //await client.SendMailAsync(message, cancellationToken);
 
                 _logger.LogInformation("Email sent successfully to {Recipient}", to);
             }
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Failed to send email to {Recipient}", to);
-                throw;
+                throw new ApplicationException($"Failed to send email Recipient {to}");
             }
         }
 

@@ -1,8 +1,8 @@
 ﻿// ========================================
 // Booksy.UserManagement.Application/Commands/ActivateUser/ActivateUserCommand.cs
 // ========================================
-using Booksy.Core.Application.Services;
 using Booksy.Core.Domain.ValueObjects;
+using Booksy.Infrastructure.External.Notifications;
 using Booksy.UserManagement.Domain.Aggregates;
 using MediatR;
 

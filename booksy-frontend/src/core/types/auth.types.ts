@@ -1,22 +1,7 @@
 // src/core/types/auth.types.ts
 
-export interface User {
-  id: string
-  email: string
-  fullName: string
-  firstName?: string
-  lastName?: string
-  phoneNumber?: string
-  avatarUrl?: string | null
-  roles?: string[]
-  permissions?: string[]
-  status: 'Active' | 'Inactive' | 'Suspended' | 'Pending'
-  createdAt: string
-  updatedAt: string
-  lastLoginAt?: string
-  emailVerified?: boolean
-  phoneVerified?: boolean
-}
+import { User, UserType } from "@/modules/user-management/types/user.types"
+
 
 export interface AuthResponse {
   token: string
@@ -38,7 +23,7 @@ export interface RegisterData {
   firstName: string
   lastName: string
   phoneNumber?: string
-  userType: 'Customer' | 'Provider'
+  userType: UserType
   acceptTerms: boolean
 }
 

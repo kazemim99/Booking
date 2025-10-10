@@ -4,7 +4,7 @@
 
 // Booksy.UserManagement.Application/EventHandlers/DomainEventHandlers/UserRegisteredEventHandler.cs
 // Booksy.UserManagement.Application/Services/Interfaces/IEmailTemplateService.cs
-namespace Booksy.UserManagement.Application.Services.Interfaces
+namespace Booksy.Infrastructure.External.Notifications
 {
     public interface IEmailTemplateService
     {

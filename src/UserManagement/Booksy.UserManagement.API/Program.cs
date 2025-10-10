@@ -18,6 +18,7 @@ using System.Text.Json;
 using Booksy.Infrastructure.Core.DependencyInjection;
 using Booksy.API.Middleware;
 using Booksy.API.Extensions;
+using Booksy.Core.Domain.Infrastructure.Middleware;
 var builder = WebApplication.CreateBuilder(args);
 
 // Configure Serilog
@@ -164,6 +165,7 @@ app.UseCors("AllowSpecificOrigins");
 // Authentication & Authorization
 app.UseAuthentication();
 app.UseAuthorization();
+app.UseMiddleware<ApiResponseMiddleware>();
 
 // Rate Limiting
 app.UseMiddleware<RateLimitingMiddleware>();

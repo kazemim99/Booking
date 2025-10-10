@@ -25,15 +25,11 @@ namespace Booksy.UserManagement.Infrastructure.Persistence.Context
         public DbSet<User> Users { get; set; } = null!;
         public DbSet<UserRole> UserRoles { get; set; } = null!;
         public DbSet<UserProfile> UserProfiles { get; set; } = null!;
+        public DbSet<PhoneVerification> PhoneVerifications { get; set; } = null!;
 
         public bool HasActiveTransaction => throw new NotImplementedException();
 
-        // Constructor for migrations
-        public UserManagementDbContext(DbContextOptions<UserManagementDbContext> options)
-            : base(options)
-        {
-        }
-
+   
         // Constructor for runtime with DI
         public UserManagementDbContext(
             DbContextOptions<UserManagementDbContext> options,

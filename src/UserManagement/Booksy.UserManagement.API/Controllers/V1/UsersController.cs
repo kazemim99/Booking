@@ -59,15 +59,12 @@ public class UsersController : ControllerBase
     {
 
         var command = MapToRegisterCommand(request);
-        var result = await _mediator.Send(command, cancellationToken);
-
-
-        var response = MapToUserResponse(result);
+        var response = await _mediator.Send(command, cancellationToken);
 
 
         return CreatedAtAction(
             nameof(GetUserById),
-            new { id = response.Id, version = "1.0" },
+            new { id = response.UserId, version = "1.0" },
             response);
     }
 
@@ -231,12 +228,15 @@ public class UsersController : ControllerBase
             request.Address,
             request.ProfilePictureUrl);
 
-        var result = await _mediator.Send(command, cancellationToken);
+        var response = await _mediator.Send(command, cancellationToken);
 
 
 
         _logger.LogInformation("User {UserId} profile updated successfully", id);
-        return Ok(MapToUserDetailsResponse(result));
+        return CreatedAtAction(
+                  nameof(GetUserById),
+                  new { id, version = "1.0" },
+                  response);
     }
 
     /// <summary>
@@ -374,49 +374,29 @@ public class UsersController : ControllerBase
             request.ReferralCode);
     }
 
-    private UserResponse MapToUserResponse(dynamic result)
-    {
-
-
-        return  new UserResponse
-        {
-            Id = result.UserId,
-            Email = result.Email,
-            FirstName = result.FullName,
-            Status = result.Status.ToString(),
-        };
-
-
-    
-    }
-
-    private UserResponse MapToUserResponse(UserDto user)
-    {
-        return new UserResponse
-        {
-            Id = user.Id,
-            Email = user.Email,
-            FirstName = user.FirstName,
-            LastName = user.LastName,
-            Status = user.Status.ToString(),
-            RegisteredAt = user.RegisteredAt
-        };
-    }
-
-    private UserDetailsResponse MapToUserDetailsResponse(dynamic user)
+    private UserDetailsResponse MapToUserDetailsResponse(UserDetailsViewModel user)
     {
         return new UserDetailsResponse
         {
             Id = user.UserId,
             Email = user.Email,
-            FirstName = user.FirstName,
-            LastName = user.LastName,
             PhoneNumber = user.PhoneNumber,
             Status = user.Status,
+            CreatedAt = user.RegisteredAt,
             Bio = user.Bio,
+            
+            Roles = user.Roles.Select(c=>c.Name).ToList(),
             RegisteredAt = user.RegisteredAt,
             LastLoginAt = user.LastLoginAt,
             TwoFactorEnabled = user.TwoFactorEnabled,
+            Profile = new UserProfileResponse
+            {
+                Bio  = user.Bio,
+                Email = user.Email,
+                FirstName = user.FirstName,
+                LastName = user.LastName,
+                AvatarUrl = user.AvatarUrl,
+            }
         };
     }
 

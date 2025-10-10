@@ -34,8 +34,8 @@
 
         <!-- Menu Items -->
         <ul class="menu-list">
-          <li v-for="item in menuItems" :key="item.name" class="menu-item">
-            <router-link :to="item.path" class="menu-link" @click="closeMenu">
+          <li v-for="item in itemsToRender" :key="item.name" class="menu-item">
+            <router-link :to="(item.to ?? item.path) as any" class="menu-link" @click="closeMenu">
               <span class="menu-icon" v-html="item.icon"></span>
               <span>{{ item.label }}</span>
             </router-link>
@@ -76,7 +76,8 @@ import { useAuthStore } from '@/core/stores/modules/auth.store'
 interface MenuItem {
   name: string
   label: string
-  path: string
+  path?: string
+  to?: unknown
   icon: string
 }
 
@@ -97,8 +98,11 @@ const userInitials = computed(() => {
   return user.value.fullName[0].toUpperCase()
 })
 
-// Menu items
-const menuItems: MenuItem[] = [
+// Optional external menu (e.g., Provider/Admin)
+const props = defineProps<{ menuItems?: MenuItem[] }>()
+
+// Default menu items
+const defaultMenuItems: MenuItem[] = [
   {
     name: 'profile',
     label: 'My Profile',
@@ -118,6 +122,8 @@ const menuItems: MenuItem[] = [
     icon: '<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" /><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" /></svg>',
   },
 ]
+
+const itemsToRender = computed<MenuItem[]>(() => props.menuItems ?? defaultMenuItems)
 
 function toggleMenu(): void {
   isMenuOpen.value = !isMenuOpen.value
@@ -242,10 +248,6 @@ async function handleLogout(): Promise<void> {
   list-style: none;
   margin: 0;
   padding: 0.5rem 0;
-}
-
-.menu-item {
-  // Styling handled by menu-link
 }
 
 .menu-link {

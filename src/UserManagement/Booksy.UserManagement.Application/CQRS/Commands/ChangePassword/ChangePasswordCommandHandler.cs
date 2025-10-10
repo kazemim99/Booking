@@ -2,7 +2,7 @@
 // Booksy.UserManagement.Application/Commands/ActivateUser/ActivateUserCommand.cs
 // ========================================
 using Booksy.Core.Domain.ValueObjects;
-using Booksy.UserManagement.Application.Services.Interfaces;
+using Booksy.Infrastructure.External.Notifications;
 using MediatR;
 
 namespace Booksy.UserManagement.Application.CQRS.Commands.ChangePassword

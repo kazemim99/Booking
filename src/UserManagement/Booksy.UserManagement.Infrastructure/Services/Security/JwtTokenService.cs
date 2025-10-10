@@ -36,6 +36,7 @@ namespace Booksy.UserManagement.Infrastructure.Services.Security
             UserType userType,
             Email email,
             string displayName,
+            string status,
             IEnumerable<string> roles,
             int expirationHours = 24)
         {
@@ -45,6 +46,7 @@ namespace Booksy.UserManagement.Infrastructure.Services.Security
                 new(ClaimTypes.Email, email.Value),
                 new(ClaimTypes.Name, displayName),
                 new("user_type", userType.ToString()),
+                new("user-status", status),
                 new(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString()),
                 new(JwtRegisteredClaimNames.Iat, DateTimeOffset.UtcNow.ToUnixTimeSeconds().ToString(), ClaimValueTypes.Integer64)
             };

@@ -1,16 +1,39 @@
 <template>
-  <div class="placeholder">
-    <h1>AdminDashboardView</h1>
-    <p>This view is under construction.</p>
+  <div class="admin-dashboard">
+    <h1>Admin Dashboard</h1>
+    <div class="grid">
+      <AppCard>
+        <h2>Users</h2>
+        <p>Overview of users and growth.</p>
+      </AppCard>
+      <AppCard>
+        <h2>Bookings</h2>
+        <p>Recent booking activity.</p>
+      </AppCard>
+      <AppCard>
+        <h2>Providers</h2>
+        <p>Verification and status summary.</p>
+      </AppCard>
+    </div>
   </div>
+  
 </template>
 
 <script setup lang="ts">
-// AdminDashboardView functionality will be implemented here
+import AppCard from '@/shared/components/ui/Card/AppCard.vue'
 </script>
 
 <style scoped>
-.placeholder {
-  padding: 2rem;
+.admin-dashboard {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+.grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  gap: 1rem;
 }
 </style>
+

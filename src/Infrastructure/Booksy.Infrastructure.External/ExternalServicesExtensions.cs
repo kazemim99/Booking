@@ -1,5 +1,10 @@
 ﻿using Booksy.Infrastructure.External.Analytics;
 using Booksy.Infrastructure.External.Marketing;
+using Booksy.Infrastructure.External.Notifications;
+using Booksy.Infrastructure.External.OTP;
+using Booksy.Infrastructure.External.OTP.DTO;
+using Booksy.Infrastructure.External.sms;
+using Booksy.Infrastructure.External.sms.Rahyab;
 using Booksy.Infrastructure.External.Storage;
 using Microsoft.Extensions.Configuration;
 
@@ -18,6 +23,19 @@ public static class ExternalServicesExtensions
         this IServiceCollection services,
         IConfiguration configuration)
     {
+        services.Configure<OtpSettings>(configuration.GetSection("Otp"));
+
+        var otpSettings = new OtpSettings();
+        configuration.GetSection("Otp").Bind(otpSettings);
+        services.AddSingleton(otpSettings);
+
+        services.AddScoped<IOtpService, OtpSharpService>();
+        services.AddScoped<IRahyabSmsSender, SmsService>();
+
+        services.AddScoped<IEmailService, EmailService>();
+        services.AddScoped<IEmailTemplateService, EmailTemplateService>();
+
+
         // Analytics
         var analyticsProvider = configuration["Analytics:Provider"];
         switch (analyticsProvider?.ToLower())

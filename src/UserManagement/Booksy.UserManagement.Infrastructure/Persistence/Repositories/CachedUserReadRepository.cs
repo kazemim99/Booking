@@ -1,11 +1,13 @@
 ﻿// 📁 Booksy.UserManagement.Infrastructure/Persistence/Repositories/CachedUserRepository.cs - FIXED
 using Booksy.Core.Application.DTOs;
 using Booksy.Core.Domain.Abstractions.Entities;
+using Booksy.Core.Domain.Abstractions.Entities.Specifications;
 using Booksy.Core.Domain.ValueObjects;
 using Booksy.UserManagement.Domain.Aggregates;
 using Booksy.UserManagement.Domain.Repositories;
 using Microsoft.Extensions.Caching.Distributed;
 using Microsoft.Extensions.Logging;
+using Pipelines.Sockets.Unofficial.Arenas;
 using System.Reflection;
 using System.Text.Json;
 
@@ -216,5 +218,10 @@ public class CachedUserRepository : IUserRepository
     public async Task<PagedResult<TProjection>> GetPaginatedAsync<TProjection>(ISpecification<User> specification, PaginationRequest pagination, System.Linq.Expressions.Expression<Func<User, TProjection>> projection, CancellationToken cancellationToken = default)
     {
        return await _innerRepository.GetPaginatedAsync(specification, pagination, projection, cancellationToken);
+    }
+
+    public async Task<User?> GetByPhoneNumberAsync(string phoneNumber, CancellationToken cancellationToken = default)
+    {
+        return await _innerRepository.GetByPhoneNumberAsync(phoneNumber, cancellationToken);
     }
 }

@@ -1,5 +1,3 @@
-import type { User } from '@/core/types/auth.types'
-
 export interface LoginRequest {
   email: string
   password: string
@@ -7,10 +5,24 @@ export interface LoginRequest {
 }
 
 export interface LoginResponse {
-  accessToken: string
-  refreshToken: string
-  user: User
-  expiresIn: number
+  user: {
+    id: string
+    email: string
+    roles: string[]
+    permissions?: string[]
+    status: string
+    createdAt: string
+    lastModifiedAt?: string
+    profile: {
+      firstName: string
+      lastName: string
+      avatarUrl?: string
+    }
+  }
+  tokens: {
+    accessToken: string
+    refreshToken: string
+  }
 }
 
 export interface RegisterRequest {
@@ -19,14 +31,24 @@ export interface RegisterRequest {
   firstName: string
   lastName: string
   phoneNumber?: string
-  userType: 'Customer' | 'Provider'
+  userType: string
 }
 
 export interface RegisterResponse {
-  accessToken: string
-  refreshToken: string
-  user: User
-  expiresIn: number
+  user: {
+    id: string
+    email: string
+    roles: string[]
+    permissions?: string[]
+    status: string
+    createdAt: string
+    lastModifiedAt?: string
+    profile: {
+      firstName: string
+      lastName: string
+      avatarUrl?: string
+    }
+  }
 }
 
 export interface RefreshTokenRequest {
@@ -34,9 +56,10 @@ export interface RefreshTokenRequest {
 }
 
 export interface RefreshTokenResponse {
-  accessToken: string
-  refreshToken: string
-  expiresIn: number
+  tokens: {
+    accessToken: string
+    refreshToken: string
+  }
 }
 
 export interface ForgotPasswordRequest {

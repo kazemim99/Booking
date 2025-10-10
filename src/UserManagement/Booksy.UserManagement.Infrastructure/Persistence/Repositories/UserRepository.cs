@@ -28,8 +28,19 @@ public class UserRepository : EfRepositoryBase<User, UserId, UserManagementDbCon
     {
         ArgumentNullException.ThrowIfNull(email);
 
+        var user =  await DbSet
+            .FirstOrDefaultAsync(u => u.Email.Value == email.Value, cancellationToken) ;
+
+        return user == null;
+    }
+
+    public async Task<User?> GetByPhoneNumberAsync(string phoneNumber, CancellationToken cancellationToken = default)
+    {
+        ArgumentNullException.ThrowIfNull(phoneNumber);
         return await DbSet
-            .AnyAsync(u => u.Email.Value == email.Value, cancellationToken);
+            .Include(u => u.Profile)
+            .Include(u => u.Roles)
+            .FirstOrDefaultAsync(u => u.PhoneNumber != null && u.PhoneNumber.NationalNumber == phoneNumber, cancellationToken);
     }
 
     // ✅ Enhanced GetByIdAsync with includes for domain operations
@@ -51,12 +62,6 @@ public class UserRepository : EfRepositoryBase<User, UserId, UserManagementDbCon
 
         if (entry.State == EntityState.Detached)
         {
-            // Check for duplicate email before adding
-            if (await ExistsByEmailAsync(user.Email, cancellationToken))
-            {
-                throw new InvalidOperationException($"User with email {user.Email.Value} already exists");
-            }
-
             await DbSet.AddAsync(user, cancellationToken);
         }
         else

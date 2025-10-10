@@ -1,6 +1,6 @@
 // src/modules/provider/services/provider.service.ts
 
-import httpClient from '@/core/api/client/http-client'
+import { serviceCategoryClient } from '@/core/api/client/http-client'
 import type {
   Provider,
   ProviderSummary,
@@ -15,10 +15,7 @@ import type {
   ProviderSearchFilters,
 } from '../types/provider.types'
 import type { PagedResult } from '@/core/types/common.types'
-/**
- * Provider Service - API communication layer
- * Handles all HTTP requests to the Provider API endpoints
- */
+
 
 const API_VERSION = 'v1'
 const API_BASE = `/${API_VERSION}/providers`
@@ -32,10 +29,11 @@ class ProviderService {
    * Search providers with advanced filtering and pagination
    */
   async searchProviders(filters: ProviderSearchFilters): Promise<PagedResult<ProviderSummary>> {
-    const { data } = await httpClient.get<PagedResult<ProviderSummary>>(`${API_BASE}/search`, {
+    const response = await serviceCategoryClient.get<PagedResult<ProviderSummary>>(`${API_BASE}/search`, {
       params: { ...filters },
     })
-    return data
+
+    return response.data!
   }
 
   /**
@@ -47,13 +45,13 @@ class ProviderService {
     includeStaff = false,
   ): Promise<Provider> {
     try {
-      const response = await httpClient.get<ProviderResponse>(`${API_BASE}/${id}`, {
+      const response = await serviceCategoryClient.get<ProviderResponse>(`${API_BASE}/${id}`, {
         params: {
           includeServices,
           includeStaff,
         },
       })
-      return this.mapProviderResponse(response.data)
+      return this.mapProviderResponse(response.data!)
     } catch (error) {
       console.error(`Error fetching provider ${id}:`, error)
       throw this.handleError(error)
@@ -64,10 +62,10 @@ class ProviderService {
    * Get featured providers (public homepage)
    */
   async getFeaturedProviders(categoryFilter?: string, limit = 20): Promise<ProviderSummary[]> {
-    const response = await httpClient.get<ProviderSummary[]>(`${API_BASE}/featured`, {
+    const response = await serviceCategoryClient.get<ProviderSummary[]>(`${API_BASE}/featured`, {
       params: { categoryFilter, limit },
     })
-    return response.data.map(this.mapProviderSummaryResponse)
+    return response.data!.map(this.mapProviderSummaryResponse)
   }
 
   /**
@@ -80,10 +78,10 @@ class ProviderService {
     limit = 50,
   ): Promise<ProviderSummary[]> {
     try {
-      const response = await httpClient.get<ProviderSummary[]>(`${API_BASE}/by-location`, {
+      const response = await serviceCategoryClient.get<ProviderSummary[]>(`${API_BASE}/by-location`, {
         params: { latitude, longitude, radiusKm, limit },
       })
-      return response.data.map(this.mapProviderSummaryResponse)
+      return response.data!.map(this.mapProviderSummaryResponse)
     } catch (error) {
       console.error('Error fetching providers by location:', error)
       throw this.handleError(error)
@@ -99,23 +97,43 @@ class ProviderService {
    */
   async registerProvider(data: RegisterProviderRequest): Promise<Provider> {
     try {
-      const response = await httpClient.post<ProviderResponse>(`${API_BASE}/register`, data)
-      return this.mapProviderResponse(response.data)
+
+      const response = await serviceCategoryClient.post<ProviderResponse>(`${API_BASE}/register`, data)
+      return this.mapProviderResponse(response.data!)
     } catch (error) {
       console.error('Error registering provider:', error)
       throw this.handleError(error)
     }
   }
 
+  async getProviderByOwnerId(ownerId: string): Promise<Provider | null> {
+    try {
+      console.log(`[ProviderService] Fetching provider for owner: ${ownerId}`)
+      const response = await serviceCategoryClient.get<ProviderResponse>(`${API_BASE}/by-owner/${ownerId}`)
+      console.log(`[ProviderService] Provider found:`, response.data)
+      return this.mapProviderResponse(response.data!)
+    } catch (error) {
+      console.error(`[ProviderService] Error fetching provider for owner ${ownerId}:`, error)
+      // Check if it's a 404 (provider not found) or actual error
+      if (error && typeof error === 'object' && 'statusCode' in error) {
+        const apiError = error as { statusCode: number; message: string }
+        console.error(`[ProviderService] Status: ${apiError.statusCode}, Message: ${apiError.message}`)
+      }
+      // Return null if provider doesn't exist (not an error - user might not be a provider yet)
+      return null
+    }
+  }
   /**
    * Update provider profile
    */
   async updateProvider(id: string, data: UpdateProviderRequest): Promise<Provider> {
     try {
-      const response = await httpClient.put<ProviderResponse>(`${API_BASE}/${id}`, data)
-      return this.mapProviderResponse(response.data)
+      console.log(`[ProviderService] Updating provider ${id} with data:`, data)
+      const response = await serviceCategoryClient.put<ProviderResponse>(`${API_BASE}/${id}`, data)
+      console.log(`[ProviderService] Provider updated successfully:`, response.data)
+      return this.mapProviderResponse(response.data!)
     } catch (error) {
-      console.error(`Error updating provider ${id}:`, error)
+      console.error(`[ProviderService] Error updating provider ${id}:`, error)
       throw this.handleError(error)
     }
   }
@@ -125,7 +143,7 @@ class ProviderService {
    */
   async activateProvider(id: string, data?: ActivateProviderRequest): Promise<void> {
     try {
-      await httpClient.post(`${API_BASE}/${id}/activate`, data)
+      await serviceCategoryClient.post(`${API_BASE}/${id}/activate`, data)
     } catch (error) {
       console.error(`Error activating provider ${id}:`, error)
       throw this.handleError(error)
@@ -137,7 +155,7 @@ class ProviderService {
    */
   async deactivateProvider(id: string, data: DeactivateProviderRequest): Promise<void> {
     try {
-      await httpClient.post(`${API_BASE}/${id}/deactivate`, data)
+      await serviceCategoryClient.post(`${API_BASE}/${id}/deactivate`, data)
     } catch (error) {
       console.error(`Error deactivating provider ${id}:`, error)
       throw this.handleError(error)
@@ -149,7 +167,7 @@ class ProviderService {
    */
   async suspendProvider(id: string, reason: string, notes?: string): Promise<void> {
     try {
-      await httpClient.post(`${API_BASE}/${id}/suspend`, { reason, notes })
+      await serviceCategoryClient.post(`${API_BASE}/${id}/suspend`, { reason, notes })
     } catch (error) {
       console.error(`Error suspending provider ${id}:`, error)
       throw this.handleError(error)
@@ -161,7 +179,7 @@ class ProviderService {
    */
   async reactivateProvider(id: string, notes?: string): Promise<void> {
     try {
-      await httpClient.post(`${API_BASE}/${id}/reactivate`, { notes })
+      await serviceCategoryClient.post(`${API_BASE}/${id}/reactivate`, { notes })
     } catch (error) {
       console.error(`Error reactivating provider ${id}:`, error)
       throw this.handleError(error)
@@ -177,8 +195,8 @@ class ProviderService {
    */
   async getProviderStatistics(id: string): Promise<ProviderStatistics> {
     try {
-      const response = await httpClient.get<ProviderStatistics>(`${API_BASE}/${id}/statistics`)
-      return response.data
+      const response = await serviceCategoryClient.get<ProviderStatistics>(`${API_BASE}/${id}/statistics`)
+      return response.data!
     } catch (error) {
       console.error(`Error fetching statistics for provider ${id}:`, error)
       throw this.handleError(error)
@@ -194,10 +212,10 @@ class ProviderService {
    */
   async getProvidersByStatus(status: ProviderStatus, maxResults = 100): Promise<ProviderSummary[]> {
     try {
-      const response = await httpClient.get<ProviderSummary[]>(`${API_BASE}/by-status/${status}`, {
+      const response = await serviceCategoryClient.get<ProviderSummary[]>(`${API_BASE}/by-status/${status}`, {
         params: { maxResults },
       })
-      return response.data.map(this.mapProviderSummaryResponse)
+      return response.data!.map(this.mapProviderSummaryResponse)
     } catch (error) {
       console.error(`Error fetching providers by status ${status}:`, error)
       throw this.handleError(error)
@@ -209,7 +227,7 @@ class ProviderService {
    */
   async verifyProvider(id: string, notes?: string): Promise<void> {
     try {
-      await httpClient.post(`${API_BASE}/${id}/verify`, { notes })
+      await serviceCategoryClient.post(`${API_BASE}/${id}/verify`, { notes })
     } catch (error) {
       console.error(`Error verifying provider ${id}:`, error)
       throw this.handleError(error)

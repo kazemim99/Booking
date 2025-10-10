@@ -1,30 +1,49 @@
 import axios, { AxiosInstance, AxiosRequestConfig, AxiosResponse, AxiosError } from 'axios'
-import { apiConfig } from '../config/api-config'
+import { apiConfig, microservices } from '../config/api-config'
 import { ApiError } from './api-error'
 import type { ApiResponse } from './api-response'
 
 interface ErrorResponse {
+  success?: boolean
+  statusCode?: number
   message?: string
+  data?: unknown
+  error?: {
+    code?: string
+    message?: string
+    errors?: Record<string, string[]>
+  }
   errors?: Record<string, string[]>
-  error?: string
   title?: string
   status?: number
+  metadata?: {
+    requestId?: string
+    timestamp?: string
+    path?: string
+    method?: string
+  }
+}
+
+interface HttpClientConfig {
+  baseURL: string
+  timeout: number
+  withCredentials: boolean
 }
 
 class HttpClient {
   private axiosInstance: AxiosInstance
   private readonly baseURL: string
 
-  constructor() {
-    this.baseURL = apiConfig.baseURL
+  constructor(config: HttpClientConfig = apiConfig) {
+    this.baseURL = config.baseURL
     this.axiosInstance = axios.create({
-      baseURL: this.baseURL,
-      timeout: apiConfig.timeout,
+      baseURL: config.baseURL,
+      timeout: config.timeout,
       headers: {
         'Content-Type': 'application/json',
         Accept: 'application/json',
       },
-      withCredentials: apiConfig.withCredentials,
+      withCredentials: config.withCredentials,
     })
 
     this.initializeInterceptors()
@@ -35,7 +54,7 @@ class HttpClient {
     this.axiosInstance.interceptors.request.use(
       (config) => {
         // Add auth token if exists
-        const token = localStorage.getItem('access_token')
+        const token = localStorage.getItem('auth_token')
         if (token && config.headers) {
           config.headers.Authorization = `Bearer ${token}`
         }
@@ -44,7 +63,7 @@ class HttpClient {
         config.metadata = { startTime: new Date() }
 
         if (import.meta.env.DEV) {
-          console.log(`[HTTP] ${config.method?.toUpperCase()} ${config.url}`)
+          console.log(`🌐 ${config.method?.toUpperCase()} ${config.url}`, config.params)
         }
 
         return config
@@ -84,17 +103,54 @@ class HttpClient {
     }
   }
 
-  private async handleError(error: AxiosError): Promise<never> {
+  private async handleError(error: AxiosError): Promise<any> {
     if (error.response) {
       // Server responded with error status
       const { status, data } = error.response
       const errorData = data as ErrorResponse
 
-      // Extract error message
+      // Check if this is a validation error (400 with error.errors)
+      if (status === 400 && errorData?.error?.errors) {
+        // Return normalized validation response instead of throwing
+        const normalizedResponse: ApiResponse<any> = {
+          success: false,
+          data: null,
+          message: errorData.message || 'Validation failed',
+          statusCode: status,
+          error: {
+            code: errorData.error.code || 'VALIDATION_ERROR',
+            message: errorData.error.message || 'Validation failed',
+            errors: errorData.error.errors,
+          },
+          errors: errorData.error.errors, // Extract to top level
+          metadata: errorData.metadata
+            ? {
+                timestamp: errorData.metadata.timestamp || new Date().toISOString(),
+                requestId: errorData.metadata.requestId || '',
+                path: errorData.metadata.path,
+                method: errorData.metadata.method,
+              }
+            : undefined,
+        }
+
+        if (import.meta.env.DEV) {
+          console.warn('[HTTP] Validation Error:', {
+            status,
+            message: errorData.message,
+            errors: errorData.error.errors,
+          })
+        }
+
+        // Return the normalized response (not throw)
+        return Promise.resolve({ data: normalizedResponse } as AxiosResponse)
+      }
+
+      // Extract error message for non-validation errors
       let errorMessage = error.message
       if (errorData) {
-        // Priority: message > error > title > default
-        errorMessage = errorData.message || errorData.error || errorData.title || error.message
+        // Priority: message > error.message > title > default
+        errorMessage =
+          errorData.message || errorData.error?.message || errorData.title || error.message
       }
 
       // Create ApiError with all error information
@@ -183,7 +239,7 @@ class HttpClient {
 
       const { accessToken, refreshToken: newRefreshToken } = response.data
 
-      localStorage.setItem('access_token', accessToken)
+      localStorage.setItem('auth_token', accessToken)
       localStorage.setItem('refresh_token', newRefreshToken)
 
       // Notify all subscribers
@@ -206,16 +262,29 @@ class HttpClient {
   private refreshSubscribers: Array<() => void> = []
 
   private clearAuthData(): void {
-    localStorage.removeItem('access_token')
+    localStorage.removeItem('auth_token')
     localStorage.removeItem('refresh_token')
     localStorage.removeItem('user')
+  }
+
+  /**
+   * Normalize API response to extract validation errors from nested error.errors
+   */
+  private normalizeResponse<T>(responseData: ApiResponse<T>): ApiResponse<T> {
+    // If error.errors exists, extract it to top level for easier access
+    if (responseData.error?.errors) {
+      return {
+        ...responseData,
+        errors: responseData.error.errors,
+      } as ApiResponse<T> & { errors: Record<string, string[]> }
+    }
+    return responseData
   }
 
   // HTTP Methods
   public async get<T>(url: string, config?: AxiosRequestConfig): Promise<ApiResponse<T>> {
     const response = await this.axiosInstance.get<ApiResponse<T>>(url, config)
-
-    return response.data
+    return this.normalizeResponse(response.data)
   }
 
   public async post<T>(
@@ -224,7 +293,7 @@ class HttpClient {
     config?: AxiosRequestConfig,
   ): Promise<ApiResponse<T>> {
     const response = await this.axiosInstance.post<ApiResponse<T>>(url, data, config)
-    return response.data
+    return this.normalizeResponse(response.data)
   }
 
   public async put<T>(
@@ -233,7 +302,7 @@ class HttpClient {
     config?: AxiosRequestConfig,
   ): Promise<ApiResponse<T>> {
     const response = await this.axiosInstance.put<ApiResponse<T>>(url, data, config)
-    return response.data
+    return this.normalizeResponse(response.data)
   }
 
   public async patch<T>(
@@ -242,12 +311,12 @@ class HttpClient {
     config?: AxiosRequestConfig,
   ): Promise<ApiResponse<T>> {
     const response = await this.axiosInstance.patch<ApiResponse<T>>(url, data, config)
-    return response.data
+    return this.normalizeResponse(response.data)
   }
 
   public async delete<T>(url: string, config?: AxiosRequestConfig): Promise<ApiResponse<T>> {
     const response = await this.axiosInstance.delete<ApiResponse<T>>(url, config)
-    return response.data
+    return this.normalizeResponse(response.data)
   }
 
   // Get raw axios instance for special cases
@@ -256,8 +325,12 @@ class HttpClient {
   }
 }
 
-// Export singleton instance
-export const httpClient = new HttpClient()
+// Export singleton instances for each microservice
+export const serviceCategoryClient = new HttpClient(microservices.serviceCategory)
+export const userManagementClient = new HttpClient(microservices.userManagement)
+
+// Legacy default client (backward compatibility)
+export const httpClient = serviceCategoryClient
 export default httpClient
 
 // Extend AxiosRequestConfig to include metadata

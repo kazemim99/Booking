@@ -1,5 +1,10 @@
 <template>
   <div class="auth-page">
+    <!-- Floating Language Switcher -->
+    <div class="floating-language-switcher">
+      <LanguageSwitcher />
+    </div>
+
     <div class="auth-container">
       <div class="auth-card">
         <ResetPasswordForm />
@@ -10,6 +15,7 @@
 
 <script setup lang="ts">
 import ResetPasswordForm from '../components/ResetPasswordForm.vue'
+import LanguageSwitcher from '@/shared/components/layout/Header/LanguageSwitcher.vue'
 </script>
 
 <style scoped lang="scss">
@@ -20,6 +26,36 @@ import ResetPasswordForm from '../components/ResetPasswordForm.vue'
   justify-content: center;
   background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
   padding: 2rem;
+  position: relative;
+}
+
+.floating-language-switcher {
+  position: absolute;
+  top: 1.5rem;
+  right: 1.5rem;
+  z-index: 1000;
+
+  :deep(.language-button) {
+    background: rgba(255, 255, 255, 0.2);
+    backdrop-filter: blur(10px);
+    color: white;
+    border: 1px solid rgba(255, 255, 255, 0.3);
+
+    &:hover {
+      background: rgba(255, 255, 255, 0.3);
+      color: white;
+    }
+  }
+
+  :deep(.dropdown-arrow),
+  :deep(.globe-icon) {
+    color: white;
+  }
+
+  @media (max-width: 640px) {
+    top: 1rem;
+    right: 1rem;
+  }
 }
 
 .auth-container {

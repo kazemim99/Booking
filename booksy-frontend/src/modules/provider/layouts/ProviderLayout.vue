@@ -13,7 +13,13 @@
     <!-- Main Content -->
     <main class="provider-main" :class="{ 'sidebar-collapsed': isSidebarCollapsed }">
       <!-- Onboarding Alert (if profile incomplete) -->
-      <Alert v-if="!isProfileComplete" type="warning" class="onboarding-alert" dismissible message="Complete your profile to start receiving bookings!">
+      <Alert
+        v-if="!isProfileComplete"
+        type="warning"
+        class="onboarding-alert"
+        dismissible
+        message="Complete your profile to start receiving bookings!"
+      >
         <div class="alert-content">
           <p>{{ completionPercentage }}% complete</p>
           <AppButton size="sm" variant="primary" @click="goToOnboarding">
@@ -30,6 +36,7 @@
           </transition>
         </router-view>
       </div>
+      <ProviderFooter />
     </main>
   </div>
 </template>
@@ -40,6 +47,7 @@ import { useRouter } from 'vue-router'
 import { useProviderStore } from '../stores/provider.store'
 import ProviderHeader from '../components/navigation/ProviderHeader.vue'
 import ProviderSidebar from '../components/navigation/ProviderSidebar.vue'
+import ProviderFooter from '../components/navigation/ProviderFooter.vue'
 import { Alert } from '@/shared/components'
 
 const router = useRouter()
@@ -60,7 +68,8 @@ const isProfileComplete = computed(() => {
     provider.contactInfo.email &&
     provider.contactInfo.primaryPhone &&
     provider.address.addressLine1 &&
-    provider.businessHours && provider.businessHours.length > 0
+    provider.businessHours &&
+    provider.businessHours.length > 0
   )
 })
 
@@ -92,10 +101,15 @@ const goToOnboarding = () => {
   router.push({ name: 'ProviderOnboarding' })
 }
 
-onMounted(() => {
+onMounted(async () => {
   const saved = localStorage.getItem('providerSidebarCollapsed')
   if (saved) {
     isSidebarCollapsed.value = JSON.parse(saved)
+  }
+
+  // ✅ Load current provider's data
+  if (!currentProvider.value) {
+    await providerStore.loadCurrentProvider()
   }
 })
 </script>

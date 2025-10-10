@@ -25,7 +25,6 @@ namespace Booksy.UserManagement.Domain.ValueObjects
 
         public static HashedPassword Create(string plainPassword)
         {
-            ValidatePassword(plainPassword);
 
             // Using BCrypt.Net-Next for password hashing
             var hash = BCrypt.Net.BCrypt.HashPassword(plainPassword, WorkFactor);
@@ -55,34 +54,7 @@ namespace Booksy.UserManagement.Domain.ValueObjects
             }
         }
 
-        private static void ValidatePassword(string password)
-        {
-            if (string.IsNullOrWhiteSpace(password))
-                throw new InvalidUserProfileException("Password cannot be empty");
-
-            if (password.Length < MinPasswordLength)
-                throw new InvalidUserProfileException($"Password must be at least {MinPasswordLength} characters long");
-
-            if (password.Length > MaxPasswordLength)
-                throw new InvalidUserProfileException($"Password cannot exceed {MaxPasswordLength} characters");
-
-            var errors = new List<string>();
-
-            if (!password.Any(char.IsUpper))
-                errors.Add("Password must contain at least one uppercase letter");
-
-            if (!password.Any(char.IsLower))
-                errors.Add("Password must contain at least one lowercase letter");
-
-            if (!password.Any(char.IsDigit))
-                errors.Add("Password must contain at least one number");
-
-            if (!password.Any(c => !char.IsLetterOrDigit(c)))
-                errors.Add("Password must contain at least one special character");
-
-            if (errors.Any())
-                throw new InvalidUserProfileException($"Password validation failed: {string.Join("; ", errors)}");
-        }
+        
 
         protected override IEnumerable<object?> GetAtomicValues()
         {

@@ -1,5 +1,6 @@
 export const environment = {
-  apiBaseUrl: import.meta.env.VITE_API_BASE_URL || 'https://localhost:5000/api',
+  userManagementApiUrl: import.meta.env.VITE_USER_MANAGEMENT_API_URL || 'https://localhost:5000/api',
+  serviceCategoryApiUrl: import.meta.env.VITE_SERVICE_CATEGORY_API_URL || 'https://localhost:5001/api',
   appTitle: import.meta.env.VITE_APP_TITLE || 'Booksy',
   enableLogging: import.meta.env.VITE_ENABLE_LOGGING === 'true',
   isDevelopment: import.meta.env.MODE === 'development',

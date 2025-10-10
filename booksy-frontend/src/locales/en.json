@@ -1,11 +1,14 @@
 {
+  "app": {
+    "name": "Booksy"
+  },
   "auth": {
     "welcomeBack": "Welcome Back",
     "signInToAccount": "Sign in to your account",
     "createAccount": "Create Account",
     "joinToday": "Join Booksy today",
     "emailAddress": "Email Address",
-    "emailPlaceholder": "you@example.com",
+    "emailPlaceholder": "you{'@'}example.com",
     "password": "Password",
     "passwordPlaceholder": "Enter your password",
     "createPasswordPlaceholder": "Create a strong password",
@@ -20,6 +23,13 @@
     "optional": "(Optional)",
     "rememberMe": "Remember me",
     "forgotPassword": "Forgot password?",
+    "resetPassword": "Reset Password",
+    "resetPasswordInstructions": "Enter your email address and we'll send you a link to reset your password.",
+    "backToLogin": "Back to login",
+    "checkEmail": "Check your email",
+    "checkEmailInstructions": "We've sent a password reset link to your email address.",
+    "resetPasswordSuccess": "Password has been reset successfully",
+    "resetPasswordSuccessInstructions": "Your password has been reset. You can now login with your new password.",
     "signIn": "Sign In",
     "signUp": "Sign up",
     "signingIn": "Signing in...",
@@ -30,10 +40,163 @@
     "customer": "Customer",
     "provider": "Provider",
     "iAccept": "I accept the",
-    "termsConditions": "Terms and Conditions"
+    "termsConditions": "Terms and Conditions",
+    "orContinueWith": "or continue with",
+    "continue": "Continue",
+    "verifying": "Verifying...",
+    "enterYourPhone": "Enter your phone number to continue",
+    "phoneLoginDescription": "We'll send a verification code to your phone",
+    "preferEmail": "Prefer to use email?",
+    "emailLogin": "Sign in with email",
+    "phoneLogin": "Sign in with phone",
+    "unifiedLoginTitle": "Welcome to Booksy",
+    "unifiedLoginSubtitle": "Sign in or create an account to continue",
+    "socialLogin": {
+      "google": "Continue with Google",
+      "facebook": "Continue with Facebook",
+      "apple": "Continue with Apple"
+    },
+    "errors": {
+      "loginFailed": "Login failed. Please check your credentials and try again.",
+      "registrationFailed": "Registration failed. Please check your information and try again.",
+      "passwordMismatch": "Passwords do not match",
+      "invalidEmail": "Please enter a valid email address",
+      "invalidPassword": "Password must be at least 6 characters",
+      "accountLocked": "Your account has been locked. Please contact support.",
+      "tooManyAttempts": "Too many failed attempts. Please try again later.",
+      "requiredField": "This field is required"
+    },
+    "success": {
+      "loginSuccess": "Login successful! Welcome back.",
+      "registrationSuccess": "Registration successful! Welcome to Booksy.",
+      "passwordResetSuccess": "Your password has been reset successfully."
+    },
+    "validation": {
+      "requiredField": "This field is required",
+      "invalidEmail": "Please enter a valid email address",
+      "passwordTooShort": "Password must be at least 8 characters",
+      "passwordRequirements": "Password must contain at least one uppercase letter, one lowercase letter, and one number",
+      "passwordsDoNotMatch": "Passwords do not match",
+      "invalidPhoneNumber": "Please enter a valid phone number",
+      "acceptTerms": "You must accept the terms and conditions"
+    },
+    "phoneVerification": {
+      "welcome": "Start your journey with Booksy",
+      "enterPhone": "Enter your phone number",
+      "enterPhoneDescription": "We'll send you a verification code to confirm your number",
+      "phoneNumberLabel": "Phone Number",
+      "phoneNumberPlaceholder": "Enter your phone number",
+      "sendCode": "Send Code",
+      "verifyCode": "Verify your phone",
+      "verifyCodeDescription": "Enter the 6-digit code we sent to {phone}",
+      "enterCodeLabel": "Verification Code",
+      "resendCode": "Resend Code",
+      "resendIn": "Resend code in {seconds}s",
+      "changePhoneNumber": "Change phone number",
+      "attemptsRemaining": "{count} attempts remaining | {count} attempt remaining",
+      "verificationSuccess": "Verification Successful!",
+      "verificationSuccessDescription": "Your phone has been verified. Let's continue setting up your account.",
+      "continue": "Continue",
+      "haveAccount": "Already have an account?",
+      "needHelp": "Need help?",
+      "successToast": "Phone verified successfully!"
+    }
   },
   "validation": {
     "checkFollowing": "Please check the following:"
+  },
+  "provider": {
+    "registration": {
+      "welcome": "Welcome to Booksy!",
+      "saveDraft": "Save Draft",
+      "progress": {
+        "step": "Step {current} of {total}"
+      },
+      "category": {
+        "title": "What type of business do you have?",
+        "subtitle": "Select the category that best describes your business",
+        "other": "Other Categories"
+      },
+      "businessInfo": {
+        "title": "Business Information",
+        "subtitle": "Tell us about your business",
+        "businessName": "Business Name",
+        "businessNamePlaceholder": "Enter your business name",
+        "ownerFirstName": "Owner First Name",
+        "firstNamePlaceholder": "Enter your first name",
+        "ownerLastName": "Owner Last Name",
+        "lastNamePlaceholder": "Enter your last name",
+        "phoneNumber": "Phone Number",
+        "phoneHint": "This will be your primary contact number"
+      },
+      "location": {
+        "title": "Business Location",
+        "confirmTitle": "Confirm Your Location",
+        "subtitle": "Where is your business located?",
+        "searchPlaceholder": "Search for your address...",
+        "mapIntegrationNote": "Map integration will be added here",
+        "enterAddressHelp": "Enter your business address",
+        "addressLine1": "Address Line 1",
+        "addressLine2": "Address Line 2 (Optional)",
+        "optional": "Optional",
+        "city": "City",
+        "zipCode": "ZIP / Postal Code",
+        "sharedLocation": "Share precise location with clients",
+        "sharedLocationHint": "Clients will see your exact location on the map"
+      },
+      "hours": {
+        "title": "Business Hours",
+        "subtitle": "Set your working hours",
+        "note": "You can customize hours for specific services later"
+      },
+      "services": {
+        "title": "Your Services",
+        "subtitle": "Add the services you offer",
+        "yourServices": "Your Services",
+        "addService": "Add Service",
+        "minRequired": "Add at least one service to continue",
+        "serviceName": "Service Name",
+        "serviceNamePlaceholder": "e.g., Haircut, Manicure",
+        "duration": "Duration (minutes)",
+        "price": "Price",
+        "description": "Description (Optional)"
+      },
+      "assistance": {
+        "title": "How Can We Help?",
+        "subtitle": "Select areas where you'd like assistance (select up to 5)",
+        "selected": "{count} of {max} selected"
+      },
+      "team": {
+        "title": "Team Members",
+        "subtitle": "Add your team members (optional)",
+        "owner": "Owner",
+        "addStaff": "Add Staff Member",
+        "addStaffMember": "Add Staff Member",
+        "staffName": "Staff Name",
+        "staffRole": "Role",
+        "staffEmail": "Email (Optional)"
+      },
+      "complete": {
+        "title": "You're All Set!",
+        "subtitle": "Your provider profile is complete",
+        "description": "You can now start accepting bookings from clients. Your profile will be visible to customers once approved.",
+        "pendingApproval": "Your profile is pending approval and will be reviewed shortly.",
+        "goToDashboard": "Go to Dashboard"
+      }
+    },
+    "categories": {
+      "nail_salon": "Nail Salon",
+      "hair_salon": "Hair Salon",
+      "brows_lashes": "Brows & Lashes",
+      "braids_locs": "Braids & Locs",
+      "massage": "Massage",
+      "barbershop": "Barbershop",
+      "aesthetic_medicine": "Aesthetic Medicine",
+      "dental_orthodontics": "Dental & Orthodontics",
+      "hair_removal": "Hair Removal",
+      "health_fitness": "Health & Fitness",
+      "home_services": "Home Services"
+    }
   },
   "common": {
     "loading": "Loading...",

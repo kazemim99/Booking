@@ -8,34 +8,40 @@ namespace Booksy.UserManagement.Domain.Enums
     /// </summary>
     public enum UserStatus
     {
+
         /// <summary>
         /// User has registered but not yet activated their account
         /// </summary>
-        Pending = 0,
+        Draft = 0,
+
+        /// <summary>
+        /// User has registered but not yet activated their account
+        /// </summary>
+        Pending = 1,
 
         /// <summary>
         /// User account is active and can be used
         /// </summary>
-        Active = 1,
+        Active = 2,
 
         /// <summary>
         /// User account is temporarily suspended
         /// </summary>
-        Suspended = 2,
+        Suspended = 3,
 
         /// <summary>
         /// User account is inactive (voluntarily deactivated)
         /// </summary>
-        Inactive = 3,
+        Inactive = 4,
 
         /// <summary>
         /// User account is banned
         /// </summary>
-        Banned = 4,
+        Banned = 5,
 
         /// <summary>
         /// User account is deleted (soft delete)
         /// </summary>
-        Deleted = 5
+        Deleted = 6
     }
 }

@@ -14,6 +14,7 @@ import type {
   ProviderStatus,
 } from '../types/provider.types'
 import type { PagedResult } from '@/core/types/common.types'
+import { useAuthStore } from '@/core/stores/modules/auth.store'
 
 export const useProviderStore = defineStore('provider', () => {
   // ============================================
@@ -257,12 +258,20 @@ export const useProviderStore = defineStore('provider', () => {
   // ============================================
 
   async function registerProvider(data: RegisterProviderRequest): Promise<Provider | undefined> {
+
     isLoading.value = true
     error.value = null
 
     try {
       const newProvider = await providerService.registerProvider(data)
       currentProvider.value = newProvider
+
+      // ✅ Store provider ID in localStorage for future retrieval
+      if (newProvider?.id) {
+        localStorage.setItem('provider_id', newProvider.id)
+        console.log('[ProviderStore] Provider registered and ID stored:', newProvider.id)
+      }
+
       return newProvider
     } catch (err: unknown) {
       // ✅ Add proper error handling
@@ -271,6 +280,7 @@ export const useProviderStore = defineStore('provider', () => {
       } else {
         error.value = 'Failed to register provider'
       }
+
       console.error('Register provider error:', err)
       // ✅ Return undefined to indicate failure
       return undefined
@@ -320,6 +330,95 @@ export const useProviderStore = defineStore('provider', () => {
     }
   }
 
+  /**
+   * Load current logged-in provider's data
+   */
+  async function loadCurrentProvider(): Promise<void> {
+    isLoading.value = true
+    error.value = null
+
+    try {
+      // Get current user from auth store
+      const authStore = useAuthStore()
+      const currentUserId = authStore.user?.id
+      const userEmail = authStore.user?.email
+
+      console.log('[ProviderStore] Loading provider for user:', currentUserId, userEmail)
+
+      if (!currentUserId) {
+        throw new Error('No authenticated user found')
+      }
+
+      // Get provider ID from localStorage (stored during registration)
+      let providerId = localStorage.getItem('provider_id')
+
+      // Fallback: If no provider ID in localStorage, try to search for provider by email
+      // This handles the case where provider was created externally (e.g., by UserFactory)
+      if (!providerId && userEmail) {
+        console.log('[ProviderStore] No provider ID in storage. Attempting to find provider by email:', userEmail)
+
+        try {
+          // Search for providers with the user's email
+          const searchResults = await providerService.searchProviders({
+            searchTerm: userEmail,
+            pageNumber: 1,
+            pageSize: 1
+          })
+
+          if (searchResults.items && searchResults.items.length > 0) {
+            const foundProvider = searchResults.items[0]
+            providerId = foundProvider.id
+            // Store the found provider ID for future use
+            localStorage.setItem('provider_id', providerId)
+            console.log('[ProviderStore] Found provider via search:', providerId)
+          } else {
+            console.warn('[ProviderStore] No provider found via email search')
+          }
+        } catch (searchError) {
+          console.error('[ProviderStore] Error searching for provider:', searchError)
+        }
+      }
+
+      if (!providerId) {
+        console.warn('[ProviderStore] No provider ID found. User may need to register as provider.')
+        currentProvider.value = null
+        error.value = null
+        return
+      }
+
+      console.log('[ProviderStore] Fetching provider by ID:', providerId)
+
+      // Get provider by ID
+      const provider = await providerService.getProviderById(providerId, true, true)
+
+      if (provider) {
+        console.log('[ProviderStore] Provider loaded successfully:', provider.id)
+        currentProvider.value = provider
+        // Ensure provider ID is stored
+        localStorage.setItem('provider_id', provider.id)
+      } else {
+        // Provider not found - might have been deleted
+        console.warn('[ProviderStore] Provider not found with ID:', providerId)
+        currentProvider.value = null
+        // Clear the invalid provider ID from storage
+        localStorage.removeItem('provider_id')
+        error.value = null
+      }
+    } catch (err: unknown) {
+      console.error('[ProviderStore] Load current provider error:', err)
+
+      // Don't set error for network issues - just log it
+      if (err instanceof Error) {
+        console.error('[ProviderStore] Error details:', err.message)
+      }
+
+      // Set currentProvider to null but don't set error
+      // This allows the onboarding flow to work even if there's a temporary network issue
+      currentProvider.value = null
+    } finally {
+      isLoading.value = false
+    }
+  }
   /**
    * Activate provider
    */
@@ -510,6 +609,7 @@ export const useProviderStore = defineStore('provider', () => {
     providersByStatus,
 
     // Actions
+    loadCurrentProvider,
     searchProviders,
     loadNextPage,
     loadPreviousPage,

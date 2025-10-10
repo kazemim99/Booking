@@ -28,17 +28,14 @@ namespace Booksy.UserManagement.Application.CQRS.Commands.RegisterUser
 
             RuleFor(x => x.FirstName)
                 .NotEmpty().WithMessage("First name is required")
-                .MaximumLength(100).WithMessage("First name cannot exceed 100 characters")
-                .Matches(@"^[a-zA-Z\s\-']+$").WithMessage("First name contains invalid characters");
+                .MaximumLength(100).WithMessage("First name cannot exceed 100 characters");
 
             RuleFor(x => x.LastName)
                 .NotEmpty().WithMessage("Last name is required")
-                .MaximumLength(100).WithMessage("Last name cannot exceed 100 characters")
-                .Matches(@"^[a-zA-Z\s\-']+$").WithMessage("Last name contains invalid characters");
+                .MaximumLength(100).WithMessage("Last name cannot exceed 100 characters");
 
             RuleFor(x => x.MiddleName)
                 .MaximumLength(100).WithMessage("Middle name cannot exceed 100 characters")
-                .Matches(@"^[a-zA-Z\s\-']*$").WithMessage("Middle name contains invalid characters")
                 .When(x => !string.IsNullOrEmpty(x.MiddleName));
 
             RuleFor(x => x.DateOfBirth)

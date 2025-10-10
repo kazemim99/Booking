@@ -63,6 +63,7 @@ namespace Booksy.UserManagement.Application.CQRS.Commands.AuthenticateUser
                     user.Type,
                     user.Email,
                     user.Profile.GetDisplayName(),
+                    user.Status.ToString(),
                     authResult.Roles,
                     tokenExpirationHours);
 

@@ -30,7 +30,6 @@ export { default as Avatar } from './ui/Avatar/AppAvatar.vue'
 // export { default as Divider } from './ui/Divider/Divider.vue'
 
 // Layout Components
-export { default as AppLayout } from './layout/AppLayout.vue'
 export { default as AppHeader } from './layout/Header/AppHeader.vue'
 export { default as HeaderNav } from './layout/Header/HeaderNav.vue'
 export { default as UserMenu } from './layout/Header/UserMenu.vue'

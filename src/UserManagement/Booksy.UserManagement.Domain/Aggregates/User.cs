@@ -26,6 +26,11 @@ namespace Booksy.UserManagement.Domain.Aggregates
         public HashedPassword Password { get; private set; }
         public UserProfile Profile { get; private set; }
 
+        // Phone Verification
+        public PhoneNumber? PhoneNumber { get; private set; }
+        public bool PhoneNumberVerified { get; private set; }
+        public DateTime? PhoneVerifiedAt { get; private set; }
+
         // Status & Type
         public UserStatus Status { get; private set; }
         public UserType Type { get; private set; }
@@ -457,6 +462,75 @@ namespace Booksy.UserManagement.Domain.Aggregates
         public void UpdateRefreshTokens(IReadOnlyList<RefreshToken> refreshTokens)
         {
             throw new NotImplementedException();
+        }
+
+        // ========================================
+        // Phone-Based Authentication Methods
+        // ========================================
+
+        /// <summary>
+        /// Creates a new user from phone verification (passwordless registration)
+        /// </summary>
+        public static User CreateFromPhoneVerification(
+            UserId id,
+            PhoneNumber phoneNumber,
+            UserType userType,
+            string firstName,
+            string lastName)
+        {
+            var user = new User
+            {
+                Id = id,
+                
+                Email = Email.Create($"{phoneNumber.Value.Replace("+0 ", "a")}@temp.booksy.com"), // Temporary email
+                Password = HashedPassword.Create(Guid.NewGuid().ToString()), // Random password (not used)
+                Profile = UserProfile.Create(firstName, lastName, phoneNumber.Value),
+                PhoneNumber = phoneNumber,
+                PhoneNumberVerified = true,
+                PhoneVerifiedAt = DateTime.UtcNow,
+                Type = userType,
+                Status = UserStatus.Draft, // Phone-verified users are automatically active
+                RegisteredAt = DateTime.UtcNow,
+                ActivatedAt = DateTime.UtcNow,
+                FailedLoginAttempts = 0,
+                TwoFactorEnabled = false,
+                ActivationToken = null // No email activation needed
+
+            };
+
+            // Don't raise domain events yet (optional: can add PhoneVerifiedRegistrationEvent)
+            return user;
+        }
+
+        /// <summary>
+        /// Marks phone number as verified
+        /// </summary>
+        public void VerifyPhoneNumber()
+        {
+            if (PhoneNumberVerified)
+                return;
+
+            PhoneNumberVerified = true;
+            PhoneVerifiedAt = DateTime.UtcNow;
+
+            // If user was pending, activate them
+            if (Status == UserStatus.Pending)
+            {
+                Status = UserStatus.Active;
+                ActivatedAt = DateTime.UtcNow;
+            }
+
+            RaiseDomainEvent(new UserActivatedEvent(Id, Email, DateTime.UtcNow));
+        }
+
+        /// <summary>
+        /// Sets phone number for existing user
+        /// </summary>
+        public void SetPhoneNumber(PhoneNumber phoneNumber)
+        {
+            PhoneNumber = phoneNumber;
+            PhoneNumberVerified = false;
+            PhoneVerifiedAt = null;
         }
     }
 }

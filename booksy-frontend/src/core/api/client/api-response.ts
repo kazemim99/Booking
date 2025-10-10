@@ -1,12 +1,38 @@
 export interface ApiResponse<T> {
   success: boolean
-  data: T
+  data: T | null
   message?: string
-  errors?: ValidationErrors
+  statusCode?: number
+  error?: {
+    code: string
+    message: string
+    errors?: ValidationErrors
+  }
+  errors?: ValidationErrors // Extracted from error.errors for easier access
   metadata?: {
     timestamp: string
     requestId: string
+    path?: string
+    method?: string
   }
+}
+
+export interface ErrorResponse {
+  code: string
+  message: string
+  errors?: ValidationErrors
+}
+
+/**
+ * Response metadata
+ */
+export interface ResponseMetadata {
+  requestId: string
+  timestamp: string
+  duration: number
+  path: string
+  method: string
+  version: string
 }
 
 export interface ValidationErrors {

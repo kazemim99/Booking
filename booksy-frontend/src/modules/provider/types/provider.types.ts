@@ -206,6 +206,8 @@ export interface RegisterProviderRequest {
   websiteUrl?: string
   addressLine1: string
   addressLine2?: string
+  logoUrl?: string
+  coverImageUrl?: string
   city: string
   state: string
   postalCode: string
@@ -236,6 +238,8 @@ export interface UpdateProviderRequest {
   allowOnlineBooking?: boolean
   offersMobileServices?: boolean
   tags?: string[]
+  businessHours?: BusinessHours[]
+  services?: ServiceSummary[]
 }
 
 export interface ActivateProviderRequest {

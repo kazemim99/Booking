@@ -5,6 +5,7 @@
 // Booksy.UserManagement.Application/EventHandlers/DomainEventHandlers/UserRegisteredEventHandler.cs
 using Booksy.Core.Application.Abstractions.Events;
 using Booksy.Infrastructure.Core.EventBus.Abstractions;
+using Booksy.Infrastructure.External.Notifications;
 using Booksy.UserManagement.Domain.Events;
 
 namespace Booksy.UserManagement.Application.EventHandlers

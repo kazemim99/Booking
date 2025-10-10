@@ -4,8 +4,8 @@
 
 
 
-using Booksy.Core.Application.Services;
 using Booksy.Core.Domain.ValueObjects;
+using Booksy.Infrastructure.External.Notifications;
 using Booksy.UserManagement.Domain.Aggregates;
 using Booksy.UserManagement.Domain.Entities;
 using Booksy.UserManagement.Domain.Exceptions;

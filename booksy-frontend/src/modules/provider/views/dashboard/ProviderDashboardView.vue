@@ -102,8 +102,10 @@ const isProfileComplete = computed(() => {
     provider.profile.businessName &&
     provider.profile.description &&
     provider.profile.logoUrl &&
-    provider.businessHours && provider.businessHours.length > 0 &&
-    provider.services && provider.services.length > 0
+    provider.businessHours &&
+    provider.businessHours.length > 0 &&
+    provider.services &&
+    provider.services.length > 0
   )
 })
 
@@ -131,7 +133,8 @@ const missingProfileItems = computed(() => {
 
   if (!provider?.profile.logoUrl) items.push('Upload business logo')
   if (!provider?.profile.description) items.push('Add business description')
-  if (!provider?.businessHours || provider.businessHours.length === 0) items.push('Set business hours')
+  if (!provider?.businessHours || provider.businessHours.length === 0)
+    items.push('Set business hours')
   if (!provider?.services || provider.services.length === 0) items.push('Add services')
 
   return items
@@ -170,11 +173,19 @@ const handleQuickAction = (action: string) => {
 }
 
 onMounted(async () => {
-  // Load dashboard data
   isLoading.value = true
+
   try {
-    // TODO: Load real data
-    // await loadDashboardData()
+    if (!currentProvider.value) {
+      await providerStore.loadCurrentProvider()
+    }
+
+    // ✅ Load dashboard stats for THIS provider only
+    if (currentProvider.value) {
+      // TODO: Load bookings, revenue, etc. for currentProvider.value.id
+      // todayStats.value = await loadProviderStats(currentProvider.value.id)
+      // recentBookings.value = await loadProviderBookings(currentProvider.value.id)
+    }
   } finally {
     isLoading.value = false
   }

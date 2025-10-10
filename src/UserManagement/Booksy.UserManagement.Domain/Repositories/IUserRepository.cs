@@ -14,6 +14,7 @@ namespace Booksy.UserManagement.Domain.Repositories
         // ✅ Domain-specific methods
         Task<User?> GetByEmailAsync(Email email, CancellationToken cancellationToken = default);
         Task<bool> ExistsByEmailAsync(Email email, CancellationToken cancellationToken = default);
+        Task<User?> GetByPhoneNumberAsync(string phoneNumber, CancellationToken cancellationToken = default);
         Task<List<User>> GetAllAsync(CancellationToken cancellationToken);
     }
 }

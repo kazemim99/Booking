@@ -1,3 +1,5 @@
+import { UserType } from "@/modules/user-management/types/user.types"
+
 export interface RegisterFormData extends Record<string, unknown> {
   email: string
   password: string
@@ -5,7 +7,7 @@ export interface RegisterFormData extends Record<string, unknown> {
   firstName: string
   lastName: string
   phoneNumber: string
-  userType: 'Customer' | 'Provider'
+  userType: UserType
   acceptTerms: boolean
 }
 
@@ -15,5 +17,5 @@ export interface RegisterData {
   firstName: string
   lastName: string
   phoneNumber?: string
-  userType: 'Customer' | 'Provider'
+  userType: UserType
 }

@@ -47,6 +47,9 @@
         </svg>
       </div>
 
+      <!-- Language Switcher -->
+      <LanguageSwitcher />
+
       <!-- Notification Bell -->
       <button class="notification-btn" @click="toggleNotifications" aria-label="Notifications">
         <svg
@@ -78,6 +81,7 @@ import { ref } from 'vue'
 import { useRouter } from 'vue-router'
 import HeaderNav from './HeaderNav.vue'
 import UserMenu from './UserMenu.vue'
+import LanguageSwitcher from './LanguageSwitcher.vue'
 
 interface Props {
   isSidebarCollapsed?: boolean

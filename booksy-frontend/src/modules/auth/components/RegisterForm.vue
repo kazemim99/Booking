@@ -118,7 +118,7 @@
     <div class="form-group">
       <label class="form-label">{{ $t('auth.userType') }}</label>
       <div class="user-type-options">
-        <label class="radio-option" :class="{ active: formData.userType === 'Customer' }">
+        <label class="radio-option" :class="{ active: formData.userType === UserType.Client }">
           <input
             v-model="formData.userType"
             type="radio"
@@ -202,6 +202,7 @@ import ValidationError from '../../../shared/components/ui/ValidationError.vue'
 import ValidationSummary from '../../../shared/components/ui/ValidationSummary.vue'
 import Alert from '../../../shared/components/ui/AppAlert.vue'
 import type { RegisterFormData } from '../types/register.types'
+import { UserType } from '@/modules/user-management/types/user.types'
 
 const { t: $t } = useI18n()
 const { register } = useRegister()
@@ -215,7 +216,7 @@ const initialValues: RegisterFormData = {
   firstName: '',
   lastName: '',
   phoneNumber: '',
-  userType: 'Customer',
+  userType: UserType.Client,
   acceptTerms: false,
 }
 

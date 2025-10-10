@@ -1,7 +1,7 @@
 ﻿// ========================================
 // Booksy.Core.Application/Services/EmailTemplate.cs
 // ========================================
-namespace Booksy.Core.Application.Services
+namespace Booksy.Infrastructure.External.Notifications
 {
     /// <summary>
     /// Represents an email template

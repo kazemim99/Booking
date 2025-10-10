@@ -15,6 +15,7 @@ declare module 'vue-router' {
     roles?: string[]
     title?: string
     showSidebar?: boolean
+    transition?: string
     showBreadcrumb?: boolean
     showFooter?: boolean
     breadcrumbs?: Array<{ label: string; path: string }>
@@ -30,4 +31,4 @@ declare global {
   }
 }
 
-export {}
+export { }

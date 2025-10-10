@@ -1,30 +1,32 @@
 import { createApp } from 'vue'
 import { createPinia } from 'pinia'
-import { createI18n } from 'vue-i18n' // vue-i18n v10+ required for Vue 3
+import { createI18n } from 'vue-i18n'
 import App from './App.vue'
 import router from './core/router'
 import { useRTLInstance } from './core/composables/useRTL'
 import { vClickOutside } from './shared/directives/v-click-outside'
-
 // Import global styles
 import './assets/styles/main.scss'
 
 // Import translations
+import fa from './locales/fa.json'
 import en from './locales/en.json'
 import ar from './locales/ar.json'
 
 // Create i18n instance
 const i18n = createI18n({
   legacy: false,
-  locale: 'en',
+  locale: 'fa',
   fallbackLocale: 'en',
   messages: {
+    fa,
     en,
     ar,
   },
   globalInjection: true,
-})
+  messageCompiler: undefined,
 
+})
 // Create Vue app
 const app = createApp(App)
 
@@ -42,6 +44,9 @@ app.use(i18n)
 const rtl = useRTLInstance()
 rtl.initializeRTL()
 
+// Sync i18n locale with RTL language
+i18n.global.locale.value = rtl.currentLanguage.value as 'fa' | 'en' | 'ar'
+
 // Register global directives
 app.directive('click-outside', vClickOutside)
 
@@ -50,5 +55,6 @@ app.mount('#app')
 
 console.log('🚀 Booksy Frontend Started')
 console.log('Environment:', import.meta.env.MODE)
-console.log('API URL:', import.meta.env.VITE_API_BASE_URL)
+console.log('API URL:', import.meta.env.VITE_USER_MANAGEMENT_API_URL)
+console.log('API URL:', import.meta.env.VITE_SERVICE_CATEGORY_API_URL)
 console.log('Direction:', rtl.direction.value)

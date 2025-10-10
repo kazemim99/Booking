@@ -2,6 +2,7 @@
 {
     public enum ProviderStatus
     {
+        Drafted,
         PendingVerification,
         Verified,
         Active,

@@ -45,9 +45,9 @@ namespace Booksy.Core.Domain.ValueObjects
             var nationalNumber = digitsOnly.Length > 10 ? digitsOnly[^10..] : digitsOnly;
 
             // Format the number
-            var formatted = FormatPhoneNumber(countryCode, nationalNumber);
+            //var formatted = FormatPhoneNumber(countryCode, nationalNumber);
 
-            return new PhoneNumber(formatted, countryCode, nationalNumber);
+            return new PhoneNumber(digitsOnly, "+98", digitsOnly);
         }
 
         private static string FormatPhoneNumber(string countryCode, string nationalNumber)

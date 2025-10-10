@@ -16,6 +16,7 @@ namespace Booksy.UserManagement.Application.Services.Interfaces
             UserType userType,
             Email email,
             string displayName,
+            string status,
             IEnumerable<string> roles,
             int expirationHours = 24);
 

@@ -3,19 +3,17 @@
 // ========================================
 
 // Booksy.UserManagement.Infrastructure/Services/Security/PasswordHasher.cs
-using Booksy.UserManagement.Application.Services.Interfaces;
-using Booksy.Core.Application.Services;
 using Microsoft.Extensions.Logging;
 
-namespace Booksy.UserManagement.Infrastructure.Services.External
+namespace Booksy.Infrastructure.External.Notifications
 {
     public class EmailTemplateService : IEmailTemplateService
     {
-        private readonly EmailService _emailService;
+        private readonly IEmailService _emailService;
         private readonly ILogger<EmailTemplateService> _logger;
         private readonly Dictionary<string, EmailTemplate> _templates;
 
-        public EmailTemplateService(EmailService emailService, ILogger<EmailTemplateService> logger)
+        public EmailTemplateService(IEmailService emailService, ILogger<EmailTemplateService> logger)
         {
             _emailService = emailService;
             _logger = logger;

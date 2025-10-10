@@ -13,16 +13,13 @@ using Microsoft.Extensions.DependencyInjection;
 using Booksy.UserManagement.Infrastructure.Persistence.Context;
 using Booksy.UserManagement.Infrastructure.Persistence.Repositories;
 using Booksy.UserManagement.Infrastructure.Services.Security;
-using Booksy.UserManagement.Infrastructure.Services.External;
 using Booksy.UserManagement.Infrastructure.Services.Application;
-using Booksy.Infrastructure.Core.Persistence.Outbox;
-using Booksy.UserManagement.Infrastructure.Persistence;
-using Booksy.Infrastructure.Core.EventBus.Abstractions;
 using Booksy.Infrastructure.Core.Persistence.Base;
 using Microsoft.Extensions.Logging;
 using Booksy.UserManagement.Application.Abstractions.Queries;
 using Booksy.UserManagement.Infrastructure.Queries;
 using Booksy.Infrastructure.Core.DependencyInjection;
+using Booksy.Infrastructure.External.Notifications;
 
 namespace Booksy.UserManagement.Infrastructure.DependencyInjection
 {
@@ -82,13 +79,15 @@ namespace Booksy.UserManagement.Infrastructure.DependencyInjection
             // Register Repositories
 
             services.AddScoped<ISeeder,UserManagementDatabaseSeeder>();
-
+            
 
             services.AddScoped<IUserRepository, UserRepository>();
             services.AddScoped<IUserRepository, UserRepository>();
             services.AddScoped<IUserQueryRepository, UserQueryRepository>();
+            services.AddScoped<IPhoneVerificationRepository, PhoneVerificationRepository>();
+            services.AddScoped<IPhoneVerificationService, PhoneVerificationService>();
 
-
+            services.AddExternalServices(configuration);
             // Register context-specific infrastructure
             //services.AddScoped<IUnitOfWork, UserManagementUnitOfWork>();
             //services.AddScoped(typeof(IOutboxProcessor<>), typeof(UserManagementOutboxProcessor));
@@ -106,10 +105,6 @@ namespace Booksy.UserManagement.Infrastructure.DependencyInjection
             services.AddScoped<IJwtTokenService, JwtTokenService>();
             services.AddScoped<TwoFactorAuthenticationService>();
 
-            // Register External Services
-            services.AddScoped<EmailService>();
-            services.AddScoped<SmsService>();
-            services.AddScoped<IEmailTemplateService, EmailTemplateService>();
 
             // Register Domain Services
             services.AddScoped<IUserValidationService, UserValidationService>();

@@ -51,6 +51,7 @@ namespace Booksy.UserManagement.Application.CQRS.Commands.RefreshToken
                 user.Type,
                 user.Email,
                 user.Profile.GetDisplayName(),
+                user.Status.ToString(),
                 user.Roles.Select(r => r.Name).ToList(),
                 24); // 24 hours
 
