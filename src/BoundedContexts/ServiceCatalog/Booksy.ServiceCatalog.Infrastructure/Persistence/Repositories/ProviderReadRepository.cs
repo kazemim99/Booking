@@ -21,6 +21,15 @@ namespace Booksy.ServiceCatalog.Infrastructure.Persistence.Repositories
         {
         }
 
+        public override async Task<Provider?> GetByIdAsync(ProviderId id, CancellationToken cancellationToken = default)
+        {
+            return await DbSet
+                .Include(p => p.Staff)
+                .Include(p => p.BusinessHours)
+                .Include(p => p.Services)
+                .FirstOrDefaultAsync(p => p.Id == id, cancellationToken);
+        }
+
         public async Task<Provider?> GetByOwnerIdAsync(UserId ownerId, CancellationToken cancellationToken = default)
         {
             return await DbSet

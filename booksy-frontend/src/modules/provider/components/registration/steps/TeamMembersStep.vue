@@ -33,6 +33,8 @@
 
     <NavigationButtons
       :show-back="true"
+      :is-loading="isSubmitting"
+      :next-label="$t('common.submit')"
       @back="$emit('back')"
       @next="handleNext"
     />
@@ -65,6 +67,7 @@ import type { TeamMember } from '@/modules/provider/types/registration.types'
 interface Props {
   modelValue?: TeamMember[]
   ownerName?: string
+  isSubmitting?: boolean
 }
 
 interface Emits {
@@ -75,6 +78,7 @@ interface Emits {
 
 const props = withDefaults(defineProps<Props>(), {
   ownerName: 'Business Owner',
+  isSubmitting: false,
 })
 const emit = defineEmits<Emits>()
 

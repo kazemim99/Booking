@@ -6,8 +6,8 @@ using Microsoft.Extensions.Logging;
 
 public class UserManagementUnitOfWork : EfCoreUnitOfWork<UserManagementDbContext>
 {
-    public UserManagementUnitOfWork(UserManagementDbContext context, ILogger<EfCoreUnitOfWork<UserManagementDbContext>> logger)
-        : base(context, logger)
+    public UserManagementUnitOfWork(UserManagementDbContext context, ILogger<EfCoreUnitOfWork<UserManagementDbContext>> logger, IDomainEventDispatcher eventDispatcher)
+        : base(context, logger,eventDispatcher)
     {
     }
 }

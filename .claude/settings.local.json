@@ -1,8 +1,24 @@
 {
+  "env": {
+    "DISABLE_SUMMARY_GENERATION": "1"
+  },
   "permissions": {
     "allow": [
-      "Bash(npm run type-check:*)",
-      "Bash(npm uninstall:*)"
+      "Bash(Select-String -Pattern \"error CS|Error(s)|Warning(s)\")",
+      "Bash(dotnet clean:*)",
+      "Bash(find:*)",
+      "Bash(dotnet build:*)",
+      "Bash(dotnet test:*)",
+      "Bash(dotnet list src/Core/Booksy.Core.Domain/Booksy.Core.Domain.csproj package)",
+      "Bash(dotnet list:*)",
+      "Bash(Select-String -Pattern \"DotNetCore.CAP\")",
+      "Bash(dotnet add:*)",
+      "Bash(docker-compose up:*)",
+      "Bash(dotnet remove:*)",
+      "Bash(Select-String -Pattern \"Serilog\")",
+      "Bash(findstr:*)",
+      "Bash(dotnet restore:*)",
+      "Bash(Get-Content src/BoundedContexts/ServiceCatalog/Booksy.ServiceCatalog.Api/Booksy.ServiceCatalog.Api.csproj)"
     ],
     "deny": [],
     "ask": []

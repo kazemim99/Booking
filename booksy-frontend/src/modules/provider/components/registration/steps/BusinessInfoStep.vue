@@ -166,21 +166,18 @@ const handleSubmit = () => {
   }
 }
 
-// Watch for changes and emit
-watch(
-  formData,
-  (newValue) => {
-    emit('update:modelValue', newValue)
-  },
-  { deep: true },
-)
-
-// Watch props for external updates
+// Watch props for external updates only (removed recursive watch on formData)
 watch(
   () => props.modelValue,
   (newValue) => {
     if (newValue) {
-      formData.value = { ...formData.value, ...newValue }
+      // Only update if values are actually different to prevent loops
+      const hasChanges = Object.keys(newValue).some(
+        key => newValue[key as keyof BusinessInfo] !== formData.value[key as keyof BusinessInfo]
+      )
+      if (hasChanges) {
+        formData.value = { ...formData.value, ...newValue }
+      }
     }
   },
   { deep: true },

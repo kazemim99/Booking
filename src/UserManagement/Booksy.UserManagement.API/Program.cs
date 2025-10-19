@@ -19,6 +19,7 @@ using Booksy.Infrastructure.Core.DependencyInjection;
 using Booksy.API.Middleware;
 using Booksy.API.Extensions;
 using Booksy.Core.Domain.Infrastructure.Middleware;
+using Booksy.UserManagement.Application.EventHandlers.IntegrationEventHandlers;
 var builder = WebApplication.CreateBuilder(args);
 
 // Configure Serilog
@@ -32,6 +33,13 @@ builder.Host.UseSerilog((context, services, configuration) =>
         .WriteTo.Console()
         .WriteTo.File("logs/booksy-usermanagement-.txt", rollingInterval: RollingInterval.Day));
 
+builder.Services.AddTransient<ProviderRegisteredEventSubscriber>();
+
+//builder.Services.Scan(scan => scan
+// .FromAssemblyOf<ProviderRegisteredEventSubscriber>()
+// .AddClasses(classes => classes.AssignableTo<ICapSubscribe>())
+// .AsSelfWithInterfaces()
+// .WithTransientLifetime());
 
 
 // Configure JSON serialization options
@@ -66,7 +74,7 @@ builder.Services.AddControllers(options =>
 ;
 
 
-builder.Services.ConfigureApiOptions(builder.Environment);
+builder.Services.ConfigureApiOptions(builder.Configuration, builder.Environment);
 
 
 // API Versioning

@@ -19,7 +19,9 @@ using Microsoft.Extensions.Logging;
 using Booksy.UserManagement.Application.Abstractions.Queries;
 using Booksy.UserManagement.Infrastructure.Queries;
 using Booksy.Infrastructure.Core.DependencyInjection;
+using Booksy.Infrastructure.Core.EventBus;
 using Booksy.Infrastructure.External.Notifications;
+using Booksy.Infrastructure.Core.EventBus.Abstractions;
 
 namespace Booksy.UserManagement.Infrastructure.DependencyInjection
 {
@@ -29,9 +31,6 @@ namespace Booksy.UserManagement.Infrastructure.DependencyInjection
             this IServiceCollection services,
             IConfiguration configuration)
         {
-
-
-            services.AddInfrastructureCore(configuration);
 
             // Add DbContext
             services.AddDbContext<UserManagementDbContext>(options =>
@@ -68,9 +67,10 @@ namespace Booksy.UserManagement.Infrastructure.DependencyInjection
             services.AddScoped<IUnitOfWork>(provider =>
             {
                 var context = provider.GetRequiredService<UserManagementDbContext>();
+                var eventDispatcher = provider.GetRequiredService<IDomainEventDispatcher>();
                 var logger = provider.GetRequiredService<ILogger<EfCoreUnitOfWork<UserManagementDbContext>>>();
 
-                return new EfCoreUnitOfWork<UserManagementDbContext>(context, logger);
+                return new EfCoreUnitOfWork<UserManagementDbContext>(context, logger, eventDispatcher);
             });
 
             services.AddScoped<IUnitOfWork, EfCoreUnitOfWork<UserManagementDbContext>>();
@@ -138,6 +138,9 @@ namespace Booksy.UserManagement.Infrastructure.DependencyInjection
 
             // Add memory cache for local caching
             services.AddMemoryCache();
+
+            // CAP Event Bus with Outbox Pattern
+            services.AddCapEventBus<UserManagementDbContext>(configuration, "UserManagement");
 
             return services;
         }

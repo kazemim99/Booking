@@ -1,5 +1,6 @@
-﻿using Booksy.ServiceCatalog.Api.Models.Requests;
-
-public class UpdateServiceRequest: CreateServiceRequest
+﻿namespace Booksy.ServiceCatalog.Api.Models.Requests
 {
+    public class UpdateServiceRequest : CreateServiceRequest
+    {
+    }
 }

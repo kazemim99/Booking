@@ -55,7 +55,9 @@ namespace Booksy.ServiceCatalog.Application.Queries.Provider.GetProvidersByLocat
                            provider.Address.City,
                             provider.Address.State,
                             provider.Address.PostalCode,
-                            provider.Address.Country),
+                            provider.Address.Country,
+                            provider.Address.Latitude,
+                            provider.Address.Longitude),
                        new CoordinatesInfo(
                              provider.Address.Latitude.Value,
                              provider.Address.Longitude.Value),

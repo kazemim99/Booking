@@ -1,23 +1,19 @@
 // ========================================
 // EventBus/RabbitMQ/RabbitMqEventBus.cs
 // ========================================
-using System.Text;
-using System.Text.Json;
 using Booksy.Core.Domain.Abstractions.Events;
 using Booksy.Infrastructure.Core.EventBus.Abstractions;
 using Microsoft.EntityFrameworkCore.Metadata;
-using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
-using Microsoft.Extensions.Options;
 using RabbitMQ.Client;
-using RabbitMQ.Client.Exceptions;
+using IModel = RabbitMQ.Client.IModel;
 
 namespace Booksy.Infrastructure.Core.EventBus.RabbitMQ;
 
 /// <summary>
 /// RabbitMQ implementation of event bus for production use
 /// </summary>
-public sealed class RabbitMqEventBus : IEventBus, IDisposable
+public sealed class RabbitMqEventBus :  IDisposable
 {
     private readonly RabbitMqSettings _settings;
     private readonly ILogger<RabbitMqEventBus> _logger;

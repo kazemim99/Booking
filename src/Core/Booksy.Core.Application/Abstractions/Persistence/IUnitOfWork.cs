@@ -1,6 +1,8 @@
 ﻿// ========================================
 // Booksy.Core.Application/Abstractions/Persistence/IUnitOfWork.cs
 // ========================================
+using Microsoft.EntityFrameworkCore.Storage;
+
 namespace Booksy.Core.Application.Abstractions.Persistence
 {
     /// <summary>
@@ -41,8 +43,12 @@ namespace Booksy.Core.Application.Abstractions.Persistence
         /// Rolls back the current transaction
         /// </summary>
         Task RollbackTransactionAsync(CancellationToken cancellationToken = default);
+        Task ExecuteInTransactionAsyncAndPublishEvent(Func<Task> operation, CancellationToken cancellationToken = default);
         Task ExecuteInTransactionAsync(Func<Task> operation, CancellationToken cancellationToken = default);
         Task<T> ExecuteInTransactionAsync<T>(Func<Task<T>> operation, CancellationToken cancellationToken = default);
+        Task<IDbContextTransaction> BeginTransactionAsync(CancellationToken cancellationToken = default);
+        Task CommitTransactionAsync(IDbContextTransaction transaction, CancellationToken cancellationToken = default);
+        Task<int> SaveChangesAsync(CancellationToken cancellationToken = default);
 
         /// <summary>
         /// Executes a function within a transaction

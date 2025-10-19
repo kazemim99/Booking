@@ -97,10 +97,36 @@ services:
       timeout: 10s
       retries: 3
 
+  # ========================================
+  # OBSERVABILITY & MONITORING
+  # ========================================
+
+  seq:
+    image: datalust/seq:latest
+    container_name: booksy-seq
+    environment:
+      - ACCEPT_EULA=Y
+      - SEQ_FIRSTRUN_ADMINUSERNAME=admin
+      - SEQ_FIRSTRUN_ADMINPASSWORD=Booksy@2024!!
+    ports:
+      - "5341:80"        # Seq UI
+      - "5342:5341"      # Seq ingestion endpoint
+    volumes:
+      - seq_data:/data
+    networks:
+      - booksy-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost/api/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
 volumes:
   postgres_data:
   redis_data:
   rabbitmq_data:
+  seq_data:
 
 networks:
   booksy-network:

@@ -11,7 +11,7 @@ namespace Booksy.UserManagement.Infrastructure.Persistence
     {
         public UserManagementOutboxProcessor(
             UserManagementDbContext context,
-            IEventBus eventBus,
+            IDomainEventDispatcher eventBus,
             ILogger<UserManagementOutboxProcessor> logger)
             : base(context, eventBus, logger)
         {

@@ -18,6 +18,8 @@ using Booksy.ServiceCatalog.Infrastructure.DependencyInjection;
 using Booksy.ServiceCatalog.Api.Extensions;
 using Booksy.ServiceCatalog.Infrastructure.Persistence.Context;
 using Booksy.Core.Domain.Infrastructure.Middleware;
+using Booksy.API.Observability;
+using System.Configuration;
 
 namespace Booksy.API
 {
@@ -44,6 +46,9 @@ namespace Booksy.API
                 options.SerializerOptions.Converters.Add(new JsonStringEnumConverter());
             });
 
+
+
+
             // Controllers
             services.AddControllers(options =>
             {
@@ -59,7 +64,7 @@ namespace Booksy.API
                 options.JsonSerializerOptions.ReadCommentHandling = JsonCommentHandling.Skip;
             });
 
-            services.ConfigureApiOptions(Environment);
+            services.ConfigureApiOptions(Configuration,Environment);
 
             // API Versioning
             services.AddApiVersioning(options =>
@@ -98,6 +103,7 @@ namespace Booksy.API
             });
 
 
+            //SerilogConfiguration.ConfigureSerilog(Configuration, "ServiceCatalog.API");
 
             // Application Services
             services.AddServiceCatalogApplication();

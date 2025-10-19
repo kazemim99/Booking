@@ -1,9 +1,14 @@
 {
   "permissions": {
     "allow": [
-      "Bash(npm run type-check:*)"
+      "Bash(*)",
+      "Write(*)",
+      "Edit(*)",
+      "Create(*)"
     ],
-    "deny": [],
-    "ask": []
+    "deny": []
+  },
+  "env": {
+    "DISABLE_SUMMARY_GENERATION": "1"
   }
 }

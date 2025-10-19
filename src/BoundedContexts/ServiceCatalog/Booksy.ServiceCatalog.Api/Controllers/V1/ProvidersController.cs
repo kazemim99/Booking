@@ -6,6 +6,7 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Booksy.ServiceCatalog.Application.Commands.Provider.RegisterProvider;
 using Booksy.ServiceCatalog.Application.Commands.Provider.ActivateProvider;
+using Booksy.ServiceCatalog.Application.Commands.Provider.RegisterProviderFull;
 using Booksy.ServiceCatalog.Application.Queries.Provider.GetProviderById;
 using Booksy.ServiceCatalog.Application.Queries.Provider.GetProvidersByStatus;
 using Booksy.API.Extensions;
@@ -13,6 +14,7 @@ using Booksy.ServiceCatalog.Api.Models.Responses;
 using Booksy.ServiceCatalog.Api.Models.Requests.Extenstions;
 using Booksy.API.Middleware;
 using static Booksy.API.Middleware.ExceptionHandlingMiddleware;
+using System.Security.Claims;
 
 namespace Booksy.ServiceCatalog.API.Controllers.V1;
 
@@ -36,7 +38,7 @@ public class ProvidersController : ControllerBase
     }
 
     /// <summary>
-    /// Registers a new service provider
+    /// Registers a new service provider (simple registration)
     /// </summary>
     /// <param name="request">Provider registration details</param>
     /// <returns>Created provider information</returns>
@@ -63,6 +65,69 @@ public class ProvidersController : ControllerBase
         return CreatedAtAction(
             nameof(GetProviderById),
             new { id = response.Id, version = "1.0" },
+            response);
+    }
+
+    /// <summary>
+    /// Registers a new service provider with complete multi-step data
+    /// </summary>
+    /// <param name="request">Complete provider registration data from multi-step form</param>
+    /// <returns>Created provider information with all details</returns>
+    /// <response code="201">Provider successfully created with all data</response>
+    /// <response code="400">Invalid request data or validation failure</response>
+    /// <response code="409">Provider already exists for this user</response>
+    /// <response code="401">User not authenticated</response>
+    [HttpPost("register-full")]
+    [Authorize]
+    [Booksy.API.Middleware.EnableRateLimiting("provider-registration")]
+    [ProducesResponseType(typeof(ProviderFullRegistrationResponse), StatusCodes.Status201Created)]
+    [ProducesResponseType(typeof(ApiErrorResult), StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(typeof(ApiErrorResult), StatusCodes.Status409Conflict)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    public async Task<IActionResult> RegisterProviderFull(
+        [FromBody] RegisterProviderFullRequest request,
+        CancellationToken cancellationToken = default)
+    {
+        // Ensure the OwnerId matches the authenticated user
+        var currentUserId = GetCurrentUserId();
+        if (string.IsNullOrEmpty(currentUserId))
+        {
+            return Unauthorized("User not authenticated");
+        }
+
+        if (request.OwnerId.ToString() != currentUserId)
+        {
+            _logger.LogWarning(
+                "User {UserId} attempted to register provider for different owner {OwnerId}",
+                currentUserId,
+                request.OwnerId);
+            return Forbid();
+        }
+
+        var command = MapToRegisterFullCommand(request);
+        var result = await _mediator.Send(command, cancellationToken);
+
+        var response = new ProviderFullRegistrationResponse
+        {
+            ProviderId = result.ProviderId,
+            BusinessName = result.BusinessName,
+            Status = result.Status.ToString(),
+            RegisteredAt = result.RegisteredAt,
+            ServicesCount = result.ServicesCount,
+            StaffCount = result.StaffCount,
+            Message = "Provider registration submitted successfully. Pending admin approval."
+        };
+
+        _logger.LogInformation(
+            "Provider {ProviderId} fully registered by user {UserId} with {ServiceCount} services and {StaffCount} staff",
+            response.ProviderId,
+            currentUserId,
+            result.ServicesCount,
+            result.StaffCount);
+
+        return CreatedAtAction(
+            nameof(GetProviderById),
+            new { id = response.ProviderId, version = "1.0" },
             response);
     }
 
@@ -431,6 +496,89 @@ public class ProvidersController : ControllerBase
             );
     }
 
+    private RegisterProviderFullCommand MapToRegisterFullCommand(RegisterProviderFullRequest request)
+    {
+        // Map business info
+        var businessInfo = new BusinessInfoDto(
+            request.BusinessInfo.BusinessName,
+            request.BusinessInfo.OwnerFirstName,
+            request.BusinessInfo.OwnerLastName,
+            request.BusinessInfo.PhoneNumber);
+
+        // Map address
+        var address = new AddressDto(
+            request.Address.Street,
+            null, // AddressLine2 is combined in Street
+            request.Address.City,
+            request.Address.PostalCode);
+
+        // Map location
+        LocationDto? location = request.Location != null
+            ? new LocationDto(
+                request.Location.Latitude,
+                request.Location.Longitude,
+                request.Location.FormattedAddress)
+            : null;
+
+        // Map business hours
+        var businessHours = new Dictionary<int, DayHoursDto?>();
+        foreach (var (dayOfWeek, hours) in request.BusinessHours)
+        {
+            if (hours == null)
+            {
+                businessHours[dayOfWeek] = null;
+                continue;
+            }
+
+            var openTime = hours.OpenTime != null
+                ? new TimeSlotDto(hours.OpenTime.Hours, hours.OpenTime.Minutes)
+                : null;
+
+            var closeTime = hours.CloseTime != null
+                ? new TimeSlotDto(hours.CloseTime.Hours, hours.CloseTime.Minutes)
+                : null;
+
+            var breaks = hours.Breaks.Select(b => new BreakTimeDto(
+                new TimeSlotDto(b.Start.Hours, b.Start.Minutes),
+                new TimeSlotDto(b.End.Hours, b.End.Minutes))).ToList();
+
+            businessHours[dayOfWeek] = new DayHoursDto(
+                hours.DayOfWeek,
+                hours.IsOpen,
+                openTime,
+                closeTime,
+                breaks);
+        }
+
+        // Map services
+        var services = request.Services.Select(s => new ServiceDto(
+            s.Name,
+            s.DurationHours,
+            s.DurationMinutes,
+            s.Price,
+            s.PriceType)).ToList();
+
+        // Map team members
+        var teamMembers = request.TeamMembers.Select(m => new TeamMemberDto(
+            m.Name,
+            m.Email,
+            m.PhoneNumber,
+            m.CountryCode,
+            m.Position,
+            m.IsOwner)).ToList();
+
+        return new RegisterProviderFullCommand(
+            request.OwnerId,
+            request.CategoryId,
+            businessInfo,
+            address,
+            location,
+            businessHours,
+            services,
+            request.AssistanceOptions,
+            teamMembers);
+    }
+
     private ProviderResponse MapToProviderResponse(dynamic result)
     {
         return new ProviderResponse
@@ -456,7 +604,7 @@ public class ProvidersController : ControllerBase
             ContactInfo = new ContactInfoResponse
             {
                 Email = result.ContactInfo.Email,
-                PrimaryPhone = result.ContactInfo.PrimaryPhone!.Value,
+                PrimaryPhone = result.ContactInfo.Phone,
                 Website = result.ContactInfo.Website
             },
             Address = new AddressResponse
@@ -530,7 +678,7 @@ public class ProvidersController : ControllerBase
 
     private string? GetCurrentUserId()
     {
-        return User.FindFirst("sub")?.Value ?? User.FindFirst("userId")?.Value;
+        return User.FindFirstValue(ClaimTypes.NameIdentifier);
     }
 
     private string? GetCurrentUserProviderId()

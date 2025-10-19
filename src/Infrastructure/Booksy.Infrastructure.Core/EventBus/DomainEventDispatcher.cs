@@ -13,11 +13,11 @@ namespace Booksy.Infrastructure.Core.EventBus;
 /// </summary>
 public sealed class DomainEventDispatcher : IDomainEventDispatcher
 {
-    private readonly IEventBus _eventBus;
+    private readonly IDomainEventDispatcher _eventBus;
     private readonly ILogger<DomainEventDispatcher> _logger;
 
     public DomainEventDispatcher(
-        IEventBus eventBus,
+        IDomainEventDispatcher eventBus,
         ILogger<DomainEventDispatcher> logger)
     {
         _eventBus = eventBus;
@@ -56,7 +56,7 @@ public sealed class DomainEventDispatcher : IDomainEventDispatcher
 
         try
         {
-            await _eventBus.PublishAsync(domainEvent, cancellationToken);
+            await _eventBus.DispatchEventAsync(domainEvent, cancellationToken);
         }
         catch (Exception ex)
         {

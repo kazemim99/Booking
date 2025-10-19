@@ -142,7 +142,7 @@ namespace Booksy.ServiceCatalog.Domain.Aggregates
         public void AddStaff(string firstName, string lastName, Email email, StaffRole role, PhoneNumber? phone = null)
         {
             // Business rule: Cannot add staff if provider is not active
-            if (Status != ProviderStatus.Active)
+            if (Status == ProviderStatus.Inactive)
                 throw new InvalidProviderException("Cannot add staff to inactive provider");
 
             // Business rule: Email must be unique among staff

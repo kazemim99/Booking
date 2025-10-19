@@ -23,7 +23,7 @@ public static class SecurityExtensions
         IConfiguration configuration)
     {
         // Add authentication
-        //services.AddJwtAuthentication(configuration);
+        services.AddJwtAuthentication(configuration);
 
         // Add authorization
         services.AddPolicyAuthorization();

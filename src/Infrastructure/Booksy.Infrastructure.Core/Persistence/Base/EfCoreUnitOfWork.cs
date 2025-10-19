@@ -1,5 +1,6 @@
 using Booksy.Core.Application.Abstractions.Persistence;
 using Booksy.Core.Domain.Abstractions.Entities;
+using Booksy.Core.Domain.Abstractions.Events;
 using Booksy.Infrastructure.Core.EventBus.Abstractions;
 using Microsoft.EntityFrameworkCore.Storage;
 using Microsoft.EntityFrameworkCore;
@@ -17,16 +18,19 @@ public class EfCoreUnitOfWork<TContext> : IUnitOfWork
 {
     private readonly TContext _context;
     private readonly ILogger<EfCoreUnitOfWork<TContext>> _logger;
+    private readonly IDomainEventDispatcher _eventDispatcher;
     private IDbContextTransaction? _currentTransaction;
 
-    public bool HasActiveTransaction => false;
+    public bool HasActiveTransaction => _currentTransaction != null;
 
     public EfCoreUnitOfWork(
         TContext context,
-        ILogger<EfCoreUnitOfWork<TContext>> logger)
+        ILogger<EfCoreUnitOfWork<TContext>> logger,
+        IDomainEventDispatcher eventDispatcher)
     {
         _context = context;
         _logger = logger;
+        _eventDispatcher = eventDispatcher;
     }
 
     public async Task<int> SaveChangesAsync(CancellationToken cancellationToken = default)
@@ -34,10 +38,7 @@ public class EfCoreUnitOfWork<TContext> : IUnitOfWork
         try
         {
             // Dispatch domain events before saving
-            //await DispatchDomainEventsAsync(cancellationToken);
-
-            //// Update audit fields
-            //UpdateAuditableEntities();
+            await DispatchDomainEventsAsync(cancellationToken);
 
             // Save changes to database
             var result = await _context.SaveChangesAsync(cancellationToken);
@@ -58,84 +59,131 @@ public class EfCoreUnitOfWork<TContext> : IUnitOfWork
         }
     }
 
-    //public async Task<IDbContextTransaction> BeginTransactionAsync(CancellationToken cancellationToken = default)
-    //{
-    //    if (_currentTransaction != null)
-    //    {
-    //        throw new InvalidOperationException("Transaction already in progress");
-    //    }
+    public async Task<IDbContextTransaction> BeginTransactionAsync(CancellationToken cancellationToken = default)
+    {
+        if (_currentTransaction != null)
+        {
+            throw new InvalidOperationException("Transaction already in progress");
+        }
 
-    //    _currentTransaction = await _context.Database.BeginTransactionAsync(cancellationToken);
-    //    _logger.LogDebug("Transaction started");
+        _currentTransaction = await _context.Database.BeginTransactionAsync(cancellationToken);
+        _logger.LogDebug("Transaction started");
 
-    //    return _currentTransaction;
-    //}
+        return _currentTransaction;
+    }
 
-    //public async Task CommitTransactionAsync(IDbContextTransaction transaction, CancellationToken cancellationToken = default)
-    //{
-    //    if (transaction == null)
-    //    {
-    //        throw new ArgumentNullException(nameof(transaction));
-    //    }
+    public async Task CommitTransactionAsync(IDbContextTransaction transaction, CancellationToken cancellationToken = default)
+    {
+        if (transaction == null)
+        {
+            throw new ArgumentNullException(nameof(transaction));
+        }
 
-    //    if (transaction != _currentTransaction)
-    //    {
-    //        throw new InvalidOperationException("Transaction is not current");
-    //    }
+        if (transaction != _currentTransaction)
+        {
+            throw new InvalidOperationException("Transaction is not current");
+        }
 
-    //    try
-    //    {
-    //        await SaveChangesAsync(cancellationToken);
-    //        await transaction.CommitAsync(cancellationToken);
-    //        _logger.LogDebug("Transaction committed");
-    //    }
-    //    catch
-    //    {
-    //        await RollbackTransactionAsync(transaction, cancellationToken);
-    //        throw;
-    //    }
-    //    finally
-    //    {
-    //        if (_currentTransaction != null)
-    //        {
-    //            _currentTransaction.Dispose();
-    //            _currentTransaction = null;
-    //        }
-    //    }
-    //}
+        try
+        {
+            await SaveChangesAsync(cancellationToken);
+            await transaction.CommitAsync(cancellationToken);
+            _logger.LogDebug("Transaction committed");
+        }
+        catch
+        {
+            await RollbackTransactionAsync(cancellationToken);
+            throw;
+        }
+        finally
+        {
+            if (_currentTransaction != null)
+            {
+                _currentTransaction.Dispose();
+                _currentTransaction = null;
+            }
+        }
+    }
 
 
+    private async Task DispatchDomainEventsAsync(CancellationToken cancellationToken)
+    {
+        // Get all tracked entities and filter for aggregates with domain events
+        // We can't use Entries<IAggregateRoot>() because that only matches IAggregateRoot<Guid>
+        // But our aggregates use strongly-typed IDs like IAggregateRoot<ProviderId>
 
-    //public async Task RollbackTransactionAsync(IDbContextTransaction transaction, CancellationToken cancellationToken = default)
-    //{
-    //    try
-    //    {
-    //        await transaction.RollbackAsync(cancellationToken);
-    //        _logger.LogDebug("Transaction rolled back");
-    //    }
-    //    finally
-    //    {
-    //        if (_currentTransaction != null)
-    //        {
-    //            _currentTransaction.Dispose();
-    //            _currentTransaction = null;
-    //        }
-    //    }
-    //}
+        var allEntries = _context.ChangeTracker.Entries().ToList();
+        _logger.LogDebug("Total tracked entities: {Count}", allEntries.Count);
 
-    //private async Task DispatchDomainEventsAsync(CancellationToken cancellationToken)
-    //{
-    //    var domainEntities = _context.ChangeTracker
-    //        .Entries<IAggregateRoot>()
-    //        .Where(x => x.Entity.DomainEvents?.Any() == true)
-    //        .Select(x => x.Entity)
-    //        .ToList();
+        var allDomainEvents = new List<IDomainEvent>();
+        var aggregatesWithEvents = new List<object>();
 
-    //    if (domainEntities.Any())
-    //    {
-    //        await _eventDispatcher.DispatchEventsAsync(domainEntities, cancellationToken);
-    //    }
-    //}
+        foreach (var entry in allEntries)
+        {
+            var entity = entry.Entity;
+
+            // Check if entity implements IAggregateRoot<T> for any T
+            var aggregateInterface = entity.GetType()
+                .GetInterfaces()
+                .FirstOrDefault(i => i.IsGenericType &&
+                                    i.GetGenericTypeDefinition() == typeof(IAggregateRoot<>));
+
+            if (aggregateInterface != null)
+            {
+                // Get the DomainEvents property using reflection
+                var domainEventsProperty = aggregateInterface.GetProperty("DomainEvents");
+                if (domainEventsProperty != null)
+                {
+                    var domainEvents = domainEventsProperty.GetValue(entity) as System.Collections.IEnumerable;
+                    if (domainEvents != null)
+                    {
+                        var eventsList = domainEvents.Cast<IDomainEvent>().ToList();
+                        if (eventsList.Any())
+                        {
+                            allDomainEvents.AddRange(eventsList);
+                            aggregatesWithEvents.Add(entity);
+
+                            _logger.LogDebug("Found aggregate {Type} with {EventCount} domain events",
+                                entity.GetType().Name, eventsList.Count);
+                        }
+                    }
+                }
+            }
+        }
+
+        if (allDomainEvents.Any())
+        {
+            _logger.LogInformation("Dispatching {EventCount} domain events from {AggregateCount} aggregates",
+                allDomainEvents.Count, aggregatesWithEvents.Count);
+
+            // Dispatch each event
+            foreach (var domainEvent in allDomainEvents)
+            {
+                await _eventDispatcher.DispatchEventAsync(domainEvent, cancellationToken);
+            }
+
+            // Clear domain events from all aggregates using reflection
+            foreach (var aggregate in aggregatesWithEvents)
+            {
+                var aggregateInterface = aggregate.GetType()
+                    .GetInterfaces()
+                    .FirstOrDefault(i => i.IsGenericType &&
+                                        i.GetGenericTypeDefinition() == typeof(IAggregateRoot<>));
+
+                if (aggregateInterface != null)
+                {
+                    var clearMethod = aggregateInterface.GetMethod("ClearDomainEvents");
+                    clearMethod?.Invoke(aggregate, null);
+                }
+            }
+
+            _logger.LogInformation("Domain events dispatched and cleared successfully");
+        }
+        else
+        {
+            _logger.LogDebug("No domain events to dispatch");
+        }
+    }
 
     //private void UpdateAuditableEntities()
     //{
@@ -156,17 +204,13 @@ public class EfCoreUnitOfWork<TContext> : IUnitOfWork
 
     //        entity.LastModifiedAt = DateTime.UtcNow;
     //        entity.LastModifiedBy = GetCurrentUserId();
-    //    }
-    //}
 
     protected virtual string? GetCurrentUserId() => "System";
 
     public async Task<int> CommitAsync(CancellationToken cancellationToken = default)
     {
-        var result = await _context.SaveChangesAsync(cancellationToken);
-        _logger.LogDebug("Saved {Count} changes to database", result);
-        return result;
-
+        // Delegate to SaveChangesAsync which dispatches events
+        return await SaveChangesAsync(cancellationToken);
     }
 
 
@@ -189,7 +233,7 @@ public class EfCoreUnitOfWork<TContext> : IUnitOfWork
             try
             {
                 var result = await operation();
-                await SaveChangesAsync(cancellationToken);
+                await CommitAndPublishEventsAsync(cancellationToken);
                 await transaction.CommitAsync(cancellationToken);
                 return result;
             }
@@ -201,6 +245,26 @@ public class EfCoreUnitOfWork<TContext> : IUnitOfWork
         });
     }
 
+    public async Task ExecuteInTransactionAsyncAndPublishEvent(Func<Task> operation, CancellationToken cancellationToken = default)
+    {
+        var strategy = _context.Database.CreateExecutionStrategy();
+
+        await strategy.ExecuteAsync(async () =>
+        {
+            await using var transaction = await _context.Database.BeginTransactionAsync(cancellationToken);
+            try
+            {
+                await operation(); 
+                await CommitAndPublishEventsAsync(cancellationToken);
+                await transaction.CommitAsync(cancellationToken);
+            }
+            catch
+            {
+                await transaction.RollbackAsync(cancellationToken);
+                throw;
+            }
+        });
+    }
     public async Task ExecuteInTransactionAsync(Func<Task> operation, CancellationToken cancellationToken = default)
     {
         var strategy = _context.Database.CreateExecutionStrategy();
@@ -210,9 +274,12 @@ public class EfCoreUnitOfWork<TContext> : IUnitOfWork
             await using var transaction = await _context.Database.BeginTransactionAsync(cancellationToken);
             try
             {
-                await operation(); // <-- do all repository work here
-                await SaveChangesAsync(cancellationToken);
+                await operation();
+                var result = await _context.SaveChangesAsync(cancellationToken);
                 await transaction.CommitAsync(cancellationToken);
+
+                _logger.LogDebug("Saved {Count} changes and events", result);
+
             }
             catch
             {
@@ -232,27 +299,11 @@ public class EfCoreUnitOfWork<TContext> : IUnitOfWork
     {
         try
         {
+            // Dispatch domain events before saving
+            await DispatchDomainEventsAsync(cancellationToken);
 
-            // Collect domain events before saving
-            var aggregates = _context.ChangeTracker.Entries<IAggregateRoot>()
-                .Where(x => x.Entity.DomainEvents?.Any() == true)
-                .Select(x => x.Entity)
-                .ToList();
-
-            // Save changes to database first
+            // Save changes to database
             var result = await _context.SaveChangesAsync(cancellationToken);
-
-            // Dispatch events only after successful save
-            if (result > 0 && aggregates.Any())
-            {
-                //await _eventDispatcher.DispatchEventsAsync(aggregates, cancellationToken);
-
-                // Clear events after successful dispatch
-                foreach (var aggregate in aggregates)
-                {
-                    aggregate.ClearDomainEvents();
-                }
-            }
 
             _logger.LogDebug("Saved {Count} changes and dispatched events", result);
             return result;

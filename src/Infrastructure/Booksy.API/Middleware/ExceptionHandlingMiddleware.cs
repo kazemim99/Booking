@@ -114,6 +114,22 @@ public partial class ExceptionHandlingMiddleware
                 errorResponse = new ApiErrorResult(appEx.Message, appEx.ErrorCode);
                 break;
 
+            // Handle ServiceCatalog ValidationException (custom) - using type name matching
+            case Exception ex when ex.GetType().FullName == "Booksy.ServiceCatalog.Application.Exceptions.ValidationException":
+                response.StatusCode = (int)HttpStatusCode.BadRequest;
+                var errorsProperty = ex.GetType().GetProperty("Errors");
+                if (errorsProperty != null)
+                {
+                    var errors = errorsProperty.GetValue(ex) as Dictionary<string, List<string>>;
+                    errorResponse = new ApiErrorResult("Validation failed", "VALIDATION_ERROR")
+                    {
+                        Errors = errors?.ToDictionary(
+                            kvp => kvp.Key,
+                            kvp => kvp.Value.ToArray())
+                    };
+                }
+                break;
+
             case ValidationException fluentEx:
                 response.StatusCode = (int)HttpStatusCode.BadRequest;
                 errorResponse = new ApiErrorResult("Validation failed", "VALIDATION_ERROR")

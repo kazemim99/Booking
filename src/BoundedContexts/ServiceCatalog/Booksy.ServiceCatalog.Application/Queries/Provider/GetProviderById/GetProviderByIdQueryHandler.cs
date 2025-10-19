@@ -39,7 +39,6 @@ namespace Booksy.ServiceCatalog.Application.Queries.Provider.GetProviderById
 
             var viewModel = new ProviderDetailsViewModel
             {
-
                 Id = provider.Id.Value,
                 OwnerId = provider.OwnerId.Value,
                 BusinessName = provider.Profile.BusinessName,
@@ -47,7 +46,43 @@ namespace Booksy.ServiceCatalog.Application.Queries.Provider.GetProviderById
                 LogoUrl = provider.Profile.LogoUrl,
                 Status = provider.Status,
                 Type = provider.ProviderType,
-                
+                ContactInfo = new DTOs.Provider.ContactInfo(
+                    provider.ContactInfo.Email?.Value,
+                    provider.ContactInfo.PrimaryPhone?.Value,
+                    provider.ContactInfo.SecondaryPhone?.Value,
+                    provider.ContactInfo.Website),
+                Address = new AddressInfo(
+                    provider.Address.Street,
+                    provider.Address.City,
+                    provider.Address.State,
+                    provider.Address.PostalCode,
+                    provider.Address.Country,
+                    provider.Address.Latitude,
+                    provider.Address.Longitude),
+                BusinessHours = provider.BusinessHours.ToDictionary(
+                    bh => bh.DayOfWeek,
+                    bh => bh.IsOpen ? new BusinessHoursDto
+                    {
+                        DayOfWeek = bh.DayOfWeek,
+                        IsOpen = bh.IsOpen,
+                        OpenTime = bh.OperatingHours?.StartTime,
+                        CloseTime = bh.OperatingHours?.EndTime
+                    } : null),
+                WebsiteUrl = provider.ContactInfo.Website,
+                AllowOnlineBooking = provider.AllowOnlineBooking,
+                OffersMobileServices = provider.OffersMobileServices,
+                IsVerified = provider.VerifiedAt.HasValue,
+                AverageRating = provider.AverageRating,
+                TotalReviews = 0,
+                ServiceCount = provider.Services.Count,
+                StaffCount = provider.Staff.Count,
+                YearsInBusiness = provider.RegisteredAt.Year > 0
+                    ? DateTime.UtcNow.Year - provider.RegisteredAt.Year
+                    : 0,
+                Tags = provider.Profile.Tags.AsReadOnly(),
+                RegisteredAt = provider.RegisteredAt,
+                ActivatedAt = provider.ActivatedAt,
+                LastActiveAt = provider.LastActiveAt
             };
 
             if (request.IncludeStaff)

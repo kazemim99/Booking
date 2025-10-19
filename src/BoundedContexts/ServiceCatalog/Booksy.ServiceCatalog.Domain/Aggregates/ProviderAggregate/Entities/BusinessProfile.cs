@@ -15,7 +15,11 @@ namespace Booksy.ServiceCatalog.Domain.Entities
         public DateTime LastUpdatedAt { get; private set; }
 
         // Private constructor for EF Core
-        private BusinessProfile() : base() { }
+        private BusinessProfile() : base()
+        {
+            BusinessName = string.Empty;
+            BusinessDescription = string.Empty;
+        }
 
         public static BusinessProfile Create(string businessName, string description, string? website = null)
         {

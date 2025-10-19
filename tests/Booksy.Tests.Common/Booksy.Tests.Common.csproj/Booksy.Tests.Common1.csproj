@@ -8,13 +8,13 @@
 	</PropertyGroup>
 
 	<ItemGroup>
-		<PackageReference Include="Microsoft.AspNetCore.App" Version="9.0.4" />
+		<PackageReference Include="Microsoft.AspNetCore.App" Version="9.0.7" />
 
 		<!-- Database -->
-		<PackageReference Include="Microsoft.EntityFrameworkCore" Version="9.0.4" />
-		<PackageReference Include="Microsoft.EntityFrameworkCore.Design" Version="9.0.4" />
-		<PackageReference Include="Microsoft.EntityFrameworkCore.Tools" Version="9.0.4" />
-		<PackageReference Include="Npgsql.EntityFrameworkCore.PostgreSQL" Version="9.0.4" />
+		<PackageReference Include="Microsoft.EntityFrameworkCore" Version="9.0.7" />
+		<PackageReference Include="Microsoft.EntityFrameworkCore.Design" Version="9.0.7" />
+		<PackageReference Include="Microsoft.EntityFrameworkCore.Tools" Version="9.0.7" />
+		<PackageReference Include="Npgsql.EntityFrameworkCore.PostgreSQL" Version="9.0.7" />
 		<!-- CQRS & Mediator -->
 		<PackageReference Include="MediatR" Version="13.0.0" />
 		<PackageReference Include="MediatR.Extensions.Microsoft.DependencyInjection" Version="11.0.0" />
@@ -37,7 +37,7 @@
 		<PackageReference Include="Microsoft.AspNetCore.Mvc.Versioning.ApiExplorer" Version="5.1.0" />
 
 		<!-- Security -->
-		<PackageReference Include="Microsoft.AspNetCore.Authentication.JwtBearer" Version="9.0.4" />
+		<PackageReference Include="Microsoft.AspNetCore.Authentication.JwtBearer" Version="9.0.7" />
 		<PackageReference Include="System.IdentityModel.Tokens.Jwt" Version="8.0.1" />
 
 		<!-- Logging & Monitoring -->
@@ -48,8 +48,8 @@
 		<PackageReference Include="Serilog.Extensions.Logging" Version="8.0.0" />
 
 		<!-- Caching -->
-		<PackageReference Include="Microsoft.Extensions.Caching.Memory" Version="9.0.4" />
-		<PackageReference Include="Microsoft.Extensions.Caching.StackExchangeRedis" Version="9.0.4" />
+		<PackageReference Include="Microsoft.Extensions.Caching.Memory" Version="9.0.7" />
+		<PackageReference Include="Microsoft.Extensions.Caching.StackExchangeRedis" Version="9.0.7" />
 		<!-- Health Checks -->
 		<PackageReference Include="AspNetCore.HealthChecks.UI" Version="8.0.0" />
 		<PackageReference Include="AspNetCore.HealthChecks.Npgsql" Version="8.0.0" />
@@ -73,7 +73,7 @@
 		<PackageReference Include="Bogus" Version="35.4.0" />
 
 		<!-- Integration Testing -->
-		<PackageReference Include="Microsoft.AspNetCore.Mvc.Testing" Version="9.0.4" />
+		<PackageReference Include="Microsoft.AspNetCore.Mvc.Testing" Version="9.0.7" />
 		
 		<!-- Code Coverage -->
 		<PackageReference Include="coverlet.collector" Version="6.0.0" />

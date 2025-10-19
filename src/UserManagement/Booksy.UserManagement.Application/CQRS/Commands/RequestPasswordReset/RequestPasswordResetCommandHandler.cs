@@ -51,7 +51,6 @@ namespace Booksy.UserManagement.Application.CQRS.Commands.RequestPasswordReset
             user.RequestPasswordReset();
 
             await _userRepository.UpdateAsync(user, cancellationToken);
-            await _unitOfWork.CommitAndPublishEventsAsync(cancellationToken);
 
             // Send password reset email
             await SendPasswordResetEmailAsync(user, cancellationToken);

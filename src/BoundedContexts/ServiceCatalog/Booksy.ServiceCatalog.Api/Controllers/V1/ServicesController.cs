@@ -249,13 +249,13 @@ public class ServicesController : ControllerBase
             Name: request.Name,
             Description: request.Description,
             CategoryName: request.CategoryName,
-            request.ServiceType,
-            request.BasePrice,
-            request.Currency,
+            ServiceType: request.ServiceType,
+            BasePrice: request.BasePrice,
+            Currency: request.Currency,
             DurationMinutes: request.DurationMinutes,
             PreparationMinutes: request.PreparationMinutes,
             BufferMinutes: request.BufferMinutes,
-            request.RequiresDeposit, 
+            RequiresDeposit: request.RequiresDeposit,
             ImageUrl: request.ImageUrl,
             IdempotencyKey: request.IdempotencyKey);
 

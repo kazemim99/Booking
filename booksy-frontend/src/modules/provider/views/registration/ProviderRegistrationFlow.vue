@@ -58,7 +58,8 @@
       v-else-if="currentStep === 7"
       v-model="registrationData.teamMembers"
       :owner-name="ownerFullName"
-      @next="handleNext"
+      :is-submitting="isSubmitting"
+      @next="handleFinalSubmit"
       @back="previousStep"
     />
 
@@ -68,10 +69,11 @@
 </template>
 
 <script setup lang="ts">
-import { computed, onMounted, onBeforeUnmount } from 'vue'
+import { ref, computed, onMounted, onBeforeUnmount } from 'vue'
 import { useRouter } from 'vue-router'
 import { useProviderRegistration } from '../../composables/useProviderRegistration'
-import { useToast } from '@/shared/composables/useToast'
+import { toastService } from '@/core/services/toast.service'
+import { errorHandlerService } from '@/core/services/error-handler.service'
 
 // Shared Components
 import ProgressBar from '../../components/registration/shared/ProgressBar.vue'
@@ -87,7 +89,7 @@ import TeamMembersStep from '../../components/registration/steps/TeamMembersStep
 import RegistrationCompleteStep from '../../components/registration/steps/RegistrationCompleteStep.vue'
 
 const router = useRouter()
-const toast = useToast()
+const isSubmitting = ref(false)
 
 const {
   currentStep,
@@ -111,22 +113,67 @@ const handleNext = () => {
   if (canProceedToNextStep()) {
     nextStep()
   } else {
-    toast.error('Please complete all required fields')
+    toastService.error('Please complete all required fields')
   }
 }
 
-const handleComplete = async () => {
-  const result = await completeRegistration()
+/**
+ * Handle final submission (at step 7 - Team Members)
+ * Submit all data to backend and show step 8 on success
+ */
+const handleFinalSubmit = async () => {
+  isSubmitting.value = true
 
-  if (result.success) {
-    toast.success(result.message || 'Registration completed successfully!')
-    // Navigate to provider dashboard
-    setTimeout(() => {
-      router.push({ name: 'ProviderDashboard' })
-    }, 1500)
-  } else {
-    toast.error(result.message || 'Failed to complete registration')
+  try {
+    // Submit registration to backend
+    const result = await completeRegistration()
+
+    if (result.success) {
+      // Show success toast
+      toastService.success(
+        result.message || 'Registration submitted successfully! Pending admin approval.',
+        'Success'
+      )
+      // Move to step 8 (completion screen)
+      nextStep()
+    }
+  } catch (error: any) {
+    // Handle errors
+    const errorResult = errorHandlerService.handleError(error)
+
+    if (errorResult.isServerError) {
+      // 5xx errors: Show as toasts
+      toastService.error(
+        errorResult.generalMessage,
+        'Server Error'
+      )
+    } else if (errorResult.isValidationError) {
+      // 4xx validation errors: Show field-specific errors
+      toastService.error(
+        'Please fix the validation errors and try again',
+        'Validation Error'
+      )
+
+      // TODO: Display field errors inline on forms
+      // This would require passing errors down to step components
+      console.error('Validation errors:', errorResult.fieldErrors)
+    } else {
+      // Generic errors
+      toastService.error(errorResult.generalMessage, 'Error')
+    }
+  } finally {
+    isSubmitting.value = false
   }
+}
+
+/**
+ * Handle navigation from completion screen
+ * Since provider registration requires admin approval, redirect to home page
+ * Users will be able to access ProviderDashboard once their registration is approved
+ */
+const handleComplete = () => {
+  // Navigate to home page since provider needs admin approval before accessing dashboard
+  router.push({ name: 'Home' })
 }
 
 // Initialize on mount

@@ -1,5 +1,6 @@
 import { ref, computed, watch } from 'vue'
 import { useAuthStore } from '@/core/stores/modules/auth.store'
+import { providerRegistrationService } from '../services/provider-registration.service'
 import type {
   RegistrationStep,
   RegistrationState,
@@ -292,31 +293,41 @@ export function useProviderRegistration() {
     registrationState.value.error = null
 
     try {
-      // Validate all steps
-      for (let step = 1; step <= TOTAL_STEPS; step++) {
+      // Validate all steps before submission (excluding step 8 which is complete screen)
+      for (let step = 1; step <= TOTAL_STEPS - 1; step++) {
         const validation = validateStep(step as RegistrationStep)
         if (!validation.isValid) {
-          throw new Error(`Step ${step} validation failed: ${Object.values(validation.errors).join(', ')}`)
+          const errorMessages = Object.entries(validation.errors)
+            .map(([field, msg]) => `${field}: ${msg}`)
+            .join(', ')
+          throw new Error(`Step ${step} validation failed: ${errorMessages}`)
         }
       }
 
-      // TODO: Implement API call to complete registration
-      // const response = await api.post('/api/providers/registration/complete', {
-      //   registrationData: registrationState.value.data,
-      // })
+      console.log('✅ All steps validated. Submitting registration...', registrationState.value.data)
 
-      // Simulate API call
-      await new Promise((resolve) => setTimeout(resolve, 1000))
+      // Call backend API to register provider with all data
+      const response = await providerRegistrationService.registerProviderFull(
+        registrationState.value.data,
+      )
+
+      console.log('✅ Provider registered successfully:', response)
 
       registrationState.value.isDirty = false
 
       return {
         success: true,
-        message: 'Registration completed successfully. Pending admin approval.',
-        providerId: 'temp-provider-id',
+        message: response.message || 'Registration completed successfully. Pending admin approval.',
+        providerId: response.providerId,
       }
-    } catch (error) {
-      const message = error instanceof Error ? error.message : 'Failed to complete registration'
+    } catch (error: any) {
+      console.error('❌ Registration failed:', error)
+
+      const message =
+        error.response?.data?.message ||
+        error.message ||
+        'Failed to complete registration. Please try again.'
+
       registrationState.value.error = message
       return { success: false, message }
     } finally {

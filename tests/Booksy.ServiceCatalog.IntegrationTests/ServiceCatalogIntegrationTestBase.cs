@@ -129,11 +129,11 @@ public abstract class ServiceCatalogIntegrationTestBase
     /// <summary>
     /// Authenticate as the owner of a specific provider
     /// </summary>
-    protected void AuthenticateAsProviderOwner(Provider provider)
+    protected new void AuthenticateAsProviderOwner(Provider provider)
     {
-        AuthenticateAsProvider(
-            provider.Id.Value.ToString(),
-            provider.ContactInfo.Email.Value
+        base.AuthenticateAsProvider(
+            provider.ContactInfo.Email.Value,
+            provider.Id.Value.ToString()
         );
     }
 
@@ -142,13 +142,35 @@ public abstract class ServiceCatalogIntegrationTestBase
     /// </summary>
     protected void AuthenticateAsServiceOwner(Service service)
     {
-        AuthenticateAsProvider(
+        base.AuthenticateAsProvider(
             service.ProviderId.Value.ToString(),
             $"provider_{service.ProviderId.Value}@test.com"
         );
     }
 
+    /// <summary>
+    /// Authenticate as an admin user with default credentials
+    /// </summary>
+    protected void AuthenticateAsTestAdmin()
+    {
+        base.AuthenticateAsAdmin("admin@booksy.com");
+    }
 
+    /// <summary>
+    /// Expose base class ClearAuthentication for derived classes
+    /// </summary>
+    protected new void ClearAuthenticationHeader()
+    {
+        base.ClearAuthentication();
+    }
+
+    /// <summary>
+    /// Authenticate as a user (customer)
+    /// </summary>
+    protected void AuthenticateAsUser(string userId, string email)
+    {
+        base.AuthenticateAsCustomer(email);
+    }
 
     // ================================================
     // ASSERTION HELPERS (Service Catalog Specific)

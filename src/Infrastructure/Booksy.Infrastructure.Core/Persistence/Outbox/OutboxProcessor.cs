@@ -17,13 +17,13 @@ public class OutboxProcessor<TDbContext> : IOutboxProcessor<TDbContext>
     where TDbContext : DbContext
 {
     private readonly TDbContext _context;
-    private readonly IEventBus _eventBus;
+    private readonly IDomainEventDispatcher _eventBus;
     private readonly ILogger<OutboxProcessor<TDbContext>> _logger;
     private readonly int _maxRetries;
 
     public OutboxProcessor(
         TDbContext context,
-        IEventBus eventBus,
+        IDomainEventDispatcher eventBus,
         ILogger<OutboxProcessor<TDbContext>> logger)
     {
         _context = context;
@@ -63,7 +63,7 @@ public class OutboxProcessor<TDbContext> : IOutboxProcessor<TDbContext>
                     var domainEvent = JsonSerializer.Deserialize(message.Payload, eventType);
                     if (domainEvent is IDomainEvent evt)
                     {
-                        await _eventBus.PublishAsync(evt, cancellationToken);
+                        await _eventBus.DispatchEventAsync(evt, cancellationToken);
                         await MarkAsProcessedAsync(message.Id, cancellationToken);
 
                         _logger.LogInformation("Outbox message {MessageId} processed successfully", message.Id);

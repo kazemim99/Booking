@@ -532,5 +532,10 @@ namespace Booksy.UserManagement.Domain.Aggregates
             PhoneNumberVerified = false;
             PhoneVerifiedAt = null;
         }
+
+        public void SetStatus(UserStatus pending)
+        {
+            this.Status = pending;
+        }
     }
 }

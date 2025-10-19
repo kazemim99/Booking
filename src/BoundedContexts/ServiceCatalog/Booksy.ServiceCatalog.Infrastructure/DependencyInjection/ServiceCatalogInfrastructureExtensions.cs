@@ -1,5 +1,7 @@
 ﻿using Booksy.Core.Application.Abstractions.Persistence;
 using Booksy.Infrastructure.Core.DependencyInjection;
+using Booksy.Infrastructure.Core.EventBus;
+using Booksy.Infrastructure.Core.EventBus.Abstractions;
 using Booksy.Infrastructure.Core.Persistence.Base;
 using Booksy.ServiceCatalog.Application.Abstractions.Queries;
 using Booksy.ServiceCatalog.Application.Services.Implementations;
@@ -24,9 +26,6 @@ namespace Booksy.ServiceCatalog.Infrastructure.DependencyInjection
             this IServiceCollection services,
             IConfiguration configuration)
         {
-
-            services.AddInfrastructureCore(configuration);
-
             // Database Context
             services.AddDbContext<ServiceCatalogDbContext>(options =>
             {
@@ -61,7 +60,8 @@ namespace Booksy.ServiceCatalog.Infrastructure.DependencyInjection
             services.AddScoped<IUnitOfWork>(provider =>
                 new EfCoreUnitOfWork<ServiceCatalogDbContext>(
                     provider.GetRequiredService<ServiceCatalogDbContext>(),
-                    provider.GetRequiredService<ILogger<EfCoreUnitOfWork<ServiceCatalogDbContext>>>()));
+                    provider.GetRequiredService<ILogger<EfCoreUnitOfWork<ServiceCatalogDbContext>>>(),
+                    provider.GetRequiredService<IDomainEventDispatcher>()));
 
             // Repositories
             services.AddScoped<IProviderReadRepository, ProviderReadRepository>();
@@ -82,6 +82,9 @@ namespace Booksy.ServiceCatalog.Infrastructure.DependencyInjection
 
             // Application Services
             services.AddScoped<IProviderApplicationService, ProviderApplicationService>();
+
+            // CAP Event Bus with Outbox Pattern
+            services.AddCapEventBus<ServiceCatalogDbContext>(configuration, "ServiceCatalog");
 
             // Health Checks
             services.AddHealthChecks()

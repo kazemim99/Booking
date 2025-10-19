@@ -1,4 +1,6 @@
+using Booksy.API.Observability;
 using Microsoft.AspNetCore.Hosting;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Hosting;
 using Serilog;
 
@@ -8,33 +10,33 @@ namespace Booksy.API
     {
         public static void Main(string[] args)
         {
-            // Configure Serilog
-            Log.Logger = new LoggerConfiguration()
-                .Enrich.FromLogContext()
-                .Enrich.WithMachineName()
-                .Enrich.WithEnvironmentName()
-                .WriteTo.Console()
-                .WriteTo.File("logs/booksy-usermanagement-.txt", rollingInterval: RollingInterval.Day)
-                .CreateLogger();
+           
+
+            // Configure Serilog with centralized configuration
 
             try
             {
-                Log.Information("Starting up...");
+                Log.Information("========================================");
+                Log.Information("Starting ServiceCatalog API");
+                Log.Information("Environment: {Environment}", Environment.GetEnvironmentVariable("ASPNETCORE_ENVIRONMENT") ?? "Development");
+                Log.Information("========================================");
+
                 CreateHostBuilder(args).Build().Run();
             }
             catch (Exception ex)
             {
-                Log.Fatal(ex, "Application start-up failed");
+                Log.Fatal(ex, "ServiceCatalog API terminated unexpectedly");
             }
             finally
             {
+                Log.Information("Shutting down ServiceCatalog API");
                 Log.CloseAndFlush();
             }
         }
 
         public static IHostBuilder CreateHostBuilder(string[] args) =>
             Host.CreateDefaultBuilder(args)
-                .UseSerilog() // attach Serilog
+                .UseSerilogWithConfiguration("ServiceCatalog.API")
                 .ConfigureWebHostDefaults(webBuilder =>
                 {
                     webBuilder.UseStartup<Startup>();

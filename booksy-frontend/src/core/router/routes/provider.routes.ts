@@ -51,12 +51,6 @@ const providerRoutes: RouteRecordRaw[] = [
         component: () => import('@/modules/provider/views/dashboard/ProviderDashboardView.vue'),
         meta: { title: 'Provider Dashboard' },
       },
-      {
-        path: 'onboarding',
-        name: 'ProviderOnboarding',
-        component: () => import('@/modules/provider/views/dashboard/ProviderOnboardingView.vue'),
-        meta: { title: 'Complete Your Profile' },
-      },
 
       // Profile Management
       {

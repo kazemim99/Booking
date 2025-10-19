@@ -1,11 +1,7 @@
-﻿// ========================================
-// Caching/InfrastructureCoreExtensions.cs
-// ========================================
+﻿
 using Booksy.Core.Application.Abstractions.Services;
 using Booksy.Infrastructure.Core.CQRS;
 using Booksy.Infrastructure.Core.EventBus.Abstractions;
-using Booksy.Infrastructure.Core.EventBus.InMemory;
-using Booksy.Infrastructure.Core.EventBus.RabbitMQ;
 using Booksy.Infrastructure.Core.EventBus;
 using Booksy.Infrastructure.Core.Services;
 using Microsoft.Extensions.Caching.Memory;
@@ -20,9 +16,6 @@ using Booksy.Infrastructure.Core.Persistence.Base;
 namespace Booksy.Infrastructure.Core.DependencyInjection;
 
 
-// ========================================
-// Caching/CacheSettings.cs
-// ========================================
 
 /// <summary>
 /// Extension methods for registering infrastructure core services
@@ -40,7 +33,9 @@ public static class InfrastructureCoreExtensions
         // Add Core Services
         services.AddSingleton<IDateTimeProvider, DateTimeProvider>();
         services.AddScoped<ICurrentUserService, CurrentUserService>();
-        services.AddSingleton<IDomainEventDispatcher, DomainEventDispatcher>();
+
+        // Use SimpleDomainEventDispatcher instead of MediatR-based dispatcher
+        services.AddScoped<IDomainEventDispatcher, SimpleDomainEventDispatcher>();
 
         services.AddHttpContextAccessor();
 
@@ -65,23 +60,6 @@ public static class InfrastructureCoreExtensions
         this IServiceCollection services,
         IConfiguration configuration)
     {
-        var eventBusSettings = configuration.GetSection("EventBus").Get<EventBusSettings>() ?? new EventBusSettings();
-
-        services.AddSingleton<IDomainEventDispatcher, DomainEventDispatcher>();
-
-        switch (eventBusSettings.Provider?.ToLower())
-        {
-            case "rabbitmq":
-                services.Configure<RabbitMqSettings>(configuration.GetSection("EventBus:RabbitMQ"));
-                services.AddSingleton<IEventBus, RabbitMqEventBus>();
-                break;
-
-            case "inmemory":
-            default:
-                services.AddSingleton<IEventBus, InMemoryEventBus>();
-                break;
-        }
-
         services.AddScoped<IIntegrationEventPublisher, IntegrationEventPublisher>();
 
         return services;

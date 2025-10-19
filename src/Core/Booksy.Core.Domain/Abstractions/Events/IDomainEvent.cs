@@ -1,10 +1,10 @@
-﻿// ========================================
-// Booksy.Core.Domain/Abstractions/Events/IDomainEvent.cs
-// ========================================
+﻿
+
 namespace Booksy.Core.Domain.Abstractions.Events
 {
     /// <summary>
     /// Represents a domain event that captures something that happened in the domain
+    /// Pure domain layer abstraction - NO infrastructure dependencies (no MediatR!)
     /// </summary>
     public interface IDomainEvent
     {

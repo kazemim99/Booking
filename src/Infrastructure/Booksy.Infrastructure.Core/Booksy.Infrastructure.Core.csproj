@@ -7,7 +7,12 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="RabbitMQ.Client" Version="7.1.2" />
+    <PackageReference Include="DotNetCore.CAP" Version="8.0.0" />
+    <PackageReference Include="DotNetCore.CAP.Dashboard" Version="8.0.0" />
+    <PackageReference Include="DotNetCore.CAP.PostgreSql" Version="8.0.0" />
+    <PackageReference Include="DotNetCore.CAP.RabbitMQ" Version="8.0.0" />
+    <PackageReference Include="RabbitMQ.Client" Version="6.7.0" />
+    <PackageReference Include="Savorboard.CAP.InMemoryMessageQueue" Version="8.0.0" />
     <PackageReference Include="StackExchange.Redis" Version="2.8.0" />
   </ItemGroup>
 

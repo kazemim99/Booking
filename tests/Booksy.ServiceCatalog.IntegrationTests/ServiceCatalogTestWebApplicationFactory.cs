@@ -71,11 +71,15 @@ public class ServiceCatalogTestWebApplicationFactory<TStartup>
             // Add test authentication
             services.AddSingleton<TestUserContext>();
 
-
-            services.AddAuthentication("IntegrationTest")
-                  .AddScheme<AuthenticationSchemeOptions, IntegrationTestAuthenticationHandler>(
-                      "IntegrationTest",
-                      options => { });
+            services.AddAuthentication(options =>
+            {
+                options.DefaultAuthenticateScheme = "IntegrationTest";
+                options.DefaultChallengeScheme = "IntegrationTest";
+                options.DefaultScheme = "IntegrationTest";
+            })
+            .AddScheme<AuthenticationSchemeOptions, IntegrationTestAuthenticationHandler>(
+                "IntegrationTest",
+                options => { });
 
             // Replace production services with test doubles if needed
             // Example: Replace email service with fake
