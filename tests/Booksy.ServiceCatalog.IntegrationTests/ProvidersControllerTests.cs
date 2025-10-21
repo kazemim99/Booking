@@ -9,6 +9,7 @@ using Booksy.ServiceCatalog.IntegrationTests.Infrastructure;
 using FluentAssertions;
 using System.Net;
 using Xunit;
+using Booksy.ServiceCatalog.Api.Models.Requests;
 
 namespace Booksy.ServiceCatalog.IntegrationTests.API.Providers;
 
@@ -517,6 +518,182 @@ public class ProvidersControllerTests : ServiceCatalogIntegrationTestBase
         var result = await GetResponseAsync<List<ProviderSummaryResponse>>(response);
         result.Should().NotBeNull();
         result.Should().HaveCountLessThanOrEqualTo(5);
+    }
+
+    #endregion
+
+    #region GetCurrentProviderStatus Tests
+
+    [Fact]
+    public async Task GetCurrentProviderStatus_WithAuthenticatedProviderUser_ShouldReturn200OK()
+    {
+        // Arrange
+        var userId = Guid.NewGuid();
+        var provider = await CreateAndAuthenticateAsProviderAsync("Test Provider", "provider@test.com", userId);
+
+        // Act
+        var response = await GetAsync("/api/v1/providers/current/status");
+
+        // Assert
+        response.StatusCode.Should().Be(HttpStatusCode.OK);
+
+        var result = await GetResponseAsync<ProviderStatusResponse>(response);
+        result.Should().NotBeNull();
+        result!.ProviderId.Should().Be(provider.Id.Value);
+        result.UserId.Should().Be(userId);
+        result.Status.Should().NotBeNullOrEmpty();
+    }
+
+    [Fact]
+    public async Task GetCurrentProviderStatus_WithDraftedStatus_ShouldReturnDraftedStatus()
+    {
+        // Arrange
+        var userId = Guid.NewGuid();
+        var provider = await CreateProviderWithStatusAsync(userId, "Drafted Provider", ProviderStatus.Drafted);
+        AuthenticateAsUser(userId.ToString(), "drafted@test.com");
+
+        // Act
+        var response = await GetAsync("/api/v1/providers/current/status");
+
+        // Assert
+        response.StatusCode.Should().Be(HttpStatusCode.OK);
+
+        var result = await GetResponseAsync<ProviderStatusResponse>(response);
+        result.Should().NotBeNull();
+        result!.Status.Should().Be(ProviderStatus.Drafted.ToString());
+        result.ProviderId.Should().Be(provider.Id.Value);
+    }
+
+    [Fact]
+    public async Task GetCurrentProviderStatus_WithPendingVerificationStatus_ShouldReturnPendingVerificationStatus()
+    {
+        // Arrange
+        var userId = Guid.NewGuid();
+        var provider = await CreateProviderWithStatusAsync(userId, "Pending Provider", ProviderStatus.PendingVerification);
+        AuthenticateAsUser(userId.ToString(), "pending@test.com");
+
+        // Act
+        var response = await GetAsync("/api/v1/providers/current/status");
+
+        // Assert
+        response.StatusCode.Should().Be(HttpStatusCode.OK);
+
+        var result = await GetResponseAsync<ProviderStatusResponse>(response);
+        result.Should().NotBeNull();
+        result!.Status.Should().Be(ProviderStatus.PendingVerification.ToString());
+    }
+
+    [Fact]
+    public async Task GetCurrentProviderStatus_WithActiveStatus_ShouldReturnActiveStatus()
+    {
+        // Arrange
+        var userId = Guid.NewGuid();
+        var provider = await CreateProviderWithStatusAsync(userId, "Active Provider", ProviderStatus.Active);
+        AuthenticateAsUser(userId.ToString(), "active@test.com");
+
+        // Act
+        var response = await GetAsync("/api/v1/providers/current/status");
+
+        // Assert
+        response.StatusCode.Should().Be(HttpStatusCode.OK);
+
+        var result = await GetResponseAsync<ProviderStatusResponse>(response);
+        result.Should().NotBeNull();
+        result!.Status.Should().Be(ProviderStatus.Active.ToString());
+    }
+
+    [Fact]
+    public async Task GetCurrentProviderStatus_WithInactiveStatus_ShouldReturnInactiveStatus()
+    {
+        // Arrange
+        var userId = Guid.NewGuid();
+        var provider = await CreateProviderWithStatusAsync(userId, "Inactive Provider", ProviderStatus.Inactive);
+        AuthenticateAsUser(userId.ToString(), "inactive@test.com");
+
+        // Act
+        var response = await GetAsync("/api/v1/providers/current/status");
+
+        // Assert
+        response.StatusCode.Should().Be(HttpStatusCode.OK);
+
+        var result = await GetResponseAsync<ProviderStatusResponse>(response);
+        result.Should().NotBeNull();
+        result!.Status.Should().Be(ProviderStatus.Inactive.ToString());
+    }
+
+    [Fact]
+    public async Task GetCurrentProviderStatus_WithSuspendedStatus_ShouldReturnSuspendedStatus()
+    {
+        // Arrange
+        var userId = Guid.NewGuid();
+        var provider = await CreateProviderWithStatusAsync(userId, "Suspended Provider", ProviderStatus.Suspended);
+        AuthenticateAsUser(userId.ToString(), "suspended@test.com");
+
+        // Act
+        var response = await GetAsync("/api/v1/providers/current/status");
+
+        // Assert
+        response.StatusCode.Should().Be(HttpStatusCode.OK);
+
+        var result = await GetResponseAsync<ProviderStatusResponse>(response);
+        result.Should().NotBeNull();
+        result!.Status.Should().Be(ProviderStatus.Suspended.ToString());
+    }
+
+    [Fact]
+    public async Task GetCurrentProviderStatus_WithoutProviderRecord_ShouldReturn404NotFound()
+    {
+        // Arrange - Authenticate as user without a provider record
+        var userId = Guid.NewGuid();
+        AuthenticateAsUser(userId.ToString(), "noprovider@test.com");
+
+        // Act
+        var response = await GetAsync("/api/v1/providers/current/status");
+
+        // Assert
+        response.StatusCode.Should().Be(HttpStatusCode.NotFound);
+
+        var content = await response.Content.ReadAsStringAsync();
+        content.Should().Contain("Provider record not found");
+    }
+
+    [Fact]
+    public async Task GetCurrentProviderStatus_WithoutAuthentication_ShouldReturn401Unauthorized()
+    {
+        // Arrange - No authentication
+
+        // Act
+        var response = await GetAsync("/api/v1/providers/current/status");
+
+        // Assert
+        response.StatusCode.Should().Be(HttpStatusCode.Unauthorized);
+    }
+
+    [Fact]
+    public async Task GetCurrentProviderStatus_MultipleProviders_ShouldReturnOnlyCurrentUserProvider()
+    {
+        // Arrange - Create multiple providers
+        var user1Id = Guid.NewGuid();
+        var user2Id = Guid.NewGuid();
+
+        var provider1 = await CreateProviderWithStatusAsync(user1Id, "Provider 1", ProviderStatus.Active);
+        var provider2 = await CreateProviderWithStatusAsync(user2Id, "Provider 2", ProviderStatus.Drafted);
+
+        // Authenticate as user 1
+        AuthenticateAsUser(user1Id.ToString(), "user1@test.com");
+
+        // Act
+        var response = await GetAsync("/api/v1/providers/current/status");
+
+        // Assert
+        response.StatusCode.Should().Be(HttpStatusCode.OK);
+
+        var result = await GetResponseAsync<ProviderStatusResponse>(response);
+        result.Should().NotBeNull();
+        result!.ProviderId.Should().Be(provider1.Id.Value);
+        result.ProviderId.Should().NotBe(provider2.Id.Value);
+        result.UserId.Should().Be(user1Id);
+        result.Status.Should().Be(ProviderStatus.Active.ToString());
     }
 
     #endregion

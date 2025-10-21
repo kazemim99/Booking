@@ -1,7 +1,23 @@
 <template>
   <div class="provider-dashboard">
     <!-- Welcome Header -->
-    <WelcomeCard :provider="currentProvider" :show-onboarding="!isProfileComplete" />
+    <WelcomeCard v-if="currentProvider" :provider="currentProvider" :show-onboarding="!isProfileComplete" />
+
+    <!-- Provider Status Banner -->
+    <div v-if="showStatusBanner" class="status-banner" :class="`status-${providerStatus?.toLowerCase()}`">
+      <div class="status-banner-content">
+        <div class="status-icon">
+          <span v-if="providerStatus === ProviderStatus.PendingVerification">⏳</span>
+          <span v-else-if="providerStatus === ProviderStatus.Inactive">⚠️</span>
+          <span v-else-if="providerStatus === ProviderStatus.Suspended">🚫</span>
+          <span v-else-if="providerStatus === ProviderStatus.Archived">📦</span>
+        </div>
+        <div class="status-text">
+          <h3 class="status-title">{{ statusTitle }}</h3>
+          <p class="status-message">{{ statusMessage }}</p>
+        </div>
+      </div>
+    </div>
 
     <!-- Quick Stats -->
     <div class="stats-grid">
@@ -40,7 +56,7 @@
       <Card class="dashboard-card bookings-card">
         <div class="card-header">
           <h2>Recent Bookings</h2>
-          <AppButton variant="text" size="sm" @click="goToBookings"> View All </AppButton>
+          <AppButton variant="link" size="small" @click="goToBookings"> View All </AppButton>
         </div>
         <RecentBookingsCard :bookings="recentBookings" :loading="isLoading" />
       </Card>
@@ -53,14 +69,6 @@
         <QuickActionsCard @action="handleQuickAction" />
       </Card>
 
-      <!-- Profile Completion (if incomplete) -->
-      <Card v-if="!isProfileComplete" class="dashboard-card completion-card">
-        <ProfileCompletionCard
-          :percentage="completionPercentage"
-          :missing-items="missingProfileItems"
-          @complete="goToOnboarding"
-        />
-      </Card>
     </div>
   </div>
 </template>
@@ -69,18 +77,60 @@
 import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { useProviderStore } from '../../stores/provider.store'
+import { useAuthStore } from '@/core/stores/modules/auth.store'
+import { ProviderStatus } from '../../types/provider.types'
 import { Card } from '@/shared/components'
+import AppButton from '@/shared/components/ui/Button/AppButton.vue'
 import WelcomeCard from '../../components/dashboard/WelcomeCard.vue'
 import QuickStatsCard from '../../components/dashboard/QuickStatsCard.vue'
 import RecentBookingsCard from '../../components/dashboard/RecentBookingsCard.vue'
-import QuickActionsCard from '../../components/dashboard/QuickActionsCard.vue'
-import ProfileCompletionCard from '../../components/onboarding/ProfileCompletionCard.vue'
 
 const router = useRouter()
 const providerStore = useProviderStore()
+const authStore = useAuthStore()
 
 const isLoading = ref(false)
 const currentProvider = computed(() => providerStore.currentProvider)
+const providerStatus = computed(() => authStore.providerStatus)
+
+// Status banner computed properties
+const showStatusBanner = computed(() => {
+  const status = providerStatus.value
+  return status === ProviderStatus.PendingVerification ||
+         status === ProviderStatus.Inactive ||
+         status === ProviderStatus.Suspended ||
+         status === ProviderStatus.Archived
+})
+
+const statusTitle = computed(() => {
+  switch (providerStatus.value) {
+    case ProviderStatus.PendingVerification:
+      return 'Account Pending Verification'
+    case ProviderStatus.Inactive:
+      return 'Account Inactive'
+    case ProviderStatus.Suspended:
+      return 'Account Suspended'
+    case ProviderStatus.Archived:
+      return 'Account Archived'
+    default:
+      return ''
+  }
+})
+
+const statusMessage = computed(() => {
+  switch (providerStatus.value) {
+    case ProviderStatus.PendingVerification:
+      return 'Your provider account is awaiting admin verification. You can view your dashboard but some features may be limited until verification is complete.'
+    case ProviderStatus.Inactive:
+      return 'Your provider account is currently inactive. Please contact support to reactivate your account.'
+    case ProviderStatus.Suspended:
+      return 'Your provider account has been temporarily suspended. Please contact support for more information.'
+    case ProviderStatus.Archived:
+      return 'Your provider account has been archived. Please contact support if you believe this is an error.'
+    default:
+      return ''
+  }
+})
 
 // Mock data - Replace with real API calls
 const todayStats = ref({
@@ -109,36 +159,6 @@ const isProfileComplete = computed(() => {
   )
 })
 
-const completionPercentage = computed(() => {
-  const provider = currentProvider.value
-  if (!provider) return 0
-
-  const checks = [
-    !!provider.profile.businessName,
-    !!provider.profile.description,
-    !!provider.profile.logoUrl,
-    !!provider.contactInfo.email,
-    !!provider.contactInfo.primaryPhone,
-    !!provider.address.addressLine1,
-    !!provider.businessHours && provider.businessHours.length > 0,
-    !!provider.services && provider.services.length > 0,
-  ]
-
-  return Math.round((checks.filter(Boolean).length / checks.length) * 100)
-})
-
-const missingProfileItems = computed(() => {
-  const provider = currentProvider.value
-  const items = []
-
-  if (!provider?.profile.logoUrl) items.push('Upload business logo')
-  if (!provider?.profile.description) items.push('Add business description')
-  if (!provider?.businessHours || provider.businessHours.length === 0)
-    items.push('Set business hours')
-  if (!provider?.services || provider.services.length === 0) items.push('Add services')
-
-  return items
-})
 
 const formatCurrency = (amount: number) => {
   return new Intl.NumberFormat('en-US', {
@@ -151,9 +171,6 @@ const goToBookings = () => {
   router.push({ name: 'ProviderBookings' })
 }
 
-const goToOnboarding = () => {
-  router.push({ name: 'ProviderOnboarding' })
-}
 
 const handleQuickAction = (action: string) => {
   switch (action) {
@@ -240,5 +257,79 @@ onMounted(async () => {
   .bookings-card {
     grid-row: span 1;
   }
+}
+
+/* Status Banner Styles */
+.status-banner {
+  padding: 1rem 1.5rem;
+  border-radius: 0.5rem;
+  border-left: 4px solid;
+  background: white;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+.status-banner-content {
+  display: flex;
+  align-items: flex-start;
+  gap: 1rem;
+}
+
+.status-icon {
+  font-size: 1.5rem;
+  flex-shrink: 0;
+}
+
+.status-text {
+  flex: 1;
+}
+
+.status-title {
+  font-size: 1rem;
+  font-weight: 600;
+  margin: 0 0 0.5rem 0;
+}
+
+.status-message {
+  font-size: 0.875rem;
+  margin: 0;
+  color: #6b7280;
+  line-height: 1.5;
+}
+
+/* Status-specific colors */
+.status-pendingverification {
+  border-left-color: #f59e0b;
+  background: #fffbeb;
+}
+
+.status-pendingverification .status-title {
+  color: #d97706;
+}
+
+.status-inactive {
+  border-left-color: #ef4444;
+  background: #fef2f2;
+}
+
+.status-inactive .status-title {
+  color: #dc2626;
+}
+
+.status-suspended {
+  border-left-color: #dc2626;
+  background: #fef2f2;
+}
+
+.status-suspended .status-title {
+  color: #991b1b;
+}
+
+.status-archived {
+  border-left-color: #6b7280;
+  background: #f9fafb;
+}
+
+.status-archived .status-title {
+  color: #4b5563;
 }
 </style>

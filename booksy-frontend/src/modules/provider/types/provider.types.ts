@@ -1,9 +1,11 @@
 export enum ProviderStatus {
-  Pending = 'Pending',
+  Drafted = 'Drafted',
+  PendingVerification = 'PendingVerification',
+  Verified = 'Verified',
   Active = 'Active',
   Inactive = 'Inactive',
   Suspended = 'Suspended',
-  Deactivated = 'Deactivated',
+  Archived = 'Archived',
 }
 
 export enum ProviderType {

@@ -118,11 +118,13 @@ export function useProvider() {
 
   const getProviderStatusColor = (status: ProviderStatus): string => {
     const colors: Record<ProviderStatus, string> = {
+      Drafted: '#9ca3af',
+      PendingVerification: '#f59e0b',
+      Verified: '#3b82f6',
       Active: '#10b981',
-      Pending: '#f59e0b',
       Inactive: '#6b7280',
       Suspended: '#ef4444',
-      Deactivated: '#9ca3af',
+      Archived: '#9ca3af',
     }
     return colors[status] || '#6b7280'
   }

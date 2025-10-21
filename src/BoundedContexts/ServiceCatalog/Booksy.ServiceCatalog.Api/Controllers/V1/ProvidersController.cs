@@ -9,6 +9,7 @@ using Booksy.ServiceCatalog.Application.Commands.Provider.ActivateProvider;
 using Booksy.ServiceCatalog.Application.Commands.Provider.RegisterProviderFull;
 using Booksy.ServiceCatalog.Application.Queries.Provider.GetProviderById;
 using Booksy.ServiceCatalog.Application.Queries.Provider.GetProvidersByStatus;
+using Booksy.ServiceCatalog.Application.Queries.Provider.GetCurrentProviderStatus;
 using Booksy.API.Extensions;
 using Booksy.ServiceCatalog.Api.Models.Responses;
 using Booksy.ServiceCatalog.Api.Models.Requests.Extenstions;
@@ -158,6 +159,47 @@ public class ProvidersController : ControllerBase
         var result = await _mediator.Send(query, cancellationToken);
 
         return Ok(MapToProviderDetailsResponse(result));
+    }
+
+    /// <summary>
+    /// Gets the current authenticated user's Provider status
+    /// </summary>
+    /// <returns>Provider status information</returns>
+    /// <response code="200">Provider status retrieved successfully</response>
+    /// <response code="404">Provider record not found for current user</response>
+    /// <response code="401">User not authenticated</response>
+    [HttpGet("current/status")]
+    [Authorize]
+    [ProducesResponseType(typeof(ProviderStatusResponse), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ApiErrorResult), StatusCodes.Status404NotFound)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    public async Task<IActionResult> GetCurrentProviderStatus(
+        CancellationToken cancellationToken = default)
+    {
+        var query = new GetCurrentProviderStatusQuery();
+        var result = await _mediator.Send(query, cancellationToken);
+
+        if (result == null)
+        {
+            return NotFound(new
+            {
+                success = false,
+                message = "Provider record not found",
+                errorCode = "PROVIDER_NOT_FOUND"
+            });
+        }
+
+        var response = new ProviderStatusResponse
+        {
+            ProviderId = result.ProviderId,
+            Status = result.Status.ToString(),
+            UserId = result.UserId
+        };
+
+        _logger.LogInformation("Provider status retrieved for user {UserId}: {Status}",
+            result.UserId, result.Status);
+
+        return Ok(response);
     }
 
     /// <summary>

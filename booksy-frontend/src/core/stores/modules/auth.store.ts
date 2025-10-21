@@ -4,6 +4,8 @@ import { defineStore } from 'pinia'
 import { computed, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { authApi } from '@/modules/auth/api/auth.api'
+import { providerService } from '@/modules/provider/services/provider.service'
+import { ProviderStatus } from '@/modules/provider/types/provider.types'
 
 interface ValidationErrors {
   [key: string]: string[]
@@ -20,6 +22,10 @@ export const useAuthStore = defineStore('auth', () => {
   const error = ref<string | null>(null)
   const validationErrors = ref<ValidationErrors>({})
 
+  // Provider status state
+  const providerStatus = ref<ProviderStatus | null>(null)
+  const providerId = ref<string | null>(null)
+
   // Getters
   const isAuthenticated = computed(() => !!token.value && !!user.value)
   const currentUser = computed(() => user.value)
@@ -27,6 +33,19 @@ export const useAuthStore = defineStore('auth', () => {
   const userName = computed(() => {
     if (!user.value) return 'Guest'
     return user.value.fullName || user.value.email || 'User'
+  })
+
+  // Provider status getters
+  const needsProfileCompletion = computed(() => {
+    return providerStatus.value === ProviderStatus.Drafted || providerStatus.value === null
+  })
+
+  const isPendingVerification = computed(() => {
+    return providerStatus.value === ProviderStatus.PendingVerification
+  })
+
+  const isProviderActive = computed(() => {
+    return providerStatus.value === ProviderStatus.Active || providerStatus.value === ProviderStatus.Verified
   })
 
   // Actions
@@ -131,9 +150,147 @@ export const useAuthStore = defineStore('auth', () => {
   }
 
   /**
-   * Redirect user to appropriate dashboard based on role
+   * Set provider status
    */
-  function redirectToDashboard() {
+  function setProviderStatus(status: ProviderStatus | null, id: string | null) {
+    providerStatus.value = status
+    providerId.value = id
+  }
+
+  /**
+   * Clear provider status
+   */
+  function clearProviderStatus() {
+    providerStatus.value = null
+    providerId.value = null
+  }
+
+  /**
+   * Fetch provider status for current user
+   * Called after login for Provider users
+   */
+  async function fetchProviderStatus(): Promise<void> {
+    try {
+      console.log('[AuthStore] Fetching provider status')
+      const statusData = await providerService.getCurrentProviderStatus()
+
+      if (statusData) {
+        setProviderStatus(statusData.status, statusData.providerId)
+        console.log('[AuthStore] Provider status set:', statusData.status)
+      } else {
+        // No provider record found - user needs to complete registration
+        setProviderStatus(null, null)
+        console.log('[AuthStore] No provider record found')
+      }
+    } catch (err) {
+      console.error('[AuthStore] Failed to fetch provider status:', err)
+      // Don't throw - we'll handle this gracefully in the UI
+      setProviderStatus(null, null)
+      throw err
+    }
+  }
+
+  /**
+   * Login user
+   */
+  async function login(credentials: { email: string; password: string; rememberMe?: boolean }): Promise<boolean> {
+    try {
+      setLoading(true)
+      clearError()
+      clearValidationErrors()
+
+      const response = await authApi.login(credentials)
+
+      if (!response.success || !response.data) {
+        setError(response.error?.message || 'Login failed')
+        if (response.error?.errors) {
+          setValidationErrors(response.error.errors)
+        }
+        return false
+      }
+
+      const { tokens, user: userData } = response.data
+
+      setToken(tokens.accessToken)
+      setRefreshToken(tokens.refreshToken)
+
+      // Transform API response to User type
+      const user: User = {
+        ...userData,
+        email: userData.email || undefined,
+        fullName: `${userData.profile.firstName} ${userData.profile.lastName}`,
+        firstName: userData.profile.firstName,
+        lastName: userData.profile.lastName,
+        avatarUrl: userData.profile.avatarUrl,
+        userType: 'Customer' as any, // Default, will be updated from profile
+        preferences: {} as any, // Will be loaded separately
+        metadata: {} as any, // Will be loaded separately
+        updatedAt: userData.lastModifiedAt,
+        status: userData.status as any,
+        lastModifiedAt: userData.lastModifiedAt || new Date().toISOString(),
+      }
+
+      setUser(user)
+
+      // Fetch provider status if user is a Provider
+      if (userData.roles && (userData.roles.includes('Provider') || userData.roles.includes('ServiceProvider'))) {
+        try {
+          await fetchProviderStatus()
+        } catch (err) {
+          console.error('[AuthStore] Failed to fetch provider status after login:', err)
+          // Don't fail login if provider status fetch fails
+        }
+      }
+
+      return true
+    } catch (err: unknown) {
+      const error = err as { message?: string }
+      setError(error.message || 'An unexpected error occurred during login')
+      return false
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  /**
+   * Register new user
+   */
+  async function register(data: { email: string; password: string; firstName: string; lastName: string; userType?: string }): Promise<boolean> {
+    try {
+      setLoading(true)
+      clearError()
+      clearValidationErrors()
+
+      const registerRequest = {
+        ...data,
+        userType: data.userType || 'Customer'
+      }
+
+      const response = await authApi.register(registerRequest)
+
+      if (!response.success || !response.data) {
+        setError(response.error?.message || 'Registration failed')
+        if (response.error?.errors) {
+          setValidationErrors(response.error.errors)
+        }
+        return false
+      }
+
+      // Registration successful - user needs to login
+      return true
+    } catch (err: unknown) {
+      const error = err as { message?: string }
+      setError(error.message || 'An unexpected error occurred during registration')
+      return false
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  /**
+   * Redirect user to appropriate dashboard based on role and provider status
+   */
+  async function redirectToDashboard() {
     if (!user.value || !user.value.roles) {
       router.push({ name: 'Login' })
       return
@@ -147,8 +304,27 @@ export const useAuthStore = defineStore('auth', () => {
       return
     }
 
-    // Provider redirect
+    // Provider redirect - check status first
     if (roles.includes('Provider') || roles.includes('ServiceProvider')) {
+      // Fetch provider status if not already loaded
+      if (providerStatus.value === null && providerId.value === null) {
+        try {
+          await fetchProviderStatus()
+        } catch (err) {
+          console.error('[AuthStore] Error fetching provider status, redirecting to registration')
+          router.push({ name: 'ProviderRegistration' })
+          return
+        }
+      }
+
+      // Redirect based on provider status
+      if (providerStatus.value === ProviderStatus.Drafted || providerStatus.value === null) {
+        // Provider needs to complete registration
+        router.push({ name: 'ProviderRegistration' })
+        return
+      }
+
+      // All other statuses (PendingVerification, Verified, Active, etc.) go to dashboard
       router.push({ path: '/provider/dashboard' })
       return
     }
@@ -181,6 +357,7 @@ export const useAuthStore = defineStore('auth', () => {
       setUser(null)
       clearError()
       clearValidationErrors()
+      clearProviderStatus()
       // Clear provider data
       localStorage.removeItem('provider_id')
 
@@ -190,6 +367,7 @@ export const useAuthStore = defineStore('auth', () => {
       setToken(null)
       setRefreshToken(null)
       setUser(null)
+      clearProviderStatus()
       // Clear provider data
       localStorage.removeItem('provider_id')
       router.push({ name: 'Login' })
@@ -292,12 +470,17 @@ export const useAuthStore = defineStore('auth', () => {
     isLoading,
     error,
     validationErrors,
+    providerStatus,
+    providerId,
 
     // Getters
     isAuthenticated,
     currentUser,
     userRoles,
     userName,
+    needsProfileCompletion,
+    isPendingVerification,
+    isProviderActive,
 
     // Actions
     setToken,
@@ -312,6 +495,11 @@ export const useAuthStore = defineStore('auth', () => {
     hasAnyRole,
     hasAllRoles,
     hasPermission,
+    setProviderStatus,
+    clearProviderStatus,
+    fetchProviderStatus,
+    login,
+    register,
     redirectToDashboard,
     logout,
     refresh,

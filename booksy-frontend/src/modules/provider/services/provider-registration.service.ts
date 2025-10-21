@@ -91,7 +91,7 @@ class ProviderRegistrationService {
       request,
     )
 
-    return response.data
+    return response.data!
   }
 
   /**

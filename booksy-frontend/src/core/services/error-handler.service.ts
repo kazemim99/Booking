@@ -107,7 +107,7 @@ class ErrorHandlerService {
   /**
    * Handle server errors (5xx)
    */
-  private handleServerError(data: ApiErrorResponse, status: number): ErrorHandlerResult {
+  private handleServerError(data: ApiErrorResponse, _status: number): ErrorHandlerResult {
     const errorMessages: string[] = []
 
     // Collect all error messages from the response

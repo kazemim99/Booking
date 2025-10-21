@@ -431,4 +431,83 @@ public abstract class ServiceCatalogIntegrationTestBase
         var query = string.Join("&", queryParams);
         return await GetAsync($"/api/v1/services/search?{query}");
     }
+
+    // ================================================
+    // PROVIDER STATUS HELPERS (for GetCurrentProviderStatus tests)
+    // ================================================
+
+    /// <summary>
+    /// Create a provider with a specific status and user ID
+    /// </summary>
+    protected async Task<Provider> CreateProviderWithStatusAsync(
+        Guid userId,
+        string businessName,
+        Domain.Enums.ProviderStatus status)
+    {
+        var provider = Provider.RegisterProvider(
+            UserId.From(userId),
+            businessName,
+            $"Description for {businessName}",
+            Domain.Enums.ProviderType.Individual,
+            ContactInfo.Create(
+                Email.Create($"{userId}@test.com"),
+                PhoneNumber.Create("+1234567890")
+            ),
+            BusinessAddress.Create(
+                "123 Test St",
+                "Test City",
+                "TS",
+                "12345",
+                "USA"
+            )
+        );
+
+        provider.SetSatus(status);
+        provider.SetAllowOnlineBooking(true);
+
+        await CreateEntityAsync(provider);
+
+        return provider;
+    }
+
+    /// <summary>
+    /// Create a provider and authenticate as them with specific user ID
+    /// </summary>
+    protected async Task<Provider> CreateAndAuthenticateAsProviderAsync(
+        string businessName,
+        string email,
+        Guid userId)
+    {
+        var provider = Provider.RegisterProvider(
+            UserId.From(userId),
+            businessName,
+            $"Description for {businessName}",
+            Domain.Enums.ProviderType.Individual,
+            ContactInfo.Create(
+                Email.Create(email),
+                PhoneNumber.Create("+1234567890")
+            ),
+            BusinessAddress.Create(
+                "123 Test St",
+                "Test City",
+                "TS",
+                "12345",
+                "USA"
+            )
+        );
+
+        provider.SetSatus(Domain.Enums.ProviderStatus.Active);
+        provider.SetAllowOnlineBooking(true);
+
+        await CreateEntityAsync(provider);
+
+        // Authenticate with the specific user ID using claims
+        var claims = new Dictionary<string, string>
+        {
+            { System.Security.Claims.ClaimTypes.NameIdentifier, userId.ToString() }
+        };
+        base.AuthenticateWithClaims(email, "Provider", claims);
+
+        return provider;
+    }
 }

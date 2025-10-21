@@ -4,6 +4,7 @@
 //===========================================
 
 using System.ComponentModel.DataAnnotations;
+using Booksy.ServiceCatalog.Api.Models.Requests;
 using Booksy.ServiceCatalog.Domain.Enums;
 
 namespace Booksy.ServiceCatalog.API.Models.Requests;
@@ -107,49 +108,10 @@ public sealed class BusinessLocationRequest
     public string? FormattedAddress { get; set; }
 }
 
-/// <summary>
-/// Day hours with breaks
-/// </summary>
-public sealed class DayHoursRequest
-{
-    [Required]
-    public int DayOfWeek { get; set; } // 0 = Sunday, 6 = Saturday
 
-    [Required]
-    public bool IsOpen { get; set; }
 
-    public TimeSlotRequest? OpenTime { get; set; }
 
-    public TimeSlotRequest? CloseTime { get; set; }
 
-    public List<BreakTimeRequest> Breaks { get; set; } = new();
-}
-
-/// <summary>
-/// Time slot (hours and minutes)
-/// </summary>
-public sealed class TimeSlotRequest
-{
-    [Required]
-    [Range(0, 23)]
-    public int Hours { get; set; }
-
-    [Required]
-    [Range(0, 59)]
-    public int Minutes { get; set; }
-}
-
-/// <summary>
-/// Break time period
-/// </summary>
-public sealed class BreakTimeRequest
-{
-    [Required]
-    public TimeSlotRequest Start { get; set; } = new();
-
-    [Required]
-    public TimeSlotRequest End { get; set; } = new();
-}
 
 /// <summary>
 /// Service offering

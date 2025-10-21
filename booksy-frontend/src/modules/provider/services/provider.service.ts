@@ -123,6 +123,49 @@ class ProviderService {
       return null
     }
   }
+
+  /**
+   * Get current user's Provider status (Auth Required)
+   * Returns status information for the authenticated user
+   * @returns Provider status information or null if no provider record exists
+   */
+  async getCurrentProviderStatus(): Promise<{
+    providerId: string
+    status: ProviderStatus
+    userId: string
+  } | null> {
+    try {
+      console.log(`[ProviderService] Fetching current user provider status`)
+      const response = await serviceCategoryClient.get<{
+        providerId: string
+        status: string
+        userId: string
+      }>(`${API_BASE}/current/status`)
+
+      console.log(`[ProviderService] Provider status retrieved:`, response.data)
+
+      return {
+        providerId: response.data!.providerId,
+        status: response.data!.status as ProviderStatus,
+        userId: response.data!.userId,
+      }
+    } catch (error) {
+      console.error(`[ProviderService] Error fetching current provider status:`, error)
+
+      // Check if it's a 404 (provider not found)
+      if (error && typeof error === 'object' && 'statusCode' in error) {
+        const apiError = error as { statusCode: number }
+        if (apiError.statusCode === 404) {
+          console.log(`[ProviderService] No provider record found for current user`)
+          return null
+        }
+      }
+
+      // For other errors, throw
+      throw this.handleError(error)
+    }
+  }
+
   /**
    * Update provider profile
    */
