@@ -61,7 +61,6 @@ export async function authGuard(
       next({ name: 'ProviderRegistration' })
       return
     }
-    debugger
     // Prevent completed providers from accessing registration route
     if (
       (authStore.providerStatus === ProviderStatus.Verified ||
