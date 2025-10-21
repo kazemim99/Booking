@@ -1,8 +1,13 @@
 <template>
-  <aside class="provider-sidebar" :class="{ collapsed: isCollapsed }">
+  <aside
+    class="provider-sidebar"
+    :class="sidebarClasses"
+    role="navigation"
+    aria-label="Provider navigation"
+  >
     <!-- Logo/Brand -->
     <div class="sidebar-header">
-      <router-link to="/provider/dashboard" class="brand">
+      <router-link to="/provider/dashboard" class="brand" @click="handleNavigation">
         <img v-if="!isCollapsed" src="@/assets/logo.svg" alt="Booksy" class="logo" />
         <img v-else src="@/assets/logo.svg" alt="B" class="logo-icon" />
       </router-link>
@@ -18,6 +23,7 @@
           icon="dashboard"
           label="Dashboard"
           :collapsed="isCollapsed"
+          @click="handleNavigation"
         />
 
         <NavItem
@@ -26,6 +32,7 @@
           label="Bookings"
           :badge="pendingBookingsCount"
           :collapsed="isCollapsed"
+          @click="handleNavigation"
         />
 
         <NavItem
@@ -33,37 +40,74 @@
           icon="services"
           label="Services"
           :collapsed="isCollapsed"
+          @click="handleNavigation"
         />
 
-        <NavItem to="/provider/staff" icon="users" label="Staff" :collapsed="isCollapsed" />
+        <NavItem
+          to="/provider/staff"
+          icon="users"
+          label="Staff"
+          :collapsed="isCollapsed"
+          @click="handleNavigation"
+        />
       </div>
 
       <div class="nav-section">
         <span v-if="!isCollapsed" class="section-title">Business</span>
 
-        <NavItem to="/provider/profile" icon="building" label="Profile" :collapsed="isCollapsed" />
+        <NavItem
+          to="/provider/profile"
+          icon="building"
+          label="Profile"
+          :collapsed="isCollapsed"
+          @click="handleNavigation"
+        />
 
         <NavItem
           to="/provider/hours"
           icon="clock"
           label="Business Hours"
           :collapsed="isCollapsed"
+          @click="handleNavigation"
         />
 
-        <NavItem to="/provider/gallery" icon="image" label="Gallery" :collapsed="isCollapsed" />
+        <NavItem
+          to="/provider/gallery"
+          icon="image"
+          label="Gallery"
+          :collapsed="isCollapsed"
+          @click="handleNavigation"
+        />
       </div>
 
       <div class="nav-section">
         <span v-if="!isCollapsed" class="section-title">Insights</span>
 
-        <NavItem to="/provider/analytics" icon="chart" label="Analytics" :collapsed="isCollapsed" />
+        <NavItem
+          to="/provider/analytics"
+          icon="chart"
+          label="Analytics"
+          :collapsed="isCollapsed"
+          @click="handleNavigation"
+        />
 
-        <NavItem to="/provider/reviews" icon="star" label="Reviews" :collapsed="isCollapsed" />
+        <NavItem
+          to="/provider/reviews"
+          icon="star"
+          label="Reviews"
+          :collapsed="isCollapsed"
+          @click="handleNavigation"
+        />
       </div>
     </nav>
 
-    <!-- Toggle Button -->
-    <button class="toggle-btn" @click="$emit('toggle')">
+    <!-- Toggle Button (desktop only) -->
+    <button
+      v-if="!isMobile"
+      class="toggle-btn"
+      @click="$emit('toggle')"
+      aria-label="Toggle sidebar"
+    >
       <svg v-if="!isCollapsed" viewBox="0 0 24 24" fill="none" stroke="currentColor">
         <path
           stroke-linecap="round"
@@ -85,21 +129,49 @@
 </template>
 
 <script setup lang="ts">
-import { computed } from 'vue'
+import { computed, onMounted, onUnmounted, ref } from 'vue'
 import NavItem from './NavItem.vue'
 import type { Provider } from '../../types/provider.types'
 
 interface Props {
   isCollapsed: boolean
+  isOpen: boolean
   provider: Provider | null
 }
 
-defineProps<Props>()
-defineEmits(['toggle'])
+const props = defineProps<Props>()
+const emit = defineEmits(['toggle', 'close'])
+
+const isMobile = ref(false)
+
+const sidebarClasses = computed(() => ({
+  collapsed: props.isCollapsed,
+  open: props.isOpen,
+  mobile: isMobile.value,
+}))
 
 const pendingBookingsCount = computed(() => {
   // TODO: Get from bookings store
   return 5
+})
+
+const handleNavigation = () => {
+  if (isMobile.value) {
+    emit('close')
+  }
+}
+
+const checkMobile = () => {
+  isMobile.value = window.innerWidth < 768
+}
+
+onMounted(() => {
+  checkMobile()
+  window.addEventListener('resize', checkMobile)
+})
+
+onUnmounted(() => {
+  window.removeEventListener('resize', checkMobile)
 })
 </script>
 
@@ -107,86 +179,171 @@ const pendingBookingsCount = computed(() => {
 .provider-sidebar {
   position: fixed;
   top: 0;
-  left: 0;
+  inset-inline-start: 0;
   height: 100vh;
-  width: 260px;
-  background: white;
-  border-right: 1px solid var(--color-border);
+  width: var(--sidebar-width-expanded);
+  background: var(--color-background);
+  border-inline-end: 1px solid var(--color-border);
+  box-shadow: var(--shadow-sm);
   display: flex;
   flex-direction: column;
-  transition: width 0.3s ease;
-  z-index: 100;
+  transition: all var(--transition-slow);
+  z-index: var(--z-index-fixed);
 }
 
 .provider-sidebar.collapsed {
-  width: 80px;
+  width: var(--sidebar-width-collapsed);
 }
 
 .sidebar-header {
-  height: 64px;
+  height: var(--header-height);
   display: flex;
   align-items: center;
-  padding: 0 1.5rem;
+  justify-content: center;
+  padding: 0 var(--spacing-lg);
   border-bottom: 1px solid var(--color-border);
+  background: linear-gradient(135deg, var(--color-primary-50) 0%, var(--color-background) 100%);
 }
 
 .brand {
   display: flex;
   align-items: center;
+  transition: transform var(--transition-fast);
+}
+
+.brand:hover {
+  transform: scale(1.05);
 }
 
 .logo {
-  height: 32px;
+  height: 36px;
+  transition: all var(--transition-fast);
 }
 
 .logo-icon {
-  height: 32px;
-  width: 32px;
+  height: 36px;
+  width: 36px;
 }
 
 .sidebar-nav {
   flex: 1;
   overflow-y: auto;
-  padding: 1rem 0;
+  overflow-x: hidden;
+  padding: var(--spacing-lg) 0;
+}
+
+/* Custom scrollbar */
+.sidebar-nav::-webkit-scrollbar {
+  width: 6px;
+}
+
+.sidebar-nav::-webkit-scrollbar-track {
+  background: var(--color-gray-50);
+}
+
+.sidebar-nav::-webkit-scrollbar-thumb {
+  background: var(--color-gray-300);
+  border-radius: var(--radius-full);
+}
+
+.sidebar-nav::-webkit-scrollbar-thumb:hover {
+  background: var(--color-gray-400);
 }
 
 .nav-section {
-  margin-bottom: 1.5rem;
+  margin-bottom: var(--spacing-xl);
+}
+
+.nav-section:last-child {
+  margin-bottom: 0;
 }
 
 .section-title {
   display: block;
-  padding: 0.5rem 1.5rem;
-  font-size: 0.75rem;
-  font-weight: 600;
+  padding: var(--spacing-sm) var(--spacing-lg);
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-semibold);
   text-transform: uppercase;
   color: var(--color-text-tertiary);
-  letter-spacing: 0.5px;
+  letter-spacing: 0.05em;
+  transition: opacity var(--transition-fast);
+}
+
+.provider-sidebar.collapsed .section-title {
+  opacity: 0;
+  height: 0;
+  padding: 0;
+  overflow: hidden;
 }
 
 .toggle-btn {
   position: absolute;
-  bottom: 1rem;
-  right: 1rem;
+  bottom: var(--spacing-lg);
+  inset-inline-end: var(--spacing-lg);
   width: 40px;
   height: 40px;
   border: 1px solid var(--color-border);
-  background: white;
-  border-radius: 8px;
+  background: var(--color-background);
+  border-radius: var(--radius-lg);
   display: flex;
   align-items: center;
   justify-content: center;
   cursor: pointer;
-  transition: all 0.2s;
+  transition: all var(--transition-fast);
+  box-shadow: var(--shadow-sm);
 }
 
 .toggle-btn:hover {
-  background: var(--color-bg-secondary);
+  background: var(--color-primary-50);
+  border-color: var(--color-primary-300);
+  transform: scale(1.1);
+  box-shadow: var(--shadow-md);
+}
+
+.toggle-btn:active {
+  transform: scale(0.95);
 }
 
 .toggle-btn svg {
   width: 20px;
   height: 20px;
   color: var(--color-text-secondary);
+  transition: color var(--transition-fast);
+}
+
+.toggle-btn:hover svg {
+  color: var(--color-primary-600);
+}
+
+/* Mobile styles */
+@media (max-width: 767px) {
+  .provider-sidebar {
+    transform: translateX(-100%);
+    box-shadow: var(--shadow-xl);
+  }
+
+  .provider-sidebar.open {
+    transform: translateX(0);
+  }
+
+  /* RTL support for mobile */
+  [dir='rtl'] .provider-sidebar {
+    transform: translateX(100%);
+  }
+
+  [dir='rtl'] .provider-sidebar.open {
+    transform: translateX(0);
+  }
+
+  .toggle-btn {
+    display: none;
+  }
+}
+
+/* Tablet */
+@media (min-width: 768px) and (max-width: 1023px) {
+  .sidebar-header {
+    padding: 0 var(--spacing-md);
+  }
 }
 </style>

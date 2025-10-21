@@ -208,13 +208,26 @@ async function handleLogout(): Promise<void> {
 .dropdown-menu {
   position: absolute;
   top: calc(100% + 0.5rem);
-  right: 0;
+  inset-inline-end: 0;
   width: 280px;
+  max-width: calc(100vw - 2rem);
   background: white;
   border-radius: 12px;
   box-shadow: 0 10px 40px rgba(0, 0, 0, 0.15);
   overflow: hidden;
   z-index: 100;
+}
+
+/* RTL Support */
+[dir='rtl'] .dropdown-menu {
+  inset-inline-end: 0;
+  inset-inline-start: auto;
+}
+
+@media (max-width: 640px) {
+  .dropdown-menu {
+    width: 260px;
+  }
 }
 
 .menu-header {

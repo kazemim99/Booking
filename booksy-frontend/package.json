@@ -22,8 +22,10 @@
   "dependencies": {
     "@neshan-maps-platform/ol": "^1.0.5",
     "@neshan-maps-platform/vue3-openlayers": "^2.0.1",
+    "echarts": "^6.0.0",
     "pinia": "^3.0.3",
     "vue": "^3.5.22",
+    "vue-echarts": "^8.0.1",
     "vue-i18n": "^10.0.8",
     "vue-router": "^4.5.1"
   },

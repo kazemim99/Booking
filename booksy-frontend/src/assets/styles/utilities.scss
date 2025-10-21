@@ -93,3 +93,84 @@
 .text-error {
   color: $error-color !important;
 }
+
+/* ============================================
+   Modern Design Token Utilities
+   RTL-Compatible using Logical Properties
+   ============================================ */
+
+/* Spacing utilities using logical properties (RTL-safe) */
+.m-inline-xs { margin-inline: var(--spacing-xs) !important; }
+.m-inline-sm { margin-inline: var(--spacing-sm) !important; }
+.m-inline-md { margin-inline: var(--spacing-md) !important; }
+.m-inline-lg { margin-inline: var(--spacing-lg) !important; }
+.m-inline-xl { margin-inline: var(--spacing-xl) !important; }
+
+.p-inline-xs { padding-inline: var(--spacing-xs) !important; }
+.p-inline-sm { padding-inline: var(--spacing-sm) !important; }
+.p-inline-md { padding-inline: var(--spacing-md) !important; }
+.p-inline-lg { padding-inline: var(--spacing-lg) !important; }
+.p-inline-xl { padding-inline: var(--spacing-xl) !important; }
+
+.m-inline-start-xs { margin-inline-start: var(--spacing-xs) !important; }
+.m-inline-start-sm { margin-inline-start: var(--spacing-sm) !important; }
+.m-inline-start-md { margin-inline-start: var(--spacing-md) !important; }
+.m-inline-start-lg { margin-inline-start: var(--spacing-lg) !important; }
+
+.m-inline-end-xs { margin-inline-end: var(--spacing-xs) !important; }
+.m-inline-end-sm { margin-inline-end: var(--spacing-sm) !important; }
+.m-inline-end-md { margin-inline-end: var(--spacing-md) !important; }
+.m-inline-end-lg { margin-inline-end: var(--spacing-lg) !important; }
+
+.p-inline-start-xs { padding-inline-start: var(--spacing-xs) !important; }
+.p-inline-start-sm { padding-inline-start: var(--spacing-sm) !important; }
+.p-inline-start-md { padding-inline-start: var(--spacing-md) !important; }
+.p-inline-start-lg { padding-inline-start: var(--spacing-lg) !important; }
+
+/* Grid utilities */
+.grid { display: grid !important; }
+.grid-cols-1 { grid-template-columns: repeat(1, minmax(0, 1fr)) !important; }
+.grid-cols-2 { grid-template-columns: repeat(2, minmax(0, 1fr)) !important; }
+.grid-cols-3 { grid-template-columns: repeat(3, minmax(0, 1fr)) !important; }
+.grid-cols-4 { grid-template-columns: repeat(4, minmax(0, 1fr)) !important; }
+.grid-cols-auto { grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)) !important; }
+
+.gap-xs { gap: var(--spacing-xs) !important; }
+.gap-sm { gap: var(--spacing-sm) !important; }
+.gap-md { gap: var(--spacing-md) !important; }
+.gap-lg { gap: var(--spacing-lg) !important; }
+.gap-xl { gap: var(--spacing-xl) !important; }
+
+/* Shadow utilities */
+.shadow-sm { box-shadow: var(--shadow-sm) !important; }
+.shadow-md { box-shadow: var(--shadow-md) !important; }
+.shadow-lg { box-shadow: var(--shadow-lg) !important; }
+.shadow-xl { box-shadow: var(--shadow-xl) !important; }
+.shadow-none { box-shadow: none !important; }
+
+/* Border radius */
+.rounded-sm { border-radius: var(--radius-sm) !important; }
+.rounded-md { border-radius: var(--radius-md) !important; }
+.rounded-lg { border-radius: var(--radius-lg) !important; }
+.rounded-xl { border-radius: var(--radius-xl) !important; }
+.rounded-full { border-radius: var(--radius-full) !important; }
+
+/* Modern color utilities using design tokens */
+.bg-primary { background-color: var(--color-primary-500) !important; }
+.bg-success { background-color: var(--color-success-500) !important; }
+.bg-warning { background-color: var(--color-warning-500) !important; }
+.bg-danger { background-color: var(--color-danger-500) !important; }
+.bg-gray-50 { background-color: var(--color-gray-50) !important; }
+.bg-gray-100 { background-color: var(--color-gray-100) !important; }
+
+.text-primary-500 { color: var(--color-primary-500) !important; }
+.text-success-500 { color: var(--color-success-500) !important; }
+.text-warning-500 { color: var(--color-warning-500) !important; }
+.text-danger-500 { color: var(--color-danger-500) !important; }
+.text-gray-500 { color: var(--color-gray-500) !important; }
+.text-gray-700 { color: var(--color-gray-700) !important; }
+
+/* Transition utilities */
+.transition-fast { transition: all var(--transition-fast) !important; }
+.transition-base { transition: all var(--transition-base) !important; }
+.transition-slow { transition: all var(--transition-slow) !important; }

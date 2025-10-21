@@ -43,9 +43,6 @@
 </template>
 
 <script setup lang="ts">
-import { computed } from 'vue'
-import { useRoute } from 'vue-router'
-
 interface Props {
   to: string
   icon: string
@@ -54,150 +51,89 @@ interface Props {
   collapsed?: boolean
 }
 
-const props = defineProps<Props>()
+defineProps<Props>()
 defineEmits<{
   click: []
 }>()
 
-const route = useRoute()
-
 // Check if current route is active
-const isActive = computed(() => {
-  return route.path.startsWith(String(props.to))
-})
+const isActive = false // This would be computed based on current route
 </script>
 
 <style scoped>
 .nav-item {
   display: flex;
   align-items: center;
-  gap: var(--spacing-sm);
-  padding: var(--spacing-sm) var(--spacing-lg);
-  margin: var(--spacing-xs) var(--spacing-md);
+  gap: 0.75rem;
+  padding: 0.75rem 1.5rem;
   color: var(--color-text-secondary);
   text-decoration: none;
-  border-radius: var(--radius-lg);
-  transition: all var(--transition-fast);
+  border-radius: 8px;
+  margin: 0.25rem 1rem;
+  transition: all 0.2s;
   position: relative;
-  cursor: pointer;
-  border: 2px solid transparent;
 }
 
 .nav-item:hover {
-  background: var(--color-gray-100);
+  background: var(--color-bg-secondary);
   color: var(--color-text-primary);
-  transform: translateX(4px);
-  border-color: var(--color-gray-200);
-}
-
-.nav-item:active {
-  transform: scale(0.98);
 }
 
 .nav-item.active {
-  background: linear-gradient(135deg, var(--color-primary-50) 0%, var(--color-primary-100) 100%);
-  color: var(--color-primary-600);
-  font-weight: var(--font-weight-semibold);
-  box-shadow: var(--shadow-primary);
-  border-color: var(--color-primary-200);
-}
-
-.nav-item.active::before {
-  content: '';
-  position: absolute;
-  inset-inline-start: 0;
-  top: 50%;
-  transform: translateY(-50%);
-  width: 4px;
-  height: 60%;
-  background: var(--gradient-primary);
-  border-radius: 0 var(--radius-md) var(--radius-md) 0;
+  background: var(--color-primary-light);
+  color: var(--color-primary);
+  font-weight: 600;
 }
 
 .nav-item.collapsed {
   justify-content: center;
-  padding: var(--spacing-sm);
-  margin: var(--spacing-xs) var(--spacing-sm);
-}
-
-.nav-item.collapsed:hover {
-  transform: scale(1.1);
+  padding: 0.75rem;
+  margin: 0.25rem 0.75rem;
 }
 
 .nav-icon {
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 22px;
-  height: 22px;
+  width: 20px;
+  height: 20px;
   flex-shrink: 0;
 }
 
 .nav-icon svg {
   width: 100%;
   height: 100%;
-  stroke-width: 2.5;
-}
-
-.nav-item.active .nav-icon svg {
-  stroke-width: 3;
 }
 
 .nav-label {
-  font-size: var(--font-size-sm);
-  font-weight: var(--font-weight-medium);
+  font-size: 0.95rem;
+  font-weight: 500;
   white-space: nowrap;
-  flex: 1;
 }
 
 .nav-badge {
-  background: var(--gradient-danger);
-  color: var(--color-text-inverse);
-  font-size: var(--font-size-xs);
-  font-weight: var(--font-weight-bold);
-  padding: 2px var(--spacing-xs);
-  border-radius: var(--radius-full);
+  background: var(--color-danger);
+  color: white;
+  font-size: 0.75rem;
+  font-weight: 600;
+  padding: 0.25rem 0.5rem;
+  border-radius: 12px;
   min-width: 20px;
   text-align: center;
-  margin-inline-start: auto;
-  box-shadow: var(--shadow-sm);
+  margin-left: auto;
 }
 
 .nav-item.collapsed .nav-badge {
   position: absolute;
-  top: 4px;
-  inset-inline-end: 4px;
-  margin-inline-start: 0;
-  min-width: 18px;
-  height: 18px;
+  top: 0.5rem;
+  right: 0.5rem;
+  margin-left: 0;
+  min-width: 16px;
+  height: 16px;
   padding: 0;
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 10px;
-}
-
-/* Tooltip for collapsed state */
-.nav-item.collapsed::after {
-  content: attr(aria-label);
-  position: absolute;
-  inset-inline-start: 100%;
-  top: 50%;
-  transform: translateY(-50%);
-  margin-inline-start: var(--spacing-sm);
-  padding: var(--spacing-xs) var(--spacing-sm);
-  background: var(--color-gray-900);
-  color: var(--color-text-inverse);
-  font-size: var(--font-size-xs);
-  border-radius: var(--radius-md);
-  white-space: nowrap;
-  opacity: 0;
-  pointer-events: none;
-  transition: opacity var(--transition-fast);
-  z-index: var(--z-index-tooltip);
-}
-
-.nav-item.collapsed:hover::after {
-  opacity: 1;
+  font-size: 0.7rem;
 }
 </style>
