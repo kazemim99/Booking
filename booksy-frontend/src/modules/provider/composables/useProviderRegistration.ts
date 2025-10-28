@@ -313,6 +313,16 @@ export function useProviderRegistration() {
 
       console.log('✅ Provider registered successfully:', response)
 
+      // If registration returned new tokens with provider claims, update auth store
+      if (response.accessToken && response.refreshToken) {
+        console.log('✅ Updating authentication tokens with provider claims')
+        authStore.setToken(response.accessToken)
+        authStore.setRefreshToken(response.refreshToken)
+
+        // Update provider status in auth store
+        authStore.setProviderStatus(response.status as any, response.providerId)
+      }
+
       registrationState.value.isDirty = false
 
       return {

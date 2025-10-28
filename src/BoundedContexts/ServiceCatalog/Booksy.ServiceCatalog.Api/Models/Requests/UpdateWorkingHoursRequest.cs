@@ -2,14 +2,29 @@ using System.ComponentModel.DataAnnotations;
 
 namespace Booksy.ServiceCatalog.Api.Models.Requests;
 
+
+public class UpdateWorkingHours
+{
+    public Dictionary<string, DayHoursRequest?> BusinessHours { get;  set; }
+    public int WorkingDaysCount { get;  set; }
+    public DateTime UpdatedAt { get;  set; }
+}
 /// <summary>
 /// Request to update provider working hours
 /// </summary>
 public sealed class UpdateWorkingHoursRequest
 {
     [Required]
-    public Dictionary<int, DayHoursRequest?> BusinessHours { get; set; } = new();
+    public Dictionary<string, DayHoursRequest?> BusinessHours { get; set; } = new();
+    //public Dictionary<string, DayScheduleRequest> WorkingHours { get; set; }
 }
+
+//public class DayScheduleRequest
+//{
+//    public bool IsOpen { get; set; }
+//    public string OpenTime { get; set; }
+//    public string CloseTime { get; set; }
+//}
 
 public sealed class DayHoursRequest
 {

@@ -17,17 +17,20 @@ namespace Booksy.ServiceCatalog.Application.Commands.Provider.RegisterProvider
         private readonly IProviderWriteRepository _providerWriteRepository;
         private readonly IProviderReadRepository _providerReadRepository;
         private readonly IProviderRegistrationService _registrationService;
+        private readonly ITokenService _tokenService;
         private readonly ILogger<RegisterProviderCommandHandler> _logger;
 
         public RegisterProviderCommandHandler(
             IProviderWriteRepository providerWriteRepository,
             IProviderReadRepository providerReadRepository,
             IProviderRegistrationService registrationService,
+            ITokenService tokenService,
             ILogger<RegisterProviderCommandHandler> logger)
         {
             _providerWriteRepository = providerWriteRepository;
             _providerReadRepository = providerReadRepository;
             _registrationService = registrationService;
+            _tokenService = tokenService;
             _logger = logger;
         }
 
@@ -85,11 +88,27 @@ namespace Booksy.ServiceCatalog.Application.Commands.Provider.RegisterProvider
 
             _logger.LogInformation("Provider registered successfully. ProviderId: {ProviderId}", provider.Id);
 
+            // Generate new token with provider claims
+            var tokenResponse = await _tokenService.GenerateTokenWithProviderClaimsAsync(
+                request.OwnerId,
+                provider.Id.Value,
+                provider.Status.ToString(),
+                cancellationToken);
+
+            _logger.LogInformation(
+                "Generated new token for user {UserId} with provider {ProviderId}",
+                request.OwnerId,
+                provider.Id.Value);
+
             return new RegisterProviderResult(
                 ProviderId: provider.Id.Value,
                 BusinessName: provider.Profile.BusinessName,
+                Type: provider.ProviderType,
                 Status: provider.Status,
-                RegisteredAt: provider.RegisteredAt);
+                RegisteredAt: provider.RegisteredAt,
+                AccessToken: tokenResponse.AccessToken,
+                RefreshToken: tokenResponse.RefreshToken,
+                ExpiresIn: tokenResponse.ExpiresIn);
         }
     }
 }

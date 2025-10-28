@@ -3,7 +3,6 @@
 // ========================================
 using Booksy.ServiceCatalog.Application.Commands.Provider.RegisterProvider;
 using Booksy.ServiceCatalog.Application.Commands.Provider.UpdateBusinessProfile;
-using Booksy.ServiceCatalog.Application.Commands.Service.CreateService;
 using Booksy.ServiceCatalog.Application.Commands.Service.UpdateService;
 using FluentValidation;
 using Microsoft.Extensions.DependencyInjection;
@@ -20,7 +19,7 @@ namespace Booksy.ServiceCatalog.Application.Validators.Common
             // Command Validators
             services.AddScoped<IValidator<RegisterProviderCommand>, RegisterProviderCommandValidator>();
             services.AddScoped<IValidator<UpdateBusinessProfileCommand>, UpdateBusinessProfileCommandValidator>();
-            services.AddScoped<IValidator<CreateServiceCommand>, CreateServiceCommandValidator>();
+            //services.AddScoped<IValidator<CreateServiceCommand>, CreateServiceCommandValidator>();
             services.AddScoped<IValidator<UpdateServiceCommand>, UpdateServiceCommandValidator>();
 
             // Domain Value Object Validators

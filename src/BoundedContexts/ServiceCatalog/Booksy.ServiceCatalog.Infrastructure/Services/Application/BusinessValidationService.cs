@@ -3,7 +3,6 @@
 // ========================================
 using Booksy.Core.Domain.Exceptions;
 using Booksy.ServiceCatalog.Application.Commands.Provider.RegisterProvider;
-using Booksy.ServiceCatalog.Application.Commands.Service.CreateService;
 using Booksy.ServiceCatalog.Application.Services.Interfaces;
 using FluentValidation;
 using Microsoft.Extensions.DependencyInjection;
@@ -44,29 +43,29 @@ namespace Booksy.ServiceCatalog.Application.Services.Implementations
             }
         }
 
-        public async Task ValidateServiceCreationAsync(CreateServiceCommand command, CancellationToken cancellationToken = default)
-        {
-            _logger.LogInformation("Validating service creation for: {ServiceName}", command.Name);
+ //       public async Task ValidateServiceCreationAsync(CreateServiceCommand command, CancellationToken cancellationToken = default)
+ //       {
+ //           _logger.LogInformation("Validating service creation for: {ServiceName}", command.Name);
 
-            var validator = _serviceProvider.GetService<IValidator<CreateServiceCommand>>();
-            if (validator != null)
-            {
-                var validationResult = await validator.ValidateAsync(command, cancellationToken);
-                if (!validationResult.IsValid)
-                {
- var errors = validationResult.Errors
-                        .GroupBy(e => e.PropertyName)
-                        .ToDictionary(
-                            g => g.Key,
-                            g => g.Select(e => e.ErrorMessage).ToArray());       
+ //           var validator = _serviceProvider.GetService<IValidator<CreateServiceCommand>>();
+ //           if (validator != null)
+ //           {
+ //               var validationResult = await validator.ValidateAsync(command, cancellationToken);
+ //               if (!validationResult.IsValid)
+ //               {
+ //var errors = validationResult.Errors
+ //                       .GroupBy(e => e.PropertyName)
+ //                       .ToDictionary(
+ //                           g => g.Key,
+ //                           g => g.Select(e => e.ErrorMessage).ToArray());       
                     
-                    throw new DomainValidationException($"Registration validation failed", errors);
-                }
-            }
+ //                   throw new DomainValidationException($"Registration validation failed", errors);
+ //               }
+ //           }
 
-            // Additional service-specific validation
-            await ValidateServiceBusinessRulesAsync(command);
-        }
+ //           // Additional service-specific validation
+ //           await ValidateServiceBusinessRulesAsync(command);
+ //       }
 
         public async Task<bool> ValidateBusinessHoursAsync(
             Dictionary<DayOfWeek, (TimeOnly Open, TimeOnly Close)?> businessHours,
@@ -125,21 +124,21 @@ namespace Booksy.ServiceCatalog.Application.Services.Implementations
 
        
 
-        private async Task ValidateServiceBusinessRulesAsync(CreateServiceCommand command)
-        {
-            await Task.CompletedTask;
+        //private async Task ValidateServiceBusinessRulesAsync(CreateServiceCommand command)
+        //{
+        //    await Task.CompletedTask;
 
-            // Rule: Premium services must have higher minimum price
-            if (command.ServiceType == ServiceType.Premium && command.BasePrice < 100)
-            {
-                throw new DomainValidationException("Premium services must have a base price of at least $100");
-            }
+        //    // Rule: Premium services must have higher minimum price
+        //    if (command.ServiceType == ServiceType.Premium && command.BasePrice < 100)
+        //    {
+        //        throw new DomainValidationException("Premium services must have a base price of at least $100");
+        //    }
 
-            // Rule: Mobile services have duration limits
-            if (command.AvailableAsMobile && command.DurationMinutes > 240) // 4 hours
-            {
-                throw new DomainValidationException("Mobile services cannot exceed 4 hours duration");
-            }
-        }
+        //    // Rule: Mobile services have duration limits
+        //    if (command.AvailableAsMobile && command.DurationMinutes > 240) // 4 hours
+        //    {
+        //        throw new DomainValidationException("Mobile services cannot exceed 4 hours duration");
+        //    }
+        //}
     }
 }

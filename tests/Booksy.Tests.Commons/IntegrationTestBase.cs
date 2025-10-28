@@ -1,12 +1,15 @@
 ﻿// ========================================
 // Booksy.Tests.Common/Infrastructure/IntegrationTestBase.cs
 // ========================================
+using Booksy.Core.Domain.Infrastructure.Middleware;
 using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Newtonsoft.Json;
+using NSubstitute;
 using System.Net.Http.Headers;
 using System.Net.Http.Json;
+using static System.Runtime.InteropServices.JavaScript.JSType;
 
 namespace Booksy.Tests.Common.Infrastructure;
 
@@ -24,7 +27,7 @@ public abstract class IntegrationTestBase<TFactory, TDbContext, TStartup>
     protected readonly HttpClient Client;
     protected IServiceScope Scope;
     protected TDbContext DbContext;
-    protected  TestUserContext _userContext;
+    protected TestUserContext _userContext;
 
 
     protected IntegrationTestBase(TFactory factory)
@@ -90,6 +93,18 @@ public abstract class IntegrationTestBase<TFactory, TDbContext, TStartup>
         await DbContext.SaveChangesAsync();
     }
 
+    protected async Task UpdateEntityAsync<T>(T entity) where T : class
+    {
+        // Check if entity is already being tracked
+        var entry = DbContext.Entry(entity);
+        if (entry.State == EntityState.Detached)
+        {
+            DbContext.Set<T>().Update(entity);
+        }
+
+        await DbContext.SaveChangesAsync();
+    }
+
     protected void SetPrivateProperty<T>(T entity, string propertyName, object value)
     {
         var property = typeof(T).GetProperty(propertyName,
@@ -100,17 +115,100 @@ public abstract class IntegrationTestBase<TFactory, TDbContext, TStartup>
         property?.SetValue(entity, value);
     }
 
-   
 
-  
-    protected async Task<HttpResponseMessage> PostAsJsonAsync<T>(string url, T data)
+    protected async Task<Core.Domain.Infrastructure.Middleware.ApiResponse> PostAsJsonAsync<T>(string url, T data)
     {
-        return await Client.PostAsJsonAsync(url, data);
+
+        try
+        {
+            var result = await Client.PostAsJsonAsync(url, data);
+            var content = await result.Content.ReadAsStringAsync();
+            if (string.IsNullOrEmpty(content))
+            {
+                return new Core.Domain.Infrastructure.Middleware.ApiResponse
+                {
+                    StatusCode = result.StatusCode,
+                };
+            }
+            var response = JsonConvert.DeserializeObject<Core.Domain.Infrastructure.Middleware.ApiResponse>(content);
+            return response;
+        }
+        catch (Exception ex)
+        {
+
+            throw;
+        }
+
     }
 
-    protected async Task<HttpResponseMessage> PutAsJsonAsync<T>(string url, T data)
+    protected async Task<ApiResponse<TResponse>> PostAsJsonAsync<T, TResponse>(string url, T data)
     {
-        return await Client.PutAsJsonAsync(url, data);
+
+        try
+        {
+            var result = await Client.PostAsJsonAsync(url, data);
+            var content = await result.Content.ReadAsStringAsync();
+            if (string.IsNullOrEmpty(content))
+            {
+                return new ApiResponse<TResponse>
+                {
+                };
+            }
+            var response = JsonConvert.DeserializeObject<ApiResponse<TResponse>>(content);
+            return response;
+        }
+        catch (Exception ex)
+        {
+
+            throw;
+        }
+
+    }
+
+    protected async Task<ApiResponse<TResponse>> PutAsJsonAsync<T, TResponse>(string url, T data)
+    {
+        try
+        {
+            var result = await Client.PutAsJsonAsync(url, data);
+            var content = await result.Content.ReadAsStringAsync();
+            if (string.IsNullOrEmpty(content))
+            {
+                return new ApiResponse<TResponse>
+                {
+                };
+            }
+            var response = JsonConvert.DeserializeObject<ApiResponse<TResponse>>(content);
+            return response;
+        }
+        catch (Exception ex)
+        {
+
+            throw;
+        }
+    }
+
+
+    protected async Task<Core.Domain.Infrastructure.Middleware.ApiResponse> PutAsJsonAsync<T>(string url, T data)
+    {
+        try
+        {
+            var result = await Client.PutAsJsonAsync(url, data);
+            var content = await result.Content.ReadAsStringAsync();
+            if (string.IsNullOrEmpty(content))
+            {
+                return new Core.Domain.Infrastructure.Middleware.ApiResponse
+                {
+                    StatusCode = result.StatusCode,
+                };
+            }
+            var response = JsonConvert.DeserializeObject<Core.Domain.Infrastructure.Middleware.ApiResponse>(content);
+            return response;
+        }
+        catch (Exception ex)
+        {
+
+            throw;
+        }
     }
 
     protected async Task<HttpResponseMessage> GetAsync(string url)
@@ -118,17 +216,38 @@ public abstract class IntegrationTestBase<TFactory, TDbContext, TStartup>
         return await Client.GetAsync(url);
     }
 
-    protected async Task<HttpResponseMessage> DeleteAsync(string url)
+    protected async Task<Core.Domain.Infrastructure.Middleware.ApiResponse> DeleteAsync(string url)
     {
-        return await Client.DeleteAsync(url);
+
+        try
+        {
+            var result = await Client.DeleteAsync(url); ;
+            var content = await result.Content.ReadAsStringAsync();
+            if (string.IsNullOrEmpty(content))
+            {
+                return new Core.Domain.Infrastructure.Middleware.ApiResponse
+                {
+                    StatusCode = result.StatusCode,
+                };
+            }
+            var response = JsonConvert.DeserializeObject<Core.Domain.Infrastructure.Middleware.ApiResponse>(content);
+            return response;
+        }
+        catch (Exception ex)
+        {
+
+            throw;
+        }
+
     }
 
     protected async Task<TResponse?> GetResponseAsync<TResponse>(HttpResponseMessage response)
     {
 
         var reson = await response.Content.ReadAsStringAsync();
+        var result = JsonConvert.DeserializeObject<ApiResponse<TResponse>>(reson);
 
-        return JsonConvert.DeserializeObject<TResponse>(reson);
+        return result.data;
     }
 
 
@@ -136,34 +255,46 @@ public abstract class IntegrationTestBase<TFactory, TDbContext, TStartup>
     /// <summary>
     /// Authenticate as a customer
     /// </summary>
-    public void AuthenticateAsCustomer(string email = "customer@test.com")
+    public TestUser AuthenticateAsCustomer(string email)
     {
         var user = TestUser.Customer(email);
 
         _userContext.SetUser(user);
 
- 
+        return user;
     }
 
     /// <summary>
+    /// Authenticate as a customer
+    /// </summary>
+    public TestUser AuthenticateAsCustomer(Guid userId, string email = "customer@test.com")
+    {
+        var user = TestUser.Customer(email, userId);
+
+        _userContext.SetUser(user);
+
+        return user;
+    }
+    /// <summary>
     /// Authenticate as a provider
     /// </summary>
-    public void AuthenticateAsProvider(string email = "provider@test.com", string providerId = null)
+    public TestUser AuthenticateAsProvider(string email = "provider@test.com", string providerId = null)
     {
         var user = TestUser.Provider(email, providerId);
         _userContext.SetUser(user);
 
-    
+        return user;
     }
 
     /// <summary>
     /// Authenticate as an admin
     /// </summary>
-    public void AuthenticateAsAdmin(string email = "admin@test.com")
+    public TestUser AuthenticateAsAdmin(string email = "admin@test.com")
     {
         var user = TestUser.Admin(email);
         _userContext.SetUser(user);
 
+        return user;
     }
 
     /// <summary>
@@ -172,9 +303,16 @@ public abstract class IntegrationTestBase<TFactory, TDbContext, TStartup>
     public void AuthenticateAs(TestUser user)
     {
         _userContext.SetUser(user);
-
     }
 
+
+    /// <summary>
+    /// Authenticate with custom test user
+    /// </summary>
+    public void LogOut()
+    {
+        _userContext.SetUser(null);
+    }
     /// <summary>
     /// Authenticate with custom claims
     /// </summary>
@@ -220,3 +358,8 @@ public abstract class IntegrationTestBase<TFactory, TDbContext, TStartup>
         //    .Be((int)expectedStatusCode);
     }
 }
+
+
+// Root myDeserializedClass = JsonConvert.DeserializeObject<Root>(myJsonResponse);
+
+

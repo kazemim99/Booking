@@ -14,6 +14,7 @@ using Booksy.UserManagement.Infrastructure.Persistence.Context;
 using Booksy.UserManagement.Infrastructure.Persistence.Repositories;
 using Booksy.UserManagement.Infrastructure.Services.Security;
 using Booksy.UserManagement.Infrastructure.Services.Application;
+using Booksy.UserManagement.Infrastructure.Services.External;
 using Booksy.Infrastructure.Core.Persistence.Base;
 using Microsoft.Extensions.Logging;
 using Booksy.UserManagement.Application.Abstractions.Queries;
@@ -119,6 +120,24 @@ namespace Booksy.UserManagement.Infrastructure.DependencyInjection
 
             // Register Database Seeder
             services.AddScoped<UserManagementDatabaseSeeder>();
+
+            // HTTP Client for ServiceCatalog API
+            services.AddHttpClient("ServiceCatalogAPI", client =>
+            {
+                var baseUrl = configuration["Services:ServiceCatalog:BaseUrl"]
+                    ?? "https://localhost:7002/api";
+                client.BaseAddress = new Uri(baseUrl);
+                client.DefaultRequestHeaders.Add("Accept", "application/json");
+
+                var apiKey = configuration["Services:ServiceCatalog:ApiKey"];
+                if (!string.IsNullOrEmpty(apiKey))
+                {
+                    client.DefaultRequestHeaders.Add("X-API-Key", apiKey);
+                }
+            });
+
+            // Register External Services
+            services.AddScoped<IProviderInfoService, ProviderInfoService>();
 
             // Add distributed caching
             var cacheProvider = configuration.GetValue<string>("CacheSettings:Provider");

@@ -4,9 +4,6 @@ using Booksy.ServiceCatalog.API.Models.Responses;
 using MediatR;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.AspNetCore.RateLimiting;
-using Booksy.ServiceCatalog.Application.Commands.Service.CreateService;
-using Booksy.ServiceCatalog.Application.Commands.Service.UpdateService;
 using Booksy.ServiceCatalog.Application.Commands.Service.ActivateService;
 using Booksy.ServiceCatalog.Application.Commands.Service.DeactivateService;
 using Booksy.ServiceCatalog.Application.Commands.Service.ArchiveService;
@@ -17,8 +14,10 @@ using Booksy.ServiceCatalog.Application.Queries.Service.GetServicesByStatus;
 using Booksy.ServiceCatalog.Application.Queries.Service.GetPopularServices;
 using Booksy.ServiceCatalog.Api.Models.Responses;
 using Booksy.ServiceCatalog.Api.Models.Requests.Extenstions;
-using Booksy.ServiceCatalog.Api.Models.Requests;
-using Booksy.API.Middleware;
+using Booksy.ServiceCatalog.Application.Commands.Service.DeleteProviderService;
+using Booksy.ServiceCatalog.Application.Commands.Service.UpdateProviderService;
+using Booksy.ServiceCatalog.Domain.Repositories;
+using Booksy.ServiceCatalog.Application.Commands.Service.AddProviderService;
 
 namespace Booksy.ServiceCatalog.API.Controllers.V1;
 
@@ -34,6 +33,7 @@ public class ServicesController : ControllerBase
 {
     private readonly ISender _mediator;
     private readonly ILogger<ServicesController> _logger;
+    private readonly IServiceReadRepository _serviceReadRepository;
 
     public ServicesController(ISender mediator, ILogger<ServicesController> logger)
     {
@@ -41,6 +41,72 @@ public class ServicesController : ControllerBase
         _logger = logger ?? throw new ArgumentNullException(nameof(logger));
     }
 
+
+  
+
+    /// <summary>
+    /// Update an existing service
+    /// </summary>
+    [HttpPut("{providerId:guid}/{serviceId:guid}")]
+    [ProducesResponseType(typeof(ServiceDetailResponse), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ApiErrorResult), StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
+    public async Task<IActionResult> UpdateService(
+        [FromRoute] Guid providerId,
+        [FromRoute] Guid serviceId,
+        [FromBody] UpdateProviderServiceRequest request,
+        CancellationToken cancellationToken = default)
+    {
+      
+
+        var command = new UpdateProviderServiceCommand(
+            serviceId,
+            providerId,
+            request.ServiceName,
+            request.Description,
+            request.DurationHours,
+            request.DurationMinutes,
+            request.Price,
+            request.Currency ?? "IRR",
+            request.Category,
+            request.IsMobileService);
+
+        var result = await _mediator.Send(command, cancellationToken);
+
+        _logger.LogInformation("Service {ServiceId} updated for provider {ProviderId}", serviceId, providerId);
+
+        var response = new ServiceDetailResponse
+        {
+            Id = result.ServiceId,
+            Name = result.ServiceName,
+            DurationMinutes = result.TotalDurationMinutes,
+            Price = result.Price
+        };
+
+        return Ok(response);
+    }
+
+    /// <summary>
+    /// Delete a service
+    /// </summary>
+    [HttpDelete("{providerId:guid}/{serviceId:guid}")]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
+    public async Task<IActionResult> DeleteService(
+        [FromRoute] Guid providerId,
+        [FromRoute] Guid serviceId,
+        CancellationToken cancellationToken = default)
+    {
+
+        var command = new DeleteProviderServiceCommand(serviceId, providerId);
+        await _mediator.Send(command, cancellationToken);
+
+        _logger.LogInformation("Service {ServiceId} deleted from provider {ProviderId}", serviceId, providerId);
+
+        return NoContent();
+    }
     /// <summary>
     /// Creates a new service offering
     /// </summary>
@@ -50,39 +116,45 @@ public class ServicesController : ControllerBase
     /// <response code="400">Invalid request data</response>
     /// <response code="409">Service with same name already exists for provider</response>
     /// <response code="403">Not authorized to create services for this provider</response>
-    [HttpPost]
+    [HttpPost("{id:guid}")]
     [Authorize(Policy = "ProviderOrAdmin")]
     [Booksy.API.Middleware.EnableRateLimiting("service-creation")]
     [ProducesResponseType(typeof(ServiceResponse), StatusCodes.Status201Created)]
     [ProducesResponseType(typeof(ApiErrorResult), StatusCodes.Status400BadRequest)]
     [ProducesResponseType(typeof(ApiErrorResult), StatusCodes.Status409Conflict)]
     [ProducesResponseType(StatusCodes.Status403Forbidden)]
-    public async Task<IActionResult> CreateService(
-        [FromBody] CreateServiceRequest request,
+    public async Task<IActionResult> AddService(
+        [FromRoute] Guid id,
+        [FromBody] AddServiceRequest request,
         CancellationToken cancellationToken = default)
     {
-        // Check if user can create services for this provider
-        //if (!await CanManageProvider(request.ProviderId))
-        //{
-        //    _logger.LogWarning("User {RequestingUser} attempted to create service for provider {ProviderId} without permission",
-        //        GetCurrentUserId(), request.ProviderId);
-        //    return Forbid();
-        //}
+       
 
-        var command = MapToCreateCommand(request);
+        var command = new AddProviderServiceCommand(
+            id,
+            request.ServiceName,
+            request.Description,
+            request.DurationHours,
+            request.Duration,
+            request.BasePrice,
+            request.Currency ?? "IRR",
+            request.Category);
+
         var result = await _mediator.Send(command, cancellationToken);
 
-        var response = MapToServiceResponse(result);
+        _logger.LogInformation("Service {ServiceId} added to provider {ProviderId}", result.ServiceId, id);
 
-        _logger.LogInformation("Service {ServiceId} created successfully for provider {ProviderId}",
-            response.Id, request.ProviderId);
+        var response = new ServiceDetailResponse
+        {
+            Id = result.ServiceId,
+            Name = result.ServiceName,
+            DurationMinutes = result.TotalDurationMinutes,
+            Price = result.Price,
+            Currency = result.Currency
+        };
 
-        return CreatedAtAction(
-            nameof(GetServiceById),
-            new { id = response.Id, version = "1.0" },
-            response);
+        return CreatedAtAction(nameof(SearchServices), new { id }, response);
     }
-
     /// <summary>
     /// Gets a service by its ID
     /// </summary>
@@ -215,55 +287,7 @@ public class ServicesController : ControllerBase
         return this.PaginatedOk(response);
     }
 
-    /// <summary>
-    /// Updates a service
-    /// </summary>
-    /// <param name="id">Service ID</param>
-    /// <param name="request">Updated service information</param>
-    /// <returns>Updated service information</returns>
-    /// <response code="200">Service updated successfully</response>
-    /// <response code="400">Invalid update data</response>
-    /// <response code="404">Service not found</response>
-    /// <response code="403">Not authorized to update this service</response>
-    [HttpPut("{id:guid}")]
-    [Authorize(Policy = "ProviderOrAdmin")]
-    [ProducesResponseType(typeof(ServiceResponse), StatusCodes.Status200OK)]
-    [ProducesResponseType(typeof(ApiErrorResult), StatusCodes.Status400BadRequest)]
-    [ProducesResponseType(typeof(ApiErrorResult), StatusCodes.Status404NotFound)]
-    [ProducesResponseType(StatusCodes.Status403Forbidden)]
-    public async Task<IActionResult> UpdateService(
-        [FromRoute] Guid id,
-        [FromBody][Required] UpdateServiceRequest request,
-        CancellationToken cancellationToken = default)
-    {
-        // Check if user can update this service
-        if (!await CanManageService(id))
-        {
-            _logger.LogWarning("User {RequestingUser} attempted to update service {ServiceId} without permission",
-                GetCurrentUserId(), id);
-            return Forbid();
-        }
-
-        var command = new UpdateServiceCommand(
-            ServiceId: id,
-            Name: request.Name,
-            Description: request.Description,
-            CategoryName: request.CategoryName,
-            ServiceType: request.ServiceType,
-            BasePrice: request.BasePrice,
-            Currency: request.Currency,
-            DurationMinutes: request.DurationMinutes,
-            PreparationMinutes: request.PreparationMinutes,
-            BufferMinutes: request.BufferMinutes,
-            RequiresDeposit: request.RequiresDeposit,
-            ImageUrl: request.ImageUrl,
-            IdempotencyKey: request.IdempotencyKey);
-
-        var result = await _mediator.Send(command, cancellationToken);
-
-        _logger.LogInformation("Service {ServiceId} updated successfully", id);
-        return Ok(MapToServiceResponse(result));
-    }
+    
 
     /// <summary>
     /// Activates a service
@@ -427,54 +451,11 @@ public class ServicesController : ControllerBase
 
     #region Private Helper Methods
 
-    private CreateServiceCommand MapToCreateCommand(CreateServiceRequest request)
-    {
-        return new CreateServiceCommand(
-            ProviderId: request.ProviderId,
-            Name: request.Name,
-            Description: request.Description,
-            CategoryName: request.CategoryName,
-            ServiceType: request.ServiceType,
-            BasePrice: request.BasePrice,
-            Currency: request.Currency,
-            DurationMinutes: request.DurationMinutes,
-            PreparationMinutes: request.PreparationMinutes,
-            BufferMinutes: request.BufferMinutes,
-            RequiresDeposit: request.RequiresDeposit,
-            DepositPercentage: request.DepositPercentage,
-            AvailableAtLocation: request.AvailableAtLocation,
-            AvailableAsMobile: request.AvailableAsMobile,
-            MaxAdvanceBookingDays: request.MaxAdvanceBookingDays,
-            MinAdvanceBookingHours: request.MinAdvanceBookingHours,
-            MaxConcurrentBookings: request.MaxConcurrentBookings,
-            ImageUrl: request.ImageUrl,
-            IdempotencyKey: request.IdempotencyKey);
-    }
+
+ 
 
 
-    private ServiceResponse MapToServiceResponse(UpdateServiceResult result)
-    {
-        return new ServiceResponse
-        {
-            Id = result.ServiceId,
-            Name = result.Name,
-            Message = "Updated Complete Service",
-            Timestamp = DateTime.UtcNow
-        };
-    }
-
-    private ServiceResponse MapToServiceResponse(CreateServiceResult result)
-    {
-        return new ServiceResponse
-        {
-            Id = result.ServiceId,
-            Name = result.Name,
-            Category = result.Category,
-            Status = result.Status.ToString(),
-            Message = "Operation completed successfully",
-            Timestamp = DateTime.UtcNow
-        };
-    }
+  
 
     private ServiceDetailsResponse MapToServiceDetailsResponse(ServiceDetailsViewModel result)
     {

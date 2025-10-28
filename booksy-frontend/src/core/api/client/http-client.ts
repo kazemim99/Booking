@@ -111,28 +111,6 @@ class HttpClient {
 
       // Check if this is a validation error (400 with error.errors)
       if (status === 400 && errorData?.error?.errors) {
-        // Return normalized validation response instead of throwing
-        const normalizedResponse: ApiResponse<any> = {
-          success: false,
-          data: null,
-          message: errorData.message || 'Validation failed',
-          statusCode: status,
-          error: {
-            code: errorData.error.code || 'VALIDATION_ERROR',
-            message: errorData.error.message || 'Validation failed',
-            errors: errorData.error.errors,
-          },
-          errors: errorData.error.errors, // Extract to top level
-          metadata: errorData.metadata
-            ? {
-                timestamp: errorData.metadata.timestamp || new Date().toISOString(),
-                requestId: errorData.metadata.requestId || '',
-                path: errorData.metadata.path,
-                method: errorData.metadata.method,
-              }
-            : undefined,
-        }
-
         if (import.meta.env.DEV) {
           console.warn('[HTTP] Validation Error:', {
             status,
@@ -141,8 +119,18 @@ class HttpClient {
           })
         }
 
-        // Return the normalized response (not throw)
-        return Promise.resolve({ data: normalizedResponse } as AxiosResponse)
+        // Create ApiError with validation details
+        const validationError = new ApiError(
+          errorData.message || 'Validation failed',
+          status,
+          errorData
+        )
+
+        // Attach validation errors to the error object
+        ;(validationError as any).validationErrors = errorData.error.errors
+        ;(validationError as any).isValidationError = true
+
+        throw validationError
       }
 
       // Extract error message for non-validation errors

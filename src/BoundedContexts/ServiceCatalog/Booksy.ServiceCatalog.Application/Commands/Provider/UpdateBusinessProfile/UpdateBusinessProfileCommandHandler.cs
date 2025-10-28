@@ -27,7 +27,7 @@ namespace Booksy.ServiceCatalog.Application.Commands.Provider.UpdateBusinessProf
         {
             _logger.LogInformation("Updating business profile for provider: {ProviderId}", request.ProviderId);
 
-            var providerId = ProviderId.Create(request.ProviderId);
+            var providerId = ProviderId.From(request.ProviderId);
             var provider = await _providerReadRepository.GetByIdAsync(providerId, cancellationToken);
 
             if (provider == null)

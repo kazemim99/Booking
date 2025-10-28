@@ -17,6 +17,8 @@ namespace Booksy.ServiceCatalog.Infrastructure.Persistence.Configurations
             // Configure primary key
             builder.HasKey(s => s.Id);
 
+            builder.Property(x => x.Id).ValueGeneratedNever();
+
             // Configure basic properties
             builder.Property(s => s.FirstName)
                 .IsRequired()
@@ -27,10 +29,9 @@ namespace Booksy.ServiceCatalog.Infrastructure.Persistence.Configurations
                 .HasMaxLength(100);
 
             builder.Property(s => s.Email)
-       .HasConversion(email => email.Value, value => Email.Create(value));
+       .HasConversion(email => email.Value, value => Email.Create(value)).IsRequired(false);
 
-            builder.Property(s => s.Phone)
-.HasConversion(phone => phone.Value, value => PhoneNumber.Create(value));
+            builder.Property(s => s.Phone).HasConversion(phone => phone.Value, value => PhoneNumber.Create(value));
 
 
 
@@ -81,41 +82,39 @@ namespace Booksy.ServiceCatalog.Infrastructure.Persistence.Configurations
 
         private static void ConfigureAuditFields(EntityTypeBuilder<Staff> builder)
         {
-            // Configure audit fields if they exist in the base Entity class
-            builder.Property<DateTime>("CreatedAt")
+            // Configure audit fields from Entity base class
+            builder.Property(e => e.CreatedAt)
                 .HasColumnType("timestamp with time zone")
-                .HasDefaultValueSql("CURRENT_TIMESTAMP");
+                .IsRequired();
 
-            builder.Property<DateTime>("UpdatedAt")
-                .HasColumnType("timestamp with time zone")
-                .HasDefaultValueSql("CURRENT_TIMESTAMP");
+            builder.Property(e => e.CreatedBy)
+                .HasMaxLength(100);
+
+            builder.Property(e => e.LastModifiedAt)
+                .HasColumnType("timestamp with time zone");
+
+            builder.Property(e => e.LastModifiedBy)
+                .HasMaxLength(100);
 
             // Add index on created date for performance
-            builder.HasIndex("CreatedAt")
+            builder.HasIndex(e => e.CreatedAt)
                 .HasDatabaseName("IX_Staff_CreatedAt");
         }
 
         private static void ConfigureRelationships(EntityTypeBuilder<Staff> builder)
         {
-            // If Staff belongs to Provider, configure the relationship
-            // This assumes there's a ProviderId foreign key property
-            // You may need to adjust this based on your actual domain model
+          
 
-            // Option 1: If Staff has a ProviderId property
-            // builder.Property<Guid>("ProviderId")
-            //     .IsRequired();
+            builder.Property(x => x.ProviderId)
+          .HasConversion(
+              v => v.Value,
+              v => ProviderId.From(v))
+          .IsRequired();
 
-            //builder.HasOne<Provider>()
-            //    .WithMany(p => p.Staff)
-            //    .HasForeignKey("ProviderId")
-            //    .OnDelete(DeleteBehavior.Cascade);
-
-            // Option 2: If you need to add ProviderId as shadow property
-            builder.Property<ProviderId>("ProviderId")
-                .IsRequired();
-
-            builder.HasIndex("ProviderId")
-                .HasDatabaseName("IX_Staff_ProviderId");
+            builder.HasOne<Provider>()
+                .WithMany(p => p.Staff)
+                .HasForeignKey(x => x.ProviderId)
+                .OnDelete(DeleteBehavior.Cascade);
         }
 
 

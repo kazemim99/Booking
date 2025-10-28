@@ -14,19 +14,25 @@ namespace Booksy.ServiceCatalog.Infrastructure.Persistence.Configurations
         {
             builder.ToTable("Providers");
 
+
+
             // Primary Key
             builder.HasKey(p => p.Id);
+
+            // Ignore Version property (not using optimistic concurrency for now)
+            builder.Ignore(p => p.Version);
+
             builder.Property(p => p.Id)
                 .HasConversion(
                     id => id.Value,
-                    value =>  ProviderId.Create(value))
+                    value => ProviderId.From(value))
                 .IsRequired();
 
             // Owner ID
             builder.Property(p => p.OwnerId)
                 .HasConversion(
                     id => id.Value,
-                    value =>  UserId.From(value))
+                    value => UserId.From(value))
                 .IsRequired()
                 .HasColumnName("OwnerId");
 
@@ -215,9 +221,23 @@ namespace Booksy.ServiceCatalog.Infrastructure.Persistence.Configurations
                 .HasForeignKey("ProviderId")
                 .OnDelete(DeleteBehavior.Cascade);
 
+            // BusinessHours as child entities with proper lifecycle management
             builder.HasMany(p => p.BusinessHours)
+        .WithOne()
+        .HasForeignKey(bh => bh.ProviderId)  // Correct
+        .OnDelete(DeleteBehavior.Cascade);
+
+
+            // Holidays as child entities with proper lifecycle management
+            builder.HasMany(p => p.Holidays)
                 .WithOne()
-                .HasForeignKey("ProviderId")
+                .HasForeignKey("_providerId")
+                .OnDelete(DeleteBehavior.Cascade);
+
+            // Exceptions as child entities with proper lifecycle management
+            builder.HasMany(p => p.Exceptions)
+                .WithOne()
+                .HasForeignKey("_providerId")
                 .OnDelete(DeleteBehavior.Cascade);
 
             // Indexes

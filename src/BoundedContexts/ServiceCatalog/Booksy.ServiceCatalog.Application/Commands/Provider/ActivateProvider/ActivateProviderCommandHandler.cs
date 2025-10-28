@@ -3,6 +3,7 @@
 // ========================================
 using Booksy.Core.Application.Abstractions.CQRS;
 using Booksy.Core.Application.Abstractions.Persistence;
+using Booksy.Core.Application.Exceptions;
 using Booksy.ServiceCatalog.Domain.Exceptions;
 using Booksy.ServiceCatalog.Domain.Repositories;
 using Booksy.ServiceCatalog.Domain.ValueObjects;
@@ -32,11 +33,11 @@ namespace Booksy.ServiceCatalog.Application.Commands.Provider.ActivateProvider
         {
             _logger.LogInformation("Activating provider: {ProviderId}", request.ProviderId);
 
-            var providerId = ProviderId.Create(request.ProviderId);
+            var providerId = ProviderId.From(request.ProviderId);
             var provider = await _providerReadRepository.GetByIdAsync(providerId, cancellationToken);
 
             if (provider == null)
-                throw new InvalidProviderException("Provider not found");
+                throw new NotFoundException("Provider not found");
 
             provider.Activate();
 

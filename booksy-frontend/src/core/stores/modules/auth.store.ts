@@ -51,12 +51,54 @@ export const useAuthStore = defineStore('auth', () => {
   // Actions
 
   /**
+   * Decode JWT token and extract provider information
+   */
+  function decodeTokenAndExtractProviderInfo(jwtToken: string) {
+    try {
+      // JWT structure: header.payload.signature
+      const parts = jwtToken.split('.')
+      if (parts.length !== 3) {
+        console.warn('[AuthStore] Invalid JWT token format')
+        return null
+      }
+
+      // Decode payload (base64url)
+      const payload = JSON.parse(atob(parts[1].replace(/-/g, '+').replace(/_/g, '/')))
+
+      // Extract providerId from token claims
+      const providerId = payload.providerId || payload.provider_id
+      const providerStatus = payload.provider_status
+
+      console.log('[AuthStore] Decoded token payload:', { providerId, providerStatus })
+
+      if (providerId) {
+        return {
+          providerId: providerId,
+          providerStatus: providerStatus || null
+        }
+      }
+
+      return null
+    } catch (error) {
+      console.error('[AuthStore] Failed to decode JWT token:', error)
+      return null
+    }
+  }
+
+  /**
    * Set authentication token
    */
   function setToken(newToken: string | null) {
     token.value = newToken
     if (newToken) {
       localStorage.setItem('auth_token', newToken)
+
+      // Extract provider info from token
+      const providerInfo = decodeTokenAndExtractProviderInfo(newToken)
+      if (providerInfo) {
+        console.log('[AuthStore] Provider info extracted from token:', providerInfo)
+        setProviderStatus(providerInfo.providerStatus as ProviderStatus, providerInfo.providerId)
+      }
     } else {
       localStorage.removeItem('auth_token')
     }
@@ -417,6 +459,13 @@ export const useAuthStore = defineStore('auth', () => {
 
       if (storedToken) {
         token.value = storedToken
+
+        // Extract provider info from token
+        const providerInfo = decodeTokenAndExtractProviderInfo(storedToken)
+        if (providerInfo) {
+          console.log('[AuthStore] Provider info loaded from stored token:', providerInfo)
+          setProviderStatus(providerInfo.providerStatus as ProviderStatus, providerInfo.providerId)
+        }
       }
 
       if (storedRefreshToken) {

@@ -4,7 +4,7 @@ namespace Booksy.ServiceCatalog.Application.Commands.Provider.UpdateWorkingHours
 
 public sealed record UpdateWorkingHoursCommand(
     Guid ProviderId,
-    Dictionary<int, DayHoursDto?> BusinessHours,
+    Dictionary<string, DayHoursDto?> BusinessHours,
     Guid? IdempotencyKey = null) : ICommand<UpdateWorkingHoursResult>;
 
 public sealed record DayHoursDto(

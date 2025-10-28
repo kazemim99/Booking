@@ -34,7 +34,7 @@ public sealed class UpdateBusinessInfoCommandHandler : ICommandHandler<UpdateBus
         ValidateRequest(request);
 
         // Get provider
-        var providerId = Domain.ValueObjects.ProviderId.Create(request.ProviderId);
+        var providerId = Domain.ValueObjects.ProviderId.From(request.ProviderId);
         var provider = await _providerReadRepository.GetByIdAsync(providerId, cancellationToken);
 
         if (provider == null)

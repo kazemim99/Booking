@@ -22,6 +22,7 @@
 
 	<ItemGroup>
 	  <ProjectReference Include="..\..\src\BoundedContexts\ServiceCatalog\Booksy.ServiceCatalog.Domain\Booksy.ServiceCatalog.Domain.csproj" />
+	  <ProjectReference Include="..\..\src\Infrastructure\Booksy.API\Booksy.API.csproj" />
 	</ItemGroup>
 
 	<ItemGroup>

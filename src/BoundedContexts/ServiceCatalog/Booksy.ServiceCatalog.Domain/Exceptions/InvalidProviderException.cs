@@ -7,6 +7,6 @@ namespace Booksy.ServiceCatalog.Domain.Exceptions
     {
         public InvalidProviderException(string message) : base(message) { }
 
-        public override string ErrorCode => throw new NotImplementedException();
+        public override string ErrorCode => "INVALID_PROVIDER";
     }  
 }

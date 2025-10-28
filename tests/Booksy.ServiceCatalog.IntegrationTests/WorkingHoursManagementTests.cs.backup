@@ -1,0 +1,864 @@
+// ========================================
+// Booksy.ServiceCatalog.IntegrationTests/WorkingHoursManagementTests.cs
+// ========================================
+using Booksy.API;
+using Booksy.ServiceCatalog.Domain.Aggregates;
+using Booksy.ServiceCatalog.Domain.ValueObjects;
+using Booksy.ServiceCatalog.IntegrationTests.Infrastructure;
+using FluentAssertions;
+using Microsoft.EntityFrameworkCore;
+using System.Net;
+using System.Net.Http.Json;
+using Xunit;
+
+namespace Booksy.ServiceCatalog.IntegrationTests;
+
+/// <summary>
+/// Integration tests for Working Hours Management APIs
+/// Tests business hours, breaks, holidays, and exception schedules
+/// </summary>
+[Collection("Integration Tests")]
+public class WorkingHoursManagementTests : ServiceCatalogIntegrationTestBase
+{
+    public WorkingHoursManagementTests(ServiceCatalogTestWebApplicationFactory<Startup> factory)
+        : base(factory)
+    {
+    }
+
+    // ================================================
+    // BUSINESS HOURS TESTS
+    // ================================================
+
+    [Fact]
+    public async Task GetBusinessHours_WithValidProvider_ReturnsAllDaysOfWeek()
+    {
+        // Arrange
+        var provider = await CreateProviderWithBusinessHoursAsync();
+        AuthenticateAsProviderOwner(provider);
+
+        // Act
+        var response = await GetAsync($"/api/v1/providers/{provider.Id.Value}/business-hours");
+
+        // Assert
+        response.StatusCode.Should().Be(HttpStatusCode.OK);
+        var result = await response.Content.ReadFromJsonAsync<BusinessHoursResponse>();
+        result.Should().NotBeNull();
+        result!.BusinessHours.Should().HaveCount(7, "should return all 7 days of the week");
+    }
+
+    [Fact]
+    public async Task GetBusinessHours_WithNonExistentProvider_ReturnsNotFound()
+    {
+        // Arrange
+        var nonExistentProviderId = Guid.NewGuid();
+        AuthenticateAsTestAdmin();
+
+        // Act
+        var response = await GetAsync($"/api/v1/providers/{nonExistentProviderId}/business-hours");
+
+        // Assert
+        response.StatusCode.Should().Be(HttpStatusCode.NotFound);
+    }
+
+    [Fact]
+    public async Task UpdateBusinessHours_WithValidData_UpdatesSuccessfully()
+    {
+        // Arrange
+        var provider = await CreateProviderWithBusinessHoursAsync();
+        AuthenticateAsProviderOwner(provider);
+
+        var updateRequest = new UpdateBusinessHoursRequest
+        {
+            BusinessHours = new List<BusinessHoursDto>
+            {
+                new() { DayOfWeek = 1, IsOpen = true, OpenTime = "09:00", CloseTime = "18:00" },
+                new() { DayOfWeek = 2, IsOpen = true, OpenTime = "09:00", CloseTime = "18:00" },
+                new() { DayOfWeek = 3, IsOpen = true, OpenTime = "09:00", CloseTime = "18:00" },
+                new() { DayOfWeek = 4, IsOpen = true, OpenTime = "09:00", CloseTime = "18:00" },
+                new() { DayOfWeek = 5, IsOpen = true, OpenTime = "09:00", CloseTime = "17:00" },
+                new() { DayOfWeek = 6, IsOpen = true, OpenTime = "10:00", CloseTime = "14:00" },
+                new() { DayOfWeek = 0, IsOpen = false, OpenTime = null, CloseTime = null }
+            }
+        };
+
+        // Act
+        var response = await PutAsync(
+            $"/api/v1/providers/{provider.Id.Value}/business-hours",
+            updateRequest);
+
+        // Assert
+        response.StatusCode.Should().Be(HttpStatusCode.OK);
+
+        // Verify in database
+        var updatedProvider = await FindProviderAsync(provider.Id.Value);
+        updatedProvider.Should().NotBeNull();
+        updatedProvider!.BusinessHours.Should().HaveCount(7);
+
+        var friday = updatedProvider.BusinessHours.FirstOrDefault(h => h.DayOfWeek == Domain.Enums.DayOfWeek.Friday);
+        friday.Should().NotBeNull();
+        friday!.CloseTime.Should().Be(new TimeOnly(17, 0));
+    }
+
+    [Fact]
+    public async Task UpdateBusinessHours_WithInvalidTimeRange_ReturnsBadRequest()
+    {
+        // Arrange
+        var provider = await CreateProviderWithBusinessHoursAsync();
+        AuthenticateAsProviderOwner(provider);
+
+        var updateRequest = new UpdateBusinessHoursRequest
+        {
+            BusinessHours = new List<BusinessHoursDto>
+            {
+                new() { DayOfWeek = 1, IsOpen = true, OpenTime = "18:00", CloseTime = "09:00" } // Invalid: close before open
+            }
+        };
+
+        // Act
+        var response = await PutAsync(
+            $"/api/v1/providers/{provider.Id.Value}/business-hours",
+            updateRequest);
+
+        // Assert
+        response.StatusCode.Should().Be(HttpStatusCode.BadRequest);
+    }
+
+    [Fact]
+    public async Task UpdateBusinessHours_WithoutAuthentication_ReturnsUnauthorized()
+    {
+        // Arrange
+        var provider = await CreateProviderWithBusinessHoursAsync();
+        ClearAuthenticationHeader();
+
+        var updateRequest = new UpdateBusinessHoursRequest
+        {
+            BusinessHours = new List<BusinessHoursDto>()
+        };
+
+        // Act
+        var response = await PutAsync(
+            $"/api/v1/providers/{provider.Id.Value}/business-hours",
+            updateRequest);
+
+        // Assert
+        response.StatusCode.Should().Be(HttpStatusCode.Unauthorized);
+    }
+
+    // ================================================
+    // BREAK PERIODS TESTS
+    // ================================================
+
+    [Fact]
+    public async Task UpdateBusinessHours_WithBreaks_SavesBreakPeriodsSuccessfully()
+    {
+        // Arrange
+        var provider = await CreateProviderWithBusinessHoursAsync();
+        AuthenticateAsProviderOwner(provider);
+
+        var updateRequest = new UpdateBusinessHoursRequest
+        {
+            BusinessHours = new List<BusinessHoursDto>
+            {
+                new()
+                {
+                    DayOfWeek = 1, // Monday
+                    IsOpen = true,
+                    OpenTime = "09:00",
+                    CloseTime = "17:00",
+                    Breaks = new List<BreakPeriodDto>
+                    {
+                        new() { StartTime = "12:00", EndTime = "13:00", Label = "Lunch" },
+                        new() { StartTime = "15:00", EndTime = "15:15", Label = "Coffee Break" }
+                    }
+                }
+            }
+        };
+
+        // Act
+        var response = await PutAsync(
+            $"/api/v1/providers/{provider.Id.Value}/business-hours",
+            updateRequest);
+
+        // Assert
+        response.StatusCode.Should().Be(HttpStatusCode.OK);
+
+        // Verify in database
+        var updatedProvider = await DbContext.Providers
+            .Include(p => p.BusinessHours)
+            .FirstOrDefaultAsync(p => p.Id == provider.Id);
+
+        updatedProvider.Should().NotBeNull();
+        var monday = updatedProvider!.BusinessHours.FirstOrDefault(h => h.DayOfWeek == Domain.Enums.DayOfWeek.Monday);
+        monday.Should().NotBeNull();
+        monday!.Breaks.Should().HaveCount(2);
+        monday.Breaks.Should().Contain(b => b.Label == "Lunch");
+    }
+
+    [Fact]
+    public async Task UpdateBusinessHours_WithOverlappingBreaks_ReturnsBadRequest()
+    {
+        // Arrange
+        var provider = await CreateProviderWithBusinessHoursAsync();
+        AuthenticateAsProviderOwner(provider);
+
+        var updateRequest = new UpdateBusinessHoursRequest
+        {
+            BusinessHours = new List<BusinessHoursDto>
+            {
+                new()
+                {
+                    DayOfWeek = 1,
+                    IsOpen = true,
+                    OpenTime = "09:00",
+                    CloseTime = "17:00",
+                    Breaks = new List<BreakPeriodDto>
+                    {
+                        new() { StartTime = "12:00", EndTime = "13:00" },
+                        new() { StartTime = "12:30", EndTime = "13:30" } // Overlaps with first break
+                    }
+                }
+            }
+        };
+
+        // Act
+        var response = await PutAsync(
+            $"/api/v1/providers/{provider.Id.Value}/business-hours",
+            updateRequest);
+
+        // Assert
+        response.StatusCode.Should().Be(HttpStatusCode.BadRequest);
+    }
+
+    [Fact]
+    public async Task UpdateBusinessHours_WithBreakOutsideBusinessHours_ReturnsBadRequest()
+    {
+        // Arrange
+        var provider = await CreateProviderWithBusinessHoursAsync();
+        AuthenticateAsProviderOwner(provider);
+
+        var updateRequest = new UpdateBusinessHoursRequest
+        {
+            BusinessHours = new List<BusinessHoursDto>
+            {
+                new()
+                {
+                    DayOfWeek = 1,
+                    IsOpen = true,
+                    OpenTime = "09:00",
+                    CloseTime = "17:00",
+                    Breaks = new List<BreakPeriodDto>
+                    {
+                        new() { StartTime = "17:00", EndTime = "18:00" } // Outside business hours
+                    }
+                }
+            }
+        };
+
+        // Act
+        var response = await PutAsync(
+            $"/api/v1/providers/{provider.Id.Value}/business-hours",
+            updateRequest);
+
+        // Assert
+        response.StatusCode.Should().Be(HttpStatusCode.BadRequest);
+    }
+
+    // ================================================
+    // HOLIDAY TESTS
+    // ================================================
+
+    [Fact]
+    public async Task GetHolidays_ReturnsAllHolidays()
+    {
+        // Arrange
+        var provider = await CreateProviderWithHolidaysAsync();
+        AuthenticateAsProviderOwner(provider);
+
+        // Act
+        var response = await GetAsync($"/api/v1/providers/{provider.Id.Value}/holidays");
+
+        // Assert
+        response.StatusCode.Should().Be(HttpStatusCode.OK);
+        var result = await response.Content.ReadFromJsonAsync<HolidaysResponse>();
+        result.Should().NotBeNull();
+        result!.Holidays.Should().HaveCount(2);
+    }
+
+    [Fact]
+    public async Task AddHoliday_SingleDate_AddsSuccessfully()
+    {
+        // Arrange
+        var provider = await CreateProviderWithBusinessHoursAsync();
+        AuthenticateAsProviderOwner(provider);
+
+        var addRequest = new AddHolidayRequest
+        {
+            Date = new DateOnly(2025, 12, 25),
+            Reason = "Christmas Day",
+            IsRecurring = false
+        };
+
+        // Act
+        var response = await PostAsync(
+            $"/api/v1/providers/{provider.Id.Value}/holidays",
+            addRequest);
+
+        // Assert
+        response.StatusCode.Should().Be(HttpStatusCode.Created);
+        var result = await response.Content.ReadFromJsonAsync<HolidayDto>();
+        result.Should().NotBeNull();
+        result!.Reason.Should().Be("Christmas Day");
+        result.IsRecurring.Should().BeFalse();
+
+        // Verify in database
+        var updatedProvider = await FindProviderAsync(provider.Id.Value);
+        updatedProvider!.Holidays.Should().HaveCount(1);
+    }
+
+    [Fact]
+    public async Task AddHoliday_RecurringYearly_AddsSuccessfully()
+    {
+        // Arrange
+        var provider = await CreateProviderWithBusinessHoursAsync();
+        AuthenticateAsProviderOwner(provider);
+
+        var addRequest = new AddHolidayRequest
+        {
+            Date = new DateOnly(2025, 1, 1),
+            Reason = "New Year's Day",
+            IsRecurring = true,
+            Pattern = "Yearly"
+        };
+
+        // Act
+        var response = await PostAsync(
+            $"/api/v1/providers/{provider.Id.Value}/holidays",
+            addRequest);
+
+        // Assert
+        response.StatusCode.Should().Be(HttpStatusCode.Created);
+        var result = await response.Content.ReadFromJsonAsync<HolidayDto>();
+        result.Should().NotBeNull();
+        result!.IsRecurring.Should().BeTrue();
+        result.Pattern.Should().Be("Yearly");
+
+        // Verify in database
+        var updatedProvider = await FindProviderAsync(provider.Id.Value);
+        var holiday = updatedProvider!.Holidays.First();
+        holiday.IsRecurring.Should().BeTrue();
+        holiday.Pattern.Should().Be(RecurrencePattern.Yearly);
+    }
+
+    [Fact]
+    public async Task AddHoliday_WithoutRecurrencePattern_ReturnsBadRequest()
+    {
+        // Arrange
+        var provider = await CreateProviderWithBusinessHoursAsync();
+        AuthenticateAsProviderOwner(provider);
+
+        var addRequest = new AddHolidayRequest
+        {
+            Date = new DateOnly(2025, 1, 1),
+            Reason = "Holiday",
+            IsRecurring = true,
+            Pattern = null // Missing pattern for recurring holiday
+        };
+
+        // Act
+        var response = await PostAsync(
+            $"/api/v1/providers/{provider.Id.Value}/holidays",
+            addRequest);
+
+        // Assert
+        response.StatusCode.Should().Be(HttpStatusCode.BadRequest);
+    }
+
+    [Fact]
+    public async Task DeleteHoliday_ExistingHoliday_DeletesSuccessfully()
+    {
+        // Arrange
+        var provider = await CreateProviderWithHolidaysAsync();
+        AuthenticateAsProviderOwner(provider);
+        var holidayId = provider.Holidays.First().Id;
+
+        // Act
+        var response = await DeleteAsync(
+            $"/api/v1/providers/{provider.Id.Value}/holidays/{holidayId}");
+
+        // Assert
+        response.StatusCode.Should().Be(HttpStatusCode.NoContent);
+
+        // Verify in database
+        var updatedProvider = await FindProviderAsync(provider.Id.Value);
+        updatedProvider!.Holidays.Should().HaveCount(1, "one holiday should remain");
+    }
+
+    [Fact]
+    public async Task DeleteHoliday_NonExistentHoliday_ReturnsNotFound()
+    {
+        // Arrange
+        var provider = await CreateProviderWithBusinessHoursAsync();
+        AuthenticateAsProviderOwner(provider);
+        var nonExistentHolidayId = Guid.NewGuid();
+
+        // Act
+        var response = await DeleteAsync(
+            $"/api/v1/providers/{provider.Id.Value}/holidays/{nonExistentHolidayId}");
+
+        // Assert
+        response.StatusCode.Should().Be(HttpStatusCode.NotFound);
+    }
+
+    // ================================================
+    // EXCEPTION SCHEDULE TESTS
+    // ================================================
+
+    [Fact]
+    public async Task GetExceptions_ReturnsAllExceptions()
+    {
+        // Arrange
+        var provider = await CreateProviderWithExceptionsAsync();
+        AuthenticateAsProviderOwner(provider);
+
+        // Act
+        var response = await GetAsync($"/api/v1/providers/{provider.Id.Value}/exceptions");
+
+        // Assert
+        response.StatusCode.Should().Be(HttpStatusCode.OK);
+        var result = await response.Content.ReadFromJsonAsync<ExceptionsResponse>();
+        result.Should().NotBeNull();
+        result!.Exceptions.Should().HaveCount(2);
+    }
+
+    [Fact]
+    public async Task AddException_ModifiedHours_AddsSuccessfully()
+    {
+        // Arrange
+        var provider = await CreateProviderWithBusinessHoursAsync();
+        AuthenticateAsProviderOwner(provider);
+
+        var addRequest = new AddExceptionRequest
+        {
+            Date = new DateOnly(2025, 12, 24),
+            OpenTime = new TimeOnly(10, 0),
+            CloseTime = new TimeOnly(14, 0),
+            Reason = "Christmas Eve - Early Closing"
+        };
+
+        // Act
+        var response = await PostAsync(
+            $"/api/v1/providers/{provider.Id.Value}/exceptions",
+            addRequest);
+
+        // Assert
+        response.StatusCode.Should().Be(HttpStatusCode.Created);
+        var result = await response.Content.ReadFromJsonAsync<ExceptionDto>();
+        result.Should().NotBeNull();
+        result!.IsClosed.Should().BeFalse();
+        result.OpenTime.Should().Be("10:00");
+        result.CloseTime.Should().Be("14:00");
+
+        // Verify in database
+        var updatedProvider = await FindProviderAsync(provider.Id.Value);
+        updatedProvider!.Exceptions.Should().HaveCount(1);
+    }
+
+    [Fact]
+    public async Task AddException_Closed_AddsSuccessfully()
+    {
+        // Arrange
+        var provider = await CreateProviderWithBusinessHoursAsync();
+        AuthenticateAsProviderOwner(provider);
+
+        var addRequest = new AddExceptionRequest
+        {
+            Date = new DateOnly(2025, 11, 1),
+            OpenTime = null,
+            CloseTime = null,
+            Reason = "Staff Training Day"
+        };
+
+        // Act
+        var response = await PostAsync(
+            $"/api/v1/providers/{provider.Id.Value}/exceptions",
+            addRequest);
+
+        // Assert
+        response.StatusCode.Should().Be(HttpStatusCode.Created);
+        var result = await response.Content.ReadFromJsonAsync<ExceptionDto>();
+        result.Should().NotBeNull();
+        result!.IsClosed.Should().BeTrue();
+
+        // Verify in database
+        var updatedProvider = await FindProviderAsync(provider.Id.Value);
+        var exception = updatedProvider!.Exceptions.First();
+        exception.IsClosed.Should().BeTrue();
+    }
+
+    [Fact]
+    public async Task AddException_OnHolidayDate_ReturnsBadRequest()
+    {
+        // Arrange
+        var provider = await CreateProviderWithHolidaysAsync();
+        AuthenticateAsProviderOwner(provider);
+        var holidayDate = provider.Holidays.First().Date;
+
+        var addRequest = new AddExceptionRequest
+        {
+            Date = holidayDate,
+            OpenTime = new TimeOnly(10, 0),
+            CloseTime = new TimeOnly(14, 0),
+            Reason = "Exception on holiday"
+        };
+
+        // Act
+        var response = await PostAsync(
+            $"/api/v1/providers/{provider.Id.Value}/exceptions",
+            addRequest);
+
+        // Assert
+        response.StatusCode.Should().Be(HttpStatusCode.BadRequest);
+    }
+
+    [Fact]
+    public async Task AddException_WithInvalidTimeRange_ReturnsBadRequest()
+    {
+        // Arrange
+        var provider = await CreateProviderWithBusinessHoursAsync();
+        AuthenticateAsProviderOwner(provider);
+
+        var addRequest = new AddExceptionRequest
+        {
+            Date = new DateOnly(2025, 11, 1),
+            OpenTime = new TimeOnly(14, 0),
+            CloseTime = new TimeOnly(10, 0), // Close before open
+            Reason = "Invalid hours"
+        };
+
+        // Act
+        var response = await PostAsync(
+            $"/api/v1/providers/{provider.Id.Value}/exceptions",
+            addRequest);
+
+        // Assert
+        response.StatusCode.Should().Be(HttpStatusCode.BadRequest);
+    }
+
+    [Fact]
+    public async Task DeleteException_ExistingException_DeletesSuccessfully()
+    {
+        // Arrange
+        var provider = await CreateProviderWithExceptionsAsync();
+        AuthenticateAsProviderOwner(provider);
+        var exceptionId = provider.Exceptions.First().Id;
+
+        // Act
+        var response = await DeleteAsync(
+            $"/api/v1/providers/{provider.Id.Value}/exceptions/{exceptionId}");
+
+        // Assert
+        response.StatusCode.Should().Be(HttpStatusCode.NoContent);
+
+        // Verify in database
+        var updatedProvider = await FindProviderAsync(provider.Id.Value);
+        updatedProvider!.Exceptions.Should().HaveCount(1, "one exception should remain");
+    }
+
+    // ================================================
+    // AVAILABILITY CALCULATION TESTS
+    // ================================================
+
+    [Fact]
+    public async Task GetAvailability_OnHoliday_ReturnsUnavailable()
+    {
+        // Arrange
+        var provider = await CreateProviderWithHolidaysAsync();
+        AuthenticateAsProviderOwner(provider);
+        var holidayDate = provider.Holidays.First().Date;
+
+        // Act
+        var response = await GetAsync(
+            $"/api/v1/providers/{provider.Id.Value}/availability?date={holidayDate:yyyy-MM-dd}");
+
+        // Assert
+        response.StatusCode.Should().Be(HttpStatusCode.OK);
+        var result = await response.Content.ReadFromJsonAsync<AvailabilityResponse>();
+        result.Should().NotBeNull();
+        result!.IsAvailable.Should().BeFalse();
+        result.Reason.Should().Contain("Holiday");
+    }
+
+    [Fact]
+    public async Task GetAvailability_OnException_ReturnsModifiedHours()
+    {
+        // Arrange
+        var provider = await CreateProviderWithExceptionsAsync();
+        AuthenticateAsProviderOwner(provider);
+        var exceptionDate = provider.Exceptions.First().Date;
+
+        // Act
+        var response = await GetAsync(
+            $"/api/v1/providers/{provider.Id.Value}/availability?date={exceptionDate:yyyy-MM-dd}");
+
+        // Assert
+        response.StatusCode.Should().Be(HttpStatusCode.OK);
+        var result = await response.Content.ReadFromJsonAsync<AvailabilityResponse>();
+        result.Should().NotBeNull();
+        result!.IsAvailable.Should().BeTrue();
+        result.Slots.Should().HaveCount(1);
+    }
+
+    [Fact]
+    public async Task GetAvailability_OnNormalDay_ReturnsBaseHoursWithBreaks()
+    {
+        // Arrange
+        var provider = await CreateProviderWithBusinessHoursAndBreaksAsync();
+        AuthenticateAsProviderOwner(provider);
+        var normalDate = new DateOnly(2025, 11, 3); // Monday
+
+        // Act
+        var response = await GetAsync(
+            $"/api/v1/providers/{provider.Id.Value}/availability?date={normalDate:yyyy-MM-dd}");
+
+        // Assert
+        response.StatusCode.Should().Be(HttpStatusCode.OK);
+        var result = await response.Content.ReadFromJsonAsync<AvailabilityResponse>();
+        result.Should().NotBeNull();
+        result!.IsAvailable.Should().BeTrue();
+        result.Slots.Should().HaveCountGreaterThan(1, "breaks should split the day into multiple slots");
+    }
+
+    [Fact]
+    public async Task GetAvailability_OnClosedDay_ReturnsUnavailable()
+    {
+        // Arrange
+        var provider = await CreateProviderWithBusinessHoursAsync();
+        AuthenticateAsProviderOwner(provider);
+        var sunday = new DateOnly(2025, 11, 2); // Sunday (closed)
+
+        // Act
+        var response = await GetAsync(
+            $"/api/v1/providers/{provider.Id.Value}/availability?date={sunday:yyyy-MM-dd}");
+
+        // Assert
+        response.StatusCode.Should().Be(HttpStatusCode.OK);
+        var result = await response.Content.ReadFromJsonAsync<AvailabilityResponse>();
+        result.Should().NotBeNull();
+        result!.IsAvailable.Should().BeFalse();
+        result.Reason.Should().Be("Closed");
+    }
+
+    // ================================================
+    // AUTHORIZATION TESTS
+    // ================================================
+
+    [Fact]
+    public async Task UpdateBusinessHours_AsWrongProvider_ReturnsForbidden()
+    {
+        // Arrange
+        var provider1 = await CreateProviderWithBusinessHoursAsync();
+        var provider2 = await CreateAndAuthenticateAsProviderAsync("Other Provider", "other@test.com");
+
+        var updateRequest = new UpdateBusinessHoursRequest
+        {
+            BusinessHours = new List<BusinessHoursDto>()
+        };
+
+        // Act
+        var response = await PutAsync(
+            $"/api/v1/providers/{provider1.Id.Value}/business-hours",
+            updateRequest);
+
+        // Assert
+        response.StatusCode.Should().Be(HttpStatusCode.Forbidden);
+    }
+
+    [Fact]
+    public async Task AddHoliday_AsWrongProvider_ReturnsForbidden()
+    {
+        // Arrange
+        var provider1 = await CreateProviderWithBusinessHoursAsync();
+        var provider2 = await CreateAndAuthenticateAsProviderAsync("Other Provider", "other@test.com");
+
+        var addRequest = new AddHolidayRequest
+        {
+            Date = new DateOnly(2025, 12, 25),
+            Reason = "Christmas",
+            IsRecurring = false
+        };
+
+        // Act
+        var response = await PostAsync(
+            $"/api/v1/providers/{provider1.Id.Value}/holidays",
+            addRequest);
+
+        // Assert
+        response.StatusCode.Should().Be(HttpStatusCode.Forbidden);
+    }
+
+    // ================================================
+    // HELPER METHODS
+    // ================================================
+
+    private async Task<Provider> CreateProviderWithBusinessHoursAsync()
+    {
+        var provider = await CreateAndAuthenticateAsProviderAsync();
+
+        // Set standard business hours (Mon-Fri 9-5, Sat 10-2, Sun closed)
+        var hours = new Dictionary<Domain.Enums.DayOfWeek, (TimeOnly? Open, TimeOnly? Close)>
+        {
+            { Domain.Enums.DayOfWeek.Monday, (new TimeOnly(9, 0), new TimeOnly(17, 0)) },
+            { Domain.Enums.DayOfWeek.Tuesday, (new TimeOnly(9, 0), new TimeOnly(17, 0)) },
+            { Domain.Enums.DayOfWeek.Wednesday, (new TimeOnly(9, 0), new TimeOnly(17, 0)) },
+            { Domain.Enums.DayOfWeek.Thursday, (new TimeOnly(9, 0), new TimeOnly(17, 0)) },
+            { Domain.Enums.DayOfWeek.Friday, (new TimeOnly(9, 0), new TimeOnly(17, 0)) },
+            { Domain.Enums.DayOfWeek.Saturday, (new TimeOnly(10, 0), new TimeOnly(14, 0)) },
+            { Domain.Enums.DayOfWeek.Sunday, (null, null) }
+        };
+
+        provider.SetBusinessHours(hours);
+        await UpdateEntityAsync(provider);
+
+        return provider;
+    }
+
+    private async Task<Provider> CreateProviderWithBusinessHoursAndBreaksAsync()
+    {
+        var provider = await CreateAndAuthenticateAsProviderAsync();
+
+        // Set business hours with breaks
+        var monday = BusinessHours.CreateWithBreaks(
+            Domain.Enums.DayOfWeek.Monday,
+            new TimeOnly(9, 0),
+            new TimeOnly(17, 0),
+            new[]
+            {
+                BreakPeriod.Create(new TimeOnly(12, 0), new TimeOnly(13, 0), "Lunch"),
+                BreakPeriod.Create(new TimeOnly(15, 0), new TimeOnly(15, 15), "Break")
+            });
+
+        // Use reflection or add method to add business hours with breaks
+        // For now, set basic hours
+        var hours = new Dictionary<Domain.Enums.DayOfWeek, (TimeOnly? Open, TimeOnly? Close)>
+        {
+            { Domain.Enums.DayOfWeek.Monday, (new TimeOnly(9, 0), new TimeOnly(17, 0)) },
+            { Domain.Enums.DayOfWeek.Tuesday, (new TimeOnly(9, 0), new TimeOnly(17, 0)) },
+            { Domain.Enums.DayOfWeek.Wednesday, (new TimeOnly(9, 0), new TimeOnly(17, 0)) },
+            { Domain.Enums.DayOfWeek.Thursday, (new TimeOnly(9, 0), new TimeOnly(17, 0)) },
+            { Domain.Enums.DayOfWeek.Friday, (new TimeOnly(9, 0), new TimeOnly(17, 0)) },
+            { Domain.Enums.DayOfWeek.Saturday, (null, null) },
+            { Domain.Enums.DayOfWeek.Sunday, (null, null) }
+        };
+
+        provider.SetBusinessHours(hours);
+        await UpdateEntityAsync(provider);
+
+        return provider;
+    }
+
+    private async Task<Provider> CreateProviderWithHolidaysAsync()
+    {
+        var provider = await CreateProviderWithBusinessHoursAsync();
+
+        provider.AddHoliday(new DateOnly(2025, 12, 25), "Christmas Day");
+        provider.AddRecurringHoliday(new DateOnly(2025, 1, 1), "New Year's Day", RecurrencePattern.Yearly);
+
+        await UpdateEntityAsync(provider);
+        return provider;
+    }
+
+    private async Task<Provider> CreateProviderWithExceptionsAsync()
+    {
+        var provider = await CreateProviderWithBusinessHoursAsync();
+
+        provider.AddException(
+            new DateOnly(2025, 12, 24),
+            new TimeOnly(10, 0),
+            new TimeOnly(14, 0),
+            "Christmas Eve - Early Closing");
+
+        provider.AddClosedException(
+            new DateOnly(2025, 11, 1),
+            "Staff Training Day");
+
+        await UpdateEntityAsync(provider);
+        return provider;
+    }
+}
+
+// ================================================
+// DTOs FOR TESTS
+// ================================================
+
+public record BusinessHoursResponse(List<BusinessHoursDto> BusinessHours);
+public record BusinessHoursDto
+{
+    public int DayOfWeek { get; init; }
+    public bool IsOpen { get; init; }
+    public string? OpenTime { get; init; }
+    public string? CloseTime { get; init; }
+    public List<BreakPeriodDto>? Breaks { get; init; }
+}
+
+public record BreakPeriodDto
+{
+    public string StartTime { get; init; } = string.Empty;
+    public string EndTime { get; init; } = string.Empty;
+    public string? Label { get; init; }
+}
+
+public record UpdateBusinessHoursRequest
+{
+    public List<BusinessHoursDto> BusinessHours { get; init; } = new();
+}
+
+public record HolidaysResponse(List<HolidayDto> Holidays);
+public record HolidayDto
+{
+    public Guid Id { get; init; }
+    public string Date { get; init; } = string.Empty;
+    public string Reason { get; init; } = string.Empty;
+    public bool IsRecurring { get; init; }
+    public string? Pattern { get; init; }
+}
+
+public record AddHolidayRequest
+{
+    public DateOnly Date { get; init; }
+    public string Reason { get; init; } = string.Empty;
+    public bool IsRecurring { get; init; }
+    public string? Pattern { get; init; }
+}
+
+public record ExceptionsResponse(List<ExceptionDto> Exceptions);
+public record ExceptionDto
+{
+    public Guid Id { get; init; }
+    public string Date { get; init; } = string.Empty;
+    public string? OpenTime { get; init; }
+    public string? CloseTime { get; init; }
+    public string Reason { get; init; } = string.Empty;
+    public bool IsClosed { get; init; }
+}
+
+public record AddExceptionRequest
+{
+    public DateOnly Date { get; init; }
+    public TimeOnly? OpenTime { get; init; }
+    public TimeOnly? CloseTime { get; init; }
+    public string Reason { get; init; } = string.Empty;
+}
+
+public record AvailabilityResponse
+{
+    public string Date { get; init; } = string.Empty;
+    public bool IsAvailable { get; init; }
+    public string? Reason { get; init; }
+    public List<TimeSlotDto> Slots { get; init; } = new();
+}
+
+public record TimeSlotDto
+{
+    public string StartTime { get; init; } = string.Empty;
+    public string EndTime { get; init; } = string.Empty;
+}

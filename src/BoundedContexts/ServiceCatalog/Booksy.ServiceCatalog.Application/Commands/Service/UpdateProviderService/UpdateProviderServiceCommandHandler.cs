@@ -28,12 +28,10 @@ public sealed class UpdateProviderServiceCommandHandler : ICommandHandler<Update
     {
         _logger.LogInformation(
             "Updating service {ServiceId} for provider {ProviderId}",
-            request.ServiceId,
-            request.ProviderId);
+            request.ServiceId);
 
         // Validate request
         ValidateRequest(request);
-
         // Get service
         var serviceId = ServiceId.Create(request.ServiceId);
         var service = await _serviceWriteRepository.GetByIdAsync(serviceId, cancellationToken);
@@ -50,7 +48,7 @@ public sealed class UpdateProviderServiceCommandHandler : ICommandHandler<Update
         }
 
         // Check for duplicate name (excluding current service)
-        var providerId = ProviderId.Create(request.ProviderId);
+        var providerId = ProviderId.From(request.ProviderId);
         var isDuplicate = await _serviceReadRepository.ExistsWithNameForProviderAsync(
             providerId,
             request.ServiceName,

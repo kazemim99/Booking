@@ -33,7 +33,7 @@ namespace Booksy.ServiceCatalog.Application.Commands.Provider.AddStaff
         {
             _logger.LogInformation("Adding staff to provider: {ProviderId}", request.ProviderId);
 
-            var providerId = ProviderId.Create(request.ProviderId);
+            var providerId = ProviderId.From(request.ProviderId);
             var provider = await _providerReadRepository.GetByIdAsync(providerId, cancellationToken);
 
             if (provider == null)
@@ -42,7 +42,7 @@ namespace Booksy.ServiceCatalog.Application.Commands.Provider.AddStaff
             var email = Email.Create(request.Email);
             var phone = !string.IsNullOrEmpty(request.Phone) ? PhoneNumber.Create(request.Phone) : null;
 
-            provider.AddStaff(request.FirstName, request.LastName, email, request.Role, phone);
+            provider.AddStaff(request.FirstName, request.LastName, request.Role, phone);
 
             await _providerWriteRepository.UpdateProviderAsync(provider, cancellationToken);
 

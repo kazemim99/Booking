@@ -7,11 +7,11 @@ public sealed record AddProviderServiceCommand(
     string ServiceName,
     string? Description,
     int DurationHours,
-    int DurationMinutes,
+    int Duration,
     decimal Price,
     string Currency,
     string? Category,
-    bool IsMobileService,
+    bool IsMobileService =false,
     Guid? IdempotencyKey = null) : ICommand<AddProviderServiceResult>;
 
 public sealed record AddProviderServiceResult(

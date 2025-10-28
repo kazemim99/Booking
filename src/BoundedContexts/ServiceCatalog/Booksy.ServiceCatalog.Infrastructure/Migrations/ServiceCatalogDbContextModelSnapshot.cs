@@ -89,9 +89,6 @@ namespace Booksy.ServiceCatalog.Infrastructure.Migrations
                     b.Property<DateTime?>("VerifiedAt")
                         .HasColumnType("timestamp without time zone");
 
-                    b.Property<int>("Version")
-                        .HasColumnType("integer");
-
                     b.HasKey("Id");
 
                     b.HasIndex("OwnerId")
@@ -222,9 +219,6 @@ namespace Booksy.ServiceCatalog.Infrastructure.Migrations
                         .HasMaxLength(50)
                         .HasColumnType("character varying(50)");
 
-                    b.Property<int>("Version")
-                        .HasColumnType("integer");
-
                     b.Property<string>("_qualifiedStaff")
                         .IsRequired()
                         .HasColumnType("jsonb")
@@ -259,45 +253,159 @@ namespace Booksy.ServiceCatalog.Infrastructure.Migrations
             modelBuilder.Entity("Booksy.ServiceCatalog.Domain.Entities.BusinessHours", b =>
                 {
                     b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
                         .HasColumnType("uuid");
 
+                    b.Property<TimeOnly?>("CloseTime")
+                        .HasColumnType("time");
+
                     b.Property<DateTime>("CreatedAt")
-                        .HasColumnType("timestamp without time zone");
+                        .HasColumnType("timestamp with time zone");
 
                     b.Property<string>("CreatedBy")
-                        .HasColumnType("text");
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)");
 
-                    b.Property<string>("DayOfWeek")
-                        .IsRequired()
-                        .HasMaxLength(20)
-                        .HasColumnType("character varying(20)");
+                    b.Property<int>("DayOfWeek")
+                        .HasColumnType("integer");
 
                     b.Property<bool>("IsDeleted")
-                        .HasColumnType("boolean");
-
-                    b.Property<bool>("IsOpen")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("boolean")
-                        .HasDefaultValue(true);
+                        .HasDefaultValue(false);
 
                     b.Property<DateTime?>("LastModifiedAt")
-                        .HasColumnType("timestamp without time zone");
+                        .HasColumnType("timestamp with time zone");
 
                     b.Property<string>("LastModifiedBy")
-                        .HasColumnType("text");
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)");
 
-                    b.Property<Guid?>("ProviderId")
+                    b.Property<TimeOnly?>("OpenTime")
+                        .HasColumnType("time");
+
+                    b.Property<Guid>("ProviderId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("ProviderId");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("DayOfWeek");
+
+                    b.HasIndex("ProviderId")
+                        .HasDatabaseName("IX_BusinessHours_ProviderId");
+
+                    b.ToTable("BusinessHours", "ServiceCatalog");
+                });
+
+            modelBuilder.Entity("Booksy.ServiceCatalog.Domain.Entities.ExceptionSchedule", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .HasColumnType("uuid");
+
+                    b.Property<TimeOnly?>("CloseTime")
+                        .HasColumnType("time");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("CreatedBy")
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)");
+
+                    b.Property<DateOnly>("Date")
+                        .HasColumnType("date");
+
+                    b.Property<bool>("IsDeleted")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("boolean")
+                        .HasDefaultValue(false);
+
+                    b.Property<DateTime?>("LastModifiedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("LastModifiedBy")
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)");
+
+                    b.Property<TimeOnly?>("OpenTime")
+                        .HasColumnType("time");
+
+                    b.Property<Guid>("ProviderId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("ProviderId");
+
+                    b.Property<string>("Reason")
+                        .IsRequired()
+                        .HasMaxLength(500)
+                        .HasColumnType("character varying(500)");
+
+                    b.Property<Guid?>("_providerId")
                         .HasColumnType("uuid");
 
                     b.HasKey("Id");
 
-                    b.HasIndex("DayOfWeek")
-                        .HasDatabaseName("IX_BusinessHours_DayOfWeek");
+                    b.HasIndex("Date")
+                        .HasDatabaseName("IX_ProviderExceptions_Date");
 
-                    b.HasIndex("ProviderId");
+                    b.HasIndex("_providerId");
 
-                    b.ToTable("BusinessHours", "ServiceCatalog");
+                    b.ToTable("ProviderExceptions", "ServiceCatalog");
+                });
+
+            modelBuilder.Entity("Booksy.ServiceCatalog.Domain.Entities.HolidaySchedule", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("CreatedBy")
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)");
+
+                    b.Property<DateOnly>("Date")
+                        .HasColumnType("date");
+
+                    b.Property<bool>("IsDeleted")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("boolean")
+                        .HasDefaultValue(false);
+
+                    b.Property<bool>("IsRecurring")
+                        .HasColumnType("boolean");
+
+                    b.Property<DateTime?>("LastModifiedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("LastModifiedBy")
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)");
+
+                    b.Property<string>("Pattern")
+                        .HasMaxLength(50)
+                        .HasColumnType("character varying(50)");
+
+                    b.Property<Guid>("ProviderId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("ProviderId");
+
+                    b.Property<string>("Reason")
+                        .IsRequired()
+                        .HasMaxLength(500)
+                        .HasColumnType("character varying(500)");
+
+                    b.Property<Guid?>("_providerId")
+                        .HasColumnType("uuid");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("Date")
+                        .HasDatabaseName("IX_ProviderHolidays_Date");
+
+                    b.HasIndex("_providerId");
+
+                    b.ToTable("ProviderHolidays", "ServiceCatalog");
                 });
 
             modelBuilder.Entity("Booksy.ServiceCatalog.Domain.Entities.ServiceOption", b =>
@@ -373,19 +481,16 @@ namespace Booksy.ServiceCatalog.Infrastructure.Migrations
             modelBuilder.Entity("Booksy.ServiceCatalog.Domain.Entities.Staff", b =>
                 {
                     b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
                         .HasColumnType("uuid");
 
                     b.Property<DateTime>("CreatedAt")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("timestamp with time zone")
-                        .HasDefaultValueSql("CURRENT_TIMESTAMP");
+                        .HasColumnType("timestamp with time zone");
 
                     b.Property<string>("CreatedBy")
-                        .HasColumnType("text");
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)");
 
                     b.Property<string>("Email")
-                        .IsRequired()
                         .HasColumnType("text");
 
                     b.Property<string>("FirstName")
@@ -405,10 +510,11 @@ namespace Booksy.ServiceCatalog.Infrastructure.Migrations
                         .HasColumnType("boolean");
 
                     b.Property<DateTime?>("LastModifiedAt")
-                        .HasColumnType("timestamp without time zone");
+                        .HasColumnType("timestamp with time zone");
 
                     b.Property<string>("LastModifiedBy")
-                        .HasColumnType("text");
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)");
 
                     b.Property<string>("LastName")
                         .IsRequired()
@@ -437,11 +543,6 @@ namespace Booksy.ServiceCatalog.Infrastructure.Migrations
                         .HasMaxLength(500)
                         .HasColumnType("character varying(500)");
 
-                    b.Property<DateTime>("UpdatedAt")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("timestamp with time zone")
-                        .HasDefaultValueSql("CURRENT_TIMESTAMP");
-
                     b.HasKey("Id");
 
                     b.HasIndex("CreatedAt")
@@ -453,8 +554,7 @@ namespace Booksy.ServiceCatalog.Infrastructure.Migrations
                     b.HasIndex("IsActive")
                         .HasDatabaseName("IX_Staff_IsActive");
 
-                    b.HasIndex("ProviderId")
-                        .HasDatabaseName("IX_Staff_ProviderId");
+                    b.HasIndex("ProviderId");
 
                     b.HasIndex("FirstName", "LastName")
                         .HasDatabaseName("IX_Staff_Name");
@@ -852,30 +952,59 @@ namespace Booksy.ServiceCatalog.Infrastructure.Migrations
                     b.HasOne("Booksy.ServiceCatalog.Domain.Aggregates.Provider", null)
                         .WithMany("BusinessHours")
                         .HasForeignKey("ProviderId")
-                        .OnDelete(DeleteBehavior.Cascade);
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
 
-                    b.OwnsOne("Booksy.ServiceCatalog.Domain.ValueObjects.OperatingHours", "OperatingHours", b1 =>
+                    b.OwnsMany("Booksy.ServiceCatalog.Domain.ValueObjects.BreakPeriod", "Breaks", b1 =>
                         {
+                            b1.Property<int>("Id")
+                                .ValueGeneratedOnAdd()
+                                .HasColumnType("integer");
+
+                            NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b1.Property<int>("Id"));
+
                             b1.Property<Guid>("BusinessHoursId")
                                 .HasColumnType("uuid");
 
                             b1.Property<TimeOnly>("EndTime")
-                                .HasColumnType("time without time zone")
-                                .HasColumnName("CloseTime");
+                                .HasColumnType("time");
+
+                            b1.Property<string>("Label")
+                                .HasMaxLength(100)
+                                .HasColumnType("character varying(100)");
 
                             b1.Property<TimeOnly>("StartTime")
-                                .HasColumnType("time without time zone")
-                                .HasColumnName("OpenTime");
+                                .HasColumnType("time");
 
-                            b1.HasKey("BusinessHoursId");
+                            b1.HasKey("Id");
 
-                            b1.ToTable("BusinessHours", "ServiceCatalog");
+                            b1.HasIndex("BusinessHoursId");
+
+                            b1.ToTable("BreakPeriods", "ServiceCatalog");
 
                             b1.WithOwner()
                                 .HasForeignKey("BusinessHoursId");
                         });
 
-                    b.Navigation("OperatingHours");
+                    b.Navigation("Breaks");
+                });
+
+            modelBuilder.Entity("Booksy.ServiceCatalog.Domain.Entities.ExceptionSchedule", b =>
+                {
+                    b.HasOne("Booksy.ServiceCatalog.Domain.Aggregates.Provider", null)
+                        .WithMany("Exceptions")
+                        .HasForeignKey("_providerId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("Booksy.ServiceCatalog.Domain.Entities.HolidaySchedule", b =>
+                {
+                    b.HasOne("Booksy.ServiceCatalog.Domain.Aggregates.Provider", null)
+                        .WithMany("Holidays")
+                        .HasForeignKey("_providerId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
                 });
 
             modelBuilder.Entity("Booksy.ServiceCatalog.Domain.Entities.ServiceOption", b =>
@@ -926,6 +1055,10 @@ namespace Booksy.ServiceCatalog.Infrastructure.Migrations
             modelBuilder.Entity("Booksy.ServiceCatalog.Domain.Aggregates.Provider", b =>
                 {
                     b.Navigation("BusinessHours");
+
+                    b.Navigation("Exceptions");
+
+                    b.Navigation("Holidays");
 
                     b.Navigation("Services");
 

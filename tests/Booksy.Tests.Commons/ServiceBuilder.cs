@@ -37,7 +37,7 @@ public class ServiceBuilder
 
     public ServiceBuilder WithProvider(Guid providerId)
     {
-        _providerId = ProviderId.Create(providerId);
+        _providerId = ProviderId.From(providerId);
         return this;
     }
 
@@ -98,7 +98,7 @@ public class ServiceBuilder
     public Service Build()
     {
         var service = Service.Create(
-            _providerId ?? ProviderId.Create(Guid.NewGuid()),
+            _providerId ?? ProviderId.From(Guid.NewGuid()),
             _name ?? _fixture.Create<string>(),
             _description ?? _fixture.Create<string>(),
             _category ?? ServiceCategory.Create("Test Category"),

@@ -10,7 +10,7 @@ namespace Booksy.ServiceCatalog.Domain.Entities
     {
         public string FirstName { get; private set; }
         public string LastName { get; private set; }
-        public Email Email { get; private set; }
+        public Email? Email { get; private set; }
         public PhoneNumber? Phone { get; private set; }
         public StaffRole Role { get; private set; }
         public bool IsActive { get; private set; }
@@ -18,32 +18,37 @@ namespace Booksy.ServiceCatalog.Domain.Entities
         public DateTime? TerminatedAt { get; private set; }
         public string? TerminationReason { get; private set; }
         public string? Notes { get; private set; }
-        public ProviderId ProviderId { get; set; }
+        public ProviderId ProviderId { get; private set; }
         // Calculated property
         public string FullName => $"{FirstName} {LastName}";
+
 
         // Private constructor for EF Core
         private Staff() : base() { }
 
-        internal static Staff Create(string firstName, string lastName, Email email, StaffRole role, PhoneNumber? phone = null)
+        internal static Staff Create(string firstName, string lastName, StaffRole role,
+                    ProviderId providerId
+            , PhoneNumber? phone = null)
         {
             return new Staff
             {
-                Id =Guid.NewGuid(),
+                Id = Guid.NewGuid(),
                 FirstName = firstName,
                 LastName = lastName,
-                Email = email,
                 Phone = phone,
                 Role = role,
+                ProviderId = providerId,
                 IsActive = true,
                 HiredAt = DateTime.UtcNow
             };
         }
 
-        public void UpdateContactInfo(Email email, PhoneNumber? phone)
+        public void UpdateContactInfo(string firstname, string lastName, Email email, PhoneNumber? phone)
         {
             Email = email;
             Phone = phone;
+            FirstName = firstname;
+            LastName = lastName;
         }
 
         public void UpdateRole(StaffRole newRole)

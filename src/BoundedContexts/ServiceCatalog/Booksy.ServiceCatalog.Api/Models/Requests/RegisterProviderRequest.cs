@@ -83,6 +83,6 @@ public sealed class RegisterProviderRequest
     /// Business tags/categories
     /// </summary>
     public List<string> Tags { get; set; } = new();
-
+    public ProviderType ProviderType { get; set; }
 }
 

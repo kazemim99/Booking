@@ -14,17 +14,20 @@ public class VerifyCodeHandler : ICommandHandler<VerifyCodeCommand, VerifyCodeRe
     private readonly IPhoneVerificationService _verificationService;
     private readonly IUserRepository _userRepository;
     private readonly IJwtTokenService _jwtTokenService;
+    private readonly IProviderInfoService _providerInfoService;
     private readonly ILogger<VerifyCodeHandler> _logger;
 
     public VerifyCodeHandler(
         IPhoneVerificationService verificationService,
         IUserRepository userRepository,
         IJwtTokenService jwtTokenService,
+        IProviderInfoService providerInfoService,
         ILogger<VerifyCodeHandler> logger)
     {
         _verificationService = verificationService;
         _userRepository = userRepository;
         _jwtTokenService = jwtTokenService;
+        _providerInfoService = providerInfoService;
         _logger = logger;
     }
 
@@ -66,6 +69,29 @@ public class VerifyCodeHandler : ICommandHandler<VerifyCodeCommand, VerifyCodeRe
         // Code is valid - get or create user
         var user = await GetOrCreateUserAsync(request.PhoneNumber, request.UserType, cancellationToken);
 
+        // Query provider information if user has Provider role
+        string? providerId = null;
+        string? providerStatus = null;
+        if (user.Roles.Any(r => r.Name == "Provider" || r.Name == "ServiceProvider"))
+        {
+            _logger.LogInformation("User has Provider role, querying provider info for UserId: {UserId}", user.Id);
+            var providerInfo = await _providerInfoService.GetProviderByOwnerIdAsync(
+                user.Id.Value,
+                cancellationToken);
+
+            if (providerInfo != null)
+            {
+                providerId = providerInfo.ProviderId.ToString();
+                providerStatus = providerInfo.Status;
+                _logger.LogInformation("Provider found: ProviderId={ProviderId}, Status={Status}",
+                    providerId, providerInfo.Status);
+            }
+            else
+            {
+                _logger.LogInformation("No provider found for UserId: {UserId}", user.Id);
+            }
+        }
+
         // Generate JWT tokens
         var accessToken = _jwtTokenService.GenerateAccessToken(
             userId: user.Id,
@@ -74,6 +100,8 @@ public class VerifyCodeHandler : ICommandHandler<VerifyCodeCommand, VerifyCodeRe
             displayName: $"{user.Profile.FirstName} {user.Profile.LastName}",
             user.Status.ToString(),
             roles: user.Roles.Select(r => r.Name).ToList(),
+            providerId: providerId,
+            providerStatus: providerStatus,
             expirationHours: 24
         );
 

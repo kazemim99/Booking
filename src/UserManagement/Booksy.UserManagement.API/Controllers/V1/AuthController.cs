@@ -115,6 +115,107 @@ public class AuthController : ControllerBase
 
         return Ok(response);
     }
+
+    /// <summary>
+    /// Generate new JWT token with additional claims (for cross-context communication)
+    /// </summary>
+    /// <param name="request">Token generation request</param>
+    /// <param name="jwtTokenService">JWT token service</param>
+    /// <param name="cancellationToken">Cancellation token</param>
+    /// <returns>Token response</returns>
+    /// <response code="200">Token generated successfully</response>
+    /// <response code="401">Unauthorized</response>
+    /// <response code="404">User not found</response>
+    [HttpPost("generate-token")]
+    [Authorize] // Require authentication (from ServiceCatalog with service auth)
+    [ProducesResponseType(typeof(GenerateTokenResponse), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> GenerateToken(
+        [FromBody] GenerateTokenRequest request,
+        [FromServices] Application.Services.Interfaces.IJwtTokenService jwtTokenService,
+        CancellationToken cancellationToken = default)
+    {
+        // Validate user ID from request
+        if (!Guid.TryParse(request.UserId, out var userId))
+        {
+            return BadRequest(new { message = "Invalid user ID format" });
+        }
+
+        _logger.LogInformation(
+            "Generating new token for user {UserId} with additional claims",
+            userId);
+
+        try
+        {
+            // Get user - use mediator or repository depending on your architecture
+            var getUserQuery = new Application.CQRS.Queries.GetUserById.GetUserByIdQuery(userId);
+            var user = await _mediator.Send(getUserQuery, cancellationToken);
+
+            if (user == null)
+            {
+                _logger.LogWarning("User {UserId} not found for token generation", userId);
+                return NotFound(new { message = "User not found" });
+            }
+
+            // Extract providerId and providerStatus from additional claims if present
+            string? providerId = null;
+            string? providerStatus = null;
+            if (request.AdditionalClaims != null)
+            {
+                if (request.AdditionalClaims.TryGetValue("provider_id", out var providerIdValue))
+                {
+                    providerId = providerIdValue;
+                }
+                if (request.AdditionalClaims.TryGetValue("provider_status", out var providerStatusValue))
+                {
+                    providerStatus = providerStatusValue;
+                }
+            }
+
+            // Parse user type from string
+            var userType = Enum.TryParse<Domain.Enums.UserType>(user.Type, out var parsedType)
+                ? parsedType
+                : Domain.Enums.UserType.Customer;
+
+            // Extract role names from RoleViewModel list
+            var roleNames = user.Roles.Select(r => r.Name).ToList();
+
+            // Generate new access token using the correct signature
+            var accessToken = jwtTokenService.GenerateAccessToken(
+                Core.Domain.ValueObjects.UserId.From(user.UserId),
+                userType,
+                Core.Domain.ValueObjects.Email.Create(user.Email ?? string.Empty),
+                user.DisplayName ?? string.Empty,
+                user.Status ?? "Active",
+                roleNames,
+                providerId,
+                providerStatus,
+                15 // 15 minutes expiration
+            );
+
+            // Generate refresh token (user aggregate handles this)
+            var refreshTokenValue = Guid.NewGuid().ToString();
+
+            _logger.LogInformation(
+                "Successfully generated new token for user {UserId} with providerId: {ProviderId}",
+                userId,
+                providerId ?? "none");
+
+            return Ok(new GenerateTokenResponse
+            {
+                AccessToken = accessToken,
+                RefreshToken = refreshTokenValue,
+                ExpiresIn = 900, // 15 minutes
+                TokenType = "Bearer"
+            });
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error generating token for user {UserId}", userId);
+            return StatusCode(500, new { message = "An error occurred while generating the token" });
+        }
+    }
 }
 
 /// <summary>
@@ -133,3 +234,23 @@ public record VerifyCodeRequest(
     string Code,
     string? UserType = "Provider"
 );
+
+/// <summary>
+/// Request model for generating token with additional claims
+/// </summary>
+public record GenerateTokenRequest
+{
+    public string UserId { get; init; } = string.Empty;
+    public Dictionary<string, string>? AdditionalClaims { get; init; }
+}
+
+/// <summary>
+/// Response model for token generation
+/// </summary>
+public record GenerateTokenResponse
+{
+    public string AccessToken { get; init; } = string.Empty;
+    public string? RefreshToken { get; init; }
+    public int ExpiresIn { get; init; }
+    public string TokenType { get; init; } = "Bearer";
+}

@@ -12,6 +12,7 @@ using Booksy.ServiceCatalog.Infrastructure.Persistence.Context;
 using Booksy.ServiceCatalog.Infrastructure.Persistence.Repositories;
 using Booksy.ServiceCatalog.Infrastructure.Persistence.Seeders;
 using Booksy.ServiceCatalog.Infrastructure.Queries;
+using Booksy.ServiceCatalog.Infrastructure.Services.Application;
 using Booksy.ServiceCatalog.Infrastructure.Services.Domain;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
@@ -75,6 +76,7 @@ namespace Booksy.ServiceCatalog.Infrastructure.DependencyInjection
             services.AddScoped<IBusinessValidationService, BusinessValidationService>();
             services.AddScoped<IProviderRegistrationService, ProviderRegistrationService>();
             services.AddScoped<IServiceQueryRepository, ServiceQueryRepository>();
+            services.AddScoped<ITokenService, TokenService>();
 
 
             // Domain Services
@@ -85,6 +87,22 @@ namespace Booksy.ServiceCatalog.Infrastructure.DependencyInjection
 
             // CAP Event Bus with Outbox Pattern
             services.AddCapEventBus<ServiceCatalogDbContext>(configuration, "ServiceCatalog");
+
+            // HTTP Client for UserManagement API
+            services.AddHttpClient("UserManagementAPI", client =>
+            {
+                var baseUrl = configuration["Services:UserManagement:BaseUrl"]
+                    ?? "https://localhost:5021/api";
+                client.BaseAddress = new Uri(baseUrl);
+                client.DefaultRequestHeaders.Add("Accept", "application/json");
+
+                // Optional: Add API key for service-to-service authentication
+                var apiKey = configuration["Services:UserManagement:ApiKey"];
+                if (!string.IsNullOrEmpty(apiKey))
+                {
+                    client.DefaultRequestHeaders.Add("X-API-Key", apiKey);
+                }
+            });
 
             // Health Checks
             services.AddHealthChecks()

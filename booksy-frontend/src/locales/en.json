@@ -106,6 +106,71 @@
     "checkFollowing": "Please check the following:"
   },
   "provider": {
+    "navigation": {
+      "toggleSidebar": "Toggle sidebar",
+      "ariaLabel": "Provider navigation"
+    },
+    "menu": {
+      "businessProfile": "Business Profile",
+      "bookings": "Bookings"
+    },
+    "sidebar": {
+      "mainSection": "Main",
+      "dashboard": "Dashboard",
+      "bookings": "Bookings",
+      "services": "Services",
+      "staff": "Staff",
+      "businessSection": "Business",
+      "profile": "Profile",
+      "businessHours": "Business Hours",
+      "gallery": "Gallery",
+      "insightsSection": "Insights",
+      "analytics": "Analytics",
+      "reviews": "Reviews",
+      "settingsSection": "Settings",
+      "settings": "Settings",
+      "toggleLabel": "Toggle sidebar"
+    },
+    "filters": {
+      "title": "Filters",
+      "clearAll": "Clear All",
+      "search": "Search",
+      "businessNamePlaceholder": "Business name...",
+      "location": "Location",
+      "cityPlaceholder": "City",
+      "statePlaceholder": "State/Province",
+      "countryPlaceholder": "Country",
+      "providerType": "Provider Type",
+      "allTypes": "All Types",
+      "type": {
+        "individual": "Individual",
+        "business": "Business",
+        "corporate": "Corporate",
+        "franchise": "Franchise",
+        "popup": "Pop-up",
+        "mobile": "Mobile"
+      },
+      "status": "Status",
+      "allStatuses": "All Statuses",
+      "statusOptions": {
+        "active": "Active",
+        "inactive": "Inactive",
+        "suspended": "Suspended",
+        "pending": "Pending"
+      },
+      "features": "Features",
+      "featuresOptions": {
+        "onlineBooking": "Online Booking",
+        "mobileServices": "Mobile Services"
+      },
+      "specializations": "Specializations",
+      "specializationPlaceholder": "Add specialization...",
+      "addSpecializationHint": "Press Enter or comma to add",
+      "distance": "Distance",
+      "distanceKm": "Distance: {value} km",
+      "minimumRating": "Minimum Rating",
+      "applyButton": "Apply Filters"
+    },
     "registration": {
       "welcome": "Welcome to Booksy!",
       "saveDraft": "Save Draft",
@@ -223,6 +288,339 @@
     "logout": "Logout",
     "language": "Language",
     "yes": "Yes",
-    "no": "No"
+    "no": "No",
+    "retry": "Retry",
+    "viewAll": "View All"
+  },
+  "dashboard": {
+    "welcome": {
+      "welcomeBack": "Welcome back,",
+      "goodMorning": "Good morning! Ready to make today great?",
+      "goodAfternoon": "Good afternoon! Keep up the great work!",
+      "goodEvening": "Good evening! Time to review your day.",
+      "completeProfile": "Complete Your Profile",
+      "completeProfileMessage": "Finish setting up your profile to start accepting bookings",
+      "completeNow": "Complete Now"
+    },
+    "actions": {
+      "addService": "Add Service",
+      "addServiceDescription": "Add new services to your offerings",
+      "viewCalendar": "View Calendar",
+      "viewCalendarDescription": "Manage your schedule and appointments",
+      "editHours": "Edit Hours",
+      "editHoursDescription": "Update your working hours",
+      "viewProfile": "View Profile",
+      "viewProfileDescription": "See how clients view your profile"
+    },
+    "bookings": {
+      "noBookings": "No Bookings Yet",
+      "noBookingsMessage": "You don't have any bookings at the moment"
+    },
+    "charts": {
+      "barChart": "Bar Chart",
+      "lineChart": "Line Chart",
+      "totalBookings": "Total Bookings",
+      "completed": "Completed",
+      "cancelled": "Cancelled",
+      "completionRate": "Completion Rate",
+      "total": "Total",
+      "average": "Average",
+      "trend": "Trend"
+    }
+  },
+  "footer": {
+    "help": "Help",
+    "support": "Support",
+    "terms": "Terms of Service",
+    "privacy": "Privacy Policy"
+  },
+  "profile": {
+    "personalInfo": {
+      "title": "Personal Information",
+      "description": "Update your personal details and contact information",
+      "basicInfo": "Basic Information",
+      "firstName": "First Name",
+      "firstNamePlaceholder": "Enter your first name",
+      "lastName": "Last Name",
+      "lastNamePlaceholder": "Enter your last name",
+      "phoneNumber": "Phone Number",
+      "phoneNumberPlaceholder": "+1 (555) 123-4567",
+      "phoneNumberHelp": "Include country code for international numbers",
+      "dateOfBirth": "Date of Birth",
+      "ageRequirement": "Your age must be at least 13 years",
+      "bio": "Bio",
+      "bioPlaceholder": "Tell us a little about yourself...",
+      "addressInfo": "Address Information",
+      "street": "Street Address",
+      "streetPlaceholder": "123 Main Street, Apt 4B",
+      "city": "City",
+      "cityPlaceholder": "New York",
+      "state": "State / Province",
+      "statePlaceholder": "NY",
+      "postalCode": "Postal Code",
+      "postalCodePlaceholder": "10001",
+      "country": "Country",
+      "selectCountry": "Select a country"
+    },
+    "preferences": {
+      "title": "Preferences",
+      "description": "Customize your experience and notification settings",
+      "localization": "Localization",
+      "language": "Language",
+      "timezone": "Timezone",
+      "timezoneRegions": {
+        "northAmerica": "North America",
+        "europe": "Europe",
+        "asia": "Asia"
+      },
+      "currency": "Currency",
+      "dateFormat": "Date Format",
+      "dateFormatOptions": {
+        "mmddyyyy": "MM/DD/YYYY",
+        "ddmmyyyy": "DD/MM/YYYY",
+        "yyyymmdd": "YYYY-MM-DD"
+      },
+      "timeFormat": "Time Format",
+      "timeFormatOptions": {
+        "12h": "12-hour (2:30 PM)",
+        "24h": "24-hour (14:30)"
+      },
+      "theme": "Theme",
+      "themeOptions": {
+        "light": "Light",
+        "dark": "Dark",
+        "auto": "Auto (System)"
+      },
+      "notificationPreferences": "Notification Preferences",
+      "notifications": {
+        "email": {
+          "label": "Email Notifications",
+          "description": "Receive notifications via email"
+        },
+        "sms": {
+          "label": "SMS Notifications",
+          "description": "Receive text message alerts"
+        },
+        "push": {
+          "label": "Push Notifications",
+          "description": "Browser push notifications"
+        },
+        "bookingReminders": {
+          "label": "Booking Reminders",
+          "description": "Get reminded about upcoming appointments"
+        },
+        "promotions": {
+          "label": "Promotions & Offers",
+          "description": "Special deals from your favorite providers"
+        },
+        "marketing": {
+          "label": "Marketing Communications",
+          "description": "Product updates and news from Booksy"
+        },
+        "newsletter": {
+          "label": "Newsletter",
+          "description": "Monthly newsletter with tips and trends"
+        }
+      },
+      "enableAll": "Enable All",
+      "disableAll": "Disable All"
+    },
+    "security": {
+      "title": "Security Settings",
+      "description": "Manage your password and account security",
+      "changePassword": "Change Password",
+      "changePasswordDescription": "Choose a strong password to keep your account secure",
+      "currentPassword": "Current Password",
+      "currentPasswordPlaceholder": "Enter your current password",
+      "newPassword": "New Password",
+      "newPasswordPlaceholder": "Enter new password",
+      "confirmPassword": "Confirm New Password",
+      "confirmPasswordPlaceholder": "Confirm new password",
+      "requirements": {
+        "minLength": "At least 8 characters",
+        "uppercase": "At least one uppercase letter",
+        "lowercase": "At least one lowercase letter",
+        "number": "At least one number",
+        "special": "At least one special character"
+      }
+    },
+    "privacy": {
+      "title": "Privacy Settings",
+      "description": "Control who can see your information and how it's used",
+      "profileVisibility": "Profile Visibility",
+      "informationVisibility": "Information Visibility",
+      "informationVisibilityDescription": "Choose what information is visible on your public profile",
+      "showEmail": {
+        "label": "Show email address",
+        "description": "Let others see your email address"
+      },
+      "showPhone": {
+        "label": "Show phone number",
+        "description": "Let others see your phone number"
+      },
+      "showAddress": {
+        "label": "Show address",
+        "description": "Display your full address on your profile"
+      },
+      "showBirthdate": {
+        "label": "Show date of birth",
+        "description": "Let others see your birthdate"
+      },
+      "searchEngineVisibility": "Search Engine Visibility",
+      "allowIndexing": {
+        "label": "Allow search engine indexing",
+        "description": "Let search engines like Google find your public profile"
+      },
+      "tips": {
+        "title": "Privacy Tips",
+        "item1": "Only share information you're comfortable making public",
+        "item2": "Review your privacy settings regularly",
+        "item3": "Be cautious about sharing personal contact information",
+        "item4": "Consider disabling search engine indexing for better privacy",
+        "item5": "You can always change these settings later"
+      }
+    }
+  },
+  "buttons": {
+    "reset": "Reset",
+    "saving": "Saving...",
+    "saveChanges": "Save Changes"
+  },
+  "languages": {
+    "english": "English",
+    "spanish": "Spanish",
+    "french": "French",
+    "german": "German",
+    "arabic": "Arabic",
+    "chinese": "Chinese",
+    "persian": "Persian (فارسی)"
+  },
+  "countries": {
+    "unitedStates": "United States",
+    "canada": "Canada",
+    "mexico": "Mexico",
+    "unitedKingdom": "United Kingdom",
+    "germany": "Germany",
+    "france": "France",
+    "spain": "Spain",
+    "italy": "Italy",
+    "china": "China",
+    "japan": "Japan",
+    "india": "India"
+  },
+  "services": {
+    "title": "Services",
+    "serviceManagement": "Service Management",
+    "manageYourServices": "Manage your services",
+    "addService": "Add Service",
+    "addFirstService": "Add First Service",
+    "createService": "Create Service",
+    "editService": "Edit Service",
+    "serviceName": "Service Name",
+    "serviceNamePlaceholder": "e.g., Women's Haircut",
+    "duration": "Duration",
+    "durationMinutes": "Duration (minutes)",
+    "durationPlaceholder": "60",
+    "price": "Price",
+    "basePrice": "Base Price",
+    "pricePlaceholder": "0.00",
+    "backToServices": "Back to Services",
+    "loadingServices": "Loading services...",
+    "noServicesYet": "No Services Yet",
+    "noServicesMessage": "Get started by adding your first service to your catalog.",
+    "noServicesFound": "No Services Found",
+    "noServicesFoundMessage": "No services match your current filters. Try adjusting your search criteria.",
+    "serviceCreatedSuccess": "Service created successfully!",
+    "serviceUpdatedSuccess": "Service updated successfully!",
+    "serviceDeletedSuccess": "Service deleted successfully!",
+    "confirmDelete": "Are you sure you want to delete this service?",
+    "deleteService": "Delete Service",
+    "totalServices": "Total Services",
+    "activeServices": "Active",
+    "draftServices": "Drafts",
+    "min": "min",
+    "searchPlaceholder": "Search services...",
+    "allCategories": "All Categories",
+    "allStatus": "All Status",
+    "clearFilters": "Clear Filters",
+    "filters": "Filters",
+    "saving": "Saving...",
+    "createNew": "Create Service",
+    "update": "Update Service",
+    "errors": {
+      "fixValidation": "Please fix the validation errors below",
+      "nameRequired": "Service name is required",
+      "nameMinLength": "Service name must be at least 3 characters",
+      "durationMin": "Duration must be at least 5 minutes",
+      "durationRequired": "Duration is required",
+      "priceNegative": "Price cannot be negative",
+      "priceRequired": "Price is required",
+      "noProvider": "Provider information not available",
+      "createFailed": "Failed to create service",
+      "updateFailed": "Failed to update service",
+      "deleteFailed": "Failed to delete service"
+    }
+  },
+  "staff": {
+    "title": "Staff",
+    "staffManagement": "Staff Management",
+    "manageYourTeam": "Manage your team members and their schedules",
+    "addStaff": "Add Staff Member",
+    "addFirstStaff": "Add First Staff Member",
+    "createStaff": "Create Staff",
+    "editStaff": "Edit Staff",
+    "firstName": "First Name",
+    "firstNamePlaceholder": "John",
+    "lastName": "Last Name",
+    "lastNamePlaceholder": "Doe",
+    "fullName": "Full Name",
+    "email": "Email",
+    "emailPlaceholder": "john.doe@example.com",
+    "phone": "Phone",
+    "phonePlaceholder": "+1 (555) 123-4567",
+    "role": "Role",
+    "hiredAt": "Hire Date",
+    "backToStaff": "Back to Staff",
+    "loadingStaff": "Loading staff...",
+    "noStaffYet": "No Staff Members Yet",
+    "noStaffMessage": "Get started by adding your first staff member to your team.",
+    "noStaffFound": "No Staff Found",
+    "noStaffFoundMessage": "No staff members match your current filters. Try adjusting your search criteria.",
+    "staffCreatedSuccess": "Staff member created successfully!",
+    "staffUpdatedSuccess": "Staff member updated successfully!",
+    "staffDeletedSuccess": "Staff member deleted successfully!",
+    "confirmDelete": "Are you sure you want to remove {name}? This action cannot be undone.",
+    "confirmDeactivate": "Are you sure you want to deactivate {name}?",
+    "removeStaff": "Remove Staff Member",
+    "deactivateStaff": "Deactivate Staff Member",
+    "deactivateReason": "Reason (optional)",
+    "deactivateReasonPlaceholder": "Enter reason for deactivation...",
+    "totalStaff": "Total Staff",
+    "activeStaff": "Active",
+    "inactiveStaff": "Inactive",
+    "avgTenure": "Avg. Tenure",
+    "tenure": "Tenure",
+    "hired": "Hired",
+    "services": "services",
+    "service": "service",
+    "searchPlaceholder": "Search by name, email, or phone...",
+    "allRoles": "All Roles",
+    "active": "Active",
+    "inactive": "Inactive",
+    "deactivate": "Deactivate",
+    "reactivate": "Reactivate",
+    "remove": "Remove",
+    "schedule": "Schedule",
+    "roles": {
+      "owner": "Owner",
+      "manager": "Manager",
+      "receptionist": "Receptionist",
+      "serviceProvider": "Service Provider",
+      "specialist": "Specialist",
+      "assistant": "Assistant",
+      "cleaner": "Cleaner",
+      "security": "Security",
+      "maintenance": "Maintenance"
+    }
   }
 }

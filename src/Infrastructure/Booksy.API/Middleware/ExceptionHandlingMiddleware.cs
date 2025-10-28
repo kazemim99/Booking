@@ -174,19 +174,22 @@ public partial class ExceptionHandlingMiddleware
 
             default:
                 response.StatusCode = (int)HttpStatusCode.InternalServerError;
-                if (_environment.IsDevelopment())
+                if (_environment.IsDevelopment() || _environment.EnvironmentName == "Test")
                 {
                     errorResponse = new ApiErrorResult(exception.Message, "INTERNAL_ERROR")
                     {
                         Errors = new Dictionary<string, string[]>
                         {
-                            ["stackTrace"] = new[] { exception.StackTrace ?? string.Empty },
-                            ["type"] = new[] { exception.GetType().FullName ?? "Unknown" }
+                            ["message"] = new[] { exception.Message ?? string.Empty },
+                            ["innerMessage"] = new[] { exception.InnerException != null ? exception.InnerException.Message : string.Empty}
                         }
                     };
                 }
                 else
                 {
+
+                    _logger.LogError(exception, "An unhandled exception occurred");
+
                     errorResponse = new ApiErrorResult(
                         "An internal server error occurred. Please try again later.",
                         "INTERNAL_ERROR");
