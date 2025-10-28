@@ -34,7 +34,7 @@ public sealed class UpdateLocationCommandHandler : ICommandHandler<UpdateLocatio
         ValidateRequest(request);
 
         // Get provider
-        var providerId = Domain.ValueObjects.ProviderId.Create(request.ProviderId);
+        var providerId = Domain.ValueObjects.ProviderId.From(request.ProviderId);
         var provider = await _providerReadRepository.GetByIdAsync(providerId, cancellationToken);
 
         if (provider == null)
@@ -51,7 +51,7 @@ public sealed class UpdateLocationCommandHandler : ICommandHandler<UpdateLocatio
         var address = BusinessAddress.Create(
             fullStreet,
             request.City,
-            request.State ?? "",
+            request.State,
             request.PostalCode,
             request.Country,
             request.Latitude,
@@ -70,7 +70,9 @@ public sealed class UpdateLocationCommandHandler : ICommandHandler<UpdateLocatio
             provider.Id.Value,
             request.AddressLine1,
             request.City,
+            request.State,
             request.PostalCode,
+            request.Country,
             request.Latitude,
             request.Longitude,
             DateTime.UtcNow);

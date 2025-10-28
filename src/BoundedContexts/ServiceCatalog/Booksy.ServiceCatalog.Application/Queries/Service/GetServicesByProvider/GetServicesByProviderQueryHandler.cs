@@ -35,7 +35,7 @@ namespace Booksy.ServiceCatalog.Application.Queries.Service.GetServicesByProvide
 
             try
             {
-                var providerId = ProviderId.Create(request.ProviderId);
+                var providerId = ProviderId.From(request.ProviderId);
 
                 // Create business specification (no pagination logic!)
                 var specification = new GetServicesByProviderSpecification(

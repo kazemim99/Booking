@@ -101,13 +101,13 @@ namespace Booksy.Core.Domain.Infrastructure.Middleware
             }
 
             // Create wrapped response
-            var wrappedResponse = new
+            var wrappedResponse = new 
             {
                 success = true,
                 statusCode = context.Response.StatusCode,
                 message = GetSuccessMessage(context.Response.StatusCode),
                 data = data,
-                metadata = _options.IncludeMetadata ? new
+                metadata = _options.IncludeMetadata ? new 
                 {
                     requestId = context.TraceIdentifier,
                     timestamp = DateTimeOffset.UtcNow,

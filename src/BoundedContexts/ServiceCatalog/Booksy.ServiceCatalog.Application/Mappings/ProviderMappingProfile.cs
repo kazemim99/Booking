@@ -5,7 +5,6 @@ using AutoMapper;
 using Booksy.ServiceCatalog.Application.DTOs.Provider;
 using Booksy.ServiceCatalog.Domain.Aggregates;
 using Booksy.ServiceCatalog.Domain.Entities;
-using static System.Runtime.InteropServices.JavaScript.JSType;
 
 namespace Booksy.ServiceCatalog.Application.Mappings
 {
@@ -29,8 +28,8 @@ namespace Booksy.ServiceCatalog.Application.Mappings
 
             CreateMap<BusinessHours, BusinessHoursDto>()
                 .ForMember(dest => dest.IsOpen, opt => opt.MapFrom(src => src.IsOpen))
-                .ForMember(dest => dest.OpenTime, opt => opt.MapFrom(src => src.OperatingHours != null ? src.OperatingHours.StartTime : (TimeOnly?)null))
-                .ForMember(dest => dest.CloseTime, opt => opt.MapFrom(src => src.OperatingHours != null ? src.OperatingHours.EndTime : (TimeOnly?)null));
+                .ForMember(dest => dest.OpenTime, opt => opt.MapFrom(src => src.OpenTime))
+                .ForMember(dest => dest.CloseTime, opt => opt.MapFrom(src => src.CloseTime));
         }
     }
 }

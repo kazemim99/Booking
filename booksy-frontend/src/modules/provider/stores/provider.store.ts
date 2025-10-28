@@ -43,6 +43,9 @@ export const useProviderStore = defineStore('provider', () => {
   const error = ref<string | null>(null)
   const viewMode = ref<'grid' | 'list' | 'map'>('grid')
 
+  // Request deduplication - cache the ongoing promise to prevent duplicate concurrent calls
+  let loadCurrentProviderPromise: Promise<void> | null = null
+
   // ============================================
   // Getters (Computed)
   // ============================================
@@ -213,7 +216,6 @@ export const useProviderStore = defineStore('provider', () => {
   ): Promise<void> {
     isLoading.value = true
     error.value = null
-
     try {
       currentProvider.value = await providerService.getProviderById(
         id,
@@ -258,7 +260,6 @@ export const useProviderStore = defineStore('provider', () => {
   // ============================================
 
   async function registerProvider(data: RegisterProviderRequest): Promise<Provider | undefined> {
-
     isLoading.value = true
     error.value = null
 
@@ -332,92 +333,92 @@ export const useProviderStore = defineStore('provider', () => {
 
   /**
    * Load current logged-in provider's data
+   * Uses promise caching to prevent duplicate concurrent calls
+   * @param forceRefresh - If true, bypass cache and force a fresh fetch
    */
-  async function loadCurrentProvider(): Promise<void> {
-    isLoading.value = true
-    error.value = null
-
-    try {
-      // Get current user from auth store
-      const authStore = useAuthStore()
-      const currentUserId = authStore.user?.id
-      const userEmail = authStore.user?.email
-
-      console.log('[ProviderStore] Loading provider for user:', currentUserId, userEmail)
-
-      if (!currentUserId) {
-        throw new Error('No authenticated user found')
-      }
-
-      // Get provider ID from localStorage (stored during registration)
-      let providerId = localStorage.getItem('provider_id')
-
-      // Fallback: If no provider ID in localStorage, try to search for provider by email
-      // This handles the case where provider was created externally (e.g., by UserFactory)
-      if (!providerId && userEmail) {
-        console.log('[ProviderStore] No provider ID in storage. Attempting to find provider by email:', userEmail)
-
-        try {
-          // Search for providers with the user's email
-          const searchResults = await providerService.searchProviders({
-            searchTerm: userEmail,
-            pageNumber: 1,
-            pageSize: 1
-          })
-
-          if (searchResults.items && searchResults.items.length > 0) {
-            const foundProvider = searchResults.items[0]
-            providerId = foundProvider.id
-            // Store the found provider ID for future use
-            localStorage.setItem('provider_id', providerId)
-            console.log('[ProviderStore] Found provider via search:', providerId)
-          } else {
-            console.warn('[ProviderStore] No provider found via email search')
-          }
-        } catch (searchError) {
-          console.error('[ProviderStore] Error searching for provider:', searchError)
-        }
-      }
-
-      if (!providerId) {
-        console.warn('[ProviderStore] No provider ID found. User may need to register as provider.')
-        currentProvider.value = null
-        error.value = null
-        return
-      }
-
-      console.log('[ProviderStore] Fetching provider by ID:', providerId)
-
-      // Get provider by ID
-      const provider = await providerService.getProviderById(providerId, true, true)
-
-      if (provider) {
-        console.log('[ProviderStore] Provider loaded successfully:', provider.id)
-        currentProvider.value = provider
-        // Ensure provider ID is stored
-        localStorage.setItem('provider_id', provider.id)
-      } else {
-        // Provider not found - might have been deleted
-        console.warn('[ProviderStore] Provider not found with ID:', providerId)
-        currentProvider.value = null
-        // Clear the invalid provider ID from storage
-        localStorage.removeItem('provider_id')
-        error.value = null
-      }
-    } catch (err: unknown) {
-      console.error('[ProviderStore] Load current provider error:', err)
-
-      // Don't set error for network issues - just log it
-      if (err instanceof Error) {
-        console.error('[ProviderStore] Error details:', err.message)
-      }
-
-      // Set currentProvider to null but don't set error
-      // This allows the onboarding flow to work even if there's a temporary network issue
-      currentProvider.value = null
-    } finally {
-      isLoading.value = false
+  async function loadCurrentProvider(forceRefresh = false): Promise<void> {
+    // If there's already a request in progress, return that promise instead of making a new request
+    if (loadCurrentProviderPromise && !forceRefresh) {
+      console.log('[ProviderStore] Returning cached promise - request already in progress')
+      return loadCurrentProviderPromise
     }
+
+    // If we already have a provider loaded and not stale, skip the fetch (unless force refresh)
+    if (currentProvider.value && !isLoading.value && !forceRefresh) {
+      console.log('[ProviderStore] Provider already loaded:', currentProvider.value.id)
+      return Promise.resolve()
+    }
+
+    if (forceRefresh) {
+      console.log('[ProviderStore] Force refresh requested')
+    }
+
+    // Create the promise and cache it
+    loadCurrentProviderPromise = (async () => {
+      isLoading.value = true
+      error.value = null
+
+      try {
+        // Get current user from auth store
+        const authStore = useAuthStore()
+        const currentUserId = authStore.user?.id
+
+        console.log('[ProviderStore] Loading provider for user (OwnerId):', currentUserId)
+
+        if (!currentUserId) {
+          throw new Error('No authenticated user found')
+        }
+
+        // Get provider ID from localStorage (stored during registration or previous login)
+        const rawProviderId = localStorage.getItem('provider_id')
+
+        // Check if provider_id is invalid (null, string "undefined", string "null", or empty)
+        const isInvalidProviderId =
+          !rawProviderId ||
+          rawProviderId === 'undefined' ||
+          rawProviderId === 'null' ||
+          rawProviderId.trim() === ''
+
+        // If no valid provider_id in localStorage, try to fetch provider by ownerId
+        if (!isInvalidProviderId) {
+          // Clean up invalid value from localStorage
+          if (rawProviderId && (rawProviderId === 'undefined' || rawProviderId === 'null')) {
+            console.warn(
+              '[ProviderStore] Removing invalid provider_id from localStorage:',
+              rawProviderId,
+            )
+            localStorage.removeItem('provider_id')
+          }
+
+          console.log(
+            '[ProviderStore] No valid provider ID in localStorage. Fetching provider by OwnerId...',
+          )
+
+          const provider = await providerService.getProviderByOwnerId(currentUserId)
+          if (provider) {
+            console.log('[ProviderStore] Provider found by OwnerId:', provider.id)
+            // Store the provider ID in localStorage for future use
+            localStorage.setItem('provider_id', provider.id)
+            currentProvider.value = provider
+            return
+          } else {
+            console.warn(
+              '[ProviderStore] No provider found for this user. User needs to complete provider registration.',
+            )
+            currentProvider.value = null
+            error.value = null
+            return
+          }
+        }
+        localStorage.removeItem('provider_id')
+      } finally {
+        isLoading.value = false
+        // Clear the cached promise so future calls will make a fresh request
+        loadCurrentProviderPromise = null
+      }
+    })()
+
+    return loadCurrentProviderPromise
   }
   /**
    * Activate provider

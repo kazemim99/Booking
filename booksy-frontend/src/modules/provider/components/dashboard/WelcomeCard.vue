@@ -73,7 +73,10 @@
 
 <script setup lang="ts">
 import { computed } from 'vue'
+import { useI18n } from 'vue-i18n'
 import type { Provider } from '../../types/provider.types'
+
+const { t } = useI18n()
 
 interface Props {
   provider: Provider
@@ -85,19 +88,18 @@ const props = withDefaults(defineProps<Props>(), {
 })
 
 const welcomeMessage = computed(() => {
-  // Can be extended with i18n support
-  return 'Welcome back,'
+  return t('dashboard.welcome.welcomeBack')
 })
 
 const getCurrentTimeGreeting = (): string => {
   const hour = new Date().getHours()
 
   if (hour < 12) {
-    return 'Good morning! Ready to make today great?'
+    return t('dashboard.welcome.goodMorning')
   } else if (hour < 18) {
-    return 'Good afternoon! Keep up the great work!'
+    return t('dashboard.welcome.goodAfternoon')
   } else {
-    return 'Good evening! Time to review your day.'
+    return t('dashboard.welcome.goodEvening')
   }
 }
 </script>

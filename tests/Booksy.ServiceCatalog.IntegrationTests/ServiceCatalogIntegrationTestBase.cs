@@ -2,6 +2,7 @@
 // Booksy.ServiceCatalog.IntegrationTests/Infrastructure/ServiceCatalogIntegrationTestBase.cs
 // ========================================
 using Booksy.API;
+using Booksy.Core.Domain.Infrastructure.Middleware;
 using Booksy.Core.Domain.ValueObjects;
 using Booksy.ServiceCatalog.API;
 using Booksy.ServiceCatalog.Domain.Aggregates;
@@ -56,7 +57,11 @@ public abstract class ServiceCatalogIntegrationTestBase
     protected async Task<Provider?> FindProviderAsync(Guid providerId)
     {
         return await DbContext.Providers
-            .FirstOrDefaultAsync(p => p.Id.Value == providerId);
+            .Include(p => p.BusinessHours)
+            .Include(p => p.Holidays)
+            .Include(p => p.Exceptions)
+            .Include(p => p.Staff)
+            .FirstOrDefaultAsync(p => p.Id == ProviderId.From(providerId));
     }
 
     /// <summary>
@@ -97,7 +102,7 @@ public abstract class ServiceCatalogIntegrationTestBase
     protected async Task<List<Service>> GetProviderServicesAsync(Guid providerId)
     {
         return await DbContext.Services
-            .Where(s => s.ProviderId == ProviderId.Create(providerId))
+            .Where(s => s.ProviderId == ProviderId.From(providerId))
             .Include(s => s.Options)
             .Include(s => s.PriceTiers)
             .ToListAsync();
@@ -131,10 +136,21 @@ public abstract class ServiceCatalogIntegrationTestBase
     /// </summary>
     protected new void AuthenticateAsProviderOwner(Provider provider)
     {
-        base.AuthenticateAsProvider(
-            provider.ContactInfo.Email.Value,
-            provider.Id.Value.ToString()
-        );
+        // Create a custom test user where userId matches the provider's OwnerId
+        var testUser = new TestUser
+        {
+            UserId = provider.OwnerId.Value.ToString(),
+            Email = provider.ContactInfo.Email.Value,
+            Name = provider.Profile.BusinessName,
+            Role = "Provider",
+            AdditionalClaims = new Dictionary<string, string>
+            {
+                { "providerId", provider.Id.Value.ToString() },
+                { "user_type", "Provider" }
+            }
+        };
+
+        _userContext.SetUser(testUser);
     }
 
     /// <summary>
@@ -167,9 +183,9 @@ public abstract class ServiceCatalogIntegrationTestBase
     /// <summary>
     /// Authenticate as a user (customer)
     /// </summary>
-    protected void AuthenticateAsUser(string userId, string email)
+    protected void AuthenticateAsUser(Guid userId, string email = "user@test.com")
     {
-        base.AuthenticateAsCustomer(email);
+        base.AuthenticateAsCustomer(userId, email);
     }
 
     // ================================================
@@ -252,7 +268,7 @@ public abstract class ServiceCatalogIntegrationTestBase
                 "USA"
             )
         );
-
+        provider.AddStaff("John", "Doe", Domain.Enums.StaffRole.ServiceProvider, PhoneNumber.Create("09123131311"));
         provider.SetSatus(Domain.Enums.ProviderStatus.Active);
         provider.SetAllowOnlineBooking(true);
 
@@ -337,7 +353,7 @@ public abstract class ServiceCatalogIntegrationTestBase
     /// </summary>
     protected ProviderId CreateProviderId(Guid? id = null)
     {
-        return ProviderId.Create(id ?? Guid.NewGuid());
+        return ProviderId.From(id ?? Guid.NewGuid());
     }
 
     /// <summary>
@@ -403,7 +419,7 @@ public abstract class ServiceCatalogIntegrationTestBase
     /// <summary>
     /// Delete service endpoint
     /// </summary>
-    protected async Task<HttpResponseMessage> DeleteServiceAsync(Guid serviceId)
+    protected async Task<Core.Domain.Infrastructure.Middleware.ApiResponse> DeleteServiceAsync(Guid serviceId)
     {
         return await DeleteAsync($"/api/v1/services/{serviceId}");
     }
@@ -478,6 +494,8 @@ public abstract class ServiceCatalogIntegrationTestBase
         string email,
         Guid userId)
     {
+        AuthenticateAsUser(userId, email);
+
         var provider = Provider.RegisterProvider(
             UserId.From(userId),
             businessName,
@@ -500,13 +518,6 @@ public abstract class ServiceCatalogIntegrationTestBase
         provider.SetAllowOnlineBooking(true);
 
         await CreateEntityAsync(provider);
-
-        // Authenticate with the specific user ID using claims
-        var claims = new Dictionary<string, string>
-        {
-            { System.Security.Claims.ClaimTypes.NameIdentifier, userId.ToString() }
-        };
-        base.AuthenticateWithClaims(email, "Provider", claims);
 
         return provider;
     }

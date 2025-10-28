@@ -3,25 +3,25 @@
     class="provider-sidebar"
     :class="sidebarClasses"
     role="navigation"
-    aria-label="Provider navigation"
+    :aria-label="$t('provider.navigation.ariaLabel')"
   >
     <!-- Logo/Brand -->
     <div class="sidebar-header">
       <router-link to="/provider/dashboard" class="brand" @click="handleNavigation">
-        <img v-if="!isCollapsed" src="@/assets/logo.svg" alt="Booksy" class="logo" />
-        <img v-else src="@/assets/logo.svg" alt="B" class="logo-icon" />
+        <img v-if="!isCollapsed" src="@/assets/logo.svg" :alt="$t('app.name')" class="logo" />
+        <img v-else src="@/assets/logo.svg" :alt="$t('app.name')" class="logo-icon" />
       </router-link>
     </div>
 
     <!-- Navigation Menu -->
     <nav class="sidebar-nav">
       <div class="nav-section">
-        <span v-if="!isCollapsed" class="section-title">Main</span>
+        <span v-if="!isCollapsed" class="section-title">{{ $t('provider.sidebar.mainSection') }}</span>
 
         <NavItem
           to="/provider/dashboard"
           icon="dashboard"
-          label="Dashboard"
+          :label="$t('provider.sidebar.dashboard')"
           :collapsed="isCollapsed"
           @click="handleNavigation"
         />
@@ -29,7 +29,7 @@
         <NavItem
           to="/provider/bookings"
           icon="calendar"
-          label="Bookings"
+          :label="$t('provider.sidebar.bookings')"
           :badge="pendingBookingsCount"
           :collapsed="isCollapsed"
           @click="handleNavigation"
@@ -38,7 +38,7 @@
         <NavItem
           to="/provider/services"
           icon="services"
-          label="Services"
+          :label="$t('provider.sidebar.services')"
           :collapsed="isCollapsed"
           @click="handleNavigation"
         />
@@ -46,19 +46,19 @@
         <NavItem
           to="/provider/staff"
           icon="users"
-          label="Staff"
+          :label="$t('provider.sidebar.staff')"
           :collapsed="isCollapsed"
           @click="handleNavigation"
         />
       </div>
 
       <div class="nav-section">
-        <span v-if="!isCollapsed" class="section-title">Business</span>
+        <span v-if="!isCollapsed" class="section-title">{{ $t('provider.sidebar.businessSection') }}</span>
 
         <NavItem
           to="/provider/profile"
           icon="building"
-          label="Profile"
+          :label="$t('provider.sidebar.profile')"
           :collapsed="isCollapsed"
           @click="handleNavigation"
         />
@@ -66,7 +66,7 @@
         <NavItem
           to="/provider/hours"
           icon="clock"
-          label="Business Hours"
+          :label="$t('provider.sidebar.businessHours')"
           :collapsed="isCollapsed"
           @click="handleNavigation"
         />
@@ -74,19 +74,19 @@
         <NavItem
           to="/provider/gallery"
           icon="image"
-          label="Gallery"
+          :label="$t('provider.sidebar.gallery')"
           :collapsed="isCollapsed"
           @click="handleNavigation"
         />
       </div>
 
       <div class="nav-section">
-        <span v-if="!isCollapsed" class="section-title">Insights</span>
+        <span v-if="!isCollapsed" class="section-title">{{ $t('provider.sidebar.insightsSection') }}</span>
 
         <NavItem
           to="/provider/analytics"
           icon="chart"
-          label="Analytics"
+          :label="$t('provider.sidebar.analytics')"
           :collapsed="isCollapsed"
           @click="handleNavigation"
         />
@@ -94,7 +94,19 @@
         <NavItem
           to="/provider/reviews"
           icon="star"
-          label="Reviews"
+          :label="$t('provider.sidebar.reviews')"
+          :collapsed="isCollapsed"
+          @click="handleNavigation"
+        />
+      </div>
+
+      <div class="nav-section">
+        <span v-if="!isCollapsed" class="section-title">{{ $t('provider.sidebar.settingsSection') }}</span>
+
+        <NavItem
+          to="/provider/settings"
+          icon="settings"
+          :label="$t('provider.sidebar.settings')"
           :collapsed="isCollapsed"
           @click="handleNavigation"
         />
@@ -106,7 +118,7 @@
       v-if="!isMobile"
       class="toggle-btn"
       @click="$emit('toggle')"
-      aria-label="Toggle sidebar"
+      :aria-label="$t('provider.sidebar.toggleLabel')"
     >
       <svg v-if="!isCollapsed" viewBox="0 0 24 24" fill="none" stroke="currentColor">
         <path

@@ -7,16 +7,19 @@ namespace Booksy.UserManagement.Application.CQRS.Commands.RefreshToken
     {
         private readonly IUserRepository _userRepository;
         private readonly IJwtTokenService _jwtTokenService;
+        private readonly IProviderInfoService _providerInfoService;
         private readonly ILogger<RefreshTokenCommandHandler> _logger;
 
         public RefreshTokenCommandHandler(
             IUserRepository userWriteRepository,
             IJwtTokenService jwtTokenService,
+            IProviderInfoService providerInfoService,
             ILogger<RefreshTokenCommandHandler> logger)
         {
             _userRepository = userWriteRepository;
-            
+
             _jwtTokenService = jwtTokenService;
+            _providerInfoService = providerInfoService;
             _logger = logger;
         }
 
@@ -45,6 +48,29 @@ namespace Booksy.UserManagement.Application.CQRS.Commands.RefreshToken
             var newRefreshToken = oldToken.Rotate(request.IpAddress);
             user.AddRefreshToken(newRefreshToken);
 
+            // Query provider information if user has Provider role
+            string? providerId = null;
+            string? providerStatus = null;
+            if (user.Roles.Any(r => r.Name == "Provider" || r.Name == "ServiceProvider"))
+            {
+                _logger.LogInformation("User has Provider role, querying provider info for UserId: {UserId}", user.Id);
+                var providerInfo = await _providerInfoService.GetProviderByOwnerIdAsync(
+                    user.Id.Value,
+                    cancellationToken);
+
+                if (providerInfo != null)
+                {
+                    providerId = providerInfo.ProviderId.ToString();
+                    providerStatus = providerInfo.Status;
+                    _logger.LogInformation("Provider found: ProviderId={ProviderId}, Status={Status}",
+                        providerId, providerInfo.Status);
+                }
+                else
+                {
+                    _logger.LogInformation("No provider found for UserId: {UserId}", user.Id);
+                }
+            }
+
             // Generate new access token
             var accessToken = _jwtTokenService.GenerateAccessToken(
                 user.Id,
@@ -53,6 +79,8 @@ namespace Booksy.UserManagement.Application.CQRS.Commands.RefreshToken
                 user.Profile.GetDisplayName(),
                 user.Status.ToString(),
                 user.Roles.Select(r => r.Name).ToList(),
+                providerId,
+                providerStatus,
                 24); // 24 hours
 
             await _userRepository.UpdateAsync(user, cancellationToken);

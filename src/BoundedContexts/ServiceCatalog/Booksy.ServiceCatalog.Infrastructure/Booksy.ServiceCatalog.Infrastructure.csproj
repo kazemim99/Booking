@@ -7,8 +7,15 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <Folder Include="Persistence\EventSourcing\" />
-    <Folder Include="Persistence\Migrations\" />
+    <Compile Remove="Persistence\EventSourcing\**" />
+    <Compile Remove="Persistence\Migrations\**" />
+    <EmbeddedResource Remove="Persistence\EventSourcing\**" />
+    <EmbeddedResource Remove="Persistence\Migrations\**" />
+    <None Remove="Persistence\EventSourcing\**" />
+    <None Remove="Persistence\Migrations\**" />
+  </ItemGroup>
+
+  <ItemGroup>
     <Folder Include="Services\External\" />
   </ItemGroup>
 

@@ -94,6 +94,12 @@ const providerRoutes: RouteRecordRaw[] = [
         meta: { title: 'Business Hours' },
       },
       {
+        path: 'hours/test',
+        name: 'HoursStoreTest',
+        component: () => import('@/modules/provider/views/hours/HoursStoreTest.vue'),
+        meta: { title: 'Hours Store Test' },
+      },
+      {
         path: 'gallery',
         name: 'ProviderGallery',
         component: () => import('@/modules/provider/views/gallery/GalleryView.vue'),
@@ -104,16 +110,36 @@ const providerRoutes: RouteRecordRaw[] = [
       {
         path: 'services',
         name: 'ProviderServices',
-        component: () => import('@/modules/provider/views/services/ServiceCatalogView.vue'),
+        component: () => import('@/modules/provider/views/ProviderServicesView.vue'),
         meta: { title: 'Manage Services' },
       },
+      {
+        path: 'services/new',
+        name: 'ServiceEditor',
+        component: () => import('@/modules/provider/views/services/ServiceEditorViewSimple.vue'),
+        meta: { title: 'Add Service' },
+      },
+      {
+        path: 'services/:id/edit',
+        name: 'ServiceEditorEdit',
+        component: () => import('@/modules/provider/views/services/ServiceEditorViewSimple.vue'),
+        meta: { title: 'Edit Service' },
+      },
 
-      // Staff (Future)
+      // Staff
       {
         path: 'staff',
-        name: 'ProviderStaff',
+        name: 'StaffList',
         component: () => import('@/modules/provider/views/staff/StaffListView.vue'),
         meta: { title: 'Manage Staff' },
+      },
+
+      // Settings
+      {
+        path: 'settings',
+        name: 'ProviderSettings',
+        component: () => import('@/modules/provider/views/ProviderSettingsView.vue'),
+        meta: { title: 'Settings' },
       },
 
       // Bookings (Future)

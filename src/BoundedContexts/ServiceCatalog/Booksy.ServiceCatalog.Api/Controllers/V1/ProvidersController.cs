@@ -16,6 +16,11 @@ using Booksy.ServiceCatalog.Api.Models.Requests.Extenstions;
 using Booksy.API.Middleware;
 using static Booksy.API.Middleware.ExceptionHandlingMiddleware;
 using System.Security.Claims;
+using Booksy.ServiceCatalog.Application.Commands.Provider.AddStaffToProvider;
+using Booksy.ServiceCatalog.Application.Commands.Provider.UpdateProviderStaff;
+using Booksy.ServiceCatalog.Application.Commands.Provider.ActivateProviderStaff;
+using Booksy.ServiceCatalog.Application.Commands.Provider.DeactivateProviderStaff;
+using Booksy.ServiceCatalog.Application.Queries.Provider.GetProviderStaff;
 
 namespace Booksy.ServiceCatalog.API.Controllers.V1;
 
@@ -38,30 +43,46 @@ public class ProvidersController : ControllerBase
         _logger = logger ?? throw new ArgumentNullException(nameof(logger));
     }
 
+
+
     /// <summary>
     /// Registers a new service provider (simple registration)
     /// </summary>
+    /// <remarks>
+    /// Requires authentication. The OwnerId is automatically set from the authenticated user's ID.
+    /// Users must first register in the User Management system before creating a provider profile.
+    /// </remarks>
     /// <param name="request">Provider registration details</param>
     /// <returns>Created provider information</returns>
     /// <response code="201">Provider successfully created</response>
     /// <response code="400">Invalid request data</response>
-    /// <response code="409">Provider already exists</response>
+    /// <response code="401">User not authenticated</response>
+    /// <response code="409">Provider already exists for this user</response>
     [HttpPost("register")]
-    [AllowAnonymous]
+    [Authorize]
     [Booksy.API.Middleware.EnableRateLimiting("provider-registration")]
     [ProducesResponseType(typeof(ProviderResponse), StatusCodes.Status201Created)]
     [ProducesResponseType(typeof(ApiErrorResult), StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     [ProducesResponseType(typeof(ApiErrorResult), StatusCodes.Status409Conflict)]
     public async Task<IActionResult> RegisterProvider(
         [FromBody] RegisterProviderRequest request,
         CancellationToken cancellationToken = default)
     {
+        // Get OwnerId from authenticated user - cross-bounded-context integration point
+        var currentUserId = GetCurrentUserId();
+
+        // Override any OwnerId in request with authenticated user's ID
+        // This ensures users can only create providers for themselves
+        request.OwnerId = Guid.Parse(currentUserId);
+
         var command = MapToRegisterCommand(request);
         var result = await _mediator.Send(command, cancellationToken);
 
         var response = MapToProviderResponse(result);
 
-        _logger.LogInformation("Provider {ProviderId} registered successfully", response.Id);
+        _logger.LogInformation("Provider {ProviderId} registered successfully for user {UserId}",
+            response.Id, currentUserId);
 
         return CreatedAtAction(
             nameof(GetProviderById),
@@ -132,6 +153,37 @@ public class ProvidersController : ControllerBase
             response);
     }
 
+
+    /// <summary>
+    /// Get provider business information
+    /// </summary>
+    [HttpGet("by-owner/{id:guid}")]
+    //[Authorize]
+    [ProducesResponseType(typeof(ProviderDetailsResponse), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
+    public async Task<IActionResult> GetProviderByOwnerId(
+        [FromRoute] Guid id,
+        CancellationToken cancellationToken = default)
+    {
+        //var currentUserId = GetCurrentUserId();
+        //if (string.IsNullOrEmpty(currentUserId))
+        //{
+        //    return Unauthorized();
+        //}
+
+        var query = new GetProviderByOwnerIdQuery(id);
+        var provider = await _mediator.Send(query, cancellationToken);
+
+        if (provider == null)
+        {
+            return NotFound();
+        }
+
+        return Ok(MapToProviderDetailsResponse(provider));
+    }
+
+
     /// <summary>
     /// Gets a provider by their ID
     /// </summary>
@@ -157,6 +209,11 @@ public class ProvidersController : ControllerBase
             IncludeStaff: includeStaff);
 
         var result = await _mediator.Send(query, cancellationToken);
+
+        if (result == null)
+        {
+            return NotFound();
+        }
 
         return Ok(MapToProviderDetailsResponse(result));
     }
@@ -523,6 +580,203 @@ public class ProvidersController : ControllerBase
     //    return Ok(new MessageResponse($"Provider verification status updated to {status}"));
     //}
 
+    #region Staff Management
+
+    /// <summary>
+    /// Gets all staff members for a provider
+    /// </summary>
+    /// <param name="id">Provider ID</param>
+    /// <param name="activeOnly">Return only active staff members</param>
+    /// <returns>List of staff members</returns>
+    /// <response code="200">Staff members retrieved successfully</response>
+    /// <response code="404">Provider not found</response>
+    /// <response code="403">Not authorized to view this provider's staff</response>
+    [HttpGet("{id:guid}/staff")]
+    [Authorize]
+    [ProducesResponseType(typeof(IReadOnlyList<StaffSummaryResponse>), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
+    public async Task<IActionResult> GetStaff(
+        [FromRoute] Guid id,
+        [FromQuery] bool activeOnly = false,
+        CancellationToken cancellationToken = default)
+    {
+        if (!await CanManageProvider(id))
+        {
+            return Forbid();
+        }
+
+        // ✅ DDD-Compliant: Use GetProviderStaffQuery which accesses staff through Provider aggregate
+        var query = new GetProviderStaffQuery(id, !activeOnly); // Note: inverted logic - query param is "IncludeInactive"
+        var result = await _mediator.Send(query, cancellationToken);
+
+        var response = result.Staff.Select(staff => new StaffSummaryResponse
+        {
+            Id = staff.Id,
+            ProviderId = result.ProviderId,
+            FirstName = staff.FirstName,
+            LastName = staff.LastName,
+            FullName = staff.FullName,
+            PhoneNumber = staff.PhoneNumber,
+            Role = staff.Role,
+            IsActive = staff.IsActive,
+            HiredAt = staff.HiredAt
+        }).ToList();
+
+        return Ok(response);
+    }
+
+    /// <summary>
+    /// Adds a new staff member to the provider
+    /// </summary>
+    /// <param name="providerId">Provider ID</param>
+    /// <param name="request">Staff member details</param>
+    /// <returns>Created staff member information</returns>
+    /// <response code="201">Staff member created successfully</response>
+    /// <response code="400">Invalid request data</response>
+    /// <response code="404">Provider not found</response>
+    /// <response code="403">Not authorized to add staff to this provider</response>
+    /// <response code="409">Staff member with email already exists</response>
+    [HttpPost("{providerId:guid}/staff")]
+    [Authorize]
+    [ProducesResponseType(typeof(StaffDetailsResponse), StatusCodes.Status201Created)]
+    [ProducesResponseType(typeof(ApiErrorResult), StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
+    [ProducesResponseType(typeof(ApiErrorResult), StatusCodes.Status409Conflict)]
+    public async Task<IActionResult> AddStaff(
+        [FromRoute] Guid providerId,
+        [FromBody] AddStaffRequest request,
+        CancellationToken cancellationToken = default)
+    {
+        if (!await CanManageProvider(providerId))
+        {
+            return Forbid();
+        }
+
+        var command = new AddStaffToProviderCommand(
+            providerId,
+            request.FirstName,
+            request.LastName,
+            request.PhoneNumber,
+            request.CountryCode,
+            request.Role,
+            request.Notes);
+
+        var result = await _mediator.Send(command, cancellationToken);
+
+        _logger.LogInformation("Staff member {StaffId} added to provider {ProviderId}", result.StaffId, providerId);
+
+        var response = new StaffDetailsResponse
+        {
+            Id = result.StaffId,
+            ProviderId = result.ProviderId,
+            FirstName = result.FirstName,
+            LastName = result.LastName,
+            Role = result.Role,
+            IsActive = result.IsActive,
+        };
+
+        return CreatedAtAction(nameof(GetStaff), new { id = providerId }, response);
+    }
+
+    /// <summary>
+    /// Updates an existing staff member
+    /// </summary>
+    /// <param name="id">Provider ID</param>
+    /// <param name="staffId">Staff member ID</param>
+    /// <param name="request">Updated staff member details</param>
+    /// <returns>Updated staff member information</returns>
+    /// <response code="200">Staff member updated successfully</response>
+    /// <response code="400">Invalid request data</response>
+    /// <response code="404">Staff member not found</response>
+    /// <response code="403">Not authorized to update this staff member</response>
+    [HttpPut("{id:guid}/staff/{staffId:guid}")]
+    [Authorize]
+    [ProducesResponseType(typeof(StaffDetailsResponse), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ApiErrorResult), StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
+    public async Task<IActionResult> UpdateStaff(
+        [FromRoute] Guid id,
+        [FromRoute] Guid staffId,
+        [FromBody] UpdateStaffRequest request,
+        CancellationToken cancellationToken = default)
+    {
+        if (!await CanManageProvider(id))
+        {
+            return Forbid();
+        }
+
+        // ✅ DDD-Compliant: Use UpdateProviderStaffCommand which operates on Provider aggregate
+        var command = new UpdateProviderStaffCommand(
+            id,
+            staffId,
+            request.FirstName,
+            request.LastName,
+            request.Email,
+            request.PhoneNumber,
+            request.CountryCode,
+            request.Role,
+            request.Notes);
+
+        var result = await _mediator.Send(command, cancellationToken);
+
+        _logger.LogInformation("Staff member {StaffId} updated for provider {ProviderId}", staffId, id);
+
+        var response = new StaffDetailsResponse
+        {
+            Id = result.StaffId,
+            ProviderId = result.ProviderId,
+            FirstName = result.FirstName,
+            LastName = result.LastName,
+            Email = result.Email,
+            Role = result.Role,
+            IsActive = result.IsActive,
+        };
+
+        return Ok(response);
+    }
+
+    /// <summary>
+    /// Removes a staff member from the provider
+    /// </summary>
+    /// <param name="id">Provider ID</param>
+    /// <param name="staffId">Staff member ID</param>
+    /// <returns>No content</returns>
+    /// <response code="204">Staff member removed successfully</response>
+    /// <response code="404">Staff member not found</response>
+    /// <response code="403">Not authorized to remove this staff member</response>
+    [HttpDelete("{id:guid}/staff/{staffId:guid}")]
+    [Authorize]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
+    public async Task<IActionResult> RemoveStaff(
+        [FromRoute] Guid id,
+        [FromRoute] Guid staffId,
+        CancellationToken cancellationToken = default)
+    {
+        if (!await CanManageProvider(id))
+        {
+            return Forbid();
+        }
+
+        // ✅ DDD-Compliant: Use DeactivateProviderStaffCommand which operates on Provider aggregate
+        var command = new DeactivateProviderStaffCommand(
+            id,
+            staffId,
+            "Removed from provider");
+
+        await _mediator.Send(command, cancellationToken);
+
+        _logger.LogInformation("Staff member {StaffId} removed from provider {ProviderId}", staffId, id);
+
+        return NoContent();
+    }
+
+    #endregion
+
     #region Private Helper Methods
 
     private RegisterProviderCommand MapToRegisterCommand(RegisterProviderRequest request)
@@ -531,10 +785,11 @@ public class ProvidersController : ControllerBase
             OwnerId: request.OwnerId,
             BusinessName: request.BusinessName,
             Description: request.Description,
+            Email: request.ContactInfo.Email,
             ProviderType: request.Type,
             PrimaryPhone: request.ContactInfo.PrimaryPhone,
-            SecondaryPhone: request.ContactInfo.SecondaryPhone,Website: request.WebsiteUrl,request.Address.Street,request.Address.City,
-            request.Address.State,request.Address.PostalCode,request.Address.Country,request.Address.Longitude,request.Address.Latitude
+            SecondaryPhone: request.ContactInfo.SecondaryPhone, Website: request.WebsiteUrl, request.Address.Street, request.Address.City,
+            request.Address.State, request.Address.PostalCode, request.Address.Country, request.Address.Longitude, request.Address.Latitude
             );
     }
 
@@ -629,7 +884,10 @@ public class ProvidersController : ControllerBase
             BusinessName = result.BusinessName,
             Type = result.Type.ToString(),
             Status = result.Status.ToString(),
-            RegisteredAt = result.RegisteredAt
+            RegisteredAt = result.RegisteredAt,
+            AccessToken = result.AccessToken,
+            RefreshToken = result.RefreshToken,
+            ExpiresIn = result.ExpiresIn
         };
     }
 
@@ -637,7 +895,7 @@ public class ProvidersController : ControllerBase
     {
         return new ProviderDetailsResponse
         {
-            Id = result.Id,
+            ProviderId = result.Id,
             OwnerId = result.OwnerId,
             BusinessName = result.BusinessName,
             Description = result.Description,
@@ -657,13 +915,13 @@ public class ProvidersController : ControllerBase
                 PostalCode = result.Address.PostalCode,
                 Country = result.Address.Country
             },
-            BusinessHours = result.BusinessHours.ToDictionary(
+            BusinessHours = result.BusinessHours.Any() ? result.BusinessHours.ToDictionary(
                 bh => bh.Key,
                 bh => bh.Value != null ? new BusinessHoursResponse
                 {
                     OpenTime = bh.Value.OpenTime,
                     CloseTime = bh.Value.CloseTime
-                } : null),
+                } : null) : new Dictionary<Domain.Enums.DayOfWeek, BusinessHoursResponse?>(),
             LogoUrl = result.LogoUrl,
             WebsiteUrl = result.WebsiteUrl,
             AllowOnlineBooking = result.AllowOnlineBooking,
@@ -678,6 +936,15 @@ public class ProvidersController : ControllerBase
             RegisteredAt = result.RegisteredAt,
             ActivatedAt = result.ActivatedAt,
             LastActiveAt = result.LastActiveAt,
+            Staff = result.Staff?.Select(c => new StaffMemberResponse
+            {
+                FirstName = c.FirstName,
+                LastName = c.LastName,
+                Id = c.Id,
+                IsActive = c.IsActive,
+                JoinedAt = c.HiredAt,
+                Role = c.Role.ToString(),
+            }).ToList() ?? new List<StaffMemberResponse>(),
             Services = result.Services?.Select(static s => new ServiceSummaryResponse
             {
                 Id = s.Id,
@@ -749,3 +1016,59 @@ public class ProvidersController : ControllerBase
 
     #endregion
 }
+
+#region Staff Request/Response Models
+
+public sealed class AddStaffRequest
+{
+    public string FirstName { get; set; } = string.Empty;
+    public string LastName { get; set; } = string.Empty;
+    public string? Email { get; set; } = string.Empty;
+    public string? PhoneNumber { get; set; }
+    public string? CountryCode { get; set; }
+    public string Role { get; set; } = "ServiceProvider";
+    public string? Notes { get; set; }
+}
+
+public sealed class UpdateStaffRequest
+{
+    public string FirstName { get; set; } = string.Empty;
+    public string LastName { get; set; } = string.Empty;
+    public string Email { get; set; } = string.Empty;
+    public string? PhoneNumber { get; set; }
+    public string? CountryCode { get; set; }
+    public string Role { get; set; } = string.Empty;
+    public string? Notes { get; set; }
+}
+
+public sealed class StaffDetailsResponse
+{
+    public Guid Id { get; set; }
+    public Guid ProviderId { get; set; }
+    public string FirstName { get; set; } = string.Empty;
+    public string LastName { get; set; } = string.Empty;
+    public string FullName { get; set; } = string.Empty;
+    public string Email { get; set; } = string.Empty;
+    public string? PhoneNumber { get; set; }
+    public string Role { get; set; } = string.Empty;
+    public bool IsActive { get; set; }
+    public DateTime? TerminatedAt { get; set; }
+    public string? TerminationReason { get; set; }
+    public string? Notes { get; set; }
+}
+
+public sealed class StaffSummaryResponse
+{
+    public Guid Id { get; set; }
+    public Guid ProviderId { get; set; }
+    public string FirstName { get; set; } = string.Empty;
+    public string LastName { get; set; } = string.Empty;
+    public string FullName { get; set; } = string.Empty;
+    public string Email { get; set; } = string.Empty;
+    public string? PhoneNumber { get; set; }
+    public string Role { get; set; } = string.Empty;
+    public bool IsActive { get; set; }
+    public DateTime HiredAt { get; set; }
+}
+
+#endregion

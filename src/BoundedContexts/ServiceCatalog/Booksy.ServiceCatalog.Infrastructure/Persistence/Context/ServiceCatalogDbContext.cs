@@ -7,6 +7,9 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.ChangeTracking;
 using System.Collections.Generic;
 using System.Reflection.Emit;
+using BusinessHours = Booksy.ServiceCatalog.Domain.Entities.BusinessHours;
+using HolidaySchedule = Booksy.ServiceCatalog.Domain.Entities.HolidaySchedule;
+using ExceptionSchedule = Booksy.ServiceCatalog.Domain.Entities.ExceptionSchedule;
 
 namespace Booksy.ServiceCatalog.Infrastructure.Persistence.Context
 {
@@ -32,6 +35,8 @@ namespace Booksy.ServiceCatalog.Infrastructure.Persistence.Context
         // Entities
         public DbSet<Staff> Staff => Set<Staff>();
         public DbSet<BusinessHours> BusinessHours => Set<BusinessHours>();
+        public DbSet<HolidaySchedule> Holidays => Set<HolidaySchedule>();
+        public DbSet<ExceptionSchedule> Exceptions => Set<ExceptionSchedule>();
         public DbSet<ServiceOption> ServiceOptions => Set<ServiceOption>();
         public DbSet<PriceTier> PriceTiers => Set<PriceTier>();
 

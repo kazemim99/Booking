@@ -148,7 +148,7 @@ public class TestAuthenticationContext
         {
             UserId = userId,
             Email = email,
-            Roles = new List<string> { "Admin" }
+            Roles = new List<string> { "Administrator" }
         };
     }
 

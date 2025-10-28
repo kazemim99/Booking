@@ -132,9 +132,9 @@ using System.Text.Encodings.Web;
         public string Role { get; set; } = "Customer";
         public Dictionary<string, string> AdditionalClaims { get; set; } = new();
 
-        public static TestUser Customer(string email = "customer@test.com") => new()
+        public static TestUser Customer(string email = "customer@test.com",Guid? userId = null) => new()
         {
-            UserId = Guid.NewGuid().ToString(),
+            UserId = userId == null ? Guid.NewGuid().ToString() : userId.ToString(),
             Email = email,
             Name = email.Split('@')[0],
             Role = "Customer"
@@ -158,7 +158,7 @@ using System.Text.Encodings.Web;
             UserId = Guid.NewGuid().ToString(),
             Email = email,
             Name = email.Split('@')[0],
-            Role = "Admin",
+            Role = "Administrator",
             AdditionalClaims = new Dictionary<string, string>
             {
                 { "isAdmin", "true" },

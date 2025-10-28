@@ -39,7 +39,7 @@ public sealed class AddProviderServiceCommandHandler : ICommandHandler<AddProvid
         await ValidateRequestAsync(request, cancellationToken);
 
         // Check if provider exists
-        var providerId = ProviderId.Create(request.ProviderId);
+        var providerId = ProviderId.From(request.ProviderId);
         var provider = await _providerReadRepository.GetByIdAsync(providerId, cancellationToken);
         if (provider == null)
         {
@@ -59,7 +59,7 @@ public sealed class AddProviderServiceCommandHandler : ICommandHandler<AddProvid
         }
 
         // Create service
-        var totalMinutes = (request.DurationHours * 60) + request.DurationMinutes;
+        var totalMinutes = (request.DurationHours * 60) + request.Duration;
         var duration = Duration.FromMinutes(totalMinutes);
         var price = Price.Create(request.Price, request.Currency);
 
@@ -107,7 +107,7 @@ public sealed class AddProviderServiceCommandHandler : ICommandHandler<AddProvid
             errors["serviceName"] = new List<string> { "Service name cannot exceed 200 characters" };
         }
 
-        var totalMinutes = (request.DurationHours * 60) + request.DurationMinutes;
+        var totalMinutes = (request.DurationHours * 60) + request.Duration;
         if (totalMinutes <= 0)
         {
             errors["duration"] = new List<string> { "Service duration must be greater than 0" };
@@ -143,7 +143,7 @@ public sealed class AddProviderServiceCommandHandler : ICommandHandler<AddProvid
 
         return category.ToLowerInvariant() switch
         {
-            "beauty" or "hair" or "nails" => ServiceCategory.Beauty,
+            "beauty" or "haircare" or "nails" => ServiceCategory.Beauty,
             "fitness" => ServiceCategory.Fitness,
             "health" or "medical" or "dental" or "therapy" => ServiceCategory.Health,
             "education" or "training" => ServiceCategory.Education,

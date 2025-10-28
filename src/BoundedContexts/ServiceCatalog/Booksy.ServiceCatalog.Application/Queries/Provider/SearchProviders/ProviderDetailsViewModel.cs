@@ -4,6 +4,11 @@ using Booksy.ServiceCatalog.Application.Queries.Provider.GetProviderById;
 
 public sealed class ProviderDetailsViewModel
 {
+
+    public ProviderDetailsViewModel()
+    {
+        Staff = new List<StaffViewModel>();
+    }
     public Guid Id { get; init; }
     public Guid OwnerId { get; init; }
     public string BusinessName { get; init; } = string.Empty;

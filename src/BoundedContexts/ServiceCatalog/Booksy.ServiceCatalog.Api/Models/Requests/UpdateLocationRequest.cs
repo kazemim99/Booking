@@ -31,4 +31,5 @@ public sealed class UpdateLocationRequest
     public string? FormattedAddress { get; set; }
 
     public bool IsShared { get; set; }
+    public string Street { get; set; }
 }

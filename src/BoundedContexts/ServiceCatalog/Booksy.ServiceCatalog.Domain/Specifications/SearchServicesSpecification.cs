@@ -81,10 +81,7 @@ namespace Booksy.ServiceCatalog.Domain.Specifications
             {
                 AddCriteria(service => service.Status == status.Value);
             }
-            else
-            {
-                AddCriteria(service => service.Status == ServiceStatus.Active);
-            }
+         
 
             // Include related entities
             if (includeProvider)

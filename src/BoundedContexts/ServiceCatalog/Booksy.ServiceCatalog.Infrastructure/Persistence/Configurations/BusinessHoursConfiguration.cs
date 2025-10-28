@@ -1,6 +1,8 @@
-﻿using Booksy.ServiceCatalog.Domain.Entities;
+using Booksy.ServiceCatalog.Domain.Aggregates;
+using Booksy.ServiceCatalog.Domain.Entities;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
+using BusinessHours = Booksy.ServiceCatalog.Domain.Entities.BusinessHours;
 
 namespace Booksy.ServiceCatalog.Infrastructure.Persistence.Configurations
 {
@@ -8,35 +10,93 @@ namespace Booksy.ServiceCatalog.Infrastructure.Persistence.Configurations
     {
         public void Configure(EntityTypeBuilder<BusinessHours> builder)
         {
-            builder.ToTable("BusinessHours");
+            builder.ToTable("BusinessHours", "ServiceCatalog");
 
+            // Primary Key
             builder.HasKey(bh => bh.Id);
 
-            builder.Property(bh => bh.DayOfWeek)
-                .HasConversion<string>()
+            builder.Property(bh => bh.Id)
                 .IsRequired()
-                .HasMaxLength(20);
+                .ValueGeneratedNever(); 
 
-            builder.OwnsOne(bh => bh.OperatingHours, hours =>
+
+            builder.Property(bh => bh.ProviderId)
+                .HasColumnName("ProviderId")
+                .HasConversion(
+                    id => id.Value,
+                    value => ProviderId.From(value))
+                .IsRequired();
+
+
+
+            builder.HasOne<Provider>()
+    .WithMany(p => p.BusinessHours)
+    .HasForeignKey(bh => bh.ProviderId)
+    .OnDelete(DeleteBehavior.Cascade)
+    .IsRequired();
+
+
+            // Day of Week
+            builder.Property(bh => bh.DayOfWeek)
+                .IsRequired()
+                .HasConversion<int>();
+
+            // Operating Times
+            builder.Property(bh => bh.OpenTime)
+                .HasColumnType("time");
+
+            builder.Property(bh => bh.CloseTime)
+                .HasColumnType("time");
+
+            // Audit Properties
+            builder.Property(bh => bh.CreatedAt)
+                .IsRequired()
+                .HasColumnType("timestamp with time zone");
+
+            builder.Property(bh => bh.CreatedBy)
+                .HasMaxLength(100);
+
+            builder.Property(bh => bh.LastModifiedAt)
+                .HasColumnType("timestamp with time zone");
+
+            builder.Property(bh => bh.LastModifiedBy)
+                .HasMaxLength(100);
+
+            builder.Property(bh => bh.IsDeleted)
+                .IsRequired()
+                .HasDefaultValue(false);
+
+            // Configure Breaks as owned collection within BusinessHours
+            builder.OwnsMany(bh => bh.Breaks, breaks =>
             {
-                hours.Property(h => h.StartTime)
-                    .IsRequired()
-                    .HasColumnName("OpenTime");
+                breaks.ToTable("BreakPeriods", "ServiceCatalog");
 
-                hours.Property(h => h.EndTime)
+                breaks.WithOwner().HasForeignKey("BusinessHoursId");
+                breaks.Property<int>("Id")
+                    .ValueGeneratedOnAdd();
+                breaks.HasKey("Id");
+
+                breaks.Property(b => b.StartTime)
                     .IsRequired()
-                    .HasColumnName("CloseTime");
+                    .HasColumnType("time");
+
+                breaks.Property(b => b.EndTime)
+                    .IsRequired()
+                    .HasColumnType("time");
+
+                breaks.Property(b => b.Label)
+                    .HasMaxLength(100);
             });
 
-            builder.Property(bh => bh.IsOpen)
-                .IsRequired()
-                .HasDefaultValue(true);
-
-     
-
             // Indexes
-            builder.HasIndex(bh => bh.DayOfWeek)
-                .HasDatabaseName("IX_BusinessHours_DayOfWeek");
+            builder.HasIndex(bh => bh.DayOfWeek);
+
+            builder.HasIndex(bh => bh.ProviderId)
+    .HasDatabaseName("IX_BusinessHours_ProviderId");
+
+
+            // Query Filter for soft deletes
+            builder.HasQueryFilter(bh => !bh.IsDeleted);
         }
     }
 }

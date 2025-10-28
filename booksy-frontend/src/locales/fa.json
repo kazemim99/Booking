@@ -296,7 +296,225 @@
     "default": "پیش‌فرض",
     "custom": "سفارشی",
     "auto": "خودکار",
-    "manual": "دستی"
+    "manual": "دستی",
+    "retry": "تلاش مجدد",
+    "viewAll": "مشاهده همه"
+  },
+  "dashboard": {
+    "welcome": {
+      "welcomeBack": "خوش آمدید،",
+      "goodMorning": "صبح بخیر! آماده‌اید روز عالی بسازید؟",
+      "goodAfternoon": "عصر بخیر! به کار خوب خود ادامه دهید!",
+      "goodEvening": "عصر بخیر! وقت بررسی روز شماست.",
+      "completeProfile": "تکمیل پروفایل",
+      "completeProfileMessage": "برای شروع دریافت رزرو، تنظیمات پروفایل خود را کامل کنید",
+      "completeNow": "اکنون تکمیل کنید"
+    },
+    "actions": {
+      "addService": "افزودن خدمت",
+      "addServiceDescription": "خدمات جدید به لیست خدمات خود اضافه کنید",
+      "viewCalendar": "مشاهده تقویم",
+      "viewCalendarDescription": "برنامه زمانی و قرارهای خود را مدیریت کنید",
+      "editHours": "ویرایش ساعات کاری",
+      "editHoursDescription": "ساعات کاری خود را به‌روزرسانی کنید",
+      "viewProfile": "مشاهده پروفایل",
+      "viewProfileDescription": "ببینید مشتریان پروفایل شما را چگونه می‌بینند"
+    },
+    "bookings": {
+      "noBookings": "رزروی وجود ندارد",
+      "noBookingsMessage": "در حال حاضر هیچ رزروی ندارید"
+    },
+    "charts": {
+      "barChart": "نمودار میله‌ای",
+      "lineChart": "نمودار خطی",
+      "totalBookings": "کل رزروها",
+      "completed": "تکمیل شده",
+      "cancelled": "لغو شده",
+      "completionRate": "نرخ تکمیل",
+      "total": "مجموع",
+      "average": "میانگین",
+      "trend": "روند"
+    }
+  },
+  "footer": {
+    "help": "راهنما",
+    "support": "پشتیبانی",
+    "terms": "شرایط استفاده",
+    "privacy": "حریم خصوصی"
+  },
+  "profile": {
+    "personalInfo": {
+      "title": "اطلاعات شخصی",
+      "description": "اطلاعات شخصی و تماس خود را به‌روزرسانی کنید",
+      "basicInfo": "اطلاعات پایه",
+      "firstName": "نام",
+      "firstNamePlaceholder": "نام خود را وارد کنید",
+      "lastName": "نام خانوادگی",
+      "lastNamePlaceholder": "نام خانوادگی خود را وارد کنید",
+      "phoneNumber": "شماره تلفن",
+      "phoneNumberPlaceholder": "۰۹۱۲۳۴۵۶۷۸۹",
+      "phoneNumberHelp": "برای شماره‌های بین‌المللی کد کشور را وارد کنید",
+      "dateOfBirth": "تاریخ تولد",
+      "ageRequirement": "سن شما باید حداقل ۱۳ سال باشد",
+      "bio": "بیوگرافی",
+      "bioPlaceholder": "کمی درباره خودتان بگویید...",
+      "addressInfo": "اطلاعات آدرس",
+      "street": "آدرس خیابان",
+      "streetPlaceholder": "خیابان اصلی ۱۲۳، واحد ۴",
+      "city": "شهر",
+      "cityPlaceholder": "تهران",
+      "state": "استان",
+      "statePlaceholder": "تهران",
+      "postalCode": "کد پستی",
+      "postalCodePlaceholder": "۱۲۳۴۵۶۷۸۹۰",
+      "country": "کشور",
+      "selectCountry": "انتخاب کشور"
+    },
+    "preferences": {
+      "title": "تنظیمات",
+      "description": "تجربه و تنظیمات اعلان خود را سفارشی کنید",
+      "localization": "محلی‌سازی",
+      "language": "زبان",
+      "timezone": "منطقه زمانی",
+      "timezoneRegions": {
+        "northAmerica": "آمریکای شمالی",
+        "europe": "اروپا",
+        "asia": "آسیا"
+      },
+      "currency": "واحد پول",
+      "dateFormat": "فرمت تاریخ",
+      "dateFormatOptions": {
+        "mmddyyyy": "MM/DD/YYYY",
+        "ddmmyyyy": "DD/MM/YYYY",
+        "yyyymmdd": "YYYY-MM-DD"
+      },
+      "timeFormat": "فرمت زمان",
+      "timeFormatOptions": {
+        "12h": "۱۲ ساعته (۲:۳۰ بعدازظهر)",
+        "24h": "۲۴ ساعته (۱۴:۳۰)"
+      },
+      "theme": "تم",
+      "themeOptions": {
+        "light": "روشن",
+        "dark": "تاریک",
+        "auto": "خودکار (سیستم)"
+      },
+      "notificationPreferences": "تنظیمات اعلان",
+      "notifications": {
+        "email": {
+          "label": "اعلان‌های ایمیل",
+          "description": "دریافت اعلان‌ها از طریق ایمیل"
+        },
+        "sms": {
+          "label": "اعلان‌های پیامکی",
+          "description": "دریافت اعلان‌ها از طریق پیامک"
+        },
+        "push": {
+          "label": "اعلان‌های فشاری",
+          "description": "اعلان‌های فشاری مرورگر"
+        },
+        "bookingReminders": {
+          "label": "یادآوری رزروها",
+          "description": "یادآوری قرارهای پیش رو"
+        },
+        "promotions": {
+          "label": "تخفیف‌ها و پیشنهادها",
+          "description": "پیشنهادات ویژه از ارائه‌دهندگان موردعلاقه شما"
+        },
+        "marketing": {
+          "label": "اطلاعیه‌های بازاریابی",
+          "description": "به‌روزرسانی‌ها و اخبار از بوکسی"
+        },
+        "newsletter": {
+          "label": "خبرنامه",
+          "description": "خبرنامه ماهانه با نکات و روندها"
+        }
+      },
+      "enableAll": "فعال کردن همه",
+      "disableAll": "غیرفعال کردن همه"
+    },
+    "security": {
+      "title": "تنظیمات امنیتی",
+      "description": "رمز عبور و امنیت حساب خود را مدیریت کنید",
+      "changePassword": "تغییر رمز عبور",
+      "changePasswordDescription": "یک رمز عبور قوی انتخاب کنید تا حساب شما امن بماند",
+      "currentPassword": "رمز عبور فعلی",
+      "currentPasswordPlaceholder": "رمز عبور فعلی خود را وارد کنید",
+      "newPassword": "رمز عبور جدید",
+      "newPasswordPlaceholder": "رمز عبور جدید را وارد کنید",
+      "confirmPassword": "تأیید رمز عبور جدید",
+      "confirmPasswordPlaceholder": "رمز عبور جدید را تأیید کنید",
+      "requirements": {
+        "minLength": "حداقل ۸ کاراکتر",
+        "uppercase": "حداقل یک حرف بزرگ",
+        "lowercase": "حداقل یک حرف کوچک",
+        "number": "حداقل یک عدد",
+        "special": "حداقل یک کاراکتر ویژه"
+      }
+    },
+    "privacy": {
+      "title": "تنظیمات حریم خصوصی",
+      "description": "کنترل کنید چه کسانی اطلاعات شما را می‌بینند و چگونه استفاده می‌شود",
+      "profileVisibility": "قابلیت مشاهده پروفایل",
+      "informationVisibility": "قابلیت مشاهده اطلاعات",
+      "informationVisibilityDescription": "انتخاب کنید چه اطلاعاتی در پروفایل عمومی شما قابل مشاهده باشد",
+      "showEmail": {
+        "label": "نمایش آدرس ایمیل",
+        "description": "دیگران آدرس ایمیل شما را ببینند"
+      },
+      "showPhone": {
+        "label": "نمایش شماره تلفن",
+        "description": "دیگران شماره تلفن شما را ببینند"
+      },
+      "showAddress": {
+        "label": "نمایش آدرس",
+        "description": "آدرس کامل شما در پروفایل نمایش داده شود"
+      },
+      "showBirthdate": {
+        "label": "نمایش تاریخ تولد",
+        "description": "دیگران تاریخ تولد شما را ببینند"
+      },
+      "searchEngineVisibility": "قابلیت مشاهده در موتورهای جستجو",
+      "allowIndexing": {
+        "label": "اجازه فهرست‌سازی موتورهای جستجو",
+        "description": "موتورهای جستجو مانند گوگل پروفایل عمومی شما را پیدا کنند"
+      },
+      "tips": {
+        "title": "نکات حریم خصوصی",
+        "item1": "فقط اطلاعاتی را به اشتراک بگذارید که از عمومی بودن آن راحت هستید",
+        "item2": "تنظیمات حریم خصوصی خود را به طور منظم بررسی کنید",
+        "item3": "در به اشتراک‌گذاری اطلاعات تماس شخصی محتاط باشید",
+        "item4": "برای حریم خصوصی بهتر، فهرست‌سازی موتور جستجو را غیرفعال کنید",
+        "item5": "همیشه می‌توانید این تنظیمات را بعداً تغییر دهید"
+      }
+    }
+  },
+  "buttons": {
+    "reset": "بازنشانی",
+    "saving": "در حال ذخیره...",
+    "saveChanges": "ذخیره تغییرات"
+  },
+  "languages": {
+    "english": "انگلیسی",
+    "spanish": "اسپانیایی",
+    "french": "فرانسوی",
+    "german": "آلمانی",
+    "arabic": "عربی",
+    "chinese": "چینی",
+    "persian": "فارسی"
+  },
+  "countries": {
+    "unitedStates": "ایالات متحده",
+    "canada": "کانادا",
+    "mexico": "مکزیک",
+    "unitedKingdom": "انگلستان",
+    "germany": "آلمان",
+    "france": "فرانسه",
+    "spain": "اسپانیا",
+    "italy": "ایتالیا",
+    "china": "چین",
+    "japan": "ژاپن",
+    "india": "هند"
   },
   "navigation": {
     "home": "خانه",
@@ -418,6 +636,71 @@
     "cancellationPolicy": "سیاست لغو"
   },
   "provider": {
+    "navigation": {
+      "toggleSidebar": "باز و بسته کردن نوار کناری",
+      "ariaLabel": "منوی ارائه‌دهنده"
+    },
+    "menu": {
+      "businessProfile": "پروفایل کسب‌وکار",
+      "bookings": "رزروها"
+    },
+    "sidebar": {
+      "mainSection": "اصلی",
+      "dashboard": "داشبورد",
+      "bookings": "رزروها",
+      "services": "خدمات",
+      "staff": "کارکنان",
+      "businessSection": "کسب‌وکار",
+      "profile": "پروفایل",
+      "businessHours": "ساعات کاری",
+      "gallery": "گالری",
+      "insightsSection": "تحلیل‌ها",
+      "analytics": "آمار و گزارش",
+      "reviews": "نظرات",
+      "settingsSection": "تنظیمات",
+      "settings": "تنظیمات",
+      "toggleLabel": "باز و بسته کردن نوار کناری"
+    },
+    "filters": {
+      "title": "فیلترها",
+      "clearAll": "پاک کردن همه",
+      "search": "جستجو",
+      "businessNamePlaceholder": "نام کسب‌وکار...",
+      "location": "موقعیت",
+      "cityPlaceholder": "شهر",
+      "statePlaceholder": "استان",
+      "countryPlaceholder": "کشور",
+      "providerType": "نوع ارائه‌دهنده",
+      "allTypes": "همه انواع",
+      "type": {
+        "individual": "شخصی",
+        "business": "تجاری",
+        "corporate": "شرکتی",
+        "franchise": "فرانشیز",
+        "popup": "موقت",
+        "mobile": "سیار"
+      },
+      "status": "وضعیت",
+      "allStatuses": "همه وضعیت‌ها",
+      "statusOptions": {
+        "active": "فعال",
+        "inactive": "غیرفعال",
+        "suspended": "معلق",
+        "pending": "در انتظار"
+      },
+      "features": "ویژگی‌ها",
+      "featuresOptions": {
+        "onlineBooking": "رزرو آنلاین",
+        "mobileServices": "خدمات سیار"
+      },
+      "specializations": "تخصص‌ها",
+      "specializationPlaceholder": "افزودن تخصص...",
+      "addSpecializationHint": "برای افزودن Enter یا کاما بزنید",
+      "distance": "فاصله",
+      "distanceKm": "فاصله: {value} کیلومتر",
+      "minimumRating": "حداقل امتیاز",
+      "applyButton": "اعمال فیلترها"
+    },
     "provider": "ارائه‌دهنده",
     "providers": "ارائه‌دهندگان",
     "findProvider": "یافتن ارائه‌دهنده",
@@ -723,5 +1006,120 @@
     "rejected": "رد شد",
     "published": "منتشر شد",
     "unpublished": "منتشر نشد"
+  },
+  "services": {
+    "title": "خدمات",
+    "serviceManagement": "مدیریت خدمات",
+    "manageYourServices": "خدمات خود را مدیریت کنید",
+    "addService": "افزودن خدمت",
+    "addFirstService": "افزودن اولین خدمت",
+    "createService": "ایجاد خدمت",
+    "editService": "ویرایش خدمت",
+    "serviceName": "نام خدمت",
+    "serviceNamePlaceholder": "مثلاً: کوتاهی مو بانوان",
+    "duration": "مدت زمان",
+    "durationMinutes": "مدت زمان (دقیقه)",
+    "durationPlaceholder": "۶۰",
+    "price": "قیمت",
+    "basePrice": "قیمت پایه",
+    "pricePlaceholder": "۰.۰۰",
+    "backToServices": "بازگشت به خدمات",
+    "loadingServices": "در حال بارگذاری خدمات...",
+    "noServicesYet": "هنوز خدمتی وجود ندارد",
+    "noServicesMessage": "با افزودن اولین خدمت به کاتالوگ خود شروع کنید.",
+    "noServicesFound": "خدمتی یافت نشد",
+    "noServicesFoundMessage": "هیچ خدمتی با فیلترهای فعلی شما مطابقت ندارد. معیارهای جستجو را تنظیم کنید.",
+    "serviceCreatedSuccess": "خدمت با موفقیت ایجاد شد!",
+    "serviceUpdatedSuccess": "خدمت با موفقیت به‌روزرسانی شد!",
+    "serviceDeletedSuccess": "خدمت با موفقیت حذف شد!",
+    "confirmDelete": "آیا مطمئن هستید که می‌خواهید این خدمت را حذف کنید؟",
+    "deleteService": "حذف خدمت",
+    "totalServices": "کل خدمات",
+    "activeServices": "فعال",
+    "draftServices": "پیش‌نویس‌ها",
+    "min": "دقیقه",
+    "searchPlaceholder": "جستجوی خدمات...",
+    "allCategories": "همه دسته‌بندی‌ها",
+    "allStatus": "همه وضعیت‌ها",
+    "clearFilters": "پاک کردن فیلترها",
+    "filters": "فیلترها",
+    "saving": "در حال ذخیره...",
+    "createNew": "ایجاد خدمت",
+    "update": "به‌روزرسانی خدمت",
+    "errors": {
+      "fixValidation": "لطفاً خطاهای اعتبارسنجی زیر را برطرف کنید",
+      "nameRequired": "نام خدمت الزامی است",
+      "nameMinLength": "نام خدمت باید حداقل ۳ کاراکتر باشد",
+      "durationMin": "مدت زمان باید حداقل ۵ دقیقه باشد",
+      "durationRequired": "مدت زمان الزامی است",
+      "priceNegative": "قیمت نمی‌تواند منفی باشد",
+      "priceRequired": "قیمت الزامی است",
+      "noProvider": "اطلاعات ارائه‌دهنده در دسترس نیست",
+      "createFailed": "ایجاد خدمت ناموفق بود",
+      "updateFailed": "به‌روزرسانی خدمت ناموفق بود",
+      "deleteFailed": "حذف خدمت ناموفق بود"
+    }
+  },
+  "staff": {
+    "title": "کارکنان",
+    "staffManagement": "مدیریت کارکنان",
+    "manageYourTeam": "اعضای تیم و برنامه‌های کاری آن‌ها را مدیریت کنید",
+    "addStaff": "افزودن کارمند",
+    "addFirstStaff": "افزودن اولین کارمند",
+    "createStaff": "ایجاد کارمند",
+    "editStaff": "ویرایش کارمند",
+    "firstName": "نام",
+    "firstNamePlaceholder": "علی",
+    "lastName": "نام خانوادگی",
+    "lastNamePlaceholder": "احمدی",
+    "fullName": "نام کامل",
+    "email": "ایمیل",
+    "emailPlaceholder": "ali.ahmadi@example.com",
+    "phone": "تلفن",
+    "phonePlaceholder": "۰۹۱۲۳۴۵۶۷۸۹",
+    "role": "نقش",
+    "hiredAt": "تاریخ استخدام",
+    "backToStaff": "بازگشت به کارکنان",
+    "loadingStaff": "در حال بارگذاری کارکنان...",
+    "noStaffYet": "هنوز کارمندی وجود ندارد",
+    "noStaffMessage": "با افزودن اولین عضو تیم خود شروع کنید.",
+    "noStaffFound": "کارمندی یافت نشد",
+    "noStaffFoundMessage": "هیچ کارمندی با فیلترهای فعلی شما مطابقت ندارد. معیارهای جستجو را تنظیم کنید.",
+    "staffCreatedSuccess": "کارمند با موفقیت ایجاد شد!",
+    "staffUpdatedSuccess": "کارمند با موفقیت به‌روزرسانی شد!",
+    "staffDeletedSuccess": "کارمند با موفقیت حذف شد!",
+    "confirmDelete": "آیا مطمئن هستید که می‌خواهید {name} را حذف کنید؟ این عمل قابل بازگشت نیست.",
+    "confirmDeactivate": "آیا مطمئن هستید که می‌خواهید {name} را غیرفعال کنید؟",
+    "removeStaff": "حذف کارمند",
+    "deactivateStaff": "غیرفعال کردن کارمند",
+    "deactivateReason": "دلیل (اختیاری)",
+    "deactivateReasonPlaceholder": "دلیل غیرفعال‌سازی را وارد کنید...",
+    "totalStaff": "کل کارکنان",
+    "activeStaff": "فعال",
+    "inactiveStaff": "غیرفعال",
+    "avgTenure": "میانگین مدت خدمت",
+    "tenure": "مدت خدمت",
+    "hired": "استخدام شده",
+    "services": "خدمات",
+    "service": "خدمت",
+    "searchPlaceholder": "جستجو بر اساس نام، ایمیل یا تلفن...",
+    "allRoles": "همه نقش‌ها",
+    "active": "فعال",
+    "inactive": "غیرفعال",
+    "deactivate": "غیرفعال کردن",
+    "reactivate": "فعال کردن مجدد",
+    "remove": "حذف",
+    "schedule": "برنامه زمانی",
+    "roles": {
+      "owner": "مالک",
+      "manager": "مدیر",
+      "receptionist": "منشی",
+      "serviceProvider": "ارائه‌دهنده خدمت",
+      "specialist": "متخصص",
+      "assistant": "دستیار",
+      "cleaner": "نظافتچی",
+      "security": "نگهبان",
+      "maintenance": "تعمیرکار"
+    }
   }
 }

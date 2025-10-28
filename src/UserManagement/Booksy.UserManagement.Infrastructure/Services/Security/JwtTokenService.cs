@@ -38,6 +38,8 @@ namespace Booksy.UserManagement.Infrastructure.Services.Security
             string displayName,
             string status,
             IEnumerable<string> roles,
+            string? providerId = null,
+            string? providerStatus = null,
             int expirationHours = 24)
         {
             var claims = new List<Claim>
@@ -50,6 +52,18 @@ namespace Booksy.UserManagement.Infrastructure.Services.Security
                 new(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString()),
                 new(JwtRegisteredClaimNames.Iat, DateTimeOffset.UtcNow.ToUnixTimeSeconds().ToString(), ClaimValueTypes.Integer64)
             };
+
+            // Add providerId claim if user is a provider
+            if (!string.IsNullOrEmpty(providerId))
+            {
+                claims.Add(new Claim("providerId", providerId));
+            }
+
+            // Add provider_status claim if available
+            if (!string.IsNullOrEmpty(providerStatus))
+            {
+                claims.Add(new Claim("provider_status", providerStatus));
+            }
 
             foreach (var role in roles)
             {
@@ -119,6 +133,8 @@ namespace Booksy.UserManagement.Infrastructure.Services.Security
             var expiration = GetTokenExpiration(token);
             return expiration == null || expiration.Value < DateTime.UtcNow;
         }
+
+      
     }
 }
 

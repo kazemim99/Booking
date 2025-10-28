@@ -4,6 +4,7 @@ using Booksy.ServiceCatalog.Api.Models.Requests;
 using Booksy.ServiceCatalog.API.Controllers.V1;
 using Booksy.ServiceCatalog.IntegrationTests.Infrastructure;
 using FluentAssertions;
+using Org.BouncyCastle.Asn1.Ocsp;
 using System.Net;
 using Xunit;
 
@@ -92,15 +93,15 @@ public class ProviderSettingsControllerTests : ServiceCatalogIntegrationTestBase
         };
 
         // Act
-        var response = await PutAsJsonAsync($"/api/v1/providers/{provider.Id.Value}/business-info", request);
+        var response = await PutAsJsonAsync<UpdateBusinessInfoRequest, BusinessInfoResponse>($"/api/v1/providers/{provider.Id.Value}/business-info", request);
 
         // Assert
+        response.Error.Should().BeNull();
         response.StatusCode.Should().Be(HttpStatusCode.OK);
 
-        var result = await GetResponseAsync<BusinessInfoResponse>(response);
-        result.Should().NotBeNull();
-        result!.BusinessName.Should().Be("Updated Business Name");
-        result.Email.Should().Be("updated@test.com");
+        response.data.Should().NotBeNull();
+        response.data!.BusinessName.Should().Be("Updated Business Name");
+        response.data.Email.Should().Be("updated@test.com");
     }
 
     [Fact]
@@ -205,15 +206,14 @@ public class ProviderSettingsControllerTests : ServiceCatalogIntegrationTestBase
         };
 
         // Act
-        var response = await PutAsJsonAsync($"/api/v1/providers/{provider.Id.Value}/location", request);
+        var response = await PutAsJsonAsync<UpdateLocationRequest, LocationResponse>($"/api/v1/providers/{provider.Id.Value}/location", request);
 
         // Assert
         response.StatusCode.Should().Be(HttpStatusCode.OK);
 
-        var result = await GetResponseAsync<LocationResponse>(response);
-        result.Should().NotBeNull();
-        result!.AddressLine1.Should().Be("456 New Street");
-        result.City.Should().Be("Tehran");
+        response.data.Should().NotBeNull();
+        response.data!.AddressLine1.Should().Be("456 New Street");
+        response.data.City.Should().Be("Tehran");
     }
 
     [Fact]
@@ -311,9 +311,9 @@ public class ProviderSettingsControllerTests : ServiceCatalogIntegrationTestBase
 
         var request = new UpdateWorkingHoursRequest
         {
-            BusinessHours = new Dictionary<int, DayHoursRequest?>
+            BusinessHours = new Dictionary<string, DayHoursRequest?>
             {
-                { 1, new DayHoursRequest
+                { "Sunday", new DayHoursRequest
                     {
                         DayOfWeek = 1,
                         IsOpen = true,
@@ -322,7 +322,7 @@ public class ProviderSettingsControllerTests : ServiceCatalogIntegrationTestBase
                         Breaks = new List<BreakTimeRequest>()
                     }
                 },
-                { 2, new DayHoursRequest
+                { "Monday", new DayHoursRequest
                     {
                         DayOfWeek = 2,
                         IsOpen = true,
@@ -331,7 +331,7 @@ public class ProviderSettingsControllerTests : ServiceCatalogIntegrationTestBase
                         Breaks = new List<BreakTimeRequest>()
                     }
                 },
-                { 0, null } // Sunday closed
+                { "Saturday", null } // Sunday closed
             }
         };
 
@@ -339,6 +339,7 @@ public class ProviderSettingsControllerTests : ServiceCatalogIntegrationTestBase
         var response = await PutAsJsonAsync($"/api/v1/providers/{provider.Id.Value}/working-hours", request);
 
         // Assert
+        response.Error.Should().BeNull();
         response.StatusCode.Should().Be(HttpStatusCode.OK);
     }
 
@@ -351,9 +352,9 @@ public class ProviderSettingsControllerTests : ServiceCatalogIntegrationTestBase
 
         var request = new UpdateWorkingHoursRequest
         {
-            BusinessHours = new Dictionary<int, DayHoursRequest?>
+            BusinessHours = new Dictionary<string, DayHoursRequest?>
             {
-                { 1, new DayHoursRequest
+                { "Sunday", new DayHoursRequest
                     {
                         DayOfWeek = 1,
                         IsOpen = true,
@@ -383,7 +384,7 @@ public class ProviderSettingsControllerTests : ServiceCatalogIntegrationTestBase
 
         var request = new UpdateWorkingHoursRequest
         {
-            BusinessHours = new Dictionary<int, DayHoursRequest?>()
+            BusinessHours = new Dictionary<string, DayHoursRequest?>()
         };
 
         // Act
@@ -443,24 +444,23 @@ public class ProviderSettingsControllerTests : ServiceCatalogIntegrationTestBase
             ServiceName = "New Service",
             Description = "A new service offering",
             DurationHours = 1,
-            DurationMinutes = 30,
-            Price = 100.00m,
+            Duration = 30,
+            BasePrice = 100.00m,
             Currency = "IRR",
             Category = "Beauty",
             IsMobileService = false
         };
 
         // Act
-        var response = await PostAsJsonAsync($"/api/v1/providers/{provider.Id.Value}/services", request);
+        var response = await PostAsJsonAsync<AddServiceRequest, ServiceDetailResponse>($"/api/v1/providers/{provider.Id.Value}/services", request);
 
         // Assert
         response.StatusCode.Should().Be(HttpStatusCode.Created);
 
-        var result = await GetResponseAsync<ServiceDetailResponse>(response);
-        result.Should().NotBeNull();
-        result!.Name.Should().Be("New Service");
-        result.Price.Should().Be(100.00m);
-        result.DurationMinutes.Should().Be(90);
+        response.data.Should().NotBeNull();
+        response.data!.Name.Should().Be("New Service");
+        response.data.Price.Should().Be(100.00m);
+        response.data.DurationMinutes.Should().Be(90);
     }
 
     [Fact]
@@ -474,8 +474,8 @@ public class ProviderSettingsControllerTests : ServiceCatalogIntegrationTestBase
         {
             ServiceName = "", // Invalid: empty
             DurationHours = 0,
-            DurationMinutes = 0,
-            Price = -10.00m // Invalid: negative
+            Duration = 0,
+            BasePrice = -10.00m // Invalid: negative
         };
 
         // Act
@@ -498,7 +498,7 @@ public class ProviderSettingsControllerTests : ServiceCatalogIntegrationTestBase
         {
             ServiceName = "Hacked Service",
             DurationHours = 1,
-            Price = 50.00m
+            BasePrice = 50.00m
         };
 
         // Act
@@ -530,17 +530,16 @@ public class ProviderSettingsControllerTests : ServiceCatalogIntegrationTestBase
         };
 
         // Act
-        var response = await PutAsJsonAsync(
+        var response = await PutAsJsonAsync<UpdateProviderServiceRequest,ServiceDetailResponse>(
             $"/api/v1/providers/{provider.Id.Value}/services/{serviceToUpdate.Id.Value}",
             request);
 
         // Assert
         response.StatusCode.Should().Be(HttpStatusCode.OK);
 
-        var result = await GetResponseAsync<ServiceDetailResponse>(response);
-        result.Should().NotBeNull();
-        result!.Name.Should().Be("Updated Service Name");
-        result.Price.Should().Be(150.00m);
+        response.data.Should().NotBeNull();
+        response.data!.Name.Should().Be("Updated Service Name");
+        response.data.Price.Should().Be(150.00m);
     }
 
     [Fact]

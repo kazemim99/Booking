@@ -74,6 +74,10 @@ export interface RegisterProviderFullResponse {
   servicesCount: number
   staffCount: number
   message: string
+  // Authentication tokens (returned on registration)
+  accessToken?: string
+  refreshToken?: string
+  expiresIn?: number
 }
 
 class ProviderRegistrationService {

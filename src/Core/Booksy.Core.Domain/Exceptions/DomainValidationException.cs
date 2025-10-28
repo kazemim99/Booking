@@ -12,7 +12,7 @@ namespace Booksy.Core.Domain.Exceptions
     public sealed class DomainValidationException : DomainException
     {
         public override string ErrorCode => "DOMAIN_VALIDATION_FAILED";
-        public IReadOnlyDictionary<string, string[]> ValidationErrors { get; }
+        public IReadOnlyDictionary<string, string[]> ValidationErrors { get; set; }
 
         public DomainValidationException(string message, Dictionary<string, string[]> validationErrors)
             : base(message)

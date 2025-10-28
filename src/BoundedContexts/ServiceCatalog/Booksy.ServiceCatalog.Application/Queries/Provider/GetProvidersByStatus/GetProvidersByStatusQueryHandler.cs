@@ -37,10 +37,15 @@ namespace Booksy.ServiceCatalog.Application.Queries.Provider.GetProvidersByStatu
                     City = provider.Address.City,
                     State = provider.Address.State,
                     Country = provider.Address.Country,
-                    Email = provider.ContactInfo.Email.Value,
-                    PrimaryPhone = provider.ContactInfo.PrimaryPhone.Value,
+                    Email = provider.ContactInfo.Email?.Value ?? string.Empty,
+                    PrimaryPhone = provider.ContactInfo.PrimaryPhone?.Value ?? string.Empty,
+                    LogoUrl = provider.Profile.LogoUrl,
                     AllowOnlineBooking = provider.AllowOnlineBooking,
                     OffersMobileServices = provider.OffersMobileServices,
+                    IsVerified = provider.VerifiedAt.HasValue,
+                    AverageRating = provider.AverageRating,
+                    TotalReviews = 0, // TODO: Add review count when reviews are implemented
+                    ServiceCount = provider.Services.Count,
                     RegisteredAt = provider.RegisteredAt,
                     LastActiveAt = provider.LastActiveAt
                 })

@@ -33,7 +33,7 @@ namespace Booksy.ServiceCatalog.Application.Commands.Provider.UpdateContactInfo
         {
             _logger.LogInformation("Updating contact info for provider: {ProviderId}", request.ProviderId);
 
-            var providerId = ProviderId.Create(request.ProviderId);
+            var providerId = ProviderId.From(request.ProviderId);
             var provider = await _providerReadRepository.GetByIdAsync(providerId, cancellationToken);
 
             if (provider == null)

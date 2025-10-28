@@ -113,31 +113,32 @@ namespace Booksy.ServiceCatalog.Application.Commands.Provider.RegisterProviderFu
             // STEP 4: Add Business Hours
             // ====================================
 
+            var hours = new Dictionary<DayOfWeek, (TimeOnly? Open, TimeOnly? Close)>();
+
             foreach (var (dayOfWeekInt, dayHours) in request.BusinessHours)
             {
-                if (dayHours == null || !dayHours.IsOpen)
-                    continue;
+                var day = (DayOfWeek)dayOfWeekInt;
 
-                if (dayHours.OpenTime == null || dayHours.CloseTime == null)
+                if (dayHours?.IsOpen == true && dayHours.OpenTime != null && dayHours.CloseTime != null)
                 {
-                    _logger.LogWarning(
-                        "Day {DayOfWeek} marked as open but missing times. Skipping.",
-                        dayOfWeekInt);
-                    continue;
+                    var open = new TimeOnly(dayHours.OpenTime.Hours, dayHours.OpenTime.Minutes);
+                    var close = new TimeOnly(dayHours.CloseTime.Hours, dayHours.CloseTime.Minutes);
+                    hours[day] = (open, close);
+
+                    _logger.LogDebug(
+                        "Set business hours for {DayOfWeek}: {OpenTime} - {CloseTime}",
+                        day,
+                        open,
+                        close);
                 }
-
-                var dayOfWeek = (DayOfWeek)dayOfWeekInt;
-                var openTime = new TimeOnly(dayHours.OpenTime.Hours, dayHours.OpenTime.Minutes);
-                var closeTime = new TimeOnly(dayHours.CloseTime.Hours, dayHours.CloseTime.Minutes);
-
-                provider.SetBusinessHours(dayOfWeek, openTime, closeTime);
-
-                _logger.LogDebug(
-                    "Set business hours for {DayOfWeek}: {OpenTime} - {CloseTime}",
-                    dayOfWeek,
-                    openTime,
-                    closeTime);
+                else
+                {
+                    hours[day] = (null, null);
+                    _logger.LogDebug("Set {DayOfWeek} as closed", day);
+                }
             }
+
+            provider.SetBusinessHours(hours);
 
             // ====================================
             // STEP 5: Save Provider First
@@ -205,7 +206,7 @@ namespace Booksy.ServiceCatalog.Application.Commands.Provider.RegisterProviderFu
                     // Determine role
                     var role = DetermineStaffRole(memberDto.Position);
 
-                    provider.AddStaff(firstName, lastName, staffEmail, role, staffPhone);
+                    provider.AddStaff(firstName, lastName, role, staffPhone);
 
                     staffAdded++;
 

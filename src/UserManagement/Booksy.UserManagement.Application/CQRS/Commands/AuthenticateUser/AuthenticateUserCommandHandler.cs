@@ -12,17 +12,20 @@ namespace Booksy.UserManagement.Application.CQRS.Commands.AuthenticateUser
         private readonly IUserRepository _userRepository;
         private readonly IJwtTokenService _jwtTokenService;
         private readonly IAuditUserService _auditService;
+        private readonly IProviderInfoService _providerInfoService;
         private readonly ILogger<AuthenticateUserCommandHandler> _logger;
 
         public AuthenticateUserCommandHandler(
             IUserRepository userWriteRepository,
             IJwtTokenService jwtTokenService,
             IAuditUserService auditService,
+            IProviderInfoService providerInfoService,
             ILogger<AuthenticateUserCommandHandler> logger)
         {
             _userRepository = userWriteRepository;
             _jwtTokenService = jwtTokenService;
             _auditService = auditService;
+            _providerInfoService = providerInfoService;
             _logger = logger;
         }
 
@@ -56,6 +59,29 @@ namespace Booksy.UserManagement.Application.CQRS.Commands.AuthenticateUser
 
                 await _userRepository.UpdateAsync(user, cancellationToken);
 
+                // Query provider information if user has Provider role
+                string? providerId = null;
+                string? providerStatus = null;
+                if (authResult.Roles.Contains("Provider") || authResult.Roles.Contains("ServiceProvider"))
+                {
+                    _logger.LogInformation("User has Provider role, querying provider info for UserId: {UserId}", user.Id);
+                    var providerInfo = await _providerInfoService.GetProviderByOwnerIdAsync(
+                        user.Id.Value,
+                        cancellationToken);
+
+                    if (providerInfo != null)
+                    {
+                        providerId = providerInfo.ProviderId.ToString();
+                        providerStatus = providerInfo.Status;
+                        _logger.LogInformation("Provider found: ProviderId={ProviderId}, Status={Status}",
+                            providerId, providerInfo.Status);
+                    }
+                    else
+                    {
+                        _logger.LogInformation("No provider found for UserId: {UserId}", user.Id);
+                    }
+                }
+
                 // Generate JWT token
                 var tokenExpirationHours = request.RememberMe ? 168 : 24; // 7 days or 1 day
                 var accessToken = _jwtTokenService.GenerateAccessToken(
@@ -65,6 +91,8 @@ namespace Booksy.UserManagement.Application.CQRS.Commands.AuthenticateUser
                     user.Profile.GetDisplayName(),
                     user.Status.ToString(),
                     authResult.Roles,
+                    providerId,
+                    providerStatus,
                     tokenExpirationHours);
 
                 await _auditService.LogSuccessfulLoginAsync(

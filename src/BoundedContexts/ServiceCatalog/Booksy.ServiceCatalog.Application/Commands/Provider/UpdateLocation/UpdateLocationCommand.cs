@@ -7,7 +7,7 @@ public sealed record UpdateLocationCommand(
     string AddressLine1,
     string? AddressLine2,
     string City,
-    string? State,
+    string State,
     string PostalCode,
     string Country,
     double? Latitude,
@@ -20,7 +20,11 @@ public sealed record UpdateLocationResult(
     Guid ProviderId,
     string AddressLine1,
     string City,
+    string State,
     string PostalCode,
+    string Country,
     double? Latitude,
     double? Longitude,
-    DateTime UpdatedAt);
+    DateTime UpdatedAt)
+{
+}

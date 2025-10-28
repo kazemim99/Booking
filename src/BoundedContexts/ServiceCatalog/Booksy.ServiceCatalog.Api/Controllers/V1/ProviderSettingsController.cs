@@ -1,20 +1,25 @@
-using Booksy.Core.Application.DTOs;
-using Booksy.ServiceCatalog.API.Models.Requests;
-using Booksy.ServiceCatalog.API.Models.Responses;
 using Booksy.ServiceCatalog.Api.Models.Requests;
-using Booksy.ServiceCatalog.Api.Models.Responses;
 using Booksy.ServiceCatalog.Application.Commands.Provider.UpdateBusinessInfo;
 using Booksy.ServiceCatalog.Application.Commands.Provider.UpdateLocation;
 using Booksy.ServiceCatalog.Application.Commands.Provider.UpdateWorkingHours;
-using Booksy.ServiceCatalog.Application.Commands.Service.AddProviderService;
 using Booksy.ServiceCatalog.Application.Commands.Service.UpdateProviderService;
 using Booksy.ServiceCatalog.Application.Commands.Service.DeleteProviderService;
 using Booksy.ServiceCatalog.Application.Queries.Provider.GetProviderById;
+using Booksy.ServiceCatalog.Application.Commands.Provider.UpdateBusinessHours;
+using Booksy.ServiceCatalog.Application.Commands.Provider.AddHoliday;
+using Booksy.ServiceCatalog.Application.Commands.Provider.DeleteHoliday;
+using Booksy.ServiceCatalog.Application.Commands.Provider.AddException;
+using Booksy.ServiceCatalog.Application.Commands.Provider.DeleteException;
+using Booksy.ServiceCatalog.Application.Queries.Provider.GetBusinessHours;
+using Booksy.ServiceCatalog.Application.Queries.Provider.GetHolidays;
+using Booksy.ServiceCatalog.Application.Queries.Provider.GetExceptions;
+using Booksy.ServiceCatalog.Application.Queries.Provider.GetAvailability;
 using Booksy.ServiceCatalog.Domain.Repositories;
 using MediatR;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using static Booksy.API.Middleware.ExceptionHandlingMiddleware;
+using Booksy.ServiceCatalog.Application.Commands.Service.AddProviderService;
 
 namespace Booksy.ServiceCatalog.API.Controllers.V1;
 
@@ -45,6 +50,7 @@ public class ProviderSettingsController : ControllerBase
     }
 
     #region Business Info
+
 
     /// <summary>
     /// Get provider business information
@@ -122,6 +128,7 @@ public class ProviderSettingsController : ControllerBase
 
         var response = new BusinessInfoResponse
         {
+
             BusinessName = result.BusinessName,
             Description = request.Description,
             PhoneNumber = request.PhoneNumber,
@@ -163,6 +170,7 @@ public class ProviderSettingsController : ControllerBase
         var response = new LocationResponse
         {
             AddressLine1 = provider.Address?.Street ?? "",
+            Street = provider.Address?.Street ?? "",
             City = provider.Address?.City ?? "",
             State = provider.Address?.State,
             PostalCode = provider.Address?.PostalCode ?? "",
@@ -212,7 +220,10 @@ public class ProviderSettingsController : ControllerBase
         var response = new LocationResponse
         {
             AddressLine1 = result.AddressLine1,
+            Street = result.AddressLine1,
             City = result.City,
+            State = result.State,
+            Country  =result.Country,
             PostalCode = result.PostalCode,
             Latitude = result.Latitude,
             Longitude = result.Longitude
@@ -252,14 +263,15 @@ public class ProviderSettingsController : ControllerBase
         var response = new WorkingHoursResponse
         {
             BusinessHours = provider.BusinessHours?.ToDictionary(
-                kvp => (int)kvp.Key,
+                kvp => kvp.Key.ToString(),
                 kvp => kvp.Value != null ? new BusinessHoursDetailResponse
                 {
                     DayOfWeek = (int)kvp.Key,
                     IsOpen = true,
                     OpenTime = kvp.Value.OpenTime?.ToString("HH:mm") ?? "",
                     CloseTime = kvp.Value.CloseTime?.ToString("HH:mm") ?? ""
-                } : null) ?? new Dictionary<int, BusinessHoursDetailResponse?>()
+                } : null) ?? [],
+            
         };
 
         return Ok(response);
@@ -284,7 +296,7 @@ public class ProviderSettingsController : ControllerBase
         }
 
         // Map request to command DTOs
-        var businessHours = new Dictionary<int, DayHoursDto?>();
+        var businessHours = new Dictionary<string, DayHoursDto?>();
         foreach (var (dayOfWeek, hours) in request.BusinessHours)
         {
             if (hours == null || !hours.IsOpen)
@@ -309,7 +321,267 @@ public class ProviderSettingsController : ControllerBase
         _logger.LogInformation("Working hours updated for provider {ProviderId}. Working days: {WorkingDaysCount}",
             id, result.WorkingDaysCount);
 
-        return Ok(new { workingDaysCount = result.WorkingDaysCount, updatedAt = result.UpdatedAt });
+        return Ok(new UpdateWorkingHours
+        { WorkingDaysCount = result.WorkingDaysCount, UpdatedAt = result.UpdatedAt,
+            BusinessHours = request.BusinessHours });
+    }
+
+    #endregion
+
+    #region Business Hours (New API with Breaks Support)
+
+    /// <summary>
+    /// Get provider business hours with breaks
+    /// </summary>
+    [HttpGet("{id:guid}/business-hours")]
+    [Authorize]
+    [ProducesResponseType(typeof(Application.Queries.Provider.GetBusinessHours.BusinessHoursViewModel), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
+    public async Task<IActionResult> GetBusinessHours(
+        [FromRoute] Guid id,
+        CancellationToken cancellationToken = default)
+    {
+     
+
+        var query = new GetBusinessHoursQuery(id);
+        var result = await _mediator.Send(query, cancellationToken);
+
+        return Ok(result);
+    }
+
+    /// <summary>
+    /// Update provider business hours with breaks
+    /// </summary>
+    [HttpPut("{id:guid}/business-hours")]
+    [Authorize]
+    [ProducesResponseType(typeof(UpdateBusinessHoursResult), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ApiErrorResult), StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
+    public async Task<IActionResult> UpdateBusinessHours(
+        [FromRoute] Guid id,
+        [FromBody] UpdateBusinessHoursRequestDto request,
+        CancellationToken cancellationToken = default)
+    {
+        // Authorization check
+        if (!await CanManageProviderAsync(id))
+        {
+            _logger.LogWarning("User {UserId} attempted to update provider {ProviderId} business hours without permission",
+                GetCurrentUserId(), id);
+            return Forbid();
+        }
+
+        var command = new UpdateBusinessHoursCommand(id, request.BusinessHours);
+        var result = await _mediator.Send(command, cancellationToken);
+
+        _logger.LogInformation("Business hours updated for provider {ProviderId}", id);
+
+        return Ok(result);
+    }
+
+    #endregion
+
+    #region Holidays
+
+    /// <summary>
+    /// Get all holidays for provider
+    /// </summary>
+    [HttpGet("{id:guid}/holidays")]
+    [Authorize]
+    [ProducesResponseType(typeof(HolidaysViewModel), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
+    public async Task<IActionResult> GetHolidays(
+        [FromRoute] Guid id,
+        CancellationToken cancellationToken = default)
+    {
+      
+
+        var query = new GetHolidaysQuery(id);
+        var result = await _mediator.Send(query, cancellationToken);
+
+        return Ok(result);
+    }
+
+    /// <summary>
+    /// Add a holiday
+    /// </summary>
+    [HttpPost("{id:guid}/holidays")]
+    [ProducesResponseType(typeof(AddHolidayResult), StatusCodes.Status201Created)]
+    [ProducesResponseType(typeof(ApiErrorResult), StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
+    public async Task<IActionResult> AddHoliday(
+        [FromRoute] Guid id,
+        [FromBody] AddHolidayRequestDto request,
+        CancellationToken cancellationToken = default)
+    {
+        if (!await CanManageProviderAsync(id))
+        {
+            return Forbid();
+        }
+
+        var command = new AddHolidayCommand(
+            id,
+            request.Date,
+            request.Reason,
+            request.IsRecurring,
+            request.Pattern);
+
+        var result = await _mediator.Send(command, cancellationToken);
+
+        _logger.LogInformation("Holiday added for provider {ProviderId}: {Date} - {Reason}",
+            id, request.Date, request.Reason);
+
+        return CreatedAtAction(nameof(GetHolidays), new { id }, result);
+    }
+
+    /// <summary>
+    /// Delete a holiday
+    /// </summary>
+    [HttpDelete("{id:guid}/holidays/{holidayId:guid}")]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
+    public async Task<IActionResult> DeleteHoliday(
+        [FromRoute] Guid id,
+        [FromRoute] Guid holidayId,
+        CancellationToken cancellationToken = default)
+    {
+        if (!await CanManageProviderAsync(id))
+        {
+            return Forbid();
+        }
+
+        var command = new DeleteHolidayCommand(id, holidayId);
+        await _mediator.Send(command, cancellationToken);
+
+        _logger.LogInformation("Holiday {HolidayId} deleted from provider {ProviderId}", holidayId, id);
+
+        return NoContent();
+    }
+
+    #endregion
+
+    #region Exceptions
+
+    /// <summary>
+    /// Get all exception schedules for provider
+    /// </summary>
+    [HttpGet("{id:guid}/exceptions")]
+    [ProducesResponseType(typeof(ExceptionsViewModel), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
+    public async Task<IActionResult> GetExceptions(
+        [FromRoute] Guid id,
+        CancellationToken cancellationToken = default)
+    {
+        if (!await CanManageProviderAsync(id))
+        {
+            return Forbid();
+        }
+
+        var query = new GetExceptionsQuery(id);
+        var result = await _mediator.Send(query, cancellationToken);
+
+        return Ok(result);
+    }
+
+    /// <summary>
+    /// Add an exception schedule
+    /// </summary>
+    [HttpPost("{id:guid}/exceptions")]
+    [ProducesResponseType(typeof(AddExceptionResult), StatusCodes.Status201Created)]
+    [ProducesResponseType(typeof(ApiErrorResult), StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
+    public async Task<IActionResult> AddException(
+        [FromRoute] Guid id,
+        [FromBody] AddExceptionRequestDto request,
+        CancellationToken cancellationToken = default)
+    {
+        if (!await CanManageProviderAsync(id))
+        {
+            return Forbid();
+        }
+
+        var command = new AddExceptionCommand(
+            id,
+            request.Date,
+            request.OpenTime,
+            request.CloseTime,
+            request.Reason);
+
+        var result = await _mediator.Send(command, cancellationToken);
+
+        _logger.LogInformation("Exception added for provider {ProviderId}: {Date} - {Reason}",
+            id, request.Date, request.Reason);
+
+        return CreatedAtAction(nameof(GetExceptions), new { id }, result);
+    }
+
+    /// <summary>
+    /// Delete an exception schedule
+    /// </summary>
+    [HttpDelete("{id:guid}/exceptions/{exceptionId:guid}")]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
+    public async Task<IActionResult> DeleteException(
+        [FromRoute] Guid id,
+        [FromRoute] Guid exceptionId,
+        CancellationToken cancellationToken = default)
+    {
+        if (!await CanManageProviderAsync(id))
+        {
+            return Forbid();
+        }
+
+        var command = new DeleteExceptionCommand(id, exceptionId);
+        await _mediator.Send(command, cancellationToken);
+
+        _logger.LogInformation("Exception {ExceptionId} deleted from provider {ProviderId}", exceptionId, id);
+
+        return NoContent();
+    }
+
+    #endregion
+
+    #region Availability
+
+    /// <summary>
+    /// Get provider availability for a specific date
+    /// </summary>
+    [HttpGet("{id:guid}/availability")]
+    [ProducesResponseType(typeof(AvailabilityViewModel), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
+    public async Task<IActionResult> GetAvailability(
+        [FromRoute] Guid id,
+        [FromQuery] string date,
+        CancellationToken cancellationToken = default)
+    {
+        if (!await CanManageProviderAsync(id))
+        {
+            return Forbid();
+        }
+
+        if (!DateOnly.TryParse(date, out var dateOnly))
+        {
+            return BadRequest(new ApiErrorResult("Invalid date format. Use yyyy-MM-dd format.", "INVALID_DATE_FORMAT")
+            {
+                Errors = new Dictionary<string, string[]>
+                {
+                    ["date"] = new[] { "Date must be in yyyy-MM-dd format" }
+                }
+            });
+        }
+
+        var query = new GetAvailabilityQuery(id, dateOnly);
+        var result = await _mediator.Send(query, cancellationToken);
+
+        return Ok(result);
     }
 
     #endregion
@@ -332,7 +604,7 @@ public class ProviderSettingsController : ControllerBase
             return Forbid();
         }
 
-        var providerId = ServiceCatalog.Domain.ValueObjects.ProviderId.Create(id);
+        var providerId = ServiceCatalog.Domain.ValueObjects.ProviderId.From(id);
         var services = await _serviceReadRepository.GetByProviderIdAsync(providerId, cancellationToken);
 
         var response = services.Select(s => new ServiceDetailResponse
@@ -374,8 +646,8 @@ public class ProviderSettingsController : ControllerBase
             request.ServiceName,
             request.Description,
             request.DurationHours,
-            request.DurationMinutes,
-            request.Price,
+            request.Duration,
+            request.BasePrice,
             request.Currency ?? "IRR",
             request.Category,
             request.IsMobileService);
@@ -525,11 +797,13 @@ public sealed class LocationResponse
     public string Country { get; set; } = "Iran";
     public double? Latitude { get; set; }
     public double? Longitude { get; set; }
+    public string Street { get; set; }
 }
 
 public sealed class WorkingHoursResponse
 {
-    public Dictionary<int, BusinessHoursDetailResponse?> BusinessHours { get; set; } = new();
+    public Dictionary<string, BusinessHoursDetailResponse?> BusinessHours { get; set; } = new();
+    //public Dictionary<string, DayScheduleRequest> WorkingHours { get; set; }
 }
 
 public sealed class BusinessHoursDetailResponse
@@ -562,8 +836,8 @@ public sealed class AddServiceRequest
     public string ServiceName { get; set; } = string.Empty;
     public string? Description { get; set; }
     public int DurationHours { get; set; }
-    public int DurationMinutes { get; set; }
-    public decimal Price { get; set; }
+    public int Duration { get; set; }
+    public decimal BasePrice { get; set; }
     public string? Currency { get; set; }
     public string? Category { get; set; }
     public bool IsMobileService { get; set; }
@@ -579,6 +853,36 @@ public sealed class UpdateProviderServiceRequest
     public string? Currency { get; set; }
     public string? Category { get; set; }
     public bool IsMobileService { get; set; }
+}
+
+/// <summary>
+/// Request to update business hours with breaks
+/// </summary>
+public sealed class UpdateBusinessHoursRequestDto
+{
+    public List<BusinessHoursDayDto> BusinessHours { get; set; } = new();
+}
+
+/// <summary>
+/// Request to add a holiday
+/// </summary>
+public sealed class AddHolidayRequestDto
+{
+    public DateOnly Date { get; set; }
+    public string Reason { get; set; } = string.Empty;
+    public bool IsRecurring { get; set; }
+    public string? Pattern { get; set; }
+}
+
+/// <summary>
+/// Request to add an exception schedule
+/// </summary>
+public sealed class AddExceptionRequestDto
+{
+    public DateOnly Date { get; set; }
+    public TimeOnly? OpenTime { get; set; }
+    public TimeOnly? CloseTime { get; set; }
+    public string Reason { get; set; } = string.Empty;
 }
 
 #endregion

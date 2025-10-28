@@ -117,7 +117,6 @@ public abstract class EfRepositoryBase<TEntity, TId, TContext> : IReadRepository
         DbSet.Update(entity);
     }
 
-    // NEW: Pagination implementations
     /// <summary>
     /// Get paginated results using specification and pagination request
     /// </summary>

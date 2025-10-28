@@ -30,17 +30,12 @@ namespace Booksy.ServiceCatalog.Application.Commands.Provider.RegisterProvider
                 .IsInEnum()
                 .WithMessage("Valid provider type is required");
 
-            RuleFor(x => x.Email)
-                .NotEmpty()
-                .WithMessage("Email is required")
-                .EmailAddress()
-                .WithMessage("Valid email address is required");
+
 
             RuleFor(x => x.PrimaryPhone)
                 .NotEmpty()
                 .WithMessage("Primary phone is required")
-                .MinimumLength(10)
-                .WithMessage("Phone number must be at least 10 digits");
+                    .Matches(@"\d").WithMessage("Invalid phone number format");
 
             RuleFor(x => x.Street)
                 .NotEmpty()

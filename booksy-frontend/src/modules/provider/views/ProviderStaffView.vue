@@ -1,17 +1,7 @@
 <template>
-  <div class="provider-staff">
-    <h1>Manage Staff</h1>
-    <p>Manage your team members</p>
-    <!-- TODO: Implement staff management -->
-  </div>
+  <StaffListView />
 </template>
 
 <script setup lang="ts">
-// TODO: Implement staff logic
+import StaffListView from './staff/StaffListView.vue'
 </script>
-
-<style scoped>
-.provider-staff {
-  padding: 2rem;
-}
-</style>

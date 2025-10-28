@@ -14,6 +14,7 @@ namespace Booksy.ServiceCatalog.Application.Commands.Provider.RegisterProvider
         Guid OwnerId,
         string BusinessName,
         string Description,
+        string Email,
         ProviderType ProviderType,
         string PrimaryPhone,
         string? SecondaryPhone,
@@ -27,6 +28,5 @@ namespace Booksy.ServiceCatalog.Application.Commands.Provider.RegisterProvider
         double? Longitude = null,
         Guid? IdempotencyKey = null) : ICommand<RegisterProviderResult>
     {
-        public string Email { get; internal set; }
     }
 }

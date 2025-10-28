@@ -28,7 +28,7 @@ namespace Booksy.ServiceCatalog.Application.Queries.Provider.GetProviderById
         {
             _logger.LogInformation("Getting provider details for ID: {ProviderId}", request.ProviderId);
 
-            var providerId = ProviderId.Create(request.ProviderId);
+            var providerId = ProviderId.From(request.ProviderId);
             var provider = await _providerRepository.GetByIdAsync(providerId, cancellationToken);
 
             if (provider == null)
@@ -65,8 +65,8 @@ namespace Booksy.ServiceCatalog.Application.Queries.Provider.GetProviderById
                     {
                         DayOfWeek = bh.DayOfWeek,
                         IsOpen = bh.IsOpen,
-                        OpenTime = bh.OperatingHours?.StartTime,
-                        CloseTime = bh.OperatingHours?.EndTime
+                        OpenTime = bh.OpenTime,
+                        CloseTime = bh.CloseTime
                     } : null),
                 WebsiteUrl = provider.ContactInfo.Website,
                 AllowOnlineBooking = provider.AllowOnlineBooking,

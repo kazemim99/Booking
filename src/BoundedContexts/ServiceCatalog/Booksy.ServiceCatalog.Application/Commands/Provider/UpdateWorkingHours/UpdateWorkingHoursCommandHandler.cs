@@ -8,16 +8,13 @@ namespace Booksy.ServiceCatalog.Application.Commands.Provider.UpdateWorkingHours
 public sealed class UpdateWorkingHoursCommandHandler : ICommandHandler<UpdateWorkingHoursCommand, UpdateWorkingHoursResult>
 {
     private readonly IProviderWriteRepository _providerWriteRepository;
-    private readonly IProviderReadRepository _providerReadRepository;
     private readonly ILogger<UpdateWorkingHoursCommandHandler> _logger;
 
     public UpdateWorkingHoursCommandHandler(
         IProviderWriteRepository providerWriteRepository,
-        IProviderReadRepository providerReadRepository,
         ILogger<UpdateWorkingHoursCommandHandler> logger)
     {
         _providerWriteRepository = providerWriteRepository;
-        _providerReadRepository = providerReadRepository;
         _logger = logger;
     }
 
@@ -33,47 +30,47 @@ public sealed class UpdateWorkingHoursCommandHandler : ICommandHandler<UpdateWor
         ValidateRequest(request);
 
         // Get provider
-        var providerId = Domain.ValueObjects.ProviderId.Create(request.ProviderId);
-        var provider = await _providerReadRepository.GetByIdAsync(providerId, cancellationToken);
+        var providerId = ProviderId.From(request.ProviderId);
+        var provider = await _providerWriteRepository.GetByIdAsync(providerId, cancellationToken);
 
         if (provider == null)
         {
             throw new KeyNotFoundException($"Provider with ID {request.ProviderId} not found");
         }
 
-        // Clear existing business hours
+        // Convert request to dictionary for SetBusinessHours
+        var hours = new Dictionary<DayOfWeek, (TimeOnly? Open, TimeOnly? Close)>();
 
-        // Add new business hours
-        int workingDaysCount = 0;
-        foreach (var (dayOfWeekInt, dayHours) in request.BusinessHours)
+        foreach (var (dayInt, dayHours) in request.BusinessHours)
         {
-            if (dayHours == null || !dayHours.IsOpen)
-                continue;
+            var day = Enum.Parse<DayOfWeek>(dayInt);
 
-            if (dayHours.OpenTime == null || dayHours.CloseTime == null)
+            if (dayHours?.IsOpen == true && dayHours.OpenTime != null && dayHours.CloseTime != null)
             {
-                _logger.LogWarning(
-                    "Day {DayOfWeek} marked as open but missing times. Skipping.",
-                    dayOfWeekInt);
-                continue;
+                var open = new TimeOnly(dayHours.OpenTime.Hours, dayHours.OpenTime.Minutes);
+                var close = new TimeOnly(dayHours.CloseTime.Hours, dayHours.CloseTime.Minutes);
+                hours[day] = (open, close);
+
+                _logger.LogDebug(
+                    "Set business hours for {DayOfWeek}: {OpenTime} - {CloseTime}",
+                    day,
+                    open,
+                    close);
             }
-
-            var dayOfWeek = (DayOfWeek)dayOfWeekInt;
-            var openTime = new TimeOnly(dayHours.OpenTime.Hours, dayHours.OpenTime.Minutes);
-            var closeTime = new TimeOnly(dayHours.CloseTime.Hours, dayHours.CloseTime.Minutes);
-
-            provider.SetBusinessHours(dayOfWeek, openTime, closeTime);
-            workingDaysCount++;
-
-            _logger.LogDebug(
-                "Set business hours for {DayOfWeek}: {OpenTime} - {CloseTime}",
-                dayOfWeek,
-                openTime,
-                closeTime);
+            else
+            {
+                hours[day] = (null, null);
+                _logger.LogDebug("Set {DayOfWeek} as closed", day);
+            }
         }
 
+        // Simple replacement - no complex tracking!
+        provider.SetBusinessHours(hours);
+
         // Save changes
-        await _providerWriteRepository.SaveProviderAsync(provider, cancellationToken);
+        await _providerWriteRepository.UpdateProviderAsync(provider, cancellationToken);
+
+        var workingDaysCount = provider.BusinessHours.Count(h => h.IsOpen);
 
         _logger.LogInformation(
             "Working hours updated successfully for provider {ProviderId}. Working days: {WorkingDaysCount}",

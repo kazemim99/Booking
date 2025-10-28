@@ -19,6 +19,10 @@ namespace Booksy.ServiceCatalog.Infrastructure.Persistence.Configurations
             // PRIMARY KEY
             // ========================================
             builder.HasKey(s => s.Id);
+
+            // Ignore Version property (not using optimistic concurrency for now)
+            builder.Ignore(s => s.Version);
+
             builder.Property(s => s.Id)
                 .HasConversion(
                     id => id.Value,
@@ -31,7 +35,7 @@ namespace Booksy.ServiceCatalog.Infrastructure.Persistence.Configurations
             builder.Property(s => s.ProviderId)
                 .HasConversion(
                     id => id.Value,
-                    value => ProviderId.Create(value))
+                    value => ProviderId.From(value))
                 .IsRequired()
                 .HasColumnName("ProviderId");
 
