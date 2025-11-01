@@ -8,11 +8,29 @@
           Set your regular business hours and availability for bookings
         </p>
       </div>
-      <Button variant="secondary" @click="goBack">← Back to Onboarding</Button>
+      <div class="header-actions">
+        <div class="view-mode-toggle">
+          <button
+            type="button"
+            :class="['view-mode-btn', { active: viewMode === 'calendar' }]"
+            @click="viewMode = 'calendar'"
+          >
+            📅 Calendar
+          </button>
+          <button
+            type="button"
+            :class="['view-mode-btn', { active: viewMode === 'list' }]"
+            @click="viewMode = 'list'"
+          >
+            📋 List
+          </button>
+        </div>
+        <Button variant="secondary" @click="goBack">{{ backButtonText }}</Button>
+      </div>
     </div>
 
     <!-- Loading State -->
-    <div v-if="providerStore.isLoading" class="loading-state">
+    <div v-if="providerStore.isLoading || isLoadingHours" class="loading-state">
       <Spinner />
       <p>Loading business hours...</p>
     </div>
@@ -34,29 +52,35 @@
     />
 
     <!-- Form -->
-    <form v-if="!providerStore.isLoading" class="hours-form" @submit.prevent="handleSubmit">
+    <form v-if="!providerStore.isLoading && !isLoadingHours" class="hours-form" @submit.prevent="handleSubmit">
       <Card class="form-section">
-        <div class="form-section-header">
-          <h2 class="section-title">Operating Hours</h2>
-          <p class="section-description">
-            Set your standard operating hours for each day of the week.
-          </p>
-
-          <div class="quick-actions">
-            <Button nativeType="button" variant="secondary" size="small" @click="copyMondayScheduleToAllDays">
-              Copy Monday to All Days
-            </Button>
-            <Button nativeType="button" variant="secondary" size="small" @click="setStandardBusinessHours">
-              Set Standard Business Hours
-            </Button>
-            <Button nativeType="button" variant="secondary" size="small" @click="clearAllHours">
-              Clear All Hours
-            </Button>
-          </div>
+        <!-- Calendar View -->
+        <div v-if="viewMode === 'calendar'" class="calendar-container">
+          <HoursCalendarView
+            :business-hours="scheduleData"
+            :holidays="hoursStore.state.holidays"
+            :exceptions="hoursStore.state.exceptions"
+            @day-click="handleDayClick"
+          />
         </div>
 
-        <!-- Days of Week -->
-        <div class="days-container">
+        <!-- List View -->
+        <div v-else class="list-container">
+          <HoursListView
+            :schedule-data="scheduleData"
+            @toggle-day="onToggleDay"
+            @time-change="handleTimeChange"
+            @add-break="addBreak"
+            @remove-break="removeBreak"
+            @break-change="handleBreakChange"
+            @copy-monday="copyMondayScheduleToAllDays"
+            @set-standard="setStandardBusinessHours"
+            @clear-all="clearAllHours"
+          />
+        </div>
+
+        <!-- Legacy Days List (hidden, keeping for compatibility) -->
+        <div v-show="false" class="days-container">
           <div
             v-for="(day, index) in weekDays"
             :key="day.value"
@@ -235,22 +259,56 @@
         </Button>
       </div>
     </form>
+
+    <!-- Day Schedule Modal -->
+    <DayScheduleModal
+      :is-open="isModalOpen"
+      :day-schedule="selectedDaySchedule"
+      :day-label="selectedDayLabel"
+      :selected-date="selectedDate"
+      :provider-id="providerId"
+      :is-saving="isSaving"
+      @close="closeModal"
+      @save="saveDaySchedule"
+    />
   </div>
 </template>
 
 <script setup lang="ts">
 import { ref, reactive, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
+import { useI18n } from 'vue-i18n'
 import { useProviderStore } from '@/modules/provider/stores/provider.store'
+import { useHoursStore } from '@/modules/provider/stores/hours.store'
 import { DayOfWeek, BusinessHours, TimeBreak } from '@/modules/provider/types/provider.types'
+import { CalendarDay, BusinessHoursWithBreaks } from '@/modules/provider/types/hours.types'
 import { Button, Card, Alert, Spinner } from '@/shared/components'
+import HoursCalendarView from '@/modules/provider/components/hours/HoursCalendarView.vue'
+import HoursListView from '@/modules/provider/components/hours/HoursListView.vue'
+import DayScheduleModal from '@/modules/provider/components/hours/DayScheduleModal.vue'
+
+const { locale, t } = useI18n()
 
 const router = useRouter()
 const providerStore = useProviderStore()
+const hoursStore = useHoursStore()
 
 const isSaving = ref(false)
 const errorMessage = ref<string | null>(null)
 const successMessage = ref<string | null>(null)
+const viewMode = ref<'calendar' | 'list'>('list')
+const isLoadingHours = ref(false)
+
+// Modal state
+const isModalOpen = ref(false)
+const selectedDaySchedule = ref<BusinessHoursWithBreaks | null>(null)
+const selectedDayLabel = ref('')
+const selectedDate = ref<string | undefined>(undefined)
+const providerId = computed(() => providerStore.currentProvider?.id)
+
+// Check if we're in onboarding context
+const fromOnboarding = computed(() => router.currentRoute.value.query.from === 'onboarding')
+const backButtonText = computed(() => fromOnboarding.value ? '← Back to Onboarding' : '← Back')
 
 // Special settings
 const allowBookingsOutsideBusinessHours = ref(false)
@@ -258,16 +316,34 @@ const allowSameDayBookings = ref(true)
 const advanceBookingHours = ref(2)
 const maxBookingDays = ref(60)
 
-// Days of the week
-const weekDays = [
-  { value: DayOfWeek.Monday, label: 'Monday' },
-  { value: DayOfWeek.Tuesday, label: 'Tuesday' },
-  { value: DayOfWeek.Wednesday, label: 'Wednesday' },
-  { value: DayOfWeek.Thursday, label: 'Thursday' },
-  { value: DayOfWeek.Friday, label: 'Friday' },
-  { value: DayOfWeek.Saturday, label: 'Saturday' },
-  { value: DayOfWeek.Sunday, label: 'Sunday' },
-]
+// Days of the week - ordered based on locale (Persian week starts Saturday, Western starts Monday)
+const weekDays = computed(() => {
+  const isPersian = locale.value === 'fa'
+
+  if (isPersian) {
+    // Persian week: Saturday to Friday
+    return [
+      { value: DayOfWeek.Saturday, label: 'Saturday' },
+      { value: DayOfWeek.Sunday, label: 'Sunday' },
+      { value: DayOfWeek.Monday, label: 'Monday' },
+      { value: DayOfWeek.Tuesday, label: 'Tuesday' },
+      { value: DayOfWeek.Wednesday, label: 'Wednesday' },
+      { value: DayOfWeek.Thursday, label: 'Thursday' },
+      { value: DayOfWeek.Friday, label: 'Friday' },
+    ]
+  } else {
+    // Western week: Monday to Sunday
+    return [
+      { value: DayOfWeek.Monday, label: 'Monday' },
+      { value: DayOfWeek.Tuesday, label: 'Tuesday' },
+      { value: DayOfWeek.Wednesday, label: 'Wednesday' },
+      { value: DayOfWeek.Thursday, label: 'Thursday' },
+      { value: DayOfWeek.Friday, label: 'Friday' },
+      { value: DayOfWeek.Saturday, label: 'Saturday' },
+      { value: DayOfWeek.Sunday, label: 'Sunday' },
+    ]
+  }
+})
 
 // Time options (30-minute intervals)
 const timeOptions = computed(() => {
@@ -291,9 +367,11 @@ function formatTimeForDisplay(time: string): string {
 
 // Create empty schedule data structure
 const createEmptyScheduleData = () => {
-  return weekDays.map((day) => ({
+  const isPersian = locale.value === 'fa'
+
+  return weekDays.value.map((day) => ({
     dayOfWeek: day.value,
-    isOpen: false,
+    isOpen: isPersian, // Persian: all days open by default, Western: closed by default
     openTime: '09:00',
     closeTime: '17:00',
     breaks: [] as { startTime: string; endTime: string }[],
@@ -303,40 +381,52 @@ const createEmptyScheduleData = () => {
 // Schedule data
 const scheduleData = reactive(createEmptyScheduleData())
 
-// Set standard business hours (9 AM to 5 PM, Monday-Friday)
+// Set standard business hours
 function setStandardBusinessHours() {
-  weekDays.forEach((_, index) => {
-    const isWeekday = index < 5 // Monday to Friday
-    scheduleData[index].isOpen = isWeekday
-    scheduleData[index].openTime = '09:00'
-    scheduleData[index].closeTime = '17:00'
-    scheduleData[index].breaks = []
+  const isPersian = locale.value === 'fa'
 
-    // Add a lunch break for weekdays
-    if (isWeekday) {
-      scheduleData[index].breaks.push({
-        startTime: '12:00',
-        endTime: '13:00',
-      })
+  weekDays.value.forEach((_, index) => {
+    if (isPersian) {
+      // Persian: All days open (Saturday to Friday), Friday is half-day
+      const isFriday = scheduleData[index].dayOfWeek === DayOfWeek.Friday
+      scheduleData[index].isOpen = true
+      scheduleData[index].openTime = '09:00'
+      scheduleData[index].closeTime = isFriday ? '13:00' : '17:00' // Friday half-day
+      scheduleData[index].breaks = []
+    } else {
+      // Western: Monday to Friday
+      const isWeekday = index < 5
+      scheduleData[index].isOpen = isWeekday
+      scheduleData[index].openTime = '09:00'
+      scheduleData[index].closeTime = '17:00'
+      scheduleData[index].breaks = []
+
+      // Add a lunch break for weekdays
+      if (isWeekday) {
+        scheduleData[index].breaks.push({
+          startTime: '12:00',
+          endTime: '13:00',
+        })
+      }
     }
   })
 }
 
-// Copy Monday's schedule to all days
+// Copy first day's schedule to all days (Monday for Western, Saturday for Persian)
 function copyMondayScheduleToAllDays() {
-  const mondaySchedule = scheduleData[0]
+  const firstDaySchedule = scheduleData[0]
 
   for (let i = 1; i < scheduleData.length; i++) {
-    scheduleData[i].isOpen = mondaySchedule.isOpen
-    scheduleData[i].openTime = mondaySchedule.openTime
-    scheduleData[i].closeTime = mondaySchedule.closeTime
+    scheduleData[i].isOpen = firstDaySchedule.isOpen
+    scheduleData[i].openTime = firstDaySchedule.openTime
+    scheduleData[i].closeTime = firstDaySchedule.closeTime
 
     // Clear existing breaks
     scheduleData[i].breaks = []
 
-    // Copy breaks from Monday
-    if (mondaySchedule.isOpen) {
-      mondaySchedule.breaks.forEach(breakTime => {
+    // Copy breaks from first day
+    if (firstDaySchedule.isOpen) {
+      firstDaySchedule.breaks.forEach((breakTime: { startTime: string; endTime: string }) => {
         scheduleData[i].breaks.push({
           startTime: breakTime.startTime,
           endTime: breakTime.endTime
@@ -348,7 +438,7 @@ function copyMondayScheduleToAllDays() {
 
 // Clear all hours
 function clearAllHours() {
-  scheduleData.forEach((day) => {
+  scheduleData.forEach((day: BusinessHoursWithBreaks) => {
     day.isOpen = false
     day.breaks = []
   })
@@ -393,11 +483,11 @@ function validateTimeRange(dayIndex: number) {
       day.closeTime = `${closeHours.toString().padStart(2, '0')}:${openMinutes.toString().padStart(2, '0')}`
     }
 
-    errorMessage.value = `Closing time must be after opening time. Adjusted for ${weekDays[dayIndex].label}.`
+    errorMessage.value = `Closing time must be after opening time. Adjusted for ${weekDays.value[dayIndex].label}.`
   }
 
   // Validate all breaks within business hours
-  day.breaks.forEach((_, breakIndex) => {
+  day.breaks.forEach((_: { startTime: string; endTime: string }, breakIndex: number) => {
     validateBreakTime(dayIndex, breakIndex)
   })
 }
@@ -452,43 +542,66 @@ onMounted(async () => {
       return
     }
 
-    // If provider has business hours, load them
-    if (provider.businessHours && provider.businessHours.length > 0) {
-      // Map existing business hours to our data structure
-      provider.businessHours.forEach((hours) => {
-        const dayIndex = hours.dayOfWeek
+    // Load hours from the hours store
+    isLoadingHours.value = true
+    try {
+      await hoursStore.loadSchedule(provider.id)
 
-        scheduleData[dayIndex].isOpen = hours.isOpen
-        scheduleData[dayIndex].openTime = hours.openTime
-        scheduleData[dayIndex].closeTime = hours.closeTime
+      // Map hours store data to scheduleData format
+      if (hoursStore.state.baseHours && hoursStore.state.baseHours.length > 0) {
+        hoursStore.state.baseHours.forEach((hours) => {
+          const dayIndex = hours.dayOfWeek
 
-        // Clear existing breaks
-        scheduleData[dayIndex].breaks = []
+          scheduleData[dayIndex].isOpen = hours.isOpen
+          scheduleData[dayIndex].openTime = hours.openTime || '09:00'
+          scheduleData[dayIndex].closeTime = hours.closeTime || '17:00'
+          scheduleData[dayIndex].breaks = []
 
-        // Add breaks if they exist
-        if (hours.breaks && hours.breaks.length > 0) {
-          hours.breaks.forEach((breakTime) => {
-            scheduleData[dayIndex].breaks.push({
-              startTime: breakTime.startTime,
-              endTime: breakTime.endTime,
+          // Add breaks if they exist
+          if (hours.breaks && hours.breaks.length > 0) {
+            hours.breaks.forEach((breakTime) => {
+              scheduleData[dayIndex].breaks.push({
+                startTime: breakTime.startTime,
+                endTime: breakTime.endTime,
+              })
             })
-          })
-        }
-      })
-    } else {
-      // If no business hours set, use default business hours
+          }
+        })
+      } else if (provider.businessHours && provider.businessHours.length > 0) {
+        // Fallback to provider data if hours store is empty
+        provider.businessHours.forEach((hours) => {
+          const dayIndex = hours.dayOfWeek
+
+          scheduleData[dayIndex].isOpen = hours.isOpen
+          scheduleData[dayIndex].openTime = hours.openTime
+          scheduleData[dayIndex].closeTime = hours.closeTime
+          scheduleData[dayIndex].breaks = []
+
+          if (hours.breaks && hours.breaks.length > 0) {
+            hours.breaks.forEach((breakTime) => {
+              scheduleData[dayIndex].breaks.push({
+                startTime: breakTime.startTime,
+                endTime: breakTime.endTime,
+              })
+            })
+          }
+        })
+      } else {
+        // If no business hours set, use default business hours
+        setStandardBusinessHours()
+      }
+    } catch (error) {
+      console.error('Error loading hours from store:', error)
+      // Fallback to default hours on error
       setStandardBusinessHours()
+    } finally {
+      isLoadingHours.value = false
     }
 
     // Load provider preferences
     if (provider.allowOnlineBooking !== undefined) {
       allowBookingsOutsideBusinessHours.value = provider.allowOnlineBooking
     }
-
-    // These would need to be added to the provider model in a real implementation
-    // allowSameDayBookings.value = provider.allowSameDayBookings ?? true
-    // advanceBookingHours.value = provider.advanceBookingHours ?? 2
-    // maxBookingDays.value = provider.maxBookingDays ?? 60
   } catch (error) {
     console.error('Error loading provider business hours:', error)
     errorMessage.value = 'Failed to load business hours. Please try again.'
@@ -497,13 +610,13 @@ onMounted(async () => {
 
 // Prepare data for API
 function prepareBusinessHours(): BusinessHours[] {
-  return scheduleData.map((day) => ({
+  return scheduleData.map((day: BusinessHoursWithBreaks) => ({
     id: '', // Will be assigned by the backend
     dayOfWeek: day.dayOfWeek,
     isOpen: day.isOpen,
-    openTime: day.openTime,
-    closeTime: day.closeTime,
-    breaks: day.breaks.map((breakTime): TimeBreak => ({
+    openTime: day.openTime || '',
+    closeTime: day.closeTime || '',
+    breaks: (day.breaks || []).map((breakTime: { startTime: string; endTime: string }): TimeBreak => ({
       startTime: breakTime.startTime,
       endTime: breakTime.endTime,
     })),
@@ -516,7 +629,7 @@ async function handleSubmit() {
   successMessage.value = null
 
   // Validate all time ranges
-  scheduleData.forEach((day, index) => {
+  scheduleData.forEach((day: BusinessHoursWithBreaks, index: number) => {
     if (day.isOpen) {
       validateTimeRange(index)
     }
@@ -530,37 +643,47 @@ async function handleSubmit() {
       throw new Error('Provider not found. Please try refreshing the page.')
     }
 
-    // Prepare business hours data
-    const businessHours = prepareBusinessHours()
+    // Prepare business hours data for hours store
+    const businessHoursData: BusinessHoursWithBreaks[] = scheduleData.map((day: BusinessHoursWithBreaks) => ({
+      dayOfWeek: day.dayOfWeek,
+      isOpen: day.isOpen,
+      openTime: day.isOpen ? day.openTime : undefined,
+      closeTime: day.isOpen ? day.closeTime : undefined,
+      breaks: day.isOpen ? (day.breaks || []) : [],
+    }))
 
-    // In a real implementation, these preferences would be included in the update
-    const updateData = {
+    // Update hours using the dedicated business-hours endpoint
+    await hoursStore.updateHours({
+      providerId: provider.id,
+      businessHours: businessHoursData,
+    })
+
+    // Also update provider settings (for backward compatibility and other fields)
+    const businessHours = prepareBusinessHours()
+    const updateData: Partial<typeof provider> = {
       businessHours: businessHours,
       allowOnlineBooking: allowBookingsOutsideBusinessHours.value,
-      // These would need to be added to the model in a real implementation:
-      // allowSameDayBookings: allowSameDayBookings.value,
-      // advanceBookingHours: advanceBookingHours.value,
-      // maxBookingDays: maxBookingDays.value,
     }
 
-    // Update provider
-    const updatedProvider = await providerStore.updateProvider(provider.id, updateData as any)
-
-    // Check if update was successful
-    if (!updatedProvider) {
-      // Check if there's an error in the store
-      if (providerStore.error) {
-        throw new Error(providerStore.error)
-      }
-      throw new Error('Failed to update business hours. Please try again.')
-    }
+    // Update provider (non-blocking - just sync other settings)
+    providerStore.updateProvider(provider.id, updateData).catch(err => {
+      console.warn('Provider update failed but business hours saved:', err)
+      // Don't throw - business hours are already saved via hours endpoint
+    })
 
     successMessage.value = 'Business hours saved successfully!'
     window.scrollTo({ top: 0, behavior: 'smooth' })
 
+    // Check if we came from onboarding (query param or referrer)
+    const fromOnboarding = router.currentRoute.value.query.from === 'onboarding'
+
     // Redirect after a short delay
     setTimeout(() => {
-      router.push({ name: 'ProviderOnboarding' })
+      if (fromOnboarding) {
+        router.push({ name: 'ProviderOnboarding' })
+      } else {
+        router.push({ name: 'ProviderDashboard' })
+      }
     }, 1500)
   } catch (error) {
     console.error('Error saving business hours:', error)
@@ -572,9 +695,107 @@ async function handleSubmit() {
   }
 }
 
-// Go back to onboarding
+// Handle day click from calendar
+function handleDayClick(day: CalendarDay) {
+  // Find the schedule data for this day
+  const daySchedule = scheduleData.find((d: BusinessHoursWithBreaks) => d.dayOfWeek === day.dayOfWeek)
+
+  if (daySchedule) {
+    selectedDaySchedule.value = { ...daySchedule }
+    selectedDayLabel.value = getDayLabel(day.dayOfWeek)
+    selectedDate.value = day.date // Set the selected date for holiday/exception management
+    isModalOpen.value = true
+  }
+}
+
+// Get day label by day of week value
+function getDayLabel(dayOfWeek: number): string {
+  const dayKey = Object.keys(DayOfWeek).find(key => DayOfWeek[key as keyof typeof DayOfWeek] === dayOfWeek)
+  if (dayKey) {
+    return t(`provider.businessHours.weekDays.${dayKey.toLowerCase()}`)
+  }
+  return ''
+}
+
+// Close modal
+function closeModal() {
+  isModalOpen.value = false
+  selectedDaySchedule.value = null
+  selectedDayLabel.value = ''
+}
+
+// Save day schedule from modal
+async function saveDaySchedule(schedule: BusinessHoursWithBreaks) {
+  const dayIndex = scheduleData.findIndex((d: BusinessHoursWithBreaks) => d.dayOfWeek === schedule.dayOfWeek)
+
+  if (dayIndex !== -1) {
+    // Update local state
+    scheduleData[dayIndex].isOpen = schedule.isOpen
+    scheduleData[dayIndex].openTime = schedule.openTime || '09:00'
+    scheduleData[dayIndex].closeTime = schedule.closeTime || '17:00'
+    scheduleData[dayIndex].breaks = schedule.breaks ? [...schedule.breaks] : []
+  }
+
+  // Save to API
+  isSaving.value = true
+  errorMessage.value = null
+
+  try {
+    const provider = providerStore.currentProvider
+    if (!provider) {
+      throw new Error('Provider not found. Please try refreshing the page.')
+    }
+
+    // Prepare business hours data for hours store
+    const businessHoursData: BusinessHoursWithBreaks[] = scheduleData.map((day: BusinessHoursWithBreaks) => ({
+      dayOfWeek: day.dayOfWeek,
+      isOpen: day.isOpen,
+      openTime: day.isOpen ? day.openTime : undefined,
+      closeTime: day.isOpen ? day.closeTime : undefined,
+      breaks: day.isOpen ? (day.breaks || []) : [],
+    }))
+
+    // Update hours using the dedicated business-hours endpoint
+    await hoursStore.updateHours({
+      providerId: provider.id,
+      businessHours: businessHoursData,
+    })
+
+    successMessage.value = 'Business hours saved successfully!'
+    window.scrollTo({ top: 0, behavior: 'smooth' })
+
+    closeModal()
+  } catch (error) {
+    console.error('Error saving business hours:', error)
+    errorMessage.value = error instanceof Error ? error.message : 'Failed to save business hours'
+    window.scrollTo({ top: 0, behavior: 'smooth' })
+  } finally {
+    isSaving.value = false
+  }
+}
+
+// Handle time change from list view
+function handleTimeChange(index: number, field: 'openTime' | 'closeTime', value: string) {
+  scheduleData[index][field] = value
+  validateTimeRange(index)
+}
+
+// Handle break change from list view
+function handleBreakChange(dayIndex: number, breakIndex: number, field: 'startTime' | 'endTime', value: string) {
+  scheduleData[dayIndex].breaks[breakIndex][field] = value
+  validateBreakTime(dayIndex, breakIndex)
+}
+
+// Go back to previous page or dashboard
 function goBack() {
-  router.push({ name: 'ProviderOnboarding' })
+  const fromOnboarding = router.currentRoute.value.query.from === 'onboarding'
+
+  if (fromOnboarding) {
+    router.push({ name: 'ProviderOnboarding' })
+  } else {
+    // Go back to previous page or dashboard
+    router.back()
+  }
 }
 </script>
 
@@ -928,6 +1149,43 @@ function goBack() {
   border-top: 1px solid #e5e7eb;
 }
 
+.header-actions {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.view-mode-toggle {
+  display: flex;
+  gap: 0.25rem;
+  background: #e5e7eb;
+  border-radius: 0.375rem;
+  padding: 0.25rem;
+}
+
+.view-mode-btn {
+  padding: 0.5rem 1rem;
+  border: none;
+  background: transparent;
+  border-radius: 0.25rem;
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: #6b7280;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.view-mode-btn.active {
+  background: white;
+  color: #111827;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+}
+
+.calendar-container,
+.list-container {
+  margin-bottom: 1rem;
+}
+
 @media (max-width: 768px) {
   .business-hours-view {
     padding: 1rem;
@@ -935,6 +1193,19 @@ function goBack() {
 
   .page-header {
     flex-direction: column;
+  }
+
+  .header-actions {
+    flex-direction: column;
+    width: 100%;
+  }
+
+  .view-mode-toggle {
+    width: 100%;
+  }
+
+  .view-mode-btn {
+    flex: 1;
   }
 
   .quick-actions {
@@ -960,3 +1231,4 @@ function goBack() {
     width: 100%;
   }
 }
+</style>

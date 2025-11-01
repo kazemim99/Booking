@@ -63,7 +63,7 @@ public class ProviderManagementTests : ServiceCatalogIntegrationTestBase
         response.StatusCode.Should().Be(HttpStatusCode.Created);
 
         response.Should().NotBeNull();
-        response.data!.ProviderId.Should().NotBeEmpty();
+        response.data!.Id.Should().NotBeEmpty();
         response.data.BusinessName.Should().Be("Test Salon & Spa");
         response.data.Status.Should().Be("PendingVerification");
     }
@@ -154,7 +154,7 @@ public class ProviderManagementTests : ServiceCatalogIntegrationTestBase
         response.StatusCode.Should().Be(HttpStatusCode.OK);
         var result = await GetResponseAsync<ProviderDetailsResponse>(response);
         result.Should().NotBeNull();
-        result!.ProviderId.Should().Be(provider.Id.Value);
+        result!.Id.Should().Be(provider.Id.Value);
         result.BusinessName.Should().Be("Test Provider");
     }
 
@@ -184,7 +184,7 @@ public class ProviderManagementTests : ServiceCatalogIntegrationTestBase
         response.StatusCode.Should().Be(HttpStatusCode.OK);
         var result = await GetResponseAsync<ProviderDetailsResponse>(response);
         result.Should().NotBeNull();
-        result!.ProviderId.Should().Be(provider.Id.Value);
+        result!.Id.Should().Be(provider.Id.Value);
     }
 
     #endregion

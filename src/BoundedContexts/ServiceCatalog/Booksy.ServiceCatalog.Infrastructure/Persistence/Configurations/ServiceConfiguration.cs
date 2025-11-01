@@ -13,7 +13,7 @@ namespace Booksy.ServiceCatalog.Infrastructure.Persistence.Configurations
     {
         public void Configure(EntityTypeBuilder<Service> builder)
         {
-            builder.ToTable("Services", "servicecatalog");
+            builder.ToTable("Services", "ServiceCatalog");
 
             // ========================================
             // PRIMARY KEY
@@ -195,7 +195,7 @@ namespace Booksy.ServiceCatalog.Infrastructure.Persistence.Configurations
             // Price Tiers - Owned collection with backing field
             builder.OwnsMany(s => s.PriceTiers, priceTier =>
             {
-                priceTier.ToTable("ServicePriceTiers", "servicecatalog");
+                priceTier.ToTable("ServicePriceTiers", "ServiceCatalog");
 
                 priceTier.HasKey(pt => pt.Id);
                 priceTier.Property(pt => pt.Id).HasColumnName("Id");

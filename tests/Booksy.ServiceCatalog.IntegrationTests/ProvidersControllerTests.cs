@@ -70,7 +70,7 @@ public class ProvidersControllerTests : ServiceCatalogIntegrationTestBase
         response.data.Status.Should().Be(ProviderStatus.PendingVerification.ToString());
 
         // Verify in database
-        await AssertProviderExistsAsync(response.data.ProviderId);
+        await AssertProviderExistsAsync(response.data.Id);
     }
 
     [Fact]
@@ -276,7 +276,7 @@ public class ProvidersControllerTests : ServiceCatalogIntegrationTestBase
 
         var result = await GetResponseAsync<ProviderDetailsResponse>(response);
         result.Should().NotBeNull();
-        result!.ProviderId.Should().Be(provider.Id.Value);
+        result!.Id.Should().Be(provider.Id.Value);
         result.BusinessName.Should().Be("Test Provider");
     }
 

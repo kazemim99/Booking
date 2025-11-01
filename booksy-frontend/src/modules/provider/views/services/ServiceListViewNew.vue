@@ -351,6 +351,7 @@ import { useRouter } from 'vue-router'
 import { useI18n } from 'vue-i18n'
 import { useServiceStore } from '../../stores/service.store'
 import { useProviderStore } from '../../stores/provider.store'
+import { useAuthStore } from '@/core/stores/modules/auth.store'
 import {
   ServiceStatus,
   type CreateServiceRequest,
@@ -361,6 +362,7 @@ const router = useRouter()
 const { t } = useI18n()
 const serviceStore = useServiceStore()
 const providerStore = useProviderStore()
+const authStore = useAuthStore()
 
 const searchTerm = ref('')
 const activeMenuId = ref<string | null>(null)
@@ -422,7 +424,7 @@ onMounted(async () => {
     console.error('[ServiceList] ⚠️ NO PROVIDER FOUND - User needs to register as provider')
     console.log('[ServiceList] Check these:')
     console.log('  - Is user logged in?')
-    console.log('  - Does provider_id exist in localStorage?')
+    console.log('  - Does providerId exist in JWT token?', authStore.providerId)
     console.log('  - Does backend have provider record for this user?')
   }
 })
@@ -580,11 +582,10 @@ async function handleSubmitForm() {
       '[ServiceForm] No provider found. Current provider:',
       providerStore.currentProvider,
     )
-    console.error('[ServiceForm] localStorage provider_id:', localStorage.getItem('provider_id'))
-    console.error('[ServiceForm] Auth user:', providerStore)
+    console.error('[ServiceForm] Auth providerId from token:', authStore.providerId)
+    console.error('[ServiceForm] Auth user:', authStore.user)
 
-    const providerId = localStorage.getItem('provider_id')
-    if (!providerId) {
+    if (!authStore.providerId) {
       formError.value =
         'No provider registration found. Please complete provider registration first.'
     } else {

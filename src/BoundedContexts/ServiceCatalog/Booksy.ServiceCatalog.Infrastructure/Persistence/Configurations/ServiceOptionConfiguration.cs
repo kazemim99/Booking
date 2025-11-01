@@ -10,7 +10,7 @@ namespace Booksy.ServiceCatalog.Infrastructure.Persistence.Configurations
     {
         public void Configure(EntityTypeBuilder<ServiceOption> builder)
         {
-            builder.ToTable("ServiceOptions", "servicecatalog");
+            builder.ToTable("ServiceOptions", "ServiceCatalog");
 
             // Primary Key
             builder.HasKey(so => so.Id);

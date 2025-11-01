@@ -14,6 +14,8 @@ using Booksy.ServiceCatalog.Infrastructure.Persistence.Seeders;
 using Booksy.ServiceCatalog.Infrastructure.Queries;
 using Booksy.ServiceCatalog.Infrastructure.Services.Application;
 using Booksy.ServiceCatalog.Infrastructure.Services.Domain;
+using Booksy.ServiceCatalog.Infrastructure.Services.Storage;
+using Booksy.ServiceCatalog.Infrastructure.Services.Images;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
@@ -81,6 +83,8 @@ namespace Booksy.ServiceCatalog.Infrastructure.DependencyInjection
 
             // Domain Services
             services.AddScoped<IBusinessRuleService, BusinessRuleService>();
+            services.AddScoped<IFileStorageService, LocalFileStorageService>();
+            services.AddScoped<IImageOptimizationService, ImageSharpOptimizationService>();
 
             // Application Services
             services.AddScoped<IProviderApplicationService, ProviderApplicationService>();

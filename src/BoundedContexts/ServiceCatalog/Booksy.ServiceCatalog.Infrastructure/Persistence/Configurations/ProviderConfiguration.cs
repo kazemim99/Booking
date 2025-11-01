@@ -95,6 +95,66 @@ namespace Booksy.ServiceCatalog.Infrastructure.Persistence.Configurations
 
                 // Ignore the Id property of BusinessProfile since it's an owned entity
                 profile.Ignore(bp => bp.Id);
+
+                // ✅ GALLERY IMAGES (Owned Collection)
+                profile.OwnsMany(bp => bp.GalleryImages, galleryImage =>
+                {
+                    galleryImage.ToTable("provider_gallery_images");
+
+                    galleryImage.Property(gi => gi.Id)
+                        .HasColumnName("id")
+                        .IsRequired();
+
+                    galleryImage.Property(gi => gi.ProviderId)
+                        .HasConversion(
+                            id => id.Value,
+                            value => ProviderId.From(value))
+                        .HasColumnName("provider_id")
+                        .IsRequired();
+
+                    galleryImage.Property(gi => gi.ImageUrl)
+                        .HasColumnName("image_url")
+                        .IsRequired()
+                        .HasMaxLength(500);
+
+                    galleryImage.Property(gi => gi.ThumbnailUrl)
+                        .HasColumnName("thumbnail_url")
+                        .IsRequired()
+                        .HasMaxLength(500);
+
+                    galleryImage.Property(gi => gi.MediumUrl)
+                        .HasColumnName("medium_url")
+                        .IsRequired()
+                        .HasMaxLength(500);
+
+                    galleryImage.Property(gi => gi.DisplayOrder)
+                        .HasColumnName("display_order")
+                        .IsRequired();
+
+                    galleryImage.Property(gi => gi.Caption)
+                        .HasColumnName("caption")
+                        .HasMaxLength(500);
+
+                    galleryImage.Property(gi => gi.AltText)
+                        .HasColumnName("alt_text")
+                        .HasMaxLength(500);
+
+                    galleryImage.Property(gi => gi.UploadedAt)
+                        .HasColumnName("uploaded_at")
+                        .IsRequired()
+                        .HasColumnType("timestamp with time zone");
+
+                    galleryImage.Property(gi => gi.IsActive)
+                        .HasColumnName("is_active")
+                        .IsRequired()
+                        .HasDefaultValue(true);
+
+                    // Indexes
+                    galleryImage.HasIndex(gi => new { gi.ProviderId, gi.DisplayOrder })
+                        .HasDatabaseName("IX_ProviderGalleryImages_Provider_DisplayOrder");
+
+                    galleryImage.HasKey(gi => gi.Id);
+                });
             });
 
             // Contact Info (Value Object)

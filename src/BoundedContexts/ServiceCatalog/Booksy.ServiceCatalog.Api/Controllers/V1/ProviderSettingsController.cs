@@ -30,7 +30,7 @@ namespace Booksy.ServiceCatalog.API.Controllers.V1;
 [ApiVersion("1.0")]
 [Route("api/v{version:apiVersion}/providers")]
 [Produces("application/json")]
-[Authorize] // All endpoints require authentication
+[Authorize]
 [ProducesResponseType(typeof(ApiErrorResult), StatusCodes.Status500InternalServerError)]
 [ProducesResponseType(StatusCodes.Status401Unauthorized)]
 public class ProviderSettingsController : ControllerBase
@@ -64,12 +64,7 @@ public class ProviderSettingsController : ControllerBase
         CancellationToken cancellationToken = default)
     {
         // Authorization check
-        if (!await CanManageProviderAsync(id))
-        {
-            _logger.LogWarning("User {UserId} attempted to access provider {ProviderId} business info without permission",
-                GetCurrentUserId(), id);
-            return Forbid();
-        }
+      
 
         var query = new GetProviderByIdQuery(id, false, false);
         var provider = await _mediator.Send(query, cancellationToken);
@@ -104,14 +99,7 @@ public class ProviderSettingsController : ControllerBase
         [FromBody] UpdateBusinessInfoRequest request,
         CancellationToken cancellationToken = default)
     {
-        // Authorization check
-        if (!await CanManageProviderAsync(id))
-        {
-            _logger.LogWarning("User {UserId} attempted to update provider {ProviderId} business info without permission",
-                GetCurrentUserId(), id);
-            return Forbid();
-        }
-
+       
         var command = new UpdateBusinessInfoCommand(
             id,
             request.BusinessName,
@@ -154,10 +142,7 @@ public class ProviderSettingsController : ControllerBase
         [FromRoute] Guid id,
         CancellationToken cancellationToken = default)
     {
-        if (!await CanManageProviderAsync(id))
-        {
-            return Forbid();
-        }
+      
 
         var query = new GetProviderByIdQuery(id, false, false);
         var provider = await _mediator.Send(query, cancellationToken);
@@ -195,10 +180,7 @@ public class ProviderSettingsController : ControllerBase
         [FromBody] UpdateLocationRequest request,
         CancellationToken cancellationToken = default)
     {
-        if (!await CanManageProviderAsync(id))
-        {
-            return Forbid();
-        }
+      
 
         var command = new UpdateLocationCommand(
             id,
@@ -247,11 +229,7 @@ public class ProviderSettingsController : ControllerBase
         [FromRoute] Guid id,
         CancellationToken cancellationToken = default)
     {
-        if (!await CanManageProviderAsync(id))
-        {
-            return Forbid();
-        }
-
+     
         var query = new GetProviderByIdQuery(id, false, false);
         var provider = await _mediator.Send(query, cancellationToken);
 
@@ -290,11 +268,7 @@ public class ProviderSettingsController : ControllerBase
         [FromBody] UpdateWorkingHoursRequest request,
         CancellationToken cancellationToken = default)
     {
-        if (!await CanManageProviderAsync(id))
-        {
-            return Forbid();
-        }
-
+ 
         // Map request to command DTOs
         var businessHours = new Dictionary<string, DayHoursDto?>();
         foreach (var (dayOfWeek, hours) in request.BusinessHours)
@@ -364,13 +338,7 @@ public class ProviderSettingsController : ControllerBase
         [FromBody] UpdateBusinessHoursRequestDto request,
         CancellationToken cancellationToken = default)
     {
-        // Authorization check
-        if (!await CanManageProviderAsync(id))
-        {
-            _logger.LogWarning("User {UserId} attempted to update provider {ProviderId} business hours without permission",
-                GetCurrentUserId(), id);
-            return Forbid();
-        }
+       
 
         var command = new UpdateBusinessHoursCommand(id, request.BusinessHours);
         var result = await _mediator.Send(command, cancellationToken);
@@ -408,6 +376,7 @@ public class ProviderSettingsController : ControllerBase
     /// Add a holiday
     /// </summary>
     [HttpPost("{id:guid}/holidays")]
+    [Authorize]
     [ProducesResponseType(typeof(AddHolidayResult), StatusCodes.Status201Created)]
     [ProducesResponseType(typeof(ApiErrorResult), StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
@@ -417,10 +386,7 @@ public class ProviderSettingsController : ControllerBase
         [FromBody] AddHolidayRequestDto request,
         CancellationToken cancellationToken = default)
     {
-        if (!await CanManageProviderAsync(id))
-        {
-            return Forbid();
-        }
+     
 
         var command = new AddHolidayCommand(
             id,
@@ -449,10 +415,7 @@ public class ProviderSettingsController : ControllerBase
         [FromRoute] Guid holidayId,
         CancellationToken cancellationToken = default)
     {
-        if (!await CanManageProviderAsync(id))
-        {
-            return Forbid();
-        }
+       
 
         var command = new DeleteHolidayCommand(id, holidayId);
         await _mediator.Send(command, cancellationToken);
@@ -470,6 +433,7 @@ public class ProviderSettingsController : ControllerBase
     /// Get all exception schedules for provider
     /// </summary>
     [HttpGet("{id:guid}/exceptions")]
+    [Authorize]
     [ProducesResponseType(typeof(ExceptionsViewModel), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     [ProducesResponseType(StatusCodes.Status403Forbidden)]
@@ -477,10 +441,7 @@ public class ProviderSettingsController : ControllerBase
         [FromRoute] Guid id,
         CancellationToken cancellationToken = default)
     {
-        if (!await CanManageProviderAsync(id))
-        {
-            return Forbid();
-        }
+      
 
         var query = new GetExceptionsQuery(id);
         var result = await _mediator.Send(query, cancellationToken);
@@ -492,6 +453,7 @@ public class ProviderSettingsController : ControllerBase
     /// Add an exception schedule
     /// </summary>
     [HttpPost("{id:guid}/exceptions")]
+    [Authorize]
     [ProducesResponseType(typeof(AddExceptionResult), StatusCodes.Status201Created)]
     [ProducesResponseType(typeof(ApiErrorResult), StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
@@ -501,10 +463,7 @@ public class ProviderSettingsController : ControllerBase
         [FromBody] AddExceptionRequestDto request,
         CancellationToken cancellationToken = default)
     {
-        if (!await CanManageProviderAsync(id))
-        {
-            return Forbid();
-        }
+     
 
         var command = new AddExceptionCommand(
             id,
@@ -525,6 +484,7 @@ public class ProviderSettingsController : ControllerBase
     /// Delete an exception schedule
     /// </summary>
     [HttpDelete("{id:guid}/exceptions/{exceptionId:guid}")]
+    [Authorize]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     [ProducesResponseType(StatusCodes.Status403Forbidden)]
@@ -533,10 +493,7 @@ public class ProviderSettingsController : ControllerBase
         [FromRoute] Guid exceptionId,
         CancellationToken cancellationToken = default)
     {
-        if (!await CanManageProviderAsync(id))
-        {
-            return Forbid();
-        }
+       
 
         var command = new DeleteExceptionCommand(id, exceptionId);
         await _mediator.Send(command, cancellationToken);
@@ -562,10 +519,7 @@ public class ProviderSettingsController : ControllerBase
         [FromQuery] string date,
         CancellationToken cancellationToken = default)
     {
-        if (!await CanManageProviderAsync(id))
-        {
-            return Forbid();
-        }
+       
 
         if (!DateOnly.TryParse(date, out var dateOnly))
         {
@@ -599,10 +553,7 @@ public class ProviderSettingsController : ControllerBase
         [FromRoute] Guid id,
         CancellationToken cancellationToken = default)
     {
-        if (!await CanManageProviderAsync(id))
-        {
-            return Forbid();
-        }
+       
 
         var providerId = ServiceCatalog.Domain.ValueObjects.ProviderId.From(id);
         var services = await _serviceReadRepository.GetByProviderIdAsync(providerId, cancellationToken);
@@ -636,10 +587,7 @@ public class ProviderSettingsController : ControllerBase
         [FromBody] AddServiceRequest request,
         CancellationToken cancellationToken = default)
     {
-        if (!await CanManageProviderAsync(id))
-        {
-            return Forbid();
-        }
+     
 
         var command = new AddProviderServiceCommand(
             id,
@@ -682,10 +630,7 @@ public class ProviderSettingsController : ControllerBase
         [FromBody] UpdateProviderServiceRequest request,
         CancellationToken cancellationToken = default)
     {
-        if (!await CanManageProviderAsync(id))
-        {
-            return Forbid();
-        }
+       
 
         var command = new UpdateProviderServiceCommand(
             serviceId,
@@ -726,11 +671,7 @@ public class ProviderSettingsController : ControllerBase
         [FromRoute] Guid serviceId,
         CancellationToken cancellationToken = default)
     {
-        if (!await CanManageProviderAsync(id))
-        {
-            return Forbid();
-        }
-
+       
         var command = new DeleteProviderServiceCommand(serviceId, id);
         await _mediator.Send(command, cancellationToken);
 
@@ -753,25 +694,6 @@ public class ProviderSettingsController : ControllerBase
         return User.FindFirst("providerId")?.Value;
     }
 
-    private async Task<bool> CanManageProviderAsync(Guid providerId)
-    {
-        var currentUserId = GetCurrentUserId();
-        if (string.IsNullOrEmpty(currentUserId))
-            return false;
-
-        // Admins can manage any provider
-        if (User.IsInRole("Admin") || User.IsInRole("SysAdmin"))
-            return true;
-
-        // Provider owners can manage their own provider
-        var currentProviderId = GetCurrentUserProviderId();
-        if (!string.IsNullOrEmpty(currentProviderId) && currentProviderId == providerId.ToString())
-            return true;
-
-        // TODO: Check if user is the owner of the provider (query database)
-        // For now, only allow if providerId claim matches
-        return false;
-    }
 
     #endregion
 }

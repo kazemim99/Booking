@@ -895,7 +895,8 @@ public class ProvidersController : ControllerBase
     {
         return new ProviderDetailsResponse
         {
-            ProviderId = result.Id,
+           
+            Id = result.Id,
             OwnerId = result.OwnerId,
             BusinessName = result.BusinessName,
             Description = result.Description,
@@ -1012,6 +1013,170 @@ public class ProvidersController : ControllerBase
 
         // Business logic: Staff with management permissions could go here
         return false;
+    }
+
+    #endregion
+
+    #region Gallery Management
+
+    /// <summary>
+    /// Upload images to provider gallery
+    /// </summary>
+    /// <param name="providerId">Provider ID</param>
+    /// <param name="files">Image files to upload (max 10 files, 10MB each)</param>
+    /// <returns>List of uploaded gallery images</returns>
+    /// <response code="200">Images uploaded successfully</response>
+    /// <response code="400">Invalid files or validation errors</response>
+    /// <response code="404">Provider not found</response>
+    [HttpPost("{providerId}/gallery")]
+    [Authorize]
+    [RequestSizeLimit(52428800)] // 50MB for multiple files
+    [ProducesResponseType(typeof(List<GalleryImageResponse>), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ApiErrorResult), StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(typeof(ApiErrorResult), StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> UploadGalleryImages(
+        [FromRoute] Guid providerId,
+        [FromForm] IFormFileCollection files,
+        CancellationToken cancellationToken = default)
+    {
+        var command = new Application.Commands.Provider.UploadGalleryImages.UploadGalleryImagesCommand(
+            providerId,
+            files);
+
+        var result = await _mediator.Send(command, cancellationToken);
+
+        var response = result.Select(dto => new GalleryImageResponse
+        {
+            Id = dto.Id,
+            ThumbnailUrl = dto.ThumbnailUrl,
+            MediumUrl = dto.MediumUrl,
+            OriginalUrl = dto.OriginalUrl,
+            DisplayOrder = dto.DisplayOrder,
+            Caption = dto.Caption,
+            AltText = dto.AltText,
+            UploadedAt = dto.UploadedAt
+        }).ToList();
+
+        return Ok(response);
+    }
+
+    /// <summary>
+    /// Get all gallery images for a provider
+    /// </summary>
+    /// <param name="providerId">Provider ID</param>
+    /// <returns>List of gallery images sorted by display order</returns>
+    /// <response code="200">Gallery images retrieved successfully</response>
+    /// <response code="404">Provider not found</response>
+    [HttpGet("{providerId}/gallery")]
+    [AllowAnonymous]
+    [ProducesResponseType(typeof(List<GalleryImageResponse>), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ApiErrorResult), StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> GetGalleryImages(
+        [FromRoute] Guid providerId,
+        CancellationToken cancellationToken = default)
+    {
+        var query = new Application.Queries.Provider.GetGalleryImages.GetGalleryImagesQuery(providerId);
+        var result = await _mediator.Send(query, cancellationToken);
+
+        var response = result.Select(dto => new GalleryImageResponse
+        {
+            Id = dto.Id,
+            ThumbnailUrl = dto.ThumbnailUrl,
+            MediumUrl = dto.MediumUrl,
+            OriginalUrl = dto.OriginalUrl,
+            DisplayOrder = dto.DisplayOrder,
+            Caption = dto.Caption,
+            AltText = dto.AltText,
+            UploadedAt = dto.UploadedAt
+        }).ToList();
+
+        return Ok(response);
+    }
+
+    /// <summary>
+    /// Update gallery image metadata (caption, alt text)
+    /// </summary>
+    /// <param name="providerId">Provider ID</param>
+    /// <param name="imageId">Image ID</param>
+    /// <param name="request">Updated metadata</param>
+    /// <returns>No content on success</returns>
+    /// <response code="204">Metadata updated successfully</response>
+    /// <response code="400">Invalid request data</response>
+    /// <response code="404">Provider or image not found</response>
+    [HttpPut("{providerId}/gallery/{imageId}")]
+    [Authorize]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType(typeof(ApiErrorResult), StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(typeof(ApiErrorResult), StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> UpdateGalleryImageMetadata(
+        [FromRoute] Guid providerId,
+        [FromRoute] Guid imageId,
+        [FromBody] UpdateGalleryImageMetadataRequest request,
+        CancellationToken cancellationToken = default)
+    {
+        var command = new Application.Commands.Provider.UpdateGalleryImageMetadata.UpdateGalleryImageMetadataCommand(
+            providerId,
+            imageId,
+            request.Caption,
+            request.AltText);
+
+        await _mediator.Send(command, cancellationToken);
+
+        return NoContent();
+    }
+
+    /// <summary>
+    /// Reorder gallery images
+    /// </summary>
+    /// <param name="providerId">Provider ID</param>
+    /// <param name="request">New image order mapping</param>
+    /// <returns>No content on success</returns>
+    /// <response code="204">Images reordered successfully</response>
+    /// <response code="400">Invalid request data</response>
+    /// <response code="404">Provider not found</response>
+    [HttpPut("{providerId}/gallery/reorder")]
+    [Authorize]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType(typeof(ApiErrorResult), StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(typeof(ApiErrorResult), StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> ReorderGalleryImages(
+        [FromRoute] Guid providerId,
+        [FromBody] ReorderGalleryImagesRequest request,
+        CancellationToken cancellationToken = default)
+    {
+        var command = new Application.Commands.Provider.ReorderGalleryImages.ReorderGalleryImagesCommand(
+            providerId,
+            request.ImageOrders);
+
+        await _mediator.Send(command, cancellationToken);
+
+        return NoContent();
+    }
+
+    /// <summary>
+    /// Delete a gallery image
+    /// </summary>
+    /// <param name="providerId">Provider ID</param>
+    /// <param name="imageId">Image ID to delete</param>
+    /// <returns>No content on success</returns>
+    /// <response code="204">Image deleted successfully</response>
+    /// <response code="404">Provider or image not found</response>
+    [HttpDelete("{providerId}/gallery/{imageId}")]
+    [Authorize]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType(typeof(ApiErrorResult), StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> DeleteGalleryImage(
+        [FromRoute] Guid providerId,
+        [FromRoute] Guid imageId,
+        CancellationToken cancellationToken = default)
+    {
+        var command = new Application.Commands.Provider.DeleteGalleryImage.DeleteGalleryImageCommand(
+            providerId,
+            imageId);
+
+        await _mediator.Send(command, cancellationToken);
+
+        return NoContent();
     }
 
     #endregion

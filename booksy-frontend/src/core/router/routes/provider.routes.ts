@@ -93,12 +93,7 @@ const providerRoutes: RouteRecordRaw[] = [
         component: () => import('@/modules/provider/views/hours/BusinessHoursView.vue'),
         meta: { title: 'Business Hours' },
       },
-      {
-        path: 'hours/test',
-        name: 'HoursStoreTest',
-        component: () => import('@/modules/provider/views/hours/HoursStoreTest.vue'),
-        meta: { title: 'Hours Store Test' },
-      },
+
       {
         path: 'gallery',
         name: 'ProviderGallery',

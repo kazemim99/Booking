@@ -12,7 +12,7 @@ namespace Booksy.ServiceCatalog.Infrastructure.Persistence.Configurations
     {
         public void Configure(EntityTypeBuilder<Staff> builder)
         {
-            builder.ToTable("Staff", "servicecatalog");
+            builder.ToTable("Staff", "ServiceCatalog");
 
             // Configure primary key
             builder.HasKey(s => s.Id);

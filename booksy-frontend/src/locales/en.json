@@ -106,6 +106,177 @@
     "checkFollowing": "Please check the following:"
   },
   "provider": {
+    "businessHours": {
+      "title": "Business Hours",
+      "subtitle": "Set your regular business hours and availability for bookings",
+      "backButton": "Back",
+      "backToOnboarding": "← Back to Onboarding",
+      "timePicker": {
+        "selectTime": "Select Time",
+        "hour": "Hour",
+        "minute": "Minute"
+      },
+      "viewModes": {
+        "calendar": "📅 Calendar",
+        "list": "📋 List"
+      },
+      "weekView": "Week",
+      "monthView": "Month",
+      "today": "Today",
+      "weekDays": {
+        "sunday": "Sunday",
+        "monday": "Monday",
+        "tuesday": "Tuesday",
+        "wednesday": "Wednesday",
+        "thursday": "Thursday",
+        "friday": "Friday",
+        "saturday": "Saturday"
+      },
+      "weekDaysShort": {
+        "sun": "Sun",
+        "mon": "Mon",
+        "tue": "Tue",
+        "wed": "Wed",
+        "thu": "Thu",
+        "fri": "Fri",
+        "sat": "Sat"
+      },
+      "dayStatus": {
+        "open": "Open",
+        "closed": "Closed",
+        "holiday": "Holiday",
+        "exception": "Exception"
+      },
+      "listView": {
+        "title": "Weekly Schedule",
+        "quickActions": {
+          "copyMonday": "Copy Monday",
+          "copyMondayHint": "Copy Monday to All Days",
+          "setStandard": "Standard Hours",
+          "setStandardHint": "Set Standard Business Hours",
+          "clearAll": "Clear All",
+          "clearAllHint": "Clear All Hours"
+        },
+        "openingLabel": "Opening",
+        "closingLabel": "Closing",
+        "breaksLabel": "Breaks",
+        "addBreak": "+ Add Break",
+        "noBreaks": "No breaks scheduled",
+        "breakCount": "{count} break | {count} breaks"
+      },
+      "modal": {
+        "title": "Edit {day}",
+        "workingHours": "Working Hours",
+        "close": "Close",
+        "cancel": "Cancel",
+        "save": "Save"
+      },
+      "breaks": {
+        "title": "Breaks",
+        "from": "From",
+        "to": "To",
+        "label": "Label",
+        "addBreak": "Add Break",
+        "remove": "Remove break",
+        "removeBreak": "Remove Break",
+        "maxBreaks": "Maximum 3 breaks per day"
+      },
+      "messages": {
+        "loading": "Loading business hours...",
+        "saving": "Saving...",
+        "success": "Business hours saved successfully!",
+        "error": "Failed to save business hours",
+        "noProvider": "Provider profile not found. Please register as a provider first.",
+        "validationError": "Please fix the validation errors"
+      },
+      "validation": {
+        "invalidTimeRange": "Close time must be after open time",
+        "invalidBreakTime": "Break times must be within business hours",
+        "breakOverlap": "Breaks cannot overlap"
+      },
+      "saveButton": "Save Business Hours"
+    },
+    "hours": {
+      "iranianHoliday": "Public Holiday",
+      "iranianHolidayTooltip": "Iranian public holiday",
+      "holidays": {
+        "title": "Holidays & Closures",
+        "addHoliday": "Add Holiday",
+        "addFirstHoliday": "Add your first holiday",
+        "editHoliday": "Edit Holiday",
+        "date": "Date",
+        "reason": "Reason",
+        "reasonPlaceholder": "e.g., Christmas Day, Annual Maintenance",
+        "recurring": "Recurring",
+        "makeRecurring": "Make this holiday recurring",
+        "recurringHelp": "The holiday will repeat automatically every year",
+        "recurrencePattern": "Recurrence Pattern",
+        "selectPattern": "Select a pattern",
+        "infoText": "Mark this date as a holiday to prevent all bookings",
+        "patterns": {
+          "daily": "Daily",
+          "weekly": "Weekly",
+          "monthly": "Monthly",
+          "yearly": "Yearly (same date every year)"
+        },
+        "previewDates": "Upcoming Occurrences",
+        "filterByYear": "Filter by Year",
+        "showPast": "Show past holidays",
+        "searchPlaceholder": "Search holidays...",
+        "emptyTitle": "No holidays scheduled",
+        "emptyMessage": "Add holidays and special closure dates to prevent bookings",
+        "deleteConfirmTitle": "Delete Holiday",
+        "deleteConfirmMessage": "Are you sure you want to delete '{reason}'?",
+        "affectedBookings": "⚠ This will affect {count} existing booking(s)",
+        "errors": {
+          "dateRequired": "Please select a date",
+          "pastDate": "Cannot add holidays in the past",
+          "reasonRequired": "Please provide a reason",
+          "reasonTooLong": "Reason must be 200 characters or less",
+          "patternRequired": "Please select a recurrence pattern",
+          "saveFailed": "Failed to save holiday"
+        }
+      },
+      "exceptions": {
+        "title": "Schedule Exceptions",
+        "addException": "Add Exception",
+        "addFirstException": "Add your first exception",
+        "editException": "Edit Exception",
+        "infoText": "Exceptions allow you to override your regular hours for specific dates (e.g., special events, shortened hours)",
+        "date": "Date",
+        "openTime": "Opening Time",
+        "closeTime": "Closing Time",
+        "reason": "Reason",
+        "reasonPlaceholder": "e.g., Staff Meeting, Early Closure",
+        "markAsClosed": "Mark as closed for the entire day",
+        "closedHelp": "Check this if you'll be closed all day instead of just changing hours",
+        "closed": "Closed",
+        "modified": "Modified Hours",
+        "closedAllDay": "Closed all day",
+        "hours": "Hours",
+        "duration": "Duration",
+        "preview": "Preview",
+        "showPast": "Show past exceptions",
+        "searchPlaceholder": "Search exceptions...",
+        "emptyTitle": "No exceptions scheduled",
+        "emptyMessage": "Add schedule exceptions for days with different hours or closures",
+        "deleteConfirmTitle": "Delete Exception",
+        "deleteConfirmMessage": "Are you sure you want to delete '{reason}'?",
+        "revertToRegular": "Revert to Regular Hours",
+        "affectedBookings": "⚠ This will affect {count} existing booking(s)",
+        "conflictWarning": "⚠ Note: There is already a holiday or exception scheduled for this date",
+        "errors": {
+          "dateRequired": "Please select a date",
+          "pastDate": "Cannot add exceptions in the past",
+          "openTimeRequired": "Please select an opening time",
+          "closeTimeRequired": "Please select a closing time",
+          "invalidTimeRange": "Closing time must be after opening time",
+          "reasonRequired": "Please provide a reason",
+          "reasonTooLong": "Reason must be 200 characters or less",
+          "saveFailed": "Failed to save exception"
+        }
+      }
+    },
     "navigation": {
       "toggleSidebar": "Toggle sidebar",
       "ariaLabel": "Provider navigation"
@@ -290,7 +461,13 @@
     "yes": "Yes",
     "no": "No",
     "retry": "Retry",
-    "viewAll": "View All"
+    "viewAll": "View All",
+    "all": "All",
+    "update": "Update",
+    "add": "Add",
+    "characters": "characters",
+    "hours": "hours",
+    "minutes": "minutes"
   },
   "dashboard": {
     "welcome": {

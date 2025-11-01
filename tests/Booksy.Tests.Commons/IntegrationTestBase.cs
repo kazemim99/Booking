@@ -1,15 +1,9 @@
-﻿// ========================================
-// Booksy.Tests.Common/Infrastructure/IntegrationTestBase.cs
-// ========================================
-using Booksy.Core.Domain.Infrastructure.Middleware;
+﻿using Booksy.Core.Domain.Infrastructure.Middleware;
 using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Newtonsoft.Json;
-using NSubstitute;
-using System.Net.Http.Headers;
 using System.Net.Http.Json;
-using static System.Runtime.InteropServices.JavaScript.JSType;
 
 namespace Booksy.Tests.Common.Infrastructure;
 
@@ -119,9 +113,7 @@ public abstract class IntegrationTestBase<TFactory, TDbContext, TStartup>
     protected async Task<Core.Domain.Infrastructure.Middleware.ApiResponse> PostAsJsonAsync<T>(string url, T data)
     {
 
-        try
-        {
-            var result = await Client.PostAsJsonAsync(url, data);
+          var result = await Client.PostAsJsonAsync(url, data);
             var content = await result.Content.ReadAsStringAsync();
             if (string.IsNullOrEmpty(content))
             {
@@ -130,23 +122,19 @@ public abstract class IntegrationTestBase<TFactory, TDbContext, TStartup>
                     StatusCode = result.StatusCode,
                 };
             }
-            var response = JsonConvert.DeserializeObject<Core.Domain.Infrastructure.Middleware.ApiResponse>(content);
-            return response;
-        }
-        catch (Exception ex)
-        {
+            var response = JsonConvert.DeserializeObject<ApiResponse>(content);
+            if (response.StatusCode == System.Net.HttpStatusCode.InternalServerError)
+                throw new Exception($"Error Message: {response.Message} \n Erros: {response.Errors}");
 
-            throw;
-        }
+            return response;
+        
 
     }
 
     protected async Task<ApiResponse<TResponse>> PostAsJsonAsync<T, TResponse>(string url, T data)
     {
 
-        try
-        {
-            var result = await Client.PostAsJsonAsync(url, data);
+        var result = await Client.PostAsJsonAsync(url, data);
             var content = await result.Content.ReadAsStringAsync();
             if (string.IsNullOrEmpty(content))
             {
@@ -155,20 +143,17 @@ public abstract class IntegrationTestBase<TFactory, TDbContext, TStartup>
                 };
             }
             var response = JsonConvert.DeserializeObject<ApiResponse<TResponse>>(content);
-            return response;
-        }
-        catch (Exception ex)
-        {
+            if (response.StatusCode == System.Net.HttpStatusCode.InternalServerError)
+                throw new Exception($"Error Message: {response.Message} \n Erros: {response.Errors}");
 
-            throw;
-        }
+            return response;
+       
 
     }
 
     protected async Task<ApiResponse<TResponse>> PutAsJsonAsync<T, TResponse>(string url, T data)
     {
-        try
-        {
+       
             var result = await Client.PutAsJsonAsync(url, data);
             var content = await result.Content.ReadAsStringAsync();
             if (string.IsNullOrEmpty(content))
@@ -178,20 +163,17 @@ public abstract class IntegrationTestBase<TFactory, TDbContext, TStartup>
                 };
             }
             var response = JsonConvert.DeserializeObject<ApiResponse<TResponse>>(content);
-            return response;
-        }
-        catch (Exception ex)
-        {
+            if (response.StatusCode == System.Net.HttpStatusCode.InternalServerError)
+                throw new Exception($"Error Message: {response.Message} \n Erros: {response.Errors}");
 
-            throw;
-        }
+            return response;
+       
     }
 
 
     protected async Task<Core.Domain.Infrastructure.Middleware.ApiResponse> PutAsJsonAsync<T>(string url, T data)
     {
-        try
-        {
+       
             var result = await Client.PutAsJsonAsync(url, data);
             var content = await result.Content.ReadAsStringAsync();
             if (string.IsNullOrEmpty(content))
@@ -202,13 +184,11 @@ public abstract class IntegrationTestBase<TFactory, TDbContext, TStartup>
                 };
             }
             var response = JsonConvert.DeserializeObject<Core.Domain.Infrastructure.Middleware.ApiResponse>(content);
-            return response;
-        }
-        catch (Exception ex)
-        {
+            if (response.StatusCode == System.Net.HttpStatusCode.InternalServerError)
+                throw new Exception($"Error Message: {response.Message} \n Erros: {response.Errors}");
 
-            throw;
-        }
+            return response;
+       
     }
 
     protected async Task<HttpResponseMessage> GetAsync(string url)
@@ -216,11 +196,10 @@ public abstract class IntegrationTestBase<TFactory, TDbContext, TStartup>
         return await Client.GetAsync(url);
     }
 
-    protected async Task<Core.Domain.Infrastructure.Middleware.ApiResponse> DeleteAsync(string url)
+    protected async Task<ApiResponse> DeleteAsync(string url)
     {
 
-        try
-        {
+      
             var result = await Client.DeleteAsync(url); ;
             var content = await result.Content.ReadAsStringAsync();
             if (string.IsNullOrEmpty(content))
@@ -230,14 +209,11 @@ public abstract class IntegrationTestBase<TFactory, TDbContext, TStartup>
                     StatusCode = result.StatusCode,
                 };
             }
-            var response = JsonConvert.DeserializeObject<Core.Domain.Infrastructure.Middleware.ApiResponse>(content);
+            var response = JsonConvert.DeserializeObject<ApiResponse>(content);
+            if(response.StatusCode == System.Net.HttpStatusCode.InternalServerError)
+                throw new Exception($"Error Message: {response.Message} \n Erros: {response.Errors}");
             return response;
-        }
-        catch (Exception ex)
-        {
-
-            throw;
-        }
+      
 
     }
 

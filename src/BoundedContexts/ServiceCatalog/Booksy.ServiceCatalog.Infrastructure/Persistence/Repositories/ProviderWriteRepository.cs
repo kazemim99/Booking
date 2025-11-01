@@ -24,6 +24,7 @@ namespace Booksy.ServiceCatalog.Infrastructure.Persistence.Repositories
                 .Include(p => p.BusinessHours)
                 .Include(p => p.Holidays)
                 .Include(p => p.Exceptions)
+                .Include(p => p.Profile)
                 .FirstOrDefaultAsync(p => p.Id == id, cancellationToken);
         }
 
@@ -35,6 +36,7 @@ namespace Booksy.ServiceCatalog.Infrastructure.Persistence.Repositories
                 .Include(p => p.BusinessHours)
                 .Include(p => p.Holidays)
                 .Include(p => p.Exceptions)
+                .Include(p => p.Profile)
                 .FirstOrDefaultAsync(p => p.OwnerId == id, cancellationToken);
         }
         public async Task SaveProviderAsync(Provider provider, CancellationToken cancellationToken = default)
