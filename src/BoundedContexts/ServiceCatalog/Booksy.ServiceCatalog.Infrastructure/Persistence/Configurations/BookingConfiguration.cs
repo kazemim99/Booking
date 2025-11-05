@@ -178,15 +178,13 @@ namespace Booksy.ServiceCatalog.Infrastructure.Persistence.Configurations
                     .HasMaxLength(200);
 
                 payment.Property(p => p.PaidAt)
-                    .HasColumnName("PaidAt")
-                    .HasColumnType("timestamp with time zone");
+                    .HasColumnName("PaidAt");
 
                 payment.Property(p => p.RefundedAt)
-                    .HasColumnName("RefundedAt")
-                    .HasColumnType("timestamp with time zone");
+                    .HasColumnName("RefundedAt");
             });
 
-            // BookingPolicy (Owned Value Object)
+            //// BookingPolicy (Owned Value Object)
             builder.OwnsOne(b => b.Policy, policy =>
             {
                 policy.Property(p => p.MinAdvanceBookingHours)
@@ -224,42 +222,42 @@ namespace Booksy.ServiceCatalog.Infrastructure.Persistence.Configurations
                     .IsRequired();
             });
 
-            // String Properties
-            builder.Property(b => b.CustomerNotes)
-                .HasColumnName("CustomerNotes")
-                .HasMaxLength(2000);
+            //// String Properties
+            //builder.Property(b => b.CustomerNotes)
+            //    .HasColumnName("CustomerNotes")
+            //    .HasMaxLength(2000);
 
-            builder.Property(b => b.StaffNotes)
-                .HasColumnName("StaffNotes")
-                .HasMaxLength(2000);
+            //builder.Property(b => b.StaffNotes)
+            //    .HasColumnName("StaffNotes")
+            //    .HasMaxLength(2000);
 
-            builder.Property(b => b.CancellationReason)
-                .HasColumnName("CancellationReason")
-                .HasMaxLength(1000);
+            //builder.Property(b => b.CancellationReason)
+            //    .HasColumnName("CancellationReason")
+            //    .HasMaxLength(1000);
 
-            // Timestamps
-            builder.Property(b => b.RequestedAt)
-                .HasColumnName("RequestedAt")
-                .HasColumnType("timestamp with time zone")
-                .IsRequired();
+            //// Timestamps
+            //builder.Property(b => b.RequestedAt)
+            //    .HasColumnName("RequestedAt")
+            //    .HasColumnType("timestamp with time zone")
+            //    .IsRequired();
 
-            builder.Property(b => b.ConfirmedAt)
-                .HasColumnName("ConfirmedAt")
-                .HasColumnType("timestamp with time zone");
+            //builder.Property(b => b.ConfirmedAt)
+            //    .HasColumnName("ConfirmedAt")
+            //    .HasColumnType("timestamp with time zone");
 
-            builder.Property(b => b.CancelledAt)
-                .HasColumnName("CancelledAt")
-                .HasColumnType("timestamp with time zone");
+            //builder.Property(b => b.CancelledAt)
+            //    .HasColumnName("CancelledAt")
+            //    .HasColumnType("timestamp with time zone");
 
-            builder.Property(b => b.CompletedAt)
-                .HasColumnName("CompletedAt")
-                .HasColumnType("timestamp with time zone");
+            //builder.Property(b => b.CompletedAt)
+            //    .HasColumnName("CompletedAt")
+            //    .HasColumnType("timestamp with time zone");
 
-            builder.Property(b => b.RescheduledAt)
-                .HasColumnName("RescheduledAt")
-                .HasColumnType("timestamp with time zone");
+            //builder.Property(b => b.RescheduledAt)
+            //    .HasColumnName("RescheduledAt")
+            //    .HasColumnType("timestamp with time zone");
 
-            // Rescheduling References
+            //// Rescheduling References
             builder.Property(b => b.PreviousBookingId)
                 .HasConversion(
                     id => id != null ? id.Value : (Guid?)null,
@@ -272,77 +270,77 @@ namespace Booksy.ServiceCatalog.Infrastructure.Persistence.Configurations
                     value => value.HasValue ? BookingId.From(value.Value) : null)
                 .HasColumnName("RescheduledToBookingId");
 
-            // Audit Properties
-            builder.Property(b => b.CreatedAt)
-                .HasColumnName("CreatedAt")
-                .HasColumnType("timestamp with time zone")
-                .IsRequired();
+            //// Audit Properties
+            //builder.Property(b => b.CreatedAt)
+            //    .HasColumnName("CreatedAt")
+            //    .HasColumnType("timestamp with time zone")
+            //    .IsRequired();
 
-            builder.Property(b => b.CreatedBy)
-                .HasColumnName("CreatedBy")
-                .HasMaxLength(200);
+            //builder.Property(b => b.CreatedBy)
+            //    .HasColumnName("CreatedBy")
+            //    .HasMaxLength(200);
 
-            builder.Property(b => b.LastModifiedAt)
-                .HasColumnName("LastModifiedAt")
-                .HasColumnType("timestamp with time zone");
+            //builder.Property(b => b.LastModifiedAt)
+            //    .HasColumnName("LastModifiedAt")
+            //    .HasColumnType("timestamp with time zone");
 
-            builder.Property(b => b.LastModifiedBy)
-                .HasColumnName("LastModifiedBy")
-                .HasMaxLength(200);
+            //builder.Property(b => b.LastModifiedBy)
+            //    .HasColumnName("LastModifiedBy")
+            //    .HasMaxLength(200);
 
-            // Owned Collection: History
-            builder.OwnsMany(b => b.History, history =>
-            {
-                history.ToTable("BookingHistory", "ServiceCatalog");
+            //// Owned Collection: History
+            //builder.OwnsMany(b => b.History, history =>
+            //{
+            //    history.ToTable("BookingHistory", "ServiceCatalog");
 
-                history.WithOwner().HasForeignKey("BookingId");
+            //    history.WithOwner().HasForeignKey("BookingId");
 
-                history.HasKey("Id");
+            //    history.HasKey("Id");
 
-                history.Property<Guid>("BookingId")
-                    .HasColumnName("BookingId")
-                    .IsRequired();
+            //    history.Property<Guid>("BookingId")
+            //        .HasColumnName("BookingId")
+            //        .IsRequired();
 
-                history.Property(h => h.Description)
-                    .HasColumnName("Description")
-                    .HasMaxLength(1000)
-                    .IsRequired();
+            //    history.Property(h => h.Description)
+            //        .HasColumnName("Description")
+            //        .HasMaxLength(1000)
+            //        .IsRequired();
 
-                history.Property(h => h.Status)
-                    .HasColumnName("Status")
-                    .HasConversion<string>()
-                    .HasMaxLength(50)
-                    .IsRequired();
+            //    history.Property(h => h.Status)
+            //        .HasColumnName("Status")
+            //        .HasConversion<string>()
+            //        .HasMaxLength(50)
+            //        .IsRequired();
 
-                history.Property(h => h.OccurredAt)
-                    .HasColumnName("OccurredAt")
-                    .HasColumnType("timestamp with time zone")
-                    .IsRequired();
-            });
+            //    history.Property(h => h.OccurredAt)
+            //        .HasColumnName("OccurredAt")
+            //        .HasColumnType("timestamp with time zone")
+            //        .IsRequired();
+            //});
 
-            // Indexes for performance
-            builder.HasIndex(b => b.CustomerId)
-                .HasDatabaseName("IX_Bookings_CustomerId");
+            //// Indexes for performance
+            //builder.HasIndex(b => b.CustomerId)
+            //    .HasDatabaseName("IX_Bookings_CustomerId");
 
-            builder.HasIndex(b => b.ProviderId)
-                .HasDatabaseName("IX_Bookings_ProviderId");
+            //builder.HasIndex(b => b.ProviderId)
+            //    .HasDatabaseName("IX_Bookings_ProviderId");
 
             builder.HasIndex(b => b.ServiceId)
                 .HasDatabaseName("IX_Bookings_ServiceId");
 
-            builder.HasIndex(b => b.StaffId)
-                .HasDatabaseName("IX_Bookings_StaffId");
+            //builder.HasIndex(b => b.StaffId)
+            //    .HasDatabaseName("IX_Bookings_StaffId");
 
-            builder.HasIndex(b => b.Status)
-                .HasDatabaseName("IX_Bookings_Status");
+            //builder.HasIndex(b => b.Status)
+            //    .HasDatabaseName("IX_Bookings_Status");
 
-            builder.HasIndex(b => new { b.StaffId, b.Status })
-                .HasDatabaseName("IX_Bookings_StaffId_Status");
+            //builder.HasIndex(b => new { b.StaffId, b.Status })
+            //    .HasDatabaseName("IX_Bookings_StaffId_Status");
 
-            // Composite index for availability checks
-            builder.HasIndex("StaffId", "Status")
-                .HasDatabaseName("IX_Bookings_Availability")
-                .HasFilter("[Status] IN ('Requested', 'Confirmed')");
+            //// Composite index for availability checks
+            //builder.HasIndex("StaffId", "Status")
+            //    .HasDatabaseName("IX_Bookings_Availability")
+            //    .HasFilter("[Status] IN ('Requested', 'Confirmed')");
         }
     }
 }
