@@ -36,9 +36,10 @@ Booksy is a comprehensive service booking platform built with Domain-Driven Desi
 ### Current Status
 
 - **Phase 1 (MVP)**: ✅ Completed - Provider/Service management, Authentication, Provider Portal UI
-- **Phase 2 (Booking System)**: 🚧 In Progress - Booking domain model, API controllers, integration tests
-- **Phase 3 (Customer Portal)**: 📋 Planned
-- **Phase 4 (Payments)**: 📋 Planned
+- **Phase 2 (Booking System)**: ✅ Completed - Booking domain model, API controllers, integration tests
+- **Phase 3 (Payment & Financial System)**: ✅ Completed - Payment processing, Payout management, Financial reporting
+- **Phase 4 (Customer Portal)**: 📋 Planned
+- **Phase 5 (Advanced Features)**: 📋 Planned
 
 ---
 
@@ -95,6 +96,45 @@ Rules governing how bookings can be made, cancelled, and rescheduled:
 - Cancellation windows and fees
 - Rescheduling permissions
 - Deposit requirements
+
+#### 6. Payments & Financial Management **[NEW]**
+Comprehensive payment processing and provider payout system.
+
+**Payment Lifecycle:**
+```
+Pending → Processing → Paid → (Refunded/PartiallyRefunded)
+                    ↓
+                 Failed
+```
+
+**Payment Methods:**
+- CreditCard (primary)
+- BankTransfer
+- Wallet (digital wallets)
+- Cash
+- Other
+
+**Key Concepts:**
+- **Payment Processing**: Charge customers for bookings
+- **Refund Processing**: Handle cancellations with policy-based refunds
+- **Commission Calculation**: Platform fees (percentage, fixed, or mixed)
+- **Tax Calculation**: Support for inclusive/exclusive tax rates
+- **Payout Management**: Automated provider payments
+- **Financial Reporting**: Provider earnings, platform revenue
+
+**Payout Lifecycle:**
+```
+Pending → Scheduled → Processing → Paid
+                  ↓              ↓
+              Cancelled      Failed/OnHold
+```
+
+**Refund Policies:**
+- **Flexible**: Full refund >24h, 50% <24h
+- **Moderate**: Full refund >48h, 50% 24-48h, 25% <24h
+- **Strict**: Full refund >72h, 50% <72h, no refund <24h
+- **NoRefunds**: No refunds allowed
+- **Custom**: Configurable windows and percentages
 
 ---
 
@@ -393,6 +433,121 @@ public sealed class Booking : AggregateRoot<BookingId>
 - `BookingRescheduledEvent`
 - `BookingNoShowEvent`
 
+#### Payment Aggregate **[NEW]**
+
+**File**: `/src/BoundedContexts/ServiceCatalog/Booksy.ServiceCatalog.Domain/Aggregates/PaymentAggregate/Payment.cs`
+
+**Core Properties:**
+```csharp
+public sealed class Payment : AggregateRoot<PaymentId>
+{
+    // Identity & References
+    public BookingId? BookingId { get; private set; }
+    public UserId CustomerId { get; private set; }
+    public ProviderId ProviderId { get; private set; }
+
+    // Amounts
+    public Money Amount { get; private set; }
+    public Money PaidAmount { get; private set; }
+    public Money RefundedAmount { get; private set; }
+
+    // Status & Method
+    public PaymentStatus Status { get; private set; }
+    public PaymentMethod Method { get; private set; }
+
+    // Gateway Integration
+    public string? PaymentIntentId { get; private set; }
+    public string? PaymentMethodId { get; private set; }
+    public string? Description { get; private set; }
+    public string? FailureReason { get; private set; }
+
+    // Timestamps
+    public DateTime CreatedAt { get; private set; }
+    public DateTime? AuthorizedAt { get; private set; }
+    public DateTime? CapturedAt { get; private set; }
+    public DateTime? RefundedAt { get; private set; }
+    public DateTime? FailedAt { get; private set; }
+
+    // Additional Data
+    public Dictionary<string, object> Metadata { get; private set; }
+
+    // Collections
+    public IReadOnlyList<Transaction> Transactions { get; }
+}
+```
+
+**Key Business Methods:**
+- `CreateForBooking()` - Create payment for booking
+- `CreateDirect()` - Create direct payment (no booking)
+- `ProcessCharge()` - Process immediate charge
+- `Authorize()` - Authorize funds (hold)
+- `Capture()` - Capture authorized payment
+- `PartialCapture()` - Capture partial amount
+- `Refund()` - Full refund
+- `PartialRefund()` - Partial refund
+- `MarkAsFailed()` - Mark as failed with reason
+- `AddTransaction()` - Record transaction
+
+**Domain Events:**
+- `PaymentCreatedEvent`
+- `PaymentAuthorizedEvent`
+- `PaymentCapturedEvent`
+- `PaymentRefundedEvent`
+- `PaymentFailedEvent`
+
+#### Payout Aggregate **[NEW]**
+
+**File**: `/src/BoundedContexts/ServiceCatalog/Booksy.ServiceCatalog.Domain/Aggregates/PayoutAggregate/Payout.cs`
+
+**Core Properties:**
+```csharp
+public sealed class Payout : AggregateRoot<PayoutId>
+{
+    // Identity
+    public ProviderId ProviderId { get; private set; }
+
+    // Amounts
+    public Money GrossAmount { get; private set; }
+    public Money CommissionAmount { get; private set; }
+    public Money NetAmount { get; private set; }
+
+    // Period
+    public DateTime PeriodStart { get; private set; }
+    public DateTime PeriodEnd { get; private set; }
+
+    // Status
+    public PayoutStatus Status { get; private set; }
+    public DateTime? ScheduledAt { get; private set; }
+    public DateTime? PaidAt { get; private set; }
+    public string? FailureReason { get; private set; }
+
+    // Gateway Integration
+    public string? ExternalPayoutId { get; private set; }
+    public DateTime? ArrivalDate { get; private set; }
+
+    // Collections
+    public IReadOnlyList<PaymentId> PaymentIds { get; }
+}
+```
+
+**Key Business Methods:**
+- `Create()` - Create pending payout
+- `Schedule()` - Schedule for execution
+- `MarkAsProcessing()` - Start processing
+- `MarkAsPaid()` - Mark as paid with external ID
+- `MarkAsFailed()` - Mark as failed with reason
+- `Cancel()` - Cancel pending payout
+- `PutOnHold()` - Place on hold for review
+- `ReleaseFromHold()` - Release from hold
+
+**Domain Events:**
+- `PayoutCreatedEvent`
+- `PayoutScheduledEvent`
+- `PayoutProcessingEvent`
+- `PayoutPaidEvent`
+- `PayoutFailedEvent`
+- `PayoutCancelledEvent`
+
 #### Value Objects
 
 **Core Value Objects** (`/src/Core/Booksy.Core.Domain/ValueObjects/`):
@@ -437,6 +592,62 @@ public sealed class Booking : AggregateRoot<BookingId>
   ```
 - `PaymentInfo` - Total, deposit, paid amounts, status, payment intent IDs
 
+**Financial Value Objects** (`/Domain/ValueObjects/`) **[NEW]**:
+- `PaymentId`, `PayoutId` - Strongly-typed IDs
+- `CommissionRate` - Platform commission configuration:
+  ```csharp
+  public sealed class CommissionRate : ValueObject
+  {
+      public CommissionType Type { get; }  // Percentage, Fixed, Mixed
+      public decimal PercentageRate { get; }
+      public Money? FixedAmount { get; }
+
+      // Static factory methods
+      public static CommissionRate Percentage(decimal rate)
+      public static CommissionRate Fixed(Money amount)
+      public static CommissionRate Mixed(decimal percentage, Money fixedAmount)
+
+      // Calculation
+      public Money CalculateCommission(Money amount)
+  }
+  ```
+- `TaxRate` - Tax calculation support:
+  ```csharp
+  public sealed class TaxRate : ValueObject
+  {
+      public decimal Percentage { get; }
+      public string TaxName { get; }
+      public string TaxCode { get; }
+      public bool IsInclusive { get; }
+
+      // Calculation methods
+      public Money CalculateTaxAmount(Money amount)
+      public Money CalculateTotalWithTax(Money baseAmount)
+      public Money CalculateBaseAmount(Money totalAmount)
+  }
+  ```
+- `RefundPolicy` - Refund calculation rules:
+  ```csharp
+  public sealed class RefundPolicy : ValueObject
+  {
+      public bool AllowRefunds { get; }
+      public int FullRefundWindowHours { get; }
+      public int PartialRefundWindowHours { get; }
+      public decimal PartialRefundPercentage { get; }
+      public decimal CancellationFeePercentage { get; }
+      public bool RefundProcessingFees { get; }
+
+      // Static presets
+      public static RefundPolicy Flexible { get; }
+      public static RefundPolicy Moderate { get; }
+      public static RefundPolicy Strict { get; }
+      public static RefundPolicy NoRefunds { get; }
+
+      // Calculation
+      public Money CalculateRefundAmount(Money paidAmount, DateTime bookingTime, DateTime currentTime)
+  }
+  ```
+
 #### Enums
 
 **Provider Domain:**
@@ -450,6 +661,13 @@ public sealed class Booking : AggregateRoot<BookingId>
 **Booking Domain:**
 - `BookingStatus`: Requested, Confirmed, InProgress, Completed, Cancelled, Rescheduled, NoShow
 - `PaymentStatus`: Pending, DepositPaid, FullyPaid, PartiallyRefunded, FullyRefunded, Failed
+
+**Payment & Financial Domain** **[NEW]**:
+- `PaymentMethod`: CreditCard, BankTransfer, Wallet, Cash, Other
+- `PaymentStatus`: Pending, PartiallyPaid, Paid, Failed, Refunded, PartiallyRefunded
+- `PayoutStatus`: Pending, Scheduled, Processing, Paid, Failed, Cancelled, OnHold
+- `CommissionType`: Percentage, Fixed, Mixed
+- `RefundReason`: CustomerCancellation, ProviderCancellation, ServiceNotDelivered, Dispute, Other
 
 ---
 
@@ -584,6 +802,92 @@ GET    /api/v1/availability/dates            # Get available dates in range
        [AllowAnonymous]
        Query: providerId, serviceId, staffId, startDate, endDate
        Response: List<DateTime>
+```
+
+#### Payment Endpoints **[NEW]**
+
+**File**: `/Api/Controllers/V1/PaymentsController.cs`
+
+**Payment Processing:**
+```http
+POST   /api/v1/payments                      # Process payment
+       [Authorize]
+       Body: ProcessPaymentRequest { BookingId?, Amount, Currency, PaymentMethod, PaymentMethodId, Description, Metadata }
+       Response: 201 Created with PaymentResponse
+
+POST   /api/v1/payments/{id}/capture         # Capture authorized payment
+       [Authorize(Policy = "ProviderOrAdmin")]
+       Body: CapturePaymentRequest { AmountToCapture? }
+       Response: 200 OK with PaymentResponse
+
+POST   /api/v1/payments/{id}/refund          # Refund payment
+       [Authorize]
+       Body: RefundPaymentRequest { RefundAmount?, Reason, Notes }
+       Response: 200 OK with RefundPaymentResponse
+
+GET    /api/v1/payments/{id}                 # Get payment details
+       [Authorize]
+       Response: PaymentDetailsResponse
+
+GET    /api/v1/payments/customer/{customerId} # Get customer payments
+       [Authorize]
+       Query: status, startDate, endDate, page, pageSize
+       Response: PagedList<PaymentResponse>
+
+POST   /api/v1/payments/calculate-pricing    # Calculate pricing with tax/commission
+       [AllowAnonymous]
+       Body: CalculatePricingRequest { Amount, Currency, ProviderId?, IncludeTax, IncludeCommission }
+       Response: PricingCalculationResponse
+```
+
+#### Payout Endpoints **[NEW]**
+
+**File**: `/Api/Controllers/V1/PayoutsController.cs`
+
+**Payout Management:**
+```http
+POST   /api/v1/payouts                       # Create payout for provider
+       [Authorize(Policy = "AdminOrFinance")]
+       Body: CreatePayoutRequest { ProviderId, PeriodStart, PeriodEnd }
+       Response: 201 Created with PayoutResponse
+
+POST   /api/v1/payouts/{id}/execute          # Execute pending payout
+       [Authorize(Policy = "AdminOrFinance")]
+       Body: ExecutePayoutRequest { ConnectedAccountId? }
+       Response: 200 OK with PayoutResponse
+
+GET    /api/v1/payouts/{id}                  # Get payout details
+       [Authorize]
+       Response: PayoutDetailsResponse
+
+GET    /api/v1/payouts/provider/{providerId} # Get provider payouts
+       [Authorize(Policy = "ProviderOrAdmin")]
+       Query: status, startDate, endDate, page, pageSize
+       Response: PagedList<PayoutResponse>
+
+GET    /api/v1/payouts/pending               # Get all pending payouts
+       [Authorize(Policy = "AdminOrFinance")]
+       Response: List<PayoutResponse>
+```
+
+#### Financial Reporting Endpoints **[NEW]**
+
+**File**: `/Api/Controllers/V1/FinancialController.cs`
+
+**Financial Reports:**
+```http
+GET    /api/v1/financial/provider-earnings/{providerId} # Provider earnings report
+       [Authorize(Policy = "ProviderOrAdmin")]
+       Query: startDate, endDate
+       Response: ProviderEarningsResponse { GrossEarnings, NetEarnings, CommissionPaid, TaxPaid, PayoutsPaid }
+
+GET    /api/v1/financial/provider-earnings/{providerId}/current-month # Current month earnings
+       [Authorize(Policy = "ProviderOrAdmin")]
+       Response: ProviderEarningsResponse
+
+GET    /api/v1/financial/provider-earnings/{providerId}/previous-month # Previous month earnings
+       [Authorize(Policy = "ProviderOrAdmin")]
+       Response: ProviderEarningsResponse
 ```
 
 ### CQRS Implementation
@@ -1259,6 +1563,285 @@ builder.OwnsOne(s => s.BookingPolicy, policy =>
 **Pattern**: Followed same configuration as `BookingConfiguration.cs` for `Booking.Policy`
 
 **Impact**: Allows migration to succeed (now ready to run)
+
+### Session: 2025-11-06 - Payment & Financial System Implementation **[NEW]**
+
+#### 1. Payment & Financial Domain (Completed ✅)
+**Commits**: `9738200` (fix builes), previous implementation commits
+
+**What was added:**
+- `Payment` aggregate root with complete payment lifecycle
+- `Payout` aggregate root with provider payment processing
+- `CommissionRate`, `TaxRate`, `RefundPolicy` value objects
+- Financial calculation services
+- Payment gateway integration abstractions
+- Integration event handlers for booking-payment flow
+
+**Key files:**
+- `/Domain/Aggregates/PaymentAggregate/Payment.cs` - Payment processing
+- `/Domain/Aggregates/PayoutAggregate/Payout.cs` - Provider payouts
+- `/Domain/ValueObjects/CommissionRate.cs` - Commission calculations
+- `/Domain/ValueObjects/TaxRate.cs` - Tax calculations
+- `/Domain/ValueObjects/RefundPolicy.cs` - Refund rules
+- `/Domain/Enums/PaymentMethod.cs` - **CRITICAL**: Changed `Card` → `CreditCard`
+
+#### 2. Payment Commands & Handlers (Completed ✅)
+
+**Commands implemented:**
+- `ProcessPaymentCommand` - Process customer payment
+- `CapturePaymentCommand` - Capture authorized payment
+- `RefundPaymentCommand` - Process refund
+- `CreatePayoutCommand` - Create provider payout
+- `ExecutePayoutCommand` - Execute payout via gateway
+
+**Queries implemented:**
+- `GetPaymentDetailsQuery` - Get payment with transactions
+- `GetCustomerPaymentsQuery` - Customer payment history
+- `GetProviderEarningsQuery` - Provider financial report
+- `CalculatePricingQuery` - Price calculation with tax/commission
+
+#### 3. Payment & Financial API (Completed ✅)
+
+**Controllers created:**
+- `PaymentsController` - 6 endpoints
+- `PayoutsController` - 5 endpoints
+- `FinancialController` - 3 endpoints
+
+**Total**: 14 new RESTful endpoints
+
+#### 4. Integration Event Handlers (Completed ✅)
+
+**Booking-Payment Flow Integration:**
+- `BookingConfirmedPaymentIntegrationEventHandler` - Validate payment on booking confirmation
+- `BookingCancelledRefundIntegrationEventHandler` - Auto-refund on cancellation
+- `BookingCompletedIntegrationEventHandler` - Trigger payout on completion
+
+#### 5. Comprehensive Testing (Completed ✅)
+
+**Test Coverage: 117 Tests Total**
+
+**Domain Unit Tests (70 tests):**
+- `PaymentAggregateTests` - 19 tests
+- `PayoutAggregateTests` - 17 tests
+- `CommissionRateTests` - 12 tests
+- `TaxRateTests` - 16 tests
+- `RefundPolicyTests` - 20 tests
+- `ProcessPaymentCommandHandlerTests` - 6 tests
+
+**API Integration Tests (47 tests):**
+- `PaymentsControllerTests` - 20 tests
+- `PayoutsControllerTests` - 16 tests
+- `FinancialControllerTests` - 11 tests
+
+**Test Infrastructure:**
+- Created `CreateTestProviderWithServicesAsync()` helper
+- Created `GetFirstServiceForProviderAsync()` helper
+- Enhanced `ServiceCatalogIntegrationTestBase` with financial test setup
+
+#### 6. Critical Build Fixes & Lessons Learned **[IMPORTANT]**
+
+**⚠️ CRITICAL PATTERNS TO REMEMBER:**
+
+##### Fix #1: Method Signatures vs Property Names
+**Problem**: Tests and controllers referenced non-existent properties/methods
+**Root Cause**: Assumed API without checking actual implementation
+
+**Examples:**
+```csharp
+// ❌ WRONG - Assumed these existed
+TaxRate.Name         → ✅ CORRECT: TaxRate.TaxName
+TaxRate.Code         → ✅ CORRECT: TaxRate.TaxCode
+Payout.GetPaymentIds() → ✅ CORRECT: Payout.PaymentIds (property)
+Payment.GetDomainEvents() → ✅ CORRECT: Payment.DomainEvents (property)
+Payout.ScheduledDate → ✅ CORRECT: Payout.ScheduledAt
+Payout.ProcessedAt   → ✅ CORRECT: Payout.PaidAt
+Payout.CompletedAt   → ✅ CORRECT: Payout.PaidAt
+Payout.PlaceOnHold() → ✅ CORRECT: Payout.PutOnHold()
+```
+
+**Lesson**: ALWAYS read the actual domain class before writing tests or handlers!
+
+##### Fix #2: Enum Values
+**Problem**: Tests used non-existent enum values
+**Root Cause**: Assumed common naming conventions
+
+**Examples:**
+```csharp
+// ❌ WRONG - Assumed these existed
+PaymentMethod.CreditCard → ✅ FIXED IN DOMAIN: Changed Card → CreditCard (commit 9738200)
+PaymentMethod.Card       → ❌ OLD VALUE (was changed)
+RefundReason.CustomerRequest → ✅ CORRECT: RefundReason.CustomerCancellation
+PaymentStatus.Authorized → ✅ CORRECT: PaymentStatus.PartiallyPaid (or redesign)
+PayoutStatus.Scheduled   → ✅ CORRECT: PayoutStatus.Pending
+```
+
+**Lesson**: Check enum definitions in `/Domain/Enums/` before usage!
+
+##### Fix #3: Result Record Properties
+**Problem**: Controllers expected `IsSuccessful` and `ErrorMessage` properties on Result records
+**Root Cause**: Initial implementation didn't include these properties
+
+**Solution Applied (commit 9738200):**
+```csharp
+// All Result records now include:
+public sealed record ProcessPaymentResult(
+    ...existing properties...,
+    bool IsSuccessful,      // ✅ Added
+    string? ErrorMessage);  // ✅ Added
+
+// Applied to:
+// - ProcessPaymentResult
+// - CapturePaymentResult
+// - RefundPaymentResult
+// - ExecutePayoutResult
+```
+
+**Lesson**: Design Result records with error handling properties from the start!
+
+##### Fix #4: Command Parameter Names
+**Problem**: Controllers used wrong parameter names in command construction
+**Root Cause**: Didn't check actual record constructor signature
+
+**Examples:**
+```csharp
+// ❌ WRONG in controllers
+new ProcessPaymentCommand(
+    PaymentMethod: "CreditCard",    // Wrong parameter name
+    CaptureImmediately: true,       // Wrong - doesn't exist
+    ...
+);
+
+// ✅ CORRECT (actual signature)
+new ProcessPaymentCommand(
+    Method: PaymentMethod.CreditCard,  // Correct parameter + enum
+    ...  // CaptureImmediately removed
+);
+
+// ❌ WRONG
+new CapturePaymentCommand(
+    Amount: request.Amount,  // Wrong - doesn't exist
+    ...
+);
+
+// ✅ CORRECT
+new CapturePaymentCommand(
+    AmountToCapture: request.Amount,  // Correct parameter name
+    ...
+);
+```
+
+**Lesson**: ALWAYS check record constructors before calling them!
+
+##### Fix #5: Type Conversions
+**Problem**: Type mismatches in metadata and parameters
+
+**Examples:**
+```csharp
+// ❌ WRONG - Type mismatch
+Dictionary<string, string> → Dictionary<string, object>  // Metadata
+decimal? → decimal  // RefundAmount parameter
+
+// ✅ FIXED with conversions
+Metadata: request.Metadata?.ToDictionary(
+    kvp => kvp.Key,
+    kvp => (object)kvp.Value)
+```
+
+**Lesson**: Check property/parameter types carefully!
+
+##### Fix #6: Extension Methods
+**Problem**: Used non-existent extension method
+**Root Cause**: Assumed common extension existed
+
+**Example:**
+```csharp
+// ❌ WRONG - Method doesn't exist
+User.GetUserId()
+
+// ✅ FIXED - Added extension method
+public static string? GetUserId(this ClaimsPrincipal user)
+{
+    return user?.FindFirst(ClaimTypes.NameIdentifier)?.Value
+        ?? user?.FindFirst("sub")?.Value;
+}
+```
+
+**Lesson**: Verify extension methods exist or create them in `/Extensions/`!
+
+##### Fix #7: Value Object Factory Methods
+**Problem**: Used wrong factory method names
+
+**Example:**
+```csharp
+// ❌ WRONG
+RefundPolicy.Custom(params...)
+
+// ✅ CORRECT
+RefundPolicy.Create(params...)
+```
+
+**Lesson**: Check static factory method names in value objects!
+
+#### 7. Build Fix Strategy (Process to Follow)
+
+**When compilation errors occur:**
+
+1. **Read First, Fix Second**:
+   ```bash
+   # ALWAYS read the actual implementation first
+   cat Domain/Aggregates/MyAggregate/MyAggregate.cs
+   cat Domain/ValueObjects/MyValueObject.cs
+   cat Domain/Enums/MyEnum.cs
+   ```
+
+2. **Check Method Signatures**:
+   - Parameter names (e.g., `Method` not `PaymentMethod`)
+   - Parameter types (e.g., `PaymentMethod` enum not `string`)
+   - Return types (e.g., properties not methods)
+
+3. **Verify Property Names**:
+   - Exact casing (e.g., `TaxName` not `Name`)
+   - Full names (e.g., `ScheduledAt` not `ScheduledDate`)
+   - Property vs Method (e.g., `PaymentIds` not `GetPaymentIds()`)
+
+4. **Test Enum Values**:
+   - Check actual enum file in `/Domain/Enums/`
+   - Don't assume common names (e.g., `CreditCard` vs `Card`)
+
+5. **Systematic Fixes**:
+   ```bash
+   # Use sed for batch fixes across test files
+   sed -i 's/\.OldName/\.NewName/g' **/*Tests.cs
+
+   # But verify each file afterward!
+   ```
+
+6. **Incremental Compilation**:
+   ```bash
+   # Build frequently to catch errors early
+   dotnet build
+   ```
+
+#### 8. Developer Guidelines Updates
+
+**When implementing new aggregates:**
+
+✅ **DO**:
+- Read actual domain classes before writing handlers
+- Check exact property and method names
+- Verify enum values in enum definition files
+- Include `IsSuccessful` and `ErrorMessage` in Result records
+- Use strongly-typed parameter names
+- Create extension methods when needed (in `/Extensions/`)
+
+❌ **DON'T**:
+- Assume property/method names without checking
+- Assume enum values follow conventions
+- Use generic parameter names (e.g., `Data` instead of specific name)
+- Create methods without checking if properties exist
+- Batch-fix without verification
+
+**Golden Rule**: *"Read the actual code before writing code that calls it!"*
 
 ---
 
