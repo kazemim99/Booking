@@ -83,11 +83,18 @@ namespace Booksy.ServiceCatalog.Application.Commands.Payment.RefundPayment
 
             return new RefundPaymentResult(
                 payment.Id.Value,
-                request.RefundAmount,
+                payment.BookingId?.Value ?? Guid.Empty,
+                payment.CustomerId.Value,
+                payment.ProviderId.Value,
+                payment.Amount.Amount,
                 payment.Amount.Currency,
-                refundResult.RefundId,
                 payment.Status.ToString(),
-                DateTime.UtcNow);
+                payment.Method.ToString(),
+                payment.PaymentIntentId,
+                DateTime.UtcNow,
+                payment.CreatedAt,
+                true,
+                null);
         }
     }
 }

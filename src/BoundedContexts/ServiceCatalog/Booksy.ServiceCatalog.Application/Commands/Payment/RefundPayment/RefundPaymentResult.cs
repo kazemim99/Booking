@@ -5,9 +5,16 @@ namespace Booksy.ServiceCatalog.Application.Commands.Payment.RefundPayment
 {
     public sealed record RefundPaymentResult(
         Guid PaymentId,
-        decimal RefundAmount,
+        Guid BookingId,
+        Guid CustomerId,
+        Guid ProviderId,
+        decimal Amount,
         string Currency,
-        string RefundId,
         string Status,
-        DateTime RefundedAt);
+        string PaymentMethod,
+        string? PaymentIntentId,
+        DateTime RefundedAt,
+        DateTime CreatedAt,
+        bool IsSuccessful,
+        string? ErrorMessage);
 }

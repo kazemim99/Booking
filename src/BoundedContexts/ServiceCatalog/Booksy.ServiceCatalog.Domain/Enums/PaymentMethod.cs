@@ -11,7 +11,7 @@ namespace Booksy.ServiceCatalog.Domain.Enums
         /// <summary>
         /// Credit or debit card
         /// </summary>
-        Card,
+        CreditCard,
 
         /// <summary>
         /// Bank transfer

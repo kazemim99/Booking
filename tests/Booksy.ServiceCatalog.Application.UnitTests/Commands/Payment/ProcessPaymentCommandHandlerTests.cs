@@ -17,7 +17,6 @@ public class ProcessPaymentCommandHandlerTests
     private readonly IPaymentGateway _paymentGateway;
     private readonly ILogger<ProcessPaymentCommandHandler> _logger;
     private readonly ProcessPaymentCommandHandler _handler;
-    private readonly ILogger<ProcessPaymentCommandHandler> _logger;
 
     public ProcessPaymentCommandHandlerTests()
     {
@@ -37,7 +36,7 @@ public class ProcessPaymentCommandHandlerTests
             ProviderId: Guid.NewGuid(),
             Amount: 100m,
             Currency: "USD",
-            Method: PaymentMethod.Card,
+            Method: PaymentMethod.CreditCard,
             PaymentMethodId: "pm_test_123",
             Description: "Test payment",
             Metadata: null);
@@ -91,7 +90,7 @@ public class ProcessPaymentCommandHandlerTests
             ProviderId: Guid.NewGuid(),
             Amount: 100m,
             Currency: "USD",
-            Method: PaymentMethod.Card,
+            Method: PaymentMethod.CreditCard,
             PaymentMethodId: "pm_test_123",
             Description: "Test payment",
             Metadata: null);
@@ -132,7 +131,7 @@ public class ProcessPaymentCommandHandlerTests
             ProviderId: Guid.NewGuid(),
             Amount: 100m,
             Currency: "USD",
-            Method: PaymentMethod.Card,
+            Method: PaymentMethod.CreditCard,
             PaymentMethodId: "pm_test_123",
             Description: "Test payment",
             Metadata: null);
@@ -178,7 +177,7 @@ public class ProcessPaymentCommandHandlerTests
             ProviderId: Guid.NewGuid(),
             Amount: 100m,
             Currency: "USD",
-            Method: PaymentMethod.Card,
+            Method: PaymentMethod.CreditCard,
             PaymentMethodId: "pm_test_123",
             Description: "Test payment",
             Metadata: metadata);
@@ -218,7 +217,7 @@ public class ProcessPaymentCommandHandlerTests
             ProviderId: Guid.NewGuid(),
             Amount: 100m,
             Currency: "USD",
-            Method: PaymentMethod.Card,
+            Method: PaymentMethod.CreditCard,
             PaymentMethodId: paymentMethodId,
             Description: "Test payment",
             Metadata: null);
@@ -254,7 +253,7 @@ public class ProcessPaymentCommandHandlerTests
             ProviderId: Guid.NewGuid(),
             Amount: 100m,
             Currency: "USD",
-            Method: PaymentMethod.Card,
+            Method: PaymentMethod.CreditCard,
             PaymentMethodId: "pm_test_123",
             Description: "Direct payment",
             Metadata: null);

@@ -105,11 +105,19 @@ namespace Booksy.ServiceCatalog.Application.Commands.Payout.ExecutePayout
             return new ExecutePayoutResult(
                 payout.Id.Value,
                 payout.ProviderId.Value,
+                payout.GrossAmount.Amount,
+                payout.CommissionAmount.Amount,
                 payout.NetAmount.Amount,
                 payout.NetAmount.Currency,
+                payout.PeriodStart,
+                payout.PeriodEnd,
+                payout.PaymentIds.Count,
                 payout.Status.ToString(),
                 payout.ExternalPayoutId ?? string.Empty,
-                result.ArrivalDate);
+                result.ArrivalDate,
+                result.IsSuccessful,
+                result.ErrorMessage,
+                payout.CreatedAt);
         }
     }
 }

@@ -11,5 +11,7 @@ namespace Booksy.ServiceCatalog.Application.Commands.Payment.ProcessPayment
         string Currency,
         string Status,
         string? PaymentIntentId,
-        DateTime ProcessedAt);
+        DateTime ProcessedAt,
+        bool IsSuccessful,
+        string? ErrorMessage);
 }

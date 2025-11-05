@@ -55,12 +55,9 @@ public class FinancialController : ControllerBase
     {
         if (startDate >= endDate)
         {
-            return BadRequest(new ApiErrorResult
-            {
-                Title = "Invalid Date Range",
-                Detail = "Start date must be before end date",
-                Status = StatusCodes.Status400BadRequest
-            });
+            return BadRequest(new ApiErrorResult(
+                "Start date must be before end date",
+                "INVALID_DATE_RANGE"));
         }
 
         var query = new GetProviderEarningsQuery(

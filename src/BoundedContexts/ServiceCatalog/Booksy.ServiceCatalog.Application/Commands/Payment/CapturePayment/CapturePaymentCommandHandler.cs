@@ -62,10 +62,18 @@ namespace Booksy.ServiceCatalog.Application.Commands.Payment.CapturePayment
 
             return new CapturePaymentResult(
                 payment.Id.Value,
+                payment.BookingId?.Value ?? Guid.Empty,
+                payment.CustomerId.Value,
+                payment.ProviderId.Value,
                 payment.Amount.Amount,
                 payment.Amount.Currency,
                 payment.Status.ToString(),
-                payment.CapturedAt!.Value);
+                payment.Method.ToString(),
+                payment.PaymentIntentId,
+                payment.CapturedAt!.Value,
+                payment.CreatedAt,
+                true,
+                null);
         }
     }
 }

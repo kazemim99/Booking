@@ -1,5 +1,6 @@
 using Booksy.Core.Domain.ValueObjects;
 using Booksy.ServiceCatalog.Application.Queries.Payment.GetProviderEarnings;
+using Booksy.ServiceCatalog.Domain.Aggregates;
 using Booksy.ServiceCatalog.Domain.Aggregates.BookingAggregate;
 using Booksy.ServiceCatalog.Domain.Aggregates.PaymentAggregate;
 using Booksy.ServiceCatalog.Domain.Enums;
@@ -58,8 +59,7 @@ public class FinancialControllerTests : ServiceCatalogIntegrationTestBase
                 UserId.From(customerId),
                 provider.Id,
                 Money.Create(100, "USD"),
-                PaymentMethod.CreditCard,
-                RefundPolicy.Moderate);
+                PaymentMethod.CreditCard);
 
             payment.ProcessCharge($"pi_test_{Guid.NewGuid()}", "pm_test_card");
             payments.Add(payment);
@@ -155,10 +155,8 @@ public class FinancialControllerTests : ServiceCatalogIntegrationTestBase
         paymentToRefund.Refund(
             Money.Create(50, "USD"),
             "re_test_123",
-            RefundReason.CustomerRequest,
+            RefundReason.CustomerCancellation,
             "Partial refund");
-
-        await SaveChangesAsync();
 
         AuthenticateAsProviderOwner(provider);
 
@@ -275,8 +273,7 @@ public class FinancialControllerTests : ServiceCatalogIntegrationTestBase
             UserId.From(customerId),
             provider.Id,
             Money.Create(200, "USD"),
-            PaymentMethod.CreditCard,
-            RefundPolicy.Moderate);
+            PaymentMethod.CreditCard);
 
         payment.ProcessCharge("pi_current_month", "pm_test_card");
         await CreateEntityAsync(payment);
@@ -292,7 +289,7 @@ public class FinancialControllerTests : ServiceCatalogIntegrationTestBase
         response.Data.Should().NotBeNull();
         response.Data!.GrossEarnings.Should().Be(200m);
         response.Data.PeriodStart.Month.Should().Be(DateTime.UtcNow.Month);
-        response.Data.PeriodEnd.Month.Should().Be(DateTime.UtcNow.Month);
+        response.Data.EndDate.Month.Should().Be(DateTime.UtcNow.Month);
     }
 
     #endregion
@@ -327,8 +324,7 @@ public class FinancialControllerTests : ServiceCatalogIntegrationTestBase
             UserId.From(customerId),
             provider.Id,
             Money.Create(300, "USD"),
-            PaymentMethod.CreditCard,
-            RefundPolicy.Moderate);
+            PaymentMethod.CreditCard);
 
         payment.ProcessCharge("pi_previous_month", "pm_test_card");
         await CreateEntityAsync(payment);
@@ -344,7 +340,7 @@ public class FinancialControllerTests : ServiceCatalogIntegrationTestBase
         response.Data.Should().NotBeNull();
         response.Data!.GrossEarnings.Should().Be(300m);
         response.Data.PeriodStart.Month.Should().Be(lastMonth.Month);
-        response.Data.PeriodEnd.Month.Should().Be(lastMonth.Month);
+        response.Data.EndDate.Month.Should().Be(lastMonth.Month);
     }
 
     #endregion

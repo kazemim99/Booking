@@ -11,6 +11,7 @@ using Booksy.ServiceCatalog.Infrastructure.Persistence.Context;
 using Microsoft.EntityFrameworkCore;
 using Booksy.ServiceCatalog.Domain.Aggregates;
 using Booksy.ServiceCatalog.Application.Queries.Payment.GetCustomerPayments;
+using Booksy.ServiceCatalog.Application.Queries.Payment.CalculatePricing;
 
 namespace Booksy.ServiceCatalog.IntegrationTests.API.Payments;
 
@@ -118,12 +119,12 @@ public class PaymentsControllerTests : ServiceCatalogIntegrationTestBase
         // Assert
         response.StatusCode.Should().Be(HttpStatusCode.Created);
         response.Data.Should().NotBeNull();
-        response.Data!.Status.Should().Be("Authorized");
+        response.Data!.Status.Should().Be("Paid");
 
         var payment = await DbContext.Set<Payment>()
             .FirstOrDefaultAsync(p => p.Id == PaymentId.From(response.Data.PaymentId));
         payment.Should().NotBeNull();
-        payment!.Status.Should().Be(PaymentStatus.Authorized);
+        payment!.Status.Should().Be(PaymentStatus.Paid);
     }
 
     [Fact]
@@ -214,8 +215,7 @@ public class PaymentsControllerTests : ServiceCatalogIntegrationTestBase
             UserId.From(booking.CustomerId.Value),
             provider.Id,
             Money.Create(100, "USD"),
-            PaymentMethod.CreditCard,
-            RefundPolicy.Moderate);
+            PaymentMethod.CreditCard);
 
         payment.Authorize("pi_test_123", "pm_test_card");
         await CreateEntityAsync(payment);
@@ -251,8 +251,7 @@ public class PaymentsControllerTests : ServiceCatalogIntegrationTestBase
             UserId.From(booking.CustomerId.Value),
             provider.Id,
             Money.Create(100, "USD"),
-            PaymentMethod.CreditCard,
-            RefundPolicy.Moderate);
+            PaymentMethod.CreditCard);
 
         payment.Authorize("pi_test_123", "pm_test_card");
         await CreateEntityAsync(payment);
@@ -308,8 +307,7 @@ public class PaymentsControllerTests : ServiceCatalogIntegrationTestBase
             UserId.From(booking.CustomerId.Value),
             provider.Id,
             Money.Create(100, "USD"),
-            PaymentMethod.CreditCard,
-            RefundPolicy.Flexible);
+            PaymentMethod.CreditCard);
 
         payment.ProcessCharge("pi_test_123", "pm_test_card");
         await CreateEntityAsync(payment);
@@ -346,8 +344,7 @@ public class PaymentsControllerTests : ServiceCatalogIntegrationTestBase
             UserId.From(booking.CustomerId.Value),
             provider.Id,
             Money.Create(100, "USD"),
-            PaymentMethod.CreditCard,
-            RefundPolicy.Flexible);
+            PaymentMethod.CreditCard);
 
         payment.ProcessCharge("pi_test_123", "pm_test_card");
         await CreateEntityAsync(payment);
@@ -385,8 +382,7 @@ public class PaymentsControllerTests : ServiceCatalogIntegrationTestBase
             UserId.From(booking.CustomerId.Value),
             provider.Id,
             Money.Create(100, "USD"),
-            PaymentMethod.CreditCard,
-            RefundPolicy.Flexible);
+            PaymentMethod.CreditCard);
 
         payment.ProcessCharge("pi_test_123", "pm_test_card");
         await CreateEntityAsync(payment);
@@ -421,8 +417,7 @@ public class PaymentsControllerTests : ServiceCatalogIntegrationTestBase
             UserId.From(booking.CustomerId.Value),
             provider.Id,
             Money.Create(100, "USD"),
-            PaymentMethod.CreditCard,
-            RefundPolicy.Moderate);
+            PaymentMethod.CreditCard);
 
         payment.ProcessCharge("pi_test_123", "pm_test_card");
         await CreateEntityAsync(payment);
@@ -472,8 +467,7 @@ public class PaymentsControllerTests : ServiceCatalogIntegrationTestBase
             UserId.From(customerId),
             provider.Id,
             Money.Create(100, "USD"),
-            PaymentMethod.CreditCard,
-            RefundPolicy.Moderate);
+            PaymentMethod.CreditCard);
         payment1.ProcessCharge("pi_test_1", "pm_test_card");
 
         var booking2 = Booking.CreateBookingRequest(
@@ -493,8 +487,7 @@ public class PaymentsControllerTests : ServiceCatalogIntegrationTestBase
             UserId.From(customerId),
             provider.Id,
             Money.Create(150, "USD"),
-            PaymentMethod.CreditCard,
-            RefundPolicy.Moderate);
+            PaymentMethod.CreditCard);
         payment2.ProcessCharge("pi_test_2", "pm_test_card");
 
         await CreateEntityAsync(payment1);

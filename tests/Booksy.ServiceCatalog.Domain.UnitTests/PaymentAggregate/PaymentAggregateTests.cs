@@ -23,7 +23,7 @@ public class PaymentAggregateTests
             _customerId,
             _providerId,
             _amount,
-            PaymentMethod.Card
+            PaymentMethod.CreditCard
             );
 
         // Assert
@@ -34,7 +34,7 @@ public class PaymentAggregateTests
         Assert.Equal(_providerId, payment.ProviderId);
         Assert.Equal(_amount, payment.Amount);
         Assert.Equal(PaymentStatus.Pending, payment.Status);
-        Assert.Equal(PaymentMethod.Card, payment.Method);
+        Assert.Equal(PaymentMethod.CreditCard, payment.Method);
         Assert.Equal(Money.Zero("USD"), payment.PaidAmount);
         Assert.Equal(Money.Zero("USD"), payment.RefundedAmount);
         Assert.True((DateTime.UtcNow - payment.CreatedAt).TotalSeconds < 5);
@@ -49,7 +49,7 @@ public class PaymentAggregateTests
             _customerId,
             _providerId,
             _amount,
-            PaymentMethod.Card
+            PaymentMethod.CreditCard
             );
 
         var paymentIntentId = "pi_test_123";
@@ -73,7 +73,7 @@ public class PaymentAggregateTests
             _customerId,
             _providerId,
             _amount,
-            PaymentMethod.Card
+            PaymentMethod.CreditCard
             );
 
         payment.Authorize("pi_test_123", "pm_test_456");
@@ -97,7 +97,7 @@ public class PaymentAggregateTests
             _customerId,
             _providerId,
             _amount,
-            PaymentMethod.Card
+            PaymentMethod.CreditCard
             );
 
         // Act & Assert
@@ -114,7 +114,7 @@ public class PaymentAggregateTests
             _customerId,
             _providerId,
             _amount,
-            PaymentMethod.Card
+            PaymentMethod.CreditCard
             );
 
         // Act
@@ -136,7 +136,7 @@ public class PaymentAggregateTests
             _customerId,
             _providerId,
             _amount,
-            PaymentMethod.Card
+            PaymentMethod.CreditCard
             );
 
         payment.ProcessCharge("pi_test_123", "pm_test_456");
@@ -163,7 +163,7 @@ public class PaymentAggregateTests
             _customerId,
             _providerId,
             _amount,
-            PaymentMethod.Card
+            PaymentMethod.CreditCard
             );
 
         payment.ProcessCharge("pi_test_123", "pm_test_456");
@@ -188,7 +188,7 @@ public class PaymentAggregateTests
             _customerId,
             _providerId,
             _amount,
-            PaymentMethod.Card
+            PaymentMethod.CreditCard
             );
 
         var refundAmount = Money.Create(50, "USD");
@@ -208,7 +208,7 @@ public class PaymentAggregateTests
             _customerId,
             _providerId,
             _amount,
-            PaymentMethod.Card
+            PaymentMethod.CreditCard
             );
 
         payment.ProcessCharge("pi_test_123", "pm_test_456");
@@ -230,7 +230,7 @@ public class PaymentAggregateTests
             _customerId,
             _providerId,
             _amount,
-            PaymentMethod.Card
+            PaymentMethod.CreditCard
             );
 
         payment.ProcessCharge("pi_test_123", "pm_test_456");
@@ -252,7 +252,7 @@ public class PaymentAggregateTests
             _customerId,
             _providerId,
             Money.Create(100, "USD"),
-            PaymentMethod.Card
+            PaymentMethod.CreditCard
             );
 
         payment.ProcessCharge("pi_test_123", "pm_test_456");
@@ -277,7 +277,7 @@ public class PaymentAggregateTests
             _customerId,
             _providerId,
             _amount,
-            PaymentMethod.Card
+            PaymentMethod.CreditCard
             );
 
         // Act
@@ -296,7 +296,7 @@ public class PaymentAggregateTests
             _customerId,
             _providerId,
             _amount,
-            PaymentMethod.Card
+            PaymentMethod.CreditCard
             );
 
         // Assert
@@ -314,7 +314,7 @@ public class PaymentAggregateTests
             _customerId,
             _providerId,
             _amount,
-            PaymentMethod.Card
+            PaymentMethod.CreditCard
             );
 
         payment.ClearDomainEvents();
@@ -344,7 +344,7 @@ public class PaymentAggregateTests
             _customerId,
             _providerId,
             _amount,
-            PaymentMethod.Card,
+            PaymentMethod.CreditCard,
             metadata: metadata);
 
         // Assert

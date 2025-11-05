@@ -9,6 +9,7 @@ using Booksy.ServiceCatalog.Domain.Enums;
 using Booksy.ServiceCatalog.Domain.ValueObjects;
 using Microsoft.EntityFrameworkCore;
 using Booksy.ServiceCatalog.Domain.Aggregates;
+using Booksy.ServiceCatalog.Application.Queries.Payout.GetPendingPayouts;
 
 namespace Booksy.ServiceCatalog.IntegrationTests.API.Payments;
 
@@ -54,8 +55,7 @@ public class PayoutsControllerTests : ServiceCatalogIntegrationTestBase
                 UserId.From(customerId),
                 provider.Id,
                 Money.Create(100 + (i * 50), "USD"),
-                PaymentMethod.CreditCard,
-                RefundPolicy.Moderate);
+                PaymentMethod.CreditCard);
 
             payment.ProcessCharge($"pi_test_{i}", "pm_test_card");
             payments.Add(payment);

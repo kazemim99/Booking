@@ -60,17 +60,23 @@ public class PaymentsController : ControllerBase
             return Unauthorized();
         }
 
+        if (!Enum.TryParse<Domain.Enums.PaymentMethod>(request.PaymentMethod, true, out var paymentMethod))
+        {
+            return BadRequest(new ApiErrorResult(
+                $"Invalid payment method: {request.PaymentMethod}",
+                "INVALID_PAYMENT_METHOD"));
+        }
+
         var command = new ProcessPaymentCommand(
             BookingId: request.BookingId,
             CustomerId: Guid.Parse(customerId),
             ProviderId: request.ProviderId,
             Amount: request.Amount,
             Currency: request.Currency,
-            PaymentMethod: request.PaymentMethod,
+            Method: paymentMethod,
             PaymentMethodId: request.PaymentMethodId,
-            CaptureImmediately: request.CaptureImmediately,
             Description: request.Description,
-            Metadata: request.Metadata);
+            Metadata: request.Metadata?.ToDictionary(kvp => kvp.Key, kvp => (object)kvp.Value));
 
         var result = await _mediator.Send(command, cancellationToken);
 
@@ -96,12 +102,9 @@ public class PaymentsController : ControllerBase
 
         if (!result.IsSuccessful)
         {
-            return BadRequest(new ApiErrorResult
-            {
-                Title = "Payment Failed",
-                Detail = result.ErrorMessage ?? "Payment processing failed",
-                Status = StatusCodes.Status400BadRequest
-            });
+            return BadRequest(new ApiErrorResult(
+                result.ErrorMessage ?? "Payment processing failed",
+                "PAYMENT_FAILED"));
         }
 
         return CreatedAtAction(nameof(GetPaymentById), new { id = result.PaymentId }, response);
@@ -129,8 +132,7 @@ public class PaymentsController : ControllerBase
     {
         var command = new CapturePaymentCommand(
             PaymentId: id,
-            Amount: request.Amount,
-            Notes: request.Notes);
+            AmountToCapture: request.Amount);
 
         var result = await _mediator.Send(command, cancellationToken);
 
@@ -156,12 +158,9 @@ public class PaymentsController : ControllerBase
 
         if (!result.IsSuccessful)
         {
-            return BadRequest(new ApiErrorResult
-            {
-                Title = "Capture Failed",
-                Detail = result.ErrorMessage ?? "Payment capture failed",
-                Status = StatusCodes.Status400BadRequest
-            });
+            return BadRequest(new ApiErrorResult(
+                result.ErrorMessage ?? "Payment capture failed",
+                "CAPTURE_FAILED"));
         }
 
         return Ok(response);
@@ -187,10 +186,17 @@ public class PaymentsController : ControllerBase
         [FromBody] RefundPaymentRequest request,
         CancellationToken cancellationToken = default)
     {
+        if (!Enum.TryParse<Domain.Enums.RefundReason>(request.Reason, true, out var refundReason))
+        {
+            return BadRequest(new ApiErrorResult(
+                $"Invalid refund reason: {request.Reason}",
+                "INVALID_REFUND_REASON"));
+        }
+
         var command = new RefundPaymentCommand(
             PaymentId: id,
-            RefundAmount: request.Amount,
-            Reason: request.Reason,
+            RefundAmount: request.Amount ?? 0,
+            Reason: refundReason,
             Notes: request.Notes);
 
         var result = await _mediator.Send(command, cancellationToken);
@@ -217,12 +223,9 @@ public class PaymentsController : ControllerBase
 
         if (!result.IsSuccessful)
         {
-            return BadRequest(new ApiErrorResult
-            {
-                Title = "Refund Failed",
-                Detail = result.ErrorMessage ?? "Payment refund failed",
-                Status = StatusCodes.Status400BadRequest
-            });
+            return BadRequest(new ApiErrorResult(
+                result.ErrorMessage ?? "Payment refund failed",
+                "REFUND_FAILED"));
         }
 
         return Ok(response);
@@ -249,12 +252,9 @@ public class PaymentsController : ControllerBase
 
         if (result == null)
         {
-            return NotFound(new ApiErrorResult
-            {
-                Title = "Payment Not Found",
-                Detail = $"Payment with ID {id} was not found",
-                Status = StatusCodes.Status404NotFound
-            });
+            return NotFound(new ApiErrorResult(
+                $"Payment with ID {id} was not found",
+                "PAYMENT_NOT_FOUND"));
         }
 
         return Ok(result);

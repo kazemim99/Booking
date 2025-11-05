@@ -106,8 +106,7 @@ public class PayoutsController : ControllerBase
     {
         var command = new ExecutePayoutCommand(
             PayoutId: id,
-            ConnectedAccountId: request.ConnectedAccountId,
-            Description: request.Description);
+            ConnectedAccountId: request.ConnectedAccountId);
 
         var result = await _mediator.Send(command, cancellationToken);
 
@@ -135,12 +134,9 @@ public class PayoutsController : ControllerBase
 
         if (!result.IsSuccessful)
         {
-            return BadRequest(new ApiErrorResult
-            {
-                Title = "Payout Execution Failed",
-                Detail = result.ErrorMessage ?? "Failed to execute payout",
-                Status = StatusCodes.Status400BadRequest
-            });
+            return BadRequest(new ApiErrorResult(
+                result.ErrorMessage ?? "Failed to execute payout",
+                "PAYOUT_EXECUTION_FAILED"));
         }
 
         return Ok(response);
@@ -168,12 +164,9 @@ public class PayoutsController : ControllerBase
 
         if (result == null)
         {
-            return NotFound(new ApiErrorResult
-            {
-                Title = "Payout Not Found",
-                Detail = $"Payout with ID {id} was not found",
-                Status = StatusCodes.Status404NotFound
-            });
+            return NotFound(new ApiErrorResult(
+                $"Payout with ID {id} was not found",
+                "PAYOUT_NOT_FOUND"));
         }
 
         return Ok(result);

@@ -5,8 +5,16 @@ namespace Booksy.ServiceCatalog.Application.Commands.Payment.CapturePayment
 {
     public sealed record CapturePaymentResult(
         Guid PaymentId,
-        decimal CapturedAmount,
+        Guid BookingId,
+        Guid CustomerId,
+        Guid ProviderId,
+        decimal Amount,
         string Currency,
         string Status,
-        DateTime CapturedAt);
+        string PaymentMethod,
+        string? PaymentIntentId,
+        DateTime CapturedAt,
+        DateTime CreatedAt,
+        bool IsSuccessful,
+        string? ErrorMessage);
 }

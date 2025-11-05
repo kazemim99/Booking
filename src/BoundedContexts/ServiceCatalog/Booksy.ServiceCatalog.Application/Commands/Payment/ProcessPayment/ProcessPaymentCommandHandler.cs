@@ -93,7 +93,9 @@ namespace Booksy.ServiceCatalog.Application.Commands.Payment.ProcessPayment
                 request.Currency,
                 payment.Status.ToString(),
                 payment.PaymentIntentId,
-                payment.CreatedAt);
+                payment.CreatedAt,
+                result.IsSuccessful,
+                result.ErrorMessage);
         }
     }
 }
