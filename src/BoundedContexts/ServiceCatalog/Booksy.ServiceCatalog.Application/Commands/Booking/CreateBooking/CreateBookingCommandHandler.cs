@@ -58,7 +58,7 @@ namespace Booksy.ServiceCatalog.Application.Commands.Booking.CreateBooking
 
             // Load service
             var service = await _serviceRepository.GetByIdAsync(
-                ServiceId.From(request.ServiceId),
+                ServiceId.Create(request.ServiceId),
                 cancellationToken);
 
             if (service == null)

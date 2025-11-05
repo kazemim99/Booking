@@ -1,6 +1,7 @@
 using Booksy.ServiceCatalog.Api.Models.Responses;
 using Booksy.ServiceCatalog.Application.Commands.Booking.CreateBooking;
 using Booksy.ServiceCatalog.Domain.Aggregates.BookingAggregate;
+using Booksy.ServiceCatalog.Domain.Entities;
 using Booksy.ServiceCatalog.Domain.ValueObjects;
 using Xunit;
 
@@ -84,7 +85,7 @@ public class AvailabilityControllerTests : ServiceCatalogIntegrationTestBase
         // Create a confirmed booking
         var customerId = Guid.NewGuid();
         var booking = await CreateBookingForCustomerAsync(customerId, provider, service, testDate);
-        booking.Confirm("test_payment_123");
+        booking.Confirm();
         await DbContext.SaveChangesAsync();
 
         // Act - Get available slots for the same date
@@ -182,7 +183,7 @@ public class AvailabilityControllerTests : ServiceCatalogIntegrationTestBase
         // Create a confirmed booking for this time
         var customerId = Guid.NewGuid();
         var booking = await CreateBookingForCustomerAsync(customerId, provider, service, futureTime);
-        booking.Confirm("test_payment_123");
+        booking.Confirm();
         await DbContext.SaveChangesAsync();
 
         // Act - Check availability for the same time
@@ -310,9 +311,9 @@ public class AvailabilityControllerTests : ServiceCatalogIntegrationTestBase
         var provider = await CreateAndAuthenticateAsProviderAsync("Test Provider", "provider@test.com");
 
         // Add business hours (Monday-Friday, 9 AM - 5 PM)
-        provider.SetBusinessHours(new Domain.ValueObjects.BusinessHours(new Dictionary<DayOfWeek, Domain.ValueObjects.TimeRange>
+        provider.SetBusinessHours(new BusinessHours(new Dictionary<DayOfWeek, TimeRange>
         {
-            { DayOfWeek.Monday, Domain.ValueObjects.TimeRange.Create(TimeSpan.FromHours(9), TimeSpan.FromHours(17)) },
+            { DayOfWeek.Monday, TimeRange.Create(TimeSpan.FromHours(9), TimeSpan.FromHours(17)) },
             { DayOfWeek.Tuesday, Domain.ValueObjects.TimeRange.Create(TimeSpan.FromHours(9), TimeSpan.FromHours(17)) },
             { DayOfWeek.Wednesday, Domain.ValueObjects.TimeRange.Create(TimeSpan.FromHours(9), TimeSpan.FromHours(17)) },
             { DayOfWeek.Thursday, Domain.ValueObjects.TimeRange.Create(TimeSpan.FromHours(9), TimeSpan.FromHours(17)) },

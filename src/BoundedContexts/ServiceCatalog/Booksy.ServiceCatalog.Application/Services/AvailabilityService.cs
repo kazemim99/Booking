@@ -65,7 +65,7 @@ namespace Booksy.ServiceCatalog.Application.Services
             }
 
             // Get business hours for the day
-            var dayOfWeek = date.DayOfWeek;
+            var dayOfWeek = (DayOfWeek)(int)date.DayOfWeek;
             var businessHours = provider.BusinessHours.FirstOrDefault(h => h.DayOfWeek == dayOfWeek);
 
             if (businessHours == null || !businessHours.IsOpen)
@@ -87,7 +87,7 @@ namespace Booksy.ServiceCatalog.Application.Services
 
             if (exception != null)
             {
-                if (!exception.IsOpen)
+                if (exception.IsClosed)
                 {
                     _logger.LogInformation("Provider is closed due to exception on {Date}", date);
                     return Array.Empty<AvailableTimeSlot>();
@@ -260,7 +260,7 @@ namespace Booksy.ServiceCatalog.Application.Services
             }
 
             // Check if provider is open on this day
-            var dayOfWeek = startTime.DayOfWeek;
+            var dayOfWeek = (DayOfWeek)(int)startTime.DayOfWeek;
             var businessHours = provider.BusinessHours.FirstOrDefault(h => h.DayOfWeek == dayOfWeek);
 
             if (businessHours == null || !businessHours.IsOpen)
@@ -276,7 +276,7 @@ namespace Booksy.ServiceCatalog.Application.Services
 
             // Check exceptions
             var exception = GetExceptionSchedule(provider, startTime.Date);
-            if (exception != null && !exception.IsOpen)
+            if (exception != null && exception.IsClosed)
             {
                 errors.Add("Provider is closed on this date (exception)");
             }
@@ -288,7 +288,7 @@ namespace Booksy.ServiceCatalog.Application.Services
                 var endTime = bookingTime.AddMinutes(service.Duration.Value);
 
                 TimeOnly openTime, closeTime;
-                if (exception != null && exception.IsOpen)
+                if (exception != null && !exception.IsClosed)
                 {
                     openTime = exception.OpenTime!.Value;
                     closeTime = exception.CloseTime!.Value;
@@ -397,16 +397,17 @@ namespace Booksy.ServiceCatalog.Application.Services
 
         private bool IsHoliday(Provider provider, DateTime date)
         {
+            var dateOnly = DateOnly.FromDateTime(date);
             return provider.Holidays.Any(h =>
-                date.Date >= h.StartDate.Date &&
-                date.Date <= h.EndDate.Date &&
+                dateOnly == h.Date &&
                 h.IsRecurring == false);
         }
 
         private ExceptionSchedule? GetExceptionSchedule(Provider provider, DateTime date)
         {
+            var dateOnly = DateOnly.FromDateTime(date);
             return provider.Exceptions
-                .Where(e => e.Date.Date == date.Date)
+                .Where(e => e.Date == dateOnly)
                 .OrderByDescending(e => e.Date)
                 .FirstOrDefault();
         }

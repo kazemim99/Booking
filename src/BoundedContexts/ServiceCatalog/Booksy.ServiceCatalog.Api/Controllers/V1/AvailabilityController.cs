@@ -51,10 +51,10 @@ public class AvailabilityController : ControllerBase
         if (request.Date.Date < DateTime.UtcNow.Date)
         {
             return BadRequest(new ApiErrorResult
-            {
-                Message = "Cannot check availability for past dates",
-                StatusCode = StatusCodes.Status400BadRequest
-            });
+            (
+"Cannot check availability for past dates",
+                StatusCodes.Status400BadRequest.ToString()
+            );
         }
 
         var query = new GetAvailableSlotsQuery(
@@ -108,10 +108,10 @@ public class AvailabilityController : ControllerBase
         if (startTime < DateTime.UtcNow)
         {
             return BadRequest(new ApiErrorResult
-            {
-                Message = "Cannot check availability for past times",
-                StatusCode = StatusCodes.Status400BadRequest
-            });
+            (
+                 "Cannot check availability for past times",
+                StatusCodes.Status400BadRequest.ToString()
+            );
         }
 
         var query = new GetAvailableSlotsQuery(
@@ -165,28 +165,31 @@ public class AvailabilityController : ControllerBase
         if (fromDate.Date < DateTime.UtcNow.Date)
         {
             return BadRequest(new ApiErrorResult
-            {
-                Message = "From date cannot be in the past",
-                StatusCode = StatusCodes.Status400BadRequest
-            });
+            (
+                "From date cannot be in the past",
+                StatusCodes.Status400BadRequest.ToString()
+            ));
         }
 
         if (toDate < fromDate)
         {
             return BadRequest(new ApiErrorResult
-            {
-                Message = "To date must be after from date",
-                StatusCode = StatusCodes.Status400BadRequest
-            });
+        (
+             "To date must be after from date",
+            StatusCodes.Status400BadRequest.ToString()
+        ));
+
         }
 
         if ((toDate - fromDate).Days > 30)
         {
+
             return BadRequest(new ApiErrorResult
-            {
-                Message = "Date range cannot exceed 30 days",
-                StatusCode = StatusCodes.Status400BadRequest
-            });
+ (
+     "Date range cannot exceed 30 days",
+     StatusCodes.Status400BadRequest.ToString()
+ ));
+
         }
 
         var availableDates = new List<DateAvailabilityResponse>();

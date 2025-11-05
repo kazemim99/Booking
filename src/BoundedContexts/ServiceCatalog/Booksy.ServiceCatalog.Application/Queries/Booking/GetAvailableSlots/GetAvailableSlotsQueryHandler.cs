@@ -45,7 +45,7 @@ namespace Booksy.ServiceCatalog.Application.Queries.Booking.GetAvailableSlots
 
             // Load service
             var service = await _serviceRepository.GetByIdAsync(
-                ServiceId.From(request.ServiceId),
+                ServiceId.Create(request.ServiceId),
                 cancellationToken);
 
             if (service == null)

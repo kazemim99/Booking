@@ -75,50 +75,50 @@ namespace Booksy.ServiceCatalog.Infrastructure.Persistence.Seeders
                 case ProviderType.Salon:
                     // Salon has 3-5 staff
                     provider.AddStaff("Sarah", "Johnson", StaffRole.Owner, PhoneNumber.Create("5551111111"));
-                    provider.AddStaff("Emily", "Davis", StaffRole.SeniorStylist, PhoneNumber.Create("5552222222"));
-                    provider.AddStaff("Michael", "Brown", StaffRole.Stylist, PhoneNumber.Create("5553333333"));
-                    provider.AddStaff("Jessica", "Wilson", StaffRole.JuniorStylist, PhoneNumber.Create("5554444444"));
+                    provider.AddStaff("Emily", "Davis", StaffRole.ServiceProvider, PhoneNumber.Create("5552222222"));
+                    provider.AddStaff("Michael", "Brown", StaffRole.ServiceProvider, PhoneNumber.Create("5553333333"));
+                    provider.AddStaff("Jessica", "Wilson", StaffRole.Assistant, PhoneNumber.Create("5554444444"));
                     staffCount = 4;
                     break;
 
                 case ProviderType.Spa:
                     // Spa has 4-6 staff
                     provider.AddStaff("Amanda", "Martinez", StaffRole.Owner, PhoneNumber.Create("5555555555"));
-                    provider.AddStaff("David", "Garcia", StaffRole.SeniorTherapist, PhoneNumber.Create("5556666666"));
-                    provider.AddStaff("Lisa", "Rodriguez", StaffRole.Therapist, PhoneNumber.Create("5557777777"));
-                    provider.AddStaff("Christopher", "Lee", StaffRole.Therapist, PhoneNumber.Create("5558888888"));
+                    provider.AddStaff("David", "Garcia", StaffRole.ServiceProvider, PhoneNumber.Create("5556666666"));
+                    provider.AddStaff("Lisa", "Rodriguez", StaffRole.ServiceProvider, PhoneNumber.Create("5557777777"));
+                    provider.AddStaff("Christopher", "Lee", StaffRole.ServiceProvider, PhoneNumber.Create("5558888888"));
                     provider.AddStaff("Jennifer", "Walker", StaffRole.Receptionist, PhoneNumber.Create("5559999999"));
                     staffCount = 5;
                     break;
 
-                case ProviderType.MedicalSpa:
-                    // Medical spa has specialized staff
-                    provider.AddStaff("Dr. Robert", "Chen", StaffRole.MedicalDirector, PhoneNumber.Create("5550000000"));
-                    provider.AddStaff("Nurse Maria", "Lopez", StaffRole.Nurse, PhoneNumber.Create("5550000001"));
-                    provider.AddStaff("Anna", "Kim", StaffRole.Esthetician, PhoneNumber.Create("5550000002"));
+                case ProviderType.Medical:
+                    // Medical facility has specialized staff
+                    provider.AddStaff("Dr. Robert", "Chen", StaffRole.Specialist, PhoneNumber.Create("5550000000"));
+                    provider.AddStaff("Nurse Maria", "Lopez", StaffRole.ServiceProvider, PhoneNumber.Create("5550000001"));
+                    provider.AddStaff("Anna", "Kim", StaffRole.Assistant, PhoneNumber.Create("5550000002"));
                     staffCount = 3;
                     break;
 
                 case ProviderType.Clinic:
                     // Clinic has medical staff
-                    provider.AddStaff("Dr. James", "Anderson", StaffRole.MedicalDirector, PhoneNumber.Create("5550000003"));
-                    provider.AddStaff("Nurse Patricia", "Thomas", StaffRole.Nurse, PhoneNumber.Create("5550000004"));
+                    provider.AddStaff("Dr. James", "Anderson", StaffRole.Specialist, PhoneNumber.Create("5550000003"));
+                    provider.AddStaff("Nurse Patricia", "Thomas", StaffRole.ServiceProvider, PhoneNumber.Create("5550000004"));
                     staffCount = 2;
                     break;
 
-                case ProviderType.FitnessCenter:
+                case ProviderType.GymFitness:
                     // Fitness center has trainers
                     provider.AddStaff("Coach Mike", "Thompson", StaffRole.Owner, PhoneNumber.Create("5550000005"));
-                    provider.AddStaff("Trainer Alex", "White", StaffRole.Trainer, PhoneNumber.Create("5550000006"));
-                    provider.AddStaff("Instructor Sam", "Harris", StaffRole.Instructor, PhoneNumber.Create("5550000007"));
+                    provider.AddStaff("Trainer Alex", "White", StaffRole.ServiceProvider, PhoneNumber.Create("5550000006"));
+                    provider.AddStaff("Instructor Sam", "Harris", StaffRole.ServiceProvider, PhoneNumber.Create("5550000007"));
                     staffCount = 3;
                     break;
 
-                case ProviderType.WellnessCenter:
-                    // Wellness center has diverse staff
+                case ProviderType.Professional:
+                    // Professional service center has diverse staff
                     provider.AddStaff("Dr. Emma", "Clark", StaffRole.Owner, PhoneNumber.Create("5550000008"));
-                    provider.AddStaff("Therapist Olivia", "Lewis", StaffRole.Therapist, PhoneNumber.Create("5550000009"));
-                    provider.AddStaff("Counselor Daniel", "Young", StaffRole.Consultant, PhoneNumber.Create("5550000010"));
+                    provider.AddStaff("Therapist Olivia", "Lewis", StaffRole.ServiceProvider, PhoneNumber.Create("5550000009"));
+                    provider.AddStaff("Counselor Daniel", "Young", StaffRole.Specialist, PhoneNumber.Create("5550000010"));
                     staffCount = 3;
                     break;
 

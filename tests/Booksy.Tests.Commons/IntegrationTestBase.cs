@@ -194,6 +194,24 @@ public abstract class IntegrationTestBase<TFactory, TDbContext, TStartup>
     protected async Task<HttpResponseMessage> GetAsync(string url)
     {
         return await Client.GetAsync(url);
+
+    }
+    protected async Task<ApiResponse<TResponse>> GetAsync<TResponse>(string url)
+    {
+
+        var result = await Client.GetAsync(url);
+        var content = await result.Content.ReadAsStringAsync();
+        if (string.IsNullOrEmpty(content))
+        {
+            return new ApiResponse<TResponse>
+            {
+                StatusCode = result.StatusCode,
+            };
+        }
+        var response = JsonConvert.DeserializeObject<ApiResponse<TResponse>>(content);
+        if (response.StatusCode == System.Net.HttpStatusCode.InternalServerError)
+            throw new Exception($"Error Message: {response.Message} \n Erros: {response.Errors}");
+        return response;
     }
 
     protected async Task<ApiResponse> DeleteAsync(string url)

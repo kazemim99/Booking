@@ -1,3 +1,4 @@
+using Booksy.Core.Domain.Infrastructure.Middleware;
 using Booksy.ServiceCatalog.Api.Models.Responses;
 using Booksy.ServiceCatalog.Domain.Aggregates.BookingAggregate;
 using Booksy.ServiceCatalog.Domain.Enums;
@@ -303,13 +304,13 @@ public class BookingsControllerTests : ServiceCatalogIntegrationTestBase
         };
 
         // Act
-        var response = await PostAsJsonAsync<RescheduleBookingRequest, MessageResponse>(
+        var response = await PostAsJsonAsync<RescheduleBookingRequest, RescheduleBookingRequest>(
             $"/api/v1/bookings/{booking.Id.Value}/reschedule", request);
 
         // Assert
         response.StatusCode.Should().Be(HttpStatusCode.OK);
         response.Data.Should().NotBeNull();
-        response.Data!.Message.Should().Contain("rescheduled successfully");
+        response.Message.Should().Contain("rescheduled successfully");
 
         // Verify old booking is marked as rescheduled
         var oldBooking = await DbContext.Bookings.FirstAsync(b => b.Id == booking.Id);
@@ -382,8 +383,8 @@ public class BookingsControllerTests : ServiceCatalogIntegrationTestBase
             provider.AddStaff(
                 "Test Staff",
                 "staff@test.com",
-                Core.Domain.ValueObjects.PhoneNumber.Create("+1234567890"),
-                "Stylist");
+                StaffRole.Assistant,
+                Core.Domain.ValueObjects.PhoneNumber.Create("+1234567890"));
         }
 
         await DbContext.SaveChangesAsync();

@@ -18,5 +18,11 @@ namespace Booksy.ServiceCatalog.Application.Commands.Booking.CreateBooking
         decimal DepositAmount,
         bool RequiresDeposit,
         string Status,
-        DateTime RequestedAt);
+        DateTime RequestedAt)
+    {
+        public int DurationMinutes { get; set; }
+        public string Currency { get; set; }
+        public string PaymentStatus { get; set; }
+        public DateTime CreatedAt { get; set; }
+    }
 }

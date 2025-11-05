@@ -50,8 +50,6 @@ namespace Booksy.ServiceCatalog.Application.Commands.Booking.ConfirmBooking
             // Update booking
             await _bookingRepository.UpdateBookingAsync(booking, cancellationToken);
 
-            // Commit transaction and publish events
-            await _unitOfWork.CommitAndPublishEventsAsync(cancellationToken);
 
             _logger.LogInformation("Booking {BookingId} confirmed successfully", booking.Id);
 

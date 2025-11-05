@@ -14,5 +14,10 @@ namespace Booksy.ServiceCatalog.Application.Queries.Booking.GetAvailableSlots
         DateTime EndTime,
         int DurationMinutes,
         Guid StaffId,
-        string StaffName);
+        string StaffName)
+    {
+        public bool IsAvailable { get; set; }
+        public Guid? AvailableStaffId { get; set; }
+        public string AvailableStaffName { get; set; }
+    }
 }

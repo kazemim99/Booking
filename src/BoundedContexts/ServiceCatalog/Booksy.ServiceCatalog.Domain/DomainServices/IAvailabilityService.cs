@@ -2,7 +2,6 @@
 // Booksy.ServiceCatalog.Domain/DomainServices/IAvailabilityService.cs
 // ========================================
 using Booksy.ServiceCatalog.Domain.Aggregates;
-using Booksy.ServiceCatalog.Domain.Aggregates.ServiceAggregate;
 using Booksy.ServiceCatalog.Domain.Entities;
 using Booksy.ServiceCatalog.Domain.ValueObjects;
 

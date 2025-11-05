@@ -52,7 +52,7 @@ namespace Booksy.ServiceCatalog.Infrastructure.Persistence.Configurations
             builder.Property(b => b.ServiceId)
                 .HasConversion(
                     id => id.Value,
-                    value => ServiceId.From(value))
+                    value => ServiceId.Create(value))
                 .IsRequired()
                 .HasColumnName("ServiceId");
 
