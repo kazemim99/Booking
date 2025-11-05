@@ -2,6 +2,7 @@
 using Booksy.ServiceCatalog.Domain.Entities;
 using Booksy.ServiceCatalog.Domain.Events;
 using Booksy.ServiceCatalog.Domain.Exceptions;
+using Booksy.ServiceCatalog.Domain.ValueObjects;
 
 namespace Booksy.ServiceCatalog.Domain.Aggregates
 {
@@ -39,6 +40,7 @@ namespace Booksy.ServiceCatalog.Domain.Aggregates
         public int MaxAdvanceBookingDays { get; private set; }
         public int MinAdvanceBookingHours { get; private set; }
         public int MaxConcurrentBookings { get; private set; }
+        public BookingPolicy? BookingPolicy { get; private set; }
 
         // Metadata
         public string? ImageUrl { get; private set; }
@@ -255,7 +257,13 @@ namespace Booksy.ServiceCatalog.Domain.Aggregates
             MaxConcurrentBookings = maxConcurrent;
         }
 
-       
+        /// <summary>
+        /// Set a comprehensive booking policy for this service
+        /// </summary>
+        public void SetBookingPolicy(BookingPolicy policy)
+        {
+            BookingPolicy = policy ?? throw new ArgumentNullException(nameof(policy));
+        }
 
         public void SetMetadata(string key, string value)
         {

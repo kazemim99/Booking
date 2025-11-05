@@ -70,6 +70,8 @@ namespace Booksy.ServiceCatalog.Infrastructure.DependencyInjection
             services.AddScoped<IProviderWriteRepository, ProviderWriteRepository>();
             services.AddScoped<IServiceReadRepository, ServiceReadRepository>();
             services.AddScoped<IServiceWriteRepository, ServiceWriteRepository>();
+            services.AddScoped<IBookingReadRepository, BookingReadRepository>();
+            services.AddScoped<IBookingWriteRepository, BookingWriteRepository>();
 
 
             services.AddScoped<IProviderApplicationService, ProviderApplicationService>();
@@ -85,6 +87,7 @@ namespace Booksy.ServiceCatalog.Infrastructure.DependencyInjection
             services.AddScoped<IFileStorageService, LocalFileStorageService>();
             services.AddScoped<IImageOptimizationService, ImageSharpOptimizationService>();
             services.AddScoped<Application.Services.IImageStorageService, Infrastructure.Services.ImageStorageService>();
+            services.AddScoped<Domain.DomainServices.IAvailabilityService, Application.Services.AvailabilityService>();
 
             // Application Services
             services.AddScoped<IProviderApplicationService, ProviderApplicationService>();
