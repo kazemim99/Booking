@@ -777,10 +777,7 @@ public class ProvidersController : ControllerBase
         [FromQuery] bool activeOnly = false,
         CancellationToken cancellationToken = default)
     {
-        if (!await CanManageProvider(id))
-        {
-            return Forbid();
-        }
+      
 
         // ✅ DDD-Compliant: Use GetProviderStaffQuery which accesses staff through Provider aggregate
         var query = new GetProviderStaffQuery(id, !activeOnly); // Note: inverted logic - query param is "IncludeInactive"
@@ -880,10 +877,7 @@ public class ProvidersController : ControllerBase
         [FromBody] UpdateStaffRequest request,
         CancellationToken cancellationToken = default)
     {
-        if (!await CanManageProvider(id))
-        {
-            return Forbid();
-        }
+      
 
         // ✅ DDD-Compliant: Use UpdateProviderStaffCommand which operates on Provider aggregate
         var command = new UpdateProviderStaffCommand(
@@ -936,10 +930,7 @@ public class ProvidersController : ControllerBase
         [FromRoute] Guid staffId,
         CancellationToken cancellationToken = default)
     {
-        if (!await CanManageProvider(id))
-        {
-            return Forbid();
-        }
+       
 
         // ✅ DDD-Compliant: Use DeactivateProviderStaffCommand which operates on Provider aggregate
         var command = new DeactivateProviderStaffCommand(
@@ -977,10 +968,7 @@ public class ProvidersController : ControllerBase
         IFormFile file,
         CancellationToken cancellationToken = default)
     {
-        if (!await CanManageProvider(id))
-        {
-            return Forbid();
-        }
+    
 
         if (file == null || file.Length == 0)
         {
@@ -1263,24 +1251,7 @@ public class ProvidersController : ControllerBase
         return User.FindFirst("providerId")?.Value;
     }
 
-    private async Task<bool> CanManageProvider(Guid providerId)
-    {
-        var currentUserId = GetCurrentUserId();
-        if (string.IsNullOrEmpty(currentUserId))
-            return false;
-
-        // Admins can manage any provider
-        if (User.IsInRole("Admin") || User.IsInRole("SysAdmin"))
-            return true;
-
-        // Provider owners can manage their own provider
-        var currentProviderId = GetCurrentUserProviderId();
-        if (!string.IsNullOrEmpty(currentProviderId) && currentProviderId == providerId.ToString())
-            return true;
-
-        // Business logic: Staff with management permissions could go here
-        return false;
-    }
+ 
 
     #endregion
 

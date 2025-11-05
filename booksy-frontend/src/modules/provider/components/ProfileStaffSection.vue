@@ -16,7 +16,7 @@
         <div class="staff-info">
           <h4 class="staff-name">{{ member.firstName }} {{ member.lastName }}</h4>
           <p class="staff-details">
-            {{ member.role || 'Staff' }} • {{ member.phoneNumber || 'No phone' }}
+            {{ member.role || 'پرسنل' }} • {{ member.phoneNumber || 'بدون شماره' }}
           </p>
         </div>
         <div class="staff-actions">
@@ -57,44 +57,55 @@
     <!-- Add/Edit Form -->
     <div v-if="isAdding" class="staff-form">
       <div class="form-group">
-        <label for="staffName" class="form-label">Full Name</label>
+        <label for="staffFirstName" class="form-label">نام</label>
         <input
-          id="staffName"
-          v-model="formData.name"
+          id="staffFirstName"
+          v-model="formData.firstName"
           type="text"
           class="form-input"
-          placeholder="e.g., John Doe"
+          placeholder="مثال: علی"
         />
       </div>
 
       <div class="form-group">
-        <label for="staffPosition" class="form-label">Position</label>
+        <label for="staffLastName" class="form-label">نام خانوادگی</label>
+        <input
+          id="staffLastName"
+          v-model="formData.lastName"
+          type="text"
+          class="form-input"
+          placeholder="مثال: احمدی"
+        />
+      </div>
+
+      <div class="form-group">
+        <label for="staffPosition" class="form-label">سمت</label>
         <input
           id="staffPosition"
           v-model="formData.position"
           type="text"
           class="form-input"
-          placeholder="e.g., Stylist"
+          placeholder="مثال: آرایشگر"
         />
       </div>
 
       <div class="form-group">
-        <label for="staffPhone" class="form-label">Phone Number</label>
+        <label for="staffPhone" class="form-label">شماره تماس</label>
         <input
           id="staffPhone"
           v-model="formData.phone"
           type="tel"
           class="form-input"
-          placeholder="+1 (555) 000-0000"
+          placeholder="09123456789"
         />
       </div>
 
       <div class="form-actions">
         <AppButton type="button" variant="primary" size="medium" @click="handleSaveStaff">
-          {{ editingId ? 'Update' : 'Add' }}
+          {{ editingId ? 'بروزرسانی' : 'افزودن' }}
         </AppButton>
         <AppButton type="button" variant="outline" size="medium" @click="handleCancelAdd">
-          Cancel
+          لغو
         </AppButton>
       </div>
 
@@ -118,36 +129,112 @@
           d="M12 4v16m8-8H4"
         />
       </svg>
-      Add Staff Member
+      افزودن پرسنل
     </AppButton>
   </div>
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted } from 'vue'
+import { ref, onMounted, watch } from 'vue'
 import { useStaffStore } from '../stores/staff.store'
 import { useProviderStore } from '../stores/provider.store'
+import { useToast } from '@/shared/composables/useToast'
 import AppButton from '@/shared/components/ui/Button/AppButton.vue'
 import type { Staff } from '../types/staff.types'
+import type { TeamMember } from '../types/registration.types'
+
+// Internal staff member type (unified structure)
+interface StaffMember {
+  id: string
+  firstName: string
+  lastName: string
+  phoneNumber?: string
+  role?: string
+}
+
+interface Props {
+  // For registration flow: pass local staff array (TeamMember[])
+  modelValue?: TeamMember[]
+  // For profile mode: load from backend
+  useBackend?: boolean
+}
+
+interface Emits {
+  (e: 'update:modelValue', value: TeamMember[]): void
+}
+
+const props = withDefaults(defineProps<Props>(), {
+  modelValue: () => [],
+  useBackend: true,
+})
+
+const emit = defineEmits<Emits>()
 
 const staffStore = useStaffStore()
 const providerStore = useProviderStore()
+const toast = useToast()
 
-// State
-const staffMembers = ref<Staff[]>([])
+// State - use unified internal structure
+const staffMembers = ref<StaffMember[]>([])
 const isAdding = ref(false)
 const editingId = ref<string | null>(null)
 const error = ref('')
 
 const formData = ref({
-  name: '',
+  firstName: '',
+  lastName: '',
   position: '',
   phone: '',
 })
 
-// Load staff on mount
+// Helper functions to convert between types
+function teamMemberToStaff(member: TeamMember): StaffMember {
+  const nameParts = member.name.trim().split(' ')
+  return {
+    id: member.id,
+    firstName: nameParts[0] || '',
+    lastName: nameParts.slice(1).join(' ') || '',
+    phoneNumber: member.phoneNumber,
+    role: member.position,
+  }
+}
+
+function staffToTeamMember(member: StaffMember): TeamMember {
+  return {
+    id: member.id,
+    name: `${member.firstName} ${member.lastName}`.trim(),
+    email: '',
+    phoneNumber: member.phoneNumber || '',
+    countryCode: '',
+    position: member.role || '',
+    isOwner: false,
+  }
+}
+
+function backendStaffToInternal(staff: Staff): StaffMember {
+  return {
+    id: staff.id,
+    firstName: staff.firstName,
+    lastName: staff.lastName,
+    phoneNumber: staff.phoneNumber,
+    role: staff.role,
+  }
+}
+
+// Watch modelValue for changes (registration mode)
+watch(() => props.modelValue, (newValue) => {
+  if (!props.useBackend && newValue) {
+    staffMembers.value = newValue.map(teamMemberToStaff)
+  }
+}, { immediate: true })
+
+// Load staff on mount (profile mode)
 onMounted(async () => {
-  await loadStaff()
+  if (props.useBackend) {
+    await loadStaff()
+  } else {
+    staffMembers.value = props.modelValue.map(teamMemberToStaff)
+  }
 })
 
 async function loadStaff() {
@@ -159,7 +246,7 @@ async function loadStaff() {
     const providerId = providerStore.currentProvider?.id
     if (providerId) {
       await staffStore.loadStaffByProvider(providerId)
-      staffMembers.value = staffStore.staff
+      staffMembers.value = staffStore.staff.map(backendStaffToInternal)
     }
   } catch (err) {
     console.error('Error loading staff:', err)
@@ -170,16 +257,18 @@ function handleAddClick() {
   isAdding.value = true
   editingId.value = null
   formData.value = {
-    name: '',
+    firstName: '',
+    lastName: '',
     position: '',
     phone: '',
   }
   error.value = ''
 }
 
-function handleEdit(member: Staff) {
+function handleEdit(member: StaffMember) {
   formData.value = {
-    name: `${member.firstName} ${member.lastName}`.trim(),
+    firstName: member.firstName,
+    lastName: member.lastName,
     position: member.role || '',
     phone: member.phoneNumber || '',
   }
@@ -189,73 +278,109 @@ function handleEdit(member: Staff) {
 }
 
 async function handleSaveStaff() {
-  if (!formData.value.name || !formData.value.phone || !formData.value.position) {
-    error.value = 'Please fill in all fields'
+  if (!formData.value.firstName || !formData.value.lastName || !formData.value.phone || !formData.value.position) {
+    error.value = 'لطفاً تمام فیلدها را پر کنید'
     return
   }
 
-  if (!providerStore.currentProvider?.id) {
-    error.value = 'Provider not found'
-    return
+  const newMember: StaffMember = {
+    id: editingId.value || Date.now().toString(),
+    firstName: formData.value.firstName,
+    lastName: formData.value.lastName,
+    phoneNumber: formData.value.phone,
+    role: formData.value.position,
   }
 
-  // Split name into first and last name
-  const nameParts = formData.value.name.trim().split(' ')
-  const firstName = nameParts[0] || ''
-  const lastName = nameParts.slice(1).join(' ') || ''
+  if (props.useBackend) {
+    // Backend mode (Profile)
+    if (!providerStore.currentProvider?.id) {
+      error.value = 'ارائه‌دهنده یافت نشد'
+      return
+    }
 
-  try {
+    try {
+      if (editingId.value) {
+        // Update existing staff
+        await staffStore.updateStaff(providerStore.currentProvider.id, editingId.value, {
+          firstName: formData.value.firstName,
+          lastName: formData.value.lastName,
+          phoneNumber: formData.value.phone || undefined,
+          role: formData.value.position || undefined,
+        })
+      } else {
+        // Create new staff
+        await staffStore.createStaff(providerStore.currentProvider.id, {
+          firstName: formData.value.firstName,
+          lastName: formData.value.lastName,
+          phoneNumber: formData.value.phone,
+          role: formData.value.position,
+        })
+      }
+
+      // Reload staff list
+      await loadStaff()
+      toast.success(editingId.value ? 'پرسنل با موفقیت بروزرسانی شد' : 'پرسنل با موفقیت اضافه شد')
+    } catch (err) {
+      const errorMessage = err instanceof Error ? err.message : 'خطا در ذخیره اطلاعات پرسنل'
+      error.value = errorMessage
+      toast.error(errorMessage)
+      console.error('Error saving staff:', err)
+      return
+    }
+  } else {
+    // Local mode (Registration)
     if (editingId.value) {
-      // Update existing staff
-      await staffStore.updateStaff(providerStore.currentProvider.id, editingId.value, {
-        firstName,
-        lastName,
-        phoneNumber: formData.value.phone || undefined,
-        role: formData.value.position || undefined,
-      })
+      // Edit existing staff member
+      staffMembers.value = staffMembers.value.map((s) =>
+        s.id === editingId.value ? newMember : s
+      )
     } else {
-      // Create new staff
-      await staffStore.createStaff(providerStore.currentProvider.id, {
-        firstName,
-        lastName,
-        phoneNumber: formData.value.phone,
-        role: formData.value.position,
-      })
+      // Add new staff member
+      staffMembers.value.push(newMember)
     }
 
-    // Reload staff list
-    await loadStaff()
-
-    // Reset form
-    isAdding.value = false
-    editingId.value = null
-    formData.value = {
-      name: '',
-      position: '',
-      phone: '',
-    }
-    error.value = ''
-  } catch (err) {
-    error.value = err instanceof Error ? err.message : 'Failed to save staff member'
-    console.error('Error saving staff:', err)
+    // Emit update (convert to TeamMember[] for registration mode)
+    emit('update:modelValue', staffMembers.value.map(staffToTeamMember))
   }
+
+  // Reset form
+  isAdding.value = false
+  editingId.value = null
+  formData.value = {
+    firstName: '',
+    lastName: '',
+    position: '',
+    phone: '',
+  }
+  error.value = ''
 }
 
 async function handleDelete(id: string) {
-  if (!confirm('Are you sure you want to delete this staff member?')) {
+  if (!confirm('آیا از حذف این پرسنل اطمینان دارید؟')) {
     return
   }
 
-  if (!providerStore.currentProvider?.id) {
-    return
-  }
+  if (props.useBackend) {
+    // Backend mode (Profile)
+    if (!providerStore.currentProvider?.id) {
+      return
+    }
 
-  try {
-    await staffStore.deleteStaff(providerStore.currentProvider.id, id)
-    await loadStaff()
-  } catch (err) {
-    error.value = err instanceof Error ? err.message : 'Failed to delete staff member'
-    console.error('Error deleting staff:', err)
+    try {
+      await staffStore.deleteStaff(providerStore.currentProvider.id, id)
+      await loadStaff()
+      toast.success('پرسنل با موفقیت حذف شد')
+    } catch (err) {
+      const errorMessage = err instanceof Error ? err.message : 'خطا در حذف پرسنل'
+      error.value = errorMessage
+      toast.error(errorMessage)
+      console.error('Error deleting staff:', err)
+    }
+  } else {
+    // Local mode (Registration)
+    staffMembers.value = staffMembers.value.filter((s) => s.id !== id)
+    emit('update:modelValue', staffMembers.value.map(staffToTeamMember))
+    toast.success('پرسنل حذف شد')
   }
 }
 
@@ -263,7 +388,8 @@ function handleCancelAdd() {
   isAdding.value = false
   editingId.value = null
   formData.value = {
-    name: '',
+    firstName: '',
+    lastName: '',
     position: '',
     phone: '',
   }
