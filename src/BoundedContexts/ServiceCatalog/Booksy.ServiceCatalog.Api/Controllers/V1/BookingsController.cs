@@ -6,6 +6,8 @@ using Booksy.ServiceCatalog.Application.Commands.Booking.CancelBooking;
 using Booksy.ServiceCatalog.Application.Commands.Booking.CompleteBooking;
 using Booksy.ServiceCatalog.Application.Commands.Booking.ConfirmBooking;
 using Booksy.ServiceCatalog.Application.Commands.Booking.CreateBooking;
+using Booksy.ServiceCatalog.Application.Commands.Booking.MarkNoShow;
+using Booksy.ServiceCatalog.Application.Commands.Booking.RescheduleBooking;
 using Booksy.ServiceCatalog.Application.Queries.Booking.GetBookingDetails;
 using Booksy.ServiceCatalog.Domain.Repositories;
 using MediatR;
@@ -323,11 +325,20 @@ public class BookingsController : ControllerBase
         [FromBody] RescheduleBookingRequest request,
         CancellationToken cancellationToken = default)
     {
-        // Note: RescheduleBookingCommand needs to be created
-        // For now, return NotImplemented
-        _logger.LogWarning("Reschedule endpoint called but command not yet implemented");
-        return StatusCode(StatusCodes.Status501NotImplemented,
-            new MessageResponse("Reschedule functionality will be implemented in next iteration"));
+        var command = new RescheduleBookingCommand(
+            BookingId: id,
+            NewStartTime: request.NewStartTime,
+            NewStaffId: request.NewStaffId,
+            Reason: request.Reason);
+
+        var result = await _mediator.Send(command, cancellationToken);
+
+        _logger.LogInformation(
+            "Booking {OldBookingId} rescheduled successfully. New booking: {NewBookingId}",
+            id, result.NewBookingId);
+
+        return Ok(new MessageResponse(
+            $"Booking rescheduled successfully. New booking ID: {result.NewBookingId}"));
     }
 
     /// <summary>
@@ -354,8 +365,7 @@ public class BookingsController : ControllerBase
     {
         var command = new CompleteBookingCommand(
             BookingId: id,
-            PaymentMethodId: request.PaymentMethodId,
-            CompletionNotes: request.CompletionNotes);
+            StaffNotes: request.CompletionNotes);
 
         var result = await _mediator.Send(command, cancellationToken);
 
@@ -386,11 +396,15 @@ public class BookingsController : ControllerBase
         [FromBody] MarkNoShowRequest request,
         CancellationToken cancellationToken = default)
     {
-        // Note: MarkNoShowCommand needs to be created
-        // For now, return NotImplemented
-        _logger.LogWarning("No-show endpoint called but command not yet implemented");
-        return StatusCode(StatusCodes.Status501NotImplemented,
-            new MessageResponse("No-show functionality will be implemented in next iteration"));
+        var command = new MarkNoShowCommand(
+            BookingId: id,
+            Notes: request.Notes);
+
+        var result = await _mediator.Send(command, cancellationToken);
+
+        _logger.LogInformation("Booking {BookingId} marked as no-show by user {UserId}", id, GetCurrentUserId());
+
+        return Ok(new MessageResponse("Booking marked as no-show successfully"));
     }
 
     #region Private Helper Methods
