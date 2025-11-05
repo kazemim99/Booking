@@ -47,9 +47,9 @@ namespace Booksy.ServiceCatalog.Application.Services.Implementations
                 AllowOnlineBooking = service.AllowOnlineBooking,
                 AvailableAtLocation = service.AvailableAtLocation,
                 AvailableAsMobile = service.AvailableAsMobile,
-                MaxAdvanceBookingDays = service.MaxAdvanceBookingDays,
-                MinAdvanceBookingHours = service.MinAdvanceBookingHours,
-                MaxConcurrentBookings = service.MaxConcurrentBookings,
+                MaxAdvanceBookingDays = service.MaxAdvanceBookingDays ?? 90,
+                MinAdvanceBookingHours = service.MinAdvanceBookingHours ?? 1,
+                MaxConcurrentBookings = service.MaxConcurrentBookings ?? 1,
                 ImageUrl = service.ImageUrl,
                 CreatedAt = service.CreatedAt,
                 ActivatedAt = service.ActivatedAt

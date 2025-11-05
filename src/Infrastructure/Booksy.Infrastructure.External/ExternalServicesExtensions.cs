@@ -34,6 +34,7 @@ public static class ExternalServicesExtensions
 
         services.AddScoped<IEmailService, EmailService>();
         services.AddScoped<IEmailTemplateService, EmailTemplateService>();
+        services.AddScoped<IPaymentGateway, StripePaymentGateway>();
 
 
         // Analytics
