@@ -77,7 +77,6 @@ namespace Booksy.ServiceCatalog.Application.Commands.Payment.RefundPayment
 
             // Save changes
             await _paymentRepository.UpdateAsync(payment, cancellationToken);
-            await _paymentRepository.SaveChangesAsync(cancellationToken);
 
             _logger.LogInformation("Payment {PaymentId} refunded successfully, refund ID {RefundId}",
                 payment.Id.Value, refundResult.RefundId);

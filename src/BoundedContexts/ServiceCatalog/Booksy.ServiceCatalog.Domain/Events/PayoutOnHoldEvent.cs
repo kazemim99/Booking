@@ -10,5 +10,5 @@ namespace Booksy.ServiceCatalog.Domain.Events
         PayoutId PayoutId,
         ProviderId ProviderId,
         string Reason,
-        DateTime HeldAt) : IDomainEvent;
+        DateTime HeldAt) : DomainEvent;
 }

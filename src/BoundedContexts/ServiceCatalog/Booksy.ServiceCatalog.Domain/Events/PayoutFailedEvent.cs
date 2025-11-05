@@ -1,7 +1,7 @@
 // ========================================
 // Booksy.ServiceCatalog.Domain/Events/PayoutFailedEvent.cs
 // ========================================
-using Booksy.Core.Domain.Abstractions;
+using Booksy.Core.Domain.Abstractions.Events;
 using Booksy.ServiceCatalog.Domain.ValueObjects;
 
 namespace Booksy.ServiceCatalog.Domain.Events
@@ -10,5 +10,5 @@ namespace Booksy.ServiceCatalog.Domain.Events
         PayoutId PayoutId,
         ProviderId ProviderId,
         string FailureReason,
-        DateTime FailedAt) : IDomainEvent;
+        DateTime FailedAt) : DomainEvent;
 }

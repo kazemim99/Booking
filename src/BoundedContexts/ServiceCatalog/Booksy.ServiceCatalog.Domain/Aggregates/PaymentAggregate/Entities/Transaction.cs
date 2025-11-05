@@ -20,12 +20,12 @@ namespace Booksy.ServiceCatalog.Domain.Aggregates.PaymentAggregate.Entities
         public string? StatusReason { get; private set; }
         public DateTime ProcessedAt { get; private set; }
         public DateTime? CompletedAt { get; private set; }
-        public Dictionary<string, string> Metadata { get; private set; }
+        public Dictionary<string, object> Metadata { get; private set; }
 
         // EF Core requires parameterless constructor
         private Transaction() : base(Guid.NewGuid())
         {
-            Metadata = new Dictionary<string, string>();
+            Metadata = new Dictionary<string, object>();
             Status = string.Empty;
         }
 
@@ -36,7 +36,7 @@ namespace Booksy.ServiceCatalog.Domain.Aggregates.PaymentAggregate.Entities
             string? reference,
             string status,
             DateTime processedAt,
-            Dictionary<string, string>? metadata = null) : base(Guid.NewGuid())
+            Dictionary<string, object>? metadata = null) : base(Guid.NewGuid())
         {
             Type = type;
             Amount = amount ?? throw new ArgumentNullException(nameof(amount));
@@ -44,14 +44,14 @@ namespace Booksy.ServiceCatalog.Domain.Aggregates.PaymentAggregate.Entities
             Reference = reference;
             Status = status ?? throw new ArgumentNullException(nameof(status));
             ProcessedAt = processedAt;
-            Metadata = metadata ?? new Dictionary<string, string>();
+            Metadata = metadata ?? new Dictionary<string, object>();
         }
 
         internal static Transaction CreateCharge(
             Money amount,
             string externalTransactionId,
             string? reference = null,
-            Dictionary<string, string>? metadata = null)
+            Dictionary<string, object>? metadata = null)
         {
             return new Transaction(
                 TransactionType.Charge,
@@ -67,7 +67,7 @@ namespace Booksy.ServiceCatalog.Domain.Aggregates.PaymentAggregate.Entities
             Money amount,
             string externalTransactionId,
             string? reference = null,
-            Dictionary<string, string>? metadata = null)
+            Dictionary<string, object>? metadata = null)
         {
             return new Transaction(
                 TransactionType.Authorization,
@@ -83,7 +83,7 @@ namespace Booksy.ServiceCatalog.Domain.Aggregates.PaymentAggregate.Entities
             Money amount,
             string externalTransactionId,
             string? reference = null,
-            Dictionary<string, string>? metadata = null)
+            Dictionary<string, object>? metadata = null)
         {
             return new Transaction(
                 TransactionType.Capture,
@@ -99,7 +99,7 @@ namespace Booksy.ServiceCatalog.Domain.Aggregates.PaymentAggregate.Entities
             Money amount,
             string externalTransactionId,
             string? reference = null,
-            Dictionary<string, string>? metadata = null)
+            Dictionary<string, object>? metadata = null)
         {
             return new Transaction(
                 TransactionType.Refund,
@@ -115,7 +115,7 @@ namespace Booksy.ServiceCatalog.Domain.Aggregates.PaymentAggregate.Entities
             Money amount,
             string externalTransactionId,
             string? reference = null,
-            Dictionary<string, string>? metadata = null)
+            Dictionary<string, object>? metadata = null)
         {
             return new Transaction(
                 TransactionType.Payout,

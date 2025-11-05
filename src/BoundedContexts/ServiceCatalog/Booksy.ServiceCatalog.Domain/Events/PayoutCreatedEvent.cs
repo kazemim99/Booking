@@ -13,5 +13,5 @@ namespace Booksy.ServiceCatalog.Domain.Events
         Money NetAmount,
         DateTime PeriodStart,
         DateTime PeriodEnd,
-        DateTime CreatedAt) : IDomainEvent;
+        DateTime CreatedAt) : DomainEvent;
 }

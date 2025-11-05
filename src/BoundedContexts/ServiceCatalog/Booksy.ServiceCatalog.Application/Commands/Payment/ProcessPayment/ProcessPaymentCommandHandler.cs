@@ -81,7 +81,6 @@ namespace Booksy.ServiceCatalog.Application.Commands.Payment.ProcessPayment
 
             // Save payment
             await _paymentRepository.AddAsync(payment, cancellationToken);
-            await _paymentRepository.SaveChangesAsync(cancellationToken);
 
             _logger.LogInformation("Payment {PaymentId} saved with status {Status}",
                 payment.Id.Value, payment.Status);

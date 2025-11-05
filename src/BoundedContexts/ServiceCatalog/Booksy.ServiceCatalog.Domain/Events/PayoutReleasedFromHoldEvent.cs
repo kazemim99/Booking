@@ -9,5 +9,5 @@ namespace Booksy.ServiceCatalog.Domain.Events
     public sealed record PayoutReleasedFromHoldEvent(
         PayoutId PayoutId,
         ProviderId ProviderId,
-        DateTime ReleasedAt) : IDomainEvent;
+        DateTime ReleasedAt) : DomainEvent;
 }

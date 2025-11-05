@@ -15,6 +15,6 @@ namespace Booksy.ServiceCatalog.Application.Commands.Payment.ProcessPayment
         PaymentMethod Method,
         string PaymentMethodId,
         string? Description = null,
-        Dictionary<string, string>? Metadata = null,
+        Dictionary<string, object>? Metadata = null,
         Guid? IdempotencyKey = null) : ICommand<ProcessPaymentResult>;
 }

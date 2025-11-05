@@ -1,10 +1,13 @@
 // ========================================
 // Booksy.ServiceCatalog.Infrastructure/Persistence/Configurations/PayoutConfiguration.cs
 // ========================================
+using AutoMapper;
 using Booksy.ServiceCatalog.Domain.Aggregates.PayoutAggregate;
 using Booksy.ServiceCatalog.Domain.ValueObjects;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.ChangeTracking;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
+using System.Text.Json;
 
 namespace Booksy.ServiceCatalog.Infrastructure.Persistence.Configurations
 {
@@ -154,7 +157,10 @@ namespace Booksy.ServiceCatalog.Infrastructure.Persistence.Configurations
                 .HasColumnType("jsonb");
 
             // PaymentIds (JSON array)
-            builder.Property("_paymentIds")
+
+        
+
+            builder.Property<List<PaymentId>>("_paymentIds")
                 .HasColumnName("PaymentIds")
                 .HasColumnType("jsonb")
                 .HasConversion(

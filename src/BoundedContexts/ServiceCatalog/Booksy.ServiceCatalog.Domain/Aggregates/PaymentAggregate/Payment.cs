@@ -44,7 +44,7 @@ namespace Booksy.ServiceCatalog.Domain.Aggregates.PaymentAggregate
         // Additional Info
         public string? Description { get; private set; }
         public string? FailureReason { get; private set; }
-        public Dictionary<string, string> Metadata { get; private set; }
+        public Dictionary<string, object> Metadata { get; private set; }
 
         // Collections
         public IReadOnlyList<Transaction> Transactions => _transactions.AsReadOnly();
@@ -52,7 +52,7 @@ namespace Booksy.ServiceCatalog.Domain.Aggregates.PaymentAggregate
         // EF Core requires parameterless constructor
         private Payment()
         {
-            Metadata = new Dictionary<string, string>();
+            Metadata = new Dictionary<string, object>();
             PaidAmount = Money.Zero("USD");
             RefundedAmount = Money.Zero("USD");
         }
@@ -65,7 +65,7 @@ namespace Booksy.ServiceCatalog.Domain.Aggregates.PaymentAggregate
             Money amount,
             PaymentMethod method,
             string? description,
-            Dictionary<string, string>? metadata) : base(id)
+            Dictionary<string, object>? metadata) : base(id)
         {
             BookingId = bookingId;
             CustomerId = customerId ?? throw new ArgumentNullException(nameof(customerId));
@@ -77,7 +77,7 @@ namespace Booksy.ServiceCatalog.Domain.Aggregates.PaymentAggregate
             Method = method;
             Description = description;
             CreatedAt = DateTime.UtcNow;
-            Metadata = metadata ?? new Dictionary<string, string>();
+            Metadata = metadata ?? new Dictionary<string, object>();
 
             RaiseDomainEvent(new PaymentCreatedEvent(id, bookingId, customerId, providerId, amount, CreatedAt));
         }
@@ -92,7 +92,7 @@ namespace Booksy.ServiceCatalog.Domain.Aggregates.PaymentAggregate
             Money amount,
             PaymentMethod method,
             string? description = null,
-            Dictionary<string, string>? metadata = null)
+            Dictionary<string, object>? metadata = null)
         {
             if (amount.Amount <= 0)
                 throw new InvalidOperationException("Payment amount must be positive");
@@ -117,7 +117,7 @@ namespace Booksy.ServiceCatalog.Domain.Aggregates.PaymentAggregate
             Money amount,
             PaymentMethod method,
             string? description = null,
-            Dictionary<string, string>? metadata = null)
+            Dictionary<string, object>? metadata = null)
         {
             if (amount.Amount <= 0)
                 throw new InvalidOperationException("Payment amount must be positive");
@@ -273,7 +273,7 @@ namespace Booksy.ServiceCatalog.Domain.Aggregates.PaymentAggregate
                 : PaymentStatus.PartiallyRefunded;
             RefundedAt = DateTime.UtcNow;
 
-            var metadata = new Dictionary<string, string>(Metadata)
+            var metadata = new Dictionary<string, object>(Metadata)
             {
                 ["RefundReason"] = reason.ToString(),
                 ["RefundNotes"] = notes ?? string.Empty

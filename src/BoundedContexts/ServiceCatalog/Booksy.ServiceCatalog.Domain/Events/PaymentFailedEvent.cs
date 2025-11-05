@@ -1,7 +1,7 @@
 // ========================================
 // Booksy.ServiceCatalog.Domain/Events/PaymentFailedEvent.cs
 // ========================================
-using Booksy.Core.Domain.Abstractions;
+using Booksy.Core.Domain.Abstractions.Events;
 using Booksy.ServiceCatalog.Domain.ValueObjects;
 
 namespace Booksy.ServiceCatalog.Domain.Events
@@ -11,5 +11,5 @@ namespace Booksy.ServiceCatalog.Domain.Events
         BookingId? BookingId,
         UserId CustomerId,
         string FailureReason,
-        DateTime FailedAt) : IDomainEvent;
+        DateTime FailedAt) : DomainEvent;
 }
