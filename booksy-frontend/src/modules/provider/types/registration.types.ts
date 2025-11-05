@@ -4,7 +4,7 @@
  */
 
 // Registration Steps
-export type RegistrationStep = 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8
+export type RegistrationStep = 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9
 
 // Business Categories
 export interface BusinessCategory {
@@ -107,6 +107,17 @@ export interface TeamMember {
   isOwner: boolean
 }
 
+// Gallery Images (for registration step 7)
+export interface GalleryImageData {
+  id: string
+  file?: File // For new uploads during registration
+  url?: string // For displaying uploaded images
+  thumbnailUrl?: string
+  displayOrder: number
+  caption?: string
+  altText?: string
+}
+
 // Complete Registration Data
 export interface ProviderRegistrationData {
   step: RegistrationStep
@@ -119,6 +130,8 @@ export interface ProviderRegistrationData {
   services: Service[]
   assistanceOptions: AssistanceOption[]
   teamMembers: TeamMember[]
+  galleryImages: GalleryImageData[] // NEW: Gallery step
+  feedbackText?: string // NEW: Optional feedback step
 }
 
 // Registration State

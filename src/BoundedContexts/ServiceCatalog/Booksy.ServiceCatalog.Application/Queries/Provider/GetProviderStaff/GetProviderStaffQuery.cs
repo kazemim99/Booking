@@ -34,5 +34,9 @@ namespace Booksy.ServiceCatalog.Application.Queries.Provider.GetProviderStaff
         bool IsActive,
         DateTime HiredAt,
         DateTime? TerminatedAt,
-        string? Notes);
+        string? Notes)
+    {
+        public string Biography { get; set; }
+        public string ProfilePhotoUrl { get; set; }
+    }
 }

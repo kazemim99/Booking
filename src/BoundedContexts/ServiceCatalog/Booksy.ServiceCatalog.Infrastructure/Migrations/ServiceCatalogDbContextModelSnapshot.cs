@@ -23,6 +23,62 @@ namespace Booksy.ServiceCatalog.Infrastructure.Migrations
 
             NpgsqlModelBuilderExtensions.UseIdentityByDefaultColumns(modelBuilder);
 
+            modelBuilder.Entity("Booksy.Core.Domain.Domain.Entities.ProvinceCities", b =>
+                {
+                    b.Property<int>("Id")
+                        .HasColumnType("integer");
+
+                    b.Property<int?>("CityCode")
+                        .HasColumnType("integer");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp without time zone");
+
+                    b.Property<string>("CreatedBy")
+                        .HasColumnType("text");
+
+                    b.Property<bool>("IsDeleted")
+                        .HasColumnType("boolean");
+
+                    b.Property<DateTime?>("LastModifiedAt")
+                        .HasColumnType("timestamp without time zone");
+
+                    b.Property<string>("LastModifiedBy")
+                        .HasColumnType("text");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)");
+
+                    b.Property<int?>("ParentId")
+                        .HasColumnType("integer");
+
+                    b.Property<int>("ProvinceCode")
+                        .HasColumnType("integer");
+
+                    b.Property<string>("Type")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("character varying(50)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("ParentId")
+                        .HasDatabaseName("IX_ProvinceCities_ParentId");
+
+                    b.HasIndex("ProvinceCode")
+                        .HasDatabaseName("IX_ProvinceCities_ProvinceCode");
+
+                    b.HasIndex("Type")
+                        .HasDatabaseName("IX_ProvinceCities_Type");
+
+                    b.HasIndex("ProvinceCode", "CityCode")
+                        .HasDatabaseName("IX_ProvinceCities_ProvinceCode_CityCode");
+
+                    b.ToTable("ProvinceCities", "ServiceCatalog");
+                });
+
             modelBuilder.Entity("Booksy.ServiceCatalog.Domain.Aggregates.Provider", b =>
                 {
                     b.Property<Guid>("Id")
@@ -48,6 +104,11 @@ namespace Booksy.ServiceCatalog.Infrastructure.Migrations
 
                     b.Property<bool>("IsDeleted")
                         .HasColumnType("boolean");
+
+                    b.Property<bool>("IsRegistrationComplete")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("boolean")
+                        .HasDefaultValue(false);
 
                     b.Property<DateTime?>("LastActiveAt")
                         .HasColumnType("timestamp without time zone");
@@ -76,6 +137,11 @@ namespace Booksy.ServiceCatalog.Infrastructure.Migrations
                     b.Property<DateTime>("RegisteredAt")
                         .HasColumnType("timestamp without time zone");
 
+                    b.Property<int>("RegistrationStep")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer")
+                        .HasDefaultValue(1);
+
                     b.Property<bool>("RequiresApproval")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("boolean")
@@ -88,6 +154,13 @@ namespace Booksy.ServiceCatalog.Infrastructure.Migrations
 
                     b.Property<DateTime?>("VerifiedAt")
                         .HasColumnType("timestamp without time zone");
+
+                    b.Property<int>("Version")
+                        .IsConcurrencyToken()
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer")
+                        .HasDefaultValue(0)
+                        .HasColumnName("Version");
 
                     b.HasKey("Id");
 
@@ -247,7 +320,7 @@ namespace Booksy.ServiceCatalog.Infrastructure.Migrations
                     b.HasIndex("Status", "AllowOnlineBooking")
                         .HasDatabaseName("IX_Services_Status_AllowOnlineBooking");
 
-                    b.ToTable("Services", "servicecatalog");
+                    b.ToTable("Services", "ServiceCatalog");
                 });
 
             modelBuilder.Entity("Booksy.ServiceCatalog.Domain.Entities.BusinessHours", b =>
@@ -475,13 +548,17 @@ namespace Booksy.ServiceCatalog.Infrastructure.Migrations
                     b.HasIndex("IsActive", "SortOrder")
                         .HasDatabaseName("IX_ServiceOptions_Active_SortOrder");
 
-                    b.ToTable("ServiceOptions", "servicecatalog");
+                    b.ToTable("ServiceOptions", "ServiceCatalog");
                 });
 
             modelBuilder.Entity("Booksy.ServiceCatalog.Domain.Entities.Staff", b =>
                 {
                     b.Property<Guid>("Id")
                         .HasColumnType("uuid");
+
+                    b.Property<string>("Biography")
+                        .HasMaxLength(500)
+                        .HasColumnType("character varying(500)");
 
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("timestamp with time zone");
@@ -528,6 +605,10 @@ namespace Booksy.ServiceCatalog.Infrastructure.Migrations
                     b.Property<string>("Phone")
                         .HasColumnType("text");
 
+                    b.Property<string>("ProfilePhotoUrl")
+                        .HasMaxLength(500)
+                        .HasColumnType("character varying(500)");
+
                     b.Property<Guid>("ProviderId")
                         .HasColumnType("uuid");
 
@@ -559,7 +640,17 @@ namespace Booksy.ServiceCatalog.Infrastructure.Migrations
                     b.HasIndex("FirstName", "LastName")
                         .HasDatabaseName("IX_Staff_Name");
 
-                    b.ToTable("Staff", "servicecatalog");
+                    b.ToTable("Staff", "ServiceCatalog");
+                });
+
+            modelBuilder.Entity("Booksy.Core.Domain.Domain.Entities.ProvinceCities", b =>
+                {
+                    b.HasOne("Booksy.Core.Domain.Domain.Entities.ProvinceCities", "Parent")
+                        .WithMany("Children")
+                        .HasForeignKey("ParentId")
+                        .OnDelete(DeleteBehavior.Restrict);
+
+                    b.Navigation("Parent");
                 });
 
             modelBuilder.Entity("Booksy.ServiceCatalog.Domain.Aggregates.Provider", b =>
@@ -605,6 +696,11 @@ namespace Booksy.ServiceCatalog.Infrastructure.Migrations
                                 .HasColumnType("character varying(500)")
                                 .HasColumnName("BusinessLogoUrl");
 
+                            b1.Property<string>("ProfileImageUrl")
+                                .HasMaxLength(500)
+                                .HasColumnType("character varying(500)")
+                                .HasColumnName("ProfileImageUrl");
+
                             b1.Property<string>("SocialMedia")
                                 .HasColumnType("jsonb")
                                 .HasColumnName("BusinessSocialMedia");
@@ -624,6 +720,104 @@ namespace Booksy.ServiceCatalog.Infrastructure.Migrations
 
                             b1.WithOwner()
                                 .HasForeignKey("ProviderId");
+
+                            b1.OwnsMany("Booksy.ServiceCatalog.Domain.Entities.GalleryImage", "GalleryImages", b2 =>
+                                {
+                                    b2.Property<Guid>("Id")
+                                        .HasColumnType("uuid")
+                                        .HasColumnName("id");
+
+                                    b2.Property<string>("AltText")
+                                        .HasMaxLength(500)
+                                        .HasColumnType("character varying(500)")
+                                        .HasColumnName("alt_text");
+
+                                    b2.Property<string>("Caption")
+                                        .HasMaxLength(500)
+                                        .HasColumnType("character varying(500)")
+                                        .HasColumnName("caption");
+
+                                    b2.Property<DateTime>("CreatedAt")
+                                        .HasColumnType("timestamp without time zone");
+
+                                    b2.Property<string>("CreatedBy")
+                                        .HasColumnType("text");
+
+                                    b2.Property<int>("DisplayOrder")
+                                        .HasColumnType("integer")
+                                        .HasColumnName("display_order");
+
+                                    b2.Property<string>("ImageUrl")
+                                        .IsRequired()
+                                        .HasMaxLength(500)
+                                        .HasColumnType("character varying(500)")
+                                        .HasColumnName("image_url");
+
+                                    b2.Property<bool>("IsActive")
+                                        .ValueGeneratedOnAdd()
+                                        .HasColumnType("boolean")
+                                        .HasDefaultValue(true)
+                                        .HasColumnName("is_active");
+
+                                    b2.Property<bool>("IsDeleted")
+                                        .HasColumnType("boolean");
+
+                                    b2.Property<bool>("IsPrimary")
+                                        .ValueGeneratedOnAdd()
+                                        .HasColumnType("boolean")
+                                        .HasDefaultValue(false)
+                                        .HasColumnName("is_primary");
+
+                                    b2.Property<DateTime?>("LastModifiedAt")
+                                        .HasColumnType("timestamp without time zone");
+
+                                    b2.Property<string>("LastModifiedBy")
+                                        .HasColumnType("text");
+
+                                    b2.Property<string>("MediumUrl")
+                                        .IsRequired()
+                                        .HasMaxLength(500)
+                                        .HasColumnType("character varying(500)")
+                                        .HasColumnName("medium_url");
+
+                                    b2.Property<Guid>("ProviderId")
+                                        .HasColumnType("uuid")
+                                        .HasColumnName("provider_id");
+
+                                    b2.Property<byte[]>("RowVersion")
+                                        .IsConcurrencyToken()
+                                        .ValueGeneratedOnAddOrUpdate()
+                                        .HasColumnType("bytea")
+                                        .HasColumnName("row_version");
+
+                                    b2.Property<string>("ThumbnailUrl")
+                                        .IsRequired()
+                                        .HasMaxLength(500)
+                                        .HasColumnType("character varying(500)")
+                                        .HasColumnName("thumbnail_url");
+
+                                    b2.Property<DateTime>("UploadedAt")
+                                        .HasColumnType("timestamp with time zone")
+                                        .HasColumnName("uploaded_at");
+
+                                    b2.HasKey("Id");
+
+                                    b2.HasIndex("ProviderId")
+                                        .HasDatabaseName("IX_ProviderGalleryImages_ProviderId");
+
+                                    b2.HasIndex("ProviderId", "DisplayOrder")
+                                        .HasDatabaseName("IX_ProviderGalleryImages_Provider_DisplayOrder");
+
+                                    b2.HasIndex("ProviderId", "IsPrimary")
+                                        .HasDatabaseName("IX_ProviderGalleryImages_Provider_IsPrimary");
+
+                                    b2.ToTable("provider_gallery_images", "ServiceCatalog");
+
+                                    b2.WithOwner()
+                                        .HasForeignKey("ProviderId");
+                                });
+
+                            b1.Navigation("GalleryImages");
                         });
 
                     b.OwnsOne("Booksy.ServiceCatalog.Domain.ValueObjects.BusinessAddress", "Address", b1 =>
@@ -637,11 +831,21 @@ namespace Booksy.ServiceCatalog.Infrastructure.Migrations
                                 .HasColumnType("character varying(100)")
                                 .HasColumnName("AddressCity");
 
+                            b1.Property<int?>("CityId")
+                                .HasColumnType("integer")
+                                .HasColumnName("AddressCityId");
+
                             b1.Property<string>("Country")
                                 .IsRequired()
                                 .HasMaxLength(100)
                                 .HasColumnType("character varying(100)")
                                 .HasColumnName("AddressCountry");
+
+                            b1.Property<string>("FormattedAddress")
+                                .IsRequired()
+                                .HasMaxLength(500)
+                                .HasColumnType("character varying(500)")
+                                .HasColumnName("AddressFormattedAddress");
 
                             b1.Property<double?>("Latitude")
                                 .HasPrecision(10, 8)
@@ -658,6 +862,10 @@ namespace Booksy.ServiceCatalog.Infrastructure.Migrations
                                 .HasMaxLength(20)
                                 .HasColumnType("character varying(20)")
                                 .HasColumnName("AddressPostalCode");
+
+                            b1.Property<int?>("ProvinceId")
+                                .HasColumnType("integer")
+                                .HasColumnName("AddressProvinceId");
 
                             b1.Property<string>("State")
                                 .IsRequired()
@@ -808,7 +1016,7 @@ namespace Booksy.ServiceCatalog.Infrastructure.Migrations
 
                             b1.HasKey("ServiceId");
 
-                            b1.ToTable("Services", "servicecatalog");
+                            b1.ToTable("Services", "ServiceCatalog");
 
                             b1.WithOwner()
                                 .HasForeignKey("ServiceId");
@@ -874,7 +1082,7 @@ namespace Booksy.ServiceCatalog.Infrastructure.Migrations
                             b1.HasIndex("ServiceId", "IsActive")
                                 .HasDatabaseName("IX_ServicePriceTiers_ServiceId_IsActive");
 
-                            b1.ToTable("ServicePriceTiers", "servicecatalog");
+                            b1.ToTable("ServicePriceTiers", "ServiceCatalog");
 
                             b1.WithOwner()
                                 .HasForeignKey("ServiceId");
@@ -897,7 +1105,7 @@ namespace Booksy.ServiceCatalog.Infrastructure.Migrations
 
                                     b2.HasKey("PriceTierId");
 
-                                    b2.ToTable("ServicePriceTiers", "servicecatalog");
+                                    b2.ToTable("ServicePriceTiers", "ServiceCatalog");
 
                                     b2.WithOwner()
                                         .HasForeignKey("PriceTierId");
@@ -930,7 +1138,7 @@ namespace Booksy.ServiceCatalog.Infrastructure.Migrations
 
                             b1.HasKey("ServiceId");
 
-                            b1.ToTable("Services", "servicecatalog");
+                            b1.ToTable("Services", "ServiceCatalog");
 
                             b1.WithOwner()
                                 .HasForeignKey("ServiceId");
@@ -1033,7 +1241,7 @@ namespace Booksy.ServiceCatalog.Infrastructure.Migrations
 
                             b1.HasKey("ServiceOptionId");
 
-                            b1.ToTable("ServiceOptions", "servicecatalog");
+                            b1.ToTable("ServiceOptions", "ServiceCatalog");
 
                             b1.WithOwner()
                                 .HasForeignKey("ServiceOptionId");
@@ -1050,6 +1258,11 @@ namespace Booksy.ServiceCatalog.Infrastructure.Migrations
                         .HasForeignKey("ProviderId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
+                });
+
+            modelBuilder.Entity("Booksy.Core.Domain.Domain.Entities.ProvinceCities", b =>
+                {
+                    b.Navigation("Children");
                 });
 
             modelBuilder.Entity("Booksy.ServiceCatalog.Domain.Aggregates.Provider", b =>

@@ -27,6 +27,7 @@ namespace Booksy.ServiceCatalog.Infrastructure.Persistence.Repositories
                 .Include(p => p.Staff)
                 .Include(p => p.BusinessHours)
                 .Include(p => p.Services)
+                .Include(p => p.Profile)
                 .FirstOrDefaultAsync(p => p.Id == id, cancellationToken);
         }
 

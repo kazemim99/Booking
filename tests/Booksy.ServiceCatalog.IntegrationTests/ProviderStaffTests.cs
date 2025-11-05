@@ -94,11 +94,11 @@ public class ProviderStaffTests : ServiceCatalogIntegrationTestBase
         // Assert
         response.Error.Should().BeNull();
         response.StatusCode.Should().Be(HttpStatusCode.Created);
-        response.data.Should().NotBeNull();
-        response.data!.Id.Should().NotBeEmpty();
-        response.data.FirstName.Should().Be("John");
-        response.data.LastName.Should().Be("Stylist");
-        response.data.IsActive.Should().BeTrue();
+        response.Data.Should().NotBeNull();
+        response.Data!.Id.Should().NotBeEmpty();
+        response.Data.FirstName.Should().Be("John");
+        response.Data.LastName.Should().Be("Stylist");
+        response.Data.IsActive.Should().BeTrue();
     }
 
    
@@ -166,18 +166,18 @@ public class ProviderStaffTests : ServiceCatalogIntegrationTestBase
 
         // Act
         var response = await PutAsJsonAsync<UpdateStaffRequest, StaffDetailsResponse>(
-            $"/api/v1/providers/{provider.Id.Value}/staff/{createResponse.data!.Id}",
+            $"/api/v1/providers/{provider.Id.Value}/staff/{createResponse.Data!.Id}",
             updateRequest);
 
         // Assert
         response.Error.Should().BeNull();
         response.StatusCode.Should().Be(HttpStatusCode.OK);
-        response.data.Should().NotBeNull();
-        response.data!.FirstName.Should().Be("Updated");
-        response.data.LastName.Should().Be("Name");
-        response.data.PhoneNumber.Should().Be("+0987654321");
-        response.data.Role.Should().Be("Manager");
-        response.data.Notes.Should().Be("Promoted to manager");
+        response.Data.Should().NotBeNull();
+        response.Data!.FirstName.Should().Be("Updated");
+        response.Data.LastName.Should().Be("Name");
+        response.Data.PhoneNumber.Should().Be("+0987654321");
+        response.Data.Role.Should().Be("Manager");
+        response.Data.Notes.Should().Be("Promoted to manager");
     }
 
     [Fact]
@@ -214,7 +214,7 @@ public class ProviderStaffTests : ServiceCatalogIntegrationTestBase
 
         // Act
         var response = await PutAsJsonAsync(
-            $"/api/v1/providers/{provider.Id.Value}/staff/{createResponse.data!.Id}",
+            $"/api/v1/providers/{provider.Id.Value}/staff/{createResponse.Data!.Id}",
             updateRequest);
 
         // Assert
@@ -272,7 +272,7 @@ public class ProviderStaffTests : ServiceCatalogIntegrationTestBase
         var createResponse = await PostAsJsonAsync<AddStaffRequest, StaffDetailsResponse>($"/api/v1/providers/{provider.Id.Value}/staff", createRequest);
 
         // Act
-        var response = await DeleteAsync($"/api/v1/providers/{provider.Id.Value}/staff/{createResponse.data!.Id}");
+        var response = await DeleteAsync($"/api/v1/providers/{provider.Id.Value}/staff/{createResponse.Data!.Id}");
 
         // Assert
         response.Error.Should().BeNull();
@@ -281,7 +281,7 @@ public class ProviderStaffTests : ServiceCatalogIntegrationTestBase
         // Verify staff is no longer active
         var getResponse = await GetAsync($"/api/v1/providers/{provider.Id.Value}/staff");
         var staffList = await GetResponseAsync<List<StaffSummaryResponse>>(getResponse);
-        staffList.Should().NotContain(s => s.Id == createResponse.data.Id && s.IsActive);
+        staffList.Should().NotContain(s => s.Id == createResponse.Data.Id && s.IsActive);
     }
 
     [Fact]
@@ -308,7 +308,7 @@ public class ProviderStaffTests : ServiceCatalogIntegrationTestBase
         AuthenticateAsProviderOwner(otherProvider);
 
         // Act
-        var response = await DeleteAsync($"/api/v1/providers/{provider.Id.Value}/staff/{createResponse.data!.Id}");
+        var response = await DeleteAsync($"/api/v1/providers/{provider.Id.Value}/staff/{createResponse.Data!.Id}");
 
         // Assert
         response.StatusCode.Should().Be(HttpStatusCode.Forbidden);
@@ -356,7 +356,7 @@ public class ProviderStaffTests : ServiceCatalogIntegrationTestBase
         var createResponse = await PostAsJsonAsync<AddStaffRequest, StaffDetailsResponse>($"/api/v1/providers/{provider.Id.Value}/staff", createRequest);
         createResponse.Error.Should().BeNull();
         createResponse.StatusCode.Should().Be(HttpStatusCode.Created);
-        createResponse.data.Should().NotBeNull();
+        createResponse.Data.Should().NotBeNull();
 
         // Step 2: Update staff member
         var updateRequest = new UpdateStaffRequest
@@ -370,26 +370,26 @@ public class ProviderStaffTests : ServiceCatalogIntegrationTestBase
         };
 
         var updateResponse = await PutAsJsonAsync<UpdateStaffRequest, StaffDetailsResponse>(
-            $"/api/v1/providers/{provider.Id.Value}/staff/{createResponse.data!.Id}",
+            $"/api/v1/providers/{provider.Id.Value}/staff/{createResponse.Data!.Id}",
             updateRequest);
         updateResponse.StatusCode.Should().Be(HttpStatusCode.OK);
-        updateResponse.data!.FirstName.Should().Be("Updated Workflow");
-        updateResponse.data.Role.Should().Be("Manager");
+        updateResponse.Data!.FirstName.Should().Be("Updated Workflow");
+        updateResponse.Data.Role.Should().Be("Manager");
 
         // Step 3: Get all staff and verify our staff is in the list
         var getResponse = await GetAsync($"/api/v1/providers/{provider.Id.Value}/staff");
         getResponse.StatusCode.Should().Be(HttpStatusCode.OK);
         var staffList = await GetResponseAsync<List<StaffSummaryResponse>>(getResponse);
-        staffList.Should().Contain(s => s.Id == createResponse.data.Id);
+        staffList.Should().Contain(s => s.Id == createResponse.Data.Id);
 
         // Step 4: Delete staff member
-        var deleteResponse = await DeleteAsync($"/api/v1/providers/{provider.Id.Value}/staff/{createResponse.data.Id}");
+        var deleteResponse = await DeleteAsync($"/api/v1/providers/{provider.Id.Value}/staff/{createResponse.Data.Id}");
         deleteResponse.StatusCode.Should().Be(HttpStatusCode.NoContent);
 
         // Step 5: Verify staff is no longer active
         var finalGetResponse = await GetAsync($"/api/v1/providers/{provider.Id.Value}/staff");
         var finalStaffList = await GetResponseAsync<List<StaffSummaryResponse>>(finalGetResponse);
-        finalStaffList.Should().NotContain(s => s.Id == createResponse.data.Id && s.IsActive);
+        finalStaffList.Should().NotContain(s => s.Id == createResponse.Data.Id && s.IsActive);
     }
 
     #endregion

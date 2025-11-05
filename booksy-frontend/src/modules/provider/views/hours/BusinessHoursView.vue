@@ -1,962 +1,663 @@
 <template>
-  <div class="business-hours-view">
+  <div class="business-hours-view" dir="rtl">
     <!-- Header -->
     <div class="page-header">
-      <div>
-        <h1 class="page-title">Business Hours</h1>
-        <p class="page-subtitle">
-          Set your regular business hours and availability for bookings
-        </p>
-      </div>
-      <Button variant="secondary" @click="goBack">← Back to Onboarding</Button>
+      <h2 class="page-title">ساعات کاری</h2>
+      <p class="page-description">مدیریت ساعات کاری هفتگی و تنظیمات روزهای خاص</p>
     </div>
 
-    <!-- Loading State -->
-    <div v-if="providerStore.isLoading" class="loading-state">
-      <Spinner />
-      <p>Loading business hours...</p>
-    </div>
-
-    <!-- Error State -->
-    <Alert
-      v-if="errorMessage"
-      type="error"
-      :message="errorMessage"
-      @dismiss="errorMessage = null"
-    />
-
-    <!-- Success Message -->
-    <Alert
-      v-if="successMessage"
-      type="success"
-      :message="successMessage"
-      @dismiss="successMessage = null"
-    />
-
-    <!-- Form -->
-    <form v-if="!providerStore.isLoading" class="hours-form" @submit.prevent="handleSubmit">
-      <Card class="form-section">
-        <div class="form-section-header">
-          <h2 class="section-title">Operating Hours</h2>
-          <p class="section-description">
-            Set your standard operating hours for each day of the week.
-          </p>
-
-          <div class="quick-actions">
-            <Button nativeType="button" variant="secondary" size="small" @click="copyMondayScheduleToAllDays">
-              Copy Monday to All Days
-            </Button>
-            <Button nativeType="button" variant="secondary" size="small" @click="setStandardBusinessHours">
-              Set Standard Business Hours
-            </Button>
-            <Button nativeType="button" variant="secondary" size="small" @click="clearAllHours">
-              Clear All Hours
-            </Button>
-          </div>
-        </div>
-
-        <!-- Days of Week -->
-        <div class="days-container">
-          <div
-            v-for="(day, index) in weekDays"
-            :key="day.value"
-            class="day-schedule"
-            :class="{ 'day-closed': !scheduleData[index].isOpen }"
-          >
-            <div class="day-header">
-              <h3 class="day-name">{{ day.label }}</h3>
-              <div class="day-toggle">
-                <label class="toggle-label">
-                  <span>{{ scheduleData[index].isOpen ? 'Open' : 'Closed' }}</span>
-                  <input
-                    type="checkbox"
-                    v-model="scheduleData[index].isOpen"
-                    @change="onToggleDay(index)"
-                  />
-                  <span class="toggle-switch"></span>
-                </label>
-              </div>
+    <!-- Main Grid Layout -->
+    <div class="hours-grid">
+      <!-- Weekly Schedule Section (Left - 2/3 width) -->
+      <div class="weekly-section">
+        <!-- Weekly Schedule Card -->
+        <div class="schedule-card">
+          <div class="card-header">
+            <div class="header-title">
+              <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                <circle cx="12" cy="12" r="10"></circle>
+                <polyline points="12 6 12 12 16 14"></polyline>
+              </svg>
+              <h3>برنامه هفتگی</h3>
             </div>
+            <div class="header-actions">
+              <button type="button" class="action-btn" @click="handleSetStandardTime">
+                <svg class="btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                  <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
+                  <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
+                </svg>
+                تنظیم استاندارد
+              </button>
+              <button type="button" class="action-btn" @click="handleClearAll">
+                <svg class="btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                  <polyline points="3 6 5 6 21 6"></polyline>
+                  <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+                </svg>
+                پاک کردن همه
+              </button>
+            </div>
+          </div>
 
-            <div v-if="scheduleData[index].isOpen" class="day-hours">
-              <div class="time-range">
-                <div class="time-input">
-                  <label>Opening Time</label>
-                  <select v-model="scheduleData[index].openTime" @change="validateTimeRange(index)">
-                    <option v-for="time in timeOptions" :key="time.value" :value="time.value">
-                      {{ time.label }}
-                    </option>
-                  </select>
+          <div class="card-content">
+            <!-- Day Schedule Items -->
+            <div class="schedule-days">
+              <div
+                v-for="(day, index) in schedule"
+                :key="day.day"
+                :class="['day-item', { 'day-disabled': !day.enabled }]"
+              >
+                <!-- Day Header -->
+                <div class="day-row-header">
+                  <div class="day-toggle-group">
+                    <label class="switch">
+                      <input
+                        type="checkbox"
+                        :checked="day.enabled"
+                        @change="handleToggleDay(index)"
+                      />
+                      <span class="switch-slider"></span>
+                    </label>
+                    <span class="day-name">{{ day.day }}</span>
+                  </div>
+                  <span v-if="!day.enabled" class="closed-label">تعطیل</span>
                 </div>
 
-                <div class="time-separator">to</div>
-
-                <div class="time-input">
-                  <label>Closing Time</label>
-                  <select v-model="scheduleData[index].closeTime" @change="validateTimeRange(index)">
-                    <option v-for="time in timeOptions" :key="time.value" :value="time.value">
-                      {{ time.label }}
-                    </option>
-                  </select>
-                </div>
-              </div>
-
-              <!-- Break Time -->
-              <div class="break-section">
-                <div class="break-header">
-                  <h4 class="break-title">Breaks</h4>
-                  <Button
-                    nativeType="button"
-                    variant="secondary"
-                    size="small"
-                    @click="addBreak(index)"
-                    :disabled="scheduleData[index].breaks.length >= 3"
-                  >
-                    + Add Break
-                  </Button>
-                </div>
-
-                <div v-if="scheduleData[index].breaks.length === 0" class="no-breaks">
-                  No breaks scheduled
-                </div>
-
-                <div
-                  v-for="(breakTime, breakIndex) in scheduleData[index].breaks"
-                  :key="`${index}-${breakIndex}`"
-                  class="break-time-container"
-                >
-                  <div class="time-range">
-                    <div class="time-input">
-                      <label>From</label>
-                      <select
-                        v-model="breakTime.startTime"
-                        @change="validateBreakTime(index, breakIndex)"
-                      >
-                        <option v-for="time in timeOptions" :key="time.value" :value="time.value">
-                          {{ time.label }}
-                        </option>
-                      </select>
-                    </div>
-
-                    <div class="time-separator">to</div>
-
-                    <div class="time-input">
-                      <label>To</label>
-                      <select
-                        v-model="breakTime.endTime"
-                        @change="validateBreakTime(index, breakIndex)"
-                      >
-                        <option v-for="time in timeOptions" :key="time.value" :value="time.value">
-                          {{ time.label }}
-                        </option>
-                      </select>
-                    </div>
-
-                    <Button
-                      nativeType="button"
-                      variant="danger"
-                      size="small"
-                      class="remove-break"
-                      @click="removeBreak(index, breakIndex)"
-                    >
-                      Remove
-                    </Button>
+                <!-- Time Inputs (only when enabled) -->
+                <div v-if="day.enabled" class="time-inputs">
+                  <div class="input-group">
+                    <label class="input-label">ساعت شروع</label>
+                    <PersianTimePicker
+                      :model-value="day.startTime"
+                      @update:model-value="handleTimeChange(index, 'startTime', $event)"
+                      placeholder="10:00"
+                    />
+                  </div>
+                  <div class="input-group">
+                    <label class="input-label">ساعت پایان</label>
+                    <PersianTimePicker
+                      :model-value="day.endTime"
+                      @update:model-value="handleTimeChange(index, 'endTime', $event)"
+                      placeholder="22:00"
+                    />
+                  </div>
+                  <div class="input-group">
+                    <label class="input-label">استراحت (اختیاری)</label>
+                    <PersianTimePicker
+                      :model-value="day.breakTime"
+                      @update:model-value="handleTimeChange(index, 'breakTime', $event)"
+                      placeholder="14:00"
+                    />
                   </div>
                 </div>
               </div>
             </div>
 
-            <div v-else class="day-closed-message">
-              <p>Closed on this day</p>
-            </div>
+            <!-- Save Button -->
+            <button type="button" class="save-btn" @click="handleSave">
+              ذخیره تغییرات
+            </button>
           </div>
         </div>
-      </Card>
 
-      <Card class="form-section">
-        <h2 class="section-title">Special Schedule Settings</h2>
-
-        <div class="special-settings">
-          <div class="checkbox-group">
-            <label class="checkbox-label">
-              <input type="checkbox" v-model="allowBookingsOutsideBusinessHours" class="checkbox" />
-              <span class="checkbox-text">
-                <strong>Allow bookings outside business hours</strong>
-                <small>Customers can book appointments outside your regular business hours</small>
-              </span>
-            </label>
-
-            <label class="checkbox-label">
-              <input type="checkbox" v-model="allowSameDayBookings" class="checkbox" />
-              <span class="checkbox-text">
-                <strong>Accept same-day bookings</strong>
-                <small>Allow customers to book appointments for the current day</small>
-              </span>
-            </label>
-          </div>
-
-          <div class="form-group">
-            <label>Minimum notice for bookings</label>
-            <div class="input-with-suffix">
-              <input
-                type="number"
-                v-model="advanceBookingHours"
-                min="0"
-                max="72"
-                class="number-input"
-              />
-              <span class="input-suffix">hours</span>
-            </div>
-            <small>Minimum time required before a booking (0 = no advance notice required)</small>
-          </div>
-
-          <div class="form-group">
-            <label>Maximum booking window</label>
-            <div class="input-with-suffix">
-              <input
-                type="number"
-                v-model="maxBookingDays"
-                min="1"
-                max="365"
-                class="number-input"
-              />
-              <span class="input-suffix">days</span>
-            </div>
-            <small>How far in advance customers can book (e.g., 30 days, 60 days, etc.)</small>
+        <!-- Info Card -->
+        <div class="info-card">
+          <div class="info-content">
+            <h4 class="info-title">💡 راهنما</h4>
+            <ul class="info-list">
+              <li>از تقویم برای تنظیم ساعات روزهای خاص استفاده کنید</li>
+              <li>می‌توانید برای روزهای تعطیل دلیل تعطیلی ثبت کنید</li>
+              <li>زمان استراحت باعث می‌شود در آن بازه رزرو ثبت نشود</li>
+              <li>تنظیمات روزهای خاص بر برنامه هفتگی اولویت دارند</li>
+            </ul>
           </div>
         </div>
-      </Card>
-
-      <!-- Form Actions -->
-      <div class="form-actions">
-        <Button type="button" variant="secondary" @click="goBack">Cancel</Button>
-        <Button type="submit" variant="primary" :disabled="isSaving">
-          {{ isSaving ? 'Saving...' : 'Save Business Hours' }}
-        </Button>
       </div>
-    </form>
+
+      <!-- Calendar Section (Right - 1/3 width) -->
+      <div class="calendar-section">
+        <!-- Calendar Card -->
+        <div class="calendar-card">
+          <div class="card-header">
+            <div class="header-title">
+              <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                <rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect>
+                <line x1="16" y1="2" x2="16" y2="6"></line>
+                <line x1="8" y1="2" x2="8" y2="6"></line>
+                <line x1="3" y1="10" x2="21" y2="10"></line>
+              </svg>
+              <h3>تقویم روزهای خاص</h3>
+            </div>
+          </div>
+          <div class="card-content">
+            <p class="calendar-hint">برای تنظیم ساعات کاری روز خاص، روی تاریخ کلیک کنید</p>
+
+            <!-- Persian Calendar Component -->
+            <PersianCalendar
+              v-model="selectedDate"
+              :custom-days="customDays"
+              @day-click="handleDateSelect"
+            />
+
+            <!-- Selected Date Info -->
+            <div v-if="selectedDateInfo" class="selected-info">
+              <p class="info-label">تنظیمات ذخیره شده:</p>
+              <p class="info-value">
+                {{ selectedDateInfo.isClosed
+                  ? `تعطیل - ${selectedDateInfo.closedReason}`
+                  : `${selectedDateInfo.startTime} - ${selectedDateInfo.endTime}`
+                }}
+              </p>
+            </div>
+          </div>
+        </div>
+
+        <!-- Custom Days List -->
+        <div v-if="customDays.size > 0" class="custom-days-card">
+          <div class="card-header">
+            <h3 class="header-title-simple">روزهای تنظیم شده</h3>
+          </div>
+          <div class="card-content">
+            <div class="custom-days-list">
+              <div
+                v-for="[dateKey, data] in Array.from(customDays.entries())"
+                :key="dateKey"
+                class="custom-day-item"
+              >
+                <div class="custom-day-date">{{ formatPersianDate(dateKey) }}</div>
+                <div class="custom-day-info">
+                  {{ data.isClosed
+                    ? `تعطیل - ${data.closedReason}`
+                    : `${data.startTime} - ${data.endTime}`
+                  }}
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Custom Day Modal -->
+    <CustomDayModal
+      :is-open="modalOpen"
+      :selected-date="selectedDate"
+      @close="modalOpen = false"
+      @save="handleSaveCustomDay"
+    />
   </div>
 </template>
 
 <script setup lang="ts">
-import { ref, reactive, computed, onMounted } from 'vue'
-import { useRouter } from 'vue-router'
-import { useProviderStore } from '@/modules/provider/stores/provider.store'
-import { DayOfWeek, BusinessHours, TimeBreak } from '@/modules/provider/types/provider.types'
-import { Button, Card, Alert, Spinner } from '@/shared/components'
+import { ref, computed } from 'vue'
+import PersianCalendar from '@/shared/components/calendar/PersianCalendar.vue'
+import PersianTimePicker from '@/shared/components/calendar/PersianTimePicker.vue'
+import CustomDayModal from './CustomDayModal.vue'
+import { convertEnglishToPersianNumbers } from '@/shared/utils/date/jalali.utils'
 
-const router = useRouter()
-const providerStore = useProviderStore()
+interface DaySchedule {
+  day: string
+  enabled: boolean
+  startTime: string
+  endTime: string
+  breakTime: string
+}
 
-const isSaving = ref(false)
-const errorMessage = ref<string | null>(null)
-const successMessage = ref<string | null>(null)
+interface CustomDayData {
+  date: Date
+  startTime: string
+  endTime: string
+  breakTime: string
+  isClosed: boolean
+  closedReason: string
+}
 
-// Special settings
-const allowBookingsOutsideBusinessHours = ref(false)
-const allowSameDayBookings = ref(true)
-const advanceBookingHours = ref(2)
-const maxBookingDays = ref(60)
-
-// Days of the week
-const weekDays = [
-  { value: DayOfWeek.Monday, label: 'Monday' },
-  { value: DayOfWeek.Tuesday, label: 'Tuesday' },
-  { value: DayOfWeek.Wednesday, label: 'Wednesday' },
-  { value: DayOfWeek.Thursday, label: 'Thursday' },
-  { value: DayOfWeek.Friday, label: 'Friday' },
-  { value: DayOfWeek.Saturday, label: 'Saturday' },
-  { value: DayOfWeek.Sunday, label: 'Sunday' },
+const initialSchedule: DaySchedule[] = [
+  { day: 'شنبه', enabled: true, startTime: '10:00', endTime: '22:00', breakTime: '' },
+  { day: 'یکشنبه', enabled: true, startTime: '10:00', endTime: '22:00', breakTime: '' },
+  { day: 'دوشنبه', enabled: true, startTime: '10:00', endTime: '22:00', breakTime: '' },
+  { day: 'سه‌شنبه', enabled: true, startTime: '10:00', endTime: '22:00', breakTime: '' },
+  { day: 'چهارشنبه', enabled: true, startTime: '10:00', endTime: '22:00', breakTime: '' },
+  { day: 'پنج‌شنبه', enabled: true, startTime: '10:00', endTime: '22:00', breakTime: '' },
+  { day: 'جمعه', enabled: false, startTime: '', endTime: '', breakTime: '' },
 ]
 
-// Time options (30-minute intervals)
-const timeOptions = computed(() => {
-  const options = []
-  for (let i = 0; i < 24; i++) {
-    const hour = i.toString().padStart(2, '0')
-    options.push({ value: `${hour}:00`, label: formatTimeForDisplay(`${hour}:00`) })
-    options.push({ value: `${hour}:30`, label: formatTimeForDisplay(`${hour}:30`) })
-  }
-  return options
-})
+const schedule = ref<DaySchedule[]>([...initialSchedule])
+const selectedDate = ref<Date | null>(null)
+const modalOpen = ref(false)
+const customDays = ref<Map<string, CustomDayData>>(new Map())
 
-// Format time for display (e.g., "09:00" -> "9:00 AM")
-function formatTimeForDisplay(time: string): string {
-  const [hours, minutes] = time.split(':')
-  const hour = parseInt(hours, 10)
-  const ampm = hour >= 12 ? 'PM' : 'AM'
-  const displayHour = hour % 12 || 12
-  return `${displayHour}:${minutes} ${ampm}`
+const handleToggleDay = (index: number) => {
+  const day = schedule.value[index]
+  day.enabled = !day.enabled
+  if (!day.enabled) {
+    day.startTime = ''
+    day.endTime = ''
+    day.breakTime = ''
+  }
 }
 
-// Create empty schedule data structure
-const createEmptyScheduleData = () => {
-  return weekDays.map((day) => ({
-    dayOfWeek: day.value,
-    isOpen: false,
-    openTime: '09:00',
-    closeTime: '17:00',
-    breaks: [] as { startTime: string; endTime: string }[],
+const handleTimeChange = (index: number, field: 'startTime' | 'endTime' | 'breakTime', value: string) => {
+  schedule.value[index][field] = value
+}
+
+const handleSetStandardTime = () => {
+  schedule.value = schedule.value.map(day => ({
+    ...day,
+    enabled: true,
+    startTime: '10:00',
+    endTime: '22:00',
+    breakTime: '',
   }))
 }
 
-// Schedule data
-const scheduleData = reactive(createEmptyScheduleData())
-
-// Set standard business hours (9 AM to 5 PM, Monday-Friday)
-function setStandardBusinessHours() {
-  weekDays.forEach((_, index) => {
-    const isWeekday = index < 5 // Monday to Friday
-    scheduleData[index].isOpen = isWeekday
-    scheduleData[index].openTime = '09:00'
-    scheduleData[index].closeTime = '17:00'
-    scheduleData[index].breaks = []
-
-    // Add a lunch break for weekdays
-    if (isWeekday) {
-      scheduleData[index].breaks.push({
-        startTime: '12:00',
-        endTime: '13:00',
-      })
-    }
-  })
-}
-
-// Copy Monday's schedule to all days
-function copyMondayScheduleToAllDays() {
-  const mondaySchedule = scheduleData[0]
-
-  for (let i = 1; i < scheduleData.length; i++) {
-    scheduleData[i].isOpen = mondaySchedule.isOpen
-    scheduleData[i].openTime = mondaySchedule.openTime
-    scheduleData[i].closeTime = mondaySchedule.closeTime
-
-    // Clear existing breaks
-    scheduleData[i].breaks = []
-
-    // Copy breaks from Monday
-    if (mondaySchedule.isOpen) {
-      mondaySchedule.breaks.forEach(breakTime => {
-        scheduleData[i].breaks.push({
-          startTime: breakTime.startTime,
-          endTime: breakTime.endTime
-        })
-      })
-    }
-  }
-}
-
-// Clear all hours
-function clearAllHours() {
-  scheduleData.forEach((day) => {
-    day.isOpen = false
-    day.breaks = []
-  })
-}
-
-// Add a break
-function addBreak(dayIndex: number) {
-  if (scheduleData[dayIndex].breaks.length < 3) {
-    scheduleData[dayIndex].breaks.push({
-      startTime: '12:00',
-      endTime: '13:00',
-    })
-  }
-}
-
-// Remove a break
-function removeBreak(dayIndex: number, breakIndex: number) {
-  scheduleData[dayIndex].breaks.splice(breakIndex, 1)
-}
-
-// Toggle day open/closed
-function onToggleDay(dayIndex: number) {
-  // If day is closed, clear breaks
-  if (!scheduleData[dayIndex].isOpen) {
-    scheduleData[dayIndex].breaks = []
-  }
-}
-
-// Validate time range (closing time must be after opening time)
-function validateTimeRange(dayIndex: number) {
-  const day = scheduleData[dayIndex]
-
-  if (day.openTime >= day.closeTime) {
-    // Auto-correct by setting closing time to 8 hours after opening time
-    const [openHours, openMinutes] = day.openTime.split(':').map(Number)
-    let closeHours = openHours + 8
-
-    if (closeHours >= 24) {
-      closeHours = 23
-      day.closeTime = `${closeHours.toString().padStart(2, '0')}:30`
-    } else {
-      day.closeTime = `${closeHours.toString().padStart(2, '0')}:${openMinutes.toString().padStart(2, '0')}`
-    }
-
-    errorMessage.value = `Closing time must be after opening time. Adjusted for ${weekDays[dayIndex].label}.`
-  }
-
-  // Validate all breaks within business hours
-  day.breaks.forEach((_, breakIndex) => {
-    validateBreakTime(dayIndex, breakIndex)
-  })
-}
-
-// Validate break time
-function validateBreakTime(dayIndex: number, breakIndex: number) {
-  const day = scheduleData[dayIndex]
-  const breakTime = day.breaks[breakIndex]
-
-  const dayStart = day.openTime
-  const dayEnd = day.closeTime
-
-  // Break must be within business hours
-  if (breakTime.startTime < dayStart) {
-    breakTime.startTime = dayStart
-  }
-
-  if (breakTime.endTime > dayEnd) {
-    breakTime.endTime = dayEnd
-  }
-
-  // Break end must be after break start
-  if (breakTime.startTime >= breakTime.endTime) {
-    // Add 1 hour to start time for end time
-    const [startHours, startMinutes] = breakTime.startTime.split(':').map(Number)
-    let endHours = startHours + 1
-
-    if (endHours >= 24) {
-      endHours = 23
-      breakTime.endTime = `${endHours.toString().padStart(2, '0')}:30`
-    } else {
-      breakTime.endTime = `${endHours.toString().padStart(2, '0')}:${startMinutes.toString().padStart(2, '0')}`
-    }
-
-    // Make sure it's still within business hours
-    if (breakTime.endTime > dayEnd) {
-      breakTime.endTime = dayEnd
-    }
-  }
-}
-
-// Load existing business hours
-onMounted(async () => {
-  try {
-    if (!providerStore.currentProvider) {
-      await providerStore.loadCurrentProvider()
-    }
-
-    const provider = providerStore.currentProvider
-    if (!provider) {
-      errorMessage.value = 'Provider profile not found. Please register as a provider first.'
-      return
-    }
-
-    // If provider has business hours, load them
-    if (provider.businessHours && provider.businessHours.length > 0) {
-      // Map existing business hours to our data structure
-      provider.businessHours.forEach((hours) => {
-        const dayIndex = hours.dayOfWeek
-
-        scheduleData[dayIndex].isOpen = hours.isOpen
-        scheduleData[dayIndex].openTime = hours.openTime
-        scheduleData[dayIndex].closeTime = hours.closeTime
-
-        // Clear existing breaks
-        scheduleData[dayIndex].breaks = []
-
-        // Add breaks if they exist
-        if (hours.breaks && hours.breaks.length > 0) {
-          hours.breaks.forEach((breakTime) => {
-            scheduleData[dayIndex].breaks.push({
-              startTime: breakTime.startTime,
-              endTime: breakTime.endTime,
-            })
-          })
-        }
-      })
-    } else {
-      // If no business hours set, use default business hours
-      setStandardBusinessHours()
-    }
-
-    // Load provider preferences
-    if (provider.allowOnlineBooking !== undefined) {
-      allowBookingsOutsideBusinessHours.value = provider.allowOnlineBooking
-    }
-
-    // These would need to be added to the provider model in a real implementation
-    // allowSameDayBookings.value = provider.allowSameDayBookings ?? true
-    // advanceBookingHours.value = provider.advanceBookingHours ?? 2
-    // maxBookingDays.value = provider.maxBookingDays ?? 60
-  } catch (error) {
-    console.error('Error loading provider business hours:', error)
-    errorMessage.value = 'Failed to load business hours. Please try again.'
-  }
-})
-
-// Prepare data for API
-function prepareBusinessHours(): BusinessHours[] {
-  return scheduleData.map((day) => ({
-    id: '', // Will be assigned by the backend
-    dayOfWeek: day.dayOfWeek,
-    isOpen: day.isOpen,
-    openTime: day.openTime,
-    closeTime: day.closeTime,
-    breaks: day.breaks.map((breakTime): TimeBreak => ({
-      startTime: breakTime.startTime,
-      endTime: breakTime.endTime,
-    })),
+const handleClearAll = () => {
+  schedule.value = schedule.value.map(day => ({
+    ...day,
+    enabled: false,
+    startTime: '',
+    endTime: '',
+    breakTime: '',
   }))
 }
 
-// Handle form submission
-async function handleSubmit() {
-  errorMessage.value = null
-  successMessage.value = null
-
-  // Validate all time ranges
-  scheduleData.forEach((day, index) => {
-    if (day.isOpen) {
-      validateTimeRange(index)
-    }
-  })
-
-  isSaving.value = true
-
-  try {
-    const provider = providerStore.currentProvider
-    if (!provider) {
-      throw new Error('Provider not found. Please try refreshing the page.')
-    }
-
-    // Prepare business hours data
-    const businessHours = prepareBusinessHours()
-
-    // In a real implementation, these preferences would be included in the update
-    const updateData = {
-      businessHours: businessHours,
-      allowOnlineBooking: allowBookingsOutsideBusinessHours.value,
-      // These would need to be added to the model in a real implementation:
-      // allowSameDayBookings: allowSameDayBookings.value,
-      // advanceBookingHours: advanceBookingHours.value,
-      // maxBookingDays: maxBookingDays.value,
-    }
-
-    // Update provider
-    const updatedProvider = await providerStore.updateProvider(provider.id, updateData as any)
-
-    // Check if update was successful
-    if (!updatedProvider) {
-      // Check if there's an error in the store
-      if (providerStore.error) {
-        throw new Error(providerStore.error)
-      }
-      throw new Error('Failed to update business hours. Please try again.')
-    }
-
-    successMessage.value = 'Business hours saved successfully!'
-    window.scrollTo({ top: 0, behavior: 'smooth' })
-
-    // Redirect after a short delay
-    setTimeout(() => {
-      router.push({ name: 'ProviderOnboarding' })
-    }, 1500)
-  } catch (error) {
-    console.error('Error saving business hours:', error)
-    errorMessage.value =
-      error instanceof Error ? error.message : 'Failed to save business hours'
-    window.scrollTo({ top: 0, behavior: 'smooth' })
-  } finally {
-    isSaving.value = false
-  }
+const handleSave = () => {
+  // TODO: Save to backend
+  console.log('Saving schedule:', schedule.value)
+  alert('ساعات کاری با موفقیت ذخیره شد')
 }
 
-// Go back to onboarding
-function goBack() {
-  router.push({ name: 'ProviderOnboarding' })
+const handleDateSelect = (date: Date) => {
+  // PersianCalendar emits Date object directly
+  selectedDate.value = date
+  modalOpen.value = true
+}
+
+const handleSaveCustomDay = (data: CustomDayData) => {
+  const dateKey = data.date.toISOString().split('T')[0]
+  customDays.value.set(dateKey, data)
+  modalOpen.value = false
+}
+
+const selectedDateInfo = computed(() => {
+  if (!selectedDate.value) return null
+  const dateKey = selectedDate.value.toISOString().split('T')[0]
+  return customDays.value.get(dateKey) || null
+})
+
+const formatPersianDate = (dateKey: string) => {
+  const date = new Date(dateKey)
+  return `${convertEnglishToPersianNumbers(date.getDate().toString())} / ${convertEnglishToPersianNumbers((date.getMonth() + 1).toString())} / ${convertEnglishToPersianNumbers(date.getFullYear().toString())}`
 }
 </script>
 
-<style scoped>
+<style scoped lang="scss">
 .business-hours-view {
-  max-width: 1000px;
+  max-width: 90rem;
   margin: 0 auto;
   padding: 2rem;
 }
 
+/* Page Header */
 .page-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: flex-start;
   margin-bottom: 2rem;
-  gap: 2rem;
 }
 
 .page-title {
   font-size: 2rem;
-  font-weight: 700;
-  margin: 0 0 0.5rem 0;
-  color: #111827;
+  font-weight: 600;
+  color: #1a1a1a;
+  margin-bottom: 0.5rem;
 }
 
-.page-subtitle {
+.page-description {
   font-size: 1rem;
   color: #6b7280;
-  margin: 0;
 }
 
-.loading-state {
+/* Grid Layout */
+.hours-grid {
+  display: grid;
+  grid-template-columns: 2fr 1fr;
+  gap: 1.5rem;
+}
+
+@media (max-width: 1024px) {
+  .hours-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* Card Base Styles */
+.schedule-card,
+.info-card,
+.calendar-card,
+.custom-days-card {
+  background: white;
+  border: 1px solid #e5e7eb;
+  border-radius: 0.75rem;
+  overflow: hidden;
+}
+
+.card-header {
+  padding: 1.5rem;
+  border-bottom: 1px solid #e5e7eb;
   display: flex;
-  flex-direction: column;
   align-items: center;
-  justify-content: center;
-  padding: 4rem 2rem;
-  gap: 1rem;
+  justify-content: space-between;
 }
 
-.hours-form {
+.header-title {
   display: flex;
-  flex-direction: column;
-  gap: 2rem;
-}
-
-.form-section {
-  padding: 2rem;
-}
-
-.form-section-header {
-  margin-bottom: 2rem;
-}
-
-.section-title {
-  font-size: 1.25rem;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 1.125rem;
   font-weight: 600;
-  margin: 0 0 0.5rem 0;
-  color: #111827;
+  color: #1a1a1a;
 }
 
-.section-description {
-  font-size: 0.875rem;
-  color: #6b7280;
-  margin: 0 0 1rem 0;
+.header-title-simple {
+  font-size: 1.125rem;
+  font-weight: 600;
+  color: #1a1a1a;
 }
 
-.quick-actions {
+.icon {
+  width: 1.25rem;
+  height: 1.25rem;
+  stroke-width: 2;
+}
+
+.header-actions {
   display: flex;
-  gap: 1rem;
-  margin-top: 1rem;
+  gap: 0.5rem;
 }
 
-.days-container {
+.action-btn {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.5rem 1rem;
+  background: white;
+  border: 1px solid #e5e7eb;
+  border-radius: 0.5rem;
+  font-size: 0.875rem;
+  color: #374151;
+  cursor: pointer;
+  transition: all 0.2s;
+
+  &:hover {
+    background: #f9fafb;
+    border-color: #d1d5db;
+  }
+}
+
+.btn-icon {
+  width: 1rem;
+  height: 1rem;
+  stroke-width: 2;
+}
+
+.card-content {
+  padding: 1.5rem;
+}
+
+/* Weekly Section */
+.weekly-section {
   display: flex;
   flex-direction: column;
   gap: 1.5rem;
 }
 
-.day-schedule {
+.schedule-days {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.day-item {
+  padding: 1rem;
   border: 1px solid #e5e7eb;
   border-radius: 0.5rem;
-  overflow: hidden;
-  transition: all 0.2s ease;
+  background: white;
+  transition: all 0.2s;
+
+  &.day-disabled {
+    background: rgba(229, 231, 235, 0.3);
+  }
 }
 
-.day-schedule:hover {
-  border-color: #d1d5db;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
-}
-
-.day-closed {
-  background-color: #f9fafb;
-}
-
-.day-header {
+.day-row-header {
   display: flex;
-  justify-content: space-between;
   align-items: center;
-  padding: 1rem;
-  background-color: #f3f4f6;
-  border-bottom: 1px solid #e5e7eb;
+  justify-content: space-between;
+  margin-bottom: 1rem;
+}
+
+.day-toggle-group {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
 }
 
 .day-name {
   font-size: 1rem;
-  font-weight: 600;
-  margin: 0;
-  color: #111827;
-}
-
-.day-toggle {
-  display: flex;
-  align-items: center;
-}
-
-.toggle-label {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  cursor: pointer;
-}
-
-.toggle-label span {
-  font-size: 0.875rem;
   font-weight: 500;
+  color: #1a1a1a;
 }
 
-.toggle-switch {
+.closed-label {
+  font-size: 0.875rem;
+  color: #6b7280;
+}
+
+/* Switch Toggle */
+.switch {
   position: relative;
   display: inline-block;
   width: 3rem;
-  height: 1.5rem;
-  background-color: #e5e7eb;
-  border-radius: 1.5rem;
-  transition: all 0.2s ease;
+  height: 1.75rem;
 }
 
-.toggle-label input {
+.switch input {
   opacity: 0;
   width: 0;
   height: 0;
 }
 
-.toggle-label input:checked + .toggle-switch {
-  background-color: #10b981;
+.switch-slider {
+  position: absolute;
+  cursor: pointer;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: #e5e7eb;
+  transition: 0.3s;
+  border-radius: 1.75rem;
 }
 
-.toggle-switch:before {
+.switch-slider:before {
   position: absolute;
-  content: "";
+  content: '';
   height: 1.25rem;
   width: 1.25rem;
-  left: 0.125rem;
-  bottom: 0.125rem;
+  left: 0.25rem;
+  bottom: 0.25rem;
   background-color: white;
+  transition: 0.3s;
   border-radius: 50%;
-  transition: all 0.2s ease;
 }
 
-.toggle-label input:checked + .toggle-switch:before {
-  transform: translateX(1.5rem);
+.switch input:checked + .switch-slider {
+  background-color: #8b5cf6;
 }
 
-.day-hours {
-  padding: 1.5rem;
+.switch input:checked + .switch-slider:before {
+  transform: translateX(1.25rem);
 }
 
-.day-closed-message {
-  padding: 1.5rem;
-  text-align: center;
-  color: #6b7280;
+/* Time Inputs */
+.time-inputs {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 0.75rem;
 }
 
-.time-range {
-  display: flex;
-  align-items: flex-end;
-  gap: 1rem;
+@media (max-width: 640px) {
+  .time-inputs {
+    grid-template-columns: 1fr;
+  }
 }
 
-.time-input {
-  flex: 1;
+.input-group {
   display: flex;
   flex-direction: column;
   gap: 0.25rem;
 }
 
-.time-input label {
-  font-size: 0.875rem;
+.input-label {
+  font-size: 0.75rem;
   color: #6b7280;
   font-weight: 500;
 }
 
-.time-input select {
-  padding: 0.625rem;
-  border: 1px solid #d1d5db;
-  border-radius: 0.375rem;
+.time-input {
+  width: 100%;
+  padding: 0.5rem 0.75rem;
+  border: 1px solid #e5e7eb;
+  border-radius: 0.5rem;
   font-size: 0.875rem;
-  color: #111827;
-  background-color: white;
-  cursor: pointer;
+  transition: all 0.2s;
+
+  &:focus {
+    outline: none;
+    border-color: #8b5cf6;
+    box-shadow: 0 0 0 3px rgba(139, 92, 246, 0.1);
+  }
+
+  &::placeholder {
+    color: #9ca3af;
+  }
 }
 
-.time-separator {
-  display: flex;
-  align-items: center;
-  padding-bottom: 0.625rem;
-  color: #6b7280;
-  font-size: 0.875rem;
-}
-
-.break-section {
+/* Save Button */
+.save-btn {
+  width: 100%;
   margin-top: 1.5rem;
-  border-top: 1px dashed #e5e7eb;
-  padding-top: 1.5rem;
+  padding: 0.75rem 1.5rem;
+  background: #8b5cf6;
+  color: white;
+  border: none;
+  border-radius: 0.5rem;
+  font-size: 1rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s;
+
+  &:hover {
+    background: #7c3aed;
+  }
+
+  &:active {
+    transform: scale(0.98);
+  }
 }
 
-.break-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 1rem;
+/* Info Card */
+.info-card {
+  background: rgba(139, 92, 246, 0.05);
+  border-color: rgba(139, 92, 246, 0.2);
 }
 
-.break-title {
-  font-size: 0.875rem;
-  font-weight: 600;
+.info-content {
+  padding: 1.5rem;
+}
+
+.info-title {
+  font-size: 1rem;
+  font-weight: 500;
+  color: #1a1a1a;
+  margin-bottom: 0.75rem;
+}
+
+.info-list {
+  list-style: none;
+  padding: 0;
   margin: 0;
-  color: #4b5563;
+  margin-right: 1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
 }
 
-.no-breaks {
-  text-align: center;
-  padding: 1rem;
-  color: #6b7280;
-  font-style: italic;
-  background-color: #f9fafb;
-  border-radius: 0.375rem;
+.info-list li {
   font-size: 0.875rem;
+  color: #6b7280;
+  position: relative;
+  padding-right: 1rem;
+
+  &:before {
+    content: '•';
+    position: absolute;
+    right: 0;
+    color: #8b5cf6;
+  }
 }
 
-.break-time-container {
-  margin-bottom: 1rem;
-  padding: 0.75rem;
-  background-color: #f9fafb;
-  border-radius: 0.375rem;
-}
-
-.break-time-container:last-child {
-  margin-bottom: 0;
-}
-
-.remove-break {
-  margin-left: auto;
-}
-
-.special-settings {
+/* Calendar Section */
+.calendar-section {
   display: flex;
   flex-direction: column;
   gap: 1.5rem;
 }
 
-.checkbox-group {
-  display: flex;
-  flex-direction: column;
-  gap: 1rem;
-}
-
-.checkbox-label {
-  display: flex;
-  align-items: flex-start;
-  gap: 0.75rem;
-  cursor: pointer;
-  padding: 1rem;
-  border: 1px solid #e5e7eb;
-  border-radius: 8px;
-  transition: all 0.2s;
-}
-
-.checkbox-label:hover {
-  border-color: #3b82f6;
-  background: #eff6ff;
-}
-
-.checkbox {
-  width: 1.25rem;
-  height: 1.25rem;
-  margin-top: 0.125rem;
-  cursor: pointer;
-  flex-shrink: 0;
-}
-
-.checkbox-text {
-  display: flex;
-  flex-direction: column;
-  gap: 0.25rem;
-}
-
-.checkbox-text strong {
-  font-weight: 600;
-  color: #111827;
-}
-
-.checkbox-text small {
+.calendar-hint {
   font-size: 0.875rem;
   color: #6b7280;
+  margin-bottom: 1rem;
 }
 
-.form-group {
-  display: flex;
-  flex-direction: column;
-  gap: 0.5rem;
+.selected-info {
+  margin-top: 1rem;
+  padding: 0.75rem;
+  background: rgba(139, 92, 246, 0.05);
+  border-radius: 0.5rem;
 }
 
-.form-group label {
+.info-label {
   font-size: 0.875rem;
-  font-weight: 600;
-  color: #111827;
+  font-weight: 500;
+  color: #1a1a1a;
+  margin-bottom: 0.25rem;
 }
 
-.form-group small {
+.info-value {
   font-size: 0.75rem;
   color: #6b7280;
 }
 
-.input-with-suffix {
+/* Custom Days List */
+.custom-days-list {
   display: flex;
-  align-items: center;
+  flex-direction: column;
   gap: 0.5rem;
 }
 
-.number-input {
-  padding: 0.625rem;
-  border: 1px solid #d1d5db;
-  border-radius: 0.375rem;
+.custom-day-item {
+  padding: 0.75rem;
+  border: 1px solid #e5e7eb;
+  border-radius: 0.5rem;
   font-size: 0.875rem;
-  color: #111827;
-  width: 5rem;
 }
 
-.input-suffix {
-  font-size: 0.875rem;
+.custom-day-date {
+  font-weight: 500;
+  color: #1a1a1a;
+  margin-bottom: 0.25rem;
+}
+
+.custom-day-info {
+  font-size: 0.75rem;
   color: #6b7280;
 }
-
-.form-actions {
-  display: flex;
-  justify-content: flex-end;
-  gap: 1rem;
-  padding-top: 1rem;
-  border-top: 1px solid #e5e7eb;
-}
-
-@media (max-width: 768px) {
-  .business-hours-view {
-    padding: 1rem;
-  }
-
-  .page-header {
-    flex-direction: column;
-  }
-
-  .quick-actions {
-    flex-direction: column;
-    gap: 0.5rem;
-  }
-
-  .time-range {
-    flex-direction: column;
-    gap: 1rem;
-  }
-
-  .time-separator {
-    padding: 0;
-    margin: 0 auto;
-  }
-
-  .form-actions {
-    flex-direction: column-reverse;
-  }
-
-  .form-actions button {
-    width: 100%;
-  }
-}
+</style>

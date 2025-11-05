@@ -1,0 +1,198 @@
+using Booksy.Core.Domain.Domain.Entities;
+using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
+
+namespace Booksy.Api.Controllers
+{
+    /// <summary>
+    /// API Controller for managing locations (Provinces and Cities)
+    /// This is an example - adapt to your API architecture
+    /// </summary>
+    [ApiController]
+    [Route("api/[controller]")]
+    public class LocationsController : ControllerBase
+    {
+        private readonly DbContext _context;
+        private readonly ILogger<LocationsController> _logger;
+
+        public LocationsController(DbContext context, ILogger<LocationsController> logger)
+        {
+            _context = context;
+            _logger = logger;
+        }
+
+        /// <summary>
+        /// Get all provinces
+        /// </summary>
+        /// <returns>List of provinces</returns>
+        [HttpGet("provinces")]
+        public async Task<ActionResult<IEnumerable<LocationDto>>> GetProvinces()
+        {
+            var provinces = await _context.Set<Location>()
+                .Where(l => l.Type == "Province")
+                .OrderBy(l => l.Name)
+                .Select(l => new LocationDto
+                {
+                    Id = l.Id,
+                    Name = l.Name,
+                    ProvinceCode = l.ProvinceCode,
+                    Type = l.Type
+                })
+                .ToListAsync();
+
+            return Ok(provinces);
+        }
+
+        /// <summary>
+        /// Get cities for a specific province
+        /// </summary>
+        /// <param name="provinceId">The province ID</param>
+        /// <returns>List of cities in the province</returns>
+        [HttpGet("provinces/{provinceId}/cities")]
+        public async Task<ActionResult<IEnumerable<LocationDto>>> GetCitiesByProvince(int provinceId)
+        {
+            var cities = await _context.Set<Location>()
+                .Where(l => l.ParentId == provinceId && l.Type == "City")
+                .OrderBy(l => l.Name)
+                .Select(l => new LocationDto
+                {
+                    Id = l.Id,
+                    Name = l.Name,
+                    ProvinceCode = l.ProvinceCode,
+                    CityCode = l.CityCode,
+                    ParentId = l.ParentId,
+                    Type = l.Type
+                })
+                .ToListAsync();
+
+            if (!cities.Any())
+            {
+                return NotFound($"No cities found for province ID {provinceId}");
+            }
+
+            return Ok(cities);
+        }
+
+        /// <summary>
+        /// Get the complete hierarchy (provinces with their cities)
+        /// </summary>
+        /// <returns>Hierarchical list of provinces with nested cities</returns>
+        [HttpGet("hierarchy")]
+        public async Task<ActionResult<IEnumerable<ProvinceHierarchyDto>>> GetHierarchy()
+        {
+            var provinces = await _context.Set<Location>()
+                .Include(l => l.Children)
+                .Where(l => l.Type == "Province")
+                .OrderBy(l => l.Name)
+                .ToListAsync();
+
+            var hierarchy = provinces.Select(p => new ProvinceHierarchyDto
+            {
+                Id = p.Id,
+                Name = p.Name,
+                ProvinceCode = p.ProvinceCode,
+                Cities = p.Children
+                    .OrderBy(c => c.Name)
+                    .Select(c => new CityDto
+                    {
+                        Id = c.Id,
+                        Name = c.Name,
+                        CityCode = c.CityCode
+                    })
+                    .ToList()
+            });
+
+            return Ok(hierarchy);
+        }
+
+        /// <summary>
+        /// Search locations by name
+        /// </summary>
+        /// <param name="searchTerm">Search term (partial match)</param>
+        /// <returns>Matching locations</returns>
+        [HttpGet("search")]
+        public async Task<ActionResult<IEnumerable<LocationDto>>> Search([FromQuery] string searchTerm)
+        {
+            if (string.IsNullOrWhiteSpace(searchTerm))
+            {
+                return BadRequest("Search term is required");
+            }
+
+            var results = await _context.Set<Location>()
+                .Where(l => l.Name.Contains(searchTerm))
+                .OrderBy(l => l.Type)
+                .ThenBy(l => l.Name)
+                .Select(l => new LocationDto
+                {
+                    Id = l.Id,
+                    Name = l.Name,
+                    ProvinceCode = l.ProvinceCode,
+                    CityCode = l.CityCode,
+                    ParentId = l.ParentId,
+                    Type = l.Type
+                })
+                .Take(50) // Limit results
+                .ToListAsync();
+
+            return Ok(results);
+        }
+
+        /// <summary>
+        /// Get a specific location by ID
+        /// </summary>
+        /// <param name="id">Location ID</param>
+        /// <returns>Location details</returns>
+        [HttpGet("{id}")]
+        public async Task<ActionResult<LocationDto>> GetById(int id)
+        {
+            var location = await _context.Set<Location>()
+                .Where(l => l.Id == id)
+                .Select(l => new LocationDto
+                {
+                    Id = l.Id,
+                    Name = l.Name,
+                    ProvinceCode = l.ProvinceCode,
+                    CityCode = l.CityCode,
+                    ParentId = l.ParentId,
+                    Type = l.Type
+                })
+                .FirstOrDefaultAsync();
+
+            if (location == null)
+            {
+                return NotFound($"Location with ID {id} not found");
+            }
+
+            return Ok(location);
+        }
+    }
+
+    #region DTOs
+
+    public class LocationDto
+    {
+        public int Id { get; set; }
+        public string Name { get; set; } = string.Empty;
+        public int ProvinceCode { get; set; }
+        public int? CityCode { get; set; }
+        public int? ParentId { get; set; }
+        public string Type { get; set; } = string.Empty;
+    }
+
+    public class ProvinceHierarchyDto
+    {
+        public int Id { get; set; }
+        public string Name { get; set; } = string.Empty;
+        public int ProvinceCode { get; set; }
+        public List<CityDto> Cities { get; set; } = new();
+    }
+
+    public class CityDto
+    {
+        public int Id { get; set; }
+        public string Name { get; set; } = string.Empty;
+        public int? CityCode { get; set; }
+    }
+
+    #endregion
+}

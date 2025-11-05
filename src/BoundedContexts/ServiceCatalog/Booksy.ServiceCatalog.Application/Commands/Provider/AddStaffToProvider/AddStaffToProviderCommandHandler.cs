@@ -61,6 +61,18 @@ public sealed class AddStaffToProviderCommandHandler
             provider.UpdateStaffNotes(staff.Id, request.Notes);
         }
 
+        // Update biography if provided
+        if (!string.IsNullOrWhiteSpace(request.Biography))
+        {
+            provider.UpdateStaffBiography(staff.Id, request.Biography);
+        }
+
+        // Update profile photo if provided
+        if (!string.IsNullOrWhiteSpace(request.ProfilePhotoUrl))
+        {
+            provider.UpdateStaffProfilePhoto(staff.Id, request.ProfilePhotoUrl);
+        }
+
         // ✅ Save Provider aggregate (EF Core cascades to staff)
         await _providerRepository.UpdateProviderAsync(provider, cancellationToken);
 

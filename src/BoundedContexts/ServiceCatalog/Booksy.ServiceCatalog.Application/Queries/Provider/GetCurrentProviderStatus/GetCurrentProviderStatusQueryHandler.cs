@@ -33,9 +33,10 @@ namespace Booksy.ServiceCatalog.Application.Queries.Provider.GetCurrentProviderS
             // Get current user ID from claims
             var userId = _httpContextAccessor.HttpContext?.User.FindFirstValue(ClaimTypes.NameIdentifier);
 
+            // Return null if user not authenticated or invalid - controller will handle with 401/404
             if (string.IsNullOrEmpty(userId) || !Guid.TryParse(userId, out var userGuid))
             {
-                throw new UnauthorizedAccessException("User not authenticated");
+                return null;
             }
 
             var ownerId = UserId.From(userGuid);

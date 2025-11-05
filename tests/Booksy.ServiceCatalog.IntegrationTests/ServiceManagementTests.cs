@@ -45,11 +45,11 @@ public class ServiceManagementTests : ServiceCatalogIntegrationTestBase
 
         // Assert
         response.StatusCode.Should().Be(HttpStatusCode.Created);
-        response.data.Should().NotBeNull();
-        response.data!.Id.Should().NotBeEmpty();
-        response.data.Name.Should().Be("Haircut");
-        response.data.DurationMinutes.Should().Be(30);
-        response.data.Price.Should().Be(50.00m);
+        response.Data.Should().NotBeNull();
+        response.Data!.Id.Should().NotBeEmpty();
+        response.Data.Name.Should().Be("Haircut");
+        response.Data.DurationMinutes.Should().Be(30);
+        response.Data.Price.Should().Be(50.00m);
     }
 
     [Fact]
@@ -213,10 +213,10 @@ public class ServiceManagementTests : ServiceCatalogIntegrationTestBase
 
         // Assert
         response.StatusCode.Should().Be(HttpStatusCode.OK);
-        response.data.Should().NotBeNull();
-        response.data!.Name.Should().Be("Updated Service");
-        response.data.DurationMinutes.Should().Be(90); // 1 hour + 30 minutes
-        response.data.Price.Should().Be(75.00m);
+        response.Data.Should().NotBeNull();
+        response.Data!.Name.Should().Be("Updated Service");
+        response.Data.DurationMinutes.Should().Be(90); // 1 hour + 30 minutes
+        response.Data.Price.Should().Be(75.00m);
     }
 
     [Fact]
@@ -380,18 +380,18 @@ public class ServiceManagementTests : ServiceCatalogIntegrationTestBase
         };
 
         var updateResponse = await PutAsJsonAsync(
-            $"/api/v1/providers/{provider.Id.Value}/services/{createResponse.data!.Id}",
+            $"/api/v1/providers/{provider.Id.Value}/services/{createResponse.Data!.Id}",
             updateRequest);
         updateResponse.StatusCode.Should().Be(HttpStatusCode.OK);
 
         // Step 3: Delete service
-        var deleteResponse = await DeleteAsync($"/api/v1/providers/{provider.Id.Value}/services/{createResponse.data.Id}");
+        var deleteResponse = await DeleteAsync($"/api/v1/providers/{provider.Id.Value}/services/{createResponse.Data.Id}");
         deleteResponse.StatusCode.Should().Be(HttpStatusCode.NoContent);
 
         // Step 4: Verify deletion
         var getResponse = await GetAsync($"/api/v1/providers/{provider.Id.Value}/services");
         var services = await GetResponseAsync<List<ServiceDetailResponse>>(getResponse);
-        services.Should().NotContain(s => s.Id == createResponse.data.Id);
+        services.Should().NotContain(s => s.Id == createResponse.Data.Id);
     }
 
     #endregion

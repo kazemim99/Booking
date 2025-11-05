@@ -43,27 +43,37 @@ The system SHALL allow providers to update their business profile with rich medi
 - **AND** preserves successfully validated fields when correcting errors
 
 ### Requirement: Advanced Business Hours Management
-The system SHALL provide advanced scheduling capabilities for business hours including exceptions and special dates.
+The system SHALL provide advanced business hours management capabilities including visual calendar interface, holiday scheduling, and exception handling.
 
 #### Scenario: Calendar view of business hours
-- **WHEN** a provider views their business hours
-- **THEN** the system displays a weekly calendar grid showing all operating hours
-- **AND** visually highlights open vs closed days
-- **AND** shows breaks within business hours
-- **AND** allows clicking any day to edit hours inline
+- **WHEN** a provider views business hours in calendar mode
+- **THEN** the system displays week grid with visual hour blocks
+- **AND** shows month calendar for overview
+- **AND** color-codes days by status (open=green, closed=gray, exception=yellow, holiday=red)
+- **AND** allows toggling between calendar and list view
+- **AND** displays breaks visually within operating hours
+- **AND** shows tooltips with detailed info on hover/tap
+- **AND** allows clicking date to edit schedule
 
 #### Scenario: Holiday and exception dates
-- **WHEN** a provider adds a holiday or exception date
-- **THEN** the system allows selecting a date range or specific dates
-- **AND** allows marking as closed or setting special hours
-- **AND** displays exceptions prominently on the calendar
-- **AND** warns about conflicts with existing bookings on those dates
+- **WHEN** a provider manages holiday and exception dates
+- **THEN** the system allows marking specific dates as holidays
+- **AND** allows setting exception hours for specific dates
+- **AND** allows recurring holidays (yearly, monthly patterns)
+- **AND** displays holidays and exceptions on calendar
+- **AND** prevents bookings on holiday dates
+- **AND** applies exception hours instead of regular hours
+- **AND** warns if existing bookings are affected
 
 #### Scenario: Recurring exceptions
-- **WHEN** a provider creates a recurring exception (e.g., "closed every first Monday")
-- **THEN** the system allows defining recurrence patterns (weekly, monthly, yearly)
-- **AND** displays all future occurrences of the exception
-- **AND** allows editing or removing individual occurrences
+- **WHEN** a provider sets recurring pattern for closures
+- **THEN** the system supports weekly recurrence (every Monday)
+- **AND** supports monthly recurrence (1st of month, last Friday)
+- **AND** supports yearly recurrence (same date annually)
+- **AND** shows preview of dates affected by pattern
+- **AND** allows setting pattern end date or occurrence count
+- **AND** allows editing individual occurrences
+- **AND** clearly displays which dates are affected
 
 ### Requirement: Business Profile Preview
 The system SHALL provide a live preview of how the business profile appears to customers.
@@ -90,4 +100,37 @@ The system SHALL allow providers to control the visibility and public availabili
 - **THEN** the system allows hiding specific features from public view (e.g., pricing, staff names, gallery)
 - **AND** displays how each setting affects customer experience
 - **AND** maintains booking functionality even when some features are hidden
+
+### Requirement: Location Map Synchronization
+The system SHALL provide two-way synchronization between the interactive map and location selector dropdowns when providers set their business location.
+
+#### Scenario: Map click updates location selectors
+- **WHEN** a provider clicks a location on the map
+- **THEN** the system performs reverse geocoding to detect the province and city
+- **AND** automatically selects the detected province in the province dropdown
+- **AND** loads cities for the detected province
+- **AND** automatically selects the detected city in the city dropdown
+- **AND** normalizes province names by removing "استان" prefix if present
+- **AND** logs detection results for debugging
+
+#### Scenario: Province selection centers map
+- **WHEN** a provider selects a province from the dropdown
+- **THEN** the system geocodes the province name to coordinates
+- **AND** centers the map on the province location
+- **AND** updates the map marker to the new coordinates
+- **AND** resets the city selection
+
+#### Scenario: City selection centers map
+- **WHEN** a provider selects a city from the dropdown
+- **THEN** the system geocodes "city, province" for better accuracy
+- **AND** centers the map on the city location
+- **AND** updates the map marker to the new coordinates
+- **AND** zooms the map to an appropriate level
+
+#### Scenario: Geocoding failure handling
+- **WHEN** geocoding fails for a location name
+- **THEN** the system logs an error to the console
+- **AND** does not update the map position
+- **AND** maintains existing coordinates
+- **AND** does not prevent the user from continuing with location setup
 

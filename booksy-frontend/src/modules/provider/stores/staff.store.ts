@@ -288,6 +288,56 @@ export const useStaffStore = defineStore('staff', () => {
   }
 
   // ============================================
+  // Actions - Photo Upload
+  // ============================================
+
+  /**
+   * Upload staff profile photo
+   */
+  async function uploadStaffPhoto(
+    providerId: string,
+    staffId: string,
+    file: File,
+    onUploadProgress?: (progressEvent: any) => void
+  ): Promise<{ imageUrl: string; thumbnailUrl: string }> {
+    isUpdating.value = true
+    error.value = null
+
+    try {
+      console.log('[StaffStore] Uploading photo for staff:', staffId)
+
+      // Upload via API
+      const result = await staffService.uploadStaffPhoto(providerId, staffId, file, onUploadProgress)
+
+      // Update local state with new photo URL
+      const staffIndex = staff.value.findIndex((s) => s.id === staffId)
+      if (staffIndex >= 0) {
+        staff.value[staffIndex] = {
+          ...staff.value[staffIndex],
+          profilePhotoUrl: result.imageUrl
+        }
+      }
+
+      // Update current staff if it's the same one
+      if (currentStaff.value?.id === staffId) {
+        currentStaff.value = {
+          ...currentStaff.value,
+          profilePhotoUrl: result.imageUrl
+        }
+      }
+
+      console.log('[StaffStore] Photo uploaded successfully:', result.imageUrl)
+      return result
+    } catch (err: unknown) {
+      error.value = err instanceof Error ? err.message : 'Failed to upload photo'
+      console.error('[StaffStore] Error uploading photo:', err)
+      throw err
+    } finally {
+      isUpdating.value = false
+    }
+  }
+
+  // ============================================
   // Actions - Filters
   // ============================================
 
@@ -390,6 +440,7 @@ export const useStaffStore = defineStore('staff', () => {
     createStaff,
     updateStaff,
     deleteStaff,
+    uploadStaffPhoto,
     setRoleFilter,
     setActiveFilter,
     setSearchTerm,

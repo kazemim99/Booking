@@ -1,10 +1,12 @@
-﻿using Booksy.Infrastructure.Core.Persistence.Base;
+﻿using Booksy.Core.Domain.Domain.Entities;
+using Booksy.Infrastructure.Core.Persistence.Base;
 using Booksy.ServiceCatalog.Domain.Aggregates;
 using Booksy.ServiceCatalog.Domain.Enums;
 using Booksy.ServiceCatalog.Domain.ValueObjects;
 using Booksy.ServiceCatalog.Infrastructure.Persistence.Context;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
+using System.Text.Json;
 
 namespace Booksy.ServiceCatalog.Infrastructure.Persistence.Seeders
 {
@@ -12,6 +14,7 @@ namespace Booksy.ServiceCatalog.Infrastructure.Persistence.Seeders
     {
         private readonly ServiceCatalogDbContext _context;
         private readonly ILogger<ServiceCatalogDatabaseSeeder> _logger;
+        private readonly string _jsonFilePath;
 
         public ServiceCatalogDatabaseSeeder(
             ServiceCatalogDbContext context,
@@ -19,6 +22,7 @@ namespace Booksy.ServiceCatalog.Infrastructure.Persistence.Seeders
         {
             _context = context;
             _logger = logger;
+            _jsonFilePath = "ProvinceCity-ParentChild.json";
         }
 
         public async Task SeedAsync(CancellationToken cancellationToken = default)
@@ -28,6 +32,7 @@ namespace Booksy.ServiceCatalog.Infrastructure.Persistence.Seeders
              
                 await SeedProvidersAsync(cancellationToken);
                 await SeedServicesAsync(cancellationToken);
+                await SeedProviceCitiesAsync(cancellationToken);
 
                 await _context.SaveChangesAsync(cancellationToken);
                 _logger.LogInformation("ServiceCatalog database seeded successfully");
@@ -75,6 +80,80 @@ namespace Booksy.ServiceCatalog.Infrastructure.Persistence.Seeders
             await _context.Providers.AddRangeAsync(providers, cancellationToken);
         }
 
+        public async Task SeedProviceCitiesAsync(CancellationToken cancellationToken = default)
+        {
+            try
+            {
+                // Check if locations already exist
+                var locationsExist = await _context.Set<ProvinceCities>().AnyAsync(cancellationToken);
+                if (locationsExist)
+                {
+                    _logger.LogInformation("ProvinceCities already seeded. Skipping...");
+                    return;
+                }
+
+                _logger.LogInformation("Starting location seeding from {FilePath}", _jsonFilePath);
+
+                // Read and parse the JSON file
+                var jsonContent = await File.ReadAllTextAsync(_jsonFilePath, cancellationToken);
+                var locationData = JsonSerializer.Deserialize<List<LocationDto>>(jsonContent);
+
+                if (locationData == null || !locationData.Any())
+                {
+                    _logger.LogWarning("No location data found in {FilePath}", _jsonFilePath);
+                    return;
+                }
+
+                // Convert DTOs to entities
+                var locations = new List<ProvinceCities>();
+                foreach (var dto in locationData)
+                {
+                    var location = dto.Type == "Province"
+                        ? ProvinceCities.CreateProvince(dto.Id, dto.Name, dto.ProvinceCode)
+                        : ProvinceCities.CreateCity(dto.Id, dto.Name, dto.ProvinceCode, dto.CityCode!.Value, dto.ParentId!.Value);
+
+                    locations.Add(location);
+                }
+
+                // Add to database
+                await _context.Set<ProvinceCities>().AddRangeAsync(locations, cancellationToken);
+                await _context.SaveChangesAsync(cancellationToken);
+
+                _logger.LogInformation("Successfully seeded {Count} locations ({ProvinceCount} provinces, {CityCount} cities)",
+                    locations.Count,
+                    locations.Count(l => l.Type == "Province"),
+                    locations.Count(l => l.Type == "City"));
+            }
+            catch (FileNotFoundException ex)
+            {
+                _logger.LogError(ex, "Location JSON file not found at {FilePath}", _jsonFilePath);
+                throw;
+            }
+            catch (JsonException ex)
+            {
+                _logger.LogError(ex, "Error parsing location JSON file");
+                throw;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error seeding locations");
+                throw;
+            }
+        }
+
+        /// <summary>
+        /// DTO for deserializing the JSON file
+        /// </summary>
+        private sealed class LocationDto
+        {
+            public int Id { get; set; }
+            public string Name { get; set; } = string.Empty;
+            public int ProvinceCode { get; set; }
+            public int? CityCode { get; set; }
+            public int? ParentId { get; set; }
+            public string Type { get; set; } = string.Empty;
+        }
+
         private Provider CreateSampleProvider(
             string businessName,
             string description,
@@ -93,11 +172,14 @@ namespace Booksy.ServiceCatalog.Infrastructure.Persistence.Seeders
                 $"https://www.{businessName.Replace(" ", "").Replace("'", "").ToLower()}.com");
 
             var address = BusinessAddress.Create(
+                $"123 Main Street, {city}, State",
                 "123 Main Street",
                 city,
                 "State",
                 "12345",
                 "United States",
+                null,
+                null,
                 40.7128,
                 -74.0060);
 

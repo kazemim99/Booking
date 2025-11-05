@@ -1,26 +1,32 @@
-﻿using Booksy.Core.Application.DTOs;
+﻿using Booksy.API.Extensions;
+using Booksy.API.Middleware;
+using Booksy.Core.Application.DTOs;
+using Booksy.ServiceCatalog.Api.Models.Requests;
+using Booksy.ServiceCatalog.Api.Models.Requests.Extenstions;
+using Booksy.ServiceCatalog.Api.Models.Responses;
 using Booksy.ServiceCatalog.API.Models.Requests;
 using Booksy.ServiceCatalog.API.Models.Responses;
+using Booksy.ServiceCatalog.Application.Commands.Provider.ActivateProvider;
+using Booksy.ServiceCatalog.Application.Commands.Provider.ActivateProviderStaff;
+using Booksy.ServiceCatalog.Application.Commands.Provider.AddStaffToProvider;
+using Booksy.ServiceCatalog.Application.Commands.Provider.CompleteProviderRegistration;
+using Booksy.ServiceCatalog.Application.Commands.Provider.CreateProviderDraft;
+using Booksy.ServiceCatalog.Application.Commands.Provider.DeactivateProviderStaff;
+using Booksy.ServiceCatalog.Application.Commands.Provider.RegisterProvider;
+using Booksy.ServiceCatalog.Application.Commands.Provider.RegisterProviderFull;
+using Booksy.ServiceCatalog.Application.Commands.Provider.UpdateBusinessProfile;
+using Booksy.ServiceCatalog.Application.Commands.Provider.UpdateProviderStaff;
+using Booksy.ServiceCatalog.Application.Queries.Provider.GetCurrentProviderStatus;
+using Booksy.ServiceCatalog.Application.Queries.Provider.GetDraftProvider;
+using Booksy.ServiceCatalog.Application.Queries.Provider.GetProviderById;
+using Booksy.ServiceCatalog.Application.Queries.Provider.GetProviderByOwnerId;
+using Booksy.ServiceCatalog.Application.Queries.Provider.GetProvidersByStatus;
+using Booksy.ServiceCatalog.Application.Queries.Provider.GetProviderStaff;
 using MediatR;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using Booksy.ServiceCatalog.Application.Commands.Provider.RegisterProvider;
-using Booksy.ServiceCatalog.Application.Commands.Provider.ActivateProvider;
-using Booksy.ServiceCatalog.Application.Commands.Provider.RegisterProviderFull;
-using Booksy.ServiceCatalog.Application.Queries.Provider.GetProviderById;
-using Booksy.ServiceCatalog.Application.Queries.Provider.GetProvidersByStatus;
-using Booksy.ServiceCatalog.Application.Queries.Provider.GetCurrentProviderStatus;
-using Booksy.API.Extensions;
-using Booksy.ServiceCatalog.Api.Models.Responses;
-using Booksy.ServiceCatalog.Api.Models.Requests.Extenstions;
-using Booksy.API.Middleware;
-using static Booksy.API.Middleware.ExceptionHandlingMiddleware;
 using System.Security.Claims;
-using Booksy.ServiceCatalog.Application.Commands.Provider.AddStaffToProvider;
-using Booksy.ServiceCatalog.Application.Commands.Provider.UpdateProviderStaff;
-using Booksy.ServiceCatalog.Application.Commands.Provider.ActivateProviderStaff;
-using Booksy.ServiceCatalog.Application.Commands.Provider.DeactivateProviderStaff;
-using Booksy.ServiceCatalog.Application.Queries.Provider.GetProviderStaff;
+using static Booksy.API.Middleware.ExceptionHandlingMiddleware;
 
 namespace Booksy.ServiceCatalog.API.Controllers.V1;
 
@@ -36,14 +42,180 @@ public class ProvidersController : ControllerBase
 {
     private readonly ISender _mediator;
     private readonly ILogger<ProvidersController> _logger;
+    private readonly Application.Services.IImageStorageService _imageStorageService;
 
-    public ProvidersController(ISender mediator, ILogger<ProvidersController> logger)
+    public ProvidersController(
+        ISender mediator,
+        ILogger<ProvidersController> logger,
+        Application.Services.IImageStorageService imageStorageService)
     {
         _mediator = mediator ?? throw new ArgumentNullException(nameof(mediator));
         _logger = logger ?? throw new ArgumentNullException(nameof(logger));
+        _imageStorageService = imageStorageService ?? throw new ArgumentNullException(nameof(imageStorageService));
     }
 
 
+
+    #region Progressive Registration Flow
+
+    /// <summary>
+    /// Creates a draft provider (Step 3 of registration flow)
+    /// </summary>
+    /// <remarks>
+    /// Creates a draft provider after user completes business info, category, and location steps.
+    /// If user already has a draft provider, returns the existing draft.
+    /// </remarks>
+    /// <param name="request">Draft provider data from Step 3</param>
+    /// <returns>Created or existing draft provider information</returns>
+    /// <response code="201">Draft provider created successfully</response>
+    /// <response code="200">Existing draft provider returned</response>
+    /// <response code="400">Invalid request data</response>
+    /// <response code="401">User not authenticated</response>
+    [HttpPost("draft")]
+    [Authorize]
+    [Booksy.API.Middleware.EnableRateLimiting("provider-registration")]
+    [ProducesResponseType(typeof(CreateProviderDraftResponse), StatusCodes.Status201Created)]
+    [ProducesResponseType(typeof(CreateProviderDraftResponse), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ApiErrorResult), StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    public async Task<IActionResult> CreateProviderDraft(
+        [FromBody] CreateProviderDraftRequest request,
+        CancellationToken cancellationToken = default)
+    {
+        var command = new CreateProviderDraftCommand(
+            BusinessName: request.BusinessName,
+            BusinessDescription: request.BusinessDescription,
+            Category: request.Category,
+            PhoneNumber: request.PhoneNumber,
+            Email: request.Email,
+            AddressLine1: request.AddressLine1,
+            AddressLine2: request.AddressLine2,
+            City: request.City,
+            Province: request.Province,
+            PostalCode: request.PostalCode,
+            Latitude: request.Latitude,
+            Longitude: request.Longitude
+        );
+
+        var result = await _mediator.Send(command, cancellationToken);
+
+        var response = new CreateProviderDraftResponse
+        {
+            ProviderId = result.ProviderId,
+            RegistrationStep = result.RegistrationStep,
+            Message = result.Message
+        };
+
+        _logger.LogInformation("Draft provider {ProviderId} created/resumed at step {Step}",
+            result.ProviderId, result.RegistrationStep);
+
+        // Return 200 if existing draft was found, 201 if new draft created
+        if (result.Message.Contains("already exists"))
+            return Ok(response);
+
+        return CreatedAtAction(
+            nameof(GetProviderById),
+            new { id = response.ProviderId, version = "1.0" },
+            response);
+    }
+
+    /// <summary>
+    /// Gets the current user's draft provider
+    /// </summary>
+    /// <returns>Draft provider data if exists</returns>
+    /// <response code="200">Draft provider found</response>
+    /// <response code="404">No draft provider found</response>
+    /// <response code="401">User not authenticated</response>
+    [HttpGet("draft")]
+    [Authorize]
+    [ProducesResponseType(typeof(GetDraftProviderResponse), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ApiErrorResult), StatusCodes.Status404NotFound)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    public async Task<IActionResult> GetDraftProvider(
+        CancellationToken cancellationToken = default)
+    {
+        var query = new GetDraftProviderQuery();
+        var result = await _mediator.Send(query, cancellationToken);
+
+        if (!result.HasDraft || result.DraftData == null)
+        {
+            return NotFound(new
+            {
+                success = false,
+                message = "No draft provider found",
+                errorCode = "DRAFT_NOT_FOUND"
+            });
+        }
+
+        var response = new GetDraftProviderResponse
+        {
+            ProviderId = result.ProviderId!.Value,
+            RegistrationStep = result.RegistrationStep!.Value,
+            BusinessName = result.DraftData.BusinessName,
+            BusinessDescription = result.DraftData.BusinessDescription,
+            Category = result.DraftData.Category,
+            PhoneNumber = result.DraftData.PhoneNumber,
+            Email = result.DraftData.Email,
+            AddressLine1 = result.DraftData.AddressLine1,
+            AddressLine2 = result.DraftData.AddressLine2,
+            City = result.DraftData.City,
+            Province = result.DraftData.Province,
+            PostalCode = result.DraftData.PostalCode,
+            Latitude = result.DraftData.Latitude,
+            Longitude = result.DraftData.Longitude
+        };
+
+        _logger.LogInformation("Draft provider {ProviderId} retrieved at step {Step}",
+            result.ProviderId, result.RegistrationStep);
+
+        return Ok(response);
+    }
+
+    /// <summary>
+    /// Completes provider registration (Final step - Step 9)
+    /// </summary>
+    /// <remarks>
+    /// Finalizes the registration process and moves provider to PendingVerification status.
+    /// Returns new JWT tokens with provider claims.
+    /// </remarks>
+    /// <param name="providerId">Provider ID to complete</param>
+    /// <returns>Completion result with new tokens</returns>
+    /// <response code="200">Registration completed successfully</response>
+    /// <response code="400">Validation failed or missing required data</response>
+    /// <response code="404">Provider not found</response>
+    /// <response code="401">User not authenticated</response>
+    /// <response code="403">Not authorized to complete this registration</response>
+    [HttpPost("{providerId}/complete")]
+    [Authorize]
+    [Booksy.API.Middleware.EnableRateLimiting("provider-registration")]
+    [ProducesResponseType(typeof(CompleteProviderRegistrationResponse), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ApiErrorResult), StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(typeof(ApiErrorResult), StatusCodes.Status404NotFound)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
+    public async Task<IActionResult> CompleteProviderRegistration(
+        [FromRoute] Guid providerId,
+        CancellationToken cancellationToken = default)
+    {
+        var command = new CompleteProviderRegistrationCommand(providerId);
+        var result = await _mediator.Send(command, cancellationToken);
+
+        var response = new CompleteProviderRegistrationResponse
+        {
+            ProviderId = result.ProviderId,
+            Status = result.Status,
+            Message = result.Message,
+            AccessToken = result.AccessToken,
+            RefreshToken = result.RefreshToken
+        };
+
+        _logger.LogInformation("Provider {ProviderId} registration completed with status {Status}",
+            result.ProviderId, result.Status);
+
+        return Ok(response);
+    }
+
+    #endregion
 
     /// <summary>
     /// Registers a new service provider (simple registration)
@@ -214,8 +386,8 @@ public class ProvidersController : ControllerBase
         {
             return NotFound();
         }
-
-        return Ok(MapToProviderDetailsResponse(result));
+        var mapped = MapToProviderDetailsResponse(result);
+        return Ok(mapped);
     }
 
     /// <summary>
@@ -339,11 +511,15 @@ public class ProvidersController : ControllerBase
             Status = locationResult.Status.ToString(),
             Address = new AddressResponse
             {
-                Street = locationResult.Address.Street,
+                FormattedAddress = locationResult.Address.FormattedAddress,
                 City = locationResult.Address.City,
                 State = locationResult.Address.State,
                 PostalCode = locationResult.Address.PostalCode,
-                Country = locationResult.Address.Country
+                Country = locationResult.Address.Country,
+                ProvinceId = locationResult.Address.ProvinceId,
+                CityId = locationResult.Address.CityId,
+                Latitude = locationResult.Address.Latitude,
+                Longitude = locationResult.Address.Longitude
             },
             Coordinates = new CoordinatesResponse
             {
@@ -458,7 +634,9 @@ public class ProvidersController : ControllerBase
             PhoneNumber = staff.PhoneNumber,
             Role = staff.Role,
             IsActive = staff.IsActive,
-            HiredAt = staff.HiredAt
+            HiredAt = staff.HiredAt,
+            Biography = staff.Biography,
+            ProfilePhotoUrl = staff.ProfilePhotoUrl
         }).ToList();
 
         return Ok(response);
@@ -487,10 +665,7 @@ public class ProvidersController : ControllerBase
         [FromBody] AddStaffRequest request,
         CancellationToken cancellationToken = default)
     {
-        if (!await CanManageProvider(providerId))
-        {
-            return Forbid();
-        }
+  
 
         var command = new AddStaffToProviderCommand(
             providerId,
@@ -499,7 +674,9 @@ public class ProvidersController : ControllerBase
             request.PhoneNumber,
             request.CountryCode,
             request.Role,
-            request.Notes);
+            request.Notes,
+            request.Biography,
+            request.ProfilePhotoUrl);
 
         var result = await _mediator.Send(command, cancellationToken);
 
@@ -556,7 +733,9 @@ public class ProvidersController : ControllerBase
             request.PhoneNumber,
             request.CountryCode,
             request.Role,
-            request.Notes);
+            request.Notes,
+            request.Biography,
+            request.ProfilePhotoUrl);
 
         var result = await _mediator.Send(command, cancellationToken);
 
@@ -611,6 +790,89 @@ public class ProvidersController : ControllerBase
         _logger.LogInformation("Staff member {StaffId} removed from provider {ProviderId}", staffId, id);
 
         return NoContent();
+    }
+
+    /// <summary>
+    /// Upload profile photo for a staff member
+    /// </summary>
+    /// <param name="id">Provider ID</param>
+    /// <param name="staffId">Staff member ID</param>
+    /// <param name="file">Photo file to upload</param>
+    /// <returns>Upload result with image URLs</returns>
+    /// <response code="200">Photo uploaded successfully</response>
+    /// <response code="400">Invalid file or request</response>
+    /// <response code="404">Staff member not found</response>
+    /// <response code="403">Not authorized to manage this staff member</response>
+    [HttpPost("{id:guid}/staff/{staffId:guid}/photo")]
+    [Authorize]
+    [ProducesResponseType(typeof(UploadImageResponse), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
+    public async Task<IActionResult> UploadStaffPhoto(
+        [FromRoute] Guid id,
+        [FromRoute] Guid staffId,
+        IFormFile file,
+        CancellationToken cancellationToken = default)
+    {
+        if (!await CanManageProvider(id))
+        {
+            return Forbid();
+        }
+
+        if (file == null || file.Length == 0)
+        {
+            return BadRequest(new { message = "No file uploaded" });
+        }
+
+        // Validate file type
+        var allowedTypes = new[] { "image/jpeg", "image/jpg", "image/png", "image/webp" };
+        if (!allowedTypes.Contains(file.ContentType.ToLower()))
+        {
+            return BadRequest(new { message = "Invalid file type. Only JPG, PNG, and WebP are allowed" });
+        }
+
+        // Validate file size (5MB max)
+        const long maxFileSize = 5 * 1024 * 1024;
+        if (file.Length > maxFileSize)
+        {
+            return BadRequest(new { message = "File size exceeds 5MB limit" });
+        }
+
+        try
+        {
+            // Upload using existing image storage service
+            var imageUrl = await _imageStorageService.SaveProfileImageAsync(id, file);
+
+            // Update staff profile photo URL via command
+            var command = new UpdateProviderStaffCommand(
+                id,
+                staffId,
+                null, // firstName - not updating
+                null, // lastName - not updating
+                null, // email - not updating
+                null, // phone - not updating
+                null, // countryCode - not updating
+                null, // role - not updating
+                null, // notes - not updating
+                null, // biography - not updating
+                imageUrl); // profilePhotoUrl
+
+            var updatedStaff = await _mediator.Send(command, cancellationToken);
+
+            _logger.LogInformation("Staff photo uploaded for staff {StaffId} in provider {ProviderId}", staffId, id);
+
+            return Ok(new UploadImageResponse
+            {
+                ImageUrl = imageUrl,
+                ThumbnailUrl = imageUrl // For now, same URL - can add thumbnail generation later
+            });
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error uploading staff photo for staff {StaffId} in provider {ProviderId}", staffId, id);
+            return BadRequest(new { message = "Failed to upload photo", error = ex.Message });
+        }
     }
 
     #endregion
@@ -733,9 +995,11 @@ public class ProvidersController : ControllerBase
     {
         return new ProviderDetailsResponse
         {
-            ProviderId = result.Id,
+           
+            Id = result.Id,
             OwnerId = result.OwnerId,
             BusinessName = result.BusinessName,
+            ProfileImageUrl = result.ProfileImageUrl,
             Description = result.Description,
             Type = result.Type.ToString(),
             Status = result.Status.ToString(),
@@ -747,11 +1011,15 @@ public class ProvidersController : ControllerBase
             },
             Address = new AddressResponse
             {
-                Street = result.Address.Street,
+                FormattedAddress = result.Address.Street,
                 City = result.Address.City,
                 State = result.Address.State,
                 PostalCode = result.Address.PostalCode,
-                Country = result.Address.Country
+                Country = result.Address.Country,
+                ProvinceId = result.Address.ProvinceId,
+                CityId = result.Address.CityId,
+                Latitude = result.Address.Latitude,
+                Longitude = result.Address.Longitude
             },
             BusinessHours = result.BusinessHours.Any() ? result.BusinessHours.ToDictionary(
                 bh => bh.Key,
@@ -853,7 +1121,493 @@ public class ProvidersController : ControllerBase
     }
 
     #endregion
+
+    #region Gallery Management
+
+    /// <summary>
+    /// Upload images to provider gallery
+    /// </summary>
+    /// <param name="providerId">Provider ID</param>
+    /// <param name="files">Image files to upload (max 10 files, 10MB each)</param>
+    /// <returns>List of uploaded gallery images</returns>
+    /// <response code="200">Images uploaded successfully</response>
+    /// <response code="400">Invalid files or validation errors</response>
+    /// <response code="404">Provider not found</response>
+    [HttpPost("{providerId}/gallery")]
+    [Authorize]
+    [RequestSizeLimit(52428800)] // 50MB for multiple files
+    [ProducesResponseType(typeof(List<GalleryImageResponse>), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ApiErrorResult), StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(typeof(ApiErrorResult), StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> UploadGalleryImages(
+        [FromRoute] Guid providerId,
+        [FromForm] IFormFileCollection files,
+        CancellationToken cancellationToken = default)
+    {
+        var command = new Application.Commands.Provider.UploadGalleryImages.UploadGalleryImagesCommand(
+            providerId,
+            files);
+
+        var result = await _mediator.Send(command, cancellationToken);
+
+        var response = result.Select(dto => new GalleryImageResponse
+        {
+            Id = dto.Id,
+            ThumbnailUrl = dto.ThumbnailUrl,
+            MediumUrl = dto.MediumUrl,
+            OriginalUrl = dto.OriginalUrl,
+            DisplayOrder = dto.DisplayOrder,
+            Caption = dto.Caption,
+            AltText = dto.AltText,
+            UploadedAt = dto.UploadedAt,
+            IsPrimary = dto.IsPrimary
+        }).ToList();
+
+        return Ok(response);
+    }
+
+    /// <summary>
+    /// Get all gallery images for a provider
+    /// </summary>
+    /// <param name="providerId">Provider ID</param>
+    /// <returns>List of gallery images sorted by display order</returns>
+    /// <response code="200">Gallery images retrieved successfully</response>
+    /// <response code="404">Provider not found</response>
+    [HttpGet("{providerId}/gallery")]
+    [Authorize]
+    [AllowAnonymous]
+    [ProducesResponseType(typeof(List<GalleryImageResponse>), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ApiErrorResult), StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> GetGalleryImages(
+        [FromRoute] Guid providerId,
+        CancellationToken cancellationToken = default)
+    {
+        var query = new Application.Queries.Provider.GetGalleryImages.GetGalleryImagesQuery(providerId);
+        var result = await _mediator.Send(query, cancellationToken);
+
+        var response = result.Select(dto => new GalleryImageResponse
+        {
+            Id = dto.Id,
+            ThumbnailUrl = dto.ThumbnailUrl,
+            MediumUrl = dto.MediumUrl,
+            OriginalUrl = dto.OriginalUrl,
+            DisplayOrder = dto.DisplayOrder,
+            Caption = dto.Caption,
+            AltText = dto.AltText,
+            UploadedAt = dto.UploadedAt,
+            IsPrimary = dto.IsPrimary
+        }).ToList();
+
+        return Ok(response);
+    }
+
+    /// <summary>
+    /// Update gallery image metadata (caption, alt text)
+    /// </summary>
+    /// <param name="providerId">Provider ID</param>
+    /// <param name="imageId">Image ID</param>
+    /// <param name="request">Updated metadata</param>
+    /// <returns>No content on success</returns>
+    /// <response code="204">Metadata updated successfully</response>
+    /// <response code="400">Invalid request data</response>
+    /// <response code="404">Provider or image not found</response>
+    [HttpPut("{providerId}/gallery/{imageId}")]
+    [Authorize]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType(typeof(ApiErrorResult), StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(typeof(ApiErrorResult), StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> UpdateGalleryImageMetadata(
+        [FromRoute] Guid providerId,
+        [FromRoute] Guid imageId,
+        [FromBody] UpdateGalleryImageMetadataRequest request,
+        CancellationToken cancellationToken = default)
+    {
+        var command = new Application.Commands.Provider.UpdateGalleryImageMetadata.UpdateGalleryImageMetadataCommand(
+            providerId,
+            imageId,
+            request.Caption,
+            request.AltText);
+
+        await _mediator.Send(command, cancellationToken);
+
+        return NoContent();
+    }
+
+    /// <summary>
+    /// Reorder gallery images
+    /// </summary>
+    /// <param name="providerId">Provider ID</param>
+    /// <param name="request">New image order mapping</param>
+    /// <returns>No content on success</returns>
+    /// <response code="204">Images reordered successfully</response>
+    /// <response code="400">Invalid request data</response>
+    /// <response code="404">Provider not found</response>
+    [HttpPut("{providerId}/gallery/reorder")]
+    [Authorize]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType(typeof(ApiErrorResult), StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(typeof(ApiErrorResult), StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> ReorderGalleryImages(
+        [FromRoute] Guid providerId,
+        [FromBody] ReorderGalleryImagesRequest request,
+        CancellationToken cancellationToken = default)
+    {
+        var command = new Application.Commands.Provider.ReorderGalleryImages.ReorderGalleryImagesCommand(
+            providerId,
+            request.ImageOrders);
+
+        await _mediator.Send(command, cancellationToken);
+
+        return NoContent();
+    }
+
+    /// <summary>
+    /// Set a gallery image as primary/featured
+    /// </summary>
+    /// <param name="providerId">Provider ID</param>
+    /// <param name="imageId">Image ID to set as primary</param>
+    /// <returns>No content on success</returns>
+    /// <response code="204">Image set as primary successfully</response>
+    /// <response code="404">Provider or image not found</response>
+    [HttpPut("{providerId}/gallery/{imageId}/set-primary")]
+    [Authorize]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> SetPrimaryGalleryImage(
+        [FromRoute] Guid providerId,
+        [FromRoute] Guid imageId,
+        CancellationToken cancellationToken = default)
+    {
+        var command = new Application.Commands.Provider.SetPrimaryGalleryImage.SetPrimaryGalleryImageCommand(
+            providerId,
+            imageId);
+
+        await _mediator.Send(command, cancellationToken);
+
+        return NoContent();
+    }
+
+    /// <summary>
+    /// Delete a gallery image
+    /// </summary>
+    /// <param name="providerId">Provider ID</param>
+    /// <param name="imageId">Image ID to delete</param>
+    /// <returns>No content on success</returns>
+    /// <response code="204">Image deleted successfully</response>
+    /// <response code="404">Provider or image not found</response>
+    [HttpDelete("{providerId}/gallery/{imageId}")]
+    [Authorize]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> DeleteGalleryImage(
+        [FromRoute] Guid providerId,
+        [FromRoute] Guid imageId,
+        CancellationToken cancellationToken = default)
+    {
+        var command = new Application.Commands.Provider.DeleteGalleryImage.DeleteGalleryImageCommand(
+            providerId,
+            imageId);
+
+        await _mediator.Send(command, cancellationToken);
+
+        return NoContent();
+    }
+
+    /// <summary>
+    /// Upload profile image for the provider
+    /// </summary>
+    /// <param name="image">Profile image file (max 5MB, jpg/png/webp)</param>
+    /// <returns>URL of uploaded profile image</returns>
+    /// <response code="200">Profile image uploaded successfully</response>
+    /// <response code="400">Invalid image file or validation errors</response>
+    /// <response code="401">User not authenticated</response>
+    [HttpPost("profile/image")]
+    [Authorize]
+    [Consumes("multipart/form-data")]
+    [RequestSizeLimit(5242880)] // 5MB
+    [ProducesResponseType(typeof(UploadImageResponse), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ApiErrorResult), StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    public async Task<IActionResult> UploadProfileImage(
+        IFormFile image,
+        CancellationToken cancellationToken = default)
+    {
+        if (image == null || image.Length == 0)
+        {
+            return BadRequest(new ApiErrorResult("No image file provided")
+            {
+                Errors = new Dictionary<string, string[]>
+                {
+                    { "image", new[] { "Image file is required" } }
+                }
+            });
+        }
+
+        if (!_imageStorageService.IsValidImageType(image))
+        {
+            return BadRequest(new ApiErrorResult("Invalid image format")
+            {
+                Errors = new Dictionary<string, string[]>
+                {
+                    { "image", new[] { "Only JPG, PNG, GIF, and WebP images are allowed" } }
+                }
+            });
+        }
+
+        // Get current user ID and find their provider
+        var currentUserId = GetCurrentUserId();
+        if (string.IsNullOrEmpty(currentUserId) || !Guid.TryParse(currentUserId, out var userId))
+        {
+            return Unauthorized();
+        }
+
+        // Query for provider by owner ID
+        var query = new GetProviderByOwnerIdQuery(userId);
+        var provider = await _mediator.Send(query, cancellationToken);
+
+        if (provider == null)
+        {
+            return NotFound(new ApiErrorResult("Provider not found for current user"));
+        }
+
+        var imageUrl = await _imageStorageService.SaveProfileImageAsync(provider.Id, image);
+
+        _logger.LogInformation("Profile image uploaded for provider {ProviderId}: {ImageUrl}", provider.Id, imageUrl);
+
+        return Ok(new UploadImageResponse
+        {
+            ImageUrl = imageUrl
+        });
+    }
+
+    /// <summary>
+    /// Upload business logo for the provider
+    /// </summary>
+    /// <param name="image">Business logo image file (max 5MB, jpg/png/webp)</param>
+    /// <returns>URL of uploaded business logo</returns>
+    /// <response code="200">Business logo uploaded successfully</response>
+    /// <response code="400">Invalid image file or validation errors</response>
+    /// <response code="401">User not authenticated</response>
+    [HttpPost("business/logo")]
+    [Authorize]
+    [Consumes("multipart/form-data")]
+    [RequestSizeLimit(5242880)] // 5MB
+    [ProducesResponseType(typeof(UploadImageResponse), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ApiErrorResult), StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    public async Task<IActionResult> UploadBusinessLogo(
+        IFormFile image,
+        CancellationToken cancellationToken = default)
+    {
+        if (image == null || image.Length == 0)
+        {
+            return BadRequest(new ApiErrorResult("No image file provided")
+            {
+                Errors = new Dictionary<string, string[]>
+                {
+                    { "image", new[] { "Image file is required" } }
+                }
+            });
+        }
+
+        if (!_imageStorageService.IsValidImageType(image))
+        {
+            return BadRequest(new ApiErrorResult("Invalid image format")
+            {
+                Errors = new Dictionary<string, string[]>
+                {
+                    { "image", new[] { "Only JPG, PNG, GIF, and WebP images are allowed" } }
+                }
+            });
+        }
+
+        // Get current user ID and find their provider
+        var currentUserId = GetCurrentUserId();
+        if (string.IsNullOrEmpty(currentUserId) || !Guid.TryParse(currentUserId, out var userId))
+        {
+            return Unauthorized();
+        }
+
+        // Query for provider by owner ID
+        var query = new GetProviderByOwnerIdQuery(userId);
+        var provider = await _mediator.Send(query, cancellationToken);
+
+        if (provider == null)
+        {
+            return NotFound(new ApiErrorResult("Provider not found for current user"));
+        }
+
+        var imageUrl = await _imageStorageService.SaveBusinessLogoAsync(provider.Id, image);
+
+        _logger.LogInformation("Business logo uploaded for provider {ProviderId}: {ImageUrl}", provider.Id, imageUrl);
+
+        return Ok(new UploadImageResponse
+        {
+            ImageUrl = imageUrl
+        });
+    }
+
+    /// <summary>
+    /// Update provider profile information
+    /// </summary>
+    /// <param name="request">Updated profile information</param>
+    /// <returns>No content on success</returns>
+    /// <response code="204">Profile updated successfully</response>
+    /// <response code="400">Invalid request data</response>
+    /// <response code="401">User not authenticated</response>
+    /// <response code="404">Provider not found</response>
+    [HttpPut("profile")]
+    [Authorize]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType(typeof(ApiErrorResult), StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> UpdateProfile(
+        [FromBody] UpdateProfileRequest request,
+        CancellationToken cancellationToken = default)
+    {
+        // Get current user ID and find their provider
+        var currentUserId = GetCurrentUserId();
+        if (string.IsNullOrEmpty(currentUserId) || !Guid.TryParse(currentUserId, out var userId))
+        {
+            return Unauthorized();
+        }
+
+        // Query for provider by owner ID
+        var query = new GetProviderByOwnerIdQuery(userId);
+        var provider = await _mediator.Send(query, cancellationToken);
+
+        if (provider == null)
+        {
+            return NotFound(new ApiErrorResult("Provider not found for current user"));
+        }
+
+        var command = new Application.Commands.Provider.UpdateProviderProfile.UpdateProviderProfileCommand(
+            provider.Id,
+            request.FullName,
+            request.Email,
+            request.ProfileImageUrl);
+
+        await _mediator.Send(command, cancellationToken);
+
+        _logger.LogInformation("Profile updated for provider {ProviderId}", provider.Id);
+
+        return NoContent();
+    }
+
+    /// <summary>
+    /// Update provider business information
+    /// </summary>
+    /// <param name="request">Updated business information</param>
+    /// <returns>No content on success</returns>
+    /// <response code="204">Business information updated successfully</response>
+    /// <response code="400">Invalid request data</response>
+    /// <response code="401">User not authenticated</response>
+    /// <response code="404">Provider not found</response>
+    [HttpPut("business")]
+    [Authorize]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType(typeof(ApiErrorResult), StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> UpdateBusinessInfo(
+        [FromBody] UpdateBusinessInfoRequest request,
+        CancellationToken cancellationToken = default)
+    {
+        // Get current user ID and find their provider
+        var currentUserId = GetCurrentUserId();
+        if (string.IsNullOrEmpty(currentUserId) || !Guid.TryParse(currentUserId, out var userId))
+        {
+            return Unauthorized();
+        }
+
+        // Query for provider by owner ID
+        var query = new GetProviderByOwnerIdQuery(userId);
+        var provider = await _mediator.Send(query, cancellationToken);
+
+        if (provider == null)
+        {
+            return NotFound(new ApiErrorResult("Provider not found for current user"));
+        }
+
+        var command = new UpdateBusinessProfileCommand(
+            ProviderId: provider.Id,
+            BusinessName: request.BusinessName,
+            Description: request.Description);
+
+        var result = await _mediator.Send(command, cancellationToken);
+
+        // Update logo if provided
+        if (!string.IsNullOrWhiteSpace(request.LogoUrl))
+        {
+            var updateLogoCommand = new Application.Commands.Provider.UpdateBusinessLogo.UpdateBusinessLogoCommand(
+                provider.Id,
+                request.LogoUrl);
+
+            await _mediator.Send(updateLogoCommand, cancellationToken);
+        }
+
+        _logger.LogInformation("Business information updated for provider {ProviderId}", provider.Id);
+
+        return NoContent();
+    }
+
+    #endregion
 }
+
+#region Progressive Registration Request/Response Models
+
+public sealed class CreateProviderDraftRequest
+{
+    public string BusinessName { get; set; } = string.Empty;
+    public string BusinessDescription { get; set; } = string.Empty;
+    public string Category { get; set; } = string.Empty;
+    public string PhoneNumber { get; set; } = string.Empty;
+    public string Email { get; set; } = string.Empty;
+    public string AddressLine1 { get; set; } = string.Empty;
+    public string? AddressLine2 { get; set; }
+    public string City { get; set; } = string.Empty;
+    public string Province { get; set; } = string.Empty;
+    public string PostalCode { get; set; } = string.Empty;
+    public decimal Latitude { get; set; }
+    public decimal Longitude { get; set; }
+}
+
+public sealed class CreateProviderDraftResponse
+{
+    public Guid ProviderId { get; set; }
+    public int RegistrationStep { get; set; }
+    public string Message { get; set; } = string.Empty;
+}
+
+public sealed class GetDraftProviderResponse
+{
+    public Guid ProviderId { get; set; }
+    public int RegistrationStep { get; set; }
+    public string BusinessName { get; set; } = string.Empty;
+    public string BusinessDescription { get; set; } = string.Empty;
+    public string Category { get; set; } = string.Empty;
+    public string PhoneNumber { get; set; } = string.Empty;
+    public string Email { get; set; } = string.Empty;
+    public string AddressLine1 { get; set; } = string.Empty;
+    public string? AddressLine2 { get; set; }
+    public string City { get; set; } = string.Empty;
+    public string Province { get; set; } = string.Empty;
+    public string PostalCode { get; set; } = string.Empty;
+    public decimal Latitude { get; set; }
+    public decimal Longitude { get; set; }
+}
+
+public sealed class CompleteProviderRegistrationResponse
+{
+    public Guid ProviderId { get; set; }
+    public string Status { get; set; } = string.Empty;
+    public string Message { get; set; } = string.Empty;
+    public string? AccessToken { get; set; }
+    public string? RefreshToken { get; set; }
+}
+
+#endregion
 
 #region Staff Request/Response Models
 
@@ -866,6 +1620,8 @@ public sealed class AddStaffRequest
     public string? CountryCode { get; set; }
     public string Role { get; set; } = "ServiceProvider";
     public string? Notes { get; set; }
+    public string? Biography { get; set; }
+    public string? ProfilePhotoUrl { get; set; }
 }
 
 public sealed class UpdateStaffRequest
@@ -877,6 +1633,8 @@ public sealed class UpdateStaffRequest
     public string? CountryCode { get; set; }
     public string Role { get; set; } = string.Empty;
     public string? Notes { get; set; }
+    public string? Biography { get; set; }
+    public string? ProfilePhotoUrl { get; set; }
 }
 
 public sealed class StaffDetailsResponse
@@ -893,6 +1651,9 @@ public sealed class StaffDetailsResponse
     public DateTime? TerminatedAt { get; set; }
     public string? TerminationReason { get; set; }
     public string? Notes { get; set; }
+    public string? Biography { get; set; }
+    public string? ProfilePhotoUrl { get; set; }
+    public DateTime HiredAt { get; set; }
 }
 
 public sealed class StaffSummaryResponse
@@ -907,6 +1668,25 @@ public sealed class StaffSummaryResponse
     public string Role { get; set; } = string.Empty;
     public bool IsActive { get; set; }
     public DateTime HiredAt { get; set; }
+    public string? Biography { get; set; }
+    public string? ProfilePhotoUrl { get; set; }
+}
+
+#endregion
+
+#region Image Upload Models
+
+public sealed class UploadImageResponse
+{
+    public string ImageUrl { get; set; } = string.Empty;
+    public string? ThumbnailUrl { get; set; }
+}
+
+public sealed class UpdateProfileRequest
+{
+    public string? FullName { get; set; }
+    public string? Email { get; set; }
+    public string? ProfileImageUrl { get; set; }
 }
 
 #endregion

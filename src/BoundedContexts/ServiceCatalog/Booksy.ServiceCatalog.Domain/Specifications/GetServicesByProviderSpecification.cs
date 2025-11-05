@@ -13,7 +13,7 @@ namespace Booksy.ServiceCatalog.Domain.Specifications
             bool includeProvider = false)
         {
             // Primary filter - services for this provider
-         //   AddCriteria(service => service.ProviderId == providerId);
+            AddCriteria(service => service.ProviderId == providerId);
 
             // Optional status filter
             if (status.HasValue)

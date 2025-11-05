@@ -212,8 +212,8 @@ export const useHoursStore = defineStore('hours', () => {
     try {
       const holiday = await hoursService.addHoliday(request)
 
-      // Optimistically add to state
-      state.value.holidays.push(holiday)
+      // Replace array to ensure reactivity
+      state.value.holidays = [...state.value.holidays, holiday]
 
       return holiday
     } catch (error) {
@@ -250,8 +250,8 @@ export const useHoursStore = defineStore('hours', () => {
     try {
       const exception = await hoursService.addException(request)
 
-      // Optimistically add to state
-      state.value.exceptions.push(exception)
+      // Replace array to ensure reactivity
+      state.value.exceptions = [...state.value.exceptions, exception]
 
       return exception
     } catch (error) {

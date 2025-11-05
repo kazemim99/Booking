@@ -10,7 +10,7 @@ namespace Booksy.Core.Domain.Infrastructure.Middleware
         public string Message { get; set; }
         public ApiError Error { get; set; }
         public Dictionary<string, string[]> Errors { get; set; }
-        public TResponse data { get; set; }
+        public TResponse Data { get; set; }
         public ResponseMetaData metadata { get; internal set; }
     }
     public class ApiResponse

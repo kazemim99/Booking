@@ -8,10 +8,19 @@ const authRoutes: RouteRecordRaw[] = [
   {
     path: '/login',
     name: 'Login',
-    component: () => import('@/modules/auth/views/PhoneLoginView.vue'),
+    component: () => import('@/modules/auth/views/LoginView.vue'),
     meta: {
       isPublic: true,
       title: 'Log In or Sign Up'
+    }
+  },
+  {
+    path: '/phone-verification',
+    name: 'PhoneVerification',
+    component: () => import('@/modules/auth/views/VerificationView.vue'),
+    meta: {
+      isPublic: true,
+      title: 'Phone Verification'
     }
   },
 

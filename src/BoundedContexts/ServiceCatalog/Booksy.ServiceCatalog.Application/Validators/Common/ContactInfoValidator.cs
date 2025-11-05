@@ -12,9 +12,7 @@ namespace Booksy.ServiceCatalog.Application.Validators.Common
     {
         public ContactInfoValidator()
         {
-            RuleFor(x => x.Email)
-                .NotNull()
-                .WithMessage("Email is required");
+      
 
             RuleFor(x => x.PrimaryPhone)
                 .NotNull()

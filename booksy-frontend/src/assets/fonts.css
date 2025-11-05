@@ -1,0 +1,53 @@
+/* B Nazanin Font - Persian/Farsi Font */
+
+/* B Nazanin Regular */
+@font-face {
+  font-family: 'B Nazanin';
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url('/Bnazanin/BNAZANIN.eot'); /* IE9 Compat Modes */
+  src: url('/Bnazanin/BNAZANIN.eot?#iefix') format('embedded-opentype'), /* IE6-IE8 */
+       url('/Bnazanin/BNAZANIN.woff2') format('woff2'), /* Modern Browsers */
+       url('/Bnazanin/BNAZANIN.woff') format('woff'), /* Modern Browsers */
+       url('/Bnazanin/BNAZANIN.TTF') format('truetype'), /* Safari, Android, iOS */
+       url('/Bnazanin/BNAZANIN.otf') format('opentype'); /* OpenType */
+}
+
+/* B Nazanin Bold */
+@font-face {
+  font-family: 'B Nazanin';
+  font-style: normal;
+  font-weight: 700;
+  font-display: swap;
+  src: url('/Bnazanin/BNAZANB.eot'); /* IE9 Compat Modes */
+  src: url('/Bnazanin/BNAZANB.eot?#iefix') format('embedded-opentype'), /* IE6-IE8 */
+       url('/Bnazanin/BNAZANB.woff2') format('woff2'), /* Modern Browsers */
+       url('/Bnazanin/BNAZANB.woff') format('woff'), /* Modern Browsers */
+       url('/Bnazanin/BNAZANB.TTF') format('truetype'), /* Safari, Android, iOS */
+       url('/Bnazanin/BNAZANB.otf') format('opentype'); /* OpenType */
+}
+
+/* Apply B Nazanin font for Persian locale */
+html[lang="fa"],
+html[lang="fa"] body,
+html[lang="fa"] * {
+  font-family: 'B Nazanin', Tahoma, 'Iranian Sans', sans-serif !important;
+}
+
+/* Ensure proper text rendering for Persian */
+html[lang="fa"] {
+  direction: rtl;
+  text-align: right;
+}
+
+html[lang="fa"] body {
+  font-family: 'B Nazanin', Tahoma, 'Iranian Sans', sans-serif;
+  letter-spacing: 0;
+  word-spacing: 0;
+}
+
+/* Better number display for Persian numerals */
+html[lang="fa"] {
+  font-variant-numeric: normal;
+}

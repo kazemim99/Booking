@@ -1,7 +1,4 @@
-﻿// ========================================
-// Booksy.Core.Application/Behaviors/TransactionBehavior.cs
-// ========================================
-using MediatR;
+﻿using MediatR;
 using Microsoft.Extensions.Logging;
 using Booksy.Core.Application.Abstractions.Persistence;
 using Booksy.Core.Application.Abstractions.CQRS;
@@ -30,23 +27,21 @@ namespace Booksy.Core.Application.Behaviors
             RequestHandlerDelegate<TResponse> next,
             CancellationToken cancellationToken)
         {
-            // Only wrap commands in transactions, not queries
-            var isCommand = request is ICommand ||
-                 (request.GetType().GetInterfaces()
-                     .Any(i => i.IsGenericType &&
-                              i.GetGenericTypeDefinition() == typeof(ICommand<>)));
-
-            if (!isCommand)
-            {
-                return await next();
-            }
-
-            if (_unitOfWork.HasActiveTransaction)
-            {
-                return await next();
-            }
-
             var requestName = typeof(TRequest).Name;
+            var requestType = request.GetType();
+
+            // Skip transactions for queries - they are read-only
+            var isQuery = requestType.GetInterfaces()
+                .Any(i => i.IsGenericType && i.GetGenericTypeDefinition() == typeof(IQuery<>));
+
+            _logger.LogDebug("TransactionBehavior: {RequestName}, Type: {RequestType}, IsQuery: {IsQuery}",
+                requestName, requestType.Name, isQuery);
+
+            if (isQuery)
+            {
+                _logger.LogDebug("Skipping transaction for query: {RequestName}", requestName);
+                return await next();
+            }
 
             // If transaction is already active, don't create a new one
             if (_unitOfWork.HasActiveTransaction)

@@ -4,7 +4,7 @@ namespace Booksy.ServiceCatalog.API.Models.Responses;
 
 public class ProviderDetailsResponse
 {
-    public Guid ProviderId { get; set; }
+    public Guid Id { get; set; }
     public string BusinessName { get; set; } = string.Empty;
     public string? Description { get; set; }
     public string Type { get; set; } = string.Empty;
@@ -29,4 +29,5 @@ public class ProviderDetailsResponse
     public DateTime? ActivatedAt { get; internal set; }
     public List<ServiceSummaryResponse> Services { get; internal set; }
     public List<StaffMemberResponse>? Staff { get; internal set; }
+    public string? ProfileImageUrl { get;  set; }
 }

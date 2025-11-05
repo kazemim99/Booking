@@ -14,21 +14,7 @@ public sealed class UpdateBusinessInfoRequest
     [MaxLength(1000)]
     public string? Description { get; set; }
 
-    [Required]
-    [MaxLength(100)]
-    public string OwnerFirstName { get; set; } = string.Empty;
-
-    [Required]
-    [MaxLength(100)]
-    public string OwnerLastName { get; set; } = string.Empty;
-
-    [Required]
-    [Phone]
-    public string PhoneNumber { get; set; } = string.Empty;
-
-    [EmailAddress]
-    public string? Email { get; set; }
 
     [Url]
-    public string? Website { get; set; }
+    public string? LogoUrl { get; set; }
 }

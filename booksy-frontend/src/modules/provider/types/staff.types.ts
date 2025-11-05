@@ -105,6 +105,9 @@ export interface Staff {
   role?: string
   isActive: boolean
   hiredAt?: string // ISO date
+  notes?: string
+  biography?: string
+  profilePhotoUrl?: string
   createdAt?: string
   updatedAt?: string
 }
@@ -124,6 +127,8 @@ export interface CreateStaffRequest {
   countryCode?: string
   role?: string
   notes?: string
+  biography?: string
+  profilePhotoUrl?: string
 }
 
 /**
@@ -137,6 +142,8 @@ export interface UpdateStaffRequest {
   countryCode?: string
   role?: string
   notes?: string
+  biography?: string
+  profilePhotoUrl?: string
 }
 
 /**

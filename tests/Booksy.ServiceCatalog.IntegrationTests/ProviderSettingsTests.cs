@@ -79,12 +79,6 @@ public class ProviderSettingsTests : ServiceCatalogIntegrationTestBase
         var request = new UpdateBusinessInfoRequest
         {
             BusinessName = "Updated Business Name",
-            OwnerFirstName = "OwnerFirstName_1",
-            OwnerLastName = "OwnerLastName_1",
-            Description = "Updated description with more details",
-            PhoneNumber = "+19876543210",
-            Email = "updated@test.com",
-            Website = "https://updatedbusiness.com"
         };
 
         // Act
@@ -94,11 +88,11 @@ public class ProviderSettingsTests : ServiceCatalogIntegrationTestBase
         response.Error.Should().BeNull();
         response.StatusCode.Should().Be(HttpStatusCode.OK);
         response.Should().NotBeNull();
-        response.data!.BusinessName.Should().Be("Updated Business Name");
-        response.data.Description.Should().Be("Updated description with more details");
-        response.data.PhoneNumber.Should().Be("+19876543210");
-        response.data.Email.Should().Be("updated@test.com");
-        response.data.Website.Should().Be("https://updatedbusiness.com");
+        response.Data!.BusinessName.Should().Be("Updated Business Name");
+        response.Data.Description.Should().Be("Updated description with more details");
+        response.Data.PhoneNumber.Should().Be("+19876543210");
+        response.Data.Email.Should().Be("updated@test.com");
+        response.Data.Website.Should().Be("https://updatedbusiness.com");
     }
 
     [Fact]
@@ -112,8 +106,6 @@ public class ProviderSettingsTests : ServiceCatalogIntegrationTestBase
         {
             BusinessName = "", // Invalid: empty business name
             Description = "Test",
-            PhoneNumber = "+1234567890",
-            Email = "test@test.com"
         };
 
         // Act
@@ -137,8 +129,6 @@ public class ProviderSettingsTests : ServiceCatalogIntegrationTestBase
         {
             BusinessName = "Hacked Business",
             Description = "Should fail",
-            PhoneNumber = "+1234567890",
-            Email = "hacker@test.com"
         };
 
         // Act
@@ -198,9 +188,7 @@ public class ProviderSettingsTests : ServiceCatalogIntegrationTestBase
         var request = new UpdateLocationRequest
         {
             AddressLine1 = "456 New Street",
-            Street = "456 New Street",
             City = "San Francisco",
-            State = "CA",
             PostalCode = "94102",
             Country = "USA",
             Latitude = 37.7749,
@@ -213,12 +201,12 @@ public class ProviderSettingsTests : ServiceCatalogIntegrationTestBase
         // Assert
         response.Error.Should().BeNull();
         response.StatusCode.Should().Be(HttpStatusCode.OK);
-        response.data.Should().NotBeNull();
-        response.data!.Street.Should().Be("456 New Street");
-        response.data.City.Should().Be("San Francisco");
-        response.data.State.Should().Be("CA");
-        response.data.PostalCode.Should().Be("94102");
-        response.data.Country.Should().Be("USA");
+        response.Data.Should().NotBeNull();
+        response.Data!.Street.Should().Be("456 New Street");
+        response.Data.City.Should().Be("San Francisco");
+        response.Data.State.Should().Be("CA");
+        response.Data.PostalCode.Should().Be("94102");
+        response.Data.Country.Should().Be("USA");
     }
 
     [Fact]
@@ -233,9 +221,7 @@ public class ProviderSettingsTests : ServiceCatalogIntegrationTestBase
 
         var request = new UpdateLocationRequest
         {
-            Street = "Hacked Street",
             City = "Hack City",
-            State = "HC",
             PostalCode = "00000",
             Country = "Hack"
         };
@@ -382,9 +368,9 @@ public class ProviderSettingsTests : ServiceCatalogIntegrationTestBase
         // Assert
         response.Error.Should().BeNull();
         response.StatusCode.Should().Be(HttpStatusCode.OK);
-        response.data.Should().NotBeNull();
-        response.data!.BusinessHours.Should().NotBeNull();
-        response.data.BusinessHours.Should().ContainKey("Monday");
+        response.Data.Should().NotBeNull();
+        response.Data!.BusinessHours.Should().NotBeNull();
+        response.Data.BusinessHours.Should().ContainKey("Monday");
     }
 
     [Fact]
@@ -425,12 +411,6 @@ public class ProviderSettingsTests : ServiceCatalogIntegrationTestBase
         {
             
             BusinessName = "Workflow Business Updated",
-            OwnerFirstName = "UpdateBusinessInfo_OwnerFirstName",
-            OwnerLastName = "UpdateBusinessInfo_OwnerLastName",
-            Description = "Complete workflow test",
-            PhoneNumber = "+1234567890",
-            Email = "workflow@test.com",
-            Website = "https://workflow.com"
         };
 
         var businessResponse = await PutAsJsonAsync(
@@ -444,9 +424,7 @@ public class ProviderSettingsTests : ServiceCatalogIntegrationTestBase
         var locationRequest = new UpdateLocationRequest
         {
             AddressLine1 = "789 Workflow Ave",
-            Street = "789 Workflow Ave",
             City = "Workflow City",
-            State = "WC",
             PostalCode = "12345",
             Country = "USA"
         };

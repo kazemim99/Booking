@@ -1,15 +1,8 @@
-﻿// ========================================
-// Booksy.ServiceCatalog.IntegrationTests/Infrastructure/ServiceCatalogIntegrationTestBase.cs
-// ========================================
-using Booksy.API;
-using Booksy.Core.Domain.Infrastructure.Middleware;
-using Booksy.Core.Domain.ValueObjects;
-using Booksy.ServiceCatalog.API;
+﻿using Booksy.Core.Domain.ValueObjects;
 using Booksy.ServiceCatalog.Domain.Aggregates;
 using Booksy.ServiceCatalog.Domain.ValueObjects;
 using Booksy.ServiceCatalog.Infrastructure.Persistence.Context;
 using Booksy.Tests.Common.Infrastructure;
-using FluentAssertions;
 using Microsoft.EntityFrameworkCore;
 using System.Linq.Expressions;
 
@@ -262,6 +255,7 @@ public abstract class ServiceCatalogIntegrationTestBase
             ),
             BusinessAddress.Create(
                 "123 Test St",
+                "123 Test St",
                 "Test City",
                 "TS",
                 "12345",
@@ -317,6 +311,7 @@ public abstract class ServiceCatalogIntegrationTestBase
                 PhoneNumber.Create("+1234567890")
             ),
             BusinessAddress.Create(
+                "123 Test St",
                 "123 Test St",
                 "Test City",
                 "TS",
@@ -471,10 +466,11 @@ public abstract class ServiceCatalogIntegrationTestBase
             ),
             BusinessAddress.Create(
                 "123 Test St",
+                "123 Test St",
+                "123 Test St",
+                "123 Test St",
                 "Test City",
-                "TS",
-                "12345",
-                "USA"
+                "TS"
             )
         );
 
@@ -506,6 +502,7 @@ public abstract class ServiceCatalogIntegrationTestBase
                 PhoneNumber.Create("+1234567890")
             ),
             BusinessAddress.Create(
+                "123 Test St",
                 "123 Test St",
                 "Test City",
                 "TS",

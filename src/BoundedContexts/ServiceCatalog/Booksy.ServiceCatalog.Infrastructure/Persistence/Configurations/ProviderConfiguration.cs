@@ -12,15 +12,17 @@ namespace Booksy.ServiceCatalog.Infrastructure.Persistence.Configurations
     {
         public void Configure(EntityTypeBuilder<Provider> builder)
         {
-            builder.ToTable("Providers");
+            builder.ToTable("Providers", "ServiceCatalog");
 
 
 
             // Primary Key
             builder.HasKey(p => p.Id);
 
-            // Ignore Version property (not using optimistic concurrency for now)
-            builder.Ignore(p => p.Version);
+            builder.Property(p => p.Version)
+                .IsConcurrencyToken()
+                .HasColumnName("Version")
+                .HasDefaultValue(0);
 
             builder.Property(p => p.Id)
                 .HasConversion(
@@ -58,27 +60,31 @@ namespace Booksy.ServiceCatalog.Infrastructure.Persistence.Configurations
                     .HasColumnName("BusinessLogoUrl")
                     .HasMaxLength(500);
 
-                // ✅ SocialMedia as JSON (Dictionary<string, string>)
+                profile.Property(bp => bp.ProfileImageUrl)
+                    .HasColumnName("ProfileImageUrl")
+                    .HasMaxLength(500);
+
+                // ✅ SocialMedia as JSON
                 profile.Property(bp => bp.SocialMedia)
                     .HasColumnName("BusinessSocialMedia")
-                    .HasColumnType("jsonb")  // Use 'nvarchar(max)' for SQL Server
+                    .HasColumnType("jsonb")
                     .HasConversion(
                         dict => JsonSerializer.Serialize(dict, (JsonSerializerOptions?)null),
                         json => JsonSerializer.Deserialize<Dictionary<string, string>>(json, (JsonSerializerOptions?)null)
                                 ?? new Dictionary<string, string>(),
                         new ValueComparer<Dictionary<string, string>>(
                             (c1, c2) => c1!.SequenceEqual(c2!),
-                            c => c.Aggregate(0, (a, v) => HashCode.Combine(a, v.GetHashCode())),
-                            c => c.ToDictionary(x => x.Key, x => x.Value)
+                            c => c.Aggregate(0, (a, v) => HashCode.Combine(a, v.Key.GetHashCode(), v.Value.GetHashCode())),
+                            c => c.ToDictionary(entry => entry.Key, entry => entry.Value)
                         ))
                     .IsRequired(false);
 
-                // ✅ Tags as JSON (List<string>)
+                // ✅ Tags as JSON
                 profile.Property(bp => bp.Tags)
                     .HasColumnName("BusinessTags")
-                    .HasColumnType("jsonb")  // Use 'nvarchar(max)' for SQL Server
+                    .HasColumnType("jsonb")
                     .HasConversion(
-                        tags => JsonSerializer.Serialize(tags, (JsonSerializerOptions?)null),
+                        list => JsonSerializer.Serialize(list, (JsonSerializerOptions?)null),
                         json => JsonSerializer.Deserialize<List<string>>(json, (JsonSerializerOptions?)null)
                                 ?? new List<string>(),
                         new ValueComparer<List<string>>(
@@ -95,7 +101,96 @@ namespace Booksy.ServiceCatalog.Infrastructure.Persistence.Configurations
 
                 // Ignore the Id property of BusinessProfile since it's an owned entity
                 profile.Ignore(bp => bp.Id);
+
+                // ✅ GALLERY IMAGES (Owned Collection) - FIXED CONFIGURATION
+                profile.OwnsMany(bp => bp.GalleryImages, galleryImage =>
+                {
+                    galleryImage.ToTable("provider_gallery_images");
+
+                    // IMPORTANT: Explicitly configure the foreign key
+                    galleryImage.WithOwner()
+                        .HasForeignKey("ProviderId");
+
+                    // Configure primary key
+                    galleryImage.HasKey(gi => gi.Id);
+
+                    galleryImage.Property(gi => gi.Id)
+                        .HasColumnName("id")
+                        .ValueGeneratedNever() // Important: Since we generate it in code
+                        .IsRequired();
+
+                    galleryImage.Property(gi => gi.ProviderId)
+                        .HasConversion(
+                            id => id.Value,
+                            value => ProviderId.From(value))
+                        .HasColumnName("provider_id")
+                        .IsRequired();
+
+                    galleryImage.Property(gi => gi.ImageUrl)
+                        .HasColumnName("image_url")
+                        .IsRequired()
+                        .HasMaxLength(500);
+
+                    galleryImage.Property(gi => gi.ThumbnailUrl)
+                        .HasColumnName("thumbnail_url")
+                        .IsRequired()
+                        .HasMaxLength(500);
+
+                    galleryImage.Property(gi => gi.MediumUrl)
+                        .HasColumnName("medium_url")
+                        .IsRequired()
+                        .HasMaxLength(500);
+
+                    galleryImage.Property(gi => gi.DisplayOrder)
+                        .HasColumnName("display_order")
+                        .IsRequired();
+
+                    galleryImage.Property(gi => gi.Caption)
+                        .HasColumnName("caption")
+                        .HasMaxLength(500);
+
+                    galleryImage.Property(gi => gi.AltText)
+                        .HasColumnName("alt_text")
+                        .HasMaxLength(500);
+
+                    galleryImage.Property(gi => gi.UploadedAt)
+                        .HasColumnName("uploaded_at")
+                        .IsRequired()
+                        .HasColumnType("timestamp with time zone");
+
+                    galleryImage.Property(gi => gi.IsActive)
+                        .HasColumnName("is_active")
+                        .IsRequired()
+                        .HasDefaultValue(true);
+
+                    galleryImage.Property(gi => gi.IsPrimary)
+                        .HasColumnName("is_primary")
+                        .IsRequired()
+                        .HasDefaultValue(false);
+
+                    // Add row version for the gallery image as well
+                    galleryImage.Property<byte[]>("RowVersion")
+                        .IsConcurrencyToken()
+                        .HasColumnName("row_version")
+                        .ValueGeneratedOnAddOrUpdate();
+
+                    // Indexes
+                    galleryImage.HasIndex(gi => new { gi.ProviderId, gi.DisplayOrder })
+                        .HasDatabaseName("IX_ProviderGalleryImages_Provider_DisplayOrder");
+
+                    galleryImage.HasIndex(gi => gi.ProviderId)
+                        .HasDatabaseName("IX_ProviderGalleryImages_ProviderId");
+
+                    galleryImage.HasIndex(gi => new { gi.ProviderId, gi.IsPrimary })
+                        .HasDatabaseName("IX_ProviderGalleryImages_Provider_IsPrimary");
+                });
+
+                // Navigation property configuration
+                profile.Navigation(bp => bp.GalleryImages)
+                    .UsePropertyAccessMode(PropertyAccessMode.Field);
             });
+
+
 
             // Contact Info (Value Object)
             builder.OwnsOne(p => p.ContactInfo, contact =>
@@ -138,6 +233,10 @@ namespace Booksy.ServiceCatalog.Infrastructure.Persistence.Configurations
             // Business Address (Value Object)
             builder.OwnsOne(p => p.Address, address =>
             {
+                address.Property(a => a.FormattedAddress)
+                    .HasMaxLength(500)
+                    .HasColumnName("AddressFormattedAddress");
+
                 address.Property(a => a.Street)
                     .HasMaxLength(200)
                     .IsRequired()
@@ -162,6 +261,12 @@ namespace Booksy.ServiceCatalog.Infrastructure.Persistence.Configurations
                     .IsRequired()
                     .HasColumnName("AddressCountry");
 
+                address.Property(a => a.ProvinceId)
+                    .HasColumnName("AddressProvinceId");
+
+                address.Property(a => a.CityId)
+                    .HasColumnName("AddressCityId");
+
                 address.Property(a => a.Latitude)
                     .HasPrecision(10, 8)
                     .HasColumnName("AddressLatitude");
@@ -181,6 +286,15 @@ namespace Booksy.ServiceCatalog.Infrastructure.Persistence.Configurations
                 .HasConversion<string>()
                 .IsRequired()
                 .HasMaxLength(50);
+
+            // Registration Progress
+            builder.Property(p => p.RegistrationStep)
+                .IsRequired()
+                .HasDefaultValue(1);
+
+            builder.Property(p => p.IsRegistrationComplete)
+                .IsRequired()
+                .HasDefaultValue(false);
 
             // Boolean Properties
             builder.Property(p => p.RequiresApproval)

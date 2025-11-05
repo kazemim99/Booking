@@ -14,6 +14,7 @@ namespace Booksy.ServiceCatalog.Application.Queries.Provider.GetProvidersByStatu
         public string Email { get; set; } = string.Empty;
         public string PrimaryPhone { get; set; } = string.Empty;
         public string? LogoUrl { get; set; }
+        public string? ProfileImageUrl { get; set; }
         public bool AllowOnlineBooking { get; set; }
         public bool OffersMobileServices { get; set; }
         public bool IsVerified { get; set; }

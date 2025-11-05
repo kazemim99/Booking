@@ -1,4 +1,4 @@
-import { createApp } from 'vue'
+import { createApp, watch } from 'vue'
 import { createPinia } from 'pinia'
 import { createI18n } from 'vue-i18n'
 import App from './App.vue'
@@ -46,6 +46,15 @@ rtl.initializeRTL()
 
 // Sync i18n locale with RTL language
 i18n.global.locale.value = rtl.currentLanguage.value as 'fa' | 'en' | 'ar'
+
+// Watch for locale changes and update HTML lang attribute for font application
+watch(() => i18n.global.locale.value, (newLocale) => {
+  document.documentElement.setAttribute('lang', newLocale)
+  console.log('🌐 Locale changed to:', newLocale)
+})
+
+// Set initial HTML lang attribute
+document.documentElement.setAttribute('lang', i18n.global.locale.value)
 
 // Register global directives
 app.directive('click-outside', vClickOutside)

@@ -12,7 +12,7 @@
 //    {
 //        public void Configure(EntityTypeBuilder<BusinessProfile> builder)
 //        {
-//            builder.ToTable("BusinessProfiles", "servicecatalog");
+//            builder.ToTable("BusinessProfiles", "ServiceCatalog");
 
 //            // Primary Key
 //            builder.HasKey(bp => bp.Id);

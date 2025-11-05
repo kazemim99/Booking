@@ -12,13 +12,15 @@ namespace Booksy.ServiceCatalog.Application.Commands.Provider.UpdateProviderStaf
     public sealed record UpdateProviderStaffCommand(
         Guid ProviderId,
         Guid StaffId,
-        string FirstName,
-        string LastName,
-        string Email,
+        string? FirstName,
+        string? LastName,
+        string? Email,
         string? PhoneNumber,
         string? CountryCode,
-        string Role,
-        string? Notes = null) : ICommand<UpdateProviderStaffResult>
+        string? Role,
+        string? Notes = null,
+        string? Biography = null,
+        string? ProfilePhotoUrl = null) : ICommand<UpdateProviderStaffResult>
     {
         public Guid? IdempotencyKey { get; init; }
     }

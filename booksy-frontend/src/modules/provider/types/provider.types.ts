@@ -27,6 +27,7 @@ export interface Provider {
 
   // Profile
   profile: BusinessProfile
+  profileImageUrl?: string // Provider profile image (separate from business logo)
 
   // Status & Type
   status: ProviderStatus
@@ -68,19 +69,22 @@ export interface BusinessProfile {
 }
 
 export interface ContactInfo {
-  email: string
-  primaryPhone: string
+  email?: string
+  phone?: string // Backend uses "phone", not "primaryPhone"
   secondaryPhone?: string
-  faxNumber?: string
+  website?: string
 }
 
 export interface BusinessAddress {
+  formattedAddress?: string // Full formatted address from backend
   addressLine1: string
   addressLine2?: string
   city: string
   state: string
   postalCode: string
   country: string
+  provinceId?: number // ID from ProvinceCities table
+  cityId?: number // ID from ProvinceCities table
   latitude?: number
   longitude?: number
 }
@@ -130,6 +134,8 @@ export interface ProviderSummary {
   city: string
   state: string
   country: string
+  provinceId?: number // ID from ProvinceCities table
+  cityId?: number // ID from ProvinceCities table
   allowOnlineBooking: boolean
   offersMobileServices: boolean
   tags: string[]
@@ -214,6 +220,8 @@ export interface RegisterProviderRequest {
   state: string
   postalCode: string
   country: string
+  provinceId?: number // ID from ProvinceCities table
+  cityId?: number // ID from ProvinceCities table
   requiresApproval: boolean
   allowOnlineBooking: boolean
   offersMobileServices: boolean
@@ -310,18 +318,26 @@ export interface ProviderResponse {
   type: string
   logoUrl?: string
   coverImageUrl?: string
-  email: string
-  primaryPhone: string
-  secondaryPhone?: string
+  profileImageUrl?: string // Provider profile image
   websiteUrl?: string
-  addressLine1: string
+
+  // Nested objects (new structure)
+  contactInfo?: ContactInfo
+  address?: BusinessAddress
+
+  // Fallback flat structure (old structure for backwards compatibility)
+  email?: string
+  primaryPhone?: string
+  secondaryPhone?: string
+  addressLine1?: string
   addressLine2?: string
-  city: string
-  state: string
-  postalCode: string
-  country: string
+  city?: string
+  state?: string
+  postalCode?: string
+  country?: string
   latitude?: number
   longitude?: number
+  formattedAddress?: string
   allowOnlineBooking: boolean
   offersMobileServices: boolean
   requiresApproval: boolean
