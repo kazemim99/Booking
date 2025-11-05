@@ -64,7 +64,7 @@ namespace Booksy.ServiceCatalog.Infrastructure.Persistence.Repositories
 
         public async Task UpdateProviderAsync(Provider provider, CancellationToken cancellationToken = default)
         {
-            DbSet.Update(provider);
+            Context.Update(provider);
         }
 
         public async Task DeleteProviderAsync(Provider provider, CancellationToken cancellationToken = default)
