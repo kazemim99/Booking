@@ -37,7 +37,7 @@ namespace Booksy.ServiceCatalog.Application.EventHandlers.IntegrationEventHandle
             // - Calculate average rating if review included
 
             // Check payment status for payout eligibility
-            var bookingId = Core.Domain.ValueObjects.BookingId.From(integrationEvent.BookingId);
+            var bookingId = Booksy.ServiceCatalog.Domain.ValueObjects.BookingId.From(integrationEvent.BookingId);
             var payments = await _paymentRepository.GetByBookingIdAsync(bookingId, cancellationToken);
 
             var paidPayment = payments.FirstOrDefault(p => p.Status == Domain.Enums.PaymentStatus.Paid);

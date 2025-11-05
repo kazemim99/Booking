@@ -39,7 +39,7 @@ namespace Booksy.ServiceCatalog.Application.EventHandlers.IntegrationEventHandle
                 integrationEvent.CancellationReason);
 
             // Find payment for this booking
-            var bookingId = Core.Domain.ValueObjects.BookingId.From(integrationEvent.BookingId);
+            var bookingId = Booksy.ServiceCatalog.Domain.ValueObjects.BookingId.From(integrationEvent.BookingId);
             var payments = await _paymentRepository.GetByBookingIdAsync(bookingId, cancellationToken);
 
             var payment = payments.FirstOrDefault(p => p.Status == PaymentStatus.Paid);
@@ -86,20 +86,21 @@ namespace Booksy.ServiceCatalog.Application.EventHandlers.IntegrationEventHandle
             {
                 var result = await _mediator.Send(refundCommand, cancellationToken);
 
-                if (result.IsSuccessful)
+                if (result.Status == "Refunded" || result.Status == "PartiallyRefunded")
                 {
                     _logger.LogInformation(
-                        "Refund processed successfully for booking {BookingId}. Amount: {Amount} {Currency}",
+                        "Refund processed successfully for booking {BookingId}. Amount: {Amount} {Currency}, Status: {Status}",
                         integrationEvent.BookingId,
                         refundAmount.Amount,
-                        refundAmount.Currency);
+                        refundAmount.Currency,
+                        result.Status);
                 }
                 else
                 {
                     _logger.LogError(
-                        "Refund failed for booking {BookingId}. Error: {Error}",
+                        "Refund failed for booking {BookingId}. Status: {Status}",
                         integrationEvent.BookingId,
-                        result.ErrorMessage);
+                        result.Status);
                 }
             }
             catch (Exception ex)

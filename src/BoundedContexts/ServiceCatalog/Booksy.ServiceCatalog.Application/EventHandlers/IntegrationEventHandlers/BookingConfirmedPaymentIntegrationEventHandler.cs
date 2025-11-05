@@ -31,7 +31,7 @@ namespace Booksy.ServiceCatalog.Application.EventHandlers.IntegrationEventHandle
                 integrationEvent.TotalAmount);
 
             // Check if payment already exists for this booking
-            var bookingId = Core.Domain.ValueObjects.BookingId.From(integrationEvent.BookingId);
+            var bookingId = Booksy.ServiceCatalog.Domain.ValueObjects.BookingId.From(integrationEvent.BookingId);
             var payments = await _paymentRepository.GetByBookingIdAsync(bookingId, cancellationToken);
 
             if (payments.Any())
