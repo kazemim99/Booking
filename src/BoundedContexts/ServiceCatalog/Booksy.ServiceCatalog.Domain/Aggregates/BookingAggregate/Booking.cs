@@ -2,6 +2,7 @@
 // Booksy.ServiceCatalog.Domain/Aggregates/BookingAggregate/Booking.cs
 // ========================================
 using Booksy.Core.Domain.Abstractions.Entities;
+using Booksy.Core.Domain.Abstractions.Rules;
 using Booksy.Core.Domain.Base;
 using Booksy.Core.Domain.Exceptions;
 using Booksy.Core.Domain.ValueObjects;
