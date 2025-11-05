@@ -344,8 +344,7 @@ public class PaymentAggregateTests
             _customerId,
             _providerId,
             _amount,
-            PaymentMethod.Card
-            _refundPolicy,
+            PaymentMethod.Card,
             metadata: metadata);
 
         // Assert
