@@ -216,7 +216,7 @@ namespace Booksy.ServiceCatalog.Application.Services
         public async Task<AvailabilityValidationResult> ValidateBookingConstraintsAsync(
             Provider provider,
             Service service,
-            DayOfWeek startTime,
+            DateTime startTime,
             CancellationToken cancellationToken = default)
         {
             var errors = new List<string>();
@@ -234,7 +234,7 @@ namespace Booksy.ServiceCatalog.Application.Services
             }
 
             // Check if service is active
-            if (service.Status == ServiceStatus.Active)
+            if (service.Status != ServiceStatus.Active)
             {
                 errors.Add("Service is not active");
             }
