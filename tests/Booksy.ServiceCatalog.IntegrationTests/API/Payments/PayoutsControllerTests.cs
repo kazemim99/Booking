@@ -8,6 +8,7 @@ using Booksy.ServiceCatalog.Domain.Aggregates.PayoutAggregate;
 using Booksy.ServiceCatalog.Domain.Enums;
 using Booksy.ServiceCatalog.Domain.ValueObjects;
 using Microsoft.EntityFrameworkCore;
+using Booksy.ServiceCatalog.Domain.Aggregates;
 
 namespace Booksy.ServiceCatalog.IntegrationTests.API.Payments;
 

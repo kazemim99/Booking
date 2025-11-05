@@ -1,12 +1,12 @@
 using Booksy.Core.Domain.ValueObjects;
 using Booksy.Infrastructure.External.Payment;
-using Booksy.Infrastructure.External.Payment.DTOs;
 using Booksy.ServiceCatalog.Application.Commands.Payment.ProcessPayment;
 using Booksy.ServiceCatalog.Domain.Aggregates.PaymentAggregate;
 using Booksy.ServiceCatalog.Domain.Enums;
 using Booksy.ServiceCatalog.Domain.Repositories;
 using Booksy.ServiceCatalog.Domain.ValueObjects;
 using FluentAssertions;
+using Microsoft.Extensions.Logging;
 using NSubstitute;
 
 namespace Booksy.ServiceCatalog.Application.UnitTests.Commands.Payment;
@@ -16,12 +16,14 @@ public class ProcessPaymentCommandHandlerTests
     private readonly IPaymentWriteRepository _paymentRepository;
     private readonly IPaymentGateway _paymentGateway;
     private readonly ProcessPaymentCommandHandler _handler;
+    private readonly ILogger<ProcessPaymentCommandHandler> _logger;
 
     public ProcessPaymentCommandHandlerTests()
     {
         _paymentRepository = Substitute.For<IPaymentWriteRepository>();
         _paymentGateway = Substitute.For<IPaymentGateway>();
-        _handler = new ProcessPaymentCommandHandler(_paymentRepository, _paymentGateway);
+        _logger = Substitute.For<ILogger<ProcessPaymentCommandHandler>>();
+        _handler = new ProcessPaymentCommandHandler(_paymentRepository, _paymentGateway, _logger);
     }
 
     [Fact]

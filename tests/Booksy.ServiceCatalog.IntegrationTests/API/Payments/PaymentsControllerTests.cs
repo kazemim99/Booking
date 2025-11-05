@@ -9,6 +9,8 @@ using Booksy.ServiceCatalog.Domain.Enums;
 using Booksy.ServiceCatalog.Domain.ValueObjects;
 using Booksy.ServiceCatalog.Infrastructure.Persistence.Context;
 using Microsoft.EntityFrameworkCore;
+using Booksy.ServiceCatalog.Domain.Aggregates;
+using Booksy.ServiceCatalog.Application.Queries.Payment.GetCustomerPayments;
 
 namespace Booksy.ServiceCatalog.IntegrationTests.API.Payments;
 
@@ -505,7 +507,7 @@ public class PaymentsControllerTests : ServiceCatalogIntegrationTestBase
         // Assert
         response.StatusCode.Should().Be(HttpStatusCode.OK);
         response.Data.Should().NotBeNull();
-        response.Data!.Should().HaveCountGreaterOrEqualTo(2);
+        response.Data!.Should().HaveCountGreaterThanOrEqualTo(2);
     }
 
     #endregion
