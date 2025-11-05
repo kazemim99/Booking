@@ -38,6 +38,11 @@ namespace Booksy.ServiceCatalog.Application.Queries.Payment.GetPaymentDetails
                     t.CompletedAt))
                 .ToList();
 
+            // Convert metadata from Dictionary<string, object> to Dictionary<string, string>
+            var metadata = payment.Metadata.ToDictionary(
+                kvp => kvp.Key,
+                kvp => kvp.Value?.ToString() ?? string.Empty);
+
             return new PaymentDetailsViewModel(
                 payment.Id.Value,
                 payment.BookingId?.Value,
@@ -59,7 +64,7 @@ namespace Booksy.ServiceCatalog.Application.Queries.Payment.GetPaymentDetails
                 payment.RefundedAt,
                 payment.FailedAt,
                 transactions,
-                payment.Metadata);
+                metadata);
         }
     }
 }

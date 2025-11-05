@@ -14,8 +14,8 @@ public class TaxRateTests
 
         // Assert
         Assert.Equal(10m, taxRate.Percentage);
-        Assert.Equal("Sales Tax", taxRate.Name);
-        Assert.Equal("ST", taxRate.Code);
+        Assert.Equal("Sales Tax", taxRate.TaxName);
+        Assert.Equal("ST", taxRate.TaxCode);
         Assert.False(taxRate.IsInclusive);
     }
 
@@ -27,8 +27,8 @@ public class TaxRateTests
 
         // Assert
         Assert.Equal(20m, taxRate.Percentage);
-        Assert.Equal("VAT", taxRate.Name);
-        Assert.Equal("VAT", taxRate.Code);
+        Assert.Equal("VAT", taxRate.TaxName);
+        Assert.Equal("VAT", taxRate.TaxCode);
         Assert.True(taxRate.IsInclusive);
     }
 

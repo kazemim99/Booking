@@ -339,6 +339,59 @@ public abstract class ServiceCatalogIntegrationTestBase
         return (provider, services);
     }
 
+    /// <summary>
+    /// Create a test provider with services and staff (commonly used in tests)
+    /// </summary>
+    protected async Task<Provider> CreateTestProviderWithServicesAsync(int serviceCount = 3)
+    {
+        var provider = Provider.RegisterProvider(
+            UserId.From(Guid.NewGuid()),
+            "Test Provider",
+            "Test provider description",
+            Domain.Enums.ProviderType.Individual,
+            ContactInfo.Create(
+                Email.Create("provider@test.com"),
+                PhoneNumber.Create("+1234567890")
+            ),
+            BusinessAddress.Create(
+                "123 Test St",
+                "123 Test St",
+                "Test City",
+                "TS",
+                "12345",
+                "USA"
+            )
+        );
+
+        // Add staff member (required for bookings/payments)
+        provider.AddStaff("John", "Doe", Domain.Enums.StaffRole.ServiceProvider, PhoneNumber.Create("09123131311"));
+        provider.SetSatus(Domain.Enums.ProviderStatus.Active);
+        provider.SetAllowOnlineBooking(true);
+        await CreateEntityAsync(provider);
+
+        // Create services
+        for (int i = 0; i < serviceCount; i++)
+        {
+            var service = await CreateServiceForProviderAsync(
+                provider,
+                $"Service {i + 1}",
+                50.00m + (i * 10),
+                60 + (i * 15)
+            );
+        }
+
+        return provider;
+    }
+
+    /// <summary>
+    /// Get the first service for a provider
+    /// </summary>
+    protected async Task<Service> GetFirstServiceForProviderAsync(Guid providerId)
+    {
+        var services = await GetProviderServicesAsync(providerId);
+        return services.First();
+    }
+
     // ================================================
     // VALUE OBJECT HELPERS
     // ================================================

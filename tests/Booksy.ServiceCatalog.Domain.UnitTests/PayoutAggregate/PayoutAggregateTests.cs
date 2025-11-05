@@ -58,7 +58,7 @@ public class PayoutAggregateTests
             _paymentIds);
 
         // Assert
-        var paymentIds = payout.GetPaymentIds();
+        var paymentIds = payout.PaymentIds;
         Assert.Equal(3, paymentIds.Count);
         Assert.Equal(_paymentIds[0], paymentIds[0]);
     }
@@ -101,8 +101,8 @@ public class PayoutAggregateTests
         payout.Schedule(scheduledDate);
 
         // Assert
-        Assert.Equal(PayoutStatus.Scheduled, payout.Status);
-        Assert.Equal(scheduledDate, payout.ScheduledDate);
+        Assert.Equal(PayoutStatus.Pending, payout.Status);
+        Assert.Equal(scheduledDate, payout.ScheduledAt);
     }
 
     [Fact]
@@ -146,7 +146,7 @@ public class PayoutAggregateTests
         Assert.Equal(PayoutStatus.Processing, payout.Status);
         Assert.Equal(externalPayoutId, payout.ExternalPayoutId);
         Assert.Equal(stripeAccountId, payout.StripeAccountId);
-        Assert.NotNull(payout.ProcessedAt);
+        Assert.NotNull(payout.PaidAt);
     }
 
     [Fact]
@@ -170,7 +170,7 @@ public class PayoutAggregateTests
         Assert.Equal(PayoutStatus.Paid, payout.Status);
         Assert.Equal("1234", payout.BankAccountLast4);
         Assert.Equal("Chase Bank", payout.BankName);
-        Assert.NotNull(payout.CompletedAt);
+        Assert.NotNull(payout.PaidAt);
     }
 
     [Fact]
@@ -212,7 +212,7 @@ public class PayoutAggregateTests
         // Assert
         Assert.Equal(PayoutStatus.Failed, payout.Status);
         Assert.Equal(failureReason, payout.FailureReason);
-        Assert.NotNull(payout.CompletedAt);
+        Assert.NotNull(payout.PaidAt);
     }
 
     [Fact]
@@ -230,7 +230,7 @@ public class PayoutAggregateTests
         var holdReason = "Under review";
 
         // Act
-        payout.PlaceOnHold(holdReason);
+        payout.PutOnHold(holdReason);
 
         // Assert
         Assert.Equal(PayoutStatus.OnHold, payout.Status);
@@ -257,7 +257,7 @@ public class PayoutAggregateTests
         // Assert
         Assert.Equal(PayoutStatus.Cancelled, payout.Status);
         Assert.Equal(cancellationReason, payout.CancellationReason);
-        Assert.NotNull(payout.CompletedAt);
+        Assert.NotNull(payout.PaidAt);
     }
 
     [Fact]
@@ -293,9 +293,9 @@ public class PayoutAggregateTests
             _paymentIds);
 
         // Assert
-        var events = payout.GetDomainEvents();
+        var events = payout.DomainEvents;
         Assert.NotEmpty(events);
-        Assert.Contains(events, e => e.GetType().Name == "PayoutCreatedEvent");
+        Assert.Contains(events, e => e.GetType().TaxName == "PayoutCreatedEvent");
     }
 
     [Fact]
@@ -316,8 +316,8 @@ public class PayoutAggregateTests
         payout.Schedule(DateTime.UtcNow.AddDays(7));
 
         // Assert
-        var events = payout.GetDomainEvents();
-        Assert.Contains(events, e => e.GetType().Name == "PayoutScheduledEvent");
+        var events = payout.DomainEvents;
+        Assert.Contains(events, e => e.GetType().TaxName == "PayoutScheduledEvent");
     }
 
     [Fact]
@@ -339,8 +339,8 @@ public class PayoutAggregateTests
         payout.MarkAsPaid("1234", "Chase Bank");
 
         // Assert
-        var events = payout.GetDomainEvents();
-        Assert.Contains(events, e => e.GetType().Name == "PayoutPaidEvent");
+        var events = payout.DomainEvents;
+        Assert.Contains(events, e => e.GetType().TaxName == "PayoutPaidEvent");
     }
 
     [Fact]
