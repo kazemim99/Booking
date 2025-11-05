@@ -171,9 +171,12 @@ public class RefundPolicyTests
     {
         // Arrange
         var policy = RefundPolicy.Create(
-            fullRefundHours: 72,
-            partialRefundHours: 24,
-            partialRefundPercentage: 25);
+            allowRefunds: true,
+            fullRefundWindowHours: 72,
+            partialRefundWindowHours: 24,
+            partialRefundPercentage: 25,
+            cancellationFeePercentage: 50,
+            refundProcessingFees: false);
 
         var paidAmount = Money.Create(100, "USD");
         var bookingTime = DateTime.UtcNow.AddHours(48);
@@ -191,9 +194,12 @@ public class RefundPolicyTests
     {
         // Arrange
         var policy = RefundPolicy.Create(
-            fullRefundHours: 72,
-            partialRefundHours: 24,
-            partialRefundPercentage: 25);
+            allowRefunds: true,
+            fullRefundWindowHours: 72,
+            partialRefundWindowHours: 24,
+            partialRefundPercentage: 25,
+            cancellationFeePercentage: 50,
+            refundProcessingFees: false);
 
         var paidAmount = Money.Create(100, "USD");
         var bookingTime = DateTime.UtcNow.AddHours(100);
@@ -211,9 +217,12 @@ public class RefundPolicyTests
     {
         // Arrange
         var policy = RefundPolicy.Create(
-            fullRefundHours: 72,
-            partialRefundHours: 24,
-            partialRefundPercentage: 25);
+            allowRefunds: true,
+            fullRefundWindowHours: 72,
+            partialRefundWindowHours: 24,
+            partialRefundPercentage: 25,
+            cancellationFeePercentage: 100,
+            refundProcessingFees: false);
 
         var paidAmount = Money.Create(100, "USD");
         var bookingTime = DateTime.UtcNow.AddHours(12);
@@ -231,7 +240,7 @@ public class RefundPolicyTests
     {
         // Act & Assert
         var exception = Assert.Throws<DomainException>(() =>
-            RefundPolicy.Create(-1, 24, 50));
+            RefundPolicy.Create(true, -1, 24, 50, 30, false));
         Assert.Contains("full refund hours", exception.Message, StringComparison.OrdinalIgnoreCase);
     }
 
@@ -240,7 +249,7 @@ public class RefundPolicyTests
     {
         // Act & Assert
         var exception = Assert.Throws<DomainException>(() =>
-            RefundPolicy.Create(72, -1, 50));
+            RefundPolicy.Create(true, 72, -1, 50, 30, false));
         Assert.Contains("partial refund hours", exception.Message, StringComparison.OrdinalIgnoreCase);
     }
 
@@ -249,7 +258,7 @@ public class RefundPolicyTests
     {
         // Act & Assert
         var exception = Assert.Throws<DomainException>(() =>
-            RefundPolicy.Create(72, 24, 105));
+            RefundPolicy.Create(true, 72, 24, 105, 30, false));
         Assert.Contains("percentage", exception.Message, StringComparison.OrdinalIgnoreCase);
     }
 
@@ -258,7 +267,7 @@ public class RefundPolicyTests
     {
         // Act & Assert
         var exception = Assert.Throws<DomainException>(() =>
-            RefundPolicy.Create(24, 72, 50));
+            RefundPolicy.Create(true, 24, 72, 50, 30, false));
         Assert.Contains("full refund hours must be greater", exception.Message, StringComparison.OrdinalIgnoreCase);
     }
 

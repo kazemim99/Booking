@@ -23,8 +23,8 @@ public class PaymentAggregateTests
             _customerId,
             _providerId,
             _amount,
-            PaymentMethod.Card,
-            _refundPolicy);
+            PaymentMethod.Card
+            );
 
         // Assert
         Assert.NotNull(payment);
@@ -49,8 +49,8 @@ public class PaymentAggregateTests
             _customerId,
             _providerId,
             _amount,
-            PaymentMethod.Card,
-            _refundPolicy);
+            PaymentMethod.Card
+            );
 
         var paymentIntentId = "pi_test_123";
 
@@ -73,8 +73,8 @@ public class PaymentAggregateTests
             _customerId,
             _providerId,
             _amount,
-            PaymentMethod.Card,
-            _refundPolicy);
+            PaymentMethod.Card
+            );
 
         payment.Authorize("pi_test_123", "pm_test_456");
 
@@ -97,8 +97,8 @@ public class PaymentAggregateTests
             _customerId,
             _providerId,
             _amount,
-            PaymentMethod.Card,
-            _refundPolicy);
+            PaymentMethod.Card
+            );
 
         // Act & Assert
         var exception = Assert.Throws<DomainException>(() => payment.Capture("ch_test_789"));
@@ -114,8 +114,8 @@ public class PaymentAggregateTests
             _customerId,
             _providerId,
             _amount,
-            PaymentMethod.Card,
-            _refundPolicy);
+            PaymentMethod.Card
+            );
 
         // Act
         payment.ProcessCharge("pi_test_123", "pm_test_456");
@@ -136,8 +136,8 @@ public class PaymentAggregateTests
             _customerId,
             _providerId,
             _amount,
-            PaymentMethod.Card,
-            _refundPolicy);
+            PaymentMethod.Card
+            );
 
         payment.ProcessCharge("pi_test_123", "pm_test_456");
 
@@ -163,8 +163,8 @@ public class PaymentAggregateTests
             _customerId,
             _providerId,
             _amount,
-            PaymentMethod.Card,
-            _refundPolicy);
+            PaymentMethod.Card
+            );
 
         payment.ProcessCharge("pi_test_123", "pm_test_456");
 
@@ -188,8 +188,8 @@ public class PaymentAggregateTests
             _customerId,
             _providerId,
             _amount,
-            PaymentMethod.Card,
-            _refundPolicy);
+            PaymentMethod.Card
+            );
 
         var refundAmount = Money.Create(50, "USD");
 
@@ -208,8 +208,8 @@ public class PaymentAggregateTests
             _customerId,
             _providerId,
             _amount,
-            PaymentMethod.Card,
-            _refundPolicy);
+            PaymentMethod.Card
+            );
 
         payment.ProcessCharge("pi_test_123", "pm_test_456");
 
@@ -230,8 +230,8 @@ public class PaymentAggregateTests
             _customerId,
             _providerId,
             _amount,
-            PaymentMethod.Card,
-            _refundPolicy);
+            PaymentMethod.Card
+            );
 
         payment.ProcessCharge("pi_test_123", "pm_test_456");
 
@@ -252,8 +252,8 @@ public class PaymentAggregateTests
             _customerId,
             _providerId,
             Money.Create(100, "USD"),
-            PaymentMethod.Card,
-            _refundPolicy);
+            PaymentMethod.Card
+            );
 
         payment.ProcessCharge("pi_test_123", "pm_test_456");
 
@@ -277,8 +277,8 @@ public class PaymentAggregateTests
             _customerId,
             _providerId,
             _amount,
-            PaymentMethod.Card,
-            _refundPolicy);
+            PaymentMethod.Card
+            );
 
         // Act
         payment.MarkAsFailed("Card declined");
@@ -296,13 +296,13 @@ public class PaymentAggregateTests
             _customerId,
             _providerId,
             _amount,
-            PaymentMethod.Card,
-            _refundPolicy);
+            PaymentMethod.Card
+            );
 
         // Assert
         var events = payment.DomainEvents;
         Assert.NotEmpty(events);
-        Assert.Contains(events, e => e.GetType().TaxName == "PaymentCreatedEvent");
+        Assert.Contains(events, e => e.GetType().Name == "PaymentCreatedEvent");
     }
 
     [Fact]
@@ -314,8 +314,8 @@ public class PaymentAggregateTests
             _customerId,
             _providerId,
             _amount,
-            PaymentMethod.Card,
-            _refundPolicy);
+            PaymentMethod.Card
+            );
 
         payment.ClearDomainEvents();
 
@@ -324,7 +324,7 @@ public class PaymentAggregateTests
 
         // Assert
         var events = payment.DomainEvents;
-        Assert.Contains(events, e => e.GetType().TaxName == "PaymentAuthorizedEvent");
+        Assert.Contains(events, e => e.GetType().Name == "PaymentAuthorizedEvent");
     }
 
     [Fact]
@@ -344,7 +344,7 @@ public class PaymentAggregateTests
             _customerId,
             _providerId,
             _amount,
-            PaymentMethod.Card,
+            PaymentMethod.Card
             _refundPolicy,
             metadata: metadata);
 
