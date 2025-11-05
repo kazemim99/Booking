@@ -3,8 +3,8 @@ using System;
 using Booksy.ServiceCatalog.Infrastructure.Persistence.Context;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Metadata;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
-using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 
 #nullable disable
 
@@ -19,48 +19,48 @@ namespace Booksy.ServiceCatalog.Infrastructure.Migrations
             modelBuilder
                 .HasDefaultSchema("ServiceCatalog")
                 .HasAnnotation("ProductVersion", "9.0.4")
-                .HasAnnotation("Relational:MaxIdentifierLength", 63);
+                .HasAnnotation("Relational:MaxIdentifierLength", 128);
 
-            NpgsqlModelBuilderExtensions.UseIdentityByDefaultColumns(modelBuilder);
+            SqlServerModelBuilderExtensions.UseIdentityColumns(modelBuilder);
 
             modelBuilder.Entity("Booksy.Core.Domain.Domain.Entities.ProvinceCities", b =>
                 {
                     b.Property<int>("Id")
-                        .HasColumnType("integer");
+                        .HasColumnType("int");
 
                     b.Property<int?>("CityCode")
-                        .HasColumnType("integer");
+                        .HasColumnType("int");
 
                     b.Property<DateTime>("CreatedAt")
-                        .HasColumnType("timestamp without time zone");
+                        .HasColumnType("datetime2");
 
                     b.Property<string>("CreatedBy")
-                        .HasColumnType("text");
+                        .HasColumnType("nvarchar(max)");
 
                     b.Property<bool>("IsDeleted")
-                        .HasColumnType("boolean");
+                        .HasColumnType("bit");
 
                     b.Property<DateTime?>("LastModifiedAt")
-                        .HasColumnType("timestamp without time zone");
+                        .HasColumnType("datetime2");
 
                     b.Property<string>("LastModifiedBy")
-                        .HasColumnType("text");
+                        .HasColumnType("nvarchar(max)");
 
                     b.Property<string>("Name")
                         .IsRequired()
                         .HasMaxLength(200)
-                        .HasColumnType("character varying(200)");
+                        .HasColumnType("nvarchar(200)");
 
                     b.Property<int?>("ParentId")
-                        .HasColumnType("integer");
+                        .HasColumnType("int");
 
                     b.Property<int>("ProvinceCode")
-                        .HasColumnType("integer");
+                        .HasColumnType("int");
 
                     b.Property<string>("Type")
                         .IsRequired()
                         .HasMaxLength(50)
-                        .HasColumnType("character varying(50)");
+                        .HasColumnType("nvarchar(50)");
 
                     b.HasKey("Id");
 
@@ -79,86 +79,221 @@ namespace Booksy.ServiceCatalog.Infrastructure.Migrations
                     b.ToTable("ProvinceCities", "ServiceCatalog");
                 });
 
+            modelBuilder.Entity("Booksy.ServiceCatalog.Domain.Aggregates.BookingAggregate.Booking", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .HasColumnType("uniqueidentifier")
+                        .HasColumnName("BookingId");
+
+                    b.Property<string>("CancellationReason")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<DateTime?>("CancelledAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<DateTime?>("CompletedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<DateTime?>("ConfirmedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("CreatedBy")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<Guid>("CustomerId")
+                        .HasColumnType("uniqueidentifier")
+                        .HasColumnName("CustomerId");
+
+                    b.Property<string>("CustomerNotes")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<int>("Duration")
+                        .HasColumnType("int")
+                        .HasColumnName("DurationMinutes");
+
+                    b.Property<bool>("IsDeleted")
+                        .HasColumnType("bit");
+
+                    b.Property<DateTime?>("LastModifiedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("LastModifiedBy")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<Guid?>("PreviousBookingId")
+                        .HasColumnType("uniqueidentifier")
+                        .HasColumnName("PreviousBookingId");
+
+                    b.Property<Guid>("ProviderId")
+                        .HasColumnType("uniqueidentifier")
+                        .HasColumnName("ProviderId");
+
+                    b.Property<DateTime>("RequestedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<DateTime?>("RescheduledAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<Guid?>("RescheduledToBookingId")
+                        .HasColumnType("uniqueidentifier")
+                        .HasColumnName("RescheduledToBookingId");
+
+                    b.Property<Guid>("ServiceId")
+                        .HasColumnType("uniqueidentifier")
+                        .HasColumnName("ServiceId");
+
+                    b.Property<Guid>("StaffId")
+                        .HasColumnType("uniqueidentifier")
+                        .HasColumnName("StaffId");
+
+                    b.Property<string>("StaffNotes")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)")
+                        .HasColumnName("Status");
+
+                    b.Property<int>("Version")
+                        .IsConcurrencyToken()
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int")
+                        .HasDefaultValue(0)
+                        .HasColumnName("Version");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("ServiceId")
+                        .HasDatabaseName("IX_Bookings_ServiceId");
+
+                    b.ToTable("Bookings", "ServiceCatalog");
+                });
+
+            modelBuilder.Entity("Booksy.ServiceCatalog.Domain.Aggregates.BookingAggregate.BookingHistoryEntry", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<Guid?>("BookingId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("CreatedBy")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("Description")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<bool>("IsDeleted")
+                        .HasColumnType("bit");
+
+                    b.Property<DateTime?>("LastModifiedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("LastModifiedBy")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<DateTime>("OccurredAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<int>("Status")
+                        .HasColumnType("int");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("BookingId");
+
+                    b.ToTable("BookingHistoryEntry", "ServiceCatalog");
+                });
+
             modelBuilder.Entity("Booksy.ServiceCatalog.Domain.Aggregates.Provider", b =>
                 {
                     b.Property<Guid>("Id")
-                        .HasColumnType("uuid");
+                        .HasColumnType("uniqueidentifier");
 
                     b.Property<DateTime?>("ActivatedAt")
-                        .HasColumnType("timestamp without time zone");
+                        .HasColumnType("datetime2");
 
                     b.Property<bool>("AllowOnlineBooking")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("boolean")
+                        .HasColumnType("bit")
                         .HasDefaultValue(true);
 
                     b.Property<decimal>("AverageRating")
-                        .HasColumnType("numeric");
+                        .HasColumnType("decimal(18,2)");
 
                     b.Property<DateTime>("CreatedAt")
-                        .HasColumnType("timestamp without time zone");
+                        .HasColumnType("datetime2");
 
                     b.Property<string>("CreatedBy")
                         .HasMaxLength(100)
-                        .HasColumnType("character varying(100)");
+                        .HasColumnType("nvarchar(100)");
 
                     b.Property<bool>("IsDeleted")
-                        .HasColumnType("boolean");
+                        .HasColumnType("bit");
 
                     b.Property<bool>("IsRegistrationComplete")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("boolean")
+                        .HasColumnType("bit")
                         .HasDefaultValue(false);
 
                     b.Property<DateTime?>("LastActiveAt")
-                        .HasColumnType("timestamp without time zone");
+                        .HasColumnType("datetime2");
 
                     b.Property<DateTime?>("LastModifiedAt")
-                        .HasColumnType("timestamp without time zone");
+                        .HasColumnType("datetime2");
 
                     b.Property<string>("LastModifiedBy")
                         .HasMaxLength(100)
-                        .HasColumnType("character varying(100)");
+                        .HasColumnType("nvarchar(100)");
 
                     b.Property<bool>("OffersMobileServices")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("boolean")
+                        .HasColumnType("bit")
                         .HasDefaultValue(false);
 
                     b.Property<Guid>("OwnerId")
-                        .HasColumnType("uuid")
+                        .HasColumnType("uniqueidentifier")
                         .HasColumnName("OwnerId");
 
                     b.Property<string>("ProviderType")
                         .IsRequired()
                         .HasMaxLength(50)
-                        .HasColumnType("character varying(50)");
+                        .HasColumnType("nvarchar(50)");
 
                     b.Property<DateTime>("RegisteredAt")
-                        .HasColumnType("timestamp without time zone");
+                        .HasColumnType("datetime2");
 
                     b.Property<int>("RegistrationStep")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("integer")
+                        .HasColumnType("int")
                         .HasDefaultValue(1);
 
                     b.Property<bool>("RequiresApproval")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("boolean")
+                        .HasColumnType("bit")
                         .HasDefaultValue(false);
 
                     b.Property<string>("Status")
                         .IsRequired()
                         .HasMaxLength(50)
-                        .HasColumnType("character varying(50)");
+                        .HasColumnType("nvarchar(50)");
 
                     b.Property<DateTime?>("VerifiedAt")
-                        .HasColumnType("timestamp without time zone");
+                        .HasColumnType("datetime2");
 
                     b.Property<int>("Version")
                         .IsConcurrencyToken()
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("integer")
+                        .HasColumnType("int")
                         .HasDefaultValue(0)
                         .HasColumnName("Version");
 
@@ -180,28 +315,28 @@ namespace Booksy.ServiceCatalog.Infrastructure.Migrations
             modelBuilder.Entity("Booksy.ServiceCatalog.Domain.Aggregates.Service", b =>
                 {
                     b.Property<Guid>("Id")
-                        .HasColumnType("uuid");
+                        .HasColumnType("uniqueidentifier");
 
                     b.Property<DateTime?>("ActivatedAt")
                         .HasColumnType("timestamp with time zone");
 
                     b.Property<bool>("AllowOnlineBooking")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("boolean")
+                        .HasColumnType("bit")
                         .HasDefaultValue(true);
 
                     b.Property<bool>("AvailableAsMobile")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("boolean")
+                        .HasColumnType("bit")
                         .HasDefaultValue(false);
 
                     b.Property<bool>("AvailableAtLocation")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("boolean")
+                        .HasColumnType("bit")
                         .HasDefaultValue(true);
 
                     b.Property<int?>("BufferTime")
-                        .HasColumnType("integer")
+                        .HasColumnType("int")
                         .HasColumnName("BufferTimeMinutes");
 
                     b.Property<DateTime>("CreatedAt")
@@ -209,45 +344,45 @@ namespace Booksy.ServiceCatalog.Infrastructure.Migrations
 
                     b.Property<string>("CreatedBy")
                         .HasMaxLength(100)
-                        .HasColumnType("character varying(100)");
+                        .HasColumnType("nvarchar(100)");
 
                     b.Property<decimal>("DepositPercentage")
                         .ValueGeneratedOnAdd()
                         .HasPrecision(5, 2)
-                        .HasColumnType("numeric(5,2)")
+                        .HasColumnType("decimal(5,2)")
                         .HasDefaultValue(0m);
 
                     b.Property<string>("Description")
                         .IsRequired()
                         .HasMaxLength(1000)
-                        .HasColumnType("character varying(1000)");
+                        .HasColumnType("nvarchar(1000)");
 
                     b.Property<int>("Duration")
-                        .HasColumnType("integer")
+                        .HasColumnType("int")
                         .HasColumnName("DurationMinutes");
 
                     b.Property<string>("ImageUrl")
                         .HasMaxLength(500)
-                        .HasColumnType("character varying(500)");
+                        .HasColumnType("nvarchar(500)");
 
                     b.Property<bool>("IsDeleted")
-                        .HasColumnType("boolean");
+                        .HasColumnType("bit");
 
                     b.Property<DateTime?>("LastModifiedAt")
                         .HasColumnType("timestamp with time zone");
 
                     b.Property<string>("LastModifiedBy")
                         .HasMaxLength(100)
-                        .HasColumnType("character varying(100)");
+                        .HasColumnType("nvarchar(100)");
 
                     b.Property<int>("MaxAdvanceBookingDays")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("integer")
+                        .HasColumnType("int")
                         .HasDefaultValue(90);
 
                     b.Property<int>("MaxConcurrentBookings")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("integer")
+                        .HasColumnType("int")
                         .HasDefaultValue(1);
 
                     b.Property<string>("Metadata")
@@ -258,39 +393,39 @@ namespace Booksy.ServiceCatalog.Infrastructure.Migrations
 
                     b.Property<int>("MinAdvanceBookingHours")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("integer")
+                        .HasColumnType("int")
                         .HasDefaultValue(1);
 
                     b.Property<string>("Name")
                         .IsRequired()
                         .HasMaxLength(200)
-                        .HasColumnType("character varying(200)");
+                        .HasColumnType("nvarchar(200)");
 
                     b.Property<int?>("PreparationTime")
-                        .HasColumnType("integer")
+                        .HasColumnType("int")
                         .HasColumnName("PreparationTimeMinutes");
 
                     b.Property<Guid>("ProviderId")
-                        .HasColumnType("uuid")
+                        .HasColumnType("uniqueidentifier")
                         .HasColumnName("ProviderId");
 
                     b.Property<Guid?>("ProviderId1")
-                        .HasColumnType("uuid");
+                        .HasColumnType("uniqueidentifier");
 
                     b.Property<bool>("RequiresDeposit")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("boolean")
+                        .HasColumnType("bit")
                         .HasDefaultValue(false);
 
                     b.Property<string>("Status")
                         .IsRequired()
                         .HasMaxLength(50)
-                        .HasColumnType("character varying(50)");
+                        .HasColumnType("nvarchar(50)");
 
                     b.Property<string>("Type")
                         .IsRequired()
                         .HasMaxLength(50)
-                        .HasColumnType("character varying(50)");
+                        .HasColumnType("nvarchar(50)");
 
                     b.Property<string>("_qualifiedStaff")
                         .IsRequired()
@@ -326,7 +461,7 @@ namespace Booksy.ServiceCatalog.Infrastructure.Migrations
             modelBuilder.Entity("Booksy.ServiceCatalog.Domain.Entities.BusinessHours", b =>
                 {
                     b.Property<Guid>("Id")
-                        .HasColumnType("uuid");
+                        .HasColumnType("uniqueidentifier");
 
                     b.Property<TimeOnly?>("CloseTime")
                         .HasColumnType("time");
@@ -336,14 +471,14 @@ namespace Booksy.ServiceCatalog.Infrastructure.Migrations
 
                     b.Property<string>("CreatedBy")
                         .HasMaxLength(100)
-                        .HasColumnType("character varying(100)");
+                        .HasColumnType("nvarchar(100)");
 
                     b.Property<int>("DayOfWeek")
-                        .HasColumnType("integer");
+                        .HasColumnType("int");
 
                     b.Property<bool>("IsDeleted")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("boolean")
+                        .HasColumnType("bit")
                         .HasDefaultValue(false);
 
                     b.Property<DateTime?>("LastModifiedAt")
@@ -351,13 +486,13 @@ namespace Booksy.ServiceCatalog.Infrastructure.Migrations
 
                     b.Property<string>("LastModifiedBy")
                         .HasMaxLength(100)
-                        .HasColumnType("character varying(100)");
+                        .HasColumnType("nvarchar(100)");
 
                     b.Property<TimeOnly?>("OpenTime")
                         .HasColumnType("time");
 
                     b.Property<Guid>("ProviderId")
-                        .HasColumnType("uuid")
+                        .HasColumnType("uniqueidentifier")
                         .HasColumnName("ProviderId");
 
                     b.HasKey("Id");
@@ -373,7 +508,7 @@ namespace Booksy.ServiceCatalog.Infrastructure.Migrations
             modelBuilder.Entity("Booksy.ServiceCatalog.Domain.Entities.ExceptionSchedule", b =>
                 {
                     b.Property<Guid>("Id")
-                        .HasColumnType("uuid");
+                        .HasColumnType("uniqueidentifier");
 
                     b.Property<TimeOnly?>("CloseTime")
                         .HasColumnType("time");
@@ -383,14 +518,14 @@ namespace Booksy.ServiceCatalog.Infrastructure.Migrations
 
                     b.Property<string>("CreatedBy")
                         .HasMaxLength(100)
-                        .HasColumnType("character varying(100)");
+                        .HasColumnType("nvarchar(100)");
 
                     b.Property<DateOnly>("Date")
                         .HasColumnType("date");
 
                     b.Property<bool>("IsDeleted")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("boolean")
+                        .HasColumnType("bit")
                         .HasDefaultValue(false);
 
                     b.Property<DateTime?>("LastModifiedAt")
@@ -398,22 +533,22 @@ namespace Booksy.ServiceCatalog.Infrastructure.Migrations
 
                     b.Property<string>("LastModifiedBy")
                         .HasMaxLength(100)
-                        .HasColumnType("character varying(100)");
+                        .HasColumnType("nvarchar(100)");
 
                     b.Property<TimeOnly?>("OpenTime")
                         .HasColumnType("time");
 
                     b.Property<Guid>("ProviderId")
-                        .HasColumnType("uuid")
+                        .HasColumnType("uniqueidentifier")
                         .HasColumnName("ProviderId");
 
                     b.Property<string>("Reason")
                         .IsRequired()
                         .HasMaxLength(500)
-                        .HasColumnType("character varying(500)");
+                        .HasColumnType("nvarchar(500)");
 
                     b.Property<Guid?>("_providerId")
-                        .HasColumnType("uuid");
+                        .HasColumnType("uniqueidentifier");
 
                     b.HasKey("Id");
 
@@ -428,48 +563,48 @@ namespace Booksy.ServiceCatalog.Infrastructure.Migrations
             modelBuilder.Entity("Booksy.ServiceCatalog.Domain.Entities.HolidaySchedule", b =>
                 {
                     b.Property<Guid>("Id")
-                        .HasColumnType("uuid");
+                        .HasColumnType("uniqueidentifier");
 
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("timestamp with time zone");
 
                     b.Property<string>("CreatedBy")
                         .HasMaxLength(100)
-                        .HasColumnType("character varying(100)");
+                        .HasColumnType("nvarchar(100)");
 
                     b.Property<DateOnly>("Date")
                         .HasColumnType("date");
 
                     b.Property<bool>("IsDeleted")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("boolean")
+                        .HasColumnType("bit")
                         .HasDefaultValue(false);
 
                     b.Property<bool>("IsRecurring")
-                        .HasColumnType("boolean");
+                        .HasColumnType("bit");
 
                     b.Property<DateTime?>("LastModifiedAt")
                         .HasColumnType("timestamp with time zone");
 
                     b.Property<string>("LastModifiedBy")
                         .HasMaxLength(100)
-                        .HasColumnType("character varying(100)");
+                        .HasColumnType("nvarchar(100)");
 
                     b.Property<string>("Pattern")
                         .HasMaxLength(50)
-                        .HasColumnType("character varying(50)");
+                        .HasColumnType("nvarchar(50)");
 
                     b.Property<Guid>("ProviderId")
-                        .HasColumnType("uuid")
+                        .HasColumnType("uniqueidentifier")
                         .HasColumnName("ProviderId");
 
                     b.Property<string>("Reason")
                         .IsRequired()
                         .HasMaxLength(500)
-                        .HasColumnType("character varying(500)");
+                        .HasColumnType("nvarchar(500)");
 
                     b.Property<Guid?>("_providerId")
-                        .HasColumnType("uuid");
+                        .HasColumnType("uniqueidentifier");
 
                     b.HasKey("Id");
 
@@ -485,10 +620,10 @@ namespace Booksy.ServiceCatalog.Infrastructure.Migrations
                 {
                     b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("uuid");
+                        .HasColumnType("uniqueidentifier");
 
                     b.Property<int?>("AdditionalDuration")
-                        .HasColumnType("integer")
+                        .HasColumnType("int")
                         .HasColumnName("AdditionalDurationMinutes");
 
                     b.Property<DateTime>("CreatedAt")
@@ -497,42 +632,42 @@ namespace Booksy.ServiceCatalog.Infrastructure.Migrations
                         .HasDefaultValueSql("CURRENT_TIMESTAMP");
 
                     b.Property<string>("CreatedBy")
-                        .HasColumnType("text");
+                        .HasColumnType("nvarchar(max)");
 
                     b.Property<string>("Description")
                         .HasMaxLength(500)
-                        .HasColumnType("character varying(500)");
+                        .HasColumnType("nvarchar(500)");
 
                     b.Property<bool>("IsActive")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("boolean")
+                        .HasColumnType("bit")
                         .HasDefaultValue(true);
 
                     b.Property<bool>("IsDeleted")
-                        .HasColumnType("boolean");
+                        .HasColumnType("bit");
 
                     b.Property<bool>("IsRequired")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("boolean")
+                        .HasColumnType("bit")
                         .HasDefaultValue(false);
 
                     b.Property<DateTime?>("LastModifiedAt")
-                        .HasColumnType("timestamp without time zone");
+                        .HasColumnType("datetime2");
 
                     b.Property<string>("LastModifiedBy")
-                        .HasColumnType("text");
+                        .HasColumnType("nvarchar(max)");
 
                     b.Property<string>("Name")
                         .IsRequired()
                         .HasMaxLength(100)
-                        .HasColumnType("character varying(100)");
+                        .HasColumnType("nvarchar(100)");
 
                     b.Property<Guid>("ServiceId")
-                        .HasColumnType("uuid");
+                        .HasColumnType("uniqueidentifier");
 
                     b.Property<int>("SortOrder")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("integer")
+                        .HasColumnType("int")
                         .HasDefaultValue(0);
 
                     b.HasKey("Id");
@@ -554,75 +689,75 @@ namespace Booksy.ServiceCatalog.Infrastructure.Migrations
             modelBuilder.Entity("Booksy.ServiceCatalog.Domain.Entities.Staff", b =>
                 {
                     b.Property<Guid>("Id")
-                        .HasColumnType("uuid");
+                        .HasColumnType("uniqueidentifier");
 
                     b.Property<string>("Biography")
                         .HasMaxLength(500)
-                        .HasColumnType("character varying(500)");
+                        .HasColumnType("nvarchar(500)");
 
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("timestamp with time zone");
 
                     b.Property<string>("CreatedBy")
                         .HasMaxLength(100)
-                        .HasColumnType("character varying(100)");
+                        .HasColumnType("nvarchar(100)");
 
                     b.Property<string>("Email")
-                        .HasColumnType("text");
+                        .HasColumnType("nvarchar(450)");
 
                     b.Property<string>("FirstName")
                         .IsRequired()
                         .HasMaxLength(100)
-                        .HasColumnType("character varying(100)");
+                        .HasColumnType("nvarchar(100)");
 
                     b.Property<DateTime>("HiredAt")
                         .HasColumnType("timestamp with time zone");
 
                     b.Property<bool>("IsActive")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("boolean")
+                        .HasColumnType("bit")
                         .HasDefaultValue(true);
 
                     b.Property<bool>("IsDeleted")
-                        .HasColumnType("boolean");
+                        .HasColumnType("bit");
 
                     b.Property<DateTime?>("LastModifiedAt")
                         .HasColumnType("timestamp with time zone");
 
                     b.Property<string>("LastModifiedBy")
                         .HasMaxLength(100)
-                        .HasColumnType("character varying(100)");
+                        .HasColumnType("nvarchar(100)");
 
                     b.Property<string>("LastName")
                         .IsRequired()
                         .HasMaxLength(100)
-                        .HasColumnType("character varying(100)");
+                        .HasColumnType("nvarchar(100)");
 
                     b.Property<string>("Notes")
                         .HasMaxLength(2000)
-                        .HasColumnType("character varying(2000)");
+                        .HasColumnType("nvarchar(2000)");
 
                     b.Property<string>("Phone")
-                        .HasColumnType("text");
+                        .HasColumnType("nvarchar(max)");
 
                     b.Property<string>("ProfilePhotoUrl")
                         .HasMaxLength(500)
-                        .HasColumnType("character varying(500)");
+                        .HasColumnType("nvarchar(500)");
 
                     b.Property<Guid>("ProviderId")
-                        .HasColumnType("uuid");
+                        .HasColumnType("uniqueidentifier");
 
                     b.Property<string>("Role")
                         .IsRequired()
                         .HasMaxLength(50)
-                        .HasColumnType("character varying(50)");
+                        .HasColumnType("nvarchar(50)");
 
                     b.Property<DateTime?>("TerminatedAt")
                         .HasColumnType("timestamp with time zone");
 
                     b.Property<string>("TerminationReason")
                         .HasMaxLength(500)
-                        .HasColumnType("character varying(500)");
+                        .HasColumnType("nvarchar(500)");
 
                     b.HasKey("Id");
 
@@ -653,39 +788,296 @@ namespace Booksy.ServiceCatalog.Infrastructure.Migrations
                     b.Navigation("Parent");
                 });
 
+            modelBuilder.Entity("Booksy.ServiceCatalog.Domain.Aggregates.BookingAggregate.Booking", b =>
+                {
+                    b.OwnsOne("Booksy.ServiceCatalog.Domain.ValueObjects.BookingPolicy", "Policy", b1 =>
+                        {
+                            b1.Property<Guid>("BookingId")
+                                .HasColumnType("uniqueidentifier");
+
+                            b1.Property<bool>("AllowRescheduling")
+                                .HasColumnType("bit")
+                                .HasColumnName("PolicyAllowRescheduling");
+
+                            b1.Property<decimal>("CancellationFeePercentage")
+                                .HasColumnType("decimal(5,2)")
+                                .HasColumnName("PolicyCancellationFeePercentage");
+
+                            b1.Property<int>("CancellationWindowHours")
+                                .HasColumnType("int")
+                                .HasColumnName("PolicyCancellationWindowHours");
+
+                            b1.Property<decimal>("DepositPercentage")
+                                .HasColumnType("decimal(5,2)")
+                                .HasColumnName("PolicyDepositPercentage");
+
+                            b1.Property<int>("MaxAdvanceBookingDays")
+                                .HasColumnType("int")
+                                .HasColumnName("PolicyMaxAdvanceBookingDays");
+
+                            b1.Property<int>("MinAdvanceBookingHours")
+                                .HasColumnType("int")
+                                .HasColumnName("PolicyMinAdvanceBookingHours");
+
+                            b1.Property<bool>("RequireDeposit")
+                                .HasColumnType("bit")
+                                .HasColumnName("PolicyRequireDeposit");
+
+                            b1.Property<int>("RescheduleWindowHours")
+                                .HasColumnType("int")
+                                .HasColumnName("PolicyRescheduleWindowHours");
+
+                            b1.HasKey("BookingId");
+
+                            b1.ToTable("Bookings", "ServiceCatalog");
+
+                            b1.WithOwner()
+                                .HasForeignKey("BookingId");
+                        });
+
+                    b.OwnsOne("Booksy.ServiceCatalog.Domain.ValueObjects.Price", "TotalPrice", b1 =>
+                        {
+                            b1.Property<Guid>("BookingId")
+                                .HasColumnType("uniqueidentifier");
+
+                            b1.Property<decimal>("Amount")
+                                .HasColumnType("decimal(18,2)")
+                                .HasColumnName("TotalPriceAmount");
+
+                            b1.Property<string>("Currency")
+                                .IsRequired()
+                                .HasMaxLength(3)
+                                .HasColumnType("nvarchar(3)")
+                                .HasColumnName("TotalPriceCurrency");
+
+                            b1.HasKey("BookingId");
+
+                            b1.ToTable("Bookings", "ServiceCatalog");
+
+                            b1.WithOwner()
+                                .HasForeignKey("BookingId");
+                        });
+
+                    b.OwnsOne("Booksy.ServiceCatalog.Domain.ValueObjects.PaymentInfo", "PaymentInfo", b1 =>
+                        {
+                            b1.Property<Guid>("BookingId")
+                                .HasColumnType("uniqueidentifier");
+
+                            b1.Property<string>("DepositPaymentIntentId")
+                                .HasMaxLength(200)
+                                .HasColumnType("nvarchar(200)")
+                                .HasColumnName("DepositPaymentIntentId");
+
+                            b1.Property<DateTime?>("PaidAt")
+                                .HasColumnType("datetime2")
+                                .HasColumnName("PaidAt");
+
+                            b1.Property<string>("PaymentIntentId")
+                                .HasMaxLength(200)
+                                .HasColumnType("nvarchar(200)")
+                                .HasColumnName("PaymentIntentId");
+
+                            b1.Property<string>("RefundId")
+                                .HasMaxLength(200)
+                                .HasColumnType("nvarchar(200)")
+                                .HasColumnName("RefundId");
+
+                            b1.Property<DateTime?>("RefundedAt")
+                                .HasColumnType("datetime2")
+                                .HasColumnName("RefundedAt");
+
+                            b1.Property<string>("Status")
+                                .IsRequired()
+                                .HasMaxLength(50)
+                                .HasColumnType("nvarchar(50)")
+                                .HasColumnName("PaymentStatus");
+
+                            b1.HasKey("BookingId");
+
+                            b1.ToTable("Bookings", "ServiceCatalog");
+
+                            b1.WithOwner()
+                                .HasForeignKey("BookingId");
+
+                            b1.OwnsOne("Booksy.Core.Domain.ValueObjects.Money", "DepositAmount", b2 =>
+                                {
+                                    b2.Property<Guid>("PaymentInfoBookingId")
+                                        .HasColumnType("uniqueidentifier");
+
+                                    b2.Property<decimal>("Amount")
+                                        .HasColumnType("decimal(18,2)")
+                                        .HasColumnName("DepositAmount");
+
+                                    b2.Property<string>("Currency")
+                                        .IsRequired()
+                                        .HasMaxLength(3)
+                                        .HasColumnType("nvarchar(3)")
+                                        .HasColumnName("DepositCurrency");
+
+                                    b2.HasKey("PaymentInfoBookingId");
+
+                                    b2.ToTable("Bookings", "ServiceCatalog");
+
+                                    b2.WithOwner()
+                                        .HasForeignKey("PaymentInfoBookingId");
+                                });
+
+                            b1.OwnsOne("Booksy.Core.Domain.ValueObjects.Money", "PaidAmount", b2 =>
+                                {
+                                    b2.Property<Guid>("PaymentInfoBookingId")
+                                        .HasColumnType("uniqueidentifier");
+
+                                    b2.Property<decimal>("Amount")
+                                        .HasColumnType("decimal(18,2)")
+                                        .HasColumnName("PaidAmount");
+
+                                    b2.Property<string>("Currency")
+                                        .IsRequired()
+                                        .HasMaxLength(3)
+                                        .HasColumnType("nvarchar(3)")
+                                        .HasColumnName("PaidCurrency");
+
+                                    b2.HasKey("PaymentInfoBookingId");
+
+                                    b2.ToTable("Bookings", "ServiceCatalog");
+
+                                    b2.WithOwner()
+                                        .HasForeignKey("PaymentInfoBookingId");
+                                });
+
+                            b1.OwnsOne("Booksy.Core.Domain.ValueObjects.Money", "RefundedAmount", b2 =>
+                                {
+                                    b2.Property<Guid>("PaymentInfoBookingId")
+                                        .HasColumnType("uniqueidentifier");
+
+                                    b2.Property<decimal>("Amount")
+                                        .HasColumnType("decimal(18,2)")
+                                        .HasColumnName("RefundedAmount");
+
+                                    b2.Property<string>("Currency")
+                                        .IsRequired()
+                                        .HasMaxLength(3)
+                                        .HasColumnType("nvarchar(3)")
+                                        .HasColumnName("RefundedCurrency");
+
+                                    b2.HasKey("PaymentInfoBookingId");
+
+                                    b2.ToTable("Bookings", "ServiceCatalog");
+
+                                    b2.WithOwner()
+                                        .HasForeignKey("PaymentInfoBookingId");
+                                });
+
+                            b1.OwnsOne("Booksy.Core.Domain.ValueObjects.Money", "TotalAmount", b2 =>
+                                {
+                                    b2.Property<Guid>("PaymentInfoBookingId")
+                                        .HasColumnType("uniqueidentifier");
+
+                                    b2.Property<decimal>("Amount")
+                                        .HasColumnType("decimal(18,2)")
+                                        .HasColumnName("PaymentTotalAmount");
+
+                                    b2.Property<string>("Currency")
+                                        .IsRequired()
+                                        .HasMaxLength(3)
+                                        .HasColumnType("nvarchar(3)")
+                                        .HasColumnName("PaymentCurrency");
+
+                                    b2.HasKey("PaymentInfoBookingId");
+
+                                    b2.ToTable("Bookings", "ServiceCatalog");
+
+                                    b2.WithOwner()
+                                        .HasForeignKey("PaymentInfoBookingId");
+                                });
+
+                            b1.Navigation("DepositAmount")
+                                .IsRequired();
+
+                            b1.Navigation("PaidAmount")
+                                .IsRequired();
+
+                            b1.Navigation("RefundedAmount")
+                                .IsRequired();
+
+                            b1.Navigation("TotalAmount")
+                                .IsRequired();
+                        });
+
+                    b.OwnsOne("Booksy.ServiceCatalog.Domain.ValueObjects.TimeSlot", "TimeSlot", b1 =>
+                        {
+                            b1.Property<Guid>("BookingId")
+                                .HasColumnType("uniqueidentifier");
+
+                            b1.Property<DateTime>("EndTime")
+                                .HasColumnType("timestamp with time zone")
+                                .HasColumnName("EndTime");
+
+                            b1.Property<DateTime>("StartTime")
+                                .HasColumnType("timestamp with time zone")
+                                .HasColumnName("StartTime");
+
+                            b1.HasKey("BookingId");
+
+                            b1.ToTable("Bookings", "ServiceCatalog");
+
+                            b1.WithOwner()
+                                .HasForeignKey("BookingId");
+                        });
+
+                    b.Navigation("PaymentInfo")
+                        .IsRequired();
+
+                    b.Navigation("Policy")
+                        .IsRequired();
+
+                    b.Navigation("TimeSlot")
+                        .IsRequired();
+
+                    b.Navigation("TotalPrice")
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("Booksy.ServiceCatalog.Domain.Aggregates.BookingAggregate.BookingHistoryEntry", b =>
+                {
+                    b.HasOne("Booksy.ServiceCatalog.Domain.Aggregates.BookingAggregate.Booking", null)
+                        .WithMany("History")
+                        .HasForeignKey("BookingId");
+                });
+
             modelBuilder.Entity("Booksy.ServiceCatalog.Domain.Aggregates.Provider", b =>
                 {
                     b.OwnsOne("Booksy.ServiceCatalog.Domain.Entities.BusinessProfile", "Profile", b1 =>
                         {
                             b1.Property<Guid>("ProviderId")
-                                .HasColumnType("uuid");
+                                .HasColumnType("uniqueidentifier");
 
                             b1.Property<string>("BusinessDescription")
                                 .IsRequired()
                                 .HasMaxLength(2000)
-                                .HasColumnType("character varying(2000)")
+                                .HasColumnType("nvarchar(2000)")
                                 .HasColumnName("BusinessDescription");
 
                             b1.Property<string>("BusinessName")
                                 .IsRequired()
                                 .HasMaxLength(200)
-                                .HasColumnType("character varying(200)")
+                                .HasColumnType("nvarchar(200)")
                                 .HasColumnName("BusinessName");
 
                             b1.Property<DateTime>("CreatedAt")
-                                .HasColumnType("timestamp without time zone");
+                                .HasColumnType("datetime2");
 
                             b1.Property<string>("CreatedBy")
-                                .HasColumnType("text");
+                                .HasColumnType("nvarchar(max)");
 
                             b1.Property<bool>("IsDeleted")
-                                .HasColumnType("boolean");
+                                .HasColumnType("bit");
 
                             b1.Property<DateTime?>("LastModifiedAt")
-                                .HasColumnType("timestamp without time zone");
+                                .HasColumnType("datetime2");
 
                             b1.Property<string>("LastModifiedBy")
-                                .HasColumnType("text");
+                                .HasColumnType("nvarchar(max)");
 
                             b1.Property<DateTime>("LastUpdatedAt")
                                 .HasColumnType("timestamp with time zone")
@@ -693,12 +1085,12 @@ namespace Booksy.ServiceCatalog.Infrastructure.Migrations
 
                             b1.Property<string>("LogoUrl")
                                 .HasMaxLength(500)
-                                .HasColumnType("character varying(500)")
+                                .HasColumnType("nvarchar(500)")
                                 .HasColumnName("BusinessLogoUrl");
 
                             b1.Property<string>("ProfileImageUrl")
                                 .HasMaxLength(500)
-                                .HasColumnType("character varying(500)")
+                                .HasColumnType("nvarchar(500)")
                                 .HasColumnName("ProfileImageUrl");
 
                             b1.Property<string>("SocialMedia")
@@ -711,7 +1103,7 @@ namespace Booksy.ServiceCatalog.Infrastructure.Migrations
 
                             b1.Property<string>("Website")
                                 .HasMaxLength(500)
-                                .HasColumnType("character varying(500)")
+                                .HasColumnType("nvarchar(500)")
                                 .HasColumnName("BusinessWebsite");
 
                             b1.HasKey("ProviderId");
@@ -724,76 +1116,76 @@ namespace Booksy.ServiceCatalog.Infrastructure.Migrations
                             b1.OwnsMany("Booksy.ServiceCatalog.Domain.Entities.GalleryImage", "GalleryImages", b2 =>
                                 {
                                     b2.Property<Guid>("Id")
-                                        .HasColumnType("uuid")
+                                        .HasColumnType("uniqueidentifier")
                                         .HasColumnName("id");
 
                                     b2.Property<string>("AltText")
                                         .HasMaxLength(500)
-                                        .HasColumnType("character varying(500)")
+                                        .HasColumnType("nvarchar(500)")
                                         .HasColumnName("alt_text");
 
                                     b2.Property<string>("Caption")
                                         .HasMaxLength(500)
-                                        .HasColumnType("character varying(500)")
+                                        .HasColumnType("nvarchar(500)")
                                         .HasColumnName("caption");
 
                                     b2.Property<DateTime>("CreatedAt")
-                                        .HasColumnType("timestamp without time zone");
+                                        .HasColumnType("datetime2");
 
                                     b2.Property<string>("CreatedBy")
-                                        .HasColumnType("text");
+                                        .HasColumnType("nvarchar(max)");
 
                                     b2.Property<int>("DisplayOrder")
-                                        .HasColumnType("integer")
+                                        .HasColumnType("int")
                                         .HasColumnName("display_order");
 
                                     b2.Property<string>("ImageUrl")
                                         .IsRequired()
                                         .HasMaxLength(500)
-                                        .HasColumnType("character varying(500)")
+                                        .HasColumnType("nvarchar(500)")
                                         .HasColumnName("image_url");
 
                                     b2.Property<bool>("IsActive")
                                         .ValueGeneratedOnAdd()
-                                        .HasColumnType("boolean")
+                                        .HasColumnType("bit")
                                         .HasDefaultValue(true)
                                         .HasColumnName("is_active");
 
                                     b2.Property<bool>("IsDeleted")
-                                        .HasColumnType("boolean");
+                                        .HasColumnType("bit");
 
                                     b2.Property<bool>("IsPrimary")
                                         .ValueGeneratedOnAdd()
-                                        .HasColumnType("boolean")
+                                        .HasColumnType("bit")
                                         .HasDefaultValue(false)
                                         .HasColumnName("is_primary");
 
                                     b2.Property<DateTime?>("LastModifiedAt")
-                                        .HasColumnType("timestamp without time zone");
+                                        .HasColumnType("datetime2");
 
                                     b2.Property<string>("LastModifiedBy")
-                                        .HasColumnType("text");
+                                        .HasColumnType("nvarchar(max)");
 
                                     b2.Property<string>("MediumUrl")
                                         .IsRequired()
                                         .HasMaxLength(500)
-                                        .HasColumnType("character varying(500)")
+                                        .HasColumnType("nvarchar(500)")
                                         .HasColumnName("medium_url");
 
                                     b2.Property<Guid>("ProviderId")
-                                        .HasColumnType("uuid")
+                                        .HasColumnType("uniqueidentifier")
                                         .HasColumnName("provider_id");
 
                                     b2.Property<byte[]>("RowVersion")
                                         .IsConcurrencyToken()
                                         .ValueGeneratedOnAddOrUpdate()
-                                        .HasColumnType("bytea")
+                                        .HasColumnType("rowversion")
                                         .HasColumnName("row_version");
 
                                     b2.Property<string>("ThumbnailUrl")
                                         .IsRequired()
                                         .HasMaxLength(500)
-                                        .HasColumnType("character varying(500)")
+                                        .HasColumnType("nvarchar(500)")
                                         .HasColumnName("thumbnail_url");
 
                                     b2.Property<DateTime>("UploadedAt")
@@ -823,60 +1215,60 @@ namespace Booksy.ServiceCatalog.Infrastructure.Migrations
                     b.OwnsOne("Booksy.ServiceCatalog.Domain.ValueObjects.BusinessAddress", "Address", b1 =>
                         {
                             b1.Property<Guid>("ProviderId")
-                                .HasColumnType("uuid");
+                                .HasColumnType("uniqueidentifier");
 
                             b1.Property<string>("City")
                                 .IsRequired()
                                 .HasMaxLength(100)
-                                .HasColumnType("character varying(100)")
+                                .HasColumnType("nvarchar(100)")
                                 .HasColumnName("AddressCity");
 
                             b1.Property<int?>("CityId")
-                                .HasColumnType("integer")
+                                .HasColumnType("int")
                                 .HasColumnName("AddressCityId");
 
                             b1.Property<string>("Country")
                                 .IsRequired()
                                 .HasMaxLength(100)
-                                .HasColumnType("character varying(100)")
+                                .HasColumnType("nvarchar(100)")
                                 .HasColumnName("AddressCountry");
 
                             b1.Property<string>("FormattedAddress")
                                 .IsRequired()
                                 .HasMaxLength(500)
-                                .HasColumnType("character varying(500)")
+                                .HasColumnType("nvarchar(500)")
                                 .HasColumnName("AddressFormattedAddress");
 
                             b1.Property<double?>("Latitude")
                                 .HasPrecision(10, 8)
-                                .HasColumnType("double precision")
+                                .HasColumnType("float(10)")
                                 .HasColumnName("AddressLatitude");
 
                             b1.Property<double?>("Longitude")
                                 .HasPrecision(11, 8)
-                                .HasColumnType("double precision")
+                                .HasColumnType("float(11)")
                                 .HasColumnName("AddressLongitude");
 
                             b1.Property<string>("PostalCode")
                                 .IsRequired()
                                 .HasMaxLength(20)
-                                .HasColumnType("character varying(20)")
+                                .HasColumnType("nvarchar(20)")
                                 .HasColumnName("AddressPostalCode");
 
                             b1.Property<int?>("ProvinceId")
-                                .HasColumnType("integer")
+                                .HasColumnType("int")
                                 .HasColumnName("AddressProvinceId");
 
                             b1.Property<string>("State")
                                 .IsRequired()
                                 .HasMaxLength(100)
-                                .HasColumnType("character varying(100)")
+                                .HasColumnType("nvarchar(100)")
                                 .HasColumnName("AddressState");
 
                             b1.Property<string>("Street")
                                 .IsRequired()
                                 .HasMaxLength(200)
-                                .HasColumnType("character varying(200)")
+                                .HasColumnType("nvarchar(200)")
                                 .HasColumnName("AddressStreet");
 
                             b1.HasKey("ProviderId");
@@ -890,11 +1282,11 @@ namespace Booksy.ServiceCatalog.Infrastructure.Migrations
                     b.OwnsOne("Booksy.ServiceCatalog.Domain.ValueObjects.ContactInfo", "ContactInfo", b1 =>
                         {
                             b1.Property<Guid>("ProviderId")
-                                .HasColumnType("uuid");
+                                .HasColumnType("uniqueidentifier");
 
                             b1.Property<string>("Website")
                                 .HasMaxLength(500)
-                                .HasColumnType("character varying(500)")
+                                .HasColumnType("nvarchar(500)")
                                 .HasColumnName("Website");
 
                             b1.HasKey("ProviderId");
@@ -907,12 +1299,12 @@ namespace Booksy.ServiceCatalog.Infrastructure.Migrations
                             b1.OwnsOne("Booksy.Core.Domain.ValueObjects.Email", "Email", b2 =>
                                 {
                                     b2.Property<Guid>("ContactInfoProviderId")
-                                        .HasColumnType("uuid");
+                                        .HasColumnType("uniqueidentifier");
 
                                     b2.Property<string>("Value")
                                         .IsRequired()
                                         .HasMaxLength(320)
-                                        .HasColumnType("character varying(320)")
+                                        .HasColumnType("nvarchar(320)")
                                         .HasColumnName("Email");
 
                                     b2.HasKey("ContactInfoProviderId");
@@ -926,16 +1318,16 @@ namespace Booksy.ServiceCatalog.Infrastructure.Migrations
                             b1.OwnsOne("Booksy.Core.Domain.ValueObjects.PhoneNumber", "PrimaryPhone", b2 =>
                                 {
                                     b2.Property<Guid>("ContactInfoProviderId")
-                                        .HasColumnType("uuid");
+                                        .HasColumnType("uniqueidentifier");
 
                                     b2.Property<string>("CountryCode")
                                         .HasMaxLength(5)
-                                        .HasColumnType("character varying(5)")
+                                        .HasColumnType("nvarchar(5)")
                                         .HasColumnName("PrimaryPhoneCountryCode");
 
                                     b2.Property<string>("Value")
                                         .HasMaxLength(20)
-                                        .HasColumnType("character varying(20)")
+                                        .HasColumnType("nvarchar(20)")
                                         .HasColumnName("PrimaryPhoneNumber");
 
                                     b2.HasKey("ContactInfoProviderId");
@@ -949,16 +1341,16 @@ namespace Booksy.ServiceCatalog.Infrastructure.Migrations
                             b1.OwnsOne("Booksy.Core.Domain.ValueObjects.PhoneNumber", "SecondaryPhone", b2 =>
                                 {
                                     b2.Property<Guid>("ContactInfoProviderId")
-                                        .HasColumnType("uuid");
+                                        .HasColumnType("uniqueidentifier");
 
                                     b2.Property<string>("CountryCode")
                                         .HasMaxLength(5)
-                                        .HasColumnType("character varying(5)")
+                                        .HasColumnType("nvarchar(5)")
                                         .HasColumnName("SecondaryPhoneCountryCode");
 
                                     b2.Property<string>("Value")
                                         .HasMaxLength(20)
-                                        .HasColumnType("character varying(20)")
+                                        .HasColumnType("nvarchar(20)")
                                         .HasColumnName("SecondaryPhoneNumber");
 
                                     b2.HasKey("ContactInfoProviderId");
@@ -1001,18 +1393,63 @@ namespace Booksy.ServiceCatalog.Infrastructure.Migrations
                     b.OwnsOne("Booksy.ServiceCatalog.Domain.ValueObjects.Price", "BasePrice", b1 =>
                         {
                             b1.Property<Guid>("ServiceId")
-                                .HasColumnType("uuid");
+                                .HasColumnType("uniqueidentifier");
 
                             b1.Property<decimal>("Amount")
                                 .HasPrecision(18, 2)
-                                .HasColumnType("numeric(18,2)")
+                                .HasColumnType("decimal(18,2)")
                                 .HasColumnName("BasePriceAmount");
 
                             b1.Property<string>("Currency")
                                 .IsRequired()
                                 .HasMaxLength(3)
-                                .HasColumnType("character varying(3)")
+                                .HasColumnType("nvarchar(3)")
                                 .HasColumnName("BasePriceCurrency");
+
+                            b1.HasKey("ServiceId");
+
+                            b1.ToTable("Services", "ServiceCatalog");
+
+                            b1.WithOwner()
+                                .HasForeignKey("ServiceId");
+                        });
+
+                    b.OwnsOne("Booksy.ServiceCatalog.Domain.ValueObjects.BookingPolicy", "BookingPolicy", b1 =>
+                        {
+                            b1.Property<Guid>("ServiceId")
+                                .HasColumnType("uniqueidentifier");
+
+                            b1.Property<bool>("AllowRescheduling")
+                                .HasColumnType("bit")
+                                .HasColumnName("BookingPolicyAllowRescheduling");
+
+                            b1.Property<decimal>("CancellationFeePercentage")
+                                .HasColumnType("decimal(5,2)")
+                                .HasColumnName("BookingPolicyCancellationFeePercentage");
+
+                            b1.Property<int>("CancellationWindowHours")
+                                .HasColumnType("int")
+                                .HasColumnName("BookingPolicyCancellationWindowHours");
+
+                            b1.Property<decimal>("DepositPercentage")
+                                .HasColumnType("decimal(5,2)")
+                                .HasColumnName("BookingPolicyDepositPercentage");
+
+                            b1.Property<int>("MaxAdvanceBookingDays")
+                                .HasColumnType("int")
+                                .HasColumnName("BookingPolicyMaxAdvanceBookingDays");
+
+                            b1.Property<int>("MinAdvanceBookingHours")
+                                .HasColumnType("int")
+                                .HasColumnName("BookingPolicyMinAdvanceBookingHours");
+
+                            b1.Property<bool>("RequireDeposit")
+                                .HasColumnType("bit")
+                                .HasColumnName("BookingPolicyRequireDeposit");
+
+                            b1.Property<int>("RescheduleWindowHours")
+                                .HasColumnType("int")
+                                .HasColumnName("BookingPolicyRescheduleWindowHours");
 
                             b1.HasKey("ServiceId");
 
@@ -1026,7 +1463,7 @@ namespace Booksy.ServiceCatalog.Infrastructure.Migrations
                         {
                             b1.Property<Guid>("Id")
                                 .ValueGeneratedOnAdd()
-                                .HasColumnType("uuid")
+                                .HasColumnType("uniqueidentifier")
                                 .HasColumnName("Id");
 
                             b1.Property<string>("Attributes")
@@ -1036,45 +1473,45 @@ namespace Booksy.ServiceCatalog.Infrastructure.Migrations
                                 .HasDefaultValueSql("'{}'::jsonb");
 
                             b1.Property<DateTime>("CreatedAt")
-                                .HasColumnType("timestamp without time zone");
+                                .HasColumnType("datetime2");
 
                             b1.Property<string>("CreatedBy")
-                                .HasColumnType("text");
+                                .HasColumnType("nvarchar(max)");
 
                             b1.Property<string>("Description")
                                 .HasMaxLength(500)
-                                .HasColumnType("character varying(500)");
+                                .HasColumnType("nvarchar(500)");
 
                             b1.Property<bool>("IsActive")
                                 .ValueGeneratedOnAdd()
-                                .HasColumnType("boolean")
+                                .HasColumnType("bit")
                                 .HasDefaultValue(true);
 
                             b1.Property<bool>("IsDefault")
                                 .ValueGeneratedOnAdd()
-                                .HasColumnType("boolean")
+                                .HasColumnType("bit")
                                 .HasDefaultValue(false);
 
                             b1.Property<bool>("IsDeleted")
-                                .HasColumnType("boolean");
+                                .HasColumnType("bit");
 
                             b1.Property<DateTime?>("LastModifiedAt")
-                                .HasColumnType("timestamp without time zone");
+                                .HasColumnType("datetime2");
 
                             b1.Property<string>("LastModifiedBy")
-                                .HasColumnType("text");
+                                .HasColumnType("nvarchar(max)");
 
                             b1.Property<string>("Name")
                                 .IsRequired()
                                 .HasMaxLength(100)
-                                .HasColumnType("character varying(100)");
+                                .HasColumnType("nvarchar(100)");
 
                             b1.Property<Guid>("ServiceId")
-                                .HasColumnType("uuid");
+                                .HasColumnType("uniqueidentifier");
 
                             b1.Property<int>("SortOrder")
                                 .ValueGeneratedOnAdd()
-                                .HasColumnType("integer")
+                                .HasColumnType("int")
                                 .HasDefaultValue(0);
 
                             b1.HasKey("Id");
@@ -1090,17 +1527,17 @@ namespace Booksy.ServiceCatalog.Infrastructure.Migrations
                             b1.OwnsOne("Booksy.ServiceCatalog.Domain.ValueObjects.Price", "Price", b2 =>
                                 {
                                     b2.Property<Guid>("PriceTierId")
-                                        .HasColumnType("uuid");
+                                        .HasColumnType("uniqueidentifier");
 
                                     b2.Property<decimal>("Amount")
                                         .HasPrecision(18, 2)
-                                        .HasColumnType("numeric(18,2)")
+                                        .HasColumnType("decimal(18,2)")
                                         .HasColumnName("Price");
 
                                     b2.Property<string>("Currency")
                                         .IsRequired()
                                         .HasMaxLength(3)
-                                        .HasColumnType("character varying(3)")
+                                        .HasColumnType("nvarchar(3)")
                                         .HasColumnName("Currency");
 
                                     b2.HasKey("PriceTierId");
@@ -1118,22 +1555,22 @@ namespace Booksy.ServiceCatalog.Infrastructure.Migrations
                     b.OwnsOne("Booksy.ServiceCatalog.Domain.ValueObjects.ServiceCategory", "Category", b1 =>
                         {
                             b1.Property<Guid>("ServiceId")
-                                .HasColumnType("uuid");
+                                .HasColumnType("uniqueidentifier");
 
                             b1.Property<string>("Description")
                                 .HasMaxLength(500)
-                                .HasColumnType("character varying(500)")
+                                .HasColumnType("nvarchar(500)")
                                 .HasColumnName("CategoryDescription");
 
                             b1.Property<string>("IconUrl")
                                 .HasMaxLength(500)
-                                .HasColumnType("character varying(500)")
+                                .HasColumnType("nvarchar(500)")
                                 .HasColumnName("CategoryIconUrl");
 
                             b1.Property<string>("Name")
                                 .IsRequired()
                                 .HasMaxLength(100)
-                                .HasColumnType("character varying(100)")
+                                .HasColumnType("nvarchar(100)")
                                 .HasColumnName("CategoryName");
 
                             b1.HasKey("ServiceId");
@@ -1146,6 +1583,8 @@ namespace Booksy.ServiceCatalog.Infrastructure.Migrations
 
                     b.Navigation("BasePrice")
                         .IsRequired();
+
+                    b.Navigation("BookingPolicy");
 
                     b.Navigation("Category")
                         .IsRequired();
@@ -1167,19 +1606,19 @@ namespace Booksy.ServiceCatalog.Infrastructure.Migrations
                         {
                             b1.Property<int>("Id")
                                 .ValueGeneratedOnAdd()
-                                .HasColumnType("integer");
+                                .HasColumnType("int");
 
-                            NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b1.Property<int>("Id"));
+                            SqlServerPropertyBuilderExtensions.UseIdentityColumn(b1.Property<int>("Id"));
 
                             b1.Property<Guid>("BusinessHoursId")
-                                .HasColumnType("uuid");
+                                .HasColumnType("uniqueidentifier");
 
                             b1.Property<TimeOnly>("EndTime")
                                 .HasColumnType("time");
 
                             b1.Property<string>("Label")
                                 .HasMaxLength(100)
-                                .HasColumnType("character varying(100)");
+                                .HasColumnType("nvarchar(100)");
 
                             b1.Property<TimeOnly>("StartTime")
                                 .HasColumnType("time");
@@ -1226,17 +1665,17 @@ namespace Booksy.ServiceCatalog.Infrastructure.Migrations
                     b.OwnsOne("Booksy.ServiceCatalog.Domain.ValueObjects.Price", "AdditionalPrice", b1 =>
                         {
                             b1.Property<Guid>("ServiceOptionId")
-                                .HasColumnType("uuid");
+                                .HasColumnType("uniqueidentifier");
 
                             b1.Property<decimal>("Amount")
                                 .HasPrecision(18, 2)
-                                .HasColumnType("numeric(18,2)")
+                                .HasColumnType("decimal(18,2)")
                                 .HasColumnName("AdditionalPriceAmount");
 
                             b1.Property<string>("Currency")
                                 .IsRequired()
                                 .HasMaxLength(3)
-                                .HasColumnType("character varying(3)")
+                                .HasColumnType("nvarchar(3)")
                                 .HasColumnName("AdditionalPriceCurrency");
 
                             b1.HasKey("ServiceOptionId");
@@ -1263,6 +1702,11 @@ namespace Booksy.ServiceCatalog.Infrastructure.Migrations
             modelBuilder.Entity("Booksy.Core.Domain.Domain.Entities.ProvinceCities", b =>
                 {
                     b.Navigation("Children");
+                });
+
+            modelBuilder.Entity("Booksy.ServiceCatalog.Domain.Aggregates.BookingAggregate.Booking", b =>
+                {
+                    b.Navigation("History");
                 });
 
             modelBuilder.Entity("Booksy.ServiceCatalog.Domain.Aggregates.Provider", b =>

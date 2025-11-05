@@ -29,10 +29,26 @@ namespace Booksy.ServiceCatalog.Infrastructure.Persistence.Seeders
         {
             try
             {
-             
+
                 await SeedProvidersAsync(cancellationToken);
+
+                // Seed staff for providers
+                var staffSeeder = new StaffDataSeeder(
+                    _context,
+                    Microsoft.Extensions.Logging.Abstractions.NullLogger<StaffDataSeeder>.Instance);
+                await staffSeeder.SeedAsync(cancellationToken);
+
                 await SeedServicesAsync(cancellationToken);
                 await SeedProviceCitiesAsync(cancellationToken);
+
+                // Save changes before seeding bookings (bookings depend on providers/services/staff)
+                await _context.SaveChangesAsync(cancellationToken);
+
+                // Seed booking data
+                var bookingSeeder = new BookingDataSeeder(
+                    _context,
+                    Microsoft.Extensions.Logging.Abstractions.NullLogger<BookingDataSeeder>.Instance);
+                await bookingSeeder.SeedAsync(cancellationToken);
 
                 await _context.SaveChangesAsync(cancellationToken);
                 _logger.LogInformation("ServiceCatalog database seeded successfully");

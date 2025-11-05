@@ -1,6 +1,7 @@
 ﻿using Booksy.Core.Application.Abstractions.Services;
 using Booksy.Core.Domain.Abstractions.Entities;
 using Booksy.ServiceCatalog.Domain.Aggregates;
+using Booksy.ServiceCatalog.Domain.Aggregates.BookingAggregate;
 using Booksy.ServiceCatalog.Domain.Entities;
 using Booksy.ServiceCatalog.Infrastructure.Persistence.Configurations;
 using Microsoft.EntityFrameworkCore;
@@ -32,6 +33,7 @@ namespace Booksy.ServiceCatalog.Infrastructure.Persistence.Context
         // Aggregate Roots
         public DbSet<Provider> Providers => Set<Provider>();
         public DbSet<Service> Services => Set<Service>();
+        public DbSet<Booking> Bookings => Set<Booking>();
 
         // Entities
         public DbSet<Staff> Staff => Set<Staff>();
