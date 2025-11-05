@@ -49,11 +49,14 @@ namespace Booksy.ServiceCatalog.Application.Services.Implementations
 
             // Return a mock address
             return BusinessAddress.Create(
+                "123 Main Street, Sample City, Sample State",
                 "123 Main Street",
                 "Sample City",
                 "Sample State",
                 "12345",
                 "Sample Country",
+                null, // ProvinceId
+                null, // CityId
                 latitude,
                 longitude);
         }
@@ -100,8 +103,8 @@ namespace Booksy.ServiceCatalog.Application.Services.Implementations
             // Return mock search results
             return new List<BusinessAddress>
             {
-                BusinessAddress.Create($"{query} Street", "City 1", "State 1", "12345", "Country 1"),
-                BusinessAddress.Create($"{query} Avenue", "City 2", "State 2", "67890", "Country 2")
+                BusinessAddress.Create($"{query} Street, City 1, State 1", $"{query} Street", "City 1", "State 1", "12345", "Country 1"),
+                BusinessAddress.Create($"{query} Avenue, City 2, State 2", $"{query} Avenue", "City 2", "State 2", "67890", "Country 2")
             };
         }
 

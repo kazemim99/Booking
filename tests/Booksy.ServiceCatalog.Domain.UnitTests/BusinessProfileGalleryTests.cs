@@ -12,7 +12,7 @@ public class BusinessProfileGalleryTests
     public void AddGalleryImage_Should_Add_Image_Successfully()
     {
         // Arrange
-        var profile = BusinessProfile.Create("Test Business", "Test Description");
+        var profile = BusinessProfile.Create("Test Business", "Test Description", "\"profileImageUrl\"");
 
         // Act
         var image = profile.AddGalleryImage(
@@ -32,7 +32,7 @@ public class BusinessProfileGalleryTests
     public void AddGalleryImage_Should_Assign_Sequential_Display_Order()
     {
         // Arrange
-        var profile = BusinessProfile.Create("Test Business", "Test Description");
+        var profile = BusinessProfile.Create("Test Business", "Test Description", "\"profileImageUrl\"");
 
         // Act
         var image1 = profile.AddGalleryImage(_providerId, "url1", "thumb1", "medium1");
@@ -49,7 +49,7 @@ public class BusinessProfileGalleryTests
     public void AddGalleryImage_Should_Throw_When_Max_Limit_Reached()
     {
         // Arrange
-        var profile = BusinessProfile.Create("Test Business", "Test Description");
+        var profile = BusinessProfile.Create("Test Business", "Test Description", "\"profileImageUrl\"");
 
         // Add 50 images (max limit)
         for (int i = 0; i < 50; i++)
@@ -68,7 +68,7 @@ public class BusinessProfileGalleryTests
     public void RemoveGalleryImage_Should_Deactivate_Image()
     {
         // Arrange
-        var profile = BusinessProfile.Create("Test Business", "Test Description");
+        var profile = BusinessProfile.Create("Test Business", "Test Description", "\"profileImageUrl\"");
         var image = profile.AddGalleryImage(_providerId, "url", "thumb", "medium");
 
         // Act
@@ -83,7 +83,7 @@ public class BusinessProfileGalleryTests
     public void RemoveGalleryImage_Should_Throw_When_Image_Not_Found()
     {
         // Arrange
-        var profile = BusinessProfile.Create("Test Business", "Test Description");
+        var profile = BusinessProfile.Create("Test Business", "Test Description", "\"profileImageUrl\"");
         var nonExistentId = Guid.NewGuid();
 
         // Act & Assert
@@ -97,7 +97,7 @@ public class BusinessProfileGalleryTests
     public void ReorderGalleryImages_Should_Update_Display_Order()
     {
         // Arrange
-        var profile = BusinessProfile.Create("Test Business", "Test Description");
+        var profile = BusinessProfile.Create("Test Business", "Test Description", "\"profileImageUrl\"");
         var image1 = profile.AddGalleryImage(_providerId, "url1", "thumb1", "medium1");
         var image2 = profile.AddGalleryImage(_providerId, "url2", "thumb2", "medium2");
         var image3 = profile.AddGalleryImage(_providerId, "url3", "thumb3", "medium3");
@@ -122,7 +122,7 @@ public class BusinessProfileGalleryTests
     public void ReorderGalleryImages_Should_Throw_When_Image_Not_Found()
     {
         // Arrange
-        var profile = BusinessProfile.Create("Test Business", "Test Description");
+        var profile = BusinessProfile.Create("Test Business", "Test Description", "\"profileImageUrl\"");
         var nonExistentId = Guid.NewGuid();
 
         var newOrder = new Dictionary<Guid, int>
@@ -142,7 +142,7 @@ public class BusinessProfileGalleryTests
     public void GetGalleryImage_Should_Return_Image_When_Exists()
     {
         // Arrange
-        var profile = BusinessProfile.Create("Test Business", "Test Description");
+        var profile = BusinessProfile.Create("Test Business", "Test Description", "\"profileImageUrl\"");
         var image = profile.AddGalleryImage(_providerId, "url", "thumb", "medium");
 
         // Act
@@ -157,7 +157,7 @@ public class BusinessProfileGalleryTests
     public void GetGalleryImage_Should_Return_Null_When_Not_Found()
     {
         // Arrange
-        var profile = BusinessProfile.Create("Test Business", "Test Description");
+        var profile = BusinessProfile.Create("Test Business", "Test Description", "\"profileImageUrl\"");
         var nonExistentId = Guid.NewGuid();
 
         // Act

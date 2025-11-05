@@ -29,4 +29,5 @@ public class ProviderDetailsResponse
     public DateTime? ActivatedAt { get; internal set; }
     public List<ServiceSummaryResponse> Services { get; internal set; }
     public List<StaffMemberResponse>? Staff { get; internal set; }
+    public string? ProfileImageUrl { get;  set; }
 }

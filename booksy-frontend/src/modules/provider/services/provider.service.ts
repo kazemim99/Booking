@@ -16,7 +16,6 @@ import type {
 } from '../types/provider.types'
 import type { PagedResult } from '@/core/types/common.types'
 
-
 const API_VERSION = 'v1'
 const API_BASE = `/${API_VERSION}/providers`
 
@@ -29,9 +28,12 @@ class ProviderService {
    * Search providers with advanced filtering and pagination
    */
   async searchProviders(filters: ProviderSearchFilters): Promise<PagedResult<ProviderSummary>> {
-    const response = await serviceCategoryClient.get<PagedResult<ProviderSummary>>(`${API_BASE}/search`, {
-      params: { ...filters },
-    })
+    const response = await serviceCategoryClient.get<PagedResult<ProviderSummary>>(
+      `${API_BASE}/search`,
+      {
+        params: { ...filters },
+      },
+    )
 
     return response.data!
   }
@@ -51,6 +53,7 @@ class ProviderService {
           includeStaff,
         },
       })
+
       return this.mapProviderResponse(response.data!)
     } catch (error) {
       console.error(`Error fetching provider ${id}:`, error)
@@ -78,9 +81,12 @@ class ProviderService {
     limit = 50,
   ): Promise<ProviderSummary[]> {
     try {
-      const response = await serviceCategoryClient.get<ProviderSummary[]>(`${API_BASE}/by-location`, {
-        params: { latitude, longitude, radiusKm, limit },
-      })
+      const response = await serviceCategoryClient.get<ProviderSummary[]>(
+        `${API_BASE}/by-location`,
+        {
+          params: { latitude, longitude, radiusKm, limit },
+        },
+      )
       return response.data!.map(this.mapProviderSummaryResponse)
     } catch (error) {
       console.error('Error fetching providers by location:', error)
@@ -97,8 +103,10 @@ class ProviderService {
    */
   async registerProvider(data: RegisterProviderRequest): Promise<Provider> {
     try {
-
-      const response = await serviceCategoryClient.post<ProviderResponse>(`${API_BASE}/register`, data)
+      const response = await serviceCategoryClient.post<ProviderResponse>(
+        `${API_BASE}/register`,
+        data,
+      )
       return this.mapProviderResponse(response.data!)
     } catch (error) {
       console.error('Error registering provider:', error)
@@ -109,7 +117,9 @@ class ProviderService {
   async getProviderByOwnerId(ownerId: string): Promise<Provider | null> {
     try {
       console.log(`[ProviderService] Fetching provider for owner: ${ownerId}`)
-      const response = await serviceCategoryClient.get<ProviderResponse>(`${API_BASE}/by-owner/${ownerId}`)
+      const response = await serviceCategoryClient.get<ProviderResponse>(
+        `${API_BASE}/by-owner/${ownerId}`,
+      )
       console.log(`[ProviderService] Provider found:`, response.data)
       return this.mapProviderResponse(response.data!)
     } catch (error) {
@@ -117,7 +127,9 @@ class ProviderService {
       // Check if it's a 404 (provider not found) or actual error
       if (error && typeof error === 'object' && 'statusCode' in error) {
         const apiError = error as { statusCode: number; message: string }
-        console.error(`[ProviderService] Status: ${apiError.statusCode}, Message: ${apiError.message}`)
+        console.error(
+          `[ProviderService] Status: ${apiError.statusCode}, Message: ${apiError.message}`,
+        )
       }
       // Return null if provider doesn't exist (not an error - user might not be a provider yet)
       return null
@@ -238,7 +250,9 @@ class ProviderService {
    */
   async getProviderStatistics(id: string): Promise<ProviderStatistics> {
     try {
-      const response = await serviceCategoryClient.get<ProviderStatistics>(`${API_BASE}/${id}/statistics`)
+      const response = await serviceCategoryClient.get<ProviderStatistics>(
+        `${API_BASE}/${id}/statistics`,
+      )
       return response.data!
     } catch (error) {
       console.error(`Error fetching statistics for provider ${id}:`, error)
@@ -255,9 +269,12 @@ class ProviderService {
    */
   async getProvidersByStatus(status: ProviderStatus, maxResults = 100): Promise<ProviderSummary[]> {
     try {
-      const response = await serviceCategoryClient.get<ProviderSummary[]>(`${API_BASE}/by-status/${status}`, {
-        params: { maxResults },
-      })
+      const response = await serviceCategoryClient.get<ProviderSummary[]>(
+        `${API_BASE}/by-status/${status}`,
+        {
+          params: { maxResults },
+        },
+      )
       return response.data!.map(this.mapProviderSummaryResponse)
     } catch (error) {
       console.error(`Error fetching providers by status ${status}:`, error)
@@ -285,6 +302,7 @@ class ProviderService {
    * Map API response to domain model
    */
   private mapProviderResponse(response: ProviderResponse): Provider {
+
     return {
       id: response.id,
       ownerId: response.ownerId,
@@ -295,15 +313,17 @@ class ProviderService {
         coverImageUrl: response.coverImageUrl,
         websiteUrl: response.websiteUrl,
       },
+      profileImageUrl: response.profileImageUrl, // Map profileImageUrl at root level
       status: response.status as ProviderStatus,
       type: response.type as ProviderType,
-      contactInfo: {
-        email: response.email,
-        primaryPhone: response.primaryPhone,
+      contactInfo: response.contactInfo || {
+        email: response.email, // Fallback to old structure
+        phone: response.primaryPhone,
         secondaryPhone: response.secondaryPhone,
       },
-      address: {
+      address: response.address || {
         addressLine1: response.addressLine1,
+        formattedAddress: response.formattedAddress,
         addressLine2: response.addressLine2,
         city: response.city,
         state: response.state,

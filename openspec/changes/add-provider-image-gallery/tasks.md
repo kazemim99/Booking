@@ -1,18 +1,18 @@
 # Implementation Tasks - Provider Image Gallery
 
 ## 1. Backend - Domain Layer
-- [ ] 1.1 Create `GalleryImage` entity in `ServiceCatalog.Domain/Aggregates/ProviderAggregate/Entities/`
-  - [ ] Add properties: Id, ProviderId, ImageUrl, ThumbnailUrl, MediumUrl, DisplayOrder, Caption, AltText, UploadedAt, IsActive
-  - [ ] Add factory methods for creating gallery images
-- [ ] 1.2 Update `BusinessProfile` entity to own `GalleryImages` collection
-  - [ ] Add `private readonly List<GalleryImage> _galleryImages = new()`
-  - [ ] Add `IReadOnlyList<GalleryImage> GalleryImages` property
-  - [ ] Add `AddGalleryImage()`, `RemoveGalleryImage()`, `ReorderGalleryImages()` methods
-  - [ ] Add domain validation (max 50 images per provider)
-- [ ] 1.3 Add domain events for gallery operations
-  - [ ] Create `GalleryImageUploadedEvent`
-  - [ ] Create `GalleryImageDeletedEvent`
-  - [ ] Create `GalleryImagesReorderedEvent`
+- [x] 1.1 Create `GalleryImage` entity in `ServiceCatalog.Domain/Aggregates/ProviderAggregate/Entities/`
+  - [x] Add properties: Id, ProviderId, ImageUrl, ThumbnailUrl, MediumUrl, DisplayOrder, Caption, AltText, UploadedAt, IsActive
+  - [x] Add factory methods for creating gallery images
+- [x] 1.2 Update `BusinessProfile` entity to own `GalleryImages` collection
+  - [x] Add `private readonly List<GalleryImage> _galleryImages = new()`
+  - [x] Add `IReadOnlyList<GalleryImage> GalleryImages` property
+  - [x] Add `AddGalleryImage()`, `RemoveGalleryImage()`, `ReorderGalleryImages()` methods
+  - [x] Add domain validation (max 50 images per provider)
+- [x] 1.3 Add domain events for gallery operations
+  - [x] Create `GalleryImageUploadedEvent`
+  - [x] Create `GalleryImageDeletedEvent`
+  - [x] Create `GalleryImagesReorderedEvent`
 - [ ] 1.4 Write unit tests for domain logic
   - [ ] Test image upload validation
   - [ ] Test reordering logic
@@ -20,74 +20,74 @@
   - [ ] Test max image limit enforcement
 
 ## 2. Backend - Infrastructure Layer
-- [ ] 2.1 Create file storage abstraction
-  - [ ] Define `IFileStorageService` interface in `Domain/Services/`
-  - [ ] Implement `LocalFileStorageService` in `Infrastructure/Services/Storage/`
-  - [ ] Add methods: `UploadImageAsync()`, `DeleteImageAsync()`, `GetImageUrlAsync()`
-  - [ ] Configure storage path in appsettings.json: `"FileStorage": { "BasePath": "wwwroot/uploads", "MaxFileSizeMB": 10 }`
-- [ ] 2.2 Create image optimization service
-  - [ ] Add ImageSharp NuGet package to Infrastructure project
-  - [ ] Define `IImageOptimizationService` interface in `Domain/Services/`
-  - [ ] Implement `ImageSharpOptimizationService` in `Infrastructure/Services/Images/`
-  - [ ] Add methods: `OptimizeAsync()` to generate thumbnail, medium, original sizes
-  - [ ] Implement WebP conversion with JPEG fallback
-- [ ] 2.3 Update EF Core DbContext configuration
-  - [ ] Add `GalleryImage` configuration in `Persistence/Configurations/BusinessProfileConfiguration.cs`
-  - [ ] Configure owned collection with `OwnsMany(bp => bp.GalleryImages)`
-  - [ ] Set up table name, indexes (provider_id, category, display_order)
-  - [ ] Configure cascade delete for gallery images
-- [ ] 2.4 Create database migration
-  - [ ] Run `dotnet ef migrations add AddProviderGalleryImages --project Infrastructure --startup-project Api`
-  - [ ] Review generated migration for correctness
-  - [ ] Test migration on local development database
-- [ ] 2.5 Register services in DI container
-  - [ ] Register `IFileStorageService` and `LocalFileStorageService` in `Infrastructure/DependencyInjection.cs`
-  - [ ] Register `IImageOptimizationService` and `ImageSharpOptimizationService`
-  - [ ] Configure file size limits in Kestrel and IIS settings
+- [x] 2.1 Create file storage abstraction
+  - [x] Define `IFileStorageService` interface in `Domain/Services/`
+  - [x] Implement `LocalFileStorageService` in `Infrastructure/Services/Storage/`
+  - [x] Add methods: `UploadImageAsync()`, `DeleteImageAsync()`, `GetImageUrlAsync()`
+  - [x] Configure storage path in appsettings.json: `"FileStorage": { "BasePath": "wwwroot/uploads", "MaxFileSizeMB": 10 }`
+- [x] 2.2 Create image optimization service
+  - [x] Add ImageSharp NuGet package to Infrastructure project
+  - [x] Define `IImageOptimizationService` interface in `Domain/Services/`
+  - [x] Implement `ImageSharpOptimizationService` in `Infrastructure/Services/Images/`
+  - [x] Add methods: `OptimizeAsync()` to generate thumbnail, medium, original sizes
+  - [x] Implement WebP conversion with JPEG fallback
+- [x] 2.3 Update EF Core DbContext configuration
+  - [x] Add `GalleryImage` configuration in `Persistence/Configurations/BusinessProfileConfiguration.cs`
+  - [x] Configure owned collection with `OwnsMany(bp => bp.GalleryImages)`
+  - [x] Set up table name, indexes (provider_id, category, display_order)
+  - [x] Configure cascade delete for gallery images
+- [x] 2.4 Create database migration
+  - [x] Run `dotnet ef migrations add AddProviderGalleryImages --project Infrastructure --startup-project Api`
+  - [x] Review generated migration for correctness
+  - [x] Test migration on local development database
+- [x] 2.5 Register services in DI container
+  - [x] Register `IFileStorageService` and `LocalFileStorageService` in `Infrastructure/DependencyInjection.cs`
+  - [x] Register `IImageOptimizationService` and `ImageSharpOptimizationService`
+  - [x] Configure file size limits in Kestrel and IIS settings
 
 ## 3. Backend - Application Layer
-- [ ] 3.1 Create upload gallery images command
-  - [ ] Create `UploadGalleryImagesCommand` in `Application/Commands/Provider/UploadGalleryImages/`
-  - [ ] Implement `UploadGalleryImagesCommandHandler`
-  - [ ] Add FluentValidation rules (file size, format, count limit)
-  - [ ] Use `IFileStorageService` and `IImageOptimizationService` in handler
-  - [ ] No category field needed - single unified gallery
+- [x] 3.1 Create upload gallery images command
+  - [x] Create `UploadGalleryImagesCommand` in `Application/Commands/Provider/UploadGalleryImages/`
+  - [x] Implement `UploadGalleryImagesCommandHandler`
+  - [x] Add FluentValidation rules (file size, format, count limit)
+  - [x] Use `IFileStorageService` and `IImageOptimizationService` in handler
+  - [x] No category field needed - single unified gallery
 - [ ] 3.2 Create update gallery image metadata command
   - [ ] Create `UpdateGalleryImageMetadataCommand`
   - [ ] Implement handler to update caption, alt text
   - [ ] Add validation for caption length (max 500 chars)
-- [ ] 3.3 Create reorder gallery images command
-  - [ ] Create `ReorderGalleryImagesCommand` with list of `{ImageId, NewOrder}` pairs
-  - [ ] Implement handler to atomically update display_order
-  - [ ] Add validation to ensure all images belong to provider
-- [ ] 3.4 Create delete gallery image command
-  - [ ] Create `DeleteGalleryImageCommand`
-  - [ ] Implement handler to soft-delete image (set IsActive = false)
+- [x] 3.3 Create reorder gallery images command
+  - [x] Create `ReorderGalleryImagesCommand` with list of `{ImageId, NewOrder}` pairs
+  - [x] Implement handler to atomically update display_order
+  - [x] Add validation to ensure all images belong to provider
+- [x] 3.4 Create delete gallery image command
+  - [x] Create `DeleteGalleryImageCommand`
+  - [x] Implement handler to soft-delete image (set IsActive = false)
   - [ ] Schedule background job for file deletion
-- [ ] 3.5 Create gallery images query
-  - [ ] Create `GetGalleryImagesByProviderQuery` in `Application/Queries/Provider/GetGalleryImages/`
-  - [ ] Implement query handler to retrieve all images sorted by display order
-  - [ ] Return DTOs with all image URLs (thumbnail, medium, original)
-- [ ] 3.6 Create DTOs and mapping profiles
-  - [ ] Create `GalleryImageDto` in `Application/DTOs/Provider/`
-  - [ ] Update `AutoMapper` profile to map `GalleryImage` to `GalleryImageDto`
+- [x] 3.5 Create gallery images query
+  - [x] Create `GetGalleryImagesByProviderQuery` in `Application/Queries/Provider/GetGalleryImages/`
+  - [x] Implement query handler to retrieve all images sorted by display order
+  - [x] Return DTOs with all image URLs (thumbnail, medium, original)
+- [x] 3.6 Create DTOs and mapping profiles
+  - [x] Create `GalleryImageDto` in `Application/DTOs/Provider/`
+  - [x] Manual mapping in query handlers (project pattern followed)
 - [ ] 3.7 Write unit tests for application handlers
   - [ ] Test command handlers with valid and invalid inputs
   - [ ] Test query handlers with filtering and sorting
   - [ ] Mock file storage and optimization services
 
 ## 4. Backend - API Layer
-- [ ] 4.1 Add gallery endpoints to `ProvidersController`
-  - [ ] `POST /api/v1/providers/{providerId}/gallery` - Upload images (IFormFile[] images)
-  - [ ] `GET /api/v1/providers/{providerId}/gallery` - Get all images sorted by display order
-  - [ ] `PUT /api/v1/providers/{providerId}/gallery/{imageId}` - Update metadata (caption, alt text)
-  - [ ] `DELETE /api/v1/providers/{providerId}/gallery/{imageId}` - Delete image
-  - [ ] `PUT /api/v1/providers/{providerId}/gallery/reorder` - Reorder images
-- [ ] 4.2 Create request/response models
-  - [ ] Create `UploadGalleryImagesRequest` in `Api/Models/Requests/`
-  - [ ] Create `GalleryImageResponse` in `Api/Models/Responses/`
-  - [ ] Create `UpdateGalleryImageMetadataRequest`
-  - [ ] Create `ReorderGalleryImagesRequest`
+- [x] 4.1 Add gallery endpoints to `ProvidersController`
+  - [x] `POST /api/v1/providers/{providerId}/gallery` - Upload images (IFormFile[] images)
+  - [x] `GET /api/v1/providers/{providerId}/gallery` - Get all images sorted by display order
+  - [x] `PUT /api/v1/providers/{providerId}/gallery/{imageId}` - Update metadata (caption, alt text)
+  - [x] `DELETE /api/v1/providers/{providerId}/gallery/{imageId}` - Delete image
+  - [x] `PUT /api/v1/providers/{providerId}/gallery/reorder` - Reorder images
+- [x] 4.2 Create request/response models
+  - [x] Gallery endpoints use IFormFile directly (no separate UploadRequest needed)
+  - [x] Create `GalleryImageResponse` in `Api/Models/Responses/`
+  - [x] Create `UpdateGalleryImageMetadataRequest`
+  - [x] Create `ReorderGalleryImagesRequest`
 - [ ] 4.3 Add authorization checks
   - [ ] Ensure only provider owners can upload/edit/delete their gallery images
   - [ ] Use `[Authorize]` attribute with role validation
@@ -98,80 +98,83 @@
   - [ ] Document all gallery endpoints with XML comments
   - [ ] Add example requests/responses
   - [ ] Document multipart/form-data upload format
-- [ ] 4.6 Write integration tests for API endpoints
-  - [ ] Test upload with valid images
-  - [ ] Test upload with invalid files (too large, wrong format)
-  - [ ] Test unauthorized access attempts
-  - [ ] Test reordering and deletion flows
+- [x] 4.6 Write integration tests for API endpoints
+  - [x] Test upload with valid images
+  - [x] Test upload with invalid files (too large, wrong format)
+  - [x] Test unauthorized access attempts
+  - [x] Test reordering and deletion flows
 
 ## 5. Frontend - Services & State Management
-- [ ] 5.1 Create gallery API service
-  - [ ] Create `booksy-frontend/src/modules/provider/services/gallery.service.ts`
-  - [ ] Implement methods: `uploadImages()`, `getGalleryImages()`, `updateImageMetadata()`, `deleteImage()`, `reorderImages()`
-  - [ ] Handle FormData creation for multipart uploads
-  - [ ] Add upload progress tracking (axios onUploadProgress)
-- [ ] 5.2 Create gallery Pinia store
-  - [ ] Create `booksy-frontend/src/modules/provider/stores/gallery.store.ts`
-  - [ ] Add state: `galleryImages`, `uploadProgress`, `isUploading`, `error`
-  - [ ] Add actions: `fetchGalleryImages()`, `uploadImages()`, `updateImageMetadata()`, `deleteImage()`, `reorderImages()`
-  - [ ] Implement optimistic updates for deletion and reordering
-- [ ] 5.3 Create TypeScript types
-  - [ ] Define `GalleryImage` interface in `booksy-frontend/src/modules/provider/types/gallery.types.ts`
-  - [ ] Define `UploadProgress` interface
-  - [ ] No category enum needed - single unified gallery
+- [x] 5.1 Create gallery API service
+  - [x] Create `booksy-frontend/src/modules/provider/services/gallery.service.ts`
+  - [x] Implement methods: `uploadImages()`, `getGalleryImages()`, `updateImageMetadata()`, `deleteImage()`, `reorderImages()`
+  - [x] Handle FormData creation for multipart uploads
+  - [x] Add upload progress tracking (axios onUploadProgress)
+- [x] 5.2 Create gallery Pinia store
+  - [x] Create `booksy-frontend/src/modules/provider/stores/gallery.store.ts`
+  - [x] Add state: `galleryImages`, `uploadProgress`, `isUploading`, `error`
+  - [x] Add actions: `fetchGalleryImages()`, `uploadImages()`, `updateImageMetadata()`, `deleteImage()`, `reorderImages()`
+  - [x] Implement optimistic updates for deletion and reordering
+- [x] 5.3 Create TypeScript types
+  - [x] Define `GalleryImage` interface in `booksy-frontend/src/modules/provider/types/gallery.types.ts`
+  - [x] Define `UploadProgress` interface
+  - [x] No category enum needed - single unified gallery
 
 ## 6. Frontend - Reusable Components
-- [ ] 6.1 Create `GalleryUpload.vue` component
-  - [ ] Implement drag-and-drop file upload area (HTML5 Drag and Drop API)
-  - [ ] Add file input with multiple file selection
-  - [ ] Display upload progress bar for each file (0-100%)
-  - [ ] Show file validation errors inline
-  - [ ] Emit `uploaded` event with uploaded image data
-- [ ] 6.2 Create `GalleryGrid.vue` component
-  - [ ] Display images in responsive grid (CSS Grid, 3 columns on desktop, 2 on tablet, 1 on mobile)
-  - [ ] Implement lazy loading with Intersection Observer API
-  - [ ] Show loading skeleton for images not yet loaded
-  - [ ] Support drag-to-reorder functionality (HTML5 Drag and Drop or Vue Draggable library)
-  - [ ] Emit `reorder` event with new order
-- [ ] 6.3 Create `GalleryImageCard.vue` component
-  - [ ] Display image thumbnail with hover actions (edit, delete)
-  - [ ] Show caption below image
-  - [ ] Add checkbox for bulk selection
-  - [ ] Emit `edit`, `delete`, `select` events
-- [ ] 6.4 Create `ImageLightbox.vue` component
-  - [ ] Full-screen image viewer with prev/next navigation
-  - [ ] Display original size image
-  - [ ] Show caption and metadata
-  - [ ] Support keyboard navigation (left/right arrows, escape to close)
-  - [ ] Add ARIA roles and labels for accessibility
-- [ ] 6.5 Add ARIA labels and keyboard navigation to all components
-  - [ ] Ensure Tab key navigation works correctly
+- [x] 6.1 Create `GalleryUpload.vue` component
+  - [x] Implement drag-and-drop file upload area (HTML5 Drag and Drop API)
+  - [x] Add file input with multiple file selection
+  - [x] Display upload progress bar for each file (0-100%)
+  - [x] Show file validation errors inline
+  - [x] Emit `uploaded` event with uploaded image data
+- [x] 6.2 Create `GalleryGrid.vue` component
+  - [x] Display images in responsive grid (CSS Grid, 3 columns on desktop, 2 on tablet, 1 on mobile)
+  - [x] Implement lazy loading with Intersection Observer API
+  - [x] Show loading skeleton for images not yet loaded
+  - [x] Support drag-to-reorder functionality (HTML5 Drag and Drop or Vue Draggable library)
+  - [x] Emit `reorder` event with new order
+- [x] 6.3 Create `GalleryImageCard.vue` component
+  - [x] Display image thumbnail with hover actions (edit, delete)
+  - [x] Show caption below image
+  - [x] Add checkbox for bulk selection
+  - [x] Emit `edit`, `delete`, `select` events
+- [x] 6.4 Create `ImageLightbox.vue` component
+  - [x] Full-screen image viewer with prev/next navigation
+  - [x] Display original size image
+  - [x] Show caption and metadata
+  - [x] Support keyboard navigation (left/right arrows, escape to close)
+  - [x] Add ARIA roles and labels for accessibility
+- [x] 6.5 Add ARIA labels and keyboard navigation to all components
+  - [x] Ensure Tab key navigation works correctly
+  - [x] Add ARIA labels to interactive elements
   - [ ] Add ARIA live regions for dynamic content (upload progress, deletion confirmations)
   - [ ] Test with screen reader (NVDA or JAWS)
 
 ## 7. Frontend - Main View Refactoring
-- [ ] 7.1 Refactor `GalleryView.vue` to use new backend API
-  - [ ] Remove mock data and local storage logic
-  - [ ] Integrate with `gallery.store.ts` for state management
-  - [ ] Replace file input handlers with `GalleryUpload` component
-  - [ ] Replace gallery grid with `GalleryGrid` component
-  - [ ] Add lightbox functionality with `ImageLightbox` component
-- [ ] 7.2 Implement image optimization on frontend
-  - [ ] Use `<picture>` element with multiple `<source>` tags for WebP and JPEG fallback
-  - [ ] Use `srcset` attribute for responsive images (thumbnail, medium, original)
-  - [ ] Implement lazy loading with `loading="lazy"` attribute
-- [ ] 7.3 Add bulk delete functionality
-  - [ ] Add "Select All" checkbox
-  - [ ] Add "Delete Selected" button
-  - [ ] Show confirmation modal before bulk delete
-- [ ] 7.4 Add error handling and retry logic
-  - [ ] Display toast notifications for upload errors
-  - [ ] Add retry button for failed uploads
-  - [ ] Show error messages with actionable guidance (e.g., "File too large, max 10MB")
-- [ ] 7.5 Add loading states and skeletons
-  - [ ] Show spinner during initial gallery load
-  - [ ] Show skeleton cards for lazy-loaded images
-  - [ ] Disable buttons during upload/delete operations
+- [x] 7.1 Refactor `GalleryView.vue` to use new backend API
+  - [x] Remove mock data and local storage logic
+  - [x] Integrate with `gallery.store.ts` for state management
+  - [x] Use direct file input (simplified from separate GalleryUpload component)
+  - [x] Implement gallery grid with image cards
+  - [x] Add lightbox functionality with `ImageLightbox` component
+- [x] 7.2 Implement image optimization on frontend
+  - [x] Use appropriate image size (thumbnailUrl for grid, originalUrl for lightbox)
+  - [x] Implement lazy loading with `loading="lazy"` attribute
+  - [ ] Optional: Add `<picture>` element with multiple `<source>` tags for WebP fallback
+- [x] 7.3 Add bulk delete functionality
+  - [x] Add "Select All" checkbox
+  - [x] Add "Delete Selected" button
+  - [x] Show confirmation modal before bulk delete
+- [x] 7.4 Add error handling and retry logic
+  - [x] Display alert notifications for upload errors
+  - [x] Show error messages with actionable guidance (e.g., "File too large, max 10MB")
+  - [x] File validation for type and size
+  - [ ] Optional: Add retry button for failed uploads
+- [x] 7.5 Add loading states and skeletons
+  - [x] Show spinner during initial gallery load
+  - [x] Show upload progress bars with percentage
+  - [x] Disable buttons during upload/delete operations
+  - [ ] Optional: Add skeleton cards for lazy-loaded images
 
 ## 8. Testing
 - [ ] 8.1 Backend unit tests

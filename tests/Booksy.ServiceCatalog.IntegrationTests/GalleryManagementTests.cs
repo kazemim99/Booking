@@ -527,8 +527,224 @@ public class GalleryManagementTests : ServiceCatalogIntegrationTestBase
 
     #endregion
 
-    #region Helper Methods
+    #region Set Primary Gallery Image Tests
 
+    [Fact]
+    public async Task SetPrimaryGalleryImage_WithValidImage_SetsImageAsPrimary()
+    {
+        // Arrange
+        var provider = await CreateProviderWithGalleryAsync(3);
+        AuthenticateAsProviderOwner(provider);
+
+        var images = await GetGalleryImagesAsync(provider.Id.Value);
+        var imageToSetPrimary = images[1];
+
+        // Act
+        var response = await PutAsJsonAsync(
+            $"/api/v1/providers/{provider.Id.Value}/gallery/{imageToSetPrimary.Id}/set-primary",
+            new { });
+
+        // Assert
+        response.StatusCode.Should().Be(HttpStatusCode.NoContent);
+
+        // Verify in database
+        var updatedProvider = await FindProviderAsync(provider.Id.Value);
+        var primaryImage = updatedProvider!.Profile.GalleryImages
+            .FirstOrDefault(img => img.Id == imageToSetPrimary.Id);
+        primaryImage.Should().NotBeNull();
+        primaryImage!.IsPrimary.Should().BeTrue();
+
+        // Verify no other image is primary
+        var otherPrimaryImages = updatedProvider.Profile.GalleryImages
+            .Where(img => img.IsPrimary && img.Id != imageToSetPrimary.Id)
+            .ToList();
+        otherPrimaryImages.Should().BeEmpty();
+    }
+
+    [Fact]
+    public async Task SetPrimaryGalleryImage_UnsetsOtherPrimaryImages()
+    {
+        // Arrange
+        var provider = await CreateProviderWithGalleryAsync(4);
+        AuthenticateAsProviderOwner(provider);
+
+        var images = await GetGalleryImagesAsync(provider.Id.Value);
+
+        // Set first image as primary
+        await PutAsJsonAsync($"/api/v1/providers/{provider.Id.Value}/gallery/{images[0].Id}/set-primary", new { });
+
+        // Act - Set another image as primary
+        var response = await PutAsJsonAsync(
+            $"/api/v1/providers/{provider.Id.Value}/gallery/{images[2].Id}/set-primary",
+            new { });
+
+        // Assert
+        response.StatusCode.Should().Be(HttpStatusCode.NoContent);
+
+        // Verify only the second image is primary
+        var updatedProvider = await FindProviderAsync(provider.Id.Value);
+        var primaryImages = updatedProvider!.Profile.GalleryImages
+            .Where(img => img.IsPrimary)
+            .ToList();
+        primaryImages.Should().HaveCount(1);
+        primaryImages[0].Id.Should().Be(images[2].Id);
+
+        // Verify first image is no longer primary
+        var firstImage = updatedProvider.Profile.GalleryImages
+            .First(img => img.Id == images[0].Id);
+        firstImage.IsPrimary.Should().BeFalse();
+    }
+
+    [Fact]
+    public async Task SetPrimaryGalleryImage_PrimaryImageAppearsFirst_InQueryResults()
+    {
+        // Arrange
+        var provider = await CreateProviderWithGalleryAsync(5);
+        AuthenticateAsProviderOwner(provider);
+
+        var images = await GetGalleryImagesAsync(provider.Id.Value);
+
+        // Act - Set the last image as primary
+        await PutAsJsonAsync($"/api/v1/providers/{provider.Id.Value}/gallery/{images[4].Id}/set-primary", new { });
+
+        // Get images again
+        var reorderedImages = await GetGalleryImagesAsync(provider.Id.Value);
+
+        // Assert
+        reorderedImages[0].Id.Should().Be(images[4].Id);
+        reorderedImages[0].IsPrimary.Should().BeTrue();
+
+        // Other images should not be primary
+        reorderedImages.Skip(1).Should().OnlyContain(img => img.IsPrimary == false);
+    }
+
+    [Fact]
+    public async Task SetPrimaryGalleryImage_WithNonExistentImage_ReturnsNotFound()
+    {
+        // Arrange
+        var provider = await CreateAndAuthenticateAsProviderAsync();
+        var nonExistentImageId = Guid.NewGuid();
+
+        // Act
+        var response = await PutAsJsonAsync(
+            $"/api/v1/providers/{provider.Id.Value}/gallery/{nonExistentImageId}/set-primary",
+            new { });
+
+        // Assert
+        response.StatusCode.Should().BeOneOf(HttpStatusCode.NotFound, HttpStatusCode.BadRequest);
+    }
+
+    [Fact]
+    public async Task SetPrimaryGalleryImage_WithDeletedImage_ReturnsNotFound()
+    {
+        // Arrange
+        var provider = await CreateProviderWithGalleryAsync(2);
+        AuthenticateAsProviderOwner(provider);
+
+        var images = await GetGalleryImagesAsync(provider.Id.Value);
+        var imageToDelete = images[0];
+
+        // Delete the image
+        await DeleteAsync($"/api/v1/providers/{provider.Id.Value}/gallery/{imageToDelete.Id}");
+
+        // Act - Try to set deleted image as primary
+        var response = await PutAsJsonAsync(
+            $"/api/v1/providers/{provider.Id.Value}/gallery/{imageToDelete.Id}/set-primary",
+            new { });
+
+        // Assert
+        response.StatusCode.Should().BeOneOf(HttpStatusCode.NotFound, HttpStatusCode.BadRequest);
+    }
+
+    [Fact]
+    public async Task SetPrimaryGalleryImage_AsUnauthorizedUser_ReturnsUnauthorized()
+    {
+        // Arrange
+        var provider = await CreateProviderWithGalleryAsync(1);
+        var images = await GetGalleryImagesAsync(provider.Id.Value);
+        ClearAuthenticationHeader();
+
+        // Act
+        var response = await PutAsJsonAsync(
+            $"/api/v1/providers/{provider.Id.Value}/gallery/{images[0].Id}/set-primary",
+            new { });
+
+        // Assert
+        response.StatusCode.Should().Be(HttpStatusCode.Unauthorized);
+    }
+
+    [Fact]
+    public async Task SetPrimaryGalleryImage_ForDifferentProvider_ReturnsForbiddenOrNotFound()
+    {
+        // Arrange
+        var provider1 = await CreateProviderWithGalleryAsync(1);
+        var provider2 = await CreateAndAuthenticateAsProviderAsync(); // Different provider
+
+        var images = await GetGalleryImagesAsync(provider1.Id.Value);
+
+        // Authenticate as provider2
+        AuthenticateAsProviderOwner(provider2);
+
+        // Act - Try to set primary for provider1's image
+        var response = await PutAsJsonAsync(
+            $"/api/v1/providers/{provider1.Id.Value}/gallery/{images[0].Id}/set-primary",
+            new { });
+
+        // Assert - Should fail with Forbidden or NotFound
+        response.StatusCode.Should().BeOneOf(
+            HttpStatusCode.Forbidden,
+            HttpStatusCode.NotFound,
+            HttpStatusCode.BadRequest);
+    }
+
+    [Fact]
+    public async Task SetPrimaryGalleryImage_MultipleTimes_OnlyLastOneIsPrimary()
+    {
+        // Arrange
+        var provider = await CreateProviderWithGalleryAsync(3);
+        AuthenticateAsProviderOwner(provider);
+
+        var images = await GetGalleryImagesAsync(provider.Id.Value);
+
+        // Act - Set all images as primary sequentially
+        await PutAsJsonAsync($"/api/v1/providers/{provider.Id.Value}/gallery/{images[0].Id}/set-primary", new { });
+        await PutAsJsonAsync($"/api/v1/providers/{provider.Id.Value}/gallery/{images[1].Id}/set-primary", new { });
+        await PutAsJsonAsync($"/api/v1/providers/{provider.Id.Value}/gallery/{images[2].Id}/set-primary", new { });
+
+        // Assert - Only the last one should be primary
+        var updatedProvider = await FindProviderAsync(provider.Id.Value);
+        var primaryImages = updatedProvider!.Profile.GalleryImages
+            .Where(img => img.IsPrimary)
+            .ToList();
+
+        primaryImages.Should().HaveCount(1);
+        primaryImages[0].Id.Should().Be(images[2].Id);
+    }
+
+    [Fact]
+    public async Task SetPrimaryGalleryImage_UpdatesBusinessProfileTimestamp()
+    {
+        // Arrange
+        var provider = await CreateProviderWithGalleryAsync(1);
+        AuthenticateAsProviderOwner(provider);
+
+        var images = await GetGalleryImagesAsync(provider.Id.Value);
+        var originalTimestamp = provider.Profile.LastUpdatedAt;
+
+        // Wait a bit to ensure timestamp difference
+        await Task.Delay(100);
+
+        // Act
+        await PutAsJsonAsync($"/api/v1/providers/{provider.Id.Value}/gallery/{images[0].Id}/set-primary", new { });
+
+        // Assert
+        var updatedProvider = await FindProviderAsync(provider.Id.Value);
+        updatedProvider!.Profile.LastUpdatedAt.Should().BeAfter(originalTimestamp);
+    }
+
+    #endregion
+
+    #region Helper Methods
     private async Task<Provider> CreateProviderWithGalleryAsync(int imageCount)
     {
         var provider = await CreateAndAuthenticateAsProviderAsync();

@@ -63,9 +63,9 @@ public class ProviderManagementTests : ServiceCatalogIntegrationTestBase
         response.StatusCode.Should().Be(HttpStatusCode.Created);
 
         response.Should().NotBeNull();
-        response.data!.Id.Should().NotBeEmpty();
-        response.data.BusinessName.Should().Be("Test Salon & Spa");
-        response.data.Status.Should().Be("PendingVerification");
+        response.Data!.Id.Should().NotBeEmpty();
+        response.Data.BusinessName.Should().Be("Test Salon & Spa");
+        response.Data.Status.Should().Be("PendingVerification");
     }
 
     [Fact]

@@ -26,11 +26,13 @@ public sealed class Email : ValueObject
     /// <exception cref="ArgumentException">Thrown when email format is invalid</exception>
     public Email(string value)
     {
-        if (string.IsNullOrWhiteSpace(value))
-            throw new DomainValidationException(nameof(Email), "Email is required");
+        if (!string.IsNullOrEmpty(value))
+        {
+
 
         if (!IsValidEmail(value))
             throw new DomainValidationException(nameof(Email), "Invalid email format");
+        }
 
         Value = value.ToLowerInvariant();
     }

@@ -131,6 +131,65 @@
           <span v-if="validationErrors.phoneNumber" class="error-message">{{ validationErrors.phoneNumber }}</span>
         </div>
 
+        <div class="form-group" v-if="isEditMode && editingStaffId">
+          <label class="form-label">Profile Photo</label>
+          <div class="photo-upload-section">
+            <div v-if="staffFormData.profilePhotoUrl" class="current-photo">
+              <img :src="staffFormData.profilePhotoUrl" alt="Profile photo" />
+            </div>
+            <div v-else class="no-photo">
+              <span class="icon">📷</span>
+              <span>No photo uploaded</span>
+            </div>
+            <div class="photo-actions">
+              <input
+                ref="photoInput"
+                type="file"
+                accept="image/jpeg,image/jpg,image/png,image/webp"
+                style="display: none"
+                @change="handlePhotoSelect"
+              />
+              <Button
+                type="button"
+                variant="secondary"
+                size="small"
+                @click="triggerPhotoUpload"
+                :disabled="isUploadingPhoto"
+                :loading="isUploadingPhoto"
+              >
+                {{ staffFormData.profilePhotoUrl ? 'Change Photo' : 'Upload Photo' }}
+              </Button>
+              <span v-if="photoUploadError" class="error-message">{{ photoUploadError }}</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label for="biography" class="form-label">Biography</label>
+          <textarea
+            id="biography"
+            v-model="staffFormData.biography"
+            placeholder="Short bio about this staff member..."
+            rows="3"
+            maxlength="500"
+            class="form-textarea"
+          />
+          <span class="char-count">{{ (staffFormData.biography || '').length }}/500</span>
+        </div>
+
+        <div class="form-group">
+          <label for="notes" class="form-label">Notes</label>
+          <textarea
+            id="notes"
+            v-model="staffFormData.notes"
+            placeholder="Internal notes (not visible to customers)..."
+            rows="3"
+            maxlength="1000"
+            class="form-textarea"
+          />
+          <span class="char-count">{{ (staffFormData.notes || '').length }}/1000</span>
+        </div>
+
         <div class="form-actions">
           <Button type="button" variant="secondary" @click="closeStaffModal" :disabled="staffStore.isCreating || staffStore.isUpdating">
             Cancel
@@ -179,9 +238,17 @@ const staffFormData = reactive<CreateStaffRequest>({
   firstName: '',
   lastName: '',
   phoneNumber: '',
+  biography: '',
+  notes: '',
+  profilePhotoUrl: '',
 })
 
 const validationErrors = reactive<Record<string, string>>({})
+
+// Photo upload state
+const photoInput = ref<HTMLInputElement | null>(null)
+const isUploadingPhoto = ref(false)
+const photoUploadError = ref<string | null>(null)
 
 // Delete confirmation
 const showDeleteConfirm = ref(false)
@@ -223,6 +290,8 @@ function handleCreateStaff() {
   staffFormData.firstName = ''
   staffFormData.lastName = ''
   staffFormData.phoneNumber = ''
+  staffFormData.biography = ''
+  staffFormData.notes = ''
   Object.keys(validationErrors).forEach(key => delete validationErrors[key])
   showStaffModal.value = true
 }
@@ -239,7 +308,11 @@ function handleEditStaff(staffId: string) {
     staffFormData.firstName = staff.firstName
     staffFormData.lastName = staff.lastName
     staffFormData.phoneNumber = staff.phoneNumber || ''
+    staffFormData.biography = staff.biography || ''
+    staffFormData.notes = staff.notes || ''
+    staffFormData.profilePhotoUrl = staff.profilePhotoUrl || ''
     Object.keys(validationErrors).forEach(key => delete validationErrors[key])
+    photoUploadError.value = null
     showStaffModal.value = true
   }
 }
@@ -251,7 +324,62 @@ function closeStaffModal() {
   staffFormData.firstName = ''
   staffFormData.lastName = ''
   staffFormData.phoneNumber = ''
+  staffFormData.biography = ''
+  staffFormData.notes = ''
+  staffFormData.profilePhotoUrl = ''
   Object.keys(validationErrors).forEach(key => delete validationErrors[key])
+  photoUploadError.value = null
+}
+
+function triggerPhotoUpload() {
+  photoInput.value?.click()
+}
+
+async function handlePhotoSelect(event: Event) {
+  const target = event.target as HTMLInputElement
+  const file = target.files?.[0]
+
+  if (!file) return
+
+  // Validate file type
+  const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp']
+  if (!allowedTypes.includes(file.type)) {
+    photoUploadError.value = 'Invalid file type. Only JPG, PNG, and WebP are allowed'
+    return
+  }
+
+  // Validate file size (5MB max)
+  const maxSize = 5 * 1024 * 1024
+  if (file.size > maxSize) {
+    photoUploadError.value = 'File size exceeds 5MB limit'
+    return
+  }
+
+  if (!providerStore.currentProvider?.id || !editingStaffId.value) {
+    photoUploadError.value = 'Unable to upload photo'
+    return
+  }
+
+  isUploadingPhoto.value = true
+  photoUploadError.value = null
+
+  try {
+    const result = await staffStore.uploadStaffPhoto(
+      providerStore.currentProvider.id,
+      editingStaffId.value,
+      file
+    )
+    staffFormData.profilePhotoUrl = result.imageUrl
+  } catch (error) {
+    photoUploadError.value = error instanceof Error ? error.message : 'Failed to upload photo'
+    console.error('Error uploading photo:', error)
+  } finally {
+    isUploadingPhoto.value = false
+    // Reset the file input
+    if (target) {
+      target.value = ''
+    }
+  }
 }
 
 function validateForm(): boolean {
@@ -286,6 +414,8 @@ async function handleSaveStaff() {
         firstName: staffFormData.firstName,
         lastName: staffFormData.lastName,
         phoneNumber: staffFormData.phoneNumber || undefined,
+        biography: staffFormData.biography || undefined,
+        notes: staffFormData.notes || undefined,
       }
       await staffStore.updateStaff(providerStore.currentProvider.id, editingStaffId.value, updateData)
     } else {
@@ -409,6 +539,91 @@ function cancelDelete() {
   font-size: 0.75rem;
   color: #ef4444;
   margin-top: -0.25rem;
+}
+
+.form-textarea {
+  width: 100%;
+  padding: 0.5rem 0.75rem;
+  font-size: 0.875rem;
+  font-family: inherit;
+  line-height: 1.5;
+  color: #111827;
+  background-color: #fff;
+  border: 1px solid #d1d5db;
+  border-radius: 0.375rem;
+  resize: vertical;
+  transition: border-color 0.15s ease;
+
+  &:focus {
+    outline: none;
+    border-color: #3b82f6;
+    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+  }
+
+  &::placeholder {
+    color: #9ca3af;
+  }
+}
+
+.char-count {
+  font-size: 0.75rem;
+  color: #6b7280;
+  text-align: right;
+  margin-top: -0.25rem;
+}
+
+.photo-upload-section {
+  display: flex;
+  gap: 1rem;
+  align-items: center;
+  padding: 1rem;
+  background-color: #f9fafb;
+  border: 1px solid #e5e7eb;
+  border-radius: 0.5rem;
+}
+
+.current-photo {
+  width: 80px;
+  height: 80px;
+  border-radius: 0.5rem;
+  overflow: hidden;
+  border: 2px solid #e5e7eb;
+
+  img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+}
+
+.no-photo {
+  width: 80px;
+  height: 80px;
+  border-radius: 0.5rem;
+  border: 2px dashed #d1d5db;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.25rem;
+  background-color: #fff;
+
+  .icon {
+    font-size: 1.5rem;
+  }
+
+  span:not(.icon) {
+    font-size: 0.625rem;
+    color: #9ca3af;
+    text-align: center;
+  }
+}
+
+.photo-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  flex: 1;
 }
 
 .form-actions {

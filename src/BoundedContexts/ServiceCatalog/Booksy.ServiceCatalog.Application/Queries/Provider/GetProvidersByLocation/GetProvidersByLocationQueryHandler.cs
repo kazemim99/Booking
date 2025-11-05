@@ -54,6 +54,8 @@ namespace Booksy.ServiceCatalog.Application.Queries.Provider.GetProvidersByLocat
                              provider.Address.Street,
                            provider.Address.City,
                             provider.Address.State,
+                            provider.Address.CityId,
+                            provider.Address.ProvinceId,
                             provider.Address.PostalCode,
                             provider.Address.Country,
                             provider.Address.Latitude,

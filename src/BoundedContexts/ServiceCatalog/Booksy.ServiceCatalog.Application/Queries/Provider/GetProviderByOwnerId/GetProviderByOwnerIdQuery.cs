@@ -1,13 +1,13 @@
 ﻿// ========================================
-// Booksy.ServiceCatalog.Application/Queries/Provider/GetProviderById/GetProviderByIdQuery.cs
+// Booksy.ServiceCatalog.Application/Queries/Provider/GetProviderByOwnerId/GetProviderByOwnerIdQuery.cs
 // ========================================
 using Booksy.Core.Application.Abstractions.CQRS;
 
-namespace Booksy.ServiceCatalog.Application.Queries.Provider.GetProviderById
+namespace Booksy.ServiceCatalog.Application.Queries.Provider.GetProviderByOwnerId
 {
     /// <summary>
-    /// Query to get provider details by ID
+    /// Query to get provider details by owner ID
     /// </summary>
     public sealed record GetProviderByOwnerIdQuery(
-        Guid ProviderId) : IQuery<ProviderDetailsViewModel?>;
+        Guid OwnerUserId) : IQuery<ProviderDetailsViewModel?>;
 }

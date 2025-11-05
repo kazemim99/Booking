@@ -7,7 +7,7 @@
   >
     <!-- Logo/Brand -->
     <div class="sidebar-header">
-      <router-link to="/provider/dashboard" class="brand" @click="handleNavigation">
+      <router-link to="/dashboard" class="brand" @click="handleNavigation">
         <img v-if="!isCollapsed" src="@/assets/logo.svg" :alt="$t('app.name')" class="logo" />
         <img v-else src="@/assets/logo.svg" :alt="$t('app.name')" class="logo-icon" />
       </router-link>
@@ -19,7 +19,7 @@
         <span v-if="!isCollapsed" class="section-title">{{ $t('provider.sidebar.mainSection') }}</span>
 
         <NavItem
-          to="/provider/dashboard"
+          to="/dashboard"
           icon="dashboard"
           :label="$t('provider.sidebar.dashboard')"
           :collapsed="isCollapsed"
@@ -27,7 +27,7 @@
         />
 
         <NavItem
-          to="/provider/bookings"
+          to="/bookings"
           icon="calendar"
           :label="$t('provider.sidebar.bookings')"
           :badge="pendingBookingsCount"
@@ -36,17 +36,9 @@
         />
 
         <NavItem
-          to="/provider/services"
+          to="/services"
           icon="services"
           :label="$t('provider.sidebar.services')"
-          :collapsed="isCollapsed"
-          @click="handleNavigation"
-        />
-
-        <NavItem
-          to="/provider/staff"
-          icon="users"
-          :label="$t('provider.sidebar.staff')"
           :collapsed="isCollapsed"
           @click="handleNavigation"
         />
@@ -56,7 +48,7 @@
         <span v-if="!isCollapsed" class="section-title">{{ $t('provider.sidebar.businessSection') }}</span>
 
         <NavItem
-          to="/provider/profile"
+          to="/profile"
           icon="building"
           :label="$t('provider.sidebar.profile')"
           :collapsed="isCollapsed"
@@ -64,7 +56,7 @@
         />
 
         <NavItem
-          to="/provider/hours"
+          to="/hours"
           icon="clock"
           :label="$t('provider.sidebar.businessHours')"
           :collapsed="isCollapsed"
@@ -72,7 +64,7 @@
         />
 
         <NavItem
-          to="/provider/gallery"
+          to="/gallery"
           icon="image"
           :label="$t('provider.sidebar.gallery')"
           :collapsed="isCollapsed"
@@ -84,7 +76,7 @@
         <span v-if="!isCollapsed" class="section-title">{{ $t('provider.sidebar.insightsSection') }}</span>
 
         <NavItem
-          to="/provider/analytics"
+          to="/analytics"
           icon="chart"
           :label="$t('provider.sidebar.analytics')"
           :collapsed="isCollapsed"
@@ -92,7 +84,7 @@
         />
 
         <NavItem
-          to="/provider/reviews"
+          to="/reviews"
           icon="star"
           :label="$t('provider.sidebar.reviews')"
           :collapsed="isCollapsed"
@@ -104,7 +96,7 @@
         <span v-if="!isCollapsed" class="section-title">{{ $t('provider.sidebar.settingsSection') }}</span>
 
         <NavItem
-          to="/provider/settings"
+          to="/settings"
           icon="settings"
           :label="$t('provider.sidebar.settings')"
           :collapsed="isCollapsed"

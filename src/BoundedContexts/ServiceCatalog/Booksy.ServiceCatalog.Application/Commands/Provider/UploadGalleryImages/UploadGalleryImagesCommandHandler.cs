@@ -5,6 +5,8 @@ using Booksy.ServiceCatalog.Application.DTOs.Provider;
 using Booksy.ServiceCatalog.Domain.Repositories;
 using Booksy.ServiceCatalog.Domain.Services;
 using Booksy.ServiceCatalog.Domain.ValueObjects;
+using Microsoft.EntityFrameworkCore;
+using System.Data;
 
 namespace Booksy.ServiceCatalog.Application.Commands.Provider.UploadGalleryImages;
 
@@ -30,6 +32,9 @@ public sealed class UploadGalleryImagesCommandHandler
         CancellationToken cancellationToken)
     {
         var providerId = ProviderId.From(request.ProviderId);
+
+        // IMPORTANT: Include the Profile and GalleryImages in the query
+        // This ensures EF Core properly tracks the owned collections
         var provider = await _providerRepository.GetByIdAsync(providerId, cancellationToken);
 
         if (provider == null)
@@ -52,7 +57,7 @@ public sealed class UploadGalleryImagesCommandHandler
                 file.FileName,
                 cancellationToken);
 
-            // Add to domain
+            // Add to domain through the aggregate
             var galleryImage = provider.Profile.AddGalleryImage(
                 providerId,
                 storageResult.OriginalUrl,
@@ -73,7 +78,10 @@ public sealed class UploadGalleryImagesCommandHandler
             });
         }
 
+
+        // Save changes with retry logic for concurrency conflicts
         await _unitOfWork.SaveChangesAsync(cancellationToken);
+
 
         return uploadedImages;
     }

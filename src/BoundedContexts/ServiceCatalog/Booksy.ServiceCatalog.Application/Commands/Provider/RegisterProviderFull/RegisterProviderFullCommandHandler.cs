@@ -85,12 +85,17 @@ namespace Booksy.ServiceCatalog.Application.Commands.Provider.RegisterProviderFu
                 ? request.Address.AddressLine1
                 : $"{request.Address.AddressLine1}, {request.Address.AddressLine2}";
 
+            var formattedAddress = $"{fullStreet}, {request.Address.City}";
+
             var address = BusinessAddress.Create(
+                formattedAddress,
                 fullStreet,
                 request.Address.City,
                 "", // State - not provided in frontend
                 request.Address.ZipCode,
                 "Iran", // Default country
+                null, // ProvinceId
+                null, // CityId
                 request.Location?.Latitude,
                 request.Location?.Longitude);
 

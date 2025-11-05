@@ -29,7 +29,8 @@ public sealed class GetGalleryImagesQueryHandler
 
         return provider.Profile.GalleryImages
             .Where(img => img.IsActive)
-            .OrderBy(img => img.DisplayOrder)
+            .OrderByDescending(img => img.IsPrimary)
+            .ThenBy(img => img.DisplayOrder)
             .Select(img => new GalleryImageDto
             {
                 Id = img.Id,
@@ -40,7 +41,8 @@ public sealed class GetGalleryImagesQueryHandler
                 Caption = img.Caption,
                 AltText = img.AltText,
                 UploadedAt = img.UploadedAt,
-                IsActive = img.IsActive
+                IsActive = img.IsActive,
+                IsPrimary = img.IsPrimary
             })
             .ToList();
     }

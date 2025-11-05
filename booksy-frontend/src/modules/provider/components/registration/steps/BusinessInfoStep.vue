@@ -1,97 +1,111 @@
 <template>
-  <StepContainer
-    :title="$t('provider.registration.businessInfo.title')"
-    :subtitle="$t('provider.registration.businessInfo.subtitle')"
-  >
-    <form class="business-info-form" @submit.prevent="handleSubmit">
-      <!-- Business Name -->
-      <div class="form-group">
-        <label for="businessName" class="form-label">
-          {{ $t('provider.registration.businessInfo.businessName') }}
-          <span class="required">*</span>
-        </label>
-        <input
-          id="businessName"
-          v-model="formData.businessName"
-          type="text"
-          class="form-input"
-          :class="{ 'has-error': errors.businessName }"
-          :placeholder="$t('provider.registration.businessInfo.businessNamePlaceholder')"
-          required
-          @blur="validateField('businessName')"
-        />
-        <span v-if="errors.businessName" class="error-message">{{ errors.businessName }}</span>
+  <div class="registration-step">
+    <ProgressIndicator :current-step="1" :total-steps="9" />
+
+    <div class="step-card">
+      <div class="step-header">
+        <h2 class="step-title">اطلاعات کسب‌و‌کار</h2>
+        <p class="step-description">لطفاً اطلاعات کسب‌و‌کار خود را وارد کنید</p>
       </div>
 
-      <!-- Owner First Name -->
-      <div class="form-group">
-        <label for="ownerFirstName" class="form-label">
-          {{ $t('provider.registration.businessInfo.ownerFirstName') }}
-          <span class="required">*</span>
-        </label>
-        <input
-          id="ownerFirstName"
-          v-model="formData.ownerFirstName"
-          type="text"
-          class="form-input"
-          :class="{ 'has-error': errors.ownerFirstName }"
-          :placeholder="$t('provider.registration.businessInfo.firstNamePlaceholder')"
-          required
-          @blur="validateField('ownerFirstName')"
-        />
-        <span v-if="errors.ownerFirstName" class="error-message">{{ errors.ownerFirstName }}</span>
-      </div>
+      <form class="step-form" @submit.prevent="handleSubmit" autocomplete="off">
+        <!-- Business Name -->
+        <div class="form-group">
+          <label for="businessName" class="form-label">
+            نام کسب‌و‌کار <span class="required">*</span>
+          </label>
+          <input
+            id="businessName"
+            v-model="formData.businessName"
+            type="text"
+            class="form-input"
+            :class="{ 'form-input-error': errors.businessName }"
+            placeholder="مثال: آرایشگاه زیبا"
+            @blur="validateField('businessName')"
+          />
+          <span v-if="errors.businessName" class="form-error">{{ errors.businessName }}</span>
+        </div>
 
-      <!-- Owner Last Name -->
-      <div class="form-group">
-        <label for="ownerLastName" class="form-label">
-          {{ $t('provider.registration.businessInfo.ownerLastName') }}
-          <span class="required">*</span>
-        </label>
-        <input
-          id="ownerLastName"
-          v-model="formData.ownerLastName"
-          type="text"
-          class="form-input"
-          :class="{ 'has-error': errors.ownerLastName }"
-          :placeholder="$t('provider.registration.businessInfo.lastNamePlaceholder')"
-          required
-          @blur="validateField('ownerLastName')"
-        />
-        <span v-if="errors.ownerLastName" class="error-message">{{ errors.ownerLastName }}</span>
-      </div>
+        <!-- Owner Name -->
+        <div class="form-group">
+          <label for="ownerFirstName" class="form-label">
+            نام مالک <span class="required">*</span>
+          </label>
+          <input
+            id="ownerFirstName"
+            v-model="formData.ownerFirstName"
+            type="text"
+            class="form-input"
+            :class="{ 'form-input-error': errors.ownerFirstName }"
+            placeholder="مثال: علی"
+            @blur="validateField('ownerFirstName')"
+          />
+          <span v-if="errors.ownerFirstName" class="form-error">{{ errors.ownerFirstName }}</span>
+        </div>
 
-      <!-- Phone Number (Read-only from verification) -->
-      <div class="form-group">
-        <label for="phoneNumber" class="form-label">
-          {{ $t('provider.registration.businessInfo.phoneNumber') }}
-        </label>
-        <input
-          id="phoneNumber"
-          v-model="formData.phoneNumber"
-          type="tel"
-          class="form-input"
-          disabled
-          readonly
-        />
-        <span class="form-hint">{{ $t('provider.registration.businessInfo.phoneHint') }}</span>
-      </div>
+        <!-- Owner Last Name -->
+        <div class="form-group">
+          <label for="ownerLastName" class="form-label">
+            نام خانوادگی مالک <span class="required">*</span>
+          </label>
+          <input
+            id="ownerLastName"
+            v-model="formData.ownerLastName"
+            type="text"
+            class="form-input"
+            :class="{ 'form-input-error': errors.ownerLastName }"
+            placeholder="مثال: احمدی"
+            @blur="validateField('ownerLastName')"
+          />
+          <span v-if="errors.ownerLastName" class="form-error">{{ errors.ownerLastName }}</span>
+        </div>
 
-      <!-- Navigation -->
-      <NavigationButtons
-        :show-back="true"
-        :can-continue="!!isFormValid"
-        @back="$emit('back')"
-        @next="handleSubmit"
-      />
-    </form>
-  </StepContainer>
+        <!-- Phone (Read-only) -->
+        <div class="form-group">
+          <label for="phoneNumber" class="form-label">شماره تماس</label>
+          <input
+            id="phoneNumber"
+            v-model="formData.phoneNumber"
+            type="tel"
+            dir="ltr"
+            class="form-input"
+            readonly
+            disabled
+          />
+        </div>
+
+        <!-- Location Selector -->
+        <div class="form-group location-group">
+          <LocationSelector
+            v-model:province-id="formData.provinceId"
+            v-model:city-id="formData.cityId"
+            province-label="استان"
+            city-label="شهر"
+            province-placeholder="انتخاب استان..."
+            city-placeholder="انتخاب شهر..."
+            :province-error="errors.provinceId"
+            :city-error="errors.cityId"
+            :required="true"
+          />
+        </div>
+
+        <!-- Navigation -->
+        <div class="step-actions">
+          <AppButton type="submit" variant="primary" size="large" block :disabled="!isFormValid">
+            بعدی
+          </AppButton>
+        </div>
+      </form>
+    </div>
+  </div>
 </template>
 
 <script setup lang="ts">
-import { ref, computed, watch } from 'vue'
-import StepContainer from '../shared/StepContainer.vue'
-import NavigationButtons from '../shared/NavigationButtons.vue'
+import { ref, computed } from 'vue'
+import { useAuthStore } from '@/core/stores/modules/auth.store'
+import ProgressIndicator from '../shared/ProgressIndicator.vue'
+import AppButton from '@/shared/components/ui/Button/AppButton.vue'
+import LocationSelector from '@/shared/components/forms/LocationSelector.vue'
 import type { BusinessInfo } from '@/modules/provider/types/registration.types'
 
 interface Props {
@@ -101,169 +115,171 @@ interface Props {
 interface Emits {
   (e: 'update:modelValue', value: Partial<BusinessInfo>): void
   (e: 'next'): void
-  (e: 'back'): void
 }
 
 const props = defineProps<Props>()
 const emit = defineEmits<Emits>()
+const authStore = useAuthStore()
 
 // Form data
-const formData = ref<Partial<BusinessInfo>>({
+const formData = ref({
   businessName: props.modelValue?.businessName || '',
   ownerFirstName: props.modelValue?.ownerFirstName || '',
   ownerLastName: props.modelValue?.ownerLastName || '',
-  phoneNumber: props.modelValue?.phoneNumber || '',
+  phoneNumber: authStore.user?.phoneNumber || '',
+  provinceId: props.modelValue?.provinceId || null,
+  cityId: props.modelValue?.cityId || null,
 })
 
-// Validation errors
 const errors = ref<Record<string, string>>({})
 
-// Validate single field
-const validateField = (field: keyof BusinessInfo) => {
-  errors.value[field] = ''
+// Validation
+const validateField = (field: keyof typeof formData.value) => {
+  errors.value = { ...errors.value }
+  delete errors.value[field]
 
-  const value = formData.value[field]
-
-  if (!value || (typeof value === 'string' && !value.trim())) {
-    errors.value[field] = `${field} is required`
-    return false
+  if (field === 'businessName' && !formData.value.businessName.trim()) {
+    errors.value.businessName = 'نام کسب‌و‌کار الزامی است'
   }
-
-  if (typeof value === 'string' && value.trim().length < 2) {
-    errors.value[field] = 'Must be at least 2 characters'
-    return false
+  if (field === 'ownerFirstName' && !formData.value.ownerFirstName.trim()) {
+    errors.value.ownerFirstName = 'نام مالک الزامی است'
   }
-
-  return true
+  if (field === 'ownerLastName' && !formData.value.ownerLastName.trim()) {
+    errors.value.ownerLastName = 'نام خانوادگی مالک الزامی است'
+  }
 }
 
-// Validate all fields
-const validateForm = (): boolean => {
-  let isValid = true
-
-  isValid = validateField('businessName') && isValid
-  isValid = validateField('ownerFirstName') && isValid
-  isValid = validateField('ownerLastName') && isValid
-
-  return isValid
-}
-
-// Check if form is valid
 const isFormValid = computed(() => {
   return (
-    formData.value.businessName?.trim() &&
-    formData.value.ownerFirstName?.trim() &&
-    formData.value.ownerLastName?.trim() &&
-    Object.keys(errors.value).every((key) => !errors.value[key])
+    formData.value.businessName.trim() &&
+    formData.value.ownerFirstName.trim() &&
+    formData.value.ownerLastName.trim() &&
+    formData.value.provinceId !== null &&
+    formData.value.cityId !== null
   )
 })
 
-// Handle form submission
 const handleSubmit = () => {
-  if (validateForm()) {
+  // Validate all fields
+  validateField('businessName')
+  validateField('ownerFirstName')
+  validateField('ownerLastName')
+
+  if (isFormValid.value && Object.keys(errors.value).length === 0) {
     emit('update:modelValue', formData.value)
     emit('next')
   }
 }
-
-// Watch props for external updates only (removed recursive watch on formData)
-watch(
-  () => props.modelValue,
-  (newValue) => {
-    if (newValue) {
-      // Only update if values are actually different to prevent loops
-      const hasChanges = Object.keys(newValue).some(
-        key => newValue[key as keyof BusinessInfo] !== formData.value[key as keyof BusinessInfo]
-      )
-      if (hasChanges) {
-        formData.value = { ...formData.value, ...newValue }
-      }
-    }
-  },
-  { deep: true },
-)
 </script>
 
 <style scoped>
-.business-info-form {
-  width: 100%;
-  max-width: 32rem;
-  margin: 0 auto;
+.registration-step {
+  min-height: 100vh;
+  padding: 2rem 1rem;
+  background: #f9fafb;
+  direction: rtl;
 }
 
-/* Form Groups */
+.step-card {
+  max-width: 42rem;
+  margin: 0 auto;
+  background: white;
+  border-radius: 1rem;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  padding: 2rem;
+}
+
+.step-header {
+  margin-bottom: 2rem;
+}
+
+.step-title {
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: #111827;
+  margin-bottom: 0.5rem;
+}
+
+.step-description {
+  font-size: 0.875rem;
+  color: #6b7280;
+}
+
+.step-form {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
 .form-group {
-  margin-bottom: 1.5rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.location-group {
+  width: 100%;
 }
 
 .form-label {
-  display: block;
   font-size: 0.875rem;
-  font-weight: 600;
+  font-weight: 500;
   color: #374151;
-  margin-bottom: 0.5rem;
 }
 
 .required {
   color: #ef4444;
-  margin-left: 0.25rem;
 }
 
 .form-input {
   width: 100%;
   padding: 0.75rem 1rem;
-  font-size: 0.9375rem;
-  color: #111827;
-  background-color: #ffffff;
+  font-size: 1rem;
   border: 1px solid #d1d5db;
   border-radius: 0.5rem;
+  background: white;
   transition: all 0.2s ease;
-  outline: none;
 }
 
 .form-input:focus {
-  border-color: #10b981;
-  box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.1);
+  outline: none;
+  border-color: #8b5cf6;
+  box-shadow: 0 0 0 3px rgba(139, 92, 246, 0.1);
 }
 
 .form-input:disabled {
-  background-color: #f3f4f6;
-  color: #9ca3af;
+  background: #f3f4f6;
   cursor: not-allowed;
+  opacity: 0.6;
 }
 
-.form-input.has-error {
+.form-input-error {
   border-color: #ef4444;
 }
 
-.form-input.has-error:focus {
+.form-input-error:focus {
   border-color: #ef4444;
   box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.1);
 }
 
-.error-message {
-  display: block;
-  margin-top: 0.375rem;
-  font-size: 0.8125rem;
+.form-error {
+  font-size: 0.875rem;
   color: #ef4444;
 }
 
-.form-hint {
-  display: block;
-  margin-top: 0.375rem;
-  font-size: 0.8125rem;
-  color: #6b7280;
+.step-actions {
+  margin-top: 1rem;
+  padding-top: 1.5rem;
+  border-top: 1px solid #e5e7eb;
 }
 
-/* Responsive */
 @media (max-width: 640px) {
-  .business-info-form {
-    max-width: 100%;
+  .step-card {
+    padding: 1.5rem;
   }
 
-  .form-input {
-    padding: 0.625rem 0.875rem;
-    font-size: 0.875rem;
+  .step-title {
+    font-size: 1.25rem;
   }
 }
 </style>

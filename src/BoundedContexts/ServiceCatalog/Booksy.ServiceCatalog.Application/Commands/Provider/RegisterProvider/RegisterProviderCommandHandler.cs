@@ -65,12 +65,17 @@ namespace Booksy.ServiceCatalog.Application.Commands.Provider.RegisterProvider
                 secondaryPhone,
                 request.Website);
 
+            var formattedAddress = $"{request.Street}, {request.City}, {request.State}";
+
             var address = BusinessAddress.Create(
+                formattedAddress,
                 request.Street,
                 request.City,
                 request.State,
                 request.PostalCode,
                 request.Country,
+                null, // ProvinceId
+                null, // CityId
                 request.Latitude,
                 request.Longitude);
 

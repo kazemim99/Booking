@@ -18,6 +18,8 @@ namespace Booksy.ServiceCatalog.Domain.Entities
         public DateTime? TerminatedAt { get; private set; }
         public string? TerminationReason { get; private set; }
         public string? Notes { get; private set; }
+        public string? ProfilePhotoUrl { get; private set; }
+        public string? Biography { get; private set; }
         public ProviderId ProviderId { get; private set; }
         // Calculated property
         public string FullName => $"{FirstName} {LastName}";
@@ -70,9 +72,25 @@ namespace Booksy.ServiceCatalog.Domain.Entities
             TerminationReason = null;
         }
 
-        public void UpdateNotes(string notes)
+        public void UpdateNotes(string? notes)
         {
+            if (notes != null && notes.Length > 1000)
+                throw new ArgumentException("Notes cannot exceed 1000 characters", nameof(notes));
+
             Notes = notes;
+        }
+
+        public void UpdateProfilePhoto(string? photoUrl)
+        {
+            ProfilePhotoUrl = photoUrl;
+        }
+
+        public void UpdateBiography(string? biography)
+        {
+            if (biography != null && biography.Length > 500)
+                throw new ArgumentException("Biography cannot exceed 500 characters", nameof(biography));
+
+            Biography = biography;
         }
     }
 }

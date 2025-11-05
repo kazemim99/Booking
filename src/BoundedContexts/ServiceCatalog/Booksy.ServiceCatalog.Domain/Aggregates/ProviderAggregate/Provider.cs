@@ -32,6 +32,10 @@ namespace Booksy.ServiceCatalog.Domain.Aggregates
         public ProviderStatus Status { get; private set; }
         public ProviderType ProviderType { get; private set; }
 
+        // Registration Progress Tracking
+        public int RegistrationStep { get; private set; }
+        public bool IsRegistrationComplete { get; private set; }
+
         // Business Information
         public ContactInfo ContactInfo { get; private set; }
         public BusinessAddress Address { get; private set; }
@@ -64,7 +68,46 @@ namespace Booksy.ServiceCatalog.Domain.Aggregates
         // Private constructor for EF Core
         private Provider() : base() { }
 
-        // Factory method for new provider registration
+        // Factory method for creating draft provider (progressive registration)
+        public static Provider CreateDraft(
+            UserId ownerId,
+            string businessName,
+            string description,
+            ProviderType type,
+            ContactInfo contactInfo,
+            BusinessAddress address,
+            int registrationStep = 3)
+        {
+            var profile = BusinessProfile.Create(businessName, description,"profileImageUrl");
+
+            var provider = new Provider
+            {
+                Id = ProviderId.New(),
+                OwnerId = ownerId,
+                Profile = profile,
+                Status = ProviderStatus.Drafted,
+                ProviderType = type,
+                ContactInfo = contactInfo,
+                Address = address,
+                RequiresApproval = false,
+                AllowOnlineBooking = true,
+                OffersMobileServices = false,
+                RegisteredAt = DateTime.UtcNow,
+                RegistrationStep = registrationStep,
+                IsRegistrationComplete = false
+            };
+
+            provider.RaiseDomainEvent(new ProviderRegisteredEvent(
+                provider.Id,
+                provider.OwnerId,
+                provider.Profile.BusinessName,
+                provider.ProviderType,
+                provider.RegisteredAt));
+
+            return provider;
+        }
+
+        // Factory method for new provider registration (legacy - full registration)
         public static Provider RegisterProvider(
             UserId ownerId,
             string businessName,
@@ -73,7 +116,7 @@ namespace Booksy.ServiceCatalog.Domain.Aggregates
             ContactInfo contactInfo,
             BusinessAddress address)
         {
-            var profile = BusinessProfile.Create(businessName, description);
+            var profile = BusinessProfile.Create(businessName, description, "profileImageUrl");
 
             var provider = new Provider
             {
@@ -87,7 +130,9 @@ namespace Booksy.ServiceCatalog.Domain.Aggregates
                 RequiresApproval = false,
                 AllowOnlineBooking = true,
                 OffersMobileServices = false,
-                RegisteredAt = DateTime.UtcNow
+                RegisteredAt = DateTime.UtcNow,
+                RegistrationStep = 9,
+                IsRegistrationComplete = true
             };
 
 
@@ -127,9 +172,9 @@ namespace Booksy.ServiceCatalog.Domain.Aggregates
             RaiseDomainEvent(new ProviderDeactivatedEvent(Id, DateTime.UtcNow, reason));
         }
 
-        public void UpdateBusinessProfile(string businessName, string description, string? website = null)
+        public void UpdateBusinessProfile(string businessName, string description, string? profileImageUrl)
         {
-            Profile = BusinessProfile.Create(businessName, description, website);
+            Profile = BusinessProfile.Create(businessName, description,profileImageUrl);
 
             RaiseDomainEvent(new BusinessProfileUpdatedEvent(Id, businessName, description, DateTime.UtcNow));
         }
@@ -142,6 +187,25 @@ namespace Booksy.ServiceCatalog.Domain.Aggregates
         public void UpdateAddress(BusinessAddress newAddress)
         {
             Address = newAddress;
+        }
+
+        // Registration Progress Methods
+        public void UpdateRegistrationStep(int step)
+        {
+            if (step < 1 || step > 9)
+                throw new ArgumentException("Registration step must be between 1 and 9", nameof(step));
+
+            RegistrationStep = step;
+        }
+
+        public void CompleteRegistration()
+        {
+            if (IsRegistrationComplete)
+                throw new InvalidProviderException("Registration is already complete");
+
+            IsRegistrationComplete = true;
+            RegistrationStep = 9;
+            Status = ProviderStatus.PendingVerification;
         }
 
         public Staff AddStaff(string firstName, string lastName, StaffRole role, PhoneNumber? phone = null)
@@ -457,8 +521,22 @@ namespace Booksy.ServiceCatalog.Domain.Aggregates
             AllowOnlineBooking = allow;
         }
 
-        public void UpdateStaffNotes(Guid id, string notes)
+        public void UpdateStaffNotes(Guid id, string? notes)
         {
+            var staff = GetStaffById(id);
+            staff.UpdateNotes(notes);
+        }
+
+        public void UpdateStaffBiography(Guid id, string? biography)
+        {
+            var staff = GetStaffById(id);
+            staff.UpdateBiography(biography);
+        }
+
+        public void UpdateStaffProfilePhoto(Guid id, string? photoUrl)
+        {
+            var staff = GetStaffById(id);
+            staff.UpdateProfilePhoto(photoUrl);
         }
 
         public void UpdateStaff(Guid staffId, string firstName, string lastName, Email email, PhoneNumber? phone, StaffRole role)

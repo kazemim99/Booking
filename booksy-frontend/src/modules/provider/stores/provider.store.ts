@@ -222,6 +222,7 @@ export const useProviderStore = defineStore('provider', () => {
         includeServices,
         includeStaff,
       )
+
     } catch (err: unknown) {
       if (err instanceof Error) {
         error.value = err.message || 'Failed to deactivate provider'

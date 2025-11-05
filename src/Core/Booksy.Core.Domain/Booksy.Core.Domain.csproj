@@ -30,6 +30,7 @@
 
 	<ItemGroup>
 	  <Compile Include="Domain\Utilities\Guard.cs" />
+	  <Compile Include="Domain\Entities\ProvinceCities.cs" />
 	</ItemGroup>
 
 

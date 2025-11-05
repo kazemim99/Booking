@@ -25,6 +25,15 @@ namespace Booksy.ServiceCatalog.Infrastructure.Persistence.Repositories
                 .FirstOrDefaultAsync(s => s.Id == id, cancellationToken);
         }
 
+        public async Task<IReadOnlyList<Service>> GetServicesByProviderIdAsync(ProviderId providerId, CancellationToken cancellationToken = default)
+        {
+            return await DbSet
+                .Include(s => s.Options)
+                .Include(s => s.PriceTiers)
+                .Where(s => s.ProviderId == providerId)
+                .ToListAsync(cancellationToken);
+        }
+
         public async Task SaveServiceAsync(Service service, CancellationToken cancellationToken = default)
         {
             await SaveAsync(service, cancellationToken);

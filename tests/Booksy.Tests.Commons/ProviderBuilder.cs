@@ -1,6 +1,4 @@
-﻿// ========================================
-// Booksy.Tests.Common/Builders/ServiceBuilder.cs
-// ========================================
+﻿
 using AutoFixture;
 using Booksy.Core.Domain.ValueObjects;
 using Booksy.ServiceCatalog.Domain.Aggregates;
@@ -104,6 +102,7 @@ public class ProviderBuilder
                 PhoneNumber.Create("+1234567890")
             ),
             _address ?? BusinessAddress.Create(
+                "123 Test St",
                 "123 Test St",
                 "Test City",
                 "TS",

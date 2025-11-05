@@ -1,12 +1,4 @@
-using Booksy.API;
-using Booksy.Core.Application.DTOs;
 using Booksy.ServiceCatalog.Api.Models.Requests;
-using Booksy.ServiceCatalog.API.Controllers.V1;
-using Booksy.ServiceCatalog.IntegrationTests.Infrastructure;
-using FluentAssertions;
-using Org.BouncyCastle.Asn1.Ocsp;
-using System.Net;
-using Xunit;
 
 namespace Booksy.ServiceCatalog.IntegrationTests.API.ProviderSettings;
 
@@ -85,11 +77,6 @@ public class ProviderSettingsControllerTests : ServiceCatalogIntegrationTestBase
         {
             BusinessName = "Updated Business Name",
             Description = "Updated description",
-            OwnerFirstName = "John",
-            OwnerLastName = "Doe",
-            PhoneNumber = "+989121234567",
-            Email = "updated@test.com",
-            Website = "https://www.updated.com"
         };
 
         // Act
@@ -99,9 +86,9 @@ public class ProviderSettingsControllerTests : ServiceCatalogIntegrationTestBase
         response.Error.Should().BeNull();
         response.StatusCode.Should().Be(HttpStatusCode.OK);
 
-        response.data.Should().NotBeNull();
-        response.data!.BusinessName.Should().Be("Updated Business Name");
-        response.data.Email.Should().Be("updated@test.com");
+        response.Data.Should().NotBeNull();
+        response.Data!.BusinessName.Should().Be("Updated Business Name");
+        response.Data.Email.Should().Be("updated@test.com");
     }
 
     [Fact]
@@ -114,7 +101,6 @@ public class ProviderSettingsControllerTests : ServiceCatalogIntegrationTestBase
         var request = new UpdateBusinessInfoRequest
         {
             BusinessName = "", // Invalid: empty
-            PhoneNumber = "+989121234567"
         };
 
         // Act
@@ -136,7 +122,6 @@ public class ProviderSettingsControllerTests : ServiceCatalogIntegrationTestBase
         var request = new UpdateBusinessInfoRequest
         {
             BusinessName = "Hacked Name",
-            PhoneNumber = "+989121234567"
         };
 
         // Act
@@ -194,15 +179,12 @@ public class ProviderSettingsControllerTests : ServiceCatalogIntegrationTestBase
         var request = new UpdateLocationRequest
         {
             AddressLine1 = "456 New Street",
-            AddressLine2 = "Suite 100",
             City = "Tehran",
-            State = "Tehran",
             PostalCode = "54321",
             Country = "Iran",
             Latitude = 35.6892,
             Longitude = 51.3890,
             FormattedAddress = "456 New Street, Suite 100, Tehran",
-            IsShared = false
         };
 
         // Act
@@ -211,9 +193,9 @@ public class ProviderSettingsControllerTests : ServiceCatalogIntegrationTestBase
         // Assert
         response.StatusCode.Should().Be(HttpStatusCode.OK);
 
-        response.data.Should().NotBeNull();
-        response.data!.AddressLine1.Should().Be("456 New Street");
-        response.data.City.Should().Be("Tehran");
+        response.Data.Should().NotBeNull();
+        response.Data!.AddressLine1.Should().Be("456 New Street");
+        response.Data.City.Should().Be("Tehran");
     }
 
     [Fact]
@@ -457,10 +439,10 @@ public class ProviderSettingsControllerTests : ServiceCatalogIntegrationTestBase
         // Assert
         response.StatusCode.Should().Be(HttpStatusCode.Created);
 
-        response.data.Should().NotBeNull();
-        response.data!.Name.Should().Be("New Service");
-        response.data.Price.Should().Be(100.00m);
-        response.data.DurationMinutes.Should().Be(90);
+        response.Data.Should().NotBeNull();
+        response.Data!.Name.Should().Be("New Service");
+        response.Data.Price.Should().Be(100.00m);
+        response.Data.DurationMinutes.Should().Be(90);
     }
 
     [Fact]
@@ -537,9 +519,9 @@ public class ProviderSettingsControllerTests : ServiceCatalogIntegrationTestBase
         // Assert
         response.StatusCode.Should().Be(HttpStatusCode.OK);
 
-        response.data.Should().NotBeNull();
-        response.data!.Name.Should().Be("Updated Service Name");
-        response.data.Price.Should().Be(150.00m);
+        response.Data.Should().NotBeNull();
+        response.Data!.Name.Should().Be("Updated Service Name");
+        response.Data.Price.Should().Be(150.00m);
     }
 
     [Fact]

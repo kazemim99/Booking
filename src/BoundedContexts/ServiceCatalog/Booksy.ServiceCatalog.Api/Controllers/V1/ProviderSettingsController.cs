@@ -1,25 +1,25 @@
 using Booksy.ServiceCatalog.Api.Models.Requests;
-using Booksy.ServiceCatalog.Application.Commands.Provider.UpdateBusinessInfo;
+using Booksy.ServiceCatalog.Application.Commands.Provider.AddException;
+using Booksy.ServiceCatalog.Application.Commands.Provider.AddHoliday;
+using Booksy.ServiceCatalog.Application.Commands.Provider.DeleteException;
+using Booksy.ServiceCatalog.Application.Commands.Provider.DeleteHoliday;
+using Booksy.ServiceCatalog.Application.Commands.Provider.UpdateBusinessHours;
+using Booksy.ServiceCatalog.Application.Commands.Provider.UpdateBusinessProfile;
 using Booksy.ServiceCatalog.Application.Commands.Provider.UpdateLocation;
 using Booksy.ServiceCatalog.Application.Commands.Provider.UpdateWorkingHours;
-using Booksy.ServiceCatalog.Application.Commands.Service.UpdateProviderService;
+using Booksy.ServiceCatalog.Application.Commands.Service.AddProviderService;
 using Booksy.ServiceCatalog.Application.Commands.Service.DeleteProviderService;
-using Booksy.ServiceCatalog.Application.Queries.Provider.GetProviderById;
-using Booksy.ServiceCatalog.Application.Commands.Provider.UpdateBusinessHours;
-using Booksy.ServiceCatalog.Application.Commands.Provider.AddHoliday;
-using Booksy.ServiceCatalog.Application.Commands.Provider.DeleteHoliday;
-using Booksy.ServiceCatalog.Application.Commands.Provider.AddException;
-using Booksy.ServiceCatalog.Application.Commands.Provider.DeleteException;
-using Booksy.ServiceCatalog.Application.Queries.Provider.GetBusinessHours;
-using Booksy.ServiceCatalog.Application.Queries.Provider.GetHolidays;
-using Booksy.ServiceCatalog.Application.Queries.Provider.GetExceptions;
+using Booksy.ServiceCatalog.Application.Commands.Service.UpdateProviderService;
 using Booksy.ServiceCatalog.Application.Queries.Provider.GetAvailability;
+using Booksy.ServiceCatalog.Application.Queries.Provider.GetBusinessHours;
+using Booksy.ServiceCatalog.Application.Queries.Provider.GetExceptions;
+using Booksy.ServiceCatalog.Application.Queries.Provider.GetHolidays;
+using Booksy.ServiceCatalog.Application.Queries.Provider.GetProviderById;
 using Booksy.ServiceCatalog.Domain.Repositories;
 using MediatR;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using static Booksy.API.Middleware.ExceptionHandlingMiddleware;
-using Booksy.ServiceCatalog.Application.Commands.Service.AddProviderService;
 
 namespace Booksy.ServiceCatalog.API.Controllers.V1;
 
@@ -100,15 +100,10 @@ public class ProviderSettingsController : ControllerBase
         CancellationToken cancellationToken = default)
     {
        
-        var command = new UpdateBusinessInfoCommand(
+        var command = new UpdateBusinessProfileCommand(
             id,
             request.BusinessName,
-            request.Description,
-            request.OwnerFirstName,
-            request.OwnerLastName,
-            request.PhoneNumber,
-            request.Email,
-            request.Website);
+            request.Description);
 
         var result = await _mediator.Send(command, cancellationToken);
 
@@ -119,9 +114,6 @@ public class ProviderSettingsController : ControllerBase
 
             BusinessName = result.BusinessName,
             Description = request.Description,
-            PhoneNumber = request.PhoneNumber,
-            Email = request.Email,
-            Website = request.Website
         };
 
         return Ok(response);
@@ -180,20 +172,19 @@ public class ProviderSettingsController : ControllerBase
         [FromBody] UpdateLocationRequest request,
         CancellationToken cancellationToken = default)
     {
-      
+
 
         var command = new UpdateLocationCommand(
             id,
+            request.FormattedAddress,
             request.AddressLine1,
-            request.AddressLine2,
             request.City,
-            request.State,
             request.PostalCode,
             request.Country,
+            request.ProvinceId,
+            request.CityId,
             request.Latitude,
-            request.Longitude,
-            request.FormattedAddress,
-            request.IsShared);
+            request.Longitude);
 
         var result = await _mediator.Send(command, cancellationToken);
 
@@ -201,12 +192,12 @@ public class ProviderSettingsController : ControllerBase
 
         var response = new LocationResponse
         {
-            AddressLine1 = result.AddressLine1,
-            Street = result.AddressLine1,
-            City = result.City,
-            State = result.State,
-            Country  =result.Country,
-            PostalCode = result.PostalCode,
+            AddressLine1 = result.FormattedAddress,
+            Street = result.FormattedAddress,
+            City = result.City ?? "",
+            State = "",
+            Country = result.Country,
+            PostalCode = result.PostalCode ?? "",
             Latitude = result.Latitude,
             Longitude = result.Longitude
         };

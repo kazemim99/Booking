@@ -2,11 +2,13 @@
 
 public class AddressResponse
 {
-    public string Street { get; set; } = string.Empty;
+    public string FormattedAddress { get; set; } = string.Empty;
     public string City { get; set; } = string.Empty;
     public string State { get; set; } = string.Empty;
     public string PostalCode { get; set; } = string.Empty;
     public string Country { get; set; } = string.Empty;
+    public int? ProvinceId { get; set; }
+    public int? CityId { get; set; }
     public double? Latitude { get; set; }
     public double? Longitude { get; set; }
 }

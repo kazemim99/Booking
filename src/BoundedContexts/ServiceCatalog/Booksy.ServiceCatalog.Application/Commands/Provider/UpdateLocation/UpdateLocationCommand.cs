@@ -4,27 +4,28 @@ namespace Booksy.ServiceCatalog.Application.Commands.Provider.UpdateLocation;
 
 public sealed record UpdateLocationCommand(
     Guid ProviderId,
-    string AddressLine1,
-    string? AddressLine2,
-    string City,
-    string State,
-    string PostalCode,
+    string FormattedAddress,
+    string? AddressLine1,
+    string? City,
+    string? PostalCode,
     string Country,
-    double? Latitude,
-    double? Longitude,
-    string? FormattedAddress,
-    bool IsShared,
+    int? ProvinceId,
+    int? CityId,
+    double Latitude,
+    double Longitude,
     Guid? IdempotencyKey = null) : ICommand<UpdateLocationResult>;
 
 public sealed record UpdateLocationResult(
     Guid ProviderId,
-    string AddressLine1,
-    string City,
-    string State,
-    string PostalCode,
+    string FormattedAddress,
+    string? AddressLine1,
+    string? City,
+    string? PostalCode,
     string Country,
-    double? Latitude,
-    double? Longitude,
+    int? ProvinceId,
+    int? CityId,
+    double Latitude,
+    double Longitude,
     DateTime UpdatedAt)
 {
 }

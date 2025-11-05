@@ -60,7 +60,8 @@ export interface UserProfile {
 }
 
 export interface Address {
-  street: string
+  formattedAddress?: string
+  street?: string
   city: string
   state: string
   postalCode: string

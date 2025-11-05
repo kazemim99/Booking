@@ -11,4 +11,5 @@ public sealed class GalleryImageDto
     public string? AltText { get; set; }
     public DateTime UploadedAt { get; set; }
     public bool IsActive { get; set; }
+    public bool IsPrimary { get; set; }
 }

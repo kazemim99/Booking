@@ -10,6 +10,7 @@ using System.Reflection.Emit;
 using BusinessHours = Booksy.ServiceCatalog.Domain.Entities.BusinessHours;
 using HolidaySchedule = Booksy.ServiceCatalog.Domain.Entities.HolidaySchedule;
 using ExceptionSchedule = Booksy.ServiceCatalog.Domain.Entities.ExceptionSchedule;
+using Booksy.Core.Domain.Domain.Entities;
 
 namespace Booksy.ServiceCatalog.Infrastructure.Persistence.Context
 {
@@ -39,6 +40,7 @@ namespace Booksy.ServiceCatalog.Infrastructure.Persistence.Context
         public DbSet<ExceptionSchedule> Exceptions => Set<ExceptionSchedule>();
         public DbSet<ServiceOption> ServiceOptions => Set<ServiceOption>();
         public DbSet<PriceTier> PriceTiers => Set<PriceTier>();
+        public DbSet<ProvinceCities> ProvinceCities => Set<ProvinceCities>();
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {

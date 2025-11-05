@@ -171,7 +171,7 @@ public abstract class IntegrationTestBase<TFactory, TDbContext, TStartup>
     }
 
 
-    protected async Task<Core.Domain.Infrastructure.Middleware.ApiResponse> PutAsJsonAsync<T>(string url, T data)
+    protected async Task<ApiResponse> PutAsJsonAsync<T>(string url, T data)
     {
        
             var result = await Client.PutAsJsonAsync(url, data);
@@ -204,7 +204,7 @@ public abstract class IntegrationTestBase<TFactory, TDbContext, TStartup>
             var content = await result.Content.ReadAsStringAsync();
             if (string.IsNullOrEmpty(content))
             {
-                return new Core.Domain.Infrastructure.Middleware.ApiResponse
+            return new Core.Domain.Infrastructure.Middleware.ApiResponse
                 {
                     StatusCode = result.StatusCode,
                 };
@@ -223,7 +223,7 @@ public abstract class IntegrationTestBase<TFactory, TDbContext, TStartup>
         var reson = await response.Content.ReadAsStringAsync();
         var result = JsonConvert.DeserializeObject<ApiResponse<TResponse>>(reson);
 
-        return result.data;
+        return result.Data;
     }
 
 

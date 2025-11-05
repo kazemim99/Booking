@@ -10,4 +10,5 @@ public sealed class GalleryImageResponse
     public string? Caption { get; set; }
     public string? AltText { get; set; }
     public DateTime UploadedAt { get; set; }
+    public bool IsPrimary { get; set; }
 }

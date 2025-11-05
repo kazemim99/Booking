@@ -16,11 +16,16 @@ namespace Booksy.ServiceCatalog.Application.DTOs.Provider
         public string Country { get; init; }
         public double? Latitude { get; init; }
         public double? Longitude { get; init; }
+        public string FormattedAddress { get; set; }
+        public int? ProvinceId { get; set; }
+        public int? CityId { get; set; }
 
         public AddressInfo(
             string street,
             string city,
             string state,
+            int? cityId,
+            int? provinceId,
             string postalCode,
             string country,
             double? latitude = null,
@@ -29,6 +34,8 @@ namespace Booksy.ServiceCatalog.Application.DTOs.Provider
             Street = street;
             City = city;
             State = state;
+            CityId = cityId;
+            ProvinceId = provinceId;
             PostalCode = postalCode;
             Country = country;
             Latitude = latitude;

@@ -17,6 +17,7 @@ public sealed class GalleryImage : Entity<Guid>
     public string? AltText { get; private set; }
     public DateTime UploadedAt { get; private set; }
     public bool IsActive { get; private set; }
+    public bool IsPrimary { get; private set; }
 
     // Private constructor for EF Core
     private GalleryImage() : base()
@@ -31,7 +32,8 @@ public sealed class GalleryImage : Entity<Guid>
         string imageUrl,
         string thumbnailUrl,
         string mediumUrl,
-        int displayOrder)
+        int displayOrder,
+        bool isPrimary = false)
     {
         return new GalleryImage
         {
@@ -42,7 +44,8 @@ public sealed class GalleryImage : Entity<Guid>
             MediumUrl = mediumUrl,
             DisplayOrder = displayOrder,
             UploadedAt = DateTime.UtcNow,
-            IsActive = true
+            IsActive = true,
+            IsPrimary = isPrimary
         };
     }
 
@@ -65,5 +68,15 @@ public sealed class GalleryImage : Entity<Guid>
     public void Reactivate()
     {
         IsActive = true;
+    }
+
+    public void SetAsPrimary()
+    {
+        IsPrimary = true;
+    }
+
+    public void UnsetAsPrimary()
+    {
+        IsPrimary = false;
     }
 }

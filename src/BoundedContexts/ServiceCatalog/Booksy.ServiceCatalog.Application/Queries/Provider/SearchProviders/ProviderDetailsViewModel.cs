@@ -19,6 +19,7 @@ public sealed class ProviderDetailsViewModel
     public AddressInfo Address { get; init; }
     public Dictionary<DayOfWeek, BusinessHoursDto?> BusinessHours { get; init; }
     public string? LogoUrl { get; init; }
+    public string? ProfileImageUrl { get; init; }
     public string? WebsiteUrl { get; init; }
     public bool AllowOnlineBooking { get; init; }
     public bool OffersMobileServices { get; init; }
@@ -36,6 +37,4 @@ public sealed class ProviderDetailsViewModel
 
     public List<StaffViewModel> Staff { get; internal set; }
     public int ActiveServicesCount { get; internal set; }
-
-
 }

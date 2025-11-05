@@ -59,6 +59,12 @@ namespace Booksy.ServiceCatalog.Infrastructure.Persistence.Configurations
             builder.Property(s => s.Notes)
                 .HasMaxLength(2000);
 
+            builder.Property(s => s.ProfilePhotoUrl)
+                .HasMaxLength(500);
+
+            builder.Property(s => s.Biography)
+                .HasMaxLength(500);
+
             // Ignore computed properties
             builder.Ignore(s => s.FullName);
 
