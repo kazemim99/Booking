@@ -45,7 +45,7 @@ namespace Booksy.ServiceCatalog.Infrastructure.Persistence.Repositories
         public async Task UpdateProviderAsync(Provider provider, CancellationToken cancellationToken = default)
         {
             Context.Update(provider);
-            await Context.SaveChangesAsync(cancellationToken);
+            // SaveChanges is handled by Unit of Work in TransactionBehavior
         }
 
         public async Task DeleteProviderAsync(Provider provider, CancellationToken cancellationToken = default)
