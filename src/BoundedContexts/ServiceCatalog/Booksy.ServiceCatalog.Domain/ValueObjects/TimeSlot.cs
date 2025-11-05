@@ -21,9 +21,6 @@ namespace Booksy.ServiceCatalog.Domain.ValueObjects
             if (startTime >= endTime)
                 throw new ArgumentException("Start time must be before end time", nameof(startTime));
 
-            if (startTime < DateTime.UtcNow.AddMinutes(-5)) // Allow 5 minute grace period
-                throw new ArgumentException("Start time cannot be in the past", nameof(startTime));
-
             StartTime = startTime;
             EndTime = endTime;
         }

@@ -1,3 +1,4 @@
+using Booksy.Core.Domain.Exceptions;
 using Booksy.Core.Domain.ValueObjects;
 using Booksy.ServiceCatalog.Domain.Enums;
 using Booksy.ServiceCatalog.Domain.ValueObjects;
@@ -307,13 +308,20 @@ public class PaymentInfoTests
     }
 
     [Theory]
-    [InlineData(0)]
     [InlineData(-10)]
-    public void Create_Should_Throw_When_Total_Amount_Is_Invalid(decimal amount)
+    public void Create_Should_Throw_When_Total_Amount_Is_Negative(decimal amount)
+    {
+        // Act & Assert
+        Assert.Throws<DomainValidationException>(() =>
+            PaymentInfo.Create(Money.Create(amount, "USD"), Money.Create(0, "USD")));
+    }
+
+    [Fact]
+    public void Create_Should_Throw_When_Total_Amount_Is_Zero()
     {
         // Act & Assert
         Assert.Throws<ArgumentException>(() =>
-            PaymentInfo.Create(Money.Create(amount, "USD"), Money.Create(0, "USD")));
+            PaymentInfo.Create(Money.Create(0, "USD"), Money.Create(0, "USD")));
     }
 
     [Fact]
