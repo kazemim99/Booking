@@ -2,6 +2,7 @@
 // Booksy.ServiceCatalog.Domain/Repositories/IBookingReadRepository.cs
 // ========================================
 using Booksy.Core.Application.Abstractions.Persistence;
+using Booksy.Core.Application.DTOs;
 using Booksy.Core.Domain.ValueObjects;
 using Booksy.ServiceCatalog.Domain.Aggregates.BookingAggregate;
 using Booksy.ServiceCatalog.Domain.Enums;
