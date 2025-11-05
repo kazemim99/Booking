@@ -367,14 +367,14 @@ public class BookingsControllerTests : ServiceCatalogIntegrationTestBase
         var provider = await CreateAndAuthenticateAsProviderAsync("Test Provider", "provider@test.com");
 
         // Add business hours
-        provider.SetBusinessHours(new Domain.ValueObjects.BusinessHours(new Dictionary<DayOfWeek, Domain.ValueObjects.TimeRange>
+        provider.SetBusinessHours(new Dictionary<DayOfWeek, (TimeOnly? Open, TimeOnly? Close)>
         {
-            { DayOfWeek.Monday, Domain.ValueObjects.TimeRange.Create(TimeSpan.FromHours(9), TimeSpan.FromHours(17)) },
-            { DayOfWeek.Tuesday, Domain.ValueObjects.TimeRange.Create(TimeSpan.FromHours(9), TimeSpan.FromHours(17)) },
-            { DayOfWeek.Wednesday, Domain.ValueObjects.TimeRange.Create(TimeSpan.FromHours(9), TimeSpan.FromHours(17)) },
-            { DayOfWeek.Thursday, Domain.ValueObjects.TimeRange.Create(TimeSpan.FromHours(9), TimeSpan.FromHours(17)) },
-            { DayOfWeek.Friday, Domain.ValueObjects.TimeRange.Create(TimeSpan.FromHours(9), TimeSpan.FromHours(17)) }
-        }));
+            { DayOfWeek.Monday, (TimeOnly.FromTimeSpan(TimeSpan.FromHours(9)), TimeOnly.FromTimeSpan(TimeSpan.FromHours(17))) },
+            { DayOfWeek.Tuesday, (TimeOnly.FromTimeSpan(TimeSpan.FromHours(9)), TimeOnly.FromTimeSpan(TimeSpan.FromHours(17))) },
+            { DayOfWeek.Wednesday, (TimeOnly.FromTimeSpan(TimeSpan.FromHours(9)), TimeOnly.FromTimeSpan(TimeSpan.FromHours(17))) },
+            { DayOfWeek.Thursday, (TimeOnly.FromTimeSpan(TimeSpan.FromHours(9)), TimeOnly.FromTimeSpan(TimeSpan.FromHours(17))) },
+            { DayOfWeek.Friday, (TimeOnly.FromTimeSpan(TimeSpan.FromHours(9)), TimeOnly.FromTimeSpan(TimeSpan.FromHours(17))) }
+        });
 
         // Add a staff member if none exists
         if (!provider.Staff.Any())
