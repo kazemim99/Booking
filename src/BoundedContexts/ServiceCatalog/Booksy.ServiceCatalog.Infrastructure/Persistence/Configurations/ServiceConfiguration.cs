@@ -121,6 +121,44 @@ namespace Booksy.ServiceCatalog.Infrastructure.Persistence.Configurations
                     value => value.HasValue ? Duration.FromMinutes(value.Value) : null)
                 .HasColumnName("BufferTimeMinutes");
 
+            // BookingPolicy (Owned Value Object)
+            builder.OwnsOne(s => s.BookingPolicy, policy =>
+            {
+                policy.Property(p => p.MinAdvanceBookingHours)
+                    .HasColumnName("BookingPolicyMinAdvanceBookingHours")
+                    .IsRequired();
+
+                policy.Property(p => p.MaxAdvanceBookingDays)
+                    .HasColumnName("BookingPolicyMaxAdvanceBookingDays")
+                    .IsRequired();
+
+                policy.Property(p => p.CancellationWindowHours)
+                    .HasColumnName("BookingPolicyCancellationWindowHours")
+                    .IsRequired();
+
+                policy.Property(p => p.CancellationFeePercentage)
+                    .HasColumnName("BookingPolicyCancellationFeePercentage")
+                    .HasColumnType("decimal(5,2)")
+                    .IsRequired();
+
+                policy.Property(p => p.AllowRescheduling)
+                    .HasColumnName("BookingPolicyAllowRescheduling")
+                    .IsRequired();
+
+                policy.Property(p => p.RescheduleWindowHours)
+                    .HasColumnName("BookingPolicyRescheduleWindowHours")
+                    .IsRequired();
+
+                policy.Property(p => p.RequireDeposit)
+                    .HasColumnName("BookingPolicyRequireDeposit")
+                    .IsRequired();
+
+                policy.Property(p => p.DepositPercentage)
+                    .HasColumnName("BookingPolicyDepositPercentage")
+                    .HasColumnType("decimal(5,2)")
+                    .IsRequired();
+            });
+
             // ========================================
             // BOOLEAN FLAGS
             // ========================================
