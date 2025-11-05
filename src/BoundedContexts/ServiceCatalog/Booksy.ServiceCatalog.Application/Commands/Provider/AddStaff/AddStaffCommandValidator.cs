@@ -25,11 +25,7 @@ namespace Booksy.ServiceCatalog.Application.Commands.Provider.AddStaff
                 .MaximumLength(50)
                 .WithMessage("Last name cannot exceed 50 characters");
 
-            RuleFor(x => x.Email)
-                .NotEmpty()
-                .WithMessage("Email is required")
-                .EmailAddress()
-                .WithMessage("Valid email address is required");
+  
 
             RuleFor(x => x.Role)
                 .IsInEnum()

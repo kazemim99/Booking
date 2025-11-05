@@ -3,8 +3,9 @@
     "DISABLE_SUMMARY_GENERATION": "1"
   },
   "permissions": {
-   "allow": [
-      "Bash"
+    "allow": [
+      "Bash",
+      "SlashCommand(/openspec:archive)"
     ],
     "deny": [],
     "ask": []

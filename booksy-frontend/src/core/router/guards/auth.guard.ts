@@ -8,7 +8,7 @@ export async function authGuard(
   from: RouteLocationNormalized,
   next: NavigationGuardNext,
 ) {
-  console.log(from)
+  console.log('[AuthGuard] Navigating from:', from.path, 'to:', to.path, 'route name:', to.name)
   const authStore = useAuthStore()
   const requiresAuth = to.matched.some((record) => record.meta.requiresAuth)
   const isPublic = to.matched.some((record) => record.meta.isPublic)
@@ -45,7 +45,8 @@ export async function authGuard(
       } catch (err) {
         console.error('[AuthGuard] Error fetching provider status:', err)
         // On error, redirect to registration as a safe fallback
-        if (to.name !== 'ProviderRegistration') {
+        const allowedRoutesOnError = ['ProviderRegistration', 'Forbidden', 'NotFound']
+        if (!allowedRoutesOnError.includes(to.name as string)) {
           next({ name: 'ProviderRegistration' })
           return
         }
@@ -54,22 +55,31 @@ export async function authGuard(
 
     // Redirect based on provider status
     // Drafted or no provider record: redirect to registration
+    // BUT allow access to profile, settings, and other general routes
     if (
       (authStore.providerStatus === ProviderStatus.Drafted || authStore.providerStatus === null) &&
       to.name !== 'ProviderRegistration'
     ) {
-      next({ name: 'ProviderRegistration' })
-      return
+      // Allow access to profile and settings even for incomplete providers
+      const allowedGeneralRoutes = ['ProviderProfile', 'ProviderSettings', 'Forbidden', 'NotFound', 'ServerError']
+      if (!allowedGeneralRoutes.includes(to.name as string)) {
+        next({ name: 'ProviderRegistration' })
+        return
+      }
     }
-    // Prevent completed providers from accessing registration route
+
+    // Prevent completed providers from accessing registration route or home
+    // Redirect ONLY from Home or ProviderRegistration to dashboard
     if (
-      (authStore.providerStatus === ProviderStatus.Verified ||
-        authStore.providerStatus === ProviderStatus.Active ||
-        authStore.providerStatus === ProviderStatus.PendingVerification) &&
-      to.name === 'Home'
+      authStore.providerStatus === ProviderStatus.Verified ||
+      authStore.providerStatus === ProviderStatus.Active ||
+      authStore.providerStatus === ProviderStatus.PendingVerification
     ) {
-      next({ path: '/provider/dashboard' })
-      return
+      if (to.name === 'Home' || to.name === 'ProviderRegistration') {
+        console.log('[AuthGuard] Redirecting from', to.name, 'to /dashboard')
+        next({ path: '/dashboard' })
+        return
+      }
     }
   }
 
@@ -78,10 +88,12 @@ export async function authGuard(
     const hasRequiredRole = authStore.hasAnyRole(requiredRoles)
 
     if (!hasRequiredRole) {
+      console.log('[AuthGuard] Access denied - insufficient permissions for', to.name)
       next({ name: 'Unauthorized' })
       return
     }
   }
 
+  console.log('[AuthGuard] Allowing navigation to:', to.path)
   next()
 }

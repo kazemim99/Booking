@@ -11,6 +11,7 @@ using FluentAssertions;
 using System.Net;
 using Xunit;
 using Booksy.ServiceCatalog.Api.Models.Requests;
+using System.Net.Http.Json;
 
 namespace Booksy.ServiceCatalog.IntegrationTests.API.Providers;
 
@@ -64,13 +65,13 @@ public class ProvidersControllerTests : ServiceCatalogIntegrationTestBase
         response.Error.Should().BeNull();
         response.StatusCode.Should().Be(HttpStatusCode.Created);
 
-        response.data.Should().NotBeNull();
-        response.data!.BusinessName.Should().Be(request.BusinessName);
-        response.data.Type.Should().Be(request.Type.ToString());
-        response.data.Status.Should().Be(ProviderStatus.PendingVerification.ToString());
+        response.Data.Should().NotBeNull();
+        response.Data!.BusinessName.Should().Be(request.BusinessName);
+        response.Data.Type.Should().Be(request.Type.ToString());
+        response.Data.Status.Should().Be(ProviderStatus.PendingVerification.ToString());
 
         // Verify in database
-        await AssertProviderExistsAsync(response.data.ProviderId);
+        await AssertProviderExistsAsync(response.Data.Id);
     }
 
     [Fact]
@@ -195,14 +196,14 @@ public class ProvidersControllerTests : ServiceCatalogIntegrationTestBase
         // Assert
         result.StatusCode.Should().Be(HttpStatusCode.Created);
 
-        result.data.Should().NotBeNull();
-        result.data!.BusinessName.Should().Be("Full Service Salon");
-        result.data.Status.Should().Be(ProviderStatus.PendingVerification.ToString());
-        result.data.ServicesCount.Should().Be(1);
-        result.data.StaffCount.Should().Be(1);
+        result.Data.Should().NotBeNull();
+        result.Data!.BusinessName.Should().Be("Full Service Salon");
+        result.Data.Status.Should().Be(ProviderStatus.PendingVerification.ToString());
+        result.Data.ServicesCount.Should().Be(1);
+        result.Data.StaffCount.Should().Be(1);
 
         // Verify in database
-        await AssertProviderExistsAsync(result.data.ProviderId);
+        await AssertProviderExistsAsync(result.Data.ProviderId);
     }
 
     [Fact]
@@ -276,7 +277,7 @@ public class ProvidersControllerTests : ServiceCatalogIntegrationTestBase
 
         var result = await GetResponseAsync<ProviderDetailsResponse>(response);
         result.Should().NotBeNull();
-        result!.ProviderId.Should().Be(provider.Id.Value);
+        result!.Id.Should().Be(provider.Id.Value);
         result.BusinessName.Should().Be("Test Provider");
     }
 
@@ -683,6 +684,208 @@ public class ProvidersControllerTests : ServiceCatalogIntegrationTestBase
         result.ProviderId.Should().NotBe(provider2.Id.Value);
         result.UserId.Should().Be(user1Id);
         result.Status.Should().Be(ProviderStatus.Active.ToString());
+    }
+
+    #endregion
+
+    #region Image Upload Tests
+
+    [Fact]
+    public async Task UploadProfileImage_WithValidImage_ShouldReturn200OkWithImageUrl()
+    {
+        // Arrange
+        var userId = Guid.NewGuid();
+        var provider = await CreateProviderWithStatusAsync(userId, "Test Provider", ProviderStatus.Active);
+        AuthenticateAsUser(userId, "provider@test.com");
+
+        // Create a test image file (1x1 PNG)
+        var imageBytes = Convert.FromBase64String("iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==");
+        var content = new MultipartFormDataContent();
+        var imageContent = new ByteArrayContent(imageBytes);
+        imageContent.Headers.ContentType = new System.Net.Http.Headers.MediaTypeHeaderValue("image/png");
+        content.Add(imageContent, "image", "test.png");
+
+        // Act
+        var response = await Client.PostAsync("/api/v1/providers/profile/image", content);
+
+        // Assert
+        response.StatusCode.Should().Be(HttpStatusCode.OK);
+
+        var result = await response.Content.ReadFromJsonAsync<UploadImageResponse>();
+        result.Should().NotBeNull();
+        result!.ImageUrl.Should().NotBeNullOrEmpty();
+        result.ImageUrl.Should().Contain("/uploads/providers/");
+        result.ImageUrl.Should().Contain(provider.Id.Value.ToString());
+    }
+
+    [Fact]
+    public async Task UploadProfileImage_WithoutAuthentication_ShouldReturn401Unauthorized()
+    {
+        // Arrange
+        var imageBytes = Convert.FromBase64String("iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==");
+        var content = new MultipartFormDataContent();
+        var imageContent = new ByteArrayContent(imageBytes);
+        imageContent.Headers.ContentType = new System.Net.Http.Headers.MediaTypeHeaderValue("image/png");
+        content.Add(imageContent, "image", "test.png");
+
+        // Act
+        var response = await Client.PostAsync("/api/v1/providers/profile/image", content);
+
+        // Assert
+        response.StatusCode.Should().Be(HttpStatusCode.Unauthorized);
+    }
+
+    [Fact]
+    public async Task UploadProfileImage_WithEmptyFile_ShouldReturn400BadRequest()
+    {
+        // Arrange
+        var userId = Guid.NewGuid();
+        var provider = await CreateProviderWithStatusAsync(userId, "Test Provider", ProviderStatus.Active);
+        AuthenticateAsUser(userId, "provider@test.com");
+
+        var content = new MultipartFormDataContent();
+        var imageContent = new ByteArrayContent(Array.Empty<byte>());
+        imageContent.Headers.ContentType = new System.Net.Http.Headers.MediaTypeHeaderValue("image/png");
+        content.Add(imageContent, "image", "empty.png");
+
+        // Act
+        var response = await Client.PostAsync("/api/v1/providers/profile/image", content);
+
+        // Assert
+        response.StatusCode.Should().Be(HttpStatusCode.BadRequest);
+
+        var errorContent = await response.Content.ReadAsStringAsync();
+        errorContent.Should().Contain("No image file provided");
+    }
+
+    [Fact]
+    public async Task UploadBusinessLogo_WithValidImage_ShouldReturn200OkWithImageUrl()
+    {
+        // Arrange
+        var userId = Guid.NewGuid();
+        var provider = await CreateProviderWithStatusAsync(userId, "Test Provider", ProviderStatus.Active);
+        AuthenticateAsUser(userId, "provider@test.com");
+
+        // Create a test image file (1x1 PNG)
+        var imageBytes = Convert.FromBase64String("iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==");
+        var content = new MultipartFormDataContent();
+        var imageContent = new ByteArrayContent(imageBytes);
+        imageContent.Headers.ContentType = new System.Net.Http.Headers.MediaTypeHeaderValue("image/png");
+        content.Add(imageContent, "image", "logo.png");
+
+        // Act
+        var response = await Client.PostAsync("/api/v1/providers/business/logo", content);
+
+        // Assert
+        response.StatusCode.Should().Be(HttpStatusCode.OK);
+
+        var result = await response.Content.ReadFromJsonAsync<UploadImageResponse>();
+        result.Should().NotBeNull();
+        result!.ImageUrl.Should().NotBeNullOrEmpty();
+        result.ImageUrl.Should().Contain("/uploads/providers/");
+        result.ImageUrl.Should().Contain(provider.Id.Value.ToString());
+    }
+
+    [Fact]
+    public async Task UpdateProfile_WithValidData_ShouldReturn204NoContent()
+    {
+        // Arrange
+        var userId = Guid.NewGuid();
+        var provider = await CreateProviderWithStatusAsync(userId, "Test Provider", ProviderStatus.Active);
+        AuthenticateAsUser(userId, "provider@test.com");
+
+        var request = new
+        {
+            FullName = "John Doe",
+            Email = "john.doe@example.com",
+            ProfileImageUrl = "/uploads/providers/test/profile.png"
+        };
+
+        // Act
+        var response = await Client.PutAsJsonAsync("/api/v1/providers/profile", request);
+
+        // Assert
+        response.StatusCode.Should().Be(HttpStatusCode.NoContent);
+    }
+
+    [Fact]
+    public async Task UpdateProfile_WithoutAuthentication_ShouldReturn401Unauthorized()
+    {
+        // Arrange
+        var request = new
+        {
+            FullName = "John Doe",
+            Email = "john.doe@example.com",
+            ProfileImageUrl = "/uploads/providers/test/profile.png"
+        };
+
+        // Act
+        var response = await Client.PutAsJsonAsync("/api/v1/providers/profile", request);
+
+        // Assert
+        response.StatusCode.Should().Be(HttpStatusCode.Unauthorized);
+    }
+
+    [Fact]
+    public async Task UpdateBusinessInfo_WithValidData_ShouldReturn204NoContent()
+    {
+        // Arrange
+        var userId = Guid.NewGuid();
+        var provider = await CreateProviderWithStatusAsync(userId, "Test Provider", ProviderStatus.Active);
+        AuthenticateAsUser(userId, "provider@test.com");
+
+        var request = new
+        {
+            BusinessName = "Updated Business Name",
+            Description = "Updated description",
+            OwnerFirstName = "John",
+            OwnerLastName = "Doe",
+            PhoneNumber = "+989121234567",
+            Email = "business@example.com",
+            Website = "https://www.updated.com",
+            LogoUrl = "/uploads/providers/test/logo.png"
+        };
+
+        // Act
+        var response = await Client.PutAsJsonAsync("/api/v1/providers/business", request);
+
+        // Assert
+        response.StatusCode.Should().Be(HttpStatusCode.NoContent);
+    }
+
+    [Fact]
+    public async Task UpdateBusinessInfo_WithInvalidPhoneNumber_ShouldReturn400BadRequest()
+    {
+        // Arrange
+        var userId = Guid.NewGuid();
+        var provider = await CreateProviderWithStatusAsync(userId, "Test Provider", ProviderStatus.Active);
+        AuthenticateAsUser(userId, "provider@test.com");
+
+        var request = new
+        {
+            BusinessName = "Updated Business Name",
+            Description = "Updated description",
+            OwnerFirstName = "John",
+            OwnerLastName = "Doe",
+            PhoneNumber = "invalid",
+            Email = "business@example.com"
+        };
+
+        // Act
+        var response = await Client.PutAsJsonAsync("/api/v1/providers/business", request);
+
+        // Assert
+        response.StatusCode.Should().Be(HttpStatusCode.BadRequest);
+    }
+
+    #endregion
+
+    #region Helper Response Models
+
+    private class UploadImageResponse
+    {
+        public string ImageUrl { get; set; } = string.Empty;
+        public string? ThumbnailUrl { get; set; }
     }
 
     #endregion

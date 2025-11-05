@@ -24,6 +24,9 @@ namespace Booksy.ServiceCatalog.Infrastructure.Persistence.Repositories
                 .Include(p => p.BusinessHours)
                 .Include(p => p.Holidays)
                 .Include(p => p.Exceptions)
+                .Include(p => p.Profile)
+                                    .ThenInclude(profile => profile.GalleryImages)
+
                 .FirstOrDefaultAsync(p => p.Id == id, cancellationToken);
         }
 
@@ -35,8 +38,25 @@ namespace Booksy.ServiceCatalog.Infrastructure.Persistence.Repositories
                 .Include(p => p.BusinessHours)
                 .Include(p => p.Holidays)
                 .Include(p => p.Exceptions)
+                .Include(p => p.Profile)
+                                                    .ThenInclude(profile => profile.GalleryImages)
+
                 .FirstOrDefaultAsync(p => p.OwnerId == id, cancellationToken);
         }
+
+        public async Task<Provider?> GetDraftProviderByOwnerIdAsync(UserId ownerId, CancellationToken cancellationToken = default)
+        {
+            return await DbSet
+                .Include(p => p.Staff)
+                .Include(p => p.Services)
+                .Include(p => p.BusinessHours)
+                .Include(p => p.Profile)
+                    .ThenInclude(profile => profile.GalleryImages)
+                .FirstOrDefaultAsync(
+                    p => p.OwnerId == ownerId && p.Status == Domain.Enums.ProviderStatus.Drafted,
+                    cancellationToken);
+        }
+
         public async Task SaveProviderAsync(Provider provider, CancellationToken cancellationToken = default)
         {
             await SaveAsync(provider, cancellationToken);
@@ -44,7 +64,7 @@ namespace Booksy.ServiceCatalog.Infrastructure.Persistence.Repositories
 
         public async Task UpdateProviderAsync(Provider provider, CancellationToken cancellationToken = default)
         {
-            await Task.CompletedTask;
+            DbSet.Update(provider);
         }
 
         public async Task DeleteProviderAsync(Provider provider, CancellationToken cancellationToken = default)

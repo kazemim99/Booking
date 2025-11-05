@@ -8,16 +8,13 @@ namespace Booksy.ServiceCatalog.Application.Commands.Provider.UpdateBusinessProf
     public sealed class UpdateBusinessProfileCommandHandler : ICommandHandler<UpdateBusinessProfileCommand, UpdateBusinessProfileResult>
     {
         private readonly IProviderWriteRepository _providerWriteRepository;
-        private readonly IProviderReadRepository _providerReadRepository;
         private readonly ILogger<UpdateBusinessProfileCommandHandler> _logger;
 
         public UpdateBusinessProfileCommandHandler(
             IProviderWriteRepository providerWriteRepository,
-            IProviderReadRepository providerReadRepository,
             ILogger<UpdateBusinessProfileCommandHandler> logger)
         {
             _providerWriteRepository = providerWriteRepository;
-            _providerReadRepository = providerReadRepository;
             _logger = logger;
         }
 
@@ -28,19 +25,15 @@ namespace Booksy.ServiceCatalog.Application.Commands.Provider.UpdateBusinessProf
             _logger.LogInformation("Updating business profile for provider: {ProviderId}", request.ProviderId);
 
             var providerId = ProviderId.From(request.ProviderId);
-            var provider = await _providerReadRepository.GetByIdAsync(providerId, cancellationToken);
+            var provider = await _providerWriteRepository.GetByIdAsync(providerId, cancellationToken);
 
             if (provider == null)
                 throw new InvalidProviderException("Provider not found");
 
-            provider.UpdateBusinessProfile(request.BusinessName, request.Description, request.Website);
+            provider.UpdateBusinessProfile(request.BusinessName, request.Description, provider.Profile.ProfileImageUrl);
 
-            if (!string.IsNullOrEmpty(request.LogoUrl))
-            {
-                provider.Profile.UpdateLogo(request.LogoUrl);
-            }
+            provider.Profile.UpdateLogo(request.LogoUrl);
 
-         
 
             await _providerWriteRepository.UpdateProviderAsync(provider, cancellationToken);
 

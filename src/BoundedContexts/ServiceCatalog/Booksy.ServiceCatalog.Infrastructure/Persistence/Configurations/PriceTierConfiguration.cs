@@ -12,7 +12,7 @@
 //    {
 //        public void Configure(EntityTypeBuilder<PriceTier> builder)
 //        {
-//            builder.ToTable("PriceTiers", "servicecatalog");
+//            builder.ToTable("PriceTiers", "ServiceCatalog");
 
 //            // Primary Key
 //            builder.HasKey(pt => pt.Id);

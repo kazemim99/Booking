@@ -222,6 +222,7 @@ export const useProviderStore = defineStore('provider', () => {
         includeServices,
         includeStaff,
       )
+
     } catch (err: unknown) {
       if (err instanceof Error) {
         error.value = err.message || 'Failed to deactivate provider'
@@ -267,11 +268,7 @@ export const useProviderStore = defineStore('provider', () => {
       const newProvider = await providerService.registerProvider(data)
       currentProvider.value = newProvider
 
-      // ✅ Store provider ID in localStorage for future retrieval
-      if (newProvider?.id) {
-        localStorage.setItem('provider_id', newProvider.id)
-        console.log('[ProviderStore] Provider registered and ID stored:', newProvider.id)
-      }
+      console.log('[ProviderStore] Provider registered:', newProvider.id)
 
       return newProvider
     } catch (err: unknown) {
@@ -359,58 +356,31 @@ export const useProviderStore = defineStore('provider', () => {
       error.value = null
 
       try {
-        // Get current user from auth store
+        // Get provider ID from auth store (extracted from JWT token)
         const authStore = useAuthStore()
-        const currentUserId = authStore.user?.id
+        const providerIdFromToken = authStore.providerId
 
-        console.log('[ProviderStore] Loading provider for user (OwnerId):', currentUserId)
+        console.log('[ProviderStore] Loading provider with ID from token:', providerIdFromToken)
 
-        if (!currentUserId) {
-          throw new Error('No authenticated user found')
-        }
-
-        // Get provider ID from localStorage (stored during registration or previous login)
-        const rawProviderId = localStorage.getItem('provider_id')
-
-        // Check if provider_id is invalid (null, string "undefined", string "null", or empty)
-        const isInvalidProviderId =
-          !rawProviderId ||
-          rawProviderId === 'undefined' ||
-          rawProviderId === 'null' ||
-          rawProviderId.trim() === ''
-
-        // If no valid provider_id in localStorage, try to fetch provider by ownerId
-        if (!isInvalidProviderId) {
-          // Clean up invalid value from localStorage
-          if (rawProviderId && (rawProviderId === 'undefined' || rawProviderId === 'null')) {
-            console.warn(
-              '[ProviderStore] Removing invalid provider_id from localStorage:',
-              rawProviderId,
-            )
-            localStorage.removeItem('provider_id')
-          }
-
-          console.log(
-            '[ProviderStore] No valid provider ID in localStorage. Fetching provider by OwnerId...',
+        if (!providerIdFromToken) {
+          console.warn(
+            '[ProviderStore] No provider ID in token. User needs to complete provider registration.',
           )
-
-          const provider = await providerService.getProviderByOwnerId(currentUserId)
-          if (provider) {
-            console.log('[ProviderStore] Provider found by OwnerId:', provider.id)
-            // Store the provider ID in localStorage for future use
-            localStorage.setItem('provider_id', provider.id)
-            currentProvider.value = provider
-            return
-          } else {
-            console.warn(
-              '[ProviderStore] No provider found for this user. User needs to complete provider registration.',
-            )
-            currentProvider.value = null
-            error.value = null
-            return
-          }
+          currentProvider.value = null
+          error.value = null
+          return
         }
-        localStorage.removeItem('provider_id')
+
+        // Fetch provider details using the providerId from token
+        const provider = await providerService.getProviderById(providerIdFromToken)
+        if (provider) {
+          console.log('[ProviderStore] Provider loaded successfully:', provider.id)
+          currentProvider.value = provider
+        } else {
+          console.warn('[ProviderStore] Provider not found with ID:', providerIdFromToken)
+          currentProvider.value = null
+          error.value = 'Provider not found'
+        }
       } finally {
         isLoading.value = false
         // Clear the cached promise so future calls will make a fresh request

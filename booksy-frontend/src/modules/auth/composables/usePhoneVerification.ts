@@ -81,13 +81,27 @@ export function usePhoneVerification() {
   /**
    * Verify OTP code
    * Works for both login and registration flows
+   * @param code - The OTP code to verify
+   * @param phoneNumber - Optional phone number (if not provided, uses state.value.phoneNumber)
    */
-  const verifyCode = async (code: string) => {
+  const verifyCode = async (code: string, phoneNumber?: string) => {
     state.value.isLoading = true
     state.value.error = null
+
+    // Use provided phoneNumber or fall back to state
+    const phoneToVerify = phoneNumber || state.value.phoneNumber
+
+    if (!phoneToVerify) {
+      const errorMessage = 'Phone number is required for verification'
+      state.value.error = errorMessage
+      toast.error(errorMessage)
+      state.value.isLoading = false
+      return { success: false, error: errorMessage }
+    }
+
     try {
       const response = await phoneVerificationApi.verifyCode({
-        phoneNumber: state.value.phoneNumber,
+        phoneNumber: phoneToVerify,
         code,
         // For new users, set provider type by default (can be changed later)
         userType: 'Provider',
@@ -288,7 +302,7 @@ export function usePhoneVerification() {
             if (needsOnboarding) {
               router.push({ name: 'ProviderOnboarding' })
             } else {
-              router.push({ path: '/provider/dashboard' })
+              router.push({ path: '/dashboard' })
             }
           } else {
             // No provider profile, redirect to registration

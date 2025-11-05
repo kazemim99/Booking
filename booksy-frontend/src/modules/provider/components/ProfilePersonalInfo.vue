@@ -98,15 +98,15 @@
         <h3 class="section-title">Address Information</h3>
 
         <div class="form-grid">
-          <!-- Street -->
+          <!-- Formatted Address -->
           <div class="form-group form-group-full">
-            <label for="street" class="form-label"> Street Address </label>
+            <label for="formattedAddress" class="form-label"> Address </label>
             <input
-              id="street"
-              v-model="form.address.street"
+              id="formattedAddress"
+              v-model="form.address.formattedAddress"
               type="text"
               class="form-input"
-              placeholder="123 Main Street, Apt 4B"
+              placeholder="123 Main Street, Apt 4B, City, State"
             />
           </div>
 
@@ -218,7 +218,7 @@ const form = ref({
   dateOfBirth: '',
   bio: '',
   address: {
-    street: '',
+    formattedAddress: '',
     city: '',
     state: '',
     postalCode: '',
@@ -255,7 +255,7 @@ function initializeForm() {
     dateOfBirth: props.profile.dateOfBirth || '',
     bio: props.profile.bio || '',
     address: {
-      street: props.profile.address?.street || '',
+      formattedAddress: props.profile.address?.formattedAddress || '',
       city: props.profile.address?.city || '',
       state: props.profile.address?.state || '',
       postalCode: props.profile.address?.postalCode || '',
@@ -323,7 +323,7 @@ function handleSubmit() {
 
 function hasAddress(): boolean {
   return !!(
-    form.value.address.street ||
+    form.value.address.formattedAddress ||
     form.value.address.city ||
     form.value.address.state ||
     form.value.address.postalCode ||

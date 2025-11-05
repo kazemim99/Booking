@@ -1,5 +1,4 @@
 ﻿using Booksy.Core.Application.Abstractions.Persistence;
-using Booksy.Infrastructure.Core.DependencyInjection;
 using Booksy.Infrastructure.Core.EventBus;
 using Booksy.Infrastructure.Core.EventBus.Abstractions;
 using Booksy.Infrastructure.Core.Persistence.Base;
@@ -14,6 +13,8 @@ using Booksy.ServiceCatalog.Infrastructure.Persistence.Seeders;
 using Booksy.ServiceCatalog.Infrastructure.Queries;
 using Booksy.ServiceCatalog.Infrastructure.Services.Application;
 using Booksy.ServiceCatalog.Infrastructure.Services.Domain;
+using Booksy.ServiceCatalog.Infrastructure.Services.Images;
+using Booksy.ServiceCatalog.Infrastructure.Services.Storage;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
@@ -81,6 +82,9 @@ namespace Booksy.ServiceCatalog.Infrastructure.DependencyInjection
 
             // Domain Services
             services.AddScoped<IBusinessRuleService, BusinessRuleService>();
+            services.AddScoped<IFileStorageService, LocalFileStorageService>();
+            services.AddScoped<IImageOptimizationService, ImageSharpOptimizationService>();
+            services.AddScoped<Application.Services.IImageStorageService, Infrastructure.Services.ImageStorageService>();
 
             // Application Services
             services.AddScoped<IProviderApplicationService, ProviderApplicationService>();
@@ -130,6 +134,10 @@ namespace Booksy.ServiceCatalog.Infrastructure.DependencyInjection
 
         public static async Task InitializeDatabaseAsync(this IServiceProvider serviceProvider)
         {
+            try
+            {
+
+           
             using var scope = serviceProvider.CreateScope();
             var context = scope.ServiceProvider.GetRequiredService<ServiceCatalogDbContext>();
             var seeder = scope.ServiceProvider.GetRequiredService<ISeeder>();
@@ -139,6 +147,12 @@ namespace Booksy.ServiceCatalog.Infrastructure.DependencyInjection
 
             // Seed data
             await seeder.SeedAsync();
+            }
+            catch (Exception ex)
+            {
+
+                throw;
+            }
         }
     }
 }

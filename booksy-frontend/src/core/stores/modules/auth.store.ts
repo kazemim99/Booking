@@ -367,7 +367,7 @@ export const useAuthStore = defineStore('auth', () => {
       }
 
       // All other statuses (PendingVerification, Verified, Active, etc.) go to dashboard
-      router.push({ path: '/provider/dashboard' })
+      router.push({ path: '/dashboard' })
       return
     }
 
@@ -400,8 +400,6 @@ export const useAuthStore = defineStore('auth', () => {
       clearError()
       clearValidationErrors()
       clearProviderStatus()
-      // Clear provider data
-      localStorage.removeItem('provider_id')
 
       router.push({ name: 'Login' })
     } catch (err: unknown) {
@@ -410,8 +408,6 @@ export const useAuthStore = defineStore('auth', () => {
       setRefreshToken(null)
       setUser(null)
       clearProviderStatus()
-      // Clear provider data
-      localStorage.removeItem('provider_id')
       router.push({ name: 'Login' })
     } finally {
       setLoading(false)

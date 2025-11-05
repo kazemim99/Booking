@@ -40,6 +40,7 @@ namespace Booksy.ServiceCatalog.Application.Queries.Provider.GetProvidersByStatu
                     Email = provider.ContactInfo.Email?.Value ?? string.Empty,
                     PrimaryPhone = provider.ContactInfo.PrimaryPhone?.Value ?? string.Empty,
                     LogoUrl = provider.Profile.LogoUrl,
+                    ProfileImageUrl = provider.Profile.ProfileImageUrl,
                     AllowOnlineBooking = provider.AllowOnlineBooking,
                     OffersMobileServices = provider.OffersMobileServices,
                     IsVerified = provider.VerifiedAt.HasValue,

@@ -44,6 +44,7 @@ namespace Booksy.ServiceCatalog.Application.Queries.Provider.GetProviderById
                 BusinessName = provider.Profile.BusinessName,
                 Description = provider.Profile.BusinessDescription,
                 LogoUrl = provider.Profile.LogoUrl,
+                ProfileImageUrl = provider.Profile.ProfileImageUrl,
                 Status = provider.Status,
                 Type = provider.ProviderType,
                 ContactInfo = new DTOs.Provider.ContactInfo(
@@ -55,7 +56,10 @@ namespace Booksy.ServiceCatalog.Application.Queries.Provider.GetProviderById
                     provider.Address.Street,
                     provider.Address.City,
                     provider.Address.State,
+                               provider.Address.CityId,
+                    provider.Address.ProvinceId,
                     provider.Address.PostalCode,
+
                     provider.Address.Country,
                     provider.Address.Latitude,
                     provider.Address.Longitude),

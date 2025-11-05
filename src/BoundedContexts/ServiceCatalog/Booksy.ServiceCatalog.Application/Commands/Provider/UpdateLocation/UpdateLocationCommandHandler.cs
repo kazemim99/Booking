@@ -42,18 +42,16 @@ public sealed class UpdateLocationCommandHandler : ICommandHandler<UpdateLocatio
             throw new KeyNotFoundException($"Provider with ID {request.ProviderId} not found");
         }
 
-        // Build full street address
-        var fullStreet = string.IsNullOrWhiteSpace(request.AddressLine2)
-            ? request.AddressLine1
-            : $"{request.AddressLine1}, {request.AddressLine2}";
-
         // Create and update business address
         var address = BusinessAddress.Create(
-            fullStreet,
-            request.City,
-            request.State,
-            request.PostalCode,
+            request.FormattedAddress,
+            request.AddressLine1 ?? request.FormattedAddress, // Use AddressLine1 or fallback to FormattedAddress
+            request.City ?? "",
+            "", // State (empty)
+            request.PostalCode ?? "",
             request.Country,
+            request.ProvinceId,
+            request.CityId,
             request.Latitude,
             request.Longitude);
 
@@ -68,11 +66,13 @@ public sealed class UpdateLocationCommandHandler : ICommandHandler<UpdateLocatio
 
         return new UpdateLocationResult(
             provider.Id.Value,
+            request.FormattedAddress,
             request.AddressLine1,
             request.City,
-            request.State,
             request.PostalCode,
             request.Country,
+            request.ProvinceId,
+            request.CityId,
             request.Latitude,
             request.Longitude,
             DateTime.UtcNow);
@@ -82,27 +82,17 @@ public sealed class UpdateLocationCommandHandler : ICommandHandler<UpdateLocatio
     {
         var errors = new Dictionary<string, List<string>>();
 
-        if (string.IsNullOrWhiteSpace(request.AddressLine1))
+        if (string.IsNullOrWhiteSpace(request.FormattedAddress))
         {
-            errors["addressLine1"] = new List<string> { "Address line 1 is required" };
+            errors["formattedAddress"] = new List<string> { "Formatted address is required" };
         }
 
-        if (string.IsNullOrWhiteSpace(request.City))
-        {
-            errors["city"] = new List<string> { "City is required" };
-        }
-
-        if (string.IsNullOrWhiteSpace(request.PostalCode))
-        {
-            errors["postalCode"] = new List<string> { "Postal code is required" };
-        }
-
-        if (request.Latitude.HasValue && (request.Latitude < -90 || request.Latitude > 90))
+        if (request.Latitude < -90 || request.Latitude > 90)
         {
             errors["latitude"] = new List<string> { "Latitude must be between -90 and 90" };
         }
 
-        if (request.Longitude.HasValue && (request.Longitude < -180 || request.Longitude > 180))
+        if (request.Longitude < -180 || request.Longitude > 180)
         {
             errors["longitude"] = new List<string> { "Longitude must be between -180 and 180" };
         }

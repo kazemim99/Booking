@@ -83,9 +83,17 @@ export interface CalendarDay {
   breaks?: BreakPeriod[]
   holiday?: HolidaySchedule
   exception?: ExceptionSchedule
+  iranianHoliday?: {
+    jalaliMonth: number
+    jalaliDay: number
+    nameEn: string
+    nameFa: string
+    isOfficial: boolean
+  } | null
   bookingCount?: number
   isToday: boolean
   isPast: boolean
+  isCurrentMonth?: boolean
 }
 
 // ============================================

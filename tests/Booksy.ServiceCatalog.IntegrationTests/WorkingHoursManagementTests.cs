@@ -87,8 +87,8 @@ public class WorkingHoursManagementTests : ServiceCatalogIntegrationTestBase
         response.Error.Should().BeNull();
         response.StatusCode.Should().Be(HttpStatusCode.OK);
         response.Error.Should().BeNull();
-        response.data.Should().NotBeNull();
-        response.data!.Success.Should().BeTrue();
+        response.Data.Should().NotBeNull();
+        response.Data!.Success.Should().BeTrue();
 
         // Verify in database
         var updatedProvider = await FindProviderAsync(provider.Id.Value);
@@ -247,9 +247,9 @@ public class WorkingHoursManagementTests : ServiceCatalogIntegrationTestBase
         response.Error.Should().BeNull();
         response.StatusCode.Should().Be(HttpStatusCode.Created);
         response.Error.Should().BeNull();
-        response.data.Should().NotBeNull();
-        response.data!.Success.Should().BeTrue();
-        response.data.HolidayId.Should().NotBeEmpty();
+        response.Data.Should().NotBeNull();
+        response.Data!.Success.Should().BeTrue();
+        response.Data.HolidayId.Should().NotBeEmpty();
 
         // Verify in database
         var updatedProvider = await FindProviderAsync(provider.Id.Value);
@@ -354,9 +354,9 @@ public class WorkingHoursManagementTests : ServiceCatalogIntegrationTestBase
         response.Error.Should().BeNull();
         response.StatusCode.Should().Be(HttpStatusCode.Created);
         response.Error.Should().BeNull();
-        response.data.Should().NotBeNull();
-        response.data!.Success.Should().BeTrue();
-        response.data.ExceptionId.Should().NotBeEmpty();
+        response.Data.Should().NotBeNull();
+        response.Data!.Success.Should().BeTrue();
+        response.Data.ExceptionId.Should().NotBeEmpty();
 
         // Verify in database
         var updatedProvider = await FindProviderAsync(provider.Id.Value);

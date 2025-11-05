@@ -87,6 +87,39 @@ class StaffService {
     }
   }
 
+  /**
+   * Upload staff profile photo
+   * Backend: POST /api/v1/providers/{id}/staff/{staffId}/photo
+   */
+  async uploadStaffPhoto(
+    providerId: string,
+    staffId: string,
+    file: File,
+    onUploadProgress?: (progressEvent: any) => void
+  ): Promise<{ imageUrl: string; thumbnailUrl: string }> {
+    try {
+      console.log(`[StaffService] Uploading photo for staff ${staffId}`)
+      const formData = new FormData()
+      formData.append('file', file)
+
+      const response = await serviceCategoryClient.post<{ imageUrl: string; thumbnailUrl: string }>(
+        `${PROVIDERS_BASE}/${providerId}/staff/${staffId}/photo`,
+        formData,
+        {
+          headers: {
+            'Content-Type': 'multipart/form-data'
+          },
+          onUploadProgress
+        }
+      )
+
+      console.log(`[StaffService] Photo uploaded successfully:`, response.data)
+      return response.data!
+    } catch (error) {
+      console.error(`[StaffService] Error uploading staff photo:`, error)
+      throw this.handleError(error)
+    }
+  }
 
   // ============================================
   // Error Handling

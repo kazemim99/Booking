@@ -8,41 +8,43 @@ namespace Booksy.ServiceCatalog.Domain.ValueObjects
     public sealed class BusinessAddress : ValueObject
     {
         public BusinessAddress() { }
+        public string FormattedAddress { get; }
         public string Street { get; }
         public string City { get; }
         public string State { get; }
         public string PostalCode { get; }
         public string Country { get; }
+        public int? ProvinceId { get; }
+        public int? CityId { get; }
         public double? Latitude { get; }
         public double? Longitude { get; }
 
-        private BusinessAddress(string street, string city, string state, string postalCode, string country, double? latitude = null, double? longitude = null)
+        private BusinessAddress(string formattedAddress, string street, string city, string state, string postalCode, string country, int? provinceId = null, int? cityId = null, double? latitude = null, double? longitude = null)
         {
             if (string.IsNullOrWhiteSpace(street))
                 throw new ArgumentException("Street cannot be empty", nameof(street));
 
-            if (string.IsNullOrWhiteSpace(city))
-                throw new ArgumentException("City cannot be empty", nameof(city));
+       
 
-            if (string.IsNullOrWhiteSpace(country))
-                throw new ArgumentException("Country cannot be empty", nameof(country));
-
+            FormattedAddress = formattedAddress?.Trim() ?? string.Empty;
             Street = street.Trim();
             City = city.Trim();
             State = state?.Trim() ?? string.Empty;
             PostalCode = postalCode?.Trim() ?? string.Empty;
             Country = country.Trim();
+            ProvinceId = provinceId;
+            CityId = cityId;
             Latitude = latitude;
             Longitude = longitude;
         }
 
-        public static BusinessAddress Create(string street, string city, string state, string postalCode, string country, double? latitude = null, double? longitude = null)
-            => new(street, city, state, postalCode, country, latitude, longitude);
+        public static BusinessAddress Create(string formattedAddress, string street, string city, string state, string postalCode, string country, int? provinceId = null, int? cityId = null, double? latitude = null, double? longitude = null)
+            => new(formattedAddress, street, city, state, postalCode, country, provinceId, cityId, latitude, longitude);
 
         public bool HasCoordinates => Latitude.HasValue && Longitude.HasValue;
 
         public BusinessAddress WithCoordinates(double latitude, double longitude)
-            => new(Street, City, State, PostalCode, Country, latitude, longitude);
+            => new(FormattedAddress, Street, City, State, PostalCode, Country, ProvinceId, CityId, latitude, longitude);
 
         public override string ToString()
         {

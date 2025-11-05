@@ -141,7 +141,13 @@ namespace Booksy.API
             // CORS
             app.UseCors("AllowSpecificOrigins");
 
-    
+            // Static Files - serve uploaded images
+            app.UseStaticFiles(new StaticFileOptions
+            {
+                FileProvider = new Microsoft.Extensions.FileProviders.PhysicalFileProvider(
+                    Path.Combine(env.ContentRootPath, "wwwroot")),
+                RequestPath = ""
+            });
 
             // Rate Limiting
             app.UseMiddleware<RateLimitingMiddleware>();

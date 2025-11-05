@@ -1,14 +1,20 @@
 {
-  "permissions": {
-    "allow": [
-      "Bash(*)",
-      "Write(*)",
-      "Edit(*)",
-      "Create(*)"
-    ],
-    "deny": []
-  },
   "env": {
     "DISABLE_SUMMARY_GENERATION": "1"
+  },
+  "permissions": {
+    "allow": [
+      "Bash(npm run dev:*)",
+      "Bash(node -e:*)",
+      "Bash(node analyze.js:*)",
+      "Bash(node convert-to-parent-child.js:*)",
+      "Bash(cat:*)",
+      "Bash(dotnet build:*)",
+      "Bash(dotnet clean:*)",
+      "Bash(find:*)",
+      "Bash(openspec archive replace-dashboard-with-figma-rtl-design:*)"
+    ],
+    "deny": [],
+    "ask": []
   }
 }

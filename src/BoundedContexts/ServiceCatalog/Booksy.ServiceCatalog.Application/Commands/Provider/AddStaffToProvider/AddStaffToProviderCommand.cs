@@ -13,7 +13,9 @@ public sealed record AddStaffToProviderCommand(
     string? PhoneNumber,
     string? CountryCode,
     string Role,
-    string? Notes = null) : ICommand<AddStaffToProviderResult>
+    string? Notes = null,
+    string? Biography = null,
+    string? ProfilePhotoUrl = null) : ICommand<AddStaffToProviderResult>
 {
     public Guid? IdempotencyKey { get; init; }
 }

@@ -85,6 +85,7 @@ export function useProvider() {
     includeServices = true,
     includeStaff = true,
   ) => {
+
     return providerStore.getProviderById(providerId, includeServices, includeStaff)
   }
 

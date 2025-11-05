@@ -34,25 +34,38 @@ namespace Booksy.ServiceCatalog.Application.Commands.Provider.UpdateProviderStaf
             if (provider == null)
                 throw new KeyNotFoundException($"Provider {request.ProviderId} not found");
 
-            // Validate and create value objects
-            var email = Email.Create(request.Email);
-            var phone = !string.IsNullOrWhiteSpace(request.PhoneNumber)
-                ? PhoneNumber.Create(request.PhoneNumber)
-                : null;
-            var role = ParseRole(request.Role);
+            // ✅ Update staff through Provider aggregate root (only if core fields are provided)
+            if (!string.IsNullOrWhiteSpace(request.FirstName) &&
+                !string.IsNullOrWhiteSpace(request.LastName) &&
+                !string.IsNullOrWhiteSpace(request.Email) &&
+                !string.IsNullOrWhiteSpace(request.Role))
+            {
+                var email = Email.Create(request.Email);
+                var phone = !string.IsNullOrWhiteSpace(request.PhoneNumber)
+                    ? PhoneNumber.Create(request.PhoneNumber)
+                    : null;
+                var role = ParseRole(request.Role);
 
-            // ✅ Update staff through Provider aggregate root
-            provider.UpdateStaff(
-                request.StaffId,
-                request.FirstName,
-                request.LastName,
-                email,
-                phone,
-                role);
+                provider.UpdateStaff(
+                    request.StaffId,
+                    request.FirstName,
+                    request.LastName,
+                    email,
+                    phone,
+                    role);
+            }
 
             // Update notes if provided
-            if (!string.IsNullOrWhiteSpace(request.Notes))
+            if (request.Notes != null)
                 provider.UpdateStaffNotes(request.StaffId, request.Notes);
+
+            // Update biography if provided
+            if (request.Biography != null)
+                provider.UpdateStaffBiography(request.StaffId, request.Biography);
+
+            // Update profile photo if provided
+            if (request.ProfilePhotoUrl != null)
+                provider.UpdateStaffProfilePhoto(request.StaffId, request.ProfilePhotoUrl);
 
             // ✅ Save Provider aggregate (EF Core cascades to staff)
             await _providerRepository.UpdateProviderAsync(provider, cancellationToken);
