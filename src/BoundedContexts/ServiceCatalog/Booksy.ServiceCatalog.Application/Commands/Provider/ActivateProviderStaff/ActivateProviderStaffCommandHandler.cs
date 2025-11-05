@@ -7,10 +7,7 @@ using Booksy.ServiceCatalog.Domain.ValueObjects;
 
 namespace Booksy.ServiceCatalog.Application.Commands.Provider.ActivateProviderStaff
 {
-    /// <summary>
-    /// Handler for ActivateProviderStaffCommand - reactivates staff through Provider aggregate
-    /// ✅ DDD-Compliant: Uses IProviderWriteRepository only and calls provider.ActivateStaff()
-    /// </summary>
+ 
     internal sealed class ActivateProviderStaffCommandHandler
         : ICommandHandler<ActivateProviderStaffCommand, ActivateProviderStaffResult>
     {

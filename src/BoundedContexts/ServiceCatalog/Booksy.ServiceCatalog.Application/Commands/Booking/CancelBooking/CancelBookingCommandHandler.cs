@@ -1,13 +1,7 @@
-// ========================================
-// Booksy.ServiceCatalog.Application/Commands/Booking/CancelBooking/CancelBookingCommandHandler.cs
-// ========================================
 using Booksy.Core.Application.Abstractions.CQRS;
 using Booksy.Core.Application.Abstractions.Persistence;
 using Booksy.Core.Application.Exceptions;
-using Booksy.Core.Domain.ValueObjects;
-using Booksy.Infrastructure.External.Payment;
 using Booksy.ServiceCatalog.Domain.Repositories;
-using Booksy.ServiceCatalog.Domain.ValueObjects;
 using Microsoft.Extensions.Logging;
 
 namespace Booksy.ServiceCatalog.Application.Commands.Booking.CancelBooking
@@ -19,17 +13,17 @@ namespace Booksy.ServiceCatalog.Application.Commands.Booking.CancelBooking
         private readonly IUnitOfWork _unitOfWork;
         private readonly ILogger<CancelBookingCommandHandler> _logger;
 
-        public CancelBookingCommandHandler(
-            IBookingWriteRepository bookingRepository,
-            IPaymentGateway paymentGateway,
-            IUnitOfWork unitOfWork,
-            ILogger<CancelBookingCommandHandler> logger)
-        {
-            _bookingRepository = bookingRepository;
-            _paymentGateway = paymentGateway;
-            _unitOfWork = unitOfWork;
-            _logger = logger;
-        }
+        //public CancelBookingCommandHandler(
+        //    IBookingWriteRepository bookingRepository,
+        //    IPaymentGateway paymentGateway,
+        //    IUnitOfWork unitOfWork,
+        //    ILogger<CancelBookingCommandHandler> logger)
+        //{
+        //    _bookingRepository = bookingRepository;
+        //    _paymentGateway = paymentGateway;
+        //    _unitOfWork = unitOfWork;
+        //    _logger = logger;
+        //}
 
         public async Task<CancelBookingResult> Handle(CancelBookingCommand request, CancellationToken cancellationToken)
         {
