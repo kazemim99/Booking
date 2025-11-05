@@ -79,8 +79,8 @@ namespace Booksy.ServiceCatalog.Application.EventHandlers.IntegrationEventHandle
             var refundCommand = new RefundPaymentCommand(
                 PaymentId: payment.Id.Value,
                 RefundAmount: refundAmount.Amount,
-                Reason: integrationEvent.CancellationReason ?? "Booking Cancelled",
-                Notes: $"Automatic refund due to booking cancellation. Cancelled by: {integrationEvent.CancelledBy}");
+                Reason: RefundReason.CustomerCancellation,
+                Notes: $"Automatic refund due to booking cancellation. Reason: {integrationEvent.CancellationReason}. Cancelled by: {integrationEvent.CancelledBy}");
 
             try
             {
