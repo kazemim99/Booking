@@ -9,7 +9,7 @@ on:
 
 env:
   DOTNET_VERSION: '9.0.x'
-  SOLUTION_PATH: './Booksy.sln'
+  SOLUTION_PATH: 'Booksy.sln'
 
 jobs:
   # Job 1: Build and Unit Tests
