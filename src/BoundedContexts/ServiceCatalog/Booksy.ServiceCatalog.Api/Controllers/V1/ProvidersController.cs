@@ -362,48 +362,6 @@ public class ProvidersController : ControllerBase
     }
 
     /// <summary>
-    /// Updates a provider's business profile
-    /// </summary>
-    /// <param name="id">Provider ID</param>
-    /// <param name="request">Updated business profile information</param>
-    /// <returns>Updated provider information</returns>
-    /// <response code="200">Profile updated successfully</response>
-    /// <response code="400">Invalid update data</response>
-    /// <response code="404">Provider not found</response>
-    /// <response code="403">Not authorized to update this profile</response>
-    //[HttpPut("{id:guid}/profile")]
-    //[Authorize]
-    //[ProducesResponseType(typeof(ProviderDetailsResponse), StatusCodes.Status200OK)]
-    //[ProducesResponseType(typeof(ApiErrorResult), StatusCodes.Status400BadRequest)]
-    //[ProducesResponseType(typeof(ApiErrorResult), StatusCodes.Status404NotFound)]
-    //[ProducesResponseType(StatusCodes.Status403Forbidden)]
-    //public async Task<IActionResult> UpdateBusinessProfile(
-    //    [FromRoute] Guid id,
-    //    [FromBody][Required] UpdateBusinessProfileRequest request,
-    //    CancellationToken cancellationToken = default)
-    //{
-    //    // Providers can only update their own profile unless they're an admin
-    //    if (!await CanManageProvider(id))
-    //    {
-    //        _logger.LogWarning("User {RequestingUser} attempted to update provider {ProviderId} without permission",
-    //            GetCurrentUserId(), id);
-    //        return Forbid();
-    //    }
-
-    //    var command = new UpdateBusinessProfileCommand(
-    //        ProviderId: id,
-    //        BusinessName: request.BusinessName,
-    //        Description: request.Description,
-    //        LogoUrl: request.LogoUrl,
-    //        Website: request.WebsiteUrl);
-
-    //    var result = await _mediator.Send(command, cancellationToken);
-
-    //    _logger.LogInformation("Provider {ProviderId} profile updated successfully", id);
-    //    return Ok(MapToProviderDetailsResponse(result));
-    //}
-
-    /// <summary>
     /// Activates a provider account
     /// </summary>
     /// <param name="id">Provider ID</param>
@@ -432,66 +390,6 @@ public class ProvidersController : ControllerBase
         return Ok(new MessageResponse("Provider account activated successfully"));
     }
 
-    ///// <summary>
-    ///// Deactivates a provider account (Admin only)
-    ///// </summary>
-    ///// <param name="id">Provider ID</param>
-    ///// <param name="request">Deactivation reason</param>
-    ///// <returns>Success message</returns>
-    ///// <response code="200">Account deactivated successfully</response>
-    ///// <response code="404">Provider not found</response>
-    ///// <response code="403">Not authorized (admin only)</response>
-    //[HttpPost("{id:guid}/deactivate")]
-    //[Authorize(Policy = "AdminOnly")]
-    //[ProducesResponseType(typeof(MessageResponse), StatusCodes.Status200OK)]
-    //[ProducesResponseType(typeof(ApiErrorResult), StatusCodes.Status404NotFound)]
-    //[ProducesResponseType(StatusCodes.Status403Forbidden)]
-    //public async Task<IActionResult> DeactivateProvider(
-    //    [FromRoute] Guid id,
-    //    [FromBody] DeactivateProviderRequest? request,
-    //    CancellationToken cancellationToken = default)
-    //{
-    //    var command = new DeactivateProviderCommand(
-    //        ProviderId: id,
-    //        Reason: request?.Reason ?? "Deactivated by administrator",
-    //        Notes: request?.Notes);
-    //    var result = await _mediator.Send(command, cancellationToken);
-
-    //    _logger.LogInformation("Provider {ProviderId} deactivated by admin {AdminId}", id, GetCurrentUserId());
-    //    return Ok(new MessageResponse("Provider account deactivated successfully"));
-    //}
-
-    /// <summary>
-    /// Permanently archives a provider account (Admin only)
-    /// </summary>
-    /// <param name="id">Provider ID</param>
-    /// <param name="request">Archive reason</param>
-    /// <returns>Success message</returns>
-    /// <response code="204">Account archived successfully</response>
-    /// <response code="404">Provider not found</response>
-    /// <response code="403">Not authorized (admin only)</response>
-    /// <response code="409">Cannot archive provider with active bookings</response>
-    //[HttpDelete("{id:guid}")]
-    //[Authorize(Policy = "SysAdminOnly")]
-    //[ProducesResponseType(StatusCodes.Status204NoContent)]
-    //[ProducesResponseType(typeof(ApiErrorResult), StatusCodes.Status404NotFound)]
-    //[ProducesResponseType(StatusCodes.Status403Forbidden)]
-    //[ProducesResponseType(typeof(ApiErrorResult), StatusCodes.Status409Conflict)]
-    //public async Task<IActionResult> ArchiveProvider(
-    //    [FromRoute] Guid id,
-    //    [FromBody] ArchiveProviderRequest? request,
-    //    CancellationToken cancellationToken = default)
-    //{
-    //    var command = new ArchiveProviderCommand(
-    //        ProviderId: id,
-    //        Reason: request?.Reason ?? "Archived by administrator",
-    //        Notes: request?.Notes);
-    //    var result = await _mediator.Send(command, cancellationToken);
-
-    //    _logger.LogWarning("Provider {ProviderId} permanently archived by admin {AdminId}", id, GetCurrentUserId());
-    //    return NoContent();
-    //}
-
     /// <summary>
     /// Gets providers filtered by status
     /// </summary>
@@ -519,66 +417,6 @@ public class ProvidersController : ControllerBase
         var response = result.Select(MapToProviderSummaryResponse).ToList();
         return Ok(response);
     }
-
-    /// <summary>
-    /// Gets featured providers across all categories
-    /// </summary>
-    /// <param name="categoryFilter">Optional category filter</param>
-    /// <param name="limit">Number of providers to return (default: 20, max: 100)</param>
-    /// <returns>List of featured providers</returns>
-    /// <response code="200">Featured providers retrieved successfully</response>
-    /// <response code="400">Invalid parameters</response>
-    //[HttpGet("featured")]
-    //[AllowAnonymous]
-    //[ProducesResponseType(typeof(IReadOnlyList<ProviderSummaryResponse>), StatusCodes.Status200OK)]
-    //[ProducesResponseType(StatusCodes.Status400BadRequest)]
-    //public async Task<IActionResult> GetFeaturedProviders(
-    //    [FromQuery] string? categoryFilter = null,
-    //    [FromQuery] int limit = 20,
-    //    CancellationToken cancellationToken = default)
-    //{
-    //    if (limit <= 0 || limit > 100)
-    //        return BadRequest("Limit must be between 1 and 100");
-
-    //    var query = new GetFeaturedProvidersQuery(categoryFilter, limit);
-    //    var result = await _mediator.Send(query, cancellationToken);
-
-    //    var response = result.Select(MapToProviderSummaryResponse).ToList();
-    //    return Ok(response);
-    //}
-
-    /// <summary>
-    /// Updates provider verification status (Admin only)
-    /// </summary>
-    /// <param name="id">Provider ID</param>
-    /// <param name="request">Verification details</param>
-    /// <returns>Success message</returns>
-    /// <response code="200">Verification status updated successfully</response>
-    /// <response code="404">Provider not found</response>
-    /// <response code="403">Not authorized (admin only)</response>
-    //[HttpPost("{id:guid}/verify")]
-    //[Authorize(Policy = "AdminOnly")]
-    //[ProducesResponseType(typeof(MessageResponse), StatusCodes.Status200OK)]
-    //[ProducesResponseType(typeof(ApiErrorResult), StatusCodes.Status404NotFound)]
-    //[ProducesResponseType(StatusCodes.Status403Forbidden)]
-    //public async Task<IActionResult> UpdateVerificationStatus(
-    //    [FromRoute] Guid id,
-    //    [FromBody][Required] UpdateVerificationRequest request,
-    //    CancellationToken cancellationToken = default)
-    //{
-    //    var command = new UpdateProviderVerificationCommand(
-    //        ProviderId: id,
-    //        IsVerified: request.IsVerified,
-    //        VerificationNotes: request.VerificationNotes);
-
-    //    var result = await _mediator.Send(command, cancellationToken);
-
-    //    var status = request.IsVerified ? "verified" : "unverified";
-    //    _logger.LogInformation("Provider {ProviderId} marked as {Status} by admin {AdminId}",
-    //        id, status, GetCurrentUserId());
-
-    //    return Ok(new MessageResponse($"Provider verification status updated to {status}"));
-    //}
 
     #region Staff Management
 
