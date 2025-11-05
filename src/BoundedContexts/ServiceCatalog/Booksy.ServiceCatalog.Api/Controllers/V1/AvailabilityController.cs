@@ -54,7 +54,7 @@ public class AvailabilityController : ControllerBase
             (
 "Cannot check availability for past dates",
                 StatusCodes.Status400BadRequest.ToString()
-            );
+            ));
         }
 
         var query = new GetAvailableSlotsQuery(
@@ -111,7 +111,7 @@ public class AvailabilityController : ControllerBase
             (
                  "Cannot check availability for past times",
                 StatusCodes.Status400BadRequest.ToString()
-            );
+            ));
         }
 
         var query = new GetAvailableSlotsQuery(

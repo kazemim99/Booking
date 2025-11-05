@@ -236,7 +236,7 @@ public class BookingsControllerTests : ServiceCatalogIntegrationTestBase
         var confirmedBooking = await CreateBookingForCustomerAsync(customerId, provider, service, DateTime.UtcNow.AddDays(2));
 
         // Confirm one booking
-        confirmedBooking.Confirm("test_payment_123");
+        confirmedBooking.Confirm();
         await DbContext.SaveChangesAsync();
 
         AuthenticateAsUser(customerId, "customer@test.com");
@@ -270,13 +270,13 @@ public class BookingsControllerTests : ServiceCatalogIntegrationTestBase
         };
 
         // Act
-        var response = await PostAsJsonAsync<CancelBookingRequest, MessageResponse>(
+        var response = await PostAsJsonAsync<CancelBookingRequest, CancelBookingRequest>(
             $"/api/v1/bookings/{booking.Id.Value}/cancel", request);
 
         // Assert
         response.StatusCode.Should().Be(HttpStatusCode.OK);
         response.Data.Should().NotBeNull();
-        response.Data!.Message.Should().Contain("cancelled successfully");
+        response!.Message.Should().Contain("cancelled successfully");
 
         // Verify booking is cancelled in database
         var cancelledBooking = await DbContext.Bookings.FirstAsync(b => b.Id == booking.Id);
@@ -368,13 +368,13 @@ public class BookingsControllerTests : ServiceCatalogIntegrationTestBase
         var provider = await CreateAndAuthenticateAsProviderAsync("Test Provider", "provider@test.com");
 
         // Add business hours
-        provider.SetBusinessHours(new Dictionary<DayOfWeek, (TimeOnly? Open, TimeOnly? Close)>
+        provider.SetBusinessHours(new Dictionary<Domain.Enums.DayOfWeek, (TimeOnly? Open, TimeOnly? Close)>
         {
-            { DayOfWeek.Monday, (TimeOnly.FromTimeSpan(TimeSpan.FromHours(9)), TimeOnly.FromTimeSpan(TimeSpan.FromHours(17))) },
-            { DayOfWeek.Tuesday, (TimeOnly.FromTimeSpan(TimeSpan.FromHours(9)), TimeOnly.FromTimeSpan(TimeSpan.FromHours(17))) },
-            { DayOfWeek.Wednesday, (TimeOnly.FromTimeSpan(TimeSpan.FromHours(9)), TimeOnly.FromTimeSpan(TimeSpan.FromHours(17))) },
-            { DayOfWeek.Thursday, (TimeOnly.FromTimeSpan(TimeSpan.FromHours(9)), TimeOnly.FromTimeSpan(TimeSpan.FromHours(17))) },
-            { DayOfWeek.Friday, (TimeOnly.FromTimeSpan(TimeSpan.FromHours(9)), TimeOnly.FromTimeSpan(TimeSpan.FromHours(17))) }
+            { Domain.Enums.DayOfWeek.Monday, (TimeOnly.FromTimeSpan(TimeSpan.FromHours(9)), TimeOnly.FromTimeSpan(TimeSpan.FromHours(17))) },
+            { Domain.Enums.DayOfWeek.Tuesday, (TimeOnly.FromTimeSpan(TimeSpan.FromHours(9)), TimeOnly.FromTimeSpan(TimeSpan.FromHours(17))) },
+            { Domain.Enums.DayOfWeek.Wednesday, (TimeOnly.FromTimeSpan(TimeSpan.FromHours(9)), TimeOnly.FromTimeSpan(TimeSpan.FromHours(17))) },
+            { Domain.Enums.DayOfWeek.Thursday, (TimeOnly.FromTimeSpan(TimeSpan.FromHours(9)), TimeOnly.FromTimeSpan(TimeSpan.FromHours(17))) },
+            { Domain.Enums.DayOfWeek.Friday, (TimeOnly.FromTimeSpan(TimeSpan.FromHours(9)), TimeOnly.FromTimeSpan(TimeSpan.FromHours(17))) }
         });
 
         // Add a staff member if none exists
