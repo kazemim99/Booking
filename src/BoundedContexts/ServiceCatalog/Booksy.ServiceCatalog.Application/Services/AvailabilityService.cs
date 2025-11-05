@@ -2,7 +2,6 @@
 // Booksy.ServiceCatalog.Application/Services/AvailabilityService.cs
 // ========================================
 using Booksy.ServiceCatalog.Domain.Aggregates;
-using Booksy.ServiceCatalog.Domain.Aggregates.ServiceAggregate;
 using Booksy.ServiceCatalog.Domain.DomainServices;
 using Booksy.ServiceCatalog.Domain.Entities;
 using Booksy.ServiceCatalog.Domain.Enums;
@@ -217,7 +216,7 @@ namespace Booksy.ServiceCatalog.Application.Services
         public async Task<AvailabilityValidationResult> ValidateBookingConstraintsAsync(
             Provider provider,
             Service service,
-            DateTime startTime,
+            DayOfWeek startTime,
             CancellationToken cancellationToken = default)
         {
             var errors = new List<string>();
@@ -235,7 +234,7 @@ namespace Booksy.ServiceCatalog.Application.Services
             }
 
             // Check if service is active
-            if (!service.IsActive)
+            if (service.Status == ServiceStatus.Active)
             {
                 errors.Add("Service is not active");
             }

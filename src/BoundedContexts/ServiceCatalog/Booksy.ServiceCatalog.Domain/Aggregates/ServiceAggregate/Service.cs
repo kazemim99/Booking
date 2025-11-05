@@ -37,9 +37,9 @@ namespace Booksy.ServiceCatalog.Domain.Aggregates
         public bool AvailableAsMobile { get; private set; }
 
         // Booking Rules
-        public int MaxAdvanceBookingDays { get; private set; }
-        public int MinAdvanceBookingHours { get; private set; }
-        public int MaxConcurrentBookings { get; private set; }
+        public int? MaxAdvanceBookingDays { get; private set; }
+        public int? MinAdvanceBookingHours { get; private set; }
+        public int? MaxConcurrentBookings { get; private set; }
         public BookingPolicy? BookingPolicy { get; private set; }
 
         // Metadata
