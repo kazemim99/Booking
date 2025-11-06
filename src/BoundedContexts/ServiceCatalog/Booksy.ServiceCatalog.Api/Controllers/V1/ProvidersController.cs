@@ -1,6 +1,7 @@
 ﻿using Booksy.API.Extensions;
 using Booksy.API.Middleware;
 using Booksy.Core.Application.DTOs;
+using Booksy.Core.Domain.Exceptions;
 using Booksy.ServiceCatalog.Api.Models.Requests;
 using Booksy.ServiceCatalog.Api.Models.Requests.Extenstions;
 using Booksy.ServiceCatalog.Api.Models.Responses;
@@ -26,7 +27,6 @@ using MediatR;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using System.Security.Claims;
-using static Booksy.API.Middleware.ExceptionHandlingMiddleware;
 
 namespace Booksy.ServiceCatalog.API.Controllers.V1;
 
@@ -37,7 +37,6 @@ namespace Booksy.ServiceCatalog.API.Controllers.V1;
 [ApiVersion("1.0")]
 [Route("api/v{version:apiVersion}/[controller]")]
 [Produces("application/json")]
-[ProducesResponseType(typeof(ApiErrorResult), StatusCodes.Status500InternalServerError)]
 public class ProvidersController : ControllerBase
 {
     private readonly ISender _mediator;
@@ -76,7 +75,6 @@ public class ProvidersController : ControllerBase
     [Booksy.API.Middleware.EnableRateLimiting("provider-registration")]
     [ProducesResponseType(typeof(CreateProviderDraftResponse), StatusCodes.Status201Created)]
     [ProducesResponseType(typeof(CreateProviderDraftResponse), StatusCodes.Status200OK)]
-    [ProducesResponseType(typeof(ApiErrorResult), StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     public async Task<IActionResult> CreateProviderDraft(
         [FromBody] CreateProviderDraftRequest request,
@@ -129,7 +127,6 @@ public class ProvidersController : ControllerBase
     [HttpGet("draft")]
     [Authorize]
     [ProducesResponseType(typeof(GetDraftProviderResponse), StatusCodes.Status200OK)]
-    [ProducesResponseType(typeof(ApiErrorResult), StatusCodes.Status404NotFound)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     public async Task<IActionResult> GetDraftProvider(
         CancellationToken cancellationToken = default)
@@ -189,8 +186,6 @@ public class ProvidersController : ControllerBase
     [Authorize]
     [Booksy.API.Middleware.EnableRateLimiting("provider-registration")]
     [ProducesResponseType(typeof(CompleteProviderRegistrationResponse), StatusCodes.Status200OK)]
-    [ProducesResponseType(typeof(ApiErrorResult), StatusCodes.Status400BadRequest)]
-    [ProducesResponseType(typeof(ApiErrorResult), StatusCodes.Status404NotFound)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     [ProducesResponseType(StatusCodes.Status403Forbidden)]
     public async Task<IActionResult> CompleteProviderRegistration(
@@ -234,9 +229,7 @@ public class ProvidersController : ControllerBase
     [Authorize]
     [Booksy.API.Middleware.EnableRateLimiting("provider-registration")]
     [ProducesResponseType(typeof(ProviderResponse), StatusCodes.Status201Created)]
-    [ProducesResponseType(typeof(ApiErrorResult), StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
-    [ProducesResponseType(typeof(ApiErrorResult), StatusCodes.Status409Conflict)]
     public async Task<IActionResult> RegisterProvider(
         [FromBody] RegisterProviderRequest request,
         CancellationToken cancellationToken = default)
@@ -275,8 +268,6 @@ public class ProvidersController : ControllerBase
     [Authorize]
     [Booksy.API.Middleware.EnableRateLimiting("provider-registration")]
     [ProducesResponseType(typeof(ProviderFullRegistrationResponse), StatusCodes.Status201Created)]
-    [ProducesResponseType(typeof(ApiErrorResult), StatusCodes.Status400BadRequest)]
-    [ProducesResponseType(typeof(ApiErrorResult), StatusCodes.Status409Conflict)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     public async Task<IActionResult> RegisterProviderFull(
         [FromBody] RegisterProviderFullRequest request,
@@ -400,7 +391,6 @@ public class ProvidersController : ControllerBase
     [HttpGet("current/status")]
     [Authorize]
     [ProducesResponseType(typeof(ProviderStatusResponse), StatusCodes.Status200OK)]
-    [ProducesResponseType(typeof(ApiErrorResult), StatusCodes.Status404NotFound)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     public async Task<IActionResult> GetCurrentProviderStatus(
         CancellationToken cancellationToken = default)
@@ -550,8 +540,6 @@ public class ProvidersController : ControllerBase
     [HttpPost("{id:guid}/activate")]
     [Authorize(Policy = "AdminOnly")]
     [ProducesResponseType(typeof(MessageResponse), StatusCodes.Status200OK)]
-    [ProducesResponseType(typeof(ApiErrorResult), StatusCodes.Status400BadRequest)]
-    [ProducesResponseType(typeof(ApiErrorResult), StatusCodes.Status404NotFound)]
     [ProducesResponseType(StatusCodes.Status403Forbidden)]
     public async Task<IActionResult> ActivateProvider(
         [FromRoute] Guid id,
@@ -656,10 +644,8 @@ public class ProvidersController : ControllerBase
     [HttpPost("{providerId:guid}/staff")]
     [Authorize]
     [ProducesResponseType(typeof(StaffDetailsResponse), StatusCodes.Status201Created)]
-    [ProducesResponseType(typeof(ApiErrorResult), StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     [ProducesResponseType(StatusCodes.Status403Forbidden)]
-    [ProducesResponseType(typeof(ApiErrorResult), StatusCodes.Status409Conflict)]
     public async Task<IActionResult> AddStaff(
         [FromRoute] Guid providerId,
         [FromBody] AddStaffRequest request,
@@ -709,7 +695,6 @@ public class ProvidersController : ControllerBase
     [HttpPut("{id:guid}/staff/{staffId:guid}")]
     [Authorize]
     [ProducesResponseType(typeof(StaffDetailsResponse), StatusCodes.Status200OK)]
-    [ProducesResponseType(typeof(ApiErrorResult), StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     [ProducesResponseType(StatusCodes.Status403Forbidden)]
     public async Task<IActionResult> UpdateStaff(
@@ -1137,8 +1122,6 @@ public class ProvidersController : ControllerBase
     [Authorize]
     [RequestSizeLimit(52428800)] // 50MB for multiple files
     [ProducesResponseType(typeof(List<GalleryImageResponse>), StatusCodes.Status200OK)]
-    [ProducesResponseType(typeof(ApiErrorResult), StatusCodes.Status400BadRequest)]
-    [ProducesResponseType(typeof(ApiErrorResult), StatusCodes.Status404NotFound)]
     public async Task<IActionResult> UploadGalleryImages(
         [FromRoute] Guid providerId,
         [FromForm] IFormFileCollection files,
@@ -1177,7 +1160,6 @@ public class ProvidersController : ControllerBase
     [Authorize]
     [AllowAnonymous]
     [ProducesResponseType(typeof(List<GalleryImageResponse>), StatusCodes.Status200OK)]
-    [ProducesResponseType(typeof(ApiErrorResult), StatusCodes.Status404NotFound)]
     public async Task<IActionResult> GetGalleryImages(
         [FromRoute] Guid providerId,
         CancellationToken cancellationToken = default)
@@ -1214,8 +1196,6 @@ public class ProvidersController : ControllerBase
     [HttpPut("{providerId}/gallery/{imageId}")]
     [Authorize]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
-    [ProducesResponseType(typeof(ApiErrorResult), StatusCodes.Status400BadRequest)]
-    [ProducesResponseType(typeof(ApiErrorResult), StatusCodes.Status404NotFound)]
     public async Task<IActionResult> UpdateGalleryImageMetadata(
         [FromRoute] Guid providerId,
         [FromRoute] Guid imageId,
@@ -1245,8 +1225,6 @@ public class ProvidersController : ControllerBase
     [HttpPut("{providerId}/gallery/reorder")]
     [Authorize]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
-    [ProducesResponseType(typeof(ApiErrorResult), StatusCodes.Status400BadRequest)]
-    [ProducesResponseType(typeof(ApiErrorResult), StatusCodes.Status404NotFound)]
     public async Task<IActionResult> ReorderGalleryImages(
         [FromRoute] Guid providerId,
         [FromBody] ReorderGalleryImagesRequest request,
@@ -1326,7 +1304,6 @@ public class ProvidersController : ControllerBase
     [Consumes("multipart/form-data")]
     [RequestSizeLimit(5242880)] // 5MB
     [ProducesResponseType(typeof(UploadImageResponse), StatusCodes.Status200OK)]
-    [ProducesResponseType(typeof(ApiErrorResult), StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     public async Task<IActionResult> UploadProfileImage(
         IFormFile image,
@@ -1334,24 +1311,12 @@ public class ProvidersController : ControllerBase
     {
         if (image == null || image.Length == 0)
         {
-            return BadRequest(new ApiErrorResult("No image file provided")
-            {
-                Errors = new Dictionary<string, string[]>
-                {
-                    { "image", new[] { "Image file is required" } }
-                }
-            });
+            throw new DomainValidationException("image", "Image file is required");
         }
 
         if (!_imageStorageService.IsValidImageType(image))
         {
-            return BadRequest(new ApiErrorResult("Invalid image format")
-            {
-                Errors = new Dictionary<string, string[]>
-                {
-                    { "image", new[] { "Only JPG, PNG, GIF, and WebP images are allowed" } }
-                }
-            });
+            throw new DomainValidationException("image", "Only JPG, PNG, GIF, and WebP images are allowed");
         }
 
         // Get current user ID and find their provider
@@ -1367,7 +1332,7 @@ public class ProvidersController : ControllerBase
 
         if (provider == null)
         {
-            return NotFound(new ApiErrorResult("Provider not found for current user"));
+            throw new NotFoundException("Provider not found for current user");
         }
 
         var imageUrl = await _imageStorageService.SaveProfileImageAsync(provider.Id, image);
@@ -1393,7 +1358,6 @@ public class ProvidersController : ControllerBase
     [Consumes("multipart/form-data")]
     [RequestSizeLimit(5242880)] // 5MB
     [ProducesResponseType(typeof(UploadImageResponse), StatusCodes.Status200OK)]
-    [ProducesResponseType(typeof(ApiErrorResult), StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     public async Task<IActionResult> UploadBusinessLogo(
         IFormFile image,
@@ -1401,24 +1365,12 @@ public class ProvidersController : ControllerBase
     {
         if (image == null || image.Length == 0)
         {
-            return BadRequest(new ApiErrorResult("No image file provided")
-            {
-                Errors = new Dictionary<string, string[]>
-                {
-                    { "image", new[] { "Image file is required" } }
-                }
-            });
+            throw new DomainValidationException("image", "Image file is required");
         }
 
         if (!_imageStorageService.IsValidImageType(image))
         {
-            return BadRequest(new ApiErrorResult("Invalid image format")
-            {
-                Errors = new Dictionary<string, string[]>
-                {
-                    { "image", new[] { "Only JPG, PNG, GIF, and WebP images are allowed" } }
-                }
-            });
+            throw new DomainValidationException("image", "Only JPG, PNG, GIF, and WebP images are allowed");
         }
 
         // Get current user ID and find their provider
@@ -1434,7 +1386,7 @@ public class ProvidersController : ControllerBase
 
         if (provider == null)
         {
-            return NotFound(new ApiErrorResult("Provider not found for current user"));
+            throw new NotFoundException("Provider not found for current user");
         }
 
         var imageUrl = await _imageStorageService.SaveBusinessLogoAsync(provider.Id, image);
@@ -1459,7 +1411,6 @@ public class ProvidersController : ControllerBase
     [HttpPut("profile")]
     [Authorize]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
-    [ProducesResponseType(typeof(ApiErrorResult), StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IActionResult> UpdateProfile(
@@ -1479,7 +1430,7 @@ public class ProvidersController : ControllerBase
 
         if (provider == null)
         {
-            return NotFound(new ApiErrorResult("Provider not found for current user"));
+            throw new NotFoundException("Provider not found for current user");
         }
 
         var command = new Application.Commands.Provider.UpdateProviderProfile.UpdateProviderProfileCommand(
@@ -1507,7 +1458,6 @@ public class ProvidersController : ControllerBase
     [HttpPut("business")]
     [Authorize]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
-    [ProducesResponseType(typeof(ApiErrorResult), StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IActionResult> UpdateBusinessInfo(
@@ -1527,7 +1477,7 @@ public class ProvidersController : ControllerBase
 
         if (provider == null)
         {
-            return NotFound(new ApiErrorResult("Provider not found for current user"));
+            throw new NotFoundException("Provider not found for current user");
         }
 
         var command = new UpdateBusinessProfileCommand(

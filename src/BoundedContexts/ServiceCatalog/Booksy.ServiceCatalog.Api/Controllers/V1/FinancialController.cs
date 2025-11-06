@@ -1,10 +1,10 @@
 using Booksy.API.Extensions;
 using Booksy.Core.Application.DTOs;
+using Booksy.Core.Domain.Exceptions;
 using Booksy.ServiceCatalog.Application.Queries.Payment.GetProviderEarnings;
 using MediatR;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using static Booksy.API.Middleware.ExceptionHandlingMiddleware;
 
 namespace Booksy.ServiceCatalog.API.Controllers.V1;
 
@@ -15,7 +15,6 @@ namespace Booksy.ServiceCatalog.API.Controllers.V1;
 [ApiVersion("1.0")]
 [Route("api/v{version:apiVersion}/[controller]")]
 [Produces("application/json")]
-[ProducesResponseType(typeof(ApiErrorResult), StatusCodes.Status500InternalServerError)]
 public class FinancialController : ControllerBase
 {
     private readonly ISender _mediator;
@@ -44,8 +43,6 @@ public class FinancialController : ControllerBase
     [HttpGet("provider/{providerId}/earnings")]
     [Authorize]
     [ProducesResponseType(typeof(ProviderEarningsViewModel), StatusCodes.Status200OK)]
-    [ProducesResponseType(typeof(ApiErrorResult), StatusCodes.Status400BadRequest)]
-    [ProducesResponseType(typeof(ApiErrorResult), StatusCodes.Status404NotFound)]
     public async Task<IActionResult> GetProviderEarnings(
         Guid providerId,
         [FromQuery] DateTime startDate,
@@ -55,9 +52,7 @@ public class FinancialController : ControllerBase
     {
         if (startDate >= endDate)
         {
-            return BadRequest(new ApiErrorResult(
-                "Start date must be before end date",
-                "INVALID_DATE_RANGE"));
+            throw new DomainValidationException("DateRange", "Start date must be before end date");
         }
 
         var query = new GetProviderEarningsQuery(

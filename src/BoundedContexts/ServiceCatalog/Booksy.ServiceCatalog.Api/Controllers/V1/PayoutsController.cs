@@ -1,5 +1,6 @@
 using Booksy.API.Extensions;
 using Booksy.Core.Application.DTOs;
+using Booksy.Core.Domain.Exceptions;
 using Booksy.ServiceCatalog.API.Models.Requests;
 using Booksy.ServiceCatalog.Api.Models.Responses;
 using Booksy.ServiceCatalog.Application.Commands.Payout.CreatePayout;
@@ -9,7 +10,6 @@ using Booksy.ServiceCatalog.Application.Queries.Payout.GetProviderPayouts;
 using MediatR;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using static Booksy.API.Middleware.ExceptionHandlingMiddleware;
 
 namespace Booksy.ServiceCatalog.API.Controllers.V1;
 
@@ -20,7 +20,6 @@ namespace Booksy.ServiceCatalog.API.Controllers.V1;
 [ApiVersion("1.0")]
 [Route("api/v{version:apiVersion}/[controller]")]
 [Produces("application/json")]
-[ProducesResponseType(typeof(ApiErrorResult), StatusCodes.Status500InternalServerError)]
 public class PayoutsController : ControllerBase
 {
     private readonly ISender _mediator;
@@ -46,8 +45,6 @@ public class PayoutsController : ControllerBase
     [HttpPost]
     [Authorize(Roles = "Admin,Finance")]
     [ProducesResponseType(typeof(PayoutResponse), StatusCodes.Status201Created)]
-    [ProducesResponseType(typeof(ApiErrorResult), StatusCodes.Status400BadRequest)]
-    [ProducesResponseType(typeof(ApiErrorResult), StatusCodes.Status404NotFound)]
     public async Task<IActionResult> CreatePayout(
         [FromBody] CreatePayoutRequest request,
         CancellationToken cancellationToken = default)
@@ -97,8 +94,6 @@ public class PayoutsController : ControllerBase
     [HttpPost("{id}/execute")]
     [Authorize(Roles = "Admin,Finance")]
     [ProducesResponseType(typeof(PayoutResponse), StatusCodes.Status200OK)]
-    [ProducesResponseType(typeof(ApiErrorResult), StatusCodes.Status400BadRequest)]
-    [ProducesResponseType(typeof(ApiErrorResult), StatusCodes.Status404NotFound)]
     public async Task<IActionResult> ExecutePayout(
         Guid id,
         [FromBody] ExecutePayoutRequest request,
@@ -113,6 +108,11 @@ public class PayoutsController : ControllerBase
         _logger.LogInformation(
             "Payout {PayoutId} executed. External ID: {ExternalId}, Status: {Status}",
             id, result.ExternalPayoutId, result.Status);
+
+        if (!result.IsSuccessful)
+        {
+            throw new DomainValidationException("PayoutExecution", result.ErrorMessage ?? "Failed to execute payout");
+        }
 
         var response = new PayoutResponse
         {
@@ -132,13 +132,6 @@ public class PayoutsController : ControllerBase
             CreatedAt = result.CreatedAt
         };
 
-        if (!result.IsSuccessful)
-        {
-            return BadRequest(new ApiErrorResult(
-                result.ErrorMessage ?? "Failed to execute payout",
-                "PAYOUT_EXECUTION_FAILED"));
-        }
-
         return Ok(response);
     }
 
@@ -153,7 +146,6 @@ public class PayoutsController : ControllerBase
     [HttpGet("{id}")]
     [Authorize]
     [ProducesResponseType(typeof(PayoutDetailsDto), StatusCodes.Status200OK)]
-    [ProducesResponseType(typeof(ApiErrorResult), StatusCodes.Status404NotFound)]
     public async Task<IActionResult> GetPayoutById(
         Guid id,
         CancellationToken cancellationToken = default)
@@ -164,9 +156,7 @@ public class PayoutsController : ControllerBase
 
         if (result == null)
         {
-            return NotFound(new ApiErrorResult(
-                $"Payout with ID {id} was not found",
-                "PAYOUT_NOT_FOUND"));
+            throw new NotFoundException($"Payout with ID {id} was not found");
         }
 
         return Ok(result);
