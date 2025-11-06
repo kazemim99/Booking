@@ -2,7 +2,6 @@
 // Booksy.ServiceCatalog.Application/Commands/Notifications/SendNotification/SendNotificationCommandHandler.cs
 // ========================================
 using Booksy.Core.Application.Abstractions.CQRS;
-using Booksy.Core.Application.Results;
 using Booksy.Core.Domain.ValueObjects;
 using Booksy.ServiceCatalog.Application.Services.Notifications;
 using Booksy.ServiceCatalog.Domain.Aggregates.NotificationAggregate;
@@ -37,78 +36,71 @@ namespace Booksy.ServiceCatalog.Application.Commands.Notifications.SendNotificat
             _inAppService = inAppService;
         }
 
-        public async Task<Result<SendNotificationResult>> Handle(
+        public async Task<SendNotificationResult> Handle(
             SendNotificationCommand command,
             CancellationToken cancellationToken)
         {
+            // Create notification aggregate
+            var notification = Notification.Create(
+                UserId.From(command.RecipientId),
+                command.Type,
+                command.Channel,
+                command.Subject,
+                command.Body,
+                command.Priority,
+                command.PlainTextBody);
+
+            // Set recipient contact information
+            notification.SetRecipientContact(
+                command.RecipientEmail,
+                command.RecipientPhone,
+                command.RecipientName);
+
+            // Set template information if provided
+            if (!string.IsNullOrWhiteSpace(command.TemplateId) && command.TemplateData != null)
+            {
+                notification.SetTemplate(command.TemplateId, command.TemplateData);
+            }
+
+            // Set related entities
+            notification.SetRelatedEntities(
+                command.BookingId.HasValue ? BookingId.From(command.BookingId.Value) : null,
+                command.PaymentId.HasValue ? PaymentId.From(command.PaymentId.Value) : null,
+                command.ProviderId.HasValue ? ProviderId.From(command.ProviderId.Value) : null);
+
+            // Add metadata
+            if (command.Metadata != null)
+            {
+                foreach (var kvp in command.Metadata)
+                {
+                    notification.AddMetadata(kvp.Key, kvp.Value);
+                }
+            }
+
+            // Queue the notification
+            notification.Queue();
+
+            // Save to database
+            await _notificationRepository.SaveNotificationAsync(notification, cancellationToken);
+
+            // Send immediately based on channel
             try
             {
-                // Create notification aggregate
-                var notification = Notification.Create(
-                    UserId.From(command.RecipientId),
-                    command.Type,
-                    command.Channel,
-                    command.Subject,
-                    command.Body,
-                    command.Priority,
-                    command.PlainTextBody);
-
-                // Set recipient contact information
-                notification.SetRecipientContact(
-                    command.RecipientEmail,
-                    command.RecipientPhone,
-                    command.RecipientName);
-
-                // Set template information if provided
-                if (!string.IsNullOrWhiteSpace(command.TemplateId) && command.TemplateData != null)
-                {
-                    notification.SetTemplate(command.TemplateId, command.TemplateData);
-                }
-
-                // Set related entities
-                notification.SetRelatedEntities(
-                    command.BookingId.HasValue ? BookingId.From(command.BookingId.Value) : null,
-                    command.PaymentId.HasValue ? PaymentId.From(command.PaymentId.Value) : null,
-                    command.ProviderId.HasValue ? ProviderId.From(command.ProviderId.Value) : null);
-
-                // Add metadata
-                if (command.Metadata != null)
-                {
-                    foreach (var kvp in command.Metadata)
-                    {
-                        notification.AddMetadata(kvp.Key, kvp.Value);
-                    }
-                }
-
-                // Queue the notification
-                notification.Queue();
-
-                // Save to database
-                await _notificationRepository.SaveNotificationAsync(notification, cancellationToken);
-
-                // Send immediately based on channel
-                try
-                {
-                    await SendNotificationAsync(notification, cancellationToken);
-                }
-                catch (Exception ex)
-                {
-                    // Mark as failed but don't throw - notification is saved and can be retried
-                    notification.MarkAsFailed(ex.Message);
-                    await _notificationRepository.UpdateNotificationAsync(notification, cancellationToken);
-                }
-
-                return Result<SendNotificationResult>.Success(new SendNotificationResult(
-                    notification.Id.Value,
-                    notification.Status,
-                    notification.CreatedAt,
-                    notification.GatewayMessageId,
-                    notification.ErrorMessage));
+                await SendNotificationAsync(notification, cancellationToken);
             }
             catch (Exception ex)
             {
-                return Result<SendNotificationResult>.Failure($"Failed to send notification: {ex.Message}");
+                // Mark as failed but don't throw - notification is saved and can be retried
+                notification.MarkAsFailed(ex.Message);
+                await _notificationRepository.UpdateNotificationAsync(notification, cancellationToken);
             }
+
+            return new SendNotificationResult(
+                notification.Id.Value,
+                notification.Status,
+                notification.CreatedAt,
+                notification.GatewayMessageId,
+                notification.ErrorMessage);
         }
 
         private async Task SendNotificationAsync(Notification notification, CancellationToken cancellationToken)
