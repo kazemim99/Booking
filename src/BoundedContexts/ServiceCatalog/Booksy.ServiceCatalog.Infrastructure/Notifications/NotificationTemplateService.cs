@@ -1,5 +1,5 @@
 // ========================================
-// Booksy.Infrastructure.External/Notifications/NotificationTemplateService.cs
+// Booksy.ServiceCatalog.Infrastructure/Notifications/NotificationTemplateService.cs
 // ========================================
 using Booksy.ServiceCatalog.Application.Services.Notifications;
 using Booksy.ServiceCatalog.Domain.Aggregates.NotificationTemplateAggregate;
@@ -7,7 +7,7 @@ using Booksy.ServiceCatalog.Domain.Enums;
 using Booksy.ServiceCatalog.Domain.Repositories;
 using Microsoft.Extensions.Logging;
 
-namespace Booksy.Infrastructure.External.Notifications
+namespace Booksy.ServiceCatalog.Infrastructure.Notifications
 {
     /// <summary>
     /// Service for managing and rendering notification templates from database

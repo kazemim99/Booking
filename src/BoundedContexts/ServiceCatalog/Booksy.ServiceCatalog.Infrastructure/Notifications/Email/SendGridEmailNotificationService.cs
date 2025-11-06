@@ -1,5 +1,5 @@
 // ========================================
-// Booksy.Infrastructure.External/Notifications/Email/SendGridEmailNotificationService.cs
+// Booksy.ServiceCatalog.Infrastructure/Notifications/Email/SendGridEmailNotificationService.cs
 // ========================================
 using Booksy.ServiceCatalog.Application.Services.Notifications;
 using Microsoft.Extensions.Configuration;
@@ -7,7 +7,7 @@ using Microsoft.Extensions.Logging;
 using SendGrid;
 using SendGrid.Helpers.Mail;
 
-namespace Booksy.Infrastructure.External.Notifications.Email
+namespace Booksy.ServiceCatalog.Infrastructure.Notifications.Email
 {
     /// <summary>
     /// SendGrid implementation of email notification service

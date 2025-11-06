@@ -1,15 +1,16 @@
 // ========================================
-// Booksy.Infrastructure.External/Notifications/InAppNotificationService.cs
+// Booksy.ServiceCatalog.Infrastructure/Notifications/InAppNotificationService.cs
 // ========================================
 using Booksy.Infrastructure.External.Hubs;
 using Booksy.ServiceCatalog.Application.Services.Notifications;
 using Microsoft.AspNetCore.SignalR;
 using Microsoft.Extensions.Logging;
 
-namespace Booksy.Infrastructure.External.Notifications
+namespace Booksy.ServiceCatalog.Infrastructure.Notifications
 {
     /// <summary>
     /// Service for sending real-time in-app notifications via SignalR
+    /// This implementation belongs to ServiceCatalog bounded context
     /// </summary>
     public sealed class InAppNotificationService : IInAppNotificationService
     {
