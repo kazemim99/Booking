@@ -175,8 +175,7 @@ app.UseAuthentication();
 app.UseAuthorization();
 app.UseMiddleware<ApiResponseMiddleware>();
 
-// Rate Limiting
-app.UseMiddleware<RateLimitingMiddleware>();
+
 
 // Response Compression
 app.UseResponseCompression();

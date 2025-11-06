@@ -1,0 +1,383 @@
+{
+  "info": {
+    "name": "Booksy Notification API",
+    "description": "Complete API collection for testing the Notification & Communication System",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "https://localhost:5001/api/v1",
+      "type": "string"
+    },
+    {
+      "key": "token",
+      "value": "YOUR_JWT_TOKEN_HERE",
+      "type": "string"
+    },
+    {
+      "key": "userId",
+      "value": "3fa85f64-5717-4562-b3fc-2c963f66afa6",
+      "type": "string"
+    }
+  ],
+  "item": [
+    {
+      "name": "Notifications",
+      "item": [
+        {
+          "name": "Send Notification",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"recipientId\": \"{{userId}}\",\n  \"type\": \"BookingConfirmation\",\n  \"channel\": \"Email, SMS, InApp\",\n  \"subject\": \"Booking Confirmed\",\n  \"body\": \"<h1>Your booking has been confirmed!</h1><p>Thank you for choosing our service.</p>\",\n  \"priority\": \"High\",\n  \"plainTextBody\": \"Your booking has been confirmed! Thank you for choosing our service.\",\n  \"metadata\": {\n    \"bookingId\": \"booking-123\",\n    \"serviceName\": \"Haircut\"\n  }\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/notifications",
+              "host": ["{{baseUrl}}"],
+              "path": ["notifications"]
+            }
+          }
+        },
+        {
+          "name": "Schedule Notification",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"recipientId\": \"{{userId}}\",\n  \"type\": \"BookingReminder\",\n  \"channel\": \"Email, SMS\",\n  \"subject\": \"Appointment Reminder\",\n  \"body\": \"<h2>Reminder</h2><p>Your appointment is tomorrow at 2 PM</p>\",\n  \"scheduledFor\": \"2025-11-07T14:00:00Z\",\n  \"priority\": \"Normal\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/notifications/schedule",
+              "host": ["{{baseUrl}}"],
+              "path": ["notifications", "schedule"]
+            }
+          }
+        },
+        {
+          "name": "Send Bulk Notification",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"recipientIds\": [\n    \"user-guid-1\",\n    \"user-guid-2\",\n    \"user-guid-3\"\n  ],\n  \"type\": \"Announcement\",\n  \"channel\": \"Email, InApp\",\n  \"subject\": \"System Maintenance Notice\",\n  \"body\": \"<h1>Scheduled Maintenance</h1><p>Our system will be under maintenance on Sunday from 2-4 AM.</p>\",\n  \"priority\": \"Normal\",\n  \"campaignId\": \"maintenance-2025-11-10\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/notifications/bulk",
+              "host": ["{{baseUrl}}"],
+              "path": ["notifications", "bulk"]
+            }
+          }
+        },
+        {
+          "name": "Get Notification History",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/notifications/history?pageNumber=1&pageSize=20&channel=Email&status=Delivered",
+              "host": ["{{baseUrl}}"],
+              "path": ["notifications", "history"],
+              "query": [
+                {
+                  "key": "pageNumber",
+                  "value": "1"
+                },
+                {
+                  "key": "pageSize",
+                  "value": "20"
+                },
+                {
+                  "key": "channel",
+                  "value": "Email"
+                },
+                {
+                  "key": "status",
+                  "value": "Delivered"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Get Delivery Status",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/notifications/{{notificationId}}/status",
+              "host": ["{{baseUrl}}"],
+              "path": ["notifications", "{{notificationId}}", "status"]
+            }
+          }
+        },
+        {
+          "name": "Get Analytics",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/notifications/analytics?startDate=2025-11-01&endDate=2025-11-06",
+              "host": ["{{baseUrl}}"],
+              "path": ["notifications", "analytics"],
+              "query": [
+                {
+                  "key": "startDate",
+                  "value": "2025-11-01"
+                },
+                {
+                  "key": "endDate",
+                  "value": "2025-11-06"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Cancel Notification",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"reason\": \"User requested cancellation\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/notifications/{{notificationId}}/cancel",
+              "host": ["{{baseUrl}}"],
+              "path": ["notifications", "{{notificationId}}", "cancel"]
+            }
+          }
+        },
+        {
+          "name": "Resend Notification",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/notifications/{{notificationId}}/resend",
+              "host": ["{{baseUrl}}"],
+              "path": ["notifications", "{{notificationId}}", "resend"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Preferences",
+      "item": [
+        {
+          "name": "Get Preferences",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/notifications/preferences",
+              "host": ["{{baseUrl}}"],
+              "path": ["notifications", "preferences"]
+            }
+          }
+        },
+        {
+          "name": "Update Preferences",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"enabledChannels\": \"Email, InApp\",\n  \"enabledTypes\": \"BookingConfirmation, BookingCancellation, PaymentReceived\",\n  \"quietHoursStart\": \"22:00\",\n  \"quietHoursEnd\": \"08:00\",\n  \"preferredLanguage\": \"en\",\n  \"marketingOptIn\": false,\n  \"maxNotificationsPerDay\": 50\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/notifications/preferences",
+              "host": ["{{baseUrl}}"],
+              "path": ["notifications", "preferences"]
+            }
+          }
+        },
+        {
+          "name": "Enable Channels",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"channels\": \"Email, SMS, InApp\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/notifications/preferences/channels/enable",
+              "host": ["{{baseUrl}}"],
+              "path": ["notifications", "preferences", "channels", "enable"]
+            }
+          }
+        },
+        {
+          "name": "Set Quiet Hours",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"start\": \"22:00\",\n  \"end\": \"08:00\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/notifications/preferences/quiet-hours",
+              "host": ["{{baseUrl}}"],
+              "path": ["notifications", "preferences", "quiet-hours"]
+            }
+          }
+        },
+        {
+          "name": "Update Marketing Opt-In",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"optIn\": false\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/notifications/preferences/marketing",
+              "host": ["{{baseUrl}}"],
+              "path": ["notifications", "preferences", "marketing"]
+            }
+          }
+        },
+        {
+          "name": "Reset to Defaults",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/notifications/preferences/reset",
+              "host": ["{{baseUrl}}"],
+              "path": ["notifications", "preferences", "reset"]
+            }
+          }
+        },
+        {
+          "name": "Set Minimal Notifications",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/notifications/preferences/minimal",
+              "host": ["{{baseUrl}}"],
+              "path": ["notifications", "preferences", "minimal"]
+            }
+          }
+        }
+      ]
+    }
+  ]
+}

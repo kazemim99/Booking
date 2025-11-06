@@ -8,6 +8,8 @@ using Booksy.Core.Application.Abstractions.Services;
 using Booksy.Core.Domain.Abstractions.Entities;
 using Booksy.Core.Domain.Abstractions.Events;
 using Booksy.UserManagement.Domain.Entities;
+using Booksy.UserManagement.Domain.Aggregates;
+using Booksy.UserManagement.Domain.Aggregates.PhoneVerificationAggregate;
 using Booksy.Infrastructure.Core.EventBus.Abstractions;
 using System.Threading;
 

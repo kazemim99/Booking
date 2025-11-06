@@ -9,10 +9,13 @@ public static class ControllerExtensions
     /// <summary>
     /// Get the current user ID from claims
     /// </summary>
-    public static string? GetUserId(this ClaimsPrincipal user)
+    public static Guid GetUserId(this ClaimsPrincipal user)
     {
-        return user?.FindFirst(ClaimTypes.NameIdentifier)?.Value
+        var userId = user?.FindFirst(ClaimTypes.NameIdentifier)?.Value
             ?? user?.FindFirst("sub")?.Value;
+     
+
+        return Guid.Parse(userId);
     }
     /// <summary>
     /// Create a paginated response with proper headers

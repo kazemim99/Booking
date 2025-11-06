@@ -3,7 +3,6 @@
 // ========================================
 using Microsoft.EntityFrameworkCore;
 using Booksy.Core.Application.Abstractions.Persistence;
-using Booksy.UserManagement.Application.Services.Interfaces;
 using Booksy.UserManagement.Domain.Repositories;
 using Booksy.UserManagement.Domain.Services;
 using Booksy.UserManagement.Infrastructure.Persistence.Seeders;
@@ -13,7 +12,6 @@ using Microsoft.Extensions.DependencyInjection;
 using Booksy.UserManagement.Infrastructure.Persistence.Context;
 using Booksy.UserManagement.Infrastructure.Persistence.Repositories;
 using Booksy.UserManagement.Infrastructure.Services.Security;
-using Booksy.UserManagement.Infrastructure.Services.Application;
 using Booksy.UserManagement.Infrastructure.Services.External;
 using Booksy.Infrastructure.Core.Persistence.Base;
 using Microsoft.Extensions.Logging;
@@ -23,6 +21,8 @@ using Booksy.Infrastructure.Core.DependencyInjection;
 using Booksy.Infrastructure.Core.EventBus;
 using Booksy.Infrastructure.External.Notifications;
 using Booksy.Infrastructure.Core.EventBus.Abstractions;
+using Booksy.UserManagement.Application.Services.Interfaces;
+using Booksy.UserManagement.Infrastructure.Services.Application;
 
 namespace Booksy.UserManagement.Infrastructure.DependencyInjection
 {
@@ -86,7 +86,6 @@ namespace Booksy.UserManagement.Infrastructure.DependencyInjection
             services.AddScoped<IUserRepository, UserRepository>();
             services.AddScoped<IUserQueryRepository, UserQueryRepository>();
             services.AddScoped<IPhoneVerificationRepository, PhoneVerificationRepository>();
-            services.AddScoped<IPhoneVerificationService, PhoneVerificationService>();
 
             services.AddExternalServices(configuration);
             // Register context-specific infrastructure

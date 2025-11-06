@@ -13,6 +13,8 @@ using Booksy.Core.Domain.Infrastructure.Middleware;
 using Booksy.Core.Domain.Infrastructure.Configuration;
 using Booksy.Core.Domain.Infrastructure.EventBus;
 using Booksy.Core.Domain.Infrastructure.Middleware.Handlers;
+using Booksy.Core.Application.Behaviors;
+
 namespace Booksy.Core.Domain.Infrastructure.DependencyInjection;
 
 public static class ServiceCollectionExtensions
@@ -27,9 +29,10 @@ public static class ServiceCollectionExtensions
         {
             cfg.RegisterServicesFromAssembly(typeof(ServiceCollectionExtensions).Assembly);
 
-            // Add behaviors
-            cfg.AddBehavior(typeof(IPipelineBehavior<,>), typeof(ValidationBehavior<,>));
+            // Add behaviors (order matters - executed in registration order)
             cfg.AddBehavior(typeof(IPipelineBehavior<,>), typeof(LoggingBehavior<,>));
+            cfg.AddBehavior(typeof(IPipelineBehavior<,>), typeof(ValidationBehavior<,>));
+            cfg.AddBehavior(typeof(IPipelineBehavior<,>), typeof(IdempotencyBehavior<,>));
         });
 
 

@@ -41,6 +41,12 @@ namespace Booksy.ServiceCatalog.Infrastructure.Persistence.Seeders
                 await SeedServicesAsync(cancellationToken);
                 await SeedProviceCitiesAsync(cancellationToken);
 
+                // Seed notification templates
+                var templateSeeder = new NotificationTemplateSeeder(
+                    _context,
+                    Microsoft.Extensions.Logging.Abstractions.NullLogger<NotificationTemplateSeeder>.Instance);
+                await templateSeeder.SeedAsync(cancellationToken);
+
                 // Save changes before seeding bookings (bookings depend on providers/services/staff)
                 await _context.SaveChangesAsync(cancellationToken);
 

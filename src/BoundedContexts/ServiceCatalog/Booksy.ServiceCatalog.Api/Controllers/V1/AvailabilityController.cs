@@ -1,10 +1,10 @@
+using Booksy.Core.Domain.Exceptions;
 using Booksy.ServiceCatalog.API.Models.Requests;
 using Booksy.ServiceCatalog.Api.Models.Responses;
 using Booksy.ServiceCatalog.Application.Queries.Booking.GetAvailableSlots;
 using MediatR;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using static Booksy.API.Middleware.ExceptionHandlingMiddleware;
 
 namespace Booksy.ServiceCatalog.API.Controllers.V1;
 
@@ -15,7 +15,6 @@ namespace Booksy.ServiceCatalog.API.Controllers.V1;
 [ApiVersion("1.0")]
 [Route("api/v{version:apiVersion}/[controller]")]
 [Produces("application/json")]
-[ProducesResponseType(typeof(ApiErrorResult), StatusCodes.Status500InternalServerError)]
 public class AvailabilityController : ControllerBase
 {
     private readonly ISender _mediator;
@@ -41,8 +40,6 @@ public class AvailabilityController : ControllerBase
     [HttpGet("slots")]
     [AllowAnonymous]
     [ProducesResponseType(typeof(IReadOnlyList<AvailableSlotResponse>), StatusCodes.Status200OK)]
-    [ProducesResponseType(typeof(ApiErrorResult), StatusCodes.Status400BadRequest)]
-    [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IActionResult> GetAvailableSlots(
         [FromQuery] GetAvailableSlotsRequest request,
         CancellationToken cancellationToken = default)
@@ -50,11 +47,7 @@ public class AvailabilityController : ControllerBase
         // Validate date is not in the past
         if (request.Date.Date < DateTime.UtcNow.Date)
         {
-            return BadRequest(new ApiErrorResult
-            (
-"Cannot check availability for past dates",
-                StatusCodes.Status400BadRequest.ToString()
-            ));
+            throw new DomainValidationException("Date", "Cannot check availability for past dates");
         }
 
         var query = new GetAvailableSlotsQuery(
@@ -96,7 +89,6 @@ public class AvailabilityController : ControllerBase
     [HttpGet("check")]
     [AllowAnonymous]
     [ProducesResponseType(typeof(SlotAvailabilityResponse), StatusCodes.Status200OK)]
-    [ProducesResponseType(typeof(ApiErrorResult), StatusCodes.Status400BadRequest)]
     public async Task<IActionResult> CheckSlotAvailability(
         [FromQuery] Guid providerId,
         [FromQuery] Guid serviceId,
@@ -107,11 +99,7 @@ public class AvailabilityController : ControllerBase
         // Validate start time is not in the past
         if (startTime < DateTime.UtcNow)
         {
-            return BadRequest(new ApiErrorResult
-            (
-                 "Cannot check availability for past times",
-                StatusCodes.Status400BadRequest.ToString()
-            ));
+            throw new DomainValidationException("StartTime", "Cannot check availability for past times");
         }
 
         var query = new GetAvailableSlotsQuery(
@@ -153,7 +141,6 @@ public class AvailabilityController : ControllerBase
     [HttpGet("dates")]
     [AllowAnonymous]
     [ProducesResponseType(typeof(IReadOnlyList<DateAvailabilityResponse>), StatusCodes.Status200OK)]
-    [ProducesResponseType(typeof(ApiErrorResult), StatusCodes.Status400BadRequest)]
     public async Task<IActionResult> GetAvailableDates(
         [FromQuery] Guid providerId,
         [FromQuery] Guid serviceId,
@@ -164,32 +151,17 @@ public class AvailabilityController : ControllerBase
         // Validate date range
         if (fromDate.Date < DateTime.UtcNow.Date)
         {
-            return BadRequest(new ApiErrorResult
-            (
-                "From date cannot be in the past",
-                StatusCodes.Status400BadRequest.ToString()
-            ));
+            throw new DomainValidationException("FromDate", "From date cannot be in the past");
         }
 
         if (toDate < fromDate)
         {
-            return BadRequest(new ApiErrorResult
-        (
-             "To date must be after from date",
-            StatusCodes.Status400BadRequest.ToString()
-        ));
-
+            throw new DomainValidationException("ToDate", "To date must be after from date");
         }
 
         if ((toDate - fromDate).Days > 30)
         {
-
-            return BadRequest(new ApiErrorResult
- (
-     "Date range cannot exceed 30 days",
-     StatusCodes.Status400BadRequest.ToString()
- ));
-
+            throw new DomainValidationException("DateRange", "Date range cannot exceed 30 days");
         }
 
         var availableDates = new List<DateAvailabilityResponse>();

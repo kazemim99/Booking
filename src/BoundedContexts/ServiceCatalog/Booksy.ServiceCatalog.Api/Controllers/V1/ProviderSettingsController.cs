@@ -1,3 +1,4 @@
+using Booksy.Core.Domain.Exceptions;
 using Booksy.ServiceCatalog.Api.Models.Requests;
 using Booksy.ServiceCatalog.Application.Commands.Provider.AddException;
 using Booksy.ServiceCatalog.Application.Commands.Provider.AddHoliday;
@@ -19,7 +20,6 @@ using Booksy.ServiceCatalog.Domain.Repositories;
 using MediatR;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using static Booksy.API.Middleware.ExceptionHandlingMiddleware;
 
 namespace Booksy.ServiceCatalog.API.Controllers.V1;
 
@@ -31,7 +31,6 @@ namespace Booksy.ServiceCatalog.API.Controllers.V1;
 [Route("api/v{version:apiVersion}/providers")]
 [Produces("application/json")]
 [Authorize]
-[ProducesResponseType(typeof(ApiErrorResult), StatusCodes.Status500InternalServerError)]
 [ProducesResponseType(StatusCodes.Status401Unauthorized)]
 public class ProviderSettingsController : ControllerBase
 {
@@ -91,7 +90,6 @@ public class ProviderSettingsController : ControllerBase
     /// </summary>
     [HttpPut("{id:guid}/business-info")]
     [ProducesResponseType(typeof(BusinessInfoResponse), StatusCodes.Status200OK)]
-    [ProducesResponseType(typeof(ApiErrorResult), StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     [ProducesResponseType(StatusCodes.Status403Forbidden)]
     public async Task<IActionResult> UpdateBusinessInfo(
@@ -164,7 +162,6 @@ public class ProviderSettingsController : ControllerBase
     /// </summary>
     [HttpPut("{id:guid}/location")]
     [ProducesResponseType(typeof(LocationResponse), StatusCodes.Status200OK)]
-    [ProducesResponseType(typeof(ApiErrorResult), StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     [ProducesResponseType(StatusCodes.Status403Forbidden)]
     public async Task<IActionResult> UpdateLocation(
@@ -251,7 +248,6 @@ public class ProviderSettingsController : ControllerBase
     /// </summary>
     [HttpPut("{id:guid}/working-hours")]
     [ProducesResponseType(typeof(WorkingHoursResponse), StatusCodes.Status200OK)]
-    [ProducesResponseType(typeof(ApiErrorResult), StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     [ProducesResponseType(StatusCodes.Status403Forbidden)]
     public async Task<IActionResult> UpdateWorkingHours(
@@ -321,7 +317,6 @@ public class ProviderSettingsController : ControllerBase
     [HttpPut("{id:guid}/business-hours")]
     [Authorize]
     [ProducesResponseType(typeof(UpdateBusinessHoursResult), StatusCodes.Status200OK)]
-    [ProducesResponseType(typeof(ApiErrorResult), StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     [ProducesResponseType(StatusCodes.Status403Forbidden)]
     public async Task<IActionResult> UpdateBusinessHours(
@@ -369,7 +364,6 @@ public class ProviderSettingsController : ControllerBase
     [HttpPost("{id:guid}/holidays")]
     [Authorize]
     [ProducesResponseType(typeof(AddHolidayResult), StatusCodes.Status201Created)]
-    [ProducesResponseType(typeof(ApiErrorResult), StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     [ProducesResponseType(StatusCodes.Status403Forbidden)]
     public async Task<IActionResult> AddHoliday(
@@ -446,7 +440,6 @@ public class ProviderSettingsController : ControllerBase
     [HttpPost("{id:guid}/exceptions")]
     [Authorize]
     [ProducesResponseType(typeof(AddExceptionResult), StatusCodes.Status201Created)]
-    [ProducesResponseType(typeof(ApiErrorResult), StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     [ProducesResponseType(StatusCodes.Status403Forbidden)]
     public async Task<IActionResult> AddException(
@@ -514,13 +507,7 @@ public class ProviderSettingsController : ControllerBase
 
         if (!DateOnly.TryParse(date, out var dateOnly))
         {
-            return BadRequest(new ApiErrorResult("Invalid date format. Use yyyy-MM-dd format.", "INVALID_DATE_FORMAT")
-            {
-                Errors = new Dictionary<string, string[]>
-                {
-                    ["date"] = new[] { "Date must be in yyyy-MM-dd format" }
-                }
-            });
+            throw new DomainValidationException("date", "Date must be in yyyy-MM-dd format");
         }
 
         var query = new GetAvailabilityQuery(id, dateOnly);
@@ -570,7 +557,6 @@ public class ProviderSettingsController : ControllerBase
     /// </summary>
     [HttpPost("{id:guid}/services")]
     [ProducesResponseType(typeof(ServiceDetailResponse), StatusCodes.Status201Created)]
-    [ProducesResponseType(typeof(ApiErrorResult), StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     [ProducesResponseType(StatusCodes.Status403Forbidden)]
     public async Task<IActionResult> AddService(
@@ -612,7 +598,6 @@ public class ProviderSettingsController : ControllerBase
     /// </summary>
     [HttpPut("{id:guid}/services/{serviceId:guid}")]
     [ProducesResponseType(typeof(ServiceDetailResponse), StatusCodes.Status200OK)]
-    [ProducesResponseType(typeof(ApiErrorResult), StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     [ProducesResponseType(StatusCodes.Status403Forbidden)]
     public async Task<IActionResult> UpdateService(

@@ -15,8 +15,8 @@ using Booksy.UserManagement.Domain.Enums;
 using Booksy.UserManagement.Application.CQRS.Commands.UpldateUserProfile;
 using Booksy.UserManagement.Application.Queries.GetUsersByStatus;
 using Booksy.API.Extensions;
-using static Booksy.API.Middleware.ExceptionHandlingMiddleware;
 using Booksy.API.Middleware;
+using Booksy.Core.Domain.Exceptions;
 
 namespace Booksy.UserManagement.API.Controllers.V1;
 
@@ -27,7 +27,6 @@ namespace Booksy.UserManagement.API.Controllers.V1;
 [ApiVersion("1.0")]
 [Route("api/v{version:apiVersion}/[controller]")]
 [Produces("application/json")]
-[ProducesResponseType(typeof(ApiErrorResult), StatusCodes.Status500InternalServerError)]
 public class UsersController : ControllerBase
 {
     private readonly ISender _mediator;
@@ -49,10 +48,8 @@ public class UsersController : ControllerBase
     /// <response code="409">User already exists</response>
     [HttpPost]
     [AllowAnonymous]
-    [Booksy.API.Middleware.EnableRateLimiting("registration")]
+    [EnableRateLimiting("registration")]
     [ProducesResponseType(typeof(UserResponse), StatusCodes.Status201Created)]
-    [ProducesResponseType(typeof(ApiErrorResult), StatusCodes.Status400BadRequest)]
-    [ProducesResponseType(typeof(ApiErrorResult), StatusCodes.Status409Conflict)]
     public async Task<IActionResult> RegisterUser(
         [FromBody][Required] RegisterUserRequest request,
         CancellationToken cancellationToken = default)
@@ -177,8 +174,6 @@ public class UsersController : ControllerBase
     [HttpPost("{id:guid}/activate")]
     [Authorize]
     [ProducesResponseType(typeof(MessageResponse), StatusCodes.Status200OK)]
-    [ProducesResponseType(typeof(ApiErrorResult), StatusCodes.Status400BadRequest)]
-    [ProducesResponseType(typeof(ApiErrorResult), StatusCodes.Status404NotFound)]
     public async Task<IActionResult> ActivateUser(
         [FromRoute] Guid id,
         [FromBody][Required] ActivateUserRequest request,
@@ -203,8 +198,6 @@ public class UsersController : ControllerBase
     [HttpPut("{id:guid}/profile")]
     [Authorize]
     [ProducesResponseType(typeof(UserDetailsResponse), StatusCodes.Status200OK)]
-    [ProducesResponseType(typeof(ApiErrorResult), StatusCodes.Status400BadRequest)]
-    [ProducesResponseType(typeof(ApiErrorResult), StatusCodes.Status404NotFound)]
     [ProducesResponseType(StatusCodes.Status403Forbidden)]
     public async Task<IActionResult> UpdateUserProfile(
         [FromRoute] Guid id,
@@ -252,8 +245,6 @@ public class UsersController : ControllerBase
     [HttpPost("{id:guid}/change-password")]
     [Authorize]
     [ProducesResponseType(typeof(MessageResponse), StatusCodes.Status200OK)]
-    [ProducesResponseType(typeof(ApiErrorResult), StatusCodes.Status400BadRequest)]
-    [ProducesResponseType(typeof(ApiErrorResult), StatusCodes.Status401Unauthorized)]
     [ProducesResponseType(StatusCodes.Status403Forbidden)]
     public async Task<IActionResult> ChangePassword(
         [FromRoute] Guid id,
@@ -288,7 +279,6 @@ public class UsersController : ControllerBase
     [HttpPost("{id:guid}/deactivate")]
     [Authorize(Policy = "AdminOnly")]
     [ProducesResponseType(typeof(MessageResponse), StatusCodes.Status200OK)]
-    [ProducesResponseType(typeof(ApiErrorResult), StatusCodes.Status404NotFound)]
     [ProducesResponseType(StatusCodes.Status403Forbidden)]
     public async Task<IActionResult> DeactivateUser(
         [FromRoute] Guid id,
@@ -316,9 +306,7 @@ public class UsersController : ControllerBase
     [HttpDelete("{id:guid}")]
     [Authorize(Policy = "SysAdminOnly")]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
-    [ProducesResponseType(typeof(ApiErrorResult), StatusCodes.Status404NotFound)]
     [ProducesResponseType(StatusCodes.Status403Forbidden)]
-    [ProducesResponseType(typeof(ApiErrorResult), StatusCodes.Status409Conflict)]
     public async Task<IActionResult> DeleteUser(
         [FromRoute] Guid id,
         CancellationToken cancellationToken = default)

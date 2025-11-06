@@ -1,20 +1,27 @@
 namespace Booksy.UserManagement.Application.CQRS.Commands.PhoneVerification.VerifyCode;
 
-public record VerifyCodeResponse(
+/// <summary>
+/// Response for VerifyCode command
+/// </summary>
+public sealed record VerifyCodeResponse(
     bool Success,
-    string? AccessToken,
-    string? RefreshToken,
-    int? ExpiresIn,
-    UserInfo? User,
+    string Message,
     string? ErrorMessage = null,
-    int? RemainingAttempts = null
+    int? RemainingAttempts = null,
+    UserDto? User = null,
+    string? AccessToken = null,
+    string? RefreshToken = null,
+    DateTime? ExpiresAt = null
 );
 
-public record UserInfo(
+/// <summary>
+/// User DTO for verification response
+/// </summary>
+public sealed record UserDto(
     Guid Id,
     string PhoneNumber,
-    bool PhoneVerified,
-    string UserType,
-    string Status,
-    string[] Roles
+    string? Email = null,
+    string? FirstName = null,
+    string? LastName = null,
+    string UserType = "Provider"
 );

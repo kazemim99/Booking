@@ -13,7 +13,7 @@ using Booksy.ServiceCatalog.Domain.Repositories;
 using MediatR;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using static Booksy.API.Middleware.ExceptionHandlingMiddleware;
+using Booksy.Core.Domain.Exceptions;
 using Booksy.Core.Domain.ValueObjects;
 
 namespace Booksy.ServiceCatalog.API.Controllers.V1;
@@ -25,7 +25,6 @@ namespace Booksy.ServiceCatalog.API.Controllers.V1;
 [ApiVersion("1.0")]
 [Route("api/v{version:apiVersion}/[controller]")]
 [Produces("application/json")]
-[ProducesResponseType(typeof(ApiErrorResult), StatusCodes.Status500InternalServerError)]
 public class BookingsController : ControllerBase
 {
     private readonly ISender _mediator;
@@ -54,8 +53,6 @@ public class BookingsController : ControllerBase
     [HttpPost]
     [Authorize]
     [ProducesResponseType(typeof(BookingResponse), StatusCodes.Status201Created)]
-    [ProducesResponseType(typeof(ApiErrorResult), StatusCodes.Status400BadRequest)]
-    [ProducesResponseType(typeof(ApiErrorResult), StatusCodes.Status404NotFound)]
     public async Task<IActionResult> CreateBooking(
         [FromBody] CreateBookingRequest request,
         CancellationToken cancellationToken = default)
@@ -245,7 +242,6 @@ public class BookingsController : ControllerBase
     [HttpPost("{id:guid}/confirm")]
     [Authorize(Policy = "ProviderOrAdmin")]
     [ProducesResponseType(typeof(MessageResponse), StatusCodes.Status200OK)]
-    [ProducesResponseType(typeof(ApiErrorResult), StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     [ProducesResponseType(StatusCodes.Status403Forbidden)]
     public async Task<IActionResult> ConfirmBooking(
@@ -278,7 +274,6 @@ public class BookingsController : ControllerBase
     [HttpPost("{id:guid}/cancel")]
     [Authorize]
     [ProducesResponseType(typeof(MessageResponse), StatusCodes.Status200OK)]
-    [ProducesResponseType(typeof(ApiErrorResult), StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     [ProducesResponseType(StatusCodes.Status403Forbidden)]
     public async Task<IActionResult> CancelBooking(
@@ -316,7 +311,6 @@ public class BookingsController : ControllerBase
     [HttpPost("{id:guid}/reschedule")]
     [Authorize]
     [ProducesResponseType(typeof(MessageResponse), StatusCodes.Status200OK)]
-    [ProducesResponseType(typeof(ApiErrorResult), StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     [ProducesResponseType(StatusCodes.Status403Forbidden)]
     public async Task<IActionResult> RescheduleBooking(
@@ -354,7 +348,6 @@ public class BookingsController : ControllerBase
     [HttpPost("{id:guid}/complete")]
     [Authorize(Policy = "ProviderOrAdmin")]
     [ProducesResponseType(typeof(MessageResponse), StatusCodes.Status200OK)]
-    [ProducesResponseType(typeof(ApiErrorResult), StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     [ProducesResponseType(StatusCodes.Status403Forbidden)]
     public async Task<IActionResult> CompleteBooking(
@@ -387,7 +380,6 @@ public class BookingsController : ControllerBase
     [HttpPost("{id:guid}/no-show")]
     [Authorize(Policy = "ProviderOrAdmin")]
     [ProducesResponseType(typeof(MessageResponse), StatusCodes.Status200OK)]
-    [ProducesResponseType(typeof(ApiErrorResult), StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     [ProducesResponseType(StatusCodes.Status403Forbidden)]
     public async Task<IActionResult> MarkAsNoShow(

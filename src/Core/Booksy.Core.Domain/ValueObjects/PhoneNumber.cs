@@ -1,26 +1,19 @@
-﻿using System.Text.RegularExpressions;
+﻿// ========================================
+// Booksy.UserManagement.Domain/ValueObjects/PhoneNumber.cs
+// ========================================
 using Booksy.Core.Domain.Base;
-
-using Booksy.Core.Domain.Domain.Utilities;
-using Booksy.Core.Domain.Exceptions;
+using System.Text.RegularExpressions;
 
 namespace Booksy.Core.Domain.ValueObjects
 {
     /// <summary>
-    /// Represents a mobile phone number that starts with 09 and has exactly 11 digits
+    /// Phone number value object with validation
     /// </summary>
-    public sealed partial class PhoneNumber : ValueObject
+    public sealed class PhoneNumber : ValueObject
     {
-
-        private PhoneNumber()
-        {
-
-        }
-        private static readonly Regex PhoneRegex = PhoneNumberRegex();
-
-        public string? Value { get; }
-        public string? CountryCode { get; }
-        public string? NationalNumber { get; }
+        public string Value { get; }
+        public string CountryCode { get; }
+        public string NationalNumber { get; }
 
         private PhoneNumber(string value, string countryCode, string nationalNumber)
         {
@@ -32,49 +25,127 @@ namespace Booksy.Core.Domain.ValueObjects
         public static PhoneNumber Create(string phoneNumber)
         {
             if (string.IsNullOrWhiteSpace(phoneNumber))
-                throw new DomainValidationException("PhoneNumber", "Phone number is required");
+                throw new ArgumentException("Phone number cannot be empty", nameof(phoneNumber));
 
-            // Remove all non-digit characters for validation
-            var digitsOnly = Regex.Replace(phoneNumber, @"\D", "");
+            // Clean the phone number (remove spaces, dashes, parentheses)
+            var cleaned = CleanPhoneNumber(phoneNumber);
 
-            if (digitsOnly.Length < 10 || digitsOnly.Length > 15)
-                throw new DomainValidationException("PhoneNumber", "Phone number must be between 10 and 15 digits");
+            // Extract country code and national number
+            var (countryCode, nationalNumber) = ExtractComponents(cleaned);
 
-            // Extract country code (assuming 1-3 digits)
-            var countryCode = digitsOnly.Length > 10 ? digitsOnly[..^10] : "1"; // Default to US
-            var nationalNumber = digitsOnly.Length > 10 ? digitsOnly[^10..] : digitsOnly;
+            // Validate
+            if (!IsValid(nationalNumber))
+                throw new ArgumentException($"Invalid phone number: {phoneNumber}", nameof(phoneNumber));
 
-            // Format the number
-            //var formatted = FormatPhoneNumber(countryCode, nationalNumber);
-
-            return new PhoneNumber(digitsOnly, "+98", digitsOnly);
+            return new PhoneNumber(cleaned, countryCode, nationalNumber);
         }
 
-        private static string FormatPhoneNumber(string countryCode, string nationalNumber)
+        public static PhoneNumber FromNational(string nationalNumber, string countryCode = "+98")
         {
-            // Format as: +X (XXX) XXX-XXXX for US numbers
-            if (countryCode == "1" && nationalNumber.Length == 10)
+            if (string.IsNullOrWhiteSpace(nationalNumber))
+                throw new ArgumentException("National number cannot be empty", nameof(nationalNumber));
+
+            var cleaned = CleanPhoneNumber(nationalNumber);
+
+            if (!IsValid(cleaned))
+                throw new ArgumentException($"Invalid national number: {nationalNumber}", nameof(nationalNumber));
+
+            var fullNumber = countryCode + cleaned;
+            return new PhoneNumber(fullNumber, countryCode, cleaned);
+        }
+
+        private static string CleanPhoneNumber(string phoneNumber)
+        {
+            if (string.IsNullOrWhiteSpace(phoneNumber))
+                return string.Empty;
+
+            // Remove all non-digit characters except '+'
+            return Regex.Replace(phoneNumber, @"[^\d+]", string.Empty);
+        }
+
+        private static (string countryCode, string nationalNumber) ExtractComponents(string phoneNumber)
+        {
+            if (phoneNumber.StartsWith("+"))
             {
-                return $"+{countryCode} ({nationalNumber[..3]}) {nationalNumber.Substring(3, 3)}-{nationalNumber[6..]}";
+                // International format: +98xxxxxxxxxx
+                if (phoneNumber.StartsWith("+98") && phoneNumber.Length >= 13)
+                {
+                    return ("+98", phoneNumber.Substring(3));
+                }
+                else if (phoneNumber.Length > 3)
+                {
+                    // Generic international: +XX...
+                    var code = phoneNumber.Substring(0, 3);
+                    var number = phoneNumber.Substring(3);
+                    return (code, number);
+                }
+            }
+            else if (phoneNumber.StartsWith("00"))
+            {
+                // Alternative international format: 0098xxxxxxxxxx
+                if (phoneNumber.StartsWith("0098") && phoneNumber.Length >= 14)
+                {
+                    return ("+98", phoneNumber.Substring(4));
+                }
+            }
+            else if (phoneNumber.StartsWith("09") && phoneNumber.Length == 11)
+            {
+                // Iranian national format: 09xxxxxxxxx
+                return ("+98", phoneNumber.Substring(1)); // Remove leading 0
             }
 
-            // Generic international format
-            return $"+{countryCode} {nationalNumber}";
+            // Assume it's a national number without country code
+            return ("+98", phoneNumber);
         }
 
-        public string GetE164Format()
+        private static bool IsValid(string nationalNumber)
         {
-            return $"+{CountryCode}{NationalNumber}";
+            if (string.IsNullOrWhiteSpace(nationalNumber))
+                return false;
+
+            // Iranian mobile numbers: 9xxxxxxxxx (10 digits starting with 9)
+            if (Regex.IsMatch(nationalNumber, @"^9\d{9}$"))
+                return true;
+
+            // General validation: 8-15 digits
+            if (nationalNumber.Length >= 8 && nationalNumber.Length <= 15)
+                return Regex.IsMatch(nationalNumber, @"^\d+$");
+
+            return false;
         }
 
-        protected override IEnumerable<object?> GetAtomicValues()
+        public string ToInternational()
+        {
+            return CountryCode + NationalNumber;
+        }
+
+        public string ToNational()
+        {
+            // For Iranian numbers, add leading 0
+            if (CountryCode == "+98" && NationalNumber.StartsWith("9"))
+                return "0" + NationalNumber;
+
+            return NationalNumber;
+        }
+
+        public string ToDisplay()
+        {
+            // Format for display: +98 912 345 6789
+            if (CountryCode == "+98" && NationalNumber.Length == 10)
+            {
+                return $"{CountryCode} {NationalNumber.Substring(0, 3)} {NationalNumber.Substring(3, 3)} {NationalNumber.Substring(6)}";
+            }
+
+            return ToInternational();
+        }
+
+        protected override IEnumerable<object> GetAtomicValues()
         {
             yield return Value;
         }
 
-        public override string? ToString() => Value;
+        public override string ToString() => ToNational();
 
-        [GeneratedRegex(@"^\+?[1-9]\d{1,14}$")]
-        private static partial Regex PhoneNumberRegex();
+        public static implicit operator string(PhoneNumber phoneNumber) => phoneNumber.Value;
     }
 }

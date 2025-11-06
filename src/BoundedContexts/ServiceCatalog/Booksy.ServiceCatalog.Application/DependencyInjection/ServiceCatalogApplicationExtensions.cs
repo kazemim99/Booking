@@ -5,6 +5,7 @@ using FluentValidation;
 using Microsoft.Extensions.DependencyInjection;
 using System.Reflection;
 using Booksy.ServiceCatalog.Application.Mappings;
+using Booksy.ServiceCatalog.Application.Services.BackgroundServices;
 using Booksy.Infrastructure.Core.CQRS;
 using MediatR;
 using Booksy.Infrastructure.Core.EventBus.Abstractions;
@@ -25,6 +26,19 @@ namespace Booksy.ServiceCatalog.Application.DependencyInjection
 
             // Register AutoMapper
             services.AddAutoMapper(cfg => { }, typeof(PriceRequest));
+
+            return services;
+        }
+
+        /// <summary>
+        /// Adds background services for notification processing
+        /// </summary>
+        public static IServiceCollection AddNotificationBackgroundServices(this IServiceCollection services)
+        {
+            // Background services for notification processing
+            services.AddHostedService<NotificationProcessorService>();
+            services.AddHostedService<ScheduledNotificationService>();
+            services.AddHostedService<NotificationCleanupService>();
 
             return services;
         }

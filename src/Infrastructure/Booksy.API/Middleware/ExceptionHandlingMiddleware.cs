@@ -201,7 +201,7 @@ public partial class ExceptionHandlingMiddleware
         var wrappedErrorResponse = new
         {
             success = false,
-            statusCode = response.StatusCode,
+            statusCode = response.StatusCode.ToString(),  // ✅ Convert to string
             message = errorResponse.Message,
             data = (object?)null,
             error = new
@@ -226,19 +226,5 @@ public partial class ExceptionHandlingMiddleware
         });
 
         await response.WriteAsync(jsonResponse);
-    }
-
-    // Keep existing ApiErrorResult class
-    public class ApiErrorResult
-    {
-        public string Message { get; set; }
-        public string? Code { get; set; }
-        public Dictionary<string, string[]>? Errors { get; set; }
-
-        public ApiErrorResult(string message, string? code = null)
-        {
-            Message = message;
-            Code = code;
-        }
     }
 }

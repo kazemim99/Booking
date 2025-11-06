@@ -1,5 +1,6 @@
 using Booksy.API.Extensions;
 using Booksy.Core.Application.DTOs;
+using Booksy.Core.Domain.Exceptions;
 using Booksy.ServiceCatalog.API.Models.Requests;
 using Booksy.ServiceCatalog.Api.Models.Responses;
 using Booksy.ServiceCatalog.Application.Commands.Payment.CapturePayment;
@@ -11,7 +12,7 @@ using Booksy.ServiceCatalog.Application.Queries.Payment.GetPaymentDetails;
 using MediatR;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using static Booksy.API.Middleware.ExceptionHandlingMiddleware;
+using Booksy.Core.Application.Exceptions;
 
 namespace Booksy.ServiceCatalog.API.Controllers.V1;
 
@@ -22,7 +23,6 @@ namespace Booksy.ServiceCatalog.API.Controllers.V1;
 [ApiVersion("1.0")]
 [Route("api/v{version:apiVersion}/[controller]")]
 [Produces("application/json")]
-[ProducesResponseType(typeof(ApiErrorResult), StatusCodes.Status500InternalServerError)]
 public class PaymentsController : ControllerBase
 {
     private readonly ISender _mediator;
@@ -48,8 +48,6 @@ public class PaymentsController : ControllerBase
     [HttpPost]
     [Authorize]
     [ProducesResponseType(typeof(PaymentResponse), StatusCodes.Status201Created)]
-    [ProducesResponseType(typeof(ApiErrorResult), StatusCodes.Status400BadRequest)]
-    [ProducesResponseType(typeof(ApiErrorResult), StatusCodes.Status404NotFound)]
     public async Task<IActionResult> ProcessPayment(
         [FromBody] ProcessPaymentRequest request,
         CancellationToken cancellationToken = default)
@@ -62,9 +60,7 @@ public class PaymentsController : ControllerBase
 
         if (!Enum.TryParse<Domain.Enums.PaymentMethod>(request.PaymentMethod, true, out var paymentMethod))
         {
-            return BadRequest(new ApiErrorResult(
-                $"Invalid payment method: {request.PaymentMethod}",
-                "INVALID_PAYMENT_METHOD"));
+            throw new DomainValidationException("PaymentMethod", $"Invalid payment method: {request.PaymentMethod}");
         }
 
         var command = new ProcessPaymentCommand(
@@ -84,6 +80,11 @@ public class PaymentsController : ControllerBase
             "Payment {PaymentId} processed for booking {BookingId}. Status: {Status}",
             result.PaymentId, request.BookingId, result.Status);
 
+        if (!result.IsSuccessful)
+        {
+            throw new DomainValidationException("Payment", result.ErrorMessage ?? "Payment processing failed");
+        }
+
         var response = new PaymentResponse
         {
             PaymentId = result.PaymentId,
@@ -99,13 +100,6 @@ public class PaymentsController : ControllerBase
             ErrorMessage = result.ErrorMessage,
             CreatedAt = DateTime.UtcNow
         };
-
-        if (!result.IsSuccessful)
-        {
-            return BadRequest(new ApiErrorResult(
-                result.ErrorMessage ?? "Payment processing failed",
-                "PAYMENT_FAILED"));
-        }
 
         return CreatedAtAction(nameof(GetPaymentById), new { id = result.PaymentId }, response);
     }
@@ -123,8 +117,6 @@ public class PaymentsController : ControllerBase
     [HttpPost("{id}/capture")]
     [Authorize]
     [ProducesResponseType(typeof(PaymentResponse), StatusCodes.Status200OK)]
-    [ProducesResponseType(typeof(ApiErrorResult), StatusCodes.Status400BadRequest)]
-    [ProducesResponseType(typeof(ApiErrorResult), StatusCodes.Status404NotFound)]
     public async Task<IActionResult> CapturePayment(
         Guid id,
         [FromBody] CapturePaymentRequest request,
@@ -139,6 +131,11 @@ public class PaymentsController : ControllerBase
         _logger.LogInformation(
             "Payment {PaymentId} captured. Status: {Status}",
             id, result.Status);
+
+        if (!result.IsSuccessful)
+        {
+            throw new DomainValidationException("PaymentCapture", result.ErrorMessage ?? "Payment capture failed");
+        }
 
         var response = new PaymentResponse
         {
@@ -155,13 +152,6 @@ public class PaymentsController : ControllerBase
             ErrorMessage = result.ErrorMessage,
             CreatedAt = result.CreatedAt
         };
-
-        if (!result.IsSuccessful)
-        {
-            return BadRequest(new ApiErrorResult(
-                result.ErrorMessage ?? "Payment capture failed",
-                "CAPTURE_FAILED"));
-        }
 
         return Ok(response);
     }
@@ -179,8 +169,6 @@ public class PaymentsController : ControllerBase
     [HttpPost("{id}/refund")]
     [Authorize]
     [ProducesResponseType(typeof(PaymentResponse), StatusCodes.Status200OK)]
-    [ProducesResponseType(typeof(ApiErrorResult), StatusCodes.Status400BadRequest)]
-    [ProducesResponseType(typeof(ApiErrorResult), StatusCodes.Status404NotFound)]
     public async Task<IActionResult> RefundPayment(
         Guid id,
         [FromBody] RefundPaymentRequest request,
@@ -188,9 +176,7 @@ public class PaymentsController : ControllerBase
     {
         if (!Enum.TryParse<Domain.Enums.RefundReason>(request.Reason, true, out var refundReason))
         {
-            return BadRequest(new ApiErrorResult(
-                $"Invalid refund reason: {request.Reason}",
-                "INVALID_REFUND_REASON"));
+            throw new DomainValidationException("RefundReason", $"Invalid refund reason: {request.Reason}");
         }
 
         var command = new RefundPaymentCommand(
@@ -204,6 +190,11 @@ public class PaymentsController : ControllerBase
         _logger.LogInformation(
             "Payment {PaymentId} refunded. Amount: {Amount}, Reason: {Reason}",
             id, request.Amount, request.Reason);
+
+        if (!result.IsSuccessful)
+        {
+            throw new DomainValidationException("PaymentRefund", result.ErrorMessage ?? "Payment refund failed");
+        }
 
         var response = new PaymentResponse
         {
@@ -221,13 +212,6 @@ public class PaymentsController : ControllerBase
             CreatedAt = result.CreatedAt
         };
 
-        if (!result.IsSuccessful)
-        {
-            return BadRequest(new ApiErrorResult(
-                result.ErrorMessage ?? "Payment refund failed",
-                "REFUND_FAILED"));
-        }
-
         return Ok(response);
     }
 
@@ -242,7 +226,6 @@ public class PaymentsController : ControllerBase
     [HttpGet("{id}")]
     [Authorize]
     [ProducesResponseType(typeof(PaymentDetailsViewModel), StatusCodes.Status200OK)]
-    [ProducesResponseType(typeof(ApiErrorResult), StatusCodes.Status404NotFound)]
     public async Task<IActionResult> GetPaymentById(
         Guid id,
         CancellationToken cancellationToken = default)
@@ -252,9 +235,7 @@ public class PaymentsController : ControllerBase
 
         if (result == null)
         {
-            return NotFound(new ApiErrorResult(
-                $"Payment with ID {id} was not found",
-                "PAYMENT_NOT_FOUND"));
+            throw new NotFoundException($"Payment with ID {id} was not found");
         }
 
         return Ok(result);
@@ -297,7 +278,6 @@ public class PaymentsController : ControllerBase
     [HttpPost("calculate-pricing")]
     [AllowAnonymous]
     [ProducesResponseType(typeof(PricingCalculationViewModel), StatusCodes.Status200OK)]
-    [ProducesResponseType(typeof(ApiErrorResult), StatusCodes.Status400BadRequest)]
     public async Task<IActionResult> CalculatePricing(
         [FromBody] CalculatePricingRequest request,
         CancellationToken cancellationToken = default)
@@ -319,6 +299,6 @@ public class PaymentsController : ControllerBase
 
     private string? GetCurrentUserId()
     {
-        return User.GetUserId();
+        return User.GetUserId().ToString();
     }
 }

@@ -2,6 +2,9 @@
 using Booksy.Core.Domain.Abstractions.Entities;
 using Booksy.ServiceCatalog.Domain.Aggregates;
 using Booksy.ServiceCatalog.Domain.Aggregates.BookingAggregate;
+using Booksy.ServiceCatalog.Domain.Aggregates.NotificationAggregate;
+using Booksy.ServiceCatalog.Domain.Aggregates.NotificationTemplateAggregate;
+using Booksy.ServiceCatalog.Domain.Aggregates.UserNotificationPreferencesAggregate;
 using Booksy.ServiceCatalog.Domain.Aggregates.PaymentAggregate;
 using Booksy.ServiceCatalog.Domain.Aggregates.PayoutAggregate;
 using Booksy.ServiceCatalog.Domain.Entities;
@@ -38,6 +41,9 @@ namespace Booksy.ServiceCatalog.Infrastructure.Persistence.Context
         public DbSet<Booking> Bookings => Set<Booking>();
         public DbSet<Payment> Payments => Set<Payment>();
         public DbSet<Payout> Payouts => Set<Payout>();
+        public DbSet<Notification> Notifications => Set<Notification>();
+        public DbSet<NotificationTemplate> NotificationTemplates => Set<NotificationTemplate>();
+        public DbSet<UserNotificationPreferences> UserNotificationPreferences => Set<UserNotificationPreferences>();
 
         // Entities
         public DbSet<Staff> Staff => Set<Staff>();

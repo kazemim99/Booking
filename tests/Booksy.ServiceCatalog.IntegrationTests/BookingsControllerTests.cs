@@ -1,4 +1,5 @@
 using Booksy.Core.Domain.Infrastructure.Middleware;
+using Booksy.Core.Domain.ValueObjects;
 using Booksy.ServiceCatalog.Api.Models.Responses;
 using Booksy.ServiceCatalog.Domain.Aggregates.BookingAggregate;
 using Booksy.ServiceCatalog.Domain.Enums;
@@ -384,7 +385,7 @@ public class BookingsControllerTests : ServiceCatalogIntegrationTestBase
                 "Test Staff",
                 "staff@test.com",
                 StaffRole.Assistant,
-                Core.Domain.ValueObjects.PhoneNumber.Create("+1234567890"));
+                PhoneNumber.Create("+1234567890"));
         }
 
         await DbContext.SaveChangesAsync();

@@ -1,8 +1,12 @@
 namespace Booksy.UserManagement.Application.CQRS.Commands.PhoneVerification.SendVerificationCode;
 
-public record SendVerificationCodeResponse(
-    bool Success,
-    string Message,
+/// <summary>
+/// Response for SendVerificationCode command
+/// </summary>
+public sealed record SendVerificationCodeResponse(
+    Guid VerificationId,
     string MaskedPhoneNumber,
-    int ExpiresIn
+    DateTime ExpiresAt,
+    int MaxAttempts,
+    string Message
 );
