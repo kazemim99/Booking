@@ -154,19 +154,20 @@ namespace Booksy.ServiceCatalog.Infrastructure.Persistence.Configurations
             // Metadata (JSON)
             builder.Property(p => p.Metadata)
                 .HasColumnName("Metadata")
-                .HasColumnType("jsonb");
-
-            // PaymentIds (JSON array)
-
-        
-
-            builder.Property<List<PaymentId>>("_paymentIds")
-                .HasColumnName("PaymentIds")
                 .HasColumnType("jsonb")
                 .HasConversion(
-                    v => System.Text.Json.JsonSerializer.Serialize(v.Select(id => id.Value).ToList(), (System.Text.Json.JsonSerializerOptions?)null),
-                    v => System.Text.Json.JsonSerializer.Deserialize<List<Guid>>(v, (System.Text.Json.JsonSerializerOptions?)null)!
-                        .Select(id => PaymentId.From(id)).ToList());
+                    v => System.Text.Json.JsonSerializer.Serialize(v, (System.Text.Json.JsonSerializerOptions?)null),
+                    v => System.Text.Json.JsonSerializer.Deserialize<Dictionary<string, string>>(v, (System.Text.Json.JsonSerializerOptions?)null) ?? new Dictionary<string, string>());
+
+            // PaymentIds (JSON array) - Configure as shadow property to avoid EF trying to materialize PaymentId
+            builder.Property<string>("PaymentIdsJson")
+                .HasColumnName("PaymentIds")
+                .HasColumnType("jsonb")
+                .IsRequired(false);
+
+            // Ignore both the public property and backing field for PaymentIds collection
+            builder.Ignore(p => p.PaymentIds);
+            builder.Ignore("_paymentIds");
 
             // Indexes
             builder.HasIndex(p => p.ProviderId)
