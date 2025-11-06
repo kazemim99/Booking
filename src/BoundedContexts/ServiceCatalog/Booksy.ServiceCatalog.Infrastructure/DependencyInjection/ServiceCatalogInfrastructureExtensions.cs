@@ -76,6 +76,7 @@ namespace Booksy.ServiceCatalog.Infrastructure.DependencyInjection
             // Notification Repositories
             services.AddScoped<INotificationWriteRepository, NotificationWriteRepository>();
             services.AddScoped<INotificationTemplateRepository, NotificationTemplateRepository>();
+            services.AddScoped<IUserNotificationPreferencesRepository, UserNotificationPreferencesRepository>();
 
             // Notification Services (registered in External Services)
             // Template engine and services
