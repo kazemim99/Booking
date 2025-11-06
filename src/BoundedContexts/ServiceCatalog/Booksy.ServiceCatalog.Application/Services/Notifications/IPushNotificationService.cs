@@ -37,5 +37,15 @@ namespace Booksy.ServiceCatalog.Application.Services.Notifications
             string body,
             Dictionary<string, string>? data = null,
             CancellationToken cancellationToken = default);
+
+        /// <summary>
+        /// Send push notification to a specific user by user ID
+        /// </summary>
+        Task<(bool Success, string? MessageId, string? ErrorMessage)> SendPushAsync(
+            Guid userId,
+            string title,
+            string body,
+            Dictionary<string, object>? data = null,
+            CancellationToken cancellationToken = default);
     }
 }

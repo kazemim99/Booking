@@ -64,5 +64,24 @@ namespace Booksy.ServiceCatalog.Infrastructure.Notifications.Push
             // TODO: Implement topic-based push notifications
             return Task.FromResult((true, Guid.NewGuid().ToString(), (string?)null));
         }
+
+        public Task<(bool Success, string? MessageId, string? ErrorMessage)> SendPushAsync(
+            Guid userId,
+            string title,
+            string body,
+            Dictionary<string, object>? data = null,
+            CancellationToken cancellationToken = default)
+        {
+            _logger.LogWarning(
+                "Push notification by userId not fully implemented. UserId: {UserId}, Title: {Title}",
+                userId, title);
+
+            // TODO: Implement user device token lookup
+            // 1. Get user's device tokens from UserDeviceRepository
+            // 2. Send to all user devices via SendPushAsync(deviceToken, ...)
+            // 3. Return aggregated result
+
+            return Task.FromResult((true, Guid.NewGuid().ToString(), (string?)null));
+        }
     }
 }
