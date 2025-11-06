@@ -175,6 +175,7 @@ namespace Booksy.ServiceCatalog.Application.Commands.Notifications.SendNotificat
                         notification.RecipientId.Value,
                         notification.Subject,
                         notification.Body,
+                        notification.Type.ToString(),
                         notification.Metadata.ToDictionary(kvp => kvp.Key, kvp => kvp.Value),
                         cancellationToken);
 

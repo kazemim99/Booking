@@ -25,7 +25,7 @@ namespace Booksy.ServiceCatalog.Infrastructure.Notifications
             _logger = logger;
         }
 
-        public async Task SendToUserAsync(
+        public async Task<(bool Success, string? ErrorMessage)> SendToUserAsync(
             Guid userId,
             string title,
             string message,
@@ -53,17 +53,19 @@ namespace Booksy.ServiceCatalog.Infrastructure.Notifications
                     "Sent in-app notification to user {UserId}: {Title}",
                     userId,
                     title);
+
+                return (true, null);
             }
             catch (Exception ex)
             {
                 _logger.LogError(ex,
                     "Failed to send in-app notification to user {UserId}",
                     userId);
-                throw;
+                return (false, ex.Message);
             }
         }
 
-        public async Task SendToUsersAsync(
+        public async Task<(bool Success, string? ErrorMessage)> SendToUsersAsync(
             List<Guid> userIds,
             string title,
             string message,
@@ -94,16 +96,18 @@ namespace Booksy.ServiceCatalog.Infrastructure.Notifications
                     "Sent in-app notification to {Count} users: {Title}",
                     userIds.Count,
                     title);
+
+                return (true, null);
             }
             catch (Exception ex)
             {
                 _logger.LogError(ex,
                     "Failed to send in-app notification to multiple users");
-                throw;
+                return (false, ex.Message);
             }
         }
 
-        public async Task SendToAllAsync(
+        public async Task<(bool Success, string? ErrorMessage)> SendToAllAsync(
             string title,
             string message,
             string type,
@@ -126,11 +130,13 @@ namespace Booksy.ServiceCatalog.Infrastructure.Notifications
                     .SendAsync("ReceiveNotification", notification, cancellationToken);
 
                 _logger.LogInformation("Broadcast in-app notification to all users: {Title}", title);
+
+                return (true, null);
             }
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Failed to broadcast in-app notification");
-                throw;
+                return (false, ex.Message);
             }
         }
 
