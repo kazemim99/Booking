@@ -36,6 +36,27 @@ public static class ExternalServicesExtensions
         services.AddScoped<IEmailTemplateService, EmailTemplateService>();
         services.AddScoped<IPaymentGateway, StripePaymentGateway>();
 
+        // Notification Services (Multi-Channel)
+        services.AddScoped<Booksy.ServiceCatalog.Application.Services.Notifications.IEmailNotificationService,
+            Booksy.Infrastructure.External.Notifications.Email.SendGridEmailNotificationService>();
+        services.AddScoped<Booksy.ServiceCatalog.Application.Services.Notifications.ISmsNotificationService,
+            Booksy.Infrastructure.External.Notifications.Sms.RahyabSmsNotificationService>();
+        services.AddScoped<Booksy.ServiceCatalog.Application.Services.Notifications.IPushNotificationService,
+            Booksy.Infrastructure.External.Notifications.Push.FirebasePushNotificationService>();
+        services.AddScoped<Booksy.ServiceCatalog.Application.Services.Notifications.IInAppNotificationService,
+            Booksy.Infrastructure.External.Notifications.InApp.SignalRInAppNotificationService>();
+
+        // SendGrid Client
+        services.AddSingleton<SendGrid.ISendGridClient>(sp =>
+        {
+            var apiKey = configuration["SendGrid:ApiKey"] ?? throw new InvalidOperationException("SendGrid API key not configured");
+            return new SendGrid.SendGridClient(apiKey);
+        });
+
+        // HTTP Clients for notification services
+        services.AddHttpClient<Booksy.Infrastructure.External.Notifications.Email.SendGridEmailNotificationService>();
+        services.AddHttpClient<Booksy.Infrastructure.External.Notifications.Sms.RahyabSmsNotificationService>();
+
 
         // Analytics
         var analyticsProvider = configuration["Analytics:Provider"];
