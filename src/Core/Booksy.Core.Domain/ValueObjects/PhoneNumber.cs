@@ -4,7 +4,7 @@
 using Booksy.Core.Domain.Base;
 using System.Text.RegularExpressions;
 
-namespace Booksy.UserManagement.Domain.ValueObjects
+namespace Booksy.Core.Domain.ValueObjects
 {
     /// <summary>
     /// Phone number value object with validation
@@ -22,7 +22,7 @@ namespace Booksy.UserManagement.Domain.ValueObjects
             NationalNumber = nationalNumber;
         }
 
-        public static PhoneNumber From(string phoneNumber)
+        public static PhoneNumber Create(string phoneNumber)
         {
             if (string.IsNullOrWhiteSpace(phoneNumber))
                 throw new ArgumentException("Phone number cannot be empty", nameof(phoneNumber));

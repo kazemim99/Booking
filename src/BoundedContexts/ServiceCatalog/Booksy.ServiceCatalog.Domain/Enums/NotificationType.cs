@@ -58,5 +58,10 @@ public enum NotificationType
           Promotions | Newsletter |
           StaffAssigned | StaffUnavailable |
           ClientNoShow | ClientLateArrival |
-          BusinessMetrics | LowInventory
+          BusinessMetrics | LowInventory,
+    ReviewRequest = 16777216,
+    RefundProcessed = 16777217,
+    BookingCancellation = 16777218,
+    BookingNoShow = 16777219,
+    PayoutCompleted = 16777220
 }

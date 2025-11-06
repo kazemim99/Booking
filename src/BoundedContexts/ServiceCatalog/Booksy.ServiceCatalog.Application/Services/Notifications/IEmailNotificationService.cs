@@ -17,7 +17,7 @@ namespace Booksy.ServiceCatalog.Application.Services.Notifications
             string htmlBody,
             string? plainTextBody = null,
             string? fromName = null,
-            Dictionary<string, string>? metadata = null,
+            Dictionary<string, object>? metadata = null,
             CancellationToken cancellationToken = default);
 
         /// <summary>

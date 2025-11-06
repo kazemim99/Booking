@@ -1,5 +1,4 @@
 ﻿using Booksy.Infrastructure.External.Analytics;
-using Booksy.Infrastructure.External.Hubs;
 using Booksy.Infrastructure.External.Marketing;
 using Booksy.Infrastructure.External.Notifications;
 using Booksy.Infrastructure.External.OTP;

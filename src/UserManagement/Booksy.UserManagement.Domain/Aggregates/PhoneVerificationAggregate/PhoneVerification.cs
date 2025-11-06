@@ -5,7 +5,6 @@ using Booksy.Core.Domain.Base;
 using Booksy.Core.Domain.ValueObjects;
 using Booksy.UserManagement.Domain.Enums;
 using Booksy.UserManagement.Domain.Events;
-using Booksy.UserManagement.Domain.ValueObjects;
 
 namespace Booksy.UserManagement.Domain.Aggregates.PhoneVerificationAggregate
 {

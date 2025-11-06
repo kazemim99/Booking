@@ -112,5 +112,7 @@ namespace Booksy.ServiceCatalog.Infrastructure.Notifications.Email
             // Simple HTML tag removal (for production, use HtmlAgilityPack)
             return System.Text.RegularExpressions.Regex.Replace(html, "<.*?>", string.Empty);
         }
+
+      
     }
 }

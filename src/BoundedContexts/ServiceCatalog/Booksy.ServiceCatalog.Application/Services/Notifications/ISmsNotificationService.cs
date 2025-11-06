@@ -14,7 +14,7 @@ namespace Booksy.ServiceCatalog.Application.Services.Notifications
         Task<(bool Success, string? MessageId, string? ErrorMessage)> SendSmsAsync(
             string phoneNumber,
             string message,
-            Dictionary<string, string>? metadata = null,
+            Dictionary<string, object>? metadata = null,
             CancellationToken cancellationToken = default);
 
         /// <summary>
@@ -23,7 +23,7 @@ namespace Booksy.ServiceCatalog.Application.Services.Notifications
         Task<List<(string PhoneNumber, bool Success, string? MessageId, string? ErrorMessage)>> SendBulkSmsAsync(
             List<string> phoneNumbers,
             string message,
-            Dictionary<string, string>? metadata = null,
+            Dictionary<string, object>? metadata = null,
             CancellationToken cancellationToken = default);
     }
 }

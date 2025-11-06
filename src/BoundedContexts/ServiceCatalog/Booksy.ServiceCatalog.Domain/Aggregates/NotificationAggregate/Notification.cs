@@ -54,7 +54,7 @@ namespace Booksy.ServiceCatalog.Domain.Aggregates.NotificationAggregate
         public ProviderId? ProviderId { get; private set; }
 
         // Metadata
-        public Dictionary<string, string> Metadata { get; private set; }
+        public Dictionary<string, object> Metadata { get; private set; }
         public string? CampaignId { get; private set; }
         public string? BatchId { get; private set; }
 
@@ -70,7 +70,7 @@ namespace Booksy.ServiceCatalog.Domain.Aggregates.NotificationAggregate
             Subject = string.Empty;
             Body = string.Empty;
             TemplateData = new Dictionary<string, string>();
-            Metadata = new Dictionary<string, string>();
+            Metadata = new Dictionary<string, object>();
         }
 
         private Notification(
@@ -94,7 +94,7 @@ namespace Booksy.ServiceCatalog.Domain.Aggregates.NotificationAggregate
             CreatedAt = DateTime.UtcNow;
             ScheduledFor = scheduledFor;
             TemplateData = new Dictionary<string, string>();
-            Metadata = new Dictionary<string, string>();
+            Metadata = new Dictionary<string, object>();
             AttemptCount = 0;
 
             // Set expiration (30 days for scheduled, 7 days for immediate)

@@ -71,10 +71,10 @@ namespace Booksy.ServiceCatalog.Application.EventHandlers.Payments
                             <td><strong>Reason:</strong></td>
                             <td>{notification.Reason}</td>
                         </tr>
-                        {(notification.BookingId.HasValue ? $@"
+                        {(notification.BookingId != null ? $@"
                         <tr>
                             <td><strong>Booking ID:</strong></td>
-                            <td>{notification.BookingId.Value.Value}</td>
+                            <td>{notification.BookingId.Value}</td>
                         </tr>" : "")}
                     </table>
                 </div>
@@ -99,7 +99,7 @@ namespace Booksy.ServiceCatalog.Application.EventHandlers.Payments
                 Refund Amount: ${notification.RefundAmount.Amount:F2} {notification.RefundAmount.Currency}
                 Processed At: {notification.RefundedAt:yyyy-MM-dd HH:mm}
                 Reason: {notification.Reason}
-                {(notification.BookingId.HasValue ? $"Booking ID: {notification.BookingId.Value.Value}" : "")}
+                {(notification.BookingId != null ? $"Booking ID: {notification.BookingId.Value}" : "")}
 
                 What happens next?
                 - The refund will be credited to your original payment method

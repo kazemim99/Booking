@@ -36,11 +36,9 @@ namespace Booksy.ServiceCatalog.Infrastructure.Notifications.Sms
             _company = configuration["Rahyab:Company"] ?? "NEGAHNO";
         }
 
-        public async Task<(bool Success, string? MessageId, string? ErrorMessage)> SendSmsAsync(
-            string phoneNumber,
-            string message,
-            Dictionary<string, string>? metadata = null,
-            CancellationToken cancellationToken = default)
+        public async Task<(bool Success, string? MessageId, string? ErrorMessage)> 
+            SendSmsAsync(string phoneNumber, string message, Dictionary<string, object>? metadata = null, CancellationToken cancellationToken = default)
+
         {
             try
             {
@@ -97,11 +95,9 @@ namespace Booksy.ServiceCatalog.Infrastructure.Notifications.Sms
             }
         }
 
-        public async Task<List<(string PhoneNumber, bool Success, string? MessageId, string? ErrorMessage)>> SendBulkSmsAsync(
-            List<string> phoneNumbers,
-            string message,
-            Dictionary<string, string>? metadata = null,
-            CancellationToken cancellationToken = default)
+        public async Task<List<(string PhoneNumber, bool Success, string? MessageId, string? ErrorMessage)>>
+            SendBulkSmsAsync(List<string> phoneNumbers, string message, Dictionary<string, object>? metadata = null, CancellationToken cancellationToken = default)
+
         {
             var results = new List<(string PhoneNumber, bool Success, string? MessageId, string? ErrorMessage)>();
 
@@ -127,5 +123,7 @@ namespace Booksy.ServiceCatalog.Infrastructure.Notifications.Sms
             // Remove all non-digit characters
             return new string(phoneNumber.Where(char.IsDigit).ToArray());
         }
+
+       
     }
 }

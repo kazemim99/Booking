@@ -15,7 +15,7 @@ namespace Booksy.ServiceCatalog.Application.Services.Notifications
             string deviceToken,
             string title,
             string body,
-            Dictionary<string, string>? data = null,
+            Dictionary<string, object>? data = null,
             CancellationToken cancellationToken = default);
 
         /// <summary>
@@ -25,7 +25,7 @@ namespace Booksy.ServiceCatalog.Application.Services.Notifications
             List<string> deviceTokens,
             string title,
             string body,
-            Dictionary<string, string>? data = null,
+            Dictionary<string, object>? data = null,
             CancellationToken cancellationToken = default);
 
         /// <summary>
@@ -35,7 +35,7 @@ namespace Booksy.ServiceCatalog.Application.Services.Notifications
             string topic,
             string title,
             string body,
-            Dictionary<string, string>? data = null,
+            Dictionary<string, object>? data = null,
             CancellationToken cancellationToken = default);
     }
 }

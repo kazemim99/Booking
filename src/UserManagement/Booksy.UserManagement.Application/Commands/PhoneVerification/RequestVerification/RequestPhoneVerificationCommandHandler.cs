@@ -9,7 +9,6 @@ using Booksy.ServiceCatalog.Application.Services.Notifications;
 using Booksy.UserManagement.Domain.Aggregates.PhoneVerificationAggregate;
 using Booksy.UserManagement.Domain.Enums;
 using Booksy.UserManagement.Domain.Repositories;
-using Booksy.UserManagement.Domain.ValueObjects;
 using Microsoft.Extensions.Logging;
 
 namespace Booksy.UserManagement.Application.Commands.PhoneVerification.RequestVerification
@@ -42,7 +41,7 @@ namespace Booksy.UserManagement.Application.Commands.PhoneVerification.RequestVe
             PhoneNumber phoneNumber;
             try
             {
-                phoneNumber = PhoneNumber.From(command.PhoneNumber);
+                phoneNumber = PhoneNumber.Create(command.PhoneNumber);
             }
             catch (ArgumentException ex)
             {

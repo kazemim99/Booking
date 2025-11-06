@@ -1,6 +1,7 @@
 ﻿using Booksy.API.Extensions;
 using Booksy.API.Middleware;
 using Booksy.Core.Application.DTOs;
+using Booksy.Core.Application.Exceptions;
 using Booksy.Core.Domain.Exceptions;
 using Booksy.ServiceCatalog.Api.Models.Requests;
 using Booksy.ServiceCatalog.Api.Models.Requests.Extenstions;
@@ -26,6 +27,7 @@ using Booksy.ServiceCatalog.Application.Queries.Provider.GetProviderStaff;
 using MediatR;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.RateLimiting;
 using System.Security.Claims;
 
 namespace Booksy.ServiceCatalog.API.Controllers.V1;
@@ -72,7 +74,7 @@ public class ProvidersController : ControllerBase
     /// <response code="401">User not authenticated</response>
     [HttpPost("draft")]
     [Authorize]
-    [Booksy.API.Middleware.EnableRateLimiting("provider-registration")]
+    [EnableRateLimiting("provider-registration")]
     [ProducesResponseType(typeof(CreateProviderDraftResponse), StatusCodes.Status201Created)]
     [ProducesResponseType(typeof(CreateProviderDraftResponse), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
@@ -184,7 +186,7 @@ public class ProvidersController : ControllerBase
     /// <response code="403">Not authorized to complete this registration</response>
     [HttpPost("{providerId}/complete")]
     [Authorize]
-    [Booksy.API.Middleware.EnableRateLimiting("provider-registration")]
+    [EnableRateLimiting("provider-registration")]
     [ProducesResponseType(typeof(CompleteProviderRegistrationResponse), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     [ProducesResponseType(StatusCodes.Status403Forbidden)]
@@ -227,7 +229,7 @@ public class ProvidersController : ControllerBase
     /// <response code="409">Provider already exists for this user</response>
     [HttpPost("register")]
     [Authorize]
-    [Booksy.API.Middleware.EnableRateLimiting("provider-registration")]
+    [EnableRateLimiting("provider-registration")]
     [ProducesResponseType(typeof(ProviderResponse), StatusCodes.Status201Created)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     public async Task<IActionResult> RegisterProvider(
@@ -266,7 +268,7 @@ public class ProvidersController : ControllerBase
     /// <response code="401">User not authenticated</response>
     [HttpPost("register-full")]
     [Authorize]
-    [Booksy.API.Middleware.EnableRateLimiting("provider-registration")]
+    [EnableRateLimiting("provider-registration")]
     [ProducesResponseType(typeof(ProviderFullRegistrationResponse), StatusCodes.Status201Created)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     public async Task<IActionResult> RegisterProviderFull(

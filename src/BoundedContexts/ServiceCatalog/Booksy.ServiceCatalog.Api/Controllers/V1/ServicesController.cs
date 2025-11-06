@@ -116,7 +116,7 @@ public class ServicesController : ControllerBase
     /// <response code="403">Not authorized to create services for this provider</response>
     [HttpPost("{id:guid}")]
     [Authorize(Policy = "ProviderOrAdmin")]
-    [Booksy.API.Middleware.EnableRateLimiting("service-creation")]
+    [EnableRateLimiting("service-creation")]
     [ProducesResponseType(typeof(ServiceResponse), StatusCodes.Status201Created)]
     [ProducesResponseType(StatusCodes.Status403Forbidden)]
     public async Task<IActionResult> AddService(
