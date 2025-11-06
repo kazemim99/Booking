@@ -61,9 +61,9 @@ namespace Booksy.ServiceCatalog.Infrastructure.BackgroundJobs
                     try
                     {
                         _logger.LogInformation(
-                            "Processing scheduled notification {NotificationId} for user {UserId}, Channel: {Channel}",
+                            "Processing scheduled notification {NotificationId} for user {RecipientId}, Channel: {Channel}",
                             notification.Id.Value,
-                            notification.UserId.Value,
+                            notification.RecipientId.Value,
                             notification.Channel);
 
                         // Send based on channel
@@ -80,9 +80,9 @@ namespace Booksy.ServiceCatalog.Infrastructure.BackgroundJobs
                     catch (Exception ex)
                     {
                         _logger.LogError(ex,
-                            "Failed to send scheduled notification {NotificationId} for user {UserId}",
+                            "Failed to send scheduled notification {NotificationId} for user {RecipientId}",
                             notification.Id.Value,
-                            notification.UserId.Value);
+                            notification.RecipientId.Value);
 
                         // Mark as failed
                         notification.MarkAsFailed(ex.Message);
@@ -130,10 +130,10 @@ namespace Booksy.ServiceCatalog.Infrastructure.BackgroundJobs
             CancellationToken ct)
         {
             var result = await _emailService.SendEmailAsync(
-                to: notification.Recipient,
+                to: notification.RecipientEmail ?? throw new InvalidOperationException("RecipientEmail is required for email notifications"),
                 subject: notification.Subject ?? "Notification",
-                htmlContent: notification.Content,
-                plainTextContent: notification.Content,
+                htmlContent: notification.Body,
+                plainTextContent: notification.PlainTextBody ?? notification.Body,
                 cancellationToken: ct);
 
             if (!result.Success)
@@ -152,8 +152,8 @@ namespace Booksy.ServiceCatalog.Infrastructure.BackgroundJobs
             CancellationToken ct)
         {
             var result = await _smsService.SendSmsAsync(
-                to: notification.Recipient,
-                message: notification.Content,
+                to: notification.RecipientPhone ?? throw new InvalidOperationException("RecipientPhone is required for SMS notifications"),
+                message: notification.PlainTextBody ?? notification.Body,
                 cancellationToken: ct);
 
             if (!result.Success)
@@ -171,12 +171,12 @@ namespace Booksy.ServiceCatalog.Infrastructure.BackgroundJobs
             Domain.Aggregates.NotificationAggregate.Notification notification,
             CancellationToken ct)
         {
-            var metadata = notification.Data ?? new Dictionary<string, object>();
+            var metadata = notification.Metadata ?? new Dictionary<string, object>();
 
             var result = await _pushService.SendPushAsync(
-                userId: notification.UserId.Value,
+                userId: notification.RecipientId.Value,
                 title: notification.Subject ?? "Notification",
-                body: notification.Content,
+                body: notification.Body,
                 data: metadata,
                 cancellationToken: ct);
 
@@ -195,12 +195,12 @@ namespace Booksy.ServiceCatalog.Infrastructure.BackgroundJobs
             Domain.Aggregates.NotificationAggregate.Notification notification,
             CancellationToken ct)
         {
-            var metadata = notification.Data ?? new Dictionary<string, object>();
+            var metadata = notification.Metadata ?? new Dictionary<string, object>();
 
             var result = await _inAppService.SendToUserAsync(
-                userId: notification.UserId.Value,
+                userId: notification.RecipientId.Value,
                 title: notification.Subject ?? "Notification",
-                message: notification.Content,
+                message: notification.Body,
                 type: notification.Type.ToString(),
                 metadata: metadata,
                 cancellationToken: ct);
