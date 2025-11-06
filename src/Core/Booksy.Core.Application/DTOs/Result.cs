@@ -89,10 +89,17 @@ namespace Booksy.Core.Application.DTOs
             return this;
         }
 
-        //public T Match<T>(Func<T, T> onSuccess, Func<ErrorResult, T> onFailure)
-        //{
-        //    return IsSuccess ? onSuccess(Value!) : onFailure(Error!);
-        //}
+        /// <summary>
+        /// Pattern matching on the result - executes one of two functions based on success/failure
+        /// </summary>
+        /// <typeparam name="TOutput">The output type of both functions</typeparam>
+        /// <param name="onSuccess">Function to execute if the result is successful</param>
+        /// <param name="onFailure">Function to execute if the result is failed</param>
+        /// <returns>The output of whichever function was executed</returns>
+        public TOutput Match<TOutput>(Func<T, TOutput> onSuccess, Func<ErrorResult, TOutput> onFailure)
+        {
+            return IsSuccess ? onSuccess(Value!) : onFailure(Error!);
+        }
     }
 
     public class Result

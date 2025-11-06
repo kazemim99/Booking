@@ -10,5 +10,6 @@ namespace Booksy.ServiceCatalog.Application.Commands.Notifications.CancelNotific
     /// </summary>
     public sealed record CancelNotificationCommand(
         Guid NotificationId,
-        string? Reason = null) : ICommand<CancelNotificationResult>;
+        string? Reason = null,
+        Guid? IdempotencyKey = null) : ICommand<CancelNotificationResult>;
 }

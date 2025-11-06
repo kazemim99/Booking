@@ -11,7 +11,7 @@ namespace Booksy.ServiceCatalog.Application.Services.Notifications
         /// <summary>
         /// Send in-app notification to a specific user
         /// </summary>
-        Task SendToUserAsync(
+        Task<(bool Success, string? ErrorMessage)> SendToUserAsync(
             Guid userId,
             string title,
             string message,
@@ -22,7 +22,7 @@ namespace Booksy.ServiceCatalog.Application.Services.Notifications
         /// <summary>
         /// Send in-app notification to multiple users
         /// </summary>
-        Task SendToUsersAsync(
+        Task<(bool Success, string? ErrorMessage)> SendToUsersAsync(
             List<Guid> userIds,
             string title,
             string message,
@@ -33,7 +33,7 @@ namespace Booksy.ServiceCatalog.Application.Services.Notifications
         /// <summary>
         /// Send in-app notification to all connected users (broadcast)
         /// </summary>
-        Task SendToAllAsync(
+        Task<(bool Success, string? ErrorMessage)> SendToAllAsync(
             string title,
             string message,
             string type,

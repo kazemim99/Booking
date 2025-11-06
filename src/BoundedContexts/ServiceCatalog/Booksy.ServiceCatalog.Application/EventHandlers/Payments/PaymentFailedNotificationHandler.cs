@@ -26,7 +26,7 @@ namespace Booksy.ServiceCatalog.Application.EventHandlers.Payments
             _logger = logger;
         }
 
-        public async Task Handle(PaymentFailedEvent notification, CancellationToken cancellationToken)
+        public async Task HandleAsync(PaymentFailedEvent notification, CancellationToken cancellationToken)
         {
             _logger.LogInformation("Handling PaymentFailedEvent for PaymentId: {PaymentId}", notification.PaymentId);
 

@@ -26,7 +26,7 @@ namespace Booksy.ServiceCatalog.Application.EventHandlers.Bookings
             _logger = logger;
         }
 
-        public async Task Handle(BookingCompletedEvent notification, CancellationToken cancellationToken)
+        public async Task HandleAsync(BookingCompletedEvent notification, CancellationToken cancellationToken)
         {
             _logger.LogInformation("Handling BookingCompletedEvent for BookingId: {BookingId}", notification.BookingId);
 

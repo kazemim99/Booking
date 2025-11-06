@@ -25,5 +25,6 @@ namespace Booksy.ServiceCatalog.Application.Commands.Notifications.SendNotificat
         Guid? BookingId = null,
         Guid? PaymentId = null,
         Guid? ProviderId = null,
-        Dictionary<string, string>? Metadata = null) : ICommand<SendNotificationResult>;
+        Dictionary<string, string>? Metadata = null,
+        Guid? IdempotencyKey = null) : ICommand<SendNotificationResult>;
 }

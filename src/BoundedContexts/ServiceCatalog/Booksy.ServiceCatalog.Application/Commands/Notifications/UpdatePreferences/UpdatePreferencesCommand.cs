@@ -19,5 +19,6 @@ namespace Booksy.ServiceCatalog.Application.Commands.Notifications.UpdatePrefere
         bool? MarketingOptIn = null,
         int? MaxNotificationsPerDay = null,
         bool ResetToDefaults = false,
-        bool SetMinimal = false) : ICommand<UpdatePreferencesResult>;
+        bool SetMinimal = false,
+        Guid? IdempotencyKey = null) : ICommand<UpdatePreferencesResult>;
 }

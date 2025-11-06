@@ -201,7 +201,7 @@ public partial class ExceptionHandlingMiddleware
         var wrappedErrorResponse = new
         {
             success = false,
-            statusCode = response.StatusCode,
+            statusCode = response.StatusCode.ToString(),  // ✅ Convert to string
             message = errorResponse.Message,
             data = (object?)null,
             error = new
