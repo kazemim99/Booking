@@ -12,6 +12,7 @@ namespace Booksy.UserManagement.Application.Commands.PhoneVerification.ResendOtp
         Guid VerificationId,
         string? IpAddress = null,
         string? UserAgent = null,
-        string? SessionId = null
+        string? SessionId = null,
+        Guid? IdempotencyKey = null
     ) : ICommand<ResendOtpResult>;
 }

@@ -2,7 +2,7 @@
 // Booksy.ServiceCatalog.Application/Commands/Notifications/CancelNotification/CancelNotificationCommandHandler.cs
 // ========================================
 using Booksy.Core.Application.Abstractions.CQRS;
-using Booksy.Core.Application.Results;
+using Booksy.Core.Application.Exceptions;
 using Booksy.ServiceCatalog.Domain.Repositories;
 using Booksy.ServiceCatalog.Domain.ValueObjects;
 using MediatR;
@@ -27,7 +27,7 @@ namespace Booksy.ServiceCatalog.Application.Commands.Notifications.CancelNotific
             _logger = logger;
         }
 
-        public async Task<Result<CancelNotificationResult>> Handle(
+        public async Task<CancelNotificationResult> Handle(
             CancelNotificationCommand command,
             CancellationToken cancellationToken)
         {

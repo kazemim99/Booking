@@ -66,10 +66,10 @@ namespace Booksy.ServiceCatalog.Application.EventHandlers.Payments
                             <td><strong>Date:</strong></td>
                             <td>{notification.ProcessedAt:yyyy-MM-dd HH:mm}</td>
                         </tr>
-                        {(notification.BookingId.HasValue ? $@"
+                        {(notification.BookingId != null ? $@"
                         <tr>
                             <td><strong>Booking ID:</strong></td>
-                            <td>{notification.BookingId.Value.Value}</td>
+                            <td>{notification.BookingId.Value}</td>
                         </tr>" : "")}
                     </table>
                 </div>
@@ -87,7 +87,7 @@ namespace Booksy.ServiceCatalog.Application.EventHandlers.Payments
                 Payment ID: {notification.PaymentId.Value}
                 Amount: ${notification.Amount.Amount:F2} {notification.Amount.Currency}
                 Date: {notification.ProcessedAt:yyyy-MM-dd HH:mm}
-                {(notification.BookingId.HasValue ? $"Booking ID: {notification.BookingId.Value.Value}" : "")}
+                {(notification.BookingId != null ? $"Booking ID: {notification.BookingId.Value}" : "")}
 
                 This is your official receipt.
             ";
@@ -119,7 +119,7 @@ namespace Booksy.ServiceCatalog.Application.EventHandlers.Payments
                     <li><strong>Customer ID:</strong> {notification.CustomerId.Value}</li>
                     <li><strong>Amount:</strong> ${notification.Amount.Amount:F2} {notification.Amount.Currency}</li>
                     <li><strong>Date:</strong> {notification.ProcessedAt:yyyy-MM-dd HH:mm}</li>
-                    {(notification.BookingId.HasValue ? $"<li><strong>Booking ID:</strong> {notification.BookingId.Value.Value}</li>" : "")}
+                    {(notification.BookingId.Value != null ? $"<li><strong>Booking ID:</strong> {notification.BookingId.Value}</li>" : "")}
                 </ul>
 
                 <p>The funds will be included in your next payout.</p>

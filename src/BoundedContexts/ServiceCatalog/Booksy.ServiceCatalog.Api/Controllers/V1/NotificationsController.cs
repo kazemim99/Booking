@@ -55,13 +55,7 @@ public class NotificationsController : ControllerBase
             request.Priority,
             request.PlainTextBody,
             request.RecipientEmail,
-            request.RecipientPhone,
-            request.BookingId,
-            request.ProviderId,
-            request.PaymentId,
-            request.Metadata,
-            request.TemplateKey,
-            request.TemplateVariables);
+            request.RecipientPhone);
 
         var result = await _mediator.Send(command, cancellationToken);
         return Ok(result);
@@ -87,13 +81,7 @@ public class NotificationsController : ControllerBase
             request.Priority,
             request.PlainTextBody,
             request.RecipientEmail,
-            request.RecipientPhone,
-            request.BookingId,
-            request.ProviderId,
-            request.PaymentId,
-            request.Metadata,
-            request.TemplateKey,
-            request.TemplateVariables);
+            request.RecipientPhone);
 
         var result = await _mediator.Send(command, cancellationToken);
         return Ok(result);
@@ -117,11 +105,7 @@ public class NotificationsController : ControllerBase
             request.Subject,
             request.Body,
             request.Priority,
-            request.PlainTextBody,
-            request.Metadata,
-            request.TemplateKey,
-            request.TemplateVariables,
-            request.CampaignId);
+            request.PlainTextBody);
 
         var result = await _mediator.Send(command, cancellationToken);
         return Ok(result);

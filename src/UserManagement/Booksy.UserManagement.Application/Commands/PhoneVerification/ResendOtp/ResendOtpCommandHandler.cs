@@ -41,19 +41,19 @@ namespace Booksy.UserManagement.Application.Commands.PhoneVerification.ResendOtp
             {
                 throw new NotFoundException($"Verification with ID {command.VerificationId} not found");
             }
-
+            var message = string.Empty;
             // Check if resend is allowed
             if (!verification.CanResend())
             {
-                var message = verification.IsExpired()
-                    ? "Verification has expired. Please request a new verification."
-                    : verification.IsBlocked()
-                        ? $"Too many failed attempts. Please try again after {verification.BlockedUntil:HH:mm}"
-                        : verification.SendAttempts >= 3
-                            ? "Maximum resend attempts reached. Please request a new verification."
-                            : verification.LastSentAt.HasValue && (DateTime.UtcNow - verification.LastSentAt.Value).TotalSeconds < 60
-                                ? $"Please wait {60 - (int)(DateTime.UtcNow - verification.LastSentAt.Value).TotalSeconds} seconds before resending."
-                                : "Cannot resend OTP at this time.";
+                message = verification.IsExpired()
+                   ? "Verification has expired. Please request a new verification."
+                   : verification.IsBlocked()
+                       ? $"Too many failed attempts. Please try again after {verification.BlockedUntil:HH:mm}"
+                       : verification.SendAttempts >= 3
+                           ? "Maximum resend attempts reached. Please request a new verification."
+                           : verification.LastSentAt.HasValue && (DateTime.UtcNow - verification.LastSentAt.Value).TotalSeconds < 60
+                               ? $"Please wait {60 - (int)(DateTime.UtcNow - verification.LastSentAt.Value).TotalSeconds} seconds before resending."
+                               : "Cannot resend OTP at this time.";
 
                 return new ResendOtpResult(
                     false,
@@ -73,7 +73,7 @@ namespace Booksy.UserManagement.Application.Commands.PhoneVerification.ResendOtp
 
             // Send new OTP via SMS
             var otpCode = verification.OtpCode.Value;
-            var message = $"Your Booksy verification code is: {otpCode}. Valid for 5 minutes. Do not share this code.";
+            message = $"Your Booksy verification code is: {otpCode}. Valid for 5 minutes. Do not share this code.";
 
             var smsResult = await _smsService.SendSmsAsync(
                 verification.PhoneNumber.ToNational(),

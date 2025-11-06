@@ -118,7 +118,7 @@ public static class ExternalServicesExtensions
         services.AddSignalR(options =>
         {
             // Configure timeouts
-            options.ClientTimeoutInterval = TimeSpan.FromSeconds(60);
+            options.HandshakeTimeout = TimeSpan.FromSeconds(60);
             options.HandshakeTimeout = TimeSpan.FromSeconds(30);
             options.KeepAliveInterval = TimeSpan.FromSeconds(15);
 
@@ -127,7 +127,6 @@ public static class ExternalServicesExtensions
             options.EnableDetailedErrors = environment == "Development";
 
             // Max message size (1MB)
-            options.MaximumReceiveMessageSize = 1024 * 1024;
         });
 
         // Add CORS for SignalR (if needed)

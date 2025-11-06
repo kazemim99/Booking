@@ -27,5 +27,8 @@ namespace Booksy.ServiceCatalog.Application.Commands.Notifications.ScheduleNotif
         Guid? PaymentId = null,
         Guid? ProviderId = null,
         Dictionary<string, string>? Metadata = null,
-        Guid? IdempotencyKey = null) : ICommand<ScheduleNotificationResult>;
+        Guid? IdempotencyKey = null) : ICommand<ScheduleNotificationResult>
+    {
+      
+    }
 }

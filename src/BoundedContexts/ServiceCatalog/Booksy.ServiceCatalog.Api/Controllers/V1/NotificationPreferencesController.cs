@@ -38,14 +38,14 @@ public class PreferencesController : ControllerBase
     public async Task<IActionResult> GetPreferences(CancellationToken cancellationToken)
     {
         var userId = User.GetUserId();
-        var query = new GetUserPreferencesQuery(Guid.Parse(userId));
+        var query = new GetUserPreferencesQuery(userId);
         var result = await _mediator.Send(query, cancellationToken);
 
         if (result == null)
         {
             // Return default preferences if none exist
             return Ok(new UserPreferencesViewModel(
-                Guid.Parse(userId),
+                userId,
                 new List<string> { "Email", "SMS", "InApp" },
                 new List<string> { "All" },
                 null,
@@ -72,7 +72,7 @@ public class PreferencesController : ControllerBase
     {
         var userId = User.GetUserId();
         var command = new UpdatePreferencesCommand(
-            Guid.Parse(userId),
+            userId,
             request.EnabledChannels,
             request.EnabledTypes,
             request.QuietHoursStart,
@@ -99,7 +99,7 @@ public class PreferencesController : ControllerBase
     {
         var userId = User.GetUserId();
         var command = new UpdatePreferencesCommand(
-           Guid.Parse(userId),
+           userId,
             EnabledChannels: request.Channels);
 
         var result = await _mediator.Send(command, cancellationToken);
@@ -118,7 +118,7 @@ public class PreferencesController : ControllerBase
     {
         var userId = User.GetUserId();
         var command = new UpdatePreferencesCommand(
-           Guid.Parse(userId),
+           userId,
             EnabledTypes: request.Types);
 
         var result = await _mediator.Send(command, cancellationToken);
@@ -137,7 +137,7 @@ public class PreferencesController : ControllerBase
     {
         var userId = User.GetUserId();
         var command = new UpdatePreferencesCommand(
-           Guid.Parse(userId),
+           userId,
             QuietHoursStart: request.Start,
             QuietHoursEnd: request.End);
 
@@ -157,7 +157,7 @@ public class PreferencesController : ControllerBase
     {
         var userId = User.GetUserId();
         var command = new UpdatePreferencesCommand(
-           Guid.Parse(userId),
+           userId,
             MarketingOptIn: request.OptIn);
 
         var result = await _mediator.Send(command, cancellationToken);

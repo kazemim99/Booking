@@ -3,6 +3,7 @@
 
 using Booksy.Core.Domain.Base;
 using Booksy.Core.Domain.ValueObjects;
+using Booksy.UserManagement.Domain.ValueObjects;
 using Microsoft.EntityFrameworkCore.ChangeTracking;
 
 namespace Booksy.ServiceCatalog.Domain.ValueObjects

@@ -66,8 +66,8 @@ public class PhoneVerificationController : ControllerBase
 
         var command = new RequestPhoneVerificationCommand(
             request.PhoneNumber,
-            method,
             purpose,
+            method,
             request.UserId,
             ipAddress,
             userAgent,

@@ -11,6 +11,9 @@ namespace Booksy.UserManagement.Application.Commands.PhoneVerification.VerifyPho
     public sealed record VerifyPhoneCommand(
         Guid VerificationId,
         string Code,
-        string? IpAddress = null
-    ) : ICommand<VerifyPhoneResult>;
+        string? IpAddress = null,
+        Guid? IdempotencyKey =null
+    ) : ICommand<VerifyPhoneResult>
+    {
+    }
 }
