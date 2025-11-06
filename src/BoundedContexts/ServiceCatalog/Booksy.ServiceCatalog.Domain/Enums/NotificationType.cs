@@ -63,5 +63,6 @@ public enum NotificationType
     RefundProcessed = 16777217,
     BookingCancellation = 16777218,
     BookingNoShow = 16777219,
-    PayoutCompleted = 16777220
+    PayoutCompleted = 16777220,
+    SystemAlert = 16777221
 }

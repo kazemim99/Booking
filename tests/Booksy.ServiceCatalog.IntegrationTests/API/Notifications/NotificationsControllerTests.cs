@@ -284,7 +284,7 @@ public class NotificationsControllerTests : ServiceCatalogIntegrationTestBase
         var notifications = await DbContext.Notifications
             .Where(n => recipientIds.Contains(n.RecipientId.Value))
             .ToListAsync();
-        notifications.Should().HaveCountGreaterOrEqualTo(3);
+        notifications.Should().HaveCountGreaterThanOrEqualTo(3);
     }
 
     [Fact]
@@ -526,8 +526,8 @@ public class NotificationsControllerTests : ServiceCatalogIntegrationTestBase
         // Assert
         response.StatusCode.Should().Be(HttpStatusCode.OK);
         response.Data.Should().NotBeNull();
-        response.Data!.Notifications.Should().HaveCountGreaterOrEqualTo(5);
-        response.Data.TotalCount.Should().BeGreaterOrEqualTo(5);
+        response.Data!.Notifications.Should().HaveCountGreaterThanOrEqualTo(5);
+        response.Data.TotalCount.Should().BeGreaterThanOrEqualTo(5);
         response.Data.Notifications.Should().AllSatisfy(n => n.RecipientId.Should().Be(userId));
     }
 
@@ -573,7 +573,7 @@ public class NotificationsControllerTests : ServiceCatalogIntegrationTestBase
         // Assert
         response.StatusCode.Should().Be(HttpStatusCode.OK);
         response.Data.Should().NotBeNull();
-        response.Data!.Notifications.Should().HaveCountGreaterOrEqualTo(3);
+        response.Data!.Notifications.Should().HaveCountGreaterThanOrEqualTo(3);
         response.Data.Notifications.Should().AllSatisfy(n =>
             n.Channel.Should().Be(NotificationChannel.Email.ToString()));
     }
@@ -609,7 +609,7 @@ public class NotificationsControllerTests : ServiceCatalogIntegrationTestBase
         response.Data!.Notifications.Should().HaveCount(10);
         response.Data.PageNumber.Should().Be(1);
         response.Data.PageSize.Should().Be(10);
-        response.Data.TotalCount.Should().BeGreaterOrEqualTo(15);
+        response.Data.TotalCount.Should().BeGreaterThanOrEqualTo(15);
     }
 
     [Fact]
@@ -717,7 +717,7 @@ public class NotificationsControllerTests : ServiceCatalogIntegrationTestBase
         // Assert
         response.StatusCode.Should().Be(HttpStatusCode.OK);
         response.Data.Should().NotBeNull();
-        response.Data!.TotalNotifications.Should().BeGreaterOrEqualTo(2);
+        response.Data!.TotalNotifications.Should().BeGreaterThanOrEqualTo(2);
         response.Data.ByStatus.Should().ContainKey("Sent");
         response.Data.ByChannel.Should().NotBeEmpty();
     }
