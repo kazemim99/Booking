@@ -1,6 +1,7 @@
 // ========================================
 // Booksy.UserManagement.Infrastructure/Persistence/Repositories/PhoneVerificationRepository.cs
 // ========================================
+using Booksy.Core.Domain.ValueObjects;
 using Booksy.Infrastructure.Core.Persistence.Base;
 using Booksy.UserManagement.Domain.Aggregates.PhoneVerificationAggregate;
 using Booksy.UserManagement.Domain.Enums;

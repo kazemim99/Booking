@@ -10,6 +10,7 @@ using Booksy.ServiceCatalog.Application.Queries.Payout.GetProviderPayouts;
 using MediatR;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Booksy.Core.Application.Exceptions;
 
 namespace Booksy.ServiceCatalog.API.Controllers.V1;
 

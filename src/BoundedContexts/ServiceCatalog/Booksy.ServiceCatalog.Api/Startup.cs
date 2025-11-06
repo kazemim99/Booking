@@ -149,8 +149,6 @@ namespace Booksy.API
                 RequestPath = ""
             });
 
-            // Rate Limiting
-            app.UseMiddleware<RateLimitingMiddleware>();
 
             // Response Compression
             app.UseResponseCompression();

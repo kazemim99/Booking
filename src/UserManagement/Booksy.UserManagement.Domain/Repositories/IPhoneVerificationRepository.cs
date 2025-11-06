@@ -1,6 +1,7 @@
 // ========================================
 // Booksy.UserManagement.Domain/Repositories/IPhoneVerificationRepository.cs
 // ========================================
+using Booksy.Core.Domain.ValueObjects;
 using Booksy.UserManagement.Domain.Aggregates.PhoneVerificationAggregate;
 using Booksy.UserManagement.Domain.Enums;
 using Booksy.UserManagement.Domain.ValueObjects;

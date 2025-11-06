@@ -12,6 +12,7 @@ using Booksy.ServiceCatalog.Application.Queries.Payment.GetPaymentDetails;
 using MediatR;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Booksy.Core.Application.Exceptions;
 
 namespace Booksy.ServiceCatalog.API.Controllers.V1;
 
@@ -298,6 +299,6 @@ public class PaymentsController : ControllerBase
 
     private string? GetCurrentUserId()
     {
-        return User.GetUserId();
+        return User.GetUserId().ToString();
     }
 }
