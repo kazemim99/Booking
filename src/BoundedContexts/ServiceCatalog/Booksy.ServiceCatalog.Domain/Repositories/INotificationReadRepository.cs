@@ -65,5 +65,11 @@ namespace Booksy.ServiceCatalog.Domain.Repositories
             DateTime? startDate = null,
             DateTime? endDate = null,
             CancellationToken cancellationToken = default);
+
+        /// <summary>
+        /// Get scheduled notifications that are due for processing
+        /// Returns notifications with status Queued and ScheduledFor <= UtcNow
+        /// </summary>
+        Task<List<Notification>> GetScheduledNotificationsDueAsync(CancellationToken cancellationToken = default);
     }
 }

@@ -1,8 +1,8 @@
 // ========================================
 // Booksy.ServiceCatalog.Infrastructure/Notifications/InAppNotificationService.cs
 // ========================================
-using Booksy.Infrastructure.External.Hubs;
 using Booksy.ServiceCatalog.Application.Services.Notifications;
+using Booksy.ServiceCatalog.Infrastructure.Hubs;
 using Microsoft.AspNetCore.SignalR;
 using Microsoft.Extensions.Logging;
 

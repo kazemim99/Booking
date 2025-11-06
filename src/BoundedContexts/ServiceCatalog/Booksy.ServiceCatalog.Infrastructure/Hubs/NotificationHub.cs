@@ -1,10 +1,10 @@
 // ========================================
-// Booksy.Infrastructure.External/Hubs/NotificationHub.cs
+// Booksy.ServiceCatalog.Infrastructure/Hubs/NotificationHub.cs
 // ========================================
 using Microsoft.AspNetCore.SignalR;
 using Microsoft.Extensions.Logging;
 
-namespace Booksy.Infrastructure.External.Hubs
+namespace Booksy.ServiceCatalog.Infrastructure.Hubs
 {
     /// <summary>
     /// SignalR Hub for real-time notifications

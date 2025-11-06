@@ -168,5 +168,18 @@ namespace Booksy.ServiceCatalog.Infrastructure.Persistence.Repositories
 
             return (totalSent, delivered, failed, deliveryRate);
         }
+
+        public async Task<List<Notification>> GetScheduledNotificationsDueAsync(
+            CancellationToken cancellationToken = default)
+        {
+            return await DbSet
+                .AsNoTracking()
+                .Where(n => n.Status == NotificationStatus.Queued
+                    && n.ScheduledFor.HasValue
+                    && n.ScheduledFor.Value <= DateTime.UtcNow)
+                .OrderBy(n => n.ScheduledFor)
+                .Take(100) // Process max 100 notifications per run
+                .ToListAsync(cancellationToken);
+        }
     }
 }

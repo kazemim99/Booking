@@ -1,0 +1,217 @@
+// ========================================
+// Booksy.ServiceCatalog.Infrastructure/BackgroundJobs/ProcessScheduledNotificationsJob.cs
+// ========================================
+using Booksy.ServiceCatalog.Application.Services.Notifications;
+using Booksy.ServiceCatalog.Domain.Enums;
+using Booksy.ServiceCatalog.Domain.Repositories;
+using Microsoft.Extensions.Logging;
+
+namespace Booksy.ServiceCatalog.Infrastructure.BackgroundJobs
+{
+    /// <summary>
+    /// Background job that processes scheduled notifications
+    /// Runs periodically (every minute) to send notifications that are due
+    /// </summary>
+    public class ProcessScheduledNotificationsJob
+    {
+        private readonly INotificationReadRepository _readRepo;
+        private readonly INotificationWriteRepository _writeRepo;
+        private readonly IEmailNotificationService _emailService;
+        private readonly ISmsNotificationService _smsService;
+        private readonly IPushNotificationService _pushService;
+        private readonly IInAppNotificationService _inAppService;
+        private readonly ILogger<ProcessScheduledNotificationsJob> _logger;
+
+        public ProcessScheduledNotificationsJob(
+            INotificationReadRepository readRepo,
+            INotificationWriteRepository writeRepo,
+            IEmailNotificationService emailService,
+            ISmsNotificationService smsService,
+            IPushNotificationService pushService,
+            IInAppNotificationService inAppService,
+            ILogger<ProcessScheduledNotificationsJob> logger)
+        {
+            _readRepo = readRepo;
+            _writeRepo = writeRepo;
+            _emailService = emailService;
+            _smsService = smsService;
+            _pushService = pushService;
+            _inAppService = inAppService;
+            _logger = logger;
+        }
+
+        /// <summary>
+        /// Executes the job to process scheduled notifications
+        /// </summary>
+        public async Task ExecuteAsync(CancellationToken ct = default)
+        {
+            try
+            {
+                _logger.LogInformation("Starting ProcessScheduledNotificationsJob execution");
+
+                // Get notifications due now
+                var notifications = await _readRepo.GetScheduledNotificationsDueAsync(ct);
+
+                _logger.LogInformation(
+                    "Found {Count} scheduled notifications due for processing",
+                    notifications.Count);
+
+                foreach (var notification in notifications)
+                {
+                    try
+                    {
+                        _logger.LogInformation(
+                            "Processing scheduled notification {NotificationId} for user {UserId}, Channel: {Channel}",
+                            notification.Id.Value,
+                            notification.UserId.Value,
+                            notification.Channel);
+
+                        // Send based on channel
+                        var messageId = await SendNotificationAsync(notification, ct);
+
+                        // Mark as delivered
+                        notification.MarkAsDelivered(messageId);
+
+                        _logger.LogInformation(
+                            "Successfully sent scheduled notification {NotificationId}. MessageId: {MessageId}",
+                            notification.Id.Value,
+                            messageId);
+                    }
+                    catch (Exception ex)
+                    {
+                        _logger.LogError(ex,
+                            "Failed to send scheduled notification {NotificationId} for user {UserId}",
+                            notification.Id.Value,
+                            notification.UserId.Value);
+
+                        // Mark as failed
+                        notification.MarkAsFailed(ex.Message);
+                    }
+                    finally
+                    {
+                        // Update notification status in database
+                        await _writeRepo.UpdateNotificationAsync(notification, ct);
+                    }
+                }
+
+                _logger.LogInformation(
+                    "Completed ProcessScheduledNotificationsJob execution. Processed {Count} notifications",
+                    notifications.Count);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error executing ProcessScheduledNotificationsJob");
+                throw;
+            }
+        }
+
+        /// <summary>
+        /// Sends notification based on its channel
+        /// </summary>
+        private async Task<string?> SendNotificationAsync(
+            Domain.Aggregates.NotificationAggregate.Notification notification,
+            CancellationToken ct)
+        {
+            return notification.Channel switch
+            {
+                NotificationChannel.Email => await SendEmailAsync(notification, ct),
+                NotificationChannel.SMS => await SendSmsAsync(notification, ct),
+                NotificationChannel.PushNotification => await SendPushAsync(notification, ct),
+                NotificationChannel.InApp => await SendInAppAsync(notification, ct),
+                _ => throw new NotSupportedException($"Notification channel {notification.Channel} is not supported")
+            };
+        }
+
+        /// <summary>
+        /// Sends email notification
+        /// </summary>
+        private async Task<string?> SendEmailAsync(
+            Domain.Aggregates.NotificationAggregate.Notification notification,
+            CancellationToken ct)
+        {
+            var result = await _emailService.SendEmailAsync(
+                to: notification.Recipient,
+                subject: notification.Subject ?? "Notification",
+                htmlContent: notification.Content,
+                plainTextContent: notification.Content,
+                cancellationToken: ct);
+
+            if (!result.Success)
+            {
+                throw new InvalidOperationException($"Failed to send email: {result.ErrorMessage}");
+            }
+
+            return result.MessageId;
+        }
+
+        /// <summary>
+        /// Sends SMS notification
+        /// </summary>
+        private async Task<string?> SendSmsAsync(
+            Domain.Aggregates.NotificationAggregate.Notification notification,
+            CancellationToken ct)
+        {
+            var result = await _smsService.SendSmsAsync(
+                to: notification.Recipient,
+                message: notification.Content,
+                cancellationToken: ct);
+
+            if (!result.Success)
+            {
+                throw new InvalidOperationException($"Failed to send SMS: {result.ErrorMessage}");
+            }
+
+            return result.MessageId;
+        }
+
+        /// <summary>
+        /// Sends push notification
+        /// </summary>
+        private async Task<string?> SendPushAsync(
+            Domain.Aggregates.NotificationAggregate.Notification notification,
+            CancellationToken ct)
+        {
+            var metadata = notification.Data ?? new Dictionary<string, object>();
+
+            var result = await _pushService.SendPushAsync(
+                userId: notification.UserId.Value,
+                title: notification.Subject ?? "Notification",
+                body: notification.Content,
+                data: metadata,
+                cancellationToken: ct);
+
+            if (!result.Success)
+            {
+                throw new InvalidOperationException($"Failed to send push notification: {result.ErrorMessage}");
+            }
+
+            return result.MessageId;
+        }
+
+        /// <summary>
+        /// Sends in-app notification
+        /// </summary>
+        private async Task<string?> SendInAppAsync(
+            Domain.Aggregates.NotificationAggregate.Notification notification,
+            CancellationToken ct)
+        {
+            var metadata = notification.Data ?? new Dictionary<string, object>();
+
+            var result = await _inAppService.SendToUserAsync(
+                userId: notification.UserId.Value,
+                title: notification.Subject ?? "Notification",
+                message: notification.Content,
+                type: notification.Type.ToString(),
+                metadata: metadata,
+                cancellationToken: ct);
+
+            if (!result.Success)
+            {
+                throw new InvalidOperationException($"Failed to send in-app notification: {result.ErrorMessage}");
+            }
+
+            // In-app notifications don't have external message IDs
+            return notification.Id.Value.ToString();
+        }
+    }
+}
