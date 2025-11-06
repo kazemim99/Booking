@@ -1,5 +1,4 @@
 using Booksy.Core.Application.Abstractions.CQRS;
-using Booksy.Core.Application.Abstractions.Persistence;
 using Booksy.Core.Domain.Exceptions;
 using Booksy.ServiceCatalog.Domain.Repositories;
 using Booksy.ServiceCatalog.Domain.Services;
@@ -12,16 +11,13 @@ public sealed class DeleteGalleryImageCommandHandler
 {
     private readonly IProviderWriteRepository _providerRepository;
     private readonly IFileStorageService _fileStorageService;
-    private readonly IUnitOfWork _unitOfWork;
 
     public DeleteGalleryImageCommandHandler(
         IProviderWriteRepository providerRepository,
-        IFileStorageService fileStorageService,
-        IUnitOfWork unitOfWork)
+        IFileStorageService fileStorageService)
     {
         _providerRepository = providerRepository;
         _fileStorageService = fileStorageService;
-        _unitOfWork = unitOfWork;
     }
 
     public async Task Handle(
@@ -45,14 +41,12 @@ public sealed class DeleteGalleryImageCommandHandler
         // Soft delete in domain
         provider.Profile.RemoveGalleryImage(request.ImageId);
 
-        await _unitOfWork.SaveChangesAsync(cancellationToken);
+        // Mark entity as modified for EF Core change tracking
+        await _providerRepository.UpdateProviderAsync(provider, cancellationToken);
 
         // Delete files asynchronously (best effort)
-        _ = Task.Run(async () =>
-        {
-            await _fileStorageService.DeleteImageAsync(image.ThumbnailUrl, cancellationToken);
-            await _fileStorageService.DeleteImageAsync(image.MediumUrl, cancellationToken);
-            await _fileStorageService.DeleteImageAsync(image.ImageUrl, cancellationToken);
-        }, cancellationToken);
+        await _fileStorageService.DeleteImageAsync(image.ThumbnailUrl, cancellationToken);
+        await _fileStorageService.DeleteImageAsync(image.MediumUrl, cancellationToken);
+        await _fileStorageService.DeleteImageAsync(image.ImageUrl, cancellationToken);
     }
 }

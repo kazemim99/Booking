@@ -38,7 +38,5 @@ public sealed class UpdateGalleryImageMetadataCommandHandler
         }
 
         image.UpdateMetadata(request.Caption, request.AltText);
-
-        await _unitOfWork.SaveChangesAsync(cancellationToken);
     }
 }
