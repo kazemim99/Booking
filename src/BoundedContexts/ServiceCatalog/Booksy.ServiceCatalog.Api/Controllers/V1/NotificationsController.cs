@@ -12,7 +12,6 @@ using Booksy.ServiceCatalog.Domain.Enums;
 using MediatR;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using static Booksy.API.Middleware.ExceptionHandlingMiddleware;
 
 namespace Booksy.ServiceCatalog.API.Controllers.V1;
 
@@ -24,7 +23,6 @@ namespace Booksy.ServiceCatalog.API.Controllers.V1;
 [Route("api/v{version:apiVersion}/[controller]")]
 [Produces("application/json")]
 [Authorize]
-[ProducesResponseType(typeof(ApiErrorResult), StatusCodes.Status500InternalServerError)]
 public class NotificationsController : ControllerBase
 {
     private readonly ISender _mediator;
@@ -66,10 +64,7 @@ public class NotificationsController : ControllerBase
             request.TemplateVariables);
 
         var result = await _mediator.Send(command, cancellationToken);
-
-        return result.Match<IActionResult>(
-            success => Ok(success),
-            failure => BadRequest(failure));
+        return Ok(result);
     }
 
     /// <summary>
@@ -101,10 +96,7 @@ public class NotificationsController : ControllerBase
             request.TemplateVariables);
 
         var result = await _mediator.Send(command, cancellationToken);
-
-        return result.Match<IActionResult>(
-            success => Ok(success),
-            failure => BadRequest(failure));
+        return Ok(result);
     }
 
     /// <summary>
@@ -132,10 +124,7 @@ public class NotificationsController : ControllerBase
             request.CampaignId);
 
         var result = await _mediator.Send(command, cancellationToken);
-
-        return result.Match<IActionResult>(
-            success => Ok(success),
-            failure => BadRequest(failure));
+        return Ok(result);
     }
 
     /// <summary>
@@ -152,10 +141,7 @@ public class NotificationsController : ControllerBase
     {
         var command = new CancelNotificationCommand(notificationId, request?.Reason);
         var result = await _mediator.Send(command, cancellationToken);
-
-        return result.Match<IActionResult>(
-            success => Ok(success),
-            failure => failure.Contains("not found") ? NotFound(failure) : BadRequest(failure));
+        return Ok(result);
     }
 
     /// <summary>
@@ -171,10 +157,7 @@ public class NotificationsController : ControllerBase
     {
         var command = new ResendNotificationCommand(notificationId);
         var result = await _mediator.Send(command, cancellationToken);
-
-        return result.Match<IActionResult>(
-            success => Ok(success),
-            failure => failure.Contains("not found") ? NotFound(failure) : BadRequest(failure));
+        return Ok(result);
     }
 
     /// <summary>

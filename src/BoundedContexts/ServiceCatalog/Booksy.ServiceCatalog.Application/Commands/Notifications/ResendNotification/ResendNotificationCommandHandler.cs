@@ -2,7 +2,8 @@
 // Booksy.ServiceCatalog.Application/Commands/Notifications/ResendNotification/ResendNotificationCommandHandler.cs
 // ========================================
 using Booksy.Core.Application.Abstractions.CQRS;
-using Booksy.Core.Application.Results;
+using Booksy.Core.Application.Exceptions;
+using Booksy.Core.Domain.Exceptions;
 using Booksy.ServiceCatalog.Application.Services.Notifications;
 using Booksy.ServiceCatalog.Domain.Enums;
 using Booksy.ServiceCatalog.Domain.Repositories;
@@ -40,76 +41,69 @@ namespace Booksy.ServiceCatalog.Application.Commands.Notifications.ResendNotific
             _logger = logger;
         }
 
-        public async Task<Result<ResendNotificationResult>> Handle(
+        public async Task<ResendNotificationResult> Handle(
             ResendNotificationCommand command,
             CancellationToken cancellationToken)
         {
+            // Get notification
+            var notificationId = NotificationId.From(command.NotificationId);
+            var notification = await _notificationRepository.GetByIdAsync(notificationId, cancellationToken);
+
+            if (notification == null)
+            {
+                throw new NotFoundException($"Notification with ID {command.NotificationId} not found");
+            }
+
+            // Check if notification can be retried
+            if (!notification.ShouldRetry())
+            {
+                throw new DomainValidationException(
+                    nameof(command.NotificationId),
+                    "Notification cannot be retried. Either it's not in Failed status or max retry attempts reached.");
+            }
+
+            // Check if expired
+            if (notification.IsExpired())
+            {
+                throw new DomainValidationException(
+                    nameof(command.NotificationId),
+                    "Notification has expired and cannot be resent");
+            }
+
+            // Resend the notification
             try
             {
-                // Get notification
-                var notificationId = NotificationId.From(command.NotificationId);
-                var notification = await _notificationRepository.GetByIdAsync(notificationId, cancellationToken);
+                await SendNotificationAsync(notification, cancellationToken);
+                await _notificationRepository.UpdateNotificationAsync(notification, cancellationToken);
 
-                if (notification == null)
-                {
-                    return Result<ResendNotificationResult>.Failure(
-                        $"Notification not found: {command.NotificationId}");
-                }
+                _logger.LogInformation(
+                    "Notification resent: NotificationId={NotificationId}, AttemptCount={AttemptCount}, Status={Status}",
+                    notification.Id.Value,
+                    notification.AttemptCount,
+                    notification.Status);
 
-                // Check if notification can be retried
-                if (!notification.ShouldRetry())
-                {
-                    return Result<ResendNotificationResult>.Failure(
-                        "Notification cannot be retried. Either it's not in Failed status or max retry attempts reached.");
-                }
-
-                // Check if expired
-                if (notification.IsExpired())
-                {
-                    return Result<ResendNotificationResult>.Failure(
-                        "Notification has expired and cannot be resent");
-                }
-
-                // Resend the notification
-                try
-                {
-                    await SendNotificationAsync(notification, cancellationToken);
-                    await _notificationRepository.UpdateNotificationAsync(notification, cancellationToken);
-
-                    _logger.LogInformation(
-                        "Notification resent: NotificationId={NotificationId}, AttemptCount={AttemptCount}, Status={Status}",
-                        notification.Id.Value,
-                        notification.AttemptCount,
-                        notification.Status);
-
-                    return Result<ResendNotificationResult>.Success(new ResendNotificationResult(
-                        notification.Id.Value,
-                        notification.Status,
-                        notification.AttemptCount,
-                        notification.GatewayMessageId,
-                        notification.ErrorMessage));
-                }
-                catch (Exception ex)
-                {
-                    notification.MarkAsFailed(ex.Message);
-                    await _notificationRepository.UpdateNotificationAsync(notification, cancellationToken);
-
-                    _logger.LogWarning(ex,
-                        "Failed to resend notification: NotificationId={NotificationId}",
-                        notification.Id.Value);
-
-                    return Result<ResendNotificationResult>.Success(new ResendNotificationResult(
-                        notification.Id.Value,
-                        notification.Status,
-                        notification.AttemptCount,
-                        null,
-                        ex.Message));
-                }
+                return new ResendNotificationResult(
+                    notification.Id.Value,
+                    notification.Status,
+                    notification.AttemptCount,
+                    notification.GatewayMessageId,
+                    notification.ErrorMessage);
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Failed to process resend notification command: {NotificationId}", command.NotificationId);
-                return Result<ResendNotificationResult>.Failure($"Failed to resend notification: {ex.Message}");
+                notification.MarkAsFailed(ex.Message);
+                await _notificationRepository.UpdateNotificationAsync(notification, cancellationToken);
+
+                _logger.LogWarning(ex,
+                    "Failed to resend notification: NotificationId={NotificationId}",
+                    notification.Id.Value);
+
+                return new ResendNotificationResult(
+                    notification.Id.Value,
+                    notification.Status,
+                    notification.AttemptCount,
+                    null,
+                    ex.Message);
             }
         }
 

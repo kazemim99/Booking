@@ -2,7 +2,6 @@
 // Booksy.ServiceCatalog.Application/Commands/Notifications/UpdatePreferences/UpdatePreferencesCommandHandler.cs
 // ========================================
 using Booksy.Core.Application.Abstractions.CQRS;
-using Booksy.Core.Application.Results;
 using Booksy.Core.Domain.ValueObjects;
 using Booksy.ServiceCatalog.Domain.Aggregates.UserNotificationPreferencesAggregate;
 using Booksy.ServiceCatalog.Domain.Repositories;
@@ -28,99 +27,86 @@ namespace Booksy.ServiceCatalog.Application.Commands.Notifications.UpdatePrefere
             _logger = logger;
         }
 
-        public async Task<Result<UpdatePreferencesResult>> Handle(
+        public async Task<UpdatePreferencesResult> Handle(
             UpdatePreferencesCommand command,
             CancellationToken cancellationToken)
         {
-            try
+            var userId = UserId.From(command.UserId);
+
+            // Get existing preferences or create default
+            var userPreferences = await _preferencesRepository.GetByUserIdAsync(userId, cancellationToken);
+            var isNew = userPreferences == null;
+
+            if (userPreferences == null)
             {
-                var userId = UserId.From(command.UserId);
-
-                // Get existing preferences or create default
-                var userPreferences = await _preferencesRepository.GetByUserIdAsync(userId, cancellationToken);
-                var isNew = userPreferences == null;
-
-                if (userPreferences == null)
-                {
-                    userPreferences = UserNotificationPreferences.CreateDefault(userId);
-                    _logger.LogInformation(
-                        "Creating default notification preferences for user: {UserId}",
-                        command.UserId);
-                }
-
-                // Handle special operations
-                if (command.ResetToDefaults)
-                {
-                    userPreferences.ResetToDefaults();
-                    _logger.LogInformation(
-                        "Reset notification preferences to defaults for user: {UserId}",
-                        command.UserId);
-                }
-                else if (command.SetMinimal)
-                {
-                    userPreferences.SetMinimalNotifications();
-                    _logger.LogInformation(
-                        "Set minimal notification preferences for user: {UserId}",
-                        command.UserId);
-                }
-                else
-                {
-                    // Update individual settings
-                    if (command.EnabledChannels.HasValue || command.EnabledTypes.HasValue ||
-                        command.QuietHoursStart.HasValue || command.QuietHoursEnd.HasValue ||
-                        command.PreferredLanguage != null || command.MarketingOptIn.HasValue ||
-                        command.MaxNotificationsPerDay.HasValue)
-                    {
-                        var newPreferences = NotificationPreference.Create(
-                            command.EnabledChannels ?? userPreferences.Preferences.EnabledChannels,
-                            command.EnabledTypes ?? userPreferences.Preferences.EnabledTypes,
-                            command.QuietHoursStart ?? userPreferences.Preferences.QuietHoursStart,
-                            command.QuietHoursEnd ?? userPreferences.Preferences.QuietHoursEnd,
-                            command.PreferredLanguage ?? userPreferences.Preferences.PreferredLanguage,
-                            command.MarketingOptIn ?? userPreferences.Preferences.MarketingOptIn,
-                            command.MaxNotificationsPerDay ?? userPreferences.Preferences.MaxNotificationsPerDay);
-
-                        userPreferences.UpdatePreferences(newPreferences);
-                    }
-                }
-
-                // Save or update
-                if (isNew)
-                {
-                    await _preferencesRepository.SaveAsync(userPreferences, cancellationToken);
-                }
-                else
-                {
-                    await _preferencesRepository.UpdateAsync(userPreferences, cancellationToken);
-                }
-
+                userPreferences = UserNotificationPreferences.CreateDefault(userId);
                 _logger.LogInformation(
-                    "Updated notification preferences for user: {UserId}, Channels={Channels}, Types={Types}",
-                    command.UserId,
-                    userPreferences.Preferences.EnabledChannels,
-                    userPreferences.Preferences.EnabledTypes);
+                    "Creating default notification preferences for user: {UserId}",
+                    command.UserId);
+            }
 
-                return Result<UpdatePreferencesResult>.Success(new UpdatePreferencesResult(
-                    command.UserId,
-                    userPreferences.Preferences.EnabledChannels,
-                    userPreferences.Preferences.EnabledTypes,
-                    userPreferences.Preferences.QuietHoursStart,
-                    userPreferences.Preferences.QuietHoursEnd,
-                    userPreferences.Preferences.PreferredLanguage ?? "en",
-                    userPreferences.Preferences.MarketingOptIn,
-                    userPreferences.Preferences.MaxNotificationsPerDay,
-                    userPreferences.LastUpdated));
-            }
-            catch (ArgumentException ex)
+            // Handle special operations
+            if (command.ResetToDefaults)
             {
-                _logger.LogWarning(ex, "Invalid preferences data for user: {UserId}", command.UserId);
-                return Result<UpdatePreferencesResult>.Failure($"Invalid preferences: {ex.Message}");
+                userPreferences.ResetToDefaults();
+                _logger.LogInformation(
+                    "Reset notification preferences to defaults for user: {UserId}",
+                    command.UserId);
             }
-            catch (Exception ex)
+            else if (command.SetMinimal)
             {
-                _logger.LogError(ex, "Failed to update notification preferences for user: {UserId}", command.UserId);
-                return Result<UpdatePreferencesResult>.Failure($"Failed to update preferences: {ex.Message}");
+                userPreferences.SetMinimalNotifications();
+                _logger.LogInformation(
+                    "Set minimal notification preferences for user: {UserId}",
+                    command.UserId);
             }
+            else
+            {
+                // Update individual settings
+                if (command.EnabledChannels.HasValue || command.EnabledTypes.HasValue ||
+                    command.QuietHoursStart.HasValue || command.QuietHoursEnd.HasValue ||
+                    command.PreferredLanguage != null || command.MarketingOptIn.HasValue ||
+                    command.MaxNotificationsPerDay.HasValue)
+                {
+                    var newPreferences = NotificationPreference.Create(
+                        command.EnabledChannels ?? userPreferences.Preferences.EnabledChannels,
+                        command.EnabledTypes ?? userPreferences.Preferences.EnabledTypes,
+                        command.QuietHoursStart ?? userPreferences.Preferences.QuietHoursStart,
+                        command.QuietHoursEnd ?? userPreferences.Preferences.QuietHoursEnd,
+                        command.PreferredLanguage ?? userPreferences.Preferences.PreferredLanguage,
+                        command.MarketingOptIn ?? userPreferences.Preferences.MarketingOptIn,
+                        command.MaxNotificationsPerDay ?? userPreferences.Preferences.MaxNotificationsPerDay);
+
+                    userPreferences.UpdatePreferences(newPreferences);
+                }
+            }
+
+            // Save or update
+            if (isNew)
+            {
+                await _preferencesRepository.SaveAsync(userPreferences, cancellationToken);
+            }
+            else
+            {
+                await _preferencesRepository.UpdateAsync(userPreferences, cancellationToken);
+            }
+
+            _logger.LogInformation(
+                "Updated notification preferences for user: {UserId}, Channels={Channels}, Types={Types}",
+                command.UserId,
+                userPreferences.Preferences.EnabledChannels,
+                userPreferences.Preferences.EnabledTypes);
+
+            return new UpdatePreferencesResult(
+                command.UserId,
+                userPreferences.Preferences.EnabledChannels,
+                userPreferences.Preferences.EnabledTypes,
+                userPreferences.Preferences.QuietHoursStart,
+                userPreferences.Preferences.QuietHoursEnd,
+                userPreferences.Preferences.PreferredLanguage ?? "en",
+                userPreferences.Preferences.MarketingOptIn,
+                userPreferences.Preferences.MaxNotificationsPerDay,
+                userPreferences.LastUpdated);
         }
     }
 }

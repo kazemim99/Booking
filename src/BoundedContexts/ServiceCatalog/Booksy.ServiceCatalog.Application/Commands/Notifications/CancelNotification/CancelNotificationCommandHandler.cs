@@ -2,7 +2,7 @@
 // Booksy.ServiceCatalog.Application/Commands/Notifications/CancelNotification/CancelNotificationCommandHandler.cs
 // ========================================
 using Booksy.Core.Application.Abstractions.CQRS;
-using Booksy.Core.Application.Results;
+using Booksy.Core.Application.Exceptions;
 using Booksy.ServiceCatalog.Domain.Repositories;
 using Booksy.ServiceCatalog.Domain.ValueObjects;
 using Microsoft.Extensions.Logging;
@@ -26,54 +26,38 @@ namespace Booksy.ServiceCatalog.Application.Commands.Notifications.CancelNotific
             _logger = logger;
         }
 
-        public async Task<Result<CancelNotificationResult>> Handle(
+        public async Task<CancelNotificationResult> Handle(
             CancelNotificationCommand command,
             CancellationToken cancellationToken)
         {
-            try
+            // Get notification
+            var notificationId = NotificationId.From(command.NotificationId);
+            var notification = await _notificationRepository.GetByIdAsync(notificationId, cancellationToken);
+
+            if (notification == null)
             {
-                // Get notification
-                var notificationId = NotificationId.From(command.NotificationId);
-                var notification = await _notificationRepository.GetByIdAsync(notificationId, cancellationToken);
-
-                if (notification == null)
-                {
-                    return Result<CancelNotificationResult>.Failure(
-                        $"Notification not found: {command.NotificationId}");
-                }
-
-                var previousStatus = notification.Status;
-
-                // Cancel the notification
-                try
-                {
-                    notification.Cancel(command.Reason);
-                }
-                catch (InvalidOperationException ex)
-                {
-                    return Result<CancelNotificationResult>.Failure(ex.Message);
-                }
-
-                // Update in database
-                await _notificationRepository.UpdateNotificationAsync(notification, cancellationToken);
-
-                _logger.LogInformation(
-                    "Notification cancelled: NotificationId={NotificationId}, PreviousStatus={PreviousStatus}, Reason={Reason}",
-                    notification.Id.Value,
-                    previousStatus,
-                    command.Reason ?? "No reason provided");
-
-                return Result<CancelNotificationResult>.Success(new CancelNotificationResult(
-                    notification.Id.Value,
-                    previousStatus,
-                    notification.Status,
-                    command.Reason));
+                throw new NotFoundException($"Notification with ID {command.NotificationId} not found");
             }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Failed to cancel notification: {NotificationId}", command.NotificationId);
-                return Result<CancelNotificationResult>.Failure($"Failed to cancel notification: {ex.Message}");
-            }
+
+            var previousStatus = notification.Status;
+
+            // Cancel the notification (throws InvalidOperationException if cannot cancel)
+            notification.Cancel(command.Reason);
+
+            // Update in database
+            await _notificationRepository.UpdateNotificationAsync(notification, cancellationToken);
+
+            _logger.LogInformation(
+                "Notification cancelled: NotificationId={NotificationId}, PreviousStatus={PreviousStatus}, Reason={Reason}",
+                notification.Id.Value,
+                previousStatus,
+                command.Reason ?? "No reason provided");
+
+            return new CancelNotificationResult(
+                notification.Id.Value,
+                previousStatus,
+                notification.Status,
+                command.Reason);
         }
     }
 }

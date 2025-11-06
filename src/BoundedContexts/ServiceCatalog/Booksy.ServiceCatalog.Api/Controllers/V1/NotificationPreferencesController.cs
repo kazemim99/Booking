@@ -6,7 +6,6 @@ using Booksy.ServiceCatalog.Domain.Enums;
 using MediatR;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using static Booksy.API.Middleware.ExceptionHandlingMiddleware;
 
 namespace Booksy.ServiceCatalog.API.Controllers.V1;
 
@@ -18,7 +17,6 @@ namespace Booksy.ServiceCatalog.API.Controllers.V1;
 [Route("api/v{version:apiVersion}/notifications/[controller]")]
 [Produces("application/json")]
 [Authorize]
-[ProducesResponseType(typeof(ApiErrorResult), StatusCodes.Status500InternalServerError)]
 public class PreferencesController : ControllerBase
 {
     private readonly ISender _mediator;
@@ -86,10 +84,7 @@ public class PreferencesController : ControllerBase
             request.SetMinimal);
 
         var result = await _mediator.Send(command, cancellationToken);
-
-        return result.Match<IActionResult>(
-            success => Ok(success),
-            failure => BadRequest(failure));
+        return Ok(result);
     }
 
     /// <summary>
@@ -108,10 +103,7 @@ public class PreferencesController : ControllerBase
             EnabledChannels: request.Channels);
 
         var result = await _mediator.Send(command, cancellationToken);
-
-        return result.Match<IActionResult>(
-            success => Ok(success),
-            failure => BadRequest(failure));
+        return Ok(result);
     }
 
     /// <summary>
@@ -130,10 +122,7 @@ public class PreferencesController : ControllerBase
             EnabledTypes: request.Types);
 
         var result = await _mediator.Send(command, cancellationToken);
-
-        return result.Match<IActionResult>(
-            success => Ok(success),
-            failure => BadRequest(failure));
+        return Ok(result);
     }
 
     /// <summary>
@@ -153,10 +142,7 @@ public class PreferencesController : ControllerBase
             QuietHoursEnd: request.End);
 
         var result = await _mediator.Send(command, cancellationToken);
-
-        return result.Match<IActionResult>(
-            success => Ok(success),
-            failure => BadRequest(failure));
+        return Ok(result);
     }
 
     /// <summary>
@@ -175,10 +161,7 @@ public class PreferencesController : ControllerBase
             MarketingOptIn: request.OptIn);
 
         var result = await _mediator.Send(command, cancellationToken);
-
-        return result.Match<IActionResult>(
-            success => Ok(success),
-            failure => BadRequest(failure));
+        return Ok(result);
     }
 
     /// <summary>
@@ -192,10 +175,7 @@ public class PreferencesController : ControllerBase
         var userId = User.GetUserId();
         var command = new UpdatePreferencesCommand(userId, ResetToDefaults: true);
         var result = await _mediator.Send(command, cancellationToken);
-
-        return result.Match<IActionResult>(
-            success => Ok(success),
-            failure => BadRequest(failure));
+        return Ok(result);
     }
 
     /// <summary>
@@ -209,10 +189,7 @@ public class PreferencesController : ControllerBase
         var userId = User.GetUserId();
         var command = new UpdatePreferencesCommand(userId, SetMinimal: true);
         var result = await _mediator.Send(command, cancellationToken);
-
-        return result.Match<IActionResult>(
-            success => Ok(success),
-            failure => BadRequest(failure));
+        return Ok(result);
     }
 }
 

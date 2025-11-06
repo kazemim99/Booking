@@ -2,7 +2,7 @@
 // Booksy.ServiceCatalog.Application/Commands/Notifications/SendBulkNotification/SendBulkNotificationCommandHandler.cs
 // ========================================
 using Booksy.Core.Application.Abstractions.CQRS;
-using Booksy.Core.Application.Results;
+using Booksy.Core.Domain.Exceptions;
 using Booksy.Core.Domain.ValueObjects;
 using Booksy.ServiceCatalog.Application.Services.Notifications;
 using Booksy.ServiceCatalog.Domain.Aggregates.NotificationAggregate;
@@ -41,124 +41,119 @@ namespace Booksy.ServiceCatalog.Application.Commands.Notifications.SendBulkNotif
             _logger = logger;
         }
 
-        public async Task<Result<SendBulkNotificationResult>> Handle(
+        public async Task<SendBulkNotificationResult> Handle(
             SendBulkNotificationCommand command,
             CancellationToken cancellationToken)
         {
-            try
+            // Validate recipients
+            if (command.RecipientIds == null || !command.RecipientIds.Any())
             {
-                // Validate recipients
-                if (command.RecipientIds == null || !command.RecipientIds.Any())
-                {
-                    return Result<SendBulkNotificationResult>.Failure("No recipients provided");
-                }
-
-                // Limit batch size
-                if (command.RecipientIds.Count > 1000)
-                {
-                    return Result<SendBulkNotificationResult>.Failure(
-                        "Maximum 1000 recipients per batch. Please split into multiple batches.");
-                }
-
-                // Generate unique batch ID
-                var batchId = Guid.NewGuid().ToString();
-
-                var notificationIds = new List<Guid>();
-                var errors = new List<string>();
-                var successCount = 0;
-                var failureCount = 0;
-
-                // Process each recipient
-                foreach (var recipientId in command.RecipientIds)
-                {
-                    try
-                    {
-                        // Create notification for this recipient
-                        var notification = Notification.Create(
-                            UserId.From(recipientId),
-                            command.Type,
-                            command.Channel,
-                            command.Subject,
-                            command.Body,
-                            command.Priority,
-                            command.PlainTextBody);
-
-                        // Set template if provided
-                        if (!string.IsNullOrWhiteSpace(command.TemplateId) && command.TemplateData != null)
-                        {
-                            notification.SetTemplate(command.TemplateId, command.TemplateData);
-                        }
-
-                        // Set campaign and batch ID
-                        notification.SetCampaign(command.CampaignId, batchId);
-
-                        // Add metadata
-                        if (command.Metadata != null)
-                        {
-                            foreach (var kvp in command.Metadata)
-                            {
-                                notification.AddMetadata(kvp.Key, kvp.Value);
-                            }
-                        }
-
-                        // Queue the notification
-                        notification.Queue();
-
-                        // Save to database
-                        await _notificationRepository.SaveNotificationAsync(notification, cancellationToken);
-
-                        notificationIds.Add(notification.Id.Value);
-
-                        // Try to send immediately (don't wait for all to complete)
-                        _ = Task.Run(async () =>
-                        {
-                            try
-                            {
-                                await SendNotificationAsync(notification, cancellationToken);
-                                await _notificationRepository.UpdateNotificationAsync(notification, cancellationToken);
-                            }
-                            catch (Exception ex)
-                            {
-                                _logger.LogWarning(ex,
-                                    "Failed to send notification in bulk: NotificationId={NotificationId}",
-                                    notification.Id.Value);
-                                notification.MarkAsFailed(ex.Message);
-                                await _notificationRepository.UpdateNotificationAsync(notification, cancellationToken);
-                            }
-                        }, cancellationToken);
-
-                        successCount++;
-                    }
-                    catch (Exception ex)
-                    {
-                        _logger.LogWarning(ex,
-                            "Failed to create notification for recipient: RecipientId={RecipientId}",
-                            recipientId);
-                        errors.Add($"Recipient {recipientId}: {ex.Message}");
-                        failureCount++;
-                    }
-                }
-
-                _logger.LogInformation(
-                    "Bulk notification initiated: BatchId={BatchId}, Total={Total}, Success={Success}, Failure={Failure}",
-                    batchId,
-                    command.RecipientIds.Count,
-                    successCount,
-                    failureCount);
-
-                return Result<SendBulkNotificationResult>.Success(new SendBulkNotificationResult(
-                    batchId,
-                    command.RecipientIds.Count,
-                    successCount,
-                    failureCount,
-                    notificationIds,
-                    errors));
+                throw new DomainValidationException(
+                    nameof(command.RecipientIds),
+                    "No recipients provided");
             }
-            catch (Exception ex)
+
+            // Limit batch size
+            if (command.RecipientIds.Count > 1000)
             {
-                _logger.LogError(ex, "Failed to send bulk notification");
-                return Result<SendBulkNotificationResult>.Failure($"Failed to send bulk notification: {ex.Message}");
+                throw new DomainValidationException(
+                    nameof(command.RecipientIds),
+                    "Maximum 1000 recipients per batch. Please split into multiple batches.");
             }
+
+            // Generate unique batch ID
+            var batchId = Guid.NewGuid().ToString();
+
+            var notificationIds = new List<Guid>();
+            var errors = new List<string>();
+            var successCount = 0;
+            var failureCount = 0;
+
+            // Process each recipient
+            foreach (var recipientId in command.RecipientIds)
+            {
+                try
+                {
+                    // Create notification for this recipient
+                    var notification = Notification.Create(
+                        UserId.From(recipientId),
+                        command.Type,
+                        command.Channel,
+                        command.Subject,
+                        command.Body,
+                        command.Priority,
+                        command.PlainTextBody);
+
+                    // Set template if provided
+                    if (!string.IsNullOrWhiteSpace(command.TemplateId) && command.TemplateData != null)
+                    {
+                        notification.SetTemplate(command.TemplateId, command.TemplateData);
+                    }
+
+                    // Set campaign and batch ID
+                    notification.SetCampaign(command.CampaignId, batchId);
+
+                    // Add metadata
+                    if (command.Metadata != null)
+                    {
+                        foreach (var kvp in command.Metadata)
+                        {
+                            notification.AddMetadata(kvp.Key, kvp.Value);
+                        }
+                    }
+
+                    // Queue the notification
+                    notification.Queue();
+
+                    // Save to database
+                    await _notificationRepository.SaveNotificationAsync(notification, cancellationToken);
+
+                    notificationIds.Add(notification.Id.Value);
+
+                    // Try to send immediately (don't wait for all to complete)
+                    _ = Task.Run(async () =>
+                    {
+                        try
+                        {
+                            await SendNotificationAsync(notification, cancellationToken);
+                            await _notificationRepository.UpdateNotificationAsync(notification, cancellationToken);
+                        }
+                        catch (Exception ex)
+                        {
+                            _logger.LogWarning(ex,
+                                "Failed to send notification in bulk: NotificationId={NotificationId}",
+                                notification.Id.Value);
+                            notification.MarkAsFailed(ex.Message);
+                            await _notificationRepository.UpdateNotificationAsync(notification, cancellationToken);
+                        }
+                    }, cancellationToken);
+
+                    successCount++;
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogWarning(ex,
+                        "Failed to create notification for recipient: RecipientId={RecipientId}",
+                        recipientId);
+                    errors.Add($"Recipient {recipientId}: {ex.Message}");
+                    failureCount++;
+                }
+            }
+
+            _logger.LogInformation(
+                "Bulk notification initiated: BatchId={BatchId}, Total={Total}, Success={Success}, Failure={Failure}",
+                batchId,
+                command.RecipientIds.Count,
+                successCount,
+                failureCount);
+
+            return new SendBulkNotificationResult(
+                batchId,
+                command.RecipientIds.Count,
+                successCount,
+                failureCount,
+                notificationIds,
+                errors);
         }
 
         private async Task SendNotificationAsync(Notification notification, CancellationToken cancellationToken)
