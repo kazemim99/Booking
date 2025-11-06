@@ -1,11 +1,14 @@
 // ========================================
 // Booksy.ServiceCatalog.Infrastructure/Persistence/Repositories/NotificationWriteRepository.cs
 // ========================================
+using Booksy.Core.Application.Abstractions.Persistence;
+using Booksy.Infrastructure.Core.Persistence.Base;
 using Booksy.ServiceCatalog.Domain.Aggregates.NotificationAggregate;
 using Booksy.ServiceCatalog.Domain.Enums;
 using Booksy.ServiceCatalog.Domain.Repositories;
 using Booksy.ServiceCatalog.Domain.ValueObjects;
 using Booksy.ServiceCatalog.Infrastructure.Persistence;
+using Booksy.ServiceCatalog.Infrastructure.Persistence.Context;
 using Microsoft.EntityFrameworkCore;
 
 namespace Booksy.ServiceCatalog.Infrastructure.Persistence.Repositories
@@ -13,11 +16,11 @@ namespace Booksy.ServiceCatalog.Infrastructure.Persistence.Repositories
     /// <summary>
     /// Implementation of Notification write repository
     /// </summary>
-    public sealed class NotificationWriteRepository : INotificationWriteRepository
+    public sealed class NotificationWriteRepository : EfWriteRepositoryBase<Notification, NotificationId, ServiceCatalogDbContext>, INotificationWriteRepository
     {
         private readonly ServiceCatalogDbContext _context;
 
-        public NotificationWriteRepository(ServiceCatalogDbContext context)
+        public NotificationWriteRepository(ServiceCatalogDbContext context):base(context)
         {
             _context = context;
         }

@@ -16,6 +16,9 @@ namespace Booksy.UserManagement.Application.Commands.PhoneVerification.RequestVe
         Guid? UserId = null,
         string? IpAddress = null,
         string? UserAgent = null,
-        string? SessionId = null
-    ) : ICommand<RequestPhoneVerificationResult>;
+        string? SessionId = null,
+        Guid? IdempotencyKey = null
+    ) : ICommand<RequestPhoneVerificationResult>
+    {
+    }
 }

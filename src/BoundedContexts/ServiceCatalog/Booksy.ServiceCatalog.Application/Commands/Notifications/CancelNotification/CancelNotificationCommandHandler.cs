@@ -2,9 +2,11 @@
 // Booksy.ServiceCatalog.Application/Commands/Notifications/CancelNotification/CancelNotificationCommandHandler.cs
 // ========================================
 using Booksy.Core.Application.Abstractions.CQRS;
+using Booksy.Core.Application.DTOs;
 using Booksy.Core.Application.Results;
 using Booksy.ServiceCatalog.Domain.Repositories;
 using Booksy.ServiceCatalog.Domain.ValueObjects;
+using MediatR;
 using Microsoft.Extensions.Logging;
 
 namespace Booksy.ServiceCatalog.Application.Commands.Notifications.CancelNotification
@@ -27,8 +29,8 @@ namespace Booksy.ServiceCatalog.Application.Commands.Notifications.CancelNotific
         }
 
         public async Task<Result<CancelNotificationResult>> Handle(
-            CancelNotificationCommand command,
-            CancellationToken cancellationToken)
+     CancelNotificationCommand command,
+     CancellationToken cancellationToken)
         {
             try
             {
@@ -75,5 +77,6 @@ namespace Booksy.ServiceCatalog.Application.Commands.Notifications.CancelNotific
                 return Result<CancelNotificationResult>.Failure($"Failed to cancel notification: {ex.Message}");
             }
         }
+      
     }
 }

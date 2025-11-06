@@ -12,6 +12,7 @@ using Booksy.UserManagement.Application.Commands.PhoneVerification.ResendOtp;
 using Booksy.UserManagement.Domain.Enums;
 using Booksy.API.Middleware;
 using System.Net;
+using static Booksy.API.Middleware.ExceptionHandlingMiddleware;
 
 namespace Booksy.UserManagement.API.Controllers.V1;
 
@@ -131,7 +132,7 @@ public class PhoneVerificationController : ControllerBase
 
         var result = await _mediator.Send(command);
 
-        if (!result.IsSuccess)
+        if (!result.Success)
         {
             return BadRequest(new ApiErrorResult
             {
@@ -142,12 +143,12 @@ public class PhoneVerificationController : ControllerBase
 
         var response = new VerifyPhoneResponse
         {
-            Success = result.Value.Success,
-            Message = result.Value.Message,
-            PhoneNumber = result.Value.Success ? result.Value.PhoneNumber : null,
-            VerifiedAt = result.Value.VerifiedAt,
-            RemainingAttempts = result.Value.RemainingAttempts,
-            BlockedUntil = result.Value.BlockedUntil
+            Success = result.Success,
+            Message = result.Message,
+            PhoneNumber = result.Success ? result.PhoneNumber : null,
+            VerifiedAt = result.VerifiedAt,
+            RemainingAttempts = result.RemainingAttempts,
+            BlockedUntil = result.BlockedUntil
         };
 
         if (result.Value.Success)

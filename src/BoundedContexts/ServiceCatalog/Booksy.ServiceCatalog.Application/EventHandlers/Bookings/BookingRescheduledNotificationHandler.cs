@@ -2,6 +2,7 @@
 // Booksy.ServiceCatalog.Application/EventHandlers/Bookings/BookingRescheduledNotificationHandler.cs
 // ========================================
 using Booksy.Core.Application.Abstractions.Events;
+using Booksy.Infrastructure.Core.EventBus.Abstractions;
 using Booksy.ServiceCatalog.Application.Commands.Notifications.SendNotification;
 using Booksy.ServiceCatalog.Domain.Enums;
 using Booksy.ServiceCatalog.Domain.Events;
@@ -26,7 +27,7 @@ namespace Booksy.ServiceCatalog.Application.EventHandlers.Bookings
             _logger = logger;
         }
 
-        public async Task Handle(BookingRescheduledEvent notification, CancellationToken cancellationToken)
+        public async Task HandleAsync(BookingRescheduledEvent notification, CancellationToken cancellationToken)
         {
             _logger.LogInformation("Handling BookingRescheduledEvent for OldBookingId: {OldBookingId}, NewBookingId: {NewBookingId}",
                 notification.OldBookingId, notification.NewBookingId);
@@ -49,6 +50,8 @@ namespace Booksy.ServiceCatalog.Application.EventHandlers.Bookings
                 // Don't throw - notifications are not critical for booking flow
             }
         }
+
+      
 
         private async Task SendCustomerNotificationAsync(BookingRescheduledEvent notification, CancellationToken cancellationToken)
         {
