@@ -1,4 +1,5 @@
 ﻿using Booksy.Infrastructure.External.Analytics;
+using Booksy.Infrastructure.External.Hubs;
 using Booksy.Infrastructure.External.Marketing;
 using Booksy.Infrastructure.External.Notifications;
 using Booksy.Infrastructure.External.OTP;
@@ -7,7 +8,6 @@ using Booksy.Infrastructure.External.sms;
 using Booksy.Infrastructure.External.sms.Rahyab;
 using Booksy.Infrastructure.External.Storage;
 using Microsoft.Extensions.Configuration;
-
 using Microsoft.Extensions.DependencyInjection;
 
 
@@ -44,7 +44,7 @@ public static class ExternalServicesExtensions
         services.AddScoped<Booksy.ServiceCatalog.Application.Services.Notifications.IPushNotificationService,
             Booksy.Infrastructure.External.Notifications.Push.FirebasePushNotificationService>();
         services.AddScoped<Booksy.ServiceCatalog.Application.Services.Notifications.IInAppNotificationService,
-            Booksy.Infrastructure.External.Notifications.InApp.SignalRInAppNotificationService>();
+            Booksy.Infrastructure.External.Notifications.InAppNotificationService>();
 
         // Template Engine & Services
         services.AddSingleton<Booksy.ServiceCatalog.Application.Services.Notifications.ITemplateEngine,
@@ -118,6 +118,48 @@ public static class ExternalServicesExtensions
             default:
                 // Add local file storage if needed
                 break;
+        }
+
+        return services;
+    }
+
+    /// <summary>
+    /// Adds SignalR for real-time notifications
+    /// </summary>
+    public static IServiceCollection AddSignalRNotifications(
+        this IServiceCollection services,
+        IConfiguration configuration)
+    {
+        // Add SignalR with configuration
+        services.AddSignalR(options =>
+        {
+            // Configure timeouts
+            options.ClientTimeoutInterval = TimeSpan.FromSeconds(60);
+            options.HandshakeTimeout = TimeSpan.FromSeconds(30);
+            options.KeepAliveInterval = TimeSpan.FromSeconds(15);
+
+            // Enable detailed errors in development
+            var environment = configuration["ASPNETCORE_ENVIRONMENT"];
+            options.EnableDetailedErrors = environment == "Development";
+
+            // Max message size (1MB)
+            options.MaximumReceiveMessageSize = 1024 * 1024;
+        });
+
+        // Add CORS for SignalR (if needed)
+        var allowedOrigins = configuration.GetSection("SignalR:AllowedOrigins").Get<string[]>();
+        if (allowedOrigins?.Length > 0)
+        {
+            services.AddCors(options =>
+            {
+                options.AddPolicy("SignalRPolicy", builder =>
+                {
+                    builder.WithOrigins(allowedOrigins)
+                           .AllowAnyHeader()
+                           .AllowAnyMethod()
+                           .AllowCredentials();
+                });
+            });
         }
 
         return services;
