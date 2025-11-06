@@ -22,7 +22,7 @@ namespace Booksy.ServiceCatalog.Infrastructure.Notifications.Push
             string deviceToken,
             string title,
             string body,
-            Dictionary<string, string>? data = null,
+            Dictionary<string, object>? data = null,
             CancellationToken cancellationToken = default)
         {
             _logger.LogWarning("Push notification service not fully implemented. DeviceToken: {DeviceToken}, Title: {Title}",
@@ -40,7 +40,7 @@ namespace Booksy.ServiceCatalog.Infrastructure.Notifications.Push
             List<string> deviceTokens,
             string title,
             string body,
-            Dictionary<string, string>? data = null,
+            Dictionary<string, object>? data = null,
             CancellationToken cancellationToken = default)
         {
             _logger.LogWarning("Bulk push notification service not fully implemented. Count: {Count}", deviceTokens.Count);
@@ -56,7 +56,7 @@ namespace Booksy.ServiceCatalog.Infrastructure.Notifications.Push
             string topic,
             string title,
             string body,
-            Dictionary<string, string>? data = null,
+            Dictionary<string, object>? data = null,
             CancellationToken cancellationToken = default)
         {
             _logger.LogWarning("Topic push notification service not fully implemented. Topic: {Topic}", topic);

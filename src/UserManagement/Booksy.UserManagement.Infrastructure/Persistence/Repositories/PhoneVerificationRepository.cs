@@ -41,6 +41,16 @@ public class PhoneVerificationRepository
             .FirstOrDefaultAsync(cancellationToken);
     }
 
+    public async Task<PhoneVerification?> GetByPhoneNumberAsync(
+        PhoneNumber phoneNumber,
+        CancellationToken cancellationToken = default)
+    {
+        return await DbSet
+            .Where(v => v.PhoneNumber == phoneNumber && v.ExpiresAt > DateTime.UtcNow)
+            .OrderByDescending(v => v.CreatedAt)
+            .FirstOrDefaultAsync(cancellationToken);
+    }
+
     public async Task<List<PhoneVerification>> GetRecentVerificationsByPhoneAsync(
         string phoneNumber,
         TimeSpan timeWindow,

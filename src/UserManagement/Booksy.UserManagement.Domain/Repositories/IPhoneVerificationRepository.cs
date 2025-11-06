@@ -26,6 +26,13 @@ public interface IPhoneVerificationRepository
         CancellationToken cancellationToken = default);
 
     /// <summary>
+    /// Gets the most recent active verification by phone number
+    /// </summary>
+    Task<PhoneVerification?> GetByPhoneNumberAsync(
+        PhoneNumber phoneNumber,
+        CancellationToken cancellationToken = default);
+
+    /// <summary>
     /// Gets recent verifications for a phone number within a time period (for rate limiting)
     /// </summary>
     Task<List<PhoneVerification>> GetRecentVerificationsByPhoneAsync(
