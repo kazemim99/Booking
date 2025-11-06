@@ -1,5 +1,5 @@
 using Booksy.API.Extensions;
-using Booksy.API.Middleware;
+using Booksy.Core.Domain.Exceptions;
 using Booksy.UserManagement.Application.CQRS.Commands.PhoneVerification.SendVerificationCode;
 using Booksy.UserManagement.Application.CQRS.Commands.PhoneVerification.VerifyCode;
 using MediatR;
@@ -39,7 +39,7 @@ public class AuthController : ControllerBase
     [AllowAnonymous]
     [EnableRateLimiting("phone-verification")]
     [ProducesResponseType(typeof(SendVerificationCodeResponse), StatusCodes.Status200OK)]
-    [ProducesResponseType(typeof(ExceptionHandlingMiddleware.ApiErrorResult), StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status429TooManyRequests)]
     public async Task<IActionResult> SendVerificationCode(
         [FromBody] SendVerificationCodeRequest request,
@@ -78,8 +78,8 @@ public class AuthController : ControllerBase
     [AllowAnonymous]
     [EnableRateLimiting("code-verification")]
     [ProducesResponseType(typeof(VerifyCodeResponse), StatusCodes.Status200OK)]
-    [ProducesResponseType(typeof(ExceptionHandlingMiddleware.ApiErrorResult), StatusCodes.Status400BadRequest)]
-    [ProducesResponseType(typeof(ExceptionHandlingMiddleware.ApiErrorResult), StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     public async Task<IActionResult> VerifyCode(
         [FromBody] VerifyCodeRequest request,
         CancellationToken cancellationToken = default)
@@ -139,7 +139,7 @@ public class AuthController : ControllerBase
         // Validate user ID from request
         if (!Guid.TryParse(request.UserId, out var userId))
         {
-            return BadRequest(new { message = "Invalid user ID format" });
+            throw new DomainValidationException("UserId", "Invalid user ID format");
         }
 
         _logger.LogInformation(
@@ -155,7 +155,7 @@ public class AuthController : ControllerBase
             if (user == null)
             {
                 _logger.LogWarning("User {UserId} not found for token generation", userId);
-                return NotFound(new { message = "User not found" });
+                throw new NotFoundException("User not found");
             }
 
             // Extract providerId and providerStatus from additional claims if present

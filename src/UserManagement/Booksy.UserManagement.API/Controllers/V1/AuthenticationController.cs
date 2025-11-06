@@ -12,8 +12,8 @@ using Booksy.UserManagement.Application.CQRS.Commands.AuthenticateUser;
 using LoginRequest = Booksy.UserManagement.API.Models.Requests.LoginRequest;
 using Booksy.UserManagement.Application.CQRS.Commands.RefreshToken;
 using Booksy.UserManagement.Application.CQRS.Commands.RequestPasswordReset;
-using static Booksy.API.Middleware.ExceptionHandlingMiddleware;
 using Booksy.API.Middleware;
+using Booksy.Core.Domain.Exceptions;
 
 
 namespace Booksy.UserManagement.API.Controllers.V1;
@@ -40,7 +40,6 @@ public class AuthenticationController : ControllerBase
     [AllowAnonymous]
     [Booksy.API.Middleware.EnableRateLimiting("authentication")]
     [ProducesResponseType(typeof(AuthenticationResponse), StatusCodes.Status200OK)]
-    [ProducesResponseType(typeof(ApiErrorResult), StatusCodes.Status401Unauthorized)]
     public async Task<IActionResult> Login([FromBody] LoginRequest request)
     {
         var command = new AuthenticateUserCommand(
@@ -76,7 +75,6 @@ public class AuthenticationController : ControllerBase
     [HttpPost("refresh")]
     [AllowAnonymous]
     [ProducesResponseType(typeof(AuthenticationResponse), StatusCodes.Status200OK)]
-    [ProducesResponseType(typeof(ApiErrorResult), StatusCodes.Status401Unauthorized)]
     public async Task<IActionResult> RefreshToken([FromBody] RefreshTokenRequest request)
     {
         var command = new RefreshTokenCommand(request.RefreshToken);

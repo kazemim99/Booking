@@ -1,4 +1,5 @@
 ﻿using Booksy.Core.Application.DTOs;
+using Booksy.Core.Domain.Exceptions;
 using Booksy.ServiceCatalog.API.Models.Requests;
 using Booksy.ServiceCatalog.API.Models.Responses;
 using MediatR;
@@ -9,7 +10,6 @@ using Booksy.ServiceCatalog.Application.Commands.Service.DeactivateService;
 using Booksy.ServiceCatalog.Application.Commands.Service.ArchiveService;
 using Booksy.ServiceCatalog.Application.Queries.Service.GetServiceById;
 using Booksy.API.Extensions;
-using static Booksy.API.Middleware.ExceptionHandlingMiddleware;
 using Booksy.ServiceCatalog.Application.Queries.Service.GetServicesByStatus;
 using Booksy.ServiceCatalog.Application.Queries.Service.GetPopularServices;
 using Booksy.ServiceCatalog.Api.Models.Responses;
@@ -28,7 +28,6 @@ namespace Booksy.ServiceCatalog.API.Controllers.V1;
 [ApiVersion("1.0")]
 [Route("api/v{version:apiVersion}/[controller]")]
 [Produces("application/json")]
-[ProducesResponseType(typeof(ApiErrorResult), StatusCodes.Status500InternalServerError)]
 public class ServicesController : ControllerBase
 {
     private readonly ISender _mediator;
@@ -49,7 +48,6 @@ public class ServicesController : ControllerBase
     /// </summary>
     [HttpPut("{providerId:guid}/{serviceId:guid}")]
     [ProducesResponseType(typeof(ServiceDetailResponse), StatusCodes.Status200OK)]
-    [ProducesResponseType(typeof(ApiErrorResult), StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     [ProducesResponseType(StatusCodes.Status403Forbidden)]
     public async Task<IActionResult> UpdateService(
@@ -120,8 +118,6 @@ public class ServicesController : ControllerBase
     [Authorize(Policy = "ProviderOrAdmin")]
     [Booksy.API.Middleware.EnableRateLimiting("service-creation")]
     [ProducesResponseType(typeof(ServiceResponse), StatusCodes.Status201Created)]
-    [ProducesResponseType(typeof(ApiErrorResult), StatusCodes.Status400BadRequest)]
-    [ProducesResponseType(typeof(ApiErrorResult), StatusCodes.Status409Conflict)]
     [ProducesResponseType(StatusCodes.Status403Forbidden)]
     public async Task<IActionResult> AddService(
         [FromRoute] Guid id,
@@ -301,8 +297,6 @@ public class ServicesController : ControllerBase
     [HttpPost("{id:guid}/activate")]
     [Authorize(Policy = "ProviderOrAdmin")]
     [ProducesResponseType(typeof(MessageResponse), StatusCodes.Status200OK)]
-    [ProducesResponseType(typeof(ApiErrorResult), StatusCodes.Status400BadRequest)]
-    [ProducesResponseType(typeof(ApiErrorResult), StatusCodes.Status404NotFound)]
     [ProducesResponseType(StatusCodes.Status403Forbidden)]
     public async Task<IActionResult> ActivateService(
         [FromRoute] Guid id,
@@ -334,7 +328,6 @@ public class ServicesController : ControllerBase
     [HttpPost("{id:guid}/deactivate")]
     [Authorize(Policy = "ProviderOrAdmin")]
     [ProducesResponseType(typeof(MessageResponse), StatusCodes.Status200OK)]
-    [ProducesResponseType(typeof(ApiErrorResult), StatusCodes.Status404NotFound)]
     [ProducesResponseType(StatusCodes.Status403Forbidden)]
     public async Task<IActionResult> DeactivateService(
         [FromRoute] Guid id,
@@ -370,9 +363,7 @@ public class ServicesController : ControllerBase
     [HttpDelete("{id:guid}")]
     [Authorize(Policy = "ProviderOrAdmin")]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
-    [ProducesResponseType(typeof(ApiErrorResult), StatusCodes.Status404NotFound)]
     [ProducesResponseType(StatusCodes.Status403Forbidden)]
-    [ProducesResponseType(typeof(ApiErrorResult), StatusCodes.Status409Conflict)]
     public async Task<IActionResult> ArchiveService(
         [FromRoute] Guid id,
         [FromBody] ArchiveServiceRequest? request,
@@ -440,7 +431,7 @@ public class ServicesController : ControllerBase
         CancellationToken cancellationToken = default)
     {
         if (limit <= 0 || limit > 100)
-            return BadRequest("Limit must be between 1 and 100");
+            throw new DomainValidationException("limit", "Limit must be between 1 and 100");
 
         var query = new GetPopularServicesQuery(categoryFilter, limit);
         var result = await _mediator.Send(query, cancellationToken);
