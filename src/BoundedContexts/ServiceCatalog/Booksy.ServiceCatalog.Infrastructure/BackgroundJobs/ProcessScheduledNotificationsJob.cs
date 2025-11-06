@@ -199,7 +199,7 @@ namespace Booksy.ServiceCatalog.Infrastructure.BackgroundJobs
             var metadata = notification.Metadata?.ToDictionary(k => k.Key, v => (object)v.Value)
                 ?? new Dictionary<string, object>();
 
-            var (success, messageId, errorMessage) = await _inAppService.SendToUserAsync(
+            var (success, errorMessage) = await _inAppService.SendToUserAsync(
                 userId: notification.RecipientId.Value,
                 title: notification.Subject ?? "Notification",
                 message: notification.Body,
@@ -213,7 +213,7 @@ namespace Booksy.ServiceCatalog.Infrastructure.BackgroundJobs
             }
 
             // In-app notifications don't have external message IDs
-            return messageId ?? notification.Id.Value.ToString();
+            return notification.Id.Value.ToString();
         }
     }
 }

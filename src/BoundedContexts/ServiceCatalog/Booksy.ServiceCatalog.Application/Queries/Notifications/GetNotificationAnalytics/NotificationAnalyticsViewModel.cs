@@ -18,5 +18,7 @@ namespace Booksy.ServiceCatalog.Application.Queries.Notifications.GetNotificatio
         double DeliveryRate,
         Dictionary<string, int> NotificationsByChannel,
         Dictionary<string, int> NotificationsByType,
-        Dictionary<string, int> NotificationsByStatus);
+        Dictionary<string, int> NotificationsByStatus)
+    {
+    }
 }

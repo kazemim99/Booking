@@ -150,7 +150,7 @@ namespace Booksy.ServiceCatalog.Infrastructure.Persistence.Repositories
         {
             var query = DbSet.AsNoTracking();
 
-            if (userId.HasValue)
+            if (userId != null)
                 query = query.Where(n => n.RecipientId == userId.Value);
 
             if (startDate.HasValue)

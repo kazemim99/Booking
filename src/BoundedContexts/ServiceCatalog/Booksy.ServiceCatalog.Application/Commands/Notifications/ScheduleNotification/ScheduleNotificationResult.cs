@@ -12,5 +12,8 @@ namespace Booksy.ServiceCatalog.Application.Commands.Notifications.ScheduleNotif
         Guid NotificationId,
         NotificationStatus Status,
         DateTime CreatedAt,
-        DateTime ScheduledFor);
+        DateTime ScheduledFor)
+    {
+        public bool Success { get; set; }
+    }
 }

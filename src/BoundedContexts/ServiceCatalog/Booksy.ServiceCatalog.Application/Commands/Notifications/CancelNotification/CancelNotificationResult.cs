@@ -12,5 +12,9 @@ namespace Booksy.ServiceCatalog.Application.Commands.Notifications.CancelNotific
         Guid NotificationId,
         NotificationStatus PreviousStatus,
         NotificationStatus CurrentStatus,
-        string? CancellationReason);
+        string? CancellationReason)
+    {
+        public bool Success { get; set; }
+        public string Message { get; set; }
+    }
 }

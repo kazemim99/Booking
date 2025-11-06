@@ -64,5 +64,16 @@ public enum NotificationType
     BookingCancellation = 16777218,
     BookingNoShow = 16777219,
     PayoutCompleted = 16777220,
-    SystemAlert = 16777221
+    SystemAlert = 16777221,
+    Welcome = 16777222,
+    RefundIssued = 16777223,
+    PayoutProcessed = 16777224,
+    InvoiceGenerated = 16777225,
+    PhoneVerification = 16777226,
+    PaymentConfirmed = 16777227,
+    PasswordReset = 16777228,
+    BookingUpdated = 16777229,
+    BookingConfirmed = 16777230,
+    AccountVerification = 16777231,
+    AccountDeactivated = 16777232
 }

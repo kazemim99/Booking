@@ -131,7 +131,7 @@ namespace Booksy.ServiceCatalog.Infrastructure.Persistence.Configurations
                 .HasColumnType("jsonb")
                 .HasConversion(
                     v => JsonSerializer.Serialize(v, (JsonSerializerOptions?)null),
-                    v => JsonSerializer.Deserialize<Dictionary<string, string>>(v, (JsonSerializerOptions?)null) ?? new Dictionary<string, string>());
+                    v => JsonSerializer.Deserialize<Dictionary<string, object>>(v, (JsonSerializerOptions?)null) ?? new Dictionary<string, object>());
 
             builder.Property(n => n.CampaignId)
                 .HasMaxLength(100);

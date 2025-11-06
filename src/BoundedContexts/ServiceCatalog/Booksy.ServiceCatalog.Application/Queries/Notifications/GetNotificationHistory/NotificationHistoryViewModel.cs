@@ -30,5 +30,8 @@ namespace Booksy.ServiceCatalog.Application.Queries.Notifications.GetNotificatio
         string? FailureReason,
         string? ExternalMessageId,
         int AttemptCount,
-        Dictionary<string, string> Metadata);
+        Dictionary<string, string> Metadata)
+    {
+        public Guid RecipientId { get; set; }
+    }
 }

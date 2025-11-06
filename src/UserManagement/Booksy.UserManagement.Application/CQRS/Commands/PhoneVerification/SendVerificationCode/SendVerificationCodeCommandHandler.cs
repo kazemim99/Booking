@@ -23,9 +23,14 @@ public sealed class SendVerificationCodeCommandHandler
         CancellationToken cancellationToken)
     {
         // Delegate to the new command
+        // Combine country code with phone number if needed
+        var phoneNumber = request.PhoneNumber.StartsWith("+")
+            ? request.PhoneNumber
+            : $"+{request.CountryCode}{request.PhoneNumber}";
+
         var newCommand = new RequestPhoneVerificationCommand(
-            PhoneNumber: request.PhoneNumber,
-            CountryCode: request.CountryCode);
+            PhoneNumber: phoneNumber,
+            Purpose: Domain.Enums.VerificationPurpose.Registration);
 
         var result = await _mediator.Send(newCommand, cancellationToken);
 

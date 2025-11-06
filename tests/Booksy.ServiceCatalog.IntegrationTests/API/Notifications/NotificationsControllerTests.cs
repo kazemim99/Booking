@@ -718,8 +718,8 @@ public class NotificationsControllerTests : ServiceCatalogIntegrationTestBase
         response.StatusCode.Should().Be(HttpStatusCode.OK);
         response.Data.Should().NotBeNull();
         response.Data!.TotalNotifications.Should().BeGreaterThanOrEqualTo(2);
-        response.Data.ByStatus.Should().ContainKey("Sent");
-        response.Data.ByChannel.Should().NotBeEmpty();
+        response.Data.NotificationsByStatus.Should().ContainKey("Sent");
+        response.Data.NotificationsByChannel.Should().NotBeEmpty();
     }
 
     [Fact]
@@ -750,7 +750,7 @@ public class NotificationsControllerTests : ServiceCatalogIntegrationTestBase
         // Assert
         response.StatusCode.Should().Be(HttpStatusCode.OK);
         response.Data.Should().NotBeNull();
-        response.Data!.TotalNotifications.Should().BeGreaterOrEqualTo(1);
+        response.Data!.TotalNotifications.Should().BeGreaterThanOrEqualTo(1);
     }
 
     [Fact]

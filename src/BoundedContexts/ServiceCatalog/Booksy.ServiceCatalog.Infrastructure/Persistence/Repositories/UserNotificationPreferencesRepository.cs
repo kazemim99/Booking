@@ -64,7 +64,7 @@ namespace Booksy.ServiceCatalog.Infrastructure.Persistence.Repositories
             var preferences = await GetByUserIdAsync(userId, cancellationToken);
             if (preferences != null)
             {
-                await DeleteAsync(preferences, cancellationToken);
+                await DeleteAsync(preferences.Id, cancellationToken);
                 _logger.LogInformation(
                     "Deleted notification preferences for user: {UserId}",
                     userId.Value);

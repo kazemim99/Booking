@@ -13,5 +13,8 @@ namespace Booksy.ServiceCatalog.Application.Commands.Notifications.ResendNotific
         NotificationStatus Status,
         int AttemptCount,
         string? GatewayMessageId = null,
-        string? ErrorMessage = null);
+        string? ErrorMessage = null)
+    {
+        public bool Success { get; set; }
+    }
 }

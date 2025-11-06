@@ -36,7 +36,7 @@ namespace Booksy.ServiceCatalog.Infrastructure.Notifications.Email
             string htmlBody,
             string? plainTextBody = null,
             string? fromName = null,
-            Dictionary<string, string>? metadata = null,
+            Dictionary<string, object>? metadata = null,
             CancellationToken cancellationToken = default)
         {
             try
@@ -56,7 +56,7 @@ namespace Booksy.ServiceCatalog.Infrastructure.Notifications.Email
                 {
                     foreach (var kvp in metadata)
                     {
-                        msg.AddCustomArg(kvp.Key, kvp.Value);
+                        msg.AddCustomArg(kvp.Key, kvp.Value?.ToString() ?? "");
                     }
                 }
 
@@ -95,9 +95,10 @@ namespace Booksy.ServiceCatalog.Infrastructure.Notifications.Email
 
             // SendGrid supports bulk sending, but for simplicity, we'll send individually
             // In production, use SendGrid's bulk API for better performance
+            var objectMetadata = metadata?.ToDictionary(kvp => kvp.Key, kvp => (object)kvp.Value);
             foreach (var recipient in recipients)
             {
-                var result = await SendEmailAsync(recipient, subject, htmlBody, plainTextBody, null, metadata, cancellationToken);
+                var result = await SendEmailAsync(recipient, subject, htmlBody, plainTextBody, null, objectMetadata, cancellationToken);
                 results.Add((recipient, result.Success, result.MessageId, result.ErrorMessage));
             }
 
