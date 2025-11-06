@@ -35,25 +35,13 @@
 
 ### 1. Create Database Migrations ⚠️ CRITICAL
 **Priority:** HIGH
-**Estimated Time:** 30 minutes
+**Estimated Time:** 30 minutes (manual)
 **Complexity:** Low
+**Owner:** User will handle manually
 
 **Why Critical:** Without migrations, notification tables don't exist in database.
 
-**Tasks:**
-```bash
-# Navigate to ServiceCatalog.Infrastructure
-cd src/BoundedContexts/ServiceCatalog/Booksy.ServiceCatalog.Infrastructure
-
-# Create migration for notification tables
-dotnet ef migrations add AddNotificationTables \
-  --context ServiceCatalogDbContext \
-  --output-dir Migrations
-
-# Review migration file
-# Apply migration to database
-dotnet ef database update --context ServiceCatalogDbContext
-```
+**Note:** User will create migrations manually.
 
 **Tables to be created:**
 - `notifications` (main notification records)
