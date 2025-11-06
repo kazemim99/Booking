@@ -1,10 +1,10 @@
 // ========================================
-// Booksy.Infrastructure.External/Notifications/TemplateEngine.cs
+// Booksy.ServiceCatalog.Infrastructure/Notifications/TemplateEngine.cs
 // ========================================
 using Booksy.ServiceCatalog.Application.Services.Notifications;
 using System.Text.RegularExpressions;
 
-namespace Booksy.Infrastructure.External.Notifications
+namespace Booksy.ServiceCatalog.Infrastructure.Notifications
 {
     /// <summary>
     /// Template rendering engine with variable substitution

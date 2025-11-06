@@ -5,8 +5,13 @@ using Booksy.Infrastructure.Core.Persistence.Base;
 using Booksy.ServiceCatalog.Application.Abstractions.Queries;
 using Booksy.ServiceCatalog.Application.Services.Implementations;
 using Booksy.ServiceCatalog.Application.Services.Interfaces;
+using Booksy.ServiceCatalog.Application.Services.Notifications;
 using Booksy.ServiceCatalog.Domain.Repositories;
 using Booksy.ServiceCatalog.Domain.Services;
+using Booksy.ServiceCatalog.Infrastructure.Notifications;
+using Booksy.ServiceCatalog.Infrastructure.Notifications.Email;
+using Booksy.ServiceCatalog.Infrastructure.Notifications.Push;
+using Booksy.ServiceCatalog.Infrastructure.Notifications.Sms;
 using Booksy.ServiceCatalog.Infrastructure.Persistence.Context;
 using Booksy.ServiceCatalog.Infrastructure.Persistence.Repositories;
 using Booksy.ServiceCatalog.Infrastructure.Persistence.Seeders;
@@ -79,8 +84,8 @@ namespace Booksy.ServiceCatalog.Infrastructure.DependencyInjection
             services.AddScoped<INotificationTemplateRepository, NotificationTemplateRepository>();
             services.AddScoped<IUserNotificationPreferencesRepository, UserNotificationPreferencesRepository>();
 
-            // Notification Services (registered in External Services)
-            // Template engine and services
+            // Notification Services
+            services.AddNotificationServices();
 
             services.AddScoped<IProviderApplicationService, ProviderApplicationService>();
             services.AddScoped<IServiceApplicationService, ServiceApplicationService>();
@@ -148,7 +153,7 @@ namespace Booksy.ServiceCatalog.Infrastructure.DependencyInjection
             try
             {
 
-           
+
             using var scope = serviceProvider.CreateScope();
             var context = scope.ServiceProvider.GetRequiredService<ServiceCatalogDbContext>();
             var seeder = scope.ServiceProvider.GetRequiredService<ISeeder>();
@@ -164,6 +169,30 @@ namespace Booksy.ServiceCatalog.Infrastructure.DependencyInjection
 
                 throw;
             }
+        }
+
+        /// <summary>
+        /// Adds notification services to the service collection.
+        /// This respects bounded context architecture by keeping ServiceCatalog
+        /// notification implementations within the ServiceCatalog bounded context.
+        /// </summary>
+        public static IServiceCollection AddNotificationServices(this IServiceCollection services)
+        {
+            // Template Engine & Services
+            services.AddSingleton<ITemplateEngine, TemplateEngine>();
+            services.AddScoped<INotificationTemplateService, NotificationTemplateService>();
+
+            // Multi-Channel Notification Services
+            services.AddScoped<IEmailNotificationService, SendGridEmailNotificationService>();
+            services.AddScoped<ISmsNotificationService, RahyabSmsNotificationService>();
+            services.AddScoped<IPushNotificationService, FirebasePushNotificationService>();
+            services.AddScoped<IInAppNotificationService, InAppNotificationService>();
+
+            // HTTP Clients for notification services
+            services.AddHttpClient<SendGridEmailNotificationService>();
+            services.AddHttpClient<RahyabSmsNotificationService>();
+
+            return services;
         }
     }
 }

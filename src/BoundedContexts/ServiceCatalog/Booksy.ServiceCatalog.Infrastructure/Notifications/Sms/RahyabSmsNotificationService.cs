@@ -1,5 +1,5 @@
 // ========================================
-// Booksy.Infrastructure.External/Notifications/Sms/RahyabSmsNotificationService.cs
+// Booksy.ServiceCatalog.Infrastructure/Notifications/Sms/RahyabSmsNotificationService.cs
 // ========================================
 using Booksy.Infrastructure.External.sms.Rahyab;
 using Booksy.ServiceCatalog.Application.Services.Notifications;
@@ -7,7 +7,7 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 using System.Text.Json;
 
-namespace Booksy.Infrastructure.External.Notifications.Sms
+namespace Booksy.ServiceCatalog.Infrastructure.Notifications.Sms
 {
     /// <summary>
     /// Rahyab SMS service implementation

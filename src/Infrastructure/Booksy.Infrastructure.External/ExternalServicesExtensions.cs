@@ -36,32 +36,16 @@ public static class ExternalServicesExtensions
         services.AddScoped<IEmailTemplateService, EmailTemplateService>();
         services.AddScoped<IPaymentGateway, StripePaymentGateway>();
 
-        // Notification Services (Multi-Channel)
-        services.AddScoped<Booksy.ServiceCatalog.Application.Services.Notifications.IEmailNotificationService,
-            Booksy.Infrastructure.External.Notifications.Email.SendGridEmailNotificationService>();
-        services.AddScoped<Booksy.ServiceCatalog.Application.Services.Notifications.ISmsNotificationService,
-            Booksy.Infrastructure.External.Notifications.Sms.RahyabSmsNotificationService>();
-        services.AddScoped<Booksy.ServiceCatalog.Application.Services.Notifications.IPushNotificationService,
-            Booksy.Infrastructure.External.Notifications.Push.FirebasePushNotificationService>();
-        services.AddScoped<Booksy.ServiceCatalog.Application.Services.Notifications.IInAppNotificationService,
-            Booksy.Infrastructure.External.Notifications.InAppNotificationService>();
+        // NOTE: Notification Services (Multi-Channel) registration has been moved to
+        // ServiceCatalog.Infrastructure to respect bounded context architecture.
+        // See ServiceCatalogInfrastructureExtensions.AddNotificationServices()
 
-        // Template Engine & Services
-        services.AddSingleton<Booksy.ServiceCatalog.Application.Services.Notifications.ITemplateEngine,
-            Booksy.Infrastructure.External.Notifications.TemplateEngine>();
-        services.AddScoped<Booksy.ServiceCatalog.Application.Services.Notifications.INotificationTemplateService,
-            Booksy.Infrastructure.External.Notifications.NotificationTemplateService>();
-
-        // SendGrid Client
+        // SendGrid Client (shared infrastructure)
         services.AddSingleton<SendGrid.ISendGridClient>(sp =>
         {
             var apiKey = configuration["SendGrid:ApiKey"] ?? throw new InvalidOperationException("SendGrid API key not configured");
             return new SendGrid.SendGridClient(apiKey);
         });
-
-        // HTTP Clients for notification services
-        services.AddHttpClient<Booksy.Infrastructure.External.Notifications.Email.SendGridEmailNotificationService>();
-        services.AddHttpClient<Booksy.Infrastructure.External.Notifications.Sms.RahyabSmsNotificationService>();
 
 
         // Analytics

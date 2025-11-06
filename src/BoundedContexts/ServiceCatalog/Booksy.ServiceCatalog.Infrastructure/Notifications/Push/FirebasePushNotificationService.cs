@@ -1,10 +1,10 @@
 // ========================================
-// Booksy.Infrastructure.External/Notifications/Push/FirebasePushNotificationService.cs
+// Booksy.ServiceCatalog.Infrastructure/Notifications/Push/FirebasePushNotificationService.cs
 // ========================================
 using Booksy.ServiceCatalog.Application.Services.Notifications;
 using Microsoft.Extensions.Logging;
 
-namespace Booksy.Infrastructure.External.Notifications.Push
+namespace Booksy.ServiceCatalog.Infrastructure.Notifications.Push
 {
     /// <summary>
     /// Firebase Cloud Messaging (FCM) implementation - Placeholder for future implementation
