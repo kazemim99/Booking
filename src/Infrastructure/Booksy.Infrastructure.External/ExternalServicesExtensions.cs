@@ -46,6 +46,12 @@ public static class ExternalServicesExtensions
         services.AddScoped<Booksy.ServiceCatalog.Application.Services.Notifications.IInAppNotificationService,
             Booksy.Infrastructure.External.Notifications.InApp.SignalRInAppNotificationService>();
 
+        // Template Engine & Services
+        services.AddSingleton<Booksy.ServiceCatalog.Application.Services.Notifications.ITemplateEngine,
+            Booksy.Infrastructure.External.Notifications.TemplateEngine>();
+        services.AddScoped<Booksy.ServiceCatalog.Application.Services.Notifications.INotificationTemplateService,
+            Booksy.Infrastructure.External.Notifications.NotificationTemplateService>();
+
         // SendGrid Client
         services.AddSingleton<SendGrid.ISendGridClient>(sp =>
         {
