@@ -1,10 +1,19 @@
 ﻿using Booksy.Core.Application.DTOs;
 using Microsoft.AspNetCore.Mvc;
+using System.Security.Claims;
 
 namespace Booksy.API.Extensions;
 
 public static class ControllerExtensions
 {
+    /// <summary>
+    /// Get the current user ID from claims
+    /// </summary>
+    public static string? GetUserId(this ClaimsPrincipal user)
+    {
+        return user?.FindFirst(ClaimTypes.NameIdentifier)?.Value
+            ?? user?.FindFirst("sub")?.Value;
+    }
     /// <summary>
     /// Create a paginated response with proper headers
     /// </summary>

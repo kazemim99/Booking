@@ -26,4 +26,14 @@ public interface IPaymentGateway
     /// Confirms a payment intent
     /// </summary>
     Task<PaymentResult> ConfirmPaymentIntentAsync(string paymentIntentId, CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Creates a payout to a connected account or bank account
+    /// </summary>
+    Task<PayoutResult> CreatePayoutAsync(PayoutRequest request, CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Gets payout details
+    /// </summary>
+    Task<PayoutDetails> GetPayoutDetailsAsync(string payoutId, CancellationToken cancellationToken = default);
 }

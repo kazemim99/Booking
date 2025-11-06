@@ -1,5 +1,6 @@
 ﻿using Booksy.Core.Domain.ValueObjects;
 using Booksy.ServiceCatalog.Domain.Aggregates;
+using Booksy.ServiceCatalog.Domain.Enums;
 using Booksy.ServiceCatalog.Domain.ValueObjects;
 using Booksy.ServiceCatalog.Infrastructure.Persistence.Context;
 using Booksy.Tests.Common.Infrastructure;
@@ -339,6 +340,59 @@ public abstract class ServiceCatalogIntegrationTestBase
         return (provider, services);
     }
 
+    /// <summary>
+    /// Create a test provider with services and staff (commonly used in tests)
+    /// </summary>
+    protected async Task<Provider> CreateTestProviderWithServicesAsync(int serviceCount = 3)
+    {
+        var provider = Provider.RegisterProvider(
+            UserId.From(Guid.NewGuid()),
+            "Test Provider",
+            "Test provider description",
+            Domain.Enums.ProviderType.Individual,
+            ContactInfo.Create(
+                Email.Create("provider@test.com"),
+                PhoneNumber.Create("+1234567890")
+            ),
+            BusinessAddress.Create(
+                "123 Test St",
+                "123 Test St",
+                "Test City",
+                "TS",
+                "12345",
+                "USA"
+            )
+        );
+
+        // Add staff member (required for bookings/payments)
+        provider.AddStaff("John", "Doe", Domain.Enums.StaffRole.ServiceProvider, PhoneNumber.Create("09123131311"));
+        provider.SetSatus(Domain.Enums.ProviderStatus.Active);
+        provider.SetAllowOnlineBooking(true);
+        await CreateEntityAsync(provider);
+
+        // Create services
+        for (int i = 0; i < serviceCount; i++)
+        {
+            var service = await CreateServiceForProviderAsync(
+                provider,
+                $"Service {i + 1}",
+                50.00m + (i * 10),
+                60 + (i * 15)
+            );
+        }
+
+        return provider;
+    }
+
+    /// <summary>
+    /// Get the first service for a provider
+    /// </summary>
+    protected async Task<Service> GetFirstServiceForProviderAsync(Guid providerId)
+    {
+        var services = await GetProviderServicesAsync(providerId);
+        return services.First();
+    }
+
     // ================================================
     // VALUE OBJECT HELPERS
     // ================================================
@@ -481,6 +535,40 @@ public abstract class ServiceCatalogIntegrationTestBase
 
         return provider;
     }
+
+
+    protected async Task<Provider> CreateTestProviderWithServicesAsync()
+    {
+        var provider = await CreateAndAuthenticateAsProviderAsync("Test Provider", "provider@test.com");
+
+        // Add business hours (Monday-Friday, 9 AM - 5 PM)
+        provider.SetBusinessHours(new Dictionary<Domain.Enums.DayOfWeek, (TimeOnly? Open, TimeOnly? Close)>
+        {
+            { Domain.Enums.DayOfWeek.Monday, (TimeOnly.FromTimeSpan(TimeSpan.FromHours(9)), TimeOnly.FromTimeSpan(TimeSpan.FromHours(17))) },
+            { Domain.Enums.DayOfWeek.Tuesday, (TimeOnly.FromTimeSpan(TimeSpan.FromHours(9)), TimeOnly.FromTimeSpan(TimeSpan.FromHours(17))) },
+            { Domain.Enums.DayOfWeek.Wednesday, (TimeOnly.FromTimeSpan(TimeSpan.FromHours(9)), TimeOnly.FromTimeSpan(TimeSpan.FromHours(17))) },
+            { Domain.Enums.DayOfWeek.Thursday, (TimeOnly.FromTimeSpan(TimeSpan.FromHours(9)), TimeOnly.FromTimeSpan(TimeSpan.FromHours(17))) },
+            { Domain.Enums.DayOfWeek.Friday, (TimeOnly.FromTimeSpan(TimeSpan.FromHours(9)), TimeOnly.FromTimeSpan(TimeSpan.FromHours(17))) }
+        });
+
+        // Add a staff member if none exists
+        if (!provider.Staff.Any())
+        {
+            provider.AddStaff(
+                "Firstname Staff",
+                "Lastname Staff",
+                StaffRole.Maintenance,
+                PhoneNumber.Create("+1234567890"));
+        }
+
+        await DbContext.SaveChangesAsync();
+
+        // Create a service
+        await CreateServiceForProviderAsync(provider, "Test Service", 50.00m, 60);
+
+        return provider;
+    }
+
 
     /// <summary>
     /// Create a provider and authenticate as them with specific user ID

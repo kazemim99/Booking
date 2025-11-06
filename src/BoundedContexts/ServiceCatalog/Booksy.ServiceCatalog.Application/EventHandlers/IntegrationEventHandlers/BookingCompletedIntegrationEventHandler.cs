@@ -11,13 +11,16 @@ namespace Booksy.ServiceCatalog.Application.EventHandlers.IntegrationEventHandle
     public sealed class BookingCompletedIntegrationEventHandler : IIntegrationEventHandler<BookingCompletedIntegrationEvent>
     {
         private readonly IServiceApplicationService _serviceApplicationService;
+        private readonly Domain.Repositories.IPaymentReadRepository _paymentRepository;
         private readonly ILogger<BookingCompletedIntegrationEventHandler> _logger;
 
         public BookingCompletedIntegrationEventHandler(
             IServiceApplicationService serviceApplicationService,
+            Domain.Repositories.IPaymentReadRepository paymentRepository,
             ILogger<BookingCompletedIntegrationEventHandler> logger)
         {
             _serviceApplicationService = serviceApplicationService;
+            _paymentRepository = paymentRepository ?? throw new ArgumentNullException(nameof(paymentRepository));
             _logger = logger;
         }
 
@@ -32,6 +35,31 @@ namespace Booksy.ServiceCatalog.Application.EventHandlers.IntegrationEventHandle
             // - Increment booking count
             // - Update revenue tracking
             // - Calculate average rating if review included
+
+            // Check payment status for payout eligibility
+            var bookingId = Booksy.ServiceCatalog.Domain.ValueObjects.BookingId.From(integrationEvent.BookingId);
+            var payments = await _paymentRepository.GetByBookingIdAsync(bookingId, cancellationToken);
+
+            var paidPayment = payments.FirstOrDefault(p => p.Status == Domain.Enums.PaymentStatus.Paid);
+            if (paidPayment != null)
+            {
+                _logger.LogInformation(
+                    "Booking {BookingId} completed with paid payment {PaymentId}. Amount {Amount} {Currency} is now eligible for payout to provider {ProviderId}",
+                    integrationEvent.BookingId,
+                    paidPayment.Id.Value,
+                    paidPayment.Amount.Amount,
+                    paidPayment.Amount.Currency,
+                    integrationEvent.ProviderId);
+
+                // Note: Payment is automatically tracked for payout when booking is completed
+                // Payout will be created via CreatePayoutCommand based on payout schedule
+            }
+            else
+            {
+                _logger.LogWarning(
+                    "Booking {BookingId} completed but no paid payment found. Provider may not receive payout.",
+                    integrationEvent.BookingId);
+            }
 
             // This would typically involve updating read models or analytics data
             await Task.CompletedTask;

@@ -182,4 +182,84 @@ public class StripePaymentGateway : IPaymentGateway
             };
         }
     }
+
+    public async Task<PayoutResult> CreatePayoutAsync(
+        PayoutRequest request,
+        CancellationToken cancellationToken = default)
+    {
+        try
+        {
+            var options = new PayoutCreateOptions
+            {
+                Amount = (long)(request.Amount * 100), // Convert to cents
+                Currency = request.Currency.ToLower(),
+                Description = request.Description,
+                Metadata = request.Metadata?.ToDictionary(kvp => kvp.Key, kvp => kvp.Value.ToString())
+            };
+
+            // If connected account ID is provided, create payout to connected account
+            RequestOptions? requestOptions = null;
+            if (!string.IsNullOrEmpty(request.ConnectedAccountId))
+            {
+                requestOptions = new RequestOptions
+                {
+                    StripeAccount = request.ConnectedAccountId
+                };
+            }
+
+            var service = new PayoutService();
+            var payout = await service.CreateAsync(options, requestOptions, cancellationToken);
+
+            return new PayoutResult
+            {
+                IsSuccessful = payout.Status == "paid" || payout.Status == "pending" || payout.Status == "in_transit",
+                PayoutId = payout.Id,
+                Status = payout.Status,
+                Amount = payout.Amount / 100m,
+                Currency = payout.Currency.ToUpper(),
+                ArrivalDate = payout.ArrivalDate
+            };
+        }
+        catch (StripeException ex)
+        {
+            _logger.LogError(ex, "Stripe payout failed");
+
+            return new PayoutResult
+            {
+                IsSuccessful = false,
+                ErrorMessage = ex.Message,
+                ErrorCode = ex.StripeError?.Code
+            };
+        }
+    }
+
+    public async Task<PayoutDetails> GetPayoutDetailsAsync(
+        string payoutId,
+        CancellationToken cancellationToken = default)
+    {
+        try
+        {
+            var service = new PayoutService();
+            var payout = await service.GetAsync(payoutId, cancellationToken: cancellationToken);
+
+            return new PayoutDetails
+            {
+                PayoutId = payout.Id,
+                Amount = payout.Amount / 100m,
+                Currency = payout.Currency.ToUpper(),
+                Status = payout.Status,
+                CreatedAt = payout.Created,
+                ArrivalDate = payout.ArrivalDate,
+                BankAccountLast4 = payout.Destination is BankAccount bankAccount ? bankAccount.Last4 : null,
+                BankName = payout.Destination is BankAccount bank ? bank.BankName : null,
+                FailureMessage = payout.FailureMessage,
+                Metadata = payout.Metadata?.ToDictionary(kvp => kvp.Key, kvp => (object)kvp.Value)
+            };
+        }
+        catch (StripeException ex)
+        {
+            _logger.LogError(ex, "Failed to get payout details");
+            throw;
+        }
+    }
 }
