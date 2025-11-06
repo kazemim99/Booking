@@ -95,7 +95,7 @@ namespace Booksy.ServiceCatalog.Application.Services.BackgroundServices
 
                     if (notification.Channel.HasFlag(NotificationChannel.PushNotification))
                     {
-                        await pushService.SendPushNotificationAsync(
+                        await pushService.SendPushAsync(
                             notification.RecipientId.Value,
                             notification.Subject,
                             notification.PlainTextBody ?? notification.Body,

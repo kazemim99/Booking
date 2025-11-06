@@ -203,6 +203,25 @@ namespace Booksy.ServiceCatalog.Domain.Aggregates.NotificationAggregate
                 AttemptCount));
         }
 
+        public void MarkAsSent(string? gatewayMessageId = null)
+        {
+            EnsureValidState(() => Status == NotificationStatus.Queued, "MarkAsSent", Status.ToString());
+
+            Status = NotificationStatus.Sent;
+            SentAt = DateTime.UtcNow;
+            GatewayMessageId = gatewayMessageId;
+
+            var lastAttempt = _deliveryAttempts.LastOrDefault();
+            lastAttempt?.MarkAsSent(gatewayMessageId ?? string.Empty);
+
+            RaiseDomainEvent(new NotificationSentEvent(
+                Id,
+                RecipientId,
+                Type,
+                Channel,
+                SentAt.Value));
+        }
+
         public void MarkAsDelivered(string? gatewayMessageId = null)
         {
             EnsureValidState(() => Status == NotificationStatus.Sent, "MarkAsDelivered", Status.ToString());
