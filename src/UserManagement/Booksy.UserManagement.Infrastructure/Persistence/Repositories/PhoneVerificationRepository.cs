@@ -1,79 +1,105 @@
-using Booksy.UserManagement.Domain.Entities;
+// ========================================
+// Booksy.UserManagement.Infrastructure/Persistence/Repositories/PhoneVerificationRepository.cs
+// ========================================
+using Booksy.Infrastructure.Core.Persistence.Base;
+using Booksy.UserManagement.Domain.Aggregates.PhoneVerificationAggregate;
+using Booksy.UserManagement.Domain.Enums;
 using Booksy.UserManagement.Domain.Repositories;
+using Booksy.UserManagement.Domain.ValueObjects;
 using Booksy.UserManagement.Infrastructure.Persistence.Context;
 using Microsoft.EntityFrameworkCore;
 
 namespace Booksy.UserManagement.Infrastructure.Persistence.Repositories;
 
-public class PhoneVerificationRepository : IPhoneVerificationRepository
+/// <summary>
+/// Repository implementation for PhoneVerification aggregate
+/// </summary>
+public class PhoneVerificationRepository
+    : EfRepositoryBase<PhoneVerification, VerificationId, UserManagementDbContext>,
+      IPhoneVerificationRepository
 {
-    private readonly UserManagementDbContext _context;
-
-    public PhoneVerificationRepository(UserManagementDbContext context)
+    public PhoneVerificationRepository(UserManagementDbContext context) : base(context)
     {
-        _context = context;
     }
 
-    public async Task<PhoneVerification?> GetByPhoneNumberAsync(
-        string phoneNumber,
+    public override async Task<PhoneVerification?> GetByIdAsync(
+        VerificationId id,
         CancellationToken cancellationToken = default)
     {
-        return await _context.PhoneVerifications
-            .Where(v => v.PhoneNumber == phoneNumber)
+        return await DbSet
+            .FirstOrDefaultAsync(v => v.Id == id, cancellationToken);
+    }
+
+    public async Task<PhoneVerification?> GetByPhoneAndPurposeAsync(
+        string phoneNumber,
+        VerificationPurpose purpose,
+        CancellationToken cancellationToken = default)
+    {
+        return await DbSet
+            .Where(v => v.PhoneNumber.Value == phoneNumber && v.Purpose == purpose)
             .OrderByDescending(v => v.CreatedAt)
             .FirstOrDefaultAsync(cancellationToken);
     }
 
-    public async Task<PhoneVerification?> GetByIdAsync(
-        Guid id,
+    public async Task<List<PhoneVerification>> GetRecentVerificationsByPhoneAsync(
+        string phoneNumber,
+        TimeSpan timeWindow,
         CancellationToken cancellationToken = default)
     {
-        return await _context.PhoneVerifications
-            .FirstOrDefaultAsync(v => v.Id == id, cancellationToken);
+        var cutoffTime = DateTime.UtcNow - timeWindow;
+
+        return await DbSet
+            .Where(v => v.PhoneNumber.Value == phoneNumber && v.CreatedAt >= cutoffTime)
+            .OrderByDescending(v => v.CreatedAt)
+            .ToListAsync(cancellationToken);
     }
 
-    public async Task<PhoneVerification> AddAsync(
+    public async Task<List<PhoneVerification>> GetExpiredVerificationsAsync(
+        CancellationToken cancellationToken = default)
+    {
+        return await DbSet
+            .Where(v => v.ExpiresAt < DateTime.UtcNow &&
+                       v.Status != VerificationStatus.Verified &&
+                       v.Status != VerificationStatus.Cancelled)
+            .ToListAsync(cancellationToken);
+    }
+
+    public async Task AddAsync(
         PhoneVerification verification,
         CancellationToken cancellationToken = default)
     {
-        await _context.PhoneVerifications.AddAsync(verification, cancellationToken);
-        await _context.SaveChangesAsync(cancellationToken);
-        return verification;
+        await DbSet.AddAsync(verification, cancellationToken);
     }
 
-    public async Task UpdateAsync(
+    public new async Task UpdateAsync(
         PhoneVerification verification,
         CancellationToken cancellationToken = default)
     {
-        _context.PhoneVerifications.Update(verification);
-        await _context.SaveChangesAsync(cancellationToken);
+        DbSet.Update(verification);
+        await Task.CompletedTask;
     }
 
     public async Task DeleteAsync(
         PhoneVerification verification,
         CancellationToken cancellationToken = default)
     {
-        _context.PhoneVerifications.Remove(verification);
-        await _context.SaveChangesAsync(cancellationToken);
-    }
-
-    public async Task<int> DeleteExpiredAsync(
-        DateTime cutoffTime,
-        CancellationToken cancellationToken = default)
-    {
-        return await _context.PhoneVerifications
-            .Where(v => v.ExpiresAt < cutoffTime && !v.IsVerified)
-            .ExecuteDeleteAsync(cancellationToken);
+        DbSet.Remove(verification);
+        await Task.CompletedTask;
     }
 
     public async Task<bool> ExistsActiveVerificationAsync(
         string phoneNumber,
         CancellationToken cancellationToken = default)
     {
-        return await _context.PhoneVerifications
-            .AnyAsync(v => v.PhoneNumber == phoneNumber &&
+        return await DbSet
+            .AnyAsync(v => v.PhoneNumber.Value == phoneNumber &&
                           v.ExpiresAt > DateTime.UtcNow &&
-                          !v.IsVerified,
+                          v.Status == VerificationStatus.Sent,
                           cancellationToken);
+    }
+
+    public async Task<int> SaveChangesAsync(CancellationToken cancellationToken = default)
+    {
+        return await Context.SaveChangesAsync(cancellationToken);
     }
 }
