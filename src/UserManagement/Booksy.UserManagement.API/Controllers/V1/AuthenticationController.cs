@@ -38,7 +38,7 @@ public class AuthenticationController : ControllerBase
     /// </summary>
     [HttpPost("login")]
     [AllowAnonymous]
-    [Booksy.API.Middleware.EnableRateLimiting("authentication")]
+    [EnableRateLimiting("authentication")]
     [ProducesResponseType(typeof(AuthenticationResponse), StatusCodes.Status200OK)]
     public async Task<IActionResult> Login([FromBody] LoginRequest request)
     {
@@ -113,7 +113,7 @@ public class AuthenticationController : ControllerBase
     /// </summary>
     [HttpPost("forgot-password")]
     [AllowAnonymous]
-    [Booksy.API.Middleware.EnableRateLimiting("password-reset")]
+    [EnableRateLimiting("password-reset")]
     [ProducesResponseType(StatusCodes.Status200OK)]
     public async Task<IActionResult> ForgotPassword([FromBody] Models.Requests.ForgotPasswordRequest request)
     {

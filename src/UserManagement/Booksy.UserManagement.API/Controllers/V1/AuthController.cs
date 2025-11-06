@@ -2,6 +2,8 @@ using Booksy.API.Extensions;
 using Booksy.API.Middleware;
 using Booksy.Core.Application.Exceptions;
 using Booksy.Core.Domain.Exceptions;
+using Booksy.UserManagement.Application.CQRS.Commands.PhoneVerification.SendVerificationCode;
+using Booksy.UserManagement.Application.CQRS.Commands.PhoneVerification.VerifyCode;
 using MediatR;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;

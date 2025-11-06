@@ -84,7 +84,7 @@ namespace Booksy.UserManagement.Application.Commands.PhoneVerification.RequestVe
             var smsResult = await _smsService.SendSmsAsync(
                 phoneNumber.ToNational(),
                 message,
-                new Dictionary<string, string>
+                new Dictionary<string, object>
                 {
                     ["VerificationId"] = verification.Id.Value.ToString(),
                     ["Purpose"] = command.Purpose.ToString()

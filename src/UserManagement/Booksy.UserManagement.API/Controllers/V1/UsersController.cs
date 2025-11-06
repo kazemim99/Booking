@@ -48,7 +48,7 @@ public class UsersController : ControllerBase
     /// <response code="409">User already exists</response>
     [HttpPost]
     [AllowAnonymous]
-    [Booksy.API.Middleware.EnableRateLimiting("registration")]
+    [EnableRateLimiting("registration")]
     [ProducesResponseType(typeof(UserResponse), StatusCodes.Status201Created)]
     public async Task<IActionResult> RegisterUser(
         [FromBody][Required] RegisterUserRequest request,

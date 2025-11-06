@@ -41,11 +41,14 @@ namespace Booksy.ServiceCatalog.Application.Queries.Notifications.GetDeliverySta
             var deliveryAttempts = notification.DeliveryAttempts
                 .Select(a => new DeliveryAttemptDto(
                     a.AttemptedAt,
-                    a.Status,
+                    a.Status.ToString(),
                     a.ErrorMessage,
-                    a.ExternalMessageId,
-                    a.ResponseTime))
+                    a.GatewayMessageId,
+                    null)) // ResponseTime is not available
                 .ToList();
+
+            var lastAttempt = notification.DeliveryAttempts.LastOrDefault();
+            var failedAttempt = notification.DeliveryAttempts.FirstOrDefault(a => a.Status == Domain.Enums.NotificationStatus.Failed);
 
             return new DeliveryStatusViewModel(
                 notification.Id.Value,
@@ -54,20 +57,20 @@ namespace Booksy.ServiceCatalog.Application.Queries.Notifications.GetDeliverySta
                 notification.Type.ToString(),
                 notification.Priority.ToString(),
                 notification.CreatedAt,
-                notification.QueuedAt,
+                notification.CreatedAt, // QueuedAt - using CreatedAt as fallback
                 notification.ScheduledFor,
                 notification.SentAt,
                 notification.DeliveredAt,
-                notification.FailedAt,
-                notification.FailureReason,
-                notification.ExternalMessageId,
+                failedAttempt?.AttemptedAt, // FailedAt - using first failed attempt time
+                notification.ErrorMessage, // FailureReason
+                notification.GatewayMessageId, // ExternalMessageId
                 notification.AttemptCount,
-                notification.MaxRetryAttempts,
-                notification.ShouldRetry(),
+                5, // MaxRetryAttempts - hardcoded based on DeliveryAttempt logic
+                notification.DeliveryAttempts.Any(a => a.ShouldRetry()), // ShouldRetry
                 notification.IsExpired(),
                 notification.ExpiresAt,
-                notification.LastAttemptAt,
-                notification.NextRetryAt,
+                lastAttempt?.AttemptedAt, // LastAttemptAt
+                lastAttempt?.NextRetryAt, // NextRetryAt
                 deliveryAttempts);
         }
     }

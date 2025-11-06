@@ -219,7 +219,7 @@ namespace Booksy.ServiceCatalog.Domain.Aggregates.NotificationAggregate
                 RecipientId,
                 Type,
                 Channel,
-                SentAt.Value));
+                AttemptCount));
         }
 
         public void MarkAsDelivered(string? gatewayMessageId = null)

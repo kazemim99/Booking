@@ -78,7 +78,7 @@ namespace Booksy.UserManagement.Application.Commands.PhoneVerification.ResendOtp
             var smsResult = await _smsService.SendSmsAsync(
                 verification.PhoneNumber.ToNational(),
                 message,
-                new Dictionary<string, string>
+                new Dictionary<string, object>
                 {
                     ["VerificationId"] = verification.Id.Value.ToString(),
                     ["ResendAttempt"] = verification.SendAttempts.ToString()

@@ -129,19 +129,19 @@ namespace Booksy.ServiceCatalog.Infrastructure.BackgroundJobs
             Domain.Aggregates.NotificationAggregate.Notification notification,
             CancellationToken ct)
         {
-            var result = await _emailService.SendEmailAsync(
+            var (success, messageId, errorMessage) = await _emailService.SendEmailAsync(
                 to: notification.RecipientEmail ?? throw new InvalidOperationException("RecipientEmail is required for email notifications"),
                 subject: notification.Subject ?? "Notification",
-                htmlContent: notification.Body,
-                plainTextContent: notification.PlainTextBody ?? notification.Body,
+                htmlBody: notification.Body,
+                plainTextBody: notification.PlainTextBody ?? notification.Body,
                 cancellationToken: ct);
 
-            if (!result.Success)
+            if (!success)
             {
-                throw new InvalidOperationException($"Failed to send email: {result.ErrorMessage}");
+                throw new InvalidOperationException($"Failed to send email: {errorMessage}");
             }
 
-            return result.MessageId;
+            return messageId;
         }
 
         /// <summary>
@@ -151,17 +151,17 @@ namespace Booksy.ServiceCatalog.Infrastructure.BackgroundJobs
             Domain.Aggregates.NotificationAggregate.Notification notification,
             CancellationToken ct)
         {
-            var result = await _smsService.SendSmsAsync(
-                to: notification.RecipientPhone ?? throw new InvalidOperationException("RecipientPhone is required for SMS notifications"),
+            var (success, messageId, errorMessage) = await _smsService.SendSmsAsync(
+                phoneNumber: notification.RecipientPhone ?? throw new InvalidOperationException("RecipientPhone is required for SMS notifications"),
                 message: notification.PlainTextBody ?? notification.Body,
                 cancellationToken: ct);
 
-            if (!result.Success)
+            if (!success)
             {
-                throw new InvalidOperationException($"Failed to send SMS: {result.ErrorMessage}");
+                throw new InvalidOperationException($"Failed to send SMS: {errorMessage}");
             }
 
-            return result.MessageId;
+            return messageId;
         }
 
         /// <summary>
@@ -174,19 +174,19 @@ namespace Booksy.ServiceCatalog.Infrastructure.BackgroundJobs
             var metadata = notification.Metadata?.ToDictionary(k => k.Key, v => (object)v.Value)
                 ?? new Dictionary<string, object>();
 
-            var result = await _pushService.SendPushAsync(
+            var (success, messageId, errorMessage) = await _pushService.SendPushAsync(
                 userId: notification.RecipientId.Value,
                 title: notification.Subject ?? "Notification",
                 body: notification.Body,
                 data: metadata,
                 cancellationToken: ct);
 
-            if (!result.Success)
+            if (!success)
             {
-                throw new InvalidOperationException($"Failed to send push notification: {result.ErrorMessage}");
+                throw new InvalidOperationException($"Failed to send push notification: {errorMessage}");
             }
 
-            return result.MessageId;
+            return messageId;
         }
 
         /// <summary>
@@ -199,7 +199,7 @@ namespace Booksy.ServiceCatalog.Infrastructure.BackgroundJobs
             var metadata = notification.Metadata?.ToDictionary(k => k.Key, v => (object)v.Value)
                 ?? new Dictionary<string, object>();
 
-            var result = await _inAppService.SendToUserAsync(
+            var (success, messageId, errorMessage) = await _inAppService.SendToUserAsync(
                 userId: notification.RecipientId.Value,
                 title: notification.Subject ?? "Notification",
                 message: notification.Body,
@@ -207,13 +207,13 @@ namespace Booksy.ServiceCatalog.Infrastructure.BackgroundJobs
                 metadata: metadata,
                 cancellationToken: ct);
 
-            if (!result.Success)
+            if (!success)
             {
-                throw new InvalidOperationException($"Failed to send in-app notification: {result.ErrorMessage}");
+                throw new InvalidOperationException($"Failed to send in-app notification: {errorMessage}");
             }
 
             // In-app notifications don't have external message IDs
-            return notification.Id.Value.ToString();
+            return messageId ?? notification.Id.Value.ToString();
         }
     }
 }

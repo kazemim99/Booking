@@ -82,7 +82,9 @@ namespace Booksy.ServiceCatalog.Application.Services.BackgroundServices
                             notification.Subject,
                             notification.Body,
                             notification.PlainTextBody,
-                            cancellationToken);
+                            fromName: null,
+                            metadata: null,
+                            cancellationToken: cancellationToken);
                     }
 
                     if (notification.Channel.HasFlag(NotificationChannel.SMS))
@@ -90,7 +92,8 @@ namespace Booksy.ServiceCatalog.Application.Services.BackgroundServices
                         await smsService.SendSmsAsync(
                             notification.RecipientPhone ?? "",
                             notification.PlainTextBody ?? notification.Body,
-                            cancellationToken);
+                            metadata: null,
+                            cancellationToken: cancellationToken);
                     }
 
                     if (notification.Channel.HasFlag(NotificationChannel.PushNotification))

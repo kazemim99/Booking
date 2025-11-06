@@ -21,6 +21,8 @@ using Booksy.Infrastructure.Core.DependencyInjection;
 using Booksy.Infrastructure.Core.EventBus;
 using Booksy.Infrastructure.External.Notifications;
 using Booksy.Infrastructure.Core.EventBus.Abstractions;
+using Booksy.UserManagement.Application.Services.Interfaces;
+using Booksy.UserManagement.Infrastructure.Services.Application;
 
 namespace Booksy.UserManagement.Infrastructure.DependencyInjection
 {

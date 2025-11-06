@@ -1,4 +1,5 @@
 using Booksy.Core.Application.Abstractions.CQRS;
+using Booksy.Core.Domain.ValueObjects;
 using Booksy.UserManagement.Application.Commands.PhoneVerification.VerifyPhone;
 using Booksy.UserManagement.Domain.Repositories;
 using Booksy.UserManagement.Domain.ValueObjects;
@@ -32,7 +33,7 @@ public sealed class VerifyCodeCommandHandler : ICommandHandler<VerifyCodeCommand
         CancellationToken cancellationToken)
     {
         // Find verification by phone number
-        var phoneNumber = PhoneNumber.From(request.PhoneNumber);
+        var phoneNumber = PhoneNumber.Create(request.PhoneNumber);
         var verification = await _verificationRepo.GetByPhoneNumberAsync(phoneNumber, cancellationToken);
 
         if (verification == null)

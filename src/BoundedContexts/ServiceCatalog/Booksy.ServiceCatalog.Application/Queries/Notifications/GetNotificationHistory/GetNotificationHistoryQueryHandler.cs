@@ -57,11 +57,11 @@ namespace Booksy.ServiceCatalog.Application.Queries.Notifications.GetNotificatio
                 n.CreatedAt,
                 n.SentAt,
                 n.DeliveredAt,
-                n.FailedAt,
-                n.FailureReason,
-                n.ExternalMessageId,
+                n.DeliveryAttempts.FirstOrDefault(a => a.Status == Domain.Enums.NotificationStatus.Failed)?.AttemptedAt,
+                n.ErrorMessage,
+                n.GatewayMessageId,
                 n.AttemptCount,
-                n.Metadata.ToDictionary(kvp => kvp.Key, kvp => kvp.Value)))
+                n.Metadata.ToDictionary(kvp => kvp.Key, kvp => kvp.Value.ToString() ?? "")))
             .ToList();
 
             _logger.LogInformation(

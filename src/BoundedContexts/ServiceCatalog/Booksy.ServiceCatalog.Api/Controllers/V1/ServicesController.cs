@@ -18,6 +18,7 @@ using Booksy.ServiceCatalog.Application.Commands.Service.DeleteProviderService;
 using Booksy.ServiceCatalog.Application.Commands.Service.UpdateProviderService;
 using Booksy.ServiceCatalog.Domain.Repositories;
 using Booksy.ServiceCatalog.Application.Commands.Service.AddProviderService;
+using Microsoft.AspNetCore.RateLimiting;
 
 namespace Booksy.ServiceCatalog.API.Controllers.V1;
 

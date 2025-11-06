@@ -56,7 +56,7 @@ namespace Booksy.ServiceCatalog.Application.EventHandlers.Payments
                     <h3>Payment Details</h3>
                     <p><strong>Payment ID:</strong> {notification.PaymentId.Value}</p>
                     <p><strong>Failed At:</strong> {notification.FailedAt:yyyy-MM-dd HH:mm}</p>
-                    {(notification.BookingId.HasValue ? $"<p><strong>Booking ID:</strong> {notification.BookingId.Value.Value}</p>" : "")}
+                    {(notification.BookingId != null ? $"<p><strong>Booking ID:</strong> {notification.BookingId.Value}</p>" : "")}
                     <p><strong>Reason:</strong> {notification.FailureReason}</p>
                 </div>
 
@@ -84,7 +84,7 @@ namespace Booksy.ServiceCatalog.Application.EventHandlers.Payments
 
                 Payment ID: {notification.PaymentId.Value}
                 Failed At: {notification.FailedAt:yyyy-MM-dd HH:mm}
-                {(notification.BookingId.HasValue ? $"Booking ID: {notification.BookingId.Value.Value}" : "")}
+                {(notification.BookingId != null ? $"Booking ID: {notification.BookingId.Value}" : "")}
                 Reason: {notification.FailureReason}
 
                 What to do next:
