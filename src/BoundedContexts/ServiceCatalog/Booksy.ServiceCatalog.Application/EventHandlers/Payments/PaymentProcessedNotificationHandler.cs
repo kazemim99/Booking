@@ -1,12 +1,7 @@
 // ========================================
 // Booksy.ServiceCatalog.Application/EventHandlers/Payments/PaymentProcessedNotificationHandler.cs
 // ========================================
-using Booksy.Core.Application.Abstractions.Events;
-using Booksy.ServiceCatalog.Application.Commands.Notifications.SendNotification;
-using Booksy.ServiceCatalog.Domain.Enums;
-using Booksy.ServiceCatalog.Domain.Events;
-using MediatR;
-using Microsoft.Extensions.Logging;
+
 
 namespace Booksy.ServiceCatalog.Application.EventHandlers.Payments
 {

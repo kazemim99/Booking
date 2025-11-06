@@ -7,6 +7,7 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <ProjectReference Include="..\..\BoundedContexts\ServiceCatalog\Booksy.ServiceCatalog.Application\Booksy.ServiceCatalog.Application.csproj" />
     <ProjectReference Include="..\..\Infrastructure\Booksy.Infrastructure.Core\Booksy.Infrastructure.Core.csproj" />
     <ProjectReference Include="..\..\Infrastructure\Booksy.Infrastructure.External\Booksy.Infrastructure.External.csproj" />
     <ProjectReference Include="..\Booksy.UserManagement.Domain\Booksy.UserManagement.Domain.csproj" />

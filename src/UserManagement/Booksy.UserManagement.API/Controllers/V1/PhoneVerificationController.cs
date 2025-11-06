@@ -69,7 +69,7 @@ public class PhoneVerificationController : ControllerBase
             return BadRequest(new ApiErrorResult
             {
                 Message = $"Invalid verification purpose: {request.Purpose}",
-                StatusCode = (int)HttpStatusCode.BadRequest
+                StatusCode = HttpStatusCode.BadRequest.ToString()
             });
         }
 
