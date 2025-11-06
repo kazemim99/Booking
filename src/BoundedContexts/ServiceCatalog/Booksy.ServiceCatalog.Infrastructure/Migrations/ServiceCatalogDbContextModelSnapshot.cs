@@ -1034,74 +1034,6 @@ namespace Booksy.ServiceCatalog.Infrastructure.Migrations
 
             modelBuilder.Entity("Booksy.ServiceCatalog.Domain.Aggregates.BookingAggregate.Booking", b =>
                 {
-                    b.OwnsOne("Booksy.ServiceCatalog.Domain.ValueObjects.BookingPolicy", "Policy", b1 =>
-                        {
-                            b1.Property<Guid>("BookingId")
-                                .HasColumnType("uniqueidentifier");
-
-                            b1.Property<bool>("AllowRescheduling")
-                                .HasColumnType("bit")
-                                .HasColumnName("PolicyAllowRescheduling");
-
-                            b1.Property<decimal>("CancellationFeePercentage")
-                                .HasColumnType("decimal(5,2)")
-                                .HasColumnName("PolicyCancellationFeePercentage");
-
-                            b1.Property<int>("CancellationWindowHours")
-                                .HasColumnType("int")
-                                .HasColumnName("PolicyCancellationWindowHours");
-
-                            b1.Property<decimal>("DepositPercentage")
-                                .HasColumnType("decimal(5,2)")
-                                .HasColumnName("PolicyDepositPercentage");
-
-                            b1.Property<int>("MaxAdvanceBookingDays")
-                                .HasColumnType("int")
-                                .HasColumnName("PolicyMaxAdvanceBookingDays");
-
-                            b1.Property<int>("MinAdvanceBookingHours")
-                                .HasColumnType("int")
-                                .HasColumnName("PolicyMinAdvanceBookingHours");
-
-                            b1.Property<bool>("RequireDeposit")
-                                .HasColumnType("bit")
-                                .HasColumnName("PolicyRequireDeposit");
-
-                            b1.Property<int>("RescheduleWindowHours")
-                                .HasColumnType("int")
-                                .HasColumnName("PolicyRescheduleWindowHours");
-
-                            b1.HasKey("BookingId");
-
-                            b1.ToTable("Bookings", "ServiceCatalog");
-
-                            b1.WithOwner()
-                                .HasForeignKey("BookingId");
-                        });
-
-                    b.OwnsOne("Booksy.ServiceCatalog.Domain.ValueObjects.Price", "TotalPrice", b1 =>
-                        {
-                            b1.Property<Guid>("BookingId")
-                                .HasColumnType("uniqueidentifier");
-
-                            b1.Property<decimal>("Amount")
-                                .HasColumnType("decimal(18,2)")
-                                .HasColumnName("TotalPriceAmount");
-
-                            b1.Property<string>("Currency")
-                                .IsRequired()
-                                .HasMaxLength(3)
-                                .HasColumnType("nvarchar(3)")
-                                .HasColumnName("TotalPriceCurrency");
-
-                            b1.HasKey("BookingId");
-
-                            b1.ToTable("Bookings", "ServiceCatalog");
-
-                            b1.WithOwner()
-                                .HasForeignKey("BookingId");
-                        });
-
                     b.OwnsOne("Booksy.ServiceCatalog.Domain.ValueObjects.PaymentInfo", "PaymentInfo", b1 =>
                         {
                             b1.Property<Guid>("BookingId")
@@ -1248,6 +1180,51 @@ namespace Booksy.ServiceCatalog.Infrastructure.Migrations
                                 .IsRequired();
                         });
 
+                    b.OwnsOne("Booksy.ServiceCatalog.Domain.ValueObjects.BookingPolicy", "Policy", b1 =>
+                        {
+                            b1.Property<Guid>("BookingId")
+                                .HasColumnType("uniqueidentifier");
+
+                            b1.Property<bool>("AllowRescheduling")
+                                .HasColumnType("bit")
+                                .HasColumnName("PolicyAllowRescheduling");
+
+                            b1.Property<decimal>("CancellationFeePercentage")
+                                .HasColumnType("decimal(5,2)")
+                                .HasColumnName("PolicyCancellationFeePercentage");
+
+                            b1.Property<int>("CancellationWindowHours")
+                                .HasColumnType("int")
+                                .HasColumnName("PolicyCancellationWindowHours");
+
+                            b1.Property<decimal>("DepositPercentage")
+                                .HasColumnType("decimal(5,2)")
+                                .HasColumnName("PolicyDepositPercentage");
+
+                            b1.Property<int>("MaxAdvanceBookingDays")
+                                .HasColumnType("int")
+                                .HasColumnName("PolicyMaxAdvanceBookingDays");
+
+                            b1.Property<int>("MinAdvanceBookingHours")
+                                .HasColumnType("int")
+                                .HasColumnName("PolicyMinAdvanceBookingHours");
+
+                            b1.Property<bool>("RequireDeposit")
+                                .HasColumnType("bit")
+                                .HasColumnName("PolicyRequireDeposit");
+
+                            b1.Property<int>("RescheduleWindowHours")
+                                .HasColumnType("int")
+                                .HasColumnName("PolicyRescheduleWindowHours");
+
+                            b1.HasKey("BookingId");
+
+                            b1.ToTable("Bookings", "ServiceCatalog");
+
+                            b1.WithOwner()
+                                .HasForeignKey("BookingId");
+                        });
+
                     b.OwnsOne("Booksy.ServiceCatalog.Domain.ValueObjects.TimeSlot", "TimeSlot", b1 =>
                         {
                             b1.Property<Guid>("BookingId")
@@ -1260,6 +1237,29 @@ namespace Booksy.ServiceCatalog.Infrastructure.Migrations
                             b1.Property<DateTime>("StartTime")
                                 .HasColumnType("timestamp with time zone")
                                 .HasColumnName("StartTime");
+
+                            b1.HasKey("BookingId");
+
+                            b1.ToTable("Bookings", "ServiceCatalog");
+
+                            b1.WithOwner()
+                                .HasForeignKey("BookingId");
+                        });
+
+                    b.OwnsOne("Booksy.ServiceCatalog.Domain.ValueObjects.Price", "TotalPrice", b1 =>
+                        {
+                            b1.Property<Guid>("BookingId")
+                                .HasColumnType("uniqueidentifier");
+
+                            b1.Property<decimal>("Amount")
+                                .HasColumnType("decimal(18,2)")
+                                .HasColumnName("TotalPriceAmount");
+
+                            b1.Property<string>("Currency")
+                                .IsRequired()
+                                .HasMaxLength(3)
+                                .HasColumnType("nvarchar(3)")
+                                .HasColumnName("TotalPriceCurrency");
 
                             b1.HasKey("BookingId");
 
@@ -1291,6 +1291,75 @@ namespace Booksy.ServiceCatalog.Infrastructure.Migrations
 
             modelBuilder.Entity("Booksy.ServiceCatalog.Domain.Aggregates.PaymentAggregate.Payment", b =>
                 {
+                    b.OwnsOne("Booksy.Core.Domain.ValueObjects.Money", "Amount", b1 =>
+                        {
+                            b1.Property<Guid>("PaymentId")
+                                .HasColumnType("uniqueidentifier");
+
+                            b1.Property<decimal>("Amount")
+                                .HasColumnType("decimal(18,2)")
+                                .HasColumnName("Amount");
+
+                            b1.Property<string>("Currency")
+                                .IsRequired()
+                                .HasMaxLength(3)
+                                .HasColumnType("nvarchar(3)")
+                                .HasColumnName("Currency");
+
+                            b1.HasKey("PaymentId");
+
+                            b1.ToTable("Payments", "ServiceCatalog");
+
+                            b1.WithOwner()
+                                .HasForeignKey("PaymentId");
+                        });
+
+                    b.OwnsOne("Booksy.Core.Domain.ValueObjects.Money", "PaidAmount", b1 =>
+                        {
+                            b1.Property<Guid>("PaymentId")
+                                .HasColumnType("uniqueidentifier");
+
+                            b1.Property<decimal>("Amount")
+                                .HasColumnType("decimal(18,2)")
+                                .HasColumnName("PaidAmount");
+
+                            b1.Property<string>("Currency")
+                                .IsRequired()
+                                .HasMaxLength(3)
+                                .HasColumnType("nvarchar(3)")
+                                .HasColumnName("PaidCurrency");
+
+                            b1.HasKey("PaymentId");
+
+                            b1.ToTable("Payments", "ServiceCatalog");
+
+                            b1.WithOwner()
+                                .HasForeignKey("PaymentId");
+                        });
+
+                    b.OwnsOne("Booksy.Core.Domain.ValueObjects.Money", "RefundedAmount", b1 =>
+                        {
+                            b1.Property<Guid>("PaymentId")
+                                .HasColumnType("uniqueidentifier");
+
+                            b1.Property<decimal>("Amount")
+                                .HasColumnType("decimal(18,2)")
+                                .HasColumnName("RefundedAmount");
+
+                            b1.Property<string>("Currency")
+                                .IsRequired()
+                                .HasMaxLength(3)
+                                .HasColumnType("nvarchar(3)")
+                                .HasColumnName("RefundedCurrency");
+
+                            b1.HasKey("PaymentId");
+
+                            b1.ToTable("Payments", "ServiceCatalog");
+
+                            b1.WithOwner()
+                                .HasForeignKey("PaymentId");
+                        });
+
                     b.OwnsMany("Booksy.ServiceCatalog.Domain.Aggregates.PaymentAggregate.Entities.Transaction", "Transactions", b1 =>
                         {
                             b1.Property<Guid>("Id")
@@ -1381,75 +1450,6 @@ namespace Booksy.ServiceCatalog.Infrastructure.Migrations
 
                             b1.Navigation("Amount")
                                 .IsRequired();
-                        });
-
-                    b.OwnsOne("Booksy.Core.Domain.ValueObjects.Money", "Amount", b1 =>
-                        {
-                            b1.Property<Guid>("PaymentId")
-                                .HasColumnType("uniqueidentifier");
-
-                            b1.Property<decimal>("Amount")
-                                .HasColumnType("decimal(18,2)")
-                                .HasColumnName("Amount");
-
-                            b1.Property<string>("Currency")
-                                .IsRequired()
-                                .HasMaxLength(3)
-                                .HasColumnType("nvarchar(3)")
-                                .HasColumnName("Currency");
-
-                            b1.HasKey("PaymentId");
-
-                            b1.ToTable("Payments", "ServiceCatalog");
-
-                            b1.WithOwner()
-                                .HasForeignKey("PaymentId");
-                        });
-
-                    b.OwnsOne("Booksy.Core.Domain.ValueObjects.Money", "PaidAmount", b1 =>
-                        {
-                            b1.Property<Guid>("PaymentId")
-                                .HasColumnType("uniqueidentifier");
-
-                            b1.Property<decimal>("Amount")
-                                .HasColumnType("decimal(18,2)")
-                                .HasColumnName("PaidAmount");
-
-                            b1.Property<string>("Currency")
-                                .IsRequired()
-                                .HasMaxLength(3)
-                                .HasColumnType("nvarchar(3)")
-                                .HasColumnName("PaidCurrency");
-
-                            b1.HasKey("PaymentId");
-
-                            b1.ToTable("Payments", "ServiceCatalog");
-
-                            b1.WithOwner()
-                                .HasForeignKey("PaymentId");
-                        });
-
-                    b.OwnsOne("Booksy.Core.Domain.ValueObjects.Money", "RefundedAmount", b1 =>
-                        {
-                            b1.Property<Guid>("PaymentId")
-                                .HasColumnType("uniqueidentifier");
-
-                            b1.Property<decimal>("Amount")
-                                .HasColumnType("decimal(18,2)")
-                                .HasColumnName("RefundedAmount");
-
-                            b1.Property<string>("Currency")
-                                .IsRequired()
-                                .HasMaxLength(3)
-                                .HasColumnType("nvarchar(3)")
-                                .HasColumnName("RefundedCurrency");
-
-                            b1.HasKey("PaymentId");
-
-                            b1.ToTable("Payments", "ServiceCatalog");
-
-                            b1.WithOwner()
-                                .HasForeignKey("PaymentId");
                         });
 
                     b.Navigation("Amount")
@@ -1547,6 +1547,162 @@ namespace Booksy.ServiceCatalog.Infrastructure.Migrations
 
             modelBuilder.Entity("Booksy.ServiceCatalog.Domain.Aggregates.Provider", b =>
                 {
+                    b.OwnsOne("Booksy.ServiceCatalog.Domain.ValueObjects.BusinessAddress", "Address", b1 =>
+                        {
+                            b1.Property<Guid>("ProviderId")
+                                .HasColumnType("uniqueidentifier");
+
+                            b1.Property<string>("City")
+                                .IsRequired()
+                                .HasMaxLength(100)
+                                .HasColumnType("nvarchar(100)")
+                                .HasColumnName("AddressCity");
+
+                            b1.Property<int?>("CityId")
+                                .HasColumnType("int")
+                                .HasColumnName("AddressCityId");
+
+                            b1.Property<string>("Country")
+                                .IsRequired()
+                                .HasMaxLength(100)
+                                .HasColumnType("nvarchar(100)")
+                                .HasColumnName("AddressCountry");
+
+                            b1.Property<string>("FormattedAddress")
+                                .IsRequired()
+                                .HasMaxLength(500)
+                                .HasColumnType("nvarchar(500)")
+                                .HasColumnName("AddressFormattedAddress");
+
+                            b1.Property<double?>("Latitude")
+                                .HasPrecision(10, 8)
+                                .HasColumnType("float(10)")
+                                .HasColumnName("AddressLatitude");
+
+                            b1.Property<double?>("Longitude")
+                                .HasPrecision(11, 8)
+                                .HasColumnType("float(11)")
+                                .HasColumnName("AddressLongitude");
+
+                            b1.Property<string>("PostalCode")
+                                .IsRequired()
+                                .HasMaxLength(20)
+                                .HasColumnType("nvarchar(20)")
+                                .HasColumnName("AddressPostalCode");
+
+                            b1.Property<int?>("ProvinceId")
+                                .HasColumnType("int")
+                                .HasColumnName("AddressProvinceId");
+
+                            b1.Property<string>("State")
+                                .IsRequired()
+                                .HasMaxLength(100)
+                                .HasColumnType("nvarchar(100)")
+                                .HasColumnName("AddressState");
+
+                            b1.Property<string>("Street")
+                                .IsRequired()
+                                .HasMaxLength(200)
+                                .HasColumnType("nvarchar(200)")
+                                .HasColumnName("AddressStreet");
+
+                            b1.HasKey("ProviderId");
+
+                            b1.ToTable("Providers", "ServiceCatalog");
+
+                            b1.WithOwner()
+                                .HasForeignKey("ProviderId");
+                        });
+
+                    b.OwnsOne("Booksy.ServiceCatalog.Domain.ValueObjects.ContactInfo", "ContactInfo", b1 =>
+                        {
+                            b1.Property<Guid>("ProviderId")
+                                .HasColumnType("uniqueidentifier");
+
+                            b1.Property<string>("Website")
+                                .HasMaxLength(500)
+                                .HasColumnType("nvarchar(500)")
+                                .HasColumnName("Website");
+
+                            b1.HasKey("ProviderId");
+
+                            b1.ToTable("Providers", "ServiceCatalog");
+
+                            b1.WithOwner()
+                                .HasForeignKey("ProviderId");
+
+                            b1.OwnsOne("Booksy.Core.Domain.ValueObjects.Email", "Email", b2 =>
+                                {
+                                    b2.Property<Guid>("ContactInfoProviderId")
+                                        .HasColumnType("uniqueidentifier");
+
+                                    b2.Property<string>("Value")
+                                        .IsRequired()
+                                        .HasMaxLength(320)
+                                        .HasColumnType("nvarchar(320)")
+                                        .HasColumnName("Email");
+
+                                    b2.HasKey("ContactInfoProviderId");
+
+                                    b2.ToTable("Providers", "ServiceCatalog");
+
+                                    b2.WithOwner()
+                                        .HasForeignKey("ContactInfoProviderId");
+                                });
+
+                            b1.OwnsOne("Booksy.Core.Domain.ValueObjects.PhoneNumber", "PrimaryPhone", b2 =>
+                                {
+                                    b2.Property<Guid>("ContactInfoProviderId")
+                                        .HasColumnType("uniqueidentifier");
+
+                                    b2.Property<string>("CountryCode")
+                                        .HasMaxLength(5)
+                                        .HasColumnType("nvarchar(5)")
+                                        .HasColumnName("PrimaryPhoneCountryCode");
+
+                                    b2.Property<string>("Value")
+                                        .HasMaxLength(20)
+                                        .HasColumnType("nvarchar(20)")
+                                        .HasColumnName("PrimaryPhoneNumber");
+
+                                    b2.HasKey("ContactInfoProviderId");
+
+                                    b2.ToTable("Providers", "ServiceCatalog");
+
+                                    b2.WithOwner()
+                                        .HasForeignKey("ContactInfoProviderId");
+                                });
+
+                            b1.OwnsOne("Booksy.Core.Domain.ValueObjects.PhoneNumber", "SecondaryPhone", b2 =>
+                                {
+                                    b2.Property<Guid>("ContactInfoProviderId")
+                                        .HasColumnType("uniqueidentifier");
+
+                                    b2.Property<string>("CountryCode")
+                                        .HasMaxLength(5)
+                                        .HasColumnType("nvarchar(5)")
+                                        .HasColumnName("SecondaryPhoneCountryCode");
+
+                                    b2.Property<string>("Value")
+                                        .HasMaxLength(20)
+                                        .HasColumnType("nvarchar(20)")
+                                        .HasColumnName("SecondaryPhoneNumber");
+
+                                    b2.HasKey("ContactInfoProviderId");
+
+                                    b2.ToTable("Providers", "ServiceCatalog");
+
+                                    b2.WithOwner()
+                                        .HasForeignKey("ContactInfoProviderId");
+                                });
+
+                            b1.Navigation("Email");
+
+                            b1.Navigation("PrimaryPhone");
+
+                            b1.Navigation("SecondaryPhone");
+                        });
+
                     b.OwnsOne("Booksy.ServiceCatalog.Domain.Entities.BusinessProfile", "Profile", b1 =>
                         {
                             b1.Property<Guid>("ProviderId")
@@ -1712,162 +1868,6 @@ namespace Booksy.ServiceCatalog.Infrastructure.Migrations
                             b1.Navigation("GalleryImages");
                         });
 
-                    b.OwnsOne("Booksy.ServiceCatalog.Domain.ValueObjects.BusinessAddress", "Address", b1 =>
-                        {
-                            b1.Property<Guid>("ProviderId")
-                                .HasColumnType("uniqueidentifier");
-
-                            b1.Property<string>("City")
-                                .IsRequired()
-                                .HasMaxLength(100)
-                                .HasColumnType("nvarchar(100)")
-                                .HasColumnName("AddressCity");
-
-                            b1.Property<int?>("CityId")
-                                .HasColumnType("int")
-                                .HasColumnName("AddressCityId");
-
-                            b1.Property<string>("Country")
-                                .IsRequired()
-                                .HasMaxLength(100)
-                                .HasColumnType("nvarchar(100)")
-                                .HasColumnName("AddressCountry");
-
-                            b1.Property<string>("FormattedAddress")
-                                .IsRequired()
-                                .HasMaxLength(500)
-                                .HasColumnType("nvarchar(500)")
-                                .HasColumnName("AddressFormattedAddress");
-
-                            b1.Property<double?>("Latitude")
-                                .HasPrecision(10, 8)
-                                .HasColumnType("float(10)")
-                                .HasColumnName("AddressLatitude");
-
-                            b1.Property<double?>("Longitude")
-                                .HasPrecision(11, 8)
-                                .HasColumnType("float(11)")
-                                .HasColumnName("AddressLongitude");
-
-                            b1.Property<string>("PostalCode")
-                                .IsRequired()
-                                .HasMaxLength(20)
-                                .HasColumnType("nvarchar(20)")
-                                .HasColumnName("AddressPostalCode");
-
-                            b1.Property<int?>("ProvinceId")
-                                .HasColumnType("int")
-                                .HasColumnName("AddressProvinceId");
-
-                            b1.Property<string>("State")
-                                .IsRequired()
-                                .HasMaxLength(100)
-                                .HasColumnType("nvarchar(100)")
-                                .HasColumnName("AddressState");
-
-                            b1.Property<string>("Street")
-                                .IsRequired()
-                                .HasMaxLength(200)
-                                .HasColumnType("nvarchar(200)")
-                                .HasColumnName("AddressStreet");
-
-                            b1.HasKey("ProviderId");
-
-                            b1.ToTable("Providers", "ServiceCatalog");
-
-                            b1.WithOwner()
-                                .HasForeignKey("ProviderId");
-                        });
-
-                    b.OwnsOne("Booksy.ServiceCatalog.Domain.ValueObjects.ContactInfo", "ContactInfo", b1 =>
-                        {
-                            b1.Property<Guid>("ProviderId")
-                                .HasColumnType("uniqueidentifier");
-
-                            b1.Property<string>("Website")
-                                .HasMaxLength(500)
-                                .HasColumnType("nvarchar(500)")
-                                .HasColumnName("Website");
-
-                            b1.HasKey("ProviderId");
-
-                            b1.ToTable("Providers", "ServiceCatalog");
-
-                            b1.WithOwner()
-                                .HasForeignKey("ProviderId");
-
-                            b1.OwnsOne("Booksy.Core.Domain.ValueObjects.Email", "Email", b2 =>
-                                {
-                                    b2.Property<Guid>("ContactInfoProviderId")
-                                        .HasColumnType("uniqueidentifier");
-
-                                    b2.Property<string>("Value")
-                                        .IsRequired()
-                                        .HasMaxLength(320)
-                                        .HasColumnType("nvarchar(320)")
-                                        .HasColumnName("Email");
-
-                                    b2.HasKey("ContactInfoProviderId");
-
-                                    b2.ToTable("Providers", "ServiceCatalog");
-
-                                    b2.WithOwner()
-                                        .HasForeignKey("ContactInfoProviderId");
-                                });
-
-                            b1.OwnsOne("Booksy.Core.Domain.ValueObjects.PhoneNumber", "PrimaryPhone", b2 =>
-                                {
-                                    b2.Property<Guid>("ContactInfoProviderId")
-                                        .HasColumnType("uniqueidentifier");
-
-                                    b2.Property<string>("CountryCode")
-                                        .HasMaxLength(5)
-                                        .HasColumnType("nvarchar(5)")
-                                        .HasColumnName("PrimaryPhoneCountryCode");
-
-                                    b2.Property<string>("Value")
-                                        .HasMaxLength(20)
-                                        .HasColumnType("nvarchar(20)")
-                                        .HasColumnName("PrimaryPhoneNumber");
-
-                                    b2.HasKey("ContactInfoProviderId");
-
-                                    b2.ToTable("Providers", "ServiceCatalog");
-
-                                    b2.WithOwner()
-                                        .HasForeignKey("ContactInfoProviderId");
-                                });
-
-                            b1.OwnsOne("Booksy.Core.Domain.ValueObjects.PhoneNumber", "SecondaryPhone", b2 =>
-                                {
-                                    b2.Property<Guid>("ContactInfoProviderId")
-                                        .HasColumnType("uniqueidentifier");
-
-                                    b2.Property<string>("CountryCode")
-                                        .HasMaxLength(5)
-                                        .HasColumnType("nvarchar(5)")
-                                        .HasColumnName("SecondaryPhoneCountryCode");
-
-                                    b2.Property<string>("Value")
-                                        .HasMaxLength(20)
-                                        .HasColumnType("nvarchar(20)")
-                                        .HasColumnName("SecondaryPhoneNumber");
-
-                                    b2.HasKey("ContactInfoProviderId");
-
-                                    b2.ToTable("Providers", "ServiceCatalog");
-
-                                    b2.WithOwner()
-                                        .HasForeignKey("ContactInfoProviderId");
-                                });
-
-                            b1.Navigation("Email");
-
-                            b1.Navigation("PrimaryPhone");
-
-                            b1.Navigation("SecondaryPhone");
-                        });
-
                     b.Navigation("Address")
                         .IsRequired();
 
@@ -1950,6 +1950,35 @@ namespace Booksy.ServiceCatalog.Infrastructure.Migrations
                             b1.Property<int>("RescheduleWindowHours")
                                 .HasColumnType("int")
                                 .HasColumnName("BookingPolicyRescheduleWindowHours");
+
+                            b1.HasKey("ServiceId");
+
+                            b1.ToTable("Services", "ServiceCatalog");
+
+                            b1.WithOwner()
+                                .HasForeignKey("ServiceId");
+                        });
+
+                    b.OwnsOne("Booksy.ServiceCatalog.Domain.ValueObjects.ServiceCategory", "Category", b1 =>
+                        {
+                            b1.Property<Guid>("ServiceId")
+                                .HasColumnType("uniqueidentifier");
+
+                            b1.Property<string>("Description")
+                                .HasMaxLength(500)
+                                .HasColumnType("nvarchar(500)")
+                                .HasColumnName("CategoryDescription");
+
+                            b1.Property<string>("IconUrl")
+                                .HasMaxLength(500)
+                                .HasColumnType("nvarchar(500)")
+                                .HasColumnName("CategoryIconUrl");
+
+                            b1.Property<string>("Name")
+                                .IsRequired()
+                                .HasMaxLength(100)
+                                .HasColumnType("nvarchar(100)")
+                                .HasColumnName("CategoryName");
 
                             b1.HasKey("ServiceId");
 
@@ -2050,35 +2079,6 @@ namespace Booksy.ServiceCatalog.Infrastructure.Migrations
 
                             b1.Navigation("Price")
                                 .IsRequired();
-                        });
-
-                    b.OwnsOne("Booksy.ServiceCatalog.Domain.ValueObjects.ServiceCategory", "Category", b1 =>
-                        {
-                            b1.Property<Guid>("ServiceId")
-                                .HasColumnType("uniqueidentifier");
-
-                            b1.Property<string>("Description")
-                                .HasMaxLength(500)
-                                .HasColumnType("nvarchar(500)")
-                                .HasColumnName("CategoryDescription");
-
-                            b1.Property<string>("IconUrl")
-                                .HasMaxLength(500)
-                                .HasColumnType("nvarchar(500)")
-                                .HasColumnName("CategoryIconUrl");
-
-                            b1.Property<string>("Name")
-                                .IsRequired()
-                                .HasMaxLength(100)
-                                .HasColumnType("nvarchar(100)")
-                                .HasColumnName("CategoryName");
-
-                            b1.HasKey("ServiceId");
-
-                            b1.ToTable("Services", "ServiceCatalog");
-
-                            b1.WithOwner()
-                                .HasForeignKey("ServiceId");
                         });
 
                     b.Navigation("BasePrice")

@@ -90,8 +90,8 @@ namespace Booksy.ServiceCatalog.Infrastructure.Persistence.Configurations
                 .HasConversion<string>()
                 .HasMaxLength(50);
 
-            // Price (Owned Value Object)
-            builder.OwnsOne(b => b.TotalPrice, price =>
+            // Price (Complex Value Object) - Use ComplexProperty to avoid key issues
+            builder.ComplexProperty(b => b.TotalPrice, price =>
             {
                 price.Property(p => p.Amount)
                     .HasColumnName("TotalPriceAmount")

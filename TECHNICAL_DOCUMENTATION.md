@@ -1564,6 +1564,94 @@ builder.OwnsOne(s => s.BookingPolicy, policy =>
 
 **Impact**: Allows migration to succeed (now ready to run)
 
+### Session: 2025-11-06 - EF Core ComplexProperty Fix **[CRITICAL]**
+
+#### Critical Fix: Booking.TotalPrice Composite Key Issue ✅
+
+**Problem**: EF Core error when adding Booking entities to DbContext:
+```
+The property 'Booking.TotalPrice#Price.BookingId' is part of a key and so cannot be modified or marked as modified.
+```
+
+**Root Cause**:
+When using `OwnsOne()` for inline value objects (stored in same table), EF Core automatically creates a shadow property for the owner's key (BookingId) and includes it as part of the owned type's composite key. When trying to add a new Booking entity, EF Core attempts to modify this shadow property, which fails because it's part of a key.
+
+**Solution**: Use `ComplexProperty()` instead of `OwnsOne()` for simple value objects
+
+**File**: [BookingConfiguration.cs:93-105](c:\Repos\Booksy\src\BoundedContexts\ServiceCatalog\Booksy.ServiceCatalog.Infrastructure\Persistence\Configurations\BookingConfiguration.cs#L93-L105)
+
+**Change Applied**:
+```csharp
+// ❌ WRONG - Creates composite key with shadow BookingId property
+builder.OwnsOne(b => b.TotalPrice, price =>
+{
+    price.Property(p => p.Amount)
+        .HasColumnName("TotalPriceAmount")
+        .HasColumnType("decimal(18,2)")
+        .IsRequired();
+
+    price.Property(p => p.Currency)
+        .HasColumnName("TotalPriceCurrency")
+        .HasMaxLength(3)
+        .IsRequired();
+});
+
+// ✅ CORRECT - No composite key, no shadow properties
+builder.ComplexProperty(b => b.TotalPrice, price =>
+{
+    price.Property(p => p.Amount)
+        .HasColumnName("TotalPriceAmount")
+        .HasColumnType("decimal(18,2)")
+        .IsRequired();
+
+    price.Property(p => p.Currency)
+        .HasColumnName("TotalPriceCurrency")
+        .HasMaxLength(3)
+        .IsRequired();
+});
+```
+
+**When to Use ComplexProperty vs OwnsOne**:
+
+| Scenario | Use ComplexProperty | Use OwnsOne |
+|----------|-------------------|-------------|
+| Simple value object (Price, Money) stored inline | ✅ YES | ❌ NO |
+| Value object with nested owned types (PaymentInfo) | ❌ NO | ✅ YES |
+| Value object in separate table | ❌ NO | ✅ YES (with ToTable) |
+| Collection of value objects | ❌ NO | ✅ YES (with OwnsMany) |
+
+**Pattern Recognition**:
+
+✅ **Use ComplexProperty for**:
+- `Price`, `Money` - Single-level value objects
+- `Duration` - Simple value objects
+- Any value object that doesn't contain other owned types
+
+✅ **Use OwnsOne for**:
+- `PaymentInfo` - Contains nested Money objects
+- `BookingPolicy` - Contains multiple properties
+- Any value object that needs separate table or contains owned types
+
+**Impact on Tests**:
+- `GetMyBookings_ShouldReturnCustomerBookings` test now **PASSES** ✅
+- `GetMyBookings_WithStatusFilter_ShouldReturnFilteredBookings` test now runs (fails on business rule, not EF Core)
+
+**Related EF Core Concepts**:
+- **ComplexProperty**: EF Core 8+ feature for value objects without identity
+- **OwnsOne**: Traditional owned entity with potential composite key
+- **Shadow Properties**: Properties created by EF Core that don't exist in C# model
+- **Table Splitting**: Multiple entities sharing same table (common with OwnsOne)
+
+**Similar Fixes Applied**:
+- Provider.Profile - Uses OwnsOne (nested owned GalleryImages collection)
+- Payment.Amount - Uses OwnsOne (similar to Money, may need review)
+- Booking.PaymentInfo - Uses OwnsOne (correctly, has nested owned types)
+
+**Developer Guideline**:
+> **Rule of Thumb**: If your value object is a simple data structure (2-3 properties, no nesting, stored inline), use `ComplexProperty`. If it has nested owned types, collections, or needs a separate table, use `OwnsOne`.
+
+---
+
 ### Session: 2025-11-06 - Payment & Financial System Implementation **[NEW]**
 
 #### 1. Payment & Financial Domain (Completed ✅)
