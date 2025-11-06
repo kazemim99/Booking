@@ -74,6 +74,7 @@ namespace Booksy.ServiceCatalog.Infrastructure.DependencyInjection
             services.AddScoped<IBookingWriteRepository, BookingWriteRepository>();
 
             // Notification Repositories
+            services.AddScoped<INotificationReadRepository, NotificationReadRepository>();
             services.AddScoped<INotificationWriteRepository, NotificationWriteRepository>();
             services.AddScoped<INotificationTemplateRepository, NotificationTemplateRepository>();
             services.AddScoped<IUserNotificationPreferencesRepository, UserNotificationPreferencesRepository>();
