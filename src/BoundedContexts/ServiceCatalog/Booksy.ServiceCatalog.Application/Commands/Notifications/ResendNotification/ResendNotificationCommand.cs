@@ -9,5 +9,6 @@ namespace Booksy.ServiceCatalog.Application.Commands.Notifications.ResendNotific
     /// Command to resend a failed notification
     /// </summary>
     public sealed record ResendNotificationCommand(
-        Guid NotificationId) : ICommand<ResendNotificationResult>;
+        Guid NotificationId,
+        Guid? IdempotencyKey = null) : ICommand<ResendNotificationResult>;
 }

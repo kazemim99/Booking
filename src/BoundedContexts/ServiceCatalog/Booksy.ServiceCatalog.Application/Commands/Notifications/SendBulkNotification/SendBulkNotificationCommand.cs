@@ -20,5 +20,6 @@ namespace Booksy.ServiceCatalog.Application.Commands.Notifications.SendBulkNotif
         string? TemplateId = null,
         Dictionary<string, string>? TemplateData = null,
         string? CampaignId = null,
-        Dictionary<string, string>? Metadata = null) : ICommand<SendBulkNotificationResult>;
+        Dictionary<string, string>? Metadata = null,
+        Guid? IdempotencyKey = null) : ICommand<SendBulkNotificationResult>;
 }
