@@ -10,8 +10,11 @@ namespace Booksy.ServiceCatalog.Application.Commands.Notifications.SendNotificat
     /// </summary>
     public sealed record SendNotificationResult(
         Guid NotificationId,
+        bool Success,
+        NotificationChannel Channel,
         NotificationStatus Status,
         DateTime CreatedAt,
+        DateTime? SentAt = null,
         string? GatewayMessageId = null,
         string? ErrorMessage = null);
 }

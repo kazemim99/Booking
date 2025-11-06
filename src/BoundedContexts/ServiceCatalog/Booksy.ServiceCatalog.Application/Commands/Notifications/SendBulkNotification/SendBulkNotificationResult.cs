@@ -8,6 +8,7 @@ namespace Booksy.ServiceCatalog.Application.Commands.Notifications.SendBulkNotif
     /// </summary>
     public sealed record SendBulkNotificationResult(
         string BatchId,
+        int TotalCount,
         int TotalRecipients,
         int SuccessCount,
         int FailureCount,

@@ -97,8 +97,11 @@ namespace Booksy.ServiceCatalog.Application.Commands.Notifications.SendNotificat
 
             return new SendNotificationResult(
                 notification.Id.Value,
+                notification.Status == NotificationStatus.Delivered || notification.Status == NotificationStatus.Sent,
+                notification.Channel,
                 notification.Status,
                 notification.CreatedAt,
+                notification.SentAt,
                 notification.GatewayMessageId,
                 notification.ErrorMessage);
         }

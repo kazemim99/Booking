@@ -131,6 +131,75 @@ namespace Booksy.ServiceCatalog.Domain.Aggregates.NotificationAggregate
             return new Notification(recipientId, type, channel, subject, body, priority, plainTextBody, scheduledFor);
         }
 
+        /// <summary>
+        /// Creates an immediate notification to be sent right away
+        /// </summary>
+        public static Notification CreateImmediate(
+            UserId recipientId,
+            NotificationType type,
+            NotificationChannel channel,
+            string subject,
+            string body,
+            NotificationPriority priority = NotificationPriority.Normal,
+            string? plainTextBody = null,
+            string? recipientEmail = null,
+            string? recipientPhone = null)
+        {
+            if (string.IsNullOrWhiteSpace(subject))
+                throw new ArgumentException("Subject cannot be empty", nameof(subject));
+
+            if (string.IsNullOrWhiteSpace(body))
+                throw new ArgumentException("Body cannot be empty", nameof(body));
+
+            var notification = new Notification(recipientId, type, channel, subject, body, priority, plainTextBody, scheduledFor: null);
+
+            // Set recipient contact information
+            if (!string.IsNullOrWhiteSpace(recipientEmail) || !string.IsNullOrWhiteSpace(recipientPhone))
+            {
+                notification.SetRecipientContact(recipientEmail, recipientPhone, null);
+            }
+
+            return notification;
+        }
+
+        /// <summary>
+        /// Creates a scheduled notification to be sent at a specific time
+        /// </summary>
+        public static Notification Schedule(
+            UserId recipientId,
+            NotificationType type,
+            NotificationChannel channel,
+            string subject,
+            string body,
+            DateTime scheduledFor,
+            NotificationPriority priority = NotificationPriority.Normal,
+            string? plainTextBody = null,
+            string? recipientEmail = null,
+            string? recipientPhone = null)
+        {
+            if (string.IsNullOrWhiteSpace(subject))
+                throw new ArgumentException("Subject cannot be empty", nameof(subject));
+
+            if (string.IsNullOrWhiteSpace(body))
+                throw new ArgumentException("Body cannot be empty", nameof(body));
+
+            if (scheduledFor <= DateTime.UtcNow)
+                throw new ArgumentException("Scheduled time must be in the future", nameof(scheduledFor));
+
+            var notification = new Notification(recipientId, type, channel, subject, body, priority, plainTextBody, scheduledFor);
+
+            // Set recipient contact information
+            if (!string.IsNullOrWhiteSpace(recipientEmail) || !string.IsNullOrWhiteSpace(recipientPhone))
+            {
+                notification.SetRecipientContact(recipientEmail, recipientPhone, null);
+            }
+
+            // Set status to Queued for scheduled notifications
+            notification.Status = NotificationStatus.Queued;
+
+            return notification;
+        }
+
         public void SetRecipientContact(string? email, string? phone, string? name)
         {
             RecipientEmail = email;

@@ -149,7 +149,8 @@ namespace Booksy.ServiceCatalog.Application.Commands.Notifications.SendBulkNotif
 
             return new SendBulkNotificationResult(
                 batchId,
-                command.RecipientIds.Count,
+                command.RecipientIds.Count, // TotalCount
+                command.RecipientIds.Count, // TotalRecipients
                 successCount,
                 failureCount,
                 notificationIds,
