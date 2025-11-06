@@ -606,4 +606,110 @@ public abstract class ServiceCatalogIntegrationTestBase
 
         return provider;
     }
+
+    // ================================================
+    // NOTIFICATION HELPERS
+    // ================================================
+
+    /// <summary>
+    /// Find a notification by ID
+    /// </summary>
+    protected async Task<Domain.Aggregates.NotificationAggregate.Notification?> FindNotificationAsync(Guid notificationId)
+    {
+        return await DbContext.Notifications
+            .AsNoTracking()
+            .FirstOrDefaultAsync(n => n.Id == Domain.ValueObjects.NotificationId.From(notificationId));
+    }
+
+    /// <summary>
+    /// Get all notifications for a user
+    /// </summary>
+    protected async Task<List<Domain.Aggregates.NotificationAggregate.Notification>> GetUserNotificationsAsync(Guid userId)
+    {
+        return await DbContext.Notifications
+            .Where(n => n.RecipientId == UserId.From(userId))
+            .ToListAsync();
+    }
+
+    /// <summary>
+    /// Create a test notification for a user
+    /// </summary>
+    protected async Task<Domain.Aggregates.NotificationAggregate.Notification> CreateTestNotificationAsync(
+        Guid userId,
+        NotificationType type = NotificationType.BookingConfirmation,
+        NotificationChannel channel = NotificationChannel.Email,
+        string subject = "Test Notification",
+        string body = "Test notification body",
+        string? recipientEmail = "test@test.com",
+        string? recipientPhone = null)
+    {
+        var notification = Domain.Aggregates.NotificationAggregate.Notification.CreateImmediate(
+            UserId.From(userId),
+            type,
+            channel,
+            subject,
+            body,
+            NotificationPriority.Normal,
+            recipientEmail: recipientEmail,
+            recipientPhone: recipientPhone);
+
+        await CreateEntityAsync(notification);
+        return notification;
+    }
+
+    /// <summary>
+    /// Create a scheduled test notification
+    /// </summary>
+    protected async Task<Domain.Aggregates.NotificationAggregate.Notification> CreateScheduledTestNotificationAsync(
+        Guid userId,
+        DateTime scheduledFor,
+        NotificationType type = NotificationType.BookingReminder,
+        NotificationChannel channel = NotificationChannel.Email,
+        string subject = "Scheduled Notification",
+        string body = "Scheduled notification body",
+        string? recipientEmail = "test@test.com")
+    {
+        var notification = Domain.Aggregates.NotificationAggregate.Notification.Schedule(
+            UserId.From(userId),
+            type,
+            channel,
+            subject,
+            body,
+            scheduledFor,
+            NotificationPriority.Normal,
+            recipientEmail: recipientEmail);
+
+        await CreateEntityAsync(notification);
+        return notification;
+    }
+
+    /// <summary>
+    /// Assert that a notification exists in the database
+    /// </summary>
+    protected async Task AssertNotificationExistsAsync(Guid notificationId)
+    {
+        var notification = await FindNotificationAsync(notificationId);
+        notification.Should().NotBeNull($"Notification with ID {notificationId} should exist");
+    }
+
+    /// <summary>
+    /// Assert that a notification has a specific status
+    /// </summary>
+    protected async Task AssertNotificationStatusAsync(Guid notificationId, NotificationStatus expectedStatus)
+    {
+        var notification = await FindNotificationAsync(notificationId);
+        notification.Should().NotBeNull();
+        notification!.Status.Should().Be(expectedStatus,
+            $"Notification {notificationId} should have status {expectedStatus}");
+    }
+
+    /// <summary>
+    /// Assert that a user has a specific number of notifications
+    /// </summary>
+    protected async Task AssertUserNotificationCountAsync(Guid userId, int expectedCount)
+    {
+        var notifications = await GetUserNotificationsAsync(userId);
+        notifications.Should().HaveCount(expectedCount,
+            $"User {userId} should have {expectedCount} notifications");
+    }
 }
