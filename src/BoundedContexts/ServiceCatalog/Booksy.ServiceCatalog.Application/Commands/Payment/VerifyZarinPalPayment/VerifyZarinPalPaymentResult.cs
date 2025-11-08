@@ -10,10 +10,11 @@ namespace Booksy.ServiceCatalog.Application.Commands.Payment.VerifyZarinPalPayme
         Guid PaymentId,
         Guid? BookingId,
         bool IsSuccessful,
-        string Status,
+        string PaymentStatus,
         long? RefNumber = null,
         string? CardPan = null,
         decimal? Fee = null,
+        string? FailureReason = null,
         string? ErrorMessage = null,
         int? ErrorCode = null)
     {

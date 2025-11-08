@@ -58,7 +58,8 @@ namespace Booksy.ServiceCatalog.Application.Commands.Payment.VerifyZarinPalPayme
                         payment.Id.Value,
                         payment.BookingId?.Value,
                         false,
-                        "Failed",
+                        PaymentStatus: "Failed",
+                        FailureReason: "User cancelled the payment",
                         ErrorMessage: "User cancelled the payment");
                 }
 
@@ -86,14 +87,15 @@ namespace Booksy.ServiceCatalog.Application.Commands.Payment.VerifyZarinPalPayme
                         payment.Id.Value,
                         payment.BookingId?.Value,
                         true,
-                        "Paid",
-                        verifyResult.RefId,
-                        verifyResult.CardPan,
-                        (decimal?)verifyResult.Fee);
+                        PaymentStatus: "Paid",
+                        RefNumber: verifyResult.RefId,
+                        CardPan: verifyResult.CardPan,
+                        Fee: (decimal?)verifyResult.Fee);
                 }
                 else
                 {
                     // Mark payment as failed
+                    var failureReason = $"[{verifyResult.ErrorCode}] {verifyResult.ErrorMessage ?? "Verification failed"}";
                     payment.MarkPaymentRequestAsFailed(
                         verifyResult.ErrorCode.ToString(),
                         verifyResult.ErrorMessage ?? "Verification failed");
@@ -108,7 +110,8 @@ namespace Booksy.ServiceCatalog.Application.Commands.Payment.VerifyZarinPalPayme
                         payment.Id.Value,
                         payment.BookingId?.Value,
                         false,
-                        "Failed",
+                        PaymentStatus: "Failed",
+                        FailureReason: failureReason,
                         ErrorMessage: verifyResult.ErrorMessage,
                         ErrorCode: verifyResult.ErrorCode);
                 }
