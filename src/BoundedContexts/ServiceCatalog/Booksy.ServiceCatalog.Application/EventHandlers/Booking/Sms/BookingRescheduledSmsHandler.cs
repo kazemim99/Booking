@@ -1,9 +1,9 @@
 // ========================================
 // Booksy.ServiceCatalog.Application/EventHandlers/Booking/Sms/BookingRescheduledSmsHandler.cs
 // ========================================
+using Booksy.Core.Application.Abstractions.Events;
 using Booksy.ServiceCatalog.Application.Services;
 using Booksy.ServiceCatalog.Domain.Events;
-using MediatR;
 using Microsoft.Extensions.Logging;
 
 namespace Booksy.ServiceCatalog.Application.EventHandlers.Booking.Sms
@@ -24,11 +24,11 @@ namespace Booksy.ServiceCatalog.Application.EventHandlers.Booking.Sms
             _logger = logger;
         }
 
-        public async Task HandleAsync(BookingRescheduledEvent notification, CancellationToken cancellationToken)
+        public async Task HandleAsync(BookingRescheduledEvent domainEvent, CancellationToken cancellationToken = default)
         {
             try
             {
-                _logger.LogInformation("Sending reschedule SMS for booking {OldBookingId}", notification.OldBookingId);
+                _logger.LogInformation("Sending reschedule SMS for booking {OldBookingId}", domainEvent.OldBookingId);
 
                 // TODO: Fetch customer phone number, name, and provider name
                 var phoneNumber = "09123456789";
@@ -38,16 +38,16 @@ namespace Booksy.ServiceCatalog.Application.EventHandlers.Booking.Sms
                 await _smsService.SendBookingRescheduledSmsAsync(
                     phoneNumber,
                     customerName,
-                    notification.OldStartTime,
-                    notification.NewStartTime,
+                    domainEvent.OldStartTime,
+                    domainEvent.NewStartTime,
                     providerName,
                     cancellationToken);
 
-                _logger.LogInformation("Reschedule SMS sent successfully for booking {OldBookingId}", notification.OldBookingId);
+                _logger.LogInformation("Reschedule SMS sent successfully for booking {OldBookingId}", domainEvent.OldBookingId);
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Error sending reschedule SMS for booking {OldBookingId}", notification.OldBookingId);
+                _logger.LogError(ex, "Error sending reschedule SMS for booking {OldBookingId}", domainEvent.OldBookingId);
             }
         }
     }
