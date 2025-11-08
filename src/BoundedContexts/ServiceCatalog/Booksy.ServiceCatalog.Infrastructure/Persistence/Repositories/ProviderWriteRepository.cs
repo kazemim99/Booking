@@ -96,9 +96,23 @@ namespace Booksy.ServiceCatalog.Infrastructure.Persistence.Repositories
             foreach (var galleryImage in provider.Profile.GalleryImages)
             {
                 var imageEntry = Context.Entry(galleryImage);
+                if (imageEntry.State == EntityState.Detached)
+                {
+                    // Skip detached entities
+                    continue;
+                }
+
                 if (imageEntry.State != EntityState.Added && imageEntry.State != EntityState.Deleted)
                 {
+                    // Mark the entire entity as modified
                     imageEntry.State = EntityState.Modified;
+
+                    // Explicitly mark critical properties as modified to ensure they're updated
+                    imageEntry.Property(gi => gi.IsActive).IsModified = true;
+                    imageEntry.Property(gi => gi.DisplayOrder).IsModified = true;
+                    imageEntry.Property(gi => gi.IsPrimary).IsModified = true;
+                    imageEntry.Property(gi => gi.Caption).IsModified = true;
+                    imageEntry.Property(gi => gi.AltText).IsModified = true;
                 }
             }
         }
