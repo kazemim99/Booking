@@ -497,6 +497,18 @@ namespace Booksy.ServiceCatalog.Domain.Aggregates.PaymentAggregate
             return netAmount;
         }
 
-       
+        // ========================================
+        // VISITOR PATTERN
+        // ========================================
+
+        /// <summary>
+        /// Accept a visitor for reporting/analytics purposes
+        /// </summary>
+        /// <typeparam name="TResult">The type of result produced by the visitor</typeparam>
+        /// <param name="visitor">The visitor to accept</param>
+        public void Accept<TResult>(Visitors.IBookingVisitor<TResult> visitor)
+        {
+            visitor.Visit(this);
+        }
     }
 }
