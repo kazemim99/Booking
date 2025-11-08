@@ -1,6 +1,7 @@
 ﻿// ========================================
 // Booksy.Core.Domain/Exceptions/InvalidAggregateStateException.cs
 // ========================================
+using Booksy.Core.Domain.Errors;
 using System.Runtime.Serialization;
 
 namespace Booksy.Core.Domain.Exceptions
@@ -11,7 +12,7 @@ namespace Booksy.Core.Domain.Exceptions
     [Serializable]
     public sealed class InvalidAggregateStateException : DomainException
     {
-        public override string ErrorCode => "INVALID_AGGREGATE_STATE";
+        public override ErrorCode ErrorCode => ErrorCode.INVALID_AGGREGATE_STATE;
         public string AggregateName { get; }
         public string Operation { get; }
         public string CurrentState { get; }

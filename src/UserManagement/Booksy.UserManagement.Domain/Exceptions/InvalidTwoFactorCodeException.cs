@@ -2,6 +2,8 @@
 // ========================================
 // Booksy.UserManagement.Domain/Exceptions/InvalidTwoFactorCodeException.cs
 // ========================================
+using Booksy.Core.Domain.Errors;
+
 namespace Booksy.UserManagement.Domain.Exceptions
 {
     /// <summary>
@@ -9,7 +11,7 @@ namespace Booksy.UserManagement.Domain.Exceptions
     /// </summary>
     public sealed class InvalidTwoFactorCodeException : UserManagementDomainException
     {
-        public override string ErrorCode => "INVALID_TWO_FACTOR_CODE";
+        public override ErrorCode ErrorCode => ErrorCode.INVALID_TWO_FACTOR_CODE;
         public override int HttpStatusCode => 401;
 
         public InvalidTwoFactorCodeException()

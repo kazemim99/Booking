@@ -4,6 +4,8 @@
 // ========================================
 // Booksy.UserManagement.Domain/Exceptions/InvalidUserProfileException.cs
 // ========================================
+using Booksy.Core.Domain.Errors;
+
 namespace Booksy.UserManagement.Domain.Exceptions
 {
     /// <summary>
@@ -11,7 +13,7 @@ namespace Booksy.UserManagement.Domain.Exceptions
     /// </summary>
     public sealed class InvalidUserProfileException : UserManagementDomainException
     {
-        public override string ErrorCode => "INVALID_USER_PROFILE";
+        public override ErrorCode ErrorCode => ErrorCode.INVALID_USER_PROFILE;
 
         public InvalidUserProfileException(string message) : base(message) { }
 

@@ -2,6 +2,7 @@
 // Booksy.Core.Domain/Exceptions/BusinessRuleViolationException.cs
 // ========================================
 using Booksy.Core.Domain.Abstractions.Rules;
+using Booksy.Core.Domain.Errors;
 using System.Runtime.Serialization;
 
 namespace Booksy.Core.Domain.Exceptions
@@ -12,13 +13,16 @@ namespace Booksy.Core.Domain.Exceptions
     [Serializable]
     public sealed class BusinessRuleViolationException : DomainException
     {
-        public override string ErrorCode { get; }
+        public override ErrorCode ErrorCode { get; }
         public string RuleName { get; }
 
         public BusinessRuleViolationException(IBusinessRule brokenRule)
             : base(brokenRule.Message)
         {
-            ErrorCode = brokenRule.ErrorCode;
+            // Try to parse the error code string to enum, default to BUSINESS_RULE_VIOLATION
+            ErrorCode = Enum.TryParse<ErrorCode>(brokenRule.ErrorCode, out var code)
+                ? code
+                : Errors.ErrorCode.BUSINESS_RULE_VIOLATION;
             RuleName = brokenRule.GetType().Name;
 
             ExtensionData = new Dictionary<string, object>
@@ -28,7 +32,7 @@ namespace Booksy.Core.Domain.Exceptions
             };
         }
 
-        public BusinessRuleViolationException(string ruleName, string message, string errorCode)
+        public BusinessRuleViolationException(string ruleName, string message, ErrorCode errorCode)
             : base(message)
         {
             RuleName = ruleName;
@@ -44,9 +48,12 @@ namespace Booksy.Core.Domain.Exceptions
             : base(info, context)
         {
             RuleName = info.GetString(nameof(RuleName)) ?? string.Empty;
-            ErrorCode = info.GetString(nameof(ErrorCode)) ?? "BUSINESS_RULE_VIOLATION";
+            var errorCodeStr = info.GetString(nameof(ErrorCode)) ?? "BUSINESS_RULE_VIOLATION";
+            ErrorCode = Enum.TryParse<ErrorCode>(errorCodeStr, out var code)
+                ? code
+                : Errors.ErrorCode.BUSINESS_RULE_VIOLATION;
         }
 
-       
+
     }
 }

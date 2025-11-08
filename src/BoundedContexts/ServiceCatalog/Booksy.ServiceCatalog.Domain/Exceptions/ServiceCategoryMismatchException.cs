@@ -1,4 +1,5 @@
-﻿using Booksy.Core.Domain.Exceptions;
+﻿using Booksy.Core.Domain.Errors;
+using Booksy.Core.Domain.Exceptions;
 using Booksy.ServiceCatalog.Domain.ValueObjects;
 
 namespace Booksy.ServiceCatalog.Domain.Exceptions;
@@ -238,7 +239,7 @@ public sealed class ServiceCategoryMismatchException : DomainException
     /// <summary>
     /// Get error code for this exception
     /// </summary>
-    public override string ErrorCode => $"CATEGORY_MISMATCH_{MismatchType.ToString().ToUpperInvariant()}";
+    public override ErrorCode ErrorCode => ErrorCode.SERVICE_CATEGORY_MISMATCH;
 
     /// <summary>
     /// Get severity level for this exception
