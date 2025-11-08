@@ -4,8 +4,6 @@
 // ========================================
 // Booksy.UserManagement.Domain/Exceptions/InvalidCredentialsException.cs
 // ========================================
-using Booksy.Core.Domain.Errors;
-
 namespace Booksy.UserManagement.Domain.Exceptions
 {
     /// <summary>
@@ -13,7 +11,7 @@ namespace Booksy.UserManagement.Domain.Exceptions
     /// </summary>
     public sealed class InvalidCredentialsException : UserManagementDomainException
     {
-        public override ErrorCode ErrorCode => ErrorCode.INVALID_CREDENTIALS;
+        public override string ErrorCode => "INVALID_CREDENTIALS";
         public override int HttpStatusCode => 401;
 
         public InvalidCredentialsException(string message) : base(message) { }

@@ -1,5 +1,4 @@
 ﻿// Booksy.SharedKernel.Domain/Exceptions/DomainExceptions.cs
-using Booksy.Core.Domain.Errors;
 using System.Runtime.Serialization;
 
 namespace Booksy.Core.Domain.Domain.Exceptions
@@ -12,7 +11,7 @@ namespace Booksy.Core.Domain.Domain.Exceptions
     {
         public string Operation { get; }
         public string Reason { get; }
-        public override ErrorCode ErrorCode => ErrorCode.OPERATION_NOT_ALLOWED;
+        public override string ErrorCode => "OPERATION_NOT_ALLOWED";
 
         public OperationNotAllowedException(string operation, string reason)
             : base($"Operation '{operation}' is not allowed: {reason}")

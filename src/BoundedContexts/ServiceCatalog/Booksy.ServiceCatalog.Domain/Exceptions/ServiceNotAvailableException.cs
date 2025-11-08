@@ -1,7 +1,6 @@
 ﻿// ========================================
 // Booksy.ServiceCatalog.Domain/Exceptions/ServiceCatalogDomainException.cs
 // ========================================
-using Booksy.Core.Domain.Errors;
 using Booksy.ServiceCatalog.Domain.ValueObjects;
 
 namespace Booksy.ServiceCatalog.Domain.Exceptions
@@ -12,6 +11,6 @@ namespace Booksy.ServiceCatalog.Domain.Exceptions
         public ServiceNotAvailableException(ServiceId serviceId)
             : base($"Service {serviceId} is not available for booking") { }
 
-        public override ErrorCode ErrorCode => ErrorCode.SERVICE_NOT_AVAILABLE;
+        public override string ErrorCode => throw new NotImplementedException();
     }
 }

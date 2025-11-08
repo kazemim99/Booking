@@ -1,5 +1,4 @@
 ﻿// Booksy.SharedKernel.Domain/Exceptions/DomainExceptions.cs
-using Booksy.Core.Domain.Errors;
 using System.Runtime.Serialization;
 
 namespace Booksy.Core.Domain.Domain.Exceptions
@@ -13,7 +12,7 @@ namespace Booksy.Core.Domain.Domain.Exceptions
         public string EntityName { get; }
         public string DuplicateField { get; }
         public object DuplicateValue { get; }
-        public override ErrorCode ErrorCode => ErrorCode.DUPLICATE_ENTITY;
+        public override string ErrorCode => "DUPLICATE_ENTITY";
 
         public DuplicateEntityException(string entityName, string duplicateField, object duplicateValue)
             : base($"{entityName} with {duplicateField} '{duplicateValue}' already exists")

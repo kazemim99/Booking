@@ -2,7 +2,6 @@
 // Booksy.Core.Domain/Exceptions/DomainException.cs
 // ========================================
 using Booksy.Core.Domain.Abstractions.Rules;
-using Booksy.Core.Domain.Errors;
 using System.Runtime.Serialization;
 
 namespace Booksy.Core.Domain.Exceptions
@@ -17,21 +16,7 @@ namespace Booksy.Core.Domain.Exceptions
         /// <summary>
         /// Gets the error code that uniquely identifies the type of error
         /// </summary>
-        public abstract ErrorCode ErrorCode { get; }
-
-        /// <summary>
-        /// Gets the error message (same as Message property)
-        /// </summary>
-        public string ErrorMessage => Message;
-
-        /// <summary>
-        /// Gets additional details for the error (extension data)
-        /// </summary>
-        public virtual Dictionary<string, object> Details
-        {
-            get => ExtensionData ?? new Dictionary<string, object>();
-            protected set => ExtensionData = value;
-        }
+        public abstract string ErrorCode { get; }
 
         /// <summary>
         /// Gets the category of the error for grouping purposes
