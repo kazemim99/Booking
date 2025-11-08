@@ -29,7 +29,7 @@ namespace Booksy.ServiceCatalog.Application.Commands.Service.DeactivateService
             _logger.LogInformation("Deactivating service: {ServiceId} with reason: {Reason}",
                 request.ServiceId, request.Reason);
 
-            var serviceId = ServiceId.Create(request.ServiceId);
+            var serviceId = ServiceId.From(request.ServiceId);
             var service = await _serviceReadRepository.GetByIdAsync(serviceId, cancellationToken);
 
             if (service == null)

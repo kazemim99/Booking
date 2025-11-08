@@ -11,7 +11,7 @@ namespace Booksy.ServiceCatalog.Application.EventHandlers.Booking.Sms
     /// <summary>
     /// Sends SMS notification when a booking is rescheduled
     /// </summary>
-    public sealed class BookingRescheduledSmsHandler : INotificationHandler<BookingRescheduledEvent>
+    public sealed class BookingRescheduledSmsHandler : IDomainEventHandler<BookingRescheduledEvent>
     {
         private readonly ISmsNotificationService _smsService;
         private readonly ILogger<BookingRescheduledSmsHandler> _logger;
@@ -24,7 +24,7 @@ namespace Booksy.ServiceCatalog.Application.EventHandlers.Booking.Sms
             _logger = logger;
         }
 
-        public async Task Handle(BookingRescheduledEvent notification, CancellationToken cancellationToken)
+        public async Task HandleAsync(BookingRescheduledEvent notification, CancellationToken cancellationToken)
         {
             try
             {

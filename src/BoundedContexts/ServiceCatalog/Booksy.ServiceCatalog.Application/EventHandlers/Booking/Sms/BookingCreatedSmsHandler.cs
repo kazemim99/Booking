@@ -16,9 +16,7 @@ namespace Booksy.ServiceCatalog.Application.EventHandlers.Booking.Sms
         private readonly ISmsNotificationService _smsService;
         private readonly ILogger<BookingCreatedSmsHandler> _logger;
 
-        public BookingCreatedSmsHandler(
-            ISmsNotificationService smsService,
-            ILogger<BookingCreatedSmsHandler> logger)
+        public BookingCreatedSmsHandler(ISmsNotificationService smsService, ILogger<BookingCreatedSmsHandler> logger)
         {
             _smsService = smsService;
             _logger = logger;

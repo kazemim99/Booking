@@ -3,11 +3,7 @@
 // ========================================
 using Booksy.Core.Application.Abstractions.Persistence;
 using Booksy.Core.Application.DTOs;
-using Booksy.Core.Domain.ValueObjects;
-using Booksy.ServiceCatalog.Application.Queries.Booking.GetBookingStatistics;
 using Booksy.ServiceCatalog.Domain.Aggregates.BookingAggregate;
-using Booksy.ServiceCatalog.Domain.Enums;
-using Booksy.ServiceCatalog.Domain.ValueObjects;
 
 namespace Booksy.ServiceCatalog.Domain.Repositories
 {

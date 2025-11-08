@@ -32,7 +32,7 @@ namespace Booksy.ServiceCatalog.Application.Commands.Service.SetServiceAvailabil
         {
             _logger.LogInformation("Setting availability for service: {ServiceId}", request.ServiceId);
 
-            var serviceId = ServiceId.Create(request.ServiceId);
+            var serviceId = ServiceId.From(request.ServiceId);
             var service = await _serviceReadRepository.GetByIdAsync(serviceId, cancellationToken);
 
             if (service == null)

@@ -11,7 +11,7 @@ namespace Booksy.ServiceCatalog.Application.EventHandlers.Booking.Sms
     /// <summary>
     /// Sends SMS notification when a booking is completed with review request
     /// </summary>
-    public sealed class BookingCompletedSmsHandler : INotificationHandler<BookingCompletedEvent>
+    public sealed class BookingCompletedSmsHandler : IDomainEventHandler<BookingCompletedEvent>
     {
         private readonly ISmsNotificationService _smsService;
         private readonly ILogger<BookingCompletedSmsHandler> _logger;
@@ -24,7 +24,7 @@ namespace Booksy.ServiceCatalog.Application.EventHandlers.Booking.Sms
             _logger = logger;
         }
 
-        public async Task Handle(BookingCompletedEvent notification, CancellationToken cancellationToken)
+        public async Task HandleAsync(BookingCompletedEvent notification, CancellationToken cancellationToken)
         {
             try
             {

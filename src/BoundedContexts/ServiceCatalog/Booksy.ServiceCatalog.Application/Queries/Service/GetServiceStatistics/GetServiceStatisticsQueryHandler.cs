@@ -25,7 +25,7 @@ public sealed class GetServiceStatisticsQueryHandler : IQueryHandler<GetServiceS
     {
         _logger.LogInformation("Getting statistics for service {ServiceId}", request.ServiceId);
 
-        var service = await _serviceRepository.GetByIdAsync(ServiceId.Create(request.ServiceId), cancellationToken);
+        var service = await _serviceRepository.GetByIdAsync(ServiceId.From(request.ServiceId), cancellationToken);
         if (service == null)
         {
             throw new ServiceNotFoundException(request.ServiceId);

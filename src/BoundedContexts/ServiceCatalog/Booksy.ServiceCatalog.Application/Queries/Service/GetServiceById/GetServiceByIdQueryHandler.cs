@@ -29,7 +29,7 @@ namespace Booksy.ServiceCatalog.Application.Queries.Service.GetServiceById
         {
             _logger.LogInformation("Getting service details for ID: {ServiceId}", request.ServiceId);
 
-            var serviceId = ServiceId.Create(request.ServiceId);
+            var serviceId = ServiceId.From(request.ServiceId);
             var service = await _serviceRepository.GetByIdAsync(serviceId, cancellationToken);
 
             if (service == null)
