@@ -1,11 +1,9 @@
-using Booksy.Core.Application.Abstractions.Data;
-using Booksy.Core.Domain.ValueObjects;
+using Booksy.Core.Application.Abstractions.Persistence;
 using Booksy.Infrastructure.External.Payment.ZarinPal;
+using Booksy.Infrastructure.External.Payment.ZarinPal.Models;
 using Booksy.ServiceCatalog.Application.Commands.Payment.CreateZarinPalPayment;
-using Booksy.ServiceCatalog.Domain.Aggregates.PaymentAggregate;
 using Booksy.ServiceCatalog.Domain.Enums;
 using Booksy.ServiceCatalog.Domain.Repositories;
-using Booksy.ServiceCatalog.Domain.ValueObjects;
 using FluentAssertions;
 using Microsoft.Extensions.Logging;
 using NSubstitute;

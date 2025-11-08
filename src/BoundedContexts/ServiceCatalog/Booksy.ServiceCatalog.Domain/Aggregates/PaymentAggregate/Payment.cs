@@ -470,5 +470,7 @@ namespace Booksy.ServiceCatalog.Domain.Aggregates.PaymentAggregate
             }
             return netAmount;
         }
+
+       
     }
 }

@@ -1,8 +1,8 @@
-using Booksy.Core.Application.Abstractions.Data;
+using Booksy.Core.Application.Abstractions.Persistence;
 using Booksy.Core.Domain.ValueObjects;
 using Booksy.Infrastructure.External.Payment.ZarinPal;
+using Booksy.Infrastructure.External.Payment.ZarinPal.Models;
 using Booksy.ServiceCatalog.Application.Commands.Payment.VerifyZarinPalPayment;
-using Booksy.ServiceCatalog.Domain.Aggregates.PaymentAggregate;
 using Booksy.ServiceCatalog.Domain.Enums;
 using Booksy.ServiceCatalog.Domain.Repositories;
 using Booksy.ServiceCatalog.Domain.ValueObjects;
@@ -61,9 +61,9 @@ public class VerifyZarinPalPaymentCommandHandlerTests
         // Assert
         result.Should().NotBeNull();
         result.IsSuccessful.Should().BeTrue();
-        result.RefNumber.Should().Be("123456789");
+        result.RefNumber.Should().Be(123456789);
         result.CardPan.Should().Be("6274****1234");
-        result.PaymentStatus.Should().Be("Paid");
+        result.Status.Should().Be("Paid");
 
         payment.Status.Should().Be(PaymentStatus.Paid);
         payment.RefNumber.Should().Be("123456789");
@@ -89,7 +89,7 @@ public class VerifyZarinPalPaymentCommandHandlerTests
         // Assert
         result.Should().NotBeNull();
         result.IsSuccessful.Should().BeFalse();
-        result.PaymentStatus.Should().Be("Failed");
+        result.Status.Should().Be("Failed");
         result.FailureReason.Should().Be("User cancelled the payment");
 
         payment.Status.Should().Be(PaymentStatus.Failed);
@@ -189,7 +189,7 @@ public class VerifyZarinPalPaymentCommandHandlerTests
         result.IsSuccessful.Should().BeFalse();
         result.ErrorCode.Should().Be(-53);
         result.ErrorMessage.Should().Be("Transaction verification unsuccessful");
-        result.PaymentStatus.Should().Be("Failed");
+        result.Status.Should().Be("Failed");
 
         payment.Status.Should().Be(PaymentStatus.Failed);
         payment.FailureReason.Should().Contain("verification unsuccessful");
@@ -356,7 +356,7 @@ public class VerifyZarinPalPaymentCommandHandlerTests
             bookingId: BookingId.From(Guid.NewGuid()),
             customerId: UserId.From(Guid.NewGuid()),
             providerId: ProviderId.From(Guid.NewGuid()),
-            amount: Money.From(50000m, "IRR"),
+            amount: Money.Create(50000m, "IRR"),
             PaymentMethod.ZarinPal,
             description: "Test");
 
@@ -413,7 +413,7 @@ public class VerifyZarinPalPaymentCommandHandlerTests
             bookingId: BookingId.From(Guid.NewGuid()),
             customerId: UserId.From(Guid.NewGuid()),
             providerId: ProviderId.From(Guid.NewGuid()),
-            amount: Money.From(amount, "IRR"),
+            amount: Money.Create(amount, "IRR"),
             PaymentMethod.ZarinPal,
             description: "Test payment");
 

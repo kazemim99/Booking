@@ -15,5 +15,8 @@ namespace Booksy.ServiceCatalog.Application.Commands.Payment.VerifyZarinPalPayme
         string? CardPan = null,
         decimal? Fee = null,
         string? ErrorMessage = null,
-        int? ErrorCode = null);
+        int? ErrorCode = null)
+    {
+        public string FailureReason { get; set; }
+    }
 }
