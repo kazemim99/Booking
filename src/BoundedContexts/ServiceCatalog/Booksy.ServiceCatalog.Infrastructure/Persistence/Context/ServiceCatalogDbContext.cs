@@ -2,6 +2,7 @@
 using Booksy.Core.Domain.Abstractions.Entities;
 using Booksy.ServiceCatalog.Domain.Aggregates;
 using Booksy.ServiceCatalog.Domain.Aggregates.BookingAggregate;
+using Booksy.ServiceCatalog.Domain.Aggregates.BookingAggregate.Entities;
 using Booksy.ServiceCatalog.Domain.Aggregates.NotificationAggregate;
 using Booksy.ServiceCatalog.Domain.Aggregates.NotificationTemplateAggregate;
 using Booksy.ServiceCatalog.Domain.Aggregates.UserNotificationPreferencesAggregate;
@@ -53,6 +54,7 @@ namespace Booksy.ServiceCatalog.Infrastructure.Persistence.Context
         public DbSet<ServiceOption> ServiceOptions => Set<ServiceOption>();
         public DbSet<PriceTier> PriceTiers => Set<PriceTier>();
         public DbSet<ProvinceCities> ProvinceCities => Set<ProvinceCities>();
+        public DbSet<BookingHistorySnapshot> BookingHistorySnapshots => Set<BookingHistorySnapshot>();
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
@@ -86,6 +88,7 @@ namespace Booksy.ServiceCatalog.Infrastructure.Persistence.Context
         public override async Task<int> SaveChangesAsync(CancellationToken cancellationToken = default)
         {
             UpdateAuditableEntities();
+            await PersistBookingMementosAsync(cancellationToken);
             return await base.SaveChangesAsync(cancellationToken);
         }
 
@@ -107,6 +110,52 @@ namespace Booksy.ServiceCatalog.Infrastructure.Persistence.Context
                         entry.Entity.SetLastModifiedAt(currentTime);
                         entry.Entity.SetLastModifiedBy(currentUserId);
                         break;
+                }
+            }
+        }
+
+        private async Task PersistBookingMementosAsync(CancellationToken cancellationToken)
+        {
+            // Find all modified or added Booking aggregates
+            var bookingEntries = ChangeTracker.Entries<Booking>()
+                .Where(e => e.State == EntityState.Modified || e.State == EntityState.Added)
+                .ToList();
+
+            foreach (var entry in bookingEntries)
+            {
+                var booking = entry.Entity;
+                var mementos = booking.GetMementoHistory();
+
+                // Get existing snapshots for this booking
+                var existingSnapshots = await BookingHistorySnapshots
+                    .Where(s => s.BookingId == booking.Id)
+                    .Select(s => s.StateId)
+                    .ToListAsync(cancellationToken);
+
+                // Persist new mementos that don't already exist in the database
+                foreach (var memento in mementos)
+                {
+                    if (!existingSnapshots.Contains(memento.StateId))
+                    {
+                        var stateJson = System.Text.Json.JsonSerializer.Serialize(
+                            memento.State,
+                            new System.Text.Json.JsonSerializerOptions
+                            {
+                                WriteIndented = false,
+                                PropertyNamingPolicy = System.Text.Json.JsonNamingPolicy.CamelCase
+                            });
+
+                        var snapshot = BookingHistorySnapshot.Create(
+                            booking.Id,
+                            memento.StateId,
+                            memento.StateName,
+                            stateJson,
+                            memento.CreatedAt,
+                            memento.TriggeredBy ?? _currentUserService.UserId,
+                            memento.Description);
+
+                        await BookingHistorySnapshots.AddAsync(snapshot, cancellationToken);
+                    }
                 }
             }
         }

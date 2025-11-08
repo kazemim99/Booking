@@ -10,8 +10,11 @@ using Booksy.ServiceCatalog.Application.Commands.Booking.ConfirmBooking;
 using Booksy.ServiceCatalog.Application.Commands.Booking.CreateBooking;
 using Booksy.ServiceCatalog.Application.Commands.Booking.MarkNoShow;
 using Booksy.ServiceCatalog.Application.Commands.Booking.RescheduleBooking;
+using Booksy.ServiceCatalog.Application.Commands.Booking.RestoreBookingState;
 using Booksy.ServiceCatalog.Application.Queries.Booking.GetAvailableSlots;
 using Booksy.ServiceCatalog.Application.Queries.Booking.GetBookingDetails;
+using Booksy.ServiceCatalog.Application.Queries.Booking.GetBookingHistory;
+using Booksy.ServiceCatalog.Application.Queries.Booking.GetBookingAuditTrail;
 using Booksy.ServiceCatalog.Application.Queries.Booking.GetBookingStatistics;
 using Booksy.ServiceCatalog.Application.Queries.Booking.SearchBookings;
 using Booksy.ServiceCatalog.Domain.Repositories;
@@ -739,6 +742,104 @@ public class BookingsController : ControllerBase
             CompletedAt = result.CompletedAt,
             CancelledAt = result.CancelledAt
         };
+    }
+
+    /// <summary>
+    /// Gets complete history of state changes for a booking (audit trail)
+    /// </summary>
+    /// <param name="id">The booking ID</param>
+    /// <param name="cancellationToken">Cancellation token</param>
+    /// <returns>List of historical state snapshots</returns>
+    /// <response code="200">History retrieved successfully</response>
+    /// <response code="404">Booking not found</response>
+    [HttpGet("{id:guid}/history")]
+    [Authorize]
+    [ProducesResponseType(typeof(IReadOnlyList<BookingHistorySnapshotDto>), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> GetBookingHistory(
+        Guid id,
+        CancellationToken cancellationToken = default)
+    {
+        _logger.LogInformation("Getting history for booking {BookingId}", id);
+
+        var query = new GetBookingHistoryQuery(id);
+        var result = await _mediator.Send(query, cancellationToken);
+
+        return Ok(result);
+    }
+
+    /// <summary>
+    /// Gets detailed audit trail for a booking with state change details
+    /// </summary>
+    /// <param name="id">The booking ID</param>
+    /// <param name="cancellationToken">Cancellation token</param>
+    /// <returns>List of detailed audit trail entries</returns>
+    /// <response code="200">Audit trail retrieved successfully</response>
+    /// <response code="404">Booking not found</response>
+    [HttpGet("{id:guid}/audit-trail")]
+    [Authorize]
+    [ProducesResponseType(typeof(IReadOnlyList<BookingAuditTrailEntryDto>), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> GetBookingAuditTrail(
+        Guid id,
+        CancellationToken cancellationToken = default)
+    {
+        _logger.LogInformation("Getting audit trail for booking {BookingId}", id);
+
+        var query = new GetBookingAuditTrailQuery(id);
+        var result = await _mediator.Send(query, cancellationToken);
+
+        return Ok(result);
+    }
+
+    /// <summary>
+    /// Restores a booking to a previous state from audit history (Admin only)
+    /// </summary>
+    /// <param name="id">The booking ID</param>
+    /// <param name="stateId">The state ID to restore to</param>
+    /// <param name="request">Restore request details</param>
+    /// <param name="cancellationToken">Cancellation token</param>
+    /// <returns>Result of the restore operation</returns>
+    /// <response code="200">Booking restored successfully</response>
+    /// <response code="400">Invalid state or restore failed</response>
+    /// <response code="403">Forbidden - Admin only</response>
+    /// <response code="404">Booking or state not found</response>
+    [HttpPost("{id:guid}/restore/{stateId:guid}")]
+    [Authorize(Roles = "Admin")]
+    [ProducesResponseType(typeof(RestoreBookingStateResult), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> RestoreBookingState(
+        Guid id,
+        Guid stateId,
+        [FromBody] RestoreBookingRequest? request,
+        CancellationToken cancellationToken = default)
+    {
+        var currentUserId = GetCurrentUserId();
+        if (string.IsNullOrEmpty(currentUserId))
+        {
+            return Unauthorized();
+        }
+
+        _logger.LogWarning(
+            "Admin {UserId} attempting to restore booking {BookingId} to state {StateId}. Reason: {Reason}",
+            currentUserId, id, stateId, request?.Reason ?? "Not specified");
+
+        var command = new RestoreBookingStateCommand(
+            BookingId: id,
+            StateId: stateId,
+            RestoredBy: currentUserId,
+            Reason: request?.Reason);
+
+        var result = await _mediator.Send(command, cancellationToken);
+
+        if (!result.Success)
+        {
+            return BadRequest(new { result.Message });
+        }
+
+        return Ok(result);
     }
 
     #endregion

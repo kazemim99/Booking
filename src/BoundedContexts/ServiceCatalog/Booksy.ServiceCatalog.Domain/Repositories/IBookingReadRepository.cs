@@ -5,6 +5,7 @@ using Booksy.Core.Application.Abstractions.Persistence;
 using Booksy.Core.Application.DTOs;
 using Booksy.Core.Domain.ValueObjects;
 using Booksy.ServiceCatalog.Domain.Aggregates.BookingAggregate;
+using Booksy.ServiceCatalog.Domain.Aggregates.BookingAggregate.Entities;
 using Booksy.ServiceCatalog.Domain.Enums;
 using Booksy.ServiceCatalog.Domain.Models;
 using Booksy.ServiceCatalog.Domain.ValueObjects;
@@ -154,6 +155,21 @@ namespace Booksy.ServiceCatalog.Domain.Repositories
             Guid providerId,
             DateTime? startDate = null,
             DateTime? endDate = null,
+            CancellationToken cancellationToken = default);
+
+        /// <summary>
+        /// Get all historical state snapshots for a booking (audit trail).
+        /// </summary>
+        Task<IReadOnlyList<BookingHistorySnapshot>> GetBookingHistorySnapshotsAsync(
+            BookingId bookingId,
+            CancellationToken cancellationToken = default);
+
+        /// <summary>
+        /// Get a specific booking history snapshot by state ID.
+        /// </summary>
+        Task<BookingHistorySnapshot?> GetBookingHistorySnapshotByStateIdAsync(
+            BookingId bookingId,
+            Guid stateId,
             CancellationToken cancellationToken = default);
     }
 }

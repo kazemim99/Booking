@@ -6,6 +6,7 @@ using Booksy.Core.Application.DTOs;
 using Booksy.Core.Domain.ValueObjects;
 using Booksy.Infrastructure.Core.Persistence.Base;
 using Booksy.ServiceCatalog.Domain.Aggregates.BookingAggregate;
+using Booksy.ServiceCatalog.Domain.Aggregates.BookingAggregate.Entities;
 using Booksy.ServiceCatalog.Domain.Enums;
 using Booksy.ServiceCatalog.Domain.Repositories;
 using Booksy.ServiceCatalog.Domain.ValueObjects;
@@ -393,6 +394,27 @@ namespace Booksy.ServiceCatalog.Infrastructure.Persistence.Repositories
                 cancellationRate: Math.Round(cancellationRate, 2),
                 startDate: startDate,
                 endDate: endDate);
+        }
+
+        public async Task<IReadOnlyList<BookingHistorySnapshot>> GetBookingHistorySnapshotsAsync(
+            BookingId bookingId,
+            CancellationToken cancellationToken = default)
+        {
+            return await Context.BookingHistorySnapshots
+                .Where(s => s.BookingId == bookingId)
+                .OrderBy(s => s.CreatedAt)
+                .ToListAsync(cancellationToken);
+        }
+
+        public async Task<BookingHistorySnapshot?> GetBookingHistorySnapshotByStateIdAsync(
+            BookingId bookingId,
+            Guid stateId,
+            CancellationToken cancellationToken = default)
+        {
+            return await Context.BookingHistorySnapshots
+                .FirstOrDefaultAsync(
+                    s => s.BookingId == bookingId && s.StateId == stateId,
+                    cancellationToken);
         }
     }
 }

@@ -5,6 +5,7 @@ using Booksy.Core.Domain.Abstractions.Entities;
 using Booksy.Core.Domain.Abstractions.Rules;
 using Booksy.Core.Domain.Base;
 using Booksy.Core.Domain.Exceptions;
+using Booksy.Core.Domain.Patterns.Memento;
 using Booksy.Core.Domain.ValueObjects;
 using Booksy.ServiceCatalog.Domain.Enums;
 using Booksy.ServiceCatalog.Domain.Events;
@@ -15,9 +16,10 @@ namespace Booksy.ServiceCatalog.Domain.Aggregates.BookingAggregate
     /// <summary>
     /// Booking aggregate root - manages appointment bookings with customers
     /// </summary>
-    public sealed class Booking : AggregateRoot<BookingId>, IAuditableEntity
+    public sealed class Booking : AggregateRoot<BookingId>, IAuditableEntity, IOriginator<BookingMemento>
     {
         private readonly List<BookingHistoryEntry> _history = new();
+        private readonly MementoCaretaker<BookingMemento> _historyCaretaker = new();
 
         // Core Identity
         public UserId CustomerId { get; private set; }
@@ -144,6 +146,9 @@ namespace Booksy.ServiceCatalog.Domain.Aggregates.BookingAggregate
                 throw new BusinessRuleViolationException(
                     new BookingMustBeWithinValidTimeWindowRule(Policy));
 
+            // Capture state snapshot before transition
+            CreateMemento($"Before Confirm - {Status}");
+
             Status = BookingStatus.Confirmed;
             ConfirmedAt = DateTime.UtcNow;
 
@@ -179,6 +184,9 @@ namespace Booksy.ServiceCatalog.Domain.Aggregates.BookingAggregate
                 cancellationFee = Policy.CalculateCancellationFee(
                     Money.Create(TotalPrice.Amount, TotalPrice.Currency));
             }
+
+            // Capture state snapshot before transition
+            CreateMemento($"Before Cancel - {Status}");
 
             Status = BookingStatus.Cancelled;
             CancellationReason = reason;
@@ -218,6 +226,9 @@ namespace Booksy.ServiceCatalog.Domain.Aggregates.BookingAggregate
             if (!Policy.CanReschedule(TimeSlot.StartTime, now))
                 throw new BusinessRuleViolationException(
                     new RescheduleWindowExpiredRule(Policy, TimeSlot.StartTime));
+
+            // Capture state snapshot before transition
+            CreateMemento($"Before Reschedule - {Status}");
 
             // Create new booking for the rescheduled time
             var newBooking = new Booking
@@ -281,6 +292,9 @@ namespace Booksy.ServiceCatalog.Domain.Aggregates.BookingAggregate
             if (now < TimeSlot.StartTime.AddMinutes(-15)) // Allow 15 min early completion
                 throw new BusinessRuleViolationException(
                     new BookingCannotBeCompletedBeforeScheduledTimeRule(TimeSlot.StartTime));
+
+            // Capture state snapshot before transition
+            CreateMemento($"Before Complete - {Status}");
 
             Status = BookingStatus.Completed;
             CompletedAt = now;
@@ -525,6 +539,112 @@ namespace Booksy.ServiceCatalog.Domain.Aggregates.BookingAggregate
         {
             var entry = BookingHistoryEntry.Create(description, status);
             _history.Add(entry);
+        }
+
+        // ========================================
+        // MEMENTO PATTERN IMPLEMENTATION
+        // ========================================
+
+        /// <summary>
+        /// Creates a memento capturing the current state of the booking.
+        /// Implements IOriginator&lt;BookingMemento&gt;.CreateMemento.
+        /// </summary>
+        /// <param name="stateName">Descriptive name for the current state.</param>
+        /// <returns>A memento containing the current state snapshot.</returns>
+        public BookingMemento CreateMemento(string stateName)
+        {
+            var memento = BookingMemento.Create(this, stateName);
+            _historyCaretaker.SaveMemento(memento);
+            return memento;
+        }
+
+        /// <summary>
+        /// Restores the booking's state from a memento.
+        /// Implements IOriginator&lt;BookingMemento&gt;.RestoreFromMemento.
+        /// </summary>
+        /// <param name="memento">The memento containing the state to restore.</param>
+        public void RestoreFromMemento(BookingMemento memento)
+        {
+            ArgumentNullException.ThrowIfNull(memento);
+
+            var state = memento.State;
+            var previousStatus = Status;
+
+            // Restore all properties from the memento state
+            CustomerId = state.CustomerId;
+            ProviderId = state.ProviderId;
+            ServiceId = state.ServiceId;
+            StaffId = state.StaffId;
+            TimeSlot = state.TimeSlot;
+            Duration = state.Duration;
+            Status = state.Status;
+            TotalPrice = state.TotalPrice;
+            PaymentInfo = state.PaymentInfo;
+            Policy = state.Policy;
+            CustomerNotes = state.CustomerNotes;
+            StaffNotes = state.StaffNotes;
+            CancellationReason = state.CancellationReason;
+            RequestedAt = state.RequestedAt;
+            ConfirmedAt = state.ConfirmedAt;
+            CancelledAt = state.CancelledAt;
+            CompletedAt = state.CompletedAt;
+            RescheduledAt = state.RescheduledAt;
+            PreviousBookingId = state.PreviousBookingId;
+            RescheduledToBookingId = state.RescheduledToBookingId;
+
+            // Note: Audit properties (CreatedAt, CreatedBy, etc.) are restored
+            // but will be updated by the audit interceptor on save
+            AddHistoryEntry($"State restored from snapshot: {memento.StateName}", Status);
+
+            // Raise domain event for restoration
+            RaiseDomainEvent(new BookingRestoredFromHistoryEvent(
+                Id,
+                CustomerId,
+                ProviderId,
+                memento.StateId,
+                $"{previousStatus} → {Status}",
+                previousStatus,
+                Status,
+                memento.TriggeredBy,
+                DateTime.UtcNow));
+        }
+
+        /// <summary>
+        /// Gets the complete history of state snapshots for this booking.
+        /// </summary>
+        /// <returns>Read-only list of all mementos in chronological order.</returns>
+        public IReadOnlyList<BookingMemento> GetMementoHistory()
+        {
+            return _historyCaretaker.GetAllMementos();
+        }
+
+        /// <summary>
+        /// Undoes the last state change by restoring from the most recent memento.
+        /// </summary>
+        /// <returns>True if undo was successful; false if no previous state exists.</returns>
+        public bool UndoToLastState()
+        {
+            var latestMemento = _historyCaretaker.GetLatestMemento();
+            if (latestMemento == null)
+                return false;
+
+            RestoreFromMemento(latestMemento);
+            return true;
+        }
+
+        /// <summary>
+        /// Restores the booking to a specific state by state ID.
+        /// </summary>
+        /// <param name="stateId">The unique identifier of the state to restore.</param>
+        /// <returns>True if restore was successful; false if state was not found.</returns>
+        public bool RestoreToState(Guid stateId)
+        {
+            var memento = _historyCaretaker.GetMemento(stateId);
+            if (memento == null)
+                return false;
+
+            RestoreFromMemento(memento);
+            return true;
         }
     }
 
