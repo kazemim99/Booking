@@ -8,7 +8,6 @@ namespace Booksy.ServiceCatalog.Domain.Entities
     /// </summary>
     public sealed class BusinessProfile : Entity<Guid>
     {
-        private readonly List<GalleryImage> _galleryImages = new();
         private const int MaxGalleryImages = 50;
 
         public string BusinessName { get; private set; }
@@ -20,9 +19,8 @@ namespace Booksy.ServiceCatalog.Domain.Entities
         public List<string> Tags { get; private set; } = new();
         public DateTime LastUpdatedAt { get; private set; }
 
-        // Gallery collection - expose directly for EF Core change tracking
-        // The List<T> is implicitly convertible to IReadOnlyList<T>
-        public IReadOnlyList<GalleryImage> GalleryImages => _galleryImages;
+        // Gallery collection - simple auto-property for EF Core change tracking
+        public List<GalleryImage> GalleryImages { get; private set; } = new();
 
         // Private constructor for EF Core
         private BusinessProfile() : base()
@@ -89,13 +87,13 @@ namespace Booksy.ServiceCatalog.Domain.Entities
             string thumbnailUrl,
             string mediumUrl)
         {
-            if (_galleryImages.Count(img => img.IsActive) >= MaxGalleryImages)
+            if (GalleryImages.Count(img => img.IsActive) >= MaxGalleryImages)
             {
                 throw new DomainValidationException($"Cannot add more than {MaxGalleryImages} gallery images");
             }
 
-            var nextOrder = _galleryImages.Count > 0
-                ? _galleryImages.Max(img => img.DisplayOrder) + 1
+            var nextOrder = GalleryImages.Count > 0
+                ? GalleryImages.Max(img => img.DisplayOrder) + 1
                 : 0;
 
             var galleryImage = GalleryImage.Create(
@@ -105,7 +103,7 @@ namespace Booksy.ServiceCatalog.Domain.Entities
                 mediumUrl,
                 nextOrder);
 
-            _galleryImages.Add(galleryImage);
+            GalleryImages.Add(galleryImage);
             LastUpdatedAt = DateTime.UtcNow;
 
             return galleryImage;
@@ -113,7 +111,7 @@ namespace Booksy.ServiceCatalog.Domain.Entities
 
         public void RemoveGalleryImage(Guid imageId)
         {
-            var image = _galleryImages.FirstOrDefault(img => img.Id == imageId);
+            var image = GalleryImages.FirstOrDefault(img => img.Id == imageId);
             if (image == null)
             {
                 throw new DomainValidationException("Gallery image not found");
@@ -127,7 +125,7 @@ namespace Booksy.ServiceCatalog.Domain.Entities
         {
             foreach (var (imageId, newOrder) in imageOrders)
             {
-                var image = _galleryImages.FirstOrDefault(img => img.Id == imageId);
+                var image = GalleryImages.FirstOrDefault(img => img.Id == imageId);
                 if (image == null)
                 {
                     throw new DomainValidationException($"Gallery image {imageId} not found");
@@ -141,19 +139,19 @@ namespace Booksy.ServiceCatalog.Domain.Entities
 
         public GalleryImage? GetGalleryImage(Guid imageId)
         {
-            return _galleryImages.FirstOrDefault(img => img.Id == imageId);
+            return GalleryImages.FirstOrDefault(img => img.Id == imageId);
         }
 
         public void SetPrimaryGalleryImage(Guid imageId)
         {
-            var image = _galleryImages.FirstOrDefault(img => img.Id == imageId && img.IsActive);
+            var image = GalleryImages.FirstOrDefault(img => img.Id == imageId && img.IsActive);
             if (image == null)
             {
                 throw new DomainValidationException("Gallery image not found or inactive");
             }
 
             // Unset all other images as primary (only one can be primary)
-            foreach (var existingImage in _galleryImages.Where(img => img.IsPrimary))
+            foreach (var existingImage in GalleryImages.Where(img => img.IsPrimary))
             {
                 existingImage.UnsetAsPrimary();
             }
