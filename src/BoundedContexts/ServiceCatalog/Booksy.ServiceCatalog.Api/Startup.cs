@@ -19,6 +19,7 @@ using Booksy.ServiceCatalog.Api.Extensions;
 using Booksy.ServiceCatalog.Infrastructure.Persistence.Context;
 using Booksy.Core.Domain.Infrastructure.Middleware;
 using Booksy.API.Observability;
+using Booksy.Infrastructure.Core.DependencyInjection;
 using System.Configuration;
 
 namespace Booksy.API
@@ -105,9 +106,14 @@ namespace Booksy.API
 
             //SerilogConfiguration.ConfigureSerilog(Configuration, "ServiceCatalog.API");
 
+            // Infrastructure Core (CQRS, Caching, Event Bus, etc.)
+            services.AddInfrastructureCore(Configuration);
+
             // Application Services
             services.AddServiceCatalogApplication();
-            services.AddServiceCatalogInfrastructure(Configuration);
+
+            // Use cached version for Redis/InMemory caching on read repositories
+            services.AddServiceCatalogInfrastructureWithCache(Configuration);
 
             AppContext.SetSwitch("Npgsql.EnableLegacyTimestampBehavior", true);
 
