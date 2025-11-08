@@ -90,6 +90,32 @@ namespace Booksy.ServiceCatalog.Domain.Aggregates.PaymentAggregate
         }
 
         /// <summary>
+        /// Creates a new payment (generic method that handles both booking and direct payments)
+        /// </summary>
+        public static Payment Create(
+            BookingId? bookingId,
+            UserId customerId,
+            ProviderId providerId,
+            Money amount,
+            PaymentMethod method,
+            string? description = null,
+            Dictionary<string, object>? metadata = null)
+        {
+            if (amount.Amount <= 0)
+                throw new InvalidOperationException("Payment amount must be positive");
+
+            return new Payment(
+                PaymentId.New(),
+                bookingId,
+                customerId,
+                providerId,
+                amount,
+                method,
+                description,
+                metadata);
+        }
+
+        /// <summary>
         /// Creates a new payment for a booking
         /// </summary>
         public static Payment CreateForBooking(
