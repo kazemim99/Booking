@@ -186,7 +186,7 @@ public class GalleryManagementTests : ServiceCatalogIntegrationTestBase
     public async Task GetGalleryImages_WithExistingImages_ReturnsAllImages()
     {
         // Arrange
-        var provider = await CreateProviderWithGalleryAsync(5);
+        var provider = await CreateProviderWithGalleryDirectAsync(5);
 
         // Act
         var response = await GetAsync($"/api/v1/providers/{provider.Id.Value}/gallery");
@@ -219,7 +219,7 @@ public class GalleryManagementTests : ServiceCatalogIntegrationTestBase
     public async Task GetGalleryImages_AsAnonymousUser_ReturnsImages()
     {
         // Arrange
-        var provider = await CreateProviderWithGalleryAsync(3);
+        var provider = await CreateProviderWithGalleryDirectAsync(3);
         ClearAuthenticationHeader(); // Anonymous access
 
         // Act
@@ -235,7 +235,7 @@ public class GalleryManagementTests : ServiceCatalogIntegrationTestBase
     public async Task GetGalleryImages_OnlyReturnsActiveImages()
     {
         // Arrange
-        var provider = await CreateProviderWithGalleryAsync(5);
+        var provider = await CreateProviderWithGalleryDirectAsync(5);
         AuthenticateAsProviderOwner(provider);
 
         // Get images
@@ -262,7 +262,7 @@ public class GalleryManagementTests : ServiceCatalogIntegrationTestBase
     public async Task UpdateGalleryImageMetadata_WithValidData_UpdatesSuccessfully()
     {
         // Arrange
-        var provider = await CreateProviderWithGalleryAsync(1);
+        var provider = await CreateProviderWithGalleryDirectAsync(1);
         AuthenticateAsProviderOwner(provider);
 
         var images = await GetGalleryImagesAsync(provider.Id.Value);
@@ -294,7 +294,7 @@ public class GalleryManagementTests : ServiceCatalogIntegrationTestBase
     public async Task UpdateGalleryImageMetadata_WithCaptionTooLong_ReturnsBadRequest()
     {
         // Arrange
-        var provider = await CreateProviderWithGalleryAsync(1);
+        var provider = await CreateProviderWithGalleryDirectAsync(1);
         AuthenticateAsProviderOwner(provider);
 
         var images = await GetGalleryImagesAsync(provider.Id.Value);
@@ -342,7 +342,7 @@ public class GalleryManagementTests : ServiceCatalogIntegrationTestBase
     public async Task ReorderGalleryImages_WithValidOrder_ReordersSuccessfully()
     {
         // Arrange
-        var provider = await CreateProviderWithGalleryAsync(5);
+        var provider = await CreateProviderWithGalleryDirectAsync(5);
         AuthenticateAsProviderOwner(provider);
 
         var images = await GetGalleryImagesAsync(provider.Id.Value);
@@ -378,7 +378,7 @@ public class GalleryManagementTests : ServiceCatalogIntegrationTestBase
     public async Task ReorderGalleryImages_WithNonExistentImage_ReturnsBadRequest()
     {
         // Arrange
-        var provider = await CreateProviderWithGalleryAsync(2);
+        var provider = await CreateProviderWithGalleryDirectAsync(2);
         AuthenticateAsProviderOwner(provider);
 
         var reorderRequest = new ReorderGalleryImagesRequest
@@ -406,7 +406,7 @@ public class GalleryManagementTests : ServiceCatalogIntegrationTestBase
     public async Task DeleteGalleryImage_WithValidImage_DeletesSuccessfully()
     {
         // Arrange
-        var provider = await CreateProviderWithGalleryAsync(3);
+        var provider = await CreateProviderWithGalleryDirectAsync(3);
         AuthenticateAsProviderOwner(provider);
 
         var images = await GetGalleryImagesAsync(provider.Id.Value);
@@ -451,7 +451,7 @@ public class GalleryManagementTests : ServiceCatalogIntegrationTestBase
     public async Task DeleteGalleryImage_AsUnauthorizedUser_ReturnsUnauthorized()
     {
         // Arrange
-        var provider = await CreateProviderWithGalleryAsync(1);
+        var provider = await CreateProviderWithGalleryDirectAsync(1);
         var images = await GetGalleryImagesAsync(provider.Id.Value);
         ClearAuthenticationHeader();
 
@@ -471,7 +471,7 @@ public class GalleryManagementTests : ServiceCatalogIntegrationTestBase
     public async Task GalleryManagement_MaintainsDisplayOrderConsistency_AfterDeletion()
     {
         // Arrange
-        var provider = await CreateProviderWithGalleryAsync(5);
+        var provider = await CreateProviderWithGalleryDirectAsync(5);
         AuthenticateAsProviderOwner(provider);
 
         var images = await GetGalleryImagesAsync(provider.Id.Value);
@@ -538,7 +538,7 @@ public class GalleryManagementTests : ServiceCatalogIntegrationTestBase
     public async Task SetPrimaryGalleryImage_WithValidImage_SetsImageAsPrimary()
     {
         // Arrange
-        var provider = await CreateProviderWithGalleryAsync(3);
+        var provider = await CreateProviderWithGalleryDirectAsync(3);
         AuthenticateAsProviderOwner(provider);
 
         var images = await GetGalleryImagesAsync(provider.Id.Value);
@@ -570,7 +570,7 @@ public class GalleryManagementTests : ServiceCatalogIntegrationTestBase
     public async Task SetPrimaryGalleryImage_UnsetsOtherPrimaryImages()
     {
         // Arrange
-        var provider = await CreateProviderWithGalleryAsync(4);
+        var provider = await CreateProviderWithGalleryDirectAsync(4);
         AuthenticateAsProviderOwner(provider);
 
         var images = await GetGalleryImagesAsync(provider.Id.Value);
@@ -604,7 +604,7 @@ public class GalleryManagementTests : ServiceCatalogIntegrationTestBase
     public async Task SetPrimaryGalleryImage_PrimaryImageAppearsFirst_InQueryResults()
     {
         // Arrange
-        var provider = await CreateProviderWithGalleryAsync(5);
+        var provider = await CreateProviderWithGalleryDirectAsync(5);
         AuthenticateAsProviderOwner(provider);
 
         var images = await GetGalleryImagesAsync(provider.Id.Value);
@@ -643,7 +643,7 @@ public class GalleryManagementTests : ServiceCatalogIntegrationTestBase
     public async Task SetPrimaryGalleryImage_WithDeletedImage_ReturnsNotFound()
     {
         // Arrange
-        var provider = await CreateProviderWithGalleryAsync(2);
+        var provider = await CreateProviderWithGalleryDirectAsync(2);
         AuthenticateAsProviderOwner(provider);
 
         var images = await GetGalleryImagesAsync(provider.Id.Value);
@@ -665,7 +665,7 @@ public class GalleryManagementTests : ServiceCatalogIntegrationTestBase
     public async Task SetPrimaryGalleryImage_AsUnauthorizedUser_ReturnsUnauthorized()
     {
         // Arrange
-        var provider = await CreateProviderWithGalleryAsync(1);
+        var provider = await CreateProviderWithGalleryDirectAsync(1);
         var images = await GetGalleryImagesAsync(provider.Id.Value);
         ClearAuthenticationHeader();
 
@@ -682,7 +682,7 @@ public class GalleryManagementTests : ServiceCatalogIntegrationTestBase
     public async Task SetPrimaryGalleryImage_ForDifferentProvider_ReturnsForbiddenOrNotFound()
     {
         // Arrange
-        var provider1 = await CreateProviderWithGalleryAsync(1);
+        var provider1 = await CreateProviderWithGalleryDirectAsync(1);
         var provider2 = await CreateAndAuthenticateAsProviderAsync(); // Different provider
 
         var images = await GetGalleryImagesAsync(provider1.Id.Value);
@@ -706,7 +706,7 @@ public class GalleryManagementTests : ServiceCatalogIntegrationTestBase
     public async Task SetPrimaryGalleryImage_MultipleTimes_OnlyLastOneIsPrimary()
     {
         // Arrange
-        var provider = await CreateProviderWithGalleryAsync(3);
+        var provider = await CreateProviderWithGalleryDirectAsync(3);
         AuthenticateAsProviderOwner(provider);
 
         var images = await GetGalleryImagesAsync(provider.Id.Value);
@@ -730,7 +730,7 @@ public class GalleryManagementTests : ServiceCatalogIntegrationTestBase
     public async Task SetPrimaryGalleryImage_UpdatesBusinessProfileTimestamp()
     {
         // Arrange
-        var provider = await CreateProviderWithGalleryAsync(1);
+        var provider = await CreateProviderWithGalleryDirectAsync(1);
         AuthenticateAsProviderOwner(provider);
 
         var images = await GetGalleryImagesAsync(provider.Id.Value);
@@ -752,8 +752,10 @@ public class GalleryManagementTests : ServiceCatalogIntegrationTestBase
     #region Helper Methods
 
     /// <summary>
-    /// Creates a provider and uploads the specified number of gallery images.
+    /// Creates a provider and uploads the specified number of gallery images via HTTP API.
     /// Images are uploaded in batches of 10 to comply with API limits.
+    /// Use this only for tests that specifically test the upload functionality.
+    /// For other tests, use CreateProviderWithGalleryDirectAsync instead.
     /// </summary>
     private async Task<Provider> CreateProviderWithGalleryAsync(int imageCount)
     {
@@ -770,6 +772,33 @@ public class GalleryManagementTests : ServiceCatalogIntegrationTestBase
             remaining -= batchSize;
         }
 
+        return await FindProviderAsync(provider.Id.Value) ?? provider;
+    }
+
+    /// <summary>
+    /// Creates a provider and adds gallery images directly to the database without HTTP upload.
+    /// This is much faster than CreateProviderWithGalleryAsync and should be used for tests
+    /// that need gallery images but aren't testing the upload functionality itself.
+    /// </summary>
+    private async Task<Provider> CreateProviderWithGalleryDirectAsync(int imageCount)
+    {
+        var provider = await CreateAndAuthenticateAsProviderAsync();
+
+        // Add gallery images directly to the provider without HTTP upload
+        for (int i = 0; i < imageCount; i++)
+        {
+            provider.Profile.AddGalleryImage(
+                provider.Id,
+                $"https://test-storage.example.com/images/original-{i}.png",
+                $"https://test-storage.example.com/images/thumbnail-{i}.png",
+                $"https://test-storage.example.com/images/medium-{i}.png"
+            );
+        }
+
+        // Save changes to database
+        await DbContext.SaveChangesAsync();
+
+        // Re-fetch to get updated state
         return await FindProviderAsync(provider.Id.Value) ?? provider;
     }
 
