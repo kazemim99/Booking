@@ -26,6 +26,8 @@ Scenario: Successfully verify Behpardakht payment after customer payment
     And the payment should have status "Completed" in the database
     And the payment should have "RefNumber" stored
     And the payment should have "CardPan" stored
+    And a PaymentRequest transaction should be recorded
+    And a Verification transaction should be recorded
 
 Scenario: Handle Behpardakht callback with failed payment
     Given a Behpardakht payment request has been created with:
@@ -41,6 +43,8 @@ Scenario: Handle Behpardakht callback with failed payment
     Then the callback response should redirect to failure page
     And the payment should have status "Failed" in the database
     And the payment failure reason should be "Customer cancelled the transaction"
+    And a PaymentRequest transaction should be recorded
+    And a Failed transaction should be recorded
 
 Scenario: Handle duplicate verification request
     Given a Behpardakht payment request has been created with:

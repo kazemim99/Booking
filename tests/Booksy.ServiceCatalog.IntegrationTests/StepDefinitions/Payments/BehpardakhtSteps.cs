@@ -806,5 +806,61 @@ public class BehpardakhtSteps
         payment!.DomainEvents.Should().Contain(e => e.GetType().Name == eventName);
     }
 
+    [Then(@"a PaymentRequest transaction should be recorded")]
+    public async Task ThenAPaymentRequestTransactionShouldBeRecorded()
+    {
+        var paymentId = _scenarioContext.Get<Guid>("LastPaymentId");
+
+        var payment = await _testBase.DbContext.Set<Payment>()
+            .Include(p => p.Transactions)
+            .FirstOrDefaultAsync(p => p.Id == PaymentId.From(paymentId));
+
+        payment.Should().NotBeNull();
+        payment!.Transactions.Should().Contain(t => t.Type == TransactionType.PaymentRequest,
+            "Payment should have a PaymentRequest transaction");
+    }
+
+    [Then(@"a Verification transaction should be recorded")]
+    public async Task ThenAVerificationTransactionShouldBeRecorded()
+    {
+        var paymentId = _scenarioContext.Get<Guid>("LastPaymentId");
+
+        var payment = await _testBase.DbContext.Set<Payment>()
+            .Include(p => p.Transactions)
+            .FirstOrDefaultAsync(p => p.Id == PaymentId.From(paymentId));
+
+        payment.Should().NotBeNull();
+        payment!.Transactions.Should().Contain(t => t.Type == TransactionType.Verification,
+            "Payment should have a Verification transaction");
+    }
+
+    [Then(@"a Failed transaction should be recorded")]
+    public async Task ThenAFailedTransactionShouldBeRecorded()
+    {
+        var paymentId = _scenarioContext.Get<Guid>("LastPaymentId");
+
+        var payment = await _testBase.DbContext.Set<Payment>()
+            .Include(p => p.Transactions)
+            .FirstOrDefaultAsync(p => p.Id == PaymentId.From(paymentId));
+
+        payment.Should().NotBeNull();
+        payment!.Transactions.Should().Contain(t => t.Type == TransactionType.Failed,
+            "Payment should have a Failed transaction");
+    }
+
+    [Then(@"the payment should have (.*) transaction\(s\)")]
+    public async Task ThenThePaymentShouldHaveTransactions(int expectedCount)
+    {
+        var paymentId = _scenarioContext.Get<Guid>("LastPaymentId");
+
+        var payment = await _testBase.DbContext.Set<Payment>()
+            .Include(p => p.Transactions)
+            .FirstOrDefaultAsync(p => p.Id == PaymentId.From(paymentId));
+
+        payment.Should().NotBeNull();
+        payment!.Transactions.Count.Should().Be(expectedCount,
+            $"Payment should have exactly {expectedCount} transaction(s)");
+    }
+
     #endregion
 }

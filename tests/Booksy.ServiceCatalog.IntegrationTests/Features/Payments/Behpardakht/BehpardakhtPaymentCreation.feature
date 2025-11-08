@@ -35,6 +35,7 @@ Scenario: Successfully create Behpardakht payment request for booking
         | Status   | Pending      |
         | Method   | Behpardakht  |
         | Amount   | 500000       |
+    And a PaymentRequest transaction should be recorded
 
 Scenario: Create Behpardakht payment request with minimum amount
     When I send a POST request to "/api/v1/payments/behpardakht/create" with:
