@@ -26,8 +26,8 @@ namespace Booksy.ServiceCatalog.IntegrationTests.Features.CQRS.Commands
         
         private static string[] featureTags = ((string[])(null));
         
-        private static global::Reqnroll.FeatureInfo featureInfo = new global::Reqnroll.FeatureInfo(new System.Globalization.CultureInfo("en"), "Features/CQRS/Commands", "Service Command Handlers - Complete Coverage", ("  As a system\r\n  I want to test all service command handlers\r\n  So that every cod" +
-                "e path and validation is covered"), global::Reqnroll.ProgrammingLanguage.CSharp, featureTags);
+        private static global::Reqnroll.FeatureInfo featureInfo = new global::Reqnroll.FeatureInfo(new System.Globalization.CultureInfo("en"), "Features/CQRS/Commands", "Service Command Handlers - Complete Coverage", "  As a system\r\n  I want to test all service command handlers\r\n  So that every cod" +
+                "e path and validation is covered", global::Reqnroll.ProgrammingLanguage.CSharp, featureTags);
         
         private Xunit.Abstractions.ITestOutputHelper _testOutputHelper;
         

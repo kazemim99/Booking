@@ -1,5 +1,6 @@
 using Booksy.Core.Domain.ValueObjects;
 using Booksy.Infrastructure.External.Payment.Behpardakht;
+using Booksy.ServiceCatalog.API.Models.Requests;
 using Booksy.ServiceCatalog.Api.Models.Responses;
 using Booksy.ServiceCatalog.Domain.Aggregates.PaymentAggregate;
 using Booksy.ServiceCatalog.Domain.Enums;
@@ -373,10 +374,11 @@ public class BehpardakhtSteps: ServiceCatalogIntegrationTestBase
     [When(@"the payment is verified successfully")]
     public async Task WhenThePaymentIsVerifiedSuccessfully()
     {
-        await WhenBehpardakhtRedirectsToCallbackWith(new Table("Parameter", "Value")
-        {
-            Rows = { { "RefId", "{LastRefId}" }, { "ResCode", "0" }, { "SaleReferenceId", "123456789" } }
-        });
+        var table = new Table("Parameter", "Value");
+        table.AddRow("RefId", "{LastRefId}");
+        table.AddRow("ResCode", "0");
+        table.AddRow("SaleReferenceId", "123456789");
+        await WhenBehpardakhtRedirectsToCallbackWith(table);
     }
 
     [Given(@"(.*) minutes have passed since payment request")]

@@ -26,8 +26,8 @@ namespace Booksy.ServiceCatalog.IntegrationTests.Features.EdgeCases
         
         private static string[] featureTags = ((string[])(null));
         
-        private static global::Reqnroll.FeatureInfo featureInfo = new global::Reqnroll.FeatureInfo(new System.Globalization.CultureInfo("en"), "Features/EdgeCases", "Data Validation and Business Constraints", ("  As a system\r\n  I want to validate all input data and enforce business rules\r\n  " +
-                "So that data integrity is maintained"), global::Reqnroll.ProgrammingLanguage.CSharp, featureTags);
+        private static global::Reqnroll.FeatureInfo featureInfo = new global::Reqnroll.FeatureInfo(new System.Globalization.CultureInfo("en"), "Features/EdgeCases", "Data Validation and Business Constraints", "  As a system\r\n  I want to validate all input data and enforce business rules\r\n  " +
+                "So that data integrity is maintained", global::Reqnroll.ProgrammingLanguage.CSharp, featureTags);
         
         private Xunit.Abstractions.ITestOutputHelper _testOutputHelper;
         

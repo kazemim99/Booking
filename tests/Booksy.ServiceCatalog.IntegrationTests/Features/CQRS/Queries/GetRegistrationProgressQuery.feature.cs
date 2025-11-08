@@ -26,8 +26,8 @@ namespace Booksy.ServiceCatalog.IntegrationTests.Features.CQRS.Queries
         
         private static string[] featureTags = ((string[])(null));
         
-        private static global::Reqnroll.FeatureInfo featureInfo = new global::Reqnroll.FeatureInfo(new System.Globalization.CultureInfo("en"), "Features/CQRS/Queries", "GetRegistrationProgressQuery - Complete Coverage", ("  As a system\r\n  I want to test GetRegistrationProgressQuery\r\n  So that users can" +
-                " resume their provider registration from where they left off"), global::Reqnroll.ProgrammingLanguage.CSharp, featureTags);
+        private static global::Reqnroll.FeatureInfo featureInfo = new global::Reqnroll.FeatureInfo(new System.Globalization.CultureInfo("en"), "Features/CQRS/Queries", "GetRegistrationProgressQuery - Complete Coverage", "  As a system\r\n  I want to test GetRegistrationProgressQuery\r\n  So that users can" +
+                " resume their provider registration from where they left off", global::Reqnroll.ProgrammingLanguage.CSharp, featureTags);
         
         private Xunit.Abstractions.ITestOutputHelper _testOutputHelper;
         
@@ -856,9 +856,11 @@ namespace Booksy.ServiceCatalog.IntegrationTests.Features.CQRS.Queries
             await this.ScenarioCleanupAsync();
         }
         
-        [Xunit.SkippableFactAttribute(DisplayName="GetRegistrationProgressQuery - Service duration is converted to hours and minutes")]
+        [Xunit.SkippableFactAttribute(DisplayName="GetRegistrationProgressQuery - Service duration is converted to hours and minutes" +
+            "")]
         [Xunit.TraitAttribute("FeatureTitle", "GetRegistrationProgressQuery - Complete Coverage")]
-        [Xunit.TraitAttribute("Description", "GetRegistrationProgressQuery - Service duration is converted to hours and minutes")]
+        [Xunit.TraitAttribute("Description", "GetRegistrationProgressQuery - Service duration is converted to hours and minutes" +
+            "")]
         [Xunit.TraitAttribute("Category", "query")]
         [Xunit.TraitAttribute("Category", "registration")]
         [Xunit.TraitAttribute("Category", "progress")]
@@ -871,7 +873,8 @@ namespace Booksy.ServiceCatalog.IntegrationTests.Features.CQRS.Queries
                     "progress",
                     "duration-conversion"};
             System.Collections.Specialized.OrderedDictionary argumentsOfScenario = new System.Collections.Specialized.OrderedDictionary();
-            global::Reqnroll.ScenarioInfo scenarioInfo = new global::Reqnroll.ScenarioInfo("GetRegistrationProgressQuery - Service duration is converted to hours and minutes", null, tagsOfScenario, argumentsOfScenario, featureTags);
+            global::Reqnroll.ScenarioInfo scenarioInfo = new global::Reqnroll.ScenarioInfo("GetRegistrationProgressQuery - Service duration is converted to hours and minutes" +
+                    "", null, tagsOfScenario, argumentsOfScenario, featureTags);
             this.ScenarioInitialize(scenarioInfo);
             if ((global::Reqnroll.TagHelper.ContainsIgnoreTag(scenarioInfo.CombinedTags) || global::Reqnroll.TagHelper.ContainsIgnoreTag(featureTags)))
             {

@@ -26,8 +26,8 @@ namespace Booksy.ServiceCatalog.IntegrationTests.Features.Payments.ZarinPal
         
         private static string[] featureTags = ((string[])(null));
         
-        private static global::Reqnroll.FeatureInfo featureInfo = new global::Reqnroll.FeatureInfo(new System.Globalization.CultureInfo("en"), "Features/Payments/ZarinPal", "ZarinPal Payment Creation", ("    As a customer\r\n    I want to create a payment request through ZarinPal\r\n    S" +
-                "o that I can pay for my booking using Iranian payment gateway"), global::Reqnroll.ProgrammingLanguage.CSharp, featureTags);
+        private static global::Reqnroll.FeatureInfo featureInfo = new global::Reqnroll.FeatureInfo(new System.Globalization.CultureInfo("en"), "Features/Payments/ZarinPal", "ZarinPal Payment Creation", "    As a customer\r\n    I want to create a payment request through ZarinPal\r\n    S" +
+                "o that I can pay for my booking using Iranian payment gateway", global::Reqnroll.ProgrammingLanguage.CSharp, featureTags);
         
         private Xunit.Abstractions.ITestOutputHelper _testOutputHelper;
         

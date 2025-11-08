@@ -26,8 +26,8 @@ namespace Booksy.ServiceCatalog.IntegrationTests.Features.Payments.ZarinPal
         
         private static string[] featureTags = ((string[])(null));
         
-        private static global::Reqnroll.FeatureInfo featureInfo = new global::Reqnroll.FeatureInfo(new System.Globalization.CultureInfo("en"), "Features/Payments/ZarinPal", "ZarinPal Payment Refunds", ("    As a provider or admin\r\n    I want to refund ZarinPal payments\r\n    So that I" +
-                " can return money to customers when needed"), global::Reqnroll.ProgrammingLanguage.CSharp, featureTags);
+        private static global::Reqnroll.FeatureInfo featureInfo = new global::Reqnroll.FeatureInfo(new System.Globalization.CultureInfo("en"), "Features/Payments/ZarinPal", "ZarinPal Payment Refunds", "    As a provider or admin\r\n    I want to refund ZarinPal payments\r\n    So that I" +
+                " can return money to customers when needed", global::Reqnroll.ProgrammingLanguage.CSharp, featureTags);
         
         private Xunit.Abstractions.ITestOutputHelper _testOutputHelper;
         

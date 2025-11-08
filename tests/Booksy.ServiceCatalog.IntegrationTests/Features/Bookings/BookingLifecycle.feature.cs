@@ -26,8 +26,8 @@ namespace Booksy.ServiceCatalog.IntegrationTests.Features.Bookings
         
         private static string[] featureTags = ((string[])(null));
         
-        private static global::Reqnroll.FeatureInfo featureInfo = new global::Reqnroll.FeatureInfo(new System.Globalization.CultureInfo("en"), "Features/Bookings", "Complete Booking Lifecycle", ("  As a customer and provider\r\n  I want to manage bookings through their complete " +
-                "lifecycle\r\n  So that appointments can be properly tracked and managed"), global::Reqnroll.ProgrammingLanguage.CSharp, featureTags);
+        private static global::Reqnroll.FeatureInfo featureInfo = new global::Reqnroll.FeatureInfo(new System.Globalization.CultureInfo("en"), "Features/Bookings", "Complete Booking Lifecycle", "  As a customer and provider\r\n  I want to manage bookings through their complete " +
+                "lifecycle\r\n  So that appointments can be properly tracked and managed", global::Reqnroll.ProgrammingLanguage.CSharp, featureTags);
         
         private Xunit.Abstractions.ITestOutputHelper _testOutputHelper;
         

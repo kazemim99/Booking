@@ -26,8 +26,8 @@ namespace Booksy.ServiceCatalog.IntegrationTests.Features.Payments.Behpardakht
         
         private static string[] featureTags = ((string[])(null));
         
-        private static global::Reqnroll.FeatureInfo featureInfo = new global::Reqnroll.FeatureInfo(new System.Globalization.CultureInfo("en"), "Features/Payments/Behpardakht", "Behpardakht Payment Refunds", ("    As a merchant\r\n    I want to refund Behpardakht payments\r\n    So that I can r" +
-                "eturn money to customers when needed"), global::Reqnroll.ProgrammingLanguage.CSharp, featureTags);
+        private static global::Reqnroll.FeatureInfo featureInfo = new global::Reqnroll.FeatureInfo(new System.Globalization.CultureInfo("en"), "Features/Payments/Behpardakht", "Behpardakht Payment Refunds", "    As a merchant\r\n    I want to refund Behpardakht payments\r\n    So that I can r" +
+                "eturn money to customers when needed", global::Reqnroll.ProgrammingLanguage.CSharp, featureTags);
         
         private Xunit.Abstractions.ITestOutputHelper _testOutputHelper;
         
