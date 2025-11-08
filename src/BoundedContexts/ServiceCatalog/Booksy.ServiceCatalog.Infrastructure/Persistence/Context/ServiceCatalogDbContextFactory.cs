@@ -1,6 +1,7 @@
 using Booksy.Core.Application.Abstractions.Services;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Design;
+using Microsoft.Extensions.Configuration;
 using System.Security.Claims;
 
 namespace Booksy.ServiceCatalog.Infrastructure.Persistence.Context
@@ -12,11 +13,22 @@ namespace Booksy.ServiceCatalog.Infrastructure.Persistence.Context
     {
         public ServiceCatalogDbContext CreateDbContext(string[] args)
         {
+            // Build configuration
+            var configuration = new ConfigurationBuilder()
+                .SetBasePath(Directory.GetCurrentDirectory())
+                .AddJsonFile("appsettings.json", optional: false)
+                .AddEnvironmentVariables()
+                .Build();
+
             var optionsBuilder = new DbContextOptionsBuilder<ServiceCatalogDbContext>();
 
-            // Use SQL Server with a placeholder connection string for migrations
+            // Get connection string from configuration
+            var connectionString = configuration.GetConnectionString("DefaultConnection")
+                ?? "Server=localhost;Database=BooksyDev;Trusted_Connection=True;TrustServerCertificate=True;";
+
+            // Use SQL Server
             optionsBuilder.UseSqlServer(
-                "Server=(localdb)\\mssqllocaldb;Database=BooksyServiceCatalog;Trusted_Connection=True;MultipleActiveResultSets=true",
+                connectionString,
                 b => b.MigrationsAssembly("Booksy.ServiceCatalog.Infrastructure"));
 
             // Create mock services for design-time

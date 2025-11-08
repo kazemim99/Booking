@@ -84,7 +84,7 @@ Feature: Data Validation and Business Constraints
   Scenario: String fields respect maximum length
     When I try to create a service with 1000-character description
     Then it should succeed if under limit
-    Or fail if exceeding maximum length
+    #Or fail if exceeding maximum length
 
   @constraint @unique-business-name
   Scenario: Business name must be unique per city

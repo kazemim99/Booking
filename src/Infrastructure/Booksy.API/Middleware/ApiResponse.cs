@@ -5,23 +5,23 @@ namespace Booksy.Core.Domain.Infrastructure.Middleware
 {
     public class ApiResponse<TResponse> 
     {
-        public bool success { get; set; }
+        public bool Success { get; set; }
         public HttpStatusCode StatusCode { get; set; }
         public string Message { get; set; }
         public ApiError Error { get; set; }
         public Dictionary<string, string[]> Errors { get; set; }
         public TResponse Data { get; set; }
-        public ResponseMetaData metadata { get; internal set; }
+        public ResponseMetaData Metadata { get; internal set; }
     }
     public class ApiResponse
     {
-        public bool success { get; set; }
+        public bool Success { get; set; }
         public HttpStatusCode StatusCode { get; set; }
         public string Message { get; set; }
         public ApiError Error { get; set; }
         public Dictionary<string, string[]> Errors { get; set; }
-        public object data { get; set; }
-        public ResponseMetaData metadata { get; internal set; }
+        public object Data { get; set; }
+        public ResponseMetaData Metadata { get; internal set; }
     }
     public class ApiError
     {

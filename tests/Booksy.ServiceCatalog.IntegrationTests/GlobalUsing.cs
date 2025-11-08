@@ -6,3 +6,4 @@ global using Booksy.ServiceCatalog.API.Models.Responses;
 global using Booksy.ServiceCatalog.IntegrationTests.Infrastructure;
 global using FluentAssertions;
 global using System.Net;
+global using DayOfWeek = Booksy.ServiceCatalog.Domain.Enums.DayOfWeek;

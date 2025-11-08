@@ -448,7 +448,7 @@ public class SharedSteps
         if (response.Data is System.Collections.IEnumerable enumerable)
         {
             var actualCount = enumerable.Cast<object>().Count();
-            actualCount.Should().BeGreaterOrEqualTo(minimumCount,
+            actualCount.Should().BeGreaterThanOrEqualTo(minimumCount,
                 $"Response should contain at least {minimumCount} items but contained {actualCount}");
         }
     }

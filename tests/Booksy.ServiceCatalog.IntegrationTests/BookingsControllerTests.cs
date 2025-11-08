@@ -275,6 +275,7 @@ public class BookingsControllerTests : ServiceCatalogIntegrationTestBase
             $"/api/v1/bookings/{booking.Id.Value}/cancel", request);
 
         // Assert
+        response.Errors.Should().BeNull();
         response.StatusCode.Should().Be(HttpStatusCode.OK);
         response.Data.Should().NotBeNull();
         response!.Message.Should().Contain("cancelled successfully");

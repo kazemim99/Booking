@@ -158,7 +158,11 @@ namespace Booksy.ServiceCatalog.Infrastructure.Persistence.Configurations
             // Metadata (JSON)
             builder.Property(p => p.Metadata)
                 .HasColumnName("Metadata")
-                .HasColumnType("jsonb");
+                .HasColumnType("jsonb")
+                .HasConversion(
+                    v => System.Text.Json.JsonSerializer.Serialize(v, (System.Text.Json.JsonSerializerOptions?)null),
+                    v => System.Text.Json.JsonSerializer.Deserialize<Dictionary<string, object>>(v, (System.Text.Json.JsonSerializerOptions?)null)
+                        ?? new Dictionary<string, object>());
 
             // Transactions (Owned Collection)
             builder.OwnsMany(p => p.Transactions, transactions =>
@@ -167,6 +171,11 @@ namespace Booksy.ServiceCatalog.Infrastructure.Persistence.Configurations
 
                 transactions.WithOwner()
                     .HasForeignKey("PaymentId");
+
+                // Configure the shadow property PaymentId as Guid
+                transactions.Property<Guid>("PaymentId")
+                    .HasColumnName("PaymentId")
+                    .IsRequired();
 
                 transactions.HasKey("Id");
 
@@ -209,7 +218,11 @@ namespace Booksy.ServiceCatalog.Infrastructure.Persistence.Configurations
                     .HasColumnType("timestamp with time zone");
 
                 transactions.Property(t => t.Metadata)
-                    .HasColumnType("jsonb");
+                    .HasColumnType("jsonb")
+                    .HasConversion(
+                        v => System.Text.Json.JsonSerializer.Serialize(v, (System.Text.Json.JsonSerializerOptions?)null),
+                        v => System.Text.Json.JsonSerializer.Deserialize<Dictionary<string, object>>(v, (System.Text.Json.JsonSerializerOptions?)null)
+                            ?? new Dictionary<string, object>());
             });
 
             // Indexes
