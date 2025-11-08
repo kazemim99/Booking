@@ -10,10 +10,25 @@ The RabbitMQ Event Bus provides a robust, production-ready message broker implem
 
 ### Components
 
+This infrastructure package provides the **reusable messaging infrastructure** only:
+
 1. **RabbitMqEventBus** - Main event bus implementation for publishing events
 2. **DomainEventConsumer<TEvent>** - Generic consumer for handling domain events
 3. **MassTransitExtensions** - DI configuration and setup
 4. **RabbitMqSettings** - Configuration settings
+
+### 🏗️ Important: Handler Placement
+
+**Event handlers MUST be placed in the Application layer of each bounded context**, NOT in `Booksy.Infrastructure.Core`.
+
+**Correct location:**
+- ✅ `Booksy.ServiceCatalog.Application/EventHandlers/`
+- ✅ `Booksy.UserManagement.Application/EventHandlers/`
+
+**Incorrect location:**
+- ❌ `Booksy.Infrastructure.Core/EventBus/RabbitMQ/` (violates dependency hierarchy)
+
+This follows Clean Architecture principles where infrastructure should not depend on domain/application layers of bounded contexts.
 
 ### Key Features
 
@@ -465,13 +480,24 @@ public async Task EndToEnd_PublishAndConsume()
 3. Fix the issue and replay messages from DLQ
 4. Consider adjusting retry policy settings
 
-## Example Files
+## Implementation Files
 
-### Publisher Example
-See: `Consumers/Examples/BookingRequestedEventHandler.cs`
+### Infrastructure Components (in this package)
 
-### Consumer Registration
-See: `MassTransitExtensions.cs`
+1. **RabbitMqEventBus.cs** - Event publisher implementation
+2. **DomainEventConsumer.cs** - Generic event consumer
+3. **MassTransitExtensions.cs** - DI registration and configuration
+4. **RabbitMqSettings.cs** - Configuration class
+
+### Application Components (in bounded contexts)
+
+Event handlers should be created in each bounded context's Application layer:
+
+**Example locations:**
+- `Booksy.ServiceCatalog.Application/EventHandlers/BookingRequestedEventHandler.cs`
+- `Booksy.UserManagement.Application/EventHandlers/UserRegisteredEventHandler.cs`
+
+See the "Consuming Events" section above for handler implementation examples.
 
 ## Additional Resources
 
