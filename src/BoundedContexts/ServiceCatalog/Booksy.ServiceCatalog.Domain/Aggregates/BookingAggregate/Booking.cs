@@ -9,15 +9,18 @@ using Booksy.Core.Domain.ValueObjects;
 using Booksy.ServiceCatalog.Domain.Enums;
 using Booksy.ServiceCatalog.Domain.Events;
 using Booksy.ServiceCatalog.Domain.ValueObjects;
+using Booksy.ServiceCatalog.Domain.Aggregates.BookingAggregate.States;
 
 namespace Booksy.ServiceCatalog.Domain.Aggregates.BookingAggregate
 {
     /// <summary>
     /// Booking aggregate root - manages appointment bookings with customers
+    /// Uses State pattern for managing booking status transitions
     /// </summary>
     public sealed class Booking : AggregateRoot<BookingId>, IAuditableEntity
     {
         private readonly List<BookingHistoryEntry> _history = new();
+        private IBookingState _state;
 
         // Core Identity
         public UserId CustomerId { get; private set; }
@@ -28,7 +31,7 @@ namespace Booksy.ServiceCatalog.Domain.Aggregates.BookingAggregate
         // Booking Details
         public TimeSlot TimeSlot { get; private set; }
         public Duration Duration { get; private set; }
-        public BookingStatus Status { get; private set; }
+        public BookingStatus Status => _state.Status;
 
         // Pricing & Payment
         public Price TotalPrice { get; private set; }
@@ -63,7 +66,10 @@ namespace Booksy.ServiceCatalog.Domain.Aggregates.BookingAggregate
         public string? LastModifiedBy { get; set; }
 
         // Private constructor for EF Core
-        private Booking() : base() { }
+        private Booking() : base()
+        {
+            _state = new RequestedState(); // Default state
+        }
 
         /// <summary>
         /// Factory method - Create a new booking request
@@ -96,12 +102,12 @@ namespace Booksy.ServiceCatalog.Domain.Aggregates.BookingAggregate
                 StaffId = staffId,
                 TimeSlot = timeSlot,
                 Duration = duration,
-                Status = BookingStatus.Requested,
                 TotalPrice = totalPrice,
                 PaymentInfo = paymentInfo,
                 Policy = policy,
                 CustomerNotes = customerNotes,
-                RequestedAt = DateTime.UtcNow
+                RequestedAt = DateTime.UtcNow,
+                _state = new RequestedState()
             };
 
             booking.AddHistoryEntry("Booking requested", BookingStatus.Requested);
@@ -121,7 +127,7 @@ namespace Booksy.ServiceCatalog.Domain.Aggregates.BookingAggregate
         }
 
         // ========================================
-        // BUSINESS METHODS - STATE TRANSITIONS
+        // BUSINESS METHODS - STATE TRANSITIONS (Using State Pattern)
         // ========================================
 
         /// <summary>
@@ -129,35 +135,7 @@ namespace Booksy.ServiceCatalog.Domain.Aggregates.BookingAggregate
         /// </summary>
         public void Confirm()
         {
-            // Business rules validation
-            if (Status != BookingStatus.Requested)
-                throw new BusinessRuleViolationException(
-                    new BookingCanOnlyBeConfirmedFromRequestedStateRule(Status));
-
-            // Check if deposit is required and paid
-            if (Policy.RequireDeposit && !PaymentInfo.IsDepositPaid())
-                throw new BusinessRuleViolationException(
-                    new DepositMustBePaidBeforeConfirmationRule());
-
-            // Check if booking time is still valid
-            if (!Policy.IsWithinBookingWindow(TimeSlot.StartTime, DateTime.UtcNow))
-                throw new BusinessRuleViolationException(
-                    new BookingMustBeWithinValidTimeWindowRule(Policy));
-
-            Status = BookingStatus.Confirmed;
-            ConfirmedAt = DateTime.UtcNow;
-
-            AddHistoryEntry("Booking confirmed", BookingStatus.Confirmed);
-
-            RaiseDomainEvent(new BookingConfirmedEvent(
-                Id,
-                CustomerId,
-                ProviderId,
-                ServiceId,
-                StaffId,
-                TimeSlot.StartTime,
-                TimeSlot.EndTime,
-                ConfirmedAt.Value));
+            _state.Confirm(this);
         }
 
         /// <summary>
@@ -165,40 +143,7 @@ namespace Booksy.ServiceCatalog.Domain.Aggregates.BookingAggregate
         /// </summary>
         public void Cancel(string reason, bool byProvider = false)
         {
-            // Business rules validation
-            if (!CanBeCancelled())
-                throw new BusinessRuleViolationException(
-                    new BookingCannotBeCancelledRule(Status));
-
-            var now = DateTime.UtcNow;
-            var canCancelWithoutFee = Policy.CanCancelWithoutFee(TimeSlot.StartTime, now);
-
-            Money? cancellationFee = null;
-            if (!canCancelWithoutFee && !byProvider && PaymentInfo.IsDepositPaid())
-            {
-                cancellationFee = Policy.CalculateCancellationFee(
-                    Money.Create(TotalPrice.Amount, TotalPrice.Currency));
-            }
-
-            Status = BookingStatus.Cancelled;
-            CancellationReason = reason;
-            CancelledAt = now;
-
-            AddHistoryEntry(
-                $"Booking cancelled: {reason} {(canCancelWithoutFee ? "(no fee)" : "(fee applied)")}",
-                BookingStatus.Cancelled);
-
-            RaiseDomainEvent(new BookingCancelledEvent(
-                Id,
-                CustomerId,
-                ProviderId,
-                ServiceId,
-                StaffId,
-                reason,
-                canCancelWithoutFee,
-                cancellationFee?.Amount ?? 0,
-                byProvider,
-                CancelledAt.Value));
+            _state.Cancel(this, reason, byProvider);
         }
 
         /// <summary>
@@ -209,61 +154,7 @@ namespace Booksy.ServiceCatalog.Domain.Aggregates.BookingAggregate
             Guid newStaffId,
             string? reason = null)
         {
-            // Business rules validation
-            if (!CanBeRescheduled())
-                throw new BusinessRuleViolationException(
-                    new BookingCannotBeRescheduledRule(Status, Policy));
-
-            var now = DateTime.UtcNow;
-            if (!Policy.CanReschedule(TimeSlot.StartTime, now))
-                throw new BusinessRuleViolationException(
-                    new RescheduleWindowExpiredRule(Policy, TimeSlot.StartTime));
-
-            // Create new booking for the rescheduled time
-            var newBooking = new Booking
-            {
-                Id = BookingId.New(),
-                CustomerId = CustomerId,
-                ProviderId = ProviderId,
-                ServiceId = ServiceId,
-                StaffId = newStaffId,
-                TimeSlot = TimeSlot.Create(newStartTime, Duration),
-                Duration = Duration,
-                Status = BookingStatus.Requested,
-                TotalPrice = TotalPrice,
-                PaymentInfo = PaymentInfo, // Transfer payment info
-                Policy = Policy,
-                CustomerNotes = CustomerNotes,
-                PreviousBookingId = Id,
-                RequestedAt = now
-            };
-
-            // Mark current booking as rescheduled
-            Status = BookingStatus.Rescheduled;
-            RescheduledToBookingId = newBooking.Id;
-            RescheduledAt = now;
-
-            AddHistoryEntry(
-                $"Booking rescheduled to {newStartTime:yyyy-MM-dd HH:mm}. {reason}",
-                BookingStatus.Rescheduled);
-
-            newBooking.AddHistoryEntry(
-                $"Rescheduled from {TimeSlot.StartTime:yyyy-MM-dd HH:mm}",
-                BookingStatus.Requested);
-
-            RaiseDomainEvent(new BookingRescheduledEvent(
-                Id,
-                newBooking.Id,
-                CustomerId,
-                ProviderId,
-                TimeSlot.StartTime,
-                newStartTime,
-                StaffId,
-                newStaffId,
-                reason,
-                RescheduledAt.Value));
-
-            return newBooking;
+            return _state.Reschedule(this, newStartTime, newStaffId, reason);
         }
 
         /// <summary>
@@ -271,31 +162,7 @@ namespace Booksy.ServiceCatalog.Domain.Aggregates.BookingAggregate
         /// </summary>
         public void Complete(string? staffNotes = null)
         {
-            // Business rules validation
-            if (Status != BookingStatus.Confirmed)
-                throw new BusinessRuleViolationException(
-                    new BookingCanOnlyBeCompletedFromConfirmedStateRule(Status));
-
-            // Booking should be completed only after or near the scheduled time
-            var now = DateTime.UtcNow;
-            if (now < TimeSlot.StartTime.AddMinutes(-15)) // Allow 15 min early completion
-                throw new BusinessRuleViolationException(
-                    new BookingCannotBeCompletedBeforeScheduledTimeRule(TimeSlot.StartTime));
-
-            Status = BookingStatus.Completed;
-            CompletedAt = now;
-            StaffNotes = staffNotes;
-
-            AddHistoryEntry("Booking completed", BookingStatus.Completed);
-
-            RaiseDomainEvent(new BookingCompletedEvent(
-                Id,
-                CustomerId,
-                ProviderId,
-                ServiceId,
-                StaffId,
-                TimeSlot.StartTime,
-                CompletedAt.Value));
+            _state.Complete(this, staffNotes);
         }
 
         /// <summary>
@@ -303,31 +170,7 @@ namespace Booksy.ServiceCatalog.Domain.Aggregates.BookingAggregate
         /// </summary>
         public void MarkAsNoShow(string? reason = null)
         {
-            // Business rules validation
-            if (Status != BookingStatus.Confirmed)
-                throw new BusinessRuleViolationException(
-                    new NoShowCanOnlyBeMarkedFromConfirmedStateRule(Status));
-
-            // Can only mark as no-show after the scheduled time
-            var now = DateTime.UtcNow;
-            if (now < TimeSlot.EndTime)
-                throw new BusinessRuleViolationException(
-                    new CannotMarkNoShowBeforeEndTimeRule(TimeSlot.EndTime));
-
-            Status = BookingStatus.NoShow;
-            StaffNotes = reason ?? "Customer did not show up";
-
-            AddHistoryEntry("Marked as no-show", BookingStatus.NoShow);
-
-            RaiseDomainEvent(new BookingNoShowEvent(
-                Id,
-                CustomerId,
-                ProviderId,
-                ServiceId,
-                StaffId,
-                TimeSlot.StartTime,
-                PaymentInfo.PaidAmount,
-                now));
+            _state.MarkAsNoShow(this, reason);
         }
 
         /// <summary>
@@ -521,155 +364,113 @@ namespace Booksy.ServiceCatalog.Domain.Aggregates.BookingAggregate
         /// <summary>
         /// Add entry to booking history
         /// </summary>
-        private void AddHistoryEntry(string description, BookingStatus status)
+        internal void AddHistoryEntry(string description, BookingStatus status)
         {
             var entry = BookingHistoryEntry.Create(description, status);
             _history.Add(entry);
         }
+
+        // ========================================
+        // INTERNAL STATE TRANSITION HELPERS
+        // These methods are called by state classes to modify the booking
+        // ========================================
+
+        /// <summary>
+        /// Transition to a new state
+        /// </summary>
+        internal void TransitionToState(IBookingState newState)
+        {
+            _state = newState;
+        }
+
+        /// <summary>
+        /// Set the confirmed timestamp
+        /// </summary>
+        internal void SetConfirmedAt(DateTime confirmedAt)
+        {
+            ConfirmedAt = confirmedAt;
+        }
+
+        /// <summary>
+        /// Set the cancelled timestamp
+        /// </summary>
+        internal void SetCancelledAt(DateTime cancelledAt)
+        {
+            CancelledAt = cancelledAt;
+        }
+
+        /// <summary>
+        /// Set the cancellation reason
+        /// </summary>
+        internal void SetCancellationReason(string reason)
+        {
+            CancellationReason = reason;
+        }
+
+        /// <summary>
+        /// Set the completed timestamp
+        /// </summary>
+        internal void SetCompletedAt(DateTime completedAt)
+        {
+            CompletedAt = completedAt;
+        }
+
+        /// <summary>
+        /// Set staff notes
+        /// </summary>
+        internal void SetStaffNotes(string? notes)
+        {
+            StaffNotes = notes;
+        }
+
+        /// <summary>
+        /// Set the rescheduled timestamp
+        /// </summary>
+        internal void SetRescheduledAt(DateTime rescheduledAt)
+        {
+            RescheduledAt = rescheduledAt;
+        }
+
+        /// <summary>
+        /// Set the rescheduled-to booking ID
+        /// </summary>
+        internal void SetRescheduledToBookingId(BookingId bookingId)
+        {
+            RescheduledToBookingId = bookingId;
+        }
+
+        /// <summary>
+        /// Create a new booking for rescheduling
+        /// </summary>
+        internal Booking CreateRescheduledBooking(DateTime newStartTime, Guid newStaffId, string? reason)
+        {
+            var now = DateTime.UtcNow;
+
+            var newBooking = new Booking
+            {
+                Id = BookingId.New(),
+                CustomerId = CustomerId,
+                ProviderId = ProviderId,
+                ServiceId = ServiceId,
+                StaffId = newStaffId,
+                TimeSlot = TimeSlot.Create(newStartTime, Duration),
+                Duration = Duration,
+                TotalPrice = TotalPrice,
+                PaymentInfo = PaymentInfo, // Transfer payment info
+                Policy = Policy,
+                CustomerNotes = CustomerNotes,
+                PreviousBookingId = Id,
+                RequestedAt = now,
+                _state = new RequestedState()
+            };
+
+            return newBooking;
+        }
     }
 
     // ========================================
-    // BUSINESS RULES
+    // BUSINESS RULES (kept for non-state-transition operations)
     // ========================================
-
-    internal sealed class BookingCanOnlyBeConfirmedFromRequestedStateRule : IBusinessRule
-    {
-        private readonly BookingStatus _currentStatus;
-
-        public BookingCanOnlyBeConfirmedFromRequestedStateRule(BookingStatus currentStatus)
-        {
-            _currentStatus = currentStatus;
-        }
-
-        public string Message => $"Booking can only be confirmed from Requested state. Current state: {_currentStatus}";
-        public string ErrorCode => "BOOKING_INVALID_STATE_FOR_CONFIRMATION";
-        public bool IsBroken() => _currentStatus != BookingStatus.Requested;
-    }
-
-    internal sealed class DepositMustBePaidBeforeConfirmationRule : IBusinessRule
-    {
-        public string Message => "Deposit must be paid before booking can be confirmed";
-        public string ErrorCode => "BOOKING_DEPOSIT_NOT_PAID";
-        public bool IsBroken() => true;
-    }
-
-    internal sealed class BookingMustBeWithinValidTimeWindowRule : IBusinessRule
-    {
-        private readonly BookingPolicy _policy;
-
-        public BookingMustBeWithinValidTimeWindowRule(BookingPolicy policy)
-        {
-            _policy = policy;
-        }
-
-        public string Message => $"Booking must be made at least {_policy.MinAdvanceBookingHours} hours in advance and no more than {_policy.MaxAdvanceBookingDays} days in advance";
-        public string ErrorCode => "BOOKING_OUTSIDE_TIME_WINDOW";
-        public bool IsBroken() => true;
-    }
-
-    internal sealed class BookingCannotBeCancelledRule : IBusinessRule
-    {
-        private readonly BookingStatus _status;
-
-        public BookingCannotBeCancelledRule(BookingStatus status)
-        {
-            _status = status;
-        }
-
-        public string Message => $"Booking with status {_status} cannot be cancelled";
-        public string ErrorCode => "BOOKING_CANNOT_BE_CANCELLED";
-        public bool IsBroken() => true;
-    }
-
-    internal sealed class BookingCannotBeRescheduledRule : IBusinessRule
-    {
-        private readonly BookingStatus _status;
-        private readonly BookingPolicy _policy;
-
-        public BookingCannotBeRescheduledRule(BookingStatus status, BookingPolicy policy)
-        {
-            _status = status;
-            _policy = policy;
-        }
-
-        public string Message => _policy.AllowRescheduling
-            ? $"Booking with status {_status} cannot be rescheduled"
-            : "Rescheduling is not allowed by booking policy";
-        public string ErrorCode => "BOOKING_CANNOT_BE_RESCHEDULED";
-        public bool IsBroken() => true;
-    }
-
-    internal sealed class RescheduleWindowExpiredRule : IBusinessRule
-    {
-        private readonly BookingPolicy _policy;
-        private readonly DateTime _bookingStartTime;
-
-        public RescheduleWindowExpiredRule(BookingPolicy policy, DateTime bookingStartTime)
-        {
-            _policy = policy;
-            _bookingStartTime = bookingStartTime;
-        }
-
-        public string Message => $"Rescheduling must be done at least {_policy.RescheduleWindowHours} hours before the booking";
-        public string ErrorCode => "BOOKING_RESCHEDULE_WINDOW_EXPIRED";
-        public bool IsBroken() => true;
-    }
-
-    internal sealed class BookingCanOnlyBeCompletedFromConfirmedStateRule : IBusinessRule
-    {
-        private readonly BookingStatus _status;
-
-        public BookingCanOnlyBeCompletedFromConfirmedStateRule(BookingStatus status)
-        {
-            _status = status;
-        }
-
-        public string Message => $"Booking can only be completed from Confirmed state. Current state: {_status}";
-        public string ErrorCode => "BOOKING_INVALID_STATE_FOR_COMPLETION";
-        public bool IsBroken() => true;
-    }
-
-    internal sealed class BookingCannotBeCompletedBeforeScheduledTimeRule : IBusinessRule
-    {
-        private readonly DateTime _scheduledTime;
-
-        public BookingCannotBeCompletedBeforeScheduledTimeRule(DateTime scheduledTime)
-        {
-            _scheduledTime = scheduledTime;
-        }
-
-        public string Message => $"Booking cannot be completed before scheduled time: {_scheduledTime:yyyy-MM-dd HH:mm}";
-        public string ErrorCode => "BOOKING_TOO_EARLY_TO_COMPLETE";
-        public bool IsBroken() => true;
-    }
-
-    internal sealed class NoShowCanOnlyBeMarkedFromConfirmedStateRule : IBusinessRule
-    {
-        private readonly BookingStatus _status;
-
-        public NoShowCanOnlyBeMarkedFromConfirmedStateRule(BookingStatus status)
-        {
-            _status = status;
-        }
-
-        public string Message => $"No-show can only be marked for Confirmed bookings. Current state: {_status}";
-        public string ErrorCode => "BOOKING_INVALID_STATE_FOR_NO_SHOW";
-        public bool IsBroken() => true;
-    }
-
-    internal sealed class CannotMarkNoShowBeforeEndTimeRule : IBusinessRule
-    {
-        private readonly DateTime _endTime;
-
-        public CannotMarkNoShowBeforeEndTimeRule(DateTime endTime)
-        {
-            _endTime = endTime;
-        }
-
-        public string Message => $"Cannot mark as no-show before booking end time: {_endTime:yyyy-MM-dd HH:mm}";
-        public string ErrorCode => "BOOKING_TOO_EARLY_FOR_NO_SHOW";
-        public bool IsBroken() => true;
-    }
 
     internal sealed class StaffCanOnlyBeAssignedToActiveBookingsRule : IBusinessRule
     {

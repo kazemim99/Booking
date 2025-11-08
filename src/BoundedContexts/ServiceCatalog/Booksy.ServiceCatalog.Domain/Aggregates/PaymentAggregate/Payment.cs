@@ -4,6 +4,7 @@
 using Booksy.Core.Domain.Base;
 using Booksy.Core.Domain.ValueObjects;
 using Booksy.ServiceCatalog.Domain.Aggregates.PaymentAggregate.Entities;
+using Booksy.ServiceCatalog.Domain.Aggregates.PaymentAggregate.States;
 using Booksy.ServiceCatalog.Domain.Enums;
 using Booksy.ServiceCatalog.Domain.Events;
 using Booksy.ServiceCatalog.Domain.ValueObjects;
@@ -12,10 +13,12 @@ namespace Booksy.ServiceCatalog.Domain.Aggregates.PaymentAggregate
 {
     /// <summary>
     /// Payment aggregate root - manages payment lifecycle and transactions
+    /// Uses State pattern for managing payment status transitions
     /// </summary>
     public sealed class Payment : AggregateRoot<PaymentId>
     {
         private readonly List<Transaction> _transactions = new();
+        private IPaymentState _state;
 
         // Identity
         public BookingId? BookingId { get; private set; }
@@ -26,7 +29,7 @@ namespace Booksy.ServiceCatalog.Domain.Aggregates.PaymentAggregate
         public Money Amount { get; private set; }
         public Money PaidAmount { get; private set; }
         public Money RefundedAmount { get; private set; }
-        public PaymentStatus Status { get; private set; }
+        public PaymentStatus Status => _state.Status;
         public PaymentMethod Method { get; private set; }
 
         // Payment Provider Details
@@ -62,6 +65,7 @@ namespace Booksy.ServiceCatalog.Domain.Aggregates.PaymentAggregate
             Metadata = new Dictionary<string, object>();
             PaidAmount = Money.Zero("USD");
             RefundedAmount = Money.Zero("USD");
+            _state = new PendingState(); // Default state
         }
 
         private Payment(
@@ -80,7 +84,7 @@ namespace Booksy.ServiceCatalog.Domain.Aggregates.PaymentAggregate
             Amount = amount ?? throw new ArgumentNullException(nameof(amount));
             PaidAmount = Money.Zero(amount.Currency);
             RefundedAmount = Money.Zero(amount.Currency);
-            Status = PaymentStatus.Pending;
+            _state = new PendingState(); // Initialize to Pending state
             Method = method;
             Description = description;
             CreatedAt = DateTime.UtcNow;
@@ -224,27 +228,7 @@ namespace Booksy.ServiceCatalog.Domain.Aggregates.PaymentAggregate
         /// </summary>
         public void ProcessCharge(string paymentIntentId, string? paymentMethodId = null)
         {
-            if (Status != PaymentStatus.Pending)
-                throw new InvalidOperationException($"Cannot process payment in {Status} status");
-
-            if (string.IsNullOrWhiteSpace(paymentIntentId))
-                throw new ArgumentException("Payment intent ID is required", nameof(paymentIntentId));
-
-            PaymentIntentId = paymentIntentId;
-            PaymentMethodId = paymentMethodId;
-            PaidAmount = Amount;
-            Status = PaymentStatus.Paid;
-            CapturedAt = DateTime.UtcNow;
-
-            var transaction = Transaction.CreateCharge(
-                Amount,
-                paymentIntentId,
-                $"Charge for Payment {Id}",
-                Metadata);
-
-            _transactions.Add(transaction);
-
-            RaiseDomainEvent(new PaymentProcessedEvent(Id, BookingId, CustomerId, ProviderId, Amount, CapturedAt.Value));
+            _state.ProcessPayment(this, paymentIntentId, paymentMethodId);
         }
 
         /// <summary>
@@ -252,34 +236,7 @@ namespace Booksy.ServiceCatalog.Domain.Aggregates.PaymentAggregate
         /// </summary>
         public void ProcessPartialPayment(Money amount, string transactionId)
         {
-            if (Status == PaymentStatus.Refunded)
-                throw new InvalidOperationException("Cannot process payment for refunded payment");
-
-            if (Status == PaymentStatus.Failed)
-                throw new InvalidOperationException("Cannot process payment for failed payment");
-
-            if (amount.Amount <= 0)
-                throw new ArgumentException("Payment amount must be positive", nameof(amount));
-
-            if (amount.Currency != Amount.Currency)
-                throw new ArgumentException("Payment currency mismatch");
-
-            var newPaidAmount = PaidAmount.Add(amount);
-            if (newPaidAmount.Amount > Amount.Amount)
-                throw new InvalidOperationException("Paid amount cannot exceed total amount");
-
-            PaidAmount = newPaidAmount;
-            Status = PaidAmount.Amount >= Amount.Amount ? PaymentStatus.Paid : PaymentStatus.PartiallyPaid;
-
-            var transaction = Transaction.CreateCharge(
-                amount,
-                transactionId,
-                $"Partial payment for Payment {Id}",
-                Metadata);
-
-            _transactions.Add(transaction);
-
-            RaiseDomainEvent(new PaymentProcessedEvent(Id, BookingId, CustomerId, ProviderId, amount, DateTime.UtcNow));
+            _state.ProcessPartialPayment(this, amount, transactionId);
         }
 
         /// <summary>
@@ -287,47 +244,7 @@ namespace Booksy.ServiceCatalog.Domain.Aggregates.PaymentAggregate
         /// </summary>
         public void Refund(Money refundAmount, string refundId, RefundReason reason, string? notes = null)
         {
-            if (Status != PaymentStatus.Paid && Status != PaymentStatus.PartiallyPaid && Status != PaymentStatus.PartiallyRefunded)
-                throw new InvalidOperationException($"Cannot refund payment in {Status} status");
-
-            if (refundAmount.Amount <= 0)
-                throw new ArgumentException("Refund amount must be positive", nameof(refundAmount));
-
-            if (refundAmount.Currency != Amount.Currency)
-                throw new ArgumentException("Refund currency mismatch");
-
-            var newRefundedAmount = RefundedAmount.Add(refundAmount);
-            if (newRefundedAmount.Amount > PaidAmount.Amount)
-                throw new InvalidOperationException("Refunded amount cannot exceed paid amount");
-
-            RefundedAmount = newRefundedAmount;
-            Status = RefundedAmount.Amount >= PaidAmount.Amount
-                ? PaymentStatus.Refunded
-                : PaymentStatus.PartiallyRefunded;
-            RefundedAt = DateTime.UtcNow;
-
-            var metadata = new Dictionary<string, object>(Metadata)
-            {
-                ["RefundReason"] = reason.ToString(),
-                ["RefundNotes"] = notes ?? string.Empty
-            };
-
-            var transaction = Transaction.CreateRefund(
-                refundAmount,
-                refundId,
-                $"Refund for Payment {Id}",
-                metadata);
-
-            _transactions.Add(transaction);
-
-            RaiseDomainEvent(new PaymentRefundedEvent(
-                Id,
-                BookingId,
-                CustomerId,
-                ProviderId,
-                refundAmount,
-                reason,
-                RefundedAt.Value));
+            _state.Refund(this, refundAmount, refundId, reason, notes);
         }
 
         /// <summary>
@@ -335,14 +252,7 @@ namespace Booksy.ServiceCatalog.Domain.Aggregates.PaymentAggregate
         /// </summary>
         public void MarkAsFailed(string reason)
         {
-            if (Status == PaymentStatus.Paid || Status == PaymentStatus.Refunded)
-                throw new InvalidOperationException($"Cannot mark {Status} payment as failed");
-
-            Status = PaymentStatus.Failed;
-            FailureReason = reason;
-            FailedAt = DateTime.UtcNow;
-
-            RaiseDomainEvent(new PaymentFailedEvent(Id, BookingId, CustomerId, reason, FailedAt.Value));
+            _state.MarkAsFailed(this, reason);
         }
 
         /// <summary>
@@ -419,42 +329,7 @@ namespace Booksy.ServiceCatalog.Domain.Aggregates.PaymentAggregate
         /// </summary>
         public void VerifyPayment(string refNumber, string? cardPan = null, decimal? fee = null)
         {
-            if (Status != PaymentStatus.Pending)
-                throw new InvalidOperationException($"Cannot verify payment in {Status} status");
-
-            if (string.IsNullOrWhiteSpace(refNumber))
-                throw new ArgumentException("Reference number is required", nameof(refNumber));
-
-            RefNumber = refNumber;
-            CardPan = cardPan;
-            if (fee.HasValue)
-            {
-                Fee =  Money.Create(fee.Value, Amount.Currency);
-            }
-
-            PaidAmount = Amount;
-            Status = PaymentStatus.Paid;
-            CapturedAt = DateTime.UtcNow;
-
-            var metadata = new Dictionary<string, object>
-            {
-                ["RefNumber"] = refNumber
-            };
-
-            if (cardPan != null)
-                metadata["CardPan"] = cardPan;
-            if (fee.HasValue)
-                metadata["Fee"] = fee.Value;
-
-            var transaction = Transaction.CreateVerification(
-                Amount,
-                refNumber,
-                $"Payment verified for Payment {Id}",
-                metadata);
-
-            _transactions.Add(transaction);
-
-            RaiseDomainEvent(new PaymentVerifiedEvent(Id, BookingId, CustomerId, ProviderId, Amount, refNumber, cardPan, CapturedAt.Value));
+            _state.VerifyPayment(this, refNumber, cardPan, fee);
         }
 
         /// <summary>
@@ -497,6 +372,113 @@ namespace Booksy.ServiceCatalog.Domain.Aggregates.PaymentAggregate
             return netAmount;
         }
 
-       
+        // ========================================
+        // INTERNAL STATE TRANSITION HELPERS
+        // These methods are called by state classes to modify the payment
+        // ========================================
+
+        /// <summary>
+        /// Transition to a new state
+        /// </summary>
+        internal void TransitionToState(IPaymentState newState)
+        {
+            _state = newState;
+        }
+
+        /// <summary>
+        /// Set the payment intent ID
+        /// </summary>
+        internal void SetPaymentIntentId(string paymentIntentId)
+        {
+            PaymentIntentId = paymentIntentId;
+        }
+
+        /// <summary>
+        /// Set the payment method ID
+        /// </summary>
+        internal void SetPaymentMethodId(string? paymentMethodId)
+        {
+            PaymentMethodId = paymentMethodId;
+        }
+
+        /// <summary>
+        /// Set the paid amount
+        /// </summary>
+        internal void SetPaidAmount(Money amount)
+        {
+            PaidAmount = amount;
+        }
+
+        /// <summary>
+        /// Set the refunded amount
+        /// </summary>
+        internal void SetRefundedAmount(Money amount)
+        {
+            RefundedAmount = amount;
+        }
+
+        /// <summary>
+        /// Set the captured timestamp
+        /// </summary>
+        internal void SetCapturedAt(DateTime capturedAt)
+        {
+            CapturedAt = capturedAt;
+        }
+
+        /// <summary>
+        /// Set the refunded timestamp
+        /// </summary>
+        internal void SetRefundedAt(DateTime refundedAt)
+        {
+            RefundedAt = refundedAt;
+        }
+
+        /// <summary>
+        /// Set the failed timestamp
+        /// </summary>
+        internal void SetFailedAt(DateTime failedAt)
+        {
+            FailedAt = failedAt;
+        }
+
+        /// <summary>
+        /// Set the failure reason
+        /// </summary>
+        internal void SetFailureReason(string? reason)
+        {
+            FailureReason = reason;
+        }
+
+        /// <summary>
+        /// Set the reference number (ZarinPal)
+        /// </summary>
+        internal void SetRefNumber(string refNumber)
+        {
+            RefNumber = refNumber;
+        }
+
+        /// <summary>
+        /// Set the card PAN
+        /// </summary>
+        internal void SetCardPan(string? cardPan)
+        {
+            CardPan = cardPan;
+        }
+
+        /// <summary>
+        /// Set the fee
+        /// </summary>
+        internal void SetFee(Money fee)
+        {
+            Fee = fee;
+        }
+
+        /// <summary>
+        /// Add a transaction to the list
+        /// </summary>
+        internal void AddTransaction(Transaction transaction)
+        {
+            _transactions.Add(transaction);
+        }
     }
 }
