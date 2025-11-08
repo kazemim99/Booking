@@ -1,11 +1,8 @@
 ﻿using Booksy.Core.Application.Abstractions.Persistence;
-using Booksy.Infrastructure.Core.Caching;
 using Booksy.Infrastructure.Core.EventBus;
 using Booksy.Infrastructure.Core.EventBus.Abstractions;
 using Booksy.Infrastructure.Core.Persistence.Base;
 using Booksy.ServiceCatalog.Application.Abstractions.Queries;
-using Booksy.ServiceCatalog.Domain.Aggregates;
-using Booksy.ServiceCatalog.Domain.ValueObjects;
 using Booksy.ServiceCatalog.Application.Services.Implementations;
 using Booksy.ServiceCatalog.Application.Services.Interfaces;
 using Booksy.ServiceCatalog.Application.Services.Notifications;
@@ -27,7 +24,6 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
-using Microsoft.Extensions.Options;
 
 namespace Booksy.ServiceCatalog.Infrastructure.DependencyInjection
 {
@@ -145,21 +141,10 @@ namespace Booksy.ServiceCatalog.Infrastructure.DependencyInjection
         {
             services.AddServiceCatalogInfrastructure(configuration);
 
-            // Add generic caching decorators for read repositories using Redis/ICacheService
-            // This uses the generic CachedRepositoryDecorator which supports both Redis and In-Memory caching
-            services.Decorate<IProviderReadRepository>((inner, provider) =>
-                new CachedRepositoryDecorator<Provider, ProviderId>(
-                    inner,
-                    provider.GetRequiredService<ICacheService>(),
-                    provider.GetRequiredService<IOptions<CacheSettings>>(),
-                    provider.GetRequiredService<ILogger<CachedRepositoryDecorator<Provider, ProviderId>>>()));
-
-            services.Decorate<IServiceReadRepository>((inner, provider) =>
-                new CachedRepositoryDecorator<Service, ServiceId>(
-                    inner,
-                    provider.GetRequiredService<ICacheService>(),
-                    provider.GetRequiredService<IOptions<CacheSettings>>(),
-                    provider.GetRequiredService<ILogger<CachedRepositoryDecorator<Service, ServiceId>>>()));
+            // Add caching decorators for read repositories using Redis distributed cache
+            // These decorators implement the full repository interfaces and use ICacheService (Redis/InMemory)
+            services.Decorate<IProviderReadRepository, CachedProviderReadRepository>();
+            services.Decorate<IServiceReadRepository, CachedServiceReadRepository>();
 
             return services;
         }
