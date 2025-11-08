@@ -1,69 +1,85 @@
 ﻿using Booksy.Core.Application.Abstractions.Persistence;
 using Booksy.Core.Application.DTOs;
+using Booksy.Infrastructure.Core.Caching;
 using Booksy.ServiceCatalog.Domain.Aggregates;
 using Booksy.ServiceCatalog.Domain.Enums;
 using Booksy.ServiceCatalog.Domain.Repositories;
 using Booksy.ServiceCatalog.Domain.ValueObjects;
-using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
 
 namespace Booksy.ServiceCatalog.Infrastructure.Persistence.Repositories
 {
+    /// <summary>
+    /// Cached decorator for ProviderReadRepository using Redis distributed cache
+    /// Caches GetByIdAsync and GetByOwnerIdAsync for improved performance
+    /// </summary>
     public sealed class CachedProviderReadRepository : IProviderReadRepository
     {
         private readonly IProviderReadRepository _inner;
-        private readonly IMemoryCache _cache;
+        private readonly ICacheService _cacheService;
         private readonly ILogger<CachedProviderReadRepository> _logger;
-        private readonly TimeSpan _cacheDuration = TimeSpan.FromMinutes(10);
+        private readonly TimeSpan _cacheDuration;
 
         public CachedProviderReadRepository(
             IProviderReadRepository inner,
-            IMemoryCache cache,
+            ICacheService cacheService,
+            IOptions<CacheSettings> cacheSettings,
             ILogger<CachedProviderReadRepository> logger)
         {
             _inner = inner;
-            _cache = cache;
+            _cacheService = cacheService;
             _logger = logger;
+
+            // Use configured expiration or default to 15 minutes
+            var expirationMinutes = cacheSettings.Value.DefaultExpirationMinutes > 0
+                ? cacheSettings.Value.DefaultExpirationMinutes
+                : 15;
+            _cacheDuration = TimeSpan.FromMinutes(expirationMinutes);
         }
 
         public async Task<Provider?> GetByIdAsync(ProviderId id, CancellationToken cancellationToken = default)
         {
-            var cacheKey = $"provider:id:{id.Value}";
+            var cacheKey = $"Provider:{id.Value}";
 
-            if (_cache.TryGetValue(cacheKey, out Provider? cachedProvider))
-            {
-                _logger.LogDebug("Cache hit for provider {ProviderId}", id);
-                return cachedProvider;
-            }
+            return await _cacheService.GetOrAddAsync(
+                cacheKey,
+                async () =>
+                {
+                    _logger.LogDebug("Cache miss for provider {ProviderId}", id);
+                    var provider = await _inner.GetByIdAsync(id, cancellationToken);
 
-            var provider = await _inner.GetByIdAsync(id, cancellationToken);
-            if (provider != null)
-            {
-                _cache.Set(cacheKey, provider, _cacheDuration);
-                _logger.LogDebug("Cached provider {ProviderId}", id);
-            }
+                    if (provider != null)
+                    {
+                        _logger.LogDebug("Cached provider {ProviderId}", id);
+                    }
 
-            return provider;
+                    return provider;
+                },
+                _cacheDuration,
+                cancellationToken);
         }
 
         public async Task<Provider?> GetByOwnerIdAsync(UserId ownerId, CancellationToken cancellationToken = default)
         {
-            var cacheKey = $"provider:owner:{ownerId.Value}";
+            var cacheKey = $"Provider:owner:{ownerId.Value}";
 
-            if (_cache.TryGetValue(cacheKey, out Provider? cachedProvider))
-            {
-                _logger.LogDebug("Cache hit for provider by owner {OwnerId}", ownerId);
-                return cachedProvider;
-            }
+            return await _cacheService.GetOrAddAsync(
+                cacheKey,
+                async () =>
+                {
+                    _logger.LogDebug("Cache miss for provider by owner {OwnerId}", ownerId);
+                    var provider = await _inner.GetByOwnerIdAsync(ownerId, cancellationToken);
 
-            var provider = await _inner.GetByOwnerIdAsync(ownerId, cancellationToken);
-            if (provider != null)
-            {
-                _cache.Set(cacheKey, provider, _cacheDuration);
-                _logger.LogDebug("Cached provider by owner {OwnerId}", ownerId);
-            }
+                    if (provider != null)
+                    {
+                        _logger.LogDebug("Cached provider by owner {OwnerId}", ownerId);
+                    }
 
-            return provider;
+                    return provider;
+                },
+                _cacheDuration,
+                cancellationToken);
         }
 
         // Other methods delegate directly to inner repository (not cached for complexity)
