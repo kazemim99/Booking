@@ -320,7 +320,7 @@ namespace Booksy.ServiceCatalog.Infrastructure.Persistence.Repositories
             return (bookings, totalCount);
         }
 
-        public async Task<Application.Queries.Booking.GetBookingStatistics.BookingStatisticsDto> GetStatisticsAsync(
+        public async Task<Domain.Models.BookingStatistics> GetStatisticsAsync(
             Guid providerId,
             DateTime? startDate = null,
             DateTime? endDate = null,
@@ -375,24 +375,24 @@ namespace Booksy.ServiceCatalog.Infrastructure.Persistence.Repositories
                 ? (double)cancelledBookings / totalBookings * 100
                 : 0;
 
-            return new Application.Queries.Booking.GetBookingStatistics.BookingStatisticsDto(
-                TotalBookings: totalBookings,
-                RequestedBookings: requestedBookings,
-                ConfirmedBookings: confirmedBookings,
-                CompletedBookings: completedBookings,
-                CancelledBookings: cancelledBookings,
-                NoShowBookings: noShowBookings,
-                RescheduledBookings: rescheduledBookings,
-                TotalRevenue: totalRevenue,
-                CompletedRevenue: completedRevenue,
-                PendingRevenue: pendingRevenue,
-                RefundedAmount: refundedAmount,
-                Currency: currency,
-                CompletionRate: Math.Round(completionRate, 2),
-                NoShowRate: Math.Round(noShowRate, 2),
-                CancellationRate: Math.Round(cancellationRate, 2),
-                StartDate: startDate,
-                EndDate: endDate);
+            return new Domain.Models.BookingStatistics(
+                totalBookings: totalBookings,
+                requestedBookings: requestedBookings,
+                confirmedBookings: confirmedBookings,
+                completedBookings: completedBookings,
+                cancelledBookings: cancelledBookings,
+                noShowBookings: noShowBookings,
+                rescheduledBookings: rescheduledBookings,
+                totalRevenue: totalRevenue,
+                completedRevenue: completedRevenue,
+                pendingRevenue: pendingRevenue,
+                refundedAmount: refundedAmount,
+                currency: currency,
+                completionRate: Math.Round(completionRate, 2),
+                noShowRate: Math.Round(noShowRate, 2),
+                cancellationRate: Math.Round(cancellationRate, 2),
+                startDate: startDate,
+                endDate: endDate);
         }
     }
 }

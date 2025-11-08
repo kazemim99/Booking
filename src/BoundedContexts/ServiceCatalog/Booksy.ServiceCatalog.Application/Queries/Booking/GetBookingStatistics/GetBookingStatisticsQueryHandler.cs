@@ -24,17 +24,35 @@ namespace Booksy.ServiceCatalog.Application.Queries.Booking.GetBookingStatistics
         {
             _logger.LogInformation("Getting booking statistics for provider {ProviderId}", request.ProviderId);
 
-            // Use the new statistics method from repository
-            var stats = await _bookingRepository.GetStatisticsAsync(
+            // Get statistics from repository (domain model)
+            var domainStats = await _bookingRepository.GetStatisticsAsync(
                 request.ProviderId,
                 request.StartDate,
                 request.EndDate,
                 cancellationToken);
 
             _logger.LogInformation("Retrieved statistics for provider {ProviderId}: {TotalBookings} total bookings",
-                request.ProviderId, stats.TotalBookings);
+                request.ProviderId, domainStats.TotalBookings);
 
-            return stats;
+            // Map domain model to application DTO
+            return new BookingStatisticsDto(
+                TotalBookings: domainStats.TotalBookings,
+                RequestedBookings: domainStats.RequestedBookings,
+                ConfirmedBookings: domainStats.ConfirmedBookings,
+                CompletedBookings: domainStats.CompletedBookings,
+                CancelledBookings: domainStats.CancelledBookings,
+                NoShowBookings: domainStats.NoShowBookings,
+                RescheduledBookings: domainStats.RescheduledBookings,
+                TotalRevenue: domainStats.TotalRevenue,
+                CompletedRevenue: domainStats.CompletedRevenue,
+                PendingRevenue: domainStats.PendingRevenue,
+                RefundedAmount: domainStats.RefundedAmount,
+                Currency: domainStats.Currency,
+                CompletionRate: domainStats.CompletionRate,
+                NoShowRate: domainStats.NoShowRate,
+                CancellationRate: domainStats.CancellationRate,
+                StartDate: domainStats.StartDate,
+                EndDate: domainStats.EndDate);
         }
     }
 }
