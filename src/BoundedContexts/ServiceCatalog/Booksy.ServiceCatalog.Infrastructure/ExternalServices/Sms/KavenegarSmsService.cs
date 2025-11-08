@@ -5,6 +5,7 @@ using Booksy.ServiceCatalog.Application.Services;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 using System.Net.Http;
+using System.Net.Http.Json;
 using System.Text.Json;
 
 namespace Booksy.ServiceCatalog.Infrastructure.ExternalServices.Sms
@@ -161,14 +162,13 @@ namespace Booksy.ServiceCatalog.Infrastructure.ExternalServices.Sms
             await SendSmsAsync(phoneNumber, message, cancellationToken);
         }
 
-        private async Task SendSmsAsync(string receptor, string message, CancellationToken cancellationToken)
+        public async Task SendSmsAsync(string receptor, string message, CancellationToken cancellationToken)
         {
             try
             {
                 var url = $"{_apiKey}/sms/send.json?sender={_sender}&receptor={receptor}&message={Uri.EscapeDataString(message)}";
 
-                var response = await _httpClient.GetAsync(url, cancellationToken);
-                var content = await response.ReadAsStringAsync(cancellationToken);
+                var response = await _httpClient.PostAsJsonAsync(url, cancellationToken);
 
                 if (response.IsSuccessStatusCode)
                 {
@@ -177,7 +177,7 @@ namespace Booksy.ServiceCatalog.Infrastructure.ExternalServices.Sms
                 else
                 {
                     _logger.LogError("Failed to send SMS to {PhoneNumber}. Status: {StatusCode}, Response: {Response}",
-                        receptor, response.StatusCode, content);
+                        receptor, response.StatusCode, response.Content);
                 }
             }
             catch (Exception ex)

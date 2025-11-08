@@ -11,7 +11,7 @@ namespace Booksy.ServiceCatalog.Application.EventHandlers.Booking.Sms
     /// <summary>
     /// Sends SMS notification when a booking is created
     /// </summary>
-    public sealed class BookingCreatedSmsHandler : INotificationHandler<BookingRequestedEvent>
+    public sealed class BookingCreatedSmsHandler : IDomainEventHandler<BookingRequestedEvent>
     {
         private readonly ISmsNotificationService _smsService;
         private readonly ILogger<BookingCreatedSmsHandler> _logger;
@@ -22,7 +22,7 @@ namespace Booksy.ServiceCatalog.Application.EventHandlers.Booking.Sms
             _logger = logger;
         }
 
-        public async Task Handle(BookingRequestedEvent notification, CancellationToken cancellationToken)
+        public async Task HandleAsync(BookingRequestedEvent notification, CancellationToken cancellationToken)
         {
             try
             {

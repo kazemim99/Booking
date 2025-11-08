@@ -92,7 +92,6 @@ namespace Booksy.ServiceCatalog.Application.Services.BackgroundServices
                         await smsService.SendSmsAsync(
                             notification.RecipientPhone ?? "",
                             notification.PlainTextBody ?? notification.Body,
-                            metadata: null,
                             cancellationToken: cancellationToken);
                     }
 

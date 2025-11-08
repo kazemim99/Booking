@@ -71,5 +71,6 @@ namespace Booksy.ServiceCatalog.Application.Services
             string providerName,
             string serviceAddress,
             CancellationToken cancellationToken = default);
+        Task SendSmsAsync(string receptor, string message, CancellationToken cancellationToken);
     }
 }

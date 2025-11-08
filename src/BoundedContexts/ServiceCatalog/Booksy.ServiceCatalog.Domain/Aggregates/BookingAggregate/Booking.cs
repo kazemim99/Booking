@@ -496,7 +496,7 @@ namespace Booksy.ServiceCatalog.Domain.Aggregates.BookingAggregate
                 ProviderId,
                 notes,
                 addedBy,
-                isStaffNote: false,
+                IsStaffNote: false,
                 DateTime.UtcNow));
         }
 
@@ -514,7 +514,7 @@ namespace Booksy.ServiceCatalog.Domain.Aggregates.BookingAggregate
                 ProviderId,
                 notes,
                 addedBy,
-                isStaffNote: true,
+                IsStaffNote: true,
                 DateTime.UtcNow));
         }
 
