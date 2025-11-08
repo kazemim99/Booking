@@ -64,10 +64,10 @@ namespace Booksy.ServiceCatalog.Infrastructure.Persistence.Repositories
 
         public async Task UpdateProviderAsync(Provider provider, CancellationToken cancellationToken = default)
         {
-            // With snapshot change tracking configured on GalleryImages,
-            // we need to explicitly call DetectChanges to compare current values
-            // with the original snapshot and detect modifications
-            Context.ChangeTracker.DetectChanges();
+            // Since GalleryImages collection is now exposed directly (not through AsReadOnly),
+            // EF Core can properly track changes to the collection and its items
+            // Just ensure the entity is marked as updated
+            Context.Update(provider);
         }
 
         public async Task DeleteProviderAsync(Provider provider, CancellationToken cancellationToken = default)

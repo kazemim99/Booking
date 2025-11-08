@@ -20,8 +20,9 @@ namespace Booksy.ServiceCatalog.Domain.Entities
         public List<string> Tags { get; private set; } = new();
         public DateTime LastUpdatedAt { get; private set; }
 
-        // Gallery collection
-        public IReadOnlyList<GalleryImage> GalleryImages => _galleryImages.AsReadOnly();
+        // Gallery collection - expose directly for EF Core change tracking
+        // The List<T> is implicitly convertible to IReadOnlyList<T>
+        public IReadOnlyList<GalleryImage> GalleryImages => _galleryImages;
 
         // Private constructor for EF Core
         private BusinessProfile() : base()

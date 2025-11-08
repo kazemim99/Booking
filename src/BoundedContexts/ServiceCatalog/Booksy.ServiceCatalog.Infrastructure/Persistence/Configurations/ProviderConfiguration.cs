@@ -107,9 +107,6 @@ namespace Booksy.ServiceCatalog.Infrastructure.Persistence.Configurations
                 {
                     galleryImage.ToTable("provider_gallery_images");
 
-                    // Use snapshot change tracking to detect property changes
-                    galleryImage.HasChangeTrackingStrategy(ChangeTrackingStrategy.Snapshot);
-
                     // IMPORTANT: Explicitly configure the foreign key
                     galleryImage.WithOwner()
                         .HasForeignKey("ProviderId");
@@ -189,10 +186,8 @@ namespace Booksy.ServiceCatalog.Infrastructure.Persistence.Configurations
                 });
 
                 // Navigation property configuration
-                // Use Field mode for owned collections with private backing fields
-                profile.Navigation(bp => bp.GalleryImages)
-                    .UsePropertyAccessMode(PropertyAccessMode.Field)
-                    .Metadata.SetPropertyAccessMode(PropertyAccessMode.Field);
+                // No need for PropertyAccessMode.Field since we expose the list directly
+                // EF Core can now properly track changes to the collection and its items
             });
 
 
