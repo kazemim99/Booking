@@ -21,6 +21,11 @@ namespace Booksy.ServiceCatalog.IntegrationTests;
 [Collection("Integration Tests")]
 public class GalleryManagementTests : ServiceCatalogIntegrationTestBase
 {
+    // Cache test images to avoid regenerating them for each test
+    private static readonly Lazy<byte[]> _cachedSmallTestImage = new Lazy<byte[]>(() => GenerateTestImage(10, 10));
+    private static readonly Lazy<byte[]> _cachedMediumTestImage = new Lazy<byte[]>(() => GenerateTestImage(50, 50));
+    private static readonly Lazy<byte[]> _cachedLargeTestImage = new Lazy<byte[]>(() => GenerateTestImage(100, 100));
+
     public GalleryManagementTests(ServiceCatalogTestWebApplicationFactory<Startup> factory)
         : base(factory)
     {
@@ -745,6 +750,11 @@ public class GalleryManagementTests : ServiceCatalogIntegrationTestBase
     #endregion
 
     #region Helper Methods
+
+    /// <summary>
+    /// Creates a provider and uploads the specified number of gallery images.
+    /// Images are uploaded in batches of 10 to comply with API limits.
+    /// </summary>
     private async Task<Provider> CreateProviderWithGalleryAsync(int imageCount)
     {
         var provider = await CreateAndAuthenticateAsProviderAsync();
@@ -763,27 +773,36 @@ public class GalleryManagementTests : ServiceCatalogIntegrationTestBase
         return await FindProviderAsync(provider.Id.Value) ?? provider;
     }
 
+    /// <summary>
+    /// Retrieves all active gallery images for a provider.
+    /// </summary>
     private async Task<List<GalleryImageResponse>> GetGalleryImagesAsync(Guid providerId)
     {
         var response = await GetAsync($"/api/v1/providers/{providerId}/gallery");
         return await GetResponseAsync<List<GalleryImageResponse>>(response) ?? new List<GalleryImageResponse>();
     }
 
+    /// <summary>
+    /// Creates multipart form data with test image files.
+    /// Uses cached test images to improve performance instead of regenerating images for each test.
+    /// </summary>
+    /// <param name="count">Number of image files to include</param>
+    /// <param name="fileSizeBytes">Size of each file in bytes (used for file size validation tests)</param>
     private MultipartFormDataContent CreateTestImageFiles(int count, long fileSizeBytes = 1024)
     {
         var content = new MultipartFormDataContent();
 
         for (int i = 0; i < count; i++)
         {
-            // Generate a valid test image using ImageSharp
-            var bytes = CreateValidTestImage();
+            // Use cached test image instead of generating new ones
+            var bytes = _cachedSmallTestImage.Value;
 
             // If fileSizeBytes exceeds 10MB (file too large test), create larger image
             if (fileSizeBytes > 10 * 1024 * 1024)
             {
                 bytes = new byte[fileSizeBytes];
                 // Copy the valid image header
-                var validImage = CreateValidTestImage();
+                var validImage = _cachedSmallTestImage.Value;
                 Array.Copy(validImage, bytes, Math.Min(validImage.Length, bytes.Length));
             }
 
@@ -795,17 +814,24 @@ public class GalleryManagementTests : ServiceCatalogIntegrationTestBase
         return content;
     }
 
-    private byte[] CreateValidTestImage()
+    /// <summary>
+    /// Generates a valid PNG test image with the specified dimensions.
+    /// This method is called lazily to populate the cached test images.
+    /// </summary>
+    /// <param name="width">Image width in pixels</param>
+    /// <param name="height">Image height in pixels</param>
+    /// <returns>PNG image bytes</returns>
+    private static byte[] GenerateTestImage(int width, int height)
     {
-        // Create a simple 10x10 colored PNG image using ImageSharp
-        using var image = new Image<Rgba32>(10, 10);
+        // Create a simple colored PNG image using ImageSharp
+        using var image = new Image<Rgba32>(width, height);
 
         // Fill with a color pattern
         for (int y = 0; y < image.Height; y++)
         {
             for (int x = 0; x < image.Width; x++)
             {
-                image[x, y] = new Rgba32((byte)(x * 25), (byte)(y * 25), 128, 255);
+                image[x, y] = new Rgba32((byte)(x * 25 % 256), (byte)(y * 25 % 256), 128, 255);
             }
         }
 
