@@ -1,25 +1,24 @@
 // ========================================
-// Booksy.ServiceCatalog.Application/Queries/Payment/GetPaymentDetails/GetPaymentDetailsQueryHandler.cs
+// GetPaymentByAuthorityQueryHandler.cs
 // ========================================
 using Booksy.Core.Application.Abstractions.CQRS;
+using Booksy.ServiceCatalog.Application.Queries.Payment.GetPaymentDetails;
 using Booksy.ServiceCatalog.Domain.Repositories;
-using Booksy.ServiceCatalog.Domain.ValueObjects;
 
-namespace Booksy.ServiceCatalog.Application.Queries.Payment.GetPaymentDetails
+namespace Booksy.ServiceCatalog.Application.Queries.Payment.GetPaymentByAuthority
 {
-    public sealed class GetPaymentDetailsQueryHandler : IQueryHandler<GetPaymentDetailsQuery, PaymentDetailsViewModel?>
+    public sealed class GetPaymentByAuthorityQueryHandler : IQueryHandler<GetPaymentByAuthorityQuery, PaymentDetailsViewModel?>
     {
         private readonly IPaymentReadRepository _paymentRepository;
 
-        public GetPaymentDetailsQueryHandler(IPaymentReadRepository paymentRepository)
+        public GetPaymentByAuthorityQueryHandler(IPaymentReadRepository paymentRepository)
         {
             _paymentRepository = paymentRepository ?? throw new ArgumentNullException(nameof(paymentRepository));
         }
 
-        public async Task<PaymentDetailsViewModel?> Handle(GetPaymentDetailsQuery request, CancellationToken cancellationToken)
+        public async Task<PaymentDetailsViewModel?> Handle(GetPaymentByAuthorityQuery request, CancellationToken cancellationToken)
         {
-            var paymentId = PaymentId.From(request.PaymentId);
-            var payment = await _paymentRepository.GetByIdAsync(paymentId, cancellationToken);
+            var payment = await _paymentRepository.GetByAuthorityAsync(request.Authority, cancellationToken);
 
             if (payment == null)
                 return null;
@@ -38,7 +37,6 @@ namespace Booksy.ServiceCatalog.Application.Queries.Payment.GetPaymentDetails
                     t.CompletedAt))
                 .ToList();
 
-            // Convert metadata from Dictionary<string, object> to Dictionary<string, string>
             var metadata = payment.Metadata.ToDictionary(
                 kvp => kvp.Key,
                 kvp => kvp.Value?.ToString() ?? string.Empty);

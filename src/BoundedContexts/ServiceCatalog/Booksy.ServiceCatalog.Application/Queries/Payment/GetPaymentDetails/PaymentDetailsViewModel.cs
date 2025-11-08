@@ -18,13 +18,18 @@ namespace Booksy.ServiceCatalog.Application.Queries.Payment.GetPaymentDetails
         string? PaymentMethodId,
         string? Description,
         string? FailureReason,
+        Dictionary<string, string> Metadata,
+        List<TransactionDto> Transactions,
         DateTime CreatedAt,
         DateTime? AuthorizedAt,
         DateTime? CapturedAt,
         DateTime? RefundedAt,
         DateTime? FailedAt,
-        List<TransactionDto> Transactions,
-        Dictionary<string, string> Metadata);
+        string? Authority = null,
+        string? RefNumber = null,
+        string? CardPan = null,
+        decimal? Fee = null,
+        string? PaymentUrl = null);
 
     public sealed record TransactionDto(
         Guid Id,
