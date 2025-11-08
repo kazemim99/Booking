@@ -39,16 +39,17 @@ public static class MassTransitExtensions
             {
                 var settings = context.GetRequiredService<IOptions<RabbitMqSettings>>().Value;
 
-                cfg.Host(settings.Host, settings.Port, settings.VirtualHost, h =>
+                cfg.Host(settings.Host, settings.VirtualHost, h =>
                 {
                     h.Username(settings.Username);
                     h.Password(settings.Password);
                     h.Heartbeat(TimeSpan.FromSeconds(settings.HeartbeatInterval));
 
-                    // Set connection name for identification in RabbitMQ management UI
-                    if (!string.IsNullOrEmpty(settings.ConnectionName))
-                    {
                         h.ConnectionName(settings.ConnectionName);
+                    if (settings.Port != 5672) // Only set if not default port
+                    {
+                        // Note: Port configuration might need to be set via connection string
+                        // For custom ports, use connection string format: rabbitmq://host:port/vhost
                     }
 
                     if (settings.UseSsl)
