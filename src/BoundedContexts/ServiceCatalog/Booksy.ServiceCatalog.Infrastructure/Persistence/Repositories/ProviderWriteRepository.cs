@@ -64,7 +64,28 @@ namespace Booksy.ServiceCatalog.Infrastructure.Persistence.Repositories
 
         public async Task UpdateProviderAsync(Provider provider, CancellationToken cancellationToken = default)
         {
-            Context.Update(provider);
+            // For owned entities with Field access mode, changes to owned collections
+            // need explicit tracking. Mark the provider and owned entities as modified.
+
+            var entry = Context.Entry(provider);
+
+            // If detached, attach and mark as modified
+            if (entry.State == EntityState.Detached)
+            {
+                Context.Attach(provider);
+                entry.State = EntityState.Modified;
+            }
+
+            // Explicitly mark all gallery images as modified to ensure changes are persisted
+            // This is necessary because GalleryImages uses PropertyAccessMode.Field
+            foreach (var galleryImage in provider.Profile.GalleryImages)
+            {
+                var imageEntry = Context.Entry(galleryImage);
+                if (imageEntry.State != EntityState.Added && imageEntry.State != EntityState.Deleted)
+                {
+                    imageEntry.State = EntityState.Modified;
+                }
+            }
         }
 
         public async Task DeleteProviderAsync(Provider provider, CancellationToken cancellationToken = default)

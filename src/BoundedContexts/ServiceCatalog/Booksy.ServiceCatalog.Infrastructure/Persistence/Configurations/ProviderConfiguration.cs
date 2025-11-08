@@ -186,10 +186,8 @@ namespace Booksy.ServiceCatalog.Infrastructure.Persistence.Configurations
                 });
 
                 // Navigation property configuration
-                // Use PreferFieldDuringConstruction to ensure proper change tracking
-                // while still allowing field-based initialization
                 profile.Navigation(bp => bp.GalleryImages)
-                    .UsePropertyAccessMode(PropertyAccessMode.PreferFieldDuringConstruction);
+                    .UsePropertyAccessMode(PropertyAccessMode.Field);
             });
 
 
