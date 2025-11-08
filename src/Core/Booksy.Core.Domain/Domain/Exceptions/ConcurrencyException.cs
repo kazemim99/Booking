@@ -1,4 +1,5 @@
 ﻿// Booksy.SharedKernel.Domain/Exceptions/DomainExceptions.cs
+using Booksy.Core.Domain.Errors;
 using System.Runtime.Serialization;
 
 namespace Booksy.Core.Domain.Domain.Exceptions
@@ -12,7 +13,7 @@ namespace Booksy.Core.Domain.Domain.Exceptions
         public string AggregateId { get; }
         public long ExpectedVersion { get; }
         public long ActualVersion { get; }
-        public override string ErrorCode => "CONCURRENCY_CONFLICT";
+        public override ErrorCode ErrorCode => ErrorCode.CONCURRENCY_ERROR;
 
         public ConcurrencyException(string aggregateId, long expectedVersion, long actualVersion)
             : base($"Concurrency conflict for aggregate '{aggregateId}'. Expected version: {expectedVersion}, Actual version: {actualVersion}")

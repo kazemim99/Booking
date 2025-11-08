@@ -1,4 +1,5 @@
 ﻿// Booksy.SharedKernel.Domain/Exceptions/DomainExceptions.cs
+using Booksy.Core.Domain.Errors;
 using System.Runtime.Serialization;
 
 namespace Booksy.Core.Domain.Domain.Exceptions
@@ -11,7 +12,7 @@ namespace Booksy.Core.Domain.Domain.Exceptions
     {
         public string InvariantName { get; }
         public string? InvariantDescription { get; }
-        public override string ErrorCode => "INVARIANT_VIOLATION";
+        public override ErrorCode ErrorCode => ErrorCode.INVARIANT_VIOLATION;
 
         public InvariantViolationException(string message, string invariantName)
             : base(message)

@@ -1,4 +1,5 @@
-﻿using Booksy.Core.Domain.Exceptions;
+﻿using Booksy.Core.Domain.Errors;
+using Booksy.Core.Domain.Exceptions;
 using Booksy.ServiceCatalog.Domain.ValueObjects;
 
 namespace Booksy.ServiceCatalog.Domain.Exceptions;
@@ -150,7 +151,7 @@ public sealed class StaffNotFoundException : DomainException
     /// <summary>
     /// Get error code for this exception
     /// </summary>
-    public override string ErrorCode => "STAFF_NOT_FOUND";
+    public override ErrorCode ErrorCode => ErrorCode.STAFF_NOT_FOUND;
 
     /// <summary>
     /// Get severity level for this exception

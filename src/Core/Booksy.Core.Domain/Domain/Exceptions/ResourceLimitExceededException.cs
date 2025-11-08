@@ -1,4 +1,5 @@
 ﻿// Booksy.SharedKernel.Domain/Exceptions/DomainExceptions.cs
+using Booksy.Core.Domain.Errors;
 using System.Runtime.Serialization;
 
 namespace Booksy.Core.Domain.Domain.Exceptions
@@ -12,7 +13,7 @@ namespace Booksy.Core.Domain.Domain.Exceptions
         public string ResourceType { get; }
         public int CurrentCount { get; }
         public int MaximumAllowed { get; }
-        public override string ErrorCode => "RESOURCE_LIMIT_EXCEEDED";
+        public override ErrorCode ErrorCode => ErrorCode.RESOURCE_LIMIT_EXCEEDED;
 
         public ResourceLimitExceededException(string resourceType, int currentCount, int maximumAllowed)
             : base($"{resourceType} limit exceeded. Current: {currentCount}, Maximum: {maximumAllowed}")

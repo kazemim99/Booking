@@ -1,4 +1,5 @@
-﻿using Booksy.Core.Domain.Exceptions;
+﻿using Booksy.Core.Domain.Errors;
+using Booksy.Core.Domain.Exceptions;
 using Booksy.Core.Domain.ValueObjects;
 using Booksy.ServiceCatalog.Domain.ValueObjects;
 using Booksy.ServiceCatalog.Domain.Enums;
@@ -294,7 +295,7 @@ public sealed class InvalidServicePriceException : DomainException
     /// <summary>
     /// Get error code for this exception
     /// </summary>
-    public override string ErrorCode => $"INVALID_SERVICE_PRICE_{ValidationError.ToString().ToUpperInvariant()}";
+    public override ErrorCode ErrorCode => ErrorCode.INVALID_SERVICE_PRICE;
 
     /// <summary>
     /// Get severity level for this exception
