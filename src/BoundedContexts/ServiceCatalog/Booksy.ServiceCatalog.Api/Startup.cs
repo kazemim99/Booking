@@ -21,6 +21,7 @@ using Booksy.Core.Domain.Infrastructure.Middleware;
 using Booksy.API.Observability;
 using Booksy.Infrastructure.Core.DependencyInjection;
 using System.Configuration;
+using AspNetCoreRateLimit;
 
 namespace Booksy.API
 {
@@ -103,6 +104,21 @@ namespace Booksy.API
                 });
             });
 
+            // Rate Limiting with Redis
+            services.AddMemoryCache();
+            services.Configure<ClientRateLimitOptions>(Configuration.GetSection("ClientRateLimiting"));
+            services.Configure<ClientRateLimitPolicies>(Configuration.GetSection("ClientRateLimitPolicies"));
+
+            // Use Redis for distributed rate limiting
+            services.AddStackExchangeRedisCache(options =>
+            {
+                options.Configuration = Configuration.GetConnectionString("Redis");
+                options.InstanceName = "RateLimit_";
+            });
+            services.AddDistributedRateLimiting();
+
+            services.AddSingleton<IClientResolveContributor, ClientRateLimitResolver>();
+            services.AddSingleton<IRateLimitConfiguration, RateLimitConfiguration>();
 
             //SerilogConfiguration.ConfigureSerilog(Configuration, "ServiceCatalog.API");
 
@@ -160,6 +176,11 @@ namespace Booksy.API
             app.UseResponseCompression();
             app.UseRouting();
 
+            // Custom Rate Limit Response Middleware (must be before ClientRateLimitMiddleware)
+            app.UseMiddleware<CustomRateLimitMiddleware>();
+
+            // Client Rate Limiting (before authentication to apply to all requests)
+            app.UseClientRateLimiting();
 
             // Auth
             app.UseAuthentication();
