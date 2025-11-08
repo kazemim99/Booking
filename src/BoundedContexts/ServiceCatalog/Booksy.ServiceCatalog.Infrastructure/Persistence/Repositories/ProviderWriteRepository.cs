@@ -65,9 +65,40 @@ namespace Booksy.ServiceCatalog.Infrastructure.Persistence.Repositories
         public async Task UpdateProviderAsync(Provider provider, CancellationToken cancellationToken = default)
         {
             // Since GalleryImages collection is now exposed directly (not through AsReadOnly),
-            // EF Core can properly track changes to the collection and its items
-            // Just ensure the entity is marked as updated
-            Context.Update(provider);
+            // EF Core can track changes. However, when entities are already tracked (loaded via
+            // GetByIdAsync), we need to explicitly detect changes to owned entity properties.
+
+            var entry = Context.Entry(provider);
+
+            if (entry.State == EntityState.Detached)
+            {
+                // Entity not tracked yet, mark entire aggregate as updated
+                Context.Update(provider);
+            }
+            else
+            {
+                // Entity already tracked - explicitly detect changes
+                Context.ChangeTracker.DetectChanges();
+
+                // Explicitly mark the Profile owned entity as modified
+                var profileEntry = entry.Reference(p => p.Profile).TargetEntry;
+                if (profileEntry != null)
+                {
+                    profileEntry.State = EntityState.Modified;
+
+                    // Explicitly mark all GalleryImages owned entities as modified
+                    // This ensures property changes (like IsActive = false) are persisted
+                    var galleryImagesCollection = profileEntry.Collection(p => p.GalleryImages);
+                    foreach (var imageEntry in galleryImagesCollection.CurrentValue!)
+                    {
+                        var imgEntry = Context.Entry(imageEntry);
+                        if (imgEntry.State != EntityState.Added && imgEntry.State != EntityState.Deleted)
+                        {
+                            imgEntry.State = EntityState.Modified;
+                        }
+                    }
+                }
+            }
         }
 
         public async Task DeleteProviderAsync(Provider provider, CancellationToken cancellationToken = default)
