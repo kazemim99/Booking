@@ -119,45 +119,45 @@ namespace Booksy.ServiceCatalog.IntegrationTests.Features.Services
             {
                 await this.ScenarioStartAsync();
                 await this.FeatureBackgroundAsync();
-                global::Reqnroll.Table table160 = new global::Reqnroll.Table(new string[] {
+                global::Reqnroll.Table table334 = new global::Reqnroll.Table(new string[] {
                             "Field",
                             "Value"});
-                table160.AddRow(new string[] {
+                table334.AddRow(new string[] {
                             "ServiceName",
                             "Haircut"});
-                table160.AddRow(new string[] {
+                table334.AddRow(new string[] {
                             "Description",
                             "Professional haircut"});
-                table160.AddRow(new string[] {
+                table334.AddRow(new string[] {
                             "Duration",
                             "30"});
-                table160.AddRow(new string[] {
+                table334.AddRow(new string[] {
                             "BasePrice",
                             "50.00"});
-                table160.AddRow(new string[] {
+                table334.AddRow(new string[] {
                             "Currency",
                             "USD"});
-                table160.AddRow(new string[] {
+                table334.AddRow(new string[] {
                             "Category",
                             "Hair Services"});
-                table160.AddRow(new string[] {
+                table334.AddRow(new string[] {
                             "IsMobileService",
                             "false"});
-                await testRunner.WhenAsync("I send a POST request to create a service with:", ((string)(null)), table160, "When ");
+                await testRunner.WhenAsync("I send a POST request to create a service with:", ((string)(null)), table334, "When ");
                 await testRunner.ThenAsync("the response status code should be 201", ((string)(null)), ((global::Reqnroll.Table)(null)), "Then ");
-                global::Reqnroll.Table table161 = new global::Reqnroll.Table(new string[] {
+                global::Reqnroll.Table table335 = new global::Reqnroll.Table(new string[] {
                             "Field",
                             "Value"});
-                table161.AddRow(new string[] {
+                table335.AddRow(new string[] {
                             "Name",
                             "Haircut"});
-                table161.AddRow(new string[] {
+                table335.AddRow(new string[] {
                             "DurationMinutes",
                             "30"});
-                table161.AddRow(new string[] {
+                table335.AddRow(new string[] {
                             "Price",
                             "50.00"});
-                await testRunner.AndAsync("the response should contain a service with:", ((string)(null)), table161, "And ");
+                await testRunner.AndAsync("the response should contain a service with:", ((string)(null)), table335, "And ");
                 await testRunner.AndAsync("the service should exist in the database", ((string)(null)), ((global::Reqnroll.Table)(null)), "And ");
             }
             await this.ScenarioCleanupAsync();
@@ -215,19 +215,19 @@ namespace Booksy.ServiceCatalog.IntegrationTests.Features.Services
                 await this.ScenarioStartAsync();
                 await this.FeatureBackgroundAsync();
                 await testRunner.GivenAsync("the provider has a service \"Haircut\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "Given ");
-                global::Reqnroll.Table table162 = new global::Reqnroll.Table(new string[] {
+                global::Reqnroll.Table table336 = new global::Reqnroll.Table(new string[] {
                             "Field",
                             "Value"});
-                table162.AddRow(new string[] {
+                table336.AddRow(new string[] {
                             "ServiceName",
                             "Premium Haircut"});
-                table162.AddRow(new string[] {
+                table336.AddRow(new string[] {
                             "BasePrice",
                             "75.00"});
-                table162.AddRow(new string[] {
+                table336.AddRow(new string[] {
                             "Description",
                             "Premium haircut service"});
-                await testRunner.WhenAsync("I send a PUT request to update the service with:", ((string)(null)), table162, "When ");
+                await testRunner.WhenAsync("I send a PUT request to update the service with:", ((string)(null)), table336, "When ");
                 await testRunner.ThenAsync("the response status code should be 200", ((string)(null)), ((global::Reqnroll.Table)(null)), "Then ");
                 await testRunner.AndAsync("the service should be updated in the database", ((string)(null)), ((global::Reqnroll.Table)(null)), "And ");
             }
@@ -347,19 +347,19 @@ namespace Booksy.ServiceCatalog.IntegrationTests.Features.Services
                 await this.ScenarioStartAsync();
                 await this.FeatureBackgroundAsync();
                 await testRunner.GivenAsync("the provider has a service \"Haircut\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "Given ");
-                global::Reqnroll.Table table163 = new global::Reqnroll.Table(new string[] {
+                global::Reqnroll.Table table337 = new global::Reqnroll.Table(new string[] {
                             "Option",
                             "Price",
                             "Duration"});
-                table163.AddRow(new string[] {
+                table337.AddRow(new string[] {
                             "Beard Trim",
                             "10.00",
                             "10"});
-                table163.AddRow(new string[] {
+                table337.AddRow(new string[] {
                             "Hair Styling",
                             "20.00",
                             "15"});
-                await testRunner.WhenAsync("I add service options:", ((string)(null)), table163, "When ");
+                await testRunner.WhenAsync("I add service options:", ((string)(null)), table337, "When ");
                 await testRunner.ThenAsync("the response status code should be 200", ((string)(null)), ((global::Reqnroll.Table)(null)), "Then ");
                 await testRunner.AndAsync("the service should have 2 options", ((string)(null)), ((global::Reqnroll.Table)(null)), "And ");
             }
@@ -388,19 +388,19 @@ namespace Booksy.ServiceCatalog.IntegrationTests.Features.Services
                 await this.ScenarioStartAsync();
                 await this.FeatureBackgroundAsync();
                 await testRunner.GivenAsync("the provider has a service \"Massage\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "Given ");
-                global::Reqnroll.Table table164 = new global::Reqnroll.Table(new string[] {
+                global::Reqnroll.Table table338 = new global::Reqnroll.Table(new string[] {
                             "Duration",
                             "Price"});
-                table164.AddRow(new string[] {
+                table338.AddRow(new string[] {
                             "30",
                             "50.00"});
-                table164.AddRow(new string[] {
+                table338.AddRow(new string[] {
                             "60",
                             "90.00"});
-                table164.AddRow(new string[] {
+                table338.AddRow(new string[] {
                             "90",
                             "120.00"});
-                await testRunner.WhenAsync("I configure price tiers:", ((string)(null)), table164, "When ");
+                await testRunner.WhenAsync("I configure price tiers:", ((string)(null)), table338, "When ");
                 await testRunner.ThenAsync("the response status code should be 200", ((string)(null)), ((global::Reqnroll.Table)(null)), "Then ");
                 await testRunner.AndAsync("the service should have 3 price tiers", ((string)(null)), ((global::Reqnroll.Table)(null)), "And ");
             }
@@ -645,19 +645,19 @@ namespace Booksy.ServiceCatalog.IntegrationTests.Features.Services
             {
                 await this.ScenarioStartAsync();
                 await this.FeatureBackgroundAsync();
-                global::Reqnroll.Table table165 = new global::Reqnroll.Table(new string[] {
+                global::Reqnroll.Table table339 = new global::Reqnroll.Table(new string[] {
                             "Field",
                             "Value"});
-                table165.AddRow(new string[] {
+                table339.AddRow(new string[] {
                             "ServiceName",
                             "Mobile Massage"});
-                table165.AddRow(new string[] {
+                table339.AddRow(new string[] {
                             "IsMobileService",
                             "true"});
-                table165.AddRow(new string[] {
+                table339.AddRow(new string[] {
                             "TravelFee",
                             "20.00"});
-                await testRunner.WhenAsync("I send a POST request to create a service with:", ((string)(null)), table165, "When ");
+                await testRunner.WhenAsync("I send a POST request to create a service with:", ((string)(null)), table339, "When ");
                 await testRunner.ThenAsync("the response status code should be 201", ((string)(null)), ((global::Reqnroll.Table)(null)), "Then ");
                 await testRunner.AndAsync("the service should be marked as mobile service", ((string)(null)), ((global::Reqnroll.Table)(null)), "And ");
             }

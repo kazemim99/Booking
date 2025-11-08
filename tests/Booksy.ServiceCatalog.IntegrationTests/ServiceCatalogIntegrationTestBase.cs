@@ -76,7 +76,7 @@ public abstract class ServiceCatalogIntegrationTestBase
             .AsNoTracking()
             .Include(s => s.Options)
             .Include(s => s.PriceTiers)
-            .FirstOrDefaultAsync(s => s.Id == ServiceId.Create(serviceId));
+            .FirstOrDefaultAsync(s => s.Id == ServiceId.From(serviceId));
     }
 
     /// <summary>
@@ -410,7 +410,7 @@ public abstract class ServiceCatalogIntegrationTestBase
     /// </summary>
     public ServiceId CreateServiceId(Guid? id = null)
     {
-        return ServiceId.Create(id ?? Guid.NewGuid());
+        return ServiceId.From(id ?? Guid.NewGuid());
     }
 
     /// <summary>

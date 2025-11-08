@@ -1,3 +1,4 @@
+using Booksy.Core.Domain.Enums;
 using Booksy.Core.Domain.Exceptions;
 using Booksy.Core.Domain.ValueObjects;
 using Booksy.ServiceCatalog.Domain.Aggregates.PaymentAggregate;
@@ -619,6 +620,7 @@ public class PaymentAggregateTests
             _providerId,
             Money.Create(50000, "IRR"),
             PaymentMethod.ZarinPal,
+            PaymentProvider.ZarinPal,
             "Test booking payment");
 
         // Act & Assert - Step 1: Record payment request

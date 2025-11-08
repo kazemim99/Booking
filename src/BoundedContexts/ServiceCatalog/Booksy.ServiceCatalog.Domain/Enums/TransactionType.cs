@@ -57,20 +57,8 @@ namespace Booksy.ServiceCatalog.Domain.Enums
         /// Adjustment (manual correction)
         /// </summary>
         Adjustment,
-
-        /// <summary>
-        /// Payment request created (ZarinPal/gateway)
-        /// </summary>
         PaymentRequest,
-
-        /// <summary>
-        /// Payment verification (ZarinPal/gateway)
-        /// </summary>
         Verification,
-
-        /// <summary>
-        /// Failed transaction
-        /// </summary>
         Failed
     }
 }

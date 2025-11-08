@@ -70,7 +70,7 @@ public class ServiceSteps
         var serviceId = GetServiceIdFromResponse(response);
 
         var service = await _testBase.DbContext.Services
-            .FirstOrDefaultAsync(s => s.Id == Domain.ValueObjects.ServiceId.Create(serviceId));
+            .FirstOrDefaultAsync(s => s.Id == Domain.ValueObjects.ServiceId.From(serviceId));
 
         service.Should().NotBeNull($"Service should exist in database");
     }

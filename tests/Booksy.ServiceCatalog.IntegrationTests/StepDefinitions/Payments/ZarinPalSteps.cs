@@ -1,8 +1,10 @@
 using Booksy.Core.Domain.Infrastructure.Middleware;
 using Booksy.Core.Domain.ValueObjects;
 using Booksy.Infrastructure.External.Payment.ZarinPal;
+using Booksy.Infrastructure.External.Payment.ZarinPal.Models;
 using Booksy.ServiceCatalog.API.Models.Requests;
 using Booksy.ServiceCatalog.Api.Models.Responses;
+using Booksy.ServiceCatalog.Application.Commands.Payment.CreateZarinPalPayment;
 using Booksy.ServiceCatalog.Domain.Aggregates.PaymentAggregate;
 using Booksy.ServiceCatalog.Domain.Aggregates.PaymentAggregate.Entities;
 using Booksy.ServiceCatalog.Domain.Enums;
@@ -55,7 +57,6 @@ public class ZarinPalSteps
             BookingId = booking?.Id.Value,
             ProviderId = provider.Id.Value,
             Amount = (decimal)requestData["Amount"],
-            Currency = requestData.ContainsKey("Currency") ? (string)requestData["Currency"] : "IRR",
             Description = requestData.ContainsKey("Description") ? (string)requestData["Description"] : null,
             Mobile = requestData.ContainsKey("Mobile") ? (string)requestData["Mobile"] : null,
             Email = requestData.ContainsKey("Email") ? (string)requestData["Email"] : null
@@ -76,7 +77,7 @@ public class ZarinPalSteps
             PaymentUrl = $"https://sandbox.zarinpal.com/pg/StartPay/{mockAuthority}"
         });
 
-        var response = await _testBase.PostAsJsonAsync<CreateZarinPalPaymentRequest, CreateZarinPalPaymentResponse>(
+        var response = await _testBase.PostAsJsonAsync<CreateZarinPalPaymentRequest, CreateZarinPalPaymentResult>(
             endpoint, request);
 
         _scenarioContext.Set(response, "LastResponse");
@@ -108,7 +109,7 @@ public class ZarinPalSteps
     [Then(@"the response should contain ""(.*)""")]
     public void ThenTheResponseShouldContain(string field)
     {
-        var response = _scenarioContext.Get<ApiResponse<CreateZarinPalPaymentResponse>>("LastZarinPalResponse");
+        var response = _scenarioContext.Get<ApiResponse<CreateZarinPalPaymentResult>>("LastZarinPalResponse");
 
         var propertyValue = response.GetType().GetProperty(field)?.GetValue(response);
         propertyValue.Should().NotBeNull($"Response should contain {field}");
@@ -205,7 +206,7 @@ public class ZarinPalSteps
             bookingId: booking != null ? BookingId.From(booking.Id.Value) : null,
             customerId: UserId.From(Guid.NewGuid()),
             providerId: ProviderId.From(provider.Id.Value),
-            amount: Money.From((decimal)requestData["Amount"], "IRR"),
+            amount: Money.Create((decimal)requestData["Amount"], "IRR"),
             PaymentMethod.ZarinPal,
             description: (string)requestData["Description"]);
 
@@ -387,10 +388,10 @@ public class ZarinPalSteps
     {
         var authority = _scenarioContext.Get<string>("LastAuthority");
 
-        await WhenZarinPalRedirectsToCallbackWith(new Table("Parameter", "Value")
-        {
-            Rows = { { "Authority", "{LastAuthority}" }, { "Status", "OK" } }
-        });
+        var table = new Table("Parameter", "Value");
+        table.AddRow("Authority", "{LastAuthority}");
+        table.AddRow("Status", "OK");
+        await WhenZarinPalRedirectsToCallbackWith(table);
     }
 
     [Then(@"the payment net amount should be (.*)")]
@@ -419,7 +420,7 @@ public class ZarinPalSteps
             bookingId: null,
             customerId: UserId.From(Guid.NewGuid()),
             providerId: ProviderId.From(provider.Id.Value),
-            amount: Money.From((decimal)requestData["Amount"], (string)requestData["Currency"]),
+            amount: Money.Create((decimal)requestData["Amount"], (string)requestData["Currency"]),
             PaymentMethod.ZarinPal,
             description: "Test payment");
 
