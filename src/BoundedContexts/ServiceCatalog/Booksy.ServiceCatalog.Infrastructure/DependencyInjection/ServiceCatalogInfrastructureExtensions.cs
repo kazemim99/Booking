@@ -141,7 +141,8 @@ namespace Booksy.ServiceCatalog.Infrastructure.DependencyInjection
         {
             services.AddServiceCatalogInfrastructure(configuration);
 
-            // Add caching decorators for read repositories
+            // Add caching decorators for read repositories using Redis distributed cache
+            // These decorators implement the full repository interfaces and use ICacheService (Redis/InMemory)
             services.Decorate<IProviderReadRepository, CachedProviderReadRepository>();
             services.Decorate<IServiceReadRepository, CachedServiceReadRepository>();
 

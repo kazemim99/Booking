@@ -1,49 +1,63 @@
 ﻿using Booksy.Core.Application.Abstractions.Persistence;
 using Booksy.Core.Application.DTOs;
+using Booksy.Infrastructure.Core.Caching;
 using Booksy.ServiceCatalog.Domain.Aggregates;
 using Booksy.ServiceCatalog.Domain.Enums;
 using Booksy.ServiceCatalog.Domain.Repositories;
 using Booksy.ServiceCatalog.Domain.ValueObjects;
-using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
 
 namespace Booksy.ServiceCatalog.Infrastructure.Persistence.Repositories
 {
+    /// <summary>
+    /// Cached decorator for ServiceReadRepository using Redis distributed cache
+    /// Caches GetByIdAsync for improved performance
+    /// </summary>
     public sealed class CachedServiceReadRepository : IServiceReadRepository
     {
         private readonly IServiceReadRepository _inner;
-        private readonly IMemoryCache _cache;
+        private readonly ICacheService _cacheService;
         private readonly ILogger<CachedServiceReadRepository> _logger;
-        private readonly TimeSpan _cacheDuration = TimeSpan.FromMinutes(5);
+        private readonly TimeSpan _cacheDuration;
 
         public CachedServiceReadRepository(
             IServiceReadRepository inner,
-            IMemoryCache cache,
+            ICacheService cacheService,
+            IOptions<CacheSettings> cacheSettings,
             ILogger<CachedServiceReadRepository> logger)
         {
             _inner = inner;
-            _cache = cache;
+            _cacheService = cacheService;
             _logger = logger;
+
+            // Use configured expiration or default to 15 minutes
+            var expirationMinutes = cacheSettings.Value.DefaultExpirationMinutes > 0
+                ? cacheSettings.Value.DefaultExpirationMinutes
+                : 15;
+            _cacheDuration = TimeSpan.FromMinutes(expirationMinutes);
         }
 
         public async Task<Service?> GetByIdAsync(ServiceId id, CancellationToken cancellationToken = default)
         {
-            var cacheKey = $"service:id:{id.Value}";
+            var cacheKey = $"Service:{id.Value}";
 
-            if (_cache.TryGetValue(cacheKey, out Service? cachedService))
-            {
-                _logger.LogDebug("Cache hit for service {ServiceId}", id);
-                return cachedService;
-            }
+            return await _cacheService.GetOrAddAsync(
+                cacheKey,
+                async () =>
+                {
+                    _logger.LogDebug("Cache miss for service {ServiceId}", id);
+                    var service = await _inner.GetByIdAsync(id, cancellationToken);
 
-            var service = await _inner.GetByIdAsync(id, cancellationToken);
-            if (service != null)
-            {
-                _cache.Set(cacheKey, service, _cacheDuration);
-                _logger.LogDebug("Cached service {ServiceId}", id);
-            }
+                    if (service != null)
+                    {
+                        _logger.LogDebug("Cached service {ServiceId}", id);
+                    }
 
-            return service;
+                    return service;
+                },
+                _cacheDuration,
+                cancellationToken);
         }
 
         // Other methods delegate directly to inner repository
