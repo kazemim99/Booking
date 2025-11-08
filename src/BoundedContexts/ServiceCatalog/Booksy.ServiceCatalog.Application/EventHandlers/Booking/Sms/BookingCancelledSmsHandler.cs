@@ -1,9 +1,9 @@
 // ========================================
 // Booksy.ServiceCatalog.Application/EventHandlers/Booking/Sms/BookingCancelledSmsHandler.cs
 // ========================================
+using Booksy.Core.Application.Abstractions.Events;
 using Booksy.ServiceCatalog.Application.Services;
 using Booksy.ServiceCatalog.Domain.Events;
-using MediatR;
 using Microsoft.Extensions.Logging;
 
 namespace Booksy.ServiceCatalog.Application.EventHandlers.Booking.Sms
@@ -11,7 +11,7 @@ namespace Booksy.ServiceCatalog.Application.EventHandlers.Booking.Sms
     /// <summary>
     /// Sends SMS notification when a booking is cancelled
     /// </summary>
-    public sealed class BookingCancelledSmsHandler : INotificationHandler<BookingCancelledEvent>
+    public sealed class BookingCancelledSmsHandler : IDomainEventHandler<BookingCancelledEvent>
     {
         private readonly ISmsNotificationService _smsService;
         private readonly ILogger<BookingCancelledSmsHandler> _logger;
@@ -24,11 +24,11 @@ namespace Booksy.ServiceCatalog.Application.EventHandlers.Booking.Sms
             _logger = logger;
         }
 
-        public async Task Handle(BookingCancelledEvent notification, CancellationToken cancellationToken)
+        public async Task HandleAsync(BookingCancelledEvent domainEvent, CancellationToken cancellationToken = default)
         {
             try
             {
-                _logger.LogInformation("Sending cancellation SMS for booking {BookingId}", notification.BookingId);
+                _logger.LogInformation("Sending cancellation SMS for booking {BookingId}", domainEvent.BookingId);
 
                 // TODO: Fetch customer phone number and name
                 var phoneNumber = "09123456789";
@@ -37,15 +37,15 @@ namespace Booksy.ServiceCatalog.Application.EventHandlers.Booking.Sms
                 await _smsService.SendBookingCancelledSmsAsync(
                     phoneNumber,
                     customerName,
-                    notification.CancelledAt,
-                    notification.Reason,
+                    domainEvent.CancelledAt,
+                    domainEvent.Reason,
                     cancellationToken);
 
-                _logger.LogInformation("Cancellation SMS sent successfully for booking {BookingId}", notification.BookingId);
+                _logger.LogInformation("Cancellation SMS sent successfully for booking {BookingId}", domainEvent.BookingId);
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Error sending cancellation SMS for booking {BookingId}", notification.BookingId);
+                _logger.LogError(ex, "Error sending cancellation SMS for booking {BookingId}", domainEvent.BookingId);
             }
         }
     }

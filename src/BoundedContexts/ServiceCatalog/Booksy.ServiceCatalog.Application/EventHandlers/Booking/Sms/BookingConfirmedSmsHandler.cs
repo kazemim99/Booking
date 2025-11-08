@@ -1,10 +1,10 @@
 // ========================================
 // Booksy.ServiceCatalog.Application/EventHandlers/Booking/Sms/BookingConfirmedSmsHandler.cs
 // ========================================
+using Booksy.Core.Application.Abstractions.Events;
 using Booksy.ServiceCatalog.Application.Services;
 using Booksy.ServiceCatalog.Domain.Events;
 using Booksy.ServiceCatalog.Domain.Repositories;
-using MediatR;
 using Microsoft.Extensions.Logging;
 
 namespace Booksy.ServiceCatalog.Application.EventHandlers.Booking.Sms
@@ -12,7 +12,7 @@ namespace Booksy.ServiceCatalog.Application.EventHandlers.Booking.Sms
     /// <summary>
     /// Sends SMS notification when a booking is confirmed
     /// </summary>
-    public sealed class BookingConfirmedSmsHandler : INotificationHandler<BookingConfirmedEvent>
+    public sealed class BookingConfirmedSmsHandler : IDomainEventHandler<BookingConfirmedEvent>
     {
         private readonly ISmsNotificationService _smsService;
         private readonly IBookingReadRepository _bookingRepository;
@@ -28,11 +28,11 @@ namespace Booksy.ServiceCatalog.Application.EventHandlers.Booking.Sms
             _logger = logger;
         }
 
-        public async Task Handle(BookingConfirmedEvent notification, CancellationToken cancellationToken)
+        public async Task HandleAsync(BookingConfirmedEvent domainEvent, CancellationToken cancellationToken = default)
         {
             try
             {
-                _logger.LogInformation("Sending confirmation SMS for booking {BookingId}", notification.BookingId);
+                _logger.LogInformation("Sending confirmation SMS for booking {BookingId}", domainEvent.BookingId);
 
                 // TODO: Fetch customer phone number, provider name, and service name from repositories
                 // For now, using placeholder logic
@@ -44,16 +44,16 @@ namespace Booksy.ServiceCatalog.Application.EventHandlers.Booking.Sms
                 await _smsService.SendBookingConfirmedSmsAsync(
                     phoneNumber,
                     customerName,
-                    notification.StartTime,
+                    domainEvent.StartTime,
                     providerName,
                     serviceName,
                     cancellationToken);
 
-                _logger.LogInformation("Confirmation SMS sent successfully for booking {BookingId}", notification.BookingId);
+                _logger.LogInformation("Confirmation SMS sent successfully for booking {BookingId}", domainEvent.BookingId);
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Error sending confirmation SMS for booking {BookingId}", notification.BookingId);
+                _logger.LogError(ex, "Error sending confirmation SMS for booking {BookingId}", domainEvent.BookingId);
                 // Don't throw - SMS failures shouldn't fail the booking process
             }
         }
