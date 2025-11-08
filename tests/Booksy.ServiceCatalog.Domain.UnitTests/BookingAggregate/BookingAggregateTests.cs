@@ -422,7 +422,7 @@ public class BookingAggregateTests
             BookingPolicy.Default);
 
         // Act
-        booking.UpdateCustomerNotes("Please use back entrance");
+        booking.UpdateCustomerNotes("Please use back entrance", "");
 
         // Assert
         Assert.Equal("Please use back entrance", booking.CustomerNotes);
@@ -443,7 +443,7 @@ public class BookingAggregateTests
             BookingPolicy.Default);
 
         // Act
-        booking.UpdateStaffNotes("Customer arrived 10 minutes early");
+        booking.UpdateStaffNotes("Customer arrived 10 minutes early", "");
 
         // Assert
         Assert.Equal("Customer arrived 10 minutes early", booking.StaffNotes);
@@ -544,7 +544,7 @@ public class BookingAggregateTests
 
         // Act
         booking.Confirm();
-        booking.UpdateCustomerNotes("Updated notes");
+        booking.UpdateCustomerNotes("Updated notes","");
 
         // Assert
         Assert.Equal(3, booking.History.Count); // Created, Confirmed, Notes updated

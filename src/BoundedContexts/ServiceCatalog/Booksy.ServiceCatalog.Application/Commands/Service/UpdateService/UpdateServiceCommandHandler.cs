@@ -33,7 +33,7 @@ namespace Booksy.ServiceCatalog.Application.Commands.Service.UpdateService
         {
             _logger.LogInformation("Updating service: {ServiceId}", request.ServiceId);
 
-            var serviceId = ServiceId.Create(request.ServiceId);
+            var serviceId = ServiceId.From(request.ServiceId);
 
             var spec = new ServiceGetByIdSpecification(serviceId);
             var service = await _serviceReadRepository.GetSingleAsync(spec, cancellationToken);

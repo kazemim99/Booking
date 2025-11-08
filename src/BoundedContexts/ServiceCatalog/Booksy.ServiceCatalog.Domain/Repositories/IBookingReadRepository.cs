@@ -6,6 +6,7 @@ using Booksy.Core.Application.DTOs;
 using Booksy.Core.Domain.ValueObjects;
 using Booksy.ServiceCatalog.Domain.Aggregates.BookingAggregate;
 using Booksy.ServiceCatalog.Domain.Enums;
+using Booksy.ServiceCatalog.Domain.Models;
 using Booksy.ServiceCatalog.Domain.ValueObjects;
 
 namespace Booksy.ServiceCatalog.Domain.Repositories
@@ -129,6 +130,30 @@ namespace Booksy.ServiceCatalog.Domain.Repositories
             BookingStatus? status = null,
             DateTime? fromDate = null,
             DateTime? toDate = null,
+            CancellationToken cancellationToken = default);
+
+        /// <summary>
+        /// Search bookings with multiple filter criteria and pagination
+        /// </summary>
+        Task<(IReadOnlyList<Booking> Bookings, int TotalCount)> SearchBookingsAsync(
+            Guid? providerId = null,
+            Guid? customerId = null,
+            Guid? serviceId = null,
+            Guid? staffId = null,
+            BookingStatus? status = null,
+            DateTime? startDate = null,
+            DateTime? endDate = null,
+            int pageNumber = 1,
+            int pageSize = 20,
+            CancellationToken cancellationToken = default);
+
+        /// <summary>
+        /// Get booking statistics for a provider within a date range
+        /// </summary>
+        Task<BookingStatistics> GetStatisticsAsync(
+            Guid providerId,
+            DateTime? startDate = null,
+            DateTime? endDate = null,
             CancellationToken cancellationToken = default);
     }
 }

@@ -28,7 +28,7 @@ public sealed class DeleteProviderServiceCommandHandler : ICommandHandler<Delete
             request.ProviderId);
 
         // Get service
-        var serviceId = ServiceId.Create(request.ServiceId);
+        var serviceId = ServiceId.From(request.ServiceId);
         var service = await _serviceWriteRepository.GetByIdAsync(serviceId, cancellationToken);
 
         if (service == null)

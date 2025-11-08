@@ -330,6 +330,36 @@ namespace Booksy.ServiceCatalog.Domain.Aggregates.BookingAggregate
                 now));
         }
 
+        /// <summary>
+        /// Assign or reassign staff to the booking
+        /// </summary>
+        public void AssignStaff(Guid newStaffId)
+        {
+            // Can only assign staff to Requested or Confirmed bookings
+            if (Status != BookingStatus.Requested && Status != BookingStatus.Confirmed)
+                throw new BusinessRuleViolationException(
+                    new StaffCanOnlyBeAssignedToActiveBookingsRule(Status));
+
+            // No change needed
+            if (StaffId == newStaffId)
+                return;
+
+            var previousStaffId = StaffId;
+            StaffId = newStaffId;
+
+            AddHistoryEntry($"Staff reassigned from {previousStaffId} to {newStaffId}", Status);
+
+            RaiseDomainEvent(new StaffAssignedToBookingEvent(
+                Id,
+                CustomerId,
+                ProviderId,
+                ServiceId,
+                previousStaffId,
+                newStaffId,
+                TimeSlot.StartTime,
+                DateTime.UtcNow));
+        }
+
         // ========================================
         // PAYMENT METHODS
         // ========================================
@@ -455,19 +485,37 @@ namespace Booksy.ServiceCatalog.Domain.Aggregates.BookingAggregate
         /// <summary>
         /// Add customer notes
         /// </summary>
-        public void UpdateCustomerNotes(string notes)
+        public void UpdateCustomerNotes(string notes, string addedBy)
         {
             CustomerNotes = notes;
             AddHistoryEntry("Customer notes updated", Status);
+
+            RaiseDomainEvent(new BookingNotesAddedEvent(
+                Id,
+                CustomerId,
+                ProviderId,
+                notes,
+                addedBy,
+                IsStaffNote: false,
+                DateTime.UtcNow));
         }
 
         /// <summary>
         /// Add staff notes (internal)
         /// </summary>
-        public void UpdateStaffNotes(string notes)
+        public void UpdateStaffNotes(string notes, string addedBy)
         {
             StaffNotes = notes;
             AddHistoryEntry("Staff notes updated", Status);
+
+            RaiseDomainEvent(new BookingNotesAddedEvent(
+                Id,
+                CustomerId,
+                ProviderId,
+                notes,
+                addedBy,
+                IsStaffNote: true,
+                DateTime.UtcNow));
         }
 
         /// <summary>
@@ -620,6 +668,20 @@ namespace Booksy.ServiceCatalog.Domain.Aggregates.BookingAggregate
 
         public string Message => $"Cannot mark as no-show before booking end time: {_endTime:yyyy-MM-dd HH:mm}";
         public string ErrorCode => "BOOKING_TOO_EARLY_FOR_NO_SHOW";
+        public bool IsBroken() => true;
+    }
+
+    internal sealed class StaffCanOnlyBeAssignedToActiveBookingsRule : IBusinessRule
+    {
+        private readonly BookingStatus _status;
+
+        public StaffCanOnlyBeAssignedToActiveBookingsRule(BookingStatus status)
+        {
+            _status = status;
+        }
+
+        public string Message => $"Staff can only be assigned to Requested or Confirmed bookings. Current state: {_status}";
+        public string ErrorCode => "BOOKING_INVALID_STATE_FOR_STAFF_ASSIGNMENT";
         public bool IsBroken() => true;
     }
 }
