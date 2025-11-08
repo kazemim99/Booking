@@ -2,13 +2,18 @@ using Booksy.API.Extensions;
 using Booksy.Core.Application.DTOs;
 using Booksy.ServiceCatalog.API.Models.Requests;
 using Booksy.ServiceCatalog.Api.Models.Responses;
+using Booksy.ServiceCatalog.Application.Commands.Booking.AddNotes;
+using Booksy.ServiceCatalog.Application.Commands.Booking.AssignStaff;
 using Booksy.ServiceCatalog.Application.Commands.Booking.CancelBooking;
 using Booksy.ServiceCatalog.Application.Commands.Booking.CompleteBooking;
 using Booksy.ServiceCatalog.Application.Commands.Booking.ConfirmBooking;
 using Booksy.ServiceCatalog.Application.Commands.Booking.CreateBooking;
 using Booksy.ServiceCatalog.Application.Commands.Booking.MarkNoShow;
 using Booksy.ServiceCatalog.Application.Commands.Booking.RescheduleBooking;
+using Booksy.ServiceCatalog.Application.Queries.Booking.GetAvailableSlots;
 using Booksy.ServiceCatalog.Application.Queries.Booking.GetBookingDetails;
+using Booksy.ServiceCatalog.Application.Queries.Booking.GetBookingStatistics;
+using Booksy.ServiceCatalog.Application.Queries.Booking.SearchBookings;
 using Booksy.ServiceCatalog.Domain.Repositories;
 using MediatR;
 using Microsoft.AspNetCore.Authorization;
@@ -396,6 +401,221 @@ public class BookingsController : ControllerBase
         _logger.LogInformation("Booking {BookingId} marked as no-show by user {UserId}", id, GetCurrentUserId());
 
         return Ok(new MessageResponse("Booking marked as no-show successfully"));
+    }
+
+    /// <summary>
+    /// Assigns or reassigns staff to a booking
+    /// </summary>
+    /// <param name="id">Booking ID</param>
+    /// <param name="staffId">Staff member ID to assign</param>
+    /// <param name="cancellationToken">Cancellation token</param>
+    /// <returns>Success message</returns>
+    /// <response code="200">Staff assigned successfully</response>
+    /// <response code="400">Invalid request or booking cannot be modified</response>
+    /// <response code="404">Booking not found</response>
+    /// <response code="403">Not authorized to modify this booking</response>
+    [HttpPut("{id:guid}/assign-staff/{staffId:guid}")]
+    [Authorize(Policy = "ProviderOrAdmin")]
+    [ProducesResponseType(typeof(MessageResponse), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
+    public async Task<IActionResult> AssignStaff(
+        [FromRoute] Guid id,
+        [FromRoute] Guid staffId,
+        CancellationToken cancellationToken = default)
+    {
+        var command = new AssignStaffToBookingCommand(
+            BookingId: id,
+            StaffId: staffId);
+
+        var result = await _mediator.Send(command, cancellationToken);
+
+        _logger.LogInformation("Staff {StaffId} assigned to booking {BookingId} by user {UserId}",
+            staffId, id, GetCurrentUserId());
+
+        return Ok(new MessageResponse($"Staff assigned successfully"));
+    }
+
+    /// <summary>
+    /// Adds notes to a booking
+    /// </summary>
+    /// <param name="id">Booking ID</param>
+    /// <param name="request">Notes details</param>
+    /// <param name="cancellationToken">Cancellation token</param>
+    /// <returns>Success message</returns>
+    /// <response code="200">Notes added successfully</response>
+    /// <response code="404">Booking not found</response>
+    /// <response code="403">Not authorized to add notes to this booking</response>
+    [HttpPost("{id:guid}/notes")]
+    [Authorize]
+    [ProducesResponseType(typeof(MessageResponse), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
+    public async Task<IActionResult> AddNotes(
+        [FromRoute] Guid id,
+        [FromBody] AddNotesRequest request,
+        CancellationToken cancellationToken = default)
+    {
+        var userId = GetCurrentUserId();
+        if (string.IsNullOrEmpty(userId))
+            return Unauthorized();
+
+        var command = new AddBookingNotesCommand(
+            BookingId: id,
+            Notes: request.Notes,
+            IsStaffNote: request.IsStaffNote,
+            AddedBy: userId);
+
+        var result = await _mediator.Send(command, cancellationToken);
+
+        _logger.LogInformation("{NoteType} notes added to booking {BookingId} by user {UserId}",
+            request.IsStaffNote ? "Staff" : "Customer", id, userId);
+
+        return Ok(new MessageResponse("Notes added successfully"));
+    }
+
+    /// <summary>
+    /// Searches bookings with multiple filter criteria
+    /// </summary>
+    /// <param name="providerId">Filter by provider ID</param>
+    /// <param name="customerId">Filter by customer ID</param>
+    /// <param name="serviceId">Filter by service ID</param>
+    /// <param name="staffId">Filter by staff ID</param>
+    /// <param name="status">Filter by booking status</param>
+    /// <param name="startDate">Filter by start date (inclusive)</param>
+    /// <param name="endDate">Filter by end date (exclusive)</param>
+    /// <param name="pageNumber">Page number (default: 1)</param>
+    /// <param name="pageSize">Page size (default: 20, max: 100)</param>
+    /// <param name="cancellationToken">Cancellation token</param>
+    /// <returns>Paginated list of bookings matching the search criteria</returns>
+    /// <response code="200">Search results returned successfully</response>
+    /// <response code="403">Not authorized to search bookings</response>
+    [HttpGet("search")]
+    [Authorize]
+    [ProducesResponseType(typeof(SearchBookingsResult), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
+    public async Task<IActionResult> SearchBookings(
+        [FromQuery] Guid? providerId = null,
+        [FromQuery] Guid? customerId = null,
+        [FromQuery] Guid? serviceId = null,
+        [FromQuery] Guid? staffId = null,
+        [FromQuery] string? status = null,
+        [FromQuery] DateTime? startDate = null,
+        [FromQuery] DateTime? endDate = null,
+        [FromQuery] int pageNumber = 1,
+        [FromQuery] int pageSize = 20,
+        CancellationToken cancellationToken = default)
+    {
+        // Validate page size
+        if (pageSize > 100) pageSize = 100;
+        if (pageSize < 1) pageSize = 20;
+
+        // Parse status if provided
+        Booksy.ServiceCatalog.Domain.Enums.BookingStatus? bookingStatus = null;
+        if (!string.IsNullOrEmpty(status))
+        {
+            if (Enum.TryParse<Booksy.ServiceCatalog.Domain.Enums.BookingStatus>(status, true, out var parsedStatus))
+            {
+                bookingStatus = parsedStatus;
+            }
+        }
+
+        var query = new SearchBookingsQuery(
+            ProviderId: providerId,
+            CustomerId: customerId,
+            ServiceId: serviceId,
+            StaffId: staffId,
+            Status: bookingStatus,
+            StartDate: startDate,
+            EndDate: endDate,
+            PageNumber: pageNumber,
+            PageSize: pageSize);
+
+        var result = await _mediator.Send(query, cancellationToken);
+
+        _logger.LogInformation("Booking search executed by user {UserId}. Found {Count} results",
+            GetCurrentUserId(), result.TotalCount);
+
+        return Ok(result);
+    }
+
+    /// <summary>
+    /// Gets available time slots for booking
+    /// </summary>
+    /// <param name="providerId">Provider ID</param>
+    /// <param name="serviceId">Service ID</param>
+    /// <param name="date">Date to check availability</param>
+    /// <param name="staffId">Optional staff ID filter</param>
+    /// <param name="cancellationToken">Cancellation token</param>
+    /// <returns>List of available time slots</returns>
+    /// <response code="200">Available slots returned successfully</response>
+    /// <response code="404">Provider or service not found</response>
+    [HttpGet("available-slots")]
+    [Authorize]
+    [ProducesResponseType(typeof(GetAvailableSlotsResult), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> GetAvailableSlots(
+        [FromQuery] Guid providerId,
+        [FromQuery] Guid serviceId,
+        [FromQuery] DateTime date,
+        [FromQuery] Guid? staffId = null,
+        CancellationToken cancellationToken = default)
+    {
+        var query = new GetAvailableSlotsQuery(
+            ProviderId: providerId,
+            ServiceId: serviceId,
+            Date: date,
+            StaffId: staffId);
+
+        var result = await _mediator.Send(query, cancellationToken);
+
+        _logger.LogInformation("Available slots query for provider {ProviderId}, service {ServiceId} on {Date}. Found {Count} slots",
+            providerId, serviceId, date.Date, result.AvailableSlots.Count);
+
+        return Ok(result);
+    }
+
+    /// <summary>
+    /// Gets booking statistics for a provider
+    /// </summary>
+    /// <param name="providerId">Provider ID</param>
+    /// <param name="startDate">Optional start date filter</param>
+    /// <param name="endDate">Optional end date filter</param>
+    /// <param name="cancellationToken">Cancellation token</param>
+    /// <returns>Booking statistics including counts, revenue, and rates</returns>
+    /// <response code="200">Statistics returned successfully</response>
+    /// <response code="403">Not authorized to view this provider's statistics</response>
+    /// <response code="404">Provider not found</response>
+    [HttpGet("statistics")]
+    [Authorize(Policy = "ProviderOrAdmin")]
+    [ProducesResponseType(typeof(BookingStatisticsDto), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> GetStatistics(
+        [FromQuery] Guid providerId,
+        [FromQuery] DateTime? startDate = null,
+        [FromQuery] DateTime? endDate = null,
+        CancellationToken cancellationToken = default)
+    {
+        // Check authorization
+        if (!await CanManageProvider(providerId))
+        {
+            _logger.LogWarning("User {UserId} attempted to view statistics for provider {ProviderId} without permission",
+                GetCurrentUserId(), providerId);
+            return Forbid();
+        }
+
+        var query = new GetBookingStatisticsQuery(
+            ProviderId: providerId,
+            StartDate: startDate,
+            EndDate: endDate);
+
+        var result = await _mediator.Send(query, cancellationToken);
+
+        _logger.LogInformation("Statistics retrieved for provider {ProviderId} by user {UserId}",
+            providerId, GetCurrentUserId());
+
+        return Ok(result);
     }
 
     #region Private Helper Methods

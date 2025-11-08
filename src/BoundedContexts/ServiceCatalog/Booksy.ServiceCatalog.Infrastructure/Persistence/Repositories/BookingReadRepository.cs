@@ -251,5 +251,148 @@ namespace Booksy.ServiceCatalog.Infrastructure.Persistence.Repositories
                 pagination.PageNumber,
                 pagination.PageSize);
         }
+
+        public async Task<(IReadOnlyList<Booking> Bookings, int TotalCount)> SearchBookingsAsync(
+            Guid? providerId = null,
+            Guid? customerId = null,
+            Guid? serviceId = null,
+            Guid? staffId = null,
+            BookingStatus? status = null,
+            DateTime? startDate = null,
+            DateTime? endDate = null,
+            int pageNumber = 1,
+            int pageSize = 20,
+            CancellationToken cancellationToken = default)
+        {
+            var query = DbSet.AsQueryable();
+
+            // Apply filters
+            if (providerId.HasValue)
+            {
+                var providerIdValue = ProviderId.From(providerId.Value);
+                query = query.Where(b => b.ProviderId == providerIdValue);
+            }
+
+            if (customerId.HasValue)
+            {
+                var customerIdValue = UserId.From(customerId.Value);
+                query = query.Where(b => b.CustomerId == customerIdValue);
+            }
+
+            if (serviceId.HasValue)
+            {
+                var serviceIdValue = ServiceId.From(serviceId.Value);
+                query = query.Where(b => b.ServiceId == serviceIdValue);
+            }
+
+            if (staffId.HasValue)
+            {
+                query = query.Where(b => b.StaffId == staffId.Value);
+            }
+
+            if (status.HasValue)
+            {
+                query = query.Where(b => b.Status == status.Value);
+            }
+
+            if (startDate.HasValue)
+            {
+                query = query.Where(b => b.TimeSlot.StartTime >= startDate.Value);
+            }
+
+            if (endDate.HasValue)
+            {
+                query = query.Where(b => b.TimeSlot.StartTime < endDate.Value);
+            }
+
+            // Order by most recent first
+            query = query.OrderByDescending(b => b.TimeSlot.StartTime);
+
+            // Get total count
+            var totalCount = await query.CountAsync(cancellationToken);
+
+            // Apply pagination
+            var bookings = await query
+                .Skip((pageNumber - 1) * pageSize)
+                .Take(pageSize)
+                .ToListAsync(cancellationToken);
+
+            return (bookings, totalCount);
+        }
+
+        public async Task<Application.Queries.Booking.GetBookingStatistics.BookingStatisticsDto> GetStatisticsAsync(
+            Guid providerId,
+            DateTime? startDate = null,
+            DateTime? endDate = null,
+            CancellationToken cancellationToken = default)
+        {
+            var providerIdValue = ProviderId.From(providerId);
+            var query = DbSet.Where(b => b.ProviderId == providerIdValue);
+
+            if (startDate.HasValue)
+            {
+                query = query.Where(b => b.TimeSlot.StartTime >= startDate.Value);
+            }
+
+            if (endDate.HasValue)
+            {
+                query = query.Where(b => b.TimeSlot.StartTime < endDate.Value);
+            }
+
+            var bookings = await query.ToListAsync(cancellationToken);
+
+            // Calculate statistics
+            var totalBookings = bookings.Count;
+            var requestedBookings = bookings.Count(b => b.Status == BookingStatus.Requested);
+            var confirmedBookings = bookings.Count(b => b.Status == BookingStatus.Confirmed);
+            var completedBookings = bookings.Count(b => b.Status == BookingStatus.Completed);
+            var cancelledBookings = bookings.Count(b => b.Status == BookingStatus.Cancelled);
+            var noShowBookings = bookings.Count(b => b.Status == BookingStatus.NoShow);
+            var rescheduledBookings = bookings.Count(b => b.Status == BookingStatus.Rescheduled);
+
+            // Calculate revenue (assuming first currency or default)
+            var currency = bookings.FirstOrDefault()?.TotalPrice.Currency ?? "USD";
+            var totalRevenue = bookings.Sum(b => b.TotalPrice.Amount);
+            var completedRevenue = bookings
+                .Where(b => b.Status == BookingStatus.Completed)
+                .Sum(b => b.PaymentInfo.PaidAmount.Amount);
+            var pendingRevenue = bookings
+                .Where(b => b.Status == BookingStatus.Requested || b.Status == BookingStatus.Confirmed)
+                .Sum(b => b.TotalPrice.Amount - b.PaymentInfo.PaidAmount.Amount);
+            var refundedAmount = bookings
+                .Where(b => b.PaymentInfo.RefundedAmount != null)
+                .Sum(b => b.PaymentInfo.RefundedAmount?.Amount ?? 0);
+
+            // Calculate rates
+            var totalCompletableBookings = confirmedBookings + completedBookings + noShowBookings;
+            var completionRate = totalCompletableBookings > 0
+                ? (double)completedBookings / totalCompletableBookings * 100
+                : 0;
+            var noShowRate = totalCompletableBookings > 0
+                ? (double)noShowBookings / totalCompletableBookings * 100
+                : 0;
+            var cancellationRate = totalBookings > 0
+                ? (double)cancelledBookings / totalBookings * 100
+                : 0;
+
+            return new Application.Queries.Booking.GetBookingStatistics.BookingStatisticsDto(
+                TotalBookings: totalBookings,
+                RequestedBookings: requestedBookings,
+                ConfirmedBookings: confirmedBookings,
+                CompletedBookings: completedBookings,
+                CancelledBookings: cancelledBookings,
+                NoShowBookings: noShowBookings,
+                RescheduledBookings: rescheduledBookings,
+                TotalRevenue: totalRevenue,
+                CompletedRevenue: completedRevenue,
+                PendingRevenue: pendingRevenue,
+                RefundedAmount: refundedAmount,
+                Currency: currency,
+                CompletionRate: Math.Round(completionRate, 2),
+                NoShowRate: Math.Round(noShowRate, 2),
+                CancellationRate: Math.Round(cancellationRate, 2),
+                StartDate: startDate,
+                EndDate: endDate);
+        }
     }
 }
