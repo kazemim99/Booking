@@ -245,7 +245,7 @@ public class ProviderManagementTests : ServiceCatalogIntegrationTestBase
         // Assert
         response.StatusCode.Should().Be(HttpStatusCode.OK);
 
-        response.data.Should().NotBeNull();
+        response.Data.Should().NotBeNull();
         response!.Message.Should().NotBeNullOrEmpty();
     }
 

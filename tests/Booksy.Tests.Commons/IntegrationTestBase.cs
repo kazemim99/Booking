@@ -17,14 +17,14 @@ public abstract class IntegrationTestBase<TFactory, TDbContext, TStartup>
     where TDbContext : DbContext
     where TStartup : class
 {
-    protected readonly TFactory Factory;
-    protected readonly HttpClient Client;
-    protected IServiceScope Scope;
-    protected TDbContext DbContext;
-    protected TestUserContext _userContext;
+    public readonly TFactory Factory;
+    public readonly HttpClient Client;
+    public IServiceScope Scope;
+    public TDbContext DbContext;
+    public TestUserContext _userContext;
 
 
-    protected IntegrationTestBase(TFactory factory)
+    public IntegrationTestBase(TFactory factory)
     {
         Factory = factory;
         Client = factory.CreateClient(new WebApplicationFactoryClientOptions
@@ -58,36 +58,36 @@ public abstract class IntegrationTestBase<TFactory, TDbContext, TStartup>
     // DATABASE HELPERS
     // ================================================
 
-    protected virtual async Task CleanDatabaseAsync()
+    public virtual async Task CleanDatabaseAsync()
     {
         // Override in derived classes for specific cleanup logic
         // Example: await DbContext.Database.ExecuteSqlRawAsync("DELETE FROM Services");
         await Task.CompletedTask;
     }
 
-    protected async Task<T?> FindEntityAsync<T>(Guid id) where T : class
+    public async Task<T?> FindEntityAsync<T>(Guid id) where T : class
     {
         return await DbContext.Set<T>().FindAsync(id);
     }
 
-    protected async Task<T?> FindEntityAsync<T>(Func<T, bool> predicate) where T : class
+    public async Task<T?> FindEntityAsync<T>(Func<T, bool> predicate) where T : class
     {
         return DbContext.Set<T>().FirstOrDefault(predicate);
     }
 
-    protected async Task CreateEntityAsync<T>(T entity) where T : class
+    public async Task CreateEntityAsync<T>(T entity) where T : class
     {
         await DbContext.Set<T>().AddAsync(entity);
         await DbContext.SaveChangesAsync();
     }
 
-    protected async Task CreateEntitiesAsync<T>(params T[] entities) where T : class
+    public async Task CreateEntitiesAsync<T>(params T[] entities) where T : class
     {
         await DbContext.Set<T>().AddRangeAsync(entities);
         await DbContext.SaveChangesAsync();
     }
 
-    protected async Task UpdateEntityAsync<T>(T entity) where T : class
+    public async Task UpdateEntityAsync<T>(T entity) where T : class
     {
         // Check if entity is already being tracked
         var entry = DbContext.Entry(entity);
@@ -99,7 +99,7 @@ public abstract class IntegrationTestBase<TFactory, TDbContext, TStartup>
         await DbContext.SaveChangesAsync();
     }
 
-    protected void SetPrivateProperty<T>(T entity, string propertyName, object value)
+    public void SetPrivateProperty<T>(T entity, string propertyName, object value)
     {
         var property = typeof(T).GetProperty(propertyName,
             System.Reflection.BindingFlags.Public |
@@ -110,7 +110,7 @@ public abstract class IntegrationTestBase<TFactory, TDbContext, TStartup>
     }
 
 
-    protected async Task<Core.Domain.Infrastructure.Middleware.ApiResponse> PostAsJsonAsync<T>(string url, T data)
+    public async Task<ApiResponse> PostAsJsonAsync<T>(string url, T data)
     {
 
           var result = await Client.PostAsJsonAsync(url, data);
@@ -131,7 +131,7 @@ public abstract class IntegrationTestBase<TFactory, TDbContext, TStartup>
 
     }
 
-    protected async Task<ApiResponse<TResponse>> PostAsJsonAsync<T, TResponse>(string url, T data)
+    public async Task<ApiResponse<TResponse>> PostAsJsonAsync<T, TResponse>(string url, T data)
     {
 
         var result = await Client.PostAsJsonAsync(url, data);
@@ -151,7 +151,7 @@ public abstract class IntegrationTestBase<TFactory, TDbContext, TStartup>
 
     }
 
-    protected async Task<ApiResponse<TResponse>> PutAsJsonAsync<T, TResponse>(string url, T data)
+    public async Task<ApiResponse<TResponse>> PutAsJsonAsync<T, TResponse>(string url, T data)
     {
        
             var result = await Client.PutAsJsonAsync(url, data);
@@ -171,7 +171,7 @@ public abstract class IntegrationTestBase<TFactory, TDbContext, TStartup>
     }
 
 
-    protected async Task<ApiResponse> PutAsJsonAsync<T>(string url, T data)
+    public async Task<ApiResponse> PutAsJsonAsync<T>(string url, T data)
     {
        
             var result = await Client.PutAsJsonAsync(url, data);
@@ -191,12 +191,12 @@ public abstract class IntegrationTestBase<TFactory, TDbContext, TStartup>
        
     }
 
-    protected async Task<HttpResponseMessage> GetAsync(string url)
+    public async Task<HttpResponseMessage> GetAsync(string url)
     {
         return await Client.GetAsync(url);
 
     }
-    protected async Task<ApiResponse<TResponse>> GetAsync<TResponse>(string url)
+    public async Task<ApiResponse<TResponse>> GetAsync<TResponse>(string url)
     {
 
         var result = await Client.GetAsync(url);
@@ -214,7 +214,7 @@ public abstract class IntegrationTestBase<TFactory, TDbContext, TStartup>
         return response;
     }
 
-    protected async Task<ApiResponse> DeleteAsync(string url)
+    public async Task<ApiResponse> DeleteAsync(string url)
     {
 
       
@@ -235,7 +235,7 @@ public abstract class IntegrationTestBase<TFactory, TDbContext, TStartup>
 
     }
 
-    protected async Task<TResponse?> GetResponseAsync<TResponse>(HttpResponseMessage response)
+    public async Task<TResponse?> GetResponseAsync<TResponse>(HttpResponseMessage response)
     {
 
         var reson = await response.Content.ReadAsStringAsync();
@@ -341,12 +341,12 @@ public abstract class IntegrationTestBase<TFactory, TDbContext, TStartup>
     }
 
 
-    protected static void AssertSuccessStatusCode(HttpResponseMessage response)
+    public static void AssertSuccessStatusCode(HttpResponseMessage response)
     {
         response.EnsureSuccessStatusCode();
     }
 
-    protected static void AssertStatusCode(HttpResponseMessage response, System.Net.HttpStatusCode expectedStatusCode)
+    public static void AssertStatusCode(HttpResponseMessage response, System.Net.HttpStatusCode expectedStatusCode)
     {
         //FluentAssertions.AssertionExtensions.Should((int)response.StatusCode)
         //    .Be((int)expectedStatusCode);

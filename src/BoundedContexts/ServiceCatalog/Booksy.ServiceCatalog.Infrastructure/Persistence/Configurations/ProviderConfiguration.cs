@@ -205,24 +205,32 @@ namespace Booksy.ServiceCatalog.Infrastructure.Persistence.Configurations
 
                 contact.OwnsOne(c => c.PrimaryPhone, phone =>
                 {
+                    phone.Property(ph => ph.Value)
+                        .HasMaxLength(20)
+                        .HasColumnName("PrimaryPhoneNumber");
+
                     phone.Property(ph => ph.CountryCode)
                         .HasMaxLength(5)
                         .HasColumnName("PrimaryPhoneCountryCode");
 
-                    phone.Property(ph => ph.Value)
-                        .HasMaxLength(20)
-                        .HasColumnName("PrimaryPhoneNumber");
+                    phone.Property(ph => ph.NationalNumber)
+                        .HasMaxLength(15)
+                        .HasColumnName("PrimaryPhoneNationalNumber");
                 });
 
                 contact.OwnsOne(c => c.SecondaryPhone, phone =>
                 {
+                    phone.Property(ph => ph.Value)
+                        .HasMaxLength(20)
+                        .HasColumnName("SecondaryPhoneNumber");
+
                     phone.Property(ph => ph.CountryCode)
                         .HasMaxLength(5)
                         .HasColumnName("SecondaryPhoneCountryCode");
 
-                    phone.Property(ph => ph.Value)
-                        .HasMaxLength(20)
-                        .HasColumnName("SecondaryPhoneNumber");
+                    phone.Property(ph => ph.NationalNumber)
+                        .HasMaxLength(15)
+                        .HasColumnName("SecondaryPhoneNationalNumber");
                 });
 
                 contact.Property(c => c.Website)

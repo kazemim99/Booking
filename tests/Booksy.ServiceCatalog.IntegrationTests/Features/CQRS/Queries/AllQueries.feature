@@ -16,7 +16,7 @@ Feature: Query Handlers - Complete Coverage
   Scenario: GetBookingByIdQuery - Booking not found
     When I execute GetBookingByIdQuery with non-existent ID
     Then the query should return null
-    Or the query should throw NotFoundException
+    #Or the query should throw NotFoundException
 
   @query @booking @customer-bookings @happy-path
   Scenario: GetCustomerBookingsQuery - Retrieve customer bookings

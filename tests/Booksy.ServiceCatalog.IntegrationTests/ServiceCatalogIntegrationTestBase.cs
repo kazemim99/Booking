@@ -19,7 +19,7 @@ public abstract class ServiceCatalogIntegrationTestBase
         ServiceCatalogDbContext,                  // Concrete DbContext
         Startup>                                  // Concrete Startup class
 {
-    protected ServiceCatalogIntegrationTestBase(ServiceCatalogTestWebApplicationFactory<Startup> factory)
+    public ServiceCatalogIntegrationTestBase(ServiceCatalogTestWebApplicationFactory<Startup> factory)
         : base(factory)
     {
     }
@@ -28,7 +28,7 @@ public abstract class ServiceCatalogIntegrationTestBase
     // DATABASE CLEANUP (Service Catalog Specific)
     // ================================================
 
-    protected override async Task CleanDatabaseAsync()
+    public override async Task CleanDatabaseAsync()
     {
         // Clean tables in correct order (respecting foreign keys)
         //await DbContext.Database.ExecuteSqlRawAsync(@"
@@ -48,7 +48,7 @@ public abstract class ServiceCatalogIntegrationTestBase
     /// <summary>
     /// Find a Provider by ID
     /// </summary>
-    protected async Task<Provider?> FindProviderAsync(Guid providerId)
+    public async Task<Provider?> FindProviderAsync(Guid providerId)
     {
         return await DbContext.Providers
             .Include(p => p.BusinessHours)
@@ -61,7 +61,7 @@ public abstract class ServiceCatalogIntegrationTestBase
     /// <summary>
     /// Find a Provider by ID with predicate
     /// </summary>
-    protected async Task<Provider?> FindProviderAsync(Expression<Func<Provider, bool>> predicate)
+    public async Task<Provider?> FindProviderAsync(Expression<Func<Provider, bool>> predicate)
     {
         return await DbContext.Providers
             .FirstOrDefaultAsync(predicate);
@@ -70,7 +70,7 @@ public abstract class ServiceCatalogIntegrationTestBase
     /// <summary>
     /// Find a Service by ID
     /// </summary>
-    protected async Task<Service?> FindServiceAsync(Guid serviceId)
+    public async Task<Service?> FindServiceAsync(Guid serviceId)
     {
         return await DbContext.Services
             .AsNoTracking()
@@ -82,7 +82,7 @@ public abstract class ServiceCatalogIntegrationTestBase
     /// <summary>
     /// Find a Service by predicate
     /// </summary>
-    protected async Task<Service?> FindServiceAsync(Expression<Func<Service, bool>> predicate)
+    public async Task<Service?> FindServiceAsync(Expression<Func<Service, bool>> predicate)
     {
         return await DbContext.Services
             .Include(s => s.Options)
@@ -93,7 +93,7 @@ public abstract class ServiceCatalogIntegrationTestBase
     /// <summary>
     /// Get all services for a provider
     /// </summary>
-    protected async Task<List<Service>> GetProviderServicesAsync(Guid providerId)
+    public async Task<List<Service>> GetProviderServicesAsync(Guid providerId)
     {
         return await DbContext.Services
             .Where(s => s.ProviderId == ProviderId.From(providerId))
@@ -105,7 +105,7 @@ public abstract class ServiceCatalogIntegrationTestBase
     /// <summary>
     /// Get all providers
     /// </summary>
-    protected async Task<List<Provider>> GetAllProvidersAsync()
+    public async Task<List<Provider>> GetAllProvidersAsync()
     {
         return await DbContext.Providers.ToListAsync();
     }
@@ -113,7 +113,7 @@ public abstract class ServiceCatalogIntegrationTestBase
     /// <summary>
     /// Get all services
     /// </summary>
-    protected async Task<List<Service>> GetAllServicesAsync()
+    public async Task<List<Service>> GetAllServicesAsync()
     {
         return await DbContext.Services
             .Include(s => s.Options)
@@ -128,7 +128,7 @@ public abstract class ServiceCatalogIntegrationTestBase
     /// <summary>
     /// Authenticate as the owner of a specific provider
     /// </summary>
-    protected new void AuthenticateAsProviderOwner(Provider provider)
+    public new void AuthenticateAsProviderOwner(Provider provider)
     {
         // Create a custom test user where userId matches the provider's OwnerId
         var testUser = new TestUser
@@ -150,7 +150,7 @@ public abstract class ServiceCatalogIntegrationTestBase
     /// <summary>
     /// Authenticate as the provider who owns a service
     /// </summary>
-    protected void AuthenticateAsServiceOwner(Service service)
+    public void AuthenticateAsServiceOwner(Service service)
     {
         base.AuthenticateAsProvider(
             service.ProviderId.Value.ToString(),
@@ -161,7 +161,7 @@ public abstract class ServiceCatalogIntegrationTestBase
     /// <summary>
     /// Authenticate as an admin user with default credentials
     /// </summary>
-    protected void AuthenticateAsTestAdmin()
+    public void AuthenticateAsTestAdmin()
     {
         base.AuthenticateAsAdmin("admin@booksy.com");
     }
@@ -169,7 +169,7 @@ public abstract class ServiceCatalogIntegrationTestBase
     /// <summary>
     /// Expose base class ClearAuthentication for derived classes
     /// </summary>
-    protected new void ClearAuthenticationHeader()
+    public new void ClearAuthenticationHeader()
     {
         base.ClearAuthentication();
     }
@@ -177,7 +177,7 @@ public abstract class ServiceCatalogIntegrationTestBase
     /// <summary>
     /// Authenticate as a user (customer)
     /// </summary>
-    protected void AuthenticateAsUser(Guid userId, string email = "user@test.com")
+    public void AuthenticateAsUser(Guid userId, string email = "user@test.com")
     {
         base.AuthenticateAsCustomer(userId, email);
     }
@@ -189,7 +189,7 @@ public abstract class ServiceCatalogIntegrationTestBase
     /// <summary>
     /// Assert that a service exists in the database
     /// </summary>
-    protected async Task AssertServiceExistsAsync(Guid serviceId)
+    public async Task AssertServiceExistsAsync(Guid serviceId)
     {
         var service = await FindServiceAsync(serviceId);
         service.Should().NotBeNull($"Service with ID {serviceId} should exist");
@@ -198,7 +198,7 @@ public abstract class ServiceCatalogIntegrationTestBase
     /// <summary>
     /// Assert that a service does not exist in the database
     /// </summary>
-    protected async Task AssertServiceNotExistsAsync(Guid serviceId)
+    public async Task AssertServiceNotExistsAsync(Guid serviceId)
     {
         var service = await FindServiceAsync(serviceId);
         service.Should().BeNull($"Service with ID {serviceId} should not exist");
@@ -207,7 +207,7 @@ public abstract class ServiceCatalogIntegrationTestBase
     /// <summary>
     /// Assert that a provider exists in the database
     /// </summary>
-    protected async Task AssertProviderExistsAsync(Guid providerId)
+    public async Task AssertProviderExistsAsync(Guid providerId)
     {
         var provider = await FindProviderAsync(providerId);
         provider.Should().NotBeNull($"Provider with ID {providerId} should exist");
@@ -216,7 +216,7 @@ public abstract class ServiceCatalogIntegrationTestBase
     /// <summary>
     /// Assert that a provider has a specific number of services
     /// </summary>
-    protected async Task AssertProviderServiceCountAsync(Guid providerId, int expectedCount)
+    public async Task AssertProviderServiceCountAsync(Guid providerId, int expectedCount)
     {
         var services = await GetProviderServicesAsync(providerId);
         services.Should().HaveCount(expectedCount,
@@ -226,7 +226,7 @@ public abstract class ServiceCatalogIntegrationTestBase
     /// <summary>
     /// Assert that a service has specific status
     /// </summary>
-    protected async Task AssertServiceStatusAsync(Guid serviceId, Domain.Enums.ServiceStatus expectedStatus)
+    public async Task AssertServiceStatusAsync(Guid serviceId, Domain.Enums.ServiceStatus expectedStatus)
     {
         var service = await FindServiceAsync(serviceId);
         service.Should().NotBeNull();
@@ -241,7 +241,7 @@ public abstract class ServiceCatalogIntegrationTestBase
     /// <summary>
     /// Create a provider and authenticate as them in one call
     /// </summary>
-    protected async Task<Provider> CreateAndAuthenticateAsProviderAsync(
+    public async Task<Provider> CreateAndAuthenticateAsProviderAsync(
         string businessName = "Test Provider",
         string email = "provider@test.com")
     {
@@ -276,7 +276,7 @@ public abstract class ServiceCatalogIntegrationTestBase
     /// <summary>
     /// Create a service for a provider
     /// </summary>
-    protected async Task<Service> CreateServiceForProviderAsync(
+    public async Task<Service> CreateServiceForProviderAsync(
         Provider provider,
         string serviceName = "Test Service",
         decimal price = 50.00m,
@@ -299,7 +299,7 @@ public abstract class ServiceCatalogIntegrationTestBase
     /// <summary>
     /// Create a provider with services
     /// </summary>
-    protected async Task<(Provider Provider, List<Service> Services)> CreateProviderWithServicesAsync(
+    public async Task<(Provider Provider, List<Service> Services)> CreateProviderWithServicesAsync(
         int serviceCount = 3)
     {
         var provider = Provider.RegisterProvider(
@@ -343,7 +343,7 @@ public abstract class ServiceCatalogIntegrationTestBase
     /// <summary>
     /// Create a test provider with services and staff (commonly used in tests)
     /// </summary>
-    protected async Task<Provider> CreateTestProviderWithServicesAsync(int serviceCount = 3)
+    public async Task<Provider> CreateTestProviderWithServicesAsync(int serviceCount = 3)
     {
         var provider = Provider.RegisterProvider(
             UserId.From(Guid.NewGuid()),
@@ -387,7 +387,7 @@ public abstract class ServiceCatalogIntegrationTestBase
     /// <summary>
     /// Get the first service for a provider
     /// </summary>
-    protected async Task<Service> GetFirstServiceForProviderAsync(Guid providerId)
+    public async Task<Service> GetFirstServiceForProviderAsync(Guid providerId)
     {
         var services = await GetProviderServicesAsync(providerId);
         return services.First();
@@ -400,7 +400,7 @@ public abstract class ServiceCatalogIntegrationTestBase
     /// <summary>
     /// Create a test ProviderId
     /// </summary>
-    protected ProviderId CreateProviderId(Guid? id = null)
+    public ProviderId CreateProviderId(Guid? id = null)
     {
         return ProviderId.From(id ?? Guid.NewGuid());
     }
@@ -408,7 +408,7 @@ public abstract class ServiceCatalogIntegrationTestBase
     /// <summary>
     /// Create a test ServiceId
     /// </summary>
-    protected ServiceId CreateServiceId(Guid? id = null)
+    public ServiceId CreateServiceId(Guid? id = null)
     {
         return ServiceId.Create(id ?? Guid.NewGuid());
     }
@@ -416,7 +416,7 @@ public abstract class ServiceCatalogIntegrationTestBase
     /// <summary>
     /// Create a test Email
     /// </summary>
-    protected Email CreateEmail(string email = "test@example.com")
+    public Email CreateEmail(string email = "test@example.com")
     {
         return Email.Create(email);
     }
@@ -424,7 +424,7 @@ public abstract class ServiceCatalogIntegrationTestBase
     /// <summary>
     /// Create a test Price
     /// </summary>
-    protected Price CreatePrice(decimal amount = 50.00m, string currency = "USD")
+    public Price CreatePrice(decimal amount = 50.00m, string currency = "USD")
     {
         return Price.Create(amount, currency);
     }
@@ -432,7 +432,7 @@ public abstract class ServiceCatalogIntegrationTestBase
     /// <summary>
     /// Create a test Duration
     /// </summary>
-    protected Duration CreateDuration(int minutes = 60)
+    public Duration CreateDuration(int minutes = 60)
     {
         return Duration.FromMinutes(minutes);
     }
@@ -444,7 +444,7 @@ public abstract class ServiceCatalogIntegrationTestBase
     /// <summary>
     /// Get service by ID endpoint
     /// </summary>
-    protected async Task<HttpResponseMessage> GetServiceByIdAsync(Guid serviceId)
+    public async Task<HttpResponseMessage> GetServiceByIdAsync(Guid serviceId)
     {
         return await GetAsync($"/api/v1/services/{serviceId}");
     }
@@ -452,7 +452,7 @@ public abstract class ServiceCatalogIntegrationTestBase
     /// <summary>
     /// Get all services for a provider endpoint
     /// </summary>
-    protected async Task<HttpResponseMessage> GetProviderServicesAsyncApi(Guid providerId)
+    public async Task<HttpResponseMessage> GetProviderServicesAsyncApi(Guid providerId)
     {
         return await GetAsync($"/api/v1/providers/{providerId}/services");
     }
@@ -460,7 +460,7 @@ public abstract class ServiceCatalogIntegrationTestBase
     /// <summary>
     /// Get provider by ID endpoint
     /// </summary>
-    protected async Task<HttpResponseMessage> GetProviderByIdAsync(Guid providerId)
+    public async Task<HttpResponseMessage> GetProviderByIdAsync(Guid providerId)
     {
         return await GetAsync($"/api/v1/providers/{providerId}");
     }
@@ -468,7 +468,7 @@ public abstract class ServiceCatalogIntegrationTestBase
     /// <summary>
     /// Delete service endpoint
     /// </summary>
-    protected async Task<Core.Domain.Infrastructure.Middleware.ApiResponse> DeleteServiceAsync(Guid serviceId)
+    public async Task<Core.Domain.Infrastructure.Middleware.ApiResponse> DeleteServiceAsync(Guid serviceId)
     {
         return await DeleteAsync($"/api/v1/services/{serviceId}");
     }
@@ -476,7 +476,7 @@ public abstract class ServiceCatalogIntegrationTestBase
     /// <summary>
     /// Search services endpoint
     /// </summary>
-    protected async Task<HttpResponseMessage> SearchServicesAsync(
+    public async Task<HttpResponseMessage> SearchServicesAsync(
         string searchTerm,
         string? category = null,
         decimal? minPrice = null,
@@ -504,7 +504,7 @@ public abstract class ServiceCatalogIntegrationTestBase
     /// <summary>
     /// Create a provider with a specific status and user ID
     /// </summary>
-    protected async Task<Provider> CreateProviderWithStatusAsync(
+    public async Task<Provider> CreateProviderWithStatusAsync(
         Guid userId,
         string businessName,
         Domain.Enums.ProviderStatus status)
@@ -537,7 +537,7 @@ public abstract class ServiceCatalogIntegrationTestBase
     }
 
 
-    protected async Task<Provider> CreateTestProviderWithServicesAsync()
+    public async Task<Provider> CreateTestProviderWithServicesAsync()
     {
         var provider = await CreateAndAuthenticateAsProviderAsync("Test Provider", "provider@test.com");
 
@@ -573,7 +573,7 @@ public abstract class ServiceCatalogIntegrationTestBase
     /// <summary>
     /// Create a provider and authenticate as them with specific user ID
     /// </summary>
-    protected async Task<Provider> CreateAndAuthenticateAsProviderAsync(
+    public async Task<Provider> CreateAndAuthenticateAsProviderAsync(
         string businessName,
         string email,
         Guid userId)
@@ -614,7 +614,7 @@ public abstract class ServiceCatalogIntegrationTestBase
     /// <summary>
     /// Find a notification by ID
     /// </summary>
-    protected async Task<Domain.Aggregates.NotificationAggregate.Notification?> FindNotificationAsync(Guid notificationId)
+    public async Task<Domain.Aggregates.NotificationAggregate.Notification?> FindNotificationAsync(Guid notificationId)
     {
         return await DbContext.Notifications
             .AsNoTracking()
@@ -624,7 +624,7 @@ public abstract class ServiceCatalogIntegrationTestBase
     /// <summary>
     /// Get all notifications for a user
     /// </summary>
-    protected async Task<List<Domain.Aggregates.NotificationAggregate.Notification>> GetUserNotificationsAsync(Guid userId)
+    public async Task<List<Domain.Aggregates.NotificationAggregate.Notification>> GetUserNotificationsAsync(Guid userId)
     {
         return await DbContext.Notifications
             .Where(n => n.RecipientId == UserId.From(userId))
@@ -634,7 +634,7 @@ public abstract class ServiceCatalogIntegrationTestBase
     /// <summary>
     /// Create a test notification for a user
     /// </summary>
-    protected async Task<Domain.Aggregates.NotificationAggregate.Notification> CreateTestNotificationAsync(
+    public async Task<Domain.Aggregates.NotificationAggregate.Notification> CreateTestNotificationAsync(
         Guid userId,
         NotificationType type = NotificationType.BookingConfirmation,
         NotificationChannel channel = NotificationChannel.Email,
@@ -660,7 +660,7 @@ public abstract class ServiceCatalogIntegrationTestBase
     /// <summary>
     /// Create a scheduled test notification
     /// </summary>
-    protected async Task<Domain.Aggregates.NotificationAggregate.Notification> CreateScheduledTestNotificationAsync(
+    public async Task<Domain.Aggregates.NotificationAggregate.Notification> CreateScheduledTestNotificationAsync(
         Guid userId,
         DateTime scheduledFor,
         NotificationType type = NotificationType.BookingReminder,
@@ -686,7 +686,7 @@ public abstract class ServiceCatalogIntegrationTestBase
     /// <summary>
     /// Assert that a notification exists in the database
     /// </summary>
-    protected async Task AssertNotificationExistsAsync(Guid notificationId)
+    public async Task AssertNotificationExistsAsync(Guid notificationId)
     {
         var notification = await FindNotificationAsync(notificationId);
         notification.Should().NotBeNull($"Notification with ID {notificationId} should exist");
@@ -695,7 +695,7 @@ public abstract class ServiceCatalogIntegrationTestBase
     /// <summary>
     /// Assert that a notification has a specific status
     /// </summary>
-    protected async Task AssertNotificationStatusAsync(Guid notificationId, NotificationStatus expectedStatus)
+    public async Task AssertNotificationStatusAsync(Guid notificationId, NotificationStatus expectedStatus)
     {
         var notification = await FindNotificationAsync(notificationId);
         notification.Should().NotBeNull();
@@ -706,7 +706,7 @@ public abstract class ServiceCatalogIntegrationTestBase
     /// <summary>
     /// Assert that a user has a specific number of notifications
     /// </summary>
-    protected async Task AssertUserNotificationCountAsync(Guid userId, int expectedCount)
+    public async Task AssertUserNotificationCountAsync(Guid userId, int expectedCount)
     {
         var notifications = await GetUserNotificationsAsync(userId);
         notifications.Should().HaveCount(expectedCount,
