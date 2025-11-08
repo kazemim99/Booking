@@ -1,13 +1,12 @@
 // ========================================
 // PaymentGatewayFactory.cs
 // ========================================
-using Booksy.Core.Application.Abstractions.Payment;
+using Booksy.Core.Domain.Enums;
 using Booksy.Infrastructure.External.Payment.Behpardakht;
 using Booksy.Infrastructure.External.Payment.IDPay;
 using Booksy.Infrastructure.External.Payment.Parsian;
 using Booksy.Infrastructure.External.Payment.Saman;
 using Booksy.Infrastructure.External.Payment.ZarinPal;
-using Booksy.ServiceCatalog.Domain.Enums;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 
