@@ -3,269 +3,224 @@
 // ========================================
 using Booksy.Core.Domain.Abstractions.Events;
 using Booksy.Infrastructure.Core.EventBus.Abstractions;
-using Microsoft.EntityFrameworkCore.Metadata;
+using MassTransit;
 using Microsoft.Extensions.Logging;
-using RabbitMQ.Client;
-using IModel = RabbitMQ.Client.IModel;
+using Microsoft.Extensions.Options;
 
 namespace Booksy.Infrastructure.Core.EventBus.RabbitMQ;
 
 /// <summary>
-/// RabbitMQ implementation of event bus for production use
+/// RabbitMQ implementation of event bus using MassTransit for production use
 /// </summary>
-public sealed class RabbitMqEventBus :  IDisposable
+public sealed class RabbitMqEventBus : IDisposable
 {
-    private readonly RabbitMqSettings _settings;
+    private readonly IPublishEndpoint _publishEndpoint;
     private readonly ILogger<RabbitMqEventBus> _logger;
-    private readonly IServiceProvider _serviceProvider;
-    private readonly IConnection _connection;
-    private readonly IModel _channel;
-    private readonly Dictionary<string, List<Type>> _handlers = new();
+    private readonly RabbitMqSettings _settings;
+    private bool _disposed;
+
+    public RabbitMqEventBus(
+        IPublishEndpoint publishEndpoint,
+        ILogger<RabbitMqEventBus> logger,
+        IOptions<RabbitMqSettings> settings)
+    {
+        _publishEndpoint = publishEndpoint ?? throw new ArgumentNullException(nameof(publishEndpoint));
+        _logger = logger ?? throw new ArgumentNullException(nameof(logger));
+        _settings = settings?.Value ?? throw new ArgumentNullException(nameof(settings));
+    }
+
+    /// <summary>
+    /// Publishes a single domain event to RabbitMQ
+    /// </summary>
+    public async Task PublishAsync(IDomainEvent domainEvent, CancellationToken cancellationToken = default)
+    {
+        if (domainEvent == null)
+        {
+            throw new ArgumentNullException(nameof(domainEvent));
+        }
+
+        var eventName = domainEvent.GetType().Name;
+
+        try
+        {
+            _logger.LogInformation(
+                "Publishing event {EventName} with ID {EventId} to RabbitMQ",
+                eventName,
+                domainEvent.EventId);
+
+            await _publishEndpoint.Publish(
+                domainEvent,
+                context =>
+                {
+                    context.MessageId = domainEvent.EventId;
+                    context.CorrelationId = domainEvent.EventId;
+
+                    // Add custom headers for metadata
+                    context.Headers.Set("EventType", eventName);
+                    context.Headers.Set("EventVersion", domainEvent.EventVersion);
+                    context.Headers.Set("OccurredAt", domainEvent.OccurredAt.ToString("o"));
+
+                    if (!string.IsNullOrEmpty(domainEvent.AggregateType))
+                    {
+                        context.Headers.Set("AggregateType", domainEvent.AggregateType);
+                    }
+
+                    if (!string.IsNullOrEmpty(domainEvent.AggregateId))
+                    {
+                        context.Headers.Set("AggregateId", domainEvent.AggregateId);
+                    }
+                },
+                cancellationToken);
+
+            _logger.LogInformation(
+                "Successfully published event {EventName} with ID {EventId}",
+                eventName,
+                domainEvent.EventId);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(
+                ex,
+                "Failed to publish event {EventName} with ID {EventId} to RabbitMQ",
+                eventName,
+                domainEvent.EventId);
+            throw;
+        }
+    }
+
+    /// <summary>
+    /// Publishes multiple domain events in a batch
+    /// </summary>
+    public async Task PublishAsync(IEnumerable<IDomainEvent> domainEvents, CancellationToken cancellationToken = default)
+    {
+        if (domainEvents == null)
+        {
+            throw new ArgumentNullException(nameof(domainEvents));
+        }
+
+        var eventsList = domainEvents.ToList();
+        if (!eventsList.Any())
+        {
+            _logger.LogWarning("Attempted to publish empty batch of events");
+            return;
+        }
+
+        _logger.LogInformation("Publishing batch of {EventCount} events to RabbitMQ", eventsList.Count);
+
+        var publishTasks = eventsList.Select(domainEvent => PublishAsync(domainEvent, cancellationToken));
+
+        try
+        {
+            await Task.WhenAll(publishTasks);
+
+            _logger.LogInformation(
+                "Successfully published batch of {EventCount} events",
+                eventsList.Count);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(
+                ex,
+                "Failed to publish batch of {EventCount} events. Some events may have been published successfully.",
+                eventsList.Count);
+            throw;
+        }
+    }
+
+    /// <summary>
+    /// Publishes multiple domain events in a batch (alternative method name)
+    /// </summary>
+    public Task PublishBatchAsync(IEnumerable<IDomainEvent> domainEvents, CancellationToken cancellationToken = default)
+    {
+        return PublishAsync(domainEvents, cancellationToken);
+    }
 
     public void Dispose()
     {
-        throw new NotImplementedException();
+        if (_disposed)
+        {
+            return;
+        }
+
+        _logger.LogInformation("Disposing RabbitMqEventBus");
+        _disposed = true;
     }
-
-    public Task PublishAsync(IDomainEvent domainEvent, CancellationToken cancellationToken = default)
-    {
-        throw new NotImplementedException();
-    }
-
-    public Task PublishAsync(IEnumerable<IDomainEvent> domainEvents, CancellationToken cancellationToken = default)
-    {
-        throw new NotImplementedException();
-    }
-
-    public void Subscribe<TEvent, THandler>()
-        where TEvent : IDomainEvent
-        where THandler : IDomainEventHandler<TEvent>
-    {
-        throw new NotImplementedException();
-    }
-
-    public void Unsubscribe<TEvent, THandler>()
-        where TEvent : IDomainEvent
-        where THandler : IDomainEventHandler<TEvent>
-    {
-        throw new NotImplementedException();
-    }
-
-    //public RabbitMqEventBus(
-    //    IOptions<RabbitMqSettings> settings,
-    //    ILogger<RabbitMqEventBus> logger,
-    //    IServiceProvider serviceProvider)
-    //{
-    //    _settings = settings.Value;
-    //    _logger = logger;
-    //    _serviceProvider = serviceProvider;
-
-    //    var factory = new ConnectionFactory
-    //    {
-    //        HostName = _settings.HostName,
-    //        UserName = _settings.UserName,
-    //        Password = _settings.Password,
-    //        VirtualHost = _settings.VirtualHost,
-    //        Port = _settings.Port,
-    //        DispatchConsumersAsync = true
-    //    };
-
-    //    _connection = factory.CreateConnection();
-    //    _channel = _connection.CreateModel();
-
-    //    DeclareExchange();
-    //}
-
-    //public async Task PublishAsync(IDomainEvent domainEvent, CancellationToken cancellationToken = default)
-    //{
-    //    var eventName = domainEvent.GetType().Name;
-    //    var message = JsonSerializer.Serialize(domainEvent, domainEvent.GetType());
-    //    var body = Encoding.UTF8.GetBytes(message);
-
-    //    var properties = _channel.CreateBasicProperties();
-    //    properties.DeliveryMode = 2; // Persistent
-    //    properties.MessageId = domainEvent.EventId.ToString();
-    //    properties.Timestamp = new AmqpTimestamp(DateTimeOffset.UtcNow.ToUnixTimeSeconds());
-
-    //    _logger.LogDebug("Publishing event {EventName} to RabbitMQ", eventName);
-
-    //    _channel.BasicPublish(
-    //        exchange: _settings.ExchangeName,
-    //        routingKey: eventName,
-    //        mandatory: true,
-    //        basicProperties: properties,
-    //        body: body);
-
-    //    await Task.CompletedTask;
-    //}
-
-    //public async Task PublishAsync(IEnumerable<IDomainEvent> domainEvents, CancellationToken cancellationToken = default)
-    //{
-    //    var batch = _channel.CreateBasicPublishBatch();
-
-    //    foreach (var domainEvent in domainEvents)
-    //    {
-    //        var eventName = domainEvent.GetType().Name;
-    //        var message = JsonSerializer.Serialize(domainEvent, domainEvent.GetType());
-    //        var body = Encoding.UTF8.GetBytes(message);
-
-    //        var properties = _channel.CreateBasicProperties();
-    //        properties.DeliveryMode = 2;
-    //        properties.MessageId = domainEvent.EventId.ToString();
-
-    //        batch.Add(
-    //            exchange: _settings.ExchangeName,
-    //            routingKey: eventName,
-    //            mandatory: true,
-    //            properties: properties,
-    //            body: new ReadOnlyMemory<byte>(body));
-    //    }
-
-    //    batch.Publish();
-    //    await Task.CompletedTask;
-    //}
-
-    //public void Subscribe<TEvent, THandler>()
-    //    where TEvent : IDomainEvent
-    //    where THandler : IEventHandler<TEvent>
-    //{
-    //    var eventName = typeof(TEvent).Name;
-    //    var handlerType = typeof(THandler);
-
-    //    BindQueue(eventName);
-
-    //    if (!_handlers.ContainsKey(eventName))
-    //    {
-    //        _handlers[eventName] = new List<Type>();
-    //    }
-
-    //    if (!_handlers[eventName].Contains(handlerType))
-    //    {
-    //        _handlers[eventName].Add(handlerType);
-    //        StartBasicConsume(eventName);
-    //        _logger.LogInformation("Subscribed {Handler} to {Event}", handlerType.Name, eventName);
-    //    }
-    //}
-
-    //public void Unsubscribe<TEvent, THandler>()
-    //    where TEvent : IDomainEvent
-    //    where THandler : IEventHandler<TEvent>
-    //{
-    //    var eventName = typeof(TEvent).Name;
-    //    var handlerType = typeof(THandler);
-
-    //    if (_handlers.ContainsKey(eventName))
-    //    {
-    //        _handlers[eventName].Remove(handlerType);
-    //        _logger.LogInformation("Unsubscribed {Handler} from {Event}", handlerType.Name, eventName);
-    //    }
-    //}
-
-    //private void DeclareExchange()
-    //{
-    //    _channel.ExchangeDeclare(
-    //        exchange: _settings.ExchangeName,
-    //        type: ExchangeType.Topic,
-    //        durable: true,
-    //        autoDelete: false);
-    //}
-
-    //private void BindQueue(string eventName)
-    //{
-    //    var queueName = $"{_settings.QueuePrefix}.{eventName}";
-
-    //    _channel.QueueDeclare(
-    //        queue: queueName,
-    //        durable: true,
-    //        exclusive: false,
-    //        autoDelete: false);
-
-    //    _channel.QueueBind(
-    //        queue: queueName,
-    //        exchange: _settings.ExchangeName,
-    //        routingKey: eventName);
-    //}
-
-    //private void StartBasicConsume(string eventName)
-    //{
-    //    var queueName = $"{_settings.QueuePrefix}.{eventName}";
-    //    var consumer = new AsyncEventingBasicConsumer(_channel);
-
-    //    consumer.Received += async (model, ea) =>
-    //    {
-    //        var body = ea.Body.ToArray();
-    //        var message = Encoding.UTF8.GetString(body);
-
-    //        try
-    //        {
-    //            await ProcessEventAsync(eventName, message);
-    //            _channel.BasicAck(ea.DeliveryTag, false);
-    //        }
-    //        catch (Exception ex)
-    //        {
-    //            _logger.LogError(ex, "Error processing message {EventName}", eventName);
-    //            _channel.BasicNack(ea.DeliveryTag, false, true); // Requeue
-    //        }
-    //    };
-
-    //    _channel.BasicConsume(
-    //        queue: queueName,
-    //        autoAck: false,
-    //        consumer: consumer);
-    //}
-
-    //private async Task ProcessEventAsync(string eventName, string message)
-    //{
-    //    if (_handlers.TryGetValue(eventName, out var handlerTypes))
-    //    {
-    //        using var scope = _serviceProvider.CreateScope();
-
-    //        foreach (var handlerType in handlerTypes)
-    //        {
-    //            var handler = scope.ServiceProvider.GetService(handlerType);
-    //            if (handler != null)
-    //            {
-    //                var eventType = handlerType.GetInterfaces()
-    //                    .First(i => i.IsGenericType && i.GetGenericTypeDefinition() == typeof(IEventHandler<>))
-    //                    .GetGenericArguments()[0];
-
-    //                var domainEvent = JsonSerializer.Deserialize(message, eventType);
-
-    //                if (domainEvent != null)
-    //                {
-    //                    var handleMethod = handlerType.GetMethod("HandleAsync");
-    //                    if (handleMethod != null)
-    //                    {
-    //                        var task = (Task?)handleMethod.Invoke(handler, new[] { domainEvent, CancellationToken.None });
-    //                        if (task != null)
-    //                        {
-    //                            await task;
-    //                        }
-    //                    }
-    //                }
-    //            }
-    //        }
-    //    }
-    //}
-
-    //public void Dispose()
-    //{
-    //    _channel?.Dispose();
-    //    _connection?.Dispose();
-    //}
 }
 
-
-
+/// <summary>
+/// Configuration settings for RabbitMQ connection
+/// </summary>
 public class RabbitMqSettings
 {
-    public string HostName { get; set; } = "localhost";
-    public string UserName { get; set; } = "guest";
-    public string Password { get; set; } = "guest";
-    public string VirtualHost { get; set; } = "/";
+    public const string SectionName = "RabbitMQ";
+
+    /// <summary>
+    /// RabbitMQ host name or IP address
+    /// </summary>
+    public string Host { get; set; } = "localhost";
+
+    /// <summary>
+    /// RabbitMQ port (default: 5672)
+    /// </summary>
     public int Port { get; set; } = 5672;
-    public string ExchangeName { get; set; } = "booksy_events";
-    public string QueuePrefix { get; set; } = "booksy";
+
+    /// <summary>
+    /// Connection name for identification in RabbitMQ management UI
+    /// </summary>
+    public string ConnectionName { get; set; } = "Booksy-EventBus";
+
+    /// <summary>
+    /// RabbitMQ virtual host
+    /// </summary>
+    public string VirtualHost { get; set; } = "/";
+
+    /// <summary>
+    /// RabbitMQ username
+    /// </summary>
+    public string Username { get; set; } = "guest";
+
+    /// <summary>
+    /// RabbitMQ password
+    /// </summary>
+    public string Password { get; set; } = "guest";
+
+    /// <summary>
+    /// Number of retry attempts for failed messages
+    /// </summary>
     public int RetryCount { get; set; } = 5;
-    public int RetryDelay { get; set; } = 1000;
+
+    /// <summary>
+    /// Delay between retry attempts in milliseconds
+    /// </summary>
+    public int RetryDelayMs { get; set; } = 1000;
+
+    /// <summary>
+    /// Enable or disable dead letter queue
+    /// </summary>
+    public bool UseDeadLetterQueue { get; set; } = true;
+
+    /// <summary>
+    /// Prefix for queue names
+    /// </summary>
+    public string QueuePrefix { get; set; } = "booksy";
+
+    /// <summary>
+    /// Number of concurrent consumers per queue
+    /// </summary>
+    public int ConcurrentMessageLimit { get; set; } = 16;
+
+    /// <summary>
+    /// Prefetch count for consumers
+    /// </summary>
+    public int PrefetchCount { get; set; } = 16;
+
+    /// <summary>
+    /// Use SSL/TLS for connection
+    /// </summary>
+    public bool UseSsl { get; set; } = false;
+
+    /// <summary>
+    /// Heartbeat interval in seconds
+    /// </summary>
+    public ushort HeartbeatInterval { get; set; } = 60;
 }
