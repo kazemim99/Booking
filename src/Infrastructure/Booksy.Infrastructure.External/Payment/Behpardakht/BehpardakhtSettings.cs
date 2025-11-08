@@ -13,6 +13,6 @@ namespace Booksy.Infrastructure.External.Payment.Behpardakht
         public string UserPassword { get; set; } = string.Empty;
         public string BaseUrl { get; set; } = "https://bpm.shaparak.ir/pgwchannel/services/pgw?wsdl";
         public string PaymentPageUrl { get; set; } = "https://bpm.shaparak.ir/pgwchannel/startpay.mellat";
-        public string CallbackUrl { get; set} = string.Empty;
+        public string CallbackUrl { get; set; } = string.Empty;
     }
 }
