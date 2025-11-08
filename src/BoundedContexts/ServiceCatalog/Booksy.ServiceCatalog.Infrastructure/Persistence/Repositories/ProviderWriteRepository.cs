@@ -64,9 +64,10 @@ namespace Booksy.ServiceCatalog.Infrastructure.Persistence.Repositories
 
         public async Task UpdateProviderAsync(Provider provider, CancellationToken cancellationToken = default)
         {
-            // Mark the provider aggregate as updated
-            // This will cascade to owned entities now that we removed PropertyAccessMode.Field
-            Context.Update(provider);
+            // With snapshot change tracking configured on GalleryImages,
+            // we need to explicitly call DetectChanges to compare current values
+            // with the original snapshot and detect modifications
+            Context.ChangeTracker.DetectChanges();
         }
 
         public async Task DeleteProviderAsync(Provider provider, CancellationToken cancellationToken = default)

@@ -107,6 +107,9 @@ namespace Booksy.ServiceCatalog.Infrastructure.Persistence.Configurations
                 {
                     galleryImage.ToTable("provider_gallery_images");
 
+                    // Use snapshot change tracking to detect property changes
+                    galleryImage.HasChangeTrackingStrategy(ChangeTrackingStrategy.Snapshot);
+
                     // IMPORTANT: Explicitly configure the foreign key
                     galleryImage.WithOwner()
                         .HasForeignKey("ProviderId");
@@ -185,9 +188,11 @@ namespace Booksy.ServiceCatalog.Infrastructure.Persistence.Configurations
                         .HasDatabaseName("IX_ProviderGalleryImages_Provider_IsPrimary");
                 });
 
-                // Navigation property configuration - use default property access mode
-                // to ensure proper change tracking
-                profile.Navigation(bp => bp.GalleryImages);
+                // Navigation property configuration
+                // Use Field mode for owned collections with private backing fields
+                profile.Navigation(bp => bp.GalleryImages)
+                    .UsePropertyAccessMode(PropertyAccessMode.Field)
+                    .Metadata.SetPropertyAccessMode(PropertyAccessMode.Field);
             });
 
 
