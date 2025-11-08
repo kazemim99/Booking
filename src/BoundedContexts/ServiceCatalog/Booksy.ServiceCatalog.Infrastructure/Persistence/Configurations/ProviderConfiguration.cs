@@ -186,8 +186,9 @@ namespace Booksy.ServiceCatalog.Infrastructure.Persistence.Configurations
                 });
 
                 // Navigation property configuration
-                // No need for PropertyAccessMode.Field since we expose the list directly
-                // EF Core can now properly track changes to the collection and its items
+                // Use Property access mode since GalleryImages is now a simple auto-property
+                profile.Navigation(bp => bp.GalleryImages)
+                    .UsePropertyAccessMode(PropertyAccessMode.Property);
             });
 
 
