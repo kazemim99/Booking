@@ -28,6 +28,7 @@ namespace Booksy.ServiceCatalog.Domain.Aggregates.PaymentAggregate
         public Money RefundedAmount { get; private set; }
         public PaymentStatus Status { get; private set; }
         public PaymentMethod Method { get; private set; }
+        public PaymentProvider Provider { get; private set; }
 
         // Payment Provider Details
         public string? PaymentIntentId { get; private set; }
@@ -71,6 +72,7 @@ namespace Booksy.ServiceCatalog.Domain.Aggregates.PaymentAggregate
             ProviderId providerId,
             Money amount,
             PaymentMethod method,
+            PaymentProvider provider,
             string? description,
             Dictionary<string, object>? metadata) : base(id)
         {
@@ -82,6 +84,7 @@ namespace Booksy.ServiceCatalog.Domain.Aggregates.PaymentAggregate
             RefundedAmount = Money.Zero(amount.Currency);
             Status = PaymentStatus.Pending;
             Method = method;
+            Provider = provider;
             Description = description;
             CreatedAt = DateTime.UtcNow;
             Metadata = metadata ?? new Dictionary<string, object>();
@@ -98,6 +101,7 @@ namespace Booksy.ServiceCatalog.Domain.Aggregates.PaymentAggregate
             ProviderId providerId,
             Money amount,
             PaymentMethod method,
+            PaymentProvider provider = PaymentProvider.ZarinPal,
             string? description = null,
             Dictionary<string, object>? metadata = null)
         {
@@ -111,6 +115,7 @@ namespace Booksy.ServiceCatalog.Domain.Aggregates.PaymentAggregate
                 providerId,
                 amount,
                 method,
+                provider,
                 description,
                 metadata);
         }
@@ -124,6 +129,7 @@ namespace Booksy.ServiceCatalog.Domain.Aggregates.PaymentAggregate
             ProviderId providerId,
             Money amount,
             PaymentMethod method,
+            PaymentProvider provider = PaymentProvider.ZarinPal,
             string? description = null,
             Dictionary<string, object>? metadata = null)
         {
@@ -137,6 +143,7 @@ namespace Booksy.ServiceCatalog.Domain.Aggregates.PaymentAggregate
                 providerId,
                 amount,
                 method,
+                provider,
                 description,
                 metadata);
         }
@@ -149,6 +156,7 @@ namespace Booksy.ServiceCatalog.Domain.Aggregates.PaymentAggregate
             ProviderId providerId,
             Money amount,
             PaymentMethod method,
+            PaymentProvider provider = PaymentProvider.ZarinPal,
             string? description = null,
             Dictionary<string, object>? metadata = null)
         {
@@ -162,6 +170,7 @@ namespace Booksy.ServiceCatalog.Domain.Aggregates.PaymentAggregate
                 providerId,
                 amount,
                 method,
+                provider,
                 description,
                 metadata);
         }

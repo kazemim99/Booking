@@ -6,7 +6,13 @@ using Booksy.Infrastructure.External.OTP.DTO;
 using Booksy.Infrastructure.External.sms;
 using Booksy.Infrastructure.External.sms.Rahyab;
 using Booksy.Infrastructure.External.Storage;
+using Booksy.Infrastructure.External.Payment;
 using Booksy.Infrastructure.External.Payment.ZarinPal;
+using Booksy.Infrastructure.External.Payment.IDPay;
+using Booksy.Infrastructure.External.Payment.Behpardakht;
+using Booksy.Infrastructure.External.Payment.Parsian;
+using Booksy.Infrastructure.External.Payment.Saman;
+using Booksy.Core.Application.Abstractions.Payment;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 
@@ -78,24 +84,46 @@ public static class ExternalServicesExtensions
                 break;
         }
 
-        // Payment
-        var paymentProvider = configuration["Payment:Provider"];
-        switch (paymentProvider?.ToLower())
+        // Payment Gateway Factory and Services
+        // Register all payment gateway implementations
+
+        // Stripe (keeping existing implementation)
+        services.Configure<StripeSettings>(configuration.GetSection("Payment:Stripe"));
+        services.AddScoped<StripePaymentGateway>();
+
+        // ZarinPal
+        services.Configure<ZarinPalSettings>(configuration.GetSection("Payment:ZarinPal"));
+        services.AddHttpClient<IZarinPalService, ZarinPalService>();
+        services.AddScoped<IZarinPalService, ZarinPalService>();
+        services.AddScoped<ZarinPalPaymentGateway>();
+
+        // IDPay
+        services.Configure<IDPaySettings>(configuration.GetSection("Payment:IDPay"));
+        services.AddHttpClient<IIDPayService, IDPayService>();
+        services.AddScoped<IIDPayService, IDPayService>();
+        services.AddScoped<IDPayPaymentGateway>();
+
+        // Behpardakht
+        services.Configure<BehpardakhtSettings>(configuration.GetSection("Payment:Behpardakht"));
+        services.AddHttpClient<IBehpardakhtService, BehpardakhtService>();
+        services.AddScoped<IBehpardakhtService, BehpardakhtService>();
+        services.AddScoped<BehpardakhtPaymentGateway>();
+
+        // Parsian (placeholder)
+        services.AddScoped<ParsianPaymentGateway>();
+
+        // Saman (placeholder)
+        services.AddScoped<SamanPaymentGateway>();
+
+        // Register the Payment Gateway Factory
+        services.AddScoped<IPaymentGatewayFactory, PaymentGatewayFactory>();
+
+        // Register the default payment gateway for backward compatibility
+        services.AddScoped<IPaymentGateway>(sp =>
         {
-            case "stripe":
-                services.Configure<StripeSettings>(configuration.GetSection("Payment:Stripe"));
-                services.AddScoped<IPaymentGateway, StripePaymentGateway>();
-                break;
-            case "zarinpal":
-                services.Configure<ZarinPalSettings>(configuration.GetSection("Payment:ZarinPal"));
-                services.AddHttpClient("ZarinPal");
-                services.AddScoped<IZarinPalService, ZarinPalService>();
-                services.AddScoped<IPaymentGateway, ZarinPalPaymentGateway>();
-                break;
-            default:
-                // Add null implementation if needed
-                break;
-        }
+            var factory = sp.GetRequiredService<IPaymentGatewayFactory>();
+            return factory.GetDefaultGateway();
+        });
 
         // Storage
         var storageProvider = configuration["Storage:Provider"];
