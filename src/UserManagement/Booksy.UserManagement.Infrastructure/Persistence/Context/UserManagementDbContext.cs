@@ -9,6 +9,7 @@ using Booksy.Core.Domain.Abstractions.Entities;
 using Booksy.Core.Domain.Abstractions.Events;
 using Booksy.UserManagement.Domain.Entities;
 using Booksy.UserManagement.Domain.Aggregates;
+using Booksy.UserManagement.Domain.Aggregates.CustomerAggregate;
 using Booksy.UserManagement.Domain.Aggregates.PhoneVerificationAggregate;
 using Booksy.Infrastructure.Core.EventBus.Abstractions;
 using System.Threading;
@@ -25,6 +26,7 @@ namespace Booksy.UserManagement.Infrastructure.Persistence.Context
 
 
         public DbSet<User> Users { get; set; } = null!;
+        public DbSet<Customer> Customers { get; set; } = null!;
         public DbSet<UserRole> UserRoles { get; set; } = null!;
         public DbSet<UserProfile> UserProfiles { get; set; } = null!;
         public DbSet<PhoneVerification> PhoneVerifications { get; set; } = null!;

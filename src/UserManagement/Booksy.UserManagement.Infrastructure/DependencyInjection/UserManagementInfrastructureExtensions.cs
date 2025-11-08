@@ -86,6 +86,7 @@ namespace Booksy.UserManagement.Infrastructure.DependencyInjection
             services.AddScoped<IUserRepository, UserRepository>();
             services.AddScoped<IUserQueryRepository, UserQueryRepository>();
             services.AddScoped<IPhoneVerificationRepository, PhoneVerificationRepository>();
+            services.AddScoped<ICustomerRepository, CustomerRepository>();
 
             services.AddExternalServices(configuration);
             // Register context-specific infrastructure
