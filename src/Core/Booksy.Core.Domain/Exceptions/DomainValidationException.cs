@@ -1,7 +1,6 @@
 ﻿// ========================================
 // Booksy.Core.Domain/Exceptions/DomainValidationException.cs
 // ========================================
-using Booksy.Core.Domain.Errors;
 using System.Runtime.Serialization;
 
 namespace Booksy.Core.Domain.Exceptions
@@ -12,7 +11,7 @@ namespace Booksy.Core.Domain.Exceptions
     [Serializable]
     public sealed class DomainValidationException : DomainException
     {
-        public override ErrorCode ErrorCode => ErrorCode.VALIDATION_ERROR;
+        public override string ErrorCode => "DOMAIN_VALIDATION_FAILED";
         public IReadOnlyDictionary<string, string[]> ValidationErrors { get; set; }
 
         public DomainValidationException(string message, Dictionary<string, string[]> validationErrors)

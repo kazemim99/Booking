@@ -1,5 +1,4 @@
-﻿using Booksy.Core.Domain.Errors;
-using Booksy.Core.Domain.Exceptions;
+﻿using Booksy.Core.Domain.Exceptions;
 using Booksy.ServiceCatalog.Domain.ValueObjects;
 
 namespace Booksy.ServiceCatalog.Domain.Exceptions;
@@ -282,7 +281,7 @@ public sealed class BusinessHoursConflictException : DomainException
     /// <summary>
     /// Get error code for this exception
     /// </summary>
-    public override ErrorCode ErrorCode => ErrorCode.BUSINESS_HOURS_CONFLICT;
+    public override string ErrorCode => $"BUSINESS_HOURS_CONFLICT_{ConflictType.ToString().ToUpperInvariant()}";
 
     /// <summary>
     /// Get severity level for this exception

@@ -1,7 +1,6 @@
 ﻿// ========================================
 // Booksy.UserManagement.Domain/Exceptions/UserManagementDomainException.cs
 // ========================================
-using Booksy.Core.Domain.Errors;
 using Booksy.Core.Domain.ValueObjects;
 
 namespace Booksy.UserManagement.Domain.Exceptions
@@ -11,7 +10,7 @@ namespace Booksy.UserManagement.Domain.Exceptions
     /// </summary>
     public sealed class UserAlreadyExistsException : UserManagementDomainException
     {
-        public override ErrorCode ErrorCode => ErrorCode.USER_ALREADY_EXISTS;
+        public override string ErrorCode => "USER_ALREADY_EXISTS";
         public Email Email { get; }
 
         public UserAlreadyExistsException(Email email)

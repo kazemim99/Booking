@@ -1,9 +1,7 @@
-// Booksy.API/Middleware/ExceptionHandlingMiddleware.cs
+﻿// Booksy.API/Middleware/ExceptionHandlingMiddleware.cs
 using System.Net;
 using System.Text.Json;
-using Booksy.API.Models;
 using Booksy.Core.Application.Exceptions;
-using Booksy.Core.Domain.Errors;
 using Booksy.Core.Domain.Exceptions;
 using FluentValidation;
 using Microsoft.AspNetCore.Http;
@@ -46,280 +44,185 @@ public partial class ExceptionHandlingMiddleware
         _logger.LogError(exception, "An unhandled exception occurred");
 
         var response = context.Response;
-        response.ContentType = "application/problem+json"; // RFC 7807 media type
+        response.ContentType = "application/json";
 
-        ProblemDetailsResponse problemDetails;
+        var errorResponse = new ApiErrorResult("An error occurred while processing your request");
 
         // Handle exceptions in order of specificity
         switch (exception)
         {
             case BusinessRuleViolationException businessEx:
                 response.StatusCode = (int)HttpStatusCode.BadRequest;
-                problemDetails = ProblemDetailsResponse.Create(
-                    businessEx.ErrorCode,
-                    response.StatusCode,
-                    businessEx.Message,
-                    context.Request.Path,
-                    businessEx.ExtensionData
-                );
+                errorResponse = new ApiErrorResult(businessEx.Message, businessEx.ErrorCode)
+                {
+                    Errors = businessEx.ExtensionData?.ToDictionary(
+                        kvp => kvp.Key,
+                        kvp => new[] { kvp.Value?.ToString() ?? string.Empty })
+                };
                 break;
 
             case DomainValidationException validationEx:
                 response.StatusCode = (int)HttpStatusCode.BadRequest;
-                var validationExtensions = new Dictionary<string, object>(validationEx.ExtensionData ?? new Dictionary<string, object>())
+                errorResponse = new ApiErrorResult(validationEx.Message, validationEx.ErrorCode)
                 {
-                    ["validationErrors"] = validationEx.ValidationErrors
+                    Errors = (Dictionary<string, string[]>)validationEx.ValidationErrors
                 };
-                problemDetails = ProblemDetailsResponse.Create(
-                    validationEx.ErrorCode,
-                    response.StatusCode,
-                    validationEx.Message,
-                    context.Request.Path,
-                    validationExtensions
-                );
                 break;
 
             case InvalidAggregateStateException aggregateEx:
                 response.StatusCode = (int)HttpStatusCode.BadRequest;
-                problemDetails = ProblemDetailsResponse.Create(
-                    aggregateEx.ErrorCode,
-                    response.StatusCode,
-                    aggregateEx.Message,
-                    context.Request.Path,
-                    aggregateEx.ExtensionData
-                );
+                errorResponse = new ApiErrorResult(aggregateEx.Message, aggregateEx.ErrorCode)
+                {
+                    Errors = aggregateEx.ExtensionData?.ToDictionary(
+                        kvp => kvp.Key,
+                        kvp => new[] { kvp.Value?.ToString() ?? string.Empty })
+                };
                 break;
 
             case DomainException domainEx:
                 response.StatusCode = domainEx.HttpStatusCode;
-                problemDetails = ProblemDetailsResponse.Create(
-                    domainEx.ErrorCode,
-                    response.StatusCode,
-                    domainEx.Message,
-                    context.Request.Path,
-                    domainEx.ExtensionData
-                );
+                errorResponse = new ApiErrorResult(domainEx.Message, domainEx.ErrorCode);
                 break;
 
             case NotFoundException notFoundEx:
                 response.StatusCode = (int)HttpStatusCode.NotFound;
-                problemDetails = ProblemDetailsResponse.Create(
-                    ErrorCode.NOT_FOUND,
-                    response.StatusCode,
-                    notFoundEx.Message,
-                    context.Request.Path,
-                    null
-                );
+                errorResponse = new ApiErrorResult(notFoundEx.Message, notFoundEx.ErrorCode);
                 break;
 
             case UnauthorizedException unauthorizedEx:
                 response.StatusCode = (int)HttpStatusCode.Unauthorized;
-                problemDetails = ProblemDetailsResponse.Create(
-                    ErrorCode.UNAUTHORIZED,
-                    response.StatusCode,
-                    unauthorizedEx.Message,
-                    context.Request.Path,
-                    null
-                );
+                errorResponse = new ApiErrorResult(unauthorizedEx.Message, unauthorizedEx.ErrorCode);
                 break;
 
             case ForbiddenException forbiddenEx:
                 response.StatusCode = (int)HttpStatusCode.Forbidden;
-                problemDetails = ProblemDetailsResponse.Create(
-                    ErrorCode.FORBIDDEN,
-                    response.StatusCode,
-                    forbiddenEx.Message,
-                    context.Request.Path,
-                    null
-                );
+                errorResponse = new ApiErrorResult(forbiddenEx.Message, forbiddenEx.ErrorCode);
                 break;
 
             case ConflictException conflictEx:
                 response.StatusCode = (int)HttpStatusCode.Conflict;
-                problemDetails = ProblemDetailsResponse.Create(
-                    ErrorCode.CONFLICT,
-                    response.StatusCode,
-                    conflictEx.Message,
-                    context.Request.Path,
-                    null
-                );
+                errorResponse = new ApiErrorResult(conflictEx.Message, conflictEx.ErrorCode);
                 break;
 
             case ExternalServiceException externalEx:
                 response.StatusCode = externalEx.StatusCode ?? (int)HttpStatusCode.ServiceUnavailable;
-                problemDetails = ProblemDetailsResponse.Create(
-                    ErrorCode.EXTERNAL_SERVICE_ERROR,
-                    response.StatusCode,
-                    externalEx.Message,
-                    context.Request.Path,
-                    null
-                );
+                errorResponse = new ApiErrorResult(externalEx.Message, externalEx.ErrorCode);
                 break;
 
             case ApplicationException appEx:
                 response.StatusCode = (int)HttpStatusCode.BadRequest;
-                problemDetails = ProblemDetailsResponse.Create(
-                    ErrorCode.VALIDATION_ERROR,
-                    response.StatusCode,
-                    appEx.Message,
-                    context.Request.Path,
-                    null
-                );
+                errorResponse = new ApiErrorResult(appEx.Message, appEx.ErrorCode);
                 break;
 
             // Handle ServiceCatalog ValidationException (custom) - using type name matching
             case Exception ex when ex.GetType().FullName == "Booksy.ServiceCatalog.Application.Exceptions.ValidationException":
                 response.StatusCode = (int)HttpStatusCode.BadRequest;
                 var errorsProperty = ex.GetType().GetProperty("Errors");
-                Dictionary<string, object>? validationExts = null;
                 if (errorsProperty != null)
                 {
                     var errors = errorsProperty.GetValue(ex) as Dictionary<string, List<string>>;
-                    if (errors != null)
+                    errorResponse = new ApiErrorResult("Validation failed", "VALIDATION_ERROR")
                     {
-                        validationExts = new Dictionary<string, object>
-                        {
-                            ["validationErrors"] = errors.ToDictionary(
-                                kvp => kvp.Key,
-                                kvp => kvp.Value.ToArray())
-                        };
-                    }
+                        Errors = errors?.ToDictionary(
+                            kvp => kvp.Key,
+                            kvp => kvp.Value.ToArray())
+                    };
                 }
-                problemDetails = ProblemDetailsResponse.Create(
-                    ErrorCode.VALIDATION_ERROR,
-                    response.StatusCode,
-                    "Validation failed",
-                    context.Request.Path,
-                    validationExts
-                );
                 break;
 
             case ValidationException fluentEx:
                 response.StatusCode = (int)HttpStatusCode.BadRequest;
-                var fluentValidationExts = new Dictionary<string, object>
+                errorResponse = new ApiErrorResult("Validation failed", "VALIDATION_ERROR")
                 {
-                    ["validationErrors"] = fluentEx.Errors
+                    Errors = fluentEx.Errors
                         .GroupBy(e => e.PropertyName)
                         .ToDictionary(
                             g => g.Key,
                             g => g.Select(e => e.ErrorMessage).ToArray())
                 };
-                problemDetails = ProblemDetailsResponse.Create(
-                    ErrorCode.VALIDATION_ERROR,
-                    response.StatusCode,
-                    "Validation failed",
-                    context.Request.Path,
-                    fluentValidationExts
-                );
                 break;
 
             case UnauthorizedAccessException:
                 response.StatusCode = (int)HttpStatusCode.Unauthorized;
-                problemDetails = ProblemDetailsResponse.Create(
-                    ErrorCode.UNAUTHORIZED,
-                    response.StatusCode,
-                    "Unauthorized",
-                    context.Request.Path,
-                    null
-                );
+                errorResponse = new ApiErrorResult("Unauthorized", "UNAUTHORIZED");
                 break;
 
             case KeyNotFoundException:
                 response.StatusCode = (int)HttpStatusCode.NotFound;
-                problemDetails = ProblemDetailsResponse.Create(
-                    ErrorCode.NOT_FOUND,
-                    response.StatusCode,
-                    "Resource not found",
-                    context.Request.Path,
-                    null
-                );
+                errorResponse = new ApiErrorResult("Resource not found", "NOT_FOUND");
                 break;
 
             case TaskCanceledException:
                 response.StatusCode = (int)HttpStatusCode.RequestTimeout;
-                problemDetails = ProblemDetailsResponse.Create(
-                    ErrorCode.UNKNOWN_ERROR,
-                    response.StatusCode,
-                    "Request timeout",
-                    context.Request.Path,
-                    null
-                );
+                errorResponse = new ApiErrorResult("Request timeout", "TIMEOUT");
                 break;
 
             case OperationCanceledException:
                 response.StatusCode = 499;
-                problemDetails = ProblemDetailsResponse.Create(
-                    ErrorCode.UNKNOWN_ERROR,
-                    response.StatusCode,
-                    "Request was cancelled",
-                    context.Request.Path,
-                    null
-                );
+                errorResponse = new ApiErrorResult("Request was cancelled", "CANCELLED");
                 break;
 
             case ArgumentNullException argNullEx:
                 response.StatusCode = (int)HttpStatusCode.BadRequest;
-                problemDetails = ProblemDetailsResponse.Create(
-                    ErrorCode.VALIDATION_ERROR,
-                    response.StatusCode,
-                    $"Required parameter is missing: {argNullEx.ParamName}",
-                    context.Request.Path,
-                    new Dictionary<string, object> { ["paramName"] = argNullEx.ParamName ?? "unknown" }
-                );
+                errorResponse = new ApiErrorResult($"Required parameter is missing: {argNullEx.ParamName}", "MISSING_PARAMETER");
                 break;
 
             case ArgumentException argEx:
                 response.StatusCode = (int)HttpStatusCode.BadRequest;
-                problemDetails = ProblemDetailsResponse.Create(
-                    ErrorCode.VALIDATION_ERROR,
-                    response.StatusCode,
-                    argEx.Message,
-                    context.Request.Path,
-                    null
-                );
+                errorResponse = new ApiErrorResult(argEx.Message, "INVALID_ARGUMENT");
                 break;
 
             default:
                 response.StatusCode = (int)HttpStatusCode.InternalServerError;
                 if (_environment.IsDevelopment() || _environment.EnvironmentName == "Test")
                 {
-                    var debugExtensions = new Dictionary<string, object>
+                    errorResponse = new ApiErrorResult(exception.Message, "INTERNAL_ERROR")
                     {
-                        ["exceptionMessage"] = exception.Message ?? string.Empty,
-                        ["exceptionType"] = exception.GetType().FullName ?? "Unknown",
-                        ["stackTrace"] = exception.StackTrace ?? string.Empty
+                        Errors = new Dictionary<string, string[]>
+                        {
+                            ["message"] = new[] { exception.Message ?? string.Empty },
+                            ["innerMessage"] = new[] { exception.InnerException != null ? exception.InnerException.Message : string.Empty}
+                        }
                     };
-                    if (exception.InnerException != null)
-                    {
-                        debugExtensions["innerException"] = exception.InnerException.Message;
-                    }
-                    problemDetails = ProblemDetailsResponse.Create(
-                        ErrorCode.INTERNAL_ERROR,
-                        response.StatusCode,
-                        exception.Message,
-                        context.Request.Path,
-                        debugExtensions
-                    );
                 }
                 else
                 {
+
                     _logger.LogError(exception, "An unhandled exception occurred");
-                    problemDetails = ProblemDetailsResponse.Create(
-                        ErrorCode.INTERNAL_ERROR,
-                        response.StatusCode,
+
+                    errorResponse = new ApiErrorResult(
                         "An internal server error occurred. Please try again later.",
-                        context.Request.Path,
-                        null
-                    );
+                        "INTERNAL_ERROR");
                 }
                 break;
         }
 
-        var jsonResponse = JsonSerializer.Serialize(problemDetails, new JsonSerializerOptions
+        // ✅ Wrap error in same format as success responses
+        var wrappedErrorResponse = new
+        {
+            success = false,
+            statusCode = response.StatusCode.ToString(),  // ✅ Convert to string
+            message = errorResponse.Message,
+            data = (object?)null,
+            error = new
+            {
+                code = errorResponse.Code,
+                message = errorResponse.Message,
+                errors = errorResponse.Errors
+            },
+            metadata = new
+            {
+                requestId = context.TraceIdentifier,
+                timestamp = DateTimeOffset.UtcNow,
+                path = context.Request.Path.Value,
+                method = context.Request.Method
+            }
+        };
+
+        var jsonResponse = JsonSerializer.Serialize(wrappedErrorResponse, new JsonSerializerOptions
         {
             PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
-            WriteIndented = _environment.IsDevelopment(),
-            DefaultIgnoreCondition = System.Text.Json.Serialization.JsonIgnoreCondition.WhenWritingNull
+            WriteIndented = _environment.IsDevelopment()
         });
 
         await response.WriteAsync(jsonResponse);
