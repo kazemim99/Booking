@@ -1,7 +1,6 @@
-using Booksy.Infrastructure.External.Payment;
-using Booksy.ServiceCatalog.Domain.Enums;
+using Booksy.Core.Domain.Enums;
 
-namespace Booksy.Core.Application.Abstractions.Payment
+namespace Booksy.Infrastructure.External.Payment
 {
     /// <summary>
     /// Abstract Factory for creating payment gateway instances based on provider

@@ -2,6 +2,7 @@
 // Booksy.ServiceCatalog.Domain/Aggregates/PaymentAggregate/Payment.cs
 // ========================================
 using Booksy.Core.Domain.Base;
+using Booksy.Core.Domain.Enums;
 using Booksy.Core.Domain.ValueObjects;
 using Booksy.ServiceCatalog.Domain.Aggregates.PaymentAggregate.Entities;
 using Booksy.ServiceCatalog.Domain.Enums;

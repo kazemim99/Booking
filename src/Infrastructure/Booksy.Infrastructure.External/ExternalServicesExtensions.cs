@@ -12,7 +12,6 @@ using Booksy.Infrastructure.External.Payment.IDPay;
 using Booksy.Infrastructure.External.Payment.Behpardakht;
 using Booksy.Infrastructure.External.Payment.Parsian;
 using Booksy.Infrastructure.External.Payment.Saman;
-using Booksy.Core.Application.Abstractions.Payment;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 

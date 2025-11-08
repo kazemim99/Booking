@@ -1,4 +1,4 @@
-namespace Booksy.ServiceCatalog.Domain.Enums
+namespace Booksy.Core.Domain.Enums
 {
     /// <summary>
     /// Represents the payment gateway provider
