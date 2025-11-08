@@ -165,6 +165,11 @@ public class RabbitMqSettings
     public int Port { get; set; } = 5672;
 
     /// <summary>
+    /// Connection name for identification in RabbitMQ management UI
+    /// </summary>
+    public string ConnectionName { get; set; } = "Booksy-EventBus";
+
+    /// <summary>
     /// RabbitMQ virtual host
     /// </summary>
     public string VirtualHost { get; set; } = "/";

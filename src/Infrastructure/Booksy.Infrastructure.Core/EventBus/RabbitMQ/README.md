@@ -60,6 +60,7 @@ Add the RabbitMQ configuration section to your `appsettings.json`:
   "RabbitMQ": {
     "Host": "localhost",
     "Port": 5672,
+    "ConnectionName": "Booksy-ServiceCatalog",
     "VirtualHost": "/",
     "Username": "booksy_admin",
     "Password": "Booksy@2024!",
@@ -245,6 +246,7 @@ public class BookingRequestedEventHandler : IDomainEventHandler<BookingRequested
 |----------|------|---------|-------------|
 | `Host` | string | "localhost" | RabbitMQ server hostname or IP |
 | `Port` | int | 5672 | RabbitMQ server port |
+| `ConnectionName` | string | "Booksy-EventBus" | Connection name for RabbitMQ management UI |
 | `VirtualHost` | string | "/" | RabbitMQ virtual host |
 | `Username` | string | "guest" | RabbitMQ username |
 | `Password` | string | "guest" | RabbitMQ password |
