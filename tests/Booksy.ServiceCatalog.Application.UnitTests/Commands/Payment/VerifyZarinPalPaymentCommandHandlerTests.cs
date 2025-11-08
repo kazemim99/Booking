@@ -63,7 +63,7 @@ public class VerifyZarinPalPaymentCommandHandlerTests
         result.IsSuccessful.Should().BeTrue();
         result.RefNumber.Should().Be(123456789);
         result.CardPan.Should().Be("6274****1234");
-        result.Status.Should().Be("Paid");
+        result.PaymentStatus.Should().Be("Paid");
 
         payment.Status.Should().Be(PaymentStatus.Paid);
         payment.RefNumber.Should().Be("123456789");
@@ -89,7 +89,7 @@ public class VerifyZarinPalPaymentCommandHandlerTests
         // Assert
         result.Should().NotBeNull();
         result.IsSuccessful.Should().BeFalse();
-        result.Status.Should().Be("Failed");
+        result.PaymentStatus.Should().Be("Failed");
         result.FailureReason.Should().Be("User cancelled the payment");
 
         payment.Status.Should().Be(PaymentStatus.Failed);
@@ -189,7 +189,7 @@ public class VerifyZarinPalPaymentCommandHandlerTests
         result.IsSuccessful.Should().BeFalse();
         result.ErrorCode.Should().Be(-53);
         result.ErrorMessage.Should().Be("Transaction verification unsuccessful");
-        result.Status.Should().Be("Failed");
+        result.PaymentStatus.Should().Be("Failed");
 
         payment.Status.Should().Be(PaymentStatus.Failed);
         payment.FailureReason.Should().Contain("verification unsuccessful");
