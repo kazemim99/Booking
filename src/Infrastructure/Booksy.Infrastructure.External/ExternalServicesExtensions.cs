@@ -6,6 +6,7 @@ using Booksy.Infrastructure.External.OTP.DTO;
 using Booksy.Infrastructure.External.sms;
 using Booksy.Infrastructure.External.sms.Rahyab;
 using Booksy.Infrastructure.External.Storage;
+using Booksy.Infrastructure.External.Payment.ZarinPal;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 
@@ -84,6 +85,12 @@ public static class ExternalServicesExtensions
             case "stripe":
                 services.Configure<StripeSettings>(configuration.GetSection("Payment:Stripe"));
                 services.AddScoped<IPaymentGateway, StripePaymentGateway>();
+                break;
+            case "zarinpal":
+                services.Configure<ZarinPalSettings>(configuration.GetSection("Payment:ZarinPal"));
+                services.AddHttpClient("ZarinPal");
+                services.AddScoped<IZarinPalService, ZarinPalService>();
+                services.AddScoped<IPaymentGateway, ZarinPalPaymentGateway>();
                 break;
             default:
                 // Add null implementation if needed

@@ -124,6 +124,35 @@ namespace Booksy.ServiceCatalog.Infrastructure.Persistence.Configurations
                 .HasColumnName("StripeCustomerId")
                 .HasMaxLength(200);
 
+            // ZarinPal-Specific Details
+            builder.Property(p => p.Authority)
+                .HasColumnName("Authority")
+                .HasMaxLength(100);
+
+            builder.Property(p => p.RefNumber)
+                .HasColumnName("RefNumber")
+                .HasMaxLength(100);
+
+            builder.Property(p => p.CardPan)
+                .HasColumnName("CardPan")
+                .HasMaxLength(20);
+
+            builder.Property(p => p.PaymentUrl)
+                .HasColumnName("PaymentUrl")
+                .HasMaxLength(500);
+
+            // Fee (Owned Value Object - nullable)
+            builder.OwnsOne(p => p.Fee, fee =>
+            {
+                fee.Property(m => m.Amount)
+                    .HasColumnName("Fee")
+                    .HasColumnType("decimal(18,2)");
+
+                fee.Property(m => m.Currency)
+                    .HasColumnName("FeeCurrency")
+                    .HasMaxLength(3);
+            });
+
             // Timestamps
             builder.Property(p => p.CreatedAt)
                 .IsRequired()
@@ -240,6 +269,9 @@ namespace Booksy.ServiceCatalog.Infrastructure.Persistence.Configurations
 
             builder.HasIndex(p => p.PaymentIntentId)
                 .HasDatabaseName("IX_Payments_PaymentIntentId");
+
+            builder.HasIndex(p => p.Authority)
+                .HasDatabaseName("IX_Payments_Authority");
 
             builder.HasIndex(p => p.CreatedAt)
                 .HasDatabaseName("IX_Payments_CreatedAt");

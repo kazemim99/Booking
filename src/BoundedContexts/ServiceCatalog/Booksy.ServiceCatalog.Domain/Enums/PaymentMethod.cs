@@ -29,6 +29,11 @@ namespace Booksy.ServiceCatalog.Domain.Enums
         Cash,
 
         /// <summary>
+        /// ZarinPal payment gateway (Iranian payment gateway)
+        /// </summary>
+        ZarinPal,
+
+        /// <summary>
         /// Other payment method
         /// </summary>
         Other
