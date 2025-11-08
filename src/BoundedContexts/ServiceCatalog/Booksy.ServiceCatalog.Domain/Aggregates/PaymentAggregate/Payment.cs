@@ -403,7 +403,7 @@ namespace Booksy.ServiceCatalog.Domain.Aggregates.PaymentAggregate
             CardPan = cardPan;
             if (fee.HasValue)
             {
-                Fee = new Money(fee.Value, Amount.Currency);
+                Fee =  Money.Create(fee.Value, Amount.Currency);
             }
 
             PaidAmount = Amount;

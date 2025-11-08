@@ -10,5 +10,5 @@ namespace Booksy.ServiceCatalog.Application.Commands.Payment.VerifyZarinPalPayme
     /// </summary>
     public sealed record VerifyZarinPalPaymentCommand(
         string Authority,
-        string Status) : ICommand<VerifyZarinPalPaymentResult>;
+        string Status, Guid? IdempotencyKey =null) : ICommand<VerifyZarinPalPaymentResult>;
 }
