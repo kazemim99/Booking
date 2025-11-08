@@ -26,8 +26,8 @@ namespace Booksy.ServiceCatalog.IntegrationTests.Features.Providers
         
         private static string[] featureTags = ((string[])(null));
         
-        private static global::Reqnroll.FeatureInfo featureInfo = new global::Reqnroll.FeatureInfo(new System.Globalization.CultureInfo("en"), "Features/Providers", "Gallery Management", "  As a provider\r\n  I want to manage my business gallery\r\n  So that customers can " +
-                "see my work and facility", global::Reqnroll.ProgrammingLanguage.CSharp, featureTags);
+        private static global::Reqnroll.FeatureInfo featureInfo = new global::Reqnroll.FeatureInfo(new System.Globalization.CultureInfo("en"), "Features/Providers", "Gallery Management", ("  As a provider\r\n  I want to manage my business gallery\r\n  So that customers can " +
+                "see my work and facility"), global::Reqnroll.ProgrammingLanguage.CSharp, featureTags);
         
         private Xunit.Abstractions.ITestOutputHelper _testOutputHelper;
         
@@ -307,19 +307,19 @@ namespace Booksy.ServiceCatalog.IntegrationTests.Features.Providers
                 await this.ScenarioStartAsync();
                 await this.FeatureBackgroundAsync();
                 await testRunner.GivenAsync("the provider has a gallery image", ((string)(null)), ((global::Reqnroll.Table)(null)), "Given ");
-                global::Reqnroll.Table table137 = new global::Reqnroll.Table(new string[] {
+                global::Reqnroll.Table table311 = new global::Reqnroll.Table(new string[] {
                             "Field",
                             "Value"});
-                table137.AddRow(new string[] {
+                table311.AddRow(new string[] {
                             "Caption",
                             "Beautiful haircut"});
-                table137.AddRow(new string[] {
+                table311.AddRow(new string[] {
                             "Description",
                             "Client transformation"});
-                table137.AddRow(new string[] {
+                table311.AddRow(new string[] {
                             "Tags",
                             "haircut, styling"});
-                await testRunner.WhenAsync("I send a PUT request to update image metadata:", ((string)(null)), table137, "When ");
+                await testRunner.WhenAsync("I send a PUT request to update image metadata:", ((string)(null)), table311, "When ");
                 await testRunner.ThenAsync("the response status code should be 200", ((string)(null)), ((global::Reqnroll.Table)(null)), "Then ");
                 await testRunner.AndAsync("the metadata should be updated", ((string)(null)), ((global::Reqnroll.Table)(null)), "And ");
             }
@@ -348,22 +348,22 @@ namespace Booksy.ServiceCatalog.IntegrationTests.Features.Providers
                 await this.ScenarioStartAsync();
                 await this.FeatureBackgroundAsync();
                 await testRunner.GivenAsync("the provider has 4 gallery images", ((string)(null)), ((global::Reqnroll.Table)(null)), "Given ");
-                global::Reqnroll.Table table138 = new global::Reqnroll.Table(new string[] {
+                global::Reqnroll.Table table312 = new global::Reqnroll.Table(new string[] {
                             "ImageId",
                             "NewOrder"});
-                table138.AddRow(new string[] {
+                table312.AddRow(new string[] {
                             "img-1",
                             "3"});
-                table138.AddRow(new string[] {
+                table312.AddRow(new string[] {
                             "img-2",
                             "1"});
-                table138.AddRow(new string[] {
+                table312.AddRow(new string[] {
                             "img-3",
                             "2"});
-                table138.AddRow(new string[] {
+                table312.AddRow(new string[] {
                             "img-4",
                             "4"});
-                await testRunner.WhenAsync("I send a PUT request to reorder images:", ((string)(null)), table138, "When ");
+                await testRunner.WhenAsync("I send a PUT request to reorder images:", ((string)(null)), table312, "When ");
                 await testRunner.ThenAsync("the response status code should be 200", ((string)(null)), ((global::Reqnroll.Table)(null)), "Then ");
                 await testRunner.AndAsync("the images should be reordered correctly", ((string)(null)), ((global::Reqnroll.Table)(null)), "And ");
             }

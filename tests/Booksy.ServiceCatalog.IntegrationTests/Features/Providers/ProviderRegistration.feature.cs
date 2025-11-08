@@ -26,8 +26,8 @@ namespace Booksy.ServiceCatalog.IntegrationTests.Features.Providers
         
         private static string[] featureTags = ((string[])(null));
         
-        private static global::Reqnroll.FeatureInfo featureInfo = new global::Reqnroll.FeatureInfo(new System.Globalization.CultureInfo("en"), "Features/Providers", "Provider Registration", "  As a new service provider\r\n  I want to register on the platform\r\n  So that I ca" +
-                "n offer my services to customers", global::Reqnroll.ProgrammingLanguage.CSharp, featureTags);
+        private static global::Reqnroll.FeatureInfo featureInfo = new global::Reqnroll.FeatureInfo(new System.Globalization.CultureInfo("en"), "Features/Providers", "Provider Registration", ("  As a new service provider\r\n  I want to register on the platform\r\n  So that I ca" +
+                "n offer my services to customers"), global::Reqnroll.ProgrammingLanguage.CSharp, featureTags);
         
         private Xunit.Abstractions.ITestOutputHelper _testOutputHelper;
         
@@ -113,57 +113,57 @@ namespace Booksy.ServiceCatalog.IntegrationTests.Features.Providers
             {
                 await this.ScenarioStartAsync();
                 await testRunner.GivenAsync("I am authenticated as a customer", ((string)(null)), ((global::Reqnroll.Table)(null)), "Given ");
-                global::Reqnroll.Table table142 = new global::Reqnroll.Table(new string[] {
+                global::Reqnroll.Table table316 = new global::Reqnroll.Table(new string[] {
                             "Field",
                             "Value"});
-                table142.AddRow(new string[] {
+                table316.AddRow(new string[] {
                             "BusinessName",
                             "Beautiful Hair Salon"});
-                table142.AddRow(new string[] {
+                table316.AddRow(new string[] {
                             "Description",
                             "Professional salon"});
-                table142.AddRow(new string[] {
+                table316.AddRow(new string[] {
                             "Type",
                             "Salon"});
-                table142.AddRow(new string[] {
+                table316.AddRow(new string[] {
                             "PrimaryPhone",
                             "+989121234567"});
-                table142.AddRow(new string[] {
+                table316.AddRow(new string[] {
                             "Email",
                             "salon@test.com"});
-                table142.AddRow(new string[] {
+                table316.AddRow(new string[] {
                             "Street",
                             "123 Main St"});
-                table142.AddRow(new string[] {
+                table316.AddRow(new string[] {
                             "City",
                             "Tehran"});
-                table142.AddRow(new string[] {
+                table316.AddRow(new string[] {
                             "State",
                             "Tehran"});
-                table142.AddRow(new string[] {
+                table316.AddRow(new string[] {
                             "PostalCode",
                             "12345"});
-                table142.AddRow(new string[] {
+                table316.AddRow(new string[] {
                             "Country",
                             "Iran"});
-                table142.AddRow(new string[] {
+                table316.AddRow(new string[] {
                             "Latitude",
                             "35.6892"});
-                table142.AddRow(new string[] {
+                table316.AddRow(new string[] {
                             "Longitude",
                             "51.3890"});
-                await testRunner.WhenAsync("I send a POST request to register a provider with:", ((string)(null)), table142, "When ");
+                await testRunner.WhenAsync("I send a POST request to register a provider with:", ((string)(null)), table316, "When ");
                 await testRunner.ThenAsync("the response status code should be 201", ((string)(null)), ((global::Reqnroll.Table)(null)), "Then ");
-                global::Reqnroll.Table table143 = new global::Reqnroll.Table(new string[] {
+                global::Reqnroll.Table table317 = new global::Reqnroll.Table(new string[] {
                             "Field",
                             "Value"});
-                table143.AddRow(new string[] {
+                table317.AddRow(new string[] {
                             "BusinessName",
                             "Beautiful Hair Salon"});
-                table143.AddRow(new string[] {
+                table317.AddRow(new string[] {
                             "Status",
                             "PendingVerification"});
-                await testRunner.AndAsync("the response should contain a provider with:", ((string)(null)), table143, "And ");
+                await testRunner.AndAsync("the response should contain a provider with:", ((string)(null)), table317, "And ");
                 await testRunner.AndAsync("the provider should exist in the database", ((string)(null)), ((global::Reqnroll.Table)(null)), "And ");
             }
             await this.ScenarioCleanupAsync();
@@ -192,32 +192,31 @@ namespace Booksy.ServiceCatalog.IntegrationTests.Features.Providers
             {
                 await this.ScenarioStartAsync();
                 await testRunner.GivenAsync("I am authenticated as a customer", ((string)(null)), ((global::Reqnroll.Table)(null)), "Given ");
-                global::Reqnroll.Table table144 = new global::Reqnroll.Table(new string[] {
+                global::Reqnroll.Table table318 = new global::Reqnroll.Table(new string[] {
                             "Field",
                             "Value"});
-                table144.AddRow(new string[] {
+                table318.AddRow(new string[] {
                             "BusinessName",
                             "Complete Salon"});
-                table144.AddRow(new string[] {
+                table318.AddRow(new string[] {
                             "CategoryId",
                             "beauty-salon"});
-                table144.AddRow(new string[] {
+                table318.AddRow(new string[] {
                             "OwnerFirstName",
                             "John"});
-                table144.AddRow(new string[] {
+                table318.AddRow(new string[] {
                             "OwnerLastName",
                             "Doe"});
-                table144.AddRow(new string[] {
+                table318.AddRow(new string[] {
                             "PhoneNumber",
                             "+989121234567"});
-                table144.AddRow(new string[] {
+                table318.AddRow(new string[] {
                             "Services",
                             "Haircut, Coloring"});
-                table144.AddRow(new string[] {
+                table318.AddRow(new string[] {
                             "TeamMembers",
                             "Staff1, Staff2"});
-                await testRunner.WhenAsync("I send a POST request to \"/api/v1/providers/register-full\" with complete details:" +
-                        "", ((string)(null)), table144, "When ");
+                await testRunner.WhenAsync("I send a POST request to \"/api/v1/providers/register-full\" with complete details:", ((string)(null)), table318, "When ");
                 await testRunner.ThenAsync("the response status code should be 201", ((string)(null)), ((global::Reqnroll.Table)(null)), "Then ");
                 await testRunner.AndAsync("the provider should have services configured", ((string)(null)), ((global::Reqnroll.Table)(null)), "And ");
                 await testRunner.AndAsync("the provider should have staff members configured", ((string)(null)), ((global::Reqnroll.Table)(null)), "And ");

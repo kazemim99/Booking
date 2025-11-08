@@ -205,7 +205,7 @@ public class ZarinPalSteps
             bookingId: booking != null ? BookingId.From(booking.Id.Value) : null,
             customerId: UserId.From(Guid.NewGuid()),
             providerId: ProviderId.From(provider.Id.Value),
-            amount: Money.From((decimal)requestData["Amount"], "IRR"),
+            amount: Money.Create((decimal)requestData["Amount"], "IRR"),
             PaymentMethod.ZarinPal,
             description: (string)requestData["Description"]);
 

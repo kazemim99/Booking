@@ -26,8 +26,8 @@ namespace Booksy.ServiceCatalog.IntegrationTests.Features.Payments
         
         private static string[] featureTags = ((string[])(null));
         
-        private static global::Reqnroll.FeatureInfo featureInfo = new global::Reqnroll.FeatureInfo(new System.Globalization.CultureInfo("en"), "Features/Payments", "Payment Capture and Advanced Operations", "  As a system and provider\r\n  I want to handle complex payment scenarios\r\n  So th" +
-                "at financial transactions are properly managed", global::Reqnroll.ProgrammingLanguage.CSharp, featureTags);
+        private static global::Reqnroll.FeatureInfo featureInfo = new global::Reqnroll.FeatureInfo(new System.Globalization.CultureInfo("en"), "Features/Payments", "Payment Capture and Advanced Operations", ("  As a system and provider\r\n  I want to handle complex payment scenarios\r\n  So th" +
+                "at financial transactions are properly managed"), global::Reqnroll.ProgrammingLanguage.CSharp, featureTags);
         
         private Xunit.Abstractions.ITestOutputHelper _testOutputHelper;
         
@@ -151,13 +151,13 @@ namespace Booksy.ServiceCatalog.IntegrationTests.Features.Payments
                 await this.ScenarioStartAsync();
                 await this.FeatureBackgroundAsync();
                 await testRunner.GivenAsync("I have an authorized but not captured payment of 100.00 USD", ((string)(null)), ((global::Reqnroll.Table)(null)), "Given ");
-                global::Reqnroll.Table table116 = new global::Reqnroll.Table(new string[] {
+                global::Reqnroll.Table table178 = new global::Reqnroll.Table(new string[] {
                             "Field",
                             "Value"});
-                table116.AddRow(new string[] {
+                table178.AddRow(new string[] {
                             "Amount",
                             "50.00"});
-                await testRunner.WhenAsync("I send a POST request to capture the payment with:", ((string)(null)), table116, "When ");
+                await testRunner.WhenAsync("I send a POST request to capture the payment with:", ((string)(null)), table178, "When ");
                 await testRunner.ThenAsync("the response status code should be 200", ((string)(null)), ((global::Reqnroll.Table)(null)), "Then ");
                 await testRunner.AndAsync("the payment should have captured amount of 50.00", ((string)(null)), ((global::Reqnroll.Table)(null)), "And ");
             }
@@ -243,31 +243,31 @@ namespace Booksy.ServiceCatalog.IntegrationTests.Features.Payments
             {
                 await this.ScenarioStartAsync();
                 await this.FeatureBackgroundAsync();
-                global::Reqnroll.Table table117 = new global::Reqnroll.Table(new string[] {
+                global::Reqnroll.Table table179 = new global::Reqnroll.Table(new string[] {
                             "Field",
                             "Value"});
-                table117.AddRow(new string[] {
+                table179.AddRow(new string[] {
                             "BaseAmount",
                             "100.00"});
-                table117.AddRow(new string[] {
+                table179.AddRow(new string[] {
                             "Currency",
                             "USD"});
-                table117.AddRow(new string[] {
+                table179.AddRow(new string[] {
                             "TaxPercentage",
                             "10"});
-                table117.AddRow(new string[] {
+                table179.AddRow(new string[] {
                             "TaxInclusive",
                             "false"});
-                table117.AddRow(new string[] {
+                table179.AddRow(new string[] {
                             "DiscountPercentage",
                             "15"});
-                table117.AddRow(new string[] {
+                table179.AddRow(new string[] {
                             "PlatformFeePercentage",
                             "5"});
-                table117.AddRow(new string[] {
+                table179.AddRow(new string[] {
                             "DepositPercentage",
                             "30"});
-                await testRunner.WhenAsync("I send a POST request to calculate pricing with:", ((string)(null)), table117, "When ");
+                await testRunner.WhenAsync("I send a POST request to calculate pricing with:", ((string)(null)), table179, "When ");
                 await testRunner.ThenAsync("the response status code should be 200", ((string)(null)), ((global::Reqnroll.Table)(null)), "Then ");
                 await testRunner.AndAsync("the pricing breakdown should be calculated correctly", ((string)(null)), ((global::Reqnroll.Table)(null)), "And ");
             }
@@ -297,22 +297,22 @@ namespace Booksy.ServiceCatalog.IntegrationTests.Features.Payments
             {
                 await this.ScenarioStartAsync();
                 await this.FeatureBackgroundAsync();
-                global::Reqnroll.Table table118 = new global::Reqnroll.Table(new string[] {
+                global::Reqnroll.Table table180 = new global::Reqnroll.Table(new string[] {
                             "Field",
                             "Value"});
-                table118.AddRow(new string[] {
+                table180.AddRow(new string[] {
                             "BaseAmount",
                             "120.00"});
-                table118.AddRow(new string[] {
+                table180.AddRow(new string[] {
                             "Currency",
                             "USD"});
-                table118.AddRow(new string[] {
+                table180.AddRow(new string[] {
                             "TaxPercentage",
                             "20"});
-                table118.AddRow(new string[] {
+                table180.AddRow(new string[] {
                             "TaxInclusive",
                             "true"});
-                await testRunner.WhenAsync("I send a POST request to calculate pricing with:", ((string)(null)), table118, "When ");
+                await testRunner.WhenAsync("I send a POST request to calculate pricing with:", ((string)(null)), table180, "When ");
                 await testRunner.ThenAsync("the response status code should be 200", ((string)(null)), ((global::Reqnroll.Table)(null)), "Then ");
                 await testRunner.AndAsync("the tax amount should be 20.00", ((string)(null)), ((global::Reqnroll.Table)(null)), "And ");
             }
@@ -343,19 +343,19 @@ namespace Booksy.ServiceCatalog.IntegrationTests.Features.Payments
                 await this.ScenarioStartAsync();
                 await this.FeatureBackgroundAsync();
                 await testRunner.GivenAsync("I am not authenticated", ((string)(null)), ((global::Reqnroll.Table)(null)), "Given ");
-                global::Reqnroll.Table table119 = new global::Reqnroll.Table(new string[] {
+                global::Reqnroll.Table table181 = new global::Reqnroll.Table(new string[] {
                             "Field",
                             "Value"});
-                table119.AddRow(new string[] {
+                table181.AddRow(new string[] {
                             "BaseAmount",
                             "100.00"});
-                table119.AddRow(new string[] {
+                table181.AddRow(new string[] {
                             "Currency",
                             "USD"});
-                table119.AddRow(new string[] {
+                table181.AddRow(new string[] {
                             "TaxPercentage",
                             "10"});
-                await testRunner.WhenAsync("I send a POST request to calculate pricing with:", ((string)(null)), table119, "When ");
+                await testRunner.WhenAsync("I send a POST request to calculate pricing with:", ((string)(null)), table181, "When ");
                 await testRunner.ThenAsync("the response status code should be 200", ((string)(null)), ((global::Reqnroll.Table)(null)), "Then ");
             }
             await this.ScenarioCleanupAsync();

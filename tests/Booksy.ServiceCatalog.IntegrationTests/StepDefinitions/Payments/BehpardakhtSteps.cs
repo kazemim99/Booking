@@ -1,19 +1,13 @@
-using Booksy.Core.Domain.Infrastructure.Middleware;
 using Booksy.Core.Domain.ValueObjects;
 using Booksy.Infrastructure.External.Payment.Behpardakht;
-using Booksy.ServiceCatalog.API.Models.Requests;
 using Booksy.ServiceCatalog.Api.Models.Responses;
 using Booksy.ServiceCatalog.Domain.Aggregates.PaymentAggregate;
-using Booksy.ServiceCatalog.Domain.Aggregates.PaymentAggregate.Entities;
 using Booksy.ServiceCatalog.Domain.Enums;
 using Booksy.ServiceCatalog.Domain.ValueObjects;
-using Booksy.ServiceCatalog.IntegrationTests.Infrastructure;
 using Booksy.ServiceCatalog.IntegrationTests.Support;
-using FluentAssertions;
 using Microsoft.EntityFrameworkCore;
 using Moq;
 using Reqnroll;
-using System.Net;
 
 namespace Booksy.ServiceCatalog.IntegrationTests.StepDefinitions.Payments;
 
@@ -21,22 +15,20 @@ namespace Booksy.ServiceCatalog.IntegrationTests.StepDefinitions.Payments;
 /// Step definitions for Behpardakht payment scenarios
 /// </summary>
 [Binding]
-public class BehpardakhtSteps
+public class BehpardakhtSteps: ServiceCatalogIntegrationTestBase
 {
     private readonly ScenarioContext _scenarioContext;
-    private readonly ServiceCatalogIntegrationTestBase _testBase;
     private readonly ScenarioContextHelper _helper;
     private readonly Mock<IBehpardakhtService> _mockBehpardakhtService;
-
-    public BehpardakhtSteps(
-        ScenarioContext scenarioContext,
-        ServiceCatalogIntegrationTestBase testBase)
+   
+    public BehpardakhtSteps(ScenarioContext scenarioContext,ServiceCatalogTestWebApplicationFactory<Startup> factory) : base(factory)
     {
         _scenarioContext = scenarioContext;
-        _testBase = testBase;
         _helper = _scenarioContext.Get<ScenarioContextHelper>("Helper");
         _mockBehpardakhtService = new Mock<IBehpardakhtService>();
     }
+
+
 
     #region Payment Creation Steps
 
@@ -80,7 +72,7 @@ public class BehpardakhtSteps
             PaymentUrl = $"https://bpm.shaparak.ir/pgwchannel/startpay.mellat"
         });
 
-        var response = await _testBase.PostAsJsonAsync<CreateBehpardakhtPaymentRequest, CreateBehpardakhtPaymentResponse>(
+        var response = await PostAsJsonAsync<CreateBehpardakhtPaymentRequest, CreateBehpardakhtPaymentResponse>(
             "/api/v1/payments/behpardakht/create", request);
 
         _scenarioContext.Set(response, "LastResponse");
@@ -122,7 +114,7 @@ public class BehpardakhtSteps
     {
         var paymentId = _scenarioContext.Get<Guid>("LastPaymentId");
 
-        var payment = await _testBase.DbContext.Set<Payment>()
+        var payment = await DbContext.Set<Payment>()
             .Include(p => p.Transactions)
             .FirstOrDefaultAsync(p => p.Id == PaymentId.From(paymentId));
 
@@ -158,7 +150,7 @@ public class BehpardakhtSteps
         var paymentId = _scenarioContext.Get<Guid>("LastPaymentId");
         var expectedMetadata = _scenarioContext.Get<Dictionary<string, object>>("RequestMetadata");
 
-        var payment = await _testBase.DbContext.Set<Payment>()
+        var payment = await DbContext.Set<Payment>()
             .FirstOrDefaultAsync(p => p.Id == PaymentId.From(paymentId));
 
         payment.Should().NotBeNull();
@@ -175,7 +167,7 @@ public class BehpardakhtSteps
     {
         var paymentId = _scenarioContext.Get<Guid>("LastPaymentId");
 
-        var payment = await _testBase.DbContext.Set<Payment>()
+        var payment = await DbContext.Set<Payment>()
             .FirstOrDefaultAsync(p => p.Id == PaymentId.From(paymentId));
 
         payment.Should().NotBeNull();
@@ -208,7 +200,7 @@ public class BehpardakhtSteps
             bookingId: booking != null ? BookingId.From(booking.Id.Value) : null,
             customerId: UserId.From(Guid.NewGuid()),
             providerId: ProviderId.From(provider.Id.Value),
-            amount: Money.From((decimal)requestData["Amount"], "IRR"),
+            amount: Money.Create((decimal)requestData["Amount"], "IRR"),
             PaymentMethod.Behpardakht,
             description: (string)requestData["Description"]);
 
@@ -218,8 +210,8 @@ public class BehpardakhtSteps
 
         payment.RecordPaymentRequest(refId, paymentUrl);
 
-        await _testBase.DbContext.Set<Payment>().AddAsync(payment);
-        await _testBase.DbContext.SaveChangesAsync();
+        await DbContext.Set<Payment>().AddAsync(payment);
+        await DbContext.SaveChangesAsync();
 
         _scenarioContext.Set(payment.Id.Value, "LastPaymentId");
         _scenarioContext.Set(refId, "LastRefId");
@@ -269,7 +261,7 @@ public class BehpardakhtSteps
 
         var callbackUrl = $"/api/v1/payments/behpardakht/callback?RefId={refId}&ResCode={resCode}&SaleReferenceId={saleReferenceId}";
 
-        var response = await _testBase.GetAsync(callbackUrl);
+        var response = await GetAsync(callbackUrl);
 
         _scenarioContext.Set(response.StatusCode, "CallbackStatusCode");
         _scenarioContext.Set(response, "CallbackResponse");
@@ -294,7 +286,7 @@ public class BehpardakhtSteps
     {
         var paymentId = _scenarioContext.Get<Guid>("LastPaymentId");
 
-        var payment = await _testBase.DbContext.Set<Payment>()
+        var payment = await DbContext.Set<Payment>()
             .FirstOrDefaultAsync(p => p.Id == PaymentId.From(paymentId));
 
         payment.Should().NotBeNull($"Payment with ID {paymentId} should exist in database");
@@ -307,7 +299,7 @@ public class BehpardakhtSteps
     {
         var paymentId = _scenarioContext.Get<Guid>("LastPaymentId");
 
-        var payment = await _testBase.DbContext.Set<Payment>()
+        var payment = await DbContext.Set<Payment>()
             .FirstOrDefaultAsync(p => p.Id == PaymentId.From(paymentId));
 
         payment.Should().NotBeNull();
@@ -328,7 +320,7 @@ public class BehpardakhtSteps
     {
         var paymentId = _scenarioContext.Get<Guid>("LastPaymentId");
 
-        var payment = await _testBase.DbContext.Set<Payment>()
+        var payment = await DbContext.Set<Payment>()
             .FirstOrDefaultAsync(p => p.Id == PaymentId.From(paymentId));
 
         payment.Should().NotBeNull();
@@ -359,7 +351,7 @@ public class BehpardakhtSteps
     {
         var paymentId = _scenarioContext.Get<Guid>("LastPaymentId");
 
-        var payment = await _testBase.DbContext.Set<Payment>()
+        var payment = await DbContext.Set<Payment>()
             .FirstOrDefaultAsync(p => p.Id == PaymentId.From(paymentId));
 
         payment.Should().NotBeNull();
@@ -449,7 +441,7 @@ public class BehpardakhtSteps
             IsSuccessful = true
         });
 
-        var response = await _testBase.PostAsync($"/api/v1/payments/{paymentId}/settle", null);
+        var response = await PostAsync($"/api/v1/payments/{paymentId}/settle");
         _scenarioContext.Set(response.StatusCode, "LastStatusCode");
     }
 
@@ -478,7 +470,7 @@ public class BehpardakhtSteps
     {
         var paymentId = _scenarioContext.Get<Guid>("LastPaymentId");
 
-        var payment = await _testBase.DbContext.Set<Payment>()
+        var payment = await DbContext.Set<Payment>()
             .FirstOrDefaultAsync(p => p.Id == PaymentId.From(paymentId));
 
         payment.Should().NotBeNull();
@@ -490,7 +482,7 @@ public class BehpardakhtSteps
     {
         var paymentId = _scenarioContext.Get<Guid>("LastPaymentId");
 
-        var payment = await _testBase.DbContext.Set<Payment>()
+        var payment = await DbContext.Set<Payment>()
             .FirstOrDefaultAsync(p => p.Id == PaymentId.From(paymentId));
 
         payment.Should().NotBeNull();
@@ -511,7 +503,7 @@ public class BehpardakhtSteps
             bookingId: null,
             customerId: UserId.From(Guid.NewGuid()),
             providerId: ProviderId.From(provider.Id.Value),
-            amount: Money.From((decimal)requestData["Amount"], (string)requestData["Currency"]),
+            amount: Money.Create((decimal)requestData["Amount"], (string)requestData["Currency"]),
             PaymentMethod.Behpardakht,
             description: "Test payment");
 
@@ -523,8 +515,8 @@ public class BehpardakhtSteps
         var cardPan = requestData.ContainsKey("CardPan") ? requestData["CardPan"].ToString() : "6104****1234";
         payment.VerifyPayment(refNumber, cardPan);
 
-        await _testBase.DbContext.Set<Payment>().AddAsync(payment);
-        await _testBase.DbContext.SaveChangesAsync();
+        await DbContext.Set<Payment>().AddAsync(payment);
+        await DbContext.SaveChangesAsync();
 
         _scenarioContext.Set(payment.Id.Value, "CurrentPaymentId");
         _scenarioContext.Set(payment.Id.Value, "LastPaymentId");
@@ -547,7 +539,7 @@ public class BehpardakhtSteps
             bookingId: null,
             customerId: UserId.From(Guid.NewGuid()),
             providerId: ProviderId.From(provider.Id.Value),
-            amount: Money.From((decimal)requestData["Amount"], (string)requestData["Currency"]),
+            amount: Money.Create((decimal)requestData["Amount"], (string)requestData["Currency"]),
             PaymentMethod.Behpardakht,
             description: "Test payment");
 
@@ -555,8 +547,8 @@ public class BehpardakhtSteps
         var paymentUrl = $"https://bpm.shaparak.ir/pgwchannel/startpay.mellat";
         payment.RecordPaymentRequest(refId, paymentUrl);
 
-        await _testBase.DbContext.Set<Payment>().AddAsync(payment);
-        await _testBase.DbContext.SaveChangesAsync();
+        await DbContext.Set<Payment>().AddAsync(payment);
+        await DbContext.SaveChangesAsync();
 
         _scenarioContext.Set(payment.Id.Value, "CurrentPaymentId");
         _scenarioContext.Set(payment.Id.Value, "LastPaymentId");
@@ -573,7 +565,7 @@ public class BehpardakhtSteps
             Reason = reason
         };
 
-        var response = await _testBase.PostAsJsonAsync<RefundPaymentRequest, PaymentResponse>(
+        var response = await PostAsJsonAsync<RefundPaymentRequest, PaymentResponse>(
             $"/api/v1/payments/{paymentId}/refund", request);
 
         _scenarioContext.Set(response.StatusCode, "LastStatusCode");
@@ -585,7 +577,7 @@ public class BehpardakhtSteps
     {
         var paymentId = _scenarioContext.Get<Guid>("CurrentPaymentId");
 
-        var payment = await _testBase.DbContext.Set<Payment>()
+        var payment = await DbContext.Set<Payment>()
             .FirstOrDefaultAsync(p => p.Id == PaymentId.From(paymentId));
 
         payment.Should().NotBeNull();
@@ -603,7 +595,7 @@ public class BehpardakhtSteps
     {
         var paymentId = _scenarioContext.Get<Guid>("CurrentPaymentId");
 
-        var payment = await _testBase.DbContext.Set<Payment>()
+        var payment = await DbContext.Set<Payment>()
             .FirstOrDefaultAsync(p => p.Id == PaymentId.From(paymentId));
 
         var fullAmount = payment!.Amount.Amount;
@@ -647,7 +639,7 @@ public class BehpardakhtSteps
             IsSuccessful = true
         });
 
-        var response = await _testBase.PostAsync($"/api/v1/payments/{paymentId}/reverse", null);
+        var response = await PostAsync($"/api/v1/payments/{paymentId}/reverse");
         _scenarioContext.Set(response.StatusCode, "LastStatusCode");
     }
 
@@ -685,7 +677,7 @@ public class BehpardakhtSteps
             Status = "Verified"
         });
 
-        var response = await _testBase.GetAsync($"/api/v1/payments/{paymentId}/inquiry");
+        var response = await GetAsync($"/api/v1/payments/{paymentId}/inquiry");
         _scenarioContext.Set(response.StatusCode, "LastStatusCode");
         _scenarioContext.Set(response, "InquiryResponse");
     }
@@ -738,7 +730,7 @@ public class BehpardakhtSteps
     {
         var paymentId = _scenarioContext.Get<Guid>("CurrentPaymentId");
 
-        var payment = await _testBase.DbContext.Set<Payment>()
+        var payment = await DbContext.Set<Payment>()
             .Include(p => p.Transactions)
             .FirstOrDefaultAsync(p => p.Id == PaymentId.From(paymentId));
 
@@ -799,7 +791,7 @@ public class BehpardakhtSteps
     {
         var paymentId = _scenarioContext.Get<Guid>("LastPaymentId");
 
-        var payment = await _testBase.DbContext.Set<Payment>()
+        var payment = await DbContext.Set<Payment>()
             .FirstOrDefaultAsync(p => p.Id == PaymentId.From(paymentId));
 
         payment.Should().NotBeNull();
@@ -811,7 +803,7 @@ public class BehpardakhtSteps
     {
         var paymentId = _scenarioContext.Get<Guid>("LastPaymentId");
 
-        var payment = await _testBase.DbContext.Set<Payment>()
+        var payment = await DbContext.Set<Payment>()
             .Include(p => p.Transactions)
             .FirstOrDefaultAsync(p => p.Id == PaymentId.From(paymentId));
 
@@ -825,7 +817,7 @@ public class BehpardakhtSteps
     {
         var paymentId = _scenarioContext.Get<Guid>("LastPaymentId");
 
-        var payment = await _testBase.DbContext.Set<Payment>()
+        var payment = await DbContext.Set<Payment>()
             .Include(p => p.Transactions)
             .FirstOrDefaultAsync(p => p.Id == PaymentId.From(paymentId));
 
@@ -839,7 +831,7 @@ public class BehpardakhtSteps
     {
         var paymentId = _scenarioContext.Get<Guid>("LastPaymentId");
 
-        var payment = await _testBase.DbContext.Set<Payment>()
+        var payment = await DbContext.Set<Payment>()
             .Include(p => p.Transactions)
             .FirstOrDefaultAsync(p => p.Id == PaymentId.From(paymentId));
 
@@ -853,7 +845,7 @@ public class BehpardakhtSteps
     {
         var paymentId = _scenarioContext.Get<Guid>("LastPaymentId");
 
-        var payment = await _testBase.DbContext.Set<Payment>()
+        var payment = await DbContext.Set<Payment>()
             .Include(p => p.Transactions)
             .FirstOrDefaultAsync(p => p.Id == PaymentId.From(paymentId));
 

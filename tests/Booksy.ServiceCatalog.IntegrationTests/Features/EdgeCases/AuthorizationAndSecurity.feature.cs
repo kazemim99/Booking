@@ -26,8 +26,8 @@ namespace Booksy.ServiceCatalog.IntegrationTests.Features.EdgeCases
         
         private static string[] featureTags = ((string[])(null));
         
-        private static global::Reqnroll.FeatureInfo featureInfo = new global::Reqnroll.FeatureInfo(new System.Globalization.CultureInfo("en"), "Features/EdgeCases", "Authorization and Security", "  As a system\r\n  I want to enforce proper authorization\r\n  So that users can only" +
-                " access their own data and perform allowed operations", global::Reqnroll.ProgrammingLanguage.CSharp, featureTags);
+        private static global::Reqnroll.FeatureInfo featureInfo = new global::Reqnroll.FeatureInfo(new System.Globalization.CultureInfo("en"), "Features/EdgeCases", "Authorization and Security", ("  As a system\r\n  I want to enforce proper authorization\r\n  So that users can only" +
+                " access their own data and perform allowed operations"), global::Reqnroll.ProgrammingLanguage.CSharp, featureTags);
         
         private Xunit.Abstractions.ITestOutputHelper _testOutputHelper;
         

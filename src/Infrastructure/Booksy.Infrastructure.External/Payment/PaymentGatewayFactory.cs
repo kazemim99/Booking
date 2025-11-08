@@ -47,7 +47,7 @@ namespace Booksy.Infrastructure.External.Payment
 
             try
             {
-                var gateway = provider switch
+                IPaymentGateway gateway = provider switch
                 {
                     PaymentProvider.ZarinPal => GetService<ZarinPalPaymentGateway>(),
                     PaymentProvider.IDPay => GetService<IDPayPaymentGateway>(),

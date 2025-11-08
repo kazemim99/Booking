@@ -14,7 +14,6 @@ using Booksy.Infrastructure.External.Payment.Parsian;
 using Booksy.Infrastructure.External.Payment.Saman;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
-using Booksy.Core.Application.Abstractions.Payment;
 
 
 /// <summary>

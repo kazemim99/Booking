@@ -26,8 +26,8 @@ namespace Booksy.ServiceCatalog.IntegrationTests.Features.Providers
         
         private static string[] featureTags = ((string[])(null));
         
-        private static global::Reqnroll.FeatureInfo featureInfo = new global::Reqnroll.FeatureInfo(new System.Globalization.CultureInfo("en"), "Features/Providers", "Staff Management", "  As a provider\r\n  I want to manage my staff members\r\n  So that customers can boo" +
-                "k with specific staff", global::Reqnroll.ProgrammingLanguage.CSharp, featureTags);
+        private static global::Reqnroll.FeatureInfo featureInfo = new global::Reqnroll.FeatureInfo(new System.Globalization.CultureInfo("en"), "Features/Providers", "Staff Management", ("  As a provider\r\n  I want to manage my staff members\r\n  So that customers can boo" +
+                "k with specific staff"), global::Reqnroll.ProgrammingLanguage.CSharp, featureTags);
         
         private Xunit.Abstractions.ITestOutputHelper _testOutputHelper;
         
@@ -119,25 +119,25 @@ namespace Booksy.ServiceCatalog.IntegrationTests.Features.Providers
             {
                 await this.ScenarioStartAsync();
                 await this.FeatureBackgroundAsync();
-                global::Reqnroll.Table table145 = new global::Reqnroll.Table(new string[] {
+                global::Reqnroll.Table table319 = new global::Reqnroll.Table(new string[] {
                             "Field",
                             "Value"});
-                table145.AddRow(new string[] {
+                table319.AddRow(new string[] {
                             "FirstName",
                             "John"});
-                table145.AddRow(new string[] {
+                table319.AddRow(new string[] {
                             "LastName",
                             "Doe"});
-                table145.AddRow(new string[] {
+                table319.AddRow(new string[] {
                             "Email",
                             "john@test.com"});
-                table145.AddRow(new string[] {
+                table319.AddRow(new string[] {
                             "Phone",
                             "+1234567890"});
-                table145.AddRow(new string[] {
+                table319.AddRow(new string[] {
                             "Role",
                             "ServiceProvider"});
-                await testRunner.WhenAsync("I send a POST request to add staff with:", ((string)(null)), table145, "When ");
+                await testRunner.WhenAsync("I send a POST request to add staff with:", ((string)(null)), table319, "When ");
                 await testRunner.ThenAsync("the response status code should be 201", ((string)(null)), ((global::Reqnroll.Table)(null)), "Then ");
                 await testRunner.AndAsync("the staff member should be added to the provider", ((string)(null)), ((global::Reqnroll.Table)(null)), "And ");
             }
@@ -206,19 +206,19 @@ namespace Booksy.ServiceCatalog.IntegrationTests.Features.Providers
                 await this.ScenarioStartAsync();
                 await this.FeatureBackgroundAsync();
                 await testRunner.GivenAsync("the provider has a staff member \"Jane Smith\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "Given ");
-                global::Reqnroll.Table table146 = new global::Reqnroll.Table(new string[] {
+                global::Reqnroll.Table table320 = new global::Reqnroll.Table(new string[] {
                             "Field",
                             "Value"});
-                table146.AddRow(new string[] {
+                table320.AddRow(new string[] {
                             "Email",
                             "newemail@test.com"});
-                table146.AddRow(new string[] {
+                table320.AddRow(new string[] {
                             "Phone",
                             "+9876543210"});
-                table146.AddRow(new string[] {
+                table320.AddRow(new string[] {
                             "Role",
                             "Manager"});
-                await testRunner.WhenAsync("I send a PUT request to update staff with:", ((string)(null)), table146, "When ");
+                await testRunner.WhenAsync("I send a PUT request to update staff with:", ((string)(null)), table320, "When ");
                 await testRunner.ThenAsync("the response status code should be 200", ((string)(null)), ((global::Reqnroll.Table)(null)), "Then ");
                 await testRunner.AndAsync("the staff information should be updated", ((string)(null)), ((global::Reqnroll.Table)(null)), "And ");
             }
@@ -341,13 +341,13 @@ namespace Booksy.ServiceCatalog.IntegrationTests.Features.Providers
                 await this.FeatureBackgroundAsync();
                 await testRunner.GivenAsync("the provider has services: \"Haircut\", \"Coloring\", \"Styling\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "Given ");
                 await testRunner.AndAsync("the provider has staff member \"John\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "And ");
-                global::Reqnroll.Table table147 = new global::Reqnroll.Table(new string[] {
+                global::Reqnroll.Table table321 = new global::Reqnroll.Table(new string[] {
                             "Service"});
-                table147.AddRow(new string[] {
+                table321.AddRow(new string[] {
                             "Haircut"});
-                table147.AddRow(new string[] {
+                table321.AddRow(new string[] {
                             "Coloring"});
-                await testRunner.WhenAsync("I assign services to John:", ((string)(null)), table147, "When ");
+                await testRunner.WhenAsync("I assign services to John:", ((string)(null)), table321, "When ");
                 await testRunner.ThenAsync("the response status code should be 200", ((string)(null)), ((global::Reqnroll.Table)(null)), "Then ");
                 await testRunner.AndAsync("John should be able to provide those services", ((string)(null)), ((global::Reqnroll.Table)(null)), "And ");
             }
@@ -376,23 +376,23 @@ namespace Booksy.ServiceCatalog.IntegrationTests.Features.Providers
                 await this.ScenarioStartAsync();
                 await this.FeatureBackgroundAsync();
                 await testRunner.GivenAsync("the provider has staff member \"Jane\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "Given ");
-                global::Reqnroll.Table table148 = new global::Reqnroll.Table(new string[] {
+                global::Reqnroll.Table table322 = new global::Reqnroll.Table(new string[] {
                             "Day",
                             "StartTime",
                             "EndTime"});
-                table148.AddRow(new string[] {
+                table322.AddRow(new string[] {
                             "Monday",
                             "09:00",
                             "17:00"});
-                table148.AddRow(new string[] {
+                table322.AddRow(new string[] {
                             "Tuesday",
                             "09:00",
                             "17:00"});
-                table148.AddRow(new string[] {
+                table322.AddRow(new string[] {
                             "Friday",
                             "10:00",
                             "15:00"});
-                await testRunner.WhenAsync("I set Jane\'s schedule:", ((string)(null)), table148, "When ");
+                await testRunner.WhenAsync("I set Jane\'s schedule:", ((string)(null)), table322, "When ");
                 await testRunner.ThenAsync("the response status code should be 200", ((string)(null)), ((global::Reqnroll.Table)(null)), "Then ");
                 await testRunner.AndAsync("Jane should only be available during those hours", ((string)(null)), ((global::Reqnroll.Table)(null)), "And ");
             }
@@ -540,17 +540,17 @@ namespace Booksy.ServiceCatalog.IntegrationTests.Features.Providers
                 await this.FeatureBackgroundAsync();
                 await testRunner.GivenAsync("the provider has staff with completed bookings", ((string)(null)), ((global::Reqnroll.Table)(null)), "Given ");
                 await testRunner.WhenAsync("I request staff performance report for last 30 days", ((string)(null)), ((global::Reqnroll.Table)(null)), "When ");
-                global::Reqnroll.Table table149 = new global::Reqnroll.Table(new string[] {
+                global::Reqnroll.Table table323 = new global::Reqnroll.Table(new string[] {
                             "Metric"});
-                table149.AddRow(new string[] {
+                table323.AddRow(new string[] {
                             "TotalBookings"});
-                table149.AddRow(new string[] {
+                table323.AddRow(new string[] {
                             "CompletedBookings"});
-                table149.AddRow(new string[] {
+                table323.AddRow(new string[] {
                             "Revenue Generated"});
-                table149.AddRow(new string[] {
+                table323.AddRow(new string[] {
                             "Customer Ratings"});
-                await testRunner.ThenAsync("the response should include:", ((string)(null)), table149, "Then ");
+                await testRunner.ThenAsync("the response should include:", ((string)(null)), table323, "Then ");
             }
             await this.ScenarioCleanupAsync();
         }

@@ -36,6 +36,7 @@ namespace Booksy.ServiceCatalog.Domain.Enums
         /// <summary>
         /// Other payment method
         /// </summary>
-        Other
+        Other,
+        Behpardakht
     }
 }
