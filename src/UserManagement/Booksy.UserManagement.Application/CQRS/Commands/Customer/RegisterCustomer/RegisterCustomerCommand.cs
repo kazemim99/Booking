@@ -22,6 +22,8 @@ namespace Booksy.UserManagement.Application.CQRS.Commands.Customer.RegisterCusto
         public string? Bio { get; init; }
         public string? IpAddress { get; init; }
         public string? UserAgent { get; init; }
+
+        public Guid? IdempotencyKey { get; init; }
     }
 
     public sealed record AddressDto(

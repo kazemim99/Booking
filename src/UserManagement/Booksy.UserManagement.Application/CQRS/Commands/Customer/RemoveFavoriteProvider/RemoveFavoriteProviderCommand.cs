@@ -10,5 +10,5 @@ namespace Booksy.UserManagement.Application.CQRS.Commands.Customer.RemoveFavorit
     /// </summary>
     public sealed record RemoveFavoriteProviderCommand(
         Guid CustomerId,
-        Guid ProviderId) : ICommand<RemoveFavoriteProviderResult>;
+        Guid ProviderId,Guid? IdempotencyKey = null) : ICommand<RemoveFavoriteProviderResult>;
 }

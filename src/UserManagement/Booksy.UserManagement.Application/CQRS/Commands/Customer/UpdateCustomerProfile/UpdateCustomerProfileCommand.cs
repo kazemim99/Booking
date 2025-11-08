@@ -20,6 +20,8 @@ namespace Booksy.UserManagement.Application.CQRS.Commands.Customer.UpdateCustome
         public AddressDto? Address { get; init; }
         public string? Bio { get; init; }
         public string? AvatarUrl { get; init; }
+
+        public Guid? IdempotencyKey { get; init; }
     }
 
     public sealed record AddressDto(

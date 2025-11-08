@@ -11,5 +11,5 @@ namespace Booksy.UserManagement.Application.CQRS.Commands.Customer.AddFavoritePr
     public sealed record AddFavoriteProviderCommand(
         Guid CustomerId,
         Guid ProviderId,
-        string? Notes = null) : ICommand<AddFavoriteProviderResult>;
+        string? Notes = null, Guid? IdempotencyKey=null) : ICommand<AddFavoriteProviderResult>;
 }
