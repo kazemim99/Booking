@@ -64,27 +64,20 @@ namespace Booksy.ServiceCatalog.Infrastructure.Persistence.Repositories
 
         public async Task UpdateProviderAsync(Provider provider, CancellationToken cancellationToken = default)
         {
-            // For owned entities with Field access mode, changes to owned collections
-            // need explicit tracking. Mark the provider and owned entities as modified.
+            // For owned entities using PropertyAccessMode.Field, EF Core doesn't automatically
+            // detect changes to properties on owned entities. We need to explicitly mark them.
 
-            var entry = Context.Entry(provider);
+            // First, detect any changes EF Core can automatically track
+            Context.ChangeTracker.DetectChanges();
 
-            // If detached, attach and mark as modified
-            if (entry.State == EntityState.Detached)
-            {
-                Context.Attach(provider);
-                entry.State = EntityState.Modified;
-            }
+            // Then mark the provider as updated
+            Context.Update(provider);
 
-            // Explicitly mark all gallery images as modified to ensure changes are persisted
-            // This is necessary because GalleryImages uses PropertyAccessMode.Field
+            // Finally, explicitly mark ALL gallery images as modified to ensure
+            // changes to their properties (like IsActive) are persisted
             foreach (var galleryImage in provider.Profile.GalleryImages)
             {
-                var imageEntry = Context.Entry(galleryImage);
-                if (imageEntry.State != EntityState.Added && imageEntry.State != EntityState.Deleted)
-                {
-                    imageEntry.State = EntityState.Modified;
-                }
+                Context.Entry(galleryImage).State = EntityState.Modified;
             }
         }
 
