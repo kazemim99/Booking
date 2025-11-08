@@ -58,13 +58,18 @@ namespace Booksy.ServiceCatalog.Application.Queries.Payment.GetPaymentDetails
                 payment.PaymentMethodId,
                 payment.Description,
                 payment.FailureReason,
+                metadata,
+                transactions,
                 payment.CreatedAt,
                 payment.AuthorizedAt,
                 payment.CapturedAt,
                 payment.RefundedAt,
                 payment.FailedAt,
-                transactions,
-                metadata);
+                payment.Authority,
+                payment.RefNumber,
+                payment.CardPan,
+                payment.Fee?.Amount,
+                payment.PaymentUrl);
         }
     }
 }

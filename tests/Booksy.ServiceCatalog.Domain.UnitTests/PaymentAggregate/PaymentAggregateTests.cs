@@ -352,4 +352,293 @@ public class PaymentAggregateTests
         Assert.Equal(3, payment.Metadata.Count);
         Assert.Equal("192.168.1.1", payment.Metadata["ip_address"]);
     }
+
+    // ========================================
+    // ZarinPal-Specific Tests
+    // ========================================
+
+    [Fact]
+    public void RecordPaymentRequest_Should_Store_Authority_And_PaymentUrl()
+    {
+        // Arrange
+        var payment = Payment.CreateForBooking(
+            _bookingId,
+            _customerId,
+            _providerId,
+            Money.Create(50000, "IRR"),
+            PaymentMethod.ZarinPal);
+
+        var authority = "A00000000000000000000000000000123456";
+        var paymentUrl = "https://sandbox.zarinpal.com/pg/StartPay/" + authority;
+
+        // Act
+        payment.RecordPaymentRequest(authority, paymentUrl);
+
+        // Assert
+        Assert.Equal(authority, payment.Authority);
+        Assert.Equal(paymentUrl, payment.PaymentUrl);
+        Assert.Equal(PaymentStatus.Pending, payment.Status);
+        Assert.Single(payment.Transactions);
+        Assert.Equal(TransactionType.PaymentRequest, payment.Transactions.First().Type);
+    }
+
+    [Fact]
+    public void RecordPaymentRequest_Should_Publish_PaymentRequestCreatedEvent()
+    {
+        // Arrange
+        var payment = Payment.CreateForBooking(
+            _bookingId,
+            _customerId,
+            _providerId,
+            Money.Create(50000, "IRR"),
+            PaymentMethod.ZarinPal);
+
+        payment.ClearDomainEvents();
+
+        var authority = "A00000000000000000000000000000123456";
+        var paymentUrl = "https://sandbox.zarinpal.com/pg/StartPay/" + authority;
+
+        // Act
+        payment.RecordPaymentRequest(authority, paymentUrl);
+
+        // Assert
+        var events = payment.DomainEvents;
+        Assert.Contains(events, e => e.GetType().Name == "PaymentRequestCreatedEvent");
+    }
+
+    [Fact]
+    public void RecordPaymentRequest_Should_Throw_When_Authority_Is_Empty()
+    {
+        // Arrange
+        var payment = Payment.CreateForBooking(
+            _bookingId,
+            _customerId,
+            _providerId,
+            Money.Create(50000, "IRR"),
+            PaymentMethod.ZarinPal);
+
+        // Act & Assert
+        var exception = Assert.Throws<ArgumentException>(() =>
+            payment.RecordPaymentRequest("", "https://zarinpal.com/pg/StartPay/123"));
+        Assert.Contains("Authority", exception.Message);
+    }
+
+    [Fact]
+    public void RecordPaymentRequest_Should_Throw_When_PaymentUrl_Is_Empty()
+    {
+        // Arrange
+        var payment = Payment.CreateForBooking(
+            _bookingId,
+            _customerId,
+            _providerId,
+            Money.Create(50000, "IRR"),
+            PaymentMethod.ZarinPal);
+
+        // Act & Assert
+        var exception = Assert.Throws<ArgumentException>(() =>
+            payment.RecordPaymentRequest("A00000000000000000000000000000123456", ""));
+        Assert.Contains("Payment URL", exception.Message);
+    }
+
+    [Fact]
+    public void VerifyPayment_Should_Update_Status_To_Paid_And_Store_Details()
+    {
+        // Arrange
+        var payment = Payment.CreateForBooking(
+            _bookingId,
+            _customerId,
+            _providerId,
+            Money.Create(50000, "IRR"),
+            PaymentMethod.ZarinPal);
+
+        payment.RecordPaymentRequest("A00000000000000000000000000000123456", "https://zarinpal.com/pg/StartPay/123");
+
+        var refNumber = "123456789";
+        var cardPan = "6274****1234";
+        var fee = 500m;
+
+        // Act
+        payment.VerifyPayment(refNumber, cardPan, fee);
+
+        // Assert
+        Assert.Equal(PaymentStatus.Paid, payment.Status);
+        Assert.Equal(refNumber, payment.RefNumber);
+        Assert.Equal(cardPan, payment.CardPan);
+        Assert.NotNull(payment.Fee);
+        Assert.Equal(fee, payment.Fee.Amount);
+        Assert.Equal(payment.Amount, payment.PaidAmount);
+        Assert.Equal(2, payment.Transactions.Count);
+        Assert.Contains(payment.Transactions, t => t.Type == TransactionType.Verification);
+    }
+
+    [Fact]
+    public void VerifyPayment_Should_Publish_PaymentVerifiedEvent()
+    {
+        // Arrange
+        var payment = Payment.CreateForBooking(
+            _bookingId,
+            _customerId,
+            _providerId,
+            Money.Create(50000, "IRR"),
+            PaymentMethod.ZarinPal);
+
+        payment.RecordPaymentRequest("A00000000000000000000000000000123456", "https://zarinpal.com/pg/StartPay/123");
+        payment.ClearDomainEvents();
+
+        // Act
+        payment.VerifyPayment("123456789", "6274****1234", 500m);
+
+        // Assert
+        var events = payment.DomainEvents;
+        Assert.Contains(events, e => e.GetType().Name == "PaymentVerifiedEvent");
+    }
+
+    [Fact]
+    public void VerifyPayment_Should_Throw_When_RefNumber_Is_Empty()
+    {
+        // Arrange
+        var payment = Payment.CreateForBooking(
+            _bookingId,
+            _customerId,
+            _providerId,
+            Money.Create(50000, "IRR"),
+            PaymentMethod.ZarinPal);
+
+        payment.RecordPaymentRequest("A00000000000000000000000000000123456", "https://zarinpal.com/pg/StartPay/123");
+
+        // Act & Assert
+        var exception = Assert.Throws<ArgumentException>(() =>
+            payment.VerifyPayment("", "6274****1234"));
+        Assert.Contains("Reference number", exception.Message);
+    }
+
+    [Fact]
+    public void VerifyPayment_Should_Work_Without_CardPan_And_Fee()
+    {
+        // Arrange
+        var payment = Payment.CreateForBooking(
+            _bookingId,
+            _customerId,
+            _providerId,
+            Money.Create(50000, "IRR"),
+            PaymentMethod.ZarinPal);
+
+        payment.RecordPaymentRequest("A00000000000000000000000000000123456", "https://zarinpal.com/pg/StartPay/123");
+
+        // Act
+        payment.VerifyPayment("123456789");
+
+        // Assert
+        Assert.Equal(PaymentStatus.Paid, payment.Status);
+        Assert.Equal("123456789", payment.RefNumber);
+        Assert.Null(payment.CardPan);
+        Assert.Null(payment.Fee);
+    }
+
+    [Fact]
+    public void MarkPaymentRequestAsFailed_Should_Update_Status_And_Store_Error()
+    {
+        // Arrange
+        var payment = Payment.CreateForBooking(
+            _bookingId,
+            _customerId,
+            _providerId,
+            Money.Create(50000, "IRR"),
+            PaymentMethod.ZarinPal);
+
+        payment.RecordPaymentRequest("A00000000000000000000000000000123456", "https://zarinpal.com/pg/StartPay/123");
+
+        var errorCode = "-11";
+        var errorMessage = "Invalid merchant credentials";
+
+        // Act
+        payment.MarkPaymentRequestAsFailed(errorCode, errorMessage);
+
+        // Assert
+        Assert.Equal(PaymentStatus.Failed, payment.Status);
+        Assert.Contains(errorCode, payment.FailureReason);
+        Assert.Contains(errorMessage, payment.FailureReason);
+        Assert.NotNull(payment.FailedAt);
+        Assert.Equal(2, payment.Transactions.Count);
+        Assert.Contains(payment.Transactions, t => t.Type == TransactionType.Failed);
+    }
+
+    [Fact]
+    public void GetNetAmount_Should_Calculate_Amount_Minus_Fee_And_Refunds()
+    {
+        // Arrange
+        var payment = Payment.CreateForBooking(
+            _bookingId,
+            _customerId,
+            _providerId,
+            Money.Create(50000, "IRR"),
+            PaymentMethod.ZarinPal);
+
+        payment.RecordPaymentRequest("A00000000000000000000000000000123456", "https://zarinpal.com/pg/StartPay/123");
+        payment.VerifyPayment("123456789", "6274****1234", 500m);
+        payment.Refund(Money.Create(5000, "IRR"), "refund_123", RefundReason.CustomerCancellation);
+
+        // Act
+        var netAmount = payment.GetNetAmount();
+
+        // Assert
+        // 50000 (paid) - 5000 (refund) - 500 (fee) = 44500
+        Assert.Equal(44500m, netAmount.Amount);
+    }
+
+    [Fact]
+    public void GetNetAmount_Should_Calculate_Without_Fee_When_Null()
+    {
+        // Arrange
+        var payment = Payment.CreateForBooking(
+            _bookingId,
+            _customerId,
+            _providerId,
+            Money.Create(50000, "IRR"),
+            PaymentMethod.ZarinPal);
+
+        payment.RecordPaymentRequest("A00000000000000000000000000000123456", "https://zarinpal.com/pg/StartPay/123");
+        payment.VerifyPayment("123456789"); // No fee
+        payment.Refund(Money.Create(5000, "IRR"), "refund_123", RefundReason.CustomerCancellation);
+
+        // Act
+        var netAmount = payment.GetNetAmount();
+
+        // Assert
+        // 50000 (paid) - 5000 (refund) = 45000
+        Assert.Equal(45000m, netAmount.Amount);
+    }
+
+    [Fact]
+    public void ZarinPal_Payment_Full_Flow_Should_Work_Correctly()
+    {
+        // Arrange
+        var payment = Payment.CreateForBooking(
+            _bookingId,
+            _customerId,
+            _providerId,
+            Money.Create(50000, "IRR"),
+            PaymentMethod.ZarinPal,
+            "Test booking payment");
+
+        // Act & Assert - Step 1: Record payment request
+        payment.RecordPaymentRequest("A00000000000000000000000000000123456", "https://sandbox.zarinpal.com/pg/StartPay/A123");
+        Assert.Equal(PaymentStatus.Pending, payment.Status);
+        Assert.Equal("A00000000000000000000000000000123456", payment.Authority);
+
+        // Act & Assert - Step 2: Verify payment
+        payment.VerifyPayment("987654321", "6274****5678", 750m);
+        Assert.Equal(PaymentStatus.Paid, payment.Status);
+        Assert.Equal("987654321", payment.RefNumber);
+        Assert.Equal(750m, payment.Fee.Amount);
+
+        // Act & Assert - Step 3: Partial refund
+        payment.Refund(Money.Create(10000, "IRR"), "refund_001", RefundReason.CustomerCancellation, "Customer request");
+        Assert.Equal(PaymentStatus.PartiallyRefunded, payment.Status);
+        Assert.Equal(10000m, payment.RefundedAmount.Amount);
+
+        // Assert final state
+        Assert.Equal(39250m, payment.GetNetAmount().Amount); // 50000 - 10000 - 750
+        Assert.Equal(3, payment.Transactions.Count); // Request, Verification, Refund
+    }
 }

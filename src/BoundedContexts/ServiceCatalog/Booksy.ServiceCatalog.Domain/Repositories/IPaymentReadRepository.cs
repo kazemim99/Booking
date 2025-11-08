@@ -64,5 +64,45 @@ namespace Booksy.ServiceCatalog.Domain.Repositories
             DateTime endDate,
             PaymentStatus? status = null,
             CancellationToken cancellationToken = default);
+
+        /// <summary>
+        /// Get payment by ZarinPal authority code (read-only)
+        /// </summary>
+        Task<Payment?> GetByAuthorityAsync(string authority, CancellationToken cancellationToken = default);
+
+        /// <summary>
+        /// Get failed payments since a specific date (for retry)
+        /// </summary>
+        Task<IReadOnlyList<Payment>> GetFailedPaymentsAsync(
+            DateTime fromDate,
+            CancellationToken cancellationToken = default);
+
+        /// <summary>
+        /// Get customer payment history with pagination
+        /// </summary>
+        Task<(IReadOnlyList<Payment> Payments, int TotalCount)> GetCustomerPaymentHistoryAsync(
+            UserId customerId,
+            DateTime? startDate = null,
+            DateTime? endDate = null,
+            int skip = 0,
+            int take = 20,
+            CancellationToken cancellationToken = default);
+
+        /// <summary>
+        /// Get provider revenue statistics for a date range
+        /// </summary>
+        Task<(decimal TotalRevenue, decimal TotalRefunds, int SuccessfulPayments, int TotalPayments)> GetProviderRevenueStatsAsync(
+            ProviderId providerId,
+            DateTime startDate,
+            DateTime endDate,
+            CancellationToken cancellationToken = default);
+
+        /// <summary>
+        /// Get payments for reconciliation (completed payments in date range)
+        /// </summary>
+        Task<IReadOnlyList<Payment>> GetPaymentsForReconciliationAsync(
+            DateTime startDate,
+            DateTime endDate,
+            CancellationToken cancellationToken = default);
     }
 }

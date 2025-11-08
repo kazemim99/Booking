@@ -127,6 +127,54 @@ namespace Booksy.ServiceCatalog.Domain.Aggregates.PaymentAggregate.Entities
                 metadata);
         }
 
+        internal static Transaction CreatePaymentRequest(
+            Money amount,
+            string authority,
+            string? reference = null,
+            Dictionary<string, object>? metadata = null)
+        {
+            return new Transaction(
+                TransactionType.PaymentRequest,
+                amount,
+                authority,
+                reference,
+                "requested",
+                DateTime.UtcNow,
+                metadata);
+        }
+
+        internal static Transaction CreateVerification(
+            Money amount,
+            string refNumber,
+            string? reference = null,
+            Dictionary<string, object>? metadata = null)
+        {
+            return new Transaction(
+                TransactionType.Verification,
+                amount,
+                refNumber,
+                reference,
+                "verified",
+                DateTime.UtcNow,
+                metadata);
+        }
+
+        internal static Transaction CreateFailedTransaction(
+            Money amount,
+            string externalTransactionId,
+            string? reference = null,
+            Dictionary<string, object>? metadata = null)
+        {
+            return new Transaction(
+                TransactionType.Failed,
+                amount,
+                externalTransactionId,
+                reference,
+                "failed",
+                DateTime.UtcNow,
+                metadata);
+        }
+
         internal void MarkAsCompleted(string? reason = null)
         {
             CompletedAt = DateTime.UtcNow;

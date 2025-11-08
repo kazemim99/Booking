@@ -28,6 +28,11 @@ namespace Booksy.ServiceCatalog.Domain.Repositories
         Task<Payment?> GetByPaymentIntentIdAsync(string paymentIntentId, CancellationToken cancellationToken = default);
 
         /// <summary>
+        /// Get payment by ZarinPal authority code
+        /// </summary>
+        Task<Payment?> GetByAuthorityAsync(string authority, CancellationToken cancellationToken = default);
+
+        /// <summary>
         /// Add a new payment
         /// </summary>
         Task AddAsync(Payment payment, CancellationToken cancellationToken = default);

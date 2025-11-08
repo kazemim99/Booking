@@ -34,6 +34,13 @@ namespace Booksy.ServiceCatalog.Domain.Aggregates.PaymentAggregate
         public string? PaymentMethodId { get; private set; }
         public string? CustomCustomerId { get; private set; } // Stripe/payment gateway customer ID
 
+        // ZarinPal-Specific Details
+        public string? Authority { get; private set; } // ZarinPal authority code
+        public string? RefNumber { get; private set; } // ZarinPal reference number after verification
+        public string? CardPan { get; private set; } // Masked card number
+        public Money? Fee { get; private set; } // Transaction fee
+        public string? PaymentUrl { get; private set; } // Payment gateway URL for redirect
+
         // Timestamps
         public DateTime CreatedAt { get; private set; }
         public DateTime? AuthorizedAt { get; private set; }
@@ -80,6 +87,32 @@ namespace Booksy.ServiceCatalog.Domain.Aggregates.PaymentAggregate
             Metadata = metadata ?? new Dictionary<string, object>();
 
             RaiseDomainEvent(new PaymentCreatedEvent(id, bookingId, customerId, providerId, amount, CreatedAt));
+        }
+
+        /// <summary>
+        /// Creates a new payment (generic method that handles both booking and direct payments)
+        /// </summary>
+        public static Payment Create(
+            BookingId? bookingId,
+            UserId customerId,
+            ProviderId providerId,
+            Money amount,
+            PaymentMethod method,
+            string? description = null,
+            Dictionary<string, object>? metadata = null)
+        {
+            if (amount.Amount <= 0)
+                throw new InvalidOperationException("Payment amount must be positive");
+
+            return new Payment(
+                PaymentId.New(),
+                bookingId,
+                customerId,
+                providerId,
+                amount,
+                method,
+                description,
+                metadata);
         }
 
         /// <summary>
@@ -344,5 +377,126 @@ namespace Booksy.ServiceCatalog.Domain.Aggregates.PaymentAggregate
             return (Status == PaymentStatus.Paid || Status == PaymentStatus.PartiallyRefunded)
                    && GetRefundableAmount().Amount > 0;
         }
+
+        // ========================================
+        // ZarinPal-Specific Methods
+        // ========================================
+
+        /// <summary>
+        /// Records payment request from ZarinPal (stores authority and payment URL)
+        /// </summary>
+        public void RecordPaymentRequest(string authority, string paymentUrl)
+        {
+            if (Status != PaymentStatus.Pending)
+                throw new InvalidOperationException($"Cannot record payment request in {Status} status");
+
+            if (string.IsNullOrWhiteSpace(authority))
+                throw new ArgumentException("Authority is required", nameof(authority));
+
+            if (string.IsNullOrWhiteSpace(paymentUrl))
+                throw new ArgumentException("Payment URL is required", nameof(paymentUrl));
+
+            Authority = authority;
+            PaymentUrl = paymentUrl;
+
+            var transaction = Transaction.CreatePaymentRequest(
+                Amount,
+                authority,
+                $"Payment request created for Payment {Id}",
+                new Dictionary<string, object>
+                {
+                    ["PaymentUrl"] = paymentUrl,
+                    ["Authority"] = authority
+                });
+
+            _transactions.Add(transaction);
+
+            RaiseDomainEvent(new PaymentRequestCreatedEvent(Id, BookingId, CustomerId, authority, paymentUrl, DateTime.UtcNow));
+        }
+
+        /// <summary>
+        /// Verifies payment with ZarinPal (called after customer completes payment)
+        /// </summary>
+        public void VerifyPayment(string refNumber, string? cardPan = null, decimal? fee = null)
+        {
+            if (Status != PaymentStatus.Pending)
+                throw new InvalidOperationException($"Cannot verify payment in {Status} status");
+
+            if (string.IsNullOrWhiteSpace(refNumber))
+                throw new ArgumentException("Reference number is required", nameof(refNumber));
+
+            RefNumber = refNumber;
+            CardPan = cardPan;
+            if (fee.HasValue)
+            {
+                Fee =  Money.Create(fee.Value, Amount.Currency);
+            }
+
+            PaidAmount = Amount;
+            Status = PaymentStatus.Paid;
+            CapturedAt = DateTime.UtcNow;
+
+            var metadata = new Dictionary<string, object>
+            {
+                ["RefNumber"] = refNumber
+            };
+
+            if (cardPan != null)
+                metadata["CardPan"] = cardPan;
+            if (fee.HasValue)
+                metadata["Fee"] = fee.Value;
+
+            var transaction = Transaction.CreateVerification(
+                Amount,
+                refNumber,
+                $"Payment verified for Payment {Id}",
+                metadata);
+
+            _transactions.Add(transaction);
+
+            RaiseDomainEvent(new PaymentVerifiedEvent(Id, BookingId, CustomerId, ProviderId, Amount, refNumber, cardPan, CapturedAt.Value));
+        }
+
+        /// <summary>
+        /// Marks payment request as failed (ZarinPal gateway error)
+        /// </summary>
+        public void MarkPaymentRequestAsFailed(string errorCode, string errorMessage)
+        {
+            if (Status == PaymentStatus.Paid || Status == PaymentStatus.Refunded)
+                throw new InvalidOperationException($"Cannot mark {Status} payment as failed");
+
+            Status = PaymentStatus.Failed;
+            FailureReason = $"[{errorCode}] {errorMessage}";
+            FailedAt = DateTime.UtcNow;
+
+            var transaction = Transaction.CreateFailedTransaction(
+                Amount,
+                Authority ?? "unknown",
+                $"Payment request failed: {errorMessage}",
+                new Dictionary<string, object>
+                {
+                    ["ErrorCode"] = errorCode,
+                    ["ErrorMessage"] = errorMessage
+                });
+
+            _transactions.Add(transaction);
+
+            RaiseDomainEvent(new PaymentFailedEvent(Id, BookingId, CustomerId, FailureReason, FailedAt.Value));
+        }
+
+        /// <summary>
+        /// Gets net amount (amount - fee - refunded)
+        /// </summary>
+        public Money GetNetAmount()
+        {
+            var netAmount = PaidAmount.Subtract(RefundedAmount);
+            if (Fee != null)
+            {
+                netAmount = netAmount.Subtract(Fee);
+            }
+            return netAmount;
+        }
+
+       
     }
 }

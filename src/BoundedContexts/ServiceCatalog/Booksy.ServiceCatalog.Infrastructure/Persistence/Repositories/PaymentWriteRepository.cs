@@ -38,6 +38,13 @@ namespace Booksy.ServiceCatalog.Infrastructure.Persistence.Repositories
                 .FirstOrDefaultAsync(p => p.PaymentIntentId == paymentIntentId, cancellationToken);
         }
 
+        public async Task<Payment?> GetByAuthorityAsync(string authority, CancellationToken cancellationToken = default)
+        {
+            return await DbSet
+                .Include(p => p.Transactions)
+                .FirstOrDefaultAsync(p => p.Authority == authority, cancellationToken);
+        }
+
         public new async Task AddAsync(Payment payment, CancellationToken cancellationToken = default)
         {
             await DbSet.AddAsync(payment, cancellationToken);

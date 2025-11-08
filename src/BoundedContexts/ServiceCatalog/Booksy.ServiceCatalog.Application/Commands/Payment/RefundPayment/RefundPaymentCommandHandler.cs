@@ -54,13 +54,12 @@ namespace Booksy.ServiceCatalog.Application.Commands.Payment.RefundPayment
             }
 
             // Process refund through gateway
-            if (string.IsNullOrEmpty(payment.PaymentIntentId))
-            {
-                throw new InvalidOperationException("Payment intent ID is missing");
-            }
+            var gatewayPaymentId = payment.Method == Domain.Enums.PaymentMethod.ZarinPal
+                ? payment.Authority ?? throw new InvalidOperationException("ZarinPal Authority is missing")
+                : payment.PaymentIntentId ?? throw new InvalidOperationException("Payment intent ID is missing");
 
             var refundResult = await _paymentGateway.RefundPaymentAsync(
-                payment.PaymentIntentId,
+                gatewayPaymentId,
                 request.RefundAmount,
                 request.Reason.ToString(),
                 cancellationToken);
