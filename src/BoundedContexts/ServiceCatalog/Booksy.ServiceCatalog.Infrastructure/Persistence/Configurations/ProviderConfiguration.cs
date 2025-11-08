@@ -185,9 +185,9 @@ namespace Booksy.ServiceCatalog.Infrastructure.Persistence.Configurations
                         .HasDatabaseName("IX_ProviderGalleryImages_Provider_IsPrimary");
                 });
 
-                // Navigation property configuration
                 profile.Navigation(bp => bp.GalleryImages)
-                    .UsePropertyAccessMode(PropertyAccessMode.Field);
+                    .UsePropertyAccessMode(PropertyAccessMode.Field)
+                    .HasField("_galleryImages"); 
             });
 
 

@@ -21,7 +21,7 @@ namespace Booksy.ServiceCatalog.Domain.Entities
         public DateTime LastUpdatedAt { get; private set; }
 
         // Gallery collection
-        public IReadOnlyList<GalleryImage> GalleryImages => _galleryImages.AsReadOnly();
+        public IReadOnlyList<GalleryImage> GalleryImages => _galleryImages;
 
         // Private constructor for EF Core
         private BusinessProfile() : base()
