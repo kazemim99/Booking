@@ -45,6 +45,12 @@ public static class MassTransitExtensions
                     h.Password(settings.Password);
                     h.Heartbeat(TimeSpan.FromSeconds(settings.HeartbeatInterval));
 
+                    // Set connection name for identification in RabbitMQ management UI
+                    if (!string.IsNullOrEmpty(settings.ConnectionName))
+                    {
+                        h.ConnectionName(settings.ConnectionName);
+                    }
+
                     if (settings.UseSsl)
                     {
                         h.UseSsl(s =>
