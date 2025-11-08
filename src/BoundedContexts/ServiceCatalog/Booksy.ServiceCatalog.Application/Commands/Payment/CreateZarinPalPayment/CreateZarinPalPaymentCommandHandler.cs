@@ -3,6 +3,7 @@
 // ========================================
 using Booksy.Core.Application.Abstractions;
 using Booksy.Core.Application.Abstractions.Persistence;
+using Booksy.Core.Domain.Enums;
 using Booksy.Core.Domain.ValueObjects;
 using Booksy.Infrastructure.External.Payment.ZarinPal;
 using Booksy.ServiceCatalog.Domain.Aggregates.PaymentAggregate;
@@ -54,6 +55,7 @@ namespace Booksy.ServiceCatalog.Application.Commands.Payment.CreateZarinPalPayme
                         ProviderId.From(request.ProviderId),
                         amount,
                         PaymentMethod.ZarinPal,
+                        PaymentProvider.ZarinPal,
                         request.Description,
                         request.Metadata)
                     : Domain.Aggregates.PaymentAggregate.Payment.CreateDirect(
@@ -61,6 +63,7 @@ namespace Booksy.ServiceCatalog.Application.Commands.Payment.CreateZarinPalPayme
                         ProviderId.From(request.ProviderId),
                         amount,
                         PaymentMethod.ZarinPal,
+                        PaymentProvider.ZarinPal,
                         request.Description,
                         request.Metadata);
 

@@ -121,39 +121,39 @@ namespace Booksy.ServiceCatalog.IntegrationTests.Features.Payments
             {
                 await this.ScenarioStartAsync();
                 await this.FeatureBackgroundAsync();
-                global::Reqnroll.Table table123 = new global::Reqnroll.Table(new string[] {
+                global::Reqnroll.Table table185 = new global::Reqnroll.Table(new string[] {
                             "Field",
                             "Value"});
-                table123.AddRow(new string[] {
+                table185.AddRow(new string[] {
                             "Amount",
                             "100.00"});
-                table123.AddRow(new string[] {
+                table185.AddRow(new string[] {
                             "Currency",
                             "USD"});
-                table123.AddRow(new string[] {
+                table185.AddRow(new string[] {
                             "PaymentMethod",
                             "CreditCard"});
-                table123.AddRow(new string[] {
+                table185.AddRow(new string[] {
                             "PaymentMethodId",
                             "pm_test_card"});
-                table123.AddRow(new string[] {
+                table185.AddRow(new string[] {
                             "CaptureImmediately",
                             "true"});
-                await testRunner.WhenAsync("I send a POST request to process a payment with:", ((string)(null)), table123, "When ");
+                await testRunner.WhenAsync("I send a POST request to process a payment with:", ((string)(null)), table185, "When ");
                 await testRunner.ThenAsync("the response status code should be 201", ((string)(null)), ((global::Reqnroll.Table)(null)), "Then ");
-                global::Reqnroll.Table table124 = new global::Reqnroll.Table(new string[] {
+                global::Reqnroll.Table table186 = new global::Reqnroll.Table(new string[] {
                             "Field",
                             "Value"});
-                table124.AddRow(new string[] {
+                table186.AddRow(new string[] {
                             "Status",
                             "Paid"});
-                table124.AddRow(new string[] {
+                table186.AddRow(new string[] {
                             "Amount",
                             "100.00"});
-                table124.AddRow(new string[] {
+                table186.AddRow(new string[] {
                             "Currency",
                             "USD"});
-                await testRunner.AndAsync("the response should contain a payment with:", ((string)(null)), table124, "And ");
+                await testRunner.AndAsync("the response should contain a payment with:", ((string)(null)), table186, "And ");
                 await testRunner.AndAsync("a payment should exist in the database with status \"Paid\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "And ");
             }
             await this.ScenarioCleanupAsync();
@@ -180,33 +180,33 @@ namespace Booksy.ServiceCatalog.IntegrationTests.Features.Payments
             {
                 await this.ScenarioStartAsync();
                 await this.FeatureBackgroundAsync();
-                global::Reqnroll.Table table125 = new global::Reqnroll.Table(new string[] {
+                global::Reqnroll.Table table187 = new global::Reqnroll.Table(new string[] {
                             "Field",
                             "Value"});
-                table125.AddRow(new string[] {
+                table187.AddRow(new string[] {
                             "Amount",
                             "100.00"});
-                table125.AddRow(new string[] {
+                table187.AddRow(new string[] {
                             "Currency",
                             "USD"});
-                table125.AddRow(new string[] {
+                table187.AddRow(new string[] {
                             "PaymentMethod",
                             "CreditCard"});
-                table125.AddRow(new string[] {
+                table187.AddRow(new string[] {
                             "PaymentMethodId",
                             "pm_test_card"});
-                table125.AddRow(new string[] {
+                table187.AddRow(new string[] {
                             "CaptureImmediately",
                             "false"});
-                await testRunner.WhenAsync("I send a POST request to process a payment with:", ((string)(null)), table125, "When ");
+                await testRunner.WhenAsync("I send a POST request to process a payment with:", ((string)(null)), table187, "When ");
                 await testRunner.ThenAsync("the response status code should be 201", ((string)(null)), ((global::Reqnroll.Table)(null)), "Then ");
-                global::Reqnroll.Table table126 = new global::Reqnroll.Table(new string[] {
+                global::Reqnroll.Table table188 = new global::Reqnroll.Table(new string[] {
                             "Field",
                             "Value"});
-                table126.AddRow(new string[] {
+                table188.AddRow(new string[] {
                             "Status",
                             "Paid"});
-                await testRunner.AndAsync("the response should contain a payment with:", ((string)(null)), table126, "And ");
+                await testRunner.AndAsync("the response should contain a payment with:", ((string)(null)), table188, "And ");
             }
             await this.ScenarioCleanupAsync();
         }
@@ -236,25 +236,25 @@ namespace Booksy.ServiceCatalog.IntegrationTests.Features.Payments
             {
                 await this.ScenarioStartAsync();
                 await this.FeatureBackgroundAsync();
-                global::Reqnroll.Table table127 = new global::Reqnroll.Table(new string[] {
+                global::Reqnroll.Table table189 = new global::Reqnroll.Table(new string[] {
                             "Field",
                             "Value"});
-                table127.AddRow(new string[] {
+                table189.AddRow(new string[] {
                             "Amount",
                             "-50.00"});
-                table127.AddRow(new string[] {
+                table189.AddRow(new string[] {
                             "Currency",
                             "USD"});
-                table127.AddRow(new string[] {
+                table189.AddRow(new string[] {
                             "PaymentMethod",
                             "CreditCard"});
-                table127.AddRow(new string[] {
+                table189.AddRow(new string[] {
                             "PaymentMethodId",
                             "pm_test_card"});
-                table127.AddRow(new string[] {
+                table189.AddRow(new string[] {
                             "CaptureImmediately",
                             "true"});
-                await testRunner.WhenAsync("I send a POST request to process a payment with:", ((string)(null)), table127, "When ");
+                await testRunner.WhenAsync("I send a POST request to process a payment with:", ((string)(null)), table189, "When ");
                 await testRunner.ThenAsync("the response status code should be 400", ((string)(null)), ((global::Reqnroll.Table)(null)), "Then ");
             }
             await this.ScenarioCleanupAsync();
@@ -285,25 +285,25 @@ namespace Booksy.ServiceCatalog.IntegrationTests.Features.Payments
             {
                 await this.ScenarioStartAsync();
                 await this.FeatureBackgroundAsync();
-                global::Reqnroll.Table table128 = new global::Reqnroll.Table(new string[] {
+                global::Reqnroll.Table table190 = new global::Reqnroll.Table(new string[] {
                             "Field",
                             "Value"});
-                table128.AddRow(new string[] {
+                table190.AddRow(new string[] {
                             "Amount",
                             "100.00"});
-                table128.AddRow(new string[] {
+                table190.AddRow(new string[] {
                             "Currency",
                             "INVALID"});
-                table128.AddRow(new string[] {
+                table190.AddRow(new string[] {
                             "PaymentMethod",
                             "CreditCard"});
-                table128.AddRow(new string[] {
+                table190.AddRow(new string[] {
                             "PaymentMethodId",
                             "pm_test_card"});
-                table128.AddRow(new string[] {
+                table190.AddRow(new string[] {
                             "CaptureImmediately",
                             "true"});
-                await testRunner.WhenAsync("I send a POST request to process a payment with:", ((string)(null)), table128, "When ");
+                await testRunner.WhenAsync("I send a POST request to process a payment with:", ((string)(null)), table190, "When ");
                 await testRunner.ThenAsync("the response status code should be 400", ((string)(null)), ((global::Reqnroll.Table)(null)), "Then ");
             }
             await this.ScenarioCleanupAsync();
@@ -333,25 +333,25 @@ namespace Booksy.ServiceCatalog.IntegrationTests.Features.Payments
                 await this.ScenarioStartAsync();
                 await this.FeatureBackgroundAsync();
                 await testRunner.GivenAsync("I am not authenticated", ((string)(null)), ((global::Reqnroll.Table)(null)), "Given ");
-                global::Reqnroll.Table table129 = new global::Reqnroll.Table(new string[] {
+                global::Reqnroll.Table table191 = new global::Reqnroll.Table(new string[] {
                             "Field",
                             "Value"});
-                table129.AddRow(new string[] {
+                table191.AddRow(new string[] {
                             "Amount",
                             "100.00"});
-                table129.AddRow(new string[] {
+                table191.AddRow(new string[] {
                             "Currency",
                             "USD"});
-                table129.AddRow(new string[] {
+                table191.AddRow(new string[] {
                             "PaymentMethod",
                             "CreditCard"});
-                table129.AddRow(new string[] {
+                table191.AddRow(new string[] {
                             "PaymentMethodId",
                             "pm_test_card"});
-                table129.AddRow(new string[] {
+                table191.AddRow(new string[] {
                             "CaptureImmediately",
                             "true"});
-                await testRunner.WhenAsync("I send a POST request to process a payment with:", ((string)(null)), table129, "When ");
+                await testRunner.WhenAsync("I send a POST request to process a payment with:", ((string)(null)), table191, "When ");
                 await testRunner.ThenAsync("the response status code should be 401", ((string)(null)), ((global::Reqnroll.Table)(null)), "Then ");
             }
             await this.ScenarioCleanupAsync();

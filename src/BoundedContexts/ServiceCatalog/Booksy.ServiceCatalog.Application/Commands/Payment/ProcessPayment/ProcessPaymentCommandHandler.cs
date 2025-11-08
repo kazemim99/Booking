@@ -2,6 +2,7 @@
 // Booksy.ServiceCatalog.Application/Commands/Payment/ProcessPayment/ProcessPaymentCommandHandler.cs
 // ========================================
 using Booksy.Core.Application.Abstractions;
+using Booksy.Core.Domain.Enums;
 using Booksy.Core.Domain.ValueObjects;
 using Booksy.Infrastructure.External.Payment;
 using Booksy.ServiceCatalog.Domain.Aggregates.PaymentAggregate;
@@ -43,6 +44,7 @@ namespace Booksy.ServiceCatalog.Application.Commands.Payment.ProcessPayment
                     ProviderId.From(request.ProviderId),
                     amount,
                     request.Method,
+                    PaymentProvider.ZarinPal, // Default provider
                     request.Description,
                     request.Metadata)
                 : Domain.Aggregates.PaymentAggregate.Payment.CreateDirect(
@@ -50,6 +52,7 @@ namespace Booksy.ServiceCatalog.Application.Commands.Payment.ProcessPayment
                     ProviderId.From(request.ProviderId),
                     amount,
                     request.Method,
+                    PaymentProvider.ZarinPal, // Default provider
                     request.Description,
                     request.Metadata);
 

@@ -147,47 +147,47 @@ namespace Booksy.ServiceCatalog.IntegrationTests.Features.Providers
             {
                 await this.ScenarioStartAsync();
                 await this.FeatureBackgroundAsync();
-                global::Reqnroll.Table table150 = new global::Reqnroll.Table(new string[] {
+                global::Reqnroll.Table table324 = new global::Reqnroll.Table(new string[] {
                             "Day",
                             "IsOpen",
                             "OpenTime",
                             "CloseTime"});
-                table150.AddRow(new string[] {
+                table324.AddRow(new string[] {
                             "Monday",
                             "true",
                             "09:00",
                             "18:00"});
-                table150.AddRow(new string[] {
+                table324.AddRow(new string[] {
                             "Tuesday",
                             "true",
                             "09:00",
                             "18:00"});
-                table150.AddRow(new string[] {
+                table324.AddRow(new string[] {
                             "Wednesday",
                             "true",
                             "09:00",
                             "18:00"});
-                table150.AddRow(new string[] {
+                table324.AddRow(new string[] {
                             "Thursday",
                             "true",
                             "09:00",
                             "18:00"});
-                table150.AddRow(new string[] {
+                table324.AddRow(new string[] {
                             "Friday",
                             "true",
                             "09:00",
                             "17:00"});
-                table150.AddRow(new string[] {
+                table324.AddRow(new string[] {
                             "Saturday",
                             "true",
                             "10:00",
                             "14:00"});
-                table150.AddRow(new string[] {
+                table324.AddRow(new string[] {
                             "Sunday",
                             "false",
                             "",
                             ""});
-                await testRunner.WhenAsync("I send a PUT request to update business hours with:", ((string)(null)), table150, "When ");
+                await testRunner.WhenAsync("I send a PUT request to update business hours with:", ((string)(null)), table324, "When ");
                 await testRunner.ThenAsync("the response status code should be 200", ((string)(null)), ((global::Reqnroll.Table)(null)), "Then ");
                 await testRunner.AndAsync("the business hours should be updated in the database", ((string)(null)), ((global::Reqnroll.Table)(null)), "And ");
             }
@@ -215,17 +215,17 @@ namespace Booksy.ServiceCatalog.IntegrationTests.Features.Providers
             {
                 await this.ScenarioStartAsync();
                 await this.FeatureBackgroundAsync();
-                global::Reqnroll.Table table151 = new global::Reqnroll.Table(new string[] {
+                global::Reqnroll.Table table325 = new global::Reqnroll.Table(new string[] {
                             "OpenTime",
                             "CloseTime",
                             "BreakStart",
                             "BreakEnd"});
-                table151.AddRow(new string[] {
+                table325.AddRow(new string[] {
                             "09:00",
                             "18:00",
                             "12:00",
                             "13:00"});
-                await testRunner.WhenAsync("I update business hours for Monday with breaks:", ((string)(null)), table151, "When ");
+                await testRunner.WhenAsync("I update business hours for Monday with breaks:", ((string)(null)), table325, "When ");
                 await testRunner.ThenAsync("the response status code should be 200", ((string)(null)), ((global::Reqnroll.Table)(null)), "Then ");
                 await testRunner.AndAsync("the break should be configured for Monday", ((string)(null)), ((global::Reqnroll.Table)(null)), "And ");
             }
@@ -253,17 +253,17 @@ namespace Booksy.ServiceCatalog.IntegrationTests.Features.Providers
             {
                 await this.ScenarioStartAsync();
                 await this.FeatureBackgroundAsync();
-                global::Reqnroll.Table table152 = new global::Reqnroll.Table(new string[] {
+                global::Reqnroll.Table table326 = new global::Reqnroll.Table(new string[] {
                             "Day",
                             "OpenTime",
                             "CloseTime",
                             "Breaks"});
-                table152.AddRow(new string[] {
+                table326.AddRow(new string[] {
                             "Monday",
                             "08:00",
                             "20:00",
                             "12:00-13:00, 16:00-16:30"});
-                await testRunner.WhenAsync("I set business hours with multiple breaks:", ((string)(null)), table152, "When ");
+                await testRunner.WhenAsync("I set business hours with multiple breaks:", ((string)(null)), table326, "When ");
                 await testRunner.ThenAsync("the response status code should be 200", ((string)(null)), ((global::Reqnroll.Table)(null)), "Then ");
                 await testRunner.AndAsync("both breaks should be saved", ((string)(null)), ((global::Reqnroll.Table)(null)), "And ");
             }
@@ -291,16 +291,16 @@ namespace Booksy.ServiceCatalog.IntegrationTests.Features.Providers
             {
                 await this.ScenarioStartAsync();
                 await this.FeatureBackgroundAsync();
-                global::Reqnroll.Table table153 = new global::Reqnroll.Table(new string[] {
+                global::Reqnroll.Table table327 = new global::Reqnroll.Table(new string[] {
                             "Field",
                             "Value"});
-                table153.AddRow(new string[] {
+                table327.AddRow(new string[] {
                             "Date",
                             "2025-12-25"});
-                table153.AddRow(new string[] {
+                table327.AddRow(new string[] {
                             "Description",
                             "Christmas Holiday"});
-                await testRunner.WhenAsync("I send a POST request to add a holiday:", ((string)(null)), table153, "When ");
+                await testRunner.WhenAsync("I send a POST request to add a holiday:", ((string)(null)), table327, "When ");
                 await testRunner.ThenAsync("the response status code should be 201", ((string)(null)), ((global::Reqnroll.Table)(null)), "Then ");
                 await testRunner.AndAsync("the holiday should be saved", ((string)(null)), ((global::Reqnroll.Table)(null)), "And ");
                 await testRunner.AndAsync("no bookings should be allowed on that date", ((string)(null)), ((global::Reqnroll.Table)(null)), "And ");
@@ -331,19 +331,19 @@ namespace Booksy.ServiceCatalog.IntegrationTests.Features.Providers
             {
                 await this.ScenarioStartAsync();
                 await this.FeatureBackgroundAsync();
-                global::Reqnroll.Table table154 = new global::Reqnroll.Table(new string[] {
+                global::Reqnroll.Table table328 = new global::Reqnroll.Table(new string[] {
                             "Field",
                             "Value"});
-                table154.AddRow(new string[] {
+                table328.AddRow(new string[] {
                             "Date",
                             "12-25"});
-                table154.AddRow(new string[] {
+                table328.AddRow(new string[] {
                             "Description",
                             "Christmas"});
-                table154.AddRow(new string[] {
+                table328.AddRow(new string[] {
                             "Recurring",
                             "Annual"});
-                await testRunner.WhenAsync("I add a recurring holiday:", ((string)(null)), table154, "When ");
+                await testRunner.WhenAsync("I add a recurring holiday:", ((string)(null)), table328, "When ");
                 await testRunner.ThenAsync("the response status code should be 201", ((string)(null)), ((global::Reqnroll.Table)(null)), "Then ");
                 await testRunner.AndAsync("the holiday should recur every year", ((string)(null)), ((global::Reqnroll.Table)(null)), "And ");
             }
@@ -371,22 +371,22 @@ namespace Booksy.ServiceCatalog.IntegrationTests.Features.Providers
             {
                 await this.ScenarioStartAsync();
                 await this.FeatureBackgroundAsync();
-                global::Reqnroll.Table table155 = new global::Reqnroll.Table(new string[] {
+                global::Reqnroll.Table table329 = new global::Reqnroll.Table(new string[] {
                             "Field",
                             "Value"});
-                table155.AddRow(new string[] {
+                table329.AddRow(new string[] {
                             "Date",
                             "3 days from now"});
-                table155.AddRow(new string[] {
+                table329.AddRow(new string[] {
                             "OpenTime",
                             "14:00"});
-                table155.AddRow(new string[] {
+                table329.AddRow(new string[] {
                             "CloseTime",
                             "20:00"});
-                table155.AddRow(new string[] {
+                table329.AddRow(new string[] {
                             "Reason",
                             "Special event"});
-                await testRunner.WhenAsync("I send a POST request to add an exception:", ((string)(null)), table155, "When ");
+                await testRunner.WhenAsync("I send a POST request to add an exception:", ((string)(null)), table329, "When ");
                 await testRunner.ThenAsync("the response status code should be 201", ((string)(null)), ((global::Reqnroll.Table)(null)), "Then ");
                 await testRunner.AndAsync("the exception should override regular hours for that date", ((string)(null)), ((global::Reqnroll.Table)(null)), "And ");
             }
@@ -416,19 +416,19 @@ namespace Booksy.ServiceCatalog.IntegrationTests.Features.Providers
             {
                 await this.ScenarioStartAsync();
                 await this.FeatureBackgroundAsync();
-                global::Reqnroll.Table table156 = new global::Reqnroll.Table(new string[] {
+                global::Reqnroll.Table table330 = new global::Reqnroll.Table(new string[] {
                             "Field",
                             "Value"});
-                table156.AddRow(new string[] {
+                table330.AddRow(new string[] {
                             "Date",
                             "3 days from now"});
-                table156.AddRow(new string[] {
+                table330.AddRow(new string[] {
                             "Closed",
                             "true"});
-                table156.AddRow(new string[] {
+                table330.AddRow(new string[] {
                             "Reason",
                             "Staff training"});
-                await testRunner.WhenAsync("I add an exception to close on a specific date:", ((string)(null)), table156, "When ");
+                await testRunner.WhenAsync("I add an exception to close on a specific date:", ((string)(null)), table330, "When ");
                 await testRunner.ThenAsync("the response status code should be 201", ((string)(null)), ((global::Reqnroll.Table)(null)), "Then ");
                 await testRunner.AndAsync("no bookings should be allowed on that date", ((string)(null)), ((global::Reqnroll.Table)(null)), "And ");
             }
@@ -458,15 +458,15 @@ namespace Booksy.ServiceCatalog.IntegrationTests.Features.Providers
             {
                 await this.ScenarioStartAsync();
                 await this.FeatureBackgroundAsync();
-                global::Reqnroll.Table table157 = new global::Reqnroll.Table(new string[] {
+                global::Reqnroll.Table table331 = new global::Reqnroll.Table(new string[] {
                             "Day",
                             "OpenTime",
                             "CloseTime"});
-                table157.AddRow(new string[] {
+                table331.AddRow(new string[] {
                             "Monday",
                             "18:00",
                             "09:00"});
-                await testRunner.WhenAsync("I send a PUT request with invalid hours:", ((string)(null)), table157, "When ");
+                await testRunner.WhenAsync("I send a PUT request with invalid hours:", ((string)(null)), table331, "When ");
                 await testRunner.ThenAsync("the response status code should be 400", ((string)(null)), ((global::Reqnroll.Table)(null)), "Then ");
                 await testRunner.AndAsync("the error should indicate close time must be after open time", ((string)(null)), ((global::Reqnroll.Table)(null)), "And ");
             }
@@ -496,16 +496,16 @@ namespace Booksy.ServiceCatalog.IntegrationTests.Features.Providers
             {
                 await this.ScenarioStartAsync();
                 await this.FeatureBackgroundAsync();
-                global::Reqnroll.Table table158 = new global::Reqnroll.Table(new string[] {
+                global::Reqnroll.Table table332 = new global::Reqnroll.Table(new string[] {
                             "BreakStart",
                             "BreakEnd"});
-                table158.AddRow(new string[] {
+                table332.AddRow(new string[] {
                             "12:00",
                             "13:00"});
-                table158.AddRow(new string[] {
+                table332.AddRow(new string[] {
                             "12:30",
                             "13:30"});
-                await testRunner.WhenAsync("I try to add overlapping breaks:", ((string)(null)), table158, "When ");
+                await testRunner.WhenAsync("I try to add overlapping breaks:", ((string)(null)), table332, "When ");
                 await testRunner.ThenAsync("the response status code should be 400", ((string)(null)), ((global::Reqnroll.Table)(null)), "Then ");
             }
             await this.ScenarioCleanupAsync();
@@ -650,19 +650,19 @@ namespace Booksy.ServiceCatalog.IntegrationTests.Features.Providers
                 await this.ScenarioStartAsync();
                 await this.FeatureBackgroundAsync();
                 await testRunner.GivenAsync("the provider has staff member \"John\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "Given ");
-                global::Reqnroll.Table table159 = new global::Reqnroll.Table(new string[] {
+                global::Reqnroll.Table table333 = new global::Reqnroll.Table(new string[] {
                             "Day",
                             "OpenTime",
                             "CloseTime"});
-                table159.AddRow(new string[] {
+                table333.AddRow(new string[] {
                             "Monday",
                             "10:00",
                             "16:00"});
-                table159.AddRow(new string[] {
+                table333.AddRow(new string[] {
                             "Tuesday",
                             "10:00",
                             "16:00"});
-                await testRunner.WhenAsync("I set working hours for John:", ((string)(null)), table159, "When ");
+                await testRunner.WhenAsync("I set working hours for John:", ((string)(null)), table333, "When ");
                 await testRunner.ThenAsync("the response status code should be 200", ((string)(null)), ((global::Reqnroll.Table)(null)), "Then ");
                 await testRunner.AndAsync("John\'s availability should be limited to those hours", ((string)(null)), ((global::Reqnroll.Table)(null)), "And ");
             }

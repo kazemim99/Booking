@@ -122,27 +122,27 @@ namespace Booksy.ServiceCatalog.IntegrationTests.Features.Payments
             {
                 await this.ScenarioStartAsync();
                 await this.FeatureBackgroundAsync();
-                global::Reqnroll.Table table130 = new global::Reqnroll.Table(new string[] {
+                global::Reqnroll.Table table192 = new global::Reqnroll.Table(new string[] {
                             "Field",
                             "Value"});
-                table130.AddRow(new string[] {
+                table192.AddRow(new string[] {
                             "Amount",
                             "100.00"});
-                table130.AddRow(new string[] {
+                table192.AddRow(new string[] {
                             "Reason",
                             "CustomerRequest"});
-                table130.AddRow(new string[] {
+                table192.AddRow(new string[] {
                             "Notes",
                             "Customer requested refund"});
-                await testRunner.WhenAsync("I send a POST request to refund the payment with:", ((string)(null)), table130, "When ");
+                await testRunner.WhenAsync("I send a POST request to refund the payment with:", ((string)(null)), table192, "When ");
                 await testRunner.ThenAsync("the response status code should be 200", ((string)(null)), ((global::Reqnroll.Table)(null)), "Then ");
-                global::Reqnroll.Table table131 = new global::Reqnroll.Table(new string[] {
+                global::Reqnroll.Table table193 = new global::Reqnroll.Table(new string[] {
                             "Field",
                             "Value"});
-                table131.AddRow(new string[] {
+                table193.AddRow(new string[] {
                             "Status",
                             "Refunded"});
-                await testRunner.AndAsync("the response should contain a payment with:", ((string)(null)), table131, "And ");
+                await testRunner.AndAsync("the response should contain a payment with:", ((string)(null)), table193, "And ");
                 await testRunner.AndAsync("the payment should have status \"Refunded\" in the database", ((string)(null)), ((global::Reqnroll.Table)(null)), "And ");
                 await testRunner.AndAsync("the refunded amount should be 100.00", ((string)(null)), ((global::Reqnroll.Table)(null)), "And ");
             }
@@ -170,27 +170,27 @@ namespace Booksy.ServiceCatalog.IntegrationTests.Features.Payments
             {
                 await this.ScenarioStartAsync();
                 await this.FeatureBackgroundAsync();
-                global::Reqnroll.Table table132 = new global::Reqnroll.Table(new string[] {
+                global::Reqnroll.Table table194 = new global::Reqnroll.Table(new string[] {
                             "Field",
                             "Value"});
-                table132.AddRow(new string[] {
+                table194.AddRow(new string[] {
                             "Amount",
                             "50.00"});
-                table132.AddRow(new string[] {
+                table194.AddRow(new string[] {
                             "Reason",
                             "ServiceCancellation"});
-                table132.AddRow(new string[] {
+                table194.AddRow(new string[] {
                             "Notes",
                             "Partial service cancelled"});
-                await testRunner.WhenAsync("I send a POST request to refund the payment with:", ((string)(null)), table132, "When ");
+                await testRunner.WhenAsync("I send a POST request to refund the payment with:", ((string)(null)), table194, "When ");
                 await testRunner.ThenAsync("the response status code should be 200", ((string)(null)), ((global::Reqnroll.Table)(null)), "Then ");
-                global::Reqnroll.Table table133 = new global::Reqnroll.Table(new string[] {
+                global::Reqnroll.Table table195 = new global::Reqnroll.Table(new string[] {
                             "Field",
                             "Value"});
-                table133.AddRow(new string[] {
+                table195.AddRow(new string[] {
                             "Status",
                             "PartiallyRefunded"});
-                await testRunner.AndAsync("the response should contain a payment with:", ((string)(null)), table133, "And ");
+                await testRunner.AndAsync("the response should contain a payment with:", ((string)(null)), table195, "And ");
                 await testRunner.AndAsync("the payment should have status \"PartiallyRefunded\" in the database", ((string)(null)), ((global::Reqnroll.Table)(null)), "And ");
                 await testRunner.AndAsync("the refunded amount should be 50.00", ((string)(null)), ((global::Reqnroll.Table)(null)), "And ");
             }
@@ -222,19 +222,19 @@ namespace Booksy.ServiceCatalog.IntegrationTests.Features.Payments
             {
                 await this.ScenarioStartAsync();
                 await this.FeatureBackgroundAsync();
-                global::Reqnroll.Table table134 = new global::Reqnroll.Table(new string[] {
+                global::Reqnroll.Table table196 = new global::Reqnroll.Table(new string[] {
                             "Field",
                             "Value"});
-                table134.AddRow(new string[] {
+                table196.AddRow(new string[] {
                             "Amount",
                             "100.00"});
-                table134.AddRow(new string[] {
+                table196.AddRow(new string[] {
                             "Reason",
                             ""});
-                table134.AddRow(new string[] {
+                table196.AddRow(new string[] {
                             "Notes",
                             "Missing reason test"});
-                await testRunner.WhenAsync("I send a POST request to refund the payment with:", ((string)(null)), table134, "When ");
+                await testRunner.WhenAsync("I send a POST request to refund the payment with:", ((string)(null)), table196, "When ");
                 await testRunner.ThenAsync("the response status code should be 400", ((string)(null)), ((global::Reqnroll.Table)(null)), "Then ");
             }
             await this.ScenarioCleanupAsync();
@@ -263,17 +263,17 @@ namespace Booksy.ServiceCatalog.IntegrationTests.Features.Payments
             {
                 await this.ScenarioStartAsync();
                 await this.FeatureBackgroundAsync();
-                global::Reqnroll.Table table135 = new global::Reqnroll.Table(new string[] {
+                global::Reqnroll.Table table197 = new global::Reqnroll.Table(new string[] {
                             "Field",
                             "Value"});
-                table135.AddRow(new string[] {
+                table197.AddRow(new string[] {
                             "Amount",
                             "100.00"});
-                table135.AddRow(new string[] {
+                table197.AddRow(new string[] {
                             "Reason",
                             "CustomerRequest"});
                 await testRunner.WhenAsync("I send a POST request to refund payment \"00000000-0000-0000-0000-000000000000\" wi" +
-                        "th:", ((string)(null)), table135, "When ");
+                        "th:", ((string)(null)), table197, "When ");
                 await testRunner.ThenAsync("the response status code should be 404", ((string)(null)), ((global::Reqnroll.Table)(null)), "Then ");
             }
             await this.ScenarioCleanupAsync();
@@ -303,16 +303,16 @@ namespace Booksy.ServiceCatalog.IntegrationTests.Features.Payments
                 await this.ScenarioStartAsync();
                 await this.FeatureBackgroundAsync();
                 await testRunner.GivenAsync("I am not authenticated", ((string)(null)), ((global::Reqnroll.Table)(null)), "Given ");
-                global::Reqnroll.Table table136 = new global::Reqnroll.Table(new string[] {
+                global::Reqnroll.Table table198 = new global::Reqnroll.Table(new string[] {
                             "Field",
                             "Value"});
-                table136.AddRow(new string[] {
+                table198.AddRow(new string[] {
                             "Amount",
                             "100.00"});
-                table136.AddRow(new string[] {
+                table198.AddRow(new string[] {
                             "Reason",
                             "CustomerRequest"});
-                await testRunner.WhenAsync("I send a POST request to refund the payment with:", ((string)(null)), table136, "When ");
+                await testRunner.WhenAsync("I send a POST request to refund the payment with:", ((string)(null)), table198, "When ");
                 await testRunner.ThenAsync("the response status code should be 401", ((string)(null)), ((global::Reqnroll.Table)(null)), "Then ");
             }
             await this.ScenarioCleanupAsync();

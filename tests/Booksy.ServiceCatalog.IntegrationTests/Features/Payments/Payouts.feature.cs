@@ -120,33 +120,33 @@ namespace Booksy.ServiceCatalog.IntegrationTests.Features.Payments
             {
                 await this.ScenarioStartAsync();
                 await this.FeatureBackgroundAsync();
-                global::Reqnroll.Table table120 = new global::Reqnroll.Table(new string[] {
+                global::Reqnroll.Table table182 = new global::Reqnroll.Table(new string[] {
                             "Field",
                             "Value"});
-                table120.AddRow(new string[] {
+                table182.AddRow(new string[] {
                             "ProviderId",
                             "[Provider:Beauty Salon:Id]"});
-                table120.AddRow(new string[] {
+                table182.AddRow(new string[] {
                             "PeriodStart",
                             "31 days ago"});
-                table120.AddRow(new string[] {
+                table182.AddRow(new string[] {
                             "PeriodEnd",
                             "yesterday"});
-                table120.AddRow(new string[] {
+                table182.AddRow(new string[] {
                             "CommissionPercentage",
                             "15"});
-                table120.AddRow(new string[] {
+                table182.AddRow(new string[] {
                             "Notes",
                             "Monthly payout"});
-                await testRunner.WhenAsync("I send a POST request to create a payout with:", ((string)(null)), table120, "When ");
+                await testRunner.WhenAsync("I send a POST request to create a payout with:", ((string)(null)), table182, "When ");
                 await testRunner.ThenAsync("the response status code should be 201", ((string)(null)), ((global::Reqnroll.Table)(null)), "Then ");
-                global::Reqnroll.Table table121 = new global::Reqnroll.Table(new string[] {
+                global::Reqnroll.Table table183 = new global::Reqnroll.Table(new string[] {
                             "Field",
                             "Value"});
-                table121.AddRow(new string[] {
+                table183.AddRow(new string[] {
                             "Status",
                             "Pending"});
-                await testRunner.AndAsync("the response should contain a payout with:", ((string)(null)), table121, "And ");
+                await testRunner.AndAsync("the response should contain a payout with:", ((string)(null)), table183, "And ");
                 await testRunner.AndAsync("the payout should exist in the database", ((string)(null)), ((global::Reqnroll.Table)(null)), "And ");
             }
             await this.ScenarioCleanupAsync();
@@ -174,16 +174,16 @@ namespace Booksy.ServiceCatalog.IntegrationTests.Features.Payments
                 await this.ScenarioStartAsync();
                 await this.FeatureBackgroundAsync();
                 await testRunner.GivenAsync("a pending payout exists for the provider", ((string)(null)), ((global::Reqnroll.Table)(null)), "Given ");
-                global::Reqnroll.Table table122 = new global::Reqnroll.Table(new string[] {
+                global::Reqnroll.Table table184 = new global::Reqnroll.Table(new string[] {
                             "Field",
                             "Value"});
-                table122.AddRow(new string[] {
+                table184.AddRow(new string[] {
                             "ExternalTransactionId",
                             "bank_txn_12345"});
-                table122.AddRow(new string[] {
+                table184.AddRow(new string[] {
                             "Notes",
                             "Transferred to bank"});
-                await testRunner.WhenAsync("I send a POST request to execute the payout with:", ((string)(null)), table122, "When ");
+                await testRunner.WhenAsync("I send a POST request to execute the payout with:", ((string)(null)), table184, "When ");
                 await testRunner.ThenAsync("the response status code should be 200", ((string)(null)), ((global::Reqnroll.Table)(null)), "Then ");
                 await testRunner.AndAsync("the payout should have status \"Completed\" in the database", ((string)(null)), ((global::Reqnroll.Table)(null)), "And ");
             }

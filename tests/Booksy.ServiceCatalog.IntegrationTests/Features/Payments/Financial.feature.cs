@@ -122,33 +122,33 @@ namespace Booksy.ServiceCatalog.IntegrationTests.Features.Payments
                 await this.ScenarioStartAsync();
                 await this.FeatureBackgroundAsync();
                 await testRunner.GivenAsync("I am authenticated as the provider", ((string)(null)), ((global::Reqnroll.Table)(null)), "Given ");
-                global::Reqnroll.Table table114 = new global::Reqnroll.Table(new string[] {
+                global::Reqnroll.Table table176 = new global::Reqnroll.Table(new string[] {
                             "Field",
                             "Value"});
-                table114.AddRow(new string[] {
+                table176.AddRow(new string[] {
                             "StartDate",
                             "30 days ago"});
-                table114.AddRow(new string[] {
+                table176.AddRow(new string[] {
                             "EndDate",
                             "today"});
-                await testRunner.WhenAsync("I send a GET request to provider earnings with:", ((string)(null)), table114, "When ");
+                await testRunner.WhenAsync("I send a GET request to provider earnings with:", ((string)(null)), table176, "When ");
                 await testRunner.ThenAsync("the response status code should be 200", ((string)(null)), ((global::Reqnroll.Table)(null)), "Then ");
-                global::Reqnroll.Table table115 = new global::Reqnroll.Table(new string[] {
+                global::Reqnroll.Table table177 = new global::Reqnroll.Table(new string[] {
                             "Field",
                             "Value"});
-                table115.AddRow(new string[] {
+                table177.AddRow(new string[] {
                             "GrossEarnings",
                             "500.00"});
-                table115.AddRow(new string[] {
+                table177.AddRow(new string[] {
                             "CommissionAmount",
                             "75.00"});
-                table115.AddRow(new string[] {
+                table177.AddRow(new string[] {
                             "NetEarnings",
                             "425.00"});
-                table115.AddRow(new string[] {
+                table177.AddRow(new string[] {
                             "TotalPayments",
                             "5"});
-                await testRunner.AndAsync("the response should contain earnings summary:", ((string)(null)), table115, "And ");
+                await testRunner.AndAsync("the response should contain earnings summary:", ((string)(null)), table177, "And ");
             }
             await this.ScenarioCleanupAsync();
         }

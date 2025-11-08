@@ -109,7 +109,26 @@ public abstract class IntegrationTestBase<TFactory, TDbContext, TStartup>
         property?.SetValue(entity, value);
     }
 
+    public async Task<ApiResponse> PostAsync(string url)
+    {
 
+        var result = await Client.PostAsync(url, null);
+        var content = await result.Content.ReadAsStringAsync();
+        if (string.IsNullOrEmpty(content))
+        {
+            return new Core.Domain.Infrastructure.Middleware.ApiResponse
+            {
+                StatusCode = result.StatusCode,
+            };
+        }
+        var response = JsonConvert.DeserializeObject<ApiResponse>(content);
+        if (response.StatusCode == System.Net.HttpStatusCode.InternalServerError)
+            throw new Exception($"Error Message: {response.Message} \n Erros: {response.Errors}");
+
+        return response;
+
+
+    }
     public async Task<ApiResponse> PostAsJsonAsync<T>(string url, T data)
     {
 

@@ -111,6 +111,13 @@ namespace Booksy.ServiceCatalog.Infrastructure.Persistence.Configurations
                 .HasConversion<string>()
                 .HasMaxLength(50);
 
+            // Provider (Enum)
+            builder.Property(p => p.Provider)
+                .IsRequired()
+                .HasColumnName("Provider")
+                .HasConversion<string>()
+                .HasMaxLength(50);
+
             // Payment Provider Details
             builder.Property(p => p.PaymentIntentId)
                 .HasColumnName("PaymentIntentId")
@@ -266,6 +273,9 @@ namespace Booksy.ServiceCatalog.Infrastructure.Persistence.Configurations
 
             builder.HasIndex(p => p.Status)
                 .HasDatabaseName("IX_Payments_Status");
+
+            builder.HasIndex(p => p.Provider)
+                .HasDatabaseName("IX_Payments_Provider");
 
             builder.HasIndex(p => p.PaymentIntentId)
                 .HasDatabaseName("IX_Payments_PaymentIntentId");
