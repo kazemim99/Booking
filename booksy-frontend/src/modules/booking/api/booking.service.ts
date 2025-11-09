@@ -72,6 +72,30 @@ export interface CancelBookingRequest {
 }
 
 /**
+ * Assign staff request
+ */
+export interface AssignStaffRequest {
+  staffMemberId: string
+  reason?: string
+}
+
+/**
+ * Add notes request
+ */
+export interface AddNotesRequest {
+  notes: string
+  isInternal?: boolean
+}
+
+/**
+ * Mark as no-show request
+ */
+export interface MarkNoShowRequest {
+  reason?: string
+  chargeNoShowFee?: boolean
+}
+
+/**
  * Paginated booking response
  */
 export interface PaginatedBookingsResponse {
@@ -346,14 +370,18 @@ class BookingService {
 
   /**
    * Reschedule a booking
-   * This may use either a dedicated endpoint or cancel+create
+   * POST /api/v1/bookings/{id}/reschedule
+   *
+   * Request body:
+   * {
+   *   "newStartTime": "2025-01-16T14:00:00Z",
+   *   "reason": "درخواست مشتری"
+   * }
    */
   async rescheduleBooking(request: RescheduleRequest): Promise<Appointment> {
     try {
       console.log('[BookingService] Rescheduling booking:', request)
 
-      // If API has a dedicated reschedule endpoint, use it
-      // Otherwise, this is a placeholder for the implementation
       const response = await httpClient.post<ApiResponse<Appointment>>(
         `${API_BASE}/${request.appointmentId}/reschedule`,
         {
@@ -368,6 +396,104 @@ class BookingService {
       return booking as Appointment
     } catch (error) {
       console.error('[BookingService] Error rescheduling booking:', error)
+      throw this.handleError(error)
+    }
+  }
+
+  /**
+   * Assign or reassign staff to a booking
+   * PUT /api/v1/bookings/{id}/assign-staff/{staffId}
+   *
+   * Request body:
+   * {
+   *   "reason": "کارمند قبلی در دسترس نیست"
+   * }
+   */
+  async assignStaff(
+    bookingId: string,
+    staffMemberId: string,
+    reason?: string
+  ): Promise<Appointment> {
+    try {
+      console.log(`[BookingService] Assigning staff ${staffMemberId} to booking ${bookingId}`)
+
+      const response = await httpClient.put<ApiResponse<Appointment>>(
+        `${API_BASE}/${bookingId}/assign-staff/${staffMemberId}`,
+        { reason }
+      )
+
+      console.log('[BookingService] Staff assigned:', response.data)
+
+      const booking = response.data?.data || response.data
+      return booking as Appointment
+    } catch (error) {
+      console.error(`[BookingService] Error assigning staff to booking ${bookingId}:`, error)
+      throw this.handleError(error)
+    }
+  }
+
+  /**
+   * Add notes to a booking
+   * POST /api/v1/bookings/{id}/notes
+   *
+   * Request body:
+   * {
+   *   "notes": "مشتری ۱۵ دقیقه دیرتر رسید",
+   *   "isInternal": true
+   * }
+   */
+  async addNotes(
+    bookingId: string,
+    notes: string,
+    isInternal: boolean = true
+  ): Promise<Appointment> {
+    try {
+      console.log(`[BookingService] Adding notes to booking ${bookingId}`)
+
+      const response = await httpClient.post<ApiResponse<Appointment>>(
+        `${API_BASE}/${bookingId}/notes`,
+        { notes, isInternal }
+      )
+
+      console.log('[BookingService] Notes added:', response.data)
+
+      const booking = response.data?.data || response.data
+      return booking as Appointment
+    } catch (error) {
+      console.error(`[BookingService] Error adding notes to booking ${bookingId}:`, error)
+      throw this.handleError(error)
+    }
+  }
+
+  /**
+   * Mark a booking as no-show
+   * POST /api/v1/bookings/{id}/no-show
+   *
+   * Request body:
+   * {
+   *   "reason": "مشتری حاضر نشد",
+   *   "chargeNoShowFee": true
+   * }
+   */
+  async markNoShow(
+    bookingId: string,
+    reason?: string,
+    chargeNoShowFee: boolean = false
+  ): Promise<Appointment> {
+    try {
+      console.log(`[BookingService] Marking booking ${bookingId} as no-show`)
+
+      const response = await httpClient.post<ApiResponse<Appointment>>(
+        `${API_BASE}/${bookingId}/no-show`,
+        { reason, chargeNoShowFee }
+      )
+
+      console.log('[BookingService] Booking marked as no-show:', response.data)
+
+      const booking = response.data?.data || response.data
+      return booking as Appointment
+    } catch (error) {
+      console.error(`[BookingService] Error marking booking ${bookingId} as no-show:`, error)
       throw this.handleError(error)
     }
   }

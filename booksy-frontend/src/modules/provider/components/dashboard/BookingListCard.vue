@@ -62,11 +62,12 @@
               <th>ساعت</th>
               <th>خدمت</th>
               <th>وضعیت</th>
+              <th>اقدامات</th>
             </tr>
           </thead>
           <tbody>
             <tr v-if="paginatedBookings.length === 0" class="empty-row">
-              <td colspan="5">
+              <td colspan="6">
                 رزروی یافت نشد
               </td>
             </tr>
@@ -83,6 +84,19 @@
                 <span :class="['status-badge', statusColorClass(booking.status)]">
                   {{ statusLabels[booking.status] }}
                 </span>
+              </td>
+              <td>
+                <BookingActions
+                  :booking="booking.appointment"
+                  :loading="actionLoading === booking.id"
+                  @confirm="handleConfirm"
+                  @complete="handleComplete"
+                  @cancel="handleCancel"
+                  @reschedule="handleReschedule"
+                  @assign-staff="handleAssignStaff"
+                  @add-notes="handleAddNotes"
+                  @mark-no-show="handleMarkNoShow"
+                />
               </td>
             </tr>
           </tbody>
@@ -116,6 +130,19 @@
         </div>
       </div>
     </div>
+
+    <!-- Modals -->
+    <RescheduleBookingModal
+      v-model="showRescheduleModal"
+      :booking="selectedBooking"
+      @rescheduled="handleRescheduled"
+    />
+
+    <AddNotesModal
+      v-model="showAddNotesModal"
+      :booking="selectedBooking"
+      @notes-added="handleNotesAdded"
+    />
   </div>
 </template>
 
@@ -124,6 +151,9 @@ import { ref, computed, onMounted, watch } from 'vue'
 import { convertEnglishToPersianNumbers } from '@/shared/utils/date/jalali.utils'
 import { bookingService } from '@/modules/booking/api/booking.service'
 import type { Appointment } from '@/modules/booking/types/booking.types'
+import BookingActions from './BookingActions.vue'
+import RescheduleBookingModal from './RescheduleBookingModal.vue'
+import AddNotesModal from './AddNotesModal.vue'
 
 type BookingStatus = 'scheduled' | 'completed' | 'cancelled'
 
@@ -134,6 +164,7 @@ interface Booking {
   time: string
   service: string
   status: BookingStatus
+  appointment: Appointment // Store full appointment for actions
 }
 
 interface Props {
@@ -143,8 +174,15 @@ interface Props {
 const props = defineProps<Props>()
 
 const bookings = ref<Booking[]>([])
+const appointments = ref<Map<string, Appointment>>(new Map()) // Store appointments by ID
 const loading = ref(false)
 const error = ref<string | null>(null)
+const actionLoading = ref<string | null>(null) // Track which booking is being acted upon
+
+// Modal states
+const showRescheduleModal = ref(false)
+const showAddNotesModal = ref(false)
+const selectedBooking = ref<Appointment | null>(null)
 
 const searchQuery = ref('')
 const filterPeriod = ref('all')
@@ -186,6 +224,9 @@ const fetchBookings = async () => {
 
 // Map Appointment from API to Booking for display
 const mapAppointmentToBooking = (appointment: Appointment): Booking => {
+  // Store appointment for actions
+  appointments.value.set(appointment.id, appointment)
+
   return {
     id: appointment.id,
     customerName: appointment.clientId, // TODO: Fetch customer name
@@ -193,6 +234,7 @@ const mapAppointmentToBooking = (appointment: Appointment): Booking => {
     time: formatTime(appointment.scheduledStartTime),
     service: appointment.serviceId, // TODO: Fetch service name
     status: mapStatus(appointment.status),
+    appointment, // Include full appointment
   }
 }
 
@@ -284,6 +326,133 @@ const nextPage = () => {
   if (currentPage.value < totalPages.value) {
     currentPage.value++
   }
+}
+
+// ==================== Action Handlers ====================
+
+const handleConfirm = async (bookingId: string) => {
+  const appointment = appointments.value.get(bookingId)
+  if (!appointment) return
+
+  actionLoading.value = bookingId
+  try {
+    await bookingService.confirmBooking(bookingId)
+    await fetchBookings() // Refresh list
+  } catch (err) {
+    console.error('Error confirming booking:', err)
+    error.value = 'خطا در تایید رزرو'
+  } finally {
+    actionLoading.value = null
+  }
+}
+
+const handleComplete = async (bookingId: string) => {
+  const appointment = appointments.value.get(bookingId)
+  if (!appointment) return
+
+  actionLoading.value = bookingId
+  try {
+    await bookingService.completeBooking(bookingId)
+    await fetchBookings() // Refresh list
+  } catch (err) {
+    console.error('Error completing booking:', err)
+    error.value = 'خطا در تکمیل رزرو'
+  } finally {
+    actionLoading.value = null
+  }
+}
+
+const handleCancel = async (bookingId: string) => {
+  const appointment = appointments.value.get(bookingId)
+  if (!appointment) return
+
+  // Show confirmation dialog
+  const confirmed = confirm('آیا از لغو این رزرو اطمینان دارید؟')
+  if (!confirmed) return
+
+  const reason = prompt('لطفا دلیل لغو را وارد کنید:') || 'لغو توسط ارائه‌دهنده'
+
+  actionLoading.value = bookingId
+  try {
+    await bookingService.cancelBooking(bookingId, { reason })
+    await fetchBookings() // Refresh list
+  } catch (err) {
+    console.error('Error cancelling booking:', err)
+    error.value = 'خطا در لغو رزرو'
+  } finally {
+    actionLoading.value = null
+  }
+}
+
+const handleReschedule = (bookingId: string) => {
+  const appointment = appointments.value.get(bookingId)
+  if (!appointment) return
+
+  selectedBooking.value = appointment
+  showRescheduleModal.value = true
+}
+
+const handleAssignStaff = async (bookingId: string) => {
+  const appointment = appointments.value.get(bookingId)
+  if (!appointment) return
+
+  // For now, use a simple prompt (in a real app, use a proper modal with staff list)
+  const staffId = prompt('لطفا ID کارمند را وارد کنید:')
+  if (!staffId) return
+
+  actionLoading.value = bookingId
+  try {
+    await bookingService.assignStaff(bookingId, staffId, 'تخصیص کارمند')
+    await fetchBookings() // Refresh list
+  } catch (err) {
+    console.error('Error assigning staff:', err)
+    error.value = 'خطا در تخصیص کارمند'
+  } finally {
+    actionLoading.value = null
+  }
+}
+
+const handleAddNotes = (bookingId: string) => {
+  const appointment = appointments.value.get(bookingId)
+  if (!appointment) return
+
+  selectedBooking.value = appointment
+  showAddNotesModal.value = true
+}
+
+const handleMarkNoShow = async (bookingId: string) => {
+  const appointment = appointments.value.get(bookingId)
+  if (!appointment) return
+
+  // Show confirmation dialog
+  const confirmed = confirm('آیا از ثبت عدم حضور مشتری اطمینان دارید؟')
+  if (!confirmed) return
+
+  const reason = prompt('لطفا دلیل را وارد کنید (اختیاری):') || undefined
+
+  actionLoading.value = bookingId
+  try {
+    await bookingService.markNoShow(bookingId, reason)
+    await fetchBookings() // Refresh list
+  } catch (err) {
+    console.error('Error marking no-show:', err)
+    error.value = 'خطا در ثبت عدم حضور'
+  } finally {
+    actionLoading.value = null
+  }
+}
+
+// Modal event handlers
+const handleRescheduled = async (updatedBooking: Appointment) => {
+  showRescheduleModal.value = false
+  selectedBooking.value = null
+  await fetchBookings() // Refresh list
+}
+
+const handleNotesAdded = async (updatedBooking: Appointment) => {
+  showAddNotesModal.value = false
+  selectedBooking.value = null
+  await fetchBookings() // Refresh list
 }
 </script>
 
