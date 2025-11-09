@@ -5,8 +5,9 @@ namespace Booksy.ServiceCatalog.Domain.Entities
 {
     /// <summary>
     /// Business profile information for a provider
+    /// Owned entity (value object) - has no separate identity
     /// </summary>
-    public sealed class BusinessProfile : Entity<Guid>
+    public sealed class BusinessProfile
     {
         private const int MaxGalleryImages = 50;
 
@@ -23,7 +24,7 @@ namespace Booksy.ServiceCatalog.Domain.Entities
         public List<GalleryImage> GalleryImages { get; private set; } = new();
 
         // Private constructor for EF Core
-        private BusinessProfile() : base()
+        private BusinessProfile()
         {
             BusinessName = string.Empty;
             BusinessDescription = string.Empty;

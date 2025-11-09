@@ -99,9 +99,6 @@ namespace Booksy.ServiceCatalog.Infrastructure.Persistence.Configurations
                     .IsRequired()
                     .HasColumnType("timestamp with time zone");
 
-                // Ignore the Id property of BusinessProfile since it's an owned entity
-                profile.Ignore(bp => bp.Id);
-
                 // GALLERY IMAGES - Owned Many Collection
                 profile.OwnsMany(bp => bp.GalleryImages, galleryImage =>
                 {
