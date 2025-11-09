@@ -57,8 +57,6 @@ namespace Booksy.UserManagement.Infrastructure.Persistence.Configurations
                     .HasColumnName("phone_national_number")
                     .HasMaxLength(40);
 
-                // Optional: Add computed column for full international format
-                phone.Ignore(p => p.Value); // If Value is computed from CountryCode + NationalNumber
             });
 
             builder.OwnsOne(up => up.AlternatePhoneNumber, phone =>
