@@ -93,23 +93,25 @@ namespace Booksy.UserManagement.Infrastructure.Persistence.Seeders
                 var email = GenerateEmail(firstName, lastName, i);
                 var phoneNumber = GenerateIranianPhone();
 
-                // Create user profile
+                // Create user profile with all details
                 var dateOfBirth = GenerateRandomDateOfBirth();
                 var profile = UserProfile.Create(
                     firstName,
                     lastName,
-                    gender,
-                    dateOfBirth);
+                    null, // middleName
+                    dateOfBirth,
+                    gender); // gender as string
+
+                // Add phone number to profile
+                profile.UpdateContactInfo(phoneNumber, null, null);
 
                 // Build user using the builder (for testing/seeding)
                 var user = UserBuilder.Create()
                     .WithEmail(email)
                     .WithPassword("Pass@123456") // Default password for seeding
-                    .WithProfile(profile.FirstName, profile.LastName, profile.DateOfBirth, profile.Gender)
+                    .WithFullProfile(profile) // Use the complete profile
                     .WithType(UserType.Customer)
-                    .WithStatus(UserStatus.Active) // Pre-activated for testing
-                    .WithPhoneNumber(phoneNumber.ToString())
-                    .AsActivated()
+                    .AsActive() // Pre-activated for testing (use AsActive, not AsActivated)
                     .Build();
 
                 users.Add(user);
