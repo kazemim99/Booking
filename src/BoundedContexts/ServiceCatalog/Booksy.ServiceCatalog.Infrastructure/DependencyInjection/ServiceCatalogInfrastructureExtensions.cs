@@ -240,6 +240,30 @@ namespace Booksy.ServiceCatalog.Infrastructure.DependencyInjection
             services.AddScoped<IZarinPalService, ZarinPalService>();
             services.AddHttpClient("ZarinPal");
 
+            // Configure IDPay settings
+            services.Configure<IDPaySettings>(settings =>
+            {
+                settings.ApiKey = configuration["Payment:IDPay:ApiKey"] ?? string.Empty;
+                settings.IsSandbox = configuration.GetValue<bool>("Payment:IDPay:IsSandbox", true);
+                settings.CallbackUrl = configuration["Payment:IDPay:CallbackUrl"] ?? string.Empty;
+            });
+
+            // Register IDPay Service
+            services.AddScoped<IIDPayService, IDPayService>();
+            services.AddHttpClient<IDPayService>();
+
+            // Configure Behpardakht settings
+            services.Configure<BehpardakhtSettings>(settings =>
+            {
+                settings.TerminalId = configuration.GetValue<long>("Payment:Behpardakht:TerminalId", 0);
+                settings.UserName = configuration["Payment:Behpardakht:Username"] ?? string.Empty;
+                settings.UserPassword = configuration["Payment:Behpardakht:Password"] ?? string.Empty;
+                settings.CallbackUrl = configuration["Payment:Behpardakht:CallbackUrl"] ?? string.Empty;
+            });
+
+            // Register Behpardakht Service
+            services.AddScoped<IBehpardakhtService, BehpardakhtService>();
+
             // Register all payment gateway implementations
             services.AddScoped<ZarinPalPaymentGateway>();
             services.AddScoped<IDPayPaymentGateway>();
