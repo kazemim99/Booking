@@ -48,6 +48,7 @@ namespace Booksy.UserManagement.Infrastructure.Persistence.Configurations
                     .HasColumnName("phone_number")
                     .HasMaxLength(50);
 
+                // Map the constructor parameters as properties
                 phone.Property(p => p.CountryCode)
                     .HasColumnName("phone_country_code")
                     .HasMaxLength(10);
@@ -55,6 +56,9 @@ namespace Booksy.UserManagement.Infrastructure.Persistence.Configurations
                 phone.Property(p => p.NationalNumber)
                     .HasColumnName("phone_national_number")
                     .HasMaxLength(40);
+
+                // Optional: Add computed column for full international format
+                phone.Ignore(p => p.Value); // If Value is computed from CountryCode + NationalNumber
             });
 
             builder.OwnsOne(up => up.AlternatePhoneNumber, phone =>
@@ -70,6 +74,8 @@ namespace Booksy.UserManagement.Infrastructure.Persistence.Configurations
                 phone.Property(p => p.NationalNumber)
                     .HasColumnName("alternate_phone_national_number")
                     .HasMaxLength(40);
+
+                phone.Ignore(p => p.Value);
             });
 
 
