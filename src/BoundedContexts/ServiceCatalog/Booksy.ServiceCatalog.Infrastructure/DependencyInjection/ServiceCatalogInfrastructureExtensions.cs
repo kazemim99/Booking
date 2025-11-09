@@ -62,7 +62,7 @@ namespace Booksy.ServiceCatalog.Infrastructure.DependencyInjection
 
             services.AddScoped<DbContext>();
 
-            services.AddScoped<ISeeder, ServiceCatalogDatabaseSeeder>();
+            services.AddScoped<ISeeder, ServiceCatalogDatabaseSeederOrchestrator>();
             // Unit of Work
             services.AddScoped<IUnitOfWork>(provider =>
                 new EfCoreUnitOfWork<ServiceCatalogDbContext>(
