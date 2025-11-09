@@ -69,31 +69,6 @@ const providerRoutes: RouteRecordRaw[] = [
     },
   },
 
-          if (!isComplete) {
-            return next({ name: 'ProviderOnboarding' })
-          }
-          next()
-        },
-      },
-      {
-        path: 'profile/business-info',
-        name: 'ProviderBusinessInfo',
-        component: () => import('@/modules/provider/views/profile/BusinessInfoView.vue'),
-        meta: { title: 'Business Information' },
-      },
-      {
-        path: 'hours',
-        name: 'ProviderBusinessHours',
-        component: () => import('@/modules/provider/views/hours/BusinessHoursView.vue'),
-        meta: { title: 'Business Hours' },
-      },
-      {
-        path: 'gallery',
-        name: 'ProviderGallery',
-        component: () => import('@/modules/provider/views/gallery/GalleryView.vue'),
-        meta: { title: 'Photo Gallery' },
-      },
-
   // Services Management
   {
     path: '/services',

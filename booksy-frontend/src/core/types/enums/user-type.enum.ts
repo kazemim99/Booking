@@ -7,13 +7,13 @@ export { UserType } from '../enums.types'
 
 // Additional user type specific helpers
 export const USER_TYPE_LABELS: Record<string, string> = {
-  individual: 'A1/�',
-  business: '�3(H�'1',
-  professional: '-1AG'�',
+  individual: 'فردی',
+  business: 'تجاری',
+  professional: 'حرفه‌ای',
 }
 
 export const USER_TYPE_DESCRIPTIONS: Record<string, string> = {
-  individual: '�'1(1 9'/�',
-  business: '5'-( �3(H�'1',
-  professional: ''1'&G/GF/G ./E'* -1AG'�',
+  individual: 'کاربر عادی',
+  business: 'حساب تجاری',
+  professional: 'ارائه‌دهنده خدمات حرفه‌ای',
 }
