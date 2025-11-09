@@ -91,7 +91,7 @@ namespace Booksy.ServiceCatalog.Infrastructure.Persistence.Seeders
                     ? PaymentProvider.ZarinPal
                     : GetRandomIranianPaymentProvider();
 
-                var description = $"پرداخت برای رزرو شماره {booking.BookingNumber}";
+                var description = $"پرداخت برای رزرو شماره {booking.Id}";
 
                 var payment = Payment.Create(
                     booking.Id,
