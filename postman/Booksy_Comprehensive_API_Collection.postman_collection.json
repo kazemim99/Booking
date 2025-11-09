@@ -1,0 +1,1817 @@
+{
+  "info": {
+    "name": "Booksy Comprehensive API Collection",
+    "description": "Complete API collection for Booksy with Iranian/Persian test data covering all 150+ endpoints.\n\nIncludes:\n- Authentication & User Management\n- Customer Operations\n- Provider Management & Registration\n- Services & Availability\n- Bookings & Scheduling\n- Payments (ZarinPal Integration)\n- Payouts & Financial\n- Locations & Geography\n- Notifications & Preferences\n\nAll test data uses realistic Iranian values:\n- Persian names and locations\n- Iranian Rial (IRR) currency\n- ZarinPal payment gateway\n- Iranian mobile numbers (09XX)\n- Tehran business hours\n- Persian language content",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+    "_postman_id": "booksy-comprehensive-api",
+    "version": "2.0.0"
+  },
+  "auth": {
+    "type": "bearer",
+    "bearer": [
+      {
+        "key": "token",
+        "value": "{{access_token}}",
+        "type": "string"
+      }
+    ]
+  },
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://localhost:5010/api",
+      "type": "string"
+    },
+    {
+      "key": "userManagementUrl",
+      "value": "http://localhost:5020/api",
+      "type": "string"
+    },
+    {
+      "key": "gatewayUrl",
+      "value": "http://localhost:5000/api",
+      "type": "string"
+    }
+  ],
+  "item": [
+    {
+      "name": "1. Authentication & User Management",
+      "description": "Complete authentication flow including login, registration, phone verification, and token management",
+      "item": [
+        {
+          "name": "Register User",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"sara.karimi@example.ir\",\n  \"password\": \"Pass@123456\",\n  \"firstName\": \"سارا\",\n  \"lastName\": \"کریمی\",\n  \"phoneNumber\": \"09121234567\",\n  \"userType\": \"Customer\",\n  \"acceptTerms\": true,\n  \"marketingConsent\": true,\n  \"referralCode\": null\n}"
+            },
+            "url": {
+              "raw": "{{userManagementUrl}}/v1/Users",
+              "host": ["{{userManagementUrl}}"],
+              "path": ["v1", "Users"]
+            },
+            "description": "Register a new user (Customer or Provider)"
+          },
+          "response": []
+        },
+        {
+          "name": "Login",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "if (pm.response.code === 200) {",
+                  "    var jsonData = pm.response.json();",
+                  "    pm.environment.set('access_token', jsonData.accessToken);",
+                  "    pm.environment.set('refresh_token', jsonData.refreshToken);",
+                  "    pm.environment.set('user_id', jsonData.userInfo.id);",
+                  "    console.log('✅ Logged in successfully');",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"sara.karimi@example.ir\",\n  \"password\": \"Pass@123456\",\n  \"rememberMe\": true\n}"
+            },
+            "url": {
+              "raw": "{{userManagementUrl}}/v1/auth/login",
+              "host": ["{{userManagementUrl}}"],
+              "path": ["v1", "auth", "login"]
+            },
+            "description": "Login with email and password"
+          },
+          "response": []
+        },
+        {
+          "name": "Refresh Token",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "if (pm.response.code === 200) {",
+                  "    var jsonData = pm.response.json();",
+                  "    pm.environment.set('access_token', jsonData.accessToken);",
+                  "    pm.environment.set('refresh_token', jsonData.refreshToken);",
+                  "    console.log('✅ Token refreshed successfully');",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"refreshToken\": \"{{refresh_token}}\"\n}"
+            },
+            "url": {
+              "raw": "{{userManagementUrl}}/v1/auth/refresh",
+              "host": ["{{userManagementUrl}}"],
+              "path": ["v1", "auth", "refresh"]
+            },
+            "description": "Refresh access token using refresh token"
+          },
+          "response": []
+        },
+        {
+          "name": "Logout",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{access_token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{userManagementUrl}}/v1/auth/logout",
+              "host": ["{{userManagementUrl}}"],
+              "path": ["v1", "auth", "logout"]
+            },
+            "description": "Logout and invalidate current session"
+          },
+          "response": []
+        },
+        {
+          "name": "Forgot Password",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"sara.karimi@example.ir\"\n}"
+            },
+            "url": {
+              "raw": "{{userManagementUrl}}/v1/auth/forgot-password",
+              "host": ["{{userManagementUrl}}"],
+              "path": ["v1", "auth", "forgot-password"]
+            },
+            "description": "Request password reset link"
+          },
+          "response": []
+        },
+        {
+          "name": "Send Phone Verification Code",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"phoneNumber\": \"09121234567\",\n  \"countryCode\": \"+98\"\n}"
+            },
+            "url": {
+              "raw": "{{userManagementUrl}}/v1/Auth/send-verification-code",
+              "host": ["{{userManagementUrl}}"],
+              "path": ["v1", "Auth", "send-verification-code"]
+            },
+            "description": "Send SMS verification code to Iranian phone number"
+          },
+          "response": []
+        },
+        {
+          "name": "Verify Phone Code",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"phoneNumber\": \"09121234567\",\n  \"code\": \"123456\",\n  \"userType\": \"Provider\"\n}"
+            },
+            "url": {
+              "raw": "{{userManagementUrl}}/v1/Auth/verify-code",
+              "host": ["{{userManagementUrl}}"],
+              "path": ["v1", "Auth", "verify-code"]
+            },
+            "description": "Verify phone with OTP code"
+          },
+          "response": []
+        },
+        {
+          "name": "Request Phone Verification",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"phoneNumber\": \"09121234567\",\n  \"method\": \"SMS\",\n  \"purpose\": \"Registration\",\n  \"userId\": null\n}"
+            },
+            "url": {
+              "raw": "{{userManagementUrl}}/v1/phone-verification/request",
+              "host": ["{{userManagementUrl}}"],
+              "path": ["v1", "phone-verification", "request"]
+            },
+            "description": "Request phone verification via SMS"
+          },
+          "response": []
+        },
+        {
+          "name": "Verify Phone",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"verificationId\": \"{{verification_id}}\",\n  \"code\": \"123456\"\n}"
+            },
+            "url": {
+              "raw": "{{userManagementUrl}}/v1/phone-verification/verify",
+              "host": ["{{userManagementUrl}}"],
+              "path": ["v1", "phone-verification", "verify"]
+            },
+            "description": "Verify phone number with OTP"
+          },
+          "response": []
+        },
+        {
+          "name": "Resend OTP",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"verificationId\": \"{{verification_id}}\"\n}"
+            },
+            "url": {
+              "raw": "{{userManagementUrl}}/v1/phone-verification/resend",
+              "host": ["{{userManagementUrl}}"],
+              "path": ["v1", "phone-verification", "resend"]
+            },
+            "description": "Resend OTP code"
+          },
+          "response": []
+        },
+        {
+          "name": "Get User Details",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{access_token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{userManagementUrl}}/v1/Users/{{user_id}}",
+              "host": ["{{userManagementUrl}}"],
+              "path": ["v1", "Users", "{{user_id}}"]
+            },
+            "description": "Get user profile details"
+          },
+          "response": []
+        },
+        {
+          "name": "Update User Profile",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{access_token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"firstName\": \"سارا\",\n  \"lastName\": \"کریمی\",\n  \"phoneNumber\": \"09121234567\",\n  \"bio\": \"علاقه‌مند به خدمات آرایشی و زیبایی\",\n  \"address\": \"تهران، میدان ونک، خیابان گاندی\",\n  \"profilePictureUrl\": null\n}"
+            },
+            "url": {
+              "raw": "{{userManagementUrl}}/v1/Users/{{user_id}}/profile",
+              "host": ["{{userManagementUrl}}"],
+              "path": ["v1", "Users", "{{user_id}}", "profile"]
+            },
+            "description": "Update user profile information"
+          },
+          "response": []
+        },
+        {
+          "name": "Change Password",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{access_token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"currentPassword\": \"Pass@123456\",\n  \"newPassword\": \"NewPass@123456\"\n}"
+            },
+            "url": {
+              "raw": "{{userManagementUrl}}/v1/Users/{{user_id}}/change-password",
+              "host": ["{{userManagementUrl}}"],
+              "path": ["v1", "Users", "{{user_id}}", "change-password"]
+            },
+            "description": "Change user password"
+          },
+          "response": []
+        },
+        {
+          "name": "Activate User",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{access_token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"activationToken\": \"activation-token-here\"\n}"
+            },
+            "url": {
+              "raw": "{{userManagementUrl}}/v1/Users/{{user_id}}/activate",
+              "host": ["{{userManagementUrl}}"],
+              "path": ["v1", "Users", "{{user_id}}", "activate"]
+            },
+            "description": "Activate user account"
+          },
+          "response": []
+        },
+        {
+          "name": "Search Users (Admin)",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{access_token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{userManagementUrl}}/v1/Users/search?query=سارا&pageNumber=1&pageSize=20",
+              "host": ["{{userManagementUrl}}"],
+              "path": ["v1", "Users", "search"],
+              "query": [
+                {
+                  "key": "query",
+                  "value": "سارا"
+                },
+                {
+                  "key": "pageNumber",
+                  "value": "1"
+                },
+                {
+                  "key": "pageSize",
+                  "value": "20"
+                }
+              ]
+            },
+            "description": "Search users (Admin only)"
+          },
+          "response": []
+        },
+        {
+          "name": "Get Users by Status (Admin)",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{access_token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{userManagementUrl}}/v1/Users/by-status/Active?maxResults=100",
+              "host": ["{{userManagementUrl}}"],
+              "path": ["v1", "Users", "by-status", "Active"],
+              "query": [
+                {
+                  "key": "maxResults",
+                  "value": "100"
+                }
+              ]
+            },
+            "description": "Get users by status (Admin only)"
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "2. Customers",
+      "description": "Customer registration, profile management, and favorite providers",
+      "item": [
+        {
+          "name": "Register Customer",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "if (pm.response.code === 201) {",
+                  "    var jsonData = pm.response.json();",
+                  "    pm.environment.set('customer_id', jsonData.customerId);",
+                  "    console.log('✅ Customer registered successfully');",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"ali.ahmadi@example.ir\",\n  \"password\": \"Pass@123456\",\n  \"firstName\": \"علی\",\n  \"lastName\": \"احمدی\",\n  \"phoneNumber\": \"09123456789\",\n  \"gender\": \"Male\",\n  \"dateOfBirth\": \"1990-05-15\",\n  \"acceptTerms\": true\n}"
+            },
+            "url": {
+              "raw": "{{userManagementUrl}}/v1/Customers/register",
+              "host": ["{{userManagementUrl}}"],
+              "path": ["v1", "Customers", "register"]
+            },
+            "description": "Register a new customer"
+          },
+          "response": []
+        },
+        {
+          "name": "Get Customer Details",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{access_token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{userManagementUrl}}/v1/Customers/{{customer_id}}",
+              "host": ["{{userManagementUrl}}"],
+              "path": ["v1", "Customers", "{{customer_id}}"]
+            },
+            "description": "Get customer profile details"
+          },
+          "response": []
+        },
+        {
+          "name": "Update Customer Profile",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{access_token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"firstName\": \"علی\",\n  \"lastName\": \"احمدی\",\n  \"phoneNumber\": \"09123456789\",\n  \"gender\": \"Male\",\n  \"dateOfBirth\": \"1990-05-15\",\n  \"address\": \"تهران، خیابان ولیعصر، نرسیده به میدان ونک\",\n  \"profilePictureUrl\": null\n}"
+            },
+            "url": {
+              "raw": "{{userManagementUrl}}/v1/Customers/{{customer_id}}",
+              "host": ["{{userManagementUrl}}"],
+              "path": ["v1", "Customers", "{{customer_id}}"]
+            },
+            "description": "Update customer profile"
+          },
+          "response": []
+        },
+        {
+          "name": "Get Customer Favorites",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{access_token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{userManagementUrl}}/v1/Customers/{{customer_id}}/favorites",
+              "host": ["{{userManagementUrl}}"],
+              "path": ["v1", "Customers", "{{customer_id}}", "favorites"]
+            },
+            "description": "Get customer's favorite providers"
+          },
+          "response": []
+        },
+        {
+          "name": "Add Favorite Provider",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{access_token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"providerId\": \"{{provider_id}}\",\n  \"notes\": \"خدمات عالی و کارکنان مهربان\"\n}"
+            },
+            "url": {
+              "raw": "{{userManagementUrl}}/v1/Customers/{{customer_id}}/favorites",
+              "host": ["{{userManagementUrl}}"],
+              "path": ["v1", "Customers", "{{customer_id}}", "favorites"]
+            },
+            "description": "Add provider to favorites"
+          },
+          "response": []
+        },
+        {
+          "name": "Remove Favorite Provider",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{access_token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{userManagementUrl}}/v1/Customers/{{customer_id}}/favorites/{{provider_id}}",
+              "host": ["{{userManagementUrl}}"],
+              "path": ["v1", "Customers", "{{customer_id}}", "favorites", "{{provider_id}}"]
+            },
+            "description": "Remove provider from favorites"
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "3. Providers",
+      "description": "Provider registration, profile management, and business operations",
+      "item": [
+        {
+          "name": "Create Provider Draft",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "if (pm.response.code === 201 || pm.response.code === 200) {",
+                  "    var jsonData = pm.response.json();",
+                  "    pm.environment.set('provider_id', jsonData.providerId);",
+                  "    console.log('✅ Provider draft created');",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{access_token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"businessName\": \"سالن زیبایی رویا - Roya Beauty Salon\",\n  \"businessDescription\": \"سالن زیبایی تخصصی بانوان در تهران با بیش از 10 سال سابقه\",\n  \"category\": \"Beauty Salon\",\n  \"phoneNumber\": \"02188990011\",\n  \"email\": \"info@royabeauty.ir\",\n  \"addressLine1\": \"خیابان ولیعصر، نرسیده به میدان ونک\",\n  \"addressLine2\": \"پلاک 245، طبقه 2\",\n  \"city\": \"Tehran\",\n  \"province\": \"Tehran\",\n  \"postalCode\": \"19917\",\n  \"latitude\": 35.7575,\n  \"longitude\": 51.4089\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/v1/Providers/draft",
+              "host": ["{{baseUrl}}"],
+              "path": ["v1", "Providers", "draft"]
+            },
+            "description": "Create a provider draft registration"
+          },
+          "response": []
+        },
+        {
+          "name": "Get Provider Draft",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{access_token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/v1/Providers/draft",
+              "host": ["{{baseUrl}}"],
+              "path": ["v1", "Providers", "draft"]
+            },
+            "description": "Get current provider draft"
+          },
+          "response": []
+        },
+        {
+          "name": "Complete Provider Registration",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{access_token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/v1/Providers/{{provider_id}}/complete",
+              "host": ["{{baseUrl}}"],
+              "path": ["v1", "Providers", "{{provider_id}}", "complete"]
+            },
+            "description": "Complete provider registration"
+          },
+          "response": []
+        },
+        {
+          "name": "Get Provider Details",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/v1/Providers/{{provider_id}}?includeServices=true&includeStaff=true",
+              "host": ["{{baseUrl}}"],
+              "path": ["v1", "Providers", "{{provider_id}}"],
+              "query": [
+                {
+                  "key": "includeServices",
+                  "value": "true"
+                },
+                {
+                  "key": "includeStaff",
+                  "value": "true"
+                }
+              ]
+            },
+            "description": "Get provider details with services and staff"
+          },
+          "response": []
+        },
+        {
+          "name": "Get Current Provider Status",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{access_token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/v1/Providers/current/status",
+              "host": ["{{baseUrl}}"],
+              "path": ["v1", "Providers", "current", "status"]
+            },
+            "description": "Get current provider status"
+          },
+          "response": []
+        },
+        {
+          "name": "Search Providers",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/v1/Providers/search?query=آرایشگاه&city=Tehran&category=Beauty Salon&pageNumber=1&pageSize=20",
+              "host": ["{{baseUrl}}"],
+              "path": ["v1", "Providers", "search"],
+              "query": [
+                {
+                  "key": "query",
+                  "value": "آرایشگاه"
+                },
+                {
+                  "key": "city",
+                  "value": "Tehran"
+                },
+                {
+                  "key": "category",
+                  "value": "Beauty Salon"
+                },
+                {
+                  "key": "pageNumber",
+                  "value": "1"
+                },
+                {
+                  "key": "pageSize",
+                  "value": "20"
+                }
+              ]
+            },
+            "description": "Search providers by query and filters"
+          },
+          "response": []
+        },
+        {
+          "name": "Get Providers by Location",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/v1/Providers/by-location?city=Tehran&latitude=35.6892&longitude=51.3890&radius=5&pageNumber=1&pageSize=20",
+              "host": ["{{baseUrl}}"],
+              "path": ["v1", "Providers", "by-location"],
+              "query": [
+                {
+                  "key": "city",
+                  "value": "Tehran"
+                },
+                {
+                  "key": "latitude",
+                  "value": "35.6892"
+                },
+                {
+                  "key": "longitude",
+                  "value": "51.3890"
+                },
+                {
+                  "key": "radius",
+                  "value": "5"
+                },
+                {
+                  "key": "pageNumber",
+                  "value": "1"
+                },
+                {
+                  "key": "pageSize",
+                  "value": "20"
+                }
+              ]
+            },
+            "description": "Get providers by location (Tehran coordinates)"
+          },
+          "response": []
+        },
+        {
+          "name": "Activate Provider (Admin)",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{access_token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"notes\": \"تایید و فعالسازی ارائه‌دهنده خدمات\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/v1/Providers/{{provider_id}}/activate",
+              "host": ["{{baseUrl}}"],
+              "path": ["v1", "Providers", "{{provider_id}}", "activate"]
+            },
+            "description": "Activate provider (Admin only)"
+          },
+          "response": []
+        },
+        {
+          "name": "Get Providers by Status (Admin)",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{access_token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/v1/Providers/by-status/Active?maxResults=100",
+              "host": ["{{baseUrl}}"],
+              "path": ["v1", "Providers", "by-status", "Active"],
+              "query": [
+                {
+                  "key": "maxResults",
+                  "value": "100"
+                }
+              ]
+            },
+            "description": "Get providers by status (Admin only)"
+          },
+          "response": []
+        },
+        {
+          "name": "Update Provider Profile",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{access_token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"fullName\": \"مریم رضایی\",\n  \"email\": \"maryam.rezaei@royabeauty.ir\",\n  \"profileImageUrl\": null\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/v1/Providers/profile",
+              "host": ["{{baseUrl}}"],
+              "path": ["v1", "Providers", "profile"]
+            },
+            "description": "Update provider profile"
+          },
+          "response": []
+        },
+        {
+          "name": "Update Business Info",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{access_token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"businessName\": \"سالن زیبایی رویا - Roya Beauty Salon\",\n  \"description\": \"سالن زیبایی تخصصی بانوان با خدمات کامل آرایشی و زیبایی\",\n  \"logoUrl\": null\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/v1/Providers/business",
+              "host": ["{{baseUrl}}"],
+              "path": ["v1", "Providers", "business"]
+            },
+            "description": "Update business information"
+          },
+          "response": []
+        },
+        {
+          "name": "Upload Profile Image",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{access_token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                {
+                  "key": "image",
+                  "type": "file",
+                  "src": []
+                }
+              ]
+            },
+            "url": {
+              "raw": "{{baseUrl}}/v1/Providers/profile/image",
+              "host": ["{{baseUrl}}"],
+              "path": ["v1", "Providers", "profile", "image"]
+            },
+            "description": "Upload provider profile image (max 5MB)"
+          },
+          "response": []
+        },
+        {
+          "name": "Upload Business Logo",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{access_token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                {
+                  "key": "image",
+                  "type": "file",
+                  "src": []
+                }
+              ]
+            },
+            "url": {
+              "raw": "{{baseUrl}}/v1/Providers/business/logo",
+              "host": ["{{baseUrl}}"],
+              "path": ["v1", "Providers", "business", "logo"]
+            },
+            "description": "Upload business logo (max 5MB)"
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "4. Provider Staff",
+      "description": "Manage provider staff members",
+      "item": [
+        {
+          "name": "Get Provider Staff",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{access_token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/v1/Providers/{{provider_id}}/staff?activeOnly=true",
+              "host": ["{{baseUrl}}"],
+              "path": ["v1", "Providers", "{{provider_id}}", "staff"],
+              "query": [
+                {
+                  "key": "activeOnly",
+                  "value": "true"
+                }
+              ]
+            },
+            "description": "Get all staff members for a provider"
+          },
+          "response": []
+        },
+        {
+          "name": "Add Staff Member",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "if (pm.response.code === 201) {",
+                  "    var jsonData = pm.response.json();",
+                  "    pm.environment.set('staff_id', jsonData.id);",
+                  "    console.log('✅ Staff member added');",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{access_token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"firstName\": \"مریم\",\n  \"lastName\": \"محمدی\",\n  \"email\": \"maryam.mohammadi@example.ir\",\n  \"phoneNumber\": \"09121234567\",\n  \"countryCode\": \"+98\",\n  \"role\": \"Stylist\",\n  \"notes\": \"متخصص کوتاهی و رنگ مو\",\n  \"biography\": \"با بیش از 8 سال تجربه در زمینه آرایش مو\",\n  \"profilePhotoUrl\": null\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/v1/Providers/{{provider_id}}/staff",
+              "host": ["{{baseUrl}}"],
+              "path": ["v1", "Providers", "{{provider_id}}", "staff"]
+            },
+            "description": "Add a staff member to provider"
+          },
+          "response": []
+        },
+        {
+          "name": "Update Staff Member",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{access_token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"firstName\": \"مریم\",\n  \"lastName\": \"محمدی\",\n  \"email\": \"maryam.mohammadi@example.ir\",\n  \"phoneNumber\": \"09121234567\",\n  \"role\": \"Senior Stylist\",\n  \"biography\": \"با بیش از 10 سال تجربه در زمینه آرایش مو\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/v1/Providers/{{provider_id}}/staff/{{staff_id}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["v1", "Providers", "{{provider_id}}", "staff", "{{staff_id}}"]
+            },
+            "description": "Update staff member details"
+          },
+          "response": []
+        },
+        {
+          "name": "Delete Staff Member",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{access_token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/v1/Providers/{{provider_id}}/staff/{{staff_id}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["v1", "Providers", "{{provider_id}}", "staff", "{{staff_id}}"]
+            },
+            "description": "Remove staff member from provider"
+          },
+          "response": []
+        },
+        {
+          "name": "Upload Staff Photo",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{access_token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                {
+                  "key": "file",
+                  "type": "file",
+                  "src": []
+                }
+              ]
+            },
+            "url": {
+              "raw": "{{baseUrl}}/v1/Providers/{{provider_id}}/staff/{{staff_id}}/photo",
+              "host": ["{{baseUrl}}"],
+              "path": ["v1", "Providers", "{{provider_id}}", "staff", "{{staff_id}}", "photo"]
+            },
+            "description": "Upload staff member photo"
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "5. Provider Gallery",
+      "description": "Manage provider gallery images",
+      "item": [
+        {
+          "name": "Get Gallery Images",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/v1/Providers/{{provider_id}}/gallery",
+              "host": ["{{baseUrl}}"],
+              "path": ["v1", "Providers", "{{provider_id}}", "gallery"]
+            },
+            "description": "Get all gallery images for a provider"
+          },
+          "response": []
+        },
+        {
+          "name": "Upload Gallery Images",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "if (pm.response.code === 200 || pm.response.code === 201) {",
+                  "    var jsonData = pm.response.json();",
+                  "    if (jsonData.length > 0) {",
+                  "        pm.environment.set('gallery_image_id', jsonData[0].id);",
+                  "        console.log('✅ Gallery images uploaded');",
+                  "    }",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{access_token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                {
+                  "key": "files",
+                  "type": "file",
+                  "src": []
+                }
+              ]
+            },
+            "url": {
+              "raw": "{{baseUrl}}/v1/Providers/{{provider_id}}/gallery",
+              "host": ["{{baseUrl}}"],
+              "path": ["v1", "Providers", "{{provider_id}}", "gallery"]
+            },
+            "description": "Upload gallery images (max 10 files)"
+          },
+          "response": []
+        },
+        {
+          "name": "Update Gallery Image Metadata",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{access_token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"caption\": \"نمونه کار کوتاهی مو\",\n  \"altText\": \"Haircut sample work\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/v1/Providers/{{provider_id}}/gallery/{{gallery_image_id}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["v1", "Providers", "{{provider_id}}", "gallery", "{{gallery_image_id}}"]
+            },
+            "description": "Update gallery image caption and alt text"
+          },
+          "response": []
+        },
+        {
+          "name": "Reorder Gallery Images",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{access_token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"imageOrders\": [\n    {\n      \"imageId\": \"{{gallery_image_id}}\",\n      \"order\": 1\n    }\n  ]\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/v1/Providers/{{provider_id}}/gallery/reorder",
+              "host": ["{{baseUrl}}"],
+              "path": ["v1", "Providers", "{{provider_id}}", "gallery", "reorder"]
+            },
+            "description": "Reorder gallery images"
+          },
+          "response": []
+        },
+        {
+          "name": "Set Primary Gallery Image",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{access_token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "PUT",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/v1/Providers/{{provider_id}}/gallery/{{gallery_image_id}}/set-primary",
+              "host": ["{{baseUrl}}"],
+              "path": ["v1", "Providers", "{{provider_id}}", "gallery", "{{gallery_image_id}}", "set-primary"]
+            },
+            "description": "Set image as primary gallery image"
+          },
+          "response": []
+        },
+        {
+          "name": "Delete Gallery Image",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{access_token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/v1/Providers/{{provider_id}}/gallery/{{gallery_image_id}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["v1", "Providers", "{{provider_id}}", "gallery", "{{gallery_image_id}}"]
+            },
+            "description": "Delete gallery image"
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "6. Provider Settings",
+      "description": "Provider business settings, hours, and availability",
+      "item": [
+        {
+          "name": "Get Business Info",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{access_token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/v1/providers/{{provider_id}}/business-info",
+              "host": ["{{baseUrl}}"],
+              "path": ["v1", "providers", "{{provider_id}}", "business-info"]
+            },
+            "description": "Get provider business information"
+          },
+          "response": []
+        },
+        {
+          "name": "Update Business Info",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{access_token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"businessName\": \"سالن زیبایی رویا\",\n  \"description\": \"سالن زیبایی تخصصی بانوان\",\n  \"logoUrl\": null,\n  \"phoneNumber\": \"02188990011\",\n  \"email\": \"info@royabeauty.ir\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/v1/providers/{{provider_id}}/business-info",
+              "host": ["{{baseUrl}}"],
+              "path": ["v1", "providers", "{{provider_id}}", "business-info"]
+            },
+            "description": "Update business information"
+          },
+          "response": []
+        },
+        {
+          "name": "Get Location",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{access_token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/v1/providers/{{provider_id}}/location",
+              "host": ["{{baseUrl}}"],
+              "path": ["v1", "providers", "{{provider_id}}", "location"]
+            },
+            "description": "Get provider location"
+          },
+          "response": []
+        },
+        {
+          "name": "Update Location",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{access_token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"addressLine1\": \"خیابان ولیعصر، نرسیده به میدان ونک\",\n  \"addressLine2\": \"پلاک 245، طبقه 2\",\n  \"city\": \"Tehran\",\n  \"province\": \"Tehran\",\n  \"postalCode\": \"19917\",\n  \"latitude\": 35.7575,\n  \"longitude\": 51.4089\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/v1/providers/{{provider_id}}/location",
+              "host": ["{{baseUrl}}"],
+              "path": ["v1", "providers", "{{provider_id}}", "location"]
+            },
+            "description": "Update provider location"
+          },
+          "response": []
+        },
+        {
+          "name": "Get Business Hours",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{access_token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/v1/providers/{{provider_id}}/business-hours",
+              "host": ["{{baseUrl}}"],
+              "path": ["v1", "providers", "{{provider_id}}", "business-hours"]
+            },
+            "description": "Get provider business hours (Iranian calendar - Sat-Thu open, Friday closed)"
+          },
+          "response": []
+        },
+        {
+          "name": "Update Business Hours",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{access_token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"businessHours\": [\n    {\n      \"dayOfWeek\": \"Saturday\",\n      \"openTime\": \"10:00\",\n      \"closeTime\": \"20:00\"\n    },\n    {\n      \"dayOfWeek\": \"Sunday\",\n      \"openTime\": \"10:00\",\n      \"closeTime\": \"20:00\"\n    },\n    {\n      \"dayOfWeek\": \"Monday\",\n      \"openTime\": \"10:00\",\n      \"closeTime\": \"20:00\"\n    },\n    {\n      \"dayOfWeek\": \"Tuesday\",\n      \"openTime\": \"10:00\",\n      \"closeTime\": \"20:00\"\n    },\n    {\n      \"dayOfWeek\": \"Wednesday\",\n      \"openTime\": \"10:00\",\n      \"closeTime\": \"20:00\"\n    },\n    {\n      \"dayOfWeek\": \"Thursday\",\n      \"openTime\": \"10:00\",\n      \"closeTime\": \"14:00\"\n    },\n    {\n      \"dayOfWeek\": \"Friday\",\n      \"openTime\": null,\n      \"closeTime\": null\n    }\n  ]\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/v1/providers/{{provider_id}}/business-hours",
+              "host": ["{{baseUrl}}"],
+              "path": ["v1", "providers", "{{provider_id}}", "business-hours"]
+            },
+            "description": "Update business hours (Iranian business week)"
+          },
+          "response": []
+        },
+        {
+          "name": "Get Holidays",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{access_token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/v1/providers/{{provider_id}}/holidays",
+              "host": ["{{baseUrl}}"],
+              "path": ["v1", "providers", "{{provider_id}}", "holidays"]
+            },
+            "description": "Get provider holidays"
+          },
+          "response": []
+        },
+        {
+          "name": "Add Holiday",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{access_token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"date\": \"2025-03-20\",\n  \"reason\": \"نوروز - Nowruz (Persian New Year)\",\n  \"isRecurring\": true,\n  \"pattern\": \"Yearly\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/v1/providers/{{provider_id}}/holidays",
+              "host": ["{{baseUrl}}"],
+              "path": ["v1", "providers", "{{provider_id}}", "holidays"]
+            },
+            "description": "Add a holiday (e.g., Nowruz)"
+          },
+          "response": []
+        },
+        {
+          "name": "Delete Holiday",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{access_token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/v1/providers/{{provider_id}}/holidays/{{holiday_id}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["v1", "providers", "{{provider_id}}", "holidays", "{{holiday_id}}"]
+            },
+            "description": "Delete a holiday"
+          },
+          "response": []
+        },
+        {
+          "name": "Get Exceptions",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{access_token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/v1/providers/{{provider_id}}/exceptions",
+              "host": ["{{baseUrl}}"],
+              "path": ["v1", "providers", "{{provider_id}}", "exceptions"]
+            },
+            "description": "Get schedule exceptions"
+          },
+          "response": []
+        },
+        {
+          "name": "Add Exception",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{access_token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"date\": \"2025-12-15\",\n  \"openTime\": \"14:00\",\n  \"closeTime\": \"18:00\",\n  \"reason\": \"ساعت کاری ویژه - Special hours\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/v1/providers/{{provider_id}}/exceptions",
+              "host": ["{{baseUrl}}"],
+              "path": ["v1", "providers", "{{provider_id}}", "exceptions"]
+            },
+            "description": "Add schedule exception"
+          },
+          "response": []
+        },
+        {
+          "name": "Delete Exception",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{access_token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/v1/providers/{{provider_id}}/exceptions/{{exception_id}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["v1", "providers", "{{provider_id}}", "exceptions", "{{exception_id}}"]
+            },
+            "description": "Delete schedule exception"
+          },
+          "response": []
+        },
+        {
+          "name": "Get Availability for Date",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/v1/providers/{{provider_id}}/availability?date=2025-12-15",
+              "host": ["{{baseUrl}}"],
+              "path": ["v1", "providers", "{{provider_id}}", "availability"],
+              "query": [
+                {
+                  "key": "date",
+                  "value": "2025-12-15"
+                }
+              ]
+            },
+            "description": "Get provider availability for specific date"
+          },
+          "response": []
+        }
+      ]
+    }
+  ]
+}

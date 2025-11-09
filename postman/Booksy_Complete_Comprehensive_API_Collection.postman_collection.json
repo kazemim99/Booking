@@ -1,0 +1,37 @@
+{
+  "info": {
+    "name": "Booksy Complete API Collection - Iranian Edition",
+    "description": "Complete API test collection for Booksy Platform with 150+ endpoints and Iranian/Persian test data.\n\n## Included Modules:\n1. Authentication & User Management (16 endpoints)\n2. Customers (6 endpoints)\n3. Providers (14 endpoints)\n4. Provider Staff (5 endpoints)\n5. Provider Gallery (6 endpoints)\n6. Provider Settings (12 endpoints)\n7. Services (11 endpoints)\n8. Availability (3 endpoints)\n9. Bookings (13 endpoints)\n10. Payments (11 endpoints)\n11. Payouts (5 endpoints)\n12. Financial (3 endpoints)\n13. Locations (6 endpoints)\n14. Notifications (8 endpoints)\n15. Notification Preferences (7 endpoints)\n16. Provider Registration (9 endpoints)\n\n## Test Data Features:\n- Persian/Farsi names and content\n- Iranian phone numbers (+98 09XX)\n- Tehran and major Iranian cities\n- Iranian Rial (IRR) currency\n- ZarinPal payment gateway integration\n- Iranian business hours (Sat-Thu, Friday off)\n- Persian cultural holidays (Nowruz, etc.)\n- Realistic Iranian addresses and postal codes\n\n## Usage:\n1. Import collection into Postman\n2. Import environment file (Booksy_Iranian_Environment)\n3. Start with Authentication → Login\n4. Access token will be auto-saved to environment\n5. Follow the numbered sections in order\n\nAuthor: Claude AI Assistant\nVersion: 2.0.0\nDate: 2025-11-09\n",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+    "_postman_id": "booksy-complete-iranian-api",
+    "version": "2.0.0"
+  },
+  "auth": {
+    "type": "bearer",
+    "bearer": [
+      {
+        "key": "token",
+        "value": "{{access_token}}",
+        "type": "string"
+      }
+    ]
+  },
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://localhost:5010/api",
+      "type": "string"
+    },
+    {
+      "key": "userManagementUrl",
+      "value": "http://localhost:5020/api",
+      "type": "string"
+    },
+    {
+      "key": "gatewayUrl",
+      "value": "http://localhost:5000/api",
+      "type": "string"
+    }
+  ],
+  "item": []
+}

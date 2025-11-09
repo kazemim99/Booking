@@ -1,0 +1,907 @@
+{
+  "info": {
+    "name": "Booksy Services, Bookings & Payments API Collection",
+    "description": "Comprehensive collection for Services, Availability, Bookings, Payments, Payouts, Financial, Locations, Notifications and Provider Registration endpoints with Iranian test data.\n\nThis collection complements the main Booksy Comprehensive API Collection.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+    "_postman_id": "booksy-services-bookings-payments",
+    "version": "2.0.0"
+  },
+  "auth": {
+    "type": "bearer",
+    "bearer": [
+      {
+        "key": "token",
+        "value": "{{access_token}}",
+        "type": "string"
+      }
+    ]
+  },
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://localhost:5010/api",
+      "type": "string"
+    },
+    {
+      "key": "userManagementUrl",
+      "value": "http://localhost:5020/api",
+      "type": "string"
+    }
+  ],
+  "item": [
+    {
+      "name": "7. Services",
+      "description": "Service management including creation, updates, activation, and search",
+      "item": [
+        {
+          "name": "Add Service to Provider",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "if (pm.response.code === 201) {",
+                  "    var jsonData = pm.response.json();",
+                  "    pm.environment.set('service_id', jsonData.id);",
+                  "    console.log('✅ Service created');",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{access_token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"serviceName\": \"کوتاهی و فشن مو - Haircut & Styling\",\n  \"description\": \"کوتاهی و مدل‌دهی موی بانوان با جدیدترین تکنیک‌های روز دنیا\",\n  \"durationHours\": 1,\n  \"duration\": 60,\n  \"basePrice\": 1200000,\n  \"currency\": \"IRR\",\n  \"category\": \"Hair Services\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/v1/Services/{{provider_id}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["v1", "Services", "{{provider_id}}"]
+            },
+            "description": "Add a new service to provider"
+          },
+          "response": []
+        },
+        {
+          "name": "Get Service Details",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/v1/Services/{{service_id}}?includeProvider=true&includeOptions=true&includePriceTiers=true",
+              "host": ["{{baseUrl}}"],
+              "path": ["v1", "Services", "{{service_id}}"],
+              "query": [
+                {
+                  "key": "includeProvider",
+                  "value": "true"
+                },
+                {
+                  "key": "includeOptions",
+                  "value": "true"
+                },
+                {
+                  "key": "includePriceTiers",
+                  "value": "true"
+                }
+              ]
+            },
+            "description": "Get complete service details"
+          },
+          "response": []
+        },
+        {
+          "name": "Search Services",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/v1/Services/search?query=کوتاهی مو&category=Hair Services&city=Tehran&pageNumber=1&pageSize=20",
+              "host": ["{{baseUrl}}"],
+              "path": ["v1", "Services", "search"],
+              "query": [
+                {
+                  "key": "query",
+                  "value": "کوتاهی مو"
+                },
+                {
+                  "key": "category",
+                  "value": "Hair Services"
+                },
+                {
+                  "key": "city",
+                  "value": "Tehran"
+                },
+                {
+                  "key": "pageNumber",
+                  "value": "1"
+                },
+                {
+                  "key": "pageSize",
+                  "value": "20"
+                }
+              ]
+            },
+            "description": "Search for services"
+          },
+          "response": []
+        },
+        {
+          "name": "Get Services by Provider",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/v1/Services/provider/{{provider_id}}?pageNumber=1&pageSize=50",
+              "host": ["{{baseUrl}}"],
+              "path": ["v1", "Services", "provider", "{{provider_id}}"],
+              "query": [
+                {
+                  "key": "pageNumber",
+                  "value": "1"
+                },
+                {
+                  "key": "pageSize",
+                  "value": "50"
+                }
+              ]
+            },
+            "description": "Get all services for a provider"
+          },
+          "response": []
+        },
+        {
+          "name": "Get Popular Services",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/v1/Services/popular?categoryFilter=Hair Services&limit=20",
+              "host": ["{{baseUrl}}"],
+              "path": ["v1", "Services", "popular"],
+              "query": [
+                {
+                  "key": "categoryFilter",
+                  "value": "Hair Services"
+                },
+                {
+                  "key": "limit",
+                  "value": "20"
+                }
+              ]
+            },
+            "description": "Get popular services"
+          },
+          "response": []
+        },
+        {
+          "name": "Update Service",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{access_token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"serviceName\": \"کوتاهی و فشن مو - Haircut & Styling\",\n  \"description\": \"کوتاهی و مدل‌دهی موی بانوان با جدیدترین مد روز\",\n  \"durationHours\": 1,\n  \"durationMinutes\": 30,\n  \"price\": 1500000,\n  \"currency\": \"IRR\",\n  \"category\": \"Hair Services\",\n  \"isMobileService\": false\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/v1/Services/{{provider_id}}/{{service_id}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["v1", "Services", "{{provider_id}}", "{{service_id}}"]
+            },
+            "description": "Update service details"
+          },
+          "response": []
+        },
+        {
+          "name": "Activate Service",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{access_token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/v1/Services/{{service_id}}/activate",
+              "host": ["{{baseUrl}}"],
+              "path": ["v1", "Services", "{{service_id}}", "activate"]
+            },
+            "description": "Activate service"
+          },
+          "response": []
+        },
+        {
+          "name": "Deactivate Service",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{access_token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"reason\": \"خدمات موقتاً متوقف شده است\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/v1/Services/{{service_id}}/deactivate",
+              "host": ["{{baseUrl}}"],
+              "path": ["v1", "Services", "{{service_id}}", "deactivate"]
+            },
+            "description": "Deactivate service"
+          },
+          "response": []
+        },
+        {
+          "name": "Delete Service",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{access_token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/v1/Services/{{service_id}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["v1", "Services", "{{service_id}}"]
+            },
+            "description": "Archive/delete service"
+          },
+          "response": []
+        },
+        {
+          "name": "Get Services by Status (Admin)",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{access_token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/v1/Services/by-status/Active?maxResults=100",
+              "host": ["{{baseUrl}}"],
+              "path": ["v1", "Services", "by-status", "Active"],
+              "query": [
+                {
+                  "key": "maxResults",
+                  "value": "100"
+                }
+              ]
+            },
+            "description": "Get services by status (Admin only)"
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "8. Availability",
+      "description": "Check service availability and time slots",
+      "item": [
+        {
+          "name": "Get Available Slots",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/v1/Availability/slots?ProviderId={{provider_id}}&ServiceId={{service_id}}&Date=2025-12-15&StaffId={{staff_id}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["v1", "Availability", "slots"],
+              "query": [
+                {
+                  "key": "ProviderId",
+                  "value": "{{provider_id}}"
+                },
+                {
+                  "key": "ServiceId",
+                  "value": "{{service_id}}"
+                },
+                {
+                  "key": "Date",
+                  "value": "2025-12-15"
+                },
+                {
+                  "key": "StaffId",
+                  "value": "{{staff_id}}"
+                }
+              ]
+            },
+            "description": "Get available time slots for booking"
+          },
+          "response": []
+        },
+        {
+          "name": "Check Slot Availability",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/v1/Availability/check?providerId={{provider_id}}&serviceId={{service_id}}&startTime=2025-12-15T14:00:00Z&staffId={{staff_id}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["v1", "Availability", "check"],
+              "query": [
+                {
+                  "key": "providerId",
+                  "value": "{{provider_id}}"
+                },
+                {
+                  "key": "serviceId",
+                  "value": "{{service_id}}"
+                },
+                {
+                  "key": "startTime",
+                  "value": "2025-12-15T14:00:00Z"
+                },
+                {
+                  "key": "staffId",
+                  "value": "{{staff_id}}"
+                }
+              ]
+            },
+            "description": "Check if specific time slot is available"
+          },
+          "response": []
+        },
+        {
+          "name": "Get Available Dates",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/v1/Availability/dates?providerId={{provider_id}}&serviceId={{service_id}}&fromDate=2025-12-01&toDate=2025-12-31",
+              "host": ["{{baseUrl}}"],
+              "path": ["v1", "Availability", "dates"],
+              "query": [
+                {
+                  "key": "providerId",
+                  "value": "{{provider_id}}"
+                },
+                {
+                  "key": "serviceId",
+                  "value": "{{service_id}}"
+                },
+                {
+                  "key": "fromDate",
+                  "value": "2025-12-01"
+                },
+                {
+                  "key": "toDate",
+                  "value": "2025-12-31"
+                }
+              ]
+            },
+            "description": "Get dates with available slots"
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "9. Bookings",
+      "description": "Complete booking management lifecycle",
+      "item": [
+        {
+          "name": "Create Booking",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "if (pm.response.code === 201) {",
+                  "    var jsonData = pm.response.json();",
+                  "    pm.environment.set('booking_id', jsonData.id);",
+                  "    console.log('✅ Booking created');",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{access_token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"providerId\": \"{{provider_id}}\",\n  \"serviceId\": \"{{service_id}}\",\n  \"staffId\": \"{{staff_id}}\",\n  \"startTime\": \"2025-12-15T14:00:00Z\",\n  \"customerNotes\": \"لطفاً دقیق باشید. اولین باری است که به سالن شما میام\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/v1/Bookings",
+              "host": ["{{baseUrl}}"],
+              "path": ["v1", "Bookings"]
+            },
+            "description": "Create a new booking"
+          },
+          "response": []
+        },
+        {
+          "name": "Get Booking Details",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{access_token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/v1/Bookings/{{booking_id}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["v1", "Bookings", "{{booking_id}}"]
+            },
+            "description": "Get booking details"
+          },
+          "response": []
+        },
+        {
+          "name": "Get My Bookings",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{access_token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/v1/Bookings/my-bookings?status=Confirmed&from=2025-12-01&to=2025-12-31",
+              "host": ["{{baseUrl}}"],
+              "path": ["v1", "Bookings", "my-bookings"],
+              "query": [
+                {
+                  "key": "status",
+                  "value": "Confirmed"
+                },
+                {
+                  "key": "from",
+                  "value": "2025-12-01"
+                },
+                {
+                  "key": "to",
+                  "value": "2025-12-31"
+                }
+              ]
+            },
+            "description": "Get current user's bookings"
+          },
+          "response": []
+        },
+        {
+          "name": "Get Provider Bookings",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{access_token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/v1/Bookings/provider/{{provider_id}}?status=Confirmed&from=2025-12-01&to=2025-12-31",
+              "host": ["{{baseUrl}}"],
+              "path": ["v1", "Bookings", "provider", "{{provider_id}}"],
+              "query": [
+                {
+                  "key": "status",
+                  "value": "Confirmed"
+                },
+                {
+                  "key": "from",
+                  "value": "2025-12-01"
+                },
+                {
+                  "key": "to",
+                  "value": "2025-12-31"
+                }
+              ]
+            },
+            "description": "Get provider's bookings (Provider/Admin only)"
+          },
+          "response": []
+        },
+        {
+          "name": "Search Bookings",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{access_token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/v1/Bookings/search?providerId={{provider_id}}&status=Confirmed&startDate=2025-12-01&endDate=2025-12-31&pageNumber=1&pageSize=20",
+              "host": ["{{baseUrl}}"],
+              "path": ["v1", "Bookings", "search"],
+              "query": [
+                {
+                  "key": "providerId",
+                  "value": "{{provider_id}}"
+                },
+                {
+                  "key": "status",
+                  "value": "Confirmed"
+                },
+                {
+                  "key": "startDate",
+                  "value": "2025-12-01"
+                },
+                {
+                  "key": "endDate",
+                  "value": "2025-12-31"
+                },
+                {
+                  "key": "pageNumber",
+                  "value": "1"
+                },
+                {
+                  "key": "pageSize",
+                  "value": "20"
+                }
+              ]
+            },
+            "description": "Search bookings with filters"
+          },
+          "response": []
+        },
+        {
+          "name": "Confirm Booking",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{access_token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"paymentMethodId\": \"zarinpal\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/v1/Bookings/{{booking_id}}/confirm",
+              "host": ["{{baseUrl}}"],
+              "path": ["v1", "Bookings", "{{booking_id}}", "confirm"]
+            },
+            "description": "Confirm booking (Provider/Admin)"
+          },
+          "response": []
+        },
+        {
+          "name": "Cancel Booking",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{access_token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"reason\": \"تداخل در برنامه - Schedule conflict\",\n  \"cancelledBy\": \"Customer\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/v1/Bookings/{{booking_id}}/cancel",
+              "host": ["{{baseUrl}}"],
+              "path": ["v1", "Bookings", "{{booking_id}}", "cancel"]
+            },
+            "description": "Cancel booking"
+          },
+          "response": []
+        },
+        {
+          "name": "Reschedule Booking",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{access_token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"newStartTime\": \"2025-12-16T15:00:00Z\",\n  \"newStaffId\": \"{{staff_id}}\",\n  \"reason\": \"درخواست مشتری برای تغییر زمان\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/v1/Bookings/{{booking_id}}/reschedule",
+              "host": ["{{baseUrl}}"],
+              "path": ["v1", "Bookings", "{{booking_id}}", "reschedule"]
+            },
+            "description": "Reschedule booking to new time"
+          },
+          "response": []
+        },
+        {
+          "name": "Complete Booking",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{access_token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"completionNotes\": \"خدمات با موفقیت ارائه شد\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/v1/Bookings/{{booking_id}}/complete",
+              "host": ["{{baseUrl}}"],
+              "path": ["v1", "Bookings", "{{booking_id}}", "complete"]
+            },
+            "description": "Mark booking as completed (Provider/Admin)"
+          },
+          "response": []
+        },
+        {
+          "name": "Mark No-Show",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{access_token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"notes\": \"مشتری حاضر نشد\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/v1/Bookings/{{booking_id}}/no-show",
+              "host": ["{{baseUrl}}"],
+              "path": ["v1", "Bookings", "{{booking_id}}", "no-show"]
+            },
+            "description": "Mark booking as no-show (Provider/Admin)"
+          },
+          "response": []
+        },
+        {
+          "name": "Assign Staff to Booking",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{access_token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "PUT",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/v1/Bookings/{{booking_id}}/assign-staff/{{staff_id}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["v1", "Bookings", "{{booking_id}}", "assign-staff", "{{staff_id}}"]
+            },
+            "description": "Assign or change staff member (Provider/Admin)"
+          },
+          "response": []
+        },
+        {
+          "name": "Add Booking Notes",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{access_token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"notes\": \"مشتری درخواست خاصی داشت\",\n  \"isStaffNote\": true\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/v1/Bookings/{{booking_id}}/notes",
+              "host": ["{{baseUrl}}"],
+              "path": ["v1", "Bookings", "{{booking_id}}", "notes"]
+            },
+            "description": "Add notes to booking"
+          },
+          "response": []
+        },
+        {
+          "name": "Get Booking Statistics",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{access_token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/v1/Bookings/statistics?providerId={{provider_id}}&startDate=2025-12-01&endDate=2025-12-31",
+              "host": ["{{baseUrl}}"],
+              "path": ["v1", "Bookings", "statistics"],
+              "query": [
+                {
+                  "key": "providerId",
+                  "value": "{{provider_id}}"
+                },
+                {
+                  "key": "startDate",
+                  "value": "2025-12-01"
+                },
+                {
+                  "key": "endDate",
+                  "value": "2025-12-31"
+                }
+              ]
+            },
+            "description": "Get booking statistics (Provider/Admin)"
+          },
+          "response": []
+        }
+      ]
+    }
+  ]
+}
