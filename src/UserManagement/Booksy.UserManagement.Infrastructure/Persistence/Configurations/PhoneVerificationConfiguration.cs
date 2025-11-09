@@ -155,7 +155,8 @@ public class PhoneVerificationConfiguration : IEntityTypeConfiguration<PhoneVeri
         builder.Ignore(v => v.DomainEvents);
 
         // Indexes for query performance
-        builder.HasIndex(v => v.PhoneNumber.Value)
+        // For owned entities, use column name directly
+        builder.HasIndex("phone_number")
             .HasDatabaseName("ix_phone_verifications_phone_number");
 
         builder.HasIndex(v => v.Status)
@@ -168,7 +169,8 @@ public class PhoneVerificationConfiguration : IEntityTypeConfiguration<PhoneVeri
             .HasDatabaseName("ix_phone_verifications_created_at");
 
         // Composite index for common queries
-        builder.HasIndex(v => new { v.PhoneNumber.Value, v.Purpose, v.Status })
+        // For owned entities, use column names directly
+        builder.HasIndex("phone_number", nameof(PhoneVerification.Purpose), nameof(PhoneVerification.Status))
             .HasDatabaseName("ix_phone_verifications_phone_purpose_status");
     }
 }
