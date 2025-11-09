@@ -57,6 +57,8 @@ namespace Booksy.UserManagement.Infrastructure.Persistence.Configurations
                     .HasColumnName("phone_national_number")
                     .HasMaxLength(40);
 
+                // Optional: Add computed column for full international format
+                phone.Ignore(p => p.Value); // If Value is computed from CountryCode + NationalNumber
             });
 
             builder.OwnsOne(up => up.AlternatePhoneNumber, phone =>
@@ -135,13 +137,13 @@ namespace Booksy.UserManagement.Infrastructure.Persistence.Configurations
             builder.Property(up => up.UpdatedAt)
                 .HasColumnName("updated_at");
 
-            // Foreign key to User - configure the existing UserId property
-            builder.Property(up => up.UserId)
-                .HasConversion(
-                    id => id.Value,
-                    value => UserId.From(value))
-                .HasColumnName("user_id")
-                .IsRequired();
+            // Foreign key to User
+            builder.Property<UserId>("UserId")
+                .HasColumnName("user_id");
+
+            // Foreign key to Customer (optional - one profile can belong to either User or Customer)
+            builder.Property<CustomerId?>("CustomerId")
+                .HasColumnName("customer_id");
 
             // Indexes
             builder.HasIndex(up => new { up.FirstName, up.LastName })

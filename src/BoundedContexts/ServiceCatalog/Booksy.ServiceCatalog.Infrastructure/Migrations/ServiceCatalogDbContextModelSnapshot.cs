@@ -625,12 +625,6 @@ namespace Booksy.ServiceCatalog.Infrastructure.Migrations
                         .HasColumnType("nvarchar(500)")
                         .HasColumnName("PaymentUrl");
 
-                    b.Property<string>("Provider")
-                        .IsRequired()
-                        .HasMaxLength(50)
-                        .HasColumnType("nvarchar(50)")
-                        .HasColumnName("Provider");
-
                     b.Property<Guid>("ProviderId")
                         .HasColumnType("uniqueidentifier")
                         .HasColumnName("ProviderId");
@@ -673,9 +667,6 @@ namespace Booksy.ServiceCatalog.Infrastructure.Migrations
 
                     b.HasIndex("PaymentIntentId")
                         .HasDatabaseName("IX_Payments_PaymentIntentId");
-
-                    b.HasIndex("Provider")
-                        .HasDatabaseName("IX_Payments_Provider");
 
                     b.HasIndex("ProviderId")
                         .HasDatabaseName("IX_Payments_ProviderId");

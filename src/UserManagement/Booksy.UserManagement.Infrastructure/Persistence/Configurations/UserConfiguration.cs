@@ -77,7 +77,7 @@ namespace Booksy.UserManagement.Infrastructure.Persistence.Configurations
             // Profile relationship
             builder.HasOne(u => u.Profile)
                 .WithOne()
-                .HasForeignKey<UserProfile>(p => p.UserId)
+                .HasForeignKey<UserProfile>("UserId")
                 .OnDelete(DeleteBehavior.Cascade);
 
             // Status and Type
