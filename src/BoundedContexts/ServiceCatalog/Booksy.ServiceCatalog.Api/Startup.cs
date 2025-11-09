@@ -133,6 +133,9 @@ namespace Booksy.API
 
             AppContext.SetSwitch("Npgsql.EnableLegacyTimestampBehavior", true);
 
+            // SignalR for real-time notifications
+            services.AddSignalR();
+
             // Other services
             services.AddResponseCompression();
             services.AddHttpContextAccessor();
@@ -201,6 +204,7 @@ namespace Booksy.API
                 });
 
                 endpoints.MapControllers();
+                endpoints.MapHub<Booksy.ServiceCatalog.Infrastructure.Hubs.NotificationHub>("/hubs/notifications");
             });
 
             // Run database seeder in development

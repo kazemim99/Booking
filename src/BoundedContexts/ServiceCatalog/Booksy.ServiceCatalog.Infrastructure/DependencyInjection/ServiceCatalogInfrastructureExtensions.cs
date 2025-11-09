@@ -24,6 +24,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
+using SendGrid;
 
 namespace Booksy.ServiceCatalog.Infrastructure.DependencyInjection
 {
@@ -77,6 +78,9 @@ namespace Booksy.ServiceCatalog.Infrastructure.DependencyInjection
             services.AddScoped<IServiceWriteRepository, ServiceWriteRepository>();
             services.AddScoped<IBookingReadRepository, BookingReadRepository>();
             services.AddScoped<IBookingWriteRepository, BookingWriteRepository>();
+            services.AddScoped<IPaymentReadRepository, PaymentReadRepository>();
+            services.AddScoped<IPaymentWriteRepository, PaymentWriteRepository>();
+            services.AddScoped<IPayoutWriteRepository, PayoutWriteRepository>();
 
             // Notification Repositories
             services.AddScoped<INotificationReadRepository, NotificationReadRepository>();
@@ -182,6 +186,14 @@ namespace Booksy.ServiceCatalog.Infrastructure.DependencyInjection
             // Template Engine & Services
             services.AddSingleton<ITemplateEngine, TemplateEngine>();
             services.AddScoped<INotificationTemplateService, NotificationTemplateService>();
+
+            // SendGrid Client
+            services.AddSingleton<ISendGridClient>(provider =>
+            {
+                var configuration = provider.GetRequiredService<IConfiguration>();
+                var apiKey = configuration["SendGrid:ApiKey"] ?? throw new InvalidOperationException("SendGrid:ApiKey is not configured");
+                return new SendGridClient(apiKey);
+            });
 
             // Multi-Channel Notification Services
             services.AddScoped<IEmailNotificationService, SendGridEmailNotificationService>();
