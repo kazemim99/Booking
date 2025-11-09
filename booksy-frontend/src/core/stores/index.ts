@@ -9,3 +9,11 @@ export function setupStore(app: App) {
 
 export { pinia }
 export default pinia
+
+// Export all stores
+export * from './modules/auth.store'
+export * from './modules/notification.store'
+export * from './modules/ui.store'
+export * from './modules/locale.store'
+export * from './modules/theme.store'
+export * from './modules/cache.store'
