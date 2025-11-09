@@ -71,8 +71,8 @@ export async function authErrorInterceptor(error: any) {
       localStorageService.remove('refresh_token')
       localStorageService.remove('user')
 
-      // Redirect to login
-      window.location.href = '/auth/login'
+      // Redirect to login (using correct route path)
+      window.location.href = '/login'
 
       return Promise.reject(refreshError)
     }
