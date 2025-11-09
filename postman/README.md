@@ -154,22 +154,61 @@ All collections include realistic Persian/Farsi data:
 
 ## 🔧 Environment Variables
 
-Auto-managed variables (set by test scripts):
-- `access_token` - JWT authentication token
-- `refresh_token` - Refresh token
+All collections use the provided environment variables structure:
+
+### Auto-managed variables (set by test scripts):
+- `access_token` - JWT authentication token (auto-populated after login)
+- `refresh_token` - Refresh token (auto-populated after login)
 - `user_id` - Current user ID
 - `customer_id` - Customer ID
-- `provider_id` - Provider ID
-- `service_id` - Service ID
-- `staff_id` - Staff member ID
+- `provider_id` - Provider ID (default: "paste-provider-id-here")
+- `service_id` - Service ID (default: "paste-service-id-here")
+- `staff_id` - Staff member ID (default: "paste-staff-id-here")
 - `booking_id` - Booking ID
+- `optionId` - Service option ID
 - `verification_id` - Phone verification ID
+- `notification_id` - Notification ID
+- `payment_id` - Payment ID
 - `gallery_image_id` - Gallery image ID
+- `holiday_id` - Holiday ID
+- `exception_id` - Schedule exception ID
+- `payout_id` - Payout ID
+- `provinceId` - Iranian province ID
 
-Manual configuration:
+### Manual configuration:
 - `baseUrl` - Service Catalog API (default: http://localhost:5010/api)
 - `userManagementUrl` - User Management API (default: http://localhost:5020/api)
 - `gatewayUrl` - API Gateway (default: http://localhost:5000/api)
+
+## 📋 HTTP Headers
+
+All requests in the collections have proper headers configured:
+
+### Global Headers (All Requests):
+```
+Accept: application/json
+```
+
+### Request Body Headers (POST/PUT/PATCH):
+```
+Content-Type: application/json
+```
+
+### Authentication Header (Authenticated Requests):
+```
+Authorization: Bearer {{access_token}}
+```
+
+These headers are automatically included:
+- **Accept** header tells the API we want JSON responses
+- **Content-Type** header specifies we're sending JSON data
+- **Authorization** header is inherited from collection-level auth
+
+### Global Scripts:
+All collections include global test scripts that automatically:
+- Warn on 401 (Authentication failed)
+- Warn on 403 (Access forbidden)
+- Log errors on 5XX (Server errors)
 
 ## 📊 Endpoint Coverage
 
