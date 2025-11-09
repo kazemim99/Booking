@@ -88,7 +88,7 @@ namespace Booksy.UserManagement.Infrastructure.Persistence.Seeders
             {
                 var isMale = _random.Next(2) == 0;
                 var (firstName, lastName) = GetRandomPersianName(isMale);
-                var gender = isMale ? Gender.Male : Gender.Female;
+                var gender = isMale ? "Male" : "Female";
 
                 var email = GenerateEmail(firstName, lastName, i);
                 var phoneNumber = GenerateIranianPhone();
@@ -105,7 +105,7 @@ namespace Booksy.UserManagement.Infrastructure.Persistence.Seeders
                 var user = UserBuilder.Create()
                     .WithEmail(email)
                     .WithPassword("Pass@123456") // Default password for seeding
-                    .WithProfile(profile.FirstName, profile.LastName, profile.Gender, profile.DateOfBirth)
+                    .WithProfile(profile.FirstName, profile.LastName, profile.DateOfBirth, profile.Gender)
                     .WithType(UserType.Customer)
                     .WithStatus(UserStatus.Active) // Pre-activated for testing
                     .WithPhoneNumber(phoneNumber.ToString())
