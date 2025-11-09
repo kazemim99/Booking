@@ -131,8 +131,11 @@ namespace Booksy.UserManagement.Infrastructure.Persistence.Configurations
             builder.Property(up => up.UpdatedAt)
                 .HasColumnName("updated_at");
 
-            // Foreign key to User
-            builder.Property<UserId>("UserId")
+            // Foreign key to User - configure the existing UserId property
+            builder.Property(up => up.UserId)
+                .HasConversion(
+                    id => id.Value,
+                    value => UserId.From(value))
                 .HasColumnName("user_id")
                 .IsRequired();
 
