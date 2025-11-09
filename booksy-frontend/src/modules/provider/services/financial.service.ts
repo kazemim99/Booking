@@ -67,7 +67,7 @@ class FinancialService {
 
   /**
    * Get current month earnings
-   * GET /api/v1/financial/provider/{providerId}/current-month
+   * GET /api/v1/financial/provider/{providerId}/earnings/current-month
    */
   async getCurrentMonthEarnings(
     providerId: string,
@@ -77,7 +77,7 @@ class FinancialService {
       console.log('[FinancialService] Fetching current month earnings for:', providerId)
 
       const response = await serviceCategoryClient.get<ApiResponse<EarningsSummary>>(
-        `${FINANCIAL_BASE}/provider/${providerId}/current-month`,
+        `${FINANCIAL_BASE}/provider/${providerId}/earnings/current-month`,
         {
           params: {
             commissionPercentage,
@@ -100,7 +100,7 @@ class FinancialService {
 
   /**
    * Get previous month earnings
-   * GET /api/v1/financial/provider/{providerId}/previous-month
+   * GET /api/v1/financial/provider/{providerId}/earnings/previous-month
    */
   async getPreviousMonthEarnings(
     providerId: string,
@@ -110,7 +110,7 @@ class FinancialService {
       console.log('[FinancialService] Fetching previous month earnings for:', providerId)
 
       const response = await serviceCategoryClient.get<ApiResponse<EarningsSummary>>(
-        `${FINANCIAL_BASE}/provider/${providerId}/previous-month`,
+        `${FINANCIAL_BASE}/provider/${providerId}/earnings/previous-month`,
         {
           params: {
             commissionPercentage,
