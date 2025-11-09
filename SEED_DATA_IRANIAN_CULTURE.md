@@ -15,6 +15,8 @@ Two main orchestrators coordinate the seeding process:
 
 ## Seed Data Files
 
+### ServiceCatalog Bounded Context
+
 ### 1. ProviderSeeder.cs
 **Location**: `src/BoundedContexts/ServiceCatalog/Booksy.ServiceCatalog.Infrastructure/Persistence/Seeders/`
 
@@ -116,23 +118,66 @@ Two main orchestrators coordinate the seeding process:
 - Realistic payment scenarios (deposits, full payments, refunds)
 - Persian cancellation reasons
 
-### 6. ProvinceCitiesSeeder.cs
+### 6. PaymentSeeder.cs
+**Location**: `src/BoundedContexts/ServiceCatalog/Booksy.ServiceCatalog.Infrastructure/Persistence/Seeders/`
+
+**Description**: Seeds payment records for bookings with Iranian payment providers.
+
+**Features**:
+- **ZarinPal Integration**: 80% of payments use ZarinPal (Iran's leading payment gateway)
+- **Authentic Iranian Card Numbers**: Uses real Iranian bank BIN prefixes
+  - 603799 (Bank Melli Iran)
+  - 627353 (Bank Tejarat)
+  - 627961 (Bank Sanat va Maadan)
+  - 639607 (Bank Eghtesad Novin)
+- **ZarinPal Authority Codes**: Generates realistic authority codes (A + 35 chars)
+- **ZarinPal Reference Numbers**: Simulates verified transactions
+- **Payment Methods**: OnlinePayment (80%), Card (15%), Cash (5%)
+- **Payment Statuses**: Pending, Authorized, Captured, Failed, Refunded
+- **Persian Descriptions**: "پرداخت برای رزرو شماره..."
+- **Iranian Rial (IRR)** currency
+
+### 7. PayoutSeeder.cs
+**Location**: `src/BoundedContexts/ServiceCatalog/Booksy.ServiceCatalog.Infrastructure/Persistence/Seeders/`
+
+**Description**: Seeds provider payout records with Iranian bank information.
+
+**Features**:
+- **Monthly Payouts**: Creates payouts for last 3 months per provider
+- **Iranian Banks**: Authentic Iranian bank names
+  - بانک ملی ایران (Bank Melli Iran)
+  - بانک تجارت (Bank Tejarat)
+  - بانک صنعت و معدن (Bank Sanat va Maadan)
+  - بانک اقتصاد نوین (Bank Eghtesad Novin)
+  - بانک پاسارگاد (Bank Pasargad)
+  - And 10+ more Iranian banks
+- **Commission Calculation**: 10-15% commission rate
+- **Payout Statuses**: Pending, Scheduled, Paid, Failed, Cancelled
+- **Persian Notes**: "تسویه حساب دوره..."
+- **Period-based Status**: Older payouts more likely to be paid
+- **Iranian Bank Account Details**: Last 4 digits + bank name
+
+### 8. ProvinceCitiesSeeder.cs
 **Location**: `src/BoundedContexts/ServiceCatalog/Booksy.ServiceCatalog.Infrastructure/Persistence/Seeders/`
 
 **Description**: Seeds Iranian provinces and cities from JSON file.
 
 **Dependencies**: Requires `ProvinceCity-ParentChild.json` file in the project root.
 
+### UserManagement Bounded Context
+
 ## Orchestrators
 
 ### ServiceCatalogDatabaseSeederOrchestrator
 **Execution Order**:
-1. ProvinceCitiesSeeder
-2. ProviderSeeder
-3. StaffSeeder
-4. ServiceSeeder
-5. NotificationTemplateSeeder
-6. BookingSeeder
+1. ProvinceCitiesSeeder (independent)
+2. ProviderSeeder (independent)
+3. StaffSeeder (depends on Providers)
+4. ServiceSeeder (depends on Providers)
+5. NotificationTemplateSeeder (independent)
+6. BookingSeeder (depends on Providers, Staff, Services)
+7. PaymentSeeder (depends on Bookings)
+8. PayoutSeeder (depends on Payments)
 
 ### UserManagementDatabaseSeederOrchestrator
 **Execution Order**:
@@ -174,6 +219,8 @@ await scope.ServiceProvider.InitializeDatabaseAsync();
 - **Services**: 100-200 services (5-10 per provider)
 - **Customers**: 50 Iranian users
 - **Bookings**: 400-700 bookings (20-35 per provider)
+- **Payments**: 300-600 payments (linked to completed/confirmed bookings)
+- **Payouts**: 40-60 monthly payouts (2-3 months × ~20 providers)
 - **Provinces/Cities**: Based on JSON file
 
 ## Persian Language Support
@@ -213,14 +260,20 @@ All seed data includes Persian text in UTF-8 encoding:
 ## Files Created
 
 ### New Seeder Files
+
+**ServiceCatalog:**
 1. `/src/BoundedContexts/ServiceCatalog/.../ProviderSeeder.cs`
 2. `/src/BoundedContexts/ServiceCatalog/.../StaffSeeder.cs`
 3. `/src/BoundedContexts/ServiceCatalog/.../ServiceSeeder.cs`
 4. `/src/BoundedContexts/ServiceCatalog/.../BookingSeeder.cs`
-5. `/src/BoundedContexts/ServiceCatalog/.../ProvinceCitiesSeeder.cs`
-6. `/src/BoundedContexts/ServiceCatalog/.../ServiceCatalogDatabaseSeederOrchestrator.cs`
-7. `/src/UserManagement/.../CustomerSeeder.cs`
-8. `/src/UserManagement/.../UserManagementDatabaseSeederOrchestrator.cs`
+5. `/src/BoundedContexts/ServiceCatalog/.../PaymentSeeder.cs` ⭐ NEW
+6. `/src/BoundedContexts/ServiceCatalog/.../PayoutSeeder.cs` ⭐ NEW
+7. `/src/BoundedContexts/ServiceCatalog/.../ProvinceCitiesSeeder.cs`
+8. `/src/BoundedContexts/ServiceCatalog/.../ServiceCatalogDatabaseSeederOrchestrator.cs`
+
+**UserManagement:**
+9. `/src/UserManagement/.../CustomerSeeder.cs`
+10. `/src/UserManagement/.../UserManagementDatabaseSeederOrchestrator.cs`
 
 ### Modified Files
 1. `/src/BoundedContexts/ServiceCatalog/.../ServiceCatalogInfrastructureExtensions.cs`
