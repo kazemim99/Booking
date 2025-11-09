@@ -63,6 +63,11 @@
             "method": "POST",
             "header": [
               {
+                "key": "Accept",
+                "value": "application/json",
+                "type": "text"
+              },
+              {
                 "key": "Content-Type",
                 "value": "application/json"
               }
@@ -73,8 +78,14 @@
             },
             "url": {
               "raw": "{{baseUrl}}/v1/Services/{{provider_id}}",
-              "host": ["{{baseUrl}}"],
-              "path": ["v1", "Services", "{{provider_id}}"]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "v1",
+                "Services",
+                "{{provider_id}}"
+              ]
             },
             "description": "Add a new service to provider"
           },
@@ -84,11 +95,23 @@
           "name": "Get Service Details",
           "request": {
             "method": "GET",
-            "header": [],
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
             "url": {
               "raw": "{{baseUrl}}/v1/Services/{{service_id}}?includeProvider=true&includeOptions=true&includePriceTiers=true",
-              "host": ["{{baseUrl}}"],
-              "path": ["v1", "Services", "{{service_id}}"],
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "v1",
+                "Services",
+                "{{service_id}}"
+              ],
               "query": [
                 {
                   "key": "includeProvider",
@@ -112,11 +135,23 @@
           "name": "Search Services",
           "request": {
             "method": "GET",
-            "header": [],
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
             "url": {
               "raw": "{{baseUrl}}/v1/Services/search?query=کوتاهی مو&category=Hair Services&city=Tehran&pageNumber=1&pageSize=20",
-              "host": ["{{baseUrl}}"],
-              "path": ["v1", "Services", "search"],
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "v1",
+                "Services",
+                "search"
+              ],
               "query": [
                 {
                   "key": "query",
@@ -148,11 +183,24 @@
           "name": "Get Services by Provider",
           "request": {
             "method": "GET",
-            "header": [],
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
             "url": {
               "raw": "{{baseUrl}}/v1/Services/provider/{{provider_id}}?pageNumber=1&pageSize=50",
-              "host": ["{{baseUrl}}"],
-              "path": ["v1", "Services", "provider", "{{provider_id}}"],
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "v1",
+                "Services",
+                "provider",
+                "{{provider_id}}"
+              ],
               "query": [
                 {
                   "key": "pageNumber",
@@ -172,11 +220,23 @@
           "name": "Get Popular Services",
           "request": {
             "method": "GET",
-            "header": [],
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
             "url": {
               "raw": "{{baseUrl}}/v1/Services/popular?categoryFilter=Hair Services&limit=20",
-              "host": ["{{baseUrl}}"],
-              "path": ["v1", "Services", "popular"],
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "v1",
+                "Services",
+                "popular"
+              ],
               "query": [
                 {
                   "key": "categoryFilter",
@@ -208,6 +268,11 @@
             "method": "PUT",
             "header": [
               {
+                "key": "Accept",
+                "value": "application/json",
+                "type": "text"
+              },
+              {
                 "key": "Content-Type",
                 "value": "application/json"
               }
@@ -218,8 +283,15 @@
             },
             "url": {
               "raw": "{{baseUrl}}/v1/Services/{{provider_id}}/{{service_id}}",
-              "host": ["{{baseUrl}}"],
-              "path": ["v1", "Services", "{{provider_id}}", "{{service_id}}"]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "v1",
+                "Services",
+                "{{provider_id}}",
+                "{{service_id}}"
+              ]
             },
             "description": "Update service details"
           },
@@ -239,11 +311,24 @@
               ]
             },
             "method": "POST",
-            "header": [],
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
             "url": {
               "raw": "{{baseUrl}}/v1/Services/{{service_id}}/activate",
-              "host": ["{{baseUrl}}"],
-              "path": ["v1", "Services", "{{service_id}}", "activate"]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "v1",
+                "Services",
+                "{{service_id}}",
+                "activate"
+              ]
             },
             "description": "Activate service"
           },
@@ -265,6 +350,11 @@
             "method": "POST",
             "header": [
               {
+                "key": "Accept",
+                "value": "application/json",
+                "type": "text"
+              },
+              {
                 "key": "Content-Type",
                 "value": "application/json"
               }
@@ -275,8 +365,15 @@
             },
             "url": {
               "raw": "{{baseUrl}}/v1/Services/{{service_id}}/deactivate",
-              "host": ["{{baseUrl}}"],
-              "path": ["v1", "Services", "{{service_id}}", "deactivate"]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "v1",
+                "Services",
+                "{{service_id}}",
+                "deactivate"
+              ]
             },
             "description": "Deactivate service"
           },
@@ -296,11 +393,23 @@
               ]
             },
             "method": "DELETE",
-            "header": [],
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
             "url": {
               "raw": "{{baseUrl}}/v1/Services/{{service_id}}",
-              "host": ["{{baseUrl}}"],
-              "path": ["v1", "Services", "{{service_id}}"]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "v1",
+                "Services",
+                "{{service_id}}"
+              ]
             },
             "description": "Archive/delete service"
           },
@@ -320,11 +429,24 @@
               ]
             },
             "method": "GET",
-            "header": [],
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
             "url": {
               "raw": "{{baseUrl}}/v1/Services/by-status/Active?maxResults=100",
-              "host": ["{{baseUrl}}"],
-              "path": ["v1", "Services", "by-status", "Active"],
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "v1",
+                "Services",
+                "by-status",
+                "Active"
+              ],
               "query": [
                 {
                   "key": "maxResults",
@@ -346,11 +468,23 @@
           "name": "Get Available Slots",
           "request": {
             "method": "GET",
-            "header": [],
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
             "url": {
               "raw": "{{baseUrl}}/v1/Availability/slots?ProviderId={{provider_id}}&ServiceId={{service_id}}&Date=2025-12-15&StaffId={{staff_id}}",
-              "host": ["{{baseUrl}}"],
-              "path": ["v1", "Availability", "slots"],
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "v1",
+                "Availability",
+                "slots"
+              ],
               "query": [
                 {
                   "key": "ProviderId",
@@ -378,11 +512,23 @@
           "name": "Check Slot Availability",
           "request": {
             "method": "GET",
-            "header": [],
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
             "url": {
               "raw": "{{baseUrl}}/v1/Availability/check?providerId={{provider_id}}&serviceId={{service_id}}&startTime=2025-12-15T14:00:00Z&staffId={{staff_id}}",
-              "host": ["{{baseUrl}}"],
-              "path": ["v1", "Availability", "check"],
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "v1",
+                "Availability",
+                "check"
+              ],
               "query": [
                 {
                   "key": "providerId",
@@ -410,11 +556,23 @@
           "name": "Get Available Dates",
           "request": {
             "method": "GET",
-            "header": [],
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
             "url": {
               "raw": "{{baseUrl}}/v1/Availability/dates?providerId={{provider_id}}&serviceId={{service_id}}&fromDate=2025-12-01&toDate=2025-12-31",
-              "host": ["{{baseUrl}}"],
-              "path": ["v1", "Availability", "dates"],
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "v1",
+                "Availability",
+                "dates"
+              ],
               "query": [
                 {
                   "key": "providerId",
@@ -474,6 +632,11 @@
             "method": "POST",
             "header": [
               {
+                "key": "Accept",
+                "value": "application/json",
+                "type": "text"
+              },
+              {
                 "key": "Content-Type",
                 "value": "application/json"
               }
@@ -484,8 +647,13 @@
             },
             "url": {
               "raw": "{{baseUrl}}/v1/Bookings",
-              "host": ["{{baseUrl}}"],
-              "path": ["v1", "Bookings"]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "v1",
+                "Bookings"
+              ]
             },
             "description": "Create a new booking"
           },
@@ -505,11 +673,23 @@
               ]
             },
             "method": "GET",
-            "header": [],
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
             "url": {
               "raw": "{{baseUrl}}/v1/Bookings/{{booking_id}}",
-              "host": ["{{baseUrl}}"],
-              "path": ["v1", "Bookings", "{{booking_id}}"]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "v1",
+                "Bookings",
+                "{{booking_id}}"
+              ]
             },
             "description": "Get booking details"
           },
@@ -529,11 +709,23 @@
               ]
             },
             "method": "GET",
-            "header": [],
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
             "url": {
               "raw": "{{baseUrl}}/v1/Bookings/my-bookings?status=Confirmed&from=2025-12-01&to=2025-12-31",
-              "host": ["{{baseUrl}}"],
-              "path": ["v1", "Bookings", "my-bookings"],
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "v1",
+                "Bookings",
+                "my-bookings"
+              ],
               "query": [
                 {
                   "key": "status",
@@ -567,11 +759,24 @@
               ]
             },
             "method": "GET",
-            "header": [],
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
             "url": {
               "raw": "{{baseUrl}}/v1/Bookings/provider/{{provider_id}}?status=Confirmed&from=2025-12-01&to=2025-12-31",
-              "host": ["{{baseUrl}}"],
-              "path": ["v1", "Bookings", "provider", "{{provider_id}}"],
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "v1",
+                "Bookings",
+                "provider",
+                "{{provider_id}}"
+              ],
               "query": [
                 {
                   "key": "status",
@@ -605,11 +810,23 @@
               ]
             },
             "method": "GET",
-            "header": [],
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
             "url": {
               "raw": "{{baseUrl}}/v1/Bookings/search?providerId={{provider_id}}&status=Confirmed&startDate=2025-12-01&endDate=2025-12-31&pageNumber=1&pageSize=20",
-              "host": ["{{baseUrl}}"],
-              "path": ["v1", "Bookings", "search"],
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "v1",
+                "Bookings",
+                "search"
+              ],
               "query": [
                 {
                   "key": "providerId",
@@ -657,6 +874,11 @@
             "method": "POST",
             "header": [
               {
+                "key": "Accept",
+                "value": "application/json",
+                "type": "text"
+              },
+              {
                 "key": "Content-Type",
                 "value": "application/json"
               }
@@ -667,8 +889,15 @@
             },
             "url": {
               "raw": "{{baseUrl}}/v1/Bookings/{{booking_id}}/confirm",
-              "host": ["{{baseUrl}}"],
-              "path": ["v1", "Bookings", "{{booking_id}}", "confirm"]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "v1",
+                "Bookings",
+                "{{booking_id}}",
+                "confirm"
+              ]
             },
             "description": "Confirm booking (Provider/Admin)"
           },
@@ -690,6 +919,11 @@
             "method": "POST",
             "header": [
               {
+                "key": "Accept",
+                "value": "application/json",
+                "type": "text"
+              },
+              {
                 "key": "Content-Type",
                 "value": "application/json"
               }
@@ -700,8 +934,15 @@
             },
             "url": {
               "raw": "{{baseUrl}}/v1/Bookings/{{booking_id}}/cancel",
-              "host": ["{{baseUrl}}"],
-              "path": ["v1", "Bookings", "{{booking_id}}", "cancel"]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "v1",
+                "Bookings",
+                "{{booking_id}}",
+                "cancel"
+              ]
             },
             "description": "Cancel booking"
           },
@@ -723,6 +964,11 @@
             "method": "POST",
             "header": [
               {
+                "key": "Accept",
+                "value": "application/json",
+                "type": "text"
+              },
+              {
                 "key": "Content-Type",
                 "value": "application/json"
               }
@@ -733,8 +979,15 @@
             },
             "url": {
               "raw": "{{baseUrl}}/v1/Bookings/{{booking_id}}/reschedule",
-              "host": ["{{baseUrl}}"],
-              "path": ["v1", "Bookings", "{{booking_id}}", "reschedule"]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "v1",
+                "Bookings",
+                "{{booking_id}}",
+                "reschedule"
+              ]
             },
             "description": "Reschedule booking to new time"
           },
@@ -756,6 +1009,11 @@
             "method": "POST",
             "header": [
               {
+                "key": "Accept",
+                "value": "application/json",
+                "type": "text"
+              },
+              {
                 "key": "Content-Type",
                 "value": "application/json"
               }
@@ -766,8 +1024,15 @@
             },
             "url": {
               "raw": "{{baseUrl}}/v1/Bookings/{{booking_id}}/complete",
-              "host": ["{{baseUrl}}"],
-              "path": ["v1", "Bookings", "{{booking_id}}", "complete"]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "v1",
+                "Bookings",
+                "{{booking_id}}",
+                "complete"
+              ]
             },
             "description": "Mark booking as completed (Provider/Admin)"
           },
@@ -789,6 +1054,11 @@
             "method": "POST",
             "header": [
               {
+                "key": "Accept",
+                "value": "application/json",
+                "type": "text"
+              },
+              {
                 "key": "Content-Type",
                 "value": "application/json"
               }
@@ -799,8 +1069,15 @@
             },
             "url": {
               "raw": "{{baseUrl}}/v1/Bookings/{{booking_id}}/no-show",
-              "host": ["{{baseUrl}}"],
-              "path": ["v1", "Bookings", "{{booking_id}}", "no-show"]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "v1",
+                "Bookings",
+                "{{booking_id}}",
+                "no-show"
+              ]
             },
             "description": "Mark booking as no-show (Provider/Admin)"
           },
@@ -820,11 +1097,25 @@
               ]
             },
             "method": "PUT",
-            "header": [],
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
             "url": {
               "raw": "{{baseUrl}}/v1/Bookings/{{booking_id}}/assign-staff/{{staff_id}}",
-              "host": ["{{baseUrl}}"],
-              "path": ["v1", "Bookings", "{{booking_id}}", "assign-staff", "{{staff_id}}"]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "v1",
+                "Bookings",
+                "{{booking_id}}",
+                "assign-staff",
+                "{{staff_id}}"
+              ]
             },
             "description": "Assign or change staff member (Provider/Admin)"
           },
@@ -846,6 +1137,11 @@
             "method": "POST",
             "header": [
               {
+                "key": "Accept",
+                "value": "application/json",
+                "type": "text"
+              },
+              {
                 "key": "Content-Type",
                 "value": "application/json"
               }
@@ -856,8 +1152,15 @@
             },
             "url": {
               "raw": "{{baseUrl}}/v1/Bookings/{{booking_id}}/notes",
-              "host": ["{{baseUrl}}"],
-              "path": ["v1", "Bookings", "{{booking_id}}", "notes"]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "v1",
+                "Bookings",
+                "{{booking_id}}",
+                "notes"
+              ]
             },
             "description": "Add notes to booking"
           },
@@ -877,11 +1180,23 @@
               ]
             },
             "method": "GET",
-            "header": [],
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
             "url": {
               "raw": "{{baseUrl}}/v1/Bookings/statistics?providerId={{provider_id}}&startDate=2025-12-01&endDate=2025-12-31",
-              "host": ["{{baseUrl}}"],
-              "path": ["v1", "Bookings", "statistics"],
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "v1",
+                "Bookings",
+                "statistics"
+              ],
               "query": [
                 {
                   "key": "providerId",

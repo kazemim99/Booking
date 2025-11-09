@@ -16,6 +16,37 @@
       }
     ]
   },
+  "event": [
+    {
+      "listen": "prerequest",
+      "script": {
+        "type": "text/javascript",
+        "exec": [
+          "// Pre-request script for all requests",
+          "// Environment variables are automatically available"
+        ]
+      }
+    },
+    {
+      "listen": "test",
+      "script": {
+        "type": "text/javascript",
+        "exec": [
+          "// Global test script",
+          "// Check for common error responses",
+          "if (pm.response.code === 401) {",
+          "    console.warn('⚠️ Authentication failed. Please login again.');",
+          "}",
+          "if (pm.response.code === 403) {",
+          "    console.warn('⚠️ Access forbidden. Check your permissions.');",
+          "}",
+          "if (pm.response.code >= 500) {",
+          "    console.error('❌ Server error:', pm.response.code);",
+          "}"
+        ]
+      }
+    }
+  ],
   "variable": [
     {
       "key": "baseUrl",
@@ -44,6 +75,11 @@
             "method": "POST",
             "header": [
               {
+                "key": "Accept",
+                "value": "application/json",
+                "type": "text"
+              },
+              {
                 "key": "Content-Type",
                 "value": "application/json"
               }
@@ -54,8 +90,13 @@
             },
             "url": {
               "raw": "{{userManagementUrl}}/v1/Users",
-              "host": ["{{userManagementUrl}}"],
-              "path": ["v1", "Users"]
+              "host": [
+                "{{userManagementUrl}}"
+              ],
+              "path": [
+                "v1",
+                "Users"
+              ]
             },
             "description": "Register a new user (Customer or Provider)"
           },
@@ -83,6 +124,11 @@
             "method": "POST",
             "header": [
               {
+                "key": "Accept",
+                "value": "application/json",
+                "type": "text"
+              },
+              {
                 "key": "Content-Type",
                 "value": "application/json"
               }
@@ -93,8 +139,14 @@
             },
             "url": {
               "raw": "{{userManagementUrl}}/v1/auth/login",
-              "host": ["{{userManagementUrl}}"],
-              "path": ["v1", "auth", "login"]
+              "host": [
+                "{{userManagementUrl}}"
+              ],
+              "path": [
+                "v1",
+                "auth",
+                "login"
+              ]
             },
             "description": "Login with email and password"
           },
@@ -121,6 +173,11 @@
             "method": "POST",
             "header": [
               {
+                "key": "Accept",
+                "value": "application/json",
+                "type": "text"
+              },
+              {
                 "key": "Content-Type",
                 "value": "application/json"
               }
@@ -131,8 +188,14 @@
             },
             "url": {
               "raw": "{{userManagementUrl}}/v1/auth/refresh",
-              "host": ["{{userManagementUrl}}"],
-              "path": ["v1", "auth", "refresh"]
+              "host": [
+                "{{userManagementUrl}}"
+              ],
+              "path": [
+                "v1",
+                "auth",
+                "refresh"
+              ]
             },
             "description": "Refresh access token using refresh token"
           },
@@ -152,11 +215,23 @@
               ]
             },
             "method": "POST",
-            "header": [],
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
             "url": {
               "raw": "{{userManagementUrl}}/v1/auth/logout",
-              "host": ["{{userManagementUrl}}"],
-              "path": ["v1", "auth", "logout"]
+              "host": [
+                "{{userManagementUrl}}"
+              ],
+              "path": [
+                "v1",
+                "auth",
+                "logout"
+              ]
             },
             "description": "Logout and invalidate current session"
           },
@@ -168,6 +243,11 @@
             "method": "POST",
             "header": [
               {
+                "key": "Accept",
+                "value": "application/json",
+                "type": "text"
+              },
+              {
                 "key": "Content-Type",
                 "value": "application/json"
               }
@@ -178,8 +258,14 @@
             },
             "url": {
               "raw": "{{userManagementUrl}}/v1/auth/forgot-password",
-              "host": ["{{userManagementUrl}}"],
-              "path": ["v1", "auth", "forgot-password"]
+              "host": [
+                "{{userManagementUrl}}"
+              ],
+              "path": [
+                "v1",
+                "auth",
+                "forgot-password"
+              ]
             },
             "description": "Request password reset link"
           },
@@ -191,6 +277,11 @@
             "method": "POST",
             "header": [
               {
+                "key": "Accept",
+                "value": "application/json",
+                "type": "text"
+              },
+              {
                 "key": "Content-Type",
                 "value": "application/json"
               }
@@ -201,8 +292,14 @@
             },
             "url": {
               "raw": "{{userManagementUrl}}/v1/Auth/send-verification-code",
-              "host": ["{{userManagementUrl}}"],
-              "path": ["v1", "Auth", "send-verification-code"]
+              "host": [
+                "{{userManagementUrl}}"
+              ],
+              "path": [
+                "v1",
+                "Auth",
+                "send-verification-code"
+              ]
             },
             "description": "Send SMS verification code to Iranian phone number"
           },
@@ -214,6 +311,11 @@
             "method": "POST",
             "header": [
               {
+                "key": "Accept",
+                "value": "application/json",
+                "type": "text"
+              },
+              {
                 "key": "Content-Type",
                 "value": "application/json"
               }
@@ -224,8 +326,14 @@
             },
             "url": {
               "raw": "{{userManagementUrl}}/v1/Auth/verify-code",
-              "host": ["{{userManagementUrl}}"],
-              "path": ["v1", "Auth", "verify-code"]
+              "host": [
+                "{{userManagementUrl}}"
+              ],
+              "path": [
+                "v1",
+                "Auth",
+                "verify-code"
+              ]
             },
             "description": "Verify phone with OTP code"
           },
@@ -237,6 +345,11 @@
             "method": "POST",
             "header": [
               {
+                "key": "Accept",
+                "value": "application/json",
+                "type": "text"
+              },
+              {
                 "key": "Content-Type",
                 "value": "application/json"
               }
@@ -247,8 +360,14 @@
             },
             "url": {
               "raw": "{{userManagementUrl}}/v1/phone-verification/request",
-              "host": ["{{userManagementUrl}}"],
-              "path": ["v1", "phone-verification", "request"]
+              "host": [
+                "{{userManagementUrl}}"
+              ],
+              "path": [
+                "v1",
+                "phone-verification",
+                "request"
+              ]
             },
             "description": "Request phone verification via SMS"
           },
@@ -260,6 +379,11 @@
             "method": "POST",
             "header": [
               {
+                "key": "Accept",
+                "value": "application/json",
+                "type": "text"
+              },
+              {
                 "key": "Content-Type",
                 "value": "application/json"
               }
@@ -270,8 +394,14 @@
             },
             "url": {
               "raw": "{{userManagementUrl}}/v1/phone-verification/verify",
-              "host": ["{{userManagementUrl}}"],
-              "path": ["v1", "phone-verification", "verify"]
+              "host": [
+                "{{userManagementUrl}}"
+              ],
+              "path": [
+                "v1",
+                "phone-verification",
+                "verify"
+              ]
             },
             "description": "Verify phone number with OTP"
           },
@@ -283,6 +413,11 @@
             "method": "POST",
             "header": [
               {
+                "key": "Accept",
+                "value": "application/json",
+                "type": "text"
+              },
+              {
                 "key": "Content-Type",
                 "value": "application/json"
               }
@@ -293,8 +428,14 @@
             },
             "url": {
               "raw": "{{userManagementUrl}}/v1/phone-verification/resend",
-              "host": ["{{userManagementUrl}}"],
-              "path": ["v1", "phone-verification", "resend"]
+              "host": [
+                "{{userManagementUrl}}"
+              ],
+              "path": [
+                "v1",
+                "phone-verification",
+                "resend"
+              ]
             },
             "description": "Resend OTP code"
           },
@@ -314,11 +455,23 @@
               ]
             },
             "method": "GET",
-            "header": [],
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
             "url": {
               "raw": "{{userManagementUrl}}/v1/Users/{{user_id}}",
-              "host": ["{{userManagementUrl}}"],
-              "path": ["v1", "Users", "{{user_id}}"]
+              "host": [
+                "{{userManagementUrl}}"
+              ],
+              "path": [
+                "v1",
+                "Users",
+                "{{user_id}}"
+              ]
             },
             "description": "Get user profile details"
           },
@@ -340,6 +493,11 @@
             "method": "PUT",
             "header": [
               {
+                "key": "Accept",
+                "value": "application/json",
+                "type": "text"
+              },
+              {
                 "key": "Content-Type",
                 "value": "application/json"
               }
@@ -350,8 +508,15 @@
             },
             "url": {
               "raw": "{{userManagementUrl}}/v1/Users/{{user_id}}/profile",
-              "host": ["{{userManagementUrl}}"],
-              "path": ["v1", "Users", "{{user_id}}", "profile"]
+              "host": [
+                "{{userManagementUrl}}"
+              ],
+              "path": [
+                "v1",
+                "Users",
+                "{{user_id}}",
+                "profile"
+              ]
             },
             "description": "Update user profile information"
           },
@@ -373,6 +538,11 @@
             "method": "POST",
             "header": [
               {
+                "key": "Accept",
+                "value": "application/json",
+                "type": "text"
+              },
+              {
                 "key": "Content-Type",
                 "value": "application/json"
               }
@@ -383,8 +553,15 @@
             },
             "url": {
               "raw": "{{userManagementUrl}}/v1/Users/{{user_id}}/change-password",
-              "host": ["{{userManagementUrl}}"],
-              "path": ["v1", "Users", "{{user_id}}", "change-password"]
+              "host": [
+                "{{userManagementUrl}}"
+              ],
+              "path": [
+                "v1",
+                "Users",
+                "{{user_id}}",
+                "change-password"
+              ]
             },
             "description": "Change user password"
           },
@@ -406,6 +583,11 @@
             "method": "POST",
             "header": [
               {
+                "key": "Accept",
+                "value": "application/json",
+                "type": "text"
+              },
+              {
                 "key": "Content-Type",
                 "value": "application/json"
               }
@@ -416,8 +598,15 @@
             },
             "url": {
               "raw": "{{userManagementUrl}}/v1/Users/{{user_id}}/activate",
-              "host": ["{{userManagementUrl}}"],
-              "path": ["v1", "Users", "{{user_id}}", "activate"]
+              "host": [
+                "{{userManagementUrl}}"
+              ],
+              "path": [
+                "v1",
+                "Users",
+                "{{user_id}}",
+                "activate"
+              ]
             },
             "description": "Activate user account"
           },
@@ -437,11 +626,23 @@
               ]
             },
             "method": "GET",
-            "header": [],
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
             "url": {
               "raw": "{{userManagementUrl}}/v1/Users/search?query=سارا&pageNumber=1&pageSize=20",
-              "host": ["{{userManagementUrl}}"],
-              "path": ["v1", "Users", "search"],
+              "host": [
+                "{{userManagementUrl}}"
+              ],
+              "path": [
+                "v1",
+                "Users",
+                "search"
+              ],
               "query": [
                 {
                   "key": "query",
@@ -475,11 +676,24 @@
               ]
             },
             "method": "GET",
-            "header": [],
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
             "url": {
               "raw": "{{userManagementUrl}}/v1/Users/by-status/Active?maxResults=100",
-              "host": ["{{userManagementUrl}}"],
-              "path": ["v1", "Users", "by-status", "Active"],
+              "host": [
+                "{{userManagementUrl}}"
+              ],
+              "path": [
+                "v1",
+                "Users",
+                "by-status",
+                "Active"
+              ],
               "query": [
                 {
                   "key": "maxResults",
@@ -517,6 +731,11 @@
             "method": "POST",
             "header": [
               {
+                "key": "Accept",
+                "value": "application/json",
+                "type": "text"
+              },
+              {
                 "key": "Content-Type",
                 "value": "application/json"
               }
@@ -527,8 +746,14 @@
             },
             "url": {
               "raw": "{{userManagementUrl}}/v1/Customers/register",
-              "host": ["{{userManagementUrl}}"],
-              "path": ["v1", "Customers", "register"]
+              "host": [
+                "{{userManagementUrl}}"
+              ],
+              "path": [
+                "v1",
+                "Customers",
+                "register"
+              ]
             },
             "description": "Register a new customer"
           },
@@ -548,11 +773,23 @@
               ]
             },
             "method": "GET",
-            "header": [],
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
             "url": {
               "raw": "{{userManagementUrl}}/v1/Customers/{{customer_id}}",
-              "host": ["{{userManagementUrl}}"],
-              "path": ["v1", "Customers", "{{customer_id}}"]
+              "host": [
+                "{{userManagementUrl}}"
+              ],
+              "path": [
+                "v1",
+                "Customers",
+                "{{customer_id}}"
+              ]
             },
             "description": "Get customer profile details"
           },
@@ -574,6 +811,11 @@
             "method": "PUT",
             "header": [
               {
+                "key": "Accept",
+                "value": "application/json",
+                "type": "text"
+              },
+              {
                 "key": "Content-Type",
                 "value": "application/json"
               }
@@ -584,8 +826,14 @@
             },
             "url": {
               "raw": "{{userManagementUrl}}/v1/Customers/{{customer_id}}",
-              "host": ["{{userManagementUrl}}"],
-              "path": ["v1", "Customers", "{{customer_id}}"]
+              "host": [
+                "{{userManagementUrl}}"
+              ],
+              "path": [
+                "v1",
+                "Customers",
+                "{{customer_id}}"
+              ]
             },
             "description": "Update customer profile"
           },
@@ -605,11 +853,24 @@
               ]
             },
             "method": "GET",
-            "header": [],
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
             "url": {
               "raw": "{{userManagementUrl}}/v1/Customers/{{customer_id}}/favorites",
-              "host": ["{{userManagementUrl}}"],
-              "path": ["v1", "Customers", "{{customer_id}}", "favorites"]
+              "host": [
+                "{{userManagementUrl}}"
+              ],
+              "path": [
+                "v1",
+                "Customers",
+                "{{customer_id}}",
+                "favorites"
+              ]
             },
             "description": "Get customer's favorite providers"
           },
@@ -631,6 +892,11 @@
             "method": "POST",
             "header": [
               {
+                "key": "Accept",
+                "value": "application/json",
+                "type": "text"
+              },
+              {
                 "key": "Content-Type",
                 "value": "application/json"
               }
@@ -641,8 +907,15 @@
             },
             "url": {
               "raw": "{{userManagementUrl}}/v1/Customers/{{customer_id}}/favorites",
-              "host": ["{{userManagementUrl}}"],
-              "path": ["v1", "Customers", "{{customer_id}}", "favorites"]
+              "host": [
+                "{{userManagementUrl}}"
+              ],
+              "path": [
+                "v1",
+                "Customers",
+                "{{customer_id}}",
+                "favorites"
+              ]
             },
             "description": "Add provider to favorites"
           },
@@ -662,11 +935,25 @@
               ]
             },
             "method": "DELETE",
-            "header": [],
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
             "url": {
               "raw": "{{userManagementUrl}}/v1/Customers/{{customer_id}}/favorites/{{provider_id}}",
-              "host": ["{{userManagementUrl}}"],
-              "path": ["v1", "Customers", "{{customer_id}}", "favorites", "{{provider_id}}"]
+              "host": [
+                "{{userManagementUrl}}"
+              ],
+              "path": [
+                "v1",
+                "Customers",
+                "{{customer_id}}",
+                "favorites",
+                "{{provider_id}}"
+              ]
             },
             "description": "Remove provider from favorites"
           },
@@ -708,6 +995,11 @@
             "method": "POST",
             "header": [
               {
+                "key": "Accept",
+                "value": "application/json",
+                "type": "text"
+              },
+              {
                 "key": "Content-Type",
                 "value": "application/json"
               }
@@ -718,8 +1010,14 @@
             },
             "url": {
               "raw": "{{baseUrl}}/v1/Providers/draft",
-              "host": ["{{baseUrl}}"],
-              "path": ["v1", "Providers", "draft"]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "v1",
+                "Providers",
+                "draft"
+              ]
             },
             "description": "Create a provider draft registration"
           },
@@ -739,11 +1037,23 @@
               ]
             },
             "method": "GET",
-            "header": [],
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
             "url": {
               "raw": "{{baseUrl}}/v1/Providers/draft",
-              "host": ["{{baseUrl}}"],
-              "path": ["v1", "Providers", "draft"]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "v1",
+                "Providers",
+                "draft"
+              ]
             },
             "description": "Get current provider draft"
           },
@@ -763,11 +1073,24 @@
               ]
             },
             "method": "POST",
-            "header": [],
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
             "url": {
               "raw": "{{baseUrl}}/v1/Providers/{{provider_id}}/complete",
-              "host": ["{{baseUrl}}"],
-              "path": ["v1", "Providers", "{{provider_id}}", "complete"]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "v1",
+                "Providers",
+                "{{provider_id}}",
+                "complete"
+              ]
             },
             "description": "Complete provider registration"
           },
@@ -777,11 +1100,23 @@
           "name": "Get Provider Details",
           "request": {
             "method": "GET",
-            "header": [],
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
             "url": {
               "raw": "{{baseUrl}}/v1/Providers/{{provider_id}}?includeServices=true&includeStaff=true",
-              "host": ["{{baseUrl}}"],
-              "path": ["v1", "Providers", "{{provider_id}}"],
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "v1",
+                "Providers",
+                "{{provider_id}}"
+              ],
               "query": [
                 {
                   "key": "includeServices",
@@ -811,11 +1146,24 @@
               ]
             },
             "method": "GET",
-            "header": [],
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
             "url": {
               "raw": "{{baseUrl}}/v1/Providers/current/status",
-              "host": ["{{baseUrl}}"],
-              "path": ["v1", "Providers", "current", "status"]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "v1",
+                "Providers",
+                "current",
+                "status"
+              ]
             },
             "description": "Get current provider status"
           },
@@ -825,11 +1173,23 @@
           "name": "Search Providers",
           "request": {
             "method": "GET",
-            "header": [],
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
             "url": {
               "raw": "{{baseUrl}}/v1/Providers/search?query=آرایشگاه&city=Tehran&category=Beauty Salon&pageNumber=1&pageSize=20",
-              "host": ["{{baseUrl}}"],
-              "path": ["v1", "Providers", "search"],
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "v1",
+                "Providers",
+                "search"
+              ],
               "query": [
                 {
                   "key": "query",
@@ -861,11 +1221,23 @@
           "name": "Get Providers by Location",
           "request": {
             "method": "GET",
-            "header": [],
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
             "url": {
               "raw": "{{baseUrl}}/v1/Providers/by-location?city=Tehran&latitude=35.6892&longitude=51.3890&radius=5&pageNumber=1&pageSize=20",
-              "host": ["{{baseUrl}}"],
-              "path": ["v1", "Providers", "by-location"],
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "v1",
+                "Providers",
+                "by-location"
+              ],
               "query": [
                 {
                   "key": "city",
@@ -913,6 +1285,11 @@
             "method": "POST",
             "header": [
               {
+                "key": "Accept",
+                "value": "application/json",
+                "type": "text"
+              },
+              {
                 "key": "Content-Type",
                 "value": "application/json"
               }
@@ -923,8 +1300,15 @@
             },
             "url": {
               "raw": "{{baseUrl}}/v1/Providers/{{provider_id}}/activate",
-              "host": ["{{baseUrl}}"],
-              "path": ["v1", "Providers", "{{provider_id}}", "activate"]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "v1",
+                "Providers",
+                "{{provider_id}}",
+                "activate"
+              ]
             },
             "description": "Activate provider (Admin only)"
           },
@@ -944,11 +1328,24 @@
               ]
             },
             "method": "GET",
-            "header": [],
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
             "url": {
               "raw": "{{baseUrl}}/v1/Providers/by-status/Active?maxResults=100",
-              "host": ["{{baseUrl}}"],
-              "path": ["v1", "Providers", "by-status", "Active"],
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "v1",
+                "Providers",
+                "by-status",
+                "Active"
+              ],
               "query": [
                 {
                   "key": "maxResults",
@@ -976,6 +1373,11 @@
             "method": "PUT",
             "header": [
               {
+                "key": "Accept",
+                "value": "application/json",
+                "type": "text"
+              },
+              {
                 "key": "Content-Type",
                 "value": "application/json"
               }
@@ -986,8 +1388,14 @@
             },
             "url": {
               "raw": "{{baseUrl}}/v1/Providers/profile",
-              "host": ["{{baseUrl}}"],
-              "path": ["v1", "Providers", "profile"]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "v1",
+                "Providers",
+                "profile"
+              ]
             },
             "description": "Update provider profile"
           },
@@ -1009,6 +1417,11 @@
             "method": "PUT",
             "header": [
               {
+                "key": "Accept",
+                "value": "application/json",
+                "type": "text"
+              },
+              {
                 "key": "Content-Type",
                 "value": "application/json"
               }
@@ -1019,8 +1432,14 @@
             },
             "url": {
               "raw": "{{baseUrl}}/v1/Providers/business",
-              "host": ["{{baseUrl}}"],
-              "path": ["v1", "Providers", "business"]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "v1",
+                "Providers",
+                "business"
+              ]
             },
             "description": "Update business information"
           },
@@ -1040,7 +1459,13 @@
               ]
             },
             "method": "POST",
-            "header": [],
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
             "body": {
               "mode": "formdata",
               "formdata": [
@@ -1053,8 +1478,15 @@
             },
             "url": {
               "raw": "{{baseUrl}}/v1/Providers/profile/image",
-              "host": ["{{baseUrl}}"],
-              "path": ["v1", "Providers", "profile", "image"]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "v1",
+                "Providers",
+                "profile",
+                "image"
+              ]
             },
             "description": "Upload provider profile image (max 5MB)"
           },
@@ -1074,7 +1506,13 @@
               ]
             },
             "method": "POST",
-            "header": [],
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
             "body": {
               "mode": "formdata",
               "formdata": [
@@ -1087,8 +1525,15 @@
             },
             "url": {
               "raw": "{{baseUrl}}/v1/Providers/business/logo",
-              "host": ["{{baseUrl}}"],
-              "path": ["v1", "Providers", "business", "logo"]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "v1",
+                "Providers",
+                "business",
+                "logo"
+              ]
             },
             "description": "Upload business logo (max 5MB)"
           },
@@ -1114,11 +1559,24 @@
               ]
             },
             "method": "GET",
-            "header": [],
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
             "url": {
               "raw": "{{baseUrl}}/v1/Providers/{{provider_id}}/staff?activeOnly=true",
-              "host": ["{{baseUrl}}"],
-              "path": ["v1", "Providers", "{{provider_id}}", "staff"],
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "v1",
+                "Providers",
+                "{{provider_id}}",
+                "staff"
+              ],
               "query": [
                 {
                   "key": "activeOnly",
@@ -1160,6 +1618,11 @@
             "method": "POST",
             "header": [
               {
+                "key": "Accept",
+                "value": "application/json",
+                "type": "text"
+              },
+              {
                 "key": "Content-Type",
                 "value": "application/json"
               }
@@ -1170,8 +1633,15 @@
             },
             "url": {
               "raw": "{{baseUrl}}/v1/Providers/{{provider_id}}/staff",
-              "host": ["{{baseUrl}}"],
-              "path": ["v1", "Providers", "{{provider_id}}", "staff"]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "v1",
+                "Providers",
+                "{{provider_id}}",
+                "staff"
+              ]
             },
             "description": "Add a staff member to provider"
           },
@@ -1193,6 +1663,11 @@
             "method": "PUT",
             "header": [
               {
+                "key": "Accept",
+                "value": "application/json",
+                "type": "text"
+              },
+              {
                 "key": "Content-Type",
                 "value": "application/json"
               }
@@ -1203,8 +1678,16 @@
             },
             "url": {
               "raw": "{{baseUrl}}/v1/Providers/{{provider_id}}/staff/{{staff_id}}",
-              "host": ["{{baseUrl}}"],
-              "path": ["v1", "Providers", "{{provider_id}}", "staff", "{{staff_id}}"]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "v1",
+                "Providers",
+                "{{provider_id}}",
+                "staff",
+                "{{staff_id}}"
+              ]
             },
             "description": "Update staff member details"
           },
@@ -1224,11 +1707,25 @@
               ]
             },
             "method": "DELETE",
-            "header": [],
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
             "url": {
               "raw": "{{baseUrl}}/v1/Providers/{{provider_id}}/staff/{{staff_id}}",
-              "host": ["{{baseUrl}}"],
-              "path": ["v1", "Providers", "{{provider_id}}", "staff", "{{staff_id}}"]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "v1",
+                "Providers",
+                "{{provider_id}}",
+                "staff",
+                "{{staff_id}}"
+              ]
             },
             "description": "Remove staff member from provider"
           },
@@ -1248,7 +1745,13 @@
               ]
             },
             "method": "POST",
-            "header": [],
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
             "body": {
               "mode": "formdata",
               "formdata": [
@@ -1261,8 +1764,17 @@
             },
             "url": {
               "raw": "{{baseUrl}}/v1/Providers/{{provider_id}}/staff/{{staff_id}}/photo",
-              "host": ["{{baseUrl}}"],
-              "path": ["v1", "Providers", "{{provider_id}}", "staff", "{{staff_id}}", "photo"]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "v1",
+                "Providers",
+                "{{provider_id}}",
+                "staff",
+                "{{staff_id}}",
+                "photo"
+              ]
             },
             "description": "Upload staff member photo"
           },
@@ -1278,11 +1790,24 @@
           "name": "Get Gallery Images",
           "request": {
             "method": "GET",
-            "header": [],
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
             "url": {
               "raw": "{{baseUrl}}/v1/Providers/{{provider_id}}/gallery",
-              "host": ["{{baseUrl}}"],
-              "path": ["v1", "Providers", "{{provider_id}}", "gallery"]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "v1",
+                "Providers",
+                "{{provider_id}}",
+                "gallery"
+              ]
             },
             "description": "Get all gallery images for a provider"
           },
@@ -1318,7 +1843,13 @@
               ]
             },
             "method": "POST",
-            "header": [],
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
             "body": {
               "mode": "formdata",
               "formdata": [
@@ -1331,8 +1862,15 @@
             },
             "url": {
               "raw": "{{baseUrl}}/v1/Providers/{{provider_id}}/gallery",
-              "host": ["{{baseUrl}}"],
-              "path": ["v1", "Providers", "{{provider_id}}", "gallery"]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "v1",
+                "Providers",
+                "{{provider_id}}",
+                "gallery"
+              ]
             },
             "description": "Upload gallery images (max 10 files)"
           },
@@ -1354,6 +1892,11 @@
             "method": "PUT",
             "header": [
               {
+                "key": "Accept",
+                "value": "application/json",
+                "type": "text"
+              },
+              {
                 "key": "Content-Type",
                 "value": "application/json"
               }
@@ -1364,8 +1907,16 @@
             },
             "url": {
               "raw": "{{baseUrl}}/v1/Providers/{{provider_id}}/gallery/{{gallery_image_id}}",
-              "host": ["{{baseUrl}}"],
-              "path": ["v1", "Providers", "{{provider_id}}", "gallery", "{{gallery_image_id}}"]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "v1",
+                "Providers",
+                "{{provider_id}}",
+                "gallery",
+                "{{gallery_image_id}}"
+              ]
             },
             "description": "Update gallery image caption and alt text"
           },
@@ -1387,6 +1938,11 @@
             "method": "PUT",
             "header": [
               {
+                "key": "Accept",
+                "value": "application/json",
+                "type": "text"
+              },
+              {
                 "key": "Content-Type",
                 "value": "application/json"
               }
@@ -1397,8 +1953,16 @@
             },
             "url": {
               "raw": "{{baseUrl}}/v1/Providers/{{provider_id}}/gallery/reorder",
-              "host": ["{{baseUrl}}"],
-              "path": ["v1", "Providers", "{{provider_id}}", "gallery", "reorder"]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "v1",
+                "Providers",
+                "{{provider_id}}",
+                "gallery",
+                "reorder"
+              ]
             },
             "description": "Reorder gallery images"
           },
@@ -1418,11 +1982,26 @@
               ]
             },
             "method": "PUT",
-            "header": [],
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
             "url": {
               "raw": "{{baseUrl}}/v1/Providers/{{provider_id}}/gallery/{{gallery_image_id}}/set-primary",
-              "host": ["{{baseUrl}}"],
-              "path": ["v1", "Providers", "{{provider_id}}", "gallery", "{{gallery_image_id}}", "set-primary"]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "v1",
+                "Providers",
+                "{{provider_id}}",
+                "gallery",
+                "{{gallery_image_id}}",
+                "set-primary"
+              ]
             },
             "description": "Set image as primary gallery image"
           },
@@ -1442,11 +2021,25 @@
               ]
             },
             "method": "DELETE",
-            "header": [],
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
             "url": {
               "raw": "{{baseUrl}}/v1/Providers/{{provider_id}}/gallery/{{gallery_image_id}}",
-              "host": ["{{baseUrl}}"],
-              "path": ["v1", "Providers", "{{provider_id}}", "gallery", "{{gallery_image_id}}"]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "v1",
+                "Providers",
+                "{{provider_id}}",
+                "gallery",
+                "{{gallery_image_id}}"
+              ]
             },
             "description": "Delete gallery image"
           },
@@ -1472,11 +2065,24 @@
               ]
             },
             "method": "GET",
-            "header": [],
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
             "url": {
               "raw": "{{baseUrl}}/v1/providers/{{provider_id}}/business-info",
-              "host": ["{{baseUrl}}"],
-              "path": ["v1", "providers", "{{provider_id}}", "business-info"]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "v1",
+                "providers",
+                "{{provider_id}}",
+                "business-info"
+              ]
             },
             "description": "Get provider business information"
           },
@@ -1498,6 +2104,11 @@
             "method": "PUT",
             "header": [
               {
+                "key": "Accept",
+                "value": "application/json",
+                "type": "text"
+              },
+              {
                 "key": "Content-Type",
                 "value": "application/json"
               }
@@ -1508,8 +2119,15 @@
             },
             "url": {
               "raw": "{{baseUrl}}/v1/providers/{{provider_id}}/business-info",
-              "host": ["{{baseUrl}}"],
-              "path": ["v1", "providers", "{{provider_id}}", "business-info"]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "v1",
+                "providers",
+                "{{provider_id}}",
+                "business-info"
+              ]
             },
             "description": "Update business information"
           },
@@ -1529,11 +2147,24 @@
               ]
             },
             "method": "GET",
-            "header": [],
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
             "url": {
               "raw": "{{baseUrl}}/v1/providers/{{provider_id}}/location",
-              "host": ["{{baseUrl}}"],
-              "path": ["v1", "providers", "{{provider_id}}", "location"]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "v1",
+                "providers",
+                "{{provider_id}}",
+                "location"
+              ]
             },
             "description": "Get provider location"
           },
@@ -1555,6 +2186,11 @@
             "method": "PUT",
             "header": [
               {
+                "key": "Accept",
+                "value": "application/json",
+                "type": "text"
+              },
+              {
                 "key": "Content-Type",
                 "value": "application/json"
               }
@@ -1565,8 +2201,15 @@
             },
             "url": {
               "raw": "{{baseUrl}}/v1/providers/{{provider_id}}/location",
-              "host": ["{{baseUrl}}"],
-              "path": ["v1", "providers", "{{provider_id}}", "location"]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "v1",
+                "providers",
+                "{{provider_id}}",
+                "location"
+              ]
             },
             "description": "Update provider location"
           },
@@ -1586,11 +2229,24 @@
               ]
             },
             "method": "GET",
-            "header": [],
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
             "url": {
               "raw": "{{baseUrl}}/v1/providers/{{provider_id}}/business-hours",
-              "host": ["{{baseUrl}}"],
-              "path": ["v1", "providers", "{{provider_id}}", "business-hours"]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "v1",
+                "providers",
+                "{{provider_id}}",
+                "business-hours"
+              ]
             },
             "description": "Get provider business hours (Iranian calendar - Sat-Thu open, Friday closed)"
           },
@@ -1612,6 +2268,11 @@
             "method": "PUT",
             "header": [
               {
+                "key": "Accept",
+                "value": "application/json",
+                "type": "text"
+              },
+              {
                 "key": "Content-Type",
                 "value": "application/json"
               }
@@ -1622,8 +2283,15 @@
             },
             "url": {
               "raw": "{{baseUrl}}/v1/providers/{{provider_id}}/business-hours",
-              "host": ["{{baseUrl}}"],
-              "path": ["v1", "providers", "{{provider_id}}", "business-hours"]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "v1",
+                "providers",
+                "{{provider_id}}",
+                "business-hours"
+              ]
             },
             "description": "Update business hours (Iranian business week)"
           },
@@ -1643,11 +2311,24 @@
               ]
             },
             "method": "GET",
-            "header": [],
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
             "url": {
               "raw": "{{baseUrl}}/v1/providers/{{provider_id}}/holidays",
-              "host": ["{{baseUrl}}"],
-              "path": ["v1", "providers", "{{provider_id}}", "holidays"]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "v1",
+                "providers",
+                "{{provider_id}}",
+                "holidays"
+              ]
             },
             "description": "Get provider holidays"
           },
@@ -1669,6 +2350,11 @@
             "method": "POST",
             "header": [
               {
+                "key": "Accept",
+                "value": "application/json",
+                "type": "text"
+              },
+              {
                 "key": "Content-Type",
                 "value": "application/json"
               }
@@ -1679,8 +2365,15 @@
             },
             "url": {
               "raw": "{{baseUrl}}/v1/providers/{{provider_id}}/holidays",
-              "host": ["{{baseUrl}}"],
-              "path": ["v1", "providers", "{{provider_id}}", "holidays"]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "v1",
+                "providers",
+                "{{provider_id}}",
+                "holidays"
+              ]
             },
             "description": "Add a holiday (e.g., Nowruz)"
           },
@@ -1700,11 +2393,25 @@
               ]
             },
             "method": "DELETE",
-            "header": [],
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
             "url": {
               "raw": "{{baseUrl}}/v1/providers/{{provider_id}}/holidays/{{holiday_id}}",
-              "host": ["{{baseUrl}}"],
-              "path": ["v1", "providers", "{{provider_id}}", "holidays", "{{holiday_id}}"]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "v1",
+                "providers",
+                "{{provider_id}}",
+                "holidays",
+                "{{holiday_id}}"
+              ]
             },
             "description": "Delete a holiday"
           },
@@ -1724,11 +2431,24 @@
               ]
             },
             "method": "GET",
-            "header": [],
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
             "url": {
               "raw": "{{baseUrl}}/v1/providers/{{provider_id}}/exceptions",
-              "host": ["{{baseUrl}}"],
-              "path": ["v1", "providers", "{{provider_id}}", "exceptions"]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "v1",
+                "providers",
+                "{{provider_id}}",
+                "exceptions"
+              ]
             },
             "description": "Get schedule exceptions"
           },
@@ -1750,6 +2470,11 @@
             "method": "POST",
             "header": [
               {
+                "key": "Accept",
+                "value": "application/json",
+                "type": "text"
+              },
+              {
                 "key": "Content-Type",
                 "value": "application/json"
               }
@@ -1760,8 +2485,15 @@
             },
             "url": {
               "raw": "{{baseUrl}}/v1/providers/{{provider_id}}/exceptions",
-              "host": ["{{baseUrl}}"],
-              "path": ["v1", "providers", "{{provider_id}}", "exceptions"]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "v1",
+                "providers",
+                "{{provider_id}}",
+                "exceptions"
+              ]
             },
             "description": "Add schedule exception"
           },
@@ -1781,11 +2513,25 @@
               ]
             },
             "method": "DELETE",
-            "header": [],
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
             "url": {
               "raw": "{{baseUrl}}/v1/providers/{{provider_id}}/exceptions/{{exception_id}}",
-              "host": ["{{baseUrl}}"],
-              "path": ["v1", "providers", "{{provider_id}}", "exceptions", "{{exception_id}}"]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "v1",
+                "providers",
+                "{{provider_id}}",
+                "exceptions",
+                "{{exception_id}}"
+              ]
             },
             "description": "Delete schedule exception"
           },
@@ -1795,11 +2541,24 @@
           "name": "Get Availability for Date",
           "request": {
             "method": "GET",
-            "header": [],
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
             "url": {
               "raw": "{{baseUrl}}/v1/providers/{{provider_id}}/availability?date=2025-12-15",
-              "host": ["{{baseUrl}}"],
-              "path": ["v1", "providers", "{{provider_id}}", "availability"],
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "v1",
+                "providers",
+                "{{provider_id}}",
+                "availability"
+              ],
               "query": [
                 {
                   "key": "date",
