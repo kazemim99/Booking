@@ -10,10 +10,14 @@ namespace Booksy.ServiceCatalog.Api.Controllers.V1;
 /// <summary>
 /// Progressive provider registration endpoints
 /// Handles step-by-step registration flow with separate endpoints for each step
+///
+/// NOTE: These endpoints are AllowAnonymous because users register BEFORE having an account.
+/// Phone verification is validated within the registration logic.
+/// Account creation and authentication happens at the end of the registration flow (Step 9).
 /// </summary>
 [ApiController]
 [Route("api/v1/registration")]
-[Authorize]
+[AllowAnonymous]
 public class ProviderRegistrationController : ControllerBase
 {
     private readonly ISender _sender;
