@@ -1,0 +1,3094 @@
+{
+  "info": {
+    "name": "Booksy API - Complete Collection",
+    "description": "Complete API collection for Booksy booking system with Iranian cultural context.\n\nIncludes:\n- User Management APIs\n- Service Catalog APIs\n- Booking Management\n- Payment & Financial APIs\n- Provider Management\n- Authentication & Authorization\n\nAll sample data uses Persian names, Iranian phone numbers, national codes, and cultural context.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+    "_exporter_id": "booksy-api-v1"
+  },
+  "auth": {
+    "type": "bearer",
+    "bearer": [
+      {
+        "key": "token",
+        "value": "{{accessToken}}",
+        "type": "string"
+      }
+    ]
+  },
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://localhost:5000",
+      "type": "string"
+    },
+    {
+      "key": "servicecat_baseUrl",
+      "value": "http://localhost:5001",
+      "type": "string"
+    },
+    {
+      "key": "accessToken",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "refreshToken",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "userId",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "providerId",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "customerId",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "bookingId",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "serviceId",
+      "value": "",
+      "type": "string"
+    }
+  ],
+  "item": [
+    {
+      "name": "User Management",
+      "item": [
+        {
+          "name": "Authentication",
+          "item": [
+            {
+              "name": "Login",
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "exec": [
+                      "if (pm.response.code === 200) {",
+                      "    var jsonData = pm.response.json();",
+                      "    pm.collectionVariables.set('accessToken', jsonData.accessToken);",
+                      "    pm.collectionVariables.set('refreshToken', jsonData.refreshToken);",
+                      "    pm.collectionVariables.set('userId', jsonData.userInfo.id);",
+                      "}"
+                    ]
+                  }
+                }
+              ],
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"email\": \"reza.ahmadi@example.com\",\n  \"password\": \"Password@123\",\n  \"rememberMe\": true\n}"
+                },
+                "url": {
+                  "raw": "{{baseUrl}}/api/v1/auth/login",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["api", "v1", "auth", "login"]
+                },
+                "description": "Authenticate user with email and password to get access token"
+              },
+              "response": []
+            },
+            {
+              "name": "Refresh Token",
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "exec": [
+                      "if (pm.response.code === 200) {",
+                      "    var jsonData = pm.response.json();",
+                      "    pm.collectionVariables.set('accessToken', jsonData.accessToken);",
+                      "    pm.collectionVariables.set('refreshToken', jsonData.refreshToken);",
+                      "}"
+                    ]
+                  }
+                }
+              ],
+              "request": {
+                "method": "POST",
+                "header": [],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"refreshToken\": \"{{refreshToken}}\"\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                },
+                "url": {
+                  "raw": "{{baseUrl}}/api/v1/auth/refresh",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["api", "v1", "auth", "refresh"]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "Logout",
+              "request": {
+                "method": "POST",
+                "header": [],
+                "url": {
+                  "raw": "{{baseUrl}}/api/v1/auth/logout",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["api", "v1", "auth", "logout"]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "Forgot Password",
+              "request": {
+                "method": "POST",
+                "header": [],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"email\": \"reza.ahmadi@example.com\"\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                },
+                "url": {
+                  "raw": "{{baseUrl}}/api/v1/auth/forgot-password",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["api", "v1", "auth", "forgot-password"]
+                }
+              },
+              "response": []
+            }
+          ]
+        },
+        {
+          "name": "Phone Verification",
+          "item": [
+            {
+              "name": "Send Verification Code",
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "exec": [
+                      "if (pm.response.code === 200) {",
+                      "    var jsonData = pm.response.json();",
+                      "    pm.collectionVariables.set('verificationId', jsonData.verificationId);",
+                      "}"
+                    ]
+                  }
+                }
+              ],
+              "request": {
+                "method": "POST",
+                "header": [],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"phoneNumber\": \"09123456789\",\n  \"countryCode\": \"+98\"\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                },
+                "url": {
+                  "raw": "{{baseUrl}}/api/v1/auth/send-verification-code",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["api", "v1", "auth", "send-verification-code"]
+                },
+                "description": "Send OTP code to Iranian phone number for verification"
+              },
+              "response": []
+            },
+            {
+              "name": "Verify Code",
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "exec": [
+                      "if (pm.response.code === 200) {",
+                      "    var jsonData = pm.response.json();",
+                      "    if (jsonData.success && jsonData.user) {",
+                      "        pm.collectionVariables.set('accessToken', jsonData.user.accessToken);",
+                      "        pm.collectionVariables.set('refreshToken', jsonData.user.refreshToken);",
+                      "        pm.collectionVariables.set('userId', jsonData.user.id);",
+                      "    }",
+                      "}"
+                    ]
+                  }
+                }
+              ],
+              "request": {
+                "method": "POST",
+                "header": [],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"phoneNumber\": \"09123456789\",\n  \"code\": \"123456\",\n  \"userType\": \"Provider\"\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                },
+                "url": {
+                  "raw": "{{baseUrl}}/api/v1/auth/verify-code",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["api", "v1", "auth", "verify-code"]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "Request Phone Verification",
+              "request": {
+                "method": "POST",
+                "header": [],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"phoneNumber\": \"09123456789\",\n  \"method\": \"SMS\",\n  \"purpose\": \"Registration\"\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                },
+                "url": {
+                  "raw": "{{baseUrl}}/api/v1/phone-verification/request",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["api", "v1", "phone-verification", "request"]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "Verify Phone",
+              "request": {
+                "method": "POST",
+                "header": [],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"verificationId\": \"{{verificationId}}\",\n  \"code\": \"123456\"\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                },
+                "url": {
+                  "raw": "{{baseUrl}}/api/v1/phone-verification/verify",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["api", "v1", "phone-verification", "verify"]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "Resend OTP",
+              "request": {
+                "method": "POST",
+                "header": [],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"verificationId\": \"{{verificationId}}\"\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                },
+                "url": {
+                  "raw": "{{baseUrl}}/api/v1/phone-verification/resend",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["api", "v1", "phone-verification", "resend"]
+                }
+              },
+              "response": []
+            }
+          ]
+        },
+        {
+          "name": "Users",
+          "item": [
+            {
+              "name": "Register User",
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "exec": [
+                      "if (pm.response.code === 201) {",
+                      "    var jsonData = pm.response.json();",
+                      "    pm.collectionVariables.set('userId', jsonData.userId);",
+                      "}"
+                    ]
+                  }
+                }
+              ],
+              "request": {
+                "method": "POST",
+                "header": [],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"email\": \"zahra.hosseini@example.com\",\n  \"password\": \"SecurePass@123\",\n  \"firstName\": \"زهرا\",\n  \"lastName\": \"حسینی\",\n  \"phoneNumber\": \"09121234567\",\n  \"userType\": \"Customer\",\n  \"acceptTerms\": true,\n  \"marketingConsent\": false,\n  \"referralCode\": null\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                },
+                "url": {
+                  "raw": "{{baseUrl}}/api/v1/users",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["api", "v1", "users"]
+                },
+                "description": "Register new user with Persian name"
+              },
+              "response": []
+            },
+            {
+              "name": "Get User By ID",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{baseUrl}}/api/v1/users/{{userId}}",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["api", "v1", "users", "{{userId}}"]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "Search Users",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{baseUrl}}/api/v1/users/search?searchTerm=رضا&pageNumber=1&pageSize=20&status=Active",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["api", "v1", "users", "search"],
+                  "query": [
+                    {
+                      "key": "searchTerm",
+                      "value": "رضا"
+                    },
+                    {
+                      "key": "pageNumber",
+                      "value": "1"
+                    },
+                    {
+                      "key": "pageSize",
+                      "value": "20"
+                    },
+                    {
+                      "key": "status",
+                      "value": "Active"
+                    }
+                  ]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "Update User Profile",
+              "request": {
+                "method": "PUT",
+                "header": [],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"firstName\": \"رضا\",\n  \"lastName\": \"احمدی\",\n  \"phoneNumber\": \"09123456789\",\n  \"bio\": \"برنامه‌نویس و توسعه‌دهنده نرم‌افزار\",\n  \"address\": \"تهران، خیابان ولیعصر، پلاک ۱۲۳\",\n  \"profilePictureUrl\": \"https://example.com/avatars/reza.jpg\"\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                },
+                "url": {
+                  "raw": "{{baseUrl}}/api/v1/users/{{userId}}/profile",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["api", "v1", "users", "{{userId}}", "profile"]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "Change Password",
+              "request": {
+                "method": "POST",
+                "header": [],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"currentPassword\": \"OldPass@123\",\n  \"newPassword\": \"NewSecurePass@456\"\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                },
+                "url": {
+                  "raw": "{{baseUrl}}/api/v1/users/{{userId}}/change-password",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["api", "v1", "users", "{{userId}}", "change-password"]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "Activate User",
+              "request": {
+                "method": "POST",
+                "header": [],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"activationToken\": \"abc123xyz\"\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                },
+                "url": {
+                  "raw": "{{baseUrl}}/api/v1/users/{{userId}}/activate",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["api", "v1", "users", "{{userId}}", "activate"]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "Deactivate User",
+              "request": {
+                "method": "POST",
+                "header": [],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"reason\": \"حساب کاربری به درخواست کاربر غیرفعال شد\"\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                },
+                "url": {
+                  "raw": "{{baseUrl}}/api/v1/users/{{userId}}/deactivate",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["api", "v1", "users", "{{userId}}", "deactivate"]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "Delete User",
+              "request": {
+                "method": "DELETE",
+                "header": [],
+                "url": {
+                  "raw": "{{baseUrl}}/api/v1/users/{{userId}}",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["api", "v1", "users", "{{userId}}"]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "Get Users By Status",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{baseUrl}}/api/v1/users/by-status/Active?maxResults=100",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["api", "v1", "users", "by-status", "Active"],
+                  "query": [
+                    {
+                      "key": "maxResults",
+                      "value": "100"
+                    }
+                  ]
+                }
+              },
+              "response": []
+            }
+          ]
+        },
+        {
+          "name": "Customers",
+          "item": [
+            {
+              "name": "Register Customer",
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "exec": [
+                      "if (pm.response.code === 201) {",
+                      "    var jsonData = pm.response.json();",
+                      "    pm.collectionVariables.set('customerId', jsonData.customerId);",
+                      "}"
+                    ]
+                  }
+                }
+              ],
+              "request": {
+                "method": "POST",
+                "header": [],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"email\": \"fateme.mohammadi@example.com\",\n  \"password\": \"SecurePass@123\",\n  \"firstName\": \"فاطمه\",\n  \"lastName\": \"محمدی\",\n  \"phoneNumber\": \"09351234567\",\n  \"dateOfBirth\": \"1998-05-15\",\n  \"nationalCode\": \"0012345678\",\n  \"address\": {\n    \"street\": \"خیابان آزادی\",\n    \"city\": \"تهران\",\n    \"province\": \"تهران\",\n    \"postalCode\": \"1234567890\",\n    \"country\": \"ایران\"\n  },\n  \"preferences\": {\n    \"language\": \"fa\",\n    \"notificationChannels\": [\"SMS\", \"Email\"],\n    \"marketingConsent\": false\n  }\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                },
+                "url": {
+                  "raw": "{{baseUrl}}/api/v1/customers/register",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["api", "v1", "customers", "register"]
+                },
+                "description": "Register new customer with Iranian details (national code, Persian address)"
+              },
+              "response": []
+            },
+            {
+              "name": "Get Customer By ID",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{baseUrl}}/api/v1/customers/{{customerId}}",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["api", "v1", "customers", "{{customerId}}"]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "Update Customer Profile",
+              "request": {
+                "method": "PUT",
+                "header": [],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"customerId\": \"{{customerId}}\",\n  \"firstName\": \"فاطمه\",\n  \"lastName\": \"محمدی\",\n  \"phoneNumber\": \"09351234567\",\n  \"dateOfBirth\": \"1998-05-15\",\n  \"address\": {\n    \"street\": \"خیابان انقلاب، کوچه شهید رضایی\",\n    \"city\": \"تهران\",\n    \"province\": \"تهران\",\n    \"postalCode\": \"1234567890\",\n    \"country\": \"ایران\"\n  },\n  \"emergencyContact\": {\n    \"name\": \"محمد محمدی\",\n    \"relationship\": \"برادر\",\n    \"phone\": \"09121112233\"\n  }\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                },
+                "url": {
+                  "raw": "{{baseUrl}}/api/v1/customers/{{customerId}}",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["api", "v1", "customers", "{{customerId}}"]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "Get Customer Favorites",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{baseUrl}}/api/v1/customers/{{customerId}}/favorites",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["api", "v1", "customers", "{{customerId}}", "favorites"]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "Add Favorite Provider",
+              "request": {
+                "method": "POST",
+                "header": [],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"providerId\": \"{{providerId}}\",\n  \"notes\": \"بهترین آرایشگاه محله\"\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                },
+                "url": {
+                  "raw": "{{baseUrl}}/api/v1/customers/{{customerId}}/favorites",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["api", "v1", "customers", "{{customerId}}", "favorites"]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "Remove Favorite Provider",
+              "request": {
+                "method": "DELETE",
+                "header": [],
+                "url": {
+                  "raw": "{{baseUrl}}/api/v1/customers/{{customerId}}/favorites/{{providerId}}",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["api", "v1", "customers", "{{customerId}}", "favorites", "{{providerId}}"]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "Deactivate Customer",
+              "request": {
+                "method": "DELETE",
+                "header": [],
+                "url": {
+                  "raw": "{{baseUrl}}/api/v1/customers/{{customerId}}",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["api", "v1", "customers", "{{customerId}}"]
+                }
+              },
+              "response": []
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Service Catalog",
+      "item": [
+        {
+          "name": "Locations",
+          "item": [
+            {
+              "name": "Get Provinces",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{servicecat_baseUrl}}/api/v1/locations/provinces",
+                  "host": ["{{servicecat_baseUrl}}"],
+                  "path": ["api", "v1", "locations", "provinces"]
+                },
+                "description": "Get all Iranian provinces"
+              },
+              "response": []
+            },
+            {
+              "name": "Get Cities By Province",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{servicecat_baseUrl}}/api/v1/locations/provinces/1/cities",
+                  "host": ["{{servicecat_baseUrl}}"],
+                  "path": ["api", "v1", "locations", "provinces", "1", "cities"]
+                },
+                "description": "Get cities for Tehran province (ID=1)"
+              },
+              "response": []
+            },
+            {
+              "name": "Get Location Hierarchy",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{servicecat_baseUrl}}/api/v1/locations/hierarchy",
+                  "host": ["{{servicecat_baseUrl}}"],
+                  "path": ["api", "v1", "locations", "hierarchy"]
+                },
+                "description": "Get complete hierarchy of provinces and cities"
+              },
+              "response": []
+            },
+            {
+              "name": "Search Locations",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{servicecat_baseUrl}}/api/v1/locations/search?query=تهران&type=City",
+                  "host": ["{{servicecat_baseUrl}}"],
+                  "path": ["api", "v1", "locations", "search"],
+                  "query": [
+                    {
+                      "key": "query",
+                      "value": "تهران"
+                    },
+                    {
+                      "key": "type",
+                      "value": "City"
+                    }
+                  ]
+                },
+                "description": "Search for Tehran city"
+              },
+              "response": []
+            },
+            {
+              "name": "Get Location By ID",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{servicecat_baseUrl}}/api/v1/locations/1",
+                  "host": ["{{servicecat_baseUrl}}"],
+                  "path": ["api", "v1", "locations", "1"]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "Get Location With Parent",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{servicecat_baseUrl}}/api/v1/locations/1/with-parent",
+                  "host": ["{{servicecat_baseUrl}}"],
+                  "path": ["api", "v1", "locations", "1", "with-parent"]
+                }
+              },
+              "response": []
+            }
+          ]
+        },
+        {
+          "name": "Providers",
+          "item": [
+            {
+              "name": "Create Provider Draft",
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "exec": [
+                      "if (pm.response.code === 201 || pm.response.code === 200) {",
+                      "    var jsonData = pm.response.json();",
+                      "    pm.collectionVariables.set('providerId', jsonData.providerId);",
+                      "}"
+                    ]
+                  }
+                }
+              ],
+              "request": {
+                "method": "POST",
+                "header": [],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"businessName\": \"آرایشگاه زیبای تهران\",\n  \"businessDescription\": \"آرایشگاه زنانه با کادری مجرب و خدمات متنوع\",\n  \"category\": \"آرایشگری\",\n  \"phoneNumber\": \"02122334455\",\n  \"email\": \"info@zibaytehran.ir\",\n  \"addressLine1\": \"خیابان ولیعصر، نرسیده به میدان ونک\",\n  \"addressLine2\": \"پلاک ۱۲۳، طبقه دوم\",\n  \"city\": \"تهران\",\n  \"province\": \"تهران\",\n  \"postalCode\": \"1991945311\",\n  \"latitude\": 35.7575,\n  \"longitude\": 51.4184\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                },
+                "url": {
+                  "raw": "{{servicecat_baseUrl}}/api/v1/providers/draft",
+                  "host": ["{{servicecat_baseUrl}}"],
+                  "path": ["api", "v1", "providers", "draft"]
+                },
+                "description": "Create draft provider for Iranian beauty salon with Persian business name and Tehran address"
+              },
+              "response": []
+            },
+            {
+              "name": "Get Draft Provider",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{servicecat_baseUrl}}/api/v1/providers/draft",
+                  "host": ["{{servicecat_baseUrl}}"],
+                  "path": ["api", "v1", "providers", "draft"]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "Complete Provider Registration",
+              "request": {
+                "method": "POST",
+                "header": [],
+                "url": {
+                  "raw": "{{servicecat_baseUrl}}/api/v1/providers/{{providerId}}/complete",
+                  "host": ["{{servicecat_baseUrl}}"],
+                  "path": ["api", "v1", "providers", "{{providerId}}", "complete"]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "Get Provider By ID",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{servicecat_baseUrl}}/api/v1/providers/{{providerId}}?includeServices=true&includeStaff=true",
+                  "host": ["{{servicecat_baseUrl}}"],
+                  "path": ["api", "v1", "providers", "{{providerId}}"],
+                  "query": [
+                    {
+                      "key": "includeServices",
+                      "value": "true"
+                    },
+                    {
+                      "key": "includeStaff",
+                      "value": "true"
+                    }
+                  ]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "Get Provider By Owner ID",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{servicecat_baseUrl}}/api/v1/providers/by-owner/{{userId}}",
+                  "host": ["{{servicecat_baseUrl}}"],
+                  "path": ["api", "v1", "providers", "by-owner", "{{userId}}"]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "Get Current Provider Status",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{servicecat_baseUrl}}/api/v1/providers/current/status",
+                  "host": ["{{servicecat_baseUrl}}"],
+                  "path": ["api", "v1", "providers", "current", "status"]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "Search Providers",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{servicecat_baseUrl}}/api/v1/providers/search?searchTerm=آرایشگاه&city=تهران&status=Active&pageNumber=1&pageSize=20",
+                  "host": ["{{servicecat_baseUrl}}"],
+                  "path": ["api", "v1", "providers", "search"],
+                  "query": [
+                    {
+                      "key": "searchTerm",
+                      "value": "آرایشگاه"
+                    },
+                    {
+                      "key": "city",
+                      "value": "تهران"
+                    },
+                    {
+                      "key": "status",
+                      "value": "Active"
+                    },
+                    {
+                      "key": "pageNumber",
+                      "value": "1"
+                    },
+                    {
+                      "key": "pageSize",
+                      "value": "20"
+                    }
+                  ]
+                },
+                "description": "Search for beauty salons in Tehran"
+              },
+              "response": []
+            },
+            {
+              "name": "Get Providers By Location",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{servicecat_baseUrl}}/api/v1/providers/by-location?latitude=35.7575&longitude=51.4184&radiusKm=5&pageNumber=1&pageSize=20",
+                  "host": ["{{servicecat_baseUrl}}"],
+                  "path": ["api", "v1", "providers", "by-location"],
+                  "query": [
+                    {
+                      "key": "latitude",
+                      "value": "35.7575",
+                      "description": "Tehran center latitude"
+                    },
+                    {
+                      "key": "longitude",
+                      "value": "51.4184",
+                      "description": "Tehran center longitude"
+                    },
+                    {
+                      "key": "radiusKm",
+                      "value": "5"
+                    },
+                    {
+                      "key": "pageNumber",
+                      "value": "1"
+                    },
+                    {
+                      "key": "pageSize",
+                      "value": "20"
+                    }
+                  ]
+                },
+                "description": "Find providers within 5km of central Tehran"
+              },
+              "response": []
+            },
+            {
+              "name": "Upload Profile Image",
+              "request": {
+                "method": "POST",
+                "header": [],
+                "body": {
+                  "mode": "formdata",
+                  "formdata": [
+                    {
+                      "key": "image",
+                      "type": "file",
+                      "src": []
+                    }
+                  ]
+                },
+                "url": {
+                  "raw": "{{servicecat_baseUrl}}/api/v1/providers/profile/image",
+                  "host": ["{{servicecat_baseUrl}}"],
+                  "path": ["api", "v1", "providers", "profile", "image"]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "Upload Business Logo",
+              "request": {
+                "method": "POST",
+                "header": [],
+                "body": {
+                  "mode": "formdata",
+                  "formdata": [
+                    {
+                      "key": "image",
+                      "type": "file",
+                      "src": []
+                    }
+                  ]
+                },
+                "url": {
+                  "raw": "{{servicecat_baseUrl}}/api/v1/providers/business/logo",
+                  "host": ["{{servicecat_baseUrl}}"],
+                  "path": ["api", "v1", "providers", "business", "logo"]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "Update Provider Profile",
+              "request": {
+                "method": "PUT",
+                "header": [],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"fullName\": \"رضا احمدی\",\n  \"email\": \"reza@zibaytehran.ir\",\n  \"profileImageUrl\": \"https://example.com/images/profile.jpg\"\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                },
+                "url": {
+                  "raw": "{{servicecat_baseUrl}}/api/v1/providers/profile",
+                  "host": ["{{servicecat_baseUrl}}"],
+                  "path": ["api", "v1", "providers", "profile"]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "Update Business Info",
+              "request": {
+                "method": "PUT",
+                "header": [],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"businessName\": \"آرایشگاه زیبای تهران\",\n  \"description\": \"آرایشگاه زنانه با بیش از ۱۰ سال سابقه، ارائه‌دهنده خدمات کوتاهی، رنگ، هایلایت، مانیکور و پدیکور با استفاده از بهترین محصولات\",\n  \"logoUrl\": \"https://example.com/logos/zibay-tehran.jpg\"\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                },
+                "url": {
+                  "raw": "{{servicecat_baseUrl}}/api/v1/providers/business",
+                  "host": ["{{servicecat_baseUrl}}"],
+                  "path": ["api", "v1", "providers", "business"]
+                }
+              },
+              "response": []
+            }
+          ]
+        },
+        {
+          "name": "Provider Staff",
+          "item": [
+            {
+              "name": "Get Staff",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{servicecat_baseUrl}}/api/v1/providers/{{providerId}}/staff?activeOnly=true",
+                  "host": ["{{servicecat_baseUrl}}"],
+                  "path": ["api", "v1", "providers", "{{providerId}}", "staff"],
+                  "query": [
+                    {
+                      "key": "activeOnly",
+                      "value": "true"
+                    }
+                  ]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "Add Staff",
+              "request": {
+                "method": "POST",
+                "header": [],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"firstName\": \"مریم\",\n  \"lastName\": \"کریمی\",\n  \"phoneNumber\": \"09123334455\",\n  \"countryCode\": \"+98\",\n  \"role\": \"آرایشگر\",\n  \"biography\": \"آرایشگر با ۵ سال سابقه کار، متخصص در رنگ و هایلایت مو\",\n  \"notes\": \"کارمند نمونه ماه\",\n  \"profilePhotoUrl\": null\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                },
+                "url": {
+                  "raw": "{{servicecat_baseUrl}}/api/v1/providers/{{providerId}}/staff",
+                  "host": ["{{servicecat_baseUrl}}"],
+                  "path": ["api", "v1", "providers", "{{providerId}}", "staff"]
+                },
+                "description": "Add Persian female hairstylist to staff"
+              },
+              "response": []
+            },
+            {
+              "name": "Update Staff",
+              "request": {
+                "method": "PUT",
+                "header": [],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"firstName\": \"مریم\",\n  \"lastName\": \"کریمی\",\n  \"email\": \"maryam.karimi@zibaytehran.ir\",\n  \"phoneNumber\": \"09123334455\",\n  \"countryCode\": \"+98\",\n  \"role\": \"آرایشگر ارشد\",\n  \"biography\": \"آرایشگر با ۶ سال سابقه کار، متخصص در رنگ و هایلایت مو\",\n  \"notes\": \"ارتقا به سطح ارشد\",\n  \"profilePhotoUrl\": \"https://example.com/staff/maryam.jpg\"\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                },
+                "url": {
+                  "raw": "{{servicecat_baseUrl}}/api/v1/providers/{{providerId}}/staff/{{staffId}}",
+                  "host": ["{{servicecat_baseUrl}}"],
+                  "path": ["api", "v1", "providers", "{{providerId}}", "staff", "{{staffId}}"]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "Remove Staff",
+              "request": {
+                "method": "DELETE",
+                "header": [],
+                "url": {
+                  "raw": "{{servicecat_baseUrl}}/api/v1/providers/{{providerId}}/staff/{{staffId}}",
+                  "host": ["{{servicecat_baseUrl}}"],
+                  "path": ["api", "v1", "providers", "{{providerId}}", "staff", "{{staffId}}"]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "Upload Staff Photo",
+              "request": {
+                "method": "POST",
+                "header": [],
+                "body": {
+                  "mode": "formdata",
+                  "formdata": [
+                    {
+                      "key": "file",
+                      "type": "file",
+                      "src": []
+                    }
+                  ]
+                },
+                "url": {
+                  "raw": "{{servicecat_baseUrl}}/api/v1/providers/{{providerId}}/staff/{{staffId}}/photo",
+                  "host": ["{{servicecat_baseUrl}}"],
+                  "path": ["api", "v1", "providers", "{{providerId}}", "staff", "{{staffId}}", "photo"]
+                }
+              },
+              "response": []
+            }
+          ]
+        },
+        {
+          "name": "Provider Gallery",
+          "item": [
+            {
+              "name": "Upload Gallery Images",
+              "request": {
+                "method": "POST",
+                "header": [],
+                "body": {
+                  "mode": "formdata",
+                  "formdata": [
+                    {
+                      "key": "files",
+                      "type": "file",
+                      "src": []
+                    }
+                  ]
+                },
+                "url": {
+                  "raw": "{{servicecat_baseUrl}}/api/v1/providers/{{providerId}}/gallery",
+                  "host": ["{{servicecat_baseUrl}}"],
+                  "path": ["api", "v1", "providers", "{{providerId}}", "gallery"]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "Get Gallery Images",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{servicecat_baseUrl}}/api/v1/providers/{{providerId}}/gallery",
+                  "host": ["{{servicecat_baseUrl}}"],
+                  "path": ["api", "v1", "providers", "{{providerId}}", "gallery"]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "Update Gallery Image Metadata",
+              "request": {
+                "method": "PUT",
+                "header": [],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"caption\": \"نمونه کار رنگ مو\",\n  \"altText\": \"مدل رنگ مو هایلایت بلوند\"\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                },
+                "url": {
+                  "raw": "{{servicecat_baseUrl}}/api/v1/providers/{{providerId}}/gallery/{{imageId}}",
+                  "host": ["{{servicecat_baseUrl}}"],
+                  "path": ["api", "v1", "providers", "{{providerId}}", "gallery", "{{imageId}}"]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "Reorder Gallery Images",
+              "request": {
+                "method": "PUT",
+                "header": [],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"imageOrders\": {\n    \"image-id-1\": 1,\n    \"image-id-2\": 2,\n    \"image-id-3\": 3\n  }\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                },
+                "url": {
+                  "raw": "{{servicecat_baseUrl}}/api/v1/providers/{{providerId}}/gallery/reorder",
+                  "host": ["{{servicecat_baseUrl}}"],
+                  "path": ["api", "v1", "providers", "{{providerId}}", "gallery", "reorder"]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "Set Primary Gallery Image",
+              "request": {
+                "method": "PUT",
+                "header": [],
+                "url": {
+                  "raw": "{{servicecat_baseUrl}}/api/v1/providers/{{providerId}}/gallery/{{imageId}}/set-primary",
+                  "host": ["{{servicecat_baseUrl}}"],
+                  "path": ["api", "v1", "providers", "{{providerId}}", "gallery", "{{imageId}}", "set-primary"]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "Delete Gallery Image",
+              "request": {
+                "method": "DELETE",
+                "header": [],
+                "url": {
+                  "raw": "{{servicecat_baseUrl}}/api/v1/providers/{{providerId}}/gallery/{{imageId}}",
+                  "host": ["{{servicecat_baseUrl}}"],
+                  "path": ["api", "v1", "providers", "{{providerId}}", "gallery", "{{imageId}}"]
+                }
+              },
+              "response": []
+            }
+          ]
+        },
+        {
+          "name": "Services",
+          "item": [
+            {
+              "name": "Add Service",
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "exec": [
+                      "if (pm.response.code === 201) {",
+                      "    var jsonData = pm.response.json();",
+                      "    pm.collectionVariables.set('serviceId', jsonData.id);",
+                      "}"
+                    ]
+                  }
+                }
+              ],
+              "request": {
+                "method": "POST",
+                "header": [],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"serviceName\": \"کوتاهی مو زنانه\",\n  \"description\": \"کوتاهی مو با جدیدترین مدل‌های روز، شامل مشاوره رایگان\",\n  \"durationHours\": 0,\n  \"duration\": 45,\n  \"basePrice\": 500000,\n  \"currency\": \"IRR\",\n  \"category\": \"آرایشگری\",\n  \"isMobileService\": false\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                },
+                "url": {
+                  "raw": "{{servicecat_baseUrl}}/api/v1/services/{{providerId}}",
+                  "host": ["{{servicecat_baseUrl}}"],
+                  "path": ["api", "v1", "services", "{{providerId}}"]
+                },
+                "description": "Add women's haircut service with Iranian Rial pricing"
+              },
+              "response": []
+            },
+            {
+              "name": "Get Service By ID",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{servicecat_baseUrl}}/api/v1/services/{{serviceId}}?includeProvider=true&includeOptions=true&includePriceTiers=true",
+                  "host": ["{{servicecat_baseUrl}}"],
+                  "path": ["api", "v1", "services", "{{serviceId}}"],
+                  "query": [
+                    {
+                      "key": "includeProvider",
+                      "value": "true"
+                    },
+                    {
+                      "key": "includeOptions",
+                      "value": "true"
+                    },
+                    {
+                      "key": "includePriceTiers",
+                      "value": "true"
+                    }
+                  ]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "Search Services",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{servicecat_baseUrl}}/api/v1/services/search?searchTerm=کوتاهی&category=آرایشگری&minPrice=100000&maxPrice=1000000&city=تهران&pageNumber=1&pageSize=20",
+                  "host": ["{{servicecat_baseUrl}}"],
+                  "path": ["api", "v1", "services", "search"],
+                  "query": [
+                    {
+                      "key": "searchTerm",
+                      "value": "کوتاهی"
+                    },
+                    {
+                      "key": "category",
+                      "value": "آرایشگری"
+                    },
+                    {
+                      "key": "minPrice",
+                      "value": "100000"
+                    },
+                    {
+                      "key": "maxPrice",
+                      "value": "1000000"
+                    },
+                    {
+                      "key": "city",
+                      "value": "تهران"
+                    },
+                    {
+                      "key": "pageNumber",
+                      "value": "1"
+                    },
+                    {
+                      "key": "pageSize",
+                      "value": "20"
+                    }
+                  ]
+                },
+                "description": "Search for haircut services in Tehran with IRR price range"
+              },
+              "response": []
+            },
+            {
+              "name": "Get Services By Provider",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{servicecat_baseUrl}}/api/v1/services/provider/{{providerId}}?status=Active&pageNumber=1&pageSize=20",
+                  "host": ["{{servicecat_baseUrl}}"],
+                  "path": ["api", "v1", "services", "provider", "{{providerId}}"],
+                  "query": [
+                    {
+                      "key": "status",
+                      "value": "Active"
+                    },
+                    {
+                      "key": "pageNumber",
+                      "value": "1"
+                    },
+                    {
+                      "key": "pageSize",
+                      "value": "20"
+                    }
+                  ]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "Update Service",
+              "request": {
+                "method": "PUT",
+                "header": [],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"serviceName\": \"کوتاهی و فرم مو زنانه\",\n  \"description\": \"کوتاهی و فرم دادن مو با جدیدترین مدل‌های روز، شامل مشاوره رایگان و استفاده از محصولات حرفه‌ای\",\n  \"durationHours\": 1,\n  \"durationMinutes\": 0,\n  \"price\": 600000,\n  \"currency\": \"IRR\",\n  \"category\": \"آرایشگری\",\n  \"isMobileService\": false\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                },
+                "url": {
+                  "raw": "{{servicecat_baseUrl}}/api/v1/services/{{providerId}}/{{serviceId}}",
+                  "host": ["{{servicecat_baseUrl}}"],
+                  "path": ["api", "v1", "services", "{{providerId}}", "{{serviceId}}"]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "Delete Service",
+              "request": {
+                "method": "DELETE",
+                "header": [],
+                "url": {
+                  "raw": "{{servicecat_baseUrl}}/api/v1/services/{{providerId}}/{{serviceId}}",
+                  "host": ["{{servicecat_baseUrl}}"],
+                  "path": ["api", "v1", "services", "{{providerId}}", "{{serviceId}}"]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "Activate Service",
+              "request": {
+                "method": "POST",
+                "header": [],
+                "url": {
+                  "raw": "{{servicecat_baseUrl}}/api/v1/services/{{serviceId}}/activate",
+                  "host": ["{{servicecat_baseUrl}}"],
+                  "path": ["api", "v1", "services", "{{serviceId}}", "activate"]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "Deactivate Service",
+              "request": {
+                "method": "POST",
+                "header": [],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"reason\": \"خدمات موقتاً متوقف شده است\"\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                },
+                "url": {
+                  "raw": "{{servicecat_baseUrl}}/api/v1/services/{{serviceId}}/deactivate",
+                  "host": ["{{servicecat_baseUrl}}"],
+                  "path": ["api", "v1", "services", "{{serviceId}}", "deactivate"]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "Get Popular Services",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{servicecat_baseUrl}}/api/v1/services/popular?categoryFilter=آرایشگری&limit=20",
+                  "host": ["{{servicecat_baseUrl}}"],
+                  "path": ["api", "v1", "services", "popular"],
+                  "query": [
+                    {
+                      "key": "categoryFilter",
+                      "value": "آرایشگری"
+                    },
+                    {
+                      "key": "limit",
+                      "value": "20"
+                    }
+                  ]
+                }
+              },
+              "response": []
+            }
+          ]
+        },
+        {
+          "name": "Bookings",
+          "item": [
+            {
+              "name": "Create Booking",
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "exec": [
+                      "if (pm.response.code === 201) {",
+                      "    var jsonData = pm.response.json();",
+                      "    pm.collectionVariables.set('bookingId', jsonData.id);",
+                      "}"
+                    ]
+                  }
+                }
+              ],
+              "request": {
+                "method": "POST",
+                "header": [],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"providerId\": \"{{providerId}}\",\n  \"serviceId\": \"{{serviceId}}\",\n  \"staffId\": null,\n  \"startTime\": \"2025-11-15T10:00:00\",\n  \"customerNotes\": \"لطفاً از رنگ‌های طبیعی استفاده شود\"\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                },
+                "url": {
+                  "raw": "{{servicecat_baseUrl}}/api/v1/bookings",
+                  "host": ["{{servicecat_baseUrl}}"],
+                  "path": ["api", "v1", "bookings"]
+                },
+                "description": "Create booking with Persian customer notes requesting natural colors"
+              },
+              "response": []
+            },
+            {
+              "name": "Get Booking By ID",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{servicecat_baseUrl}}/api/v1/bookings/{{bookingId}}",
+                  "host": ["{{servicecat_baseUrl}}"],
+                  "path": ["api", "v1", "bookings", "{{bookingId}}"]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "Get My Bookings",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{servicecat_baseUrl}}/api/v1/bookings/my-bookings?status=Confirmed&from=2025-11-01&to=2025-11-30",
+                  "host": ["{{servicecat_baseUrl}}"],
+                  "path": ["api", "v1", "bookings", "my-bookings"],
+                  "query": [
+                    {
+                      "key": "status",
+                      "value": "Confirmed"
+                    },
+                    {
+                      "key": "from",
+                      "value": "2025-11-01"
+                    },
+                    {
+                      "key": "to",
+                      "value": "2025-11-30"
+                    }
+                  ]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "Get Provider Bookings",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{servicecat_baseUrl}}/api/v1/bookings/provider/{{providerId}}?status=Confirmed&from=2025-11-01&to=2025-11-30",
+                  "host": ["{{servicecat_baseUrl}}"],
+                  "path": ["api", "v1", "bookings", "provider", "{{providerId}}"],
+                  "query": [
+                    {
+                      "key": "status",
+                      "value": "Confirmed"
+                    },
+                    {
+                      "key": "from",
+                      "value": "2025-11-01"
+                    },
+                    {
+                      "key": "to",
+                      "value": "2025-11-30"
+                    }
+                  ]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "Confirm Booking",
+              "request": {
+                "method": "POST",
+                "header": [],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"paymentMethodId\": \"pm_card_visa\"\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                },
+                "url": {
+                  "raw": "{{servicecat_baseUrl}}/api/v1/bookings/{{bookingId}}/confirm",
+                  "host": ["{{servicecat_baseUrl}}"],
+                  "path": ["api", "v1", "bookings", "{{bookingId}}", "confirm"]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "Cancel Booking",
+              "request": {
+                "method": "POST",
+                "header": [],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"reason\": \"پیش‌آمد اضطراری\",\n  \"cancelledBy\": \"{{userId}}\"\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                },
+                "url": {
+                  "raw": "{{servicecat_baseUrl}}/api/v1/bookings/{{bookingId}}/cancel",
+                  "host": ["{{servicecat_baseUrl}}"],
+                  "path": ["api", "v1", "bookings", "{{bookingId}}", "cancel"]
+                },
+                "description": "Cancel booking with Persian reason"
+              },
+              "response": []
+            },
+            {
+              "name": "Reschedule Booking",
+              "request": {
+                "method": "POST",
+                "header": [],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"newStartTime\": \"2025-11-16T14:00:00\",\n  \"newStaffId\": null,\n  \"reason\": \"تغییر برنامه کاری\"\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                },
+                "url": {
+                  "raw": "{{servicecat_baseUrl}}/api/v1/bookings/{{bookingId}}/reschedule",
+                  "host": ["{{servicecat_baseUrl}}"],
+                  "path": ["api", "v1", "bookings", "{{bookingId}}", "reschedule"]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "Complete Booking",
+              "request": {
+                "method": "POST",
+                "header": [],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"completionNotes\": \"خدمات با کیفیت عالی ارائه شد. مشتری راضی بود.\"\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                },
+                "url": {
+                  "raw": "{{servicecat_baseUrl}}/api/v1/bookings/{{bookingId}}/complete",
+                  "host": ["{{servicecat_baseUrl}}"],
+                  "path": ["api", "v1", "bookings", "{{bookingId}}", "complete"]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "Mark No-Show",
+              "request": {
+                "method": "POST",
+                "header": [],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"notes\": \"مشتری حاضر نشد و تماس هم برقرار نکرد\"\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                },
+                "url": {
+                  "raw": "{{servicecat_baseUrl}}/api/v1/bookings/{{bookingId}}/no-show",
+                  "host": ["{{servicecat_baseUrl}}"],
+                  "path": ["api", "v1", "bookings", "{{bookingId}}", "no-show"]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "Assign Staff",
+              "request": {
+                "method": "PUT",
+                "header": [],
+                "url": {
+                  "raw": "{{servicecat_baseUrl}}/api/v1/bookings/{{bookingId}}/assign-staff/{{staffId}}",
+                  "host": ["{{servicecat_baseUrl}}"],
+                  "path": ["api", "v1", "bookings", "{{bookingId}}", "assign-staff", "{{staffId}}"]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "Add Notes",
+              "request": {
+                "method": "POST",
+                "header": [],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"notes\": \"مشتری از نتیجه بسیار راضی بود و قول داد دوباره مراجعه کند\",\n  \"isStaffNote\": true\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                },
+                "url": {
+                  "raw": "{{servicecat_baseUrl}}/api/v1/bookings/{{bookingId}}/notes",
+                  "host": ["{{servicecat_baseUrl}}"],
+                  "path": ["api", "v1", "bookings", "{{bookingId}}", "notes"]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "Search Bookings",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{servicecat_baseUrl}}/api/v1/bookings/search?providerId={{providerId}}&status=Confirmed&pageNumber=1&pageSize=20",
+                  "host": ["{{servicecat_baseUrl}}"],
+                  "path": ["api", "v1", "bookings", "search"],
+                  "query": [
+                    {
+                      "key": "providerId",
+                      "value": "{{providerId}}"
+                    },
+                    {
+                      "key": "status",
+                      "value": "Confirmed"
+                    },
+                    {
+                      "key": "pageNumber",
+                      "value": "1"
+                    },
+                    {
+                      "key": "pageSize",
+                      "value": "20"
+                    }
+                  ]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "Get Booking Statistics",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{servicecat_baseUrl}}/api/v1/bookings/statistics?providerId={{providerId}}&startDate=2025-11-01&endDate=2025-11-30",
+                  "host": ["{{servicecat_baseUrl}}"],
+                  "path": ["api", "v1", "bookings", "statistics"],
+                  "query": [
+                    {
+                      "key": "providerId",
+                      "value": "{{providerId}}"
+                    },
+                    {
+                      "key": "startDate",
+                      "value": "2025-11-01"
+                    },
+                    {
+                      "key": "endDate",
+                      "value": "2025-11-30"
+                    }
+                  ]
+                }
+              },
+              "response": []
+            }
+          ]
+        },
+        {
+          "name": "Availability",
+          "item": [
+            {
+              "name": "Get Available Slots",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{servicecat_baseUrl}}/api/v1/availability/slots?providerId={{providerId}}&serviceId={{serviceId}}&date=2025-11-15",
+                  "host": ["{{servicecat_baseUrl}}"],
+                  "path": ["api", "v1", "availability", "slots"],
+                  "query": [
+                    {
+                      "key": "providerId",
+                      "value": "{{providerId}}"
+                    },
+                    {
+                      "key": "serviceId",
+                      "value": "{{serviceId}}"
+                    },
+                    {
+                      "key": "date",
+                      "value": "2025-11-15"
+                    }
+                  ]
+                },
+                "description": "Get available booking slots for specific date"
+              },
+              "response": []
+            },
+            {
+              "name": "Check Slot Availability",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{servicecat_baseUrl}}/api/v1/availability/check?providerId={{providerId}}&serviceId={{serviceId}}&startTime=2025-11-15T10:00:00",
+                  "host": ["{{servicecat_baseUrl}}"],
+                  "path": ["api", "v1", "availability", "check"],
+                  "query": [
+                    {
+                      "key": "providerId",
+                      "value": "{{providerId}}"
+                    },
+                    {
+                      "key": "serviceId",
+                      "value": "{{serviceId}}"
+                    },
+                    {
+                      "key": "startTime",
+                      "value": "2025-11-15T10:00:00"
+                    }
+                  ]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "Get Available Dates",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{servicecat_baseUrl}}/api/v1/availability/dates?providerId={{providerId}}&serviceId={{serviceId}}&fromDate=2025-11-10&toDate=2025-11-30",
+                  "host": ["{{servicecat_baseUrl}}"],
+                  "path": ["api", "v1", "availability", "dates"],
+                  "query": [
+                    {
+                      "key": "providerId",
+                      "value": "{{providerId}}"
+                    },
+                    {
+                      "key": "serviceId",
+                      "value": "{{serviceId}}"
+                    },
+                    {
+                      "key": "fromDate",
+                      "value": "2025-11-10"
+                    },
+                    {
+                      "key": "toDate",
+                      "value": "2025-11-30"
+                    }
+                  ]
+                }
+              },
+              "response": []
+            }
+          ]
+        },
+        {
+          "name": "Payments",
+          "item": [
+            {
+              "name": "Process Payment",
+              "request": {
+                "method": "POST",
+                "header": [],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"bookingId\": \"{{bookingId}}\",\n  \"providerId\": \"{{providerId}}\",\n  \"amount\": 600000,\n  \"currency\": \"IRR\",\n  \"paymentMethod\": \"Card\",\n  \"paymentMethodId\": \"pm_card_visa\",\n  \"description\": \"پرداخت هزینه کوتاهی مو\",\n  \"metadata\": {\n    \"customerName\": \"فاطمه محمدی\",\n    \"phoneNumber\": \"09351234567\"\n  }\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                },
+                "url": {
+                  "raw": "{{servicecat_baseUrl}}/api/v1/payments",
+                  "host": ["{{servicecat_baseUrl}}"],
+                  "path": ["api", "v1", "payments"]
+                },
+                "description": "Process payment in Iranian Rials with Persian description"
+              },
+              "response": []
+            },
+            {
+              "name": "Create ZarinPal Payment",
+              "request": {
+                "method": "POST",
+                "header": [],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"bookingId\": \"{{bookingId}}\",\n  \"providerId\": \"{{providerId}}\",\n  \"amount\": 6000000,\n  \"description\": \"پرداخت هزینه رنگ و هایلایت مو\",\n  \"mobile\": \"09351234567\",\n  \"email\": \"fateme.mohammadi@example.com\",\n  \"metadata\": {\n    \"serviceName\": \"رنگ و هایلایت\",\n    \"date\": \"1404/08/24\"\n  }\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                },
+                "url": {
+                  "raw": "{{servicecat_baseUrl}}/api/v1/payments/zarinpal/create",
+                  "host": ["{{servicecat_baseUrl}}"],
+                  "path": ["api", "v1", "payments", "zarinpal", "create"]
+                },
+                "description": "Create ZarinPal payment for Iranian customers with Jalali date"
+              },
+              "response": []
+            },
+            {
+              "name": "Verify ZarinPal Payment",
+              "request": {
+                "method": "POST",
+                "header": [],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"authority\": \"A00000000000000000000000000123456789\"\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                },
+                "url": {
+                  "raw": "{{servicecat_baseUrl}}/api/v1/payments/zarinpal/verify",
+                  "host": ["{{servicecat_baseUrl}}"],
+                  "path": ["api", "v1", "payments", "zarinpal", "verify"]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "Get Payment By ID",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{servicecat_baseUrl}}/api/v1/payments/{{paymentId}}",
+                  "host": ["{{servicecat_baseUrl}}"],
+                  "path": ["api", "v1", "payments", "{{paymentId}}"]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "Get Customer Payment History",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{servicecat_baseUrl}}/api/v1/payments/customer/history?page=1&pageSize=20",
+                  "host": ["{{servicecat_baseUrl}}"],
+                  "path": ["api", "v1", "payments", "customer", "history"],
+                  "query": [
+                    {
+                      "key": "page",
+                      "value": "1"
+                    },
+                    {
+                      "key": "pageSize",
+                      "value": "20"
+                    }
+                  ]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "Capture Payment",
+              "request": {
+                "method": "POST",
+                "header": [],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"amount\": 600000\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                },
+                "url": {
+                  "raw": "{{servicecat_baseUrl}}/api/v1/payments/{{paymentId}}/capture",
+                  "host": ["{{servicecat_baseUrl}}"],
+                  "path": ["api", "v1", "payments", "{{paymentId}}", "capture"]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "Refund Payment",
+              "request": {
+                "method": "POST",
+                "header": [],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"amount\": 300000,\n  \"reason\": \"CustomerRequest\",\n  \"notes\": \"بازگشت وجه به درخواست مشتری\"\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                },
+                "url": {
+                  "raw": "{{servicecat_baseUrl}}/api/v1/payments/{{paymentId}}/refund",
+                  "host": ["{{servicecat_baseUrl}}"],
+                  "path": ["api", "v1", "payments", "{{paymentId}}", "refund"]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "Calculate Pricing",
+              "request": {
+                "method": "POST",
+                "header": [],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"baseAmount\": 500000,\n  \"currency\": \"IRR\",\n  \"taxPercentage\": 9,\n  \"taxInclusive\": false,\n  \"discountPercentage\": 10,\n  \"discountAmount\": 0,\n  \"platformFeePercentage\": 15,\n  \"depositPercentage\": 30\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                },
+                "url": {
+                  "raw": "{{servicecat_baseUrl}}/api/v1/payments/calculate-pricing",
+                  "host": ["{{servicecat_baseUrl}}"],
+                  "path": ["api", "v1", "payments", "calculate-pricing"]
+                },
+                "description": "Calculate pricing with Iranian VAT (9%)"
+              },
+              "response": []
+            },
+            {
+              "name": "Get Provider Revenue",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{servicecat_baseUrl}}/api/v1/payments/provider/{{providerId}}/revenue?startDate=2025-11-01&endDate=2025-11-30",
+                  "host": ["{{servicecat_baseUrl}}"],
+                  "path": ["api", "v1", "payments", "provider", "{{providerId}}", "revenue"],
+                  "query": [
+                    {
+                      "key": "startDate",
+                      "value": "2025-11-01"
+                    },
+                    {
+                      "key": "endDate",
+                      "value": "2025-11-30"
+                    }
+                  ]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "Get Payment Reconciliation",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{servicecat_baseUrl}}/api/v1/payments/reconciliation?startDate=2025-11-01&endDate=2025-11-30",
+                  "host": ["{{servicecat_baseUrl}}"],
+                  "path": ["api", "v1", "payments", "reconciliation"],
+                  "query": [
+                    {
+                      "key": "startDate",
+                      "value": "2025-11-01"
+                    },
+                    {
+                      "key": "endDate",
+                      "value": "2025-11-30"
+                    }
+                  ]
+                }
+              },
+              "response": []
+            }
+          ]
+        },
+        {
+          "name": "Financial",
+          "item": [
+            {
+              "name": "Get Provider Earnings",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{servicecat_baseUrl}}/api/v1/financial/provider/{{providerId}}/earnings?startDate=2025-11-01&endDate=2025-11-30&commissionPercentage=15",
+                  "host": ["{{servicecat_baseUrl}}"],
+                  "path": ["api", "v1", "financial", "provider", "{{providerId}}", "earnings"],
+                  "query": [
+                    {
+                      "key": "startDate",
+                      "value": "2025-11-01"
+                    },
+                    {
+                      "key": "endDate",
+                      "value": "2025-11-30"
+                    },
+                    {
+                      "key": "commissionPercentage",
+                      "value": "15"
+                    }
+                  ]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "Get Current Month Earnings",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{servicecat_baseUrl}}/api/v1/financial/provider/{{providerId}}/earnings/current-month",
+                  "host": ["{{servicecat_baseUrl}}"],
+                  "path": ["api", "v1", "financial", "provider", "{{providerId}}", "earnings", "current-month"]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "Get Previous Month Earnings",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{servicecat_baseUrl}}/api/v1/financial/provider/{{providerId}}/earnings/previous-month",
+                  "host": ["{{servicecat_baseUrl}}"],
+                  "path": ["api", "v1", "financial", "provider", "{{providerId}}", "earnings", "previous-month"]
+                }
+              },
+              "response": []
+            }
+          ]
+        },
+        {
+          "name": "Payouts",
+          "item": [
+            {
+              "name": "Create Payout",
+              "request": {
+                "method": "POST",
+                "header": [],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"providerId\": \"{{providerId}}\",\n  \"periodStart\": \"2025-11-01\",\n  \"periodEnd\": \"2025-11-30\",\n  \"commissionPercentage\": 15,\n  \"notes\": \"واریز درآمد آبان ماه\"\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                },
+                "url": {
+                  "raw": "{{servicecat_baseUrl}}/api/v1/payouts",
+                  "host": ["{{servicecat_baseUrl}}"],
+                  "path": ["api", "v1", "payouts"]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "Execute Payout",
+              "request": {
+                "method": "POST",
+                "header": [],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"connectedAccountId\": \"acct_1234567890\"\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                },
+                "url": {
+                  "raw": "{{servicecat_baseUrl}}/api/v1/payouts/{{payoutId}}/execute",
+                  "host": ["{{servicecat_baseUrl}}"],
+                  "path": ["api", "v1", "payouts", "{{payoutId}}", "execute"]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "Get Payout By ID",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{servicecat_baseUrl}}/api/v1/payouts/{{payoutId}}",
+                  "host": ["{{servicecat_baseUrl}}"],
+                  "path": ["api", "v1", "payouts", "{{payoutId}}"]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "Get Pending Payouts",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{servicecat_baseUrl}}/api/v1/payouts/pending",
+                  "host": ["{{servicecat_baseUrl}}"],
+                  "path": ["api", "v1", "payouts", "pending"]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "Get Provider Payouts",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{servicecat_baseUrl}}/api/v1/payouts/provider/{{providerId}}?status=Completed",
+                  "host": ["{{servicecat_baseUrl}}"],
+                  "path": ["api", "v1", "payouts", "provider", "{{providerId}}"],
+                  "query": [
+                    {
+                      "key": "status",
+                      "value": "Completed"
+                    }
+                  ]
+                }
+              },
+              "response": []
+            }
+          ]
+        },
+        {
+          "name": "Provider Settings",
+          "item": [
+            {
+              "name": "Business Info",
+              "item": [
+                {
+                  "name": "Get Business Info",
+                  "request": {
+                    "method": "GET",
+                    "header": [],
+                    "url": {
+                      "raw": "{{servicecat_baseUrl}}/api/v1/providers/{{providerId}}/business-info",
+                      "host": ["{{servicecat_baseUrl}}"],
+                      "path": ["api", "v1", "providers", "{{providerId}}", "business-info"]
+                    }
+                  },
+                  "response": []
+                },
+                {
+                  "name": "Update Business Info",
+                  "request": {
+                    "method": "PUT",
+                    "header": [],
+                    "body": {
+                      "mode": "raw",
+                      "raw": "{\n  \"businessName\": \"آرایشگاه زیبای شیراز\",\n  \"description\": \"آرایشگاه زنانه با بیش از ۱۵ سال سابقه درخشان در ارائه خدمات زیبایی\",\n  \"phoneNumber\": \"07132223344\",\n  \"email\": \"info@zibayshiraz.ir\",\n  \"website\": \"https://zibayshiraz.ir\"\n}",
+                      "options": {
+                        "raw": {
+                          "language": "json"
+                        }
+                      }
+                    },
+                    "url": {
+                      "raw": "{{servicecat_baseUrl}}/api/v1/providers/{{providerId}}/business-info",
+                      "host": ["{{servicecat_baseUrl}}"],
+                      "path": ["api", "v1", "providers", "{{providerId}}", "business-info"]
+                    },
+                    "description": "Update business info with Persian name and Shiraz phone number"
+                  },
+                  "response": []
+                }
+              ]
+            },
+            {
+              "name": "Location",
+              "item": [
+                {
+                  "name": "Get Location",
+                  "request": {
+                    "method": "GET",
+                    "header": [],
+                    "url": {
+                      "raw": "{{servicecat_baseUrl}}/api/v1/providers/{{providerId}}/location",
+                      "host": ["{{servicecat_baseUrl}}"],
+                      "path": ["api", "v1", "providers", "{{providerId}}", "location"]
+                    }
+                  },
+                  "response": []
+                },
+                {
+                  "name": "Update Location",
+                  "request": {
+                    "method": "PUT",
+                    "header": [],
+                    "body": {
+                      "mode": "raw",
+                      "raw": "{\n  \"formattedAddress\": \"اصفهان، خیابان چهارباغ عباسی، کوچه گلستان، پلاک ۴۵\",\n  \"addressLine1\": \"خیابان چهارباغ عباسی، کوچه گلستان، پلاک ۴۵\",\n  \"city\": \"اصفهان\",\n  \"postalCode\": \"8163653811\",\n  \"country\": \"ایران\",\n  \"provinceId\": 3,\n  \"cityId\": 301,\n  \"latitude\": 32.6546,\n  \"longitude\": 51.6680\n}",
+                      "options": {
+                        "raw": {
+                          "language": "json"
+                        }
+                      }
+                    },
+                    "url": {
+                      "raw": "{{servicecat_baseUrl}}/api/v1/providers/{{providerId}}/location",
+                      "host": ["{{servicecat_baseUrl}}"],
+                      "path": ["api", "v1", "providers", "{{providerId}}", "location"]
+                    },
+                    "description": "Update location with Isfahan address (Chahar Bagh Abbasi St.)"
+                  },
+                  "response": []
+                }
+              ]
+            },
+            {
+              "name": "Working Hours",
+              "item": [
+                {
+                  "name": "Get Working Hours",
+                  "request": {
+                    "method": "GET",
+                    "header": [],
+                    "url": {
+                      "raw": "{{servicecat_baseUrl}}/api/v1/providers/{{providerId}}/working-hours",
+                      "host": ["{{servicecat_baseUrl}}"],
+                      "path": ["api", "v1", "providers", "{{providerId}}", "working-hours"]
+                    }
+                  },
+                  "response": []
+                },
+                {
+                  "name": "Update Working Hours",
+                  "request": {
+                    "method": "PUT",
+                    "header": [],
+                    "body": {
+                      "mode": "raw",
+                      "raw": "{\n  \"businessHours\": {\n    \"Saturday\": {\n      \"dayOfWeek\": 6,\n      \"isOpen\": true,\n      \"openTime\": {\"hours\": 9, \"minutes\": 0},\n      \"closeTime\": {\"hours\": 18, \"minutes\": 0},\n      \"breaks\": [\n        {\n          \"start\": {\"hours\": 13, \"minutes\": 0},\n          \"end\": {\"hours\": 14, \"minutes\": 0}\n        }\n      ]\n    },\n    \"Sunday\": {\n      \"dayOfWeek\": 0,\n      \"isOpen\": true,\n      \"openTime\": {\"hours\": 9, \"minutes\": 0},\n      \"closeTime\": {\"hours\": 18, \"minutes\": 0},\n      \"breaks\": [\n        {\n          \"start\": {\"hours\": 13, \"minutes\": 0},\n          \"end\": {\"hours\": 14, \"minutes\": 0}\n        }\n      ]\n    },\n    \"Monday\": {\n      \"dayOfWeek\": 1,\n      \"isOpen\": true,\n      \"openTime\": {\"hours\": 9, \"minutes\": 0},\n      \"closeTime\": {\"hours\": 18, \"minutes\": 0},\n      \"breaks\": []\n    },\n    \"Tuesday\": {\n      \"dayOfWeek\": 2,\n      \"isOpen\": true,\n      \"openTime\": {\"hours\": 9, \"minutes\": 0},\n      \"closeTime\": {\"hours\": 18, \"minutes\": 0},\n      \"breaks\": []\n    },\n    \"Wednesday\": {\n      \"dayOfWeek\": 3,\n      \"isOpen\": true,\n      \"openTime\": {\"hours\": 9, \"minutes\": 0},\n      \"closeTime\": {\"hours\": 18, \"minutes\": 0},\n      \"breaks\": []\n    },\n    \"Thursday\": {\n      \"dayOfWeek\": 4,\n      \"isOpen\": true,\n      \"openTime\": {\"hours\": 9, \"minutes\": 0},\n      \"closeTime\": {\"hours\": 20, \"minutes\": 0},\n      \"breaks\": []\n    },\n    \"Friday\": {\n      \"dayOfWeek\": 5,\n      \"isOpen\": false,\n      \"openTime\": null,\n      \"closeTime\": null,\n      \"breaks\": []\n    }\n  }\n}",
+                      "options": {
+                        "raw": {
+                          "language": "json"
+                        }
+                      }
+                    },
+                    "url": {
+                      "raw": "{{servicecat_baseUrl}}/api/v1/providers/{{providerId}}/working-hours",
+                      "host": ["{{servicecat_baseUrl}}"],
+                      "path": ["api", "v1", "providers", "{{providerId}}", "working-hours"]
+                    },
+                    "description": "Set Iranian working hours (Sat-Thu, closed Friday)"
+                  },
+                  "response": []
+                }
+              ]
+            },
+            {
+              "name": "Business Hours",
+              "item": [
+                {
+                  "name": "Get Business Hours",
+                  "request": {
+                    "method": "GET",
+                    "header": [],
+                    "url": {
+                      "raw": "{{servicecat_baseUrl}}/api/v1/providers/{{providerId}}/business-hours",
+                      "host": ["{{servicecat_baseUrl}}"],
+                      "path": ["api", "v1", "providers", "{{providerId}}", "business-hours"]
+                    }
+                  },
+                  "response": []
+                },
+                {
+                  "name": "Update Business Hours",
+                  "request": {
+                    "method": "PUT",
+                    "header": [],
+                    "body": {
+                      "mode": "raw",
+                      "raw": "{\n  \"businessHours\": [\n    {\n      \"dayOfWeek\": 6,\n      \"isOpen\": true,\n      \"openTime\": \"09:00\",\n      \"closeTime\": \"18:00\",\n      \"breaks\": [\n        {\n          \"startTime\": \"13:00\",\n          \"endTime\": \"14:00\",\n          \"reason\": \"استراحت ناهار\"\n        }\n      ]\n    },\n    {\n      \"dayOfWeek\": 0,\n      \"isOpen\": true,\n      \"openTime\": \"09:00\",\n      \"closeTime\": \"18:00\",\n      \"breaks\": []\n    },\n    {\n      \"dayOfWeek\": 1,\n      \"isOpen\": true,\n      \"openTime\": \"09:00\",\n      \"closeTime\": \"18:00\",\n      \"breaks\": []\n    },\n    {\n      \"dayOfWeek\": 5,\n      \"isOpen\": false,\n      \"openTime\": null,\n      \"closeTime\": null,\n      \"breaks\": []\n    }\n  ]\n}",
+                      "options": {
+                        "raw": {
+                          "language": "json"
+                        }
+                      }
+                    },
+                    "url": {
+                      "raw": "{{servicecat_baseUrl}}/api/v1/providers/{{providerId}}/business-hours",
+                      "host": ["{{servicecat_baseUrl}}"],
+                      "path": ["api", "v1", "providers", "{{providerId}}", "business-hours"]
+                    }
+                  },
+                  "response": []
+                }
+              ]
+            },
+            {
+              "name": "Holidays",
+              "item": [
+                {
+                  "name": "Get Holidays",
+                  "request": {
+                    "method": "GET",
+                    "header": [],
+                    "url": {
+                      "raw": "{{servicecat_baseUrl}}/api/v1/providers/{{providerId}}/holidays",
+                      "host": ["{{servicecat_baseUrl}}"],
+                      "path": ["api", "v1", "providers", "{{providerId}}", "holidays"]
+                    }
+                  },
+                  "response": []
+                },
+                {
+                  "name": "Add Holiday",
+                  "request": {
+                    "method": "POST",
+                    "header": [],
+                    "body": {
+                      "mode": "raw",
+                      "raw": "{\n  \"date\": \"2025-03-20\",\n  \"reason\": \"عید نوروز\",\n  \"isRecurring\": true,\n  \"pattern\": \"Yearly\"\n}",
+                      "options": {
+                        "raw": {
+                          "language": "json"
+                        }
+                      }
+                    },
+                    "url": {
+                      "raw": "{{servicecat_baseUrl}}/api/v1/providers/{{providerId}}/holidays",
+                      "host": ["{{servicecat_baseUrl}}"],
+                      "path": ["api", "v1", "providers", "{{providerId}}", "holidays"]
+                    },
+                    "description": "Add Iranian Nowruz holiday (recurring yearly)"
+                  },
+                  "response": []
+                },
+                {
+                  "name": "Delete Holiday",
+                  "request": {
+                    "method": "DELETE",
+                    "header": [],
+                    "url": {
+                      "raw": "{{servicecat_baseUrl}}/api/v1/providers/{{providerId}}/holidays/{{holidayId}}",
+                      "host": ["{{servicecat_baseUrl}}"],
+                      "path": ["api", "v1", "providers", "{{providerId}}", "holidays", "{{holidayId}}"]
+                    }
+                  },
+                  "response": []
+                }
+              ]
+            },
+            {
+              "name": "Exceptions",
+              "item": [
+                {
+                  "name": "Get Exceptions",
+                  "request": {
+                    "method": "GET",
+                    "header": [],
+                    "url": {
+                      "raw": "{{servicecat_baseUrl}}/api/v1/providers/{{providerId}}/exceptions",
+                      "host": ["{{servicecat_baseUrl}}"],
+                      "path": ["api", "v1", "providers", "{{providerId}}", "exceptions"]
+                    }
+                  },
+                  "response": []
+                },
+                {
+                  "name": "Add Exception",
+                  "request": {
+                    "method": "POST",
+                    "header": [],
+                    "body": {
+                      "mode": "raw",
+                      "raw": "{\n  \"date\": \"2025-12-05\",\n  \"openTime\": \"14:00\",\n  \"closeTime\": \"20:00\",\n  \"reason\": \"بازگشایی بعدازظهر به دلیل جلسه صبحگاهی\"\n}",
+                      "options": {
+                        "raw": {
+                          "language": "json"
+                        }
+                      }
+                    },
+                    "url": {
+                      "raw": "{{servicecat_baseUrl}}/api/v1/providers/{{providerId}}/exceptions",
+                      "host": ["{{servicecat_baseUrl}}"],
+                      "path": ["api", "v1", "providers", "{{providerId}}", "exceptions"]
+                    },
+                    "description": "Add exception schedule with Persian reason"
+                  },
+                  "response": []
+                },
+                {
+                  "name": "Delete Exception",
+                  "request": {
+                    "method": "DELETE",
+                    "header": [],
+                    "url": {
+                      "raw": "{{servicecat_baseUrl}}/api/v1/providers/{{providerId}}/exceptions/{{exceptionId}}",
+                      "host": ["{{servicecat_baseUrl}}"],
+                      "path": ["api", "v1", "providers", "{{providerId}}", "exceptions", "{{exceptionId}}"]
+                    }
+                  },
+                  "response": []
+                }
+              ]
+            },
+            {
+              "name": "Availability",
+              "item": [
+                {
+                  "name": "Get Provider Availability",
+                  "request": {
+                    "method": "GET",
+                    "header": [],
+                    "url": {
+                      "raw": "{{servicecat_baseUrl}}/api/v1/providers/{{providerId}}/availability?date=2025-11-20",
+                      "host": ["{{servicecat_baseUrl}}"],
+                      "path": ["api", "v1", "providers", "{{providerId}}", "availability"],
+                      "query": [
+                        {
+                          "key": "date",
+                          "value": "2025-11-20"
+                        }
+                      ]
+                    }
+                  },
+                  "response": []
+                }
+              ]
+            },
+            {
+              "name": "Provider Services",
+              "item": [
+                {
+                  "name": "Get Services",
+                  "request": {
+                    "method": "GET",
+                    "header": [],
+                    "url": {
+                      "raw": "{{servicecat_baseUrl}}/api/v1/providers/{{providerId}}/services",
+                      "host": ["{{servicecat_baseUrl}}"],
+                      "path": ["api", "v1", "providers", "{{providerId}}", "services"]
+                    }
+                  },
+                  "response": []
+                },
+                {
+                  "name": "Add Service",
+                  "request": {
+                    "method": "POST",
+                    "header": [],
+                    "body": {
+                      "mode": "raw",
+                      "raw": "{\n  \"serviceName\": \"رنگ و هایلایت مو\",\n  \"description\": \"رنگ کامل مو با رنگ‌های طبیعی و هایلایت با تکنیک‌های روز دنیا\",\n  \"durationHours\": 2,\n  \"duration\": 30,\n  \"basePrice\": 2500000,\n  \"currency\": \"IRR\",\n  \"category\": \"رنگ مو\",\n  \"isMobileService\": false\n}",
+                      "options": {
+                        "raw": {
+                          "language": "json"
+                        }
+                      }
+                    },
+                    "url": {
+                      "raw": "{{servicecat_baseUrl}}/api/v1/providers/{{providerId}}/services",
+                      "host": ["{{servicecat_baseUrl}}"],
+                      "path": ["api", "v1", "providers", "{{providerId}}", "services"]
+                    },
+                    "description": "Add hair coloring service with Iranian Rial pricing (2.5M IRR)"
+                  },
+                  "response": []
+                },
+                {
+                  "name": "Update Service",
+                  "request": {
+                    "method": "PUT",
+                    "header": [],
+                    "body": {
+                      "mode": "raw",
+                      "raw": "{\n  \"serviceName\": \"رنگ و هایلایت مو (ویژه)\",\n  \"description\": \"رنگ کامل مو با رنگ‌های اورجینال اروپایی و هایلایت با تکنیک‌های روز دنیا، شامل مشاوره رنگ رایگان\",\n  \"durationHours\": 3,\n  \"durationMinutes\": 0,\n  \"price\": 3500000,\n  \"currency\": \"IRR\",\n  \"category\": \"رنگ مو\",\n  \"isMobileService\": false\n}",
+                      "options": {
+                        "raw": {
+                          "language": "json"
+                        }
+                      }
+                    },
+                    "url": {
+                      "raw": "{{servicecat_baseUrl}}/api/v1/providers/{{providerId}}/services/{{serviceId}}",
+                      "host": ["{{servicecat_baseUrl}}"],
+                      "path": ["api", "v1", "providers", "{{providerId}}", "services", "{{serviceId}}"]
+                    }
+                  },
+                  "response": []
+                },
+                {
+                  "name": "Delete Service",
+                  "request": {
+                    "method": "DELETE",
+                    "header": [],
+                    "url": {
+                      "raw": "{{servicecat_baseUrl}}/api/v1/providers/{{providerId}}/services/{{serviceId}}",
+                      "host": ["{{servicecat_baseUrl}}"],
+                      "path": ["api", "v1", "providers", "{{providerId}}", "services", "{{serviceId}}"]
+                    }
+                  },
+                  "response": []
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "name": "Notification Preferences",
+          "item": [
+            {
+              "name": "Get Notification Preferences",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{servicecat_baseUrl}}/api/v1/notification-preferences",
+                  "host": ["{{servicecat_baseUrl}}"],
+                  "path": ["api", "v1", "notification-preferences"]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "Update Notification Preferences",
+              "request": {
+                "method": "PUT",
+                "header": [],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"emailEnabled\": true,\n  \"smsEnabled\": true,\n  \"pushEnabled\": true,\n  \"inAppEnabled\": true,\n  \"bookingConfirmation\": true,\n  \"bookingReminder\": true,\n  \"bookingCancellation\": true,\n  \"paymentConfirmation\": true,\n  \"promotionalOffers\": false,\n  \"systemUpdates\": true\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                },
+                "url": {
+                  "raw": "{{servicecat_baseUrl}}/api/v1/notification-preferences",
+                  "host": ["{{servicecat_baseUrl}}"],
+                  "path": ["api", "v1", "notification-preferences"]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "Enable Email Notifications",
+              "request": {
+                "method": "POST",
+                "header": [],
+                "url": {
+                  "raw": "{{servicecat_baseUrl}}/api/v1/notification-preferences/email/enable",
+                  "host": ["{{servicecat_baseUrl}}"],
+                  "path": ["api", "v1", "notification-preferences", "email", "enable"]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "Disable Email Notifications",
+              "request": {
+                "method": "POST",
+                "header": [],
+                "url": {
+                  "raw": "{{servicecat_baseUrl}}/api/v1/notification-preferences/email/disable",
+                  "host": ["{{servicecat_baseUrl}}"],
+                  "path": ["api", "v1", "notification-preferences", "email", "disable"]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "Enable SMS Notifications",
+              "request": {
+                "method": "POST",
+                "header": [],
+                "url": {
+                  "raw": "{{servicecat_baseUrl}}/api/v1/notification-preferences/sms/enable",
+                  "host": ["{{servicecat_baseUrl}}"],
+                  "path": ["api", "v1", "notification-preferences", "sms", "enable"]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "Disable SMS Notifications",
+              "request": {
+                "method": "POST",
+                "header": [],
+                "url": {
+                  "raw": "{{servicecat_baseUrl}}/api/v1/notification-preferences/sms/disable",
+                  "host": ["{{servicecat_baseUrl}}"],
+                  "path": ["api", "v1", "notification-preferences", "sms", "disable"]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "Update Specific Preferences",
+              "request": {
+                "method": "PATCH",
+                "header": [],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"bookingReminder\": true,\n  \"promotionalOffers\": false\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                },
+                "url": {
+                  "raw": "{{servicecat_baseUrl}}/api/v1/notification-preferences/specific",
+                  "host": ["{{servicecat_baseUrl}}"],
+                  "path": ["api", "v1", "notification-preferences", "specific"]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "Reset To Defaults",
+              "request": {
+                "method": "POST",
+                "header": [],
+                "url": {
+                  "raw": "{{servicecat_baseUrl}}/api/v1/notification-preferences/reset",
+                  "host": ["{{servicecat_baseUrl}}"],
+                  "path": ["api", "v1", "notification-preferences", "reset"]
+                }
+              },
+              "response": []
+            }
+          ]
+        },
+        {
+          "name": "Notifications",
+          "item": [
+            {
+              "name": "Get All Notifications",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{servicecat_baseUrl}}/api/v1/notifications?unreadOnly=false&pageNumber=1&pageSize=20",
+                  "host": ["{{servicecat_baseUrl}}"],
+                  "path": ["api", "v1", "notifications"],
+                  "query": [
+                    {
+                      "key": "unreadOnly",
+                      "value": "false"
+                    },
+                    {
+                      "key": "pageNumber",
+                      "value": "1"
+                    },
+                    {
+                      "key": "pageSize",
+                      "value": "20"
+                    }
+                  ]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "Get Unread Count",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{servicecat_baseUrl}}/api/v1/notifications/unread/count",
+                  "host": ["{{servicecat_baseUrl}}"],
+                  "path": ["api", "v1", "notifications", "unread", "count"]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "Mark As Read",
+              "request": {
+                "method": "PUT",
+                "header": [],
+                "url": {
+                  "raw": "{{servicecat_baseUrl}}/api/v1/notifications/{{notificationId}}/read",
+                  "host": ["{{servicecat_baseUrl}}"],
+                  "path": ["api", "v1", "notifications", "{{notificationId}}", "read"]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "Mark All As Read",
+              "request": {
+                "method": "PUT",
+                "header": [],
+                "url": {
+                  "raw": "{{servicecat_baseUrl}}/api/v1/notifications/read-all",
+                  "host": ["{{servicecat_baseUrl}}"],
+                  "path": ["api", "v1", "notifications", "read-all"]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "Delete Notification",
+              "request": {
+                "method": "DELETE",
+                "header": [],
+                "url": {
+                  "raw": "{{servicecat_baseUrl}}/api/v1/notifications/{{notificationId}}",
+                  "host": ["{{servicecat_baseUrl}}"],
+                  "path": ["api", "v1", "notifications", "{{notificationId}}"]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "Clear All Notifications",
+              "request": {
+                "method": "DELETE",
+                "header": [],
+                "url": {
+                  "raw": "{{servicecat_baseUrl}}/api/v1/notifications/clear-all",
+                  "host": ["{{servicecat_baseUrl}}"],
+                  "path": ["api", "v1", "notifications", "clear-all"]
+                }
+              },
+              "response": []
+            }
+          ]
+        },
+        {
+          "name": "Provider Registration",
+          "item": [
+            {
+              "name": "Start Registration",
+              "request": {
+                "method": "POST",
+                "header": [],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"businessName\": \"سالن زیبایی نگار\",\n  \"firstName\": \"نگار\",\n  \"lastName\": \"کریمی\",\n  \"email\": \"negar.karimi@example.com\",\n  \"phoneNumber\": \"09121234567\",\n  \"businessType\": \"BeautySalon\"\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                },
+                "url": {
+                  "raw": "{{servicecat_baseUrl}}/api/v1/provider-registration/start",
+                  "host": ["{{servicecat_baseUrl}}"],
+                  "path": ["api", "v1", "provider-registration", "start"]
+                },
+                "description": "Start provider registration with Persian beauty salon name"
+              },
+              "response": []
+            },
+            {
+              "name": "Submit Business Details",
+              "request": {
+                "method": "POST",
+                "header": [],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"businessName\": \"سالن زیبایی نگار\",\n  \"description\": \"سالن زیبایی تخصصی با ارائه خدمات آرایشگری، پوست و ناخن\",\n  \"category\": \"BeautySalon\",\n  \"subCategories\": [\"آرایشگری زنانه\", \"مراقبت پوست\", \"ناخن\"],\n  \"businessRegistrationNumber\": \"12345678901\",\n  \"taxId\": \"1234567890\",\n  \"website\": \"https://salonnegar.ir\",\n  \"socialMedia\": {\n    \"instagram\": \"@salon.negar\",\n    \"telegram\": \"@salonnegar\"\n  }\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                },
+                "url": {
+                  "raw": "{{servicecat_baseUrl}}/api/v1/provider-registration/business-details",
+                  "host": ["{{servicecat_baseUrl}}"],
+                  "path": ["api", "v1", "provider-registration", "business-details"]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "Submit Location",
+              "request": {
+                "method": "POST",
+                "header": [],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"addressLine1\": \"خیابان شریعتی، بالاتر از میدان تجریش\",\n  \"addressLine2\": \"کوچه شهید باهنر، پلاک ۲۸، واحد ۳\",\n  \"city\": \"تهران\",\n  \"province\": \"تهران\",\n  \"postalCode\": \"1234567890\",\n  \"country\": \"ایران\",\n  \"latitude\": 35.8043,\n  \"longitude\": 51.5309,\n  \"parkingAvailable\": true,\n  \"publicTransportAccess\": true,\n  \"wheelchairAccessible\": false\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                },
+                "url": {
+                  "raw": "{{servicecat_baseUrl}}/api/v1/provider-registration/location",
+                  "host": ["{{servicecat_baseUrl}}"],
+                  "path": ["api", "v1", "provider-registration", "location"]
+                },
+                "description": "Submit location in Tehran (Tajrish area)"
+              },
+              "response": []
+            },
+            {
+              "name": "Submit Working Hours",
+              "request": {
+                "method": "POST",
+                "header": [],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"workingHours\": {\n    \"Saturday\": {\"isOpen\": true, \"openTime\": \"09:00\", \"closeTime\": \"19:00\"},\n    \"Sunday\": {\"isOpen\": true, \"openTime\": \"09:00\", \"closeTime\": \"19:00\"},\n    \"Monday\": {\"isOpen\": true, \"openTime\": \"09:00\", \"closeTime\": \"19:00\"},\n    \"Tuesday\": {\"isOpen\": true, \"openTime\": \"09:00\", \"closeTime\": \"19:00\"},\n    \"Wednesday\": {\"isOpen\": true, \"openTime\": \"09:00\", \"closeTime\": \"19:00\"},\n    \"Thursday\": {\"isOpen\": true, \"openTime\": \"09:00\", \"closeTime\": \"21:00\"},\n    \"Friday\": {\"isOpen\": false}\n  },\n  \"timezone\": \"Asia/Tehran\"\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                },
+                "url": {
+                  "raw": "{{servicecat_baseUrl}}/api/v1/provider-registration/working-hours",
+                  "host": ["{{servicecat_baseUrl}}"],
+                  "path": ["api", "v1", "provider-registration", "working-hours"]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "Submit Initial Services",
+              "request": {
+                "method": "POST",
+                "header": [],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"services\": [\n    {\n      \"name\": \"کوتاهی مو\",\n      \"description\": \"کوتاهی و فرم دادن مو\",\n      \"duration\": 45,\n      \"price\": 500000,\n      \"currency\": \"IRR\"\n    },\n    {\n      \"name\": \"رنگ مو\",\n      \"description\": \"رنگ کامل مو با رنگ‌های اورجینال\",\n      \"duration\": 120,\n      \"price\": 2000000,\n      \"currency\": \"IRR\"\n    },\n    {\n      \"name\": \"مانیکور و پدیکور\",\n      \"description\": \"مانیکور و پدیکور کامل با ژل\",\n      \"duration\": 90,\n      \"price\": 800000,\n      \"currency\": \"IRR\"\n    }\n  ]\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                },
+                "url": {
+                  "raw": "{{servicecat_baseUrl}}/api/v1/provider-registration/services",
+                  "host": ["{{servicecat_baseUrl}}"],
+                  "path": ["api", "v1", "provider-registration", "services"]
+                },
+                "description": "Submit initial services with Iranian Rial pricing"
+              },
+              "response": []
+            },
+            {
+              "name": "Upload Documents",
+              "request": {
+                "method": "POST",
+                "header": [],
+                "body": {
+                  "mode": "formdata",
+                  "formdata": [
+                    {
+                      "key": "businessLicense",
+                      "type": "file",
+                      "src": [],
+                      "description": "پروانه کسب"
+                    },
+                    {
+                      "key": "nationalId",
+                      "type": "file",
+                      "src": [],
+                      "description": "کارت ملی"
+                    },
+                    {
+                      "key": "taxCertificate",
+                      "type": "file",
+                      "src": [],
+                      "description": "گواهی مالیاتی"
+                    }
+                  ]
+                },
+                "url": {
+                  "raw": "{{servicecat_baseUrl}}/api/v1/provider-registration/documents",
+                  "host": ["{{servicecat_baseUrl}}"],
+                  "path": ["api", "v1", "provider-registration", "documents"]
+                },
+                "description": "Upload Iranian business documents (business license, national ID, tax certificate)"
+              },
+              "response": []
+            },
+            {
+              "name": "Submit Bank Details",
+              "request": {
+                "method": "POST",
+                "header": [],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"bankName\": \"بانک ملی ایران\",\n  \"accountHolderName\": \"نگار کریمی\",\n  \"accountNumber\": \"0123456789\",\n  \"iban\": \"IR123456789012345678901234\",\n  \"shabaNumber\": \"IR123456789012345678901234\",\n  \"swiftCode\": null\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                },
+                "url": {
+                  "raw": "{{servicecat_baseUrl}}/api/v1/provider-registration/bank-details",
+                  "host": ["{{servicecat_baseUrl}}"],
+                  "path": ["api", "v1", "provider-registration", "bank-details"]
+                },
+                "description": "Submit Iranian bank details with SHABA number"
+              },
+              "response": []
+            },
+            {
+              "name": "Review Registration",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{servicecat_baseUrl}}/api/v1/provider-registration/review",
+                  "host": ["{{servicecat_baseUrl}}"],
+                  "path": ["api", "v1", "provider-registration", "review"]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "Submit For Approval",
+              "request": {
+                "method": "POST",
+                "header": [],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"agreesToTerms\": true,\n  \"agreesToPrivacyPolicy\": true,\n  \"declarationOfAccuracy\": true\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                },
+                "url": {
+                  "raw": "{{servicecat_baseUrl}}/api/v1/provider-registration/submit",
+                  "host": ["{{servicecat_baseUrl}}"],
+                  "path": ["api", "v1", "provider-registration", "submit"]
+                }
+              },
+              "response": []
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}
