@@ -18,9 +18,14 @@
             <p class="provider-address">📍 {{ provider.address }}</p>
           </div>
           <div class="provider-actions">
-            <button @click="toggleFavorite" class="btn-favorite" :class="{ active: isFavorite }">
-              {{ isFavorite ? '❤️' : '🤍' }} افزودن به علاقه‌مندی‌ها
-            </button>
+            <FavoriteButton
+              v-if="provider.id"
+              :provider-id="String(provider.id)"
+              :show-label="true"
+              size="lg"
+              @favorited="handleFavorited"
+              @unfavorited="handleUnfavorited"
+            />
             <button @click="bookNow" class="btn-book-now">رزرو نوبت</button>
           </div>
         </div>
@@ -91,12 +96,12 @@
 <script setup lang="ts">
 import { ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
+import FavoriteButton from '../components/favorites/FavoriteButton.vue'
 
 const route = useRoute()
 const router = useRouter()
 
 const activeTab = ref('services')
-const isFavorite = ref(false)
 
 // Mock provider data
 const provider = ref({
@@ -123,8 +128,12 @@ function formatPrice(price: number) {
   return new Intl.NumberFormat('fa-IR').format(price)
 }
 
-function toggleFavorite() {
-  isFavorite.value = !isFavorite.value
+function handleFavorited(providerId: string): void {
+  console.log('[ProviderDetailView] Provider favorited:', providerId)
+}
+
+function handleUnfavorited(providerId: string): void {
+  console.log('[ProviderDetailView] Provider unfavorited:', providerId)
 }
 
 function bookNow() {
@@ -178,27 +187,22 @@ function bookService(service: any) {
   display: flex;
   flex-direction: column;
   gap: 0.75rem;
+  align-items: stretch;
 }
 
-.btn-favorite, .btn-book-now {
+.btn-book-now {
   padding: 0.75rem 1.5rem;
   border: none;
   border-radius: 0.5rem;
   cursor: pointer;
-}
-
-.btn-favorite {
-  background: var(--color-gray-100);
-}
-
-.btn-favorite.active {
-  background: var(--color-red-50);
-  color: var(--color-red-600);
-}
-
-.btn-book-now {
   background: var(--color-primary);
   color: white;
+  font-weight: 600;
+  transition: background 0.2s;
+}
+
+.btn-book-now:hover {
+  background: var(--color-primary-dark, #2c5aa0);
 }
 
 .content-tabs {
