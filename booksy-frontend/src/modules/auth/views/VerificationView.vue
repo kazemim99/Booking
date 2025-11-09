@@ -76,6 +76,7 @@ import { ref, computed, onMounted } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { usePhoneVerification } from '../composables/usePhoneVerification'
 import { useAuthStore } from '@/core/stores/modules/auth.store'
+import { useToast } from '@/core/composables'
 import AppButton from '@/shared/components/ui/Button/AppButton.vue'
 import OtpInput from '../components/OtpInput.vue'
 
@@ -83,6 +84,7 @@ const router = useRouter()
 const route = useRoute()
 const { state, canResend, resendCountdown, verifyCode, resendCode } = usePhoneVerification()
 const authStore = useAuthStore()
+const toast = useToast()
 
 // State
 const otpCode = ref('')
