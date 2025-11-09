@@ -26,6 +26,9 @@ export function usePhoneVerification() {
     remainingAttempts: 3,
   })
 
+  // Verification ID from backend (required for verify step)
+  const verificationId = ref<string>('')
+
   // Resend state
   const canResend = ref(false)
   const resendCountdown = ref(60)
@@ -42,29 +45,39 @@ export function usePhoneVerification() {
     state.value.error = null
 
     try {
+      // Format phone number with country code
+      const fullPhoneNumber = phoneNumber.startsWith('+') ? phoneNumber : `${countryCode}${phoneNumber}`
+
       const response = await phoneVerificationApi.sendVerificationCode({
-        phoneNumber,
-        countryCode,
+        phoneNumber: fullPhoneNumber,
+        method: 'SMS',
+        purpose: 'Registration',
       })
 
       if (response.success && response.data) {
-        // Update state
-        state.value.phoneNumber = phoneNumber
-        state.value.countryCode = countryCode
-        state.value.maskedPhone = response.data.maskedPhoneNumber
-        state.value.expiresIn = response.data.expiresIn
-        state.value.step = 'otp'
+        // Store verification ID for the verify step
+        verificationId.value = response.data.verificationId
 
-        // Track if this is a new user (auto-registration)
-        isNewUser.value = response.data.isNewUser || false
+        // Calculate expiresIn (seconds) from expiresAt
+        const expiresAt = new Date(response.data.expiresAt)
+        const now = new Date()
+        const expiresInSeconds = Math.floor((expiresAt.getTime() - now.getTime()) / 1000)
+
+        // Update state
+        state.value.phoneNumber = fullPhoneNumber
+        state.value.countryCode = countryCode
+        state.value.maskedPhone = response.data.phoneNumber // Already masked by backend
+        state.value.expiresIn = expiresInSeconds
+        state.value.step = 'otp'
+        state.value.remainingAttempts = response.data.maxAttempts
 
         // Start resend countdown
         startResendCountdown()
 
         return {
           success: true,
-          maskedPhone: response.data.maskedPhoneNumber,
-          isNewUser: isNewUser.value
+          maskedPhone: response.data.phoneNumber,
+          isNewUser: false // Backend doesn't tell us this yet, will be determined during verification
         }
       } else {
         throw new Error(typeof response.error === 'string' ? response.error : 'Failed to send verification code')
@@ -80,19 +93,16 @@ export function usePhoneVerification() {
 
   /**
    * Verify OTP code
-   * Works for both login and registration flows
-   * @param code - The OTP code to verify
-   * @param phoneNumber - Optional phone number (if not provided, uses state.value.phoneNumber)
+   * NOTE: Backend phone verification only confirms the phone number is valid.
+   * After successful verification, user must complete registration or login separately.
+   * @param code - The 6-digit OTP code to verify
    */
-  const verifyCode = async (code: string, phoneNumber?: string) => {
+  const verifyCode = async (code: string) => {
     state.value.isLoading = true
     state.value.error = null
 
-    // Use provided phoneNumber or fall back to state
-    const phoneToVerify = phoneNumber || state.value.phoneNumber
-
-    if (!phoneToVerify) {
-      const errorMessage = 'Phone number is required for verification'
+    if (!verificationId.value) {
+      const errorMessage = 'Verification ID is missing. Please request a new code.'
       state.value.error = errorMessage
       toast.error(errorMessage)
       state.value.isLoading = false
@@ -101,79 +111,26 @@ export function usePhoneVerification() {
 
     try {
       const response = await phoneVerificationApi.verifyCode({
-        phoneNumber: phoneToVerify,
+        verificationId: verificationId.value,
         code,
-        // For new users, set provider type by default (can be changed later)
-        userType: 'Provider',
       })
 
       if (response.success && response.data?.success) {
-        // Store auth token
-        if (response.data.accessToken) {
-          authStore.setToken(response.data.accessToken)
-        }
-
-        // Store user info
-        if (response.data.user) {
-          // Create a minimally required User object based on the UserInfo from phone verification
-          authStore.setUser({
-            id: response.data.user.id,
-            email: response.data.user.phoneNumber + '@temp.booksy.com', // Temporary email for phone-only users
-            phoneNumber: response.data.user.phoneNumber,
-            phoneVerified: response.data.user.phoneVerified,
-            userType: response.data.user.userType as UserType, // Using 'as any' to handle potential type mismatch
-            roles: response.data.user.roles,
-            // Required User properties
-            lastModifiedAt: new Date().toISOString(),
-            createdAt: new Date().toISOString(),
-            status: response.data.user.status,
-            // Empty required objects
-            profile: {
-              firstName: '',
-              lastName: '',
-            },
-            preferences: {
-              theme: 'light',
-              notifications: {},
-              language: 'en',
-              timezone: 'UTC',
-              currency: 'USD',
-              dateFormat: 'MM/DD/YYYY',
-              timeFormat: '12h',
-              notificationSettings: {
-                emailNotifications: true,
-                smsNotifications: true,
-                pushNotifications: false,
-                appointmentReminders: true,
-                promotionalEmails: false
-              },
-              privacySettings: undefined
-            },
-            metadata: {
-              totalBookings: 0,
-              completedBookings: 0,
-              cancelledBookings: 0,
-              noShows: 0,
-              favoriteProviders: [],
-              lastActivityAt: new Date().toISOString()
-            }
-          } as any)
-        }
-
         state.value.step = 'success'
 
-        // Show different toast message based on whether this was a login or registration
-        if (isNewUser.value) {
-          toast.success('Account created and verified successfully!')
-        } else {
-          toast.success('Phone verified successfully. Welcome back!')
-        }
+        toast.success('Phone verified successfully!')
+
+        // TODO: After phone verification, implement actual login/registration flow
+        // The backend separates phone verification from authentication
+        // Next steps would be to either:
+        // 1. Call a separate registration endpoint if this is a new user
+        // 2. Call a login endpoint if this is an existing user
+        // For now, we just confirm the phone is verified
 
         return {
           success: true,
-          user: response.data.user,
-          token: response.data.accessToken || '',
-          isNewUser: isNewUser.value
+          phoneNumber: response.data.phoneNumber,
+          verifiedAt: response.data.verifiedAt,
         }
       } else {
         // Update remaining attempts
@@ -182,7 +139,7 @@ export function usePhoneVerification() {
         }
 
         const errorMessage =
-          response.data?.errorMessage ||
+          response.data?.message ||
           (typeof response.error === 'string' ? response.error : 'Invalid verification code')
         state.value.error = errorMessage
 
@@ -257,6 +214,7 @@ export function usePhoneVerification() {
       step: 'phone',
       remainingAttempts: 3,
     }
+    verificationId.value = ''
     canResend.value = false
     resendCountdown.value = 60
     isNewUser.value = false

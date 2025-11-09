@@ -1,28 +1,32 @@
 /**
  * Transform Interceptor
  *
- * Converts request data to snake_case and response data to camelCase
+ * Converts between frontend camelCase and backend PascalCase
+ * Backend: .NET Core (uses PascalCase for JSON properties)
+ * Frontend: TypeScript/JavaScript (uses camelCase convention)
  */
 
 import type { AxiosResponse, InternalAxiosRequestConfig } from 'axios'
 
 /**
- * Converts request data to snake_case for API
+ * Converts request data from camelCase to PascalCase for .NET API
+ * Example: { phoneNumber: "123" } → { PhoneNumber: "123" }
  */
 export function requestTransformInterceptor(config: InternalAxiosRequestConfig) {
   if (config.data && typeof config.data === 'object' && !(config.data instanceof FormData)) {
-    config.data = toSnakeCase(config.data)
+    config.data = toPascalCase(config.data)
   }
 
   if (config.params && typeof config.params === 'object') {
-    config.params = toSnakeCase(config.params)
+    config.params = toPascalCase(config.params)
   }
 
   return config
 }
 
 /**
- * Converts response data from snake_case to camelCase
+ * Converts response data from PascalCase to camelCase
+ * Example: { PhoneNumber: "123" } → { phoneNumber: "123" }
  */
 export function responseTransformInterceptor(response: AxiosResponse) {
   if (response.data && typeof response.data === 'object') {
@@ -33,15 +37,16 @@ export function responseTransformInterceptor(response: AxiosResponse) {
 }
 
 /**
- * Convert object keys to snake_case
+ * Convert object keys to PascalCase (C# convention)
+ * Example: phoneNumber → PhoneNumber
  */
-function toSnakeCase(obj: any): any {
+function toPascalCase(obj: any): any {
   if (obj === null || obj === undefined) {
     return obj
   }
 
   if (Array.isArray(obj)) {
-    return obj.map(toSnakeCase)
+    return obj.map(toPascalCase)
   }
 
   if (obj instanceof Date) {
@@ -50,8 +55,9 @@ function toSnakeCase(obj: any): any {
 
   if (typeof obj === 'object') {
     return Object.keys(obj).reduce((result, key) => {
-      const snakeKey = key.replace(/[A-Z]/g, (letter) => `_${letter.toLowerCase()}`)
-      result[snakeKey] = toSnakeCase(obj[key])
+      // Convert first character to uppercase, keep rest as is
+      const pascalKey = key.charAt(0).toUpperCase() + key.slice(1)
+      result[pascalKey] = toPascalCase(obj[key])
       return result
     }, {} as any)
   }
@@ -60,7 +66,8 @@ function toSnakeCase(obj: any): any {
 }
 
 /**
- * Convert object keys to camelCase
+ * Convert object keys to camelCase (JavaScript convention)
+ * Example: PhoneNumber → phoneNumber
  */
 function toCamelCase(obj: any): any {
   if (obj === null || obj === undefined) {
@@ -77,7 +84,8 @@ function toCamelCase(obj: any): any {
 
   if (typeof obj === 'object') {
     return Object.keys(obj).reduce((result, key) => {
-      const camelKey = key.replace(/_([a-z])/g, (_, letter) => letter.toUpperCase())
+      // Convert first character to lowercase, keep rest as is
+      const camelKey = key.charAt(0).toLowerCase() + key.slice(1)
       result[camelKey] = toCamelCase(obj[key])
       return result
     }, {} as any)

@@ -152,11 +152,13 @@ const verifyOtp = async () => {
   const result = await verifyCode(otpCode.value)
   if (!result) return
 
-  if (result.success && result.user) {
+  if (result.success) {
+    // Phone verification successful
+    // Note: Backend now separates phone verification from authentication
+    // The parent component should handle the next steps (login/registration)
     emit('success', {
-      user: result.user,
-      token: result.token || '',
-      isNewUser: result.isNewUser,
+      phoneNumber: result.phoneNumber,
+      verifiedAt: result.verifiedAt,
     })
   } else {
     emit('error', result.error || 'Verification failed')

@@ -94,7 +94,7 @@ class HttpClient {
       (error: AxiosError) => Promise.reject(error),
     )
 
-    // 4. Transform - Convert camelCase to snake_case for API
+    // 4. Transform - Convert camelCase to PascalCase for .NET API
     this.axiosInstance.interceptors.request.use(
       requestTransformInterceptor,
       (error: AxiosError) => Promise.reject(error),
@@ -104,7 +104,7 @@ class HttpClient {
     // Response Interceptors (applied in reverse order)
     // ============================================
 
-    // 1. Transform - Convert snake_case to camelCase from API
+    // 1. Transform - Convert PascalCase to camelCase from .NET API
     this.axiosInstance.interceptors.response.use(
       responseTransformInterceptor,
       (error: AxiosError) => Promise.reject(error),
