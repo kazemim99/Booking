@@ -21,6 +21,8 @@ namespace Booksy.ServiceCatalog.Infrastructure.Notifications.Sms
         private readonly string _password;
         private readonly string _number;
         private readonly string _company;
+        private readonly bool _sandboxMode;
+        private readonly string _sandboxOtpCode;
 
         public RahyabSmsNotificationService(
             HttpClient httpClient,
@@ -34,9 +36,11 @@ namespace Booksy.ServiceCatalog.Infrastructure.Notifications.Sms
             _password = configuration["Rahyab:Password"] ?? "B3q71jaY96";
             _number = configuration["Rahyab:Number"] ?? "1000110110001";
             _company = configuration["Rahyab:Company"] ?? "NEGAHNO";
+            _sandboxMode = configuration.GetValue<bool>("Rahyab:SandboxMode", false);
+            _sandboxOtpCode = configuration["Rahyab:SandboxOtpCode"] ?? "123456";
         }
 
-        public async Task<(bool Success, string? MessageId, string? ErrorMessage)> 
+        public async Task<(bool Success, string? MessageId, string? ErrorMessage)>
             SendSmsAsync(string phoneNumber, string message, Dictionary<string, object>? metadata = null, CancellationToken cancellationToken = default)
 
         {
@@ -51,12 +55,30 @@ namespace Booksy.ServiceCatalog.Infrastructure.Notifications.Sms
                     return (false, null, "Invalid phone number");
                 }
 
+                // 🔧 SANDBOX MODE: Skip real SMS sending in development
+                if (_sandboxMode)
+                {
+                    var sandboxMessageId = $"sandbox-{Guid.NewGuid()}";
+
+                    _logger.LogWarning(
+                        "🔧 SANDBOX MODE: Skipping real SMS to {PhoneNumber}. Message: {Message}. Use OTP code: {OtpCode}",
+                        phoneNumber,
+                        message,
+                        _sandboxOtpCode);
+
+                    // Simulate a small delay like a real API call
+                    await Task.Delay(100, cancellationToken);
+
+                    return (true, sandboxMessageId, null);
+                }
+
                 // Limit message length for SMS (1600 chars with concatenation)
                 if (message.Length > 1600)
                 {
                     message = message.Substring(0, 1597) + "...";
                 }
 
+                // 📱 PRODUCTION: Send real SMS via Rahyab API
                 var request = new RahyabSendSmsReques
                 {
                     message = message,
