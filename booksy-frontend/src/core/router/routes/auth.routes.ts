@@ -22,18 +22,7 @@ const authRoutes: RouteRecordRaw[] = [
       isPublic: true,
       title: 'Phone Verification'
     }
-  },
-
-  {
-    path: '/provider-register',
-    name: 'ProviderRegister',
-    component: () => import('@/modules/provider/views/registration/ProviderRegistrationView.vue'),
-    meta: {
-      isPublic: true,
-      title: 'Register'
-    }
   }
-
 ]
 
 export default authRoutes
