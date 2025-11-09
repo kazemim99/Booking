@@ -102,17 +102,84 @@ namespace Booksy.ServiceCatalog.Infrastructure.Persistence.Configurations
                 // Ignore the Id property of BusinessProfile since it's an owned entity
                 profile.Ignore(bp => bp.Id);
 
-                // GALLERY IMAGES - Child Entity Collection (Not Owned)
-                // GalleryImages are regular entities with their own Id and table
-                // They belong to Provider (not BusinessProfile) via foreign key
-                // BusinessProfile just provides convenient navigation access
-                profile.HasMany(bp => bp.GalleryImages)
-                    .WithOne()
-                    .HasForeignKey(gi => gi.ProviderId)
-                    .OnDelete(DeleteBehavior.Cascade);
+                // GALLERY IMAGES - Owned Many Collection
+                profile.OwnsMany(bp => bp.GalleryImages, galleryImage =>
+                {
+                    galleryImage.ToTable("provider_gallery_images");
 
-                // Note: No need for PropertyAccessMode configuration with HasMany
-                // EF Core handles change tracking automatically for child entities
+                    galleryImage.WithOwner()
+                        .HasForeignKey(gi => gi.ProviderId);
+
+                    galleryImage.HasKey(gi => gi.Id);
+
+                    galleryImage.Property(gi => gi.Id)
+                        .HasColumnName("id")
+                        .ValueGeneratedNever()
+                        .IsRequired();
+
+                    galleryImage.Property(gi => gi.ProviderId)
+                        .HasConversion(
+                            id => id.Value,
+                            value => ProviderId.From(value))
+                        .HasColumnName("provider_id")
+                        .IsRequired();
+
+                    galleryImage.Property(gi => gi.ImageUrl)
+                        .HasColumnName("image_url")
+                        .IsRequired()
+                        .HasMaxLength(500);
+
+                    galleryImage.Property(gi => gi.ThumbnailUrl)
+                        .HasColumnName("thumbnail_url")
+                        .IsRequired()
+                        .HasMaxLength(500);
+
+                    galleryImage.Property(gi => gi.MediumUrl)
+                        .HasColumnName("medium_url")
+                        .IsRequired()
+                        .HasMaxLength(500);
+
+                    galleryImage.Property(gi => gi.DisplayOrder)
+                        .HasColumnName("display_order")
+                        .IsRequired();
+
+                    galleryImage.Property(gi => gi.Caption)
+                        .HasColumnName("caption")
+                        .HasMaxLength(500);
+
+                    galleryImage.Property(gi => gi.AltText)
+                        .HasColumnName("alt_text")
+                        .HasMaxLength(500);
+
+                    galleryImage.Property(gi => gi.UploadedAt)
+                        .HasColumnName("uploaded_at")
+                        .IsRequired()
+                        .HasColumnType("timestamp with time zone");
+
+                    galleryImage.Property(gi => gi.IsActive)
+                        .HasColumnName("is_active")
+                        .IsRequired()
+                        .HasDefaultValue(true);
+
+                    galleryImage.Property(gi => gi.IsPrimary)
+                        .HasColumnName("is_primary")
+                        .IsRequired()
+                        .HasDefaultValue(false);
+
+                    galleryImage.Property<byte[]>("RowVersion")
+                        .IsConcurrencyToken()
+                        .HasColumnName("row_version")
+                        .ValueGeneratedOnAddOrUpdate();
+
+                    galleryImage.HasIndex(gi => new { gi.ProviderId, gi.DisplayOrder })
+                        .HasDatabaseName("IX_ProviderGalleryImages_Provider_DisplayOrder");
+
+                    galleryImage.HasIndex(gi => gi.ProviderId)
+                        .HasDatabaseName("IX_ProviderGalleryImages_ProviderId");
+
+                    galleryImage.HasIndex(gi => new { gi.ProviderId, gi.IsPrimary })
+                        .HasDatabaseName("IX_ProviderGalleryImages_Provider_IsPrimary");
+                });
             });
 
 
