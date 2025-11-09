@@ -1,6 +1,7 @@
 using Booksy.Core.Domain.ValueObjects;
 using Booksy.Infrastructure.Core.Persistence.Base;
 using Booksy.UserManagement.Domain.Aggregates;
+using Booksy.UserManagement.Domain.Entities;
 using Booksy.UserManagement.Domain.Enums;
 using Booksy.UserManagement.Domain.ValueObjects;
 using Booksy.UserManagement.Infrastructure.Persistence.Context;

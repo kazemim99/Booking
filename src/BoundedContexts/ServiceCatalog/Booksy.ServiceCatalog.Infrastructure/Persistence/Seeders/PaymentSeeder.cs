@@ -1,3 +1,4 @@
+using Booksy.Core.Domain.Enums;
 using Booksy.Core.Domain.ValueObjects;
 using Booksy.Infrastructure.Core.Persistence.Base;
 using Booksy.ServiceCatalog.Domain.Aggregates.PaymentAggregate;
@@ -88,7 +89,7 @@ namespace Booksy.ServiceCatalog.Infrastructure.Persistence.Seeders
                 // Mostly ZarinPal for Iranian payments
                 var paymentProvider = _random.Next(100) < 80
                     ? PaymentProvider.ZarinPal
-                    : PaymentProvider.Stripe;
+                    : PaymentProvider.Behpardakht;
 
                 var description = $"پرداخت برای رزرو شماره {booking.BookingNumber}";
 
@@ -119,7 +120,7 @@ namespace Booksy.ServiceCatalog.Infrastructure.Persistence.Seeders
                     else
                     {
                         var paymentIntentId = $"pi_iranian_{Guid.NewGuid():N}";
-                        payment.Authorize(paymentIntentId, null, null);
+                        payment.Authorize(paymentIntentId, null);
                         payment.Capture();
                     }
                 }
@@ -141,7 +142,7 @@ namespace Booksy.ServiceCatalog.Infrastructure.Persistence.Seeders
                         else
                         {
                             var paymentIntentId = $"pi_iranian_{Guid.NewGuid():N}";
-                            payment.Authorize(paymentIntentId, null, null);
+                            payment.Authorize(paymentIntentId, null);
                             payment.Capture();
                         }
                     }
@@ -155,7 +156,7 @@ namespace Booksy.ServiceCatalog.Infrastructure.Persistence.Seeders
                         else
                         {
                             var paymentIntentId = $"pi_iranian_{Guid.NewGuid():N}";
-                            payment.Authorize(paymentIntentId, null, null);
+                            payment.Authorize(paymentIntentId, null);
                         }
                     }
                 }

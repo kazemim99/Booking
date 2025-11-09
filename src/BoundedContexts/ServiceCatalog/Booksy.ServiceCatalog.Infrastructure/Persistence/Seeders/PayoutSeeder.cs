@@ -194,7 +194,7 @@ namespace Booksy.ServiceCatalog.Infrastructure.Persistence.Seeders
                     else if (_random.Next(100) < 50) // Some failed
                     {
                         payout.Schedule(periodEnd.AddDays(7));
-                        payout.MarkAsFailed("خطا در انتقال وجه", null);
+                        payout.MarkAsFailed("خطا در انتقال وجه");
                     }
                 }
                 else if (daysSincePeriodEnd > 15) // 15-45 days ago
