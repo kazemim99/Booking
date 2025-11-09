@@ -33,6 +33,33 @@
     <div v-if="currentPage === 'profile'">
       <ProfileManager />
     </div>
+
+    <!-- Financial Tab -->
+    <div v-if="currentPage === 'financial'">
+      <!-- Financial Dashboard Overview -->
+      <FinancialDashboard
+        v-if="financialView === 'dashboard'"
+        @request-payout="financialView = 'payouts'"
+        @view-transactions="financialView = 'transactions'"
+        @view-payouts="financialView = 'payouts'"
+      />
+
+      <!-- Transaction History View -->
+      <div v-else-if="financialView === 'transactions'">
+        <button @click="financialView = 'dashboard'" class="btn-back mb-4">
+          ← بازگشت به داشبورد
+        </button>
+        <TransactionHistory />
+      </div>
+
+      <!-- Payout Manager View -->
+      <div v-else-if="financialView === 'payouts'">
+        <button @click="financialView = 'dashboard'" class="btn-back mb-4">
+          ← بازگشت به داشبورد
+        </button>
+        <PayoutManager />
+      </div>
+    </div>
   </DashboardLayout>
 </template>
 
@@ -46,12 +73,16 @@ import DashboardLayout from '../../components/dashboard/DashboardLayout.vue'
 import BookingStatsCard from '../../components/dashboard/BookingStatsCard.vue'
 import BookingListCard from '../../components/dashboard/BookingListCard.vue'
 import ProfileManager from '../../components/dashboard/ProfileManager.vue'
+import FinancialDashboard from '../../components/financial/FinancialDashboard.vue'
+import TransactionHistory from '../../components/financial/TransactionHistory.vue'
+import PayoutManager from '../../components/financial/PayoutManager.vue'
 
 const router = useRouter()
 const providerStore = useProviderStore()
 const authStore = useAuthStore()
 
 const currentPage = ref('bookings')
+const financialView = ref<'dashboard' | 'transactions' | 'payouts'>('dashboard')
 const currentProvider = computed(() => providerStore.currentProvider)
 const providerStatus = computed(() => authStore.providerStatus)
 
