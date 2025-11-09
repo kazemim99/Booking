@@ -635,6 +635,13 @@ export function useProviderRegistration() {
     registrationState.value.isLoading = true
 
     try {
+      // Don't try to load draft if user is not authenticated
+      // (e.g., new users coming from phone verification)
+      if (!authStore.isAuthenticated) {
+        console.log('⏭️  Skipping draft load - user not authenticated (new registration)')
+        return { success: true, message: 'No authentication - starting fresh registration' }
+      }
+
       const response = await providerRegistrationService.getRegistrationProgress()
 
       if (response.hasDraft && response.draftData) {
