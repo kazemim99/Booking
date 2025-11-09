@@ -9,6 +9,7 @@ import bookingRoutes from './routes/booking.routes'
 import profileRoutes from './routes/profile.routes'
 import adminRoutes from './routes/admin.routes'
 import providerRoutes from '@/core/router/routes/provider.routes'
+import customerRoutes from './routes/customer.routes'
 
 const routes: RouteRecordRaw[] = [
   {
@@ -23,6 +24,7 @@ const routes: RouteRecordRaw[] = [
   ...authRoutes,
   ...bookingRoutes,
   ...profileRoutes,
+  ...customerRoutes,
   ...providerRoutes,
   ...adminRoutes,
   // Error routes
