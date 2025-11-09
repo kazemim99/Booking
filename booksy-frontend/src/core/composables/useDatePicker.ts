@@ -29,7 +29,7 @@ export function useDatePicker(
   options: UseDatePickerOptions = {}
 ) {
   const {
-    format = 'jalaali',
+    format: initialFormat = 'jalaali',
     minDate,
     maxDate,
     disabledDates = [],
@@ -41,7 +41,7 @@ export function useDatePicker(
   const selectedDate = ref<Date | null>(
     initialDate ? new Date(initialDate) : null
   )
-  const displayFormat = ref<DateFormat>(format)
+  const displayFormat = ref<DateFormat>(initialFormat)
   const currentMonth = ref(new Date())
   const isOpen = ref(false)
 
