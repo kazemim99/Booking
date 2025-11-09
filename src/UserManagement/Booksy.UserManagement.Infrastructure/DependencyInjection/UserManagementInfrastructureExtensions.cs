@@ -23,6 +23,8 @@ using Booksy.Infrastructure.External.Notifications;
 using Booksy.Infrastructure.Core.EventBus.Abstractions;
 using Booksy.UserManagement.Application.Services.Interfaces;
 using Booksy.UserManagement.Infrastructure.Services.Application;
+using Booksy.ServiceCatalog.Application.Services.Notifications;
+using Booksy.ServiceCatalog.Infrastructure.Notifications.Sms;
 
 namespace Booksy.UserManagement.Infrastructure.DependencyInjection
 {
@@ -89,6 +91,11 @@ namespace Booksy.UserManagement.Infrastructure.DependencyInjection
             services.AddScoped<ICustomerRepository, CustomerRepository>();
 
             services.AddExternalServices(configuration);
+
+            // Register SMS Notification Service for phone verification
+            services.AddScoped<ISmsNotificationService, RahyabSmsNotificationService>();
+            services.AddHttpClient<RahyabSmsNotificationService>();
+
             // Register context-specific infrastructure
             //services.AddScoped<IUnitOfWork, UserManagementUnitOfWork>();
             //services.AddScoped(typeof(IOutboxProcessor<>), typeof(UserManagementOutboxProcessor));
