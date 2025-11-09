@@ -58,34 +58,64 @@
 </template>
 
 <script setup lang="ts">
-import { computed } from 'vue'
+import { computed, ref, onMounted, watch } from 'vue'
 import { PieChart, LineChart } from '@/shared/components/charts'
 import { convertEnglishToPersianNumbers } from '@/shared/utils/date/jalali.utils'
+import { bookingService } from '@/modules/booking/api/booking.service'
 import type { ChartData, ChartOptions } from 'chart.js'
 
 interface Props {
-  completedCount?: number
-  cancelledCount?: number
-  scheduledCount?: number
-  revenueData?: Array<{ month: string; revenue: number }>
+  providerId?: string
 }
 
-const props = withDefaults(defineProps<Props>(), {
-  completedCount: 68,
-  cancelledCount: 12,
-  scheduledCount: 20,
-  revenueData: () => [
-    { month: 'فروردین', revenue: 4500 },
-    { month: 'اردیبهشت', revenue: 5200 },
-    { month: 'خرداد', revenue: 4800 },
-    { month: 'تیر', revenue: 6100 },
-    { month: 'مرداد', revenue: 7200 },
-    { month: 'شهریور', revenue: 6800 }
-  ]
+const props = defineProps<Props>()
+
+const completedCount = ref(0)
+const cancelledCount = ref(0)
+const scheduledCount = ref(0)
+const loading = ref(false)
+const revenueData = ref([
+  { month: 'فروردین', revenue: 0 },
+  { month: 'اردیبهشت', revenue: 0 },
+  { month: 'خرداد', revenue: 0 },
+  { month: 'تیر', revenue: 0 },
+  { month: 'مرداد', revenue: 0 },
+  { month: 'شهریور', revenue: 0 }
+])
+
+// Fetch booking stats
+const fetchStats = async () => {
+  if (!props.providerId) return
+
+  loading.value = true
+  try {
+    const stats = await bookingService.getProviderBookingStats(props.providerId)
+    completedCount.value = stats.completed
+    cancelledCount.value = stats.cancelled
+    scheduledCount.value = stats.pending + stats.confirmed
+  } catch (error) {
+    console.error('Error fetching booking stats:', error)
+  } finally {
+    loading.value = false
+  }
+}
+
+// Watch for providerId changes
+watch(() => props.providerId, () => {
+  if (props.providerId) {
+    fetchStats()
+  }
+})
+
+// Load data on mount
+onMounted(() => {
+  if (props.providerId) {
+    fetchStats()
+  }
 })
 
 const totalBookings = computed(() => {
-  return props.completedCount + props.cancelledCount + props.scheduledCount
+  return completedCount.value + cancelledCount.value + scheduledCount.value
 })
 
 const formatNumber = (num: number) => {
@@ -97,7 +127,7 @@ const pieChartData = computed<ChartData<'pie'>>(() => ({
   labels: ['انجام‌شده', 'لغوشده', 'رزروشده'],
   datasets: [
     {
-      data: [props.completedCount, props.cancelledCount, props.scheduledCount],
+      data: [completedCount.value, cancelledCount.value, scheduledCount.value],
       backgroundColor: ['#22c55e', '#ef4444', '#f59e0b'],
       borderWidth: 2,
       borderColor: '#ffffff'
@@ -123,11 +153,11 @@ const pieChartOptions = computed<ChartOptions<'pie'>>(() => ({
 
 // Line Chart Data
 const lineChartData = computed<ChartData<'line'>>(() => ({
-  labels: props.revenueData.map(d => d.month),
+  labels: revenueData.value.map(d => d.month),
   datasets: [
     {
       label: 'درآمد',
-      data: props.revenueData.map(d => d.revenue),
+      data: revenueData.value.map(d => d.revenue),
       borderColor: '#6366f1',
       backgroundColor: 'rgba(99, 102, 241, 0.1)',
       borderWidth: 2,

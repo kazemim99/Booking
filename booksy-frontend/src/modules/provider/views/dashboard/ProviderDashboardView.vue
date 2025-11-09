@@ -23,14 +23,10 @@
     <!-- Bookings Tab -->
     <div v-if="currentPage === 'bookings'">
       <!-- Booking Statistics -->
-      <BookingStatsCard
-        :completed-count="68"
-        :cancelled-count="12"
-        :scheduled-count="20"
-      />
+      <BookingStatsCard :provider-id="currentProvider?.id" />
 
       <!-- Booking List -->
-      <BookingListCard />
+      <BookingListCard :provider-id="currentProvider?.id" />
     </div>
 
     <!-- Profile Tab -->

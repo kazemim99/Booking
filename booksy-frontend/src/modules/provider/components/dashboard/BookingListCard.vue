@@ -40,8 +40,20 @@
         </select>
       </div>
 
+      <!-- Loading State -->
+      <div v-if="loading" class="loading-container">
+        <div class="spinner"></div>
+        <p>در حال بارگذاری...</p>
+      </div>
+
+      <!-- Error State -->
+      <div v-else-if="error" class="error-container">
+        <p>{{ error }}</p>
+        <button @click="fetchBookings" class="retry-btn">تلاش مجدد</button>
+      </div>
+
       <!-- Table -->
-      <div class="table-wrapper">
+      <div v-else class="table-wrapper">
         <table class="booking-table">
           <thead>
             <tr>
@@ -108,8 +120,10 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed } from 'vue'
+import { ref, computed, onMounted, watch } from 'vue'
 import { convertEnglishToPersianNumbers } from '@/shared/utils/date/jalali.utils'
+import { bookingService } from '@/modules/booking/api/booking.service'
+import type { Appointment } from '@/modules/booking/types/booking.types'
 
 type BookingStatus = 'scheduled' | 'completed' | 'cancelled'
 
@@ -123,53 +137,14 @@ interface Booking {
 }
 
 interface Props {
-  bookings?: Booking[]
+  providerId?: string
 }
 
-const props = withDefaults(defineProps<Props>(), {
-  bookings: () => [
-    {
-      id: '1',
-      customerName: 'علی احمدی',
-      date: '۱۴۰۳/۰۸/۱۵',
-      time: '۱۰:۳۰',
-      service: 'کوتاهی مو',
-      status: 'scheduled'
-    },
-    {
-      id: '2',
-      customerName: 'سارا محمدی',
-      date: '۱۴۰۳/۰۸/۱۵',
-      time: '۱۲:۰۰',
-      service: 'رنگ مو',
-      status: 'scheduled'
-    },
-    {
-      id: '3',
-      customerName: 'رضا کریمی',
-      date: '۱۴۰۳/۰۸/۱۴',
-      time: '۱۵:۳۰',
-      service: 'اصلاح صورت',
-      status: 'completed'
-    },
-    {
-      id: '4',
-      customerName: 'مریم رضایی',
-      date: '۱۴۰۳/۰۸/۱۴',
-      time: '۱۱:۰۰',
-      service: 'مانیکور',
-      status: 'completed'
-    },
-    {
-      id: '5',
-      customerName: 'حسین موسوی',
-      date: '۱۴۰۳/۰۸/۱۳',
-      time: '۱۶:۰۰',
-      service: 'کوتاهی مو',
-      status: 'cancelled'
-    }
-  ]
-})
+const props = defineProps<Props>()
+
+const bookings = ref<Booking[]>([])
+const loading = ref(false)
+const error = ref<string | null>(null)
 
 const searchQuery = ref('')
 const filterPeriod = ref('all')
@@ -183,6 +158,89 @@ const statusLabels: Record<BookingStatus, string> = {
   cancelled: 'لغوشده'
 }
 
+// Fetch bookings from API
+const fetchBookings = async () => {
+  if (!props.providerId) return
+
+  loading.value = true
+  error.value = null
+
+  try {
+    const response = await bookingService.getProviderBookings(
+      props.providerId,
+      undefined, // status filter
+      1, // page
+      100 // get more bookings for local filtering
+    )
+
+    // Map API response to component format
+    bookings.value = response.items.map(mapAppointmentToBooking)
+  } catch (err) {
+    console.error('Error fetching bookings:', err)
+    error.value = 'خطا در بارگذاری لیست رزروها'
+    bookings.value = []
+  } finally {
+    loading.value = false
+  }
+}
+
+// Map Appointment from API to Booking for display
+const mapAppointmentToBooking = (appointment: Appointment): Booking => {
+  return {
+    id: appointment.id,
+    customerName: appointment.clientId, // TODO: Fetch customer name
+    date: formatDate(appointment.scheduledStartTime),
+    time: formatTime(appointment.scheduledStartTime),
+    service: appointment.serviceId, // TODO: Fetch service name
+    status: mapStatus(appointment.status),
+  }
+}
+
+// Map API status to component status
+const mapStatus = (apiStatus: string): BookingStatus => {
+  const statusMap: Record<string, BookingStatus> = {
+    Pending: 'scheduled',
+    Confirmed: 'scheduled',
+    InProgress: 'scheduled',
+    Completed: 'completed',
+    Cancelled: 'cancelled',
+    NoShow: 'cancelled',
+  }
+  return statusMap[apiStatus] || 'scheduled'
+}
+
+// Format date to Persian
+const formatDate = (dateString: string): string => {
+  const date = new Date(dateString)
+  // TODO: Use Jalaali date formatting
+  const year = date.getFullYear()
+  const month = String(date.getMonth() + 1).padStart(2, '0')
+  const day = String(date.getDate()).padStart(2, '0')
+  return convertEnglishToPersianNumbers(`${year}/${month}/${day}`)
+}
+
+// Format time
+const formatTime = (dateString: string): string => {
+  const date = new Date(dateString)
+  const hours = String(date.getHours()).padStart(2, '0')
+  const minutes = String(date.getMinutes()).padStart(2, '0')
+  return convertEnglishToPersianNumbers(`${hours}:${minutes}`)
+}
+
+// Watch for providerId changes
+watch(() => props.providerId, () => {
+  if (props.providerId) {
+    fetchBookings()
+  }
+})
+
+// Load data on mount
+onMounted(() => {
+  if (props.providerId) {
+    fetchBookings()
+  }
+})
+
 const statusColorClass = (status: BookingStatus): string => {
   const classes = {
     scheduled: 'status-scheduled',
@@ -193,7 +251,7 @@ const statusColorClass = (status: BookingStatus): string => {
 }
 
 const filteredBookings = computed(() => {
-  return props.bookings.filter(booking => {
+  return bookings.value.filter(booking => {
     const matchesSearch =
       booking.customerName.includes(searchQuery.value) ||
       booking.service.includes(searchQuery.value)
@@ -428,6 +486,48 @@ const nextPage = () => {
   .btn-icon {
     width: 16px;
     height: 16px;
+  }
+}
+
+/* Loading & Error States */
+.loading-container,
+.error-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 48px 24px;
+  text-align: center;
+  color: #6b7280;
+}
+
+.spinner {
+  width: 40px;
+  height: 40px;
+  border: 3px solid #e5e7eb;
+  border-top-color: #6366f1;
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+  margin-bottom: 16px;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+.retry-btn {
+  margin-top: 16px;
+  padding: 8px 16px;
+  background: #6366f1;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 14px;
+  transition: background-color 0.2s;
+
+  &:hover {
+    background: #4f46e5;
   }
 }
 </style>
