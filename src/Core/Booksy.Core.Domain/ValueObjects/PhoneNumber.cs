@@ -11,11 +11,10 @@ namespace Booksy.Core.Domain.ValueObjects
     /// </summary>
     public sealed class PhoneNumber : ValueObject
     {
-        public string Value { get; private set; }
-        public string CountryCode { get; private set; }
-        public string NationalNumber { get; private set; }
+        public string Value { get; }
+        public string CountryCode { get; }
+        public string NationalNumber { get; }
 
-        // Parameterless constructor for EF Core
         private PhoneNumber()
         {
             Value = string.Empty;
