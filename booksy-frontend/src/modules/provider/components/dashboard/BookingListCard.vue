@@ -143,6 +143,14 @@
       :booking="selectedBooking"
       @notes-added="handleNotesAdded"
     />
+
+    <StaffSelectorModal
+      v-if="props.providerId"
+      v-model="showStaffSelectorModal"
+      :provider-id="props.providerId"
+      :current-staff-id="selectedBooking?.staffMemberId"
+      @staff-selected="handleStaffSelected"
+    />
   </div>
 </template>
 
@@ -150,10 +158,14 @@
 import { ref, computed, onMounted, watch } from 'vue'
 import { convertEnglishToPersianNumbers } from '@/shared/utils/date/jalali.utils'
 import { bookingService } from '@/modules/booking/api/booking.service'
+import { customerService } from '@/modules/user-management/api/customer.service'
+import { serviceService } from '@/modules/provider/services/service.service'
 import type { Appointment } from '@/modules/booking/types/booking.types'
+import type { Staff } from '@/modules/provider/types/staff.types'
 import BookingActions from './BookingActions.vue'
 import RescheduleBookingModal from './RescheduleBookingModal.vue'
 import AddNotesModal from './AddNotesModal.vue'
+import StaffSelectorModal from './StaffSelectorModal.vue'
 
 type BookingStatus = 'scheduled' | 'completed' | 'cancelled'
 
@@ -182,6 +194,7 @@ const actionLoading = ref<string | null>(null) // Track which booking is being a
 // Modal states
 const showRescheduleModal = ref(false)
 const showAddNotesModal = ref(false)
+const showStaffSelectorModal = ref(false)
 const selectedBooking = ref<Appointment | null>(null)
 
 const searchQuery = ref('')
@@ -211,8 +224,11 @@ const fetchBookings = async () => {
       100 // get more bookings for local filtering
     )
 
-    // Map API response to component format
-    bookings.value = response.items.map(mapAppointmentToBooking)
+    // Map API response to component format (with name resolution)
+    const mappedBookings = await Promise.all(
+      response.items.map(appointment => mapAppointmentToBooking(appointment))
+    )
+    bookings.value = mappedBookings
   } catch (err) {
     console.error('Error fetching bookings:', err)
     error.value = 'خطا در بارگذاری لیست رزروها'
@@ -223,16 +239,20 @@ const fetchBookings = async () => {
 }
 
 // Map Appointment from API to Booking for display
-const mapAppointmentToBooking = (appointment: Appointment): Booking => {
+const mapAppointmentToBooking = async (appointment: Appointment): Promise<Booking> => {
   // Store appointment for actions
   appointments.value.set(appointment.id, appointment)
 
+  // Fetch customer and service names (with caching)
+  const customerName = await customerService.getCustomerName(appointment.clientId)
+  const serviceName = await serviceService.getServiceName(appointment.serviceId)
+
   return {
     id: appointment.id,
-    customerName: appointment.clientId, // TODO: Fetch customer name
+    customerName, // Resolved name
     date: formatDate(appointment.scheduledStartTime),
     time: formatTime(appointment.scheduledStartTime),
-    service: appointment.serviceId, // TODO: Fetch service name
+    service: serviceName, // Resolved name
     status: mapStatus(appointment.status),
     appointment, // Include full appointment
   }
@@ -392,17 +412,23 @@ const handleReschedule = (bookingId: string) => {
   showRescheduleModal.value = true
 }
 
-const handleAssignStaff = async (bookingId: string) => {
+const handleAssignStaff = (bookingId: string) => {
   const appointment = appointments.value.get(bookingId)
   if (!appointment) return
 
-  // For now, use a simple prompt (in a real app, use a proper modal with staff list)
-  const staffId = prompt('لطفا ID کارمند را وارد کنید:')
-  if (!staffId) return
+  selectedBooking.value = appointment
+  showStaffSelectorModal.value = true
+}
 
+const handleStaffSelected = async (staffId: string, staff: Staff) => {
+  if (!selectedBooking.value) return
+
+  const bookingId = selectedBooking.value.id
   actionLoading.value = bookingId
+
   try {
-    await bookingService.assignStaff(bookingId, staffId, 'تخصیص کارمند')
+    const staffName = staff.fullName || `${staff.firstName} ${staff.lastName}`.trim()
+    await bookingService.assignStaff(bookingId, staffId, `تخصیص به ${staffName}`)
     await fetchBookings() // Refresh list
   } catch (err) {
     console.error('Error assigning staff:', err)
