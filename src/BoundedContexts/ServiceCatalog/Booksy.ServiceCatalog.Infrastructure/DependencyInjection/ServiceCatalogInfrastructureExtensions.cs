@@ -25,6 +25,13 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using SendGrid;
+using Booksy.Infrastructure.External.Payment;
+using Booksy.Infrastructure.External.Payment.ZarinPal;
+using Booksy.Infrastructure.External.Payment.IDPay;
+using Booksy.Infrastructure.External.Payment.Behpardakht;
+using Booksy.Infrastructure.External.Payment.Parsian;
+using Booksy.Infrastructure.External.Payment.Saman;
+using Booksy.ServiceCatalog.Infrastructure.ExternalServices.Sms;
 
 namespace Booksy.ServiceCatalog.Infrastructure.DependencyInjection
 {
@@ -90,6 +97,13 @@ namespace Booksy.ServiceCatalog.Infrastructure.DependencyInjection
 
             // Notification Services
             services.AddNotificationServices();
+
+            // Payment Services
+            services.AddPaymentServices(configuration);
+
+            // Domain-specific SMS Notification Service
+            services.AddScoped<Application.Services.ISmsNotificationService, KavenegarSmsService>();
+            services.AddHttpClient<KavenegarSmsService>();
 
             services.AddScoped<IProviderApplicationService, ProviderApplicationService>();
             services.AddScoped<IServiceApplicationService, ServiceApplicationService>();
@@ -204,6 +218,44 @@ namespace Booksy.ServiceCatalog.Infrastructure.DependencyInjection
             // HTTP Clients for notification services
             services.AddHttpClient<SendGridEmailNotificationService>();
             services.AddHttpClient<RahyabSmsNotificationService>();
+
+            return services;
+        }
+
+        /// <summary>
+        /// Adds payment gateway services to the service collection.
+        /// </summary>
+        public static IServiceCollection AddPaymentServices(this IServiceCollection services, IConfiguration configuration)
+        {
+            // Configure ZarinPal settings
+            services.Configure<ZarinPalSettings>(settings =>
+            {
+                settings.MerchantId = configuration["Payment:ZarinPal:MerchantId"] ?? string.Empty;
+                settings.IsSandbox = configuration.GetValue<bool>("Payment:ZarinPal:IsSandbox", true);
+                settings.CallbackUrl = configuration["Payment:ZarinPal:CallbackUrl"] ?? string.Empty;
+            });
+
+            // Register ZarinPal Service
+            services.AddScoped<IZarinPalService, ZarinPalService>();
+            services.AddHttpClient("ZarinPal");
+
+            // Register all payment gateway implementations
+            services.AddScoped<ZarinPalPaymentGateway>();
+            services.AddScoped<IDPayPaymentGateway>();
+            services.AddScoped<BehpardakhtPaymentGateway>();
+            services.AddScoped<ParsianPaymentGateway>();
+            services.AddScoped<SamanPaymentGateway>();
+            services.AddScoped<StripePaymentGateway>();
+
+            // Register payment gateway factory
+            services.AddScoped<IPaymentGatewayFactory, PaymentGatewayFactory>();
+
+            // Register default payment gateway
+            services.AddScoped<IPaymentGateway>(provider =>
+            {
+                var factory = provider.GetRequiredService<IPaymentGatewayFactory>();
+                return factory.GetDefaultGateway();
+            });
 
             return services;
         }
