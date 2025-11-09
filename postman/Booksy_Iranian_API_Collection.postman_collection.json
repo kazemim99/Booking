@@ -1,0 +1,495 @@
+{
+  "info": {
+    "name": "Booksy Iranian API Collection",
+    "description": "Comprehensive API collection for Booksy with Iranian/Persian test data\n\nIncludes realistic Iranian data:\n- Persian names and locations\n- Iranian Rial (IRR) currency\n- ZarinPal payment gateway\n- Iranian mobile numbers (09XX)\n- Tehran business hours\n\nAll seed data values are pre-populated from the database seeders.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+    "_postman_id": "booksy-iranian-api-collection",
+    "version": "1.0.0"
+  },
+  "auth": {
+    "type": "bearer",
+    "bearer": [
+      {
+        "key": "token",
+        "value": "{{access_token}}",
+        "type": "string"
+      }
+    ]
+  },
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://localhost:5010/api",
+      "type": "string"
+    },
+    {
+      "key": "gatewayUrl",
+      "value": "http://localhost:5000/api",
+      "type": "string"
+    },
+    {
+      "key": "userManagementUrl",
+      "value": "http://localhost:5020/api",
+      "type": "string"
+    }
+  ],
+  "item": [
+    {
+      "name": "Authentication",
+      "item": [
+        {
+          "name": "Register Iranian Customer",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"ali.ahmadi@example.ir\",\n  \"password\": \"Pass@123456\",\n  \"firstName\": \"علی\",\n  \"lastName\": \"احمدی\",\n  \"phoneNumber\": \"09123456789\",\n  \"gender\": \"Male\",\n  \"dateOfBirth\": \"1990-05-15\"\n}"
+            },
+            "url": {
+              "raw": "{{userManagementUrl}}/v1/auth/register",
+              "host": ["{{userManagementUrl}}"],
+              "path": ["v1", "auth", "register"]
+            }
+          }
+        },
+        {
+          "name": "Login",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "if (pm.response.code === 200) {",
+                  "    var jsonData = pm.response.json();",
+                  "    pm.environment.set('access_token', jsonData.accessToken);",
+                  "    pm.environment.set('refresh_token', jsonData.refreshToken);",
+                  "    console.log('✅ Logged in successfully');",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"ali.ahmadi@example.ir\",\n  \"password\": \"Pass@123456\"\n}"
+            },
+            "url": {
+              "raw": "{{userManagementUrl}}/v1/auth/login",
+              "host": ["{{userManagementUrl}}"],
+              "path": ["v1", "auth", "login"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Providers",
+      "item": [
+        {
+          "name": "Get All Iranian Providers",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/v1/providers?city=Tehran&pageNumber=1&pageSize=20",
+              "host": ["{{baseUrl}}"],
+              "path": ["v1", "providers"],
+              "query": [
+                {
+                  "key": "city",
+                  "value": "Tehran"
+                },
+                {
+                  "key": "pageNumber",
+                  "value": "1"
+                },
+                {
+                  "key": "pageSize",
+                  "value": "20"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Get Provider by ID",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/v1/providers/{{providerId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["v1", "providers", "{{providerId}}"]
+            }
+          }
+        },
+        {
+          "name": "Create Iranian Provider",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"businessName\": \"سالن زیبایی رویا - Roya Beauty Salon\",\n  \"description\": \"سالن زیبایی تخصصی بانوان در تهران\",\n  \"providerType\": \"Salon\",\n  \"contactInfo\": {\n    \"email\": \"info@royabeauty.ir\",\n    \"phoneNumber\": \"02188990011\",\n    \"website\": \"https://www.royabeauty.ir\"\n  },\n  \"address\": {\n    \"fullAddress\": \"تهران، میدان ونک، خیابان ملاصدرا\",\n    \"streetAddress\": \"خیابان ملاصدرا\",\n    \"city\": \"Tehran\",\n    \"state\": \"Tehran\",\n    \"postalCode\": \"19917\",\n    \"country\": \"Iran\",\n    \"latitude\": 35.7575,\n    \"longitude\": 51.4089\n  }\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/v1/providers",
+              "host": ["{{baseUrl}}"],
+              "path": ["v1", "providers"]
+            }
+          }
+        },
+        {
+          "name": "Search Iranian Providers",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/v1/providers/search?query=آرایشگاه&city=Tehran&providerType=Salon",
+              "host": ["{{baseUrl}}"],
+              "path": ["v1", "providers", "search"],
+              "query": [
+                {
+                  "key": "query",
+                  "value": "آرایشگاه"
+                },
+                {
+                  "key": "city",
+                  "value": "Tehran"
+                },
+                {
+                  "key": "providerType",
+                  "value": "Salon"
+                }
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Services",
+      "item": [
+        {
+          "name": "Get Services by Provider",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/v1/services?providerId={{providerId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["v1", "services"],
+              "query": [
+                {
+                  "key": "providerId",
+                  "value": "{{providerId}}"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Create Iranian Service",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"providerId\": \"{{providerId}}\",\n  \"name\": \"کوتاهی و فشن مو - Hair Cut & Style\",\n  \"description\": \"کوتاهی و مدل‌دهی موی بانوان با آخرین تکنیک‌های روز\",\n  \"category\": {\n    \"name\": \"آرایش و زیبایی\",\n    \"description\": \"خدمات آرایش و زیبایی\"\n  },\n  \"serviceType\": \"Standard\",\n  \"basePrice\": {\n    \"amount\": 1200000,\n    \"currency\": \"IRR\"\n  },\n  \"duration\": {\n    \"totalMinutes\": 60\n  },\n  \"options\": [\n    {\n      \"name\": \"سشوار - Blow Dry\",\n      \"description\": \"سشوار حرفه‌ای موی سر\",\n      \"additionalPrice\": {\n        \"amount\": 400000,\n        \"currency\": \"IRR\"\n      },\n      \"additionalDuration\": {\n        \"totalMinutes\": 20\n      }\n    }\n  ]\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/v1/services",
+              "host": ["{{baseUrl}}"],
+              "path": ["v1", "services"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Bookings",
+      "item": [
+        {
+          "name": "Create Booking",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"providerId\": \"{{providerId}}\",\n  \"serviceId\": \"{{serviceId}}\",\n  \"staffId\": \"{{staffId}}\",\n  \"startTime\": \"2024-12-15T14:00:00Z\",\n  \"customerNotes\": \"لطفا دقیق باشید. اولین بار است که میام\",\n  \"selectedOptions\": [\n    {\n      \"serviceOptionId\": \"{{optionId}}\",\n      \"quantity\": 1\n    }\n  ]\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/v1/bookings",
+              "host": ["{{baseUrl}}"],
+              "path": ["v1", "bookings"]
+            }
+          }
+        },
+        {
+          "name": "Get My Bookings",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/v1/bookings/my-bookings?status=Confirmed&pageNumber=1&pageSize=20",
+              "host": ["{{baseUrl}}"],
+              "path": ["v1", "bookings", "my-bookings"],
+              "query": [
+                {
+                  "key": "status",
+                  "value": "Confirmed"
+                },
+                {
+                  "key": "pageNumber",
+                  "value": "1"
+                },
+                {
+                  "key": "pageSize",
+                  "value": "20"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Confirm Booking",
+          "request": {
+            "method": "PUT",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/v1/bookings/{{bookingId}}/confirm",
+              "host": ["{{baseUrl}}"],
+              "path": ["v1", "bookings", "{{bookingId}}", "confirm"]
+            }
+          }
+        },
+        {
+          "name": "Cancel Booking",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"reason\": \"تداخل در برنامه - Schedule conflict\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/v1/bookings/{{bookingId}}/cancel",
+              "host": ["{{baseUrl}}"],
+              "path": ["v1", "bookings", "{{bookingId}}", "cancel"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Payments",
+      "item": [
+        {
+          "name": "Create ZarinPal Payment",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"bookingId\": \"{{bookingId}}\",\n  \"amount\": {\n    \"amount\": 1200000,\n    \"currency\": \"IRR\"\n  },\n  \"paymentMethod\": \"OnlinePayment\",\n  \"paymentProvider\": \"ZarinPal\",\n  \"description\": \"پرداخت برای رزرو خدمات زیبایی\",\n  \"callbackUrl\": \"https://yourdomain.ir/payment/callback\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/v1/payments/zarinpal/create",
+              "host": ["{{baseUrl}}"],
+              "path": ["v1", "payments", "zarinpal", "create"]
+            }
+          }
+        },
+        {
+          "name": "Verify ZarinPal Payment",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"authority\": \"A00000000000000000000000000001234567\",\n  \"status\": \"OK\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/v1/payments/zarinpal/verify",
+              "host": ["{{baseUrl}}"],
+              "path": ["v1", "payments", "zarinpal", "verify"]
+            }
+          }
+        },
+        {
+          "name": "Get Payment History",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/v1/payments/history?pageNumber=1&pageSize=20",
+              "host": ["{{baseUrl}}"],
+              "path": ["v1", "payments", "history"],
+              "query": [
+                {
+                  "key": "pageNumber",
+                  "value": "1"
+                },
+                {
+                  "key": "pageSize",
+                  "value": "20"
+                }
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Staff",
+      "item": [
+        {
+          "name": "Get Provider Staff",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/v1/providers/{{providerId}}/staff",
+              "host": ["{{baseUrl}}"],
+              "path": ["v1", "providers", "{{providerId}}", "staff"]
+            }
+          }
+        },
+        {
+          "name": "Add Iranian Staff",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"providerId\": \"{{providerId}}\",\n  \"firstName\": \"مریم\",\n  \"lastName\": \"محمدی\",\n  \"role\": \"ServiceProvider\",\n  \"phoneNumber\": \"09121234567\",\n  \"email\": \"maryam.mohammadi@example.ir\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/v1/staff",
+              "host": ["{{baseUrl}}"],
+              "path": ["v1", "staff"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Business Hours",
+      "item": [
+        {
+          "name": "Get Provider Business Hours",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/v1/providers/{{providerId}}/business-hours",
+              "host": ["{{baseUrl}}"],
+              "path": ["v1", "providers", "{{providerId}}", "business-hours"]
+            },
+            "description": "Returns Iranian business hours:\n- Saturday-Thursday: Open\n- Friday: Closed (Islamic weekend)\n- Thursday: Often half-day"
+          }
+        },
+        {
+          "name": "Set Iranian Business Hours",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"businessHours\": [\n    {\"dayOfWeek\": \"Saturday\", \"openTime\": \"10:00\", \"closeTime\": \"20:00\"},\n    {\"dayOfWeek\": \"Sunday\", \"openTime\": \"10:00\", \"closeTime\": \"20:00\"},\n    {\"dayOfWeek\": \"Monday\", \"openTime\": \"10:00\", \"closeTime\": \"20:00\"},\n    {\"dayOfWeek\": \"Tuesday\", \"openTime\": \"10:00\", \"closeTime\": \"20:00\"},\n    {\"dayOfWeek\": \"Wednesday\", \"openTime\": \"10:00\", \"closeTime\": \"20:00\"},\n    {\"dayOfWeek\": \"Thursday\", \"openTime\": \"10:00\", \"closeTime\": \"14:00\"},\n    {\"dayOfWeek\": \"Friday\", \"openTime\": null, \"closeTime\": null}\n  ]\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/v1/providers/{{providerId}}/business-hours",
+              "host": ["{{baseUrl}}"],
+              "path": ["v1", "providers", "{{providerId}}", "business-hours"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Locations",
+      "item": [
+        {
+          "name": "Get Iranian Provinces",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/v1/locations/provinces",
+              "host": ["{{baseUrl}}"],
+              "path": ["v1", "locations", "provinces"]
+            },
+            "description": "Returns Iranian provinces: Tehran, Isfahan, Shiraz, Mashhad, Tabriz, etc."
+          }
+        },
+        {
+          "name": "Get Cities by Province",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/v1/locations/provinces/{{provinceId}}/cities",
+              "host": ["{{baseUrl}}"],
+              "path": ["v1", "locations", "provinces", "{{provinceId}}", "cities"]
+            }
+          }
+        }
+      ]
+    }
+  ]
+}
