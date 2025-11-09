@@ -85,7 +85,11 @@ public static class SwaggerExtensions
         this IApplicationBuilder app,
         IApiVersionDescriptionProvider provider)
     {
-        app.UseSwagger();
+        app.UseSwagger(c =>
+        {
+            c.RouteTemplate = "swagger/{documentName}/swagger.json";
+        });
+
         app.UseSwaggerUI(options =>
         {
             foreach (var description in provider.ApiVersionDescriptions)
@@ -95,8 +99,9 @@ public static class SwaggerExtensions
                     description.GroupName.ToUpperInvariant());
             }
 
-            options.RoutePrefix = string.Empty;
-            options.DocumentTitle = "Booksy Service Category API";
+            // CHANGED: Moved Swagger UI to /swagger route instead of root
+            options.RoutePrefix = "swagger";
+            options.DocumentTitle = "Booksy Service Catalog API";
             options.DocExpansion(Swashbuckle.AspNetCore.SwaggerUI.DocExpansion.None);
             options.EnableDeepLinking();
             options.ShowExtensions();

@@ -1,0 +1,15 @@
+{
+  "openapi": "3.0.1",
+  "info": {
+    "title": "Booksy Service Catalog API",
+    "description": "API for managing service catalog in the Booksy platform",
+    "contact": {
+      "name": "Booksy Team",
+      "email": "support@booksy.com"
+    },
+    "version": "v1"
+  },
+  "paths": {},
+  "components": {},
+  "note": "This is a placeholder file. Run './scripts/export-swagger-specs.sh' to generate the actual OpenAPI specification from the running API."
+}
