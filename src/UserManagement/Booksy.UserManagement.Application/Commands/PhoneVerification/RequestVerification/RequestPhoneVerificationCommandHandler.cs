@@ -51,14 +51,14 @@ namespace Booksy.UserManagement.Application.Commands.PhoneVerification.RequestVe
             // Check for recent verification attempts (rate limiting)
             var recentVerifications = await _repository.GetRecentVerificationsByPhoneAsync(
                 phoneNumber.Value,
-                TimeSpan.FromHours(1),
+                TimeSpan.FromMinutes(10),
                 cancellationToken);
 
             if (recentVerifications.Count >= 3)
             {
                 throw new DomainValidationException(
-                    "PhoneNumber",
-                    "Too many verification attempts. Please try again later.");
+                    $"{phoneNumber}",
+                    "تعداد درخواست بیش از حد.لطفا دقایقی دیگر مجدد تلاش کنید");
             }
 
             // Create verification aggregate

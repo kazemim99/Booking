@@ -186,7 +186,8 @@ namespace Booksy.UserManagement.Domain.Aggregates.PhoneVerificationAggregate
             LastAttemptAt = DateTime.UtcNow;
 
             // Verify OTP
-            var isValid = OtpCode.IsValid(inputCode);
+            var inputHash = HashOtp(inputCode);
+            var isValid = OtpHash.Equals(OtpHash, StringComparison.Ordinal);
 
             if (isValid)
             {
