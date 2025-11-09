@@ -74,21 +74,6 @@
           />
         </div>
 
-        <!-- Location Selector -->
-        <div class="form-group location-group">
-          <LocationSelector
-            v-model:province-id="formData.provinceId"
-            v-model:city-id="formData.cityId"
-            province-label="استان"
-            city-label="شهر"
-            province-placeholder="انتخاب استان..."
-            city-placeholder="انتخاب شهر..."
-            :province-error="errors.provinceId"
-            :city-error="errors.cityId"
-            :required="true"
-          />
-        </div>
-
         <!-- Navigation -->
         <div class="step-actions">
           <AppButton type="submit" variant="primary" size="large" block :disabled="!isFormValid">
@@ -105,7 +90,6 @@ import { ref, computed } from 'vue'
 import { useAuthStore } from '@/core/stores/modules/auth.store'
 import ProgressIndicator from '../shared/ProgressIndicator.vue'
 import AppButton from '@/shared/components/ui/Button/AppButton.vue'
-import LocationSelector from '@/shared/components/forms/LocationSelector.vue'
 import type { BusinessInfo } from '@/modules/provider/types/registration.types'
 
 interface Props {
@@ -121,14 +105,18 @@ const props = defineProps<Props>()
 const emit = defineEmits<Emits>()
 const authStore = useAuthStore()
 
+// Get phone number from sessionStorage (saved during phone verification) or authStore
+const PHONE_NUMBER_KEY = 'phone_verification_number'
+const getPhoneNumber = () => {
+  return sessionStorage.getItem(PHONE_NUMBER_KEY) || authStore.user?.phoneNumber || ''
+}
+
 // Form data
 const formData = ref({
   businessName: props.modelValue?.businessName || '',
   ownerFirstName: props.modelValue?.ownerFirstName || '',
   ownerLastName: props.modelValue?.ownerLastName || '',
-  phoneNumber: authStore.user?.phoneNumber || '',
-  provinceId: props.modelValue?.provinceId || null,
-  cityId: props.modelValue?.cityId || null,
+  phoneNumber: getPhoneNumber(),
 })
 
 const errors = ref<Record<string, string>>({})
@@ -153,9 +141,7 @@ const isFormValid = computed(() => {
   return (
     formData.value.businessName.trim() &&
     formData.value.ownerFirstName.trim() &&
-    formData.value.ownerLastName.trim() &&
-    formData.value.provinceId !== null &&
-    formData.value.cityId !== null
+    formData.value.ownerLastName.trim()
   )
 })
 
@@ -215,10 +201,6 @@ const handleSubmit = () => {
   display: flex;
   flex-direction: column;
   gap: 0.5rem;
-}
-
-.location-group {
-  width: 100%;
 }
 
 .form-label {
