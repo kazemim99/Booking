@@ -71,6 +71,32 @@ export interface ResendOtpResponse {
   canResendAfter?: string // When resend is allowed again (if too soon)
 }
 
+/**
+ * Register/login user from verified phone number
+ * Maps to: RegisterFromVerifiedPhoneRequest (C#)
+ */
+export interface RegisterFromVerifiedPhoneRequest {
+  verificationId: string // Verification ID from successful phone verification
+  userType: 'Provider' | 'Customer' // Type of user account to create
+  firstName?: string // Optional first name
+  lastName?: string // Optional last name
+}
+
+/**
+ * Response from phone-based registration/login
+ * Includes JWT authentication tokens
+ * Maps to: RegisterFromVerifiedPhoneResponse (C#)
+ */
+export interface RegisterFromVerifiedPhoneResponse {
+  userId: string // Created/existing user ID
+  phoneNumber: string // User's phone number
+  accessToken: string // JWT access token
+  refreshToken: string // JWT refresh token
+  expiresIn: number // Token expiration in seconds
+  tokenType: string // "Bearer"
+  message: string // Success message
+}
+
 export interface UserInfo {
   id: string
   phoneNumber: string
