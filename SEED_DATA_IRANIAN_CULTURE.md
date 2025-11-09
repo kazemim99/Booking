@@ -105,7 +105,40 @@ Two main orchestrators coordinate the seeding process:
 - Gender-appropriate names
 - Active user status for testing
 
-### 5. BookingSeeder.cs
+### 5. BusinessHoursSeeder.cs ⭐ NEW
+**Location**: `src/BoundedContexts/ServiceCatalog/Booksy.ServiceCatalog.Infrastructure/Persistence/Seeders/`
+
+**Description**: Seeds business operating hours with Iranian business culture.
+
+**Features**:
+- **Iranian Weekend**: Friday is weekend (closed), some businesses Thursday half-day
+- **Business Patterns**:
+  - **Standard Salon**: Saturday-Wednesday 10:00-20:00, Thursday 10:00-14:00, Friday closed
+  - **Spa**: Saturday-Thursday 9:00-21:00, Friday closed
+  - **Clinic**: Saturday-Thursday 8:00-18:00, Thursday 8:00-13:00, Friday closed
+  - **Gym/Fitness**: Saturday-Thursday 6:00-22:00, Friday 8:00-14:00 (short hours)
+  - **Barbershop**: Saturday-Thursday 9:00-21:00, Friday closed
+- **Cultural Authenticity**: Reflects Iranian work week (Saturday-Thursday with Friday as Islamic weekend)
+- Break periods support (lunch breaks, prayer times)
+
+### 6. ServiceOptionSeeder.cs ⭐ NEW
+**Location**: `src/BoundedContexts/ServiceCatalog/Booksy.ServiceCatalog.Infrastructure/Persistence/Seeders/`
+
+**Description**: Seeds service add-ons/options with Persian names and pricing.
+
+**Features**:
+- **Hair Services**: شستشوی مو (Hair Wash), ماساژ سر (Head Massage), سشوار (Blow Dry)
+- **Color Services**: ترمیم مو (Hair Treatment), کراتینه (Keratin)
+- **Massage Add-ons**: آروماتراپی (Aromatherapy), سنگ داغ (Hot Stone)
+- **Facial Add-ons**: ماسک طلا (Gold Mask), میکرودرم (Microdermabrasion)
+- **Nail Services**: ژل (Gel Polish), طراحی ناخن (Nail Art), اکستنشن ناخن (Nail Extension)
+- **Makeup Add-ons**: مژه مصنوعی (False Lashes), کانتور حرفه‌ای (Professional Contouring)
+- **Laser Add-ons**: ناحیه اضافی (Extra Area), کرم بیحس کننده (Numbing Cream)
+- **Barbershop Add-ons**: حوله داغ (Hot Towel), ماساژ صورت (Face Massage)
+- Realistic Iranian Rial (IRR) pricing
+- Additional duration where applicable
+
+### 7. BookingSeeder.cs
 **Location**: `src/BoundedContexts/ServiceCatalog/Booksy.ServiceCatalog.Infrastructure/Persistence/Seeders/`
 
 **Description**: Seeds 20-35 bookings per provider with various statuses and scenarios.
@@ -118,7 +151,7 @@ Two main orchestrators coordinate the seeding process:
 - Realistic payment scenarios (deposits, full payments, refunds)
 - Persian cancellation reasons
 
-### 6. PaymentSeeder.cs
+### 8. PaymentSeeder.cs
 **Location**: `src/BoundedContexts/ServiceCatalog/Booksy.ServiceCatalog.Infrastructure/Persistence/Seeders/`
 
 **Description**: Seeds payment records for bookings with Iranian payment providers.
@@ -137,7 +170,7 @@ Two main orchestrators coordinate the seeding process:
 - **Persian Descriptions**: "پرداخت برای رزرو شماره..."
 - **Iranian Rial (IRR)** currency
 
-### 7. PayoutSeeder.cs
+### 9. PayoutSeeder.cs
 **Location**: `src/BoundedContexts/ServiceCatalog/Booksy.ServiceCatalog.Infrastructure/Persistence/Seeders/`
 
 **Description**: Seeds provider payout records with Iranian bank information.
@@ -157,7 +190,19 @@ Two main orchestrators coordinate the seeding process:
 - **Period-based Status**: Older payouts more likely to be paid
 - **Iranian Bank Account Details**: Last 4 digits + bank name
 
-### 8. ProvinceCitiesSeeder.cs
+### 10. UserNotificationPreferencesSeeder.cs ⭐ NEW
+**Location**: `src/BoundedContexts/ServiceCatalog/Booksy.ServiceCatalog.Infrastructure/Persistence/Seeders/`
+
+**Description**: Seeds notification preferences for all customers.
+
+**Features**:
+- Creates default notification preferences for each customer
+- Extracts customer IDs from existing bookings
+- Default settings include all notification channels (Email, SMS, Push)
+- Default notification types (Booking confirmations, reminders, cancellations)
+- Quiet hours support for Iranian time zone
+
+### 11. ProvinceCitiesSeeder.cs
 **Location**: `src/BoundedContexts/ServiceCatalog/Booksy.ServiceCatalog.Infrastructure/Persistence/Seeders/`
 
 **Description**: Seeds Iranian provinces and cities from JSON file.
@@ -173,11 +218,14 @@ Two main orchestrators coordinate the seeding process:
 1. ProvinceCitiesSeeder (independent)
 2. ProviderSeeder (independent)
 3. StaffSeeder (depends on Providers)
-4. ServiceSeeder (depends on Providers)
-5. NotificationTemplateSeeder (independent)
-6. BookingSeeder (depends on Providers, Staff, Services)
-7. PaymentSeeder (depends on Bookings)
-8. PayoutSeeder (depends on Payments)
+4. BusinessHoursSeeder (depends on Providers) ⭐ NEW
+5. ServiceSeeder (depends on Providers)
+6. ServiceOptionSeeder (depends on Services) ⭐ NEW
+7. NotificationTemplateSeeder (independent)
+8. BookingSeeder (depends on Providers, Staff, Services)
+9. PaymentSeeder (depends on Bookings)
+10. PayoutSeeder (depends on Payments)
+11. UserNotificationPreferencesSeeder (depends on Bookings) ⭐ NEW
 
 ### UserManagementDatabaseSeederOrchestrator
 **Execution Order**:
@@ -216,11 +264,14 @@ await scope.ServiceProvider.InitializeDatabaseAsync();
 ### Expected Seed Data Counts
 - **Providers**: 20 Iranian beauty/wellness businesses
 - **Staff**: 60-80 staff members (3-5 per provider)
+- **BusinessHours**: 140-160 business hours records (7 days × 20 providers) ⭐ NEW
 - **Services**: 100-200 services (5-10 per provider)
+- **ServiceOptions**: 200-400 service add-ons (2-4 per service) ⭐ NEW
 - **Customers**: 50 Iranian users
 - **Bookings**: 400-700 bookings (20-35 per provider)
 - **Payments**: 300-600 payments (linked to completed/confirmed bookings)
 - **Payouts**: 40-60 monthly payouts (2-3 months × ~20 providers)
+- **UserNotificationPreferences**: 30-50 preference records (one per unique customer) ⭐ NEW
 - **Provinces/Cities**: Based on JSON file
 
 ## Persian Language Support
@@ -264,20 +315,24 @@ All seed data includes Persian text in UTF-8 encoding:
 **ServiceCatalog:**
 1. `/src/BoundedContexts/ServiceCatalog/.../ProviderSeeder.cs`
 2. `/src/BoundedContexts/ServiceCatalog/.../StaffSeeder.cs`
-3. `/src/BoundedContexts/ServiceCatalog/.../ServiceSeeder.cs`
-4. `/src/BoundedContexts/ServiceCatalog/.../BookingSeeder.cs`
-5. `/src/BoundedContexts/ServiceCatalog/.../PaymentSeeder.cs` ⭐ NEW
-6. `/src/BoundedContexts/ServiceCatalog/.../PayoutSeeder.cs` ⭐ NEW
-7. `/src/BoundedContexts/ServiceCatalog/.../ProvinceCitiesSeeder.cs`
-8. `/src/BoundedContexts/ServiceCatalog/.../ServiceCatalogDatabaseSeederOrchestrator.cs`
+3. `/src/BoundedContexts/ServiceCatalog/.../BusinessHoursSeeder.cs` ⭐ NEW
+4. `/src/BoundedContexts/ServiceCatalog/.../ServiceSeeder.cs`
+5. `/src/BoundedContexts/ServiceCatalog/.../ServiceOptionSeeder.cs` ⭐ NEW
+6. `/src/BoundedContexts/ServiceCatalog/.../BookingSeeder.cs`
+7. `/src/BoundedContexts/ServiceCatalog/.../PaymentSeeder.cs`
+8. `/src/BoundedContexts/ServiceCatalog/.../PayoutSeeder.cs`
+9. `/src/BoundedContexts/ServiceCatalog/.../UserNotificationPreferencesSeeder.cs` ⭐ NEW
+10. `/src/BoundedContexts/ServiceCatalog/.../ProvinceCitiesSeeder.cs`
+11. `/src/BoundedContexts/ServiceCatalog/.../ServiceCatalogDatabaseSeederOrchestrator.cs`
 
 **UserManagement:**
-9. `/src/UserManagement/.../CustomerSeeder.cs`
-10. `/src/UserManagement/.../UserManagementDatabaseSeederOrchestrator.cs`
+12. `/src/UserManagement/.../CustomerSeeder.cs`
+13. `/src/UserManagement/.../UserManagementDatabaseSeederOrchestrator.cs`
 
 ### Modified Files
-1. `/src/BoundedContexts/ServiceCatalog/.../ServiceCatalogInfrastructureExtensions.cs`
-2. `/src/UserManagement/.../UserManagementInfrastructureExtensions.cs`
+1. `/src/BoundedContexts/ServiceCatalog/.../ServiceCatalogDatabaseSeederOrchestrator.cs` - Added 3 new seeders
+2. `/src/BoundedContexts/ServiceCatalog/.../ServiceCatalogInfrastructureExtensions.cs`
+3. `/src/UserManagement/.../UserManagementInfrastructureExtensions.cs`
 
 ## Benefits
 

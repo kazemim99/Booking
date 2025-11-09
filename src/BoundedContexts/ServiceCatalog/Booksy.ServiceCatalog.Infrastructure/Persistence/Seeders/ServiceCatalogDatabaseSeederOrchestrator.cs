@@ -36,25 +36,37 @@ namespace Booksy.ServiceCatalog.Infrastructure.Persistence.Seeders
                 new StaffSeeder(_context,
                     Microsoft.Extensions.Logging.Abstractions.NullLogger<StaffSeeder>.Instance),
 
-                // 4. Services (depends on Providers)
+                // 4. BusinessHours (depends on Providers)
+                new BusinessHoursSeeder(_context,
+                    Microsoft.Extensions.Logging.Abstractions.NullLogger<BusinessHoursSeeder>.Instance),
+
+                // 5. Services (depends on Providers)
                 new ServiceSeeder(_context,
                     Microsoft.Extensions.Logging.Abstractions.NullLogger<ServiceSeeder>.Instance),
 
-                // 5. Notification Templates (independent)
+                // 6. ServiceOptions (depends on Services)
+                new ServiceOptionSeeder(_context,
+                    Microsoft.Extensions.Logging.Abstractions.NullLogger<ServiceOptionSeeder>.Instance),
+
+                // 7. Notification Templates (independent)
                 new NotificationTemplateSeeder(_context,
                     Microsoft.Extensions.Logging.Abstractions.NullLogger<NotificationTemplateSeeder>.Instance),
 
-                // 6. Bookings (depends on Providers, Staff, Services)
+                // 8. Bookings (depends on Providers, Staff, Services)
                 new BookingSeeder(_context,
                     Microsoft.Extensions.Logging.Abstractions.NullLogger<BookingSeeder>.Instance),
 
-                // 7. Payments (depends on Bookings)
+                // 9. Payments (depends on Bookings)
                 new PaymentSeeder(_context,
                     Microsoft.Extensions.Logging.Abstractions.NullLogger<PaymentSeeder>.Instance),
 
-                // 8. Payouts (depends on Payments)
+                // 10. Payouts (depends on Payments)
                 new PayoutSeeder(_context,
-                    Microsoft.Extensions.Logging.Abstractions.NullLogger<PayoutSeeder>.Instance)
+                    Microsoft.Extensions.Logging.Abstractions.NullLogger<PayoutSeeder>.Instance),
+
+                // 11. UserNotificationPreferences (depends on Bookings for customer IDs)
+                new UserNotificationPreferencesSeeder(_context,
+                    Microsoft.Extensions.Logging.Abstractions.NullLogger<UserNotificationPreferencesSeeder>.Instance)
             };
         }
 
