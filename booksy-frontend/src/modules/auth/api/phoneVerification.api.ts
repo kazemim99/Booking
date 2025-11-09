@@ -7,6 +7,8 @@ import type {
   VerifyCodeResponse,
   ResendOtpRequest,
   ResendOtpResponse,
+  RegisterFromVerifiedPhoneRequest,
+  RegisterFromVerifiedPhoneResponse,
 } from '../types/phoneVerification.types'
 
 /**
@@ -42,6 +44,20 @@ export const phoneVerificationApi = {
    */
   async resendOtp(request: ResendOtpRequest): Promise<ApiResponse<ResendOtpResponse>> {
     return userManagementClient.post<ResendOtpResponse>('/v1/phone-verification/resend', request)
+  },
+
+  /**
+   * Register/login user from verified phone number
+   * Creates user account and returns authentication tokens
+   * POST /api/v1/phone-verification/register
+   */
+  async registerFromVerifiedPhone(
+    request: RegisterFromVerifiedPhoneRequest
+  ): Promise<ApiResponse<RegisterFromVerifiedPhoneResponse>> {
+    return userManagementClient.post<RegisterFromVerifiedPhoneResponse>(
+      '/v1/phone-verification/register',
+      request
+    )
   },
 }
 

@@ -77,6 +77,7 @@ import { useRouter, useRoute } from 'vue-router'
 import { usePhoneVerification } from '../composables/usePhoneVerification'
 import { useAuthStore } from '@/core/stores/modules/auth.store'
 import { useToast } from '@/core/composables'
+import { phoneVerificationApi } from '../api/phoneVerification.api'
 import AppButton from '@/shared/components/ui/Button/AppButton.vue'
 import OtpInput from '../components/OtpInput.vue'
 
@@ -124,24 +125,61 @@ const verifyOtp = async () => {
   console.log('[VerificationView] Verifying OTP:', otpCode.value, 'with phone:', phoneNumber.value)
 
   try {
-    // Verify OTP code (verificationId is retrieved from sessionStorage in composable)
+    // Step 1: Verify OTP code (verificationId is retrieved from sessionStorage in composable)
     const result = await verifyCode(otpCode.value)
 
     console.log('[VerificationView] Verification result:', result)
 
     if (result.success) {
-      console.log('[VerificationView] Verification successful! Navigating to ProviderRegistration...')
+      console.log('[VerificationView] Phone verified successfully!')
 
-      // TODO: After phone verification, the backend needs to provide login/registration flow
-      // For now, just show success and navigate to login
-      // The backend currently only verifies the phone, doesn't return user/token
+      // Step 2: Create user account and get authentication tokens
+      const verificationId = sessionStorage.getItem('phone_verification_id')
+      if (!verificationId) {
+        throw new Error('Verification ID not found')
+      }
 
-      toast.success('شماره تلفن شما با موفقیت تایید شد!')
+      console.log('[VerificationView] Creating user account from verified phone...')
 
-      // Navigate to provider registration (since phone is verified)
-      console.log('[VerificationView] About to call router.push with ProviderRegistration')
-      await router.push({ name: 'ProviderRegistration' })
-      console.log('[VerificationView] router.push completed')
+      const registerResult = await phoneVerificationApi.registerFromVerifiedPhone({
+        verificationId,
+        userType: 'Provider',
+        firstName: undefined,
+        lastName: undefined,
+      })
+
+      if (registerResult.success && registerResult.data) {
+        // Step 3: Store authentication tokens
+        console.log('[VerificationView] User account created, storing tokens...')
+
+        authStore.setTokens({
+          accessToken: registerResult.data.accessToken,
+          refreshToken: registerResult.data.refreshToken,
+          expiresIn: registerResult.data.expiresIn,
+        })
+
+        // Store user info
+        authStore.setUser({
+          id: registerResult.data.userId,
+          phoneNumber: registerResult.data.phoneNumber,
+          phoneVerified: true,
+          userType: 'Provider',
+          roles: ['Provider'],
+          status: 'Active',
+        })
+
+        // Clear sessionStorage
+        sessionStorage.removeItem('phone_verification_id')
+        sessionStorage.removeItem('phone_verification_number')
+
+        toast.success('ثبت‌نام شما با موفقیت انجام شد!')
+
+        // Step 4: Navigate to provider registration
+        console.log('[VerificationView] Navigating to ProviderRegistration with authenticated user')
+        await router.push({ name: 'ProviderRegistration' })
+      } else {
+        throw new Error(registerResult.error || 'خطا در ثبت‌نام')
+      }
     } else {
       console.error('[VerificationView] Verification failed:', result.error)
       error.value = result.error || 'کد وارد شده صحیح نیست'
@@ -149,7 +187,7 @@ const verifyOtp = async () => {
       otpInputRef.value?.clear()
     }
   } catch (err: any) {
-    console.error('[VerificationView] Verification error:', err)
+    console.error('[VerificationView] Error:', err)
     error.value = err.message || 'خطا در تأیید کد'
     otpInputRef.value?.clear()
   } finally {
