@@ -1,3 +1,4 @@
+using Booksy.Core.Domain.Enums;
 using Booksy.Core.Domain.ValueObjects;
 using Booksy.Infrastructure.Core.Persistence.Base;
 using Booksy.ServiceCatalog.Domain.Aggregates.PaymentAggregate;
