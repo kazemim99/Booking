@@ -36,11 +36,6 @@ export function usePhoneVerification() {
   // Registration tracking
   const isNewUser = ref(false)
 
-  // Development mode settings
-  const isDevMode = import.meta.env.VITE_DEV_MODE === 'true'
-  const devOtpCode = import.meta.env.VITE_DEV_OTP_CODE || '123456'
-  const skipRealSms = import.meta.env.VITE_SKIP_REAL_SMS === 'true'
-
   /**
    * Send verification code to phone number
    * This function works for both login and registration
@@ -53,34 +48,6 @@ export function usePhoneVerification() {
       // Format phone number with country code
       const fullPhoneNumber = phoneNumber.startsWith('+') ? phoneNumber : `${countryCode}${phoneNumber}`
 
-      // 🔧 DEVELOPMENT MODE: Skip real SMS
-      if (isDevMode && skipRealSms) {
-        console.log(`🔧 DEV MODE: Skipping real SMS. Use code: ${devOtpCode}`)
-
-        // Simulate backend response
-        await new Promise(resolve => setTimeout(resolve, 500)) // Simulate network delay
-
-        verificationId.value = 'dev-verification-id-' + Date.now()
-
-        state.value.phoneNumber = fullPhoneNumber
-        state.value.countryCode = countryCode
-        state.value.maskedPhone = fullPhoneNumber.slice(0, -4).replace(/./g, '*') + fullPhoneNumber.slice(-4)
-        state.value.expiresIn = 300
-        state.value.step = 'otp'
-        state.value.remainingAttempts = 3
-
-        startResendCountdown()
-
-        toast.success(`DEV MODE: Code is ${devOtpCode}`)
-
-        return {
-          success: true,
-          maskedPhone: state.value.maskedPhone,
-          isNewUser: false
-        }
-      }
-
-      // 📱 PRODUCTION: Real SMS via backend
       const response = await phoneVerificationApi.sendVerificationCode({
         phoneNumber: fullPhoneNumber,
         method: 'SMS',
@@ -143,35 +110,6 @@ export function usePhoneVerification() {
     }
 
     try {
-      // 🔧 DEVELOPMENT MODE: Accept dev OTP code
-      if (isDevMode && skipRealSms) {
-        // Simulate network delay
-        await new Promise(resolve => setTimeout(resolve, 300))
-
-        if (code === devOtpCode) {
-          state.value.step = 'success'
-          toast.success('Phone verified successfully! (DEV MODE)')
-
-          return {
-            success: true,
-            phoneNumber: state.value.phoneNumber,
-            verifiedAt: new Date().toISOString(),
-          }
-        } else {
-          state.value.remainingAttempts--
-          const errorMessage = `Invalid code. Use ${devOtpCode} in dev mode. Remaining attempts: ${state.value.remainingAttempts}`
-          state.value.error = errorMessage
-          toast.error(errorMessage)
-
-          return {
-            success: false,
-            error: errorMessage,
-            remainingAttempts: state.value.remainingAttempts,
-          }
-        }
-      }
-
-      // 📱 PRODUCTION: Real verification via backend
       const response = await phoneVerificationApi.verifyCode({
         verificationId: verificationId.value,
         code,
