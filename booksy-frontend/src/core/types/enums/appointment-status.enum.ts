@@ -7,14 +7,14 @@ export { BookingStatus } from '../enums.types'
 
 // Additional booking status specific helpers
 export const APPOINTMENT_STATUS_LABELS: Record<string, string> = {
-  requested: '/1.H'3* 4/G',
-  pending: '/1 'F*8'1',
-  confirmed: '*'��/ 4/G',
-  in_progress: '/1 -'D 'F,'E',
-  completed: '*�E�D 4/G',
-  cancelled: 'D:H 4/G',
-  no_show: '9/E -6H1',
-  rescheduled: '*:��1 2E'F',
+  requested: 'درخواست شده',
+  pending: 'در انتظار',
+  confirmed: 'تایید شده',
+  in_progress: 'در حال انجام',
+  completed: 'تکمیل شده',
+  cancelled: 'لغو شده',
+  no_show: 'عدم حضور',
+  rescheduled: 'زمان‌بندی مجدد',
 }
 
 export const APPOINTMENT_STATUS_COLORS: Record<string, string> = {
