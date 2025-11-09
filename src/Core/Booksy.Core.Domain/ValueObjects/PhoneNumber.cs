@@ -15,13 +15,6 @@ namespace Booksy.Core.Domain.ValueObjects
         public string CountryCode { get; }
         public string NationalNumber { get; }
 
-        private PhoneNumber()
-        {
-            Value = string.Empty;
-            CountryCode = string.Empty;
-            NationalNumber = string.Empty;
-        }
-
         private PhoneNumber(string value, string countryCode, string nationalNumber)
         {
             Value = value;

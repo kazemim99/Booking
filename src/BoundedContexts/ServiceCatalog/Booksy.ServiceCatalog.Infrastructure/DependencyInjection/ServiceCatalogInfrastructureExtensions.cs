@@ -24,14 +24,6 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
-using SendGrid;
-using Booksy.Infrastructure.External.Payment;
-using Booksy.Infrastructure.External.Payment.ZarinPal;
-using Booksy.Infrastructure.External.Payment.IDPay;
-using Booksy.Infrastructure.External.Payment.Behpardakht;
-using Booksy.Infrastructure.External.Payment.Parsian;
-using Booksy.Infrastructure.External.Payment.Saman;
-using Booksy.ServiceCatalog.Infrastructure.ExternalServices.Sms;
 
 namespace Booksy.ServiceCatalog.Infrastructure.DependencyInjection
 {
@@ -80,15 +72,11 @@ namespace Booksy.ServiceCatalog.Infrastructure.DependencyInjection
 
             // Repositories
             services.AddScoped<IProviderReadRepository, ProviderReadRepository>();
-            services.AddScoped<IPayoutReadRepository, PayoutReadRepository>();
             services.AddScoped<IProviderWriteRepository, ProviderWriteRepository>();
             services.AddScoped<IServiceReadRepository, ServiceReadRepository>();
             services.AddScoped<IServiceWriteRepository, ServiceWriteRepository>();
             services.AddScoped<IBookingReadRepository, BookingReadRepository>();
             services.AddScoped<IBookingWriteRepository, BookingWriteRepository>();
-            services.AddScoped<IPaymentReadRepository, PaymentReadRepository>();
-            services.AddScoped<IPaymentWriteRepository, PaymentWriteRepository>();
-            services.AddScoped<IPayoutWriteRepository, PayoutWriteRepository>();
 
             // Notification Repositories
             services.AddScoped<INotificationReadRepository, NotificationReadRepository>();
@@ -98,13 +86,6 @@ namespace Booksy.ServiceCatalog.Infrastructure.DependencyInjection
 
             // Notification Services
             services.AddNotificationServices();
-
-            // Payment Services
-            services.AddPaymentServices(configuration);
-
-            // Domain-specific SMS Notification Service
-            services.AddScoped<Application.Services.ISmsNotificationService, KavenegarSmsService>();
-            services.AddHttpClient<KavenegarSmsService>();
 
             services.AddScoped<IProviderApplicationService, ProviderApplicationService>();
             services.AddScoped<IServiceApplicationService, ServiceApplicationService>();
@@ -202,14 +183,6 @@ namespace Booksy.ServiceCatalog.Infrastructure.DependencyInjection
             services.AddSingleton<ITemplateEngine, TemplateEngine>();
             services.AddScoped<INotificationTemplateService, NotificationTemplateService>();
 
-            // SendGrid Client
-            services.AddSingleton<ISendGridClient>(provider =>
-            {
-                var configuration = provider.GetRequiredService<IConfiguration>();
-                var apiKey = configuration["SendGrid:ApiKey"] ?? throw new InvalidOperationException("SendGrid:ApiKey is not configured");
-                return new SendGridClient(apiKey);
-            });
-
             // Multi-Channel Notification Services
             services.AddScoped<IEmailNotificationService, SendGridEmailNotificationService>();
             services.AddScoped<ISmsNotificationService, RahyabSmsNotificationService>();
@@ -219,68 +192,6 @@ namespace Booksy.ServiceCatalog.Infrastructure.DependencyInjection
             // HTTP Clients for notification services
             services.AddHttpClient<SendGridEmailNotificationService>();
             services.AddHttpClient<RahyabSmsNotificationService>();
-
-            return services;
-        }
-
-        /// <summary>
-        /// Adds payment gateway services to the service collection.
-        /// </summary>
-        public static IServiceCollection AddPaymentServices(this IServiceCollection services, IConfiguration configuration)
-        {
-            // Configure ZarinPal settings
-            services.Configure<ZarinPalSettings>(settings =>
-            {
-                settings.MerchantId = configuration["Payment:ZarinPal:MerchantId"] ?? string.Empty;
-                settings.IsSandbox = configuration.GetValue<bool>("Payment:ZarinPal:IsSandbox", true);
-                settings.CallbackUrl = configuration["Payment:ZarinPal:CallbackUrl"] ?? string.Empty;
-            });
-
-            // Register ZarinPal Service
-            services.AddScoped<IZarinPalService, ZarinPalService>();
-            services.AddHttpClient("ZarinPal");
-
-            // Configure IDPay settings
-            services.Configure<IDPaySettings>(settings =>
-            {
-                settings.ApiKey = configuration["Payment:IDPay:ApiKey"] ?? string.Empty;
-                settings.IsSandbox = configuration.GetValue<bool>("Payment:IDPay:IsSandbox", true);
-                settings.CallbackUrl = configuration["Payment:IDPay:CallbackUrl"] ?? string.Empty;
-            });
-
-            // Register IDPay Service
-            services.AddScoped<IIDPayService, IDPayService>();
-            services.AddHttpClient<IDPayService>();
-
-            // Configure Behpardakht settings
-            services.Configure<BehpardakhtSettings>(settings =>
-            {
-                settings.TerminalId = configuration.GetValue<long>("Payment:Behpardakht:TerminalId", 0);
-                settings.UserName = configuration["Payment:Behpardakht:Username"] ?? string.Empty;
-                settings.UserPassword = configuration["Payment:Behpardakht:Password"] ?? string.Empty;
-                settings.CallbackUrl = configuration["Payment:Behpardakht:CallbackUrl"] ?? string.Empty;
-            });
-
-            // Register Behpardakht Service
-            services.AddScoped<IBehpardakhtService, BehpardakhtService>();
-
-            // Register all payment gateway implementations
-            services.AddScoped<ZarinPalPaymentGateway>();
-            services.AddScoped<IDPayPaymentGateway>();
-            services.AddScoped<BehpardakhtPaymentGateway>();
-            services.AddScoped<ParsianPaymentGateway>();
-            services.AddScoped<SamanPaymentGateway>();
-            services.AddScoped<StripePaymentGateway>();
-
-            // Register payment gateway factory
-            services.AddScoped<IPaymentGatewayFactory, PaymentGatewayFactory>();
-
-            // Register default payment gateway
-            services.AddScoped<IPaymentGateway>(provider =>
-            {
-                var factory = provider.GetRequiredService<IPaymentGatewayFactory>();
-                return factory.GetDefaultGateway();
-            });
 
             return services;
         }

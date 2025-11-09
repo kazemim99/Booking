@@ -55,10 +55,6 @@ public class PhoneVerificationConfiguration : IEntityTypeConfiguration<PhoneVeri
                 .HasMaxLength(15)
                 .IsRequired()
                 .HasComment("National number without country code");
-
-            // Index on phone number value (configured within owned entity)
-            pn.HasIndex(p => p.Value)
-                .HasDatabaseName("ix_phone_verifications_phone_number");
         });
 
         // OtpCode - owned value object (for validation, not persisted hash)
@@ -159,6 +155,9 @@ public class PhoneVerificationConfiguration : IEntityTypeConfiguration<PhoneVeri
         builder.Ignore(v => v.DomainEvents);
 
         // Indexes for query performance
+        builder.HasIndex(v => v.PhoneNumber.Value)
+            .HasDatabaseName("ix_phone_verifications_phone_number");
+
         builder.HasIndex(v => v.Status)
             .HasDatabaseName("ix_phone_verifications_status");
 
@@ -168,7 +167,8 @@ public class PhoneVerificationConfiguration : IEntityTypeConfiguration<PhoneVeri
         builder.HasIndex(v => v.CreatedAt)
             .HasDatabaseName("ix_phone_verifications_created_at");
 
-        // Note: Composite index with owned entity properties (phone_number) and regular properties
-        // cannot be created using lambda expressions in EF Core. If needed, create via migration.
+        // Composite index for common queries
+        builder.HasIndex(v => new { v.PhoneNumber.Value, v.Purpose, v.Status })
+            .HasDatabaseName("ix_phone_verifications_phone_purpose_status");
     }
 }
