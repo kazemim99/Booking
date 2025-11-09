@@ -69,14 +69,14 @@ namespace Booksy.ServiceCatalog.Infrastructure.Persistence.Seeders
                     return;
                 }
 
-                // Get captured payments grouped by provider
-                var capturedPayments = await _context.Payments
-                    .Where(p => p.Status == PaymentStatus.Captured)
+                // Get paid payments grouped by provider
+                var paidPayments = await _context.Payments
+                    .Where(p => p.Status == PaymentStatus.Paid)
                     .ToListAsync(cancellationToken);
 
-                if (!capturedPayments.Any())
+                if (!paidPayments.Any())
                 {
-                    _logger.LogWarning("No captured payments found for payout seeding.");
+                    _logger.LogWarning("No paid payments found for payout seeding.");
                     return;
                 }
 
@@ -87,7 +87,7 @@ namespace Booksy.ServiceCatalog.Infrastructure.Persistence.Seeders
 
                 foreach (var provider in providers)
                 {
-                    var providerPayments = capturedPayments
+                    var providerPayments = paidPayments
                         .Where(p => p.ProviderId == provider.Id)
                         .ToList();
 
@@ -175,10 +175,9 @@ namespace Booksy.ServiceCatalog.Infrastructure.Persistence.Seeders
                     notes,
                     null);
 
-                // Set Iranian bank details
+                // Prepare Iranian bank details for when payout is marked as paid
                 var bankName = GetRandomIranianBank();
                 var accountLast4 = _random.Next(1000, 9999).ToString();
-                payout.SetBankDetails(accountLast4, bankName);
 
                 // Simulate payout status based on period
                 var daysSincePeriodEnd = (DateTime.UtcNow - periodEnd).Days;
@@ -189,12 +188,14 @@ namespace Booksy.ServiceCatalog.Infrastructure.Persistence.Seeders
                     if (_random.Next(100) < 90) // 90% paid
                     {
                         payout.Schedule(periodEnd.AddDays(7));
-                        payout.MarkAsPaid($"iranian_payout_{Guid.NewGuid():N}", null);
+                        payout.MarkAsProcessing($"iranian_payout_{Guid.NewGuid():N}", null);
+                        payout.MarkAsPaid(accountLast4, bankName);
                     }
                     else if (_random.Next(100) < 50) // Some failed
                     {
                         payout.Schedule(periodEnd.AddDays(7));
-                        payout.MarkAsFailed("خطا در انتقال وجه");
+                        payout.MarkAsProcessing($"iranian_payout_{Guid.NewGuid():N}", null);
+                        payout.MarkAsFailed("خطا در انتقال وجه به حساب بانکی");
                     }
                 }
                 else if (daysSincePeriodEnd > 15) // 15-45 days ago
@@ -202,16 +203,22 @@ namespace Booksy.ServiceCatalog.Infrastructure.Persistence.Seeders
                     if (_random.Next(100) < 70) // 70% paid
                     {
                         payout.Schedule(periodEnd.AddDays(7));
-                        payout.MarkAsPaid($"iranian_payout_{Guid.NewGuid():N}", null);
+                        payout.MarkAsProcessing($"iranian_payout_{Guid.NewGuid():N}", null);
+                        payout.MarkAsPaid(accountLast4, bankName);
                     }
-                    else if (_random.Next(100) < 30) // 30% scheduled
+                    else if (_random.Next(100) < 20) // 20% processing
+                    {
+                        payout.Schedule(periodEnd.AddDays(7));
+                        payout.MarkAsProcessing($"iranian_payout_{Guid.NewGuid():N}", null);
+                    }
+                    else // 10% scheduled (pending)
                     {
                         payout.Schedule(periodEnd.AddDays(7));
                     }
                 }
                 else // Recent period
                 {
-                    if (_random.Next(100) < 40) // 40% scheduled
+                    if (_random.Next(100) < 40) // 40% scheduled (pending)
                     {
                         payout.Schedule(periodEnd.AddDays(7));
                     }
@@ -238,26 +245,28 @@ namespace Booksy.ServiceCatalog.Infrastructure.Persistence.Seeders
             {
                 Total = payouts.Count,
                 Pending = payouts.Count(p => p.Status == PayoutStatus.Pending),
-                Scheduled = payouts.Count(p => p.Status == PayoutStatus.Scheduled),
+                Processing = payouts.Count(p => p.Status == PayoutStatus.Processing),
                 Paid = payouts.Count(p => p.Status == PayoutStatus.Paid),
                 Failed = payouts.Count(p => p.Status == PayoutStatus.Failed),
                 Cancelled = payouts.Count(p => p.Status == PayoutStatus.Cancelled),
+                OnHold = payouts.Count(p => p.Status == PayoutStatus.OnHold),
                 TotalGrossAmount = payouts.Sum(p => p.GrossAmount.Amount),
                 TotalCommissionAmount = payouts.Sum(p => p.CommissionAmount.Amount),
                 TotalNetAmount = payouts.Sum(p => p.NetAmount.Amount)
             };
 
             _logger.LogInformation(
-                "Payout Statistics: Total={Total}, Pending={Pending}, Scheduled={Scheduled}, " +
-                "Paid={Paid}, Failed={Failed}, Cancelled={Cancelled}, " +
+                "Payout Statistics: Total={Total}, Pending={Pending}, Processing={Processing}, " +
+                "Paid={Paid}, Failed={Failed}, Cancelled={Cancelled}, OnHold={OnHold}, " +
                 "TotalGross={TotalGrossAmount:N0} IRR, TotalCommission={TotalCommissionAmount:N0} IRR, " +
                 "TotalNet={TotalNetAmount:N0} IRR",
                 statistics.Total,
                 statistics.Pending,
-                statistics.Scheduled,
+                statistics.Processing,
                 statistics.Paid,
                 statistics.Failed,
                 statistics.Cancelled,
+                statistics.OnHold,
                 statistics.TotalGrossAmount,
                 statistics.TotalCommissionAmount,
                 statistics.TotalNetAmount);
