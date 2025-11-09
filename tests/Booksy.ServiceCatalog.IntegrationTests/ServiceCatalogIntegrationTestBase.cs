@@ -55,6 +55,7 @@ public abstract class ServiceCatalogIntegrationTestBase
             .Include(p => p.Holidays)
             .Include(p => p.Exceptions)
             .Include(p => p.Staff)
+            .Include(c=>c.Profile).ThenInclude(c=>c.GalleryImages)
             .FirstOrDefaultAsync(p => p.Id == ProviderId.From(providerId));
     }
 

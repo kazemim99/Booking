@@ -246,6 +246,8 @@ public abstract class IntegrationTestBase<TFactory, TDbContext, TStartup>
                     StatusCode = result.StatusCode,
                 };
             }
+
+            
             var response = JsonConvert.DeserializeObject<ApiResponse>(content);
             if(response.StatusCode == System.Net.HttpStatusCode.InternalServerError)
                 throw new Exception($"Error Message: {response.Message} \n Erros: {response.Errors}");

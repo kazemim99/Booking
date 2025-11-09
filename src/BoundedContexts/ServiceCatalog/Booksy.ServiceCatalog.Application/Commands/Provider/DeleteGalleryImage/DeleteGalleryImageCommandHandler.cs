@@ -42,7 +42,7 @@ public sealed class DeleteGalleryImageCommandHandler
         provider.Profile.RemoveGalleryImage(request.ImageId);
 
         // Mark entity as modified for EF Core change tracking
-        await _providerRepository.UpdateProviderAsync(provider, cancellationToken);
+        await _providerRepository.SaveAsync(provider, cancellationToken);
 
         // Delete files asynchronously (best effort)
         await _fileStorageService.DeleteImageAsync(image.ThumbnailUrl, cancellationToken);
