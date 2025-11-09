@@ -88,7 +88,7 @@ namespace Booksy.ServiceCatalog.Infrastructure.Persistence.Seeders
                 // Mostly ZarinPal for Iranian payments
                 var paymentProvider = _random.Next(100) < 80
                     ? PaymentProvider.ZarinPal
-                    : PaymentProvider.Stripe;
+                    : GetRandomIranianPaymentProvider();
 
                 var description = $"پرداخت برای رزرو شماره {booking.BookingNumber}";
 
@@ -105,28 +105,27 @@ namespace Booksy.ServiceCatalog.Infrastructure.Persistence.Seeders
                 // Simulate payment flow based on booking status
                 if (booking.Status == Domain.Enums.BookingStatus.Completed)
                 {
-                    // For completed bookings, mark payment as captured
+                    // For completed bookings, mark payment as paid
                     if (paymentProvider == PaymentProvider.ZarinPal)
                     {
                         var authority = GenerateZarinPalAuthority();
                         var refNumber = GenerateZarinPalRefNumber();
                         var cardPan = GenerateIranianCardPan();
 
-                        payment.AuthorizeZarinPal(authority, GetPaymentUrl(authority), null);
-                        payment.VerifyZarinPal(refNumber, cardPan, null);
-                        payment.Capture();
+                        payment.RecordPaymentRequest(authority, GetPaymentUrl(authority));
+                        payment.VerifyPayment(refNumber, cardPan, null);
                     }
                     else
                     {
                         var paymentIntentId = $"pi_iranian_{Guid.NewGuid():N}";
-                        payment.Authorize(paymentIntentId, null, null);
+                        payment.Authorize(paymentIntentId, null);
                         payment.Capture();
                     }
                 }
                 else if (booking.Status == Domain.Enums.BookingStatus.Confirmed)
                 {
-                    // For confirmed bookings, might be authorized or captured
-                    if (_random.Next(100) < 70) // 70% captured
+                    // For confirmed bookings, might be paid or just pending
+                    if (_random.Next(100) < 70) // 70% paid
                     {
                         if (paymentProvider == PaymentProvider.ZarinPal)
                         {
@@ -134,28 +133,27 @@ namespace Booksy.ServiceCatalog.Infrastructure.Persistence.Seeders
                             var refNumber = GenerateZarinPalRefNumber();
                             var cardPan = GenerateIranianCardPan();
 
-                            payment.AuthorizeZarinPal(authority, GetPaymentUrl(authority), null);
-                            payment.VerifyZarinPal(refNumber, cardPan, null);
-                            payment.Capture();
+                            payment.RecordPaymentRequest(authority, GetPaymentUrl(authority));
+                            payment.VerifyPayment(refNumber, cardPan, null);
                         }
                         else
                         {
                             var paymentIntentId = $"pi_iranian_{Guid.NewGuid():N}";
-                            payment.Authorize(paymentIntentId, null, null);
+                            payment.Authorize(paymentIntentId, null);
                             payment.Capture();
                         }
                     }
-                    else // 30% just authorized
+                    else // 30% just recorded payment request (pending)
                     {
                         if (paymentProvider == PaymentProvider.ZarinPal)
                         {
                             var authority = GenerateZarinPalAuthority();
-                            payment.AuthorizeZarinPal(authority, GetPaymentUrl(authority), null);
+                            payment.RecordPaymentRequest(authority, GetPaymentUrl(authority));
                         }
                         else
                         {
                             var paymentIntentId = $"pi_iranian_{Guid.NewGuid():N}";
-                            payment.Authorize(paymentIntentId, null, null);
+                            payment.Authorize(paymentIntentId, null);
                         }
                     }
                 }
@@ -174,15 +172,29 @@ namespace Booksy.ServiceCatalog.Infrastructure.Persistence.Seeders
             // Iranian payment methods distribution
             var methods = new[]
             {
-                PaymentMethod.OnlinePayment,
-                PaymentMethod.OnlinePayment,
-                PaymentMethod.OnlinePayment,
-                PaymentMethod.OnlinePayment, // 80% online via ZarinPal
-                PaymentMethod.Card,
+                PaymentMethod.ZarinPal,
+                PaymentMethod.ZarinPal,
+                PaymentMethod.ZarinPal,
+                PaymentMethod.ZarinPal, // 67% online via ZarinPal
+                PaymentMethod.CreditCard,
                 PaymentMethod.Cash
             };
 
             return methods[_random.Next(methods.Length)];
+        }
+
+        private Core.Domain.Enums.PaymentProvider GetRandomIranianPaymentProvider()
+        {
+            // Other Iranian payment providers (used when not ZarinPal)
+            var providers = new[]
+            {
+                Core.Domain.Enums.PaymentProvider.IDPay,
+                Core.Domain.Enums.PaymentProvider.Parsian,
+                Core.Domain.Enums.PaymentProvider.Saman,
+                Core.Domain.Enums.PaymentProvider.Behpardakht
+            };
+
+            return providers[_random.Next(providers.Length)];
         }
 
         private string GenerateZarinPalAuthority()
@@ -223,33 +235,33 @@ namespace Booksy.ServiceCatalog.Infrastructure.Persistence.Seeders
             {
                 Total = payments.Count,
                 Pending = payments.Count(p => p.Status == PaymentStatus.Pending),
-                Authorized = payments.Count(p => p.Status == PaymentStatus.Authorized),
-                Captured = payments.Count(p => p.Status == PaymentStatus.Captured),
+                Paid = payments.Count(p => p.Status == PaymentStatus.Paid),
+                PartiallyPaid = payments.Count(p => p.Status == PaymentStatus.PartiallyPaid),
                 Failed = payments.Count(p => p.Status == PaymentStatus.Failed),
                 Refunded = payments.Count(p => p.Status == PaymentStatus.Refunded),
-                ZarinPal = payments.Count(p => p.Provider == PaymentProvider.ZarinPal),
-                Stripe = payments.Count(p => p.Provider == PaymentProvider.Stripe),
-                OnlinePayment = payments.Count(p => p.Method == PaymentMethod.OnlinePayment),
-                Cash = payments.Count(p => p.Method == PaymentMethod.Cash),
-                Card = payments.Count(p => p.Method == PaymentMethod.Card)
+                ZarinPal = payments.Count(p => p.Provider == Core.Domain.Enums.PaymentProvider.ZarinPal),
+                IDPay = payments.Count(p => p.Provider == Core.Domain.Enums.PaymentProvider.IDPay),
+                ZarinPalMethod = payments.Count(p => p.Method == PaymentMethod.ZarinPal),
+                CreditCard = payments.Count(p => p.Method == PaymentMethod.CreditCard),
+                Cash = payments.Count(p => p.Method == PaymentMethod.Cash)
             };
 
             _logger.LogInformation(
-                "Payment Statistics: Total={Total}, Pending={Pending}, Authorized={Authorized}, " +
-                "Captured={Captured}, Failed={Failed}, Refunded={Refunded}, " +
-                "ZarinPal={ZarinPal}, Stripe={Stripe}, OnlinePayment={OnlinePayment}, " +
-                "Cash={Cash}, Card={Card}",
+                "Payment Statistics: Total={Total}, Pending={Pending}, Paid={Paid}, " +
+                "PartiallyPaid={PartiallyPaid}, Failed={Failed}, Refunded={Refunded}, " +
+                "ZarinPal={ZarinPal}, IDPay={IDPay}, ZarinPalMethod={ZarinPalMethod}, " +
+                "CreditCard={CreditCard}, Cash={Cash}",
                 statistics.Total,
                 statistics.Pending,
-                statistics.Authorized,
-                statistics.Captured,
+                statistics.Paid,
+                statistics.PartiallyPaid,
                 statistics.Failed,
                 statistics.Refunded,
                 statistics.ZarinPal,
-                statistics.Stripe,
-                statistics.OnlinePayment,
-                statistics.Cash,
-                statistics.Card);
+                statistics.IDPay,
+                statistics.ZarinPalMethod,
+                statistics.CreditCard,
+                statistics.Cash);
         }
     }
 }
