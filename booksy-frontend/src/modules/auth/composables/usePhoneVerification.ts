@@ -27,7 +27,16 @@ export function usePhoneVerification() {
   })
 
   // Verification ID from backend (required for verify step)
-  const verificationId = ref<string>('')
+  // Persist in sessionStorage to survive navigation
+  const VERIFICATION_ID_KEY = 'phone_verification_id'
+  const PHONE_NUMBER_KEY = 'phone_verification_number'
+
+  const verificationId = ref<string>(sessionStorage.getItem(VERIFICATION_ID_KEY) || '')
+
+  // Restore phone number from sessionStorage if available
+  if (sessionStorage.getItem(PHONE_NUMBER_KEY)) {
+    state.value.phoneNumber = sessionStorage.getItem(PHONE_NUMBER_KEY) || ''
+  }
 
   // Resend state
   const canResend = ref(false)
@@ -57,6 +66,10 @@ export function usePhoneVerification() {
       if (response.success && response.data) {
         // Store verification ID for the verify step
         verificationId.value = response.data.verificationId
+
+        // Persist to sessionStorage for navigation
+        sessionStorage.setItem(VERIFICATION_ID_KEY, response.data.verificationId)
+        sessionStorage.setItem(PHONE_NUMBER_KEY, fullPhoneNumber)
 
         // Calculate expiresIn (seconds) from expiresAt
         const expiresAt = new Date(response.data.expiresAt)
@@ -117,6 +130,10 @@ export function usePhoneVerification() {
 
       if (response.success && response.data?.success) {
         state.value.step = 'success'
+
+        // Clear sessionStorage after successful verification
+        sessionStorage.removeItem(VERIFICATION_ID_KEY)
+        sessionStorage.removeItem(PHONE_NUMBER_KEY)
 
         toast.success('Phone verified successfully!')
 
@@ -218,6 +235,10 @@ export function usePhoneVerification() {
     canResend.value = false
     resendCountdown.value = 60
     isNewUser.value = false
+
+    // Clear sessionStorage
+    sessionStorage.removeItem(VERIFICATION_ID_KEY)
+    sessionStorage.removeItem(PHONE_NUMBER_KEY)
   }
 
   /**

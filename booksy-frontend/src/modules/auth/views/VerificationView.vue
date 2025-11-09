@@ -122,35 +122,22 @@ const verifyOtp = async () => {
   console.log('Verifying OTP:', otpCode.value, 'with phone:', phoneNumber.value)
 
   try {
-    // Pass phoneNumber explicitly to verifyCode to avoid state issues
-    const result = await verifyCode(otpCode.value, phoneNumber.value)
+    // Verify OTP code (verificationId is retrieved from sessionStorage in composable)
+    const result = await verifyCode(otpCode.value)
 
     console.log('Verification result:', result)
 
-    if (result.success && result.user) {
-      const { user, token } = result
+    if (result.success) {
+      console.log('Verification successful!')
 
-      console.log('Verification successful, user:', user)
+      // TODO: After phone verification, the backend needs to provide login/registration flow
+      // For now, just show success and navigate to login
+      // The backend currently only verifies the phone, doesn't return user/token
 
-      // Store auth data
-      authStore.setToken(token)
-      authStore.setUser(user)
+      toast.success('شماره تلفن شما با موفقیت تایید شد!')
 
-      // Navigate based on user status
-      if (user.status === 'Draft' && user.roles.includes('Provider')) {
-        // Provider needs to complete registration
-        console.log('Navigating to ProviderRegistration')
-        router.push({ name: 'ProviderRegistration' })
-      } else if (user.roles.includes('Provider')) {
-        console.log('Navigating to ProviderDashboard')
-        router.push({ name: 'ProviderDashboard' })
-      } else if (user.roles.includes('Admin')) {
-        console.log('Navigating to AdminDashboard')
-        router.push({ name: 'AdminDashboard' })
-      } else {
-        console.log('Navigating to Home')
-        router.push({ name: 'Home' })
-      }
+      // Navigate to provider registration (since phone is verified)
+      router.push({ name: 'ProviderRegistration' })
     } else {
       console.error('Verification failed:', result.error)
       error.value = result.error || 'کد وارد شده صحیح نیست'
