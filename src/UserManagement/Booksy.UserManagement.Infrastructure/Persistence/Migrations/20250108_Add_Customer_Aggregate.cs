@@ -13,13 +13,9 @@ namespace Booksy.UserManagement.Infrastructure.Persistence.Migrations
     {
         protected override void Up(MigrationBuilder migrationBuilder)
         {
-            // Add customer_id column to user_profiles table (nullable for backward compatibility)
-            migrationBuilder.AddColumn<Guid>(
-                name: "customer_id",
-                schema: "user_management",
-                table: "user_profiles",
-                type: "uuid",
-                nullable: true);
+            // NOTE: Customer does not own UserProfile directly
+            // Customer accesses UserProfile through User aggregate
+            // Therefore, no customer_id column is needed in user_profiles
 
             // Create Customers table
             migrationBuilder.CreateTable(
@@ -117,11 +113,7 @@ namespace Booksy.UserManagement.Infrastructure.Persistence.Migrations
                 name: "customers",
                 schema: "user_management");
 
-            // Remove customer_id column from user_profiles
-            migrationBuilder.DropColumn(
-                name: "customer_id",
-                schema: "user_management",
-                table: "user_profiles");
+            // NOTE: No customer_id column was added to user_profiles
         }
     }
 }
