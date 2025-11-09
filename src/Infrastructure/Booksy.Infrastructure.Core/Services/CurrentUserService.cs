@@ -36,19 +36,17 @@ public sealed class CurrentUserService : ICurrentUserService
 
     public IEnumerable<Claim> Claims => _httpContextAccessor.HttpContext?.User?.Claims ?? Enumerable.Empty<Claim>();
 
-    public string? Name => throw new NotImplementedException();
+    public string? Name => _httpContextAccessor.HttpContext?.User?.FindFirst(ClaimTypes.GivenName)?.Value
+                          ?? _httpContextAccessor.HttpContext?.User?.FindFirst("name")?.Value
+                          ?? UserName;
 
+    public string? IpAddress => _httpContextAccessor.HttpContext?.Connection?.RemoteIpAddress?.ToString();
 
-    public string? IpAddress => throw new NotImplementedException();
-
-    public string? UserAgent => throw new NotImplementedException();
+    public string? UserAgent => _httpContextAccessor.HttpContext?.Request?.Headers["User-Agent"].ToString();
 
     public bool IsInRole(string role) => _httpContextAccessor.HttpContext?.User?.IsInRole(role) ?? false;
 
     public string? GetClaim(string claimType) => _httpContextAccessor.HttpContext?.User?.FindFirst(claimType)?.Value;
 
-    public string? GetClaimValue(string claimType)
-    {
-        throw new NotImplementedException();
-    }
+    public string? GetClaimValue(string claimType) => GetClaim(claimType);
 }

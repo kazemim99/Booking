@@ -22,6 +22,7 @@ using Booksy.API.Observability;
 using Booksy.Infrastructure.Core.DependencyInjection;
 using System.Configuration;
 using AspNetCoreRateLimit;
+using Booksy.ServiceCatalog.Infrastructure.Hubs;
 
 namespace Booksy.API
 {
@@ -137,6 +138,9 @@ namespace Booksy.API
             services.AddResponseCompression();
             services.AddHttpContextAccessor();
 
+            // SignalR for real-time notifications
+            services.AddSignalR();
+
             // API Behaviors
             services.Configure<ApiBehaviorOptions>(options =>
             {
@@ -201,6 +205,9 @@ namespace Booksy.API
                 });
 
                 endpoints.MapControllers();
+
+                // SignalR Hub for real-time notifications
+                endpoints.MapHub<NotificationHub>("/hubs/notifications");
             });
 
             // Run database seeder in development

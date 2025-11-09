@@ -77,8 +77,11 @@ public class UserRepository : EfRepositoryBase<User, UserId, UserManagementDbCon
         await Task.FromResult(DbSet.Update(user));
     }
 
-    public Task<List<User>> GetAllAsync(CancellationToken cancellationToken)
+    public async Task<List<User>> GetAllAsync(CancellationToken cancellationToken)
     {
-        throw new NotImplementedException();
+        return await DbSet
+            .Include(u => u.Profile)
+            .Include(u => u.Roles)
+            .ToListAsync(cancellationToken);
     }
 }

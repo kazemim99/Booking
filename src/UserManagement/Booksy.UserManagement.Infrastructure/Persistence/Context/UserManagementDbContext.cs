@@ -31,7 +31,7 @@ namespace Booksy.UserManagement.Infrastructure.Persistence.Context
         public DbSet<UserProfile> UserProfiles { get; set; } = null!;
         public DbSet<PhoneVerification> PhoneVerifications { get; set; } = null!;
 
-        public bool HasActiveTransaction => throw new NotImplementedException();
+        public bool HasActiveTransaction => _currentTransaction != null || Database.CurrentTransaction != null;
 
    
         // Constructor for runtime with DI

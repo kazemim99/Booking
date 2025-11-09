@@ -689,7 +689,6 @@ public class BookingsController : ControllerBase
         };
     }
 
-    // TODO: Fix this mapping - BookingDetailsViewModel structure doesn't match expected properties
     private BookingDetailsResponse MapToBookingDetailsResponse(BookingDetailsViewModel result)
     {
         return new BookingDetailsResponse
@@ -700,9 +699,9 @@ public class BookingsController : ControllerBase
             ServiceId = result.ServiceId,
             StaffId = result.StaffId,
             ServiceName = result.ServiceName,
-            // ServiceCategory = result.ServiceCategory, // Property doesn't exist
+            ServiceCategory = string.Empty, // TODO: Add ServiceCategory to query to fetch from Service aggregate
             ProviderBusinessName = result.ProviderName,
-            // ProviderCity = result.ProviderCity, // Property doesn't exist
+            ProviderCity = string.Empty, // TODO: Add ProviderCity to query to fetch from Provider aggregate
             StaffName = result.StaffName,
             StartTime = result.StartTime,
             EndTime = result.EndTime,
@@ -721,20 +720,17 @@ public class BookingsController : ControllerBase
             },
             CustomerNotes = result.CustomerNotes,
             StaffNotes = result.StaffNotes,
-            // Policy = new BookingPolicyResponse // TODO: Add policy properties to BookingDetailsViewModel
-            // {
-            //     MinAdvanceBookingHours = result.PolicyMinAdvanceBookingHours,
-            //     MaxAdvanceBookingDays = result.PolicyMaxAdvanceBookingDays,
-            //     CancellationWindowHours = result.PolicyCancellationWindowHours,
-            //     CancellationFeePercentage = result.PolicyCancellationFeePercentage,
-            //     AllowRescheduling = result.PolicyAllowRescheduling,
-            //     RescheduleWindowHours = result.PolicyRescheduleWindowHours,
-            //     RequireDeposit = result.PolicyRequireDeposit,
-            //     DepositPercentage = result.PolicyDepositPercentage
-            // },
-            // CreatedAt = result.CreatedAt, // Use RequestedAt instead
+            Policy = new BookingPolicyResponse(), // TODO: Add Policy properties to BookingDetailsViewModel from Service aggregate
+            History = result.History.Select(h => new BookingHistoryEntryResponse
+            {
+                Action = h.Description,
+                Timestamp = h.OccurredAt,
+                PerformedBy = Guid.Empty, // TODO: Add PerformedBy to BookingHistoryDto
+                Notes = h.Status,
+                Metadata = new Dictionary<string, string>()
+            }).ToList(),
             CreatedAt = result.RequestedAt,
-            // LastModifiedAt = result.LastModifiedAt, // Property doesn't exist
+            LastModifiedAt = null, // TODO: Add LastModifiedAt tracking to Booking aggregate
             ConfirmedAt = result.ConfirmedAt,
             CompletedAt = result.CompletedAt,
             CancelledAt = result.CancelledAt
