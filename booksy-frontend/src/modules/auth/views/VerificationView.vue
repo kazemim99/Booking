@@ -121,16 +121,16 @@ const verifyOtp = async () => {
   error.value = ''
   isLoading.value = true
 
-  console.log('Verifying OTP:', otpCode.value, 'with phone:', phoneNumber.value)
+  console.log('[VerificationView] Verifying OTP:', otpCode.value, 'with phone:', phoneNumber.value)
 
   try {
     // Verify OTP code (verificationId is retrieved from sessionStorage in composable)
     const result = await verifyCode(otpCode.value)
 
-    console.log('Verification result:', result)
+    console.log('[VerificationView] Verification result:', result)
 
     if (result.success) {
-      console.log('Verification successful!')
+      console.log('[VerificationView] Verification successful! Navigating to ProviderRegistration...')
 
       // TODO: After phone verification, the backend needs to provide login/registration flow
       // For now, just show success and navigate to login
@@ -139,15 +139,17 @@ const verifyOtp = async () => {
       toast.success('شماره تلفن شما با موفقیت تایید شد!')
 
       // Navigate to provider registration (since phone is verified)
-      router.push({ name: 'ProviderRegistration' })
+      console.log('[VerificationView] About to call router.push with ProviderRegistration')
+      await router.push({ name: 'ProviderRegistration' })
+      console.log('[VerificationView] router.push completed')
     } else {
-      console.error('Verification failed:', result.error)
+      console.error('[VerificationView] Verification failed:', result.error)
       error.value = result.error || 'کد وارد شده صحیح نیست'
       // Clear OTP input
       otpInputRef.value?.clear()
     }
   } catch (err: any) {
-    console.error('Verification error:', err)
+    console.error('[VerificationView] Verification error:', err)
     error.value = err.message || 'خطا در تأیید کد'
     otpInputRef.value?.clear()
   } finally {
