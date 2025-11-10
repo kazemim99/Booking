@@ -464,7 +464,6 @@ namespace Booksy.UserManagement.Domain.Aggregates
         public void UpdateRefreshToken(string token, DateTime expiresAt)
         {
             var refreshToken = RefreshToken.Create(
-                Id,
                 token,
                 expiresAt,
                 DateTime.UtcNow);

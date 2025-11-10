@@ -22,6 +22,9 @@ namespace Booksy.UserManagement.Domain.Entities
 
         private RefreshToken() : base() { }
 
+        /// <summary>
+        /// Generate a new refresh token with a random token string
+        /// </summary>
         public static RefreshToken Generate(
             int expirationDays = 7,
             string? createdByIp = null)
@@ -31,6 +34,28 @@ namespace Booksy.UserManagement.Domain.Entities
                 Token = GenerateTokenString(),
                 CreatedAt = DateTime.UtcNow,
                 ExpiresAt = DateTime.UtcNow.AddDays(expirationDays),
+                CreatedByIp = createdByIp
+            };
+        }
+
+        /// <summary>
+        /// Create a refresh token from an existing token string
+        /// Used when storing tokens from external sources
+        /// </summary>
+        public static RefreshToken Create(
+            string token,
+            DateTime expiresAt,
+            DateTime createdAt,
+            string? createdByIp = null)
+        {
+            if (string.IsNullOrWhiteSpace(token))
+                throw new ArgumentException("Token cannot be empty", nameof(token));
+
+            return new RefreshToken
+            {
+                Token = token,
+                CreatedAt = createdAt,
+                ExpiresAt = expiresAt,
                 CreatedByIp = createdByIp
             };
         }

@@ -128,13 +128,11 @@ public sealed class RegisterFromVerifiedPhoneCommandHandler
             providerStatus: null,     // Will be added after registration completes
             expirationHours: 24);
 
-        // Generate refresh token
-        var refreshTokenEntity = RefreshToken.Generate(
+        // Generate and add refresh token
+        var refreshToken = RefreshToken.Generate(
             expirationDays: 30,
             createdByIp: request.IpAddress);
-
-        // Store refresh token
-        user.UpdateRefreshToken(refreshTokenEntity.Token, refreshTokenEntity.ExpiresAt);
+        user.AddRefreshToken(refreshToken);
         await _userRepository.SaveAsync(user, cancellationToken);
 
         _logger.LogInformation(
@@ -146,7 +144,7 @@ public sealed class RegisterFromVerifiedPhoneCommandHandler
             user.Id.Value,
             phoneNumber.Value,
             accessToken,
-            refreshTokenEntity.Token,
+            refreshToken.Token,
             86400, // 24 hours in seconds
             isNewUser ? "Account created successfully" : "Logged in successfully");
     }
