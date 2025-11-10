@@ -100,6 +100,9 @@ export interface CreateProviderDraftResponse {
   providerId: string
   registrationStep: number
   message: string
+  accessToken?: string
+  refreshToken?: string
+  expiresIn?: number
 }
 
 export interface GetDraftProviderResponse {
