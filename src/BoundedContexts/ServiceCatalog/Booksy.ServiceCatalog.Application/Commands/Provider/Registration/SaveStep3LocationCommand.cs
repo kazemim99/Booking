@@ -25,5 +25,8 @@ public sealed record SaveStep3LocationCommand(
 public sealed record SaveStep3LocationResult(
     Guid ProviderId,
     int RegistrationStep,
-    string Message
+    string Message,
+    string? AccessToken = null,
+    string? RefreshToken = null,
+    int? ExpiresIn = null
 );

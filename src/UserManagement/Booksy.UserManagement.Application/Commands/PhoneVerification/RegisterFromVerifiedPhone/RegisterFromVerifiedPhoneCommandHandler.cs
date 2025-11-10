@@ -9,7 +9,7 @@ using Booksy.UserManagement.Domain.Entities;
 using Booksy.UserManagement.Domain.Enums;
 using Booksy.UserManagement.Domain.Repositories;
 using Booksy.UserManagement.Domain.ValueObjects;
-using Booksy.UserManagement.Application.Services;
+using Booksy.UserManagement.Application.Services.Interfaces;
 using Microsoft.Extensions.Logging;
 
 namespace Booksy.UserManagement.Application.Commands.PhoneVerification.RegisterFromVerifiedPhone;
@@ -22,18 +22,18 @@ public sealed class RegisterFromVerifiedPhoneCommandHandler
 {
     private readonly IPhoneVerificationRepository _verificationRepository;
     private readonly IUserRepository _userRepository;
-    private readonly IJwtTokenGenerator _tokenGenerator;
+    private readonly IJwtTokenService _tokenService;
     private readonly ILogger<RegisterFromVerifiedPhoneCommandHandler> _logger;
 
     public RegisterFromVerifiedPhoneCommandHandler(
         IPhoneVerificationRepository verificationRepository,
         IUserRepository userRepository,
-        IJwtTokenGenerator tokenGenerator,
+        IJwtTokenService tokenService,
         ILogger<RegisterFromVerifiedPhoneCommandHandler> logger)
     {
         _verificationRepository = verificationRepository;
         _userRepository = userRepository;
-        _tokenGenerator = tokenGenerator;
+        _tokenService = tokenService;
         _logger = logger;
     }
 
@@ -111,27 +111,43 @@ public sealed class RegisterFromVerifiedPhoneCommandHandler
         }
 
         // 4. Generate JWT tokens
-        var accessToken = _tokenGenerator.GenerateAccessToken(
-            user.Id.Value,
-            user.Email.Value,
-            user.Roles.Select(r => r.Name).ToList());
+        var displayName = $"{user.Profile.FirstName} {user.Profile.LastName}".Trim();
+        if (string.IsNullOrWhiteSpace(displayName))
+        {
+            displayName = phoneNumber.NationalNumber;
+        }
 
-        var refreshToken = _tokenGenerator.GenerateRefreshToken();
+        var accessToken = _tokenService.GenerateAccessToken(
+            user.Id,
+            user.Type,
+            user.Email,
+            displayName,
+            user.Status.ToString(),
+            user.Roles.Select(r => r.Name),
+            providerId: null,         // Provider aggregate doesn't exist yet
+            providerStatus: null,     // Will be added after registration completes
+            expirationHours: 24);
+
+        // Generate refresh token
+        var refreshTokenEntity = RefreshToken.Generate(
+            expirationDays: 30,
+            createdByIp: request.IpAddress);
 
         // Store refresh token
-        user.UpdateRefreshToken(refreshToken, DateTime.UtcNow.AddDays(30));
+        user.UpdateRefreshToken(refreshTokenEntity.Token, refreshTokenEntity.ExpiresAt);
         await _userRepository.SaveAsync(user, cancellationToken);
 
         _logger.LogInformation(
-            "Generated tokens for user {UserId} from phone verification",
-            user.Id.Value);
+            "Generated tokens for user {UserId} (Type: {UserType}) from phone verification",
+            user.Id.Value,
+            user.Type);
 
         return new RegisterFromVerifiedPhoneResult(
             user.Id.Value,
             phoneNumber.Value,
             accessToken,
-            refreshToken,
-            3600, // 1 hour expiry
+            refreshTokenEntity.Token,
+            86400, // 24 hours in seconds
             isNewUser ? "Account created successfully" : "Logged in successfully");
     }
 }
