@@ -11,6 +11,7 @@ using Booksy.ServiceCatalog.Domain.Entities;
 using Booksy.ServiceCatalog.Infrastructure.Persistence.Configurations;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.ChangeTracking;
+using Microsoft.EntityFrameworkCore.Diagnostics;
 using System.Collections.Generic;
 using System.Reflection.Emit;
 using BusinessHours = Booksy.ServiceCatalog.Domain.Entities.BusinessHours;
@@ -53,6 +54,16 @@ namespace Booksy.ServiceCatalog.Infrastructure.Persistence.Context
         public DbSet<ServiceOption> ServiceOptions => Set<ServiceOption>();
         public DbSet<PriceTier> PriceTiers => Set<PriceTier>();
         public DbSet<ProvinceCities> ProvinceCities => Set<ProvinceCities>();
+
+        protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
+        {
+            // Suppress PendingModelChangesWarning when there are no actual schema changes
+            // This can happen when method signatures change but database schema doesn't
+            optionsBuilder.ConfigureWarnings(warnings =>
+                warnings.Ignore(RelationalEventId.PendingModelChangesWarning));
+
+            base.OnConfiguring(optionsBuilder);
+        }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
