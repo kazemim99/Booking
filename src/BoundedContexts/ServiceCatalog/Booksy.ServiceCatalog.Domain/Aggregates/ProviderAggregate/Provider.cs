@@ -71,6 +71,8 @@ namespace Booksy.ServiceCatalog.Domain.Aggregates
         // Factory method for creating draft provider (progressive registration)
         public static Provider CreateDraft(
             UserId ownerId,
+            string ownerFirstName,
+            string ownerLastName,
             string businessName,
             string description,
             ProviderType type,
@@ -97,12 +99,14 @@ namespace Booksy.ServiceCatalog.Domain.Aggregates
                 IsRegistrationComplete = false
             };
 
-            provider.RaiseDomainEvent(new ProviderRegisteredEvent(
+            // Raise event for draft creation - UserManagement will update User.Profile with owner's name
+            provider.RaiseDomainEvent(new ProviderDraftCreatedEvent(
                 provider.Id,
                 provider.OwnerId,
+                ownerFirstName,
+                ownerLastName,
                 provider.Profile.BusinessName,
-                provider.ProviderType,
-                provider.RegisteredAt));
+                DateTime.UtcNow));
 
             return provider;
         }

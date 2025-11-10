@@ -320,6 +320,8 @@ export function useProviderRegistration() {
 
       // Create draft provider request
       const draftRequest = {
+        ownerFirstName: businessInfo.ownerFirstName || '',
+        ownerLastName: businessInfo.ownerLastName || '',
         businessName: businessInfo.businessName,
         businessDescription: businessInfo.businessDescription || '',
         category: categoryId,

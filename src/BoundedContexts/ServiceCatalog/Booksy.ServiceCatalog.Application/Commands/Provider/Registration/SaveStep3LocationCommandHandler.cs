@@ -135,6 +135,8 @@ public sealed class SaveStep3LocationCommandHandler
         // Create new draft provider
         var provider = Domain.Aggregates.Provider.CreateDraft(
             userId,
+            request.OwnerFirstName,
+            request.OwnerLastName,
             request.BusinessName,
             request.BusinessDescription,
             providerType,
