@@ -106,9 +106,9 @@ const props = defineProps<Props>()
 const emit = defineEmits<Emits>()
 
 // Neshan Map API keys - same as ProfileManager
-const neshanMapKey = import.meta.env.VITE_NESHAN_MAP_KEY || 'web.92c704be7e37461ca51c38a3c0d94e92'
+const neshanMapKey = import.meta.env.VITE_NESHAN_MAP_KEY || 'web.741ff28152504624a0b3942d3621b56d'
 const neshanServiceKey =
-  import.meta.env.VITE_NESHAN_SERVICE_KEY || 'service.6d4f76aefbce44e996ed56e3a49fe4c7'
+  import.meta.env.VITE_NESHAN_SERVICE_KEY || 'service.qBDJpu7hKVBEAzERghfm9JM7vqGKXoNNNTdtrGy7'
 
 // Form data
 const formData = ref({
