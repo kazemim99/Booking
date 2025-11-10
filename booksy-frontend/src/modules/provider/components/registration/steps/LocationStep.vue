@@ -9,66 +9,33 @@
       </div>
 
       <form class="step-form" @submit.prevent="handleSubmit">
-        <!-- Mock Map Placeholder -->
+        <!-- Neshan Map Picker -->
         <div class="form-group">
-          <label class="form-label">انتخاب روی نقشه</label>
-          <div class="map-placeholder">
-            <div class="map-placeholder-content">
-              <svg class="map-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path
-                  stroke-linecap="round"
-                  stroke-linejoin="round"
-                  stroke-width="2"
-                  d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"
-                />
-                <path
-                  stroke-linecap="round"
-                  stroke-linejoin="round"
-                  stroke-width="2"
-                  d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"
-                />
-              </svg>
-              <p class="map-placeholder-text">کلیک کنید تا موقعیت را روی نقشه انتخاب کنید</p>
-            </div>
-            <!-- Grid pattern to simulate map -->
-            <div class="map-grid"></div>
-          </div>
+          <label class="form-label">موقعیت روی نقشه</label>
+          <p class="form-hint">روی نقشه کلیک کنید تا موقعیت کسب‌وکار خود را انتخاب کنید</p>
+          <NeshanMapPicker
+            v-model="formData.coordinates"
+            :map-key="neshanMapKey"
+            :service-key="neshanServiceKey"
+            height="450px"
+            @location-selected="handleLocationSelected"
+          />
         </div>
 
-        <!-- Province and City -->
-        <div class="form-row">
-          <div class="form-group">
-            <label for="province" class="form-label">
-              استان <span class="required">*</span>
-            </label>
-            <input
-              id="province"
-              v-model="formData.province"
-              type="text"
-              class="form-input"
-              :class="{ 'form-input-error': errors.province }"
-              placeholder="مثال: تهران"
-              @blur="validateField('province')"
-            />
-            <span v-if="errors.province" class="form-error">{{ errors.province }}</span>
-          </div>
-
-          <div class="form-group">
-            <label for="city" class="form-label">
-              شهر <span class="required">*</span>
-            </label>
-            <input
-              id="city"
-              v-model="formData.city"
-              type="text"
-              class="form-input"
-              :class="{ 'form-input-error': errors.city }"
-              placeholder="مثال: تهران"
-              @blur="validateField('city')"
-            />
-            <span v-if="errors.city" class="form-error">{{ errors.city }}</span>
-          </div>
-        </div>
+        <!-- Province and City Selector -->
+        <LocationSelector
+          :province-id="formData.provinceId"
+          :city-id="formData.cityId"
+          province-label="استان"
+          city-label="شهر"
+          province-placeholder="استان را انتخاب کنید"
+          city-placeholder="شهر را انتخاب کنید"
+          :province-error="errors.province"
+          :city-error="errors.city"
+          :required="true"
+          @update:province-id="handleProvinceChange"
+          @update:city-id="handleCityChange"
+        />
 
         <!-- Address -->
         <div class="form-group">
@@ -97,6 +64,7 @@
             dir="ltr"
             class="form-input"
             placeholder="1234567890"
+            maxlength="10"
           />
         </div>
 
@@ -115,9 +83,11 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed } from 'vue'
+import { ref, computed, onMounted, watch } from 'vue'
 import ProgressIndicator from '../shared/ProgressIndicator.vue'
 import AppButton from '@/shared/components/ui/Button/AppButton.vue'
+import NeshanMapPicker from '@/shared/components/map/NeshanMapPicker.vue'
+import LocationSelector from '@/shared/components/forms/LocationSelector.vue'
 import type { BusinessAddress, BusinessLocation } from '@/modules/provider/types/registration.types'
 
 interface Props {
@@ -135,82 +105,174 @@ interface Emits {
 const props = defineProps<Props>()
 const emit = defineEmits<Emits>()
 
+// Neshan Map API keys - same as ProfileManager
+const neshanMapKey = import.meta.env.VITE_NESHAN_MAP_KEY || 'web.92c704be7e37461ca51c38a3c0d94e92'
+const neshanServiceKey =
+  import.meta.env.VITE_NESHAN_SERVICE_KEY || 'service.6d4f76aefbce44e996ed56e3a49fe4c7'
+
 // Form data
 const formData = ref({
-  province: props.address?.province || '',
-  city: props.address?.city || '',
+  provinceId: props.address?.provinceId || null as number | null,
+  cityId: props.address?.cityId || null as number | null,
   address: props.address?.addressLine1 || '',
   postalCode: props.address?.zipCode || '',
+  coordinates: props.location?.latitude && props.location?.longitude
+    ? { lat: props.location.latitude, lng: props.location.longitude }
+    : null as { lat: number; lng: number } | null,
+  formattedAddress: props.address?.formattedAddress || '',
 })
 
 const errors = ref<Record<string, string>>({})
 
+// Handle location selection from map
+const handleLocationSelected = (data: {
+  lat: number
+  lng: number
+  address?: string
+  addressDetails?: {
+    formattedAddress: string
+    neighbourhood: string
+    city: string
+    state: string
+    address: string
+    route: string
+    district: string
+    village: string
+    county: string
+    postalCode: string
+  } | null
+}) => {
+  console.log('Location selected:', data)
+  formData.value.coordinates = { lat: data.lat, lng: data.lng }
+
+  // Auto-fill address if available
+  if (data.addressDetails) {
+    formData.value.formattedAddress = data.addressDetails.formattedAddress || data.address || ''
+    if (!formData.value.address) {
+      formData.value.address = data.addressDetails.address || data.addressDetails.formattedAddress || ''
+    }
+    if (data.addressDetails.postalCode) {
+      formData.value.postalCode = data.addressDetails.postalCode
+    }
+  } else if (data.address) {
+    formData.value.formattedAddress = data.address
+    if (!formData.value.address) {
+      formData.value.address = data.address
+    }
+  }
+}
+
+// Handle province change
+const handleProvinceChange = (provinceId: number | null) => {
+  formData.value.provinceId = provinceId
+  // Reset city when province changes
+  if (formData.value.cityId) {
+    formData.value.cityId = null
+  }
+  errors.value.province = ''
+}
+
+// Handle city change
+const handleCityChange = (cityId: number | null) => {
+  formData.value.cityId = cityId
+  errors.value.city = ''
+}
+
 // Validation
 const validateField = (field: keyof typeof formData.value) => {
   errors.value = { ...errors.value }
-  delete errors.value[field]
 
-  if (field === 'province' && !formData.value.province.trim()) {
+  switch (field) {
+    case 'address':
+      if (!formData.value.address?.trim()) {
+        errors.value.address = 'آدرس الزامی است'
+      } else {
+        delete errors.value.address
+      }
+      break
+  }
+}
+
+const validateForm = (): boolean => {
+  errors.value = {}
+
+  if (!formData.value.provinceId) {
     errors.value.province = 'استان الزامی است'
   }
-  if (field === 'city' && !formData.value.city.trim()) {
+
+  if (!formData.value.cityId) {
     errors.value.city = 'شهر الزامی است'
   }
-  if (field === 'address' && !formData.value.address.trim()) {
+
+  if (!formData.value.address?.trim()) {
     errors.value.address = 'آدرس الزامی است'
   }
+
+  return Object.keys(errors.value).length === 0
 }
 
 const isFormValid = computed(() => {
   return (
-    formData.value.province.trim() &&
-    formData.value.city.trim() &&
-    formData.value.address.trim()
+    formData.value.provinceId !== null &&
+    formData.value.cityId !== null &&
+    formData.value.address?.trim() !== ''
   )
 })
 
-const handleSubmit = () => {
-  // Validate all fields
-  validateField('province')
-  validateField('city')
-  validateField('address')
-
-  if (isFormValid.value && Object.keys(errors.value).length === 0) {
-    // Emit address data
+// Update parent when form data changes
+watch(
+  formData,
+  (newValue) => {
+    // Emit address update
     emit('update:address', {
-      addressLine1: formData.value.address,
-      city: formData.value.city,
-      province: formData.value.province,
-      zipCode: formData.value.postalCode,
-      country: 'Iran',
+      addressLine1: newValue.address,
+      addressLine2: undefined,
+      city: undefined, // City will be resolved by provinceId/cityId
+      province: undefined, // Province will be resolved by provinceId/cityId
+      zipCode: newValue.postalCode,
+      formattedAddress: newValue.formattedAddress,
+      provinceId: newValue.provinceId || undefined,
+      cityId: newValue.cityId || undefined,
     })
 
-    // Emit location data (mock for now since we don't have real map)
-    emit('update:location', {
-      latitude: 35.6892, // Default Tehran coordinates
-      longitude: 51.389,
-    })
+    // Emit location update
+    if (newValue.coordinates) {
+      emit('update:location', {
+        latitude: newValue.coordinates.lat,
+        longitude: newValue.coordinates.lng,
+      })
+    }
+  },
+  { deep: true }
+)
 
+const handleSubmit = () => {
+  if (validateForm()) {
     emit('next')
   }
 }
+
+// Initialize from props on mount
+onMounted(() => {
+  if (props.address?.provinceId) {
+    formData.value.provinceId = props.address.provinceId
+  }
+  if (props.address?.cityId) {
+    formData.value.cityId = props.address.cityId
+  }
+})
 </script>
 
 <style scoped>
 .registration-step {
-  min-height: 100vh;
-  padding: 2rem 1rem;
-  background: #f9fafb;
-  direction: rtl;
+  width: 100%;
 }
 
 .step-card {
-  max-width: 42rem;
-  margin: 0 auto;
-  background: white;
+  background: #ffffff;
   border-radius: 1rem;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
   padding: 2rem;
+  box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1);
 }
 
 .step-header {
@@ -221,12 +283,13 @@ const handleSubmit = () => {
   font-size: 1.5rem;
   font-weight: 700;
   color: #111827;
-  margin-bottom: 0.5rem;
+  margin: 0 0 0.5rem 0;
 }
 
 .step-description {
   font-size: 0.875rem;
   color: #6b7280;
+  margin: 0;
 }
 
 .step-form {
@@ -241,36 +304,37 @@ const handleSubmit = () => {
   gap: 0.5rem;
 }
 
-.form-row {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 1rem;
-}
-
 .form-label {
   font-size: 0.875rem;
-  font-weight: 500;
+  font-weight: 600;
   color: #374151;
+}
+
+.form-hint {
+  font-size: 0.75rem;
+  color: #6b7280;
+  margin: 0;
 }
 
 .required {
   color: #ef4444;
+  margin-right: 0.25rem;
 }
 
 .form-input {
   width: 100%;
   padding: 0.75rem 1rem;
-  font-size: 1rem;
   border: 1px solid #d1d5db;
   border-radius: 0.5rem;
-  background: white;
-  transition: all 0.2s ease;
+  font-size: 0.875rem;
+  transition: all 0.2s;
+  background: #ffffff;
 }
 
 .form-input:focus {
   outline: none;
-  border-color: #8b5cf6;
-  box-shadow: 0 0 0 3px rgba(139, 92, 246, 0.1);
+  border-color: #10b981;
+  box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.1);
 }
 
 .form-input-error {
@@ -278,61 +342,17 @@ const handleSubmit = () => {
 }
 
 .form-input-error:focus {
-  border-color: #ef4444;
   box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.1);
 }
 
 .form-error {
-  font-size: 0.875rem;
+  font-size: 0.75rem;
   color: #ef4444;
 }
 
-/* Map Placeholder */
-.map-placeholder {
-  position: relative;
-  height: 16rem;
-  background: #f3f4f6;
-  border-radius: 0.75rem;
-  overflow: hidden;
-  border: 1px solid #e5e7eb;
-}
-
-.map-placeholder-content {
-  position: absolute;
-  inset: 0;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  z-index: 1;
-}
-
-.map-icon {
-  width: 3rem;
-  height: 3rem;
-  color: #8b5cf6;
-  margin-bottom: 0.5rem;
-}
-
-.map-placeholder-text {
-  font-size: 0.875rem;
-  color: #6b7280;
-  text-align: center;
-}
-
-.map-grid {
-  position: absolute;
-  inset: 0;
-  opacity: 0.1;
-  background-image: linear-gradient(0deg, #000 1px, transparent 1px),
-    linear-gradient(90deg, #000 1px, transparent 1px);
-  background-size: 20px 20px;
-}
-
-/* Navigation */
 .step-actions {
   display: flex;
-  gap: 0.75rem;
+  gap: 1rem;
   margin-top: 1rem;
   padding-top: 1.5rem;
   border-top: 1px solid #e5e7eb;
@@ -347,16 +367,8 @@ const handleSubmit = () => {
     padding: 1.5rem;
   }
 
-  .step-title {
-    font-size: 1.25rem;
-  }
-
-  .form-row {
-    grid-template-columns: 1fr;
-  }
-
-  .map-placeholder {
-    height: 12rem;
+  .step-actions {
+    flex-direction: column-reverse;
   }
 }
 </style>
