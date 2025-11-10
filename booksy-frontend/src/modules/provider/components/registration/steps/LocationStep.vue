@@ -89,6 +89,7 @@ import AppButton from '@/shared/components/ui/Button/AppButton.vue'
 import NeshanMapPicker from '@/shared/components/map/NeshanMapPicker.vue'
 import LocationSelector from '@/shared/components/forms/LocationSelector.vue'
 import type { BusinessAddress, BusinessLocation } from '@/modules/provider/types/registration.types'
+import { useLocations } from '@/shared/composables/useLocations'
 
 interface Props {
   address?: Partial<BusinessAddress>
@@ -105,10 +106,16 @@ interface Emits {
 const props = defineProps<Props>()
 const emit = defineEmits<Emits>()
 
+// Location composable for province/city data
+const locationStore = useLocations()
+
 // Neshan Map API keys - same as ProfileManager
 const neshanMapKey = import.meta.env.VITE_NESHAN_MAP_KEY || 'web.741ff28152504624a0b3942d3621b56d'
 const neshanServiceKey =
   import.meta.env.VITE_NESHAN_SERVICE_KEY || 'service.qBDJpu7hKVBEAzERghfm9JM7vqGKXoNNNTdtrGy7'
+
+// Flag to prevent circular updates between map and form
+const isUpdatingFromMap = ref(false)
 
 // Form data
 const formData = ref({
@@ -125,7 +132,7 @@ const formData = ref({
 const errors = ref<Record<string, string>>({})
 
 // Handle location selection from map
-const handleLocationSelected = (data: {
+const handleLocationSelected = async (data: {
   lat: number
   lng: number
   address?: string
@@ -154,6 +161,35 @@ const handleLocationSelected = (data: {
     if (data.addressDetails.postalCode) {
       formData.value.postalCode = data.addressDetails.postalCode
     }
+
+    // Auto-select province from reverse geocoded state name
+    if (data.addressDetails.state) {
+      const province = locationStore.getProvinceByName(data.addressDetails.state)
+      if (province) {
+        // Temporarily disable watchers to prevent circular updates
+        isUpdatingFromMap.value = true
+        formData.value.provinceId = province.id
+        errors.value.province = ''
+
+        // Load cities for this province
+        await locationStore.loadCitiesByProvinceId(province.id)
+
+        // Auto-select city from reverse geocoded city name
+        if (data.addressDetails.city) {
+          const cities = locationStore.getCitiesByProvinceId(province.id)
+          const city = cities.find(c => c.name === data.addressDetails.city)
+          if (city) {
+            formData.value.cityId = city.id
+            errors.value.city = ''
+          }
+        }
+
+        // Re-enable watchers after a delay
+        setTimeout(() => {
+          isUpdatingFromMap.value = false
+        }, 100)
+      }
+    }
   } else if (data.address) {
     formData.value.formattedAddress = data.address
     if (!formData.value.address) {
@@ -177,6 +213,82 @@ const handleCityChange = (cityId: number | null) => {
   formData.value.cityId = cityId
   errors.value.city = ''
 }
+
+// Helper function to geocode location name using Neshan Search API
+const geocodeLocationName = async (locationName: string): Promise<{ lat: number; lng: number } | null> => {
+  if (!neshanServiceKey || !locationName) return null
+
+  try {
+    const response = await fetch(
+      `https://api.neshan.org/v1/search?term=${encodeURIComponent(locationName)}&lat=35.6892&lng=51.389`,
+      {
+        headers: {
+          'Api-Key': neshanServiceKey,
+        },
+      }
+    )
+
+    if (!response.ok) {
+      console.error('Neshan search failed:', response.statusText)
+      return null
+    }
+
+    const data = await response.json()
+
+    if (data.items && data.items.length > 0) {
+      const firstResult = data.items[0]
+      return {
+        lat: firstResult.location.y,
+        lng: firstResult.location.x,
+      }
+    }
+
+    return null
+  } catch (error) {
+    console.error('Geocoding error:', error)
+    return null
+  }
+}
+
+// Watch province changes to update map
+watch(
+  () => formData.value.provinceId,
+  async (newProvinceId) => {
+    // Skip if update is coming from map click
+    if (isUpdatingFromMap.value || !newProvinceId) return
+
+    // Get province name and geocode it
+    const province = locationStore.getLocationById(newProvinceId)
+    if (province) {
+      const coordinates = await geocodeLocationName(province.name)
+      if (coordinates) {
+        formData.value.coordinates = coordinates
+      }
+    }
+  }
+)
+
+// Watch city changes to update map
+watch(
+  () => formData.value.cityId,
+  async (newCityId) => {
+    // Skip if update is coming from map click
+    if (isUpdatingFromMap.value || !newCityId) return
+
+    // Get city and province names for better geocoding accuracy
+    const city = locationStore.getLocationById(newCityId)
+    const province = formData.value.provinceId ? locationStore.getLocationById(formData.value.provinceId) : null
+
+    if (city) {
+      // Combine city and province name for more accurate results
+      const searchTerm = province ? `${city.name}, ${province.name}` : city.name
+      const coordinates = await geocodeLocationName(searchTerm)
+      if (coordinates) {
+        formData.value.coordinates = coordinates
+      }
+    }
+  }
+)
 
 // Validation
 const validateField = (field: keyof typeof formData.value) => {
