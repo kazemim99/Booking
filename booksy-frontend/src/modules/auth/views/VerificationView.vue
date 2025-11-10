@@ -155,14 +155,54 @@ const verifyOtp = async () => {
         authStore.setToken(registerResult.data.accessToken)
         authStore.setRefreshToken(registerResult.data.refreshToken)
 
-        // Store user info
+        // Store user info - create complete User object
+        const now = new Date().toISOString()
         authStore.setUser({
           id: registerResult.data.userId,
+          email: undefined, // Temp email like 09123456789@booksy.temp
           phoneNumber: registerResult.data.phoneNumber,
           phoneVerified: true,
-          userType: 'Provider',
+          emailVerified: false,
+          userType: 'Provider' as any,
           roles: ['Provider'],
-          status: 'Active',
+          status: 'Active' as any,
+          createdAt: now,
+          updatedAt: now,
+          lastModifiedAt: now,
+          profile: {
+            firstName: '',
+            lastName: '',
+            phoneNumber: registerResult.data.phoneNumber,
+          },
+          preferences: {
+            theme: 'light',
+            language: 'fa',
+            timezone: 'Asia/Tehran',
+            currency: 'IRR',
+            dateFormat: 'YYYY/MM/DD',
+            timeFormat: '24h',
+            notifications: {
+              email: true,
+              sms: true,
+              push: true,
+            },
+            notificationSettings: {
+              emailNotifications: true,
+              smsNotifications: true,
+              pushNotifications: true,
+              appointmentReminders: true,
+              promotionalEmails: false,
+            },
+            privacySettings: undefined,
+          },
+          metadata: {
+            totalBookings: 0,
+            completedBookings: 0,
+            cancelledBookings: 0,
+            noShows: 0,
+            favoriteProviders: [],
+            lastActivityAt: now,
+          },
         } as any)
 
         // Clear sessionStorage

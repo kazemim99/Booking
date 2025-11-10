@@ -39,6 +39,13 @@ export async function authGuard(
   // Provider status-based routing
   // Check if user is a Provider and needs status-based routing
   if (authStore.isAuthenticated && authStore.hasAnyRole(['Provider', 'ServiceProvider'])) {
+    // If already going to ProviderRegistration, allow it without fetching status
+    // This prevents unnecessary API calls and redirect loops for new users
+    if (to.name === 'ProviderRegistration') {
+      next()
+      return
+    }
+
     // Fetch provider status if not already loaded
     if (authStore.providerStatus === null && authStore.providerId === null) {
       try {
