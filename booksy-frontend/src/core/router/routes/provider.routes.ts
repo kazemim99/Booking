@@ -23,14 +23,15 @@ const providerRoutes: RouteRecordRaw[] = [
   },
 
   // Provider Registration (after phone verification)
-  // This is PUBLIC because user completes registration BEFORE being authenticated
+  // User must be authenticated (phone verification creates User + returns JWT)
+  // This route is for Providers with Drafted status to complete their profile
   {
     path: '/registration',
     name: 'ProviderRegistration',
     component: () => import('@/modules/provider/views/registration/ProviderRegistrationView.vue'),
     meta: {
-      isPublic: true,
-      requiresPhoneVerification: true, // Custom meta to check if phone is verified
+      requiresAuth: true,
+      roles: ['Provider', 'ServiceProvider'],
       title: 'Complete Your Provider Profile',
     },
   },
