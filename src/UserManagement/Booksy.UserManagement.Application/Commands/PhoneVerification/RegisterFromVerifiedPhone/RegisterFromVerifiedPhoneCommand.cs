@@ -16,8 +16,11 @@ public sealed record RegisterFromVerifiedPhoneCommand(
     string? FirstName = null,
     string? LastName = null,
     string? IpAddress = null,
-    string? UserAgent = null
-) : ICommand<RegisterFromVerifiedPhoneResult>;
+    string? UserAgent = null,
+    Guid? IdempotencyKey = null
+) : ICommand<RegisterFromVerifiedPhoneResult>
+{
+}
 
 /// <summary>
 /// Result returned after creating user from verified phone
