@@ -67,7 +67,7 @@ public sealed class ProviderDraftCreatedEventSubscriber : ICapSubscribe
                     @event.OwnerFirstName,
                     @event.OwnerLastName);
 
-                user.Profile.UpdateName(@event.OwnerFirstName, @event.OwnerLastName, middleName: null);
+                user.Profile.UpdatePersonalInfo(@event.OwnerFirstName, @event.OwnerLastName, middleName: null);
 
                 await _userRepository.UpdateAsync(user, CancellationToken.None);
             });

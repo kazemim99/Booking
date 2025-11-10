@@ -174,15 +174,19 @@ namespace Booksy.ServiceCatalog.Infrastructure.DependencyInjection
             {
 
 
-            using var scope = serviceProvider.CreateScope();
-            var context = scope.ServiceProvider.GetRequiredService<ServiceCatalogDbContext>();
-            var seeder = scope.ServiceProvider.GetRequiredService<ISeeder>();
+                using var scope = serviceProvider.CreateScope();
+                var context = scope.ServiceProvider.GetRequiredService<ServiceCatalogDbContext>();
+                var seeder = scope.ServiceProvider.GetServices<ISeeder>();
 
-            // Apply migrations
-            await context.Database.MigrateAsync();
+                // Apply migrations
+                await context.Database.MigrateAsync();
 
-            // Seed data
-            await seeder.SeedAsync();
+                foreach (var item in seeder)
+                {
+                    await item.SeedAsync();
+
+                }
+                // Seed data
             }
             catch (Exception ex)
             {
