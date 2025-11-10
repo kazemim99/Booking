@@ -131,18 +131,14 @@ export function usePhoneVerification() {
       if (response.success && response.data?.success) {
         state.value.step = 'success'
 
-        // Clear sessionStorage after successful verification
-        sessionStorage.removeItem(VERIFICATION_ID_KEY)
-        sessionStorage.removeItem(PHONE_NUMBER_KEY)
+        // DON'T clear sessionStorage here - we need verificationId for registration
+        // It will be cleared in VerificationView after account creation
 
         toast.success('Phone verified successfully!')
 
-        // TODO: After phone verification, implement actual login/registration flow
-        // The backend separates phone verification from authentication
-        // Next steps would be to either:
-        // 1. Call a separate registration endpoint if this is a new user
-        // 2. Call a login endpoint if this is an existing user
-        // For now, we just confirm the phone is verified
+        // NOTE: After phone verification, the next step is to create a user account
+        // The verificationId is needed for the registerFromVerifiedPhone call
+        // VerificationView.vue handles the account creation and token storage
 
         return {
           success: true,
