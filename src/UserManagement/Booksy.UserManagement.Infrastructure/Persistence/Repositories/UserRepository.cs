@@ -1,5 +1,4 @@
-﻿// 📁 Booksy.UserManagement.Infrastructure/Persistence/Repositories/UserRepository.cs - FIXED
-using Booksy.Core.Domain.ValueObjects;
+﻿using Booksy.Core.Domain.ValueObjects;
 using Booksy.Infrastructure.Core.Persistence.Base;
 using Booksy.UserManagement.Domain.Aggregates;
 using Booksy.UserManagement.Domain.Repositories;

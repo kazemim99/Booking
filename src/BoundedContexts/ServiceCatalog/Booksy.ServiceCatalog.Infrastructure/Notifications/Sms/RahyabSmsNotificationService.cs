@@ -36,7 +36,7 @@ namespace Booksy.ServiceCatalog.Infrastructure.Notifications.Sms
             _password = configuration["Rahyab:Password"] ?? "B3q71jaY96";
             _number = configuration["Rahyab:Number"] ?? "1000110110001";
             _company = configuration["Rahyab:Company"] ?? "NEGAHNO";
-            _sandboxMode = configuration.GetValue<bool>("Rahyab:SandboxMode", false);
+            _sandboxMode = configuration.GetValue<bool>("Rahyab:SandboxMode");
             _sandboxOtpCode = configuration["Rahyab:SandboxOtpCode"] ?? "123456";
         }
 
