@@ -337,12 +337,9 @@ export function useProviderRegistration() {
       const response = await providerRegistrationService.saveStep3Location(draftRequest)
 
       // Update tokens if returned (after provider aggregate is created)
-      if (response.accessToken && response.refreshToken && response.expiresIn) {
-        authStore.setTokens({
-          accessToken: response.accessToken,
-          refreshToken: response.refreshToken,
-          expiresIn: response.expiresIn
-        })
+      if (response.accessToken && response.refreshToken) {
+        authStore.setToken(response.accessToken)
+        authStore.setRefreshToken(response.refreshToken)
         console.log('✅ Updated tokens with provider claims (providerId now included)')
       }
 

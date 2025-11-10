@@ -152,11 +152,8 @@ const verifyOtp = async () => {
         // Step 3: Store authentication tokens
         console.log('[VerificationView] User account created, storing tokens...')
 
-        authStore.setTokens({
-          accessToken: registerResult.data.accessToken,
-          refreshToken: registerResult.data.refreshToken,
-          expiresIn: registerResult.data.expiresIn,
-        })
+        authStore.setToken(registerResult.data.accessToken)
+        authStore.setRefreshToken(registerResult.data.refreshToken)
 
         // Store user info
         authStore.setUser({
@@ -166,7 +163,7 @@ const verifyOtp = async () => {
           userType: 'Provider',
           roles: ['Provider'],
           status: 'Active',
-        })
+        } as any)
 
         // Clear sessionStorage
         sessionStorage.removeItem('phone_verification_id')
