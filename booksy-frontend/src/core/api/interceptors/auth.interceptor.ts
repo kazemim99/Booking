@@ -12,7 +12,7 @@ import { localStorageService } from '@/core/services/storage/local-storage.servi
  * Adds JWT token to request headers
  */
 export function authInterceptor(config: InternalAxiosRequestConfig): InternalAxiosRequestConfig {
-  const token = localStorageService.get<string>('access_token')
+  const token = localStorage.getItem('access_token')
 
   if (token && config.headers) {
     config.headers.Authorization = `Bearer ${token}`
@@ -32,7 +32,7 @@ export async function authErrorInterceptor(error: any) {
     originalRequest._retry = true
 
     try {
-      const refreshToken = localStorageService.get<string>('refresh_token')
+      const refreshToken = localStorage.getItem('refresh_token')
 
       if (!refreshToken) {
         throw new Error('No refresh token available')
@@ -56,9 +56,9 @@ export async function authErrorInterceptor(error: any) {
       const { accessToken, refreshToken: newRefreshToken } = data.data || data
 
       // Update tokens
-      localStorageService.set('access_token', accessToken)
+      localStorage.setItem('access_token', accessToken)
       if (newRefreshToken) {
-        localStorageService.set('refresh_token', newRefreshToken)
+        localStorage.setItem('refresh_token', newRefreshToken)
       }
 
       // Retry original request with new token
@@ -67,9 +67,9 @@ export async function authErrorInterceptor(error: any) {
 
     } catch (refreshError) {
       // Clear tokens and redirect to login
-      localStorageService.remove('access_token')
-      localStorageService.remove('refresh_token')
-      localStorageService.remove('user')
+      localStorage.removeItem('access_token')
+      localStorage.removeItem('refresh_token')
+      localStorage.removeItem('user')
 
       // Redirect to login (using correct route path)
       window.location.href = '/login'
