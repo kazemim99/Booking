@@ -5,7 +5,7 @@ using Booksy.Core.Application.Abstractions.CQRS;
 using Booksy.Core.Application.Exceptions;
 using Booksy.Core.Domain.Exceptions;
 using Booksy.Core.Domain.ValueObjects;
-using Booksy.ServiceCatalog.Application.Services.Notifications;
+using Booksy.UserManagement.Application.Services.Interfaces;
 using Booksy.UserManagement.Domain.Aggregates.PhoneVerificationAggregate;
 using Booksy.UserManagement.Domain.Enums;
 using Booksy.UserManagement.Domain.Repositories;
