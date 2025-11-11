@@ -697,6 +697,21 @@ export function useProviderRegistration() {
 
       const response = await providerRegistrationService.getRegistrationProgress()
 
+      // Handle completed registration (hasDraft: false but providerId exists)
+      if (!response.hasDraft && response.providerId) {
+        console.log('✅ Registration already completed:', {
+          providerId: response.providerId,
+          currentStep: response.currentStep,
+        })
+
+        // Return provider ID so it can be used even after completion
+        return {
+          success: true,
+          message: 'Registration already completed',
+          providerId: response.providerId,
+        }
+      }
+
       if (response.hasDraft && response.draftData) {
         // Populate registration state with draft data
         const draft = response.draftData

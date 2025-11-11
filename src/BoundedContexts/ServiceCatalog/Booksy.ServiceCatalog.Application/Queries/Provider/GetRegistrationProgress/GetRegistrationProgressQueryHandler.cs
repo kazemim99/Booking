@@ -29,11 +29,27 @@ public sealed class GetRegistrationProgressQueryHandler
         var userId = UserId.From(_currentUserService.UserId ??
             throw new UnauthorizedAccessException("User not authenticated"));
 
+        // First, try to get draft provider (status = Drafted)
         var draftProvider = await _providerRepository
             .GetDraftProviderByOwnerIdAsync(userId, cancellationToken);
 
+        // If no draft found, check if user has a completed/pending provider
         if (draftProvider == null)
         {
+            var provider = await _providerRepository
+                .GetByOwnerIdAsync(userId, cancellationToken);
+
+            // If provider exists but registration is complete, return completed status
+            if (provider != null && provider.IsRegistrationComplete)
+            {
+                return new GetRegistrationProgressResult(
+                    HasDraft: false,
+                    CurrentStep: 9, // Registration completed
+                    ProviderId: provider.Id.Value,
+                    DraftData: null);
+            }
+
+            // No provider found at all
             return new GetRegistrationProgressResult(
                 HasDraft: false,
                 CurrentStep: null,
