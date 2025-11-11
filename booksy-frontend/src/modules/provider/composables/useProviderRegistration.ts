@@ -411,7 +411,7 @@ export function useProviderRegistration() {
         name: member.name,
         email: member.email || '',
         phoneNumber: member.phoneNumber || '',
-        position: member.role || 'stylist',
+        position: member.position || 'stylist',
       }))
 
       // Staff is optional, allow proceeding even without staff members
@@ -694,9 +694,11 @@ export function useProviderRegistration() {
         registrationState.value.data.teamMembers = draft.staff.map((s) => ({
           id: s.id,
           name: s.name,
-          email: s.email,
+          email: s.email || '',
           phoneNumber: s.phoneNumber,
-          role: s.position,
+          countryCode: '+98',
+          position: s.position,
+          isOwner: false,
         }))
 
         // Business hours
