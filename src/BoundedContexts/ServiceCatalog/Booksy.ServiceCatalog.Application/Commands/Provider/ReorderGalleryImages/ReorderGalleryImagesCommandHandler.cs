@@ -9,14 +9,12 @@ public sealed class ReorderGalleryImagesCommandHandler
     : ICommandHandler<ReorderGalleryImagesCommand>
 {
     private readonly IProviderWriteRepository _providerRepository;
-    private readonly IUnitOfWork _unitOfWork;
 
     public ReorderGalleryImagesCommandHandler(
         IProviderWriteRepository providerRepository,
         IUnitOfWork unitOfWork)
     {
         _providerRepository = providerRepository;
-        _unitOfWork = unitOfWork;
     }
 
     public async Task Handle(
@@ -39,7 +37,5 @@ public sealed class ReorderGalleryImagesCommandHandler
         {
             provider.Profile.SetPrimaryGalleryImage(request.PrimaryImageId.Value);
         }
-
-        await _unitOfWork.SaveChangesAsync(cancellationToken);
     }
 }

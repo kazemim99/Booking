@@ -78,11 +78,6 @@ public sealed class UploadGalleryImagesCommandHandler
             });
         }
 
-
-        // Save changes with retry logic for concurrency conflicts
-        await _unitOfWork.SaveChangesAsync(cancellationToken);
-
-
         return uploadedImages;
     }
 }
