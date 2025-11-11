@@ -157,6 +157,9 @@ namespace Booksy.API
             // Swagger
             app.UseSwaggerConfiguration(provider);
 
+            // API Response Wrapper (must be before exception handler to avoid stream conflicts)
+            app.UseMiddleware<ApiResponseMiddleware>();
+
             // Global Middlewares
             app.UseMiddleware<ExceptionHandlingMiddleware>();
             app.UseMiddleware<RequestLoggingMiddleware>();
@@ -188,7 +191,6 @@ namespace Booksy.API
             // Auth
             app.UseAuthentication();
             app.UseAuthorization();
-            app.UseMiddleware<ApiResponseMiddleware>();
 
 
             app.UseEndpoints(endpoints =>

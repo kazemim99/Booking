@@ -158,6 +158,9 @@ if (app.Environment.IsDevelopment())
 // Add Swagger UI
 app.UseSwaggerConfiguration(app.Services.GetRequiredService<IApiVersionDescriptionProvider>());
 
+// API Response Wrapper (must be before exception handler to avoid stream conflicts)
+app.UseMiddleware<ApiResponseMiddleware>();
+
 // Global Exception Handler
 app.UseMiddleware<ExceptionHandlingMiddleware>();
 
@@ -173,7 +176,6 @@ app.UseCors("AllowSpecificOrigins");
 // Authentication & Authorization
 app.UseAuthentication();
 app.UseAuthorization();
-app.UseMiddleware<ApiResponseMiddleware>();
 
 
 
