@@ -211,7 +211,7 @@ namespace Booksy.ServiceCatalog.Infrastructure.DependencyInjection
 
             // Multi-Channel Notification Services
             services.AddScoped<IEmailNotificationService, SendGridEmailNotificationService>();
-            services.AddScoped<Notifications.ISmsNotificationService, RahyabSmsNotificationService>();
+            services.AddScoped<ISmsNotificationService, RahyabSmsNotificationService>();
             services.AddScoped<IPushNotificationService, FirebasePushNotificationService>();
             services.AddScoped<IInAppNotificationService, InAppNotificationService>();
 
