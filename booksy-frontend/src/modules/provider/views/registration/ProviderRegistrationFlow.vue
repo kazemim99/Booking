@@ -71,7 +71,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed, onMounted, onBeforeUnmount, watch } from 'vue'
+import { computed, onMounted, onBeforeUnmount } from 'vue'
 import { useRouter } from 'vue-router'
 import { useProviderRegistration } from '../../composables/useProviderRegistration'
 import { toastService } from '@/core/services/toast.service'
@@ -251,24 +251,6 @@ const handleFinalSubmit = async (feedback?: string) => {
     toastService.error(error.message || 'خطا در تکمیل ثبت‌نام')
   }
 }
-
-// Auto-save staff when leaving step 5
-watch(currentStep, async (newStep, oldStep) => {
-  // If we're leaving step 5 (staff), auto-save the staff data
-  if (oldStep === 5 && newStep !== 5 && draftProviderId) {
-    console.log('🔄 Auto-saving staff before leaving step 5...')
-    try {
-      const result = await saveStaff(draftProviderId)
-      if (result.success) {
-        console.log('✅ Staff auto-saved successfully')
-      } else {
-        console.warn('⚠️ Failed to auto-save staff:', result.message)
-      }
-    } catch (error) {
-      console.error('❌ Error auto-saving staff:', error)
-    }
-  }
-})
 
 // Initialize on mount
 onMounted(async () => {
