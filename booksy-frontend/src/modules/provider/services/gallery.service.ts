@@ -75,7 +75,9 @@ class GalleryService {
   }
 
   /**
-   * Reorder gallery images
+   * Reorder gallery images and optionally set a primary image
+   * @param providerId - Provider ID
+   * @param request - Reorder request with optional primary image ID
    */
   async reorderImages(
     providerId: string,

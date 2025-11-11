@@ -630,8 +630,14 @@ async function handleDrop(event: DragEvent, dropIndex: number): Promise<void> {
 
   // Persist to backend
   try {
+    // Build imageOrders dictionary: { imageId: displayOrder }
+    const imageOrders: Record<string, number> = {}
+    updatedImages.forEach(img => {
+      imageOrders[img.id] = img.displayOrder
+    })
+
     await galleryService.reorderImages(providerId.value, {
-      imageIds: updatedImages.map(img => img.id),
+      imageOrders
     })
 
     console.log('[GalleryManager] Images reordered successfully')

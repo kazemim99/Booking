@@ -34,10 +34,9 @@ export interface UpdateGalleryImageMetadataRequest {
 
 /**
  * Reorder gallery images request
+ * Maps image IDs to their new display order positions
  */
 export interface ReorderGalleryImagesRequest {
-  imageOrders: Array<{
-    imageId: string
-    newOrder: number
-  }>
+  imageOrders: Record<string, number> // imageId -> displayOrder
+  primaryImageId?: string // Optional: ID of image to set as primary
 }
