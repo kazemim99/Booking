@@ -157,6 +157,9 @@ namespace Booksy.API
             // Swagger
             app.UseSwaggerConfiguration(provider);
 
+            // Response Compression (must be before ApiResponseMiddleware to avoid encoding conflicts)
+            app.UseResponseCompression();
+
             // API Response Wrapper (must be before exception handler to avoid stream conflicts)
             app.UseMiddleware<ApiResponseMiddleware>();
 
@@ -178,8 +181,6 @@ namespace Booksy.API
             });
 
 
-            // Response Compression
-            app.UseResponseCompression();
             app.UseRouting();
 
             // Custom Rate Limit Response Middleware (must be before ClientRateLimitMiddleware)

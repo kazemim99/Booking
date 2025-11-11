@@ -40,6 +40,9 @@ const registrationState = ref<RegistrationState>({
   isDirty: false,
 })
 
+// Track if draft is currently being loaded to prevent duplicate calls
+let isDraftLoading = false
+
 // Initialize business hours with default closed for all days
 function initializeBusinessHours(): DayHours[] {
   return Array.from({ length: 7 }, (_, i) => ({
@@ -641,6 +644,13 @@ export function useProviderRegistration() {
 
   // Load existing draft on initialization
   const loadDraft = async (): Promise<{ success: boolean; message?: string; providerId?: string }> => {
+    // Prevent duplicate concurrent calls
+    if (isDraftLoading) {
+      console.log('⏭️  Draft already loading, skipping duplicate call')
+      return { success: false, message: 'Draft load already in progress' }
+    }
+
+    isDraftLoading = true
     registrationState.value.isLoading = true
 
     try {
@@ -744,6 +754,7 @@ export function useProviderRegistration() {
       return { success: false, message: 'Failed to load draft' }
     } finally {
       registrationState.value.isLoading = false
+      isDraftLoading = false
     }
   }
 
