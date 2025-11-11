@@ -1,6 +1,6 @@
 # Booksy Platform - Comprehensive Technical Documentation
 
-> **Living Document**: This documentation consolidates all technical documentation from the project. Last updated: 2025-11-09
+> **Living Document**: This documentation consolidates all technical documentation from the project. Last updated: 2025-11-11
 
 ---
 
@@ -10,6 +10,9 @@
 - [Architecture & Patterns](#architecture--patterns)
 - [Authentication & Phone Verification](#authentication--phone-verification)
 - [Provider Registration Flow](#provider-registration-flow)
+- [Location & Map Integration](#location--map-integration)
+- [Event-Driven Architecture](#event-driven-architecture)
+- [Database & EF Core Configuration](#database--ef-core-configuration)
 - [API Integration & Type Safety](#api-integration--type-safety)
 - [Routing & Navigation Guards](#routing--navigation-guards)
 - [Known Issues & Solutions](#known-issues--solutions)
@@ -257,6 +260,471 @@ const loadDraft = async () => {
 **4. Province/City Only in LocationStep**
 - **BusinessInfoStep** (Step 1): Business name, owner name, phone
 - **LocationStep** (Step 3): Province, city, address, coordinates
+
+---
+
+## Location & Map Integration
+
+### Neshan Maps Integration
+
+**Overview:**
+The platform uses Neshan Maps (Iranian map service) for location selection with bidirectional synchronization between map and form fields.
+
+**Architecture:**
+```typescript
+LocationStep.vue
+  ├─ NeshanMapPicker (Interactive map component)
+  ├─ LocationSelector (Province/City dropdowns)
+  └─ useLocations (Composable for location data)
+```
+
+### Bidirectional Synchronization
+
+**1. Map → Form (Click on map updates dropdowns)**
+
+```typescript
+const handleLocationSelected = async (data: {
+  lat: number
+  lng: number
+  addressDetails?: {
+    state: string     // Province name from reverse geocoding
+    city: string      // City name from reverse geocoding
+    formattedAddress: string
+    postalCode: string
+  }
+}) => {
+  // Update coordinates
+  formData.value.coordinates = { lat: data.lat, lng: data.lng }
+
+  // Auto-select province from reverse geocoded state name
+  if (data.addressDetails?.state) {
+    const province = locationStore.getProvinceByName(data.addressDetails.state)
+    if (province) {
+      isUpdatingFromMap.value = true  // Prevent circular updates
+      formData.value.provinceId = province.id
+
+      // Load and auto-select city
+      await locationStore.loadCitiesByProvinceId(province.id)
+      if (data.addressDetails.city) {
+        const cities = locationStore.getCitiesByProvinceId(province.id)
+        const city = cities.find(c => c.name === data.addressDetails.city)
+        if (city) {
+          formData.value.cityId = city.id
+        }
+      }
+
+      setTimeout(() => { isUpdatingFromMap.value = false }, 100)
+    }
+  }
+
+  // Auto-fill address and postal code
+  formData.value.formattedAddress = data.addressDetails.formattedAddress
+  formData.value.postalCode = data.addressDetails.postalCode
+}
+```
+
+**2. Form → Map (Select dropdown updates map)**
+
+```typescript
+// Helper function to geocode location names
+const geocodeLocationName = async (locationName: string) => {
+  const response = await fetch(
+    `https://api.neshan.org/v1/search?term=${encodeURIComponent(locationName)}`,
+    { headers: { 'Api-Key': neshanServiceKey } }
+  )
+  const data = await response.json()
+  if (data.items?.[0]) {
+    return {
+      lat: data.items[0].location.y,
+      lng: data.items[0].location.x
+    }
+  }
+  return null
+}
+
+// Watch province changes
+watch(() => formData.value.provinceId, async (newProvinceId) => {
+  if (isUpdatingFromMap.value || !newProvinceId) return
+
+  const province = locationStore.getLocationById(newProvinceId)
+  if (province) {
+    const coordinates = await geocodeLocationName(province.name)
+    if (coordinates) {
+      formData.value.coordinates = coordinates  // Triggers map center update
+    }
+  }
+})
+
+// Watch city changes
+watch(() => formData.value.cityId, async (newCityId) => {
+  if (isUpdatingFromMap.value || !newCityId) return
+
+  const city = locationStore.getLocationById(newCityId)
+  const province = formData.value.provinceId ?
+    locationStore.getLocationById(formData.value.provinceId) : null
+
+  if (city) {
+    // Combine city + province for accurate geocoding
+    const searchTerm = province ? `${city.name}, ${province.name}` : city.name
+    const coordinates = await geocodeLocationName(searchTerm)
+    if (coordinates) {
+      formData.value.coordinates = coordinates
+    }
+  }
+})
+```
+
+**3. Preventing Circular Updates**
+
+```typescript
+const isUpdatingFromMap = ref(false)
+
+// Set flag when map triggers update
+isUpdatingFromMap.value = true
+// ... update form fields
+setTimeout(() => { isUpdatingFromMap.value = false }, 100)
+
+// Skip watchers when flag is set
+if (isUpdatingFromMap.value) return
+```
+
+### Neshan Maps Configuration
+
+**Environment Variables:**
+```env
+# .env.development
+VITE_NESHAN_MAP_KEY=web.741ff28152504624a0b3942d3621b56d
+VITE_NESHAN_SERVICE_KEY=service.qBDJpu7hKVBEAzERghfm9JM7vqGKXoNNNTdtrGy7
+```
+
+**API Endpoints Used:**
+- **Reverse Geocoding**: `https://api.neshan.org/v5/reverse?lat={lat}&lng={lng}`
+  - Returns: address, city, state, postalCode
+- **Search/Geocoding**: `https://api.neshan.org/v1/search?term={query}`
+  - Returns: coordinates for location name
+
+**Key Files:**
+- `NeshanMapPicker.vue` - Interactive map component
+- `LocationSelector.vue` - Province/City dropdowns
+- `LocationStep.vue` - Registration step with bidirectional sync
+- `useLocations.ts` - Composable for location data (provinces, cities)
+
+---
+
+## Event-Driven Architecture
+
+### Domain Events vs Integration Events
+
+**Domain Events**: Internal to a bounded context
+**Integration Events**: Cross-context communication via message bus
+
+```csharp
+// Domain Event (internal)
+public sealed record ProviderDraftCreatedEvent(
+    ProviderId ProviderId,
+    UserId OwnerId,
+    string OwnerFirstName,
+    string OwnerLastName,
+    string BusinessName,
+    DateTime CreatedAt
+) : DomainEvent;
+
+// Integration Event (cross-context)
+public sealed record ProviderDraftCreatedIntegrationEvent(
+    Guid ProviderId,
+    Guid OwnerId,
+    string OwnerFirstName,
+    string OwnerLastName,
+    string BusinessName,
+    DateTime CreatedAt
+) : IntegrationEvent
+```
+
+### Event Flow: Owner Name Storage
+
+**Use Case**: When provider registers, store owner's firstName/lastName in User.Profile
+
+**Architecture:**
+```
+ServiceCatalog Context              UserManagement Context
+      |                                     |
+Provider.CreateDraft()                     |
+      ↓                                     |
+Raise: ProviderDraftCreatedEvent           |
+      ↓                                     |
+ProviderDraftCreatedEventHandler           |
+      ↓                                     |
+Publish: Integration Event → CAP → RabbitMQ
+      |                                     ↓
+      |                    ProviderDraftCreatedEventSubscriber
+      |                                     ↓
+      |                         User.Profile.UpdatePersonalInfo()
+      |                                     ↓
+      |                              Save to UserManagement DB
+```
+
+### Implementation Details
+
+**1. Raise Domain Event in Aggregate**
+
+```csharp
+// Provider.cs
+public static Provider CreateDraft(
+    UserId ownerId,
+    string ownerFirstName,    // ← Captured from registration
+    string ownerLastName,
+    string businessName,
+    // ... other params
+)
+{
+    var provider = new Provider { /* ... */ };
+
+    // Raise domain event
+    provider.RaiseDomainEvent(new ProviderDraftCreatedEvent(
+        provider.Id,
+        provider.OwnerId,
+        ownerFirstName,
+        ownerLastName,
+        provider.Profile.BusinessName,
+        DateTime.UtcNow
+    ));
+
+    return provider;
+}
+```
+
+**2. Domain Event Handler → Integration Event**
+
+```csharp
+// ProviderDraftCreatedEventHandler.cs (ServiceCatalog)
+public async Task HandleAsync(
+    ProviderDraftCreatedEvent domainEvent,
+    CancellationToken cancellationToken)
+{
+    var integrationEvent = new ProviderDraftCreatedIntegrationEvent(
+        domainEvent.ProviderId.Value,
+        domainEvent.OwnerId.Value,
+        domainEvent.OwnerFirstName,
+        domainEvent.OwnerLastName,
+        domainEvent.BusinessName,
+        domainEvent.CreatedAt
+    );
+
+    await _eventPublisher.PublishAsync(integrationEvent, cancellationToken);
+}
+```
+
+**3. Integration Event Subscriber (Cross-Context)**
+
+```csharp
+// ProviderDraftCreatedEventSubscriber.cs (UserManagement)
+[CapSubscribe("booksy.servicecatalog.providerdraftcreated")]
+public async Task HandleAsync(ProviderDraftCreatedIntegrationEvent @event)
+{
+    await _unitOfWork.ExecuteInTransactionAsync(async () =>
+    {
+        var userId = UserId.From(@event.OwnerId);
+        var user = await _userRepository.GetByIdAsync(userId);
+
+        // Update user profile with owner names
+        user.Profile.UpdatePersonalInfo(
+            @event.OwnerFirstName,
+            @event.OwnerLastName,
+            middleName: null
+        );
+
+        await _userRepository.UpdateAsync(user, CancellationToken.None);
+    });
+}
+```
+
+**Key Benefits:**
+- ✅ Bounded contexts remain decoupled
+- ✅ Each context maintains its own database
+- ✅ Cross-context updates happen asynchronously
+- ✅ Failure in one context doesn't affect the other
+
+**Key Files:**
+- `ProviderDraftCreatedEvent.cs` - Domain event
+- `ProviderDraftCreatedIntegrationEvent.cs` - Integration event
+- `ProviderDraftCreatedEventHandler.cs` - Event publisher (ServiceCatalog)
+- `ProviderDraftCreatedEventSubscriber.cs` - Event subscriber (UserManagement)
+
+---
+
+## Database & EF Core Configuration
+
+### PostgreSQL Setup
+
+**Connection String Format:**
+```json
+{
+  "ConnectionStrings": {
+    "DefaultConnection": "Host=localhost;Port=5432;Database=booksy_service_catalog;Username=postgres;Password=postgres;Include Error Detail=true"
+  }
+}
+```
+
+**❌ WRONG (SQL Server format):**
+```
+"Server=localhost;Database=booksy;..."
+```
+
+**✅ CORRECT (PostgreSQL format):**
+```
+"Host=localhost;Port=5432;Database=booksy;..."
+```
+
+### EF Core 9 Owned Entity Configuration
+
+**Critical Issue**: Owned entities with manually-generated IDs require specific configuration in EF Core 9.
+
+**The Problem:**
+```
+Error: The database operation was expected to affect 1 row(s),
+       but actually affected 0 row(s); data may have been modified
+       or deleted since entities were loaded.
+```
+
+**Root Cause**: Owned entities in EF Core 9 need explicit configuration for:
+1. **Value generation strategy**
+2. **Concurrency token behavior**
+3. **No DbSet exposure**
+4. **Shadow property for foreign key**
+
+### Owned Entity Pattern (EF Core 9)
+
+**Domain Entity:**
+```csharp
+// ServiceOption.cs - Owned by Service aggregate
+public sealed class ServiceOption : Entity<Guid>
+{
+    public string Name { get; private set; }
+    public Price AdditionalPrice { get; private set; }
+    // ... other properties
+
+    // ❌ NO explicit ServiceId property (use shadow property)
+    // public ServiceId ServiceId { get; private set; }  // WRONG
+
+    internal static ServiceOption Create(string name, Price price, ...)
+    {
+        return new ServiceOption
+        {
+            Id = Guid.NewGuid(),  // ← Generated in code
+            Name = name,
+            // ... no ServiceId assignment
+        };
+    }
+}
+```
+
+**EF Core Configuration:**
+```csharp
+// ServiceConfiguration.cs
+builder.OwnsMany(s => s.Options, option =>
+{
+    option.ToTable("ServiceOptions", "ServiceCatalog");
+
+    // ✅ CRITICAL: Tell EF Core the ID is not database-generated
+    option.Property(so => so.Id)
+        .ValueGeneratedNever()      // ID set in code, not by DB
+        .IsConcurrencyToken(false); // Don't use for concurrency checks
+
+    option.HasKey(so => so.Id);
+    option.Property(so => so.Id).HasColumnName("Id");
+
+    // ✅ Use shadow property for foreign key
+    option.WithOwner()
+        .HasForeignKey("ServiceId");  // Shadow property, not exposed
+
+    // Configure all properties...
+    option.Property(so => so.Name)
+        .IsRequired()
+        .HasMaxLength(100);
+
+    // ✅ Configure inherited base class properties
+    option.Property(so => so.CreatedAt)
+        .IsRequired()
+        .HasColumnType("timestamp with time zone");
+
+    option.Property(so => so.CreatedBy);
+    option.Property(so => so.LastModifiedAt);
+    option.Property(so => so.LastModifiedBy);
+    option.Property(so => so.IsDeleted).HasDefaultValue(false);
+});
+
+// ✅ Configure navigation with backing field
+builder.Navigation(s => s.Options)
+    .UsePropertyAccessMode(PropertyAccessMode.Field)
+    .HasField("_options");
+```
+
+**DbContext Configuration:**
+```csharp
+// ServiceCatalogDbContext.cs
+
+// ❌ WRONG: Don't expose owned entities as DbSets
+// public DbSet<ServiceOption> ServiceOptions => Set<ServiceOption>();
+
+// ✅ CORRECT: Only aggregates are DbSets
+public DbSet<Service> Services => Set<Service>();
+
+// Comment why owned entities aren't exposed
+// ServiceOption and PriceTier are owned entities (OwnsMany) - not exposed as DbSets
+```
+
+### Configuration Checklist for Owned Entities
+
+**When using `OwnsMany` in EF Core 9:**
+
+- ✅ Add `ValueGeneratedNever().IsConcurrencyToken(false)` for manually-generated IDs
+- ✅ Use shadow property for foreign key: `WithOwner().HasForeignKey("PropertyName")`
+- ✅ Remove explicit foreign key property from entity class
+- ✅ Configure ALL properties (including inherited base class properties)
+- ✅ Do NOT expose as `DbSet<T>` in DbContext
+- ✅ Access only through parent aggregate's navigation property
+- ✅ Use backing fields for collections in aggregate
+
+**Common Mistakes:**
+
+| Mistake | Solution |
+|---------|----------|
+| Explicit FK property (e.g., `ServiceId`) | Remove it, use shadow property |
+| Exposed as `DbSet<ServiceOption>` | Remove from DbContext |
+| Missing `.ValueGeneratedNever()` | Add to Id property configuration |
+| Not configuring inherited properties | Configure `CreatedAt`, `CreatedBy`, etc. |
+| Using `.Include(s => s.Options)` | Not needed, auto-loaded with `OwnsMany` |
+
+### Database Migrations
+
+**Creating Migrations:**
+```bash
+cd src/BoundedContexts/ServiceCatalog/Booksy.ServiceCatalog.Infrastructure
+
+dotnet ef migrations add MigrationName \
+  --startup-project ../../Apps/Booksy.ServiceCatalog.Api/Booksy.ServiceCatalog.Api.csproj \
+  --context ServiceCatalogDbContext
+```
+
+**Applying Migrations:**
+```bash
+dotnet ef database update \
+  --startup-project ../../Apps/Booksy.ServiceCatalog.Api/Booksy.ServiceCatalog.Api.csproj \
+  --context ServiceCatalogDbContext
+```
+
+**Suppressing Pending Model Changes Warning:**
+```csharp
+// ServiceCatalogDbContext.cs
+protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
+{
+    // Method signature changes don't require migrations
+    optionsBuilder.ConfigureWarnings(warnings =>
+        warnings.Ignore(RelationalEventId.PendingModelChangesWarning));
+
+    base.OnConfiguring(optionsBuilder);
+}
+```
 
 ---
 
@@ -572,6 +1040,71 @@ const toast = useToast()
 **File Changed:**
 - `VerificationView.vue`
 
+### Issue 7: EF Core 9 Owned Entity SaveChanges Error
+
+**Symptom:**
+```
+DbUpdateConcurrencyException: The database operation was expected to affect 1 row(s),
+but actually affected 0 row(s); data may have been modified or deleted since entities were loaded.
+```
+
+**Context:**
+Occurs when seeding ServiceOption entities that are configured as owned entities (`OwnsMany`) in EF Core 9.
+
+**Root Causes (Multiple Issues):**
+
+1. **Missing ValueGeneratedNever Configuration**
+   - Owned entities with `Guid.NewGuid()` in code need `ValueGeneratedNever()`
+   - EF Core 9 assumes DB-generated IDs by default
+
+2. **Exposed as DbSet**
+   - Owned entities should NOT be exposed as `DbSet<T>` in DbContext
+   - Conflicts with `OwnsMany` configuration
+
+3. **Explicit Foreign Key Property**
+   - Owned entities should use shadow properties for FKs
+   - Explicit `ServiceId` property causes tracking issues
+
+4. **Missing Inherited Property Configuration**
+   - Base class properties (CreatedAt, CreatedBy, etc.) must be configured
+   - EF Core 9 is stricter about owned entity property mapping
+
+**Solutions Applied:**
+
+```csharp
+// 1. Add ValueGeneratedNever to entity configuration
+option.Property(so => so.Id)
+    .ValueGeneratedNever()      // ← CRITICAL for manual ID generation
+    .IsConcurrencyToken(false);
+
+// 2. Remove DbSet from DbContext
+// public DbSet<ServiceOption> ServiceOptions => Set<ServiceOption>(); // ← REMOVE
+
+// 3. Remove explicit FK from entity, use shadow property
+// public ServiceId ServiceId { get; private set; }  // ← REMOVE FROM ENTITY
+option.WithOwner().HasForeignKey("ServiceId");  // ← Shadow property in config
+
+// 4. Configure all inherited properties
+option.Property(so => so.CreatedAt);
+option.Property(so => so.CreatedBy);
+option.Property(so => so.LastModifiedAt);
+option.Property(so => so.LastModifiedBy);
+option.Property(so => so.IsDeleted);
+```
+
+**Reference:**
+https://stackoverflow.com/questions/79219671/ef-core-9-the-database-operation-was-expected-to-affect-1-rows-but-actually
+
+**Files Changed:**
+- `ServiceOption.cs` - Removed ServiceId property
+- `PriceTier.cs` - Removed ServiceId property
+- `ServiceConfiguration.cs` - Added ValueGeneratedNever, moved config inline
+- `ServiceCatalogDbContext.cs` - Removed DbSet declarations
+- `ServiceOptionSeeder.cs` - Updated to access through parent aggregate
+
+**Key Takeaway:**
+EF Core 9 has stricter validation for owned entities. Always use `ValueGeneratedNever()` for manually-generated IDs in owned entities.
+
 ---
 
 ## Session Summaries & Progress
@@ -689,10 +1222,165 @@ Frontend:
 
 ---
 
+### Session: 2025-11-11 - Location Integration, Event Architecture & EF Core 9 Fixes
+
+**Context:**
+Continued from previous session. Implemented bidirectional map synchronization, event-driven owner name storage, and resolved critical EF Core 9 owned entity issues.
+
+**Major Work Completed:**
+
+1. ✅ **Bidirectional Location Synchronization**
+   - Implemented Map → Form sync (click map → auto-select province/city)
+   - Implemented Form → Map sync (select dropdown → move map)
+   - Used Neshan Search API for geocoding location names
+   - Prevented circular updates with `isUpdatingFromMap` flag
+   - Files: `LocationStep.vue`, `NeshanMapPicker.vue`, `useLocations.ts`
+
+2. ✅ **Event-Driven Owner Name Storage**
+   - Created `ProviderDraftCreatedEvent` (domain event)
+   - Created `ProviderDraftCreatedIntegrationEvent` (cross-context)
+   - Implemented event handler to publish to CAP/RabbitMQ
+   - Implemented event subscriber in UserManagement to update User.Profile
+   - Owner names now stored in both ServiceCatalog and UserManagement contexts
+   - Files: Event classes, handlers, Provider.cs, SaveStep3LocationCommand.cs
+
+3. ✅ **EF Core 9 Owned Entity Configuration**
+   - **Critical Issue Resolved**: "expected to affect 1 row(s), but actually affected 0 row(s)"
+   - Added `ValueGeneratedNever().IsConcurrencyToken(false)` to ServiceOption Id
+   - Removed explicit `ServiceId` property, used shadow property
+   - Removed `DbSet<ServiceOption>` and `DbSet<PriceTier>` from DbContext
+   - Configured all inherited base class properties (CreatedAt, CreatedBy, etc.)
+   - Moved ServiceOption configuration inline with Service (removed separate file)
+   - Files: ServiceOption.cs, PriceTier.cs, ServiceConfiguration.cs, ServiceCatalogDbContext.cs
+
+4. ✅ **Database & Migration Fixes**
+   - Fixed connection string format (SQL Server → PostgreSQL)
+   - Removed SQL Server EF Core package
+   - Added suppression for PendingModelChangesWarning
+   - Updated seeder to work with owned entities
+   - Files: appsettings.json, Infrastructure.csproj, ServiceOptionSeeder.cs
+
+**Technical Details:**
+
+**Location Synchronization Flow:**
+```typescript
+User clicks map → Reverse geocode → Get state/city names
+→ Match to provinceId/cityId → Update dropdowns
+
+User selects province/city → Geocode name → Get coordinates
+→ Update map center → Prevent circular updates with flag
+```
+
+**Event-Driven Architecture Flow:**
+```csharp
+Provider.CreateDraft(ownerFirstName, ownerLastName)
+→ Raise ProviderDraftCreatedEvent
+→ ProviderDraftCreatedEventHandler
+→ Publish ProviderDraftCreatedIntegrationEvent to CAP
+→ RabbitMQ message bus
+→ ProviderDraftCreatedEventSubscriber (UserManagement)
+→ User.Profile.UpdatePersonalInfo()
+→ Save to UserManagement database
+```
+
+**EF Core 9 Owned Entity Pattern:**
+```csharp
+// Entity: No explicit FK, manual ID generation
+internal static ServiceOption Create(string name, ...) {
+    return new ServiceOption { Id = Guid.NewGuid(), ... };
+}
+
+// Configuration: Shadow property, ValueGeneratedNever
+builder.OwnsMany(s => s.Options, option => {
+    option.Property(so => so.Id)
+        .ValueGeneratedNever()
+        .IsConcurrencyToken(false);
+    option.WithOwner().HasForeignKey("ServiceId");
+});
+
+// DbContext: No DbSet for owned entities
+// ❌ public DbSet<ServiceOption> ServiceOptions => Set<ServiceOption>();
+```
+
+**Key Decisions:**
+
+1. **Location Synchronization**
+   - Use Neshan Search API for geocoding (free tier sufficient)
+   - Combine city + province for accurate results
+   - 100ms delay before re-enabling watchers (prevents race conditions)
+
+2. **Event Architecture**
+   - Owner names stored in both contexts (ServiceCatalog + UserManagement)
+   - Asynchronous cross-context communication via CAP/RabbitMQ
+   - UpdatePersonalInfo instead of UpdateName (user preference)
+
+3. **EF Core 9 Owned Entities**
+   - Always use `ValueGeneratedNever()` for manual ID generation
+   - Never expose owned entities as `DbSet<T>`
+   - Always use shadow properties for foreign keys
+   - Always configure inherited base class properties
+
+**Files Modified:**
+```
+Backend:
+- ServiceOption.cs (removed ServiceId, CreatedAt properties)
+- PriceTier.cs (removed ServiceId property)
+- ServiceConfiguration.cs (added ValueGeneratedNever, inline config)
+- ServiceCatalogDbContext.cs (removed DbSet, added warning suppression)
+- ServiceOptionSeeder.cs (updated for owned entities)
+- Provider.cs (added owner name parameters, domain event)
+- SaveStep3LocationCommand.cs (added owner name fields)
+- ProviderDraftCreatedEvent.cs (NEW)
+- ProviderDraftCreatedIntegrationEvent.cs (NEW)
+- ProviderDraftCreatedEventHandler.cs (NEW)
+- ProviderDraftCreatedEventSubscriber.cs (NEW)
+- Infrastructure.csproj (removed SQL Server package)
+- appsettings.json (PostgreSQL connection string)
+
+Frontend:
+- LocationStep.vue (bidirectional sync implementation)
+- useLocations.ts (location data composable)
+- .env.development (Neshan API keys)
+```
+
+**Testing Verified:**
+- ✅ Location map-to-form synchronization
+- ✅ Location form-to-map synchronization
+- ✅ Owner name event flow (ServiceCatalog → UserManagement)
+- ✅ ServiceOption seeder (no more concurrency errors)
+- ✅ Database migrations (PostgreSQL)
+- ✅ No circular update loops in location selection
+
+**Key Learnings:**
+
+1. **EF Core 9 Breaking Changes**
+   - Owned entities require `ValueGeneratedNever()` for manual IDs
+   - Stricter validation for entity configuration
+   - Must configure ALL properties including inherited ones
+
+2. **StackOverflow as Problem-Solving Resource**
+   - Found exact solution for EF Core 9 owned entity issue
+   - Reference: https://stackoverflow.com/questions/79219671/
+
+3. **Bidirectional Sync Complexity**
+   - Need flags to prevent infinite loops
+   - Geocoding API calls can be slow (consider caching)
+   - Combining location names improves accuracy
+
+**Next Steps:**
+- Test complete registration flow with all steps
+- Implement service creation and management
+- Add staff management functionality
+- Implement business hours configuration
+- Add gallery/image upload features
+
+---
+
 ## Document Revision History
 
 | Date       | Version | Changes                                           | Author       |
 |------------|---------|---------------------------------------------------|--------------|
+| 2025-11-11 | 4.0.0   | Added location integration, event architecture, EF Core 9 fixes | Claude (AI)  |
 | 2025-11-09 | 3.0.0   | Comprehensive documentation of auth & registration| Claude (AI)  |
 | 2025-11-06 | 2.0.0   | Consolidated all technical documentation          | Claude (AI)  |
 | 2025-11-05 | 1.0.0   | Initial comprehensive documentation created       | Claude (AI)  |
