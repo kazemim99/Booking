@@ -148,12 +148,26 @@ const handleNext = async () => {
       }
     } else if (currentStep.value === 4) {
       // Step 4: Save services
-      if (!draftProviderId) {
-        toastService.error('خطا: شناسه ارائه‌دهنده یافت نشد')
+      // Try to get provider ID from draftProviderId or load from progress
+      let providerId = draftProviderId
+      if (!providerId) {
+        console.log('⚠️ draftProviderId not found, fetching from registration progress...')
+        const draftResult = await loadDraft()
+        if (draftResult.success && draftResult.providerId) {
+          providerId = draftResult.providerId
+          draftProviderId = providerId
+          console.log('✅ Provider ID loaded from progress:', providerId)
+        }
+      }
+
+      if (!providerId) {
+        console.error('❌ No provider ID found')
+        toastService.error('خطا: شناسه ارائه‌دهنده یافت نشد. لطفاً از مرحله ۳ دوباره شروع کنید.')
         return
       }
+
       console.log('✅ Step 4 complete - Saving services...')
-      const result = await saveServices(draftProviderId)
+      const result = await saveServices(providerId)
 
       if (!result.success) {
         console.error('❌ Failed to save services:', result.message)
@@ -163,12 +177,26 @@ const handleNext = async () => {
       toastService.success('خدمات ذخیره شد')
     } else if (currentStep.value === 5) {
       // Step 5: Save staff (optional)
-      if (!draftProviderId) {
-        toastService.error('خطا: شناسه ارائه‌دهنده یافت نشد')
+      // Try to get provider ID from draftProviderId or load from progress
+      let providerId = draftProviderId
+      if (!providerId) {
+        console.log('⚠️ draftProviderId not found, fetching from registration progress...')
+        const draftResult = await loadDraft()
+        if (draftResult.success && draftResult.providerId) {
+          providerId = draftResult.providerId
+          draftProviderId = providerId
+          console.log('✅ Provider ID loaded from progress:', providerId)
+        }
+      }
+
+      if (!providerId) {
+        console.error('❌ No provider ID found')
+        toastService.error('خطا: شناسه ارائه‌دهنده یافت نشد. لطفاً از مرحله ۳ دوباره شروع کنید.')
         return
       }
+
       console.log('✅ Step 5 complete - Saving staff...')
-      const result = await saveStaff(draftProviderId)
+      const result = await saveStaff(providerId)
 
       if (!result.success) {
         console.error('❌ Failed to save staff:', result.message)
@@ -178,12 +206,26 @@ const handleNext = async () => {
       toastService.success('کارکنان ذخیره شد')
     } else if (currentStep.value === 6) {
       // Step 6: Save working hours
-      if (!draftProviderId) {
-        toastService.error('خطا: شناسه ارائه‌دهنده یافت نشد')
+      // Try to get provider ID from draftProviderId or load from progress
+      let providerId = draftProviderId
+      if (!providerId) {
+        console.log('⚠️ draftProviderId not found, fetching from registration progress...')
+        const draftResult = await loadDraft()
+        if (draftResult.success && draftResult.providerId) {
+          providerId = draftResult.providerId
+          draftProviderId = providerId
+          console.log('✅ Provider ID loaded from progress:', providerId)
+        }
+      }
+
+      if (!providerId) {
+        console.error('❌ No provider ID found')
+        toastService.error('خطا: شناسه ارائه‌دهنده یافت نشد. لطفاً از مرحله ۳ دوباره شروع کنید.')
         return
       }
+
       console.log('✅ Step 6 complete - Saving working hours...')
-      const result = await saveWorkingHours(draftProviderId)
+      const result = await saveWorkingHours(providerId)
 
       if (!result.success) {
         console.error('❌ Failed to save working hours:', result.message)
@@ -193,12 +235,26 @@ const handleNext = async () => {
       toastService.success('ساعات کاری ذخیره شد')
     } else if (currentStep.value === 7) {
       // Step 7: Save gallery (optional)
-      if (!draftProviderId) {
-        toastService.error('خطا: شناسه ارائه‌دهنده یافت نشد')
+      // Try to get provider ID from draftProviderId or load from progress
+      let providerId = draftProviderId
+      if (!providerId) {
+        console.log('⚠️ draftProviderId not found, fetching from registration progress...')
+        const draftResult = await loadDraft()
+        if (draftResult.success && draftResult.providerId) {
+          providerId = draftResult.providerId
+          draftProviderId = providerId
+          console.log('✅ Provider ID loaded from progress:', providerId)
+        }
+      }
+
+      if (!providerId) {
+        console.error('❌ No provider ID found')
+        toastService.error('خطا: شناسه ارائه‌دهنده یافت نشد. لطفاً از مرحله ۳ دوباره شروع کنید.')
         return
       }
-      console.log('✅ Step 7 complete - Saving gallery...')
-      const result = await saveGallery(draftProviderId)
+
+      console.log('✅ Step 7 complete - Saving gallery with provider ID:', providerId)
+      const result = await saveGallery(providerId)
 
       if (!result.success) {
         console.error('❌ Failed to save gallery:', result.message)
@@ -218,14 +274,27 @@ const handleNext = async () => {
 
 const handleFinalSubmit = async (feedback?: string) => {
   try {
-    if (!draftProviderId) {
-      toastService.error('خطا: شناسه ارائه‌دهنده یافت نشد')
+    // Try to get provider ID from draftProviderId or load from progress
+    let providerId = draftProviderId
+    if (!providerId) {
+      console.log('⚠️ draftProviderId not found, fetching from registration progress...')
+      const draftResult = await loadDraft()
+      if (draftResult.success && draftResult.providerId) {
+        providerId = draftResult.providerId
+        draftProviderId = providerId
+        console.log('✅ Provider ID loaded from progress:', providerId)
+      }
+    }
+
+    if (!providerId) {
+      console.error('❌ No provider ID found')
+      toastService.error('خطا: شناسه ارائه‌دهنده یافت نشد. لطفاً از مرحله ۳ دوباره شروع کنید.')
       return
     }
 
     // Step 8: Save feedback (optional)
     console.log('✅ Step 8 complete - Saving feedback...')
-    const feedbackResult = await saveFeedback(draftProviderId)
+    const feedbackResult = await saveFeedback(providerId)
 
     if (!feedbackResult.success) {
       console.error('❌ Failed to save feedback:', feedbackResult.message)
@@ -233,10 +302,10 @@ const handleFinalSubmit = async (feedback?: string) => {
       return
     }
 
-    console.log('✅ Completing registration with provider ID:', draftProviderId)
+    console.log('✅ Completing registration with provider ID:', providerId)
 
     // Step 9: Complete registration
-    const result = await completeRegistration(draftProviderId)
+    const result = await completeRegistration(providerId)
 
     if (result.success) {
       // Move to completion step
