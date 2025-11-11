@@ -120,16 +120,10 @@ namespace Booksy.ServiceCatalog.Infrastructure.DependencyInjection
             // Application Services
             services.AddScoped<IProviderApplicationService, ProviderApplicationService>();
 
-            // SendGrid Client for Email Notifications
-            services.AddSingleton<ISendGridClient>(sp =>
-            {
-                var apiKey = configuration["SendGrid:ApiKey"];
-                if (string.IsNullOrEmpty(apiKey))
-                {
-                    throw new InvalidOperationException("SendGrid API key not configured");
-                }
-                return new SendGridClient(apiKey);
-            });
+            // External Services (Payment Gateways, SMS, Email, Analytics, Storage, etc.)
+            // This registers: IPaymentGateway, IPaymentGatewayFactory, IZarinPalService,
+            // IIDPayService, IBehpardakhtService, ISendGridClient, and other external services
+            services.AddExternalServices(configuration);
 
             // CAP Event Bus with Outbox Pattern
             services.AddCapEventBus<ServiceCatalogDbContext>(configuration, "ServiceCatalog");
