@@ -27,7 +27,11 @@ namespace Booksy.ServiceCatalog.Infrastructure.Persistence.Seeders
         {
             try
             {
-                if (await _context.ServiceOptions.AnyAsync(cancellationToken))
+                // Check if any service already has options (owned entities are auto-included with OwnsMany)
+                var hasOptions = await _context.Services
+                    .AnyAsync(s => s.Options.Any(), cancellationToken);
+
+                if (hasOptions)
                 {
                     _logger.LogInformation("ServiceOptions already seeded. Skipping...");
                     return;
@@ -35,8 +39,8 @@ namespace Booksy.ServiceCatalog.Infrastructure.Persistence.Seeders
 
                 _logger.LogInformation("Starting Iranian service options seeding...");
 
+                // With OwnsMany, owned entities are automatically included - no need for explicit Include
                 var services = await _context.Services
-                    .Include(s => s.Options)
                     .ToListAsync(cancellationToken);
 
                 if (!services.Any())
