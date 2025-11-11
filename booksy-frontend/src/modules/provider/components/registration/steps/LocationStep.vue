@@ -333,12 +333,20 @@ const isFormValid = computed(() => {
 watch(
   formData,
   (newValue) => {
+    // Get province and city names from locationStore
+    const provinceName = newValue.provinceId
+      ? locationStore.getLocationById(newValue.provinceId)?.name
+      : undefined
+    const cityName = newValue.cityId
+      ? locationStore.getLocationById(newValue.cityId)?.name
+      : undefined
+
     // Emit address update
     emit('update:address', {
       addressLine1: newValue.address,
       addressLine2: undefined,
-      city: undefined, // City will be resolved by provinceId/cityId
-      province: undefined, // Province will be resolved by provinceId/cityId
+      city: cityName,
+      province: provinceName,
       zipCode: newValue.postalCode,
       formattedAddress: newValue.formattedAddress,
       provinceId: newValue.provinceId || undefined,
