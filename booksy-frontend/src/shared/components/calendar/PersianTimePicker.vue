@@ -1,7 +1,7 @@
 <template>
   <div class="persian-time-picker-wrapper" dir="rtl">
     <date-picker
-      v-model="internalValue"
+      :model-value="internalValue"
       type="time"
       format="HH:mm"
       display-format="HH:mm"
@@ -9,7 +9,7 @@
       :clearable="clearable"
       :placeholder="placeholder"
       color="#8b5cf6"
-      @change="handleTimeChange"
+      @update:model-value="handleTimeChange"
     />
   </div>
 </template>
