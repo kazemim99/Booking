@@ -216,8 +216,13 @@
               :week-days="weekDays.map(d => d.persian)"
               start-time-label="ساعت شروع"
               end-time-label="ساعت پایان"
-              break-time-label="استراحت"
-              :show-break-time="true"
+              :show-breaks="true"
+              breaks-label="استراحت‌ها"
+              break-start-label="شروع استراحت"
+              break-end-label="پایان استراحت"
+              add-break-text="افزودن استراحت"
+              remove-break-label="حذف استراحت"
+              no-breaks-text="استراحتی تعریف نشده است"
               :show-copy-button="true"
               copy-button-text="کپی"
               copy-button-label="کپی به همه روزها"
@@ -449,13 +454,13 @@ const weekDays = [
 ]
 
 const workingHours = ref([
-  { isOpen: true, startTime: '10:00', endTime: '22:00', breakTime: '' },
-  { isOpen: true, startTime: '10:00', endTime: '22:00', breakTime: '' },
-  { isOpen: true, startTime: '10:00', endTime: '22:00', breakTime: '' },
-  { isOpen: true, startTime: '10:00', endTime: '22:00', breakTime: '' },
-  { isOpen: true, startTime: '10:00', endTime: '22:00', breakTime: '' },
-  { isOpen: true, startTime: '10:00', endTime: '22:00', breakTime: '' },
-  { isOpen: false, startTime: '', endTime: '', breakTime: '' },
+  { isOpen: true, startTime: '10:00', endTime: '22:00', breaks: [] },
+  { isOpen: true, startTime: '10:00', endTime: '22:00', breaks: [] },
+  { isOpen: true, startTime: '10:00', endTime: '22:00', breaks: [] },
+  { isOpen: true, startTime: '10:00', endTime: '22:00', breaks: [] },
+  { isOpen: true, startTime: '10:00', endTime: '22:00', breaks: [] },
+  { isOpen: true, startTime: '10:00', endTime: '22:00', breaks: [] },
+  { isOpen: false, startTime: '', endTime: '', breaks: [] },
 ])
 
 // Calendar and exceptions
@@ -827,7 +832,7 @@ const setStandardHours = () => {
     isOpen: true,
     startTime: '10:00',
     endTime: '22:00',
-    breakTime: '',
+    breaks: [],
   }))
 }
 
@@ -836,7 +841,7 @@ const clearAllHours = () => {
     isOpen: false,
     startTime: '',
     endTime: '',
-    breakTime: '',
+    breaks: [],
   }))
 }
 

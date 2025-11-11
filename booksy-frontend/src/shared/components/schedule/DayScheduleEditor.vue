@@ -25,7 +25,7 @@
           <div class="time-input-group">
             <label class="time-label">{{ startTimeLabel }}</label>
             <PersianTimePicker
-              :model-value="day.startTime"
+              :model-value="day.startTime || ''"
               :placeholder="startTimeLabel"
               @update:model-value="(value) => updateTime(index, 'startTime', value)"
             />
@@ -33,17 +33,9 @@
           <div class="time-input-group">
             <label class="time-label">{{ endTimeLabel }}</label>
             <PersianTimePicker
-              :model-value="day.endTime"
+              :model-value="day.endTime || ''"
               :placeholder="endTimeLabel"
               @update:model-value="(value) => updateTime(index, 'endTime', value)"
-            />
-          </div>
-          <div v-if="showBreakTime" class="time-input-group">
-            <label class="time-label">{{ breakTimeLabel }}</label>
-            <PersianTimePicker
-              :model-value="day.breakTime || ''"
-              :placeholder="breakTimeLabel"
-              @update:model-value="(value) => updateTime(index, 'breakTime', value)"
             />
           </div>
           <button
@@ -64,6 +56,67 @@
             <span class="copy-btn-text">{{ copyButtonText }}</span>
           </button>
         </div>
+
+        <!-- Breaks Section -->
+        <div v-if="day.isOpen && showBreaks" class="breaks-section">
+          <div class="breaks-header">
+            <label class="breaks-label">{{ breaksLabel }}</label>
+            <button type="button" class="add-break-btn" @click="addBreak(index)">
+              <svg class="btn-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  stroke-width="2"
+                  d="M12 4v16m8-8H4"
+                />
+              </svg>
+              {{ addBreakText }}
+            </button>
+          </div>
+
+          <div v-if="day.breaks && day.breaks.length > 0" class="breaks-list">
+            <div
+              v-for="(breakItem, breakIndex) in day.breaks"
+              :key="breakItem.id"
+              class="break-item"
+            >
+              <div class="break-times">
+                <div class="break-time-input">
+                  <label class="break-time-label">{{ breakStartLabel }}</label>
+                  <PersianTimePicker
+                    :model-value="breakItem.start"
+                    :placeholder="breakStartLabel"
+                    @update:model-value="(value) => updateBreak(index, breakIndex, 'start', value)"
+                  />
+                </div>
+                <div class="break-time-input">
+                  <label class="break-time-label">{{ breakEndLabel }}</label>
+                  <PersianTimePicker
+                    :model-value="breakItem.end"
+                    :placeholder="breakEndLabel"
+                    @update:model-value="(value) => updateBreak(index, breakIndex, 'end', value)"
+                  />
+                </div>
+              </div>
+              <button
+                type="button"
+                class="remove-break-btn"
+                @click="removeBreak(index, breakIndex)"
+                :title="removeBreakLabel"
+              >
+                <svg class="btn-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                    stroke-width="2"
+                    d="M6 18L18 6M6 6l12 12"
+                  />
+                </svg>
+              </button>
+            </div>
+          </div>
+          <p v-else class="no-breaks-message">{{ noBreaksText }}</p>
+        </div>
       </div>
     </div>
   </div>
@@ -73,11 +126,17 @@
 import { ref, watch } from 'vue'
 import PersianTimePicker from '@/shared/components/calendar/PersianTimePicker.vue'
 
+export interface BreakPeriod {
+  id: string
+  start: string
+  end: string
+}
+
 export interface DayScheduleItem {
   isOpen: boolean
   startTime: string
   endTime: string
-  breakTime?: string
+  breaks?: BreakPeriod[]
 }
 
 interface Props {
@@ -85,8 +144,13 @@ interface Props {
   weekDays?: string[]
   startTimeLabel?: string
   endTimeLabel?: string
-  breakTimeLabel?: string
-  showBreakTime?: boolean
+  showBreaks?: boolean
+  breaksLabel?: string
+  breakStartLabel?: string
+  breakEndLabel?: string
+  addBreakText?: string
+  removeBreakLabel?: string
+  noBreaksText?: string
   showCopyButton?: boolean
   copyButtonText?: string
   copyButtonLabel?: string
@@ -100,8 +164,13 @@ const props = withDefaults(defineProps<Props>(), {
   weekDays: () => ['شنبه', 'یکشنبه', 'دوشنبه', 'سه‌شنبه', 'چهارشنبه', 'پنجشنبه', 'جمعه'],
   startTimeLabel: 'ساعت شروع',
   endTimeLabel: 'ساعت پایان',
-  breakTimeLabel: 'استراحت',
-  showBreakTime: false,
+  showBreaks: false,
+  breaksLabel: 'استراحت‌ها',
+  breakStartLabel: 'شروع استراحت',
+  breakEndLabel: 'پایان استراحت',
+  addBreakText: 'افزودن استراحت',
+  removeBreakLabel: 'حذف استراحت',
+  noBreaksText: 'استراحتی تعریف نشده است',
   showCopyButton: false,
   copyButtonText: 'کپی',
   copyButtonLabel: 'کپی به همه روزها',
@@ -110,25 +179,62 @@ const props = withDefaults(defineProps<Props>(), {
 const emit = defineEmits<Emits>()
 
 // Local copy of schedule
-const localSchedule = ref<DayScheduleItem[]>([...props.modelValue])
+const localSchedule = ref<DayScheduleItem[]>(JSON.parse(JSON.stringify(props.modelValue)))
 
 // Watch for external changes
 watch(() => props.modelValue, (newValue) => {
-  localSchedule.value = [...newValue]
+  localSchedule.value = JSON.parse(JSON.stringify(newValue))
 }, { deep: true })
 
 const toggleDay = (index: number, isOpen: boolean) => {
   localSchedule.value[index].isOpen = isOpen
+
+  // Set default times when opening a day
+  if (isOpen && !localSchedule.value[index].startTime) {
+    localSchedule.value[index].startTime = '09:00'
+  }
+  if (isOpen && !localSchedule.value[index].endTime) {
+    localSchedule.value[index].endTime = '18:00'
+  }
+
   emitUpdate()
 }
 
-const updateTime = (index: number, field: 'startTime' | 'endTime' | 'breakTime', value: string) => {
-  if (field === 'breakTime') {
-    localSchedule.value[index].breakTime = value
-  } else {
+const updateTime = (index: number, field: 'startTime' | 'endTime', value: string | null) => {
+  // Handle null/undefined values - keep the existing value if new value is falsy
+  if (value !== null && value !== undefined && value !== '') {
     localSchedule.value[index][field] = value
+    emitUpdate()
   }
+}
+
+const addBreak = (dayIndex: number) => {
+  if (!localSchedule.value[dayIndex].breaks) {
+    localSchedule.value[dayIndex].breaks = []
+  }
+
+  localSchedule.value[dayIndex].breaks!.push({
+    id: `break-${Date.now()}-${Math.random()}`,
+    start: '12:00',
+    end: '13:00',
+  })
+
   emitUpdate()
+}
+
+const removeBreak = (dayIndex: number, breakIndex: number) => {
+  if (localSchedule.value[dayIndex].breaks) {
+    localSchedule.value[dayIndex].breaks!.splice(breakIndex, 1)
+    emitUpdate()
+  }
+}
+
+const updateBreak = (dayIndex: number, breakIndex: number, field: 'start' | 'end', value: string | null) => {
+  // Handle null/undefined values - keep the existing value if new value is falsy
+  if (value !== null && value !== undefined && value !== '' && localSchedule.value[dayIndex].breaks) {
+    localSchedule.value[dayIndex].breaks![breakIndex][field] = value
+    emitUpdate()
+  }
 }
 
 const copyToAll = (sourceIndex: number) => {
@@ -137,13 +243,13 @@ const copyToAll = (sourceIndex: number) => {
     isOpen: sourceDay.isOpen,
     startTime: sourceDay.startTime,
     endTime: sourceDay.endTime,
-    breakTime: sourceDay.breakTime,
+    breaks: sourceDay.breaks ? JSON.parse(JSON.stringify(sourceDay.breaks)) : [],
   }))
   emitUpdate()
 }
 
 const emitUpdate = () => {
-  emit('update:modelValue', [...localSchedule.value])
+  emit('update:modelValue', JSON.parse(JSON.stringify(localSchedule.value)))
 }
 </script>
 
@@ -254,11 +360,6 @@ const emitUpdate = () => {
   align-items: end;
 }
 
-/* When breakTime is shown, adjust grid */
-.day-card:has(.time-input-group:nth-child(3)) .time-fields {
-  grid-template-columns: repeat(3, 1fr) auto;
-}
-
 @media (max-width: 768px) {
   .time-fields {
     grid-template-columns: 1fr !important;
@@ -309,5 +410,115 @@ const emitUpdate = () => {
   .copy-btn-text {
     display: none;
   }
+}
+
+/* Breaks Section */
+.breaks-section {
+  margin-top: 0.5rem;
+  padding-top: 1rem;
+  border-top: 1px solid #e5e7eb;
+}
+
+.breaks-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 0.75rem;
+}
+
+.breaks-label {
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: #374151;
+}
+
+.add-break-btn {
+  display: flex;
+  align-items: center;
+  gap: 0.375rem;
+  padding: 0.375rem 0.75rem;
+  background: white;
+  border: 1px solid #d1d5db;
+  border-radius: 0.375rem;
+  font-size: 0.8125rem;
+  color: #6b7280;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.add-break-btn:hover {
+  background: #f9fafb;
+  border-color: #8b5cf6;
+  color: #8b5cf6;
+}
+
+.breaks-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.break-item {
+  display: flex;
+  gap: 0.75rem;
+  align-items: flex-end;
+  padding: 0.75rem;
+  background: #f9fafb;
+  border-radius: 0.5rem;
+  border: 1px solid #e5e7eb;
+}
+
+.break-times {
+  flex: 1;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.75rem;
+}
+
+@media (max-width: 640px) {
+  .break-times {
+    grid-template-columns: 1fr;
+  }
+}
+
+.break-time-input {
+  display: flex;
+  flex-direction: column;
+  gap: 0.375rem;
+}
+
+.break-time-label {
+  font-size: 0.75rem;
+  color: #6b7280;
+  font-weight: 500;
+}
+
+.remove-break-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0.625rem;
+  background: white;
+  border: 1px solid #e5e7eb;
+  border-radius: 0.375rem;
+  color: #6b7280;
+  cursor: pointer;
+  transition: all 0.2s;
+  height: fit-content;
+  flex-shrink: 0;
+}
+
+.remove-break-btn:hover {
+  background: #fee2e2;
+  border-color: #ef4444;
+  color: #ef4444;
+}
+
+.no-breaks-message {
+  font-size: 0.8125rem;
+  color: #9ca3af;
+  text-align: center;
+  padding: 1rem;
+  margin: 0;
 }
 </style>

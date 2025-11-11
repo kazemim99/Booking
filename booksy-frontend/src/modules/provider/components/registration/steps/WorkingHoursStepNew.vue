@@ -15,7 +15,13 @@
           :week-days="weekDays"
           start-time-label="ساعت شروع"
           end-time-label="ساعت پایان"
-          :show-break-time="false"
+          :show-breaks="true"
+          breaks-label="استراحت‌ها"
+          break-start-label="شروع"
+          break-end-label="پایان"
+          add-break-text="افزودن استراحت"
+          remove-break-label="حذف"
+          no-breaks-text="بدون استراحت"
           :show-copy-button="true"
           copy-button-text="کپی به سایر روزها"
           copy-button-label="کپی به سایر روزها"
@@ -44,7 +50,7 @@ import { ref, computed, onMounted } from 'vue'
 import ProgressIndicator from '../shared/ProgressIndicator.vue'
 import AppButton from '@/shared/components/ui/Button/AppButton.vue'
 import DayScheduleEditor from '@/shared/components/schedule/DayScheduleEditor.vue'
-import type { DayScheduleItem } from '@/shared/components/schedule/DayScheduleEditor.vue'
+import type { DayScheduleItem, BreakPeriod } from '@/shared/components/schedule/DayScheduleEditor.vue'
 import type { DayHours } from '@/modules/provider/types/registration.types'
 
 interface Props {
@@ -100,6 +106,11 @@ const scheduleForEditor = computed<DayScheduleItem[]>(() => {
     isOpen: day.isOpen,
     startTime: timeToString(day.openTime),
     endTime: timeToString(day.closeTime),
+    breaks: day.breaks?.map(brk => ({
+      id: brk.id,
+      start: timeToString(brk.start),
+      end: timeToString(brk.end),
+    })) || [],
   }))
 })
 
@@ -110,7 +121,11 @@ const handleScheduleUpdate = (updatedSchedule: DayScheduleItem[]) => {
     isOpen: day.isOpen,
     openTime: day.isOpen ? stringToTime(day.startTime) : null,
     closeTime: day.isOpen ? stringToTime(day.endTime) : null,
-    breaks: schedule.value[index].breaks || [],
+    breaks: day.breaks?.map(brk => ({
+      id: brk.id,
+      start: stringToTime(brk.start),
+      end: stringToTime(brk.end),
+    })) || [],
   }))
 
   emit('update:modelValue', schedule.value)
