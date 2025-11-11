@@ -28,15 +28,17 @@
             <div class="form-group">
               <label class="form-label">{{ startTimeLabel }}</label>
               <PersianTimePicker
-                v-model="localData.startTime"
+                :model-value="localData.startTime || ''"
                 :placeholder="startTimeLabel"
+                @update:model-value="(value) => updateTime('startTime', value)"
               />
             </div>
             <div class="form-group">
               <label class="form-label">{{ endTimeLabel }}</label>
               <PersianTimePicker
-                v-model="localData.endTime"
+                :model-value="localData.endTime || ''"
                 :placeholder="endTimeLabel"
+                @update:model-value="(value) => updateTime('endTime', value)"
               />
             </div>
           </div>
@@ -64,15 +66,17 @@
                   <div class="form-group">
                     <label class="form-label-small">{{ breakStartLabel }}</label>
                     <PersianTimePicker
-                      v-model="breakItem.start"
+                      :model-value="breakItem.start || ''"
                       :placeholder="breakStartLabel"
+                      @update:model-value="(value) => updateBreakTime(index, 'start', value)"
                     />
                   </div>
                   <div class="form-group">
                     <label class="form-label-small">{{ breakEndLabel }}</label>
                     <PersianTimePicker
-                      v-model="breakItem.end"
+                      :model-value="breakItem.end || ''"
                       :placeholder="breakEndLabel"
+                      @update:model-value="(value) => updateBreakTime(index, 'end', value)"
                     />
                   </div>
                 </div>
@@ -178,6 +182,20 @@ watch(() => props.isOpen, (isOpen) => {
     localData.value = JSON.parse(JSON.stringify(props.dayData))
   }
 })
+
+const updateTime = (field: 'startTime' | 'endTime', value: string | null) => {
+  // Handle null/undefined values - keep the existing value if new value is falsy
+  if (value !== null && value !== undefined && value !== '') {
+    localData.value[field] = value
+  }
+}
+
+const updateBreakTime = (index: number, field: 'start' | 'end', value: string | null) => {
+  // Handle null/undefined values - keep the existing value if new value is falsy
+  if (value !== null && value !== undefined && value !== '' && localData.value.breaks) {
+    localData.value.breaks[index][field] = value
+  }
+}
 
 const addBreak = () => {
   if (!localData.value.breaks) {
