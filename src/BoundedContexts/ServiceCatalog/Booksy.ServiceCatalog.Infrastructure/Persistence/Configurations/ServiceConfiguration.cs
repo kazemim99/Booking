@@ -223,7 +223,7 @@ namespace Booksy.ServiceCatalog.Infrastructure.Persistence.Configurations
             // Service Options - Configure backing field
             builder.HasMany(s => s.Options)
                 .WithOne()
-                .HasForeignKey("ServiceId")
+                .HasForeignKey(so => so.ServiceId)
                 .OnDelete(DeleteBehavior.Cascade);
 
             builder.Navigation(s => s.Options)

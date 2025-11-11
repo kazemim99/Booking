@@ -58,6 +58,14 @@ namespace Booksy.ServiceCatalog.Infrastructure.Persistence.Configurations
                 .IsRequired()
                 .HasDefaultValue(0);
 
+            // Foreign Key to Service
+            builder.Property(so => so.ServiceId)
+                .HasConversion(
+                    id => id.Value,
+                    value => ServiceId.From(value))
+                .IsRequired()
+                .HasColumnName("ServiceId");
+
             // Timestamp
             builder.Property(so => so.CreatedAt)
                 .IsRequired()
@@ -65,6 +73,8 @@ namespace Booksy.ServiceCatalog.Infrastructure.Persistence.Configurations
                 .HasDefaultValueSql("CURRENT_TIMESTAMP");
 
             // Indexes
+            builder.HasIndex(so => so.ServiceId)
+                .HasDatabaseName("IX_ServiceOptions_ServiceId");
             builder.HasIndex(so => so.IsActive)
                 .HasDatabaseName("IX_ServiceOptions_IsActive");
 
