@@ -132,22 +132,45 @@ public class ProviderRegistrationController : ControllerBase
     }
 
     /// <summary>
-    /// Step 7: Mark gallery step as complete
-    /// Images are uploaded separately via UploadGalleryImages endpoint
+    /// Step 7: Upload gallery images to provider draft
+    /// This endpoint uploads images and marks the gallery step as complete
     /// </summary>
-    /// <param name="command">Gallery completion data</param>
+    /// <param name="files">Image files to upload (max 10 files, 10MB each)</param>
     /// <param name="cancellationToken">Cancellation token</param>
-    /// <response code="200">Gallery step completed</response>
+    /// <response code="200">Gallery images uploaded successfully</response>
+    /// <response code="400">Invalid files or validation errors</response>
     /// <response code="404">Provider draft not found</response>
     [HttpPost("step-7/gallery")]
+    [RequestSizeLimit(52428800)] // 50MB for multiple files
     [ProducesResponseType(typeof(SaveStep7GalleryResult), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IActionResult> SaveStep7Gallery(
-        [FromBody] SaveStep7GalleryCommand command,
+        [FromForm] IFormFileCollection files,
         CancellationToken cancellationToken)
     {
-        var result = await _sender.Send(command, cancellationToken);
-        return Ok(result);
+        // Get current user's provider draft
+        var progressQuery = new GetRegistrationProgressQuery();
+        var progress = await _sender.Send(progressQuery, cancellationToken);
+
+        if (!progress.HasDraft || !progress.ProviderId.HasValue)
+        {
+            return NotFound(new { message = "Provider draft not found" });
+        }
+
+        // Upload gallery images using the shared handler
+        var uploadCommand = new Application.Commands.Provider.UploadGalleryImages.UploadGalleryImagesCommand(
+            progress.ProviderId.Value,
+            files);
+
+        var uploadedImages = await _sender.Send(uploadCommand, cancellationToken);
+
+        // Return response in Step 7 format for consistency with other registration steps
+        return Ok(new SaveStep7GalleryResult(
+            progress.ProviderId.Value,
+            7, // Registration step
+            uploadedImages.Count,
+            $"Gallery step completed. {uploadedImages.Count} image(s) uploaded."));
     }
 
     /// <summary>

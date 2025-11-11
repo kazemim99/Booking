@@ -74,10 +74,16 @@ public sealed class UploadGalleryImagesCommandHandler
                 Caption = galleryImage.Caption,
                 AltText = galleryImage.AltText,
                 UploadedAt = galleryImage.UploadedAt,
-                IsActive = galleryImage.IsActive
+                IsActive = galleryImage.IsActive,
+                IsPrimary = galleryImage.IsPrimary
             });
         }
 
+        // If provider is in draft status, update registration step to 7 (gallery step)
+        if (provider.Status == Domain.Enums.ProviderStatus.Drafted && uploadedImages.Any())
+        {
+            provider.UpdateRegistrationStep(7);
+        }
 
         // Save changes with retry logic for concurrency conflicts
         await _unitOfWork.SaveChangesAsync(cancellationToken);
