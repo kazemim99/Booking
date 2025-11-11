@@ -85,10 +85,19 @@ export function useProviderRegistration() {
   }
 
   const nextStep = () => {
+    console.log('🔵 nextStep called')
+    console.log('🔵 currentStep:', registrationState.value.currentStep)
+    console.log('🔵 TOTAL_STEPS:', TOTAL_STEPS)
+    console.log('🔵 canGoNext:', canGoNext.value)
+
     if (canGoNext.value) {
+      console.log('🔵 Advancing to next step...')
       registrationState.value.currentStep = (registrationState.value.currentStep +
         1) as RegistrationStep
       registrationState.value.data.step = registrationState.value.currentStep
+      console.log('🔵 New currentStep:', registrationState.value.currentStep)
+    } else {
+      console.error('🔴 Cannot advance: canGoNext is false')
     }
   }
 
