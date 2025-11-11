@@ -224,6 +224,7 @@ namespace Booksy.ServiceCatalog.Infrastructure.Persistence.Configurations
             builder.OwnsMany(s => s.Options, option =>
             {
                 option.ToTable("ServiceOptions", "ServiceCatalog");
+                option.Property(so => so.Id).ValueGeneratedNever().IsConcurrencyToken(false);
 
                 option.HasKey(so => so.Id);
                 option.Property(so => so.Id).HasColumnName("Id");

@@ -1354,74 +1354,6 @@ namespace Booksy.ServiceCatalog.Infrastructure.Migrations
 
             modelBuilder.Entity("Booksy.ServiceCatalog.Domain.Aggregates.BookingAggregate.Booking", b =>
                 {
-                    b.OwnsOne("Booksy.ServiceCatalog.Domain.ValueObjects.BookingPolicy", "Policy", b1 =>
-                        {
-                            b1.Property<Guid>("BookingId")
-                                .HasColumnType("uuid");
-
-                            b1.Property<bool>("AllowRescheduling")
-                                .HasColumnType("boolean")
-                                .HasColumnName("PolicyAllowRescheduling");
-
-                            b1.Property<decimal>("CancellationFeePercentage")
-                                .HasColumnType("decimal(5,2)")
-                                .HasColumnName("PolicyCancellationFeePercentage");
-
-                            b1.Property<int>("CancellationWindowHours")
-                                .HasColumnType("integer")
-                                .HasColumnName("PolicyCancellationWindowHours");
-
-                            b1.Property<decimal>("DepositPercentage")
-                                .HasColumnType("decimal(5,2)")
-                                .HasColumnName("PolicyDepositPercentage");
-
-                            b1.Property<int>("MaxAdvanceBookingDays")
-                                .HasColumnType("integer")
-                                .HasColumnName("PolicyMaxAdvanceBookingDays");
-
-                            b1.Property<int>("MinAdvanceBookingHours")
-                                .HasColumnType("integer")
-                                .HasColumnName("PolicyMinAdvanceBookingHours");
-
-                            b1.Property<bool>("RequireDeposit")
-                                .HasColumnType("boolean")
-                                .HasColumnName("PolicyRequireDeposit");
-
-                            b1.Property<int>("RescheduleWindowHours")
-                                .HasColumnType("integer")
-                                .HasColumnName("PolicyRescheduleWindowHours");
-
-                            b1.HasKey("BookingId");
-
-                            b1.ToTable("Bookings", "ServiceCatalog");
-
-                            b1.WithOwner()
-                                .HasForeignKey("BookingId");
-                        });
-
-                    b.OwnsOne("Booksy.ServiceCatalog.Domain.ValueObjects.Price", "TotalPrice", b1 =>
-                        {
-                            b1.Property<Guid>("BookingId")
-                                .HasColumnType("uuid");
-
-                            b1.Property<decimal>("Amount")
-                                .HasColumnType("decimal(18,2)")
-                                .HasColumnName("TotalPriceAmount");
-
-                            b1.Property<string>("Currency")
-                                .IsRequired()
-                                .HasMaxLength(3)
-                                .HasColumnType("character varying(3)")
-                                .HasColumnName("TotalPriceCurrency");
-
-                            b1.HasKey("BookingId");
-
-                            b1.ToTable("Bookings", "ServiceCatalog");
-
-                            b1.WithOwner()
-                                .HasForeignKey("BookingId");
-                        });
-
                     b.OwnsOne("Booksy.ServiceCatalog.Domain.ValueObjects.PaymentInfo", "PaymentInfo", b1 =>
                         {
                             b1.Property<Guid>("BookingId")
@@ -1568,6 +1500,51 @@ namespace Booksy.ServiceCatalog.Infrastructure.Migrations
                                 .IsRequired();
                         });
 
+                    b.OwnsOne("Booksy.ServiceCatalog.Domain.ValueObjects.BookingPolicy", "Policy", b1 =>
+                        {
+                            b1.Property<Guid>("BookingId")
+                                .HasColumnType("uuid");
+
+                            b1.Property<bool>("AllowRescheduling")
+                                .HasColumnType("boolean")
+                                .HasColumnName("PolicyAllowRescheduling");
+
+                            b1.Property<decimal>("CancellationFeePercentage")
+                                .HasColumnType("decimal(5,2)")
+                                .HasColumnName("PolicyCancellationFeePercentage");
+
+                            b1.Property<int>("CancellationWindowHours")
+                                .HasColumnType("integer")
+                                .HasColumnName("PolicyCancellationWindowHours");
+
+                            b1.Property<decimal>("DepositPercentage")
+                                .HasColumnType("decimal(5,2)")
+                                .HasColumnName("PolicyDepositPercentage");
+
+                            b1.Property<int>("MaxAdvanceBookingDays")
+                                .HasColumnType("integer")
+                                .HasColumnName("PolicyMaxAdvanceBookingDays");
+
+                            b1.Property<int>("MinAdvanceBookingHours")
+                                .HasColumnType("integer")
+                                .HasColumnName("PolicyMinAdvanceBookingHours");
+
+                            b1.Property<bool>("RequireDeposit")
+                                .HasColumnType("boolean")
+                                .HasColumnName("PolicyRequireDeposit");
+
+                            b1.Property<int>("RescheduleWindowHours")
+                                .HasColumnType("integer")
+                                .HasColumnName("PolicyRescheduleWindowHours");
+
+                            b1.HasKey("BookingId");
+
+                            b1.ToTable("Bookings", "ServiceCatalog");
+
+                            b1.WithOwner()
+                                .HasForeignKey("BookingId");
+                        });
+
                     b.OwnsOne("Booksy.ServiceCatalog.Domain.ValueObjects.TimeSlot", "TimeSlot", b1 =>
                         {
                             b1.Property<Guid>("BookingId")
@@ -1580,6 +1557,29 @@ namespace Booksy.ServiceCatalog.Infrastructure.Migrations
                             b1.Property<DateTime>("StartTime")
                                 .HasColumnType("timestamp with time zone")
                                 .HasColumnName("StartTime");
+
+                            b1.HasKey("BookingId");
+
+                            b1.ToTable("Bookings", "ServiceCatalog");
+
+                            b1.WithOwner()
+                                .HasForeignKey("BookingId");
+                        });
+
+                    b.OwnsOne("Booksy.ServiceCatalog.Domain.ValueObjects.Price", "TotalPrice", b1 =>
+                        {
+                            b1.Property<Guid>("BookingId")
+                                .HasColumnType("uuid");
+
+                            b1.Property<decimal>("Amount")
+                                .HasColumnType("decimal(18,2)")
+                                .HasColumnName("TotalPriceAmount");
+
+                            b1.Property<string>("Currency")
+                                .IsRequired()
+                                .HasMaxLength(3)
+                                .HasColumnType("character varying(3)")
+                                .HasColumnName("TotalPriceCurrency");
 
                             b1.HasKey("BookingId");
 
@@ -1691,6 +1691,98 @@ namespace Booksy.ServiceCatalog.Infrastructure.Migrations
 
             modelBuilder.Entity("Booksy.ServiceCatalog.Domain.Aggregates.PaymentAggregate.Payment", b =>
                 {
+                    b.OwnsOne("Booksy.Core.Domain.ValueObjects.Money", "Amount", b1 =>
+                        {
+                            b1.Property<Guid>("PaymentId")
+                                .HasColumnType("uuid");
+
+                            b1.Property<decimal>("Amount")
+                                .HasColumnType("decimal(18,2)")
+                                .HasColumnName("Amount");
+
+                            b1.Property<string>("Currency")
+                                .IsRequired()
+                                .HasMaxLength(3)
+                                .HasColumnType("character varying(3)")
+                                .HasColumnName("Currency");
+
+                            b1.HasKey("PaymentId");
+
+                            b1.ToTable("Payments", "ServiceCatalog");
+
+                            b1.WithOwner()
+                                .HasForeignKey("PaymentId");
+                        });
+
+                    b.OwnsOne("Booksy.Core.Domain.ValueObjects.Money", "Fee", b1 =>
+                        {
+                            b1.Property<Guid>("PaymentId")
+                                .HasColumnType("uuid");
+
+                            b1.Property<decimal>("Amount")
+                                .HasColumnType("decimal(18,2)")
+                                .HasColumnName("Fee");
+
+                            b1.Property<string>("Currency")
+                                .IsRequired()
+                                .HasMaxLength(3)
+                                .HasColumnType("character varying(3)")
+                                .HasColumnName("FeeCurrency");
+
+                            b1.HasKey("PaymentId");
+
+                            b1.ToTable("Payments", "ServiceCatalog");
+
+                            b1.WithOwner()
+                                .HasForeignKey("PaymentId");
+                        });
+
+                    b.OwnsOne("Booksy.Core.Domain.ValueObjects.Money", "PaidAmount", b1 =>
+                        {
+                            b1.Property<Guid>("PaymentId")
+                                .HasColumnType("uuid");
+
+                            b1.Property<decimal>("Amount")
+                                .HasColumnType("decimal(18,2)")
+                                .HasColumnName("PaidAmount");
+
+                            b1.Property<string>("Currency")
+                                .IsRequired()
+                                .HasMaxLength(3)
+                                .HasColumnType("character varying(3)")
+                                .HasColumnName("PaidCurrency");
+
+                            b1.HasKey("PaymentId");
+
+                            b1.ToTable("Payments", "ServiceCatalog");
+
+                            b1.WithOwner()
+                                .HasForeignKey("PaymentId");
+                        });
+
+                    b.OwnsOne("Booksy.Core.Domain.ValueObjects.Money", "RefundedAmount", b1 =>
+                        {
+                            b1.Property<Guid>("PaymentId")
+                                .HasColumnType("uuid");
+
+                            b1.Property<decimal>("Amount")
+                                .HasColumnType("decimal(18,2)")
+                                .HasColumnName("RefundedAmount");
+
+                            b1.Property<string>("Currency")
+                                .IsRequired()
+                                .HasMaxLength(3)
+                                .HasColumnType("character varying(3)")
+                                .HasColumnName("RefundedCurrency");
+
+                            b1.HasKey("PaymentId");
+
+                            b1.ToTable("Payments", "ServiceCatalog");
+
+                            b1.WithOwner()
+                                .HasForeignKey("PaymentId");
+                        });
+
                     b.OwnsMany("Booksy.ServiceCatalog.Domain.Aggregates.PaymentAggregate.Entities.Transaction", "Transactions", b1 =>
                         {
                             b1.Property<Guid>("Id")
@@ -1782,98 +1874,6 @@ namespace Booksy.ServiceCatalog.Infrastructure.Migrations
 
                             b1.Navigation("Amount")
                                 .IsRequired();
-                        });
-
-                    b.OwnsOne("Booksy.Core.Domain.ValueObjects.Money", "Amount", b1 =>
-                        {
-                            b1.Property<Guid>("PaymentId")
-                                .HasColumnType("uuid");
-
-                            b1.Property<decimal>("Amount")
-                                .HasColumnType("decimal(18,2)")
-                                .HasColumnName("Amount");
-
-                            b1.Property<string>("Currency")
-                                .IsRequired()
-                                .HasMaxLength(3)
-                                .HasColumnType("character varying(3)")
-                                .HasColumnName("Currency");
-
-                            b1.HasKey("PaymentId");
-
-                            b1.ToTable("Payments", "ServiceCatalog");
-
-                            b1.WithOwner()
-                                .HasForeignKey("PaymentId");
-                        });
-
-                    b.OwnsOne("Booksy.Core.Domain.ValueObjects.Money", "Fee", b1 =>
-                        {
-                            b1.Property<Guid>("PaymentId")
-                                .HasColumnType("uuid");
-
-                            b1.Property<decimal>("Amount")
-                                .HasColumnType("decimal(18,2)")
-                                .HasColumnName("Fee");
-
-                            b1.Property<string>("Currency")
-                                .IsRequired()
-                                .HasMaxLength(3)
-                                .HasColumnType("character varying(3)")
-                                .HasColumnName("FeeCurrency");
-
-                            b1.HasKey("PaymentId");
-
-                            b1.ToTable("Payments", "ServiceCatalog");
-
-                            b1.WithOwner()
-                                .HasForeignKey("PaymentId");
-                        });
-
-                    b.OwnsOne("Booksy.Core.Domain.ValueObjects.Money", "PaidAmount", b1 =>
-                        {
-                            b1.Property<Guid>("PaymentId")
-                                .HasColumnType("uuid");
-
-                            b1.Property<decimal>("Amount")
-                                .HasColumnType("decimal(18,2)")
-                                .HasColumnName("PaidAmount");
-
-                            b1.Property<string>("Currency")
-                                .IsRequired()
-                                .HasMaxLength(3)
-                                .HasColumnType("character varying(3)")
-                                .HasColumnName("PaidCurrency");
-
-                            b1.HasKey("PaymentId");
-
-                            b1.ToTable("Payments", "ServiceCatalog");
-
-                            b1.WithOwner()
-                                .HasForeignKey("PaymentId");
-                        });
-
-                    b.OwnsOne("Booksy.Core.Domain.ValueObjects.Money", "RefundedAmount", b1 =>
-                        {
-                            b1.Property<Guid>("PaymentId")
-                                .HasColumnType("uuid");
-
-                            b1.Property<decimal>("Amount")
-                                .HasColumnType("decimal(18,2)")
-                                .HasColumnName("RefundedAmount");
-
-                            b1.Property<string>("Currency")
-                                .IsRequired()
-                                .HasMaxLength(3)
-                                .HasColumnType("character varying(3)")
-                                .HasColumnName("RefundedCurrency");
-
-                            b1.HasKey("PaymentId");
-
-                            b1.ToTable("Payments", "ServiceCatalog");
-
-                            b1.WithOwner()
-                                .HasForeignKey("PaymentId");
                         });
 
                     b.Navigation("Amount")
@@ -1973,171 +1973,6 @@ namespace Booksy.ServiceCatalog.Infrastructure.Migrations
 
             modelBuilder.Entity("Booksy.ServiceCatalog.Domain.Aggregates.Provider", b =>
                 {
-                    b.OwnsOne("Booksy.ServiceCatalog.Domain.Entities.BusinessProfile", "Profile", b1 =>
-                        {
-                            b1.Property<Guid>("ProviderId")
-                                .HasColumnType("uuid");
-
-                            b1.Property<string>("BusinessDescription")
-                                .IsRequired()
-                                .HasMaxLength(2000)
-                                .HasColumnType("character varying(2000)")
-                                .HasColumnName("BusinessDescription");
-
-                            b1.Property<string>("BusinessName")
-                                .IsRequired()
-                                .HasMaxLength(200)
-                                .HasColumnType("character varying(200)")
-                                .HasColumnName("BusinessName");
-
-                            b1.Property<DateTime>("CreatedAt")
-                                .HasColumnType("timestamp with time zone");
-
-                            b1.Property<string>("CreatedBy")
-                                .HasColumnType("text");
-
-                            b1.Property<bool>("IsDeleted")
-                                .HasColumnType("boolean");
-
-                            b1.Property<DateTime?>("LastModifiedAt")
-                                .HasColumnType("timestamp with time zone");
-
-                            b1.Property<string>("LastModifiedBy")
-                                .HasColumnType("text");
-
-                            b1.Property<DateTime>("LastUpdatedAt")
-                                .HasColumnType("timestamp with time zone")
-                                .HasColumnName("BusinessProfileLastUpdatedAt");
-
-                            b1.Property<string>("LogoUrl")
-                                .HasMaxLength(500)
-                                .HasColumnType("character varying(500)")
-                                .HasColumnName("BusinessLogoUrl");
-
-                            b1.Property<string>("ProfileImageUrl")
-                                .HasMaxLength(500)
-                                .HasColumnType("character varying(500)")
-                                .HasColumnName("ProfileImageUrl");
-
-                            b1.Property<string>("SocialMedia")
-                                .HasColumnType("jsonb")
-                                .HasColumnName("BusinessSocialMedia");
-
-                            b1.Property<string>("Tags")
-                                .HasColumnType("jsonb")
-                                .HasColumnName("BusinessTags");
-
-                            b1.Property<string>("Website")
-                                .HasMaxLength(500)
-                                .HasColumnType("character varying(500)")
-                                .HasColumnName("BusinessWebsite");
-
-                            b1.HasKey("ProviderId");
-
-                            b1.ToTable("Providers", "ServiceCatalog");
-
-                            b1.WithOwner()
-                                .HasForeignKey("ProviderId");
-
-                            b1.OwnsMany("Booksy.ServiceCatalog.Domain.Entities.GalleryImage", "GalleryImages", b2 =>
-                                {
-                                    b2.Property<Guid>("Id")
-                                        .HasColumnType("uuid")
-                                        .HasColumnName("id");
-
-                                    b2.Property<string>("AltText")
-                                        .HasMaxLength(500)
-                                        .HasColumnType("character varying(500)")
-                                        .HasColumnName("alt_text");
-
-                                    b2.Property<string>("Caption")
-                                        .HasMaxLength(500)
-                                        .HasColumnType("character varying(500)")
-                                        .HasColumnName("caption");
-
-                                    b2.Property<DateTime>("CreatedAt")
-                                        .HasColumnType("timestamp with time zone");
-
-                                    b2.Property<string>("CreatedBy")
-                                        .HasColumnType("text");
-
-                                    b2.Property<int>("DisplayOrder")
-                                        .HasColumnType("integer")
-                                        .HasColumnName("display_order");
-
-                                    b2.Property<string>("ImageUrl")
-                                        .IsRequired()
-                                        .HasMaxLength(500)
-                                        .HasColumnType("character varying(500)")
-                                        .HasColumnName("image_url");
-
-                                    b2.Property<bool>("IsActive")
-                                        .ValueGeneratedOnAdd()
-                                        .HasColumnType("boolean")
-                                        .HasDefaultValue(true)
-                                        .HasColumnName("is_active");
-
-                                    b2.Property<bool>("IsDeleted")
-                                        .HasColumnType("boolean");
-
-                                    b2.Property<bool>("IsPrimary")
-                                        .ValueGeneratedOnAdd()
-                                        .HasColumnType("boolean")
-                                        .HasDefaultValue(false)
-                                        .HasColumnName("is_primary");
-
-                                    b2.Property<DateTime?>("LastModifiedAt")
-                                        .HasColumnType("timestamp with time zone");
-
-                                    b2.Property<string>("LastModifiedBy")
-                                        .HasColumnType("text");
-
-                                    b2.Property<string>("MediumUrl")
-                                        .IsRequired()
-                                        .HasMaxLength(500)
-                                        .HasColumnType("character varying(500)")
-                                        .HasColumnName("medium_url");
-
-                                    b2.Property<Guid>("ProviderId")
-                                        .HasColumnType("uuid")
-                                        .HasColumnName("provider_id");
-
-                                    b2.Property<byte[]>("RowVersion")
-                                        .IsConcurrencyToken()
-                                        .ValueGeneratedOnAddOrUpdate()
-                                        .HasColumnType("bytea")
-                                        .HasColumnName("row_version");
-
-                                    b2.Property<string>("ThumbnailUrl")
-                                        .IsRequired()
-                                        .HasMaxLength(500)
-                                        .HasColumnType("character varying(500)")
-                                        .HasColumnName("thumbnail_url");
-
-                                    b2.Property<DateTime>("UploadedAt")
-                                        .HasColumnType("timestamp with time zone")
-                                        .HasColumnName("uploaded_at");
-
-                                    b2.HasKey("Id");
-
-                                    b2.HasIndex("ProviderId")
-                                        .HasDatabaseName("IX_ProviderGalleryImages_ProviderId");
-
-                                    b2.HasIndex("ProviderId", "DisplayOrder")
-                                        .HasDatabaseName("IX_ProviderGalleryImages_Provider_DisplayOrder");
-
-                                    b2.HasIndex("ProviderId", "IsPrimary")
-                                        .HasDatabaseName("IX_ProviderGalleryImages_Provider_IsPrimary");
-
-                                    b2.ToTable("provider_gallery_images", "ServiceCatalog");
-
-                                    b2.WithOwner()
-                                        .HasForeignKey("ProviderId");
-                                });
-
-                            b1.Navigation("GalleryImages");
-                        });
-
                     b.OwnsOne("Booksy.ServiceCatalog.Domain.ValueObjects.BusinessAddress", "Address", b1 =>
                         {
                             b1.Property<Guid>("ProviderId")
@@ -2310,6 +2145,171 @@ namespace Booksy.ServiceCatalog.Infrastructure.Migrations
                             b1.Navigation("SecondaryPhone");
                         });
 
+                    b.OwnsOne("Booksy.ServiceCatalog.Domain.Entities.BusinessProfile", "Profile", b1 =>
+                        {
+                            b1.Property<Guid>("ProviderId")
+                                .HasColumnType("uuid");
+
+                            b1.Property<string>("BusinessDescription")
+                                .IsRequired()
+                                .HasMaxLength(2000)
+                                .HasColumnType("character varying(2000)")
+                                .HasColumnName("BusinessDescription");
+
+                            b1.Property<string>("BusinessName")
+                                .IsRequired()
+                                .HasMaxLength(200)
+                                .HasColumnType("character varying(200)")
+                                .HasColumnName("BusinessName");
+
+                            b1.Property<DateTime>("CreatedAt")
+                                .HasColumnType("timestamp with time zone");
+
+                            b1.Property<string>("CreatedBy")
+                                .HasColumnType("text");
+
+                            b1.Property<bool>("IsDeleted")
+                                .HasColumnType("boolean");
+
+                            b1.Property<DateTime?>("LastModifiedAt")
+                                .HasColumnType("timestamp with time zone");
+
+                            b1.Property<string>("LastModifiedBy")
+                                .HasColumnType("text");
+
+                            b1.Property<DateTime>("LastUpdatedAt")
+                                .HasColumnType("timestamp with time zone")
+                                .HasColumnName("BusinessProfileLastUpdatedAt");
+
+                            b1.Property<string>("LogoUrl")
+                                .HasMaxLength(500)
+                                .HasColumnType("character varying(500)")
+                                .HasColumnName("BusinessLogoUrl");
+
+                            b1.Property<string>("ProfileImageUrl")
+                                .HasMaxLength(500)
+                                .HasColumnType("character varying(500)")
+                                .HasColumnName("ProfileImageUrl");
+
+                            b1.Property<string>("SocialMedia")
+                                .HasColumnType("jsonb")
+                                .HasColumnName("BusinessSocialMedia");
+
+                            b1.Property<string>("Tags")
+                                .HasColumnType("jsonb")
+                                .HasColumnName("BusinessTags");
+
+                            b1.Property<string>("Website")
+                                .HasMaxLength(500)
+                                .HasColumnType("character varying(500)")
+                                .HasColumnName("BusinessWebsite");
+
+                            b1.HasKey("ProviderId");
+
+                            b1.ToTable("Providers", "ServiceCatalog");
+
+                            b1.WithOwner()
+                                .HasForeignKey("ProviderId");
+
+                            b1.OwnsMany("Booksy.ServiceCatalog.Domain.Entities.GalleryImage", "GalleryImages", b2 =>
+                                {
+                                    b2.Property<Guid>("Id")
+                                        .HasColumnType("uuid")
+                                        .HasColumnName("id");
+
+                                    b2.Property<string>("AltText")
+                                        .HasMaxLength(500)
+                                        .HasColumnType("character varying(500)")
+                                        .HasColumnName("alt_text");
+
+                                    b2.Property<string>("Caption")
+                                        .HasMaxLength(500)
+                                        .HasColumnType("character varying(500)")
+                                        .HasColumnName("caption");
+
+                                    b2.Property<DateTime>("CreatedAt")
+                                        .HasColumnType("timestamp with time zone");
+
+                                    b2.Property<string>("CreatedBy")
+                                        .HasColumnType("text");
+
+                                    b2.Property<int>("DisplayOrder")
+                                        .HasColumnType("integer")
+                                        .HasColumnName("display_order");
+
+                                    b2.Property<string>("ImageUrl")
+                                        .IsRequired()
+                                        .HasMaxLength(500)
+                                        .HasColumnType("character varying(500)")
+                                        .HasColumnName("image_url");
+
+                                    b2.Property<bool>("IsActive")
+                                        .ValueGeneratedOnAdd()
+                                        .HasColumnType("boolean")
+                                        .HasDefaultValue(true)
+                                        .HasColumnName("is_active");
+
+                                    b2.Property<bool>("IsDeleted")
+                                        .HasColumnType("boolean");
+
+                                    b2.Property<bool>("IsPrimary")
+                                        .ValueGeneratedOnAdd()
+                                        .HasColumnType("boolean")
+                                        .HasDefaultValue(false)
+                                        .HasColumnName("is_primary");
+
+                                    b2.Property<DateTime?>("LastModifiedAt")
+                                        .HasColumnType("timestamp with time zone");
+
+                                    b2.Property<string>("LastModifiedBy")
+                                        .HasColumnType("text");
+
+                                    b2.Property<string>("MediumUrl")
+                                        .IsRequired()
+                                        .HasMaxLength(500)
+                                        .HasColumnType("character varying(500)")
+                                        .HasColumnName("medium_url");
+
+                                    b2.Property<Guid>("ProviderId")
+                                        .HasColumnType("uuid")
+                                        .HasColumnName("provider_id");
+
+                                    b2.Property<byte[]>("RowVersion")
+                                        .IsConcurrencyToken()
+                                        .ValueGeneratedOnAddOrUpdate()
+                                        .HasColumnType("bytea")
+                                        .HasColumnName("row_version");
+
+                                    b2.Property<string>("ThumbnailUrl")
+                                        .IsRequired()
+                                        .HasMaxLength(500)
+                                        .HasColumnType("character varying(500)")
+                                        .HasColumnName("thumbnail_url");
+
+                                    b2.Property<DateTime>("UploadedAt")
+                                        .HasColumnType("timestamp with time zone")
+                                        .HasColumnName("uploaded_at");
+
+                                    b2.HasKey("Id");
+
+                                    b2.HasIndex("ProviderId")
+                                        .HasDatabaseName("IX_ProviderGalleryImages_ProviderId");
+
+                                    b2.HasIndex("ProviderId", "DisplayOrder")
+                                        .HasDatabaseName("IX_ProviderGalleryImages_Provider_DisplayOrder");
+
+                                    b2.HasIndex("ProviderId", "IsPrimary")
+                                        .HasDatabaseName("IX_ProviderGalleryImages_Provider_IsPrimary");
+
+                                    b2.ToTable("provider_gallery_images", "ServiceCatalog");
+
+                                    b2.WithOwner()
+                                        .HasForeignKey("ProviderId");
+                                });
+
+                            b1.Navigation("GalleryImages");
+                        });
+
                     b.Navigation("Address")
                         .IsRequired();
 
@@ -2401,97 +2401,33 @@ namespace Booksy.ServiceCatalog.Infrastructure.Migrations
                                 .HasForeignKey("ServiceId");
                         });
 
-                    b.OwnsMany("Booksy.ServiceCatalog.Domain.Entities.PriceTier", "PriceTiers", b1 =>
+                    b.OwnsOne("Booksy.ServiceCatalog.Domain.ValueObjects.ServiceCategory", "Category", b1 =>
                         {
-                            b1.Property<Guid>("Id")
-                                .ValueGeneratedOnAdd()
-                                .HasColumnType("uuid")
-                                .HasColumnName("Id");
-
-                            b1.Property<string>("Attributes")
-                                .IsRequired()
-                                .ValueGeneratedOnAdd()
-                                .HasColumnType("jsonb")
-                                .HasDefaultValueSql("'{}'::jsonb");
-
-                            b1.Property<DateTime>("CreatedAt")
-                                .HasColumnType("timestamp with time zone");
-
-                            b1.Property<string>("CreatedBy")
-                                .HasColumnType("text");
+                            b1.Property<Guid>("ServiceId")
+                                .HasColumnType("uuid");
 
                             b1.Property<string>("Description")
                                 .HasMaxLength(500)
-                                .HasColumnType("character varying(500)");
+                                .HasColumnType("character varying(500)")
+                                .HasColumnName("CategoryDescription");
 
-                            b1.Property<bool>("IsActive")
-                                .ValueGeneratedOnAdd()
-                                .HasColumnType("boolean")
-                                .HasDefaultValue(true);
-
-                            b1.Property<bool>("IsDefault")
-                                .ValueGeneratedOnAdd()
-                                .HasColumnType("boolean")
-                                .HasDefaultValue(false);
-
-                            b1.Property<bool>("IsDeleted")
-                                .HasColumnType("boolean");
-
-                            b1.Property<DateTime?>("LastModifiedAt")
-                                .HasColumnType("timestamp with time zone");
-
-                            b1.Property<string>("LastModifiedBy")
-                                .HasColumnType("text");
+                            b1.Property<string>("IconUrl")
+                                .HasMaxLength(500)
+                                .HasColumnType("character varying(500)")
+                                .HasColumnName("CategoryIconUrl");
 
                             b1.Property<string>("Name")
                                 .IsRequired()
                                 .HasMaxLength(100)
-                                .HasColumnType("character varying(100)");
+                                .HasColumnType("character varying(100)")
+                                .HasColumnName("CategoryName");
 
-                            b1.Property<Guid>("ServiceId")
-                                .HasColumnType("uuid");
+                            b1.HasKey("ServiceId");
 
-                            b1.Property<int>("SortOrder")
-                                .ValueGeneratedOnAdd()
-                                .HasColumnType("integer")
-                                .HasDefaultValue(0);
-
-                            b1.HasKey("Id");
-
-                            b1.HasIndex("ServiceId", "IsActive")
-                                .HasDatabaseName("IX_ServicePriceTiers_ServiceId_IsActive");
-
-                            b1.ToTable("ServicePriceTiers", "ServiceCatalog");
+                            b1.ToTable("Services", "ServiceCatalog");
 
                             b1.WithOwner()
                                 .HasForeignKey("ServiceId");
-
-                            b1.OwnsOne("Booksy.ServiceCatalog.Domain.ValueObjects.Price", "Price", b2 =>
-                                {
-                                    b2.Property<Guid>("PriceTierId")
-                                        .HasColumnType("uuid");
-
-                                    b2.Property<decimal>("Amount")
-                                        .HasPrecision(18, 2)
-                                        .HasColumnType("numeric(18,2)")
-                                        .HasColumnName("Price");
-
-                                    b2.Property<string>("Currency")
-                                        .IsRequired()
-                                        .HasMaxLength(3)
-                                        .HasColumnType("character varying(3)")
-                                        .HasColumnName("Currency");
-
-                                    b2.HasKey("PriceTierId");
-
-                                    b2.ToTable("ServicePriceTiers", "ServiceCatalog");
-
-                                    b2.WithOwner()
-                                        .HasForeignKey("PriceTierId");
-                                });
-
-                            b1.Navigation("Price")
-                                .IsRequired();
                         });
 
                     b.OwnsMany("Booksy.ServiceCatalog.Domain.Entities.ServiceOption", "Options", b1 =>
@@ -2595,33 +2531,97 @@ namespace Booksy.ServiceCatalog.Infrastructure.Migrations
                                 .IsRequired();
                         });
 
-                    b.OwnsOne("Booksy.ServiceCatalog.Domain.ValueObjects.ServiceCategory", "Category", b1 =>
+                    b.OwnsMany("Booksy.ServiceCatalog.Domain.Entities.PriceTier", "PriceTiers", b1 =>
                         {
-                            b1.Property<Guid>("ServiceId")
-                                .HasColumnType("uuid");
+                            b1.Property<Guid>("Id")
+                                .ValueGeneratedOnAdd()
+                                .HasColumnType("uuid")
+                                .HasColumnName("Id");
+
+                            b1.Property<string>("Attributes")
+                                .IsRequired()
+                                .ValueGeneratedOnAdd()
+                                .HasColumnType("jsonb")
+                                .HasDefaultValueSql("'{}'::jsonb");
+
+                            b1.Property<DateTime>("CreatedAt")
+                                .HasColumnType("timestamp with time zone");
+
+                            b1.Property<string>("CreatedBy")
+                                .HasColumnType("text");
 
                             b1.Property<string>("Description")
                                 .HasMaxLength(500)
-                                .HasColumnType("character varying(500)")
-                                .HasColumnName("CategoryDescription");
+                                .HasColumnType("character varying(500)");
 
-                            b1.Property<string>("IconUrl")
-                                .HasMaxLength(500)
-                                .HasColumnType("character varying(500)")
-                                .HasColumnName("CategoryIconUrl");
+                            b1.Property<bool>("IsActive")
+                                .ValueGeneratedOnAdd()
+                                .HasColumnType("boolean")
+                                .HasDefaultValue(true);
+
+                            b1.Property<bool>("IsDefault")
+                                .ValueGeneratedOnAdd()
+                                .HasColumnType("boolean")
+                                .HasDefaultValue(false);
+
+                            b1.Property<bool>("IsDeleted")
+                                .HasColumnType("boolean");
+
+                            b1.Property<DateTime?>("LastModifiedAt")
+                                .HasColumnType("timestamp with time zone");
+
+                            b1.Property<string>("LastModifiedBy")
+                                .HasColumnType("text");
 
                             b1.Property<string>("Name")
                                 .IsRequired()
                                 .HasMaxLength(100)
-                                .HasColumnType("character varying(100)")
-                                .HasColumnName("CategoryName");
+                                .HasColumnType("character varying(100)");
 
-                            b1.HasKey("ServiceId");
+                            b1.Property<Guid>("ServiceId")
+                                .HasColumnType("uuid");
 
-                            b1.ToTable("Services", "ServiceCatalog");
+                            b1.Property<int>("SortOrder")
+                                .ValueGeneratedOnAdd()
+                                .HasColumnType("integer")
+                                .HasDefaultValue(0);
+
+                            b1.HasKey("Id");
+
+                            b1.HasIndex("ServiceId", "IsActive")
+                                .HasDatabaseName("IX_ServicePriceTiers_ServiceId_IsActive");
+
+                            b1.ToTable("ServicePriceTiers", "ServiceCatalog");
 
                             b1.WithOwner()
                                 .HasForeignKey("ServiceId");
+
+                            b1.OwnsOne("Booksy.ServiceCatalog.Domain.ValueObjects.Price", "Price", b2 =>
+                                {
+                                    b2.Property<Guid>("PriceTierId")
+                                        .HasColumnType("uuid");
+
+                                    b2.Property<decimal>("Amount")
+                                        .HasPrecision(18, 2)
+                                        .HasColumnType("numeric(18,2)")
+                                        .HasColumnName("Price");
+
+                                    b2.Property<string>("Currency")
+                                        .IsRequired()
+                                        .HasMaxLength(3)
+                                        .HasColumnType("character varying(3)")
+                                        .HasColumnName("Currency");
+
+                                    b2.HasKey("PriceTierId");
+
+                                    b2.ToTable("ServicePriceTiers", "ServiceCatalog");
+
+                                    b2.WithOwner()
+                                        .HasForeignKey("PriceTierId");
+                                });
+
+                            b1.Navigation("Price")
+                                .IsRequired();
                         });
 
                     b.Navigation("BasePrice")
