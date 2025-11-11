@@ -1,7 +1,20 @@
 # provider-registration Specification
 
 ## Purpose
-TBD - created by archiving change replace-registration-with-figma-design. Update Purpose after archive.
+
+This specification defines the provider registration flow for the Booksy platform. The registration process guides new service providers through a comprehensive 9-step onboarding experience, collecting all necessary business information to create a complete provider profile.
+
+**Status**: ✅ Production Ready (as of 2025-11-11)
+
+**Recent Updates**:
+- Gallery image submission now properly integrated with registration flow
+- UI fixes for CompletionStep and OptionalFeedbackStep
+- Registration progress query handles completed registrations correctly
+- Provider status transitions properly handled (Drafted → PendingVerification)
+
+**Related Documentation**:
+- [Gallery Implementation Summary](/openspec/changes/add-provider-image-gallery/IMPLEMENTATION_SUMMARY.md)
+- [CHANGELOG.md](/CHANGELOG.md)
 ## Requirements
 ### Requirement: Registration step sequence
 The provider registration flow MUST follow the new Figma-designed sequence with 11 total steps. The system SHALL enforce sequential navigation and prevent skipping incomplete steps.
