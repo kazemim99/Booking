@@ -497,33 +497,54 @@ export function useProviderRegistration() {
     }
   }
 
-  // Save gallery - Gallery images are uploaded in real-time in GalleryStep.vue
-  // via galleryStore.uploadImages(), which auto-updates registration step to 7
-  // This function just returns success since the work is already done
+  // Save gallery - Upload images to registration endpoint
   const saveGallery = async (providerId: string): Promise<{ success: boolean; message?: string }> => {
     registrationState.value.isLoading = true
     registrationState.value.error = null
 
     try {
-      const imagesCount = registrationState.value.data.galleryImages.length
+      // Extract File objects from gallery images that haven't been uploaded yet
+      const files = registrationState.value.data.galleryImages
+        .filter(img => img.file) // Only files that haven't been uploaded yet
+        .map(img => img.file!)
 
-      console.log('✅ Gallery step already complete (images uploaded in real-time):', {
+      console.log('📤 Uploading gallery images to registration endpoint:', {
         providerId,
-        imagesCount
+        filesCount: files.length,
+        totalImagesCount: registrationState.value.data.galleryImages.length
       })
 
-      registrationState.value.isDirty = false
+      if (files.length > 0) {
+        // Upload images via registration endpoint
+        const response = await providerRegistrationService.saveStep7Gallery(files)
 
-      return {
-        success: true,
-        message: imagesCount > 0
-          ? `تصاویر گالری ذخیره شد (${imagesCount} تصویر)`
-          : 'مرحله گالری تکمیل شد',
+        console.log('✅ Gallery images uploaded successfully:', response)
+
+        registrationState.value.isDirty = false
+
+        return {
+          success: true,
+          message: response.message || `تصاویر گالری ذخیره شد (${response.imagesCount} تصویر)`,
+        }
+      } else {
+        // No new files to upload - images might have been uploaded already
+        const imagesCount = registrationState.value.data.galleryImages.length
+
+        console.log('ℹ️ No new files to upload. Total images:', imagesCount)
+
+        registrationState.value.isDirty = false
+
+        return {
+          success: true,
+          message: imagesCount > 0
+            ? `تصاویر گالری ذخیره شد (${imagesCount} تصویر)`
+            : 'مرحله گالری تکمیل شد',
+        }
       }
     } catch (error: any) {
-      console.error('❌ Failed to complete gallery step:', error)
+      console.error('❌ Failed to upload gallery images:', error)
 
-      const message = error.response?.data?.message || error.message || 'Failed to complete gallery step'
+      const message = error.response?.data?.message || error.message || 'خطا در آپلود تصاویر گالری'
       registrationState.value.error = message
 
       return { success: false, message }
