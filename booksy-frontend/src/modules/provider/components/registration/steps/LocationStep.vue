@@ -154,10 +154,10 @@ const handleLocationSelected = async (data: {
 
   // Auto-fill address if available
   if (data.addressDetails) {
+    // Always update address from formatted_address when clicking map
     formData.value.formattedAddress = data.addressDetails.formattedAddress || data.address || ''
-    if (!formData.value.address) {
-      formData.value.address = data.addressDetails.address || data.addressDetails.formattedAddress || ''
-    }
+    formData.value.address = data.addressDetails.formattedAddress || data.addressDetails.address || ''
+
     if (data.addressDetails.postalCode) {
       formData.value.postalCode = data.addressDetails.postalCode
     }
@@ -192,9 +192,7 @@ const handleLocationSelected = async (data: {
     }
   } else if (data.address) {
     formData.value.formattedAddress = data.address
-    if (!formData.value.address) {
-      formData.value.address = data.address
-    }
+    formData.value.address = data.address
   }
 }
 
