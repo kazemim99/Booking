@@ -723,7 +723,11 @@ export function useProviderRegistration() {
             h.closeTimeHours !== null && h.closeTimeMinutes !== null
               ? { hours: h.closeTimeHours, minutes: h.closeTimeMinutes }
               : null,
-          breaks: [],
+          breaks: h.breaks?.map((br) => ({
+            id: `break-${br.startTimeHours}-${br.startTimeMinutes}`,
+            start: { hours: br.startTimeHours, minutes: br.startTimeMinutes },
+            end: { hours: br.endTimeHours, minutes: br.endTimeMinutes },
+          })) || [],
         }))
 
         // Gallery images

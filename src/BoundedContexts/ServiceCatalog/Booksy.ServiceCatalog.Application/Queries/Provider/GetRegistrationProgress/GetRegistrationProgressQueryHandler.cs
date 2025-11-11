@@ -91,7 +91,14 @@ public sealed class GetRegistrationProgressQueryHandler
             OpenTimeHours: bh.OpenTime?.Hour,
             OpenTimeMinutes: bh.OpenTime?.Minute,
             CloseTimeHours: bh.CloseTime?.Hour,
-            CloseTimeMinutes: bh.CloseTime?.Minute
+            CloseTimeMinutes: bh.CloseTime?.Minute,
+            Breaks: bh.Breaks.Select(br => new BreakPeriodData(
+                StartTimeHours: br.StartTime.Hour,
+                StartTimeMinutes: br.StartTime.Minute,
+                EndTimeHours: br.EndTime.Hour,
+                EndTimeMinutes: br.EndTime.Minute,
+                Label: br.Label
+            )).ToList()
         )).ToList();
 
         // Map gallery images (Provider doesn't have GalleryImages - would need separate repository)

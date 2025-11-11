@@ -172,6 +172,13 @@ export interface RegistrationProgressResponse {
       openTimeMinutes: number | null
       closeTimeHours: number | null
       closeTimeMinutes: number | null
+      breaks: Array<{
+        startTimeHours: number
+        startTimeMinutes: number
+        endTimeHours: number
+        endTimeMinutes: number
+        label: string | null
+      }>
     }>
     galleryImages: Array<{
       imageUrl: string
