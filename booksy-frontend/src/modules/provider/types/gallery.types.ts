@@ -11,6 +11,7 @@ export interface GalleryImage {
   altText?: string
   uploadedAt: Date
   isActive: boolean
+  isPrimary?: boolean
 }
 
 /**

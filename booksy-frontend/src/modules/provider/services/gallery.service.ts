@@ -88,6 +88,15 @@ class GalleryService {
   }
 
   /**
+   * Set an image as primary (main image for the provider)
+   */
+  async setPrimaryImage(providerId: string, imageId: string): Promise<void> {
+    await serviceCategoryClient.put(
+      `${this.baseUrl}/${providerId}/gallery/${imageId}/set-primary`
+    )
+  }
+
+  /**
    * Map gallery image dates from string to Date objects
    */
   private mapGalleryImageDates(image: any): GalleryImage {

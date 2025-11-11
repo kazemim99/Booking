@@ -117,6 +117,16 @@
                 </svg>
               </button>
               <button
+                v-if="!image.isPrimary"
+                @click="handleSetPrimary(image)"
+                class="overlay-btn btn-primary"
+                title="تنظیم به عنوان تصویر اصلی"
+              >
+                <svg viewBox="0 0 20 20" fill="currentColor">
+                  <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
+                </svg>
+              </button>
+              <button
                 @click="handleEditMetadata(image)"
                 class="overlay-btn"
                 title="ویرایش"
@@ -134,6 +144,12 @@
                   <path fill-rule="evenodd" d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v6a1 1 0 102 0V8a1 1 0 00-1-1z" clip-rule="evenodd" />
                 </svg>
               </button>
+            </div>
+            <!-- Primary Badge -->
+            <div v-if="image.isPrimary" class="primary-badge" title="تصویر اصلی">
+              <svg viewBox="0 0 20 20" fill="currentColor">
+                <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
+              </svg>
             </div>
             <!-- Drag Handle -->
             <div class="drag-handle" title="جابجایی">
@@ -535,6 +551,31 @@ function handleViewImage(image: GalleryImage): void {
 
 function closeViewModal(): void {
   viewingImage.value = null
+}
+
+// ============================================================================
+// Set Primary Image
+// ============================================================================
+
+async function handleSetPrimary(image: GalleryImage): Promise<void> {
+  if (!providerId.value) return
+
+  try {
+    await galleryService.setPrimaryImage(providerId.value, image.id)
+
+    console.log(`[GalleryManager] Set image ${image.id} as primary`)
+
+    // Update local state - unset other images and set this one as primary
+    images.value = images.value.map(img => ({
+      ...img,
+      isPrimary: img.id === image.id
+    }))
+
+    emit('images-updated', images.value)
+  } catch (err) {
+    console.error('[GalleryManager] Error setting primary image:', err)
+    error.value = 'خطا در تنظیم تصویر اصلی'
+  }
 }
 
 // ============================================================================
@@ -1123,5 +1164,42 @@ function formatDate(date: Date | string): string {
 .text-muted {
   color: #a0aec0;
   font-size: 0.875rem;
+}
+
+/* Primary Image Badge */
+.primary-badge {
+  position: absolute;
+  top: 0.5rem;
+  right: 0.5rem;
+  width: 2.5rem;
+  height: 2.5rem;
+  background: linear-gradient(135deg, #fbbf24 0%, #f59e0b 100%);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 2px 8px rgba(251, 191, 36, 0.5);
+  z-index: 10;
+}
+
+.primary-badge svg {
+  width: 1.5rem;
+  height: 1.5rem;
+  color: white;
+}
+
+/* Primary Button Styling */
+.overlay-btn.btn-primary {
+  background: linear-gradient(135deg, #fbbf24 0%, #f59e0b 100%);
+  border: none;
+}
+
+.overlay-btn.btn-primary svg {
+  color: white;
+}
+
+.overlay-btn.btn-primary:hover {
+  transform: scale(1.1);
+  box-shadow: 0 4px 12px rgba(251, 191, 36, 0.4);
 }
 </style>
