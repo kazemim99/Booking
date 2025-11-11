@@ -168,18 +168,42 @@ const props = withDefaults(defineProps<Props>(), {
 
 const emit = defineEmits<Emits>()
 
+// Helper to ensure time is a string
+const ensureTimeString = (time: any): string => {
+  if (typeof time === 'string') return time
+  if (time && typeof time === 'object' && time._isAMomentObject) {
+    // If it's a moment object, format it as HH:mm
+    return time.format('HH:mm')
+  }
+  return ''
+}
+
+// Helper to normalize day data to ensure all times are strings
+const normalizeDayData = (data: DayScheduleData): DayScheduleData => {
+  return {
+    isOpen: data.isOpen,
+    startTime: ensureTimeString(data.startTime),
+    endTime: ensureTimeString(data.endTime),
+    breaks: data.breaks?.map(brk => ({
+      id: brk.id,
+      start: ensureTimeString(brk.start),
+      end: ensureTimeString(brk.end),
+    })) || [],
+  }
+}
+
 // Local copy of data
-const localData = ref<DayScheduleData>(JSON.parse(JSON.stringify(props.dayData)))
+const localData = ref<DayScheduleData>(normalizeDayData(props.dayData))
 
 // Watch for prop changes
 watch(() => props.dayData, (newData) => {
-  localData.value = JSON.parse(JSON.stringify(newData))
+  localData.value = normalizeDayData(newData)
 }, { deep: true })
 
 // Watch for modal open/close to reset data
 watch(() => props.isOpen, (isOpen) => {
   if (isOpen) {
-    localData.value = JSON.parse(JSON.stringify(props.dayData))
+    localData.value = normalizeDayData(props.dayData)
   }
 })
 
