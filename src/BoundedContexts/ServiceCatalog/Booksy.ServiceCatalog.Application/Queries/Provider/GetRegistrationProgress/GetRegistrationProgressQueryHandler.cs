@@ -73,14 +73,16 @@ public sealed class GetRegistrationProgressQueryHandler
             PriceType: s.Type.ToString()
         )).ToList();
 
-        // Map staff
-        var staff = draftProvider.Staff.Select(s => new StaffData(
-            Id: s.Id.ToString(),
-            Name: s.FullName,
-            Email: s.Email?.Value ?? "",
-            PhoneNumber: s.Phone?.Value ?? "",
-            Position: s.Role.ToString()
-        )).ToList();
+        // Map staff (only active staff members)
+        var staff = draftProvider.Staff
+            .Where(s => s.IsActive)
+            .Select(s => new StaffData(
+                Id: s.Id.ToString(),
+                Name: s.FullName,
+                Email: s.Email?.Value ?? "",
+                PhoneNumber: s.Phone?.Value ?? "",
+                Position: s.Role.ToString()
+            )).ToList();
 
         // Map business hours
         var businessHours = draftProvider.BusinessHours.Select(bh => new BusinessHoursData(
