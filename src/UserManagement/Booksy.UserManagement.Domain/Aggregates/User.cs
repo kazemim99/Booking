@@ -122,6 +122,50 @@ namespace Booksy.UserManagement.Domain.Aggregates
             return user;
         }
 
+        /// <summary>
+        /// Factory method for creating users from verified phone number
+        /// Used after successful phone verification to create account
+        /// </summary>
+        public static User RegisterWithPhone(
+            Email email,
+            PhoneNumber phoneNumber,
+            UserProfile profile,
+            UserType type = UserType.Provider)
+        {
+            var user = new User
+            {
+                Id = UserId.CreateNew(),
+                Email = email,
+                Password = HashedPassword.Create(Guid.NewGuid().ToString()), // Temporary password
+                Profile = profile,
+                PhoneNumber = phoneNumber,
+                PhoneNumberVerified = true, // Already verified via OTP
+                PhoneVerifiedAt = DateTime.UtcNow,
+                Type = type,
+                Status = UserStatus.Active, // Immediately active since phone is verified
+                RegisteredAt = DateTime.UtcNow,
+                ActivatedAt = DateTime.UtcNow,
+                FailedLoginAttempts = 0,
+                TwoFactorEnabled = false,
+                ActivationToken = null // No email activation needed
+            };
+
+            // Add default role based on user type
+            user._roles.Add(UserRole.Create(
+                type == UserType.Customer ? "Customer" : "Provider",
+                DateTime.UtcNow));
+
+            user.RaiseDomainEvent(new UserRegisteredEvent(
+                user.Id,
+                user.Email,
+                user.Profile.FirstName,
+                user.Profile.LastName,
+                user.Type,
+                user.RegisteredAt));
+
+            return user;
+        }
+
         // Factory method for creating pre-activated users (for testing/seeding only)
         public static User CreateActivated(
             Email email,
@@ -413,6 +457,20 @@ namespace Booksy.UserManagement.Domain.Aggregates
         {
             _refreshTokens.Add(refreshToken);
         }
+
+        /// <summary>
+        /// Helper method to update refresh token with a new token string and expiration
+        /// </summary>
+        public void UpdateRefreshToken(string token, DateTime expiresAt)
+        {
+            var refreshToken = RefreshToken.Create(
+                token,
+                expiresAt,
+                DateTime.UtcNow);
+
+            _refreshTokens.Add(refreshToken);
+        }
+
         public void RevokeAllRefreshTokens()
         {
             foreach (var token in _refreshTokens)

@@ -47,16 +47,21 @@ public sealed class SaveStep7GalleryCommandHandler
             throw new InvalidOperationException("Provider is not in draft status");
 
         // Gallery images are already uploaded via UploadGalleryImages endpoint
-        // This step just marks the gallery step as complete
-        // Provider aggregate doesn't store gallery images directly - they're in a separate aggregate
+        // This step marks the gallery step as complete and optionally sets primary image
+
+        // Set primary image if specified
+        if (request.PrimaryImageId.HasValue)
+        {
+            provider.Profile.SetPrimaryGalleryImage(request.PrimaryImageId.Value);
+        }
 
         // Update registration step
         provider.UpdateRegistrationStep(7);
 
         await _unitOfWork.CommitAsync(cancellationToken);
 
-        // Image count from request since Provider doesn't have GalleryImages property
-        var imageCount = request.ImageUrls?.Count ?? 0;
+        // Get actual image count from provider's gallery
+        var imageCount = provider.Profile.GalleryImages.Count(img => img.IsActive);
 
         return new SaveStep7GalleryResult(
             provider.Id.Value,

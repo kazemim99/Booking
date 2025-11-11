@@ -4,7 +4,6 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 using Booksy.UserManagement.Domain.Aggregates.CustomerAggregate;
-using Booksy.UserManagement.Domain.Entities;
 using Booksy.Core.Domain.ValueObjects;
 
 namespace Booksy.UserManagement.Infrastructure.Persistence.Configurations
@@ -43,11 +42,9 @@ namespace Booksy.UserManagement.Infrastructure.Persistence.Configurations
                 .IsUnique()
                 .HasDatabaseName("ix_customers_user_id");
 
-            // Profile relationship
-            builder.HasOne(c => c.Profile)
-                .WithOne()
-                .HasForeignKey<UserProfile>("CustomerId")
-                .OnDelete(DeleteBehavior.Cascade);
+            // Profile relationship - Customer accesses Profile through User, not directly
+            // The Profile entity is owned by User aggregate, so we ignore it here
+            builder.Ignore(c => c.Profile);
 
             // Status
             builder.Property(c => c.IsActive)

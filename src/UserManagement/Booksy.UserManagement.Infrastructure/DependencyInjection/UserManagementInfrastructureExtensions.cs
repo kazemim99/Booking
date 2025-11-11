@@ -79,7 +79,7 @@ namespace Booksy.UserManagement.Infrastructure.DependencyInjection
 
             // Register Repositories
 
-            services.AddScoped<ISeeder,UserManagementDatabaseSeeder>();
+            services.AddScoped<ISeeder, UserManagementDatabaseSeederOrchestrator>();
             
 
             services.AddScoped<IUserRepository, UserRepository>();

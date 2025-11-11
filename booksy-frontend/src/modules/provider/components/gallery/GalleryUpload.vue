@@ -33,10 +33,10 @@
             />
           </svg>
         </div>
-        <h3 class="upload-title">Drag and drop images here</h3>
-        <p class="upload-subtitle">or click to browse</p>
+        <h3 class="upload-title">تصاویر را اینجا بکشید و رها کنید</h3>
+        <p class="upload-subtitle">یا برای انتخاب کلیک کنید</p>
         <p class="upload-hint">
-          Supports: JPG, PNG, WebP | Max size: 10MB per image | Max {{ maxImages }} images
+          فرمت‌های مجاز: JPG، PNG، WebP | حداکثر حجم: {{ maxFileSize }}MB | حداکثر {{ maxImages }} تصویر
         </p>
       </div>
 
@@ -44,7 +44,7 @@
         <div class="progress-bar-container">
           <div class="progress-bar" :style="{ width: `${overallProgress}%` }"></div>
         </div>
-        <p class="progress-text">Uploading {{ uploadingFiles.length }} image(s)... {{ overallProgress }}%</p>
+        <p class="progress-text">در حال آپلود {{ uploadingFiles.length }} تصویر... {{ overallProgress }}%</p>
       </div>
     </div>
 
@@ -156,7 +156,7 @@ function processFiles(files: File[]) {
 
   // Check total count
   if (validFiles.length > props.maxImages) {
-    validationErrors.value.push(`You can only upload up to ${props.maxImages} images at a time`)
+    validationErrors.value.push(`شما تنها می‌توانید حداکثر ${props.maxImages} تصویر را همزمان آپلود کنید`)
     return
   }
 
@@ -171,13 +171,13 @@ function validateFile(file: File): string[] {
 
   // Check file type
   if (!props.acceptedFormats.includes(file.type)) {
-    errors.push(`${file.name}: Invalid file type. Accepted formats: JPG, PNG, WebP`)
+    errors.push(`${file.name}: فرمت فایل نامعتبر است. فرمت‌های مجاز: JPG، PNG، WebP`)
   }
 
   // Check file size
   const fileSizeMB = file.size / (1024 * 1024)
   if (fileSizeMB > props.maxFileSize) {
-    errors.push(`${file.name}: File size exceeds ${props.maxFileSize}MB limit`)
+    errors.push(`${file.name}: حجم فایل بیش از حد مجاز ${props.maxFileSize}MB است`)
   }
 
   return errors

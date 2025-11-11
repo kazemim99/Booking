@@ -78,6 +78,201 @@ namespace Booksy.UserManagement.Infrastructure.Migrations
                     b.ToTable("event_store", "user_management");
                 });
 
+            modelBuilder.Entity("Booksy.UserManagement.Domain.Aggregates.CustomerAggregate.Customer", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp without time zone")
+                        .HasColumnName("created_at");
+
+                    b.Property<string>("CreatedBy")
+                        .HasMaxLength(256)
+                        .HasColumnType("character varying(256)")
+                        .HasColumnName("created_by");
+
+                    b.Property<bool>("IsActive")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("boolean")
+                        .HasDefaultValue(true)
+                        .HasColumnName("is_active");
+
+                    b.Property<bool>("IsDeleted")
+                        .HasColumnType("boolean");
+
+                    b.Property<DateTime?>("LastModifiedAt")
+                        .HasColumnType("timestamp without time zone")
+                        .HasColumnName("last_modified_at");
+
+                    b.Property<string>("LastModifiedBy")
+                        .HasMaxLength(256)
+                        .HasColumnType("character varying(256)")
+                        .HasColumnName("last_modified_by");
+
+                    b.Property<Guid>("UserId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("user_id");
+
+                    b.Property<int>("Version")
+                        .IsConcurrencyToken()
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer")
+                        .HasDefaultValue(0)
+                        .HasColumnName("version");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("CreatedAt")
+                        .HasDatabaseName("ix_customers_created_at");
+
+                    b.HasIndex("IsActive")
+                        .HasDatabaseName("ix_customers_is_active");
+
+                    b.HasIndex("UserId")
+                        .IsUnique()
+                        .HasDatabaseName("ix_customers_user_id");
+
+                    b.ToTable("customers", "user_management");
+                });
+
+            modelBuilder.Entity("Booksy.UserManagement.Domain.Aggregates.PhoneVerificationAggregate.PhoneVerification", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<DateTime?>("BlockedUntil")
+                        .HasColumnType("timestamp without time zone")
+                        .HasColumnName("blocked_until")
+                        .HasComment("Timestamp until which verification is blocked");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp without time zone")
+                        .HasColumnName("created_at")
+                        .HasComment("Creation timestamp");
+
+                    b.Property<string>("CreatedBy")
+                        .HasColumnType("text");
+
+                    b.Property<DateTime>("ExpiresAt")
+                        .HasColumnType("timestamp without time zone")
+                        .HasColumnName("expires_at")
+                        .HasComment("Expiration timestamp for the verification code");
+
+                    b.Property<string>("IpAddress")
+                        .HasMaxLength(50)
+                        .HasColumnType("character varying(50)")
+                        .HasColumnName("ip_address")
+                        .HasComment("IP address of the requester");
+
+                    b.Property<bool>("IsDeleted")
+                        .HasColumnType("boolean");
+
+                    b.Property<DateTime?>("LastAttemptAt")
+                        .HasColumnType("timestamp without time zone")
+                        .HasColumnName("last_attempt_at")
+                        .HasComment("Timestamp of last verification attempt");
+
+                    b.Property<DateTime?>("LastModifiedAt")
+                        .HasColumnType("timestamp without time zone");
+
+                    b.Property<string>("LastModifiedBy")
+                        .HasColumnType("text");
+
+                    b.Property<DateTime?>("LastSentAt")
+                        .HasColumnType("timestamp without time zone")
+                        .HasColumnName("last_sent_at")
+                        .HasComment("Timestamp when OTP was last sent");
+
+                    b.Property<int>("MaxVerificationAttempts")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer")
+                        .HasDefaultValue(5)
+                        .HasColumnName("max_verification_attempts")
+                        .HasComment("Maximum allowed verification attempts");
+
+                    b.Property<string>("Method")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("character varying(50)")
+                        .HasColumnName("method")
+                        .HasComment("Verification method (SMS, Call, WhatsApp)");
+
+                    b.Property<string>("OtpHash")
+                        .IsRequired()
+                        .HasMaxLength(256)
+                        .HasColumnType("character varying(256)")
+                        .HasColumnName("otp_hash")
+                        .HasComment("SHA256 hashed OTP code");
+
+                    b.Property<string>("Purpose")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("character varying(50)")
+                        .HasColumnName("purpose")
+                        .HasComment("Purpose of verification (Registration, Login, etc.)");
+
+                    b.Property<int>("SendAttempts")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer")
+                        .HasDefaultValue(0)
+                        .HasColumnName("send_attempts")
+                        .HasComment("Number of times OTP was sent");
+
+                    b.Property<string>("SessionId")
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)")
+                        .HasColumnName("session_id")
+                        .HasComment("Session identifier");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("character varying(50)")
+                        .HasColumnName("status")
+                        .HasComment("Current status of verification");
+
+                    b.Property<string>("UserAgent")
+                        .HasMaxLength(500)
+                        .HasColumnType("character varying(500)")
+                        .HasColumnName("user_agent")
+                        .HasComment("User agent of the requester");
+
+                    b.Property<Guid?>("UserId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("user_id");
+
+                    b.Property<int>("VerificationAttempts")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer")
+                        .HasDefaultValue(0)
+                        .HasColumnName("verification_attempts")
+                        .HasComment("Number of verification attempts made");
+
+                    b.Property<DateTime?>("VerifiedAt")
+                        .HasColumnType("timestamp without time zone")
+                        .HasColumnName("verified_at")
+                        .HasComment("Timestamp when verification was completed");
+
+                    b.Property<int>("Version")
+                        .HasColumnType("integer");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("CreatedAt")
+                        .HasDatabaseName("ix_phone_verifications_created_at");
+
+                    b.HasIndex("ExpiresAt")
+                        .HasDatabaseName("ix_phone_verifications_expires_at");
+
+                    b.HasIndex("Status")
+                        .HasDatabaseName("ix_phone_verifications_status");
+
+                    b.ToTable("phone_verifications", "user_management");
+                });
+
             modelBuilder.Entity("Booksy.UserManagement.Domain.Aggregates.User", b =>
                 {
                     b.Property<Guid>("Id")
@@ -170,98 +365,6 @@ namespace Booksy.UserManagement.Infrastructure.Migrations
                         .HasDatabaseName("ix_users_type");
 
                     b.ToTable("users", "user_management");
-                });
-
-            modelBuilder.Entity("Booksy.UserManagement.Domain.Entities.PhoneVerification", b =>
-                {
-                    b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("uuid");
-
-                    b.Property<int>("AttemptCount")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("integer")
-                        .HasDefaultValue(0)
-                        .HasComment("Number of verification attempts made");
-
-                    b.Property<string>("CountryCode")
-                        .IsRequired()
-                        .HasMaxLength(5)
-                        .HasColumnType("character varying(5)")
-                        .HasComment("ISO country code (e.g., DE, US, GB)");
-
-                    b.Property<DateTime>("CreatedAt")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("timestamp without time zone")
-                        .HasDefaultValueSql("CURRENT_TIMESTAMP AT TIME ZONE 'UTC'")
-                        .HasComment("Creation timestamp");
-
-                    b.Property<string>("CreatedBy")
-                        .HasColumnType("text");
-
-                    b.Property<DateTime>("ExpiresAt")
-                        .HasColumnType("timestamp without time zone")
-                        .HasComment("Expiration timestamp for the verification code");
-
-                    b.Property<string>("HashedCode")
-                        .IsRequired()
-                        .HasMaxLength(256)
-                        .HasColumnType("character varying(256)")
-                        .HasComment("Hashed OTP code (SHA256)");
-
-                    b.Property<string>("IpAddress")
-                        .HasMaxLength(50)
-                        .HasColumnType("character varying(50)")
-                        .HasComment("IP address of the requester");
-
-                    b.Property<bool>("IsDeleted")
-                        .HasColumnType("boolean");
-
-                    b.Property<bool>("IsVerified")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("boolean")
-                        .HasDefaultValue(false)
-                        .HasComment("Whether the phone number has been verified");
-
-                    b.Property<DateTime?>("LastModifiedAt")
-                        .HasColumnType("timestamp without time zone");
-
-                    b.Property<string>("LastModifiedBy")
-                        .HasColumnType("text");
-
-                    b.Property<int>("MaxAttempts")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("integer")
-                        .HasDefaultValue(3)
-                        .HasComment("Maximum allowed verification attempts");
-
-                    b.Property<string>("PhoneNumber")
-                        .IsRequired()
-                        .HasMaxLength(20)
-                        .HasColumnType("character varying(20)")
-                        .HasComment("Phone number in E.164 format");
-
-                    b.Property<string>("UserAgent")
-                        .HasMaxLength(500)
-                        .HasColumnType("character varying(500)")
-                        .HasComment("User agent of the requester");
-
-                    b.Property<DateTime?>("VerifiedAt")
-                        .HasColumnType("timestamp without time zone")
-                        .HasComment("Timestamp when verification was completed");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("ExpiresAt")
-                        .HasDatabaseName("IX_PhoneVerifications_ExpiresAt");
-
-                    b.HasIndex("PhoneNumber")
-                        .HasDatabaseName("IX_PhoneVerifications_PhoneNumber");
-
-                    b.HasIndex("PhoneNumber", "IsVerified", "ExpiresAt")
-                        .HasDatabaseName("IX_PhoneVerifications_PhoneNumber_Status");
-
-                    b.ToTable("PhoneVerifications", "user_management");
                 });
 
             modelBuilder.Entity("Booksy.UserManagement.Domain.Entities.UserProfile", b =>
@@ -422,6 +525,105 @@ namespace Booksy.UserManagement.Infrastructure.Migrations
                     b.ToTable("user_roles", "user_management");
                 });
 
+            modelBuilder.Entity("Booksy.UserManagement.Domain.Aggregates.CustomerAggregate.Customer", b =>
+                {
+                    b.OwnsMany("Booksy.UserManagement.Domain.Entities.CustomerFavoriteProvider", "FavoriteProviders", b1 =>
+                        {
+                            b1.Property<Guid>("Id")
+                                .ValueGeneratedOnAdd()
+                                .HasColumnType("uuid")
+                                .HasColumnName("id");
+
+                            b1.Property<DateTime>("AddedAt")
+                                .HasColumnType("timestamp without time zone")
+                                .HasColumnName("added_at");
+
+                            b1.Property<DateTime>("CreatedAt")
+                                .HasColumnType("timestamp without time zone");
+
+                            b1.Property<string>("CreatedBy")
+                                .HasColumnType("text");
+
+                            b1.Property<Guid>("CustomerId")
+                                .HasColumnType("uuid");
+
+                            b1.Property<bool>("IsDeleted")
+                                .HasColumnType("boolean");
+
+                            b1.Property<DateTime?>("LastModifiedAt")
+                                .HasColumnType("timestamp without time zone");
+
+                            b1.Property<string>("LastModifiedBy")
+                                .HasColumnType("text");
+
+                            b1.Property<string>("Notes")
+                                .HasMaxLength(500)
+                                .HasColumnType("character varying(500)")
+                                .HasColumnName("notes");
+
+                            b1.Property<Guid>("ProviderId")
+                                .HasColumnType("uuid")
+                                .HasColumnName("provider_id");
+
+                            b1.HasKey("Id");
+
+                            b1.HasIndex("CustomerId");
+
+                            b1.HasIndex("ProviderId")
+                                .HasDatabaseName("ix_customer_favorite_providers_provider_id");
+
+                            b1.ToTable("customer_favorite_providers", "user_management");
+
+                            b1.WithOwner()
+                                .HasForeignKey("CustomerId");
+                        });
+
+                    b.Navigation("FavoriteProviders");
+                });
+
+            modelBuilder.Entity("Booksy.UserManagement.Domain.Aggregates.PhoneVerificationAggregate.PhoneVerification", b =>
+                {
+                    b.OwnsOne("Booksy.Core.Domain.ValueObjects.PhoneNumber", "PhoneNumber", b1 =>
+                        {
+                            b1.Property<Guid>("PhoneVerificationId")
+                                .HasColumnType("uuid");
+
+                            b1.Property<string>("CountryCode")
+                                .IsRequired()
+                                .HasMaxLength(5)
+                                .HasColumnType("character varying(5)")
+                                .HasColumnName("country_code")
+                                .HasComment("Country code (e.g., +98, +1)");
+
+                            b1.Property<string>("NationalNumber")
+                                .IsRequired()
+                                .HasMaxLength(15)
+                                .HasColumnType("character varying(15)")
+                                .HasColumnName("national_number")
+                                .HasComment("National number without country code");
+
+                            b1.Property<string>("Value")
+                                .IsRequired()
+                                .HasMaxLength(20)
+                                .HasColumnType("character varying(20)")
+                                .HasColumnName("phone_number")
+                                .HasComment("Phone number in international format");
+
+                            b1.HasKey("PhoneVerificationId");
+
+                            b1.HasIndex("Value")
+                                .HasDatabaseName("ix_phone_verifications_phone_number");
+
+                            b1.ToTable("phone_verifications", "user_management");
+
+                            b1.WithOwner()
+                                .HasForeignKey("PhoneVerificationId");
+                        });
+
+                    b.Navigation("PhoneNumber")
+                        .IsRequired();
+                });
+
             modelBuilder.Entity("Booksy.UserManagement.Domain.Aggregates.User", b =>
                 {
                     b.OwnsOne("Booksy.Core.Domain.ValueObjects.Email", "Email", b1 =>
@@ -453,16 +655,19 @@ namespace Booksy.UserManagement.Infrastructure.Migrations
                                 .HasColumnType("uuid");
 
                             b1.Property<string>("CountryCode")
+                                .IsRequired()
                                 .HasMaxLength(5)
                                 .HasColumnType("character varying(5)")
                                 .HasColumnName("CountryCode");
 
                             b1.Property<string>("NationalNumber")
+                                .IsRequired()
                                 .HasMaxLength(15)
                                 .HasColumnType("character varying(15)")
                                 .HasColumnName("NationalNumber");
 
                             b1.Property<string>("Value")
+                                .IsRequired()
                                 .HasMaxLength(20)
                                 .HasColumnType("character varying(20)")
                                 .HasColumnName("PhoneNumber");
@@ -805,11 +1010,13 @@ namespace Booksy.UserManagement.Infrastructure.Migrations
                                 .HasColumnType("uuid");
 
                             b1.Property<string>("CountryCode")
+                                .IsRequired()
                                 .HasMaxLength(10)
                                 .HasColumnType("character varying(10)")
                                 .HasColumnName("alternate_phone_country_code");
 
                             b1.Property<string>("NationalNumber")
+                                .IsRequired()
                                 .HasMaxLength(40)
                                 .HasColumnType("character varying(40)")
                                 .HasColumnName("alternate_phone_national_number");
@@ -828,14 +1035,22 @@ namespace Booksy.UserManagement.Infrastructure.Migrations
                                 .HasColumnType("uuid");
 
                             b1.Property<string>("CountryCode")
+                                .IsRequired()
                                 .HasMaxLength(10)
                                 .HasColumnType("character varying(10)")
                                 .HasColumnName("phone_country_code");
 
                             b1.Property<string>("NationalNumber")
+                                .IsRequired()
                                 .HasMaxLength(40)
                                 .HasColumnType("character varying(40)")
                                 .HasColumnName("phone_national_number");
+
+                            b1.Property<string>("Value")
+                                .IsRequired()
+                                .HasMaxLength(50)
+                                .HasColumnType("character varying(50)")
+                                .HasColumnName("phone_number");
 
                             b1.HasKey("UserProfileId");
 

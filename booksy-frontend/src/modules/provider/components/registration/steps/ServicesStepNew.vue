@@ -11,50 +11,101 @@
       <div class="step-content">
         <!-- Service List -->
         <div v-if="services.length > 0" class="service-list">
-          <div v-for="service in services" :key="service.id" class="service-item">
-            <div class="service-info">
-              <h4 class="service-name">{{ service.name }}</h4>
-              <p class="service-details">
-                قیمت: {{ formatPrice(service.price) }} تومان • مدت: {{ service.durationHours * 60 + service.durationMinutes }} دقیقه
-              </p>
+          <template v-for="service in services" :key="service.id">
+            <div class="service-item">
+              <div class="service-info">
+                <h4 class="service-name">{{ service.name }}</h4>
+                <p class="service-details">
+                  قیمت: {{ formatPrice(service.price) }} تومان • مدت: {{ service.durationHours * 60 + service.durationMinutes }} دقیقه
+                </p>
+              </div>
+              <div class="service-actions">
+                <button
+                  type="button"
+                  class="btn-icon"
+                  @click="handleEdit(service)"
+                  title="ویرایش"
+                >
+                  <svg class="icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
+                      stroke-width="2"
+                      d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"
+                    />
+                  </svg>
+                </button>
+                <button
+                  type="button"
+                  class="btn-icon btn-delete"
+                  @click="handleDelete(service.id)"
+                  title="حذف"
+                >
+                  <svg class="icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
+                      stroke-width="2"
+                      d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
+                    />
+                  </svg>
+                </button>
+              </div>
             </div>
-            <div class="service-actions">
-              <button
-                type="button"
-                class="btn-icon"
-                @click="handleEdit(service)"
-                title="ویرایش"
-              >
-                <svg class="icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path
-                    stroke-linecap="round"
-                    stroke-linejoin="round"
-                    stroke-width="2"
-                    d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"
+
+            <!-- Inline Edit Form (shown right after the service being edited) -->
+            <div v-if="editingId === service.id" class="service-form">
+              <div class="form-group">
+                <label for="serviceName" class="form-label">نام خدمت</label>
+                <input
+                  id="serviceName"
+                  v-model="formData.name"
+                  type="text"
+                  class="form-input"
+                  placeholder="مثال: اصلاح مو"
+                />
+              </div>
+
+              <div class="form-row">
+                <div class="form-group">
+                  <label for="price" class="form-label">قیمت (تومان)</label>
+                  <input
+                    id="price"
+                    v-model="formData.price"
+                    type="number"
+                    dir="ltr"
+                    class="form-input"
+                    placeholder="100000"
                   />
-                </svg>
-              </button>
-              <button
-                type="button"
-                class="btn-icon btn-delete"
-                @click="handleDelete(service.id)"
-                title="حذف"
-              >
-                <svg class="icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path
-                    stroke-linecap="round"
-                    stroke-linejoin="round"
-                    stroke-width="2"
-                    d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
+                </div>
+
+                <div class="form-group">
+                  <label for="duration" class="form-label">مدت زمان (دقیقه)</label>
+                  <input
+                    id="duration"
+                    v-model="formData.duration"
+                    type="number"
+                    dir="ltr"
+                    class="form-input"
+                    placeholder="30"
                   />
-                </svg>
-              </button>
+                </div>
+              </div>
+
+              <div class="form-actions">
+                <AppButton type="button" variant="primary" size="medium" @click="handleAddService">
+                  ویرایش
+                </AppButton>
+                <AppButton type="button" variant="outline" size="medium" @click="handleCancelAdd">
+                  لغو
+                </AppButton>
+              </div>
             </div>
-          </div>
+          </template>
         </div>
 
-        <!-- Add/Edit Form -->
-        <div v-if="isAdding" class="service-form">
+        <!-- Add New Service Form -->
+        <div v-if="isAdding && !editingId" class="service-form">
           <div class="form-group">
             <label for="serviceName" class="form-label">نام خدمت</label>
             <input
@@ -94,7 +145,7 @@
 
           <div class="form-actions">
             <AppButton type="button" variant="primary" size="medium" @click="handleAddService">
-              {{ editingId ? 'ویرایش' : 'افزودن' }}
+              افزودن
             </AppButton>
             <AppButton type="button" variant="outline" size="medium" @click="handleCancelAdd">
               لغو
@@ -104,7 +155,7 @@
 
         <!-- Add Service Button -->
         <AppButton
-          v-else
+          v-if="!isAdding"
           type="button"
           variant="outline"
           size="large"
@@ -195,15 +246,15 @@ const handleAddService = () => {
     services.value = services.value.map((s) =>
       s.id === editingId.value ? newService : s
     )
-    editingId.value = null
   } else {
     // Add new service
     services.value.push(newService)
   }
 
-  // Reset form
+  // Reset form and state
   formData.value = { name: '', price: '', duration: '' }
   isAdding.value = false
+  editingId.value = null
   error.value = ''
 
   // Emit update
@@ -211,6 +262,11 @@ const handleAddService = () => {
 }
 
 const handleEdit = (service: Service) => {
+  // Cancel any active add form
+  if (isAdding.value) {
+    isAdding.value = false
+  }
+
   const totalMinutes = service.durationHours * 60 + service.durationMinutes
   formData.value = {
     name: service.name,
@@ -218,7 +274,6 @@ const handleEdit = (service: Service) => {
     duration: totalMinutes.toString(),
   }
   editingId.value = service.id
-  isAdding.value = true
 }
 
 const handleDelete = (id: string) => {

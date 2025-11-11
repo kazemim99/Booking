@@ -16,7 +16,7 @@ namespace Booksy.ServiceCatalog.Domain.Entities
         public bool IsActive { get; private set; }
         public int SortOrder { get; private set; }
         public Dictionary<string, string> Attributes { get; private set; } = new();
-        public ServiceId ServiceId { get; private set; }
+        // ServiceId is a shadow property managed by EF Core for owned entity relationship
 
         // Private constructor for EF Core
         private PriceTier() : base() { }

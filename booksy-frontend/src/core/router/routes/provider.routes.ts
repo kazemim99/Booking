@@ -23,12 +23,15 @@ const providerRoutes: RouteRecordRaw[] = [
   },
 
   // Provider Registration (after phone verification)
+  // User must be authenticated (phone verification creates User + returns JWT)
+  // This route is for Providers with Drafted status to complete their profile
   {
     path: '/registration',
     name: 'ProviderRegistration',
     component: () => import('@/modules/provider/views/registration/ProviderRegistrationView.vue'),
     meta: {
       requiresAuth: true,
+      roles: ['Provider', 'ServiceProvider'],
       title: 'Complete Your Provider Profile',
     },
   },
@@ -68,31 +71,6 @@ const providerRoutes: RouteRecordRaw[] = [
       title: 'Gallery',
     },
   },
-
-          if (!isComplete) {
-            return next({ name: 'ProviderOnboarding' })
-          }
-          next()
-        },
-      },
-      {
-        path: 'profile/business-info',
-        name: 'ProviderBusinessInfo',
-        component: () => import('@/modules/provider/views/profile/BusinessInfoView.vue'),
-        meta: { title: 'Business Information' },
-      },
-      {
-        path: 'hours',
-        name: 'ProviderBusinessHours',
-        component: () => import('@/modules/provider/views/hours/BusinessHoursView.vue'),
-        meta: { title: 'Business Hours' },
-      },
-      {
-        path: 'gallery',
-        name: 'ProviderGallery',
-        component: () => import('@/modules/provider/views/gallery/GalleryView.vue'),
-        meta: { title: 'Photo Gallery' },
-      },
 
   // Services Management
   {

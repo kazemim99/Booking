@@ -40,6 +40,9 @@ const registrationState = ref<RegistrationState>({
   isDirty: false,
 })
 
+// Track if draft is currently being loaded to prevent duplicate calls
+let isDraftLoading = false
+
 // Initialize business hours with default closed for all days
 function initializeBusinessHours(): DayHours[] {
   return Array.from({ length: 7 }, (_, i) => ({
@@ -320,6 +323,8 @@ export function useProviderRegistration() {
 
       // Create draft provider request
       const draftRequest = {
+        ownerFirstName: businessInfo.ownerFirstName || '',
+        ownerLastName: businessInfo.ownerLastName || '',
         businessName: businessInfo.businessName,
         businessDescription: businessInfo.businessDescription || '',
         category: categoryId,
@@ -335,6 +340,13 @@ export function useProviderRegistration() {
       }
 
       const response = await providerRegistrationService.saveStep3Location(draftRequest)
+
+      // Update tokens if returned (after provider aggregate is created)
+      if (response.accessToken && response.refreshToken) {
+        authStore.setToken(response.accessToken)
+        authStore.setRefreshToken(response.refreshToken)
+        console.log('✅ Updated tokens with provider claims (providerId now included)')
+      }
 
       registrationState.value.isDirty = false
 
@@ -402,7 +414,7 @@ export function useProviderRegistration() {
         name: member.name,
         email: member.email || '',
         phoneNumber: member.phoneNumber || '',
-        position: member.role || 'stylist',
+        position: member.position || 'stylist',
       }))
 
       // Staff is optional, allow proceeding even without staff members
@@ -632,9 +644,23 @@ export function useProviderRegistration() {
 
   // Load existing draft on initialization
   const loadDraft = async (): Promise<{ success: boolean; message?: string; providerId?: string }> => {
+    // Prevent duplicate concurrent calls
+    if (isDraftLoading) {
+      console.log('⏭️  Draft already loading, skipping duplicate call')
+      return { success: false, message: 'Draft load already in progress' }
+    }
+
+    isDraftLoading = true
     registrationState.value.isLoading = true
 
     try {
+      // Don't try to load draft if user is not authenticated
+      // (e.g., new users coming from phone verification)
+      if (!authStore.isAuthenticated) {
+        console.log('⏭️  Skipping draft load - user not authenticated (new registration)')
+        return { success: true, message: 'No authentication - starting fresh registration' }
+      }
+
       const response = await providerRegistrationService.getRegistrationProgress()
 
       if (response.hasDraft && response.draftData) {
@@ -678,9 +704,11 @@ export function useProviderRegistration() {
         registrationState.value.data.teamMembers = draft.staff.map((s) => ({
           id: s.id,
           name: s.name,
-          email: s.email,
+          email: s.email || '',
           phoneNumber: s.phoneNumber,
-          role: s.position,
+          countryCode: '+98',
+          position: s.position,
+          isOwner: false,
         }))
 
         // Business hours
@@ -695,7 +723,11 @@ export function useProviderRegistration() {
             h.closeTimeHours !== null && h.closeTimeMinutes !== null
               ? { hours: h.closeTimeHours, minutes: h.closeTimeMinutes }
               : null,
-          breaks: [],
+          breaks: h.breaks?.map((br) => ({
+            id: `break-${br.startTimeHours}-${br.startTimeMinutes}`,
+            start: { hours: br.startTimeHours, minutes: br.startTimeMinutes },
+            end: { hours: br.endTimeHours, minutes: br.endTimeMinutes },
+          })) || [],
         }))
 
         // Gallery images
@@ -726,6 +758,7 @@ export function useProviderRegistration() {
       return { success: false, message: 'Failed to load draft' }
     } finally {
       registrationState.value.isLoading = false
+      isDraftLoading = false
     }
   }
 

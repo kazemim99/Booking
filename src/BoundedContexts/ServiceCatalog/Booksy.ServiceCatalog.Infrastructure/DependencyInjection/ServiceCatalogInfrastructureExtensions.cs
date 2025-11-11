@@ -24,6 +24,15 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
+using SendGrid;
+using Booksy.Infrastructure.External.Payment;
+using Booksy.Infrastructure.External.Payment.ZarinPal;
+using Booksy.Infrastructure.External.Payment.IDPay;
+using Booksy.Infrastructure.External.Payment.Behpardakht;
+using Booksy.Infrastructure.External.Payment.Parsian;
+using Booksy.Infrastructure.External.Payment.Saman;
+using Booksy.ServiceCatalog.Infrastructure.ExternalServices.Sms;
+using System.Threading;
 
 namespace Booksy.ServiceCatalog.Infrastructure.DependencyInjection
 {
@@ -62,7 +71,7 @@ namespace Booksy.ServiceCatalog.Infrastructure.DependencyInjection
 
             services.AddScoped<DbContext>();
 
-            services.AddScoped<ISeeder, ServiceCatalogDatabaseSeeder>();
+            services.AddScoped<ISeeder, ServiceCatalogDatabaseSeederOrchestrator>();
             // Unit of Work
             services.AddScoped<IUnitOfWork>(provider =>
                 new EfCoreUnitOfWork<ServiceCatalogDbContext>(
@@ -155,15 +164,15 @@ namespace Booksy.ServiceCatalog.Infrastructure.DependencyInjection
             {
 
 
-            using var scope = serviceProvider.CreateScope();
-            var context = scope.ServiceProvider.GetRequiredService<ServiceCatalogDbContext>();
-            var seeder = scope.ServiceProvider.GetRequiredService<ISeeder>();
+                using var scope = serviceProvider.CreateScope();
+                var context = scope.ServiceProvider.GetRequiredService<ServiceCatalogDbContext>();
+                var seeder = scope.ServiceProvider.GetRequiredService<ISeeder>();
 
-            // Apply migrations
-            await context.Database.MigrateAsync();
+                // Apply migrations
+                //await context.Database.MigrateAsync();
 
-            // Seed data
-            await seeder.SeedAsync();
+                await seeder.SeedAsync();
+
             }
             catch (Exception ex)
             {

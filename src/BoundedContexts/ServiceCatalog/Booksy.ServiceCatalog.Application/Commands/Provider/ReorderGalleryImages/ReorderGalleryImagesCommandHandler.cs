@@ -31,7 +31,14 @@ public sealed class ReorderGalleryImagesCommandHandler
             throw new InvalidOperationException($"Provider {request.ProviderId} not found");
         }
 
+        // Reorder images
         provider.Profile.ReorderGalleryImages(request.ImageOrders);
+
+        // Set primary image if specified
+        if (request.PrimaryImageId.HasValue)
+        {
+            provider.Profile.SetPrimaryGalleryImage(request.PrimaryImageId.Value);
+        }
 
         await _unitOfWork.SaveChangesAsync(cancellationToken);
     }

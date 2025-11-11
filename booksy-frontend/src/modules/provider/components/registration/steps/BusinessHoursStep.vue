@@ -73,16 +73,20 @@
           <div class="hours-section">
             <label class="hours-label">Opening hours</label>
             <div class="time-inputs">
-              <select v-model="tempOpenTime" class="time-select">
-                <option v-for="time in timeOptions" :key="time.value" :value="time.value">
-                  {{ time.label }}
-                </option>
-              </select>
-              <select v-model="tempCloseTime" class="time-select">
-                <option v-for="time in timeOptions" :key="time.value" :value="time.value">
-                  {{ time.label }}
-                </option>
-              </select>
+              <div class="time-picker-wrapper">
+                <label class="time-sublabel">From</label>
+                <PersianTimePicker
+                  v-model="tempOpenTime"
+                  placeholder="Select opening time"
+                />
+              </div>
+              <div class="time-picker-wrapper">
+                <label class="time-sublabel">To</label>
+                <PersianTimePicker
+                  v-model="tempCloseTime"
+                  placeholder="Select closing time"
+                />
+              </div>
             </div>
           </div>
 
@@ -91,16 +95,20 @@
             <div v-for="(breakTime, index) in tempBreaks" :key="index" class="break-item">
               <label class="hours-label">Break {{ index + 1 }}</label>
               <div class="time-inputs">
-                <select v-model="breakTime.start" class="time-select">
-                  <option v-for="time in timeOptions" :key="time.value" :value="time.value">
-                    {{ time.label }}
-                  </option>
-                </select>
-                <select v-model="breakTime.end" class="time-select">
-                  <option v-for="time in timeOptions" :key="time.value" :value="time.value">
-                    {{ time.label }}
-                  </option>
-                </select>
+                <div class="time-picker-wrapper">
+                  <label class="time-sublabel">Start</label>
+                  <PersianTimePicker
+                    v-model="breakTime.start"
+                    placeholder="Break start"
+                  />
+                </div>
+                <div class="time-picker-wrapper">
+                  <label class="time-sublabel">End</label>
+                  <PersianTimePicker
+                    v-model="breakTime.end"
+                    placeholder="Break end"
+                  />
+                </div>
                 <button class="delete-break-btn" @click="removeBreak(index)">
                   <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
@@ -131,6 +139,7 @@
 import { ref, computed, watch } from 'vue'
 import StepContainer from '../shared/StepContainer.vue'
 import NavigationButtons from '../shared/NavigationButtons.vue'
+import PersianTimePicker from '@/shared/components/calendar/PersianTimePicker.vue'
 import type { DayHours, TimeSlot } from '@/modules/provider/types/registration.types'
 
 interface Props {
@@ -141,11 +150,6 @@ interface Emits {
   (e: 'update:modelValue', value: DayHours[]): void
   (e: 'next'): void
   (e: 'back'): void
-}
-
-interface TimeOption {
-  value: string
-  label: string
 }
 
 interface BreakTime {
@@ -182,26 +186,9 @@ const businessHours = ref<DayHours[]>(initializeHours())
 
 const showModal = ref(false)
 const editingDay = ref<DayHours | null>(null)
-const tempOpenTime = ref('10:00 AM')
-const tempCloseTime = ref('7:00 PM')
+const tempOpenTime = ref('10:00')
+const tempCloseTime = ref('19:00')
 const tempBreaks = ref<BreakTime[]>([])
-
-// Generate time options (30-minute intervals)
-const timeOptions = computed<TimeOption[]>(() => {
-  const options: TimeOption[] = []
-  for (let hour = 0; hour < 24; hour++) {
-    for (let minute = 0; minute < 60; minute += 30) {
-      const period = hour >= 12 ? 'PM' : 'AM'
-      const displayHour = hour === 0 ? 12 : hour > 12 ? hour - 12 : hour
-      const timeValue = `${displayHour}:${minute.toString().padStart(2, '0')} ${period}`
-      options.push({
-        value: timeValue,
-        label: timeValue
-      })
-    }
-  }
-  return options
-})
 
 const getDayName = (dayOfWeek: number): string => {
   const days = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday']
@@ -209,22 +196,13 @@ const getDayName = (dayOfWeek: number): string => {
 }
 
 const formatTime = (time: TimeSlot | null): string => {
-  if (!time) return '10:00 AM'
-  const period = time.hours >= 12 ? 'PM' : 'AM'
-  const displayHour = time.hours === 0 ? 12 : time.hours > 12 ? time.hours - 12 : time.hours
-  return `${displayHour}:${time.minutes.toString().padStart(2, '0')} ${period}`
+  if (!time) return '10:00'
+  return `${time.hours.toString().padStart(2, '0')}:${time.minutes.toString().padStart(2, '0')}`
 }
 
 const parseTime = (timeStr: string): TimeSlot => {
-  const [time, period] = timeStr.split(' ')
-  const [hours, minutes] = time.split(':').map(Number)
-  let actualHours = hours
-  if (period === 'PM' && hours !== 12) {
-    actualHours = hours + 12
-  } else if (period === 'AM' && hours === 12) {
-    actualHours = 0
-  }
-  return { hours: actualHours, minutes }
+  const [hours, minutes] = timeStr.split(':').map(Number)
+  return { hours, minutes }
 }
 
 const generateId = (): string => {
@@ -249,8 +227,8 @@ const closeModal = () => {
 
 const addBreak = () => {
   tempBreaks.value.push({
-    start: '12:00 PM',
-    end: '1:00 PM'
+    start: '12:00',
+    end: '13:00'
   })
 }
 
@@ -477,29 +455,19 @@ const handleNext = () => {
   display: grid;
   grid-template-columns: 1fr 1fr auto;
   gap: 0.75rem;
-  align-items: center;
+  align-items: end;
 }
 
-.time-select {
-  padding: 0.75rem;
-  border: 1px solid #d1d5db;
-  border-radius: 0.5rem;
-  font-size: 0.875rem;
-  background: white;
-  cursor: pointer;
-  appearance: none;
-  background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%236b7280' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='M6 8l4 4 4-4'/%3e%3c/svg%3e");
-  background-position: right 0.5rem center;
-  background-repeat: no-repeat;
-  background-size: 1.5em 1.5em;
-  padding-right: 2.5rem;
+.time-picker-wrapper {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
 }
 
-.time-select:focus {
-  outline: none;
-  border-color: #10b981;
-  ring: 2px;
-  ring-color: rgba(16, 185, 129, 0.2);
+.time-sublabel {
+  font-size: 0.75rem;
+  font-weight: 500;
+  color: #6b7280;
 }
 
 .break-item {

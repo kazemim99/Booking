@@ -67,11 +67,26 @@ public sealed record BusinessHoursData(
     int? OpenTimeHours,
     int? OpenTimeMinutes,
     int? CloseTimeHours,
-    int? CloseTimeMinutes
+    int? CloseTimeMinutes,
+    List<BreakPeriodData> Breaks
+);
+
+public sealed record BreakPeriodData(
+    int StartTimeHours,
+    int StartTimeMinutes,
+    int EndTimeHours,
+    int EndTimeMinutes,
+    string? Label
 );
 
 public sealed record GalleryImageData(
+    string Id,
     string ImageUrl,
-    string? ThumbnailUrl,
-    int DisplayOrder
+    string ThumbnailUrl,
+    string MediumUrl,
+    int DisplayOrder,
+    bool IsPrimary,
+    string? Caption,
+    string? AltText,
+    DateTime UploadedAt
 );

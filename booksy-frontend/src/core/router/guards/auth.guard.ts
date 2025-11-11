@@ -16,7 +16,8 @@ export async function authGuard(
 
   // Allow public routes
   if (isPublic) {
-    // If authenticated user tries to access login/register
+    // If authenticated user tries to access login/register pages (but NOT registration page)
+    // Registration page may be needed for providers with Drafted status
     if (authStore.isAuthenticated && (to.name === 'Login' || to.name === 'Register')) {
       // Use redirectToDashboard which now handles provider status checking
       await authStore.redirectToDashboard()
@@ -38,6 +39,13 @@ export async function authGuard(
   // Provider status-based routing
   // Check if user is a Provider and needs status-based routing
   if (authStore.isAuthenticated && authStore.hasAnyRole(['Provider', 'ServiceProvider'])) {
+    // If already going to ProviderRegistration, allow it without fetching status
+    // This prevents unnecessary API calls and redirect loops for new users
+    if (to.name === 'ProviderRegistration') {
+      next()
+      return
+    }
+
     // Fetch provider status if not already loaded
     if (authStore.providerStatus === null && authStore.providerId === null) {
       try {

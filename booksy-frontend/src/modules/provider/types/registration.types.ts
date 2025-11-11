@@ -42,15 +42,19 @@ export interface BusinessInfo {
 export interface BusinessAddress {
   addressLine1: string
   addressLine2?: string
-  city: string
-  zipCode: string
-  isShared: boolean
+  city?: string  // Optional - resolved from cityId
+  province?: string  // Optional - resolved from provinceId
+  provinceId?: number  // Province ID for API
+  cityId?: number  // City ID for API
+  zipCode?: string
+  formattedAddress?: string  // Full formatted address from map
+  isShared?: boolean
 }
 
 export interface BusinessLocation {
   latitude: number
   longitude: number
-  formattedAddress: string
+  formattedAddress?: string
 }
 
 // Business Hours

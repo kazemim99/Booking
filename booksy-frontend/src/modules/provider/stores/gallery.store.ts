@@ -161,11 +161,12 @@ export const useGalleryStore = defineStore('gallery', () => {
   }
 
   /**
-   * Reorder gallery images
+   * Reorder gallery images and optionally set a primary image
    */
   async function reorderImages(
     providerId: string,
-    imageOrders: Array<{ imageId: string; newOrder: number }>
+    imageOrders: Array<{ imageId: string; newOrder: number }>,
+    primaryImageId?: string
   ): Promise<void> {
     error.value = null
 
@@ -181,10 +182,26 @@ export const useGalleryStore = defineStore('gallery', () => {
         }
       })
 
+      // Optimistically update primary image if specified
+      if (primaryImageId) {
+        galleryImages.value.forEach((img) => {
+          img.isPrimary = img.id === primaryImageId
+        })
+      }
+
       // Sort by new display order
       galleryImages.value.sort((a, b) => a.displayOrder - b.displayOrder)
 
-      await galleryService.reorderImages(providerId, { imageOrders })
+      // Build imageOrders dictionary for API
+      const imageOrdersDict: Record<string, number> = {}
+      imageOrders.forEach(({ imageId, newOrder }) => {
+        imageOrdersDict[imageId] = newOrder
+      })
+
+      await galleryService.reorderImages(providerId, {
+        imageOrders: imageOrdersDict,
+        primaryImageId
+      })
     } catch (err: any) {
       // Rollback on error
       galleryImages.value = originalImages

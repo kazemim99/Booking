@@ -10,6 +10,9 @@ namespace Booksy.ServiceCatalog.Api.Controllers.V1;
 /// <summary>
 /// Progressive provider registration endpoints
 /// Handles step-by-step registration flow with separate endpoints for each step
+///
+/// NOTE: User must be authenticated before accessing these endpoints.
+/// Authentication happens after phone verification via /api/v1/phone-verification/register endpoint.
 /// </summary>
 [ApiController]
 [Route("api/v1/registration")]

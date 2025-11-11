@@ -1,0 +1,319 @@
+# OpenAPI/Swagger Examples with Iranian/Persian Culture
+# These examples can be integrated into your Swagger/OpenAPI documentation
+# To use: Copy these examples into your controller attributes or OpenAPI schema
+
+components:
+  examples:
+    # Provider Examples
+    IranianProvider:
+      summary: Iranian Beauty Salon
+      value:
+        businessName: "سالن زیبایی نگین - Negin Beauty Salon"
+        description: "مرکز تخصصی پوست، مو و زیبایی در تهران"
+        providerType: "Salon"
+        contactInfo:
+          email: "contact@neginbeauty.ir"
+          phoneNumber: "02188123456"
+          website: "https://www.neginbeauty.ir"
+        address:
+          fullAddress: "تهران، سعادت‌آباد، خیابان شهید بهشتی"
+          streetAddress: "خیابان شهید بهشتی"
+          city: "Tehran"
+          state: "Tehran"
+          postalCode: "19917"
+          country: "Iran"
+          latitude: 35.7575
+          longitude: 51.4089
+
+    IranianBarbershop:
+      summary: Iranian Men's Barbershop
+      value:
+        businessName: "آرایشگاه مردانه آریا - Arya Barbershop"
+        description: "آرایشگاه مردانه با سبک مدرن و سنتی"
+        providerType: "Individual"
+        contactInfo:
+          email: "info@aryabarbershop.ir"
+          phoneNumber: "02188234567"
+          website: "https://www.aryabarbershop.ir"
+        address:
+          fullAddress: "تهران، میدان ونک، خیابان ملاصدرا"
+          city: "Tehran"
+          country: "Iran"
+
+    # Service Examples
+    IranianHairService:
+      summary: Iranian Hair Service
+      value:
+        name: "کوتاهی و فشن - Cut & Style"
+        description: "کوتاهی و مدل موی بانوان با تکنیک‌های روز"
+        category:
+          name: "آرایش و زیبایی"
+          description: "خدمات زیبایی بانوان"
+        serviceType: "Standard"
+        basePrice:
+          amount: 1200000
+          currency: "IRR"
+        duration:
+          totalMinutes: 60
+        bookingPolicy: "Default"
+
+    IranianMassageService:
+      summary: Iranian Spa Massage
+      value:
+        name: "ماساژ سوئدی - Swedish Massage"
+        description: "ماساژ کامل بدن به سبک سوئدی"
+        category:
+          name: "ماساژ"
+          description: "خدمات ماساژ درمانی"
+        basePrice:
+          amount: 1800000
+          currency: "IRR"
+        duration:
+          totalMinutes: 60
+
+    # Service Options Examples
+    IranianServiceOptions:
+      summary: Iranian Service Add-ons
+      value:
+        - name: "شستشوی مو - Hair Wash"
+          description: "شستشوی حرفه‌ای موی سر"
+          additionalPrice:
+            amount: 200000
+            currency: "IRR"
+          additionalDuration:
+            totalMinutes: 10
+          isRequired: false
+        - name: "سشوار - Blow Dry"
+          description: "سشوار حرفه‌ای"
+          additionalPrice:
+            amount: 400000
+            currency: "IRR"
+          additionalDuration:
+            totalMinutes: 20
+        - name: "ماساژ سر - Head Massage"
+          additionalPrice:
+            amount: 300000
+            currency: "IRR"
+          additionalDuration:
+            totalMinutes: 15
+
+    # Staff Examples
+    IranianStaff:
+      summary: Iranian Staff Member
+      value:
+        firstName: "مریم"
+        lastName: "محمدی"
+        role: "ServiceProvider"
+        phoneNumber: "09121234567"
+        email: "maryam.mohammadi@example.ir"
+        isActive: true
+        specialties: ["آرایش موی عروس", "رنگ مو", "کراتینه"]
+
+    IranianStaffList:
+      summary: Iranian Staff List
+      value:
+        - firstName: "فاطمه"
+          lastName: "رضایی"
+          role: "Owner"
+          phoneNumber: "09123456789"
+        - firstName: "زهرا"
+          lastName: "کریمی"
+          role: "ServiceProvider"
+          phoneNumber: "09127654321"
+        - firstName: "نگار"
+          lastName: "احمدی"
+          role: "Receptionist"
+          phoneNumber: "09129998877"
+
+    # Business Hours Examples
+    IranianBusinessHours:
+      summary: Iranian Business Hours (Friday Weekend)
+      description: "Standard Iranian business hours with Friday closed (Islamic weekend)"
+      value:
+        - dayOfWeek: "Saturday"
+          openTime: "10:00"
+          closeTime: "20:00"
+          isOpen: true
+        - dayOfWeek: "Sunday"
+          openTime: "10:00"
+          closeTime: "20:00"
+          isOpen: true
+        - dayOfWeek: "Monday"
+          openTime: "10:00"
+          closeTime: "20:00"
+          isOpen: true
+        - dayOfWeek: "Tuesday"
+          openTime: "10:00"
+          closeTime: "20:00"
+          isOpen: true
+        - dayOfWeek: "Wednesday"
+          openTime: "10:00"
+          closeTime: "20:00"
+          isOpen: true
+        - dayOfWeek: "Thursday"
+          openTime: "10:00"
+          closeTime: "14:00"
+          isOpen: true
+          comment: "Half day"
+        - dayOfWeek: "Friday"
+          openTime: null
+          closeTime: null
+          isOpen: false
+          comment: "Closed - Islamic weekend"
+
+    # Booking Examples
+    IranianBookingRequest:
+      summary: Create Iranian Booking
+      value:
+        providerId: "3fa85f64-5717-4562-b3fc-2c963f66afa6"
+        serviceId: "7d123456-8901-2345-6789-012345678901"
+        staffId: "9e234567-8901-2345-6789-012345678902"
+        startTime: "2024-12-15T14:00:00Z"
+        customerNotes: "لطفا دقیق باشید. اولین بار است که میام"
+        selectedOptions:
+          - serviceOptionId: "1a345678-9012-3456-7890-123456789012"
+            quantity: 1
+
+    IranianBookingResponse:
+      summary: Iranian Booking Details
+      value:
+        id: "4b567890-1234-5678-9012-345678901234"
+        bookingNumber: "BK-202412-001234"
+        providerId: "3fa85f64-5717-4562-b3fc-2c963f66afa6"
+        providerName: "سالن زیبایی نگین - Negin Beauty Salon"
+        serviceName: "کوتاهی و فشن - Cut & Style"
+        staffName: "مریم محمدی"
+        startTime: "2024-12-15T14:00:00Z"
+        endTime: "2024-12-15T15:00:00Z"
+        status: "Confirmed"
+        totalPrice:
+          amount: 1600000
+          currency: "IRR"
+        customerNotes: "لطفا دقیق باشید. اولین بار است که میام"
+        createdAt: "2024-12-01T10:30:00Z"
+
+    # Payment Examples
+    ZarinPalPaymentRequest:
+      summary: ZarinPal Payment Request
+      description: "Create payment using ZarinPal (Iran's leading payment gateway)"
+      value:
+        bookingId: "4b567890-1234-5678-9012-345678901234"
+        amount:
+          amount: 1600000
+          currency: "IRR"
+        paymentMethod: "OnlinePayment"
+        paymentProvider: "ZarinPal"
+        description: "پرداخت برای رزرو خدمات زیبایی - رزرو شماره BK-202412-001234"
+        callbackUrl: "https://yourdomain.ir/payment/callback"
+
+    ZarinPalPaymentResponse:
+      summary: ZarinPal Payment Created
+      value:
+        paymentId: "5c678901-2345-6789-0123-456789012345"
+        authority: "A00000000000000000000000000001234567"
+        paymentUrl: "https://www.zarinpal.com/pg/StartPay/A00000000000000000000000000001234567"
+        amount:
+          amount: 1600000
+          currency: "IRR"
+        status: "Pending"
+        createdAt: "2024-12-01T10:35:00Z"
+
+    ZarinPalVerifyRequest:
+      summary: Verify ZarinPal Payment
+      value:
+        authority: "A00000000000000000000000000001234567"
+        status: "OK"
+
+    ZarinPalVerifiedPayment:
+      summary: Verified ZarinPal Payment
+      value:
+        paymentId: "5c678901-2345-6789-0123-456789012345"
+        refNumber: "123456789"
+        cardPan: "603799******1234"
+        status: "Captured"
+        amount:
+          amount: 1600000
+          currency: "IRR"
+        verifiedAt: "2024-12-01T10:40:00Z"
+
+    # User Examples
+    IranianCustomerRegistration:
+      summary: Register Iranian Customer
+      value:
+        email: "ali.ahmadi@example.ir"
+        password: "Pass@123456"
+        firstName: "علی"
+        lastName: "احمدی"
+        phoneNumber: "09123456789"
+        gender: "Male"
+        dateOfBirth: "1990-05-15"
+
+    IranianCustomerProfile:
+      summary: Iranian Customer Profile
+      value:
+        id: "6d789012-3456-7890-1234-567890123456"
+        email: "ali.ahmadi@example.ir"
+        firstName: "علی"
+        lastName: "احمدی"
+        fullName: "علی احمدی"
+        phoneNumber: "09123456789"
+        phoneNumberVerified: true
+        gender: "Male"
+        dateOfBirth: "1990-05-15"
+        status: "Active"
+        registeredAt: "2024-01-15T09:00:00Z"
+
+    # Location Examples
+    IranianProvinces:
+      summary: Iranian Provinces
+      value:
+        - id: 1
+          name: "تهران - Tehran"
+          provinceCode: 1
+          type: "Province"
+        - id: 2
+          name: "اصفهان - Isfahan"
+          provinceCode: 2
+          type: "Province"
+        - id: 3
+          name: "شیراز - Shiraz"
+          provinceCode: 3
+          type: "Province"
+        - id: 4
+          name: "مشهد - Mashhad"
+          provinceCode: 4
+          type: "Province"
+        - id: 5
+          name: "تبریز - Tabriz"
+          provinceCode: 5
+          type: "Province"
+
+    # Payout Examples
+    IranianProviderPayout:
+      summary: Iranian Provider Payout
+      value:
+        id: "7e890123-4567-8901-2345-678901234567"
+        providerId: "3fa85f64-5717-4562-b3fc-2c963f66afa6"
+        periodStart: "2024-11-01"
+        periodEnd: "2024-11-30"
+        grossAmount:
+          amount: 15000000
+          currency: "IRR"
+        commissionAmount:
+          amount: 1500000
+          currency: "IRR"
+        netAmount:
+          amount: 13500000
+          currency: "IRR"
+        status: "Paid"
+        bankName: "بانک ملی ایران - Bank Melli Iran"
+        bankAccountLast4: "1234"
+        paidAt: "2024-12-05T10:00:00Z"
+        notes: "تسویه حساب دوره 2024/11/01 - 2024/11/30"
+
+# Request Body Examples for Controllers
+# Use these in your [SwaggerRequestExample] attributes
+
+# C# Controller Example:
+# [SwaggerRequestExample(typeof(CreateProviderRequest), typeof(IranianProviderExample))]
+# [SwaggerResponseExample(200, typeof(ProviderResponseExample))]

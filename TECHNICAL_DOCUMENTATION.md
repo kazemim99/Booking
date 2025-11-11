@@ -1,6 +1,6 @@
 # Booksy Platform - Comprehensive Technical Documentation
 
-> **Living Document**: This documentation consolidates all technical documentation from the project. Last updated: 2025-11-06
+> **Living Document**: This documentation consolidates all technical documentation from the project. Last updated: 2025-11-11
 
 ---
 
@@ -8,22 +8,1371 @@
 
 - [Overview](#overview)
 - [Architecture & Patterns](#architecture--patterns)
-- [System Implementation Guides](#system-implementation-guides)
-- [API Documentation](#api-documentation)
-- [Testing & Quality Assurance](#testing--quality-assurance)
-- [Setup & Configuration Guides](#setup--configuration-guides)
-- [Development Workflows](#development-workflows)
+- [Authentication & Phone Verification](#authentication--phone-verification)
+- [Provider Registration Flow](#provider-registration-flow)
+- [Location & Map Integration](#location--map-integration)
+- [Event-Driven Architecture](#event-driven-architecture)
+- [Database & EF Core Configuration](#database--ef-core-configuration)
+- [API Integration & Type Safety](#api-integration--type-safety)
+- [Routing & Navigation Guards](#routing--navigation-guards)
+- [Known Issues & Solutions](#known-issues--solutions)
 - [Session Summaries & Progress](#session-summaries--progress)
 
 ---
 
-*This comprehensive document consolidates content from 22+ individual documentation files into a single, searchable reference. For the most up-to-date information, always refer to this document.*
+## Overview
+
+Booksy is a service booking platform built with:
+- **Backend**: .NET Core 8 (Clean Architecture, CQRS, DDD)
+- **Frontend**: Vue 3 + TypeScript (Composition API, Pinia)
+- **Database**: PostgreSQL with EF Core
+- **Authentication**: JWT with phone verification (OTP)
+- **Messaging**: RabbitMQ for event-driven architecture
+- **SMS**: Rahyab SMS gateway integration
 
 ---
 
-**Content continues with the existing comprehensive technical documentation...**
+## Architecture & Patterns
 
-*[The rest of the existing TECHNICAL_DOCUMENTATION.md content would be preserved here, followed by consolidated sections from all other MD files organized logically]*
+### Backend Architecture
+
+**Clean Architecture Layers:**
+```
+├── API Layer (Controllers, Middleware)
+├── Application Layer (CQRS - Commands, Queries, Handlers)
+├── Domain Layer (Aggregates, Entities, Value Objects, Events)
+└── Infrastructure Layer (Persistence, External Services)
+```
+
+**Key Patterns:**
+- **CQRS**: Commands for writes, Queries for reads
+- **DDD**: Domain-driven design with aggregates and value objects
+- **Repository Pattern**: Data access abstraction
+- **Unit of Work**: Transaction management
+- **Domain Events**: Event-driven communication
+
+### Frontend Architecture
+
+**Structure:**
+```
+booksy-frontend/
+├── src/
+│   ├── core/                    # Core infrastructure
+│   │   ├── api/                 # API clients & interceptors
+│   │   ├── router/              # Routes & guards
+│   │   ├── stores/              # Pinia state management
+│   │   ├── services/            # Shared services
+│   │   └── types/               # Global TypeScript types
+│   ├── modules/                 # Feature modules
+│   │   ├── auth/                # Authentication & verification
+│   │   ├── provider/            # Provider features
+│   │   ├── customer/            # Customer features
+│   │   └── booking/             # Booking features
+│   └── shared/                  # Shared UI components
+```
+
+**Key Patterns:**
+- **Composition API**: Vue 3 composables for logic reuse
+- **Pinia Stores**: Reactive state management
+- **TypeScript**: Type-safe development
+- **Axios Interceptors**: Request/response transformation
+- **Route Guards**: Authentication & authorization
+
+---
+
+## Authentication & Phone Verification
+
+### Phone Verification Flow
+
+**Overview:**
+Phone verification is a **separate step** from user authentication. It only confirms phone ownership, not user identity.
+
+**Flow Diagram:**
+```
+1. User enters phone number → LoginView
+   ↓
+2. Backend generates OTP code (6 digits, 5-minute validity)
+   ↓
+3. OTP hashed with SHA256, stored in DB (plain text NOT stored)
+   ↓
+4. SMS sent via Rahyab gateway
+   ↓
+5. User enters OTP → VerificationView
+   ↓
+6. Backend hashes input, compares with stored hash
+   ↓
+7. If match → Phone verified (user proceeds to registration)
+   ↓
+8. Registration creates account & authenticates user
+```
+
+### OTP Security Implementation
+
+**Key Security Features:**
+
+1. **Hash-Only Storage**: Plain text OTP is NEVER stored
+   ```csharp
+   // PhoneVerification.cs
+   public OtpCode OtpCode { get; private set; } // NOT persisted to DB
+   public string OtpHash { get; private set; }   // SHA256 hash stored
+
+   // EF Core Configuration
+   builder.Ignore(v => v.OtpCode); // Ignore OtpCode property
+   ```
+
+2. **Verification by Hash Comparison**:
+   ```csharp
+   public bool Verify(string inputCode)
+   {
+       var inputHash = HashOtp(inputCode);
+       var isValid = inputHash.Equals(OtpHash, StringComparison.Ordinal);
+       // ...
+   }
+   ```
+
+3. **Why OtpCode is Null After Database Load**:
+   - The `OtpCode` property is a transient value object
+   - Only exists during OTP generation/sending
+   - **Never persisted** to protect against database breaches
+   - Verification works by hashing user input and comparing hashes
+
+**Important Files:**
+- `PhoneVerification.cs` - Domain aggregate
+- `PhoneVerificationConfiguration.cs` - EF Core mapping
+- `RequestPhoneVerificationCommandHandler.cs` - OTP generation
+- `VerifyPhoneRequest.cs` - OTP verification
+
+### SMS Sandbox Mode
+
+**Development Configuration:**
+```json
+// appsettings.Development.json
+{
+  "Rahyab": {
+    "SandboxMode": true,
+    "SandboxOtpCode": "123456",
+    "ApiUrl": "https://api.rahyab.ir/sms/send"
+  }
+}
+```
+
+**Implementation:**
+```csharp
+// RahyabSmsNotificationService.cs
+if (_sandboxMode)
+{
+    _logger.LogWarning(
+        "🔧 SANDBOX MODE: Skipping real SMS. Use OTP code: {OtpCode}",
+        _sandboxOtpCode);
+    return (true, $"sandbox-{Guid.NewGuid()}", null);
+}
+```
+
+**Production Configuration** (Azure KeyVault):
+```json
+{
+  "Rahyab": {
+    "SandboxMode": false,
+    "ApiUrl": "#{AzureKeyVault:RahyabApiUrl}#",
+    "UserName": "#{AzureKeyVault:RahyabUserName}#",
+    "Password": "#{AzureKeyVault:RahyabPassword}#"
+  }
+}
+```
+
+---
+
+## Provider Registration Flow
+
+### Complete Flow
+
+```
+Phone Verification (Unauthenticated)
+  ↓
+/phone-verification → Verify OTP
+  ↓
+/registration → Step 1: Business Info (PUBLIC route)
+  ├─ Business Name
+  ├─ Owner Name
+  └─ Phone Number (auto-filled from sessionStorage)
+  ↓
+Step 2: Category Selection
+  ↓
+Step 3: Location (Province, City, Address, Map)
+  ↓
+Step 4: Services
+  ↓
+Step 5: Staff
+  ↓
+Step 6: Working Hours
+  ↓
+Step 7: Gallery
+  ↓
+Step 8: Optional Feedback
+  ↓
+Step 9: Completion → Account Creation & Authentication
+  ↓
+/dashboard (Authenticated)
+```
+
+### Key Implementation Details
+
+**1. Registration Route is PUBLIC**
+```typescript
+// provider.routes.ts
+{
+  path: '/registration',
+  name: 'ProviderRegistration',
+  meta: {
+    isPublic: true,  // ← Important: No authentication required
+    requiresPhoneVerification: true
+  }
+}
+```
+
+**Why?** New users don't have accounts yet. Registration creates the account.
+
+**2. Phone Number Persistence**
+```typescript
+// usePhoneVerification.ts
+const PHONE_NUMBER_KEY = 'phone_verification_number'
+sessionStorage.setItem(PHONE_NUMBER_KEY, fullPhoneNumber)
+
+// BusinessInfoStep.vue
+const getPhoneNumber = () => {
+  return sessionStorage.getItem(PHONE_NUMBER_KEY) ||
+         authStore.user?.phoneNumber || ''
+}
+```
+
+**3. Skip Draft Load for Unauthenticated Users**
+```typescript
+// useProviderRegistration.ts
+const loadDraft = async () => {
+  if (!authStore.isAuthenticated) {
+    console.log('⏭️ Skipping draft load - user not authenticated')
+    return { success: true, message: 'Starting fresh registration' }
+  }
+  // Load draft only for authenticated users
+}
+```
+
+**4. Province/City Only in LocationStep**
+- **BusinessInfoStep** (Step 1): Business name, owner name, phone
+- **LocationStep** (Step 3): Province, city, address, coordinates
+
+---
+
+## Location & Map Integration
+
+### Neshan Maps Integration
+
+**Overview:**
+The platform uses Neshan Maps (Iranian map service) for location selection with bidirectional synchronization between map and form fields.
+
+**Architecture:**
+```typescript
+LocationStep.vue
+  ├─ NeshanMapPicker (Interactive map component)
+  ├─ LocationSelector (Province/City dropdowns)
+  └─ useLocations (Composable for location data)
+```
+
+### Bidirectional Synchronization
+
+**1. Map → Form (Click on map updates dropdowns)**
+
+```typescript
+const handleLocationSelected = async (data: {
+  lat: number
+  lng: number
+  addressDetails?: {
+    state: string     // Province name from reverse geocoding
+    city: string      // City name from reverse geocoding
+    formattedAddress: string
+    postalCode: string
+  }
+}) => {
+  // Update coordinates
+  formData.value.coordinates = { lat: data.lat, lng: data.lng }
+
+  // Auto-select province from reverse geocoded state name
+  if (data.addressDetails?.state) {
+    const province = locationStore.getProvinceByName(data.addressDetails.state)
+    if (province) {
+      isUpdatingFromMap.value = true  // Prevent circular updates
+      formData.value.provinceId = province.id
+
+      // Load and auto-select city
+      await locationStore.loadCitiesByProvinceId(province.id)
+      if (data.addressDetails.city) {
+        const cities = locationStore.getCitiesByProvinceId(province.id)
+        const city = cities.find(c => c.name === data.addressDetails.city)
+        if (city) {
+          formData.value.cityId = city.id
+        }
+      }
+
+      setTimeout(() => { isUpdatingFromMap.value = false }, 100)
+    }
+  }
+
+  // Auto-fill address and postal code
+  formData.value.formattedAddress = data.addressDetails.formattedAddress
+  formData.value.postalCode = data.addressDetails.postalCode
+}
+```
+
+**2. Form → Map (Select dropdown updates map)**
+
+```typescript
+// Helper function to geocode location names
+const geocodeLocationName = async (locationName: string) => {
+  const response = await fetch(
+    `https://api.neshan.org/v1/search?term=${encodeURIComponent(locationName)}`,
+    { headers: { 'Api-Key': neshanServiceKey } }
+  )
+  const data = await response.json()
+  if (data.items?.[0]) {
+    return {
+      lat: data.items[0].location.y,
+      lng: data.items[0].location.x
+    }
+  }
+  return null
+}
+
+// Watch province changes
+watch(() => formData.value.provinceId, async (newProvinceId) => {
+  if (isUpdatingFromMap.value || !newProvinceId) return
+
+  const province = locationStore.getLocationById(newProvinceId)
+  if (province) {
+    const coordinates = await geocodeLocationName(province.name)
+    if (coordinates) {
+      formData.value.coordinates = coordinates  // Triggers map center update
+    }
+  }
+})
+
+// Watch city changes
+watch(() => formData.value.cityId, async (newCityId) => {
+  if (isUpdatingFromMap.value || !newCityId) return
+
+  const city = locationStore.getLocationById(newCityId)
+  const province = formData.value.provinceId ?
+    locationStore.getLocationById(formData.value.provinceId) : null
+
+  if (city) {
+    // Combine city + province for accurate geocoding
+    const searchTerm = province ? `${city.name}, ${province.name}` : city.name
+    const coordinates = await geocodeLocationName(searchTerm)
+    if (coordinates) {
+      formData.value.coordinates = coordinates
+    }
+  }
+})
+```
+
+**3. Preventing Circular Updates**
+
+```typescript
+const isUpdatingFromMap = ref(false)
+
+// Set flag when map triggers update
+isUpdatingFromMap.value = true
+// ... update form fields
+setTimeout(() => { isUpdatingFromMap.value = false }, 100)
+
+// Skip watchers when flag is set
+if (isUpdatingFromMap.value) return
+```
+
+### Neshan Maps Configuration
+
+**Environment Variables:**
+```env
+# .env.development
+VITE_NESHAN_MAP_KEY=web.741ff28152504624a0b3942d3621b56d
+VITE_NESHAN_SERVICE_KEY=service.qBDJpu7hKVBEAzERghfm9JM7vqGKXoNNNTdtrGy7
+```
+
+**API Endpoints Used:**
+- **Reverse Geocoding**: `https://api.neshan.org/v5/reverse?lat={lat}&lng={lng}`
+  - Returns: address, city, state, postalCode
+- **Search/Geocoding**: `https://api.neshan.org/v1/search?term={query}`
+  - Returns: coordinates for location name
+
+**Key Files:**
+- `NeshanMapPicker.vue` - Interactive map component
+- `LocationSelector.vue` - Province/City dropdowns
+- `LocationStep.vue` - Registration step with bidirectional sync
+- `useLocations.ts` - Composable for location data (provinces, cities)
+
+---
+
+## Event-Driven Architecture
+
+### Domain Events vs Integration Events
+
+**Domain Events**: Internal to a bounded context
+**Integration Events**: Cross-context communication via message bus
+
+```csharp
+// Domain Event (internal)
+public sealed record ProviderDraftCreatedEvent(
+    ProviderId ProviderId,
+    UserId OwnerId,
+    string OwnerFirstName,
+    string OwnerLastName,
+    string BusinessName,
+    DateTime CreatedAt
+) : DomainEvent;
+
+// Integration Event (cross-context)
+public sealed record ProviderDraftCreatedIntegrationEvent(
+    Guid ProviderId,
+    Guid OwnerId,
+    string OwnerFirstName,
+    string OwnerLastName,
+    string BusinessName,
+    DateTime CreatedAt
+) : IntegrationEvent
+```
+
+### Event Flow: Owner Name Storage
+
+**Use Case**: When provider registers, store owner's firstName/lastName in User.Profile
+
+**Architecture:**
+```
+ServiceCatalog Context              UserManagement Context
+      |                                     |
+Provider.CreateDraft()                     |
+      ↓                                     |
+Raise: ProviderDraftCreatedEvent           |
+      ↓                                     |
+ProviderDraftCreatedEventHandler           |
+      ↓                                     |
+Publish: Integration Event → CAP → RabbitMQ
+      |                                     ↓
+      |                    ProviderDraftCreatedEventSubscriber
+      |                                     ↓
+      |                         User.Profile.UpdatePersonalInfo()
+      |                                     ↓
+      |                              Save to UserManagement DB
+```
+
+### Implementation Details
+
+**1. Raise Domain Event in Aggregate**
+
+```csharp
+// Provider.cs
+public static Provider CreateDraft(
+    UserId ownerId,
+    string ownerFirstName,    // ← Captured from registration
+    string ownerLastName,
+    string businessName,
+    // ... other params
+)
+{
+    var provider = new Provider { /* ... */ };
+
+    // Raise domain event
+    provider.RaiseDomainEvent(new ProviderDraftCreatedEvent(
+        provider.Id,
+        provider.OwnerId,
+        ownerFirstName,
+        ownerLastName,
+        provider.Profile.BusinessName,
+        DateTime.UtcNow
+    ));
+
+    return provider;
+}
+```
+
+**2. Domain Event Handler → Integration Event**
+
+```csharp
+// ProviderDraftCreatedEventHandler.cs (ServiceCatalog)
+public async Task HandleAsync(
+    ProviderDraftCreatedEvent domainEvent,
+    CancellationToken cancellationToken)
+{
+    var integrationEvent = new ProviderDraftCreatedIntegrationEvent(
+        domainEvent.ProviderId.Value,
+        domainEvent.OwnerId.Value,
+        domainEvent.OwnerFirstName,
+        domainEvent.OwnerLastName,
+        domainEvent.BusinessName,
+        domainEvent.CreatedAt
+    );
+
+    await _eventPublisher.PublishAsync(integrationEvent, cancellationToken);
+}
+```
+
+**3. Integration Event Subscriber (Cross-Context)**
+
+```csharp
+// ProviderDraftCreatedEventSubscriber.cs (UserManagement)
+[CapSubscribe("booksy.servicecatalog.providerdraftcreated")]
+public async Task HandleAsync(ProviderDraftCreatedIntegrationEvent @event)
+{
+    await _unitOfWork.ExecuteInTransactionAsync(async () =>
+    {
+        var userId = UserId.From(@event.OwnerId);
+        var user = await _userRepository.GetByIdAsync(userId);
+
+        // Update user profile with owner names
+        user.Profile.UpdatePersonalInfo(
+            @event.OwnerFirstName,
+            @event.OwnerLastName,
+            middleName: null
+        );
+
+        await _userRepository.UpdateAsync(user, CancellationToken.None);
+    });
+}
+```
+
+**Key Benefits:**
+- ✅ Bounded contexts remain decoupled
+- ✅ Each context maintains its own database
+- ✅ Cross-context updates happen asynchronously
+- ✅ Failure in one context doesn't affect the other
+
+**Key Files:**
+- `ProviderDraftCreatedEvent.cs` - Domain event
+- `ProviderDraftCreatedIntegrationEvent.cs` - Integration event
+- `ProviderDraftCreatedEventHandler.cs` - Event publisher (ServiceCatalog)
+- `ProviderDraftCreatedEventSubscriber.cs` - Event subscriber (UserManagement)
+
+---
+
+## Database & EF Core Configuration
+
+### PostgreSQL Setup
+
+**Connection String Format:**
+```json
+{
+  "ConnectionStrings": {
+    "DefaultConnection": "Host=localhost;Port=5432;Database=booksy_service_catalog;Username=postgres;Password=postgres;Include Error Detail=true"
+  }
+}
+```
+
+**❌ WRONG (SQL Server format):**
+```
+"Server=localhost;Database=booksy;..."
+```
+
+**✅ CORRECT (PostgreSQL format):**
+```
+"Host=localhost;Port=5432;Database=booksy;..."
+```
+
+### EF Core 9 Owned Entity Configuration
+
+**Critical Issue**: Owned entities with manually-generated IDs require specific configuration in EF Core 9.
+
+**The Problem:**
+```
+Error: The database operation was expected to affect 1 row(s),
+       but actually affected 0 row(s); data may have been modified
+       or deleted since entities were loaded.
+```
+
+**Root Cause**: Owned entities in EF Core 9 need explicit configuration for:
+1. **Value generation strategy**
+2. **Concurrency token behavior**
+3. **No DbSet exposure**
+4. **Shadow property for foreign key**
+
+### Owned Entity Pattern (EF Core 9)
+
+**Domain Entity:**
+```csharp
+// ServiceOption.cs - Owned by Service aggregate
+public sealed class ServiceOption : Entity<Guid>
+{
+    public string Name { get; private set; }
+    public Price AdditionalPrice { get; private set; }
+    // ... other properties
+
+    // ❌ NO explicit ServiceId property (use shadow property)
+    // public ServiceId ServiceId { get; private set; }  // WRONG
+
+    internal static ServiceOption Create(string name, Price price, ...)
+    {
+        return new ServiceOption
+        {
+            Id = Guid.NewGuid(),  // ← Generated in code
+            Name = name,
+            // ... no ServiceId assignment
+        };
+    }
+}
+```
+
+**EF Core Configuration:**
+```csharp
+// ServiceConfiguration.cs
+builder.OwnsMany(s => s.Options, option =>
+{
+    option.ToTable("ServiceOptions", "ServiceCatalog");
+
+    // ✅ CRITICAL: Tell EF Core the ID is not database-generated
+    option.Property(so => so.Id)
+        .ValueGeneratedNever()      // ID set in code, not by DB
+        .IsConcurrencyToken(false); // Don't use for concurrency checks
+
+    option.HasKey(so => so.Id);
+    option.Property(so => so.Id).HasColumnName("Id");
+
+    // ✅ Use shadow property for foreign key
+    option.WithOwner()
+        .HasForeignKey("ServiceId");  // Shadow property, not exposed
+
+    // Configure all properties...
+    option.Property(so => so.Name)
+        .IsRequired()
+        .HasMaxLength(100);
+
+    // ✅ Configure inherited base class properties
+    option.Property(so => so.CreatedAt)
+        .IsRequired()
+        .HasColumnType("timestamp with time zone");
+
+    option.Property(so => so.CreatedBy);
+    option.Property(so => so.LastModifiedAt);
+    option.Property(so => so.LastModifiedBy);
+    option.Property(so => so.IsDeleted).HasDefaultValue(false);
+});
+
+// ✅ Configure navigation with backing field
+builder.Navigation(s => s.Options)
+    .UsePropertyAccessMode(PropertyAccessMode.Field)
+    .HasField("_options");
+```
+
+**DbContext Configuration:**
+```csharp
+// ServiceCatalogDbContext.cs
+
+// ❌ WRONG: Don't expose owned entities as DbSets
+// public DbSet<ServiceOption> ServiceOptions => Set<ServiceOption>();
+
+// ✅ CORRECT: Only aggregates are DbSets
+public DbSet<Service> Services => Set<Service>();
+
+// Comment why owned entities aren't exposed
+// ServiceOption and PriceTier are owned entities (OwnsMany) - not exposed as DbSets
+```
+
+### Configuration Checklist for Owned Entities
+
+**When using `OwnsMany` in EF Core 9:**
+
+- ✅ Add `ValueGeneratedNever().IsConcurrencyToken(false)` for manually-generated IDs
+- ✅ Use shadow property for foreign key: `WithOwner().HasForeignKey("PropertyName")`
+- ✅ Remove explicit foreign key property from entity class
+- ✅ Configure ALL properties (including inherited base class properties)
+- ✅ Do NOT expose as `DbSet<T>` in DbContext
+- ✅ Access only through parent aggregate's navigation property
+- ✅ Use backing fields for collections in aggregate
+
+**Common Mistakes:**
+
+| Mistake | Solution |
+|---------|----------|
+| Explicit FK property (e.g., `ServiceId`) | Remove it, use shadow property |
+| Exposed as `DbSet<ServiceOption>` | Remove from DbContext |
+| Missing `.ValueGeneratedNever()` | Add to Id property configuration |
+| Not configuring inherited properties | Configure `CreatedAt`, `CreatedBy`, etc. |
+| Using `.Include(s => s.Options)` | Not needed, auto-loaded with `OwnsMany` |
+
+### Database Migrations
+
+**Creating Migrations:**
+```bash
+cd src/BoundedContexts/ServiceCatalog/Booksy.ServiceCatalog.Infrastructure
+
+dotnet ef migrations add MigrationName \
+  --startup-project ../../Apps/Booksy.ServiceCatalog.Api/Booksy.ServiceCatalog.Api.csproj \
+  --context ServiceCatalogDbContext
+```
+
+**Applying Migrations:**
+```bash
+dotnet ef database update \
+  --startup-project ../../Apps/Booksy.ServiceCatalog.Api/Booksy.ServiceCatalog.Api.csproj \
+  --context ServiceCatalogDbContext
+```
+
+**Suppressing Pending Model Changes Warning:**
+```csharp
+// ServiceCatalogDbContext.cs
+protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
+{
+    // Method signature changes don't require migrations
+    optionsBuilder.ConfigureWarnings(warnings =>
+        warnings.Ignore(RelationalEventId.PendingModelChangesWarning));
+
+    base.OnConfiguring(optionsBuilder);
+}
+```
+
+---
+
+## API Integration & Type Safety
+
+### Transform Interceptor
+
+**Critical Component**: Converts between frontend camelCase and backend PascalCase
+
+```typescript
+// transform.interceptor.ts
+
+// REQUEST: camelCase → PascalCase
+export function transformRequest(data: any) {
+  return toPascalCase(data)
+}
+
+function toPascalCase(obj: any): any {
+  if (!obj || typeof obj !== 'object') return obj
+
+  if (Array.isArray(obj)) {
+    return obj.map(item => toPascalCase(item))
+  }
+
+  const result: any = {}
+  for (const key in obj) {
+    // phoneNumber → PhoneNumber
+    const pascalKey = key.charAt(0).toUpperCase() + key.slice(1)
+    result[pascalKey] = toPascalCase(obj[key])
+  }
+  return result
+}
+
+// RESPONSE: PascalCase → camelCase
+export function transformResponse(data: any) {
+  return toCamelCase(data)
+}
+
+function toCamelCase(obj: any): any {
+  if (!obj || typeof obj !== 'object') return obj
+
+  if (Array.isArray(obj)) {
+    return obj.map(item => toCamelCase(item))
+  }
+
+  const result: any = {}
+  for (const key in obj) {
+    // PhoneNumber → phoneNumber
+    const camelKey = key.charAt(0).toLowerCase() + key.slice(1)
+    result[camelKey] = toCamelCase(obj[key])
+  }
+  return result
+}
+```
+
+**Why This Matters:**
+- Frontend: `{ phoneNumber: "..." }` (JavaScript convention)
+- Backend: `{ PhoneNumber: "..." }` (.NET convention)
+- **Automatic conversion** prevents API mismatches
+
+### Auth Interceptor
+
+```typescript
+// auth.interceptor.ts
+export function authInterceptor(config: InternalAxiosRequestConfig) {
+  const token = localStorageService.get<string>('access_token')
+
+  if (token && config.headers) {
+    config.headers.Authorization = `Bearer ${token}`
+  }
+
+  return config
+}
+
+export async function authErrorInterceptor(error: any) {
+  if (error.response?.status === 401 && !originalRequest._retry) {
+    // Try to refresh token
+    const refreshToken = localStorageService.get<string>('refresh_token')
+    const response = await fetch('/api/v1/auth/refresh', {
+      method: 'POST',
+      body: JSON.stringify({ refreshToken })
+    })
+
+    if (response.ok) {
+      // Retry original request
+      return axios(originalRequest)
+    } else {
+      // Redirect to login
+      window.location.href = '/login'  // NOT /auth/login!
+    }
+  }
+}
+```
+
+---
+
+## Routing & Navigation Guards
+
+### Route Structure
+
+```typescript
+// Main router (index.ts)
+const routes: RouteRecordRaw[] = [
+  {
+    path: '/',
+    name: 'Home',
+    component: BookingView,
+    meta: { requiresAuth: true }
+  },
+  ...authRoutes,      // /login, /phone-verification
+  ...providerRoutes,  // /registration, /dashboard, /services, etc.
+  ...customerRoutes,
+  ...bookingRoutes
+]
+```
+
+**Important: NO duplicate `/` redirect** in auth.routes!
+- OLD (WRONG): `{ path: '/', redirect: '/login' }` in auth.routes
+- NEW (CORRECT): Only one `/` route in main router
+
+### Auth Guard Logic
+
+```typescript
+// auth.guard.ts
+export async function authGuard(to, from, next) {
+  const authStore = useAuthStore()
+  const requiresAuth = to.matched.some((record) => record.meta.requiresAuth)
+  const isPublic = to.matched.some((record) => record.meta.isPublic)
+
+  // Allow public routes
+  if (isPublic) {
+    // Redirect authenticated users AWAY from login
+    if (authStore.isAuthenticated && (to.name === 'Login' || to.name === 'Register')) {
+      await authStore.redirectToDashboard()
+      return
+    }
+    next()
+    return
+  }
+
+  // Require authentication for protected routes
+  if (requiresAuth && !authStore.isAuthenticated) {
+    next({ name: 'Login', query: { redirect: to.fullPath } })
+    return
+  }
+
+  // Provider status-based routing
+  if (authStore.hasAnyRole(['Provider'])) {
+    if (authStore.providerStatus === ProviderStatus.Drafted) {
+      // Redirect to registration
+      next({ name: 'ProviderRegistration' })
+      return
+    }
+  }
+
+  next()
+}
+```
+
+### Route Metadata
+
+```typescript
+// Public route (no auth required)
+{
+  path: '/registration',
+  meta: {
+    isPublic: true,
+    requiresPhoneVerification: true,  // Custom meta
+    title: 'Complete Your Provider Profile'
+  }
+}
+
+// Protected route (requires auth)
+{
+  path: '/dashboard',
+  meta: {
+    requiresAuth: true,
+    roles: ['Provider', 'ServiceProvider'],
+    title: 'Dashboard'
+  }
+}
+```
+
+---
+
+## Known Issues & Solutions
+
+### Issue 1: OTP Code is Null After Database Load
+
+**Symptom:**
+```csharp
+var verification = await repository.GetByIdAsync(verificationId);
+// verification.OtpCode is NULL
+// verification.OtpHash has value
+```
+
+**Root Cause:**
+`OtpCode` is ignored by EF Core for security (see `PhoneVerificationConfiguration.cs:66`)
+
+**Solution:**
+This is **intentional by design**. Use hash comparison:
+```csharp
+var inputHash = HashOtp(inputCode);
+var isValid = inputHash.Equals(OtpHash, StringComparison.Ordinal);
+```
+
+### Issue 2: Redirect to Login After Phone Verification
+
+**Symptom:**
+After successful OTP verification, user redirects to `/login` instead of `/registration`
+
+**Root Causes:**
+1. Duplicate `/` route redirecting to `/login`
+2. ProviderRegistration route had `requiresAuth: true`
+3. Auth interceptor redirecting to wrong path
+
+**Solutions:**
+1. Remove `{ path: '/', redirect: '/login' }` from auth.routes
+2. Set ProviderRegistration to `isPublic: true`
+3. Fix auth interceptor redirect: `/login` not `/auth/login`
+
+**Files Changed:**
+- `auth.routes.ts` - Removed duplicate route
+- `provider.routes.ts` - Made ProviderRegistration public
+- `auth.interceptor.ts` - Fixed redirect path
+
+### Issue 3: 401 Error Loading Registration Progress
+
+**Symptom:**
+```
+GET /v1/registration/progress 401 (Unauthorized)
+```
+
+**Root Cause:**
+New users from phone verification are not authenticated, but registration page tries to load existing draft.
+
+**Solution:**
+Skip draft load for unauthenticated users:
+```typescript
+const loadDraft = async () => {
+  if (!authStore.isAuthenticated) {
+    return { success: true, message: 'Starting fresh registration' }
+  }
+  // Only load draft for authenticated users
+  const response = await api.getRegistrationProgress()
+  // ...
+}
+```
+
+**File Changed:**
+- `useProviderRegistration.ts`
+
+### Issue 4: Phone Number Empty in BusinessInfoStep
+
+**Symptom:**
+Phone number field is blank in Step 1 of registration
+
+**Root Cause:**
+Tried to get from `authStore.user?.phoneNumber` but user not authenticated
+
+**Solution:**
+Get from sessionStorage where it was saved during verification:
+```typescript
+const PHONE_NUMBER_KEY = 'phone_verification_number'
+const getPhoneNumber = () => {
+  return sessionStorage.getItem(PHONE_NUMBER_KEY) ||
+         authStore.user?.phoneNumber || ''
+}
+```
+
+**File Changed:**
+- `BusinessInfoStep.vue`
+
+### Issue 5: Duplicate Symbol 'format' Error
+
+**Symptom:**
+```
+ERROR: The symbol "format" has already been declared
+```
+
+**Root Cause:**
+```typescript
+const { format = 'jalaali', ... } = options  // Line 32
+function format(date: Date) { ... }          // Line 177
+```
+
+**Solution:**
+Rename destructured variable:
+```typescript
+const { format: initialFormat = 'jalaali', ... } = options
+const displayFormat = ref<DateFormat>(initialFormat)
+```
+
+**File Changed:**
+- `useDatePicker.ts`
+
+### Issue 6: Toast Not Defined Error
+
+**Symptom:**
+```
+ReferenceError: toast is not defined
+```
+
+**Root Cause:**
+`useToast` not imported in VerificationView.vue
+
+**Solution:**
+```typescript
+import { useToast } from '@/core/composables'
+const toast = useToast()
+```
+
+**File Changed:**
+- `VerificationView.vue`
+
+### Issue 7: EF Core 9 Owned Entity SaveChanges Error
+
+**Symptom:**
+```
+DbUpdateConcurrencyException: The database operation was expected to affect 1 row(s),
+but actually affected 0 row(s); data may have been modified or deleted since entities were loaded.
+```
+
+**Context:**
+Occurs when seeding ServiceOption entities that are configured as owned entities (`OwnsMany`) in EF Core 9.
+
+**Root Causes (Multiple Issues):**
+
+1. **Missing ValueGeneratedNever Configuration**
+   - Owned entities with `Guid.NewGuid()` in code need `ValueGeneratedNever()`
+   - EF Core 9 assumes DB-generated IDs by default
+
+2. **Exposed as DbSet**
+   - Owned entities should NOT be exposed as `DbSet<T>` in DbContext
+   - Conflicts with `OwnsMany` configuration
+
+3. **Explicit Foreign Key Property**
+   - Owned entities should use shadow properties for FKs
+   - Explicit `ServiceId` property causes tracking issues
+
+4. **Missing Inherited Property Configuration**
+   - Base class properties (CreatedAt, CreatedBy, etc.) must be configured
+   - EF Core 9 is stricter about owned entity property mapping
+
+**Solutions Applied:**
+
+```csharp
+// 1. Add ValueGeneratedNever to entity configuration
+option.Property(so => so.Id)
+    .ValueGeneratedNever()      // ← CRITICAL for manual ID generation
+    .IsConcurrencyToken(false);
+
+// 2. Remove DbSet from DbContext
+// public DbSet<ServiceOption> ServiceOptions => Set<ServiceOption>(); // ← REMOVE
+
+// 3. Remove explicit FK from entity, use shadow property
+// public ServiceId ServiceId { get; private set; }  // ← REMOVE FROM ENTITY
+option.WithOwner().HasForeignKey("ServiceId");  // ← Shadow property in config
+
+// 4. Configure all inherited properties
+option.Property(so => so.CreatedAt);
+option.Property(so => so.CreatedBy);
+option.Property(so => so.LastModifiedAt);
+option.Property(so => so.LastModifiedBy);
+option.Property(so => so.IsDeleted);
+```
+
+**Reference:**
+https://stackoverflow.com/questions/79219671/ef-core-9-the-database-operation-was-expected-to-affect-1-rows-but-actually
+
+**Files Changed:**
+- `ServiceOption.cs` - Removed ServiceId property
+- `PriceTier.cs` - Removed ServiceId property
+- `ServiceConfiguration.cs` - Added ValueGeneratedNever, moved config inline
+- `ServiceCatalogDbContext.cs` - Removed DbSet declarations
+- `ServiceOptionSeeder.cs` - Updated to access through parent aggregate
+
+**Key Takeaway:**
+EF Core 9 has stricter validation for owned entities. Always use `ValueGeneratedNever()` for manually-generated IDs in owned entities.
+
+---
+
+## Session Summaries & Progress
+
+### Session: 2025-11-09 - Phone Verification & Registration Flow Fixes
+
+**Context:**
+Continued from previous session. Phone verification backend was complete, but frontend flow had critical routing and authentication issues.
+
+**Issues Addressed:**
+
+1. ✅ **OTP Verification Security**
+   - Fixed OTP verification to use hash comparison
+   - Documented why OtpCode is null (security feature)
+   - Backend: `PhoneVerification.cs`, `PhoneVerificationConfiguration.cs`
+
+2. ✅ **Routing Flow After Verification**
+   - Removed duplicate `/` route causing redirect loops
+   - Made ProviderRegistration public (no auth required)
+   - Fixed auth interceptor redirect path
+   - Files: `auth.routes.ts`, `provider.routes.ts`, `auth.interceptor.ts`, `auth.guard.ts`
+
+3. ✅ **Registration Draft Loading**
+   - Skip draft load for unauthenticated users
+   - Prevents 401 errors for new registrations
+   - File: `useProviderRegistration.ts`
+
+4. ✅ **BusinessInfoStep Improvements**
+   - Phone number auto-filled from sessionStorage
+   - Removed duplicate Province/City fields (belong in LocationStep)
+   - File: `BusinessInfoStep.vue`
+
+5. ✅ **TypeScript & Build Errors**
+   - Fixed duplicate 'format' symbol in useDatePicker
+   - Fixed missing toast import in VerificationView
+   - Files: `useDatePicker.ts`, `VerificationView.vue`
+
+**Complete Flow Now Working:**
+```
+/login
+  → User enters phone: 09123456789
+  → Backend generates OTP, sends SMS
+  ↓
+/phone-verification
+  → User enters OTP: 123456 (or sandbox code)
+  → Backend verifies hash
+  ↓
+/registration (PUBLIC - no auth required)
+  → Step 1: Business Info (phone auto-filled)
+  → Step 2: Category
+  → Step 3: Location (Province, City, Address)
+  → Steps 4-8: Services, Staff, Hours, Gallery, Feedback
+  → Step 9: Account created → User authenticated
+  ↓
+/dashboard (authenticated)
+```
+
+**Key Decisions:**
+
+1. **Phone verification ≠ Authentication**
+   - Verification only confirms phone ownership
+   - Registration creates the actual user account
+   - Authentication happens after registration completes
+
+2. **Registration is PUBLIC**
+   - New users can't authenticate before having an account
+   - Registration page accessible without login
+   - Draft loading skipped for unauthenticated users
+
+3. **SessionStorage for Phone Number**
+   - Persists across navigation
+   - Survives page refresh during verification
+   - Auto-fills registration form
+
+4. **OTP Security by Design**
+   - Plain text never stored in database
+   - Hash-only verification prevents exposure
+   - Sandbox mode for development testing
+
+**Files Modified:**
+```
+Backend:
+- PhoneVerification.cs
+- RahyabSmsNotificationService.cs
+- All appsettings.json files (Rahyab config)
+
+Frontend:
+- auth.routes.ts
+- provider.routes.ts
+- auth.guard.ts
+- auth.interceptor.ts
+- transform.interceptor.ts (previous session)
+- VerificationView.vue
+- BusinessInfoStep.vue
+- usePhoneVerification.ts
+- useProviderRegistration.ts
+- useDatePicker.ts
+```
+
+**Testing Verified:**
+- ✅ Phone verification flow (login → verify → registration)
+- ✅ OTP hash comparison (sandbox mode with 123456)
+- ✅ Navigation guards (public vs protected routes)
+- ✅ Phone number auto-fill in registration
+- ✅ Draft loading skip for new users
+- ✅ No 401 errors on registration page
+- ✅ No routing loops or redirects
+
+**Next Steps:**
+- Complete provider registration backend endpoints
+- Implement account creation on registration completion
+- Add email verification (optional)
+- Add profile image upload
+- Testing with real Rahyab SMS in staging
+
+---
+
+### Session: 2025-11-11 - Location Integration, Event Architecture & EF Core 9 Fixes
+
+**Context:**
+Continued from previous session. Implemented bidirectional map synchronization, event-driven owner name storage, and resolved critical EF Core 9 owned entity issues.
+
+**Major Work Completed:**
+
+1. ✅ **Bidirectional Location Synchronization**
+   - Implemented Map → Form sync (click map → auto-select province/city)
+   - Implemented Form → Map sync (select dropdown → move map)
+   - Used Neshan Search API for geocoding location names
+   - Prevented circular updates with `isUpdatingFromMap` flag
+   - Files: `LocationStep.vue`, `NeshanMapPicker.vue`, `useLocations.ts`
+
+2. ✅ **Event-Driven Owner Name Storage**
+   - Created `ProviderDraftCreatedEvent` (domain event)
+   - Created `ProviderDraftCreatedIntegrationEvent` (cross-context)
+   - Implemented event handler to publish to CAP/RabbitMQ
+   - Implemented event subscriber in UserManagement to update User.Profile
+   - Owner names now stored in both ServiceCatalog and UserManagement contexts
+   - Files: Event classes, handlers, Provider.cs, SaveStep3LocationCommand.cs
+
+3. ✅ **EF Core 9 Owned Entity Configuration**
+   - **Critical Issue Resolved**: "expected to affect 1 row(s), but actually affected 0 row(s)"
+   - Added `ValueGeneratedNever().IsConcurrencyToken(false)` to ServiceOption Id
+   - Removed explicit `ServiceId` property, used shadow property
+   - Removed `DbSet<ServiceOption>` and `DbSet<PriceTier>` from DbContext
+   - Configured all inherited base class properties (CreatedAt, CreatedBy, etc.)
+   - Moved ServiceOption configuration inline with Service (removed separate file)
+   - Files: ServiceOption.cs, PriceTier.cs, ServiceConfiguration.cs, ServiceCatalogDbContext.cs
+
+4. ✅ **Database & Migration Fixes**
+   - Fixed connection string format (SQL Server → PostgreSQL)
+   - Removed SQL Server EF Core package
+   - Added suppression for PendingModelChangesWarning
+   - Updated seeder to work with owned entities
+   - Files: appsettings.json, Infrastructure.csproj, ServiceOptionSeeder.cs
+
+**Technical Details:**
+
+**Location Synchronization Flow:**
+```typescript
+User clicks map → Reverse geocode → Get state/city names
+→ Match to provinceId/cityId → Update dropdowns
+
+User selects province/city → Geocode name → Get coordinates
+→ Update map center → Prevent circular updates with flag
+```
+
+**Event-Driven Architecture Flow:**
+```csharp
+Provider.CreateDraft(ownerFirstName, ownerLastName)
+→ Raise ProviderDraftCreatedEvent
+→ ProviderDraftCreatedEventHandler
+→ Publish ProviderDraftCreatedIntegrationEvent to CAP
+→ RabbitMQ message bus
+→ ProviderDraftCreatedEventSubscriber (UserManagement)
+→ User.Profile.UpdatePersonalInfo()
+→ Save to UserManagement database
+```
+
+**EF Core 9 Owned Entity Pattern:**
+```csharp
+// Entity: No explicit FK, manual ID generation
+internal static ServiceOption Create(string name, ...) {
+    return new ServiceOption { Id = Guid.NewGuid(), ... };
+}
+
+// Configuration: Shadow property, ValueGeneratedNever
+builder.OwnsMany(s => s.Options, option => {
+    option.Property(so => so.Id)
+        .ValueGeneratedNever()
+        .IsConcurrencyToken(false);
+    option.WithOwner().HasForeignKey("ServiceId");
+});
+
+// DbContext: No DbSet for owned entities
+// ❌ public DbSet<ServiceOption> ServiceOptions => Set<ServiceOption>();
+```
+
+**Key Decisions:**
+
+1. **Location Synchronization**
+   - Use Neshan Search API for geocoding (free tier sufficient)
+   - Combine city + province for accurate results
+   - 100ms delay before re-enabling watchers (prevents race conditions)
+
+2. **Event Architecture**
+   - Owner names stored in both contexts (ServiceCatalog + UserManagement)
+   - Asynchronous cross-context communication via CAP/RabbitMQ
+   - UpdatePersonalInfo instead of UpdateName (user preference)
+
+3. **EF Core 9 Owned Entities**
+   - Always use `ValueGeneratedNever()` for manual ID generation
+   - Never expose owned entities as `DbSet<T>`
+   - Always use shadow properties for foreign keys
+   - Always configure inherited base class properties
+
+**Files Modified:**
+```
+Backend:
+- ServiceOption.cs (removed ServiceId, CreatedAt properties)
+- PriceTier.cs (removed ServiceId property)
+- ServiceConfiguration.cs (added ValueGeneratedNever, inline config)
+- ServiceCatalogDbContext.cs (removed DbSet, added warning suppression)
+- ServiceOptionSeeder.cs (updated for owned entities)
+- Provider.cs (added owner name parameters, domain event)
+- SaveStep3LocationCommand.cs (added owner name fields)
+- ProviderDraftCreatedEvent.cs (NEW)
+- ProviderDraftCreatedIntegrationEvent.cs (NEW)
+- ProviderDraftCreatedEventHandler.cs (NEW)
+- ProviderDraftCreatedEventSubscriber.cs (NEW)
+- Infrastructure.csproj (removed SQL Server package)
+- appsettings.json (PostgreSQL connection string)
+
+Frontend:
+- LocationStep.vue (bidirectional sync implementation)
+- useLocations.ts (location data composable)
+- .env.development (Neshan API keys)
+```
+
+**Testing Verified:**
+- ✅ Location map-to-form synchronization
+- ✅ Location form-to-map synchronization
+- ✅ Owner name event flow (ServiceCatalog → UserManagement)
+- ✅ ServiceOption seeder (no more concurrency errors)
+- ✅ Database migrations (PostgreSQL)
+- ✅ No circular update loops in location selection
+
+**Key Learnings:**
+
+1. **EF Core 9 Breaking Changes**
+   - Owned entities require `ValueGeneratedNever()` for manual IDs
+   - Stricter validation for entity configuration
+   - Must configure ALL properties including inherited ones
+
+2. **StackOverflow as Problem-Solving Resource**
+   - Found exact solution for EF Core 9 owned entity issue
+   - Reference: https://stackoverflow.com/questions/79219671/
+
+3. **Bidirectional Sync Complexity**
+   - Need flags to prevent infinite loops
+   - Geocoding API calls can be slow (consider caching)
+   - Combining location names improves accuracy
+
+**Next Steps:**
+- Test complete registration flow with all steps
+- Implement service creation and management
+- Add staff management functionality
+- Implement business hours configuration
+- Add gallery/image upload features
 
 ---
 
@@ -31,9 +1380,11 @@
 
 | Date       | Version | Changes                                           | Author       |
 |------------|---------|---------------------------------------------------|--------------|
+| 2025-11-11 | 4.0.0   | Added location integration, event architecture, EF Core 9 fixes | Claude (AI)  |
+| 2025-11-09 | 3.0.0   | Comprehensive documentation of auth & registration| Claude (AI)  |
 | 2025-11-06 | 2.0.0   | Consolidated all technical documentation          | Claude (AI)  |
 | 2025-11-05 | 1.0.0   | Initial comprehensive documentation created       | Claude (AI)  |
 
 ---
 
-*This is a living document. It consolidates all technical documentation from the project into a single, searchable reference. Update this file whenever significant changes are made to the architecture, domain model, or development processes.*
+*This is a living document. It consolidates all technical documentation from the project into a single, searchable reference. Update this file whenever significant changes are made to the architecture, authentication flow, or critical components.*

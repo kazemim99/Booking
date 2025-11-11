@@ -56,15 +56,11 @@
                 <label for="exception-open-time" class="form-label required">
                   {{ $t('provider.hours.exceptions.openTime') }}
                 </label>
-                <input
-                  id="exception-open-time"
+                <PersianTimePicker
                   v-model="formData.openTime"
-                  type="time"
-                  class="form-control"
-                  :class="{ 'is-invalid': errors.openTime }"
-                  required
+                  :placeholder="$t('provider.hours.exceptions.openTime')"
                 />
-                <div v-if="errors.openTime" class="invalid-feedback">
+                <div v-if="errors.openTime" class="invalid-feedback d-block">
                   {{ errors.openTime }}
                 </div>
               </div>
@@ -73,15 +69,11 @@
                 <label for="exception-close-time" class="form-label required">
                   {{ $t('provider.hours.exceptions.closeTime') }}
                 </label>
-                <input
-                  id="exception-close-time"
+                <PersianTimePicker
                   v-model="formData.closeTime"
-                  type="time"
-                  class="form-control"
-                  :class="{ 'is-invalid': errors.closeTime }"
-                  required
+                  :placeholder="$t('provider.hours.exceptions.closeTime')"
                 />
-                <div v-if="errors.closeTime" class="invalid-feedback">
+                <div v-if="errors.closeTime" class="invalid-feedback d-block">
                   {{ errors.closeTime }}
                 </div>
               </div>
@@ -165,6 +157,7 @@ import { ref, computed, watch, onMounted } from 'vue'
 import { useHoursStore } from '../../stores/hours.store'
 import type { ExceptionSchedule } from '../../types/hours.types'
 import { useI18n } from 'vue-i18n'
+import PersianTimePicker from '@/shared/components/calendar/PersianTimePicker.vue'
 
 // Props & Emits
 interface Props {

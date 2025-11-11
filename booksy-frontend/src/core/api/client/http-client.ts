@@ -2,6 +2,25 @@ import axios, { AxiosInstance, AxiosRequestConfig, AxiosResponse, AxiosError } f
 import { apiConfig, microservices } from '../config/api-config'
 import { ApiError } from './api-error'
 import type { ApiResponse } from './api-response'
+import {
+  authInterceptor,
+  authErrorInterceptor,
+} from '../interceptors/auth.interceptor'
+import { errorInterceptor } from '../interceptors/error.interceptor'
+import {
+  requestLoggingInterceptor,
+  responseLoggingInterceptor,
+  errorLoggingInterceptor,
+} from '../interceptors/logging.interceptor'
+import {
+  requestTransformInterceptor,
+  responseTransformInterceptor,
+} from '../interceptors/transform.interceptor'
+import { retryInterceptor } from '../interceptors/retry-handler'
+import {
+  cacheRequestInterceptor,
+  cacheResponseInterceptor,
+} from '../interceptors/request-cache'
 
 interface ErrorResponse {
   success?: boolean
@@ -50,210 +69,84 @@ class HttpClient {
   }
 
   private initializeInterceptors(): void {
-    // Request Interceptor
+    // ============================================
+    // Request Interceptors (applied in order)
+    // ============================================
+
+    // 1. Cache - Check cache before making request (GET only)
     this.axiosInstance.interceptors.request.use(
-      (config) => {
-        // Add auth token if exists
-        const token = localStorage.getItem('auth_token')
-        if (token && config.headers) {
-          config.headers.Authorization = `Bearer ${token}`
-        }
+      cacheRequestInterceptor as any,
+      (error: AxiosError) => Promise.reject(error),
+    )
 
-        // Add request timestamp
-        config.metadata = { startTime: new Date() }
-
-        if (import.meta.env.DEV) {
-          console.log(`🌐 ${config.method?.toUpperCase()} ${config.url}`, config.params)
-        }
-
-        return config
-      },
+    // 2. Logging - Track request start time and log request details
+    this.axiosInstance.interceptors.request.use(
+      requestLoggingInterceptor,
       (error: AxiosError) => {
         console.error('[HTTP] Request Error:', error)
         return Promise.reject(error)
       },
     )
 
-    // Response Interceptor
+    // 3. Auth - Add JWT token to request headers
+    this.axiosInstance.interceptors.request.use(
+      authInterceptor,
+      (error: AxiosError) => Promise.reject(error),
+    )
+
+    // 4. Transform - Convert camelCase to PascalCase for .NET API
+    this.axiosInstance.interceptors.request.use(
+      requestTransformInterceptor,
+      (error: AxiosError) => Promise.reject(error),
+    )
+
+    // ============================================
+    // Response Interceptors (applied in reverse order)
+    // ============================================
+
+    // 1. Transform - Convert PascalCase to camelCase from .NET API
     this.axiosInstance.interceptors.response.use(
-      (response: AxiosResponse) => {
-        this.logResponse(response)
-        return response
-      },
-      async (error: AxiosError) => {
-        return this.handleError(error)
-      },
+      responseTransformInterceptor,
+      (error: AxiosError) => Promise.reject(error),
+    )
+
+    // 2. Logging - Log successful responses
+    this.axiosInstance.interceptors.response.use(
+      responseLoggingInterceptor,
+      (error: AxiosError) => Promise.reject(error),
+    )
+
+    // 3. Cache - Store successful GET responses
+    this.axiosInstance.interceptors.response.use(
+      cacheResponseInterceptor,
+      (error: AxiosError) => Promise.reject(error),
+    )
+
+    // 4. Auth Error - Handle 401 errors and token refresh
+    this.axiosInstance.interceptors.response.use(
+      (response: AxiosResponse) => response,
+      authErrorInterceptor,
+    )
+
+    // 5. Error - Handle all other errors with Persian messages
+    this.axiosInstance.interceptors.response.use(
+      (response: AxiosResponse) => response,
+      errorInterceptor,
+    )
+
+    // 6. Retry - Retry failed requests with exponential backoff
+    this.axiosInstance.interceptors.response.use(
+      (response: AxiosResponse) => response,
+      retryInterceptor,
+    )
+
+    // 7. Error Logging - Log error responses in development
+    this.axiosInstance.interceptors.response.use(
+      (response: AxiosResponse) => response,
+      errorLoggingInterceptor,
     )
   }
 
-  private logResponse(response: AxiosResponse): void {
-    if (!import.meta.env.DEV) return
-
-    const metadata = response.config.metadata as { startTime: Date } | undefined
-
-    if (metadata?.startTime) {
-      const duration = new Date().getTime() - metadata.startTime.getTime()
-      console.log(
-        `[HTTP] ${response.config.method?.toUpperCase()} ${response.config.url} - ${response.status} (${duration}ms)`,
-      )
-    } else {
-      console.log(
-        `[HTTP] ${response.config.method?.toUpperCase()} ${response.config.url} - ${response.status}`,
-      )
-    }
-  }
-
-  private async handleError(error: AxiosError): Promise<any> {
-    if (error.response) {
-      // Server responded with error status
-      const { status, data } = error.response
-      const errorData = data as ErrorResponse
-
-      // Check if this is a validation error (400 with error.errors)
-      if (status === 400 && errorData?.error?.errors) {
-        if (import.meta.env.DEV) {
-          console.warn('[HTTP] Validation Error:', {
-            status,
-            message: errorData.message,
-            errors: errorData.error.errors,
-          })
-        }
-
-        // Create ApiError with validation details
-        const validationError = new ApiError(
-          errorData.message || 'Validation failed',
-          status,
-          errorData
-        )
-
-        // Attach validation errors to the error object
-        ;(validationError as any).validationErrors = errorData.error.errors
-        ;(validationError as any).isValidationError = true
-
-        throw validationError
-      }
-
-      // Extract error message for non-validation errors
-      let errorMessage = error.message
-      if (errorData) {
-        // Priority: message > error.message > title > default
-        errorMessage =
-          errorData.message || errorData.error?.message || errorData.title || error.message
-      }
-
-      // Create ApiError with all error information
-      const apiError = new ApiError(errorMessage, status, errorData)
-
-      // Log error details in development
-      if (import.meta.env.DEV) {
-        console.error('Response Error:', {
-          status,
-          message: errorMessage,
-          errors: errorData?.errors,
-          data: errorData,
-        })
-      }
-
-      // Handle 401 Unauthorized - Token expired
-      if (status === 401) {
-        const originalRequest = error.config
-        if (originalRequest && !originalRequest.metadata?.isRetry) {
-          try {
-            await this.handleUnauthorized()
-            // Mark as retry to prevent infinite loop
-            originalRequest.metadata = {
-              ...originalRequest.metadata,
-              isRetry: true,
-              startTime: new Date(),
-            }
-            // Retry the original request with new token
-            return this.axiosInstance.request(originalRequest)
-          } catch (_refreshError) {
-            console.error('[HTTP] Token refresh failed, redirecting to login')
-            console.log(_refreshError)
-            throw apiError
-          }
-        }
-      }
-
-      // Handle 403 Forbidden
-      if (status === 403) {
-        console.error('[HTTP] Access Forbidden')
-      }
-
-      throw apiError
-    } else if (error.request) {
-      // Request made but no response received
-      const networkError = new ApiError(
-        'No response from server. Please check your internet connection.',
-        0,
-      )
-      console.error('[HTTP] Network Error:', error.request)
-      throw networkError
-    } else {
-      // Error in request setup
-      const setupError = new ApiError(error.message, 0)
-      console.error('[HTTP] Request Setup Error:', error.message)
-      throw setupError
-    }
-  }
-
-  private async handleUnauthorized(): Promise<void> {
-    // If already refreshing, wait for it to complete
-    if (this.isRefreshing) {
-      return new Promise((resolve) => {
-        this.refreshSubscribers.push(() => {
-          resolve()
-        })
-      })
-    }
-
-    const refreshToken = localStorage.getItem('refresh_token')
-
-    if (!refreshToken) {
-      this.clearAuthData()
-      window.location.href = '/login'
-      return Promise.reject(new Error('No refresh token available'))
-    }
-
-    this.isRefreshing = true
-
-    try {
-      // Try to refresh token
-      const response = await axios.post<{ accessToken: string; refreshToken: string }>(
-        `${this.baseURL}/auth/refresh`,
-        { refreshToken },
-      )
-
-      const { accessToken, refreshToken: newRefreshToken } = response.data
-
-      localStorage.setItem('auth_token', accessToken)
-      localStorage.setItem('refresh_token', newRefreshToken)
-
-      // Notify all subscribers
-      this.refreshSubscribers.forEach((callback) => callback())
-      this.refreshSubscribers = []
-
-      return Promise.resolve()
-    } catch (error) {
-      // Refresh failed - logout user
-      console.error('[HTTP] Token refresh failed:', error)
-      this.clearAuthData()
-      window.location.href = '/login'
-      return Promise.reject(error)
-    } finally {
-      this.isRefreshing = false
-    }
-  }
-
-  private isRefreshing = false
-  private refreshSubscribers: Array<() => void> = []
-
-  private clearAuthData(): void {
-    localStorage.removeItem('auth_token')
-    localStorage.removeItem('refresh_token')
-    localStorage.removeItem('user')
-  }
 
   /**
    * Normalize API response to extract validation errors from nested error.errors
@@ -320,6 +213,18 @@ export const userManagementClient = new HttpClient(microservices.userManagement)
 // Legacy default client (backward compatibility)
 export const httpClient = serviceCategoryClient
 export default httpClient
+
+// Re-export cache utilities
+export {
+  withCache,
+  withoutCache,
+  clearCache,
+  getCacheStats,
+  requestCache,
+} from '../interceptors/request-cache'
+
+// Re-export retry utilities
+export { withRetry, withoutRetry } from '../interceptors/retry-handler'
 
 // Extend AxiosRequestConfig to include metadata
 declare module 'axios' {

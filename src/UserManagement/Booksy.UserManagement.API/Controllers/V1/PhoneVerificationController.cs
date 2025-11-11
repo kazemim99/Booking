@@ -10,6 +10,7 @@ using Booksy.UserManagement.API.Models.Responses;
 using Booksy.UserManagement.Application.Commands.PhoneVerification.RequestVerification;
 using Booksy.UserManagement.Application.Commands.PhoneVerification.VerifyPhone;
 using Booksy.UserManagement.Application.Commands.PhoneVerification.ResendOtp;
+using Booksy.UserManagement.Application.Commands.PhoneVerification.RegisterFromVerifiedPhone;
 using Booksy.UserManagement.Domain.Enums;
 using Booksy.Core.Domain.Exceptions;
 
@@ -186,6 +187,57 @@ public class PhoneVerificationController : ControllerBase
                 "OTP resent: VerificationId={VerificationId}",
                 request.VerificationId);
         }
+
+        return Ok(response);
+    }
+
+    /// <summary>
+    /// Register/login user from verified phone number
+    /// Creates account if new user, or logs in existing user
+    /// </summary>
+    /// <param name="request">Registration request with verification ID</param>
+    /// <returns>Authentication tokens</returns>
+    [HttpPost("register")]
+    [AllowAnonymous]
+    [EnableRateLimiting("authentication")]
+    [ProducesResponseType(typeof(RegisterFromVerifiedPhoneResponse), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> RegisterFromVerifiedPhone([FromBody] RegisterFromVerifiedPhoneRequest request)
+    {
+        var ipAddress = HttpContext.Connection.RemoteIpAddress?.ToString();
+        var userAgent = HttpContext.Request.Headers["User-Agent"].ToString();
+
+        // Parse user type
+        if (!Enum.TryParse<UserType>(request.UserType, true, out var userType))
+        {
+            throw new DomainValidationException("UserType", $"Invalid user type: {request.UserType}");
+        }
+
+        var command = new RegisterFromVerifiedPhoneCommand(
+            request.VerificationId,
+            userType,
+            request.FirstName,
+            request.LastName,
+            ipAddress,
+            userAgent);
+
+        var result = await _mediator.Send(command);
+
+        var response = new RegisterFromVerifiedPhoneResponse
+        {
+            UserId = result.UserId.ToString(),
+            PhoneNumber = result.PhoneNumber,
+            AccessToken = result.AccessToken,
+            RefreshToken = result.RefreshToken,
+            ExpiresIn = result.ExpiresIn,
+            TokenType = "Bearer",
+            Message = result.Message
+        };
+
+        _logger.LogInformation(
+            "User registered from verified phone: UserId={UserId}",
+            result.UserId);
 
         return Ok(response);
     }
