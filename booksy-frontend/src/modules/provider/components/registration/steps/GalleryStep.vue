@@ -314,9 +314,16 @@ async function handleDeleteImage(imageId: string) {
 }
 
 function handleNext() {
+  console.log('🎯 GalleryStep: handleNext called')
+  console.log('🎯 GalleryStep: localGalleryImages count:', localGalleryImages.value.length)
+  console.log('🎯 GalleryStep: isUploading:', isUploading.value)
+
   // Save gallery images to registration state
   registration.setGalleryImages(localGalleryImages.value)
+
+  console.log('🎯 GalleryStep: Emitting next event')
   emit('next')
+  console.log('🎯 GalleryStep: Next event emitted')
 }
 </script>
 

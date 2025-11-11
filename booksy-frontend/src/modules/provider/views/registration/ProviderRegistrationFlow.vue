@@ -118,17 +118,20 @@ const ownerFullName = computed(() => {
 let draftProviderId: string | undefined = undefined
 
 const handleNext = async () => {
-  console.log('handleNext called, current step:', currentStep.value)
-  console.log('Registration data:', registrationData.value)
+  console.log('🚀 ProviderRegistrationFlow: handleNext called, current step:', currentStep.value)
+  console.log('🚀 ProviderRegistrationFlow: Registration data:', registrationData.value)
+  console.log('🚀 ProviderRegistrationFlow: draftProviderId:', draftProviderId)
 
   const canProceed = canProceedToNextStep()
-  console.log('Can proceed to next step:', canProceed)
+  console.log('🚀 ProviderRegistrationFlow: Can proceed to next step:', canProceed)
 
   if (!canProceed) {
-    console.error('Cannot proceed - validation failed')
+    console.error('🚀 ProviderRegistrationFlow: Cannot proceed - validation failed')
     toastService.error('لطفاً تمام فیلدهای الزامی را تکمیل کنید')
     return
   }
+
+  console.log('🚀 ProviderRegistrationFlow: Validation passed, continuing...')
 
   try {
     // Step-specific save operations
@@ -234,6 +237,8 @@ const handleNext = async () => {
       }
       toastService.success('ساعات کاری ذخیره شد')
     } else if (currentStep.value === 7) {
+      console.log('🚀 ProviderRegistrationFlow: Processing Step 7 (Gallery)')
+
       // Step 7: Save gallery (optional)
       // Try to get provider ID from draftProviderId or load from progress
       let providerId = draftProviderId
@@ -253,19 +258,23 @@ const handleNext = async () => {
         return
       }
 
-      console.log('✅ Step 7 complete - Saving gallery with provider ID:', providerId)
+      console.log('✅ Step 7 - Calling saveGallery with provider ID:', providerId)
       const result = await saveGallery(providerId)
+      console.log('✅ Step 7 - saveGallery result:', result)
 
       if (!result.success) {
         console.error('❌ Failed to save gallery:', result.message)
         toastService.error(result.message || 'خطا در ذخیره گالری')
         return
       }
+      console.log('✅ Step 7 - Showing success toast')
       toastService.success('گالری ذخیره شد')
+      console.log('✅ Step 7 - Success toast shown')
     }
 
-    console.log('Proceeding to next step')
+    console.log('🚀 ProviderRegistrationFlow: Proceeding to next step')
     nextStep()
+    console.log('🚀 ProviderRegistrationFlow: nextStep() called successfully')
   } catch (error: any) {
     console.error('Error in handleNext:', error)
     toastService.error(error.message || 'خطا در ذخیره اطلاعات')
