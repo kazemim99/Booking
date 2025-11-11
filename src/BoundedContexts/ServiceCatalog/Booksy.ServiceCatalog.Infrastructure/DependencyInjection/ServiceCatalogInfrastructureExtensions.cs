@@ -87,6 +87,12 @@ namespace Booksy.ServiceCatalog.Infrastructure.DependencyInjection
             services.AddScoped<IBookingReadRepository, BookingReadRepository>();
             services.AddScoped<IBookingWriteRepository, BookingWriteRepository>();
 
+            // Payment and Payout Repositories
+            services.AddScoped<IPaymentReadRepository, PaymentReadRepository>();
+            services.AddScoped<IPaymentWriteRepository, PaymentWriteRepository>();
+            services.AddScoped<IPayoutReadRepository, PayoutReadRepository>();
+            services.AddScoped<IPayoutWriteRepository, PayoutWriteRepository>();
+
             // Notification Repositories
             services.AddScoped<INotificationReadRepository, NotificationReadRepository>();
             services.AddScoped<INotificationWriteRepository, NotificationWriteRepository>();
@@ -113,6 +119,17 @@ namespace Booksy.ServiceCatalog.Infrastructure.DependencyInjection
 
             // Application Services
             services.AddScoped<IProviderApplicationService, ProviderApplicationService>();
+
+            // SendGrid Client for Email Notifications
+            services.AddSingleton<ISendGridClient>(sp =>
+            {
+                var apiKey = configuration["SendGrid:ApiKey"];
+                if (string.IsNullOrEmpty(apiKey))
+                {
+                    throw new InvalidOperationException("SendGrid API key not configured");
+                }
+                return new SendGridClient(apiKey);
+            });
 
             // CAP Event Bus with Outbox Pattern
             services.AddCapEventBus<ServiceCatalogDbContext>(configuration, "ServiceCatalog");
@@ -194,9 +211,13 @@ namespace Booksy.ServiceCatalog.Infrastructure.DependencyInjection
 
             // Multi-Channel Notification Services
             services.AddScoped<IEmailNotificationService, SendGridEmailNotificationService>();
-            services.AddScoped<ISmsNotificationService, RahyabSmsNotificationService>();
+            services.AddScoped<Notifications.ISmsNotificationService, RahyabSmsNotificationService>();
             services.AddScoped<IPushNotificationService, FirebasePushNotificationService>();
             services.AddScoped<IInAppNotificationService, InAppNotificationService>();
+
+            // Register old ISmsNotificationService for booking event handlers
+            services.AddHttpClient<ExternalServices.Sms.KavenegarSmsService>();
+            services.AddScoped<Application.Services.ISmsNotificationService, ExternalServices.Sms.KavenegarSmsService>();
 
             // HTTP Clients for notification services
             services.AddHttpClient<SendGridEmailNotificationService>();

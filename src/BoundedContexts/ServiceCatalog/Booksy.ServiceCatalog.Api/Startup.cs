@@ -137,6 +137,9 @@ namespace Booksy.API
             services.AddResponseCompression();
             services.AddHttpContextAccessor();
 
+            // SignalR for real-time notifications
+            services.AddSignalR();
+
             // API Behaviors
             services.Configure<ApiBehaviorOptions>(options =>
             {
@@ -204,6 +207,9 @@ namespace Booksy.API
                 });
 
                 endpoints.MapControllers();
+
+                // Map SignalR hubs
+                endpoints.MapHub<Booksy.ServiceCatalog.Infrastructure.Hubs.NotificationHub>("/hubs/notifications");
             });
 
             // Run database seeder in development
