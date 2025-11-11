@@ -37,6 +37,7 @@ public sealed class GetRegistrationProgressQueryHandler
             return new GetRegistrationProgressResult(
                 HasDraft: false,
                 CurrentStep: null,
+                ProviderId: null,
                 DraftData: null);
         }
 
@@ -132,6 +133,7 @@ public sealed class GetRegistrationProgressQueryHandler
         return new GetRegistrationProgressResult(
             HasDraft: true,
             CurrentStep: draftProvider.RegistrationStep,
+            ProviderId: draftProvider?.Id.Value,
             DraftData: draftData
         );
     }

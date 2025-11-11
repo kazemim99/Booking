@@ -11,6 +11,7 @@ public sealed record GetRegistrationProgressQuery() : IQuery<GetRegistrationProg
 public sealed record GetRegistrationProgressResult(
     bool HasDraft,
     int? CurrentStep,
+    Guid? ProviderId,
     ProviderDraftData? DraftData
 );
 

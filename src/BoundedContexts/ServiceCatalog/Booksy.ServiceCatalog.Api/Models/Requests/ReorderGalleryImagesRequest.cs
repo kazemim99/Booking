@@ -14,4 +14,5 @@ public sealed class ReorderGalleryImagesRequest
     /// Optional: ID of the image to set as primary
     /// </summary>
     public Guid? PrimaryImageId { get; set; }
+
 }
