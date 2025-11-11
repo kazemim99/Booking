@@ -166,7 +166,7 @@ namespace Booksy.ServiceCatalog.Domain.Aggregates
         // Service Options Management
         public void AddOption(string name, Price additionalPrice, Duration? additionalDuration = null)
         {
-            var option = ServiceOption.Create(name, additionalPrice, additionalDuration);
+            var option = ServiceOption.Create(this.Id, name, additionalPrice, additionalDuration);
             _options.Add(option);
         }
 

@@ -20,11 +20,12 @@ namespace Booksy.ServiceCatalog.Domain.Entities
         // Private constructor for EF Core
         private ServiceOption() : base() { }
 
-        internal static ServiceOption Create(string name, Price additionalPrice, Duration? additionalDuration = null, string? description = null)
+        internal static ServiceOption Create(ServiceId serviceId, string name, Price additionalPrice, Duration? additionalDuration = null, string? description = null)
         {
             return new ServiceOption
             {
                 Id = Guid.NewGuid(),
+                ServiceId = serviceId,
                 Name = name,
                 Description = description,
                 AdditionalPrice = additionalPrice,
