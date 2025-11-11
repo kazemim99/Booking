@@ -66,11 +66,23 @@ namespace Booksy.ServiceCatalog.Infrastructure.Persistence.Configurations
                 .IsRequired()
                 .HasColumnName("ServiceId");
 
-            // Timestamp
+            // Audit properties from base Entity class
             builder.Property(so => so.CreatedAt)
                 .IsRequired()
                 .HasColumnType("timestamp with time zone")
                 .HasDefaultValueSql("CURRENT_TIMESTAMP");
+
+            builder.Property(so => so.CreatedBy);
+
+            builder.Property(so => so.LastModifiedAt)
+                .HasColumnType("timestamp with time zone");
+
+            builder.Property(so => so.LastModifiedBy);
+
+            // Soft delete from base Entity class
+            builder.Property(so => so.IsDeleted)
+                .IsRequired()
+                .HasDefaultValue(false);
 
             // Indexes
             builder.HasIndex(so => so.ServiceId)
