@@ -57,22 +57,18 @@
             <div v-if="schedule[index].isOpen" class="day-times">
               <div class="time-group">
                 <label class="time-label">ساعت شروع</label>
-                <input
-                  type="time"
-                  :value="timeToString(schedule[index].openTime)"
-                  dir="ltr"
-                  class="time-input"
-                  @change="(e) => handleTimeChange(index, 'openTime', (e.target as HTMLInputElement).value)"
+                <PersianTimePicker
+                  :model-value="timeToString(schedule[index].openTime)"
+                  placeholder="انتخاب ساعت شروع"
+                  @update:model-value="(value) => handleTimeChange(index, 'openTime', value)"
                 />
               </div>
               <div class="time-group">
                 <label class="time-label">ساعت پایان</label>
-                <input
-                  type="time"
-                  :value="timeToString(schedule[index].closeTime)"
-                  dir="ltr"
-                  class="time-input"
-                  @change="(e) => handleTimeChange(index, 'closeTime', (e.target as HTMLInputElement).value)"
+                <PersianTimePicker
+                  :model-value="timeToString(schedule[index].closeTime)"
+                  placeholder="انتخاب ساعت پایان"
+                  @update:model-value="(value) => handleTimeChange(index, 'closeTime', value)"
                 />
               </div>
             </div>
@@ -100,6 +96,7 @@
 import { ref, onMounted } from 'vue'
 import ProgressIndicator from '../shared/ProgressIndicator.vue'
 import AppButton from '@/shared/components/ui/Button/AppButton.vue'
+import PersianTimePicker from '@/shared/components/calendar/PersianTimePicker.vue'
 import type { DayHours } from '@/modules/provider/types/registration.types'
 
 interface Props {
