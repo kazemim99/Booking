@@ -15,16 +15,15 @@ namespace Booksy.ServiceCatalog.Domain.Entities
         public bool IsRequired { get; private set; }
         public bool IsActive { get; private set; }
         public int SortOrder { get; private set; }
-        public ServiceId ServiceId { get; private set; }
+        // ServiceId is a shadow property managed by EF Core for owned entity relationship
         // Private constructor for EF Core
         private ServiceOption() : base() { }
 
-        internal static ServiceOption Create(ServiceId serviceId, string name, Price additionalPrice, Duration? additionalDuration = null, string? description = null)
+        internal static ServiceOption Create(string name, Price additionalPrice, Duration? additionalDuration = null, string? description = null)
         {
             var option = new ServiceOption
             {
                 Id = Guid.NewGuid(),
-                ServiceId = serviceId,
                 Name = name,
                 Description = description,
                 AdditionalPrice = additionalPrice,

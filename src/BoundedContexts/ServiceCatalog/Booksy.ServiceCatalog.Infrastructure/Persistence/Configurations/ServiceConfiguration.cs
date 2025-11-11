@@ -220,11 +220,89 @@ namespace Booksy.ServiceCatalog.Infrastructure.Persistence.Configurations
             // COLLECTIONS (Using Backing Fields)
             // ========================================
 
-            // Service Options - Configure backing field
-            builder.HasMany(s => s.Options)
-                .WithOne()
-                .HasForeignKey(so => so.ServiceId)
-                .OnDelete(DeleteBehavior.Cascade);
+            // Service Options - Owned collection with backing field
+            builder.OwnsMany(s => s.Options, option =>
+            {
+                option.ToTable("ServiceOptions", "ServiceCatalog");
+
+                option.HasKey(so => so.Id);
+                option.Property(so => so.Id).HasColumnName("Id");
+
+                // Shadow property for foreign key (EF Core 9 requirement for owned entities)
+                option.WithOwner()
+                    .HasForeignKey("ServiceId");
+
+                // Properties
+                option.Property(so => so.Name)
+                    .IsRequired()
+                    .HasMaxLength(100);
+
+                option.Property(so => so.Description)
+                    .HasMaxLength(500);
+
+                // Additional Price (Owned Value Object)
+                option.OwnsOne(so => so.AdditionalPrice, price =>
+                {
+                    price.Property(p => p.Amount)
+                        .HasPrecision(18, 2)
+                        .IsRequired()
+                        .HasColumnName("AdditionalPriceAmount");
+
+                    price.Property(p => p.Currency)
+                        .HasMaxLength(3)
+                        .IsRequired()
+                        .HasColumnName("AdditionalPriceCurrency");
+                });
+
+                // Additional Duration
+                option.Property(so => so.AdditionalDuration)
+                    .HasConversion(
+                        duration => duration != null ? duration.Value : (int?)null,
+                        value => value.HasValue ? Duration.FromMinutes(value.Value) : null)
+                    .HasColumnName("AdditionalDurationMinutes");
+
+                // Boolean flags
+                option.Property(so => so.IsRequired)
+                    .IsRequired()
+                    .HasDefaultValue(false);
+
+                option.Property(so => so.IsActive)
+                    .IsRequired()
+                    .HasDefaultValue(true);
+
+                // Sort order
+                option.Property(so => so.SortOrder)
+                    .IsRequired()
+                    .HasDefaultValue(0);
+
+                // Audit properties from base Entity class
+                option.Property(so => so.CreatedAt)
+                    .IsRequired()
+                    .HasColumnType("timestamp with time zone")
+                    .HasDefaultValueSql("CURRENT_TIMESTAMP");
+
+                option.Property(so => so.CreatedBy);
+
+                option.Property(so => so.LastModifiedAt)
+                    .HasColumnType("timestamp with time zone");
+
+                option.Property(so => so.LastModifiedBy);
+
+                // Soft delete from base Entity class
+                option.Property(so => so.IsDeleted)
+                    .IsRequired()
+                    .HasDefaultValue(false);
+
+                // Indexes for ServiceOptions
+                option.HasIndex("ServiceId", nameof(ServiceOption.IsActive))
+                    .HasDatabaseName("IX_ServiceOptions_ServiceId_IsActive");
+
+                option.HasIndex(so => so.SortOrder)
+                    .HasDatabaseName("IX_ServiceOptions_SortOrder");
+
+                option.HasIndex(so => new { so.IsActive, so.SortOrder })
+                    .HasDatabaseName("IX_ServiceOptions_Active_SortOrder");
+            });
 
             builder.Navigation(s => s.Options)
                 .UsePropertyAccessMode(PropertyAccessMode.Field)
