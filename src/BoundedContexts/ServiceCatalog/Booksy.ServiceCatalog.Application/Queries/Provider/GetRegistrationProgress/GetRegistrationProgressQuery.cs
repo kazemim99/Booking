@@ -80,7 +80,13 @@ public sealed record BreakPeriodData(
 );
 
 public sealed record GalleryImageData(
+    string Id,
     string ImageUrl,
-    string? ThumbnailUrl,
-    int DisplayOrder
+    string ThumbnailUrl,
+    string MediumUrl,
+    int DisplayOrder,
+    bool IsPrimary,
+    string? Caption,
+    string? AltText,
+    DateTime UploadedAt
 );

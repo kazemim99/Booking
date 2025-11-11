@@ -101,8 +101,21 @@ public sealed class GetRegistrationProgressQueryHandler
             )).ToList()
         )).ToList();
 
-        // Map gallery images (Provider doesn't have GalleryImages - would need separate repository)
-        var galleryImages = new List<GalleryImageData>();
+        // Map gallery images from provider's business profile
+        var galleryImages = draftProvider.Profile.GalleryImages
+            .Where(img => img.IsActive)
+            .OrderBy(img => img.DisplayOrder)
+            .Select(img => new GalleryImageData(
+                Id: img.Id.ToString(),
+                ImageUrl: img.ImageUrl,
+                ThumbnailUrl: img.ThumbnailUrl,
+                MediumUrl: img.MediumUrl,
+                DisplayOrder: img.DisplayOrder,
+                IsPrimary: img.IsPrimary,
+                Caption: img.Caption,
+                AltText: img.AltText,
+                UploadedAt: img.UploadedAt
+            )).ToList();
 
         var draftData = new ProviderDraftData(
             ProviderId: draftProvider.Id.Value,
