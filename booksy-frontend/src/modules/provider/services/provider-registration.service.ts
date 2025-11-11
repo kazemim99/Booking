@@ -366,20 +366,29 @@ class ProviderRegistrationService {
   }
 
   /**
-   * Step 7: Mark gallery step as complete
+   * Step 7: Upload gallery images and mark step as complete
+   * This endpoint uploads files directly and auto-updates registration step to 7
    */
-  async saveStep7Gallery(providerId: string, imageUrls: string[]): Promise<{
+  async saveStep7Gallery(files: File[]): Promise<{
     providerId: string
     registrationStep: number
     imagesCount: number
     message: string
   }> {
+    const formData = new FormData()
+
+    files.forEach((file) => {
+      formData.append('files', file)
+    })
+
     const response = await serviceCategoryClient.post(
       'v1/registration/step-7/gallery',
+      formData,
       {
-        providerId,
-        imageUrls,
-      },
+        headers: {
+          'Content-Type': 'multipart/form-data'
+        }
+      }
     )
     return response.data!
   }

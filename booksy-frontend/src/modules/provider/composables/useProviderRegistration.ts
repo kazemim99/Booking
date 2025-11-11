@@ -488,29 +488,33 @@ export function useProviderRegistration() {
     }
   }
 
-  // Save gallery - Calls Step 7 endpoint
+  // Save gallery - Gallery images are uploaded in real-time in GalleryStep.vue
+  // via galleryStore.uploadImages(), which auto-updates registration step to 7
+  // This function just returns success since the work is already done
   const saveGallery = async (providerId: string): Promise<{ success: boolean; message?: string }> => {
     registrationState.value.isLoading = true
     registrationState.value.error = null
 
     try {
-      const imageUrls = registrationState.value.data.galleryImages.map((img) => img.url || img)
+      const imagesCount = registrationState.value.data.galleryImages.length
 
-      // Gallery is optional
-      const response = await providerRegistrationService.saveStep7Gallery(providerId, imageUrls)
-
-      console.log('✅ Gallery saved:', response)
+      console.log('✅ Gallery step already complete (images uploaded in real-time):', {
+        providerId,
+        imagesCount
+      })
 
       registrationState.value.isDirty = false
 
       return {
         success: true,
-        message: response.message || 'Gallery saved successfully',
+        message: imagesCount > 0
+          ? `تصاویر گالری ذخیره شد (${imagesCount} تصویر)`
+          : 'مرحله گالری تکمیل شد',
       }
     } catch (error: any) {
-      console.error('❌ Failed to save gallery:', error)
+      console.error('❌ Failed to complete gallery step:', error)
 
-      const message = error.response?.data?.message || error.message || 'Failed to save gallery'
+      const message = error.response?.data?.message || error.message || 'Failed to complete gallery step'
       registrationState.value.error = message
 
       return { success: false, message }
