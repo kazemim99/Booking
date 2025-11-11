@@ -32,6 +32,7 @@ using Booksy.Infrastructure.External.Payment.Behpardakht;
 using Booksy.Infrastructure.External.Payment.Parsian;
 using Booksy.Infrastructure.External.Payment.Saman;
 using Booksy.ServiceCatalog.Infrastructure.ExternalServices.Sms;
+using System.Threading;
 
 namespace Booksy.ServiceCatalog.Infrastructure.DependencyInjection
 {
@@ -176,17 +177,13 @@ namespace Booksy.ServiceCatalog.Infrastructure.DependencyInjection
 
                 using var scope = serviceProvider.CreateScope();
                 var context = scope.ServiceProvider.GetRequiredService<ServiceCatalogDbContext>();
-                var seeder = scope.ServiceProvider.GetServices<ISeeder>();
+                var seeder = scope.ServiceProvider.GetRequiredService<ISeeder>();
 
                 // Apply migrations
-                await context.Database.MigrateAsync();
+                //await context.Database.MigrateAsync();
 
-                foreach (var item in seeder)
-                {
-                    await item.SeedAsync();
+                await seeder.SeedAsync();
 
-                }
-                // Seed data
             }
             catch (Exception ex)
             {

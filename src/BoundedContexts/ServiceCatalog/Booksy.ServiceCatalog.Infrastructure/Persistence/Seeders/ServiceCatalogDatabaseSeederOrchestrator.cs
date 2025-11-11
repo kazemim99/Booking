@@ -74,9 +74,6 @@ namespace Booksy.ServiceCatalog.Infrastructure.Persistence.Seeders
         {
             try
             {
-                _logger.LogInformation("=========================================");
-                _logger.LogInformation("Starting ServiceCatalog Database Seeding");
-                _logger.LogInformation("=========================================");
 
                 var startTime = DateTime.UtcNow;
                 var seederCount = 0;
@@ -84,27 +81,21 @@ namespace Booksy.ServiceCatalog.Infrastructure.Persistence.Seeders
                 foreach (var seeder in _seeders)
                 {
                     var seederName = seeder.GetType().Name;
-                    _logger.LogInformation("Executing seeder: {SeederName}", seederName);
 
                     try
                     {
                         await seeder.SeedAsync(cancellationToken);
                         seederCount++;
-                        _logger.LogInformation("✓ {SeederName} completed successfully", seederName);
                     }
                     catch (Exception ex)
                     {
-                        _logger.LogError(ex, "✗ Error in {SeederName}", seederName);
-                        throw;
+
+                        _logger.LogError(ex, $"Entity: { seederName}");
+
+                        //throw new ApplicationException($"Entity: {seederName}-Message: {ex.Message}");
                     }
                 }
-
                 var duration = DateTime.UtcNow - startTime;
-
-                _logger.LogInformation("=========================================");
-                _logger.LogInformation("ServiceCatalog Seeding Completed Successfully");
-                _logger.LogInformation("Executed {Count} seeders in {Duration:c}", seederCount, duration);
-                _logger.LogInformation("=========================================");
             }
             catch (Exception ex)
             {
