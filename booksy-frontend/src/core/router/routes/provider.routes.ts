@@ -36,15 +36,39 @@ const providerRoutes: RouteRecordRaw[] = [
     },
   },
 
-  // Provider Dashboard
+  // Provider Dashboard (redirects to bookings)
   {
     path: '/dashboard',
     name: 'ProviderDashboard',
-    component: () => import('@/modules/provider/views/dashboard/ProviderDashboardView.vue'),
+    redirect: '/bookings',
     meta: {
       requiresAuth: true,
       roles: ['Provider', 'ServiceProvider'],
       title: 'Dashboard',
+    },
+  },
+
+  // Provider Profile
+  {
+    path: '/profile',
+    name: 'ProviderProfile',
+    component: () => import('@/modules/provider/views/dashboard/ProviderProfileView.vue'),
+    meta: {
+      requiresAuth: true,
+      roles: ['Provider', 'ServiceProvider'],
+      title: 'Profile',
+    },
+  },
+
+  // Provider Financial
+  {
+    path: '/financial',
+    name: 'ProviderFinancial',
+    component: () => import('@/modules/provider/views/dashboard/ProviderFinancialView.vue'),
+    meta: {
+      requiresAuth: true,
+      roles: ['Provider', 'ServiceProvider'],
+      title: 'Financial',
     },
   },
 

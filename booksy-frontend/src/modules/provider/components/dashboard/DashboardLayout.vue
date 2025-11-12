@@ -58,8 +58,8 @@
           <button
             v-for="item in menuItems"
             :key="item.id"
-            @click="navigateTo(item.id)"
-            :class="['nav-item', { 'active': currentPage === item.id }]"
+            @click="navigateTo(item.route)"
+            :class="['nav-item', { 'active': isMenuItemActive(item.route) }]"
           >
             <component :is="item.icon" class="nav-icon" />
             <span>{{ item.label }}</span>
@@ -98,8 +98,8 @@
             <button
               v-for="item in menuItems"
               :key="item.id"
-              @click="navigateToMobile(item.id)"
-              :class="['nav-item', { 'active': currentPage === item.id }]"
+              @click="navigateToMobile(item.route)"
+              :class="['nav-item', { 'active': isMenuItemActive(item.route) }]"
             >
               <component :is="item.icon" class="nav-icon" />
               <span>{{ item.label }}</span>
@@ -126,7 +126,9 @@
 
 <script setup lang="ts">
 import { ref, computed, h } from 'vue'
+import { useRouter, useRoute } from 'vue-router'
 import { useProviderStore } from '../../stores/provider.store'
+import { useAuthStore } from '@/core/stores/modules/auth.store'
 
 // Icon Components (Simple SVG-based)
 const CalendarIcon = () => h('svg', { class: 'w-5 h-5', fill: 'none', stroke: 'currentColor', viewBox: '0 0 24 24' }, [
@@ -145,19 +147,10 @@ const LogoutIcon = () => h('svg', { class: 'w-5 h-5', fill: 'none', stroke: 'cur
   h('path', { 'stroke-linecap': 'round', 'stroke-linejoin': 'round', 'stroke-width': '2', d: 'M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1' })
 ])
 
-interface Props {
-  currentPage: string
-  onNavigate?: (page: string) => void
-  onLogout?: () => void
-}
-
-const props = defineProps<Props>()
-const emit = defineEmits<{
-  navigate: [page: string]
-  logout: []
-}>()
-
+const router = useRouter()
+const route = useRoute()
 const providerStore = useProviderStore()
+const authStore = useAuthStore()
 const mobileMenuOpen = ref(false)
 
 const currentProvider = computed(() => providerStore.currentProvider)
@@ -172,32 +165,32 @@ const avatarLetter = computed(() => {
 })
 
 const menuItems = [
-  { id: 'bookings', label: 'رزروها', icon: CalendarIcon },
-  { id: 'financial', label: 'مالی', icon: CurrencyIcon },
-  { id: 'profile', label: 'پروفایل', icon: UserIcon }
+  { id: 'bookings', label: 'رزروها', icon: CalendarIcon, route: '/bookings' },
+  { id: 'financial', label: 'مالی', icon: CurrencyIcon, route: '/financial' },
+  { id: 'profile', label: 'پروفایل', icon: UserIcon, route: '/profile' }
 ]
+
+// Determine if a menu item is active based on current route
+const isMenuItemActive = (itemRoute: string) => {
+  return route.path === itemRoute
+}
 
 const toggleMobileMenu = () => {
   mobileMenuOpen.value = !mobileMenuOpen.value
 }
 
-const navigateTo = (page: string) => {
-  emit('navigate', page)
-  if (props.onNavigate) {
-    props.onNavigate(page)
-  }
+const navigateTo = (itemRoute: string) => {
+  router.push(itemRoute)
 }
 
-const navigateToMobile = (page: string) => {
-  navigateTo(page)
+const navigateToMobile = (itemRoute: string) => {
+  router.push(itemRoute)
   mobileMenuOpen.value = false
 }
 
-const handleLogout = () => {
-  emit('logout')
-  if (props.onLogout) {
-    props.onLogout()
-  }
+const handleLogout = async () => {
+  await authStore.logout()
+  router.push({ name: 'Login' })
 }
 </script>
 
