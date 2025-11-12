@@ -334,14 +334,44 @@ const handleFinalSubmit = async (feedback?: string) => {
 onMounted(async () => {
   initialize()
 
-  // Try to load existing draft
-  const draftResult = await loadDraft()
-  if (draftResult.success && draftResult.providerId) {
-    draftProviderId = draftResult.providerId
-    console.log('✅ Existing draft loaded with provider ID:', draftProviderId)
+  // Check provider status before loading draft
+  // Only call progress API if status is Drafted or no provider exists
+  try {
+    const { providerService } = await import('../../services/provider.service')
+    const { ProviderStatus } = await import('@/core/types/enums.types')
 
-    if (state.value.data.step >= 3) {
-      toastService.info('ثبت‌نام شما از مرحله قبل ادامه می‌یابد')
+    const statusData = await providerService.getCurrentProviderStatus()
+
+    // If no provider exists or status is Drafted, load the draft
+    if (!statusData || statusData.status === ProviderStatus.Drafted) {
+      console.log('[RegistrationFlow] Provider status allows draft loading, calling progress API')
+
+      const draftResult = await loadDraft()
+      if (draftResult.success && draftResult.providerId) {
+        draftProviderId = draftResult.providerId
+        console.log('✅ Existing draft loaded with provider ID:', draftProviderId)
+
+        if (state.value.data.step >= 3) {
+          toastService.info('ثبت‌نام شما از مرحله قبل ادامه می‌یابد')
+        }
+      }
+    } else {
+      // User has completed registration, shouldn't be here
+      // Route guard should have prevented this, but handle it gracefully
+      console.warn('[RegistrationFlow] Provider status is', statusData.status, '- registration already complete')
+      console.warn('[RegistrationFlow] Skipping progress API call')
+    }
+  } catch (error) {
+    console.error('[RegistrationFlow] Error checking provider status:', error)
+    // On error, try to load draft anyway (fail open)
+    const draftResult = await loadDraft()
+    if (draftResult.success && draftResult.providerId) {
+      draftProviderId = draftResult.providerId
+      console.log('✅ Existing draft loaded with provider ID:', draftProviderId)
+
+      if (state.value.data.step >= 3) {
+        toastService.info('ثبت‌نام شما از مرحله قبل ادامه می‌یابد')
+      }
     }
   }
 
