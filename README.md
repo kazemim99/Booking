@@ -4,6 +4,21 @@ A modern, scalable service booking platform built with Domain-Driven Design (DDD
 
 ---
 
+## Recent Updates (2025-11-11) 🎉
+
+### Provider Registration Flow - Critical Fixes
+
+✅ **Gallery Image Submission** - Images now properly submit to backend during registration
+✅ **UI Fixes** - Resolved distorted UI in CompletionStep and OptionalFeedbackStep
+✅ **Registration Progress** - Fixed "not found" error after completing registration
+✅ **Status Handling** - Proper handling of provider status transitions (Drafted → PendingVerification)
+
+**Impact**: The 9-step provider registration flow is now fully functional and production-ready.
+
+See [CHANGELOG.md](CHANGELOG.md) for detailed information about all changes.
+
+---
+
 ## Table of Contents
 
 - [Business Overview](#business-overview)

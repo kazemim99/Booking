@@ -1,6 +1,8 @@
 # Booksy Platform - Comprehensive Technical Documentation
 
 > **Living Document**: This documentation consolidates all technical documentation from the project. Last updated: 2025-11-11
+>
+> **Recent Updates (2025-11-11)**: Added 3 critical bug fixes to Known Issues section (Issues #8-10): Gallery image submission, CompletionStep UI distortion, and registration progress query handling.
 
 ---
 
@@ -1104,6 +1106,170 @@ https://stackoverflow.com/questions/79219671/ef-core-9-the-database-operation-wa
 
 **Key Takeaway:**
 EF Core 9 has stricter validation for owned entities. Always use `ValueGeneratedNever()` for manually-generated IDs in owned entities.
+
+### Issue 8: Gallery Images Not Submitted During Registration (Fixed 2025-11-11)
+
+**Symptom:**
+Images uploaded during Step 7 (Gallery) of registration flow were not being saved to the backend.
+
+**Root Cause:**
+The `saveGallery()` function in `useProviderRegistration.ts` was a no-op that just returned success without calling the registration API endpoint.
+
+```typescript
+// BEFORE (Broken):
+const saveGallery = async (providerId: string) => {
+  // Just returns success, doesn't actually call API
+  return {
+    success: true,
+    message: 'Gallery step complete'
+  }
+}
+```
+
+**Solution (Commit: `e6273aa`):**
+Modified `saveGallery()` to actually submit images to the registration endpoint:
+
+```typescript
+// AFTER (Fixed):
+const saveGallery = async (providerId: string) => {
+  // Extract File objects from gallery images
+  const files = registrationState.value.data.galleryImages
+    .filter(img => img.file)
+    .map(img => img.file!)
+
+  if (files.length > 0) {
+    // Upload images via registration endpoint
+    const response = await providerRegistrationService.saveStep7Gallery(files)
+    return { success: true, message: response.message }
+  }
+
+  return { success: true, message: 'No new files to upload' }
+}
+```
+
+**Files Changed:**
+- `booksy-frontend/src/modules/provider/composables/useProviderRegistration.ts:500-554`
+
+### Issue 9: CompletionStep UI Distortion (Fixed 2025-11-11)
+
+**Symptom:**
+The final completion screen (Step 9) had distorted UI with broken gradient backgrounds and incorrect spacing.
+
+**Root Cause:**
+Component was using broken Tailwind CSS escape sequences that don't render correctly:
+```vue
+<!-- BROKEN -->
+<div class="bg-gradient-to-br from-primary\/5 to-accent\/20">
+<div class="bg-primary\/10">
+```
+
+The escape sequences (`\/`) are invalid and cause the styles to not apply.
+
+**Solution (Commit: `2cead84`):**
+Completely rewrote the component using semantic scoped CSS instead of Tailwind utilities:
+
+```vue
+<!-- BEFORE -->
+<div class="bg-gradient-to-br from-primary\/5 to-accent\/20">
+
+<!-- AFTER -->
+<div class="completion-container">
+
+<style scoped>
+.completion-container {
+  background: linear-gradient(to bottom right, rgba(139, 92, 246, 0.05), rgba(236, 72, 153, 0.2));
+}
+</style>
+```
+
+**Files Changed:**
+- `booksy-frontend/src/modules/provider/components/registration/steps/CompletionStep.vue`
+
+**Related Fix:**
+Same issue and solution applied to `OptionalFeedbackStep.vue` (Commit: `d7b8a79`)
+
+### Issue 10: Registration Progress Query Returns "Not Found" After Completion (Fixed 2025-11-11)
+
+**Symptom:**
+After completing registration (Step 9), calling `GetRegistrationProgress` returned "not found" error, causing page refresh to fail.
+
+**Root Cause:**
+When registration completes, the provider status changes from `Drafted` to `PendingVerification`. The query only looked for providers with `Drafted` status:
+
+```csharp
+// BEFORE (Broken):
+public async Task<Provider?> GetDraftProviderByOwnerIdAsync(UserId ownerId) {
+  return await DbSet
+    .FirstOrDefaultAsync(p => p.OwnerId == ownerId && p.Status == ProviderStatus.Drafted);
+  // Returns null after status changes to PendingVerification
+}
+```
+
+**Solution (Commit: `f4be06d`):**
+
+**Backend Fix:**
+Added fallback logic to check for completed providers:
+
+```csharp
+// AFTER (Fixed):
+public async Task<GetRegistrationProgressResult> Handle(...) {
+  // First, try to get draft provider (status = Drafted)
+  var draftProvider = await _providerRepository
+    .GetDraftProviderByOwnerIdAsync(userId, cancellationToken);
+
+  // If no draft found, check if user has a completed/pending provider
+  if (draftProvider == null) {
+    var provider = await _providerRepository
+      .GetByOwnerIdAsync(userId, cancellationToken);
+
+    // If provider exists but registration is complete, return completed status
+    if (provider != null && provider.IsRegistrationComplete) {
+      return new GetRegistrationProgressResult(
+        HasDraft: false,
+        CurrentStep: 9, // Registration completed
+        ProviderId: provider.Id.Value,
+        DraftData: null);
+    }
+
+    // No provider found at all
+    return new GetRegistrationProgressResult(
+      HasDraft: false,
+      CurrentStep: null,
+      ProviderId: null,
+      DraftData: null);
+  }
+
+  // Continue with draft provider mapping...
+}
+```
+
+**Frontend Fix:**
+Added handler for completed registration state:
+
+```typescript
+// AFTER (Fixed):
+const response = await providerRegistrationService.getRegistrationProgress()
+
+// Handle completed registration (hasDraft: false but providerId exists)
+if (!response.hasDraft && response.providerId) {
+  return {
+    success: true,
+    message: 'Registration already completed',
+    providerId: response.providerId,
+  }
+}
+```
+
+**Files Changed:**
+- `src/BoundedContexts/ServiceCatalog/Booksy.ServiceCatalog.Application/Queries/Provider/GetRegistrationProgress/GetRegistrationProgressQueryHandler.cs`
+- `booksy-frontend/src/modules/provider/composables/useProviderRegistration.ts:700-713`
+
+**Impact:**
+This fix ensures that:
+- Provider ID remains accessible after registration completion
+- Page refresh works correctly at any point in the registration flow
+- No "not found" errors after completing Step 9
+- Proper status tracking throughout the provider lifecycle (Drafted → PendingVerification → Active)
 
 ---
 
