@@ -236,37 +236,16 @@ const verifyOtp = async () => {
 
 const redirectBasedOnProviderStatus = async () => {
   try {
-    // Check if user has a provider profile and get its status
     const providerStatus = await providerService.getCurrentProviderStatus()
 
-    if (providerStatus) {
-      console.log('[VerificationView] Provider status:', providerStatus.status)
-
-      // If registration is complete (status changed from Drafted), redirect to dashboard
-      if (
-        providerStatus.status === ProviderStatus.PendingVerification ||
-        providerStatus.status === ProviderStatus.Verified ||
-        providerStatus.status === ProviderStatus.Active
-      ) {
-        console.log('[VerificationView] Registration complete, redirecting to dashboard')
-        await router.push({ name: 'ProviderDashboard' })
-        return
-      }
-
-      // If status is Drafted, continue to registration
-      if (providerStatus.status === ProviderStatus.Drafted) {
-        console.log('[VerificationView] Registration incomplete, redirecting to registration')
-        await router.push({ name: 'ProviderRegistration' })
-        return
-      }
-
-      // For other statuses (Inactive, Suspended, Archived), redirect to dashboard with a message
-      console.log('[VerificationView] Provider has status:', providerStatus.status, '- redirecting to dashboard')
-      await router.push({ name: 'ProviderDashboard' })
-    } else {
-      // No provider profile exists yet, start registration
-      console.log('[VerificationView] No provider profile, redirecting to registration')
+    // If status is Drafted or no provider exists, go to registration
+    if (!providerStatus || providerStatus.status === ProviderStatus.Drafted) {
+      console.log('[VerificationView] Starting/continuing registration flow')
       await router.push({ name: 'ProviderRegistration' })
+    } else {
+      // All other statuses (PendingVerification, Verified, Active, etc.) go to dashboard
+      console.log('[VerificationView] Redirecting to dashboard, status:', providerStatus.status)
+      await router.push({ name: 'ProviderDashboard' })
     }
   } catch (error) {
     console.error('[VerificationView] Error checking provider status:', error)
