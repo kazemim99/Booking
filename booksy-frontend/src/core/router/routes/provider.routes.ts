@@ -36,15 +36,27 @@ const providerRoutes: RouteRecordRaw[] = [
     },
   },
 
-  // Provider Dashboard (redirects to bookings)
+  // Provider Dashboard (main overview page)
   {
     path: '/dashboard',
     name: 'ProviderDashboard',
-    redirect: '/bookings',
+    component: () => import('@/modules/provider/views/dashboard/ProviderDashboardView.vue'),
     meta: {
       requiresAuth: true,
       roles: ['Provider', 'ServiceProvider'],
       title: 'Dashboard',
+    },
+  },
+
+  // Provider Bookings
+  {
+    path: '/bookings',
+    name: 'ProviderBookings',
+    component: () => import('@/modules/provider/views/ProviderBookingsView.vue'),
+    meta: {
+      requiresAuth: true,
+      roles: ['Provider', 'ServiceProvider'],
+      title: 'Bookings',
     },
   },
 
@@ -119,18 +131,6 @@ const providerRoutes: RouteRecordRaw[] = [
   //     title: 'Staff',
   //   },
   // },
-
-  // Bookings Management
-  {
-    path: '/bookings',
-    name: 'ProviderBookings',
-    component: () => import('@/modules/provider/views/ProviderBookingsView.vue'),
-    meta: {
-      requiresAuth: true,
-      roles: ['Provider', 'ServiceProvider'],
-      title: 'Bookings',
-    },
-  },
 
   // Settings
   {
