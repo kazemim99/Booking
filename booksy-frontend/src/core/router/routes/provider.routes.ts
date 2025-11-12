@@ -1,5 +1,7 @@
 import type { RouteRecordRaw, NavigationGuardNext, RouteLocationNormalized } from 'vue-router'
 import { useProviderStore } from '@/modules/provider/stores/provider.store'
+import { providerService } from '@/modules/provider/services/provider.service'
+import { ProviderStatus } from '@/core/types/enums.types'
 
 const providerRoutes: RouteRecordRaw[] = [
   // Public Provider Pages (customer-facing)
@@ -34,17 +36,58 @@ const providerRoutes: RouteRecordRaw[] = [
       roles: ['Provider', 'ServiceProvider'],
       title: 'Complete Your Provider Profile',
     },
+    async beforeEnter(to: RouteLocationNormalized, from: RouteLocationNormalized, next: NavigationGuardNext) {
+      try {
+        // Check provider status before allowing access to registration
+        const statusData = await providerService.getCurrentProviderStatus()
+
+        // If no provider exists (null), allow access to start registration
+        if (!statusData) {
+          console.log('[Route Guard] No provider found, allowing registration')
+          next()
+          return
+        }
+
+        // If status is Drafted, allow access to continue registration
+        if (statusData.status === ProviderStatus.Drafted) {
+          console.log('[Route Guard] Provider status is Drafted, allowing registration')
+          next()
+          return
+        }
+
+        // For any other status (PendingVerification, Verified, Active, etc.),
+        // redirect to dashboard - registration is complete
+        console.log('[Route Guard] Provider status is', statusData.status, '- redirecting to dashboard')
+        next({ name: 'ProviderDashboard' })
+      } catch (error) {
+        console.error('[Route Guard] Error checking provider status:', error)
+        // On error, allow access (fail open) to avoid blocking legitimate users
+        next()
+      }
+    },
   },
 
-  // Provider Dashboard (redirects to bookings)
+  // Provider Dashboard (main overview page)
   {
     path: '/dashboard',
     name: 'ProviderDashboard',
-    redirect: '/bookings',
+    component: () => import('@/modules/provider/views/dashboard/ProviderDashboardView.vue'),
     meta: {
       requiresAuth: true,
       roles: ['Provider', 'ServiceProvider'],
       title: 'Dashboard',
+    },
+  },
+
+  // Provider Bookings
+  {
+    path: '/bookings',
+    name: 'ProviderBookings',
+    component: () => import('@/modules/provider/views/ProviderBookingsView.vue'),
+    meta: {
+      requiresAuth: true,
+      roles: ['Provider', 'ServiceProvider'],
+      title: 'Bookings',
     },
   },
 
@@ -119,18 +162,6 @@ const providerRoutes: RouteRecordRaw[] = [
   //     title: 'Staff',
   //   },
   // },
-
-  // Bookings Management
-  {
-    path: '/bookings',
-    name: 'ProviderBookings',
-    component: () => import('@/modules/provider/views/ProviderBookingsView.vue'),
-    meta: {
-      requiresAuth: true,
-      roles: ['Provider', 'ServiceProvider'],
-      title: 'Bookings',
-    },
-  },
 
   // Settings
   {

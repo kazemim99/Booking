@@ -1,11 +1,13 @@
 <template>
-  <DashboardLayout
-    :current-page="currentPage"
-    @navigate="handleNavigate"
-    @logout="handleLogout"
-  >
+  <DashboardLayout>
+    <!-- Welcome Section -->
+    <div class="dashboard-welcome">
+      <h1>خوش آمدید، {{ displayName }}</h1>
+      <p>مدیریت کسب و کار خود از اینجا شروع کنید</p>
+    </div>
+
     <!-- Provider Status Banner -->
-    <div v-if="showStatusBanner" class="status-banner mb-6" :class="`status-${providerStatus?.toLowerCase()}`">
+    <div v-if="showStatusBanner" class="status-banner" :class="`status-${providerStatus?.toLowerCase()}`">
       <div class="status-banner-content">
         <div class="status-icon">
           <span v-if="providerStatus === ProviderStatus.PendingVerification">⏳</span>
@@ -20,71 +22,87 @@
       </div>
     </div>
 
-    <!-- Bookings Tab -->
-    <div v-if="currentPage === 'bookings'">
-      <!-- Booking Statistics -->
-      <BookingStatsCard :provider-id="currentProvider?.id" />
-
-      <!-- Booking List -->
-      <BookingListCard :provider-id="currentProvider?.id" />
-    </div>
-
-    <!-- Profile Tab -->
-    <div v-if="currentPage === 'profile'">
-      <ProfileManager />
-    </div>
-
-    <!-- Financial Tab -->
-    <div v-if="currentPage === 'financial'">
-      <!-- Financial Dashboard Overview -->
-      <FinancialDashboard
-        v-if="financialView === 'dashboard'"
-        @request-payout="financialView = 'payouts'"
-        @view-transactions="financialView = 'transactions'"
-        @view-payouts="financialView = 'payouts'"
-      />
-
-      <!-- Transaction History View -->
-      <div v-else-if="financialView === 'transactions'">
-        <button @click="financialView = 'dashboard'" class="btn-back mb-4">
-          ← بازگشت به داشبورد
-        </button>
-        <TransactionHistory />
+    <!-- Quick Actions Grid -->
+    <div class="quick-actions">
+      <div class="action-card" @click="navigateTo('/bookings')">
+        <div class="action-icon bookings-icon">
+          <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+          </svg>
+        </div>
+        <h3>رزروها</h3>
+        <p>مشاهده و مدیریت رزروها</p>
       </div>
 
-      <!-- Payout Manager View -->
-      <div v-else-if="financialView === 'payouts'">
-        <button @click="financialView = 'dashboard'" class="btn-back mb-4">
-          ← بازگشت به داشبورد
-        </button>
-        <PayoutManager />
+      <div class="action-card" @click="navigateTo('/financial')">
+        <div class="action-icon financial-icon">
+          <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+          </svg>
+        </div>
+        <h3>مالی</h3>
+        <p>گزارشات مالی و تراکنش‌ها</p>
+      </div>
+
+      <div class="action-card" @click="navigateTo('/profile')">
+        <div class="action-icon profile-icon">
+          <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+          </svg>
+        </div>
+        <h3>پروفایل</h3>
+        <p>مدیریت اطلاعات کسب و کار</p>
+      </div>
+    </div>
+
+    <!-- Quick Stats -->
+    <div class="stats-grid">
+      <div class="stat-card">
+        <div class="stat-icon">📅</div>
+        <div class="stat-info">
+          <h4>رزروهای امروز</h4>
+          <p class="stat-value">-</p>
+        </div>
+      </div>
+
+      <div class="stat-card">
+        <div class="stat-icon">💰</div>
+        <div class="stat-info">
+          <h4>درآمد این ماه</h4>
+          <p class="stat-value">-</p>
+        </div>
+      </div>
+
+      <div class="stat-card">
+        <div class="stat-icon">⭐</div>
+        <div class="stat-info">
+          <h4>امتیاز</h4>
+          <p class="stat-value">-</p>
+        </div>
       </div>
     </div>
   </DashboardLayout>
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted } from 'vue'
+import { computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { useProviderStore } from '../../stores/provider.store'
 import { useAuthStore } from '@/core/stores/modules/auth.store'
 import { ProviderStatus } from '../../types/provider.types'
 import DashboardLayout from '../../components/dashboard/DashboardLayout.vue'
-import BookingStatsCard from '../../components/dashboard/BookingStatsCard.vue'
-import BookingListCard from '../../components/dashboard/BookingListCard.vue'
-import ProfileManager from '../../components/dashboard/ProfileManager.vue'
-import FinancialDashboard from '../../components/financial/FinancialDashboard.vue'
-import TransactionHistory from '../../components/financial/TransactionHistory.vue'
-import PayoutManager from '../../components/financial/PayoutManager.vue'
 
 const router = useRouter()
 const providerStore = useProviderStore()
 const authStore = useAuthStore()
 
-const currentPage = ref('bookings')
-const financialView = ref<'dashboard' | 'transactions' | 'payouts'>('dashboard')
 const currentProvider = computed(() => providerStore.currentProvider)
 const providerStatus = computed(() => authStore.providerStatus)
+
+const displayName = computed(() => {
+  if (!currentProvider.value) return 'مدیر'
+  return currentProvider.value.profile?.businessName || 'مدیر'
+})
 
 // Status banner computed properties
 const showStatusBanner = computed(() => {
@@ -100,13 +118,13 @@ const showStatusBanner = computed(() => {
 const statusTitle = computed(() => {
   switch (providerStatus.value) {
     case ProviderStatus.PendingVerification:
-      return 'Account Pending Verification'
+      return 'در انتظار تایید حساب'
     case ProviderStatus.Inactive:
-      return 'Account Inactive'
+      return 'حساب غیرفعال'
     case ProviderStatus.Suspended:
-      return 'Account Suspended'
+      return 'حساب معلق شده'
     case ProviderStatus.Archived:
-      return 'Account Archived'
+      return 'حساب بایگانی شده'
     default:
       return ''
   }
@@ -115,25 +133,20 @@ const statusTitle = computed(() => {
 const statusMessage = computed(() => {
   switch (providerStatus.value) {
     case ProviderStatus.PendingVerification:
-      return 'Your provider account is awaiting admin verification. You can view your dashboard but some features may be limited until verification is complete.'
+      return 'حساب شما در انتظار تایید مدیر است. می‌توانید داشبورد را مشاهده کنید اما برخی امکانات محدود هستند.'
     case ProviderStatus.Inactive:
-      return 'Your provider account is currently inactive. Please contact support to reactivate your account.'
+      return 'حساب شما در حال حاضر غیرفعال است. لطفا با پشتیبانی تماس بگیرید.'
     case ProviderStatus.Suspended:
-      return 'Your provider account has been temporarily suspended. Please contact support for more information.'
+      return 'حساب شما به طور موقت معلق شده است. لطفا با پشتیبانی تماس بگیرید.'
     case ProviderStatus.Archived:
-      return 'Your provider account has been archived. Please contact support if you believe this is an error.'
+      return 'حساب شما بایگانی شده است. لطفا با پشتیبانی تماس بگیرید.'
     default:
       return ''
   }
 })
 
-const handleNavigate = (page: string) => {
-  currentPage.value = page
-}
-
-const handleLogout = async () => {
-  await authStore.logout()
-  router.push({ name: 'Login' })
+const navigateTo = (path: string) => {
+  router.push(path)
 }
 
 onMounted(async () => {
@@ -148,13 +161,31 @@ onMounted(async () => {
 </script>
 
 <style scoped>
-/* Status Banner Styles */
+.dashboard-welcome {
+  margin-bottom: 2rem;
+}
+
+.dashboard-welcome h1 {
+  font-size: 2rem;
+  font-weight: 700;
+  color: #1f2937;
+  margin: 0 0 0.5rem;
+}
+
+.dashboard-welcome p {
+  font-size: 1rem;
+  color: #6b7280;
+  margin: 0;
+}
+
+/* Status Banner */
 .status-banner {
   padding: 1rem 1.5rem;
   border-radius: 0.5rem;
   border-right: 4px solid;
   background: white;
   box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1);
+  margin-bottom: 2rem;
 }
 
 .status-banner-content {
@@ -185,7 +216,7 @@ onMounted(async () => {
   line-height: 1.5;
 }
 
-/* Status-specific colors */
+/* Status colors */
 .status-pendingverification {
   border-right-color: #f59e0b;
   background: #fffbeb;
@@ -220,5 +251,122 @@ onMounted(async () => {
 
 .status-archived .status-title {
   color: #374151;
+}
+
+/* Quick Actions */
+.quick-actions {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+  gap: 1.5rem;
+  margin-bottom: 2rem;
+}
+
+.action-card {
+  background: white;
+  border-radius: 0.75rem;
+  padding: 2rem;
+  text-align: center;
+  cursor: pointer;
+  transition: all 0.3s;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+.action-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+.action-icon {
+  width: 64px;
+  height: 64px;
+  margin: 0 auto 1rem;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.action-icon svg {
+  width: 32px;
+  height: 32px;
+  color: white;
+}
+
+.bookings-icon {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+}
+
+.financial-icon {
+  background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+}
+
+.profile-icon {
+  background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+}
+
+.action-card h3 {
+  font-size: 1.25rem;
+  font-weight: 600;
+  color: #1f2937;
+  margin: 0 0 0.5rem;
+}
+
+.action-card p {
+  font-size: 0.875rem;
+  color: #6b7280;
+  margin: 0;
+}
+
+/* Stats Grid */
+.stats-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 1rem;
+}
+
+.stat-card {
+  background: white;
+  border-radius: 0.5rem;
+  padding: 1.5rem;
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+.stat-icon {
+  font-size: 2rem;
+}
+
+.stat-info {
+  flex: 1;
+}
+
+.stat-info h4 {
+  font-size: 0.875rem;
+  color: #6b7280;
+  margin: 0 0 0.25rem;
+}
+
+.stat-value {
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: #1f2937;
+  margin: 0;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .dashboard-welcome h1 {
+    font-size: 1.5rem;
+  }
+
+  .quick-actions {
+    grid-template-columns: 1fr;
+  }
+
+  .stats-grid {
+    grid-template-columns: 1fr;
+  }
 }
 </style>
