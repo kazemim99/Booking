@@ -145,7 +145,6 @@ public sealed class SaveStep3LocationCommandHandler
             registrationStep: 3);
 
         await _providerRepository.SaveProviderAsync(provider, cancellationToken);
-        await _unitOfWork.CommitAsync(cancellationToken);
 
         // Generate new token with provider claims
         var newTokenResponse = await _tokenService.GenerateTokenWithProviderClaimsAsync(
