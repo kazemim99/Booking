@@ -78,6 +78,8 @@ import { usePhoneVerification } from '../composables/usePhoneVerification'
 import { useAuthStore } from '@/core/stores/modules/auth.store'
 import { useToast } from '@/core/composables'
 import { phoneVerificationApi } from '../api/phoneVerification.api'
+import { providerService } from '@/modules/provider/services/provider.service'
+import { ProviderStatus } from '@/core/types/enums.types'
 import AppButton from '@/shared/components/ui/Button/AppButton.vue'
 import OtpInput from '../components/OtpInput.vue'
 
@@ -211,9 +213,9 @@ const verifyOtp = async () => {
 
         toast.success('ثبت‌نام شما با موفقیت انجام شد!')
 
-        // Step 4: Navigate to provider registration
-        console.log('[VerificationView] Navigating to ProviderRegistration with authenticated user')
-        await router.push({ name: 'ProviderRegistration' })
+        // Step 4: Check provider status and redirect accordingly
+        console.log('[VerificationView] Checking provider status...')
+        await redirectBasedOnProviderStatus()
       } else {
         throw new Error(registerResult.error || 'خطا در ثبت‌نام')
       }
@@ -229,6 +231,47 @@ const verifyOtp = async () => {
     otpInputRef.value?.clear()
   } finally {
     isLoading.value = false
+  }
+}
+
+const redirectBasedOnProviderStatus = async () => {
+  try {
+    // Check if user has a provider profile and get its status
+    const providerStatus = await providerService.getCurrentProviderStatus()
+
+    if (providerStatus) {
+      console.log('[VerificationView] Provider status:', providerStatus.status)
+
+      // If registration is complete (status changed from Drafted), redirect to dashboard
+      if (
+        providerStatus.status === ProviderStatus.PendingVerification ||
+        providerStatus.status === ProviderStatus.Verified ||
+        providerStatus.status === ProviderStatus.Active
+      ) {
+        console.log('[VerificationView] Registration complete, redirecting to dashboard')
+        await router.push({ name: 'ProviderDashboard' })
+        return
+      }
+
+      // If status is Drafted, continue to registration
+      if (providerStatus.status === ProviderStatus.Drafted) {
+        console.log('[VerificationView] Registration incomplete, redirecting to registration')
+        await router.push({ name: 'ProviderRegistration' })
+        return
+      }
+
+      // For other statuses (Inactive, Suspended, Archived), redirect to dashboard with a message
+      console.log('[VerificationView] Provider has status:', providerStatus.status, '- redirecting to dashboard')
+      await router.push({ name: 'ProviderDashboard' })
+    } else {
+      // No provider profile exists yet, start registration
+      console.log('[VerificationView] No provider profile, redirecting to registration')
+      await router.push({ name: 'ProviderRegistration' })
+    }
+  } catch (error) {
+    console.error('[VerificationView] Error checking provider status:', error)
+    // Default to registration on error
+    await router.push({ name: 'ProviderRegistration' })
   }
 }
 
