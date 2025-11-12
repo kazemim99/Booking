@@ -67,13 +67,13 @@ export enum ProviderType {
  * Provider verification status
  */
 export enum ProviderStatus {
-  Pending = 'pending',
-  UnderReview = 'under_review',
-  Verified = 'verified',
-  Rejected = 'rejected',
-  Suspended = 'suspended',
-  Active = 'active',
-  Inactive = 'inactive',
+  Drafted = 'Drafted',
+  PendingVerification = 'PendingVerification',
+  Verified = 'Verified',
+  Active = 'Active',
+  Inactive = 'Inactive',
+  Suspended = 'Suspended',
+  Archived = 'Archived',
 }
 
 /**
