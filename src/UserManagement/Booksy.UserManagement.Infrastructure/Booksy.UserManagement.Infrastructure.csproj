@@ -29,6 +29,7 @@
   </ItemGroup>
 
   <ItemGroup>
+    <ProjectReference Include="..\..\Infrastructure\Booksy.API\Booksy.API.csproj" />
     <ProjectReference Include="..\..\Infrastructure\Booksy.Infrastructure.Core\Booksy.Infrastructure.Core.csproj" />
     <ProjectReference Include="..\Booksy.UserManagement.Application\Booksy.UserManagement.Application.csproj" />
     <ProjectReference Include="..\Booksy.UserManagement.Domain\Booksy.UserManagement.Domain.csproj" />

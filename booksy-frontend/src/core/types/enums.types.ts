@@ -20,6 +20,7 @@ export enum UserRole {
  * User account status
  */
 export enum UserStatus {
+  Draft = 'Draft',
   Active = 'active',
   Inactive = 'inactive',
   Pending = 'pending',

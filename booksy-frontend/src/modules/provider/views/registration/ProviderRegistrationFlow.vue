@@ -52,11 +52,7 @@
     />
 
     <!-- Step 7: Gallery (NEW) -->
-    <GalleryStep
-      v-else-if="currentStep === 7"
-      @next="handleNext"
-      @back="previousStep"
-    />
+    <GalleryStep v-else-if="currentStep === 7" @next="handleNext" @back="previousStep" />
 
     <!-- Step 8: Optional Feedback (NEW) -->
     <OptionalFeedbackStep
@@ -72,9 +68,10 @@
 
 <script setup lang="ts">
 import { computed, onMounted, onBeforeUnmount } from 'vue'
-import { useRouter } from 'vue-router'
 import { useProviderRegistration } from '../../composables/useProviderRegistration'
 import { toastService } from '@/core/services/toast.service'
+import { useAuthStore } from '@/core/stores/modules/auth.store'
+import { ProviderStatus } from '../../types/provider.types'
 
 // New Step Components (Figma Design)
 import BusinessInfoStep from '../../components/registration/steps/BusinessInfoStep.vue'
@@ -87,7 +84,7 @@ import GalleryStep from '../../components/registration/steps/GalleryStep.vue'
 import OptionalFeedbackStep from '../../components/registration/steps/OptionalFeedbackStep.vue'
 import CompletionStep from '../../components/registration/steps/CompletionStep.vue'
 
-const router = useRouter()
+const authStore = useAuthStore()
 
 const {
   currentStep,
@@ -275,13 +272,13 @@ const handleNext = async () => {
     console.log('🚀 ProviderRegistrationFlow: Proceeding to next step')
     nextStep()
     console.log('🚀 ProviderRegistrationFlow: nextStep() called successfully')
-  } catch (error: any) {
+  } catch (error) {
     console.error('Error in handleNext:', error)
-    toastService.error(error.message || 'خطا در ذخیره اطلاعات')
+    toastService.error((error as Error).message || 'خطا در ذخیره اطلاعات')
   }
 }
 
-const handleFinalSubmit = async (feedback?: string) => {
+const handleFinalSubmit = async () => {
   try {
     // Try to get provider ID from draftProviderId or load from progress
     let providerId = draftProviderId
@@ -324,9 +321,9 @@ const handleFinalSubmit = async (feedback?: string) => {
       // Show error message
       toastService.error(result.message || 'خطا در تکمیل ثبت‌نام')
     }
-  } catch (error: any) {
+  } catch (error) {
     console.error('Error in handleFinalSubmit:', error)
-    toastService.error(error.message || 'خطا در تکمیل ثبت‌نام')
+    toastService.error((error as Error).message || 'خطا در تکمیل ثبت‌نام')
   }
 }
 
@@ -334,22 +331,38 @@ const handleFinalSubmit = async (feedback?: string) => {
 onMounted(async () => {
   initialize()
 
-  // Load draft progress - route guard has already validated access
-  try {
-    console.log('[RegistrationFlow] Loading draft progress')
-    const draftResult = await loadDraft()
+  // Check provider status from token (no API call needed)
+  const tokenProviderStatus = authStore.providerStatus
+  const tokenProviderId = authStore.providerId
 
-    if (draftResult.success && draftResult.providerId) {
-      draftProviderId = draftResult.providerId
-      console.log('✅ Existing draft loaded with provider ID:', draftProviderId)
+  console.log('[RegistrationFlow] Provider status from token:', tokenProviderStatus)
+  console.log('[RegistrationFlow] Provider ID from token:', tokenProviderId)
 
-      if (state.value.data.step >= 3) {
-        toastService.info('ثبت‌نام شما از مرحله قبل ادامه می‌یابد')
+  // Only load draft if status is null (new user) or Drafted (incomplete registration)
+  if (tokenProviderStatus === null || tokenProviderStatus === ProviderStatus.Drafted) {
+    console.log('[RegistrationFlow] Provider status allows draft loading')
+
+    try {
+      const draftResult = await loadDraft()
+      if (draftResult.success && draftResult.providerId) {
+        draftProviderId = draftResult.providerId
+        console.log('✅ Existing draft loaded with provider ID:', draftProviderId)
+
+        if (state.value.data.step >= 3) {
+          toastService.info('ثبت‌نام شما از مرحله قبل ادامه می‌یابد')
+        }
+      } else {
+        // No existing draft - new user starting fresh
+        console.log('[RegistrationFlow] No existing draft found, starting fresh registration')
       }
+    } catch (error) {
+      console.error('[RegistrationFlow] Error loading draft:', error)
+      // Continue anyway - user can start fresh registration
     }
-  } catch (error) {
-    console.error('[RegistrationFlow] Error loading draft:', error)
-    // Continue anyway - user can start fresh registration
+  } else {
+    // User has already completed registration (Active, PendingVerification, etc.)
+    console.warn('[RegistrationFlow] Provider status is', tokenProviderStatus, '- registration already complete')
+    console.warn('[RegistrationFlow] Route guard should have prevented access')
   }
 
   window.addEventListener('beforeunload', handleBeforeUnload)

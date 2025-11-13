@@ -23,17 +23,20 @@ public sealed class RegisterFromVerifiedPhoneCommandHandler
     private readonly IPhoneVerificationRepository _verificationRepository;
     private readonly IUserRepository _userRepository;
     private readonly IJwtTokenService _tokenService;
+    private readonly IProviderInfoService _providerInfoService;
     private readonly ILogger<RegisterFromVerifiedPhoneCommandHandler> _logger;
 
     public RegisterFromVerifiedPhoneCommandHandler(
         IPhoneVerificationRepository verificationRepository,
         IUserRepository userRepository,
         IJwtTokenService tokenService,
+        IProviderInfoService providerInfoService,
         ILogger<RegisterFromVerifiedPhoneCommandHandler> logger)
     {
         _verificationRepository = verificationRepository;
         _userRepository = userRepository;
         _tokenService = tokenService;
+        _providerInfoService = providerInfoService;
         _logger = logger;
     }
 
@@ -110,7 +113,38 @@ public sealed class RegisterFromVerifiedPhoneCommandHandler
                 phoneNumber.Value);
         }
 
-        // 4. Generate JWT tokens
+        // 4. Query provider information if user has Provider role
+        string? providerId = null;
+        string? providerStatus = null;
+        if (user.Roles.Any(r => r.Name == "Provider" || r.Name == "ServiceProvider"))
+        {
+            _logger.LogInformation("User has Provider role, querying provider info for UserId: {UserId}", user.Id);
+            try
+            {
+                var providerInfo = await _providerInfoService.GetProviderByOwnerIdAsync(
+                    user.Id.Value,
+                    cancellationToken);
+
+                if (providerInfo != null)
+                {
+                    providerId = providerInfo.ProviderId.ToString();
+                    providerStatus = providerInfo.Status;
+                    _logger.LogInformation("Provider found: ProviderId={ProviderId}, Status={Status}",
+                        providerId, providerStatus);
+                }
+                else
+                {
+                    _logger.LogInformation("No provider found for UserId: {UserId} - new provider registration", user.Id);
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.LogWarning(ex, "Error querying provider info for UserId: {UserId}, continuing without provider claims", user.Id);
+                // Continue without provider claims if there's an error
+            }
+        }
+
+        // 5. Generate JWT tokens
         var displayName = $"{user.Profile.FirstName} {user.Profile.LastName}".Trim();
         if (string.IsNullOrWhiteSpace(displayName))
         {
@@ -124,8 +158,8 @@ public sealed class RegisterFromVerifiedPhoneCommandHandler
             displayName,
             user.Status.ToString(),
             user.Roles.Select(r => r.Name),
-            providerId: null,         // Provider aggregate doesn't exist yet
-            providerStatus: null,     // Will be added after registration completes
+            providerId,
+            providerStatus,
             expirationHours: 24);
 
         // Generate and add refresh token

@@ -3,10 +3,12 @@ using Booksy.Core.Application.Abstractions.Persistence;
 using Booksy.Core.Application.Abstractions.Services;
 using Booksy.Core.Domain.Abstractions;
 using Booksy.Core.Domain.ValueObjects;
+using Booksy.ServiceCatalog.Application.Services.Interfaces;
 using Booksy.ServiceCatalog.Domain.Aggregates;
 using Booksy.ServiceCatalog.Domain.Enums;
 using Booksy.ServiceCatalog.Domain.Repositories;
 using Booksy.ServiceCatalog.Domain.ValueObjects;
+using Microsoft.Extensions.Logging;
 
 namespace Booksy.ServiceCatalog.Application.Commands.Provider.Registration;
 
@@ -17,17 +19,23 @@ public sealed class SaveStep9CompleteCommandHandler
     private readonly IServiceWriteRepository _serviceRepository;
     private readonly IUnitOfWork _unitOfWork;
     private readonly ICurrentUserService _currentUserService;
+    private readonly ITokenService _tokenService;
+    private readonly ILogger<SaveStep9CompleteCommandHandler> _logger;
 
     public SaveStep9CompleteCommandHandler(
         IProviderWriteRepository providerRepository,
         IServiceWriteRepository serviceRepository,
         IUnitOfWork unitOfWork,
-        ICurrentUserService currentUserService)
+        ICurrentUserService currentUserService,
+        ITokenService tokenService,
+        ILogger<SaveStep9CompleteCommandHandler> logger)
     {
         _providerRepository = providerRepository;
         _serviceRepository = serviceRepository;
         _unitOfWork = unitOfWork;
         _currentUserService = currentUserService;
+        _tokenService = tokenService;
+        _logger = logger;
     }
 
     public async Task<SaveStep9CompleteResult> Handle(
@@ -73,12 +81,24 @@ public sealed class SaveStep9CompleteCommandHandler
 
         await _unitOfWork.CommitAsync(cancellationToken);
 
+        // Generate new token with updated status (PendingVerification)
+        var tokenResponse = await _tokenService.GenerateTokenWithProviderClaimsAsync(
+            userId.Value,
+            provider.Id.Value,
+            provider.Status.ToString(),
+            cancellationToken);
+
+        _logger.LogInformation(
+            "Registration completed for provider {ProviderId} with new status {Status}. Generated new authentication tokens.",
+            provider.Id.Value,
+            provider.Status);
+
         return new SaveStep9CompleteResult(
             ProviderId: provider.Id.Value,
             Status: provider.Status.ToString(),
             Message: "Registration completed successfully. Your provider profile is now pending admin verification.",
-            AccessToken: null, // Tokens are handled by authentication service
-            RefreshToken: null
+            AccessToken: tokenResponse.AccessToken,
+            RefreshToken: tokenResponse.RefreshToken
         );
     }
 }
