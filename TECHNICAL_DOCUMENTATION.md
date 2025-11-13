@@ -1,8 +1,8 @@
 # Booksy Platform - Comprehensive Technical Documentation
 
-> **Living Document**: This documentation consolidates all technical documentation from the project. Last updated: 2025-11-11
+> **Living Document**: This documentation consolidates all technical documentation from the project. Last updated: 2025-11-13
 >
-> **Recent Updates (2025-11-11)**: Added 3 critical bug fixes to Known Issues section (Issues #8-10): Gallery image submission, CompletionStep UI distortion, and registration progress query handling.
+> **Recent Updates (2025-11-13)**: Added 4 critical bug fixes and optimizations (Issues #11-14): Route conflict resolution, status API optimization, HTTP interceptor error handling, and cache validation. Redesigned provider bookings management page with modern UI/UX.
 
 ---
 
@@ -1270,6 +1270,315 @@ This fix ensures that:
 - Page refresh works correctly at any point in the registration flow
 - No "not found" errors after completing Step 9
 - Proper status tracking throughout the provider lifecycle (Drafted → PendingVerification → Active)
+
+### Issue 11: Route Conflict Between Customer and Provider Bookings (Fixed 2025-11-13)
+
+**Symptom:**
+Clicking "رزروها" (Bookings) in the provider dashboard sidebar navigated to `AppointmentListView.vue` (customer appointments) instead of `ProviderBookingsView.vue` (provider bookings management).
+
+**Root Cause:**
+Two routes were competing for the `/bookings` path:
+- **Customer route** (registered first in router): `/bookings` → `AppointmentListView.vue`
+- **Provider route** (registered second): `/bookings` → `ProviderBookingsView.vue`
+
+Since routes are matched in order, the customer route was always matching first.
+
+```typescript
+// Router configuration (router/index.ts)
+const routes = [
+  ...authRoutes,
+  ...bookingRoutes,      // ← Registered FIRST (customer bookings)
+  ...providerRoutes,     // ← Registered SECOND (provider bookings)
+  ...adminRoutes,
+]
+```
+
+**Solution (Commit: `f9ea81c3`):**
+Changed the customer bookings route to a distinct path:
+
+```typescript
+// BEFORE (booking.routes.ts):
+{
+  path: '/bookings',
+  name: 'Bookings',
+  component: () => import('@/modules/booking/views/AppointmentListView.vue'),
+}
+
+// AFTER (booking.routes.ts):
+{
+  path: '/my-appointments',
+  name: 'Bookings',
+  component: () => import('@/modules/booking/views/AppointmentListView.vue'),
+}
+```
+
+**Result:**
+- Customer appointments: `/my-appointments` → `AppointmentListView.vue`
+- Provider bookings: `/bookings` → `ProviderBookingsView.vue`
+
+**Files Changed:**
+- `booksy-frontend/src/core/router/routes/booking.routes.ts`
+
+### Issue 12: Redundant Status API Calls in Registration Flow (Fixed 2025-11-13)
+
+**Symptom:**
+The `getCurrentProviderStatus()` API was being called **3 times** when users navigated to the registration page:
+1. `VerificationView.vue:239` - After phone verification
+2. `provider.routes.ts:42` - Route guard `beforeEnter`
+3. `ProviderRegistrationFlow.vue:343` - Component `onMounted()`
+
+**Root Cause:**
+Defensive programming led to multiple layers checking the same status, causing unnecessary API calls and delays.
+
+**Solution (Commit: `62132db`):**
+Implemented **Option 2: Route-level protection only** - Use route guard as single source of truth:
+
+```typescript
+// BEFORE - VerificationView.vue (removed):
+const redirectBasedOnProviderStatus = async () => {
+  const providerStatus = await providerService.getCurrentProviderStatus() // ❌ Call 1
+  if (!providerStatus || providerStatus.status === ProviderStatus.Drafted) {
+    await router.push({ name: 'ProviderRegistration' })
+  } else {
+    await router.push({ name: 'ProviderDashboard' })
+  }
+}
+
+// AFTER - VerificationView.vue (simplified):
+const redirectBasedOnProviderStatus = async () => {
+  // Simply redirect - route guard will handle status validation
+  await router.push({ name: 'ProviderRegistration' })
+}
+
+// Route guard remains (single source of truth):
+async beforeEnter(...) {
+  const statusData = await authStore.providerStatus  // ✅ Single call from token
+  // Validate and redirect as needed
+}
+
+// BEFORE - ProviderRegistrationFlow.vue (removed):
+onMounted(async () => {
+  const statusData = await providerService.getCurrentProviderStatus() // ❌ Call 3
+  if (statusData.status === ProviderStatus.Drafted) {
+    await loadDraft()
+  }
+})
+
+// AFTER - ProviderRegistrationFlow.vue (simplified):
+onMounted(async () => {
+  // Route guard already validated access - just load draft
+  await loadDraft()
+})
+```
+
+**Result:**
+- Status checks reduced from **3 API calls to 1** (from token, no API call)
+- Faster navigation experience
+- Cleaner code with single responsibility
+
+**Files Changed:**
+- `booksy-frontend/src/modules/auth/views/VerificationView.vue`
+- `booksy-frontend/src/modules/provider/views/registration/ProviderRegistrationFlow.vue`
+- `booksy-frontend/src/core/router/routes/provider.routes.ts`
+
+### Issue 13: TypeError in HTTP Interceptors - toUpperCase() on Undefined (Fixed 2025-11-13)
+
+**Symptom:**
+```
+TypeError: Cannot read properties of undefined (reading 'toUpperCase')
+    at requestLoggingInterceptor
+    at cacheRequestInterceptor
+    at retryInterceptor
+```
+
+**Root Cause:**
+Multiple HTTP interceptors were calling `.toUpperCase()` on the request `method` property without proper type checking:
+
+```typescript
+// BROKEN CODE:
+loggerService.info('🚀 API Request', {
+  method: method?.toUpperCase(),  // ❌ Optional chaining not enough
+  url,
+})
+
+// If method is undefined, method?.toUpperCase() still tries to call toUpperCase() on undefined
+```
+
+The error occurred when cached responses or malformed requests had missing or undefined `method` properties.
+
+**Solution (Commits: `605711b`, `d1448bf`):**
+Added defensive type checking in all interceptors:
+
+```typescript
+// AFTER - Logging Interceptor (logging.interceptor.ts):
+loggerService.info('🚀 API Request', {
+  method: method && typeof method === 'string' ? method.toUpperCase() : 'UNKNOWN',
+  url,
+})
+
+// AFTER - Cache Interceptor (request-cache.ts):
+const method = config.method && typeof config.method === 'string'
+  ? config.method.toUpperCase()
+  : 'UNKNOWN'
+console.log(`💾 Cache HIT: ${method} ${config.url}`)
+
+// AFTER - Retry Interceptor (retry-handler.ts):
+const method = config.method && typeof config.method === 'string'
+  ? config.method.toUpperCase()
+  : 'UNKNOWN'
+console.log(`🔄 Retrying request: ${method} ${config.url}`)
+
+// AFTER - Transform Interceptor (transform.interceptor.ts):
+return Object.keys(obj).reduce((result, key) => {
+  // Skip if key is not a valid string or is empty
+  if (!key || typeof key !== 'string' || key.length === 0) {
+    result[key] = toPascalCase(obj[key])
+    return result
+  }
+
+  const pascalKey = key.charAt(0).toUpperCase() + key.slice(1)
+  result[pascalKey] = toPascalCase(obj[key])
+  return result
+}, {} as any)
+```
+
+**Files Changed:**
+- `booksy-frontend/src/core/api/interceptors/logging.interceptor.ts`
+- `booksy-frontend/src/core/api/interceptors/request-cache.ts`
+- `booksy-frontend/src/core/api/interceptors/retry-handler.ts`
+- `booksy-frontend/src/core/api/interceptors/transform.interceptor.ts`
+
+### Issue 14: Cache Returning Malformed Responses (Fixed 2025-11-13)
+
+**Symptom:**
+```
+request-cache.ts:76 💾 Cache HIT: GET /v1/providers/current/status
+error.interceptor.ts:21 خطا در برقراری ارتباط با سرور
+TypeError: Cannot read properties of undefined (reading 'toUpperCase')
+```
+
+**Root Cause:**
+The in-memory request cache was returning cached responses without validating that the response had a properly formed `config` object:
+
+```typescript
+// BEFORE (request-cache.ts):
+get(config: InternalAxiosRequestConfig): AxiosResponse | null {
+  const entry = this.cache.get(key)
+  if (entry && this.isValid(entry)) {
+    return { ...entry.data }  // ❌ No validation of response structure
+  }
+  return null
+}
+```
+
+When cached responses were returned without a valid `config.method` property, downstream interceptors failed with TypeError.
+
+**Solution (Commit: `a704cf3`):**
+Added validation and sanitization of cached responses:
+
+```typescript
+// AFTER (request-cache.ts):
+get(config: InternalAxiosRequestConfig): AxiosResponse | null {
+  const entry = this.cache.get(key)
+  if (!entry || !this.isValid(entry)) {
+    return null
+  }
+
+  // Ensure the cached response has a valid config object with method
+  const cachedResponse = { ...entry.data }
+  if (cachedResponse.config) {
+    cachedResponse.config = {
+      ...cachedResponse.config,
+      method: cachedResponse.config.method || config.method || 'get',
+    }
+  }
+
+  return cachedResponse
+}
+
+set(config: InternalAxiosRequestConfig, response: AxiosResponse, ttl: number): void {
+  // Don't cache responses without a valid config
+  if (!response.config || !response.config.method) {
+    if (import.meta.env.DEV) {
+      console.warn('💾 Cache SKIP: Response missing valid config')
+    }
+    return
+  }
+
+  const key = this.generateKey(config)
+  this.cache.set(key, {
+    data: { ...response },
+    timestamp: Date.now(),
+    ttl,
+  })
+}
+```
+
+**Files Changed:**
+- `booksy-frontend/src/core/api/interceptors/request-cache.ts`
+
+**Impact:**
+- Prevents malformed cached responses from causing runtime errors
+- Ensures all cached responses have valid config objects
+- Improves application stability when using cached data
+- Better logging for debugging cache issues
+
+### Feature Addition: Modern Provider Bookings Management UI (Added 2025-11-13)
+
+**Commit:** `0ce5cf5`
+
+**Overview:**
+Completely redesigned the provider bookings management page (`ProviderBookingsView.vue`) with a modern, card-based UI/UX design.
+
+**Key Features:**
+
+1. **Page Header**
+   - Title and subtitle
+   - Action buttons: "Calendar View", "Create Booking"
+
+2. **Quick Stats Dashboard**
+   - 4 gradient stat cards with icons:
+     - Today's bookings
+     - Upcoming bookings
+     - Completed bookings
+     - Monthly revenue
+   - Hover effects with lift animation
+
+3. **Advanced Filtering System**
+   - Tab-based status filter: All / Pending / Confirmed / Completed / Cancelled
+   - Each tab shows count badges
+   - Search box for customer name/service
+   - Date range picker
+   - Service type dropdown
+   - Reset filters button
+
+4. **Card-Based Booking List**
+   - Replaced old table with modern cards
+   - Customer avatar with initials
+   - Color-coded status badges
+   - Details grid with icons (date, time, service, price)
+   - Contextual action buttons based on status:
+     - Pending: Confirm / Decline
+     - Confirmed: Complete / Reschedule / Cancel
+     - Completed: View Details
+   - Hover effects with elevation
+
+5. **Loading & Empty States**
+   - Spinner animation during data fetch
+   - Empty state illustration with helpful message
+
+6. **Full Persian/RTL Support**
+   - Right-to-left layout
+   - Persian labels and dates
+   - Sample data for demonstration
+
+**Files Changed:**
+- `booksy-frontend/src/modules/provider/views/ProviderBookingsView.vue`
+
+**Route:**
+- Path: `/bookings`
+- Name: `ProviderBookings`
+- Component: `ProviderBookingsView.vue`
 
 ---
 
