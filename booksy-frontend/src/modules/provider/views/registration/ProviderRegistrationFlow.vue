@@ -361,17 +361,37 @@ onMounted(async () => {
       console.warn('[RegistrationFlow] Provider status is', statusData.status, '- registration already complete')
       console.warn('[RegistrationFlow] Skipping progress API call')
     }
-  } catch (error) {
+  } catch (error: any) {
     console.error('[RegistrationFlow] Error checking provider status:', error)
-    // On error, try to load draft anyway (fail open)
-    const draftResult = await loadDraft()
-    if (draftResult.success && draftResult.providerId) {
-      draftProviderId = draftResult.providerId
-      console.log('✅ Existing draft loaded with provider ID:', draftProviderId)
 
-      if (state.value.data.step >= 3) {
-        toastService.info('ثبت‌نام شما از مرحله قبل ادامه می‌یابد')
+    // If error is due to no provider existing (404 or similar), proceed with draft loading
+    // This is expected for brand new users starting registration
+    const isNoProviderError =
+      error?.statusCode === 404 ||
+      error?.response?.status === 404 ||
+      error?.message?.includes('not found') ||
+      error?.message?.includes('404')
+
+    if (isNoProviderError) {
+      console.log('[RegistrationFlow] No provider found (404) - proceeding with draft loading for new registration')
+    } else {
+      console.log('[RegistrationFlow] Error occurred, proceeding with draft loading as fallback')
+    }
+
+    // On any error, try to load draft anyway (fail open for new users)
+    try {
+      const draftResult = await loadDraft()
+      if (draftResult.success && draftResult.providerId) {
+        draftProviderId = draftResult.providerId
+        console.log('✅ Existing draft loaded with provider ID:', draftProviderId)
+
+        if (state.value.data.step >= 3) {
+          toastService.info('ثبت‌نام شما از مرحله قبل ادامه می‌یابد')
+        }
       }
+    } catch (draftError) {
+      console.error('[RegistrationFlow] Error loading draft:', draftError)
+      // Continue anyway - user can start fresh registration
     }
   }
 
