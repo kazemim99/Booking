@@ -24,6 +24,15 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
+using SendGrid;
+using Booksy.Infrastructure.External.Payment;
+using Booksy.Infrastructure.External.Payment.ZarinPal;
+using Booksy.Infrastructure.External.Payment.IDPay;
+using Booksy.Infrastructure.External.Payment.Behpardakht;
+using Booksy.Infrastructure.External.Payment.Parsian;
+using Booksy.Infrastructure.External.Payment.Saman;
+using Booksy.ServiceCatalog.Infrastructure.ExternalServices.Sms;
+using System.Threading;
 
 namespace Booksy.ServiceCatalog.Infrastructure.DependencyInjection
 {
@@ -62,7 +71,7 @@ namespace Booksy.ServiceCatalog.Infrastructure.DependencyInjection
 
             services.AddScoped<DbContext>();
 
-            services.AddScoped<ISeeder, ServiceCatalogDatabaseSeeder>();
+            services.AddScoped<ISeeder, ServiceCatalogDatabaseSeederOrchestrator>();
             // Unit of Work
             services.AddScoped<IUnitOfWork>(provider =>
                 new EfCoreUnitOfWork<ServiceCatalogDbContext>(
@@ -77,6 +86,12 @@ namespace Booksy.ServiceCatalog.Infrastructure.DependencyInjection
             services.AddScoped<IServiceWriteRepository, ServiceWriteRepository>();
             services.AddScoped<IBookingReadRepository, BookingReadRepository>();
             services.AddScoped<IBookingWriteRepository, BookingWriteRepository>();
+
+            // Payment and Payout Repositories
+            services.AddScoped<IPaymentReadRepository, PaymentReadRepository>();
+            services.AddScoped<IPaymentWriteRepository, PaymentWriteRepository>();
+            services.AddScoped<IPayoutReadRepository, PayoutReadRepository>();
+            services.AddScoped<IPayoutWriteRepository, PayoutWriteRepository>();
 
             // Notification Repositories
             services.AddScoped<INotificationReadRepository, NotificationReadRepository>();
@@ -104,6 +119,11 @@ namespace Booksy.ServiceCatalog.Infrastructure.DependencyInjection
 
             // Application Services
             services.AddScoped<IProviderApplicationService, ProviderApplicationService>();
+
+            // External Services (Payment Gateways, SMS, Email, Analytics, Storage, etc.)
+            // This registers: IPaymentGateway, IPaymentGatewayFactory, IZarinPalService,
+            // IIDPayService, IBehpardakhtService, ISendGridClient, and other external services
+            services.AddExternalServices(configuration);
 
             // CAP Event Bus with Outbox Pattern
             services.AddCapEventBus<ServiceCatalogDbContext>(configuration, "ServiceCatalog");
@@ -155,15 +175,15 @@ namespace Booksy.ServiceCatalog.Infrastructure.DependencyInjection
             {
 
 
-            using var scope = serviceProvider.CreateScope();
-            var context = scope.ServiceProvider.GetRequiredService<ServiceCatalogDbContext>();
-            var seeder = scope.ServiceProvider.GetRequiredService<ISeeder>();
+                using var scope = serviceProvider.CreateScope();
+                var context = scope.ServiceProvider.GetRequiredService<ServiceCatalogDbContext>();
+                var seeder = scope.ServiceProvider.GetRequiredService<ISeeder>();
 
-            // Apply migrations
-            await context.Database.MigrateAsync();
+                // Apply migrations
+                //await context.Database.MigrateAsync();
 
-            // Seed data
-            await seeder.SeedAsync();
+                await seeder.SeedAsync();
+
             }
             catch (Exception ex)
             {
@@ -188,6 +208,10 @@ namespace Booksy.ServiceCatalog.Infrastructure.DependencyInjection
             services.AddScoped<ISmsNotificationService, RahyabSmsNotificationService>();
             services.AddScoped<IPushNotificationService, FirebasePushNotificationService>();
             services.AddScoped<IInAppNotificationService, InAppNotificationService>();
+
+            // Register old ISmsNotificationService for booking event handlers
+            services.AddHttpClient<ExternalServices.Sms.KavenegarSmsService>();
+            services.AddScoped<Application.Services.ISmsNotificationService, ExternalServices.Sms.KavenegarSmsService>();
 
             // HTTP Clients for notification services
             services.AddHttpClient<SendGridEmailNotificationService>();

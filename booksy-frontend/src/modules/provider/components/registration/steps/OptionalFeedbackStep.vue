@@ -1,95 +1,97 @@
 <template>
-  <div class="min-h-screen bg-background p-4 py-8">
-    <div class="max-w-2xl mx-auto">
-      <ProgressIndicator :current-step="8" :total-steps="9" />
+  <div class="registration-step">
+    <ProgressIndicator :current-step="8" :total-steps="9" />
 
-      <div class="bg-card rounded-2xl shadow-sm p-8 border">
-        <div class="mb-6 text-center">
-          <div class="w-16 h-16 bg-primary/10 rounded-full flex items-center justify-center mx-auto mb-4">
-            <svg xmlns="http://www.w3.org/2000/svg" class="w-8 h-8 text-primary" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 8h10M7 12h4m1 8l-4-4H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-3l-4 4z" />
-            </svg>
+    <div class="step-card">
+      <div class="step-header">
+        <div class="icon-wrapper">
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            class="icon"
+          >
+            <path
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              stroke-width="2"
+              d="M7 8h10M7 12h4m1 8l-4-4H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-3l-4 4z"
+            />
+          </svg>
+        </div>
+        <h2 class="step-title">نظر شما برای ما مهم است</h2>
+        <p class="step-description">چطور می‌توانیم بیشتر به شما کمک کنیم؟</p>
+      </div>
+
+      <form @submit.prevent="handleSubmit" class="form-content">
+        <!-- Pre-defined Answers -->
+        <div class="form-section">
+          <label class="section-label">گزینه‌های پیشنهادی را انتخاب کنید (اختیاری)</label>
+          <div class="options-grid">
+            <button
+              v-for="answer in preAnswers"
+              :key="answer"
+              type="button"
+              @click="togglePreAnswer(answer)"
+              :class="['option-button', { selected: selectedPreAnswers.includes(answer) }]"
+            >
+              <div class="option-content">
+                <div :class="['checkbox', { checked: selectedPreAnswers.includes(answer) }]">
+                  <svg
+                    v-if="selectedPreAnswers.includes(answer)"
+                    xmlns="http://www.w3.org/2000/svg"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    class="check-icon"
+                  >
+                    <path
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
+                      stroke-width="3"
+                      d="M5 13l4 4L19 7"
+                    />
+                  </svg>
+                </div>
+                <span class="option-text">{{ answer }}</span>
+              </div>
+            </button>
           </div>
-          <h2 class="mb-2 text-2xl font-bold">نظر شما برای ما مهم است</h2>
-          <p class="text-muted-foreground">
-            چطور می‌توانیم بیشتر به شما کمک کنیم؟
+        </div>
+
+        <!-- Custom Feedback -->
+        <div class="form-section">
+          <label for="feedback" class="section-label">
+            یا نظرات دیگری دارید؟ (اختیاری)
+          </label>
+          <textarea
+            id="feedback"
+            v-model="feedback"
+            placeholder="لطفاً نظرات، پیشنهادات یا موارد خاصی که نیاز دارید را بنویسید..."
+            class="feedback-textarea"
+          />
+          <p class="helper-text">
+            می‌توانید هم از گزینه‌های بالا و هم از این بخش استفاده کنید
           </p>
         </div>
 
-        <form @submit.prevent="handleSubmit" class="space-y-6">
-          <div class="space-y-3">
-            <label class="block text-sm font-medium">گزینه‌های پیشنهادی را انتخاب کنید (اختیاری)</label>
-            <div class="grid grid-cols-1 gap-2">
-              <button
-                v-for="answer in preAnswers"
-                :key="answer"
-                type="button"
-                @click="togglePreAnswer(answer)"
-                :class="[
-                  'p-3 rounded-lg border-2 transition-all text-sm text-right hover:border-primary/50',
-                  selectedPreAnswers.includes(answer)
-                    ? 'border-primary bg-primary/5'
-                    : 'border-border bg-card'
-                ]"
-              >
-                <div class="flex items-center gap-2">
-                  <div
-                    :class="[
-                      'w-5 h-5 rounded border-2 flex items-center justify-center flex-shrink-0',
-                      selectedPreAnswers.includes(answer)
-                        ? 'border-primary bg-primary'
-                        : 'border-muted-foreground/30'
-                    ]"
-                  >
-                    <svg
-                      v-if="selectedPreAnswers.includes(answer)"
-                      xmlns="http://www.w3.org/2000/svg"
-                      class="w-3 h-3 text-white"
-                      viewBox="0 0 24 24"
-                      fill="none"
-                      stroke="currentColor"
-                      stroke-width="3"
-                    >
-                      <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7" />
-                    </svg>
-                  </div>
-                  <span class="flex-1">{{ answer }}</span>
-                </div>
-              </button>
-            </div>
-          </div>
+        <!-- Info Box -->
+        <div class="info-box">
+          <p class="info-text">
+            💡 <span class="font-medium">نکته:</span> بازخورد شما به ما کمک می‌کند تا خدمات
+            بهتری ارائه دهیم
+          </p>
+        </div>
 
-          <div class="space-y-2">
-            <label for="feedback" class="block text-sm font-medium">
-              یا نظرات دیگری دارید؟ (اختیاری)
-            </label>
-            <textarea
-              id="feedback"
-              v-model="feedback"
-              placeholder="لطفاً نظرات، پیشنهادات یا موارد خاصی که نیاز دارید را بنویسید..."
-              class="w-full min-h-[120px] resize-none p-3 rounded-lg border border-border focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary"
-            />
-            <p class="text-xs text-muted-foreground">
-              می‌توانید هم از گزینه‌های بالا و هم از این بخش استفاده کنید
-            </p>
-          </div>
-
-          <div class="p-4 bg-accent/20 rounded-lg">
-            <p class="text-sm">
-              💡 <span class="font-medium">نکته:</span> بازخورد شما به ما کمک می‌کند تا خدمات بهتری ارائه دهیم
-            </p>
-          </div>
-
-          <div class="flex gap-3">
-            <AppButton type="button" variant="secondary" @click="$emit('back')" class="flex-1">
-              قبلی
-            </AppButton>
-            <AppButton type="submit" variant="primary" class="flex-1">
-              پایان
-            </AppButton>
-          </div>
-        </form>
-      </div>
+        <!-- Actions -->
+        <div class="step-actions">
+          <AppButton type="button" variant="secondary" size="large" block @click="$emit('back')">
+            قبلی
+          </AppButton>
+          <AppButton type="submit" variant="primary" size="large" block> پایان </AppButton>
+        </div>
+      </form>
     </div>
   </div>
 </template>
@@ -119,17 +121,14 @@ const selectedPreAnswers = ref<string[]>([])
 
 const togglePreAnswer = (answer: string) => {
   if (selectedPreAnswers.value.includes(answer)) {
-    selectedPreAnswers.value = selectedPreAnswers.value.filter(a => a !== answer)
+    selectedPreAnswers.value = selectedPreAnswers.value.filter((a) => a !== answer)
   } else {
     selectedPreAnswers.value = [...selectedPreAnswers.value, answer]
   }
 }
 
 const handleSubmit = () => {
-  const combinedFeedback = [
-    ...selectedPreAnswers.value,
-    feedback.value.trim() && `دیگر: ${feedback.value.trim()}`
-  ]
+  const combinedFeedback = [...selectedPreAnswers.value, feedback.value.trim() && `دیگر: ${feedback.value.trim()}`]
     .filter(Boolean)
     .join(' | ')
 
@@ -138,55 +137,208 @@ const handleSubmit = () => {
 </script>
 
 <style scoped>
-.bg-background {
-  background-color: #f9fafb;
+.registration-step {
+  min-height: 100vh;
+  padding: 2rem 1rem;
+  background: #f9fafb;
+  direction: rtl;
 }
 
-.bg-card {
-  background-color: white;
+.step-card {
+  max-width: 42rem;
+  margin: 0 auto;
+  background: white;
+  border-radius: 1rem;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  padding: 2rem;
 }
 
-.bg-primary\/10 {
-  background-color: rgba(139, 92, 246, 0.1);
+.step-header {
+  text-align: center;
+  margin-bottom: 2rem;
 }
 
-.bg-primary\/5 {
-  background-color: rgba(139, 92, 246, 0.05);
+.icon-wrapper {
+  width: 4rem;
+  height: 4rem;
+  background: rgba(139, 92, 246, 0.1);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0 auto 1rem;
 }
 
-.bg-accent\/20 {
-  background-color: rgba(236, 72, 153, 0.2);
-}
-
-.text-primary {
+.icon {
+  width: 2rem;
+  height: 2rem;
   color: #8b5cf6;
 }
 
-.text-muted-foreground {
+.step-title {
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: #111827;
+  margin: 0 0 0.5rem 0;
+}
+
+.step-description {
+  font-size: 0.875rem;
   color: #6b7280;
+  margin: 0;
 }
 
-.border-primary {
+.form-content {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+.form-section {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.section-label {
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: #111827;
+}
+
+.options-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.option-button {
+  padding: 0.75rem;
+  border: 2px solid #d1d5db;
+  border-radius: 0.5rem;
+  background: white;
+  cursor: pointer;
+  transition: all 0.2s;
+  text-align: right;
+}
+
+.option-button:hover {
+  border-color: rgba(139, 92, 246, 0.5);
+}
+
+.option-button.selected {
   border-color: #8b5cf6;
+  background: rgba(139, 92, 246, 0.05);
 }
 
-.border-primary\/50 {
-  border-color: rgba(139, 92, 246, 0.5);
+.option-content {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
 }
 
-.border-muted-foreground\/30 {
-  border-color: rgba(107, 114, 128, 0.3);
+.checkbox {
+  width: 1.25rem;
+  height: 1.25rem;
+  border: 2px solid rgba(107, 114, 128, 0.3);
+  border-radius: 0.25rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  transition: all 0.2s;
 }
 
-.border-border {
-  border-color: #d1d5db;
+.checkbox.checked {
+  border-color: #8b5cf6;
+  background: #8b5cf6;
 }
 
-.bg-primary {
-  background-color: #8b5cf6;
+.check-icon {
+  width: 0.75rem;
+  height: 0.75rem;
+  color: white;
+  stroke-width: 3;
 }
 
-.hover\:border-primary\/50:hover {
-  border-color: rgba(139, 92, 246, 0.5);
+.option-text {
+  flex: 1;
+  font-size: 0.875rem;
+  color: #111827;
+}
+
+.feedback-textarea {
+  width: 100%;
+  min-height: 120px;
+  padding: 0.75rem;
+  border: 1px solid #d1d5db;
+  border-radius: 0.5rem;
+  font-size: 0.875rem;
+  line-height: 1.5;
+  resize: vertical;
+  font-family: inherit;
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+
+.feedback-textarea:focus {
+  outline: none;
+  border-color: #8b5cf6;
+  box-shadow: 0 0 0 3px rgba(139, 92, 246, 0.1);
+}
+
+.feedback-textarea::placeholder {
+  color: #9ca3af;
+}
+
+.helper-text {
+  font-size: 0.75rem;
+  color: #6b7280;
+  margin: 0;
+}
+
+.info-box {
+  padding: 1rem;
+  background: rgba(236, 72, 153, 0.1);
+  border-radius: 0.5rem;
+}
+
+.info-text {
+  font-size: 0.875rem;
+  color: #111827;
+  margin: 0;
+}
+
+.font-medium {
+  font-weight: 500;
+}
+
+.step-actions {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1rem;
+  padding-top: 1.5rem;
+  border-top: 1px solid #e5e7eb;
+}
+
+@media (max-width: 640px) {
+  .registration-step {
+    padding: 1rem 0.5rem;
+  }
+
+  .step-card {
+    padding: 1.5rem;
+  }
+
+  .step-actions {
+    grid-template-columns: 1fr;
+  }
+
+  .step-actions button:first-child {
+    order: 2;
+  }
+
+  .step-actions button:last-child {
+    order: 1;
+  }
 }
 </style>

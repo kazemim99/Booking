@@ -76,6 +76,8 @@ import { ref, computed, onMounted } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { usePhoneVerification } from '../composables/usePhoneVerification'
 import { useAuthStore } from '@/core/stores/modules/auth.store'
+import { useToast } from '@/core/composables'
+import { phoneVerificationApi } from '../api/phoneVerification.api'
 import AppButton from '@/shared/components/ui/Button/AppButton.vue'
 import OtpInput from '../components/OtpInput.vue'
 
@@ -83,6 +85,7 @@ const router = useRouter()
 const route = useRoute()
 const { state, canResend, resendCountdown, verifyCode, resendCode } = usePhoneVerification()
 const authStore = useAuthStore()
+const toast = useToast()
 
 // State
 const otpCode = ref('')
@@ -119,50 +122,124 @@ const verifyOtp = async () => {
   error.value = ''
   isLoading.value = true
 
-  console.log('Verifying OTP:', otpCode.value, 'with phone:', phoneNumber.value)
+  console.log('[VerificationView] Verifying OTP:', otpCode.value, 'with phone:', phoneNumber.value)
 
   try {
-    // Pass phoneNumber explicitly to verifyCode to avoid state issues
-    const result = await verifyCode(otpCode.value, phoneNumber.value)
+    // Step 1: Verify OTP code (verificationId is retrieved from sessionStorage in composable)
+    const result = await verifyCode(otpCode.value)
 
-    console.log('Verification result:', result)
+    console.log('[VerificationView] Verification result:', result)
 
-    if (result.success && result.user) {
-      const { user, token } = result
+    if (result.success) {
+      console.log('[VerificationView] Phone verified successfully!')
 
-      console.log('Verification successful, user:', user)
+      // Step 2: Create user account and get authentication tokens
+      const verificationId = sessionStorage.getItem('phone_verification_id')
+      if (!verificationId) {
+        throw new Error('Verification ID not found')
+      }
 
-      // Store auth data
-      authStore.setToken(token)
-      authStore.setUser(user)
+      console.log('[VerificationView] Creating user account from verified phone...')
 
-      // Navigate based on user status
-      if (user.status === 'Draft' && user.roles.includes('Provider')) {
-        // Provider needs to complete registration
-        console.log('Navigating to ProviderRegistration')
-        router.push({ name: 'ProviderRegistration' })
-      } else if (user.roles.includes('Provider')) {
-        console.log('Navigating to ProviderDashboard')
-        router.push({ name: 'ProviderDashboard' })
-      } else if (user.roles.includes('Admin')) {
-        console.log('Navigating to AdminDashboard')
-        router.push({ name: 'AdminDashboard' })
+      const registerResult = await phoneVerificationApi.registerFromVerifiedPhone({
+        verificationId,
+        userType: 'Provider',
+        firstName: undefined,
+        lastName: undefined,
+      })
+
+      if (registerResult.success && registerResult.data) {
+        // Step 3: Store authentication tokens
+        console.log('[VerificationView] User account created, storing tokens...')
+
+        authStore.setToken(registerResult.data.accessToken)
+        authStore.setRefreshToken(registerResult.data.refreshToken)
+
+        // Store user info - create complete User object
+        const now = new Date().toISOString()
+        authStore.setUser({
+          id: registerResult.data.userId,
+          email: undefined, // Temp email like 09123456789@booksy.temp
+          phoneNumber: registerResult.data.phoneNumber,
+          phoneVerified: true,
+          emailVerified: false,
+          userType: 'Provider' as any,
+          roles: ['Provider'],
+          status: 'Active' as any,
+          createdAt: now,
+          updatedAt: now,
+          lastModifiedAt: now,
+          profile: {
+            firstName: '',
+            lastName: '',
+            phoneNumber: registerResult.data.phoneNumber,
+          },
+          preferences: {
+            theme: 'light',
+            language: 'fa',
+            timezone: 'Asia/Tehran',
+            currency: 'IRR',
+            dateFormat: 'YYYY/MM/DD',
+            timeFormat: '24h',
+            notifications: {
+              email: true,
+              sms: true,
+              push: true,
+            },
+            notificationSettings: {
+              emailNotifications: true,
+              smsNotifications: true,
+              pushNotifications: true,
+              appointmentReminders: true,
+              promotionalEmails: false,
+            },
+            privacySettings: undefined,
+          },
+          metadata: {
+            totalBookings: 0,
+            completedBookings: 0,
+            cancelledBookings: 0,
+            noShows: 0,
+            favoriteProviders: [],
+            lastActivityAt: now,
+          },
+        } as any)
+
+        // Clear sessionStorage
+        sessionStorage.removeItem('phone_verification_id')
+        sessionStorage.removeItem('phone_verification_number')
+
+        toast.success('ثبت‌نام شما با موفقیت انجام شد!')
+
+        // Step 4: Check provider status and redirect accordingly
+        console.log('[VerificationView] Checking provider status...')
+        await redirectBasedOnProviderStatus()
       } else {
-        console.log('Navigating to Home')
-        router.push({ name: 'Home' })
+        throw new Error(registerResult.error || 'خطا در ثبت‌نام')
       }
     } else {
-      console.error('Verification failed:', result.error)
+      console.error('[VerificationView] Verification failed:', result.error)
       error.value = result.error || 'کد وارد شده صحیح نیست'
       // Clear OTP input
       otpInputRef.value?.clear()
     }
   } catch (err: any) {
-    console.error('Verification error:', err)
+    console.error('[VerificationView] Error:', err)
     error.value = err.message || 'خطا در تأیید کد'
     otpInputRef.value?.clear()
   } finally {
     isLoading.value = false
+  }
+}
+
+const redirectBasedOnProviderStatus = async () => {
+  try {
+    // Simply redirect to registration route
+    // The route guard will check provider status and redirect to dashboard if needed
+    console.log('[VerificationView] Phone verification complete, redirecting to registration')
+    await router.push({ name: 'ProviderRegistration' })
+  } catch (error) {
+    console.error('[VerificationView] Error during redirect:', error)
   }
 }
 

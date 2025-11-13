@@ -52,11 +52,7 @@
     />
 
     <!-- Step 7: Gallery (NEW) -->
-    <GalleryStep
-      v-else-if="currentStep === 7"
-      @next="handleNext"
-      @back="previousStep"
-    />
+    <GalleryStep v-else-if="currentStep === 7" @next="handleNext" @back="previousStep" />
 
     <!-- Step 8: Optional Feedback (NEW) -->
     <OptionalFeedbackStep
@@ -72,9 +68,10 @@
 
 <script setup lang="ts">
 import { computed, onMounted, onBeforeUnmount } from 'vue'
-import { useRouter } from 'vue-router'
 import { useProviderRegistration } from '../../composables/useProviderRegistration'
 import { toastService } from '@/core/services/toast.service'
+import { useAuthStore } from '@/core/stores/modules/auth.store'
+import { ProviderStatus } from '../../types/provider.types'
 
 // New Step Components (Figma Design)
 import BusinessInfoStep from '../../components/registration/steps/BusinessInfoStep.vue'
@@ -87,7 +84,7 @@ import GalleryStep from '../../components/registration/steps/GalleryStep.vue'
 import OptionalFeedbackStep from '../../components/registration/steps/OptionalFeedbackStep.vue'
 import CompletionStep from '../../components/registration/steps/CompletionStep.vue'
 
-const router = useRouter()
+const authStore = useAuthStore()
 
 const {
   currentStep,
@@ -118,17 +115,20 @@ const ownerFullName = computed(() => {
 let draftProviderId: string | undefined = undefined
 
 const handleNext = async () => {
-  console.log('handleNext called, current step:', currentStep.value)
-  console.log('Registration data:', registrationData.value)
+  console.log('🚀 ProviderRegistrationFlow: handleNext called, current step:', currentStep.value)
+  console.log('🚀 ProviderRegistrationFlow: Registration data:', registrationData.value)
+  console.log('🚀 ProviderRegistrationFlow: draftProviderId:', draftProviderId)
 
   const canProceed = canProceedToNextStep()
-  console.log('Can proceed to next step:', canProceed)
+  console.log('🚀 ProviderRegistrationFlow: Can proceed to next step:', canProceed)
 
   if (!canProceed) {
-    console.error('Cannot proceed - validation failed')
+    console.error('🚀 ProviderRegistrationFlow: Cannot proceed - validation failed')
     toastService.error('لطفاً تمام فیلدهای الزامی را تکمیل کنید')
     return
   }
+
+  console.log('🚀 ProviderRegistrationFlow: Validation passed, continuing...')
 
   try {
     // Step-specific save operations
@@ -148,12 +148,26 @@ const handleNext = async () => {
       }
     } else if (currentStep.value === 4) {
       // Step 4: Save services
-      if (!draftProviderId) {
-        toastService.error('خطا: شناسه ارائه‌دهنده یافت نشد')
+      // Try to get provider ID from draftProviderId or load from progress
+      let providerId = draftProviderId
+      if (!providerId) {
+        console.log('⚠️ draftProviderId not found, fetching from registration progress...')
+        const draftResult = await loadDraft()
+        if (draftResult.success && draftResult.providerId) {
+          providerId = draftResult.providerId
+          draftProviderId = providerId
+          console.log('✅ Provider ID loaded from progress:', providerId)
+        }
+      }
+
+      if (!providerId) {
+        console.error('❌ No provider ID found')
+        toastService.error('خطا: شناسه ارائه‌دهنده یافت نشد. لطفاً از مرحله ۳ دوباره شروع کنید.')
         return
       }
+
       console.log('✅ Step 4 complete - Saving services...')
-      const result = await saveServices(draftProviderId)
+      const result = await saveServices(providerId)
 
       if (!result.success) {
         console.error('❌ Failed to save services:', result.message)
@@ -163,12 +177,26 @@ const handleNext = async () => {
       toastService.success('خدمات ذخیره شد')
     } else if (currentStep.value === 5) {
       // Step 5: Save staff (optional)
-      if (!draftProviderId) {
-        toastService.error('خطا: شناسه ارائه‌دهنده یافت نشد')
+      // Try to get provider ID from draftProviderId or load from progress
+      let providerId = draftProviderId
+      if (!providerId) {
+        console.log('⚠️ draftProviderId not found, fetching from registration progress...')
+        const draftResult = await loadDraft()
+        if (draftResult.success && draftResult.providerId) {
+          providerId = draftResult.providerId
+          draftProviderId = providerId
+          console.log('✅ Provider ID loaded from progress:', providerId)
+        }
+      }
+
+      if (!providerId) {
+        console.error('❌ No provider ID found')
+        toastService.error('خطا: شناسه ارائه‌دهنده یافت نشد. لطفاً از مرحله ۳ دوباره شروع کنید.')
         return
       }
+
       console.log('✅ Step 5 complete - Saving staff...')
-      const result = await saveStaff(draftProviderId)
+      const result = await saveStaff(providerId)
 
       if (!result.success) {
         console.error('❌ Failed to save staff:', result.message)
@@ -178,12 +206,26 @@ const handleNext = async () => {
       toastService.success('کارکنان ذخیره شد')
     } else if (currentStep.value === 6) {
       // Step 6: Save working hours
-      if (!draftProviderId) {
-        toastService.error('خطا: شناسه ارائه‌دهنده یافت نشد')
+      // Try to get provider ID from draftProviderId or load from progress
+      let providerId = draftProviderId
+      if (!providerId) {
+        console.log('⚠️ draftProviderId not found, fetching from registration progress...')
+        const draftResult = await loadDraft()
+        if (draftResult.success && draftResult.providerId) {
+          providerId = draftResult.providerId
+          draftProviderId = providerId
+          console.log('✅ Provider ID loaded from progress:', providerId)
+        }
+      }
+
+      if (!providerId) {
+        console.error('❌ No provider ID found')
+        toastService.error('خطا: شناسه ارائه‌دهنده یافت نشد. لطفاً از مرحله ۳ دوباره شروع کنید.')
         return
       }
+
       console.log('✅ Step 6 complete - Saving working hours...')
-      const result = await saveWorkingHours(draftProviderId)
+      const result = await saveWorkingHours(providerId)
 
       if (!result.success) {
         console.error('❌ Failed to save working hours:', result.message)
@@ -192,40 +234,73 @@ const handleNext = async () => {
       }
       toastService.success('ساعات کاری ذخیره شد')
     } else if (currentStep.value === 7) {
+      console.log('🚀 ProviderRegistrationFlow: Processing Step 7 (Gallery)')
+
       // Step 7: Save gallery (optional)
-      if (!draftProviderId) {
-        toastService.error('خطا: شناسه ارائه‌دهنده یافت نشد')
+      // Try to get provider ID from draftProviderId or load from progress
+      let providerId = draftProviderId
+      if (!providerId) {
+        console.log('⚠️ draftProviderId not found, fetching from registration progress...')
+        const draftResult = await loadDraft()
+        if (draftResult.success && draftResult.providerId) {
+          providerId = draftResult.providerId
+          draftProviderId = providerId
+          console.log('✅ Provider ID loaded from progress:', providerId)
+        }
+      }
+
+      if (!providerId) {
+        console.error('❌ No provider ID found')
+        toastService.error('خطا: شناسه ارائه‌دهنده یافت نشد. لطفاً از مرحله ۳ دوباره شروع کنید.')
         return
       }
-      console.log('✅ Step 7 complete - Saving gallery...')
-      const result = await saveGallery(draftProviderId)
+
+      console.log('✅ Step 7 - Calling saveGallery with provider ID:', providerId)
+      const result = await saveGallery(providerId)
+      console.log('✅ Step 7 - saveGallery result:', result)
 
       if (!result.success) {
         console.error('❌ Failed to save gallery:', result.message)
         toastService.error(result.message || 'خطا در ذخیره گالری')
         return
       }
+      console.log('✅ Step 7 - Showing success toast')
       toastService.success('گالری ذخیره شد')
+      console.log('✅ Step 7 - Success toast shown')
     }
 
-    console.log('Proceeding to next step')
+    console.log('🚀 ProviderRegistrationFlow: Proceeding to next step')
     nextStep()
-  } catch (error: any) {
+    console.log('🚀 ProviderRegistrationFlow: nextStep() called successfully')
+  } catch (error) {
     console.error('Error in handleNext:', error)
-    toastService.error(error.message || 'خطا در ذخیره اطلاعات')
+    toastService.error((error as Error).message || 'خطا در ذخیره اطلاعات')
   }
 }
 
-const handleFinalSubmit = async (feedback?: string) => {
+const handleFinalSubmit = async () => {
   try {
-    if (!draftProviderId) {
-      toastService.error('خطا: شناسه ارائه‌دهنده یافت نشد')
+    // Try to get provider ID from draftProviderId or load from progress
+    let providerId = draftProviderId
+    if (!providerId) {
+      console.log('⚠️ draftProviderId not found, fetching from registration progress...')
+      const draftResult = await loadDraft()
+      if (draftResult.success && draftResult.providerId) {
+        providerId = draftResult.providerId
+        draftProviderId = providerId
+        console.log('✅ Provider ID loaded from progress:', providerId)
+      }
+    }
+
+    if (!providerId) {
+      console.error('❌ No provider ID found')
+      toastService.error('خطا: شناسه ارائه‌دهنده یافت نشد. لطفاً از مرحله ۳ دوباره شروع کنید.')
       return
     }
 
     // Step 8: Save feedback (optional)
     console.log('✅ Step 8 complete - Saving feedback...')
-    const feedbackResult = await saveFeedback(draftProviderId)
+    const feedbackResult = await saveFeedback(providerId)
 
     if (!feedbackResult.success) {
       console.error('❌ Failed to save feedback:', feedbackResult.message)
@@ -233,10 +308,10 @@ const handleFinalSubmit = async (feedback?: string) => {
       return
     }
 
-    console.log('✅ Completing registration with provider ID:', draftProviderId)
+    console.log('✅ Completing registration with provider ID:', providerId)
 
     // Step 9: Complete registration
-    const result = await completeRegistration(draftProviderId)
+    const result = await completeRegistration(providerId)
 
     if (result.success) {
       // Move to completion step
@@ -246,9 +321,9 @@ const handleFinalSubmit = async (feedback?: string) => {
       // Show error message
       toastService.error(result.message || 'خطا در تکمیل ثبت‌نام')
     }
-  } catch (error: any) {
+  } catch (error) {
     console.error('Error in handleFinalSubmit:', error)
-    toastService.error(error.message || 'خطا در تکمیل ثبت‌نام')
+    toastService.error((error as Error).message || 'خطا در تکمیل ثبت‌نام')
   }
 }
 
@@ -256,15 +331,38 @@ const handleFinalSubmit = async (feedback?: string) => {
 onMounted(async () => {
   initialize()
 
-  // Try to load existing draft
-  const draftResult = await loadDraft()
-  if (draftResult.success && draftResult.providerId) {
-    draftProviderId = draftResult.providerId
-    console.log('✅ Existing draft loaded with provider ID:', draftProviderId)
+  // Check provider status from token (no API call needed)
+  const tokenProviderStatus = authStore.providerStatus
+  const tokenProviderId = authStore.providerId
 
-    if (state.value.data.step >= 3) {
-      toastService.info('ثبت‌نام شما از مرحله قبل ادامه می‌یابد')
+  console.log('[RegistrationFlow] Provider status from token:', tokenProviderStatus)
+  console.log('[RegistrationFlow] Provider ID from token:', tokenProviderId)
+
+  // Only load draft if status is null (new user) or Drafted (incomplete registration)
+  if (tokenProviderStatus === null || tokenProviderStatus === ProviderStatus.Drafted) {
+    console.log('[RegistrationFlow] Provider status allows draft loading')
+
+    try {
+      const draftResult = await loadDraft()
+      if (draftResult.success && draftResult.providerId) {
+        draftProviderId = draftResult.providerId
+        console.log('✅ Existing draft loaded with provider ID:', draftProviderId)
+
+        if (state.value.data.step >= 3) {
+          toastService.info('ثبت‌نام شما از مرحله قبل ادامه می‌یابد')
+        }
+      } else {
+        // No existing draft - new user starting fresh
+        console.log('[RegistrationFlow] No existing draft found, starting fresh registration')
+      }
+    } catch (error) {
+      console.error('[RegistrationFlow] Error loading draft:', error)
+      // Continue anyway - user can start fresh registration
     }
+  } else {
+    // User has already completed registration (Active, PendingVerification, etc.)
+    console.warn('[RegistrationFlow] Provider status is', tokenProviderStatus, '- registration already complete')
+    console.warn('[RegistrationFlow] Route guard should have prevented access')
   }
 
   window.addEventListener('beforeunload', handleBeforeUnload)

@@ -34,5 +34,6 @@ public sealed class SetPrimaryGalleryImageCommandHandler
 
         provider.Profile.SetPrimaryGalleryImage(request.ImageId);
 
+        await _unitOfWork.SaveChangesAsync(cancellationToken);
     }
 }

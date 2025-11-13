@@ -7,6 +7,8 @@ namespace Booksy.ServiceCatalog.Application.Commands.Provider.Registration;
 /// This is the first step that persists data to the database
 /// </summary>
 public sealed record SaveStep3LocationCommand(
+    string OwnerFirstName,
+    string OwnerLastName,
     string BusinessName,
     string BusinessDescription,
     string Category,
@@ -25,5 +27,8 @@ public sealed record SaveStep3LocationCommand(
 public sealed record SaveStep3LocationResult(
     Guid ProviderId,
     int RegistrationStep,
-    string Message
+    string Message,
+    string? AccessToken = null,
+    string? RefreshToken = null,
+    int? ExpiresIn = null
 );

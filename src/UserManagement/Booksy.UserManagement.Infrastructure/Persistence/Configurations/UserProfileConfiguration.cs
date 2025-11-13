@@ -139,11 +139,18 @@ namespace Booksy.UserManagement.Infrastructure.Persistence.Configurations
 
             // Foreign key to User
             builder.Property<UserId>("UserId")
-                .HasColumnName("user_id");
+                .HasColumnName("user_id")
+                .HasConversion(
+                    v => v.Value,
+                    v => UserId.From(v))
+                .IsRequired();
 
             // Foreign key to Customer (optional - one profile can belong to either User or Customer)
             builder.Property<CustomerId?>("CustomerId")
-                .HasColumnName("customer_id");
+                .HasColumnName("customer_id")
+                .HasConversion(
+                    v => v != null ? v.Value : (Guid?)null,
+                    v => v.HasValue ? CustomerId.From(v.Value) : null);
 
             // Indexes
             builder.HasIndex(up => new { up.FirstName, up.LastName })

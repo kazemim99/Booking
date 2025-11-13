@@ -1,41 +1,41 @@
 <template>
-  <div class="min-h-screen flex items-center justify-center p-4 bg-gradient-to-br from-primary/5 to-accent/20">
-    <div class="w-full max-w-md">
-      <div class="bg-card rounded-2xl shadow-lg p-8 text-center">
+  <div class="completion-container">
+    <div class="completion-card">
+      <div class="card-content">
         <!-- Success Icon -->
-        <div class="relative mb-6">
-          <div class="w-24 h-24 bg-primary/10 rounded-full flex items-center justify-center mx-auto">
-            <svg xmlns="http://www.w3.org/2000/svg" class="w-16 h-16 text-primary" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <div class="icon-container">
+          <div class="icon-wrapper">
+            <svg xmlns="http://www.w3.org/2000/svg" class="check-icon" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
             </svg>
           </div>
-          <svg xmlns="http://www.w3.org/2000/svg" class="w-6 h-6 text-primary absolute top-0 right-1/3 animate-pulse sparkle-icon" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <svg xmlns="http://www.w3.org/2000/svg" class="sparkle-icon sparkle-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3z" />
           </svg>
-          <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5 text-primary absolute bottom-2 left-1/4 animate-pulse delay-75 sparkle-icon" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <svg xmlns="http://www.w3.org/2000/svg" class="sparkle-icon sparkle-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3z" />
           </svg>
         </div>
 
         <!-- Title & Message -->
-        <h1 class="mb-3 text-3xl font-bold">تبریک می‌گوییم!</h1>
-        <p class="text-muted-foreground mb-8">
+        <h1 class="completion-title">تبریک می‌گوییم!</h1>
+        <p class="completion-message">
           ثبت‌نام شما با موفقیت انجام شد. اکنون می‌توانید از تمامی امکانات پنل استفاده کنید
         </p>
 
         <!-- Stats Cards -->
-        <div class="grid grid-cols-3 gap-3 mb-8">
-          <div class="p-3 bg-muted/50 rounded-lg">
-            <div class="text-2xl mb-1">✓</div>
-            <p class="text-xs text-muted-foreground">پروفایل کامل</p>
+        <div class="stats-grid">
+          <div class="stat-card">
+            <div class="stat-icon">✓</div>
+            <p class="stat-label">پروفایل کامل</p>
           </div>
-          <div class="p-3 bg-muted/50 rounded-lg">
-            <div class="text-2xl mb-1">🎯</div>
-            <p class="text-xs text-muted-foreground">آماده فعالیت</p>
+          <div class="stat-card">
+            <div class="stat-icon">🎯</div>
+            <p class="stat-label">آماده فعالیت</p>
           </div>
-          <div class="p-3 bg-muted/50 rounded-lg">
-            <div class="text-2xl mb-1">🚀</div>
-            <p class="text-xs text-muted-foreground">شروع موفق</p>
+          <div class="stat-card">
+            <div class="stat-icon">🚀</div>
+            <p class="stat-label">شروع موفق</p>
           </div>
         </div>
 
@@ -46,15 +46,15 @@
           size="large"
           block
           @click="goToDashboard"
-          class="mb-4"
+          class="dashboard-button"
         >
           ورود به داشبورد
         </AppButton>
 
         <!-- Next Steps -->
-        <div class="mt-6 p-4 bg-accent/20 rounded-lg text-right">
-          <p class="text-sm font-medium mb-2">گام‌های بعدی:</p>
-          <ul class="text-sm text-muted-foreground space-y-1">
+        <div class="next-steps">
+          <p class="next-steps-title">گام‌های بعدی:</p>
+          <ul class="next-steps-list">
             <li>• بررسی و تکمیل اطلاعات پروفایل</li>
             <li>• افزودن نوبت‌های جدید</li>
             <li>• دعوت از مشتریان</li>
@@ -63,10 +63,10 @@
       </div>
 
       <!-- Additional Help -->
-      <div class="mt-6 text-center">
-        <p class="text-sm text-muted-foreground">
+      <div class="help-section">
+        <p class="help-text">
           نیاز به راهنمایی دارید؟{" "}
-          <a href="#" class="text-primary hover:underline">
+          <a href="#" class="help-link">
             مشاهده راهنمای کامل
           </a>
         </p>
@@ -87,55 +87,74 @@ const goToDashboard = () => {
 </script>
 
 <style scoped>
-.bg-gradient-to-br {
+.completion-container {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1rem;
   background: linear-gradient(to bottom right, rgba(139, 92, 246, 0.05), rgba(236, 72, 153, 0.2));
+  direction: rtl;
 }
 
-.from-primary\/5 {
-  --tw-gradient-from: rgba(139, 92, 246, 0.05);
+.completion-card {
+  width: 100%;
+  max-width: 28rem;
 }
 
-.to-accent\/20 {
-  --tw-gradient-to: rgba(236, 72, 153, 0.2);
+.card-content {
+  background: white;
+  border-radius: 1rem;
+  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+  padding: 2rem;
+  text-align: center;
 }
 
-.bg-card {
-  background-color: white;
+/* Success Icon */
+.icon-container {
+  position: relative;
+  margin-bottom: 1.5rem;
 }
 
-.bg-primary\/10 {
-  background-color: rgba(139, 92, 246, 0.1);
+.icon-wrapper {
+  width: 6rem;
+  height: 6rem;
+  background: rgba(139, 92, 246, 0.1);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0 auto;
 }
 
-.bg-accent\/20 {
-  background-color: rgba(236, 72, 153, 0.2);
-}
-
-.bg-muted\/50 {
-  background-color: rgba(156, 163, 175, 0.5);
-}
-
-.text-primary {
+.check-icon {
+  width: 4rem;
+  height: 4rem;
   color: #8b5cf6;
 }
 
-.text-muted-foreground {
-  color: #6b7280;
-}
-
-.hover\:underline:hover {
-  text-decoration: underline;
-}
-
 .sparkle-icon {
-  animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+  position: absolute;
+  color: #8b5cf6;
+  animation: sparkle-pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
 }
 
-.delay-75 {
+.sparkle-1 {
+  width: 1.5rem;
+  height: 1.5rem;
+  top: 0;
+  right: 33%;
+}
+
+.sparkle-2 {
+  width: 1.25rem;
+  height: 1.25rem;
+  bottom: 0.5rem;
+  left: 25%;
   animation-delay: 75ms;
 }
 
-@keyframes pulse {
+@keyframes sparkle-pulse {
   0%, 100% {
     opacity: 1;
   }
@@ -144,7 +163,132 @@ const goToDashboard = () => {
   }
 }
 
-.animate-pulse {
-  animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+/* Title & Message */
+.completion-title {
+  margin-bottom: 0.75rem;
+  font-size: 1.875rem;
+  font-weight: 700;
+  color: #111827;
+}
+
+.completion-message {
+  color: #6b7280;
+  margin-bottom: 2rem;
+  line-height: 1.5;
+}
+
+/* Stats Cards */
+.stats-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 0.75rem;
+  margin-bottom: 2rem;
+}
+
+.stat-card {
+  padding: 0.75rem;
+  background: rgba(156, 163, 175, 0.1);
+  border-radius: 0.5rem;
+}
+
+.stat-icon {
+  font-size: 1.5rem;
+  margin-bottom: 0.25rem;
+}
+
+.stat-label {
+  font-size: 0.75rem;
+  color: #6b7280;
+  margin: 0;
+}
+
+/* Dashboard Button */
+.dashboard-button {
+  margin-bottom: 1rem;
+}
+
+/* Next Steps */
+.next-steps {
+  margin-top: 1.5rem;
+  padding: 1rem;
+  background: rgba(236, 72, 153, 0.1);
+  border-radius: 0.5rem;
+  text-align: right;
+}
+
+.next-steps-title {
+  font-size: 0.875rem;
+  font-weight: 500;
+  margin-bottom: 0.5rem;
+  color: #111827;
+}
+
+.next-steps-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.next-steps-list li {
+  font-size: 0.875rem;
+  color: #6b7280;
+  margin-bottom: 0.25rem;
+}
+
+.next-steps-list li:last-child {
+  margin-bottom: 0;
+}
+
+/* Help Section */
+.help-section {
+  margin-top: 1.5rem;
+  text-align: center;
+}
+
+.help-text {
+  font-size: 0.875rem;
+  color: #6b7280;
+  margin: 0;
+}
+
+.help-link {
+  color: #8b5cf6;
+  text-decoration: none;
+  transition: text-decoration 0.2s;
+}
+
+.help-link:hover {
+  text-decoration: underline;
+}
+
+/* Responsive */
+@media (max-width: 640px) {
+  .completion-container {
+    padding: 0.5rem;
+  }
+
+  .card-content {
+    padding: 1.5rem;
+  }
+
+  .completion-title {
+    font-size: 1.5rem;
+  }
+
+  .stats-grid {
+    gap: 0.5rem;
+  }
+
+  .stat-card {
+    padding: 0.5rem;
+  }
+
+  .stat-icon {
+    font-size: 1.25rem;
+  }
+
+  .stat-label {
+    font-size: 0.625rem;
+  }
 }
 </style>

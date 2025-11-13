@@ -9,75 +9,24 @@
       </div>
 
       <div class="step-content">
-        <!-- Days Schedule -->
-        <div class="days-list">
-          <div
-            v-for="(day, index) in weekDays"
-            :key="index"
-            class="day-item"
-            :class="{ 'day-closed': !schedule[index].isOpen }"
-          >
-            <div class="day-header">
-              <div class="day-toggle">
-                <label class="switch">
-                  <input
-                    type="checkbox"
-                    :checked="schedule[index].isOpen"
-                    @change="handleToggleDay(index)"
-                  />
-                  <span class="slider"></span>
-                </label>
-                <label
-                  class="day-name"
-                  @click="handleToggleDay(index)"
-                >
-                  {{ day }}
-                </label>
-              </div>
-
-              <button
-                v-if="schedule[index].isOpen"
-                type="button"
-                class="btn-copy"
-                @click="handleCopySchedule(index)"
-                title="کپی به سایر روزها"
-              >
-                <svg class="icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path
-                    stroke-linecap="round"
-                    stroke-linejoin="round"
-                    stroke-width="2"
-                    d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"
-                  />
-                </svg>
-                کپی به سایر روزها
-              </button>
-            </div>
-
-            <div v-if="schedule[index].isOpen" class="day-times">
-              <div class="time-group">
-                <label class="time-label">ساعت شروع</label>
-                <input
-                  type="time"
-                  :value="timeToString(schedule[index].openTime)"
-                  dir="ltr"
-                  class="time-input"
-                  @change="(e) => handleTimeChange(index, 'openTime', (e.target as HTMLInputElement).value)"
-                />
-              </div>
-              <div class="time-group">
-                <label class="time-label">ساعت پایان</label>
-                <input
-                  type="time"
-                  :value="timeToString(schedule[index].closeTime)"
-                  dir="ltr"
-                  class="time-input"
-                  @change="(e) => handleTimeChange(index, 'closeTime', (e.target as HTMLInputElement).value)"
-                />
-              </div>
-            </div>
-          </div>
-        </div>
+        <!-- Days Schedule Editor -->
+        <DayScheduleEditor
+          :model-value="scheduleForEditor"
+          :week-days="weekDays"
+          start-time-label="ساعت شروع"
+          end-time-label="ساعت پایان"
+          :show-breaks="true"
+          breaks-label="استراحت‌ها"
+          break-start-label="شروع"
+          break-end-label="پایان"
+          add-break-text="افزودن استراحت"
+          remove-break-label="حذف"
+          no-breaks-text="بدون استراحت"
+          :show-copy-button="true"
+          copy-button-text="کپی به سایر روزها"
+          copy-button-label="کپی به سایر روزها"
+          @update:model-value="handleScheduleUpdate"
+        />
 
         <!-- Error Message -->
         <p v-if="error" class="error-message">{{ error }}</p>
@@ -97,9 +46,11 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import ProgressIndicator from '../shared/ProgressIndicator.vue'
 import AppButton from '@/shared/components/ui/Button/AppButton.vue'
+import DayScheduleEditor from '@/shared/components/schedule/DayScheduleEditor.vue'
+import type { DayScheduleItem, BreakPeriod } from '@/shared/components/schedule/DayScheduleEditor.vue'
 import type { DayHours } from '@/modules/provider/types/registration.types'
 
 interface Props {
@@ -137,6 +88,49 @@ const initializeSchedule = (): DayHours[] => {
 const schedule = ref<DayHours[]>(initializeSchedule())
 const error = ref('')
 
+// Convert TimeSlot to string (HH:mm format)
+const timeToString = (time: { hours: number; minutes: number } | null): string => {
+  if (!time) return '09:00'
+  return `${String(time.hours).padStart(2, '0')}:${String(time.minutes).padStart(2, '0')}`
+}
+
+// Convert string to TimeSlot
+const stringToTime = (timeStr: string): { hours: number; minutes: number } => {
+  const [hours, minutes] = timeStr.split(':').map(Number)
+  return { hours, minutes }
+}
+
+// Convert DayHours[] to DayScheduleItem[] for the editor component
+const scheduleForEditor = computed<DayScheduleItem[]>(() => {
+  return schedule.value.map(day => ({
+    isOpen: day.isOpen,
+    startTime: timeToString(day.openTime),
+    endTime: timeToString(day.closeTime),
+    breaks: day.breaks?.map(brk => ({
+      id: brk.id,
+      start: timeToString(brk.start),
+      end: timeToString(brk.end),
+    })) || [],
+  }))
+})
+
+// Handle updates from the editor component
+const handleScheduleUpdate = (updatedSchedule: DayScheduleItem[]) => {
+  schedule.value = updatedSchedule.map((day, index) => ({
+    dayOfWeek: index,
+    isOpen: day.isOpen,
+    openTime: day.isOpen ? stringToTime(day.startTime) : null,
+    closeTime: day.isOpen ? stringToTime(day.endTime) : null,
+    breaks: day.breaks?.map(brk => ({
+      id: brk.id,
+      start: stringToTime(brk.start),
+      end: stringToTime(brk.end),
+    })) || [],
+  }))
+
+  emit('update:modelValue', schedule.value)
+}
+
 // Initialize and emit default schedule if not provided
 onMounted(() => {
   // If no modelValue was provided, emit the default schedule
@@ -144,62 +138,6 @@ onMounted(() => {
     emit('update:modelValue', schedule.value)
   }
 })
-
-// Convert time object to string for input
-const timeToString = (time: { hours: number; minutes: number } | null): string => {
-  if (!time) return '09:00'
-  return `${String(time.hours).padStart(2, '0')}:${String(time.minutes).padStart(2, '0')}`
-}
-
-// Convert string to time object
-const stringToTime = (timeStr: string): { hours: number; minutes: number } => {
-  const [hours, minutes] = timeStr.split(':').map(Number)
-  return { hours, minutes }
-}
-
-// Methods
-const handleToggleDay = (dayIndex: number) => {
-  const isOpen = !schedule.value[dayIndex].isOpen
-  schedule.value[dayIndex].isOpen = isOpen
-
-  // If closing the day, set times to null
-  if (!isOpen) {
-    schedule.value[dayIndex].openTime = null
-    schedule.value[dayIndex].closeTime = null
-  } else {
-    // If opening the day, set default times if not already set
-    if (!schedule.value[dayIndex].openTime) {
-      schedule.value[dayIndex].openTime = { hours: 9, minutes: 0 }
-    }
-    if (!schedule.value[dayIndex].closeTime) {
-      schedule.value[dayIndex].closeTime = { hours: 18, minutes: 0 }
-    }
-  }
-
-  emit('update:modelValue', schedule.value)
-}
-
-const handleTimeChange = (dayIndex: number, field: 'openTime' | 'closeTime', value: string) => {
-  schedule.value[dayIndex][field] = stringToTime(value)
-  emit('update:modelValue', schedule.value)
-}
-
-const handleCopySchedule = (fromDayIndex: number) => {
-  const fromSchedule = schedule.value[fromDayIndex]
-
-  schedule.value = schedule.value.map((day, index) => {
-    if (index === fromDayIndex) return day
-
-    return {
-      ...day,
-      isOpen: fromSchedule.isOpen,
-      openTime: { ...fromSchedule.openTime! },
-      closeTime: { ...fromSchedule.closeTime! },
-    }
-  })
-
-  emit('update:modelValue', schedule.value)
-}
 
 const handleNext = () => {
   error.value = ''
@@ -288,154 +226,6 @@ const handleNext = () => {
   gap: 1.5rem;
 }
 
-/* Days List */
-.days-list {
-  display: flex;
-  flex-direction: column;
-  gap: 1rem;
-}
-
-.day-item {
-  padding: 1rem;
-  border: 1px solid #e5e7eb;
-  border-radius: 0.5rem;
-  background: white;
-  transition: all 0.2s ease;
-}
-
-.day-item.day-closed {
-  background: rgba(0, 0, 0, 0.02);
-}
-
-.day-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  margin-bottom: 0.75rem;
-}
-
-.day-toggle {
-  display: flex;
-  align-items: center;
-  gap: 0.75rem;
-}
-
-.day-name {
-  font-size: 1rem;
-  font-weight: 500;
-  color: #111827;
-  cursor: pointer;
-  user-select: none;
-}
-
-/* Toggle Switch */
-.switch {
-  position: relative;
-  display: inline-block;
-  width: 3rem;
-  height: 1.75rem;
-}
-
-.switch input {
-  opacity: 0;
-  width: 0;
-  height: 0;
-}
-
-.slider {
-  position: absolute;
-  cursor: pointer;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background-color: #d1d5db;
-  transition: 0.3s;
-  border-radius: 2rem;
-}
-
-.slider:before {
-  position: absolute;
-  content: '';
-  height: 1.25rem;
-  width: 1.25rem;
-  left: 0.25rem;
-  bottom: 0.25rem;
-  background-color: white;
-  transition: 0.3s;
-  border-radius: 50%;
-}
-
-input:checked + .slider {
-  background-color: #8b5cf6;
-}
-
-input:checked + .slider:before {
-  transform: translateX(1.25rem);
-}
-
-/* Copy Button */
-.btn-copy {
-  display: flex;
-  align-items: center;
-  gap: 0.25rem;
-  padding: 0.5rem 0.75rem;
-  font-size: 0.875rem;
-  color: #6b7280;
-  background: none;
-  border: 1px solid #e5e7eb;
-  border-radius: 0.375rem;
-  cursor: pointer;
-  transition: all 0.2s ease;
-}
-
-.btn-copy:hover {
-  background: #f9fafb;
-  border-color: #8b5cf6;
-  color: #8b5cf6;
-}
-
-.btn-copy .icon {
-  width: 1rem;
-  height: 1rem;
-}
-
-/* Day Times */
-.day-times {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 1rem;
-  padding-right: 3.75rem;
-}
-
-.time-group {
-  display: flex;
-  flex-direction: column;
-  gap: 0.5rem;
-}
-
-.time-label {
-  font-size: 0.875rem;
-  color: #6b7280;
-}
-
-.time-input {
-  width: 100%;
-  padding: 0.75rem 1rem;
-  font-size: 1rem;
-  border: 1px solid #d1d5db;
-  border-radius: 0.5rem;
-  background: white;
-  transition: all 0.2s ease;
-  text-align: left;
-}
-
-.time-input:focus {
-  outline: none;
-  border-color: #8b5cf6;
-  box-shadow: 0 0 0 3px rgba(139, 92, 246, 0.1);
-}
-
 /* Error Message */
 .error-message {
   font-size: 0.875rem;
@@ -463,20 +253,6 @@ input:checked + .slider:before {
 
   .step-title {
     font-size: 1.25rem;
-  }
-
-  .day-times {
-    padding-right: 0;
-    grid-template-columns: 1fr;
-  }
-
-  .btn-copy {
-    font-size: 0.75rem;
-    padding: 0.375rem 0.5rem;
-  }
-
-  .btn-copy span {
-    display: none;
   }
 }
 </style>

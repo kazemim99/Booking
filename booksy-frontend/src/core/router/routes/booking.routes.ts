@@ -2,12 +2,12 @@ import type { RouteRecordRaw } from 'vue-router'
 
 const bookingRoutes: RouteRecordRaw[] = [
   {
-    path: '/bookings',
+    path: '/my-appointments',
     name: 'Bookings',
     component: () => import('@/modules/booking/views/AppointmentListView.vue'),
     meta: {
       requiresAuth: true,
-      title: 'My Bookings'
+      title: 'My Appointments'
     }
   },
   {

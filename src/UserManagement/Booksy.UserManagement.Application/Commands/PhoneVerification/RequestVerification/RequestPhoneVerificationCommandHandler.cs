@@ -5,7 +5,7 @@ using Booksy.Core.Application.Abstractions.CQRS;
 using Booksy.Core.Application.Exceptions;
 using Booksy.Core.Domain.Exceptions;
 using Booksy.Core.Domain.ValueObjects;
-using Booksy.ServiceCatalog.Application.Services.Notifications;
+using Booksy.UserManagement.Application.Services.Interfaces;
 using Booksy.UserManagement.Domain.Aggregates.PhoneVerificationAggregate;
 using Booksy.UserManagement.Domain.Enums;
 using Booksy.UserManagement.Domain.Repositories;
@@ -51,16 +51,16 @@ namespace Booksy.UserManagement.Application.Commands.PhoneVerification.RequestVe
             // Check for recent verification attempts (rate limiting)
             var recentVerifications = await _repository.GetRecentVerificationsByPhoneAsync(
                 phoneNumber.Value,
-                TimeSpan.FromHours(1),
+                TimeSpan.FromMinutes(10),
                 cancellationToken);
-
+#if !DEBUG
             if (recentVerifications.Count >= 3)
             {
                 throw new DomainValidationException(
-                    "PhoneNumber",
-                    "Too many verification attempts. Please try again later.");
+                    $"{phoneNumber}",
+                    "تعداد درخواست بیش از حد.لطفا دقایقی دیگر مجدد تلاش کنید");
             }
-
+#endif
             // Create verification aggregate
             UserId? userId = command.UserId.HasValue ? UserId.From(command.UserId.Value) : null;
 

@@ -3,7 +3,7 @@
 // ========================================
 using Booksy.Core.Application.Abstractions.CQRS;
 using Booksy.Core.Application.Exceptions;
-using Booksy.ServiceCatalog.Application.Services.Notifications;
+using Booksy.UserManagement.Application.Services.Interfaces;
 using Booksy.UserManagement.Domain.Repositories;
 using Booksy.UserManagement.Domain.ValueObjects;
 using Microsoft.Extensions.Logging;

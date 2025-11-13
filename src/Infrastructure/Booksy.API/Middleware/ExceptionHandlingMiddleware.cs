@@ -43,6 +43,13 @@ public partial class ExceptionHandlingMiddleware
     {
         _logger.LogError(exception, "An unhandled exception occurred");
 
+        // ✅ Prevent writing to response that has already started (prevents infinite loop)
+        if (context.Response.HasStarted)
+        {
+            _logger.LogWarning("Cannot write exception response - response has already started");
+            return;
+        }
+
         var response = context.Response;
         response.ContentType = "application/json";
 

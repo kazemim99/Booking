@@ -1234,7 +1234,8 @@ public class ProvidersController : ControllerBase
     {
         var command = new Application.Commands.Provider.ReorderGalleryImages.ReorderGalleryImagesCommand(
             providerId,
-            request.ImageOrders);
+            request.ImageOrders,
+            request.PrimaryImageId);
 
         await _mediator.Send(command, cancellationToken);
 

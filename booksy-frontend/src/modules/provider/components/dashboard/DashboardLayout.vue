@@ -58,8 +58,8 @@
           <button
             v-for="item in menuItems"
             :key="item.id"
-            @click="navigateTo(item.id)"
-            :class="['nav-item', { 'active': currentPage === item.id }]"
+            @click="navigateTo(item.route)"
+            :class="['nav-item', { 'active': isMenuItemActive(item.route) }]"
           >
             <component :is="item.icon" class="nav-icon" />
             <span>{{ item.label }}</span>
@@ -98,8 +98,8 @@
             <button
               v-for="item in menuItems"
               :key="item.id"
-              @click="navigateToMobile(item.id)"
-              :class="['nav-item', { 'active': currentPage === item.id }]"
+              @click="navigateToMobile(item.route)"
+              :class="['nav-item', { 'active': isMenuItemActive(item.route) }]"
             >
               <component :is="item.icon" class="nav-icon" />
               <span>{{ item.label }}</span>
@@ -126,7 +126,9 @@
 
 <script setup lang="ts">
 import { ref, computed, h } from 'vue'
+import { useRouter, useRoute } from 'vue-router'
 import { useProviderStore } from '../../stores/provider.store'
+import { useAuthStore } from '@/core/stores/modules/auth.store'
 
 // Icon Components (Simple SVG-based)
 const CalendarIcon = () => h('svg', { class: 'w-5 h-5', fill: 'none', stroke: 'currentColor', viewBox: '0 0 24 24' }, [
@@ -137,23 +139,18 @@ const UserIcon = () => h('svg', { class: 'w-5 h-5', fill: 'none', stroke: 'curre
   h('path', { 'stroke-linecap': 'round', 'stroke-linejoin': 'round', 'stroke-width': '2', d: 'M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z' })
 ])
 
+const CurrencyIcon = () => h('svg', { class: 'w-5 h-5', fill: 'none', stroke: 'currentColor', viewBox: '0 0 24 24' }, [
+  h('path', { 'stroke-linecap': 'round', 'stroke-linejoin': 'round', 'stroke-width': '2', d: 'M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z' })
+])
+
 const LogoutIcon = () => h('svg', { class: 'w-5 h-5', fill: 'none', stroke: 'currentColor', viewBox: '0 0 24 24' }, [
   h('path', { 'stroke-linecap': 'round', 'stroke-linejoin': 'round', 'stroke-width': '2', d: 'M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1' })
 ])
 
-interface Props {
-  currentPage: string
-  onNavigate?: (page: string) => void
-  onLogout?: () => void
-}
-
-const props = defineProps<Props>()
-const emit = defineEmits<{
-  navigate: [page: string]
-  logout: []
-}>()
-
+const router = useRouter()
+const route = useRoute()
 const providerStore = useProviderStore()
+const authStore = useAuthStore()
 const mobileMenuOpen = ref(false)
 
 const currentProvider = computed(() => providerStore.currentProvider)
@@ -167,32 +164,39 @@ const avatarLetter = computed(() => {
   return displayName.value.charAt(0)
 })
 
+// Dashboard Icon
+const DashboardIcon = () => h('svg', { class: 'w-5 h-5', fill: 'none', stroke: 'currentColor', viewBox: '0 0 24 24' }, [
+  h('path', { 'stroke-linecap': 'round', 'stroke-linejoin': 'round', 'stroke-width': '2', d: 'M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z' })
+])
+
 const menuItems = [
-  { id: 'bookings', label: 'رزروها', icon: CalendarIcon },
-  { id: 'profile', label: 'پروفایل', icon: UserIcon }
+  { id: 'dashboard', label: 'داشبورد', icon: DashboardIcon, route: '/dashboard' },
+  { id: 'bookings', label: 'رزروها', icon: CalendarIcon, route: '/bookings' },
+  { id: 'financial', label: 'مالی', icon: CurrencyIcon, route: '/financial' },
+  { id: 'profile', label: 'پروفایل', icon: UserIcon, route: '/profile' }
 ]
+
+// Determine if a menu item is active based on current route
+const isMenuItemActive = (itemRoute: string) => {
+  return route.path === itemRoute
+}
 
 const toggleMobileMenu = () => {
   mobileMenuOpen.value = !mobileMenuOpen.value
 }
 
-const navigateTo = (page: string) => {
-  emit('navigate', page)
-  if (props.onNavigate) {
-    props.onNavigate(page)
-  }
+const navigateTo = (itemRoute: string) => {
+  router.push(itemRoute)
 }
 
-const navigateToMobile = (page: string) => {
-  navigateTo(page)
+const navigateToMobile = (itemRoute: string) => {
+  router.push(itemRoute)
   mobileMenuOpen.value = false
 }
 
-const handleLogout = () => {
-  emit('logout')
-  if (props.onLogout) {
-    props.onLogout()
-  }
+const handleLogout = async () => {
+  await authStore.logout()
+  router.push({ name: 'Login' })
 }
 </script>
 

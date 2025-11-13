@@ -40,6 +40,9 @@ const registrationState = ref<RegistrationState>({
   isDirty: false,
 })
 
+// Track if draft is currently being loaded to prevent duplicate calls
+let isDraftLoading = false
+
 // Initialize business hours with default closed for all days
 function initializeBusinessHours(): DayHours[] {
   return Array.from({ length: 7 }, (_, i) => ({
@@ -82,10 +85,19 @@ export function useProviderRegistration() {
   }
 
   const nextStep = () => {
+    console.log('🔵 nextStep called')
+    console.log('🔵 currentStep:', registrationState.value.currentStep)
+    console.log('🔵 TOTAL_STEPS:', TOTAL_STEPS)
+    console.log('🔵 canGoNext:', canGoNext.value)
+
     if (canGoNext.value) {
+      console.log('🔵 Advancing to next step...')
       registrationState.value.currentStep = (registrationState.value.currentStep +
         1) as RegistrationStep
       registrationState.value.data.step = registrationState.value.currentStep
+      console.log('🔵 New currentStep:', registrationState.value.currentStep)
+    } else {
+      console.error('🔴 Cannot advance: canGoNext is false')
     }
   }
 
@@ -233,7 +245,11 @@ export function useProviderRegistration() {
       case 1: // Business Info (NEW STEP 1)
         const { businessName, ownerFirstName, ownerLastName } =
           registrationState.value.data.businessInfo
-        console.log('Step 1 validation - BusinessInfo:', { businessName, ownerFirstName, ownerLastName })
+        console.log('Step 1 validation - BusinessInfo:', {
+          businessName,
+          ownerFirstName,
+          ownerLastName,
+        })
         if (!businessName?.trim()) errors.businessName = 'Business name is required'
         if (!ownerFirstName?.trim()) errors.ownerFirstName = 'First name is required'
         if (!ownerLastName?.trim()) errors.ownerLastName = 'Last name is required'
@@ -255,7 +271,10 @@ export function useProviderRegistration() {
         break
 
       case 4: // Services - At least one required
-        console.log('Step 4 validation - Services count:', registrationState.value.data.services.length)
+        console.log(
+          'Step 4 validation - Services count:',
+          registrationState.value.data.services.length,
+        )
         if (registrationState.value.data.services.length === 0) {
           errors.services = 'Please add at least one service'
         }
@@ -301,7 +320,11 @@ export function useProviderRegistration() {
   }
 
   // Save draft - Creates provider draft at Step 3 (after location)
-  const saveDraft = async (): Promise<{ success: boolean; message?: string; providerId?: string }> => {
+  const saveDraft = async (): Promise<{
+    success: boolean
+    message?: string
+    providerId?: string
+  }> => {
     registrationState.value.isLoading = true
     registrationState.value.error = null
 
@@ -320,6 +343,8 @@ export function useProviderRegistration() {
 
       // Create draft provider request
       const draftRequest = {
+        ownerFirstName: businessInfo.ownerFirstName || '',
+        ownerLastName: businessInfo.ownerLastName || '',
         businessName: businessInfo.businessName,
         businessDescription: businessInfo.businessDescription || '',
         category: categoryId,
@@ -336,12 +361,19 @@ export function useProviderRegistration() {
 
       const response = await providerRegistrationService.saveStep3Location(draftRequest)
 
+      // Update tokens if returned (after provider aggregate is created)
+      if (response.accessToken && response.refreshToken) {
+        authStore.setToken(response.accessToken)
+        authStore.setRefreshToken(response.refreshToken)
+        console.log('✅ Updated tokens with provider claims (providerId now included)')
+      }
+
       registrationState.value.isDirty = false
 
       return {
         success: true,
         message: response.message,
-        providerId: response.providerId
+        providerId: response.providerId,
       }
     } catch (error: any) {
       const message = error.response?.data?.message || 'Failed to save draft'
@@ -353,7 +385,9 @@ export function useProviderRegistration() {
   }
 
   // Save services - Calls Step 4 endpoint
-  const saveServices = async (providerId: string): Promise<{ success: boolean; message?: string }> => {
+  const saveServices = async (
+    providerId: string,
+  ): Promise<{ success: boolean; message?: string }> => {
     registrationState.value.isLoading = true
     registrationState.value.error = null
 
@@ -402,7 +436,7 @@ export function useProviderRegistration() {
         name: member.name,
         email: member.email || '',
         phoneNumber: member.phoneNumber || '',
-        position: member.role || 'stylist',
+        position: member.position || 'stylist',
       }))
 
       // Staff is optional, allow proceeding even without staff members
@@ -429,7 +463,9 @@ export function useProviderRegistration() {
   }
 
   // Save working hours - Calls Step 6 endpoint
-  const saveWorkingHours = async (providerId: string): Promise<{ success: boolean; message?: string }> => {
+  const saveWorkingHours = async (
+    providerId: string,
+  ): Promise<{ success: boolean; message?: string }> => {
     registrationState.value.isLoading = true
     registrationState.value.error = null
 
@@ -443,10 +479,11 @@ export function useProviderRegistration() {
         closeTime: day.closeTime
           ? { hours: day.closeTime.hours, minutes: day.closeTime.minutes }
           : { hours: 0, minutes: 0 },
-        breaks: day.breaks?.map((b) => ({
-          start: { hours: b.start.hours, minutes: b.start.minutes },
-          end: { hours: b.end.hours, minutes: b.end.minutes },
-        })) || [],
+        breaks:
+          day.breaks?.map((b) => ({
+            start: { hours: b.start.hours, minutes: b.start.minutes },
+            end: { hours: b.end.hours, minutes: b.end.minutes },
+          })) || [],
       }))
 
       const hasOpenDays = businessHours.some((day) => day.isOpen)
@@ -454,7 +491,10 @@ export function useProviderRegistration() {
         throw new Error('Please set at least one open day')
       }
 
-      const response = await providerRegistrationService.saveStep6WorkingHours(providerId, businessHours)
+      const response = await providerRegistrationService.saveStep6WorkingHours(
+        providerId,
+        businessHours,
+      )
 
       console.log('✅ Working hours saved:', response)
 
@@ -467,7 +507,8 @@ export function useProviderRegistration() {
     } catch (error: any) {
       console.error('❌ Failed to save working hours:', error)
 
-      const message = error.response?.data?.message || error.message || 'Failed to save working hours'
+      const message =
+        error.response?.data?.message || error.message || 'Failed to save working hours'
       registrationState.value.error = message
 
       return { success: false, message }
@@ -476,29 +517,57 @@ export function useProviderRegistration() {
     }
   }
 
-  // Save gallery - Calls Step 7 endpoint
-  const saveGallery = async (providerId: string): Promise<{ success: boolean; message?: string }> => {
+  // Save gallery - Upload images to registration endpoint
+  const saveGallery = async (
+    providerId: string,
+  ): Promise<{ success: boolean; message?: string }> => {
     registrationState.value.isLoading = true
     registrationState.value.error = null
 
     try {
-      const imageUrls = registrationState.value.data.galleryImages.map((img) => img.url || img)
+      // Extract File objects from gallery images that haven't been uploaded yet
+      const files = registrationState.value.data.galleryImages
+        .filter((img) => img.file) // Only files that haven't been uploaded yet
+        .map((img) => img.file!)
 
-      // Gallery is optional
-      const response = await providerRegistrationService.saveStep7Gallery(providerId, imageUrls)
+      console.log('📤 Uploading gallery images to registration endpoint:', {
+        providerId,
+        filesCount: files.length,
+        totalImagesCount: registrationState.value.data.galleryImages.length,
+      })
 
-      console.log('✅ Gallery saved:', response)
+      if (files.length > 0) {
+        // Upload images via registration endpoint
+        const response = await providerRegistrationService.saveStep7Gallery(files)
 
-      registrationState.value.isDirty = false
+        console.log('✅ Gallery images uploaded successfully:', response)
 
-      return {
-        success: true,
-        message: response.message || 'Gallery saved successfully',
+        registrationState.value.isDirty = false
+
+        return {
+          success: true,
+          message: response.message || `تصاویر گالری ذخیره شد (${response.imagesCount} تصویر)`,
+        }
+      } else {
+        // No new files to upload - images might have been uploaded already
+        const imagesCount = registrationState.value.data.galleryImages.length
+
+        console.log('ℹ️ No new files to upload. Total images:', imagesCount)
+
+        registrationState.value.isDirty = false
+
+        return {
+          success: true,
+          message:
+            imagesCount > 0
+              ? `تصاویر گالری ذخیره شد (${imagesCount} تصویر)`
+              : 'مرحله گالری تکمیل شد',
+        }
       }
     } catch (error: any) {
-      console.error('❌ Failed to save gallery:', error)
+      console.error('❌ Failed to upload gallery images:', error)
 
-      const message = error.response?.data?.message || error.message || 'Failed to save gallery'
+      const message = error.response?.data?.message || error.message || 'خطا در آپلود تصاویر گالری'
       registrationState.value.error = message
 
       return { success: false, message }
@@ -508,7 +577,9 @@ export function useProviderRegistration() {
   }
 
   // Save feedback - Calls Step 8 endpoint
-  const saveFeedback = async (providerId: string): Promise<{ success: boolean; message?: string }> => {
+  const saveFeedback = async (
+    providerId: string,
+  ): Promise<{ success: boolean; message?: string }> => {
     registrationState.value.isLoading = true
     registrationState.value.error = null
 
@@ -539,7 +610,9 @@ export function useProviderRegistration() {
   }
 
   // Complete registration - Calls the complete endpoint (Step 9)
-  const completeRegistration = async (providerId?: string): Promise<{
+  const completeRegistration = async (
+    providerId?: string,
+  ): Promise<{
     success: boolean
     message?: string
     providerId?: string
@@ -631,11 +704,44 @@ export function useProviderRegistration() {
   }
 
   // Load existing draft on initialization
-  const loadDraft = async (): Promise<{ success: boolean; message?: string; providerId?: string }> => {
+  const loadDraft = async (): Promise<{
+    success: boolean
+    message?: string
+    providerId?: string
+  }> => {
+    // Prevent duplicate concurrent calls
+    if (isDraftLoading) {
+      console.log('⏭️  Draft already loading, skipping duplicate call')
+      return { success: false, message: 'Draft load already in progress' }
+    }
+
+    isDraftLoading = true
     registrationState.value.isLoading = true
 
     try {
+      // Don't try to load draft if user is not authenticated
+      // (e.g., new users coming from phone verification)
+      if (!authStore.isAuthenticated) {
+        console.log('⏭️  Skipping draft load - user not authenticated (new registration)')
+        return { success: true, message: 'No authentication - starting fresh registration' }
+      }
+      debugger
       const response = await providerRegistrationService.getRegistrationProgress()
+
+      // Handle completed registration (hasDraft: false but providerId exists)
+      if (!response.hasDraft && response.providerId) {
+        console.log('✅ Registration already completed:', {
+          providerId: response.providerId,
+          currentStep: response.currentStep,
+        })
+
+        // Return provider ID so it can be used even after completion
+        return {
+          success: true,
+          message: 'Registration already completed',
+          providerId: response.providerId,
+        }
+      }
 
       if (response.hasDraft && response.draftData) {
         // Populate registration state with draft data
@@ -678,9 +784,11 @@ export function useProviderRegistration() {
         registrationState.value.data.teamMembers = draft.staff.map((s) => ({
           id: s.id,
           name: s.name,
-          email: s.email,
+          email: s.email || '',
           phoneNumber: s.phoneNumber,
-          role: s.position,
+          countryCode: '+98',
+          position: s.position,
+          isOwner: false,
         }))
 
         // Business hours
@@ -695,7 +803,12 @@ export function useProviderRegistration() {
             h.closeTimeHours !== null && h.closeTimeMinutes !== null
               ? { hours: h.closeTimeHours, minutes: h.closeTimeMinutes }
               : null,
-          breaks: [],
+          breaks:
+            h.breaks?.map((br) => ({
+              id: `break-${br.startTimeHours}-${br.startTimeMinutes}`,
+              start: { hours: br.startTimeHours, minutes: br.startTimeMinutes },
+              end: { hours: br.endTimeHours, minutes: br.endTimeMinutes },
+            })) || [],
         }))
 
         // Gallery images
@@ -726,6 +839,7 @@ export function useProviderRegistration() {
       return { success: false, message: 'Failed to load draft' }
     } finally {
       registrationState.value.isLoading = false
+      isDraftLoading = false
     }
   }
 

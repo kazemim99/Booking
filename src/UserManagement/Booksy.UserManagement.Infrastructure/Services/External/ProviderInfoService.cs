@@ -1,3 +1,4 @@
+using Booksy.Core.Domain.Infrastructure.Middleware;
 using Booksy.UserManagement.Application.Services.Interfaces;
 using Microsoft.Extensions.Logging;
 using System.Net.Http.Json;
@@ -25,9 +26,8 @@ public class ProviderInfoService : IProviderInfoService
         {
             var client = _httpClientFactory.CreateClient("ServiceCatalogAPI");
 
-            var response = await client.GetAsync(
-                $"/api/v1/Providers/by-owner/{ownerId}",
-                cancellationToken);
+            var response = await client.GetFromJsonAsync<ApiResponse<ProviderDetailsDto>>(
+                $"/api/v1/Providers/by-owner/{ownerId}");
 
             if (response.StatusCode == System.Net.HttpStatusCode.NotFound)
             {
@@ -35,19 +35,14 @@ public class ProviderInfoService : IProviderInfoService
                 return null;
             }
 
-            response.EnsureSuccessStatusCode();
-
-            var result = await response.Content.ReadFromJsonAsync<ProviderStatusResponse>(
-                cancellationToken: cancellationToken);
-
-            if (result?.Data == null)
+            if (response?.Data == null)
             {
                 return null;
             }
 
             return new ProviderInfo(
-                Guid.Parse(result.Data.ProviderId),
-                result.Data.Status);
+                response.Data.Id,  // API returns "Id" not "ProviderId"
+                response.Data.Status);
         }
         catch (HttpRequestException ex)
         {
@@ -65,14 +60,9 @@ public class ProviderInfoService : IProviderInfoService
         }
     }
 
-    private record ProviderStatusResponse(
-        bool Success,
-        int StatusCode,
-        string Message,
-        ProviderStatusData? Data);
-
-    private record ProviderStatusData(
-        string ProviderId,
+    // DTO that matches the ServiceCatalog API response structure
+    private record ProviderDetailsDto(
+        Guid Id,           // ProviderId
         string Status,
-        string UserId);
+        Guid OwnerId);
 }

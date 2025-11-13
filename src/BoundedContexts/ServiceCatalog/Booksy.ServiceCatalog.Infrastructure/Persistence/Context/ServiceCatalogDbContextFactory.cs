@@ -27,7 +27,7 @@ namespace Booksy.ServiceCatalog.Infrastructure.Persistence.Context
                 ?? "Server=localhost;Database=BooksyDev;Trusted_Connection=True;TrustServerCertificate=True;";
 
             // Use SQL Server
-            optionsBuilder.UseSqlServer(
+            optionsBuilder.UseNpgsql(
                 connectionString,
                 b => b.MigrationsAssembly("Booksy.ServiceCatalog.Infrastructure"));
 

@@ -47,7 +47,7 @@ public class TokenService : ITokenService
                 providerId);
 
             var response = await client.PostAsJsonAsync(
-                "/v1/auth/generate-token",
+                "api/v1/auth/generate-token",
                 request,
                 cancellationToken);
 

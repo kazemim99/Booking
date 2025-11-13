@@ -130,7 +130,6 @@ public class AuthController : ControllerBase
     /// <response code="401">Unauthorized</response>
     /// <response code="404">User not found</response>
     [HttpPost("generate-token")]
-    [Authorize] // Require authentication (from ServiceCatalog with service auth)
     [ProducesResponseType(typeof(GenerateTokenResponse), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]

@@ -79,7 +79,7 @@ namespace Booksy.UserManagement.Infrastructure.DependencyInjection
 
             // Register Repositories
 
-            services.AddScoped<ISeeder,UserManagementDatabaseSeeder>();
+            services.AddScoped<ISeeder, UserManagementDatabaseSeederOrchestrator>();
             
 
             services.AddScoped<IUserRepository, UserRepository>();
@@ -89,6 +89,11 @@ namespace Booksy.UserManagement.Infrastructure.DependencyInjection
             services.AddScoped<ICustomerRepository, CustomerRepository>();
 
             services.AddExternalServices(configuration);
+
+            // Register SMS Notification Service (UserManagement bounded context)
+            services.AddHttpClient<RahyabSmsNotificationService>();
+            services.AddScoped<ISmsNotificationService, RahyabSmsNotificationService>();
+
             // Register context-specific infrastructure
             //services.AddScoped<IUnitOfWork, UserManagementUnitOfWork>();
             //services.AddScoped(typeof(IOutboxProcessor<>), typeof(UserManagementOutboxProcessor));

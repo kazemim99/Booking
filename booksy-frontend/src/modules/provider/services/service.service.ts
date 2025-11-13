@@ -57,7 +57,57 @@ function mapToService(
   } as Service
 }
 
+// ==================== Service Name Cache ====================
+
+interface CacheEntry<T> {
+  data: T
+  timestamp: number
+  expiresAt: number
+}
+
+class SimpleCache<T> {
+  private cache = new Map<string, CacheEntry<T>>()
+  private ttl: number
+
+  constructor(ttlMinutes: number = 15) {
+    this.ttl = ttlMinutes * 60 * 1000
+  }
+
+  set(key: string, data: T): void {
+    const now = Date.now()
+    this.cache.set(key, {
+      data,
+      timestamp: now,
+      expiresAt: now + this.ttl,
+    })
+  }
+
+  get(key: string): T | null {
+    const entry = this.cache.get(key)
+    if (!entry) return null
+
+    if (Date.now() > entry.expiresAt) {
+      this.cache.delete(key)
+      return null
+    }
+
+    return entry.data
+  }
+
+  clear(): void {
+    this.cache.clear()
+  }
+}
+
+interface ServiceNameData {
+  id: string
+  name: string
+}
+
 class ServiceService {
+  // Service name cache (15 minute TTL)
+  private nameCache = new SimpleCache<ServiceNameData>(15)
+
   // ============================================
   // Service CRUD Operations
   // ============================================
@@ -355,6 +405,98 @@ class ServiceService {
       console.error(`[ServiceService] Error bulk deleting services:`, error)
       throw this.handleError(error)
     }
+  }
+
+  // ============================================
+  // Quick Name Lookup (Optimized for Booking Lists)
+  // ============================================
+
+  /**
+   * Get service name by ID (with caching)
+   * Returns service name or ID as fallback
+   *
+   * Usage: Perfect for booking lists where you just need the service name
+   */
+  async getServiceName(serviceId: string): Promise<string> {
+    try {
+      // Check cache first
+      const cached = this.nameCache.get(serviceId)
+      if (cached) {
+        return cached.name
+      }
+
+      // Fetch from API
+      const service = await this.getServiceById(serviceId)
+
+      // Cache the name
+      this.nameCache.set(serviceId, {
+        id: service.id,
+        name: service.name,
+      })
+
+      return service.name || serviceId
+    } catch (error) {
+      console.warn(`[ServiceService] Could not fetch name for service ${serviceId}:`, error)
+      // Return ID as fallback instead of throwing
+      return serviceId
+    }
+  }
+
+  /**
+   * Get multiple service names (batch lookup with caching)
+   * Returns a Map of serviceId -> name
+   */
+  async getServiceNames(serviceIds: string[]): Promise<Map<string, string>> {
+    const result = new Map<string, string>()
+    const uncachedIds: string[] = []
+
+    // Check cache first
+    for (const id of serviceIds) {
+      const cached = this.nameCache.get(id)
+      if (cached) {
+        result.set(id, cached.name)
+      } else {
+        uncachedIds.push(id)
+      }
+    }
+
+    // If all were cached, return immediately
+    if (uncachedIds.length === 0) {
+      return result
+    }
+
+    try {
+      // Fetch uncached IDs
+      const fetchPromises = uncachedIds.map(id =>
+        this.getServiceById(id)
+          .then(service => {
+            // Cache the name
+            this.nameCache.set(id, {
+              id: service.id,
+              name: service.name,
+            })
+            result.set(id, service.name)
+          })
+          .catch(err => {
+            console.warn(`[ServiceService] Failed to fetch service ${id}:`, err)
+            result.set(id, id) // Use ID as fallback
+          })
+      )
+
+      await Promise.all(fetchPromises)
+    } catch (error) {
+      console.error('[ServiceService] Error in batch name fetch:', error)
+    }
+
+    return result
+  }
+
+  /**
+   * Clear service name cache
+   */
+  clearNameCache(): void {
+    this.nameCache.clear()
+    console.log('[ServiceService] Name cache cleared')
   }
 
   // ============================================

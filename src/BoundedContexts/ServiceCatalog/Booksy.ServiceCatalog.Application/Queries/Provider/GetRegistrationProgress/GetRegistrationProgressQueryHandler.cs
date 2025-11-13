@@ -29,14 +29,31 @@ public sealed class GetRegistrationProgressQueryHandler
         var userId = UserId.From(_currentUserService.UserId ??
             throw new UnauthorizedAccessException("User not authenticated"));
 
+        // First, try to get draft provider (status = Drafted)
         var draftProvider = await _providerRepository
             .GetDraftProviderByOwnerIdAsync(userId, cancellationToken);
 
+        // If no draft found, check if user has a completed/pending provider
         if (draftProvider == null)
         {
+            var provider = await _providerRepository
+                .GetByOwnerIdAsync(userId, cancellationToken);
+
+            // If provider exists but registration is complete, return completed status
+            if (provider != null && provider.IsRegistrationComplete)
+            {
+                return new GetRegistrationProgressResult(
+                    HasDraft: false,
+                    CurrentStep: 9, // Registration completed
+                    ProviderId: provider.Id.Value,
+                    DraftData: null);
+            }
+
+            // No provider found at all
             return new GetRegistrationProgressResult(
                 HasDraft: false,
                 CurrentStep: null,
+                ProviderId: null,
                 DraftData: null);
         }
 
@@ -73,14 +90,16 @@ public sealed class GetRegistrationProgressQueryHandler
             PriceType: s.Type.ToString()
         )).ToList();
 
-        // Map staff
-        var staff = draftProvider.Staff.Select(s => new StaffData(
-            Id: s.Id.ToString(),
-            Name: s.FullName,
-            Email: s.Email?.Value ?? "",
-            PhoneNumber: s.Phone?.Value ?? "",
-            Position: s.Role.ToString()
-        )).ToList();
+        // Map staff (only active staff members)
+        var staff = draftProvider.Staff
+            .Where(s => s.IsActive)
+            .Select(s => new StaffData(
+                Id: s.Id.ToString(),
+                Name: s.FullName,
+                Email: s.Email?.Value ?? "",
+                PhoneNumber: s.Phone?.Value ?? "",
+                Position: s.Role.ToString()
+            )).ToList();
 
         // Map business hours
         var businessHours = draftProvider.BusinessHours.Select(bh => new BusinessHoursData(
@@ -89,11 +108,31 @@ public sealed class GetRegistrationProgressQueryHandler
             OpenTimeHours: bh.OpenTime?.Hour,
             OpenTimeMinutes: bh.OpenTime?.Minute,
             CloseTimeHours: bh.CloseTime?.Hour,
-            CloseTimeMinutes: bh.CloseTime?.Minute
+            CloseTimeMinutes: bh.CloseTime?.Minute,
+            Breaks: bh.Breaks.Select(br => new BreakPeriodData(
+                StartTimeHours: br.StartTime.Hour,
+                StartTimeMinutes: br.StartTime.Minute,
+                EndTimeHours: br.EndTime.Hour,
+                EndTimeMinutes: br.EndTime.Minute,
+                Label: br.Label
+            )).ToList()
         )).ToList();
 
-        // Map gallery images (Provider doesn't have GalleryImages - would need separate repository)
-        var galleryImages = new List<GalleryImageData>();
+        // Map gallery images from provider's business profile
+        var galleryImages = draftProvider.Profile.GalleryImages
+            .Where(img => img.IsActive)
+            .OrderBy(img => img.DisplayOrder)
+            .Select(img => new GalleryImageData(
+                Id: img.Id.ToString(),
+                ImageUrl: img.ImageUrl,
+                ThumbnailUrl: img.ThumbnailUrl,
+                MediumUrl: img.MediumUrl,
+                DisplayOrder: img.DisplayOrder,
+                IsPrimary: img.IsPrimary,
+                Caption: img.Caption,
+                AltText: img.AltText,
+                UploadedAt: img.UploadedAt
+            )).ToList();
 
         var draftData = new ProviderDraftData(
             ProviderId: draftProvider.Id.Value,
@@ -110,6 +149,7 @@ public sealed class GetRegistrationProgressQueryHandler
         return new GetRegistrationProgressResult(
             HasDraft: true,
             CurrentStep: draftProvider.RegistrationStep,
+            ProviderId: draftProvider?.Id.Value,
             DraftData: draftData
         );
     }

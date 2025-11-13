@@ -23,9 +23,9 @@
               </svg>
             </div>
             <div class="staff-info">
-              <h4 class="staff-name">{{ member.firstName }} {{ member.lastName }}</h4>
+              <h4 class="staff-name">{{ member.name }}</h4>
               <p class="staff-details">
-                {{ member.role || 'همکار' }} • {{ member.phoneNumber || 'بدون شماره' }}
+                {{ member.position || 'همکار' }} • {{ member.phoneNumber || 'بدون شماره' }}
               </p>
             </div>
             <div class="staff-actions">
@@ -183,18 +183,14 @@ const handleAddStaff = () => {
     return
   }
 
-  // Split name into first and last name
-  const nameParts = formData.value.name.trim().split(' ')
-  const firstName = nameParts[0] || ''
-  const lastName = nameParts.slice(1).join(' ') || ''
-
   const newMember: TeamMember = {
     id: editingId.value || Date.now().toString(),
-    firstName,
-    lastName,
+    name: formData.value.name.trim(),
+    email: '',
     phoneNumber: formData.value.phone,
-    role: formData.value.position,
-    isActive: true,
+    countryCode: '+98',
+    position: formData.value.position,
+    isOwner: false,
   }
 
   if (editingId.value) {
@@ -219,8 +215,8 @@ const handleAddStaff = () => {
 
 const handleEdit = (member: TeamMember) => {
   formData.value = {
-    name: `${member.firstName} ${member.lastName}`.trim(),
-    position: member.role || '',
+    name: member.name || '',
+    position: member.position || '',
     phone: member.phoneNumber || '',
   }
   editingId.value = member.id

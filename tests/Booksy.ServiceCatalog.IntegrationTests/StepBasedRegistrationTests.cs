@@ -284,7 +284,7 @@ public class StepBasedRegistrationTests : ServiceCatalogIntegrationTestBase
 
 
         // Act
-        var response = await PostAsJsonAsync<SaveStep9CompleteCommand,SaveStep9CompleteResult>("/api/v1/registration/step-9/complete", request);
+        var response = await PostAsJsonAsync<SaveStep9CompleteCommand, SaveStep9CompleteResult>("/api/v1/registration/step-9/complete", request);
 
         // Assert
         response.StatusCode.Should().Be(HttpStatusCode.OK);
@@ -348,19 +348,20 @@ public class StepBasedRegistrationTests : ServiceCatalogIntegrationTestBase
         AuthenticateAsCustomer(email);
 
         var request = new SaveStep3LocationCommand(
-        
-            BusinessName : "Test Business",
-            BusinessDescription : "Test Description",
-            Category : "Salon",
-            PhoneNumber : "+989123456789",
-            Email : email,
-            AddressLine1 : "123 Test St",
+        OwnerFirstName: "Mostafa",
+        OwnerLastName: "Kazemi",
+            BusinessName: "Test Business",
+            BusinessDescription: "Test Description",
+            Category: "Salon",
+            PhoneNumber: "+989123456789",
+            Email: email,
+            AddressLine1: "123 Test St",
             AddressLine2: "",
-            City : "Tehran",
-            Province : "Tehran",
-            PostalCode : "1234567890",
-            Latitude : 35.6892m,
-            Longitude : 51.3890m
+            City: "Tehran",
+            Province: "Tehran",
+            PostalCode: "1234567890",
+            Latitude: 35.6892m,
+            Longitude: 51.3890m
         );
 
         var response = await PostAsJsonAsync<SaveStep3LocationCommand, SaveStep3LocationResult>("/api/v1/registration/step-3/location", request);

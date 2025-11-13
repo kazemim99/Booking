@@ -53,7 +53,7 @@ namespace Booksy.ServiceCatalog.Infrastructure.Persistence.Repositories
                 .Include(p => p.Profile)
                     .ThenInclude(profile => profile.GalleryImages)
                 .FirstOrDefaultAsync(
-                    p => p.OwnerId == ownerId && p.Status == Domain.Enums.ProviderStatus.Drafted,
+                    p => p.OwnerId == ownerId ,
                     cancellationToken);
         }
 

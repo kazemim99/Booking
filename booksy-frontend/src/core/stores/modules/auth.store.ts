@@ -91,7 +91,7 @@ export const useAuthStore = defineStore('auth', () => {
   function setToken(newToken: string | null) {
     token.value = newToken
     if (newToken) {
-      localStorage.setItem('auth_token', newToken)
+      localStorage.setItem('access_token', newToken)
 
       // Extract provider info from token
       const providerInfo = decodeTokenAndExtractProviderInfo(newToken)
@@ -100,7 +100,7 @@ export const useAuthStore = defineStore('auth', () => {
         setProviderStatus(providerInfo.providerStatus as ProviderStatus, providerInfo.providerId)
       }
     } else {
-      localStorage.removeItem('auth_token')
+      localStorage.removeItem('access_token')
     }
   }
 
@@ -449,7 +449,7 @@ export const useAuthStore = defineStore('auth', () => {
    */
   function loadFromStorage() {
     try {
-      const storedToken = localStorage.getItem('auth_token')
+      const storedToken = localStorage.getItem('access_token')
       const storedRefreshToken = localStorage.getItem('refresh_token')
       const storedUser = localStorage.getItem('user')
 
@@ -473,7 +473,7 @@ export const useAuthStore = defineStore('auth', () => {
       }
     } catch (err) {
       console.error('Failed to load auth state from storage:', err)
-      localStorage.removeItem('auth_token')
+      localStorage.removeItem('access_token')
       localStorage.removeItem('refresh_token')
       localStorage.removeItem('user')
     }

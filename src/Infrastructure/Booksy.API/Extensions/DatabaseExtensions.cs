@@ -13,9 +13,9 @@ public static class DatabaseExtensions
     /// <summary>
     /// Applies database migrations and seeds initial data
     /// </summary>
-    public static async Task MigrateAndSeedDatabaseAsync<T>(this WebApplication app) where T : ISeeder
+    public static async Task MigrateAndSeedDatabaseAsync<T>(this IApplicationBuilder app) where T : ISeeder
     {
-        using var scope = app.Services.CreateScope();
+        using var scope = app.ApplicationServices.CreateScope();
         var services = scope.ServiceProvider;
         var logger = services.GetRequiredService<ILogger<T>>();
 

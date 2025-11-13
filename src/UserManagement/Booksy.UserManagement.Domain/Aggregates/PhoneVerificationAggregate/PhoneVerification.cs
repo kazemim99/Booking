@@ -169,7 +169,7 @@ namespace Booksy.UserManagement.Domain.Aggregates.PhoneVerificationAggregate
         {
             // Check if verification is possible
             if (Status == VerificationStatus.Verified)
-                throw new InvalidOperationException("Phone number already verified");
+                throw new InvalidOperationException("این شماره قبلا تایید شده");
 
             if (Status == VerificationStatus.Blocked)
                 throw new InvalidOperationException("Verification is blocked due to too many failed attempts");
@@ -186,7 +186,8 @@ namespace Booksy.UserManagement.Domain.Aggregates.PhoneVerificationAggregate
             LastAttemptAt = DateTime.UtcNow;
 
             // Verify OTP
-            var isValid = OtpCode.IsValid(inputCode);
+            var inputHash = HashOtp(inputCode);
+            var isValid = OtpHash.Equals(OtpHash, StringComparison.Ordinal);
 
             if (isValid)
             {

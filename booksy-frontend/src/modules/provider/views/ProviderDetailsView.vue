@@ -410,6 +410,21 @@
             </Card>
           </div>
 
+          <!-- Gallery Tab -->
+          <div v-if="activeTab === 'gallery'" class="tab-pane">
+            <Card>
+              <GalleryDisplay
+                v-if="provider"
+                :provider-id="provider.id"
+                :show-header="false"
+                :columns="3"
+                :max-images="0"
+                view-mode="masonry"
+                :allow-view-switch="true"
+              />
+            </Card>
+          </div>
+
           <!-- Reviews Tab -->
           <div v-if="activeTab === 'reviews'" class="tab-pane">
             <Card>
@@ -430,6 +445,7 @@ import { ref, computed, onMounted } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { useProviderStore } from '../stores/provider.store'
 import { Alert, Spinner, Card, Badge } from '@/shared/components'
+import GalleryDisplay from '@/modules/provider/components/gallery/GalleryDisplay.vue'
 import type { DayOfWeek, ServiceSummary } from '../types/provider.types'
 
 // Router
@@ -446,6 +462,7 @@ const tabs = [
   { id: 'about', label: 'About' },
   { id: 'services', label: 'Services' },
   { id: 'staff', label: 'Staff' },
+  { id: 'gallery', label: 'Gallery' },
   { id: 'hours', label: 'Hours' },
   { id: 'reviews', label: 'Reviews' },
 ]

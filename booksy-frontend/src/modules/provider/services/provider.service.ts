@@ -153,7 +153,7 @@ class ProviderService {
         status: string
         userId: string
       }>(`${API_BASE}/current/status`)
-
+      debugger
       console.log(`[ProviderService] Provider status retrieved:`, response.data)
 
       return {
@@ -302,7 +302,6 @@ class ProviderService {
    * Map API response to domain model
    */
   private mapProviderResponse(response: ProviderResponse): Provider {
-
     return {
       id: response.id,
       ownerId: response.ownerId,

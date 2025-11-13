@@ -79,8 +79,12 @@ public sealed class CreateProviderDraftCommandHandler
             (double)request.Longitude);
 
         // 5. Create draft provider
+        // Note: This is a legacy endpoint. Owner names are not collected here.
+        // Use SaveStep3LocationCommand from ProviderRegistrationController for the full registration flow.
         var provider = Domain.Aggregates.Provider.CreateDraft(
             userId,
+            ownerFirstName: string.Empty, // Legacy endpoint - no owner name collected
+            ownerLastName: string.Empty,  // Legacy endpoint - no owner name collected
             request.BusinessName,
             request.BusinessDescription,
             providerType,

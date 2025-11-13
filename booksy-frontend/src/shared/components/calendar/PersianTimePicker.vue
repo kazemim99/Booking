@@ -1,7 +1,7 @@
 <template>
   <div class="persian-time-picker-wrapper" dir="rtl">
     <date-picker
-      v-model="internalValue"
+      :model-value="internalValue"
       type="time"
       format="HH:mm"
       display-format="HH:mm"
@@ -9,7 +9,7 @@
       :clearable="clearable"
       :placeholder="placeholder"
       color="#8b5cf6"
-      @change="handleTimeChange"
+      @update:model-value="handleTimeChange"
     />
   </div>
 </template>
@@ -38,13 +38,26 @@ const emit = defineEmits<Emits>()
 
 const internalValue = ref<string>('')
 
+// Helper to ensure value is a string (handles moment objects)
+const ensureStringValue = (value: any): string => {
+  if (!value) return ''
+  if (typeof value === 'string') return value
+  if (typeof value === 'object' && value._isAMomentObject) {
+    // If it's a moment object, format it as HH:mm
+    return value.format('HH:mm')
+  }
+  return String(value)
+}
+
 // Watch for external changes
 watch(() => props.modelValue, (newValue) => {
-  internalValue.value = newValue || ''
+  internalValue.value = ensureStringValue(newValue)
 }, { immediate: true })
 
-const handleTimeChange = (value: string) => {
-  emit('update:modelValue', value || '')
+const handleTimeChange = (value: any) => {
+  // Ensure we always emit a string
+  const stringValue = ensureStringValue(value)
+  emit('update:modelValue', stringValue)
 }
 </script>
 
