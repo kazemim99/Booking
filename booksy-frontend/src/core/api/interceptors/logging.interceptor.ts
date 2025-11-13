@@ -15,7 +15,7 @@ export function requestLoggingInterceptor(config: InternalAxiosRequestConfig) {
     const { method, url, params, data } = config
 
     loggerService.info('🚀 API Request', {
-      method: method?.toUpperCase(),
+      method: method && typeof method === 'string' ? method.toUpperCase() : 'UNKNOWN',
       url,
       params,
       data: data ? (typeof data === 'string' ? data.substring(0, 100) : data) : undefined

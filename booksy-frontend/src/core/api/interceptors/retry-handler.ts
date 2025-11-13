@@ -77,8 +77,9 @@ export async function retryInterceptor(error: AxiosError): Promise<any> {
   const delay = getRetryDelay(config.retryCount - 1, retryConfig.retryDelay)
 
   if (import.meta.env.DEV) {
+    const method = config.method && typeof config.method === 'string' ? config.method.toUpperCase() : 'UNKNOWN'
     console.log(
-      `🔄 Retrying request (${config.retryCount}/${retryConfig.maxRetries}) after ${Math.round(delay)}ms: ${config.method?.toUpperCase()} ${config.url}`,
+      `🔄 Retrying request (${config.retryCount}/${retryConfig.maxRetries}) after ${Math.round(delay)}ms: ${method} ${config.url}`,
     )
   }
 

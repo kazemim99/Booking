@@ -55,6 +55,12 @@ function toPascalCase(obj: any): any {
 
   if (typeof obj === 'object') {
     return Object.keys(obj).reduce((result, key) => {
+      // Skip if key is not a valid string or is empty
+      if (!key || typeof key !== 'string' || key.length === 0) {
+        result[key] = toPascalCase(obj[key])
+        return result
+      }
+
       // Convert first character to uppercase, keep rest as is
       const pascalKey = key.charAt(0).toUpperCase() + key.slice(1)
       result[pascalKey] = toPascalCase(obj[key])
@@ -84,6 +90,12 @@ function toCamelCase(obj: any): any {
 
   if (typeof obj === 'object') {
     return Object.keys(obj).reduce((result, key) => {
+      // Skip if key is not a valid string or is empty
+      if (!key || typeof key !== 'string' || key.length === 0) {
+        result[key] = toCamelCase(obj[key])
+        return result
+      }
+
       // Convert first character to lowercase, keep rest as is
       const camelKey = key.charAt(0).toLowerCase() + key.slice(1)
       result[camelKey] = toCamelCase(obj[key])

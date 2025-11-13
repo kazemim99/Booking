@@ -71,7 +71,8 @@ class RequestCache {
     }
 
     if (import.meta.env.DEV) {
-      console.log(`💾 Cache HIT: ${config.method?.toUpperCase()} ${config.url}`)
+      const method = config.method && typeof config.method === 'string' ? config.method.toUpperCase() : 'UNKNOWN'
+      console.log(`💾 Cache HIT: ${method} ${config.url}`)
     }
 
     return { ...entry.data }
@@ -90,7 +91,8 @@ class RequestCache {
     })
 
     if (import.meta.env.DEV) {
-      console.log(`💾 Cache SET: ${config.method?.toUpperCase()} ${config.url} (TTL: ${ttl}ms)`)
+      const method = config.method && typeof config.method === 'string' ? config.method.toUpperCase() : 'UNKNOWN'
+      console.log(`💾 Cache SET: ${method} ${config.url} (TTL: ${ttl}ms)`)
     }
   }
 
