@@ -75,13 +75,30 @@ class RequestCache {
       console.log(`💾 Cache HIT: ${method} ${config.url}`)
     }
 
-    return { ...entry.data }
+    // Ensure the cached response has a valid config object with method
+    const cachedResponse = { ...entry.data }
+    if (cachedResponse.config) {
+      cachedResponse.config = {
+        ...cachedResponse.config,
+        method: cachedResponse.config.method || config.method || 'get',
+      }
+    }
+
+    return cachedResponse
   }
 
   /**
    * Store response in cache
    */
   set(config: InternalAxiosRequestConfig, response: AxiosResponse, ttl: number): void {
+    // Don't cache responses without a valid config
+    if (!response.config || !response.config.method) {
+      if (import.meta.env.DEV) {
+        console.warn('💾 Cache SKIP: Response missing valid config')
+      }
+      return
+    }
+
     const key = this.generateKey(config)
 
     this.cache.set(key, {
