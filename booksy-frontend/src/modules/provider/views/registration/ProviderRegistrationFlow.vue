@@ -52,11 +52,7 @@
     />
 
     <!-- Step 7: Gallery (NEW) -->
-    <GalleryStep
-      v-else-if="currentStep === 7"
-      @next="handleNext"
-      @back="previousStep"
-    />
+    <GalleryStep v-else-if="currentStep === 7" @next="handleNext" @back="previousStep" />
 
     <!-- Step 8: Optional Feedback (NEW) -->
     <OptionalFeedbackStep
@@ -341,7 +337,7 @@ onMounted(async () => {
     const { ProviderStatus } = await import('@/core/types/enums.types')
 
     const statusData = await providerService.getCurrentProviderStatus()
-
+    debugger
     // If no provider exists or status is Drafted, load the draft
     if (!statusData || statusData.status === ProviderStatus.Drafted) {
       console.log('[RegistrationFlow] Provider status allows draft loading, calling progress API')
@@ -358,7 +354,11 @@ onMounted(async () => {
     } else {
       // User has completed registration, shouldn't be here
       // Route guard should have prevented this, but handle it gracefully
-      console.warn('[RegistrationFlow] Provider status is', statusData.status, '- registration already complete')
+      console.warn(
+        '[RegistrationFlow] Provider status is',
+        statusData.status,
+        '- registration already complete',
+      )
       console.warn('[RegistrationFlow] Skipping progress API call')
     }
   } catch (error) {

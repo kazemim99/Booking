@@ -53,14 +53,14 @@ namespace Booksy.UserManagement.Application.Commands.PhoneVerification.RequestVe
                 phoneNumber.Value,
                 TimeSpan.FromMinutes(10),
                 cancellationToken);
-
+#if !DEBUG
             if (recentVerifications.Count >= 3)
             {
                 throw new DomainValidationException(
                     $"{phoneNumber}",
                     "تعداد درخواست بیش از حد.لطفا دقایقی دیگر مجدد تلاش کنید");
             }
-
+#endif
             // Create verification aggregate
             UserId? userId = command.UserId.HasValue ? UserId.From(command.UserId.Value) : null;
 

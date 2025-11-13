@@ -245,7 +245,11 @@ export function useProviderRegistration() {
       case 1: // Business Info (NEW STEP 1)
         const { businessName, ownerFirstName, ownerLastName } =
           registrationState.value.data.businessInfo
-        console.log('Step 1 validation - BusinessInfo:', { businessName, ownerFirstName, ownerLastName })
+        console.log('Step 1 validation - BusinessInfo:', {
+          businessName,
+          ownerFirstName,
+          ownerLastName,
+        })
         if (!businessName?.trim()) errors.businessName = 'Business name is required'
         if (!ownerFirstName?.trim()) errors.ownerFirstName = 'First name is required'
         if (!ownerLastName?.trim()) errors.ownerLastName = 'Last name is required'
@@ -267,7 +271,10 @@ export function useProviderRegistration() {
         break
 
       case 4: // Services - At least one required
-        console.log('Step 4 validation - Services count:', registrationState.value.data.services.length)
+        console.log(
+          'Step 4 validation - Services count:',
+          registrationState.value.data.services.length,
+        )
         if (registrationState.value.data.services.length === 0) {
           errors.services = 'Please add at least one service'
         }
@@ -313,7 +320,11 @@ export function useProviderRegistration() {
   }
 
   // Save draft - Creates provider draft at Step 3 (after location)
-  const saveDraft = async (): Promise<{ success: boolean; message?: string; providerId?: string }> => {
+  const saveDraft = async (): Promise<{
+    success: boolean
+    message?: string
+    providerId?: string
+  }> => {
     registrationState.value.isLoading = true
     registrationState.value.error = null
 
@@ -362,7 +373,7 @@ export function useProviderRegistration() {
       return {
         success: true,
         message: response.message,
-        providerId: response.providerId
+        providerId: response.providerId,
       }
     } catch (error: any) {
       const message = error.response?.data?.message || 'Failed to save draft'
@@ -374,7 +385,9 @@ export function useProviderRegistration() {
   }
 
   // Save services - Calls Step 4 endpoint
-  const saveServices = async (providerId: string): Promise<{ success: boolean; message?: string }> => {
+  const saveServices = async (
+    providerId: string,
+  ): Promise<{ success: boolean; message?: string }> => {
     registrationState.value.isLoading = true
     registrationState.value.error = null
 
@@ -450,7 +463,9 @@ export function useProviderRegistration() {
   }
 
   // Save working hours - Calls Step 6 endpoint
-  const saveWorkingHours = async (providerId: string): Promise<{ success: boolean; message?: string }> => {
+  const saveWorkingHours = async (
+    providerId: string,
+  ): Promise<{ success: boolean; message?: string }> => {
     registrationState.value.isLoading = true
     registrationState.value.error = null
 
@@ -464,10 +479,11 @@ export function useProviderRegistration() {
         closeTime: day.closeTime
           ? { hours: day.closeTime.hours, minutes: day.closeTime.minutes }
           : { hours: 0, minutes: 0 },
-        breaks: day.breaks?.map((b) => ({
-          start: { hours: b.start.hours, minutes: b.start.minutes },
-          end: { hours: b.end.hours, minutes: b.end.minutes },
-        })) || [],
+        breaks:
+          day.breaks?.map((b) => ({
+            start: { hours: b.start.hours, minutes: b.start.minutes },
+            end: { hours: b.end.hours, minutes: b.end.minutes },
+          })) || [],
       }))
 
       const hasOpenDays = businessHours.some((day) => day.isOpen)
@@ -475,7 +491,10 @@ export function useProviderRegistration() {
         throw new Error('Please set at least one open day')
       }
 
-      const response = await providerRegistrationService.saveStep6WorkingHours(providerId, businessHours)
+      const response = await providerRegistrationService.saveStep6WorkingHours(
+        providerId,
+        businessHours,
+      )
 
       console.log('✅ Working hours saved:', response)
 
@@ -488,7 +507,8 @@ export function useProviderRegistration() {
     } catch (error: any) {
       console.error('❌ Failed to save working hours:', error)
 
-      const message = error.response?.data?.message || error.message || 'Failed to save working hours'
+      const message =
+        error.response?.data?.message || error.message || 'Failed to save working hours'
       registrationState.value.error = message
 
       return { success: false, message }
@@ -498,20 +518,22 @@ export function useProviderRegistration() {
   }
 
   // Save gallery - Upload images to registration endpoint
-  const saveGallery = async (providerId: string): Promise<{ success: boolean; message?: string }> => {
+  const saveGallery = async (
+    providerId: string,
+  ): Promise<{ success: boolean; message?: string }> => {
     registrationState.value.isLoading = true
     registrationState.value.error = null
 
     try {
       // Extract File objects from gallery images that haven't been uploaded yet
       const files = registrationState.value.data.galleryImages
-        .filter(img => img.file) // Only files that haven't been uploaded yet
-        .map(img => img.file!)
+        .filter((img) => img.file) // Only files that haven't been uploaded yet
+        .map((img) => img.file!)
 
       console.log('📤 Uploading gallery images to registration endpoint:', {
         providerId,
         filesCount: files.length,
-        totalImagesCount: registrationState.value.data.galleryImages.length
+        totalImagesCount: registrationState.value.data.galleryImages.length,
       })
 
       if (files.length > 0) {
@@ -536,9 +558,10 @@ export function useProviderRegistration() {
 
         return {
           success: true,
-          message: imagesCount > 0
-            ? `تصاویر گالری ذخیره شد (${imagesCount} تصویر)`
-            : 'مرحله گالری تکمیل شد',
+          message:
+            imagesCount > 0
+              ? `تصاویر گالری ذخیره شد (${imagesCount} تصویر)`
+              : 'مرحله گالری تکمیل شد',
         }
       }
     } catch (error: any) {
@@ -554,7 +577,9 @@ export function useProviderRegistration() {
   }
 
   // Save feedback - Calls Step 8 endpoint
-  const saveFeedback = async (providerId: string): Promise<{ success: boolean; message?: string }> => {
+  const saveFeedback = async (
+    providerId: string,
+  ): Promise<{ success: boolean; message?: string }> => {
     registrationState.value.isLoading = true
     registrationState.value.error = null
 
@@ -585,7 +610,9 @@ export function useProviderRegistration() {
   }
 
   // Complete registration - Calls the complete endpoint (Step 9)
-  const completeRegistration = async (providerId?: string): Promise<{
+  const completeRegistration = async (
+    providerId?: string,
+  ): Promise<{
     success: boolean
     message?: string
     providerId?: string
@@ -677,7 +704,11 @@ export function useProviderRegistration() {
   }
 
   // Load existing draft on initialization
-  const loadDraft = async (): Promise<{ success: boolean; message?: string; providerId?: string }> => {
+  const loadDraft = async (): Promise<{
+    success: boolean
+    message?: string
+    providerId?: string
+  }> => {
     // Prevent duplicate concurrent calls
     if (isDraftLoading) {
       console.log('⏭️  Draft already loading, skipping duplicate call')
@@ -694,7 +725,7 @@ export function useProviderRegistration() {
         console.log('⏭️  Skipping draft load - user not authenticated (new registration)')
         return { success: true, message: 'No authentication - starting fresh registration' }
       }
-
+      debugger
       const response = await providerRegistrationService.getRegistrationProgress()
 
       // Handle completed registration (hasDraft: false but providerId exists)
@@ -772,11 +803,12 @@ export function useProviderRegistration() {
             h.closeTimeHours !== null && h.closeTimeMinutes !== null
               ? { hours: h.closeTimeHours, minutes: h.closeTimeMinutes }
               : null,
-          breaks: h.breaks?.map((br) => ({
-            id: `break-${br.startTimeHours}-${br.startTimeMinutes}`,
-            start: { hours: br.startTimeHours, minutes: br.startTimeMinutes },
-            end: { hours: br.endTimeHours, minutes: br.endTimeMinutes },
-          })) || [],
+          breaks:
+            h.breaks?.map((br) => ({
+              id: `break-${br.startTimeHours}-${br.startTimeMinutes}`,
+              start: { hours: br.startTimeHours, minutes: br.startTimeMinutes },
+              end: { hours: br.endTimeHours, minutes: br.endTimeMinutes },
+            })) || [],
         }))
 
         // Gallery images
