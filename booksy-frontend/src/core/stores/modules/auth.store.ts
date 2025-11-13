@@ -213,6 +213,7 @@ export const useAuthStore = defineStore('auth', () => {
    */
   async function fetchProviderStatus(): Promise<void> {
     try {
+      debugger;
       console.log('[AuthStore] Fetching provider status')
       const statusData = await providerService.getCurrentProviderStatus()
 
