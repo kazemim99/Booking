@@ -78,8 +78,6 @@ import { usePhoneVerification } from '../composables/usePhoneVerification'
 import { useAuthStore } from '@/core/stores/modules/auth.store'
 import { useToast } from '@/core/composables'
 import { phoneVerificationApi } from '../api/phoneVerification.api'
-import { providerService } from '@/modules/provider/services/provider.service'
-import { ProviderStatus } from '@/core/types/enums.types'
 import AppButton from '@/shared/components/ui/Button/AppButton.vue'
 import OtpInput from '../components/OtpInput.vue'
 
@@ -236,21 +234,12 @@ const verifyOtp = async () => {
 
 const redirectBasedOnProviderStatus = async () => {
   try {
-    const providerStatus = await providerService.getCurrentProviderStatus()
-
-    // If status is Drafted or no provider exists, go to registration
-    if (!providerStatus || providerStatus.status === ProviderStatus.Drafted) {
-      console.log('[VerificationView] Starting/continuing registration flow')
-      await router.push({ name: 'ProviderRegistration' })
-    } else {
-      // All other statuses (PendingVerification, Verified, Active, etc.) go to dashboard
-      console.log('[VerificationView] Redirecting to dashboard, status:', providerStatus.status)
-      await router.push({ name: 'ProviderDashboard' })
-    }
-  } catch (error) {
-    console.error('[VerificationView] Error checking provider status:', error)
-    // Default to registration on error
+    // Simply redirect to registration route
+    // The route guard will check provider status and redirect to dashboard if needed
+    console.log('[VerificationView] Phone verification complete, redirecting to registration')
     await router.push({ name: 'ProviderRegistration' })
+  } catch (error) {
+    console.error('[VerificationView] Error during redirect:', error)
   }
 }
 
