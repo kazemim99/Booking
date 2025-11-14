@@ -257,11 +257,16 @@
 
         <div class="reschedule-picker">
           <label class="picker-label">تاریخ و زمان جدید</label>
-          <DatePicker
+          <VuePersianDatetimePicker
             v-model="newDateTime"
             placeholder="تاریخ و زمان جدید را انتخاب کنید"
-            :show-time="true"
-            :min-date="new Date()"
+            format="YYYY-MM-DD HH:mm"
+            display-format="jYYYY/jMM/jDD - HH:mm"
+            type="datetime"
+            :min="new Date().toISOString()"
+            auto-submit
+            :color="#1976d2"
+            input-class="persian-datepicker-input"
           />
         </div>
       </div>
@@ -333,7 +338,7 @@ import { useToast, setToastInstance } from '@/shared/composables/useToast'
 import DashboardLayout from '../components/dashboard/DashboardLayout.vue'
 import Toast from '@/shared/components/Toast.vue'
 import Modal from '@/shared/components/Modal.vue'
-import DatePicker from '@/shared/components/DatePicker.vue'
+import VuePersianDatetimePicker from 'vue3-persian-datetime-picker'
 
 const toast = useToast()
 const toastRef = ref()
@@ -486,16 +491,16 @@ const rescheduleBooking = (id: string) => {
 
 const confirmReschedule = () => {
   if (rescheduleBookingData.value && newDateTime.value) {
-    // Parse the new date/time
-    const date = new Date(newDateTime.value)
-    const formattedDate = `${date.getFullYear()}/${String(date.getMonth() + 1).padStart(2, '0')}/${String(date.getDate()).padStart(2, '0')}`
-    const formattedTime = `${String(date.getHours()).padStart(2, '0')}:${String(date.getMinutes()).padStart(2, '0')}`
+    // Parse the date/time from persian datepicker (format: YYYY-MM-DD HH:mm)
+    const [datePart, timePart] = newDateTime.value.split(' ')
+    const formattedDate = datePart.replace(/-/g, '/')
+    const formattedTime = timePart
 
     // Update booking
-    rescheduleBookingData.value.date = formattedDate
-    rescheduleBookingData.value.time = formattedTime
+    rescheduleBookingData.value.date = convertEnglishToPersianNumbers(formattedDate)
+    rescheduleBookingData.value.time = convertEnglishToPersianNumbers(formattedTime)
 
-    toast.success(`رزرو ${rescheduleBookingData.value.customerName} به ${formattedDate} ساعت ${formattedTime} منتقل شد`)
+    toast.success(`رزرو ${rescheduleBookingData.value.customerName} به ${convertEnglishToPersianNumbers(formattedDate)} ساعت ${convertEnglishToPersianNumbers(formattedTime)} منتقل شد`)
 
     // Close modal
     showRescheduleModal.value = false
@@ -1197,6 +1202,34 @@ onMounted(async () => {
   font-weight: 500;
   color: rgba(0, 0, 0, 0.6);
   letter-spacing: 0.25px;
+}
+
+/* Persian DatePicker Styling */
+:deep(.persian-datepicker-input) {
+  width: 100%;
+  padding: 10px 16px;
+  border: 1px solid rgba(0, 0, 0, 0.23);
+  border-radius: 4px;
+  font-size: 14px;
+  background: white;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  color: rgba(0, 0, 0, 0.87);
+  font-family: 'B Nazanin', Tahoma, Arial, sans-serif;
+}
+
+:deep(.persian-datepicker-input):hover {
+  border-color: rgba(0, 0, 0, 0.87);
+}
+
+:deep(.persian-datepicker-input):focus {
+  outline: none;
+  border-color: #1976d2;
+  border-width: 2px;
+  padding: 9px 15px;
+}
+
+:deep(.vpd-input-group) {
+  width: 100%;
 }
 
 /* Modal Booking Details */
