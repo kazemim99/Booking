@@ -14,7 +14,7 @@
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" />
         </svg>
       </button>
-      <h2 class="calendar-title">{{ jalaliMonthNames[currentJalaliMonth - 1] }} {{ convertToPersian(currentJalaliYear.toString()) }}</h2>
+      <h2 class="calendar-title">{{ jalaliMonthNames[currentJalaliMonth - 1] }} {{ convertToPersian(currentJalaliYear) }}</h2>
       <button class="nav-btn" @click="nextMonth">
         <svg class="nav-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
@@ -43,18 +43,21 @@
         ]"
         @click="selectDay(day)"
       >
-        <div class="day-number">{{ convertToPersian(day.dayNumber.toString()) }}</div>
+        <div class="day-number">{{ convertToPersian(day.dayNumber) }}</div>
         <div v-if="day.bookingsCount > 0" class="bookings-badge">
-          {{ convertToPersian(day.bookingsCount.toString()) }}
+          {{ convertToPersian(day.bookingsCount) }}
         </div>
       </div>
     </div>
 
     <!-- Selected Day Bookings -->
     <div v-if="selectedDay" class="day-bookings">
-      <h3 class="day-bookings-title">
-        رزروهای {{ convertToPersian(selectedDay.dayNumber.toString()) }} {{ jalaliMonthNames[currentJalaliMonth - 1] }}
-      </h3>
+      <div class="day-bookings-header">
+        <h3 class="day-bookings-title">
+          رزروهای {{ convertToPersian(selectedDay.dayNumber) }} {{ jalaliMonthNames[currentJalaliMonth - 1] }}
+        </h3>
+        <span class="bookings-count-badge">{{ convertToPersian(selectedDayBookings.length) }} رزرو</span>
+      </div>
       <div v-if="selectedDayBookings.length === 0" class="no-bookings">
         هیچ رزروی برای این روز وجود ندارد
       </div>
@@ -276,8 +279,8 @@ const nextMonth = () => {
   selectedDay.value = null
 }
 
-const convertToPersian = (num: string) => {
-  return convertEnglishToPersianNumbers(num)
+const convertToPersian = (num: number | string) => {
+  return convertEnglishToPersianNumbers(num.toString())
 }
 
 const getStatusLabel = (status: string) => {
@@ -447,15 +450,33 @@ watch(() => props.bookings, () => {
 
 .day-bookings {
   margin-top: 32px;
-  padding-top: 24px;
-  border-top: 2px solid #e5e7eb;
+  padding: 24px;
+  background: #f9fafb;
+  border-radius: 12px;
+  border: 2px solid #1976d2;
+}
+
+.day-bookings-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 16px;
 }
 
 .day-bookings-title {
   font-size: 18px;
   font-weight: 600;
   color: #1f2937;
-  margin: 0 0 16px 0;
+  margin: 0;
+}
+
+.bookings-count-badge {
+  padding: 6px 12px;
+  background: #1976d2;
+  color: white;
+  border-radius: 16px;
+  font-size: 13px;
+  font-weight: 600;
 }
 
 .no-bookings {
