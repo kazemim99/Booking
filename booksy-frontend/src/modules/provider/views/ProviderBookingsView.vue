@@ -12,11 +12,11 @@
             <p class="page-subtitle">مشاهده و مدیریت تمام رزروهای خود</p>
           </div>
           <div class="header-actions">
-            <button class="btn-secondary" @click="toggleCalendarView">
+            <button :class="['btn-secondary', { 'active': viewMode === 'calendar' }]" @click="toggleCalendarView">
               <svg class="btn-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
               </svg>
-              <span>نمای تقویم</span>
+              <span>{{ viewMode === 'calendar' ? 'نمای لیست' : 'نمای تقویم' }}</span>
             </button>
             <button class="btn-primary" @click="showCreateBooking = true">
               <svg class="btn-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -131,13 +131,23 @@
           </div>
         </div>
 
-        <!-- Bookings List -->
-        <div v-if="loading" class="loading-state">
-          <div class="spinner"></div>
-          <p>در حال بارگذاری رزروها...</p>
+        <!-- Calendar View -->
+        <div v-if="viewMode === 'calendar'" class="calendar-view">
+          <BookingCalendar
+            :bookings="bookings"
+            @booking-click="handleBookingClick"
+          />
         </div>
 
-        <div v-else-if="filteredBookings.length === 0" class="empty-state">
+        <!-- List View -->
+        <div v-else>
+          <!-- Bookings List -->
+          <div v-if="loading" class="loading-state">
+            <div class="spinner"></div>
+            <p>در حال بارگذاری رزروها...</p>
+          </div>
+
+          <div v-else-if="filteredBookings.length === 0" class="empty-state">
           <div class="empty-icon">
             <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
@@ -243,8 +253,17 @@
             </div>
           </div>
         </div>
+        </div> <!-- End List View -->
       </div>
     </div>
+
+    <!-- Create Booking Modal -->
+    <CreateBookingModal
+      v-model="showCreateBooking"
+      :customers="customers"
+      :services="services"
+      @submit="handleNewBooking"
+    />
 
     <!-- Reschedule Modal -->
     <Modal v-model="showRescheduleModal" title="زمان‌بندی مجدد رزرو" size="small">
@@ -339,6 +358,8 @@ import DashboardLayout from '../components/dashboard/DashboardLayout.vue'
 import Toast from '@/shared/components/Toast.vue'
 import Modal from '@/shared/components/Modal.vue'
 import VuePersianDatetimePicker from 'vue3-persian-datetime-picker'
+import BookingCalendar from '../components/calendar/BookingCalendar.vue'
+import CreateBookingModal from '../components/modals/CreateBookingModal.vue'
 
 const toast = useToast()
 const toastRef = ref()
@@ -347,13 +368,16 @@ const providerStore = useProviderStore()
 
 const currentProvider = computed(() => providerStore.currentProvider)
 
+// View mode: 'list' or 'calendar'
+const viewMode = ref<'list' | 'calendar'>('list')
+
 // Sample data - replace with actual API calls
 const bookings = ref([
   {
     id: '1',
     customerName: 'علی احمدی',
     customerPhone: '۰۹۱۲۳۴۵۶۷۸۹',
-    date: '۱۴۰۲/۱۲/۱۵',
+    date: '2025-11-14',
     time: '۱۰:۰۰',
     service: 'کوتاهی مو',
     price: 150000,
@@ -363,7 +387,7 @@ const bookings = ref([
     id: '2',
     customerName: 'سارا محمدی',
     customerPhone: '۰۹۳۸۷۶۵۴۳۲۱',
-    date: '۱۴۰۲/۱۲/۱۵',
+    date: '2025-11-14',
     time: '۱۱:۳۰',
     service: 'رنگ مو',
     price: 350000,
@@ -373,12 +397,53 @@ const bookings = ref([
     id: '3',
     customerName: 'محمد رضایی',
     customerPhone: '۰۹۱۲۷۶۵۴۳۲۱',
-    date: '۱۴۰۲/۱۲/۱۴',
+    date: '2025-11-13',
     time: '۱۴:۰۰',
     service: 'اصلاح صورت',
     price: 80000,
     status: 'completed',
   },
+  {
+    id: '4',
+    customerName: 'فاطمه کریمی',
+    customerPhone: '۰۹۱۱۱۲۳۴۵۶۷',
+    date: '2025-11-15',
+    time: '۰۹:۰۰',
+    service: 'مانیکور',
+    price: 120000,
+    status: 'confirmed',
+  },
+  {
+    id: '5',
+    customerName: 'حسین نوری',
+    customerPhone: '۰۹۱۲۸۸۸۷۷۷۶',
+    date: '2025-11-16',
+    time: '۱۵:۰۰',
+    service: 'کوتاهی مو',
+    price: 150000,
+    status: 'pending',
+  },
+])
+
+// Sample customers
+const customers = ref([
+  { id: '1', name: 'علی احمدی', phone: '۰۹۱۲۳۴۵۶۷۸۹' },
+  { id: '2', name: 'سارا محمدی', phone: '۰۹۳۸۷۶۵۴۳۲۱' },
+  { id: '3', name: 'محمد رضایی', phone: '۰۹۱۲۷۶۵۴۳۲۱' },
+  { id: '4', name: 'فاطمه کریمی', phone: '۰۹۱۱۱۲۳۴۵۶۷' },
+  { id: '5', name: 'حسین نوری', phone: '۰۹۱۲۸۸۸۷۷۷۶' },
+  { id: '6', name: 'زهرا حسینی', phone: '۰۹۱۳۱۱۱۲۲۲۳' },
+  { id: '7', name: 'رضا مرادی', phone: '۰۹۱۴۲۲۲۳۳۳۴' },
+])
+
+// Sample services
+const services = ref([
+  { id: '1', name: 'کوتاهی مو', duration: 30, price: 150000 },
+  { id: '2', name: 'رنگ مو', duration: 120, price: 350000 },
+  { id: '3', name: 'اصلاح صورت', duration: 20, price: 80000 },
+  { id: '4', name: 'مانیکور', duration: 45, price: 120000 },
+  { id: '5', name: 'پدیکور', duration: 60, price: 150000 },
+  { id: '6', name: 'ماساژ صورت', duration: 40, price: 200000 },
 ])
 
 const loading = ref(false)
@@ -536,7 +601,41 @@ const confirmBookingFromModal = () => {
 }
 
 const toggleCalendarView = () => {
-  console.log('Toggle calendar view')
+  viewMode.value = viewMode.value === 'list' ? 'calendar' : 'list'
+}
+
+const handleNewBooking = (formData: any) => {
+  // In production, this would make an API call
+  const selectedService = services.value.find(s => s.id === formData.serviceId)
+  const selectedCustomer = customers.value.find(c => c.id === formData.customerId)
+
+  if (!selectedService || !selectedCustomer) return
+
+  // Extract date and time from datetime string
+  const dateTime = new Date(formData.dateTime)
+  const date = dateTime.toISOString().split('T')[0]
+  const hours = dateTime.getHours().toString().padStart(2, '0')
+  const minutes = dateTime.getMinutes().toString().padStart(2, '0')
+  const time = convertEnglishToPersianNumbers(`${hours}:${minutes}`)
+
+  const newBooking = {
+    id: (bookings.value.length + 1).toString(),
+    customerName: selectedCustomer.name,
+    customerPhone: selectedCustomer.phone,
+    date,
+    time,
+    service: selectedService.name,
+    price: selectedService.price,
+    status: 'pending',
+  }
+
+  bookings.value.unshift(newBooking)
+  toast.success('رزرو جدید با موفقیت ثبت شد')
+}
+
+const handleBookingClick = (booking: any) => {
+  selectedBooking.value = booking
+  showBookingDetails.value = true
 }
 
 const resetFilters = () => {
@@ -649,6 +748,17 @@ onMounted(async () => {
 .btn-secondary:hover {
   background: rgba(0, 0, 0, 0.04);
   border-color: rgba(0, 0, 0, 0.23);
+}
+
+.btn-secondary.active {
+  background: #1976d2;
+  color: white;
+  border-color: #1976d2;
+}
+
+.btn-secondary.active:hover {
+  background: #1565c0;
+  border-color: #1565c0;
 }
 
 .btn-icon {
@@ -1313,5 +1423,10 @@ onMounted(async () => {
   .booking-details {
     grid-template-columns: 1fr;
   }
+}
+
+/* Calendar View */
+.calendar-view {
+  margin-top: 24px;
 }
 </style>
