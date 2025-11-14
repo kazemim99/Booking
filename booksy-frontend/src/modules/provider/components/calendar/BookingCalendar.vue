@@ -1,5 +1,11 @@
 <template>
   <div class="booking-calendar">
+    <!-- Debug Info (temporary) -->
+    <div v-if="bookings.length > 0" class="debug-info">
+      مجموع رزروها: {{ convertToPersian(bookings.length) }} |
+      رزروهای این ماه: {{ convertToPersian(currentMonthBookingsCount) }}
+    </div>
+
     <!-- Calendar Header -->
     <div class="calendar-header">
       <button class="nav-btn" @click="previousMonth">
@@ -121,6 +127,15 @@ const currentYear = computed(() => {
   return convertEnglishToPersianNumbers((currentDate.value.getFullYear() - 621).toString())
 })
 
+const currentMonthBookingsCount = computed(() => {
+  const year = currentDate.value.getFullYear()
+  const month = currentDate.value.getMonth() + 1
+  return props.bookings.filter(booking => {
+    const [bookingYear, bookingMonth] = booking.date.split('-')
+    return parseInt(bookingYear) === year && parseInt(bookingMonth) === month
+  }).length
+})
+
 const calendarDays = computed(() => {
   const year = currentDate.value.getFullYear()
   const month = currentDate.value.getMonth()
@@ -181,12 +196,19 @@ const calendarDays = computed(() => {
 const selectedDayBookings = computed(() => {
   if (!selectedDay.value) return []
 
-  const selectedDate = selectedDay.value.date.toISOString().split('T')[0]
+  const selectedDate = formatDateToString(selectedDay.value.date)
   return props.bookings.filter(booking => booking.date === selectedDate)
 })
 
+const formatDateToString = (date: Date): string => {
+  const year = date.getFullYear()
+  const month = String(date.getMonth() + 1).padStart(2, '0')
+  const day = String(date.getDate()).padStart(2, '0')
+  return `${year}-${month}-${day}`
+}
+
 const getBookingsCountForDate = (date: Date) => {
-  const dateStr = date.toISOString().split('T')[0]
+  const dateStr = formatDateToString(date)
   return props.bookings.filter(booking => booking.date === dateStr).length
 }
 
@@ -248,6 +270,17 @@ watch(() => props.bookings, () => {
   border-radius: 8px;
   padding: 24px;
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.debug-info {
+  padding: 12px;
+  background: #fff3cd;
+  border-radius: 8px;
+  margin-bottom: 16px;
+  font-size: 14px;
+  color: #856404;
+  text-align: center;
+  font-weight: 600;
 }
 
 .calendar-header {
