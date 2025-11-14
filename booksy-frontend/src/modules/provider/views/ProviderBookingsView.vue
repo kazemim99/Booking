@@ -246,6 +246,34 @@
       </div>
     </div>
 
+    <!-- Reschedule Modal -->
+    <Modal v-model="showRescheduleModal" title="زمان‌بندی مجدد رزرو" size="small">
+      <div v-if="rescheduleBookingData" class="reschedule-modal">
+        <div class="reschedule-info">
+          <p><strong>مشتری:</strong> {{ rescheduleBookingData.customerName }}</p>
+          <p><strong>خدمت:</strong> {{ rescheduleBookingData.service }}</p>
+          <p><strong>تاریخ فعلی:</strong> {{ rescheduleBookingData.date }} - {{ rescheduleBookingData.time }}</p>
+        </div>
+
+        <div class="reschedule-picker">
+          <label class="picker-label">تاریخ و زمان جدید</label>
+          <DatePicker
+            v-model="newDateTime"
+            placeholder="تاریخ و زمان جدید را انتخاب کنید"
+            :show-time="true"
+            :min-date="new Date()"
+          />
+        </div>
+      </div>
+
+      <template #footer>
+        <button class="btn-secondary" @click="cancelReschedule">انصراف</button>
+        <button class="btn-primary" @click="confirmReschedule" :disabled="!newDateTime">
+          ثبت تغییرات
+        </button>
+      </template>
+    </Modal>
+
     <!-- Booking Details Modal -->
     <Modal v-model="showBookingDetails" title="جزئیات رزرو" size="medium">
       <div v-if="selectedBooking" class="booking-details-modal">
@@ -305,6 +333,7 @@ import { useToast, setToastInstance } from '@/shared/composables/useToast'
 import DashboardLayout from '../components/dashboard/DashboardLayout.vue'
 import Toast from '@/shared/components/Toast.vue'
 import Modal from '@/shared/components/Modal.vue'
+import DatePicker from '@/shared/components/DatePicker.vue'
 
 const toast = useToast()
 const toastRef = ref()
@@ -355,6 +384,9 @@ const filterService = ref('all')
 const showCreateBooking = ref(false)
 const showBookingDetails = ref(false)
 const selectedBooking = ref<any>(null)
+const showRescheduleModal = ref(false)
+const rescheduleBookingData = ref<any>(null)
+const newDateTime = ref('')
 
 // Computed stats
 const todayBookings = computed(() => 8)
@@ -446,9 +478,36 @@ const completeBooking = (id: string) => {
 const rescheduleBooking = (id: string) => {
   const booking = bookings.value.find(b => b.id === id)
   if (booking) {
-    toast.info(`زمان‌بندی مجدد رزرو ${booking.customerName}`)
-    // Here you would show a date picker modal
+    rescheduleBookingData.value = booking
+    newDateTime.value = ''
+    showRescheduleModal.value = true
   }
+}
+
+const confirmReschedule = () => {
+  if (rescheduleBookingData.value && newDateTime.value) {
+    // Parse the new date/time
+    const date = new Date(newDateTime.value)
+    const formattedDate = `${date.getFullYear()}/${String(date.getMonth() + 1).padStart(2, '0')}/${String(date.getDate()).padStart(2, '0')}`
+    const formattedTime = `${String(date.getHours()).padStart(2, '0')}:${String(date.getMinutes()).padStart(2, '0')}`
+
+    // Update booking
+    rescheduleBookingData.value.date = formattedDate
+    rescheduleBookingData.value.time = formattedTime
+
+    toast.success(`رزرو ${rescheduleBookingData.value.customerName} به ${formattedDate} ساعت ${formattedTime} منتقل شد`)
+
+    // Close modal
+    showRescheduleModal.value = false
+    rescheduleBookingData.value = null
+    newDateTime.value = ''
+  }
+}
+
+const cancelReschedule = () => {
+  showRescheduleModal.value = false
+  rescheduleBookingData.value = null
+  newDateTime.value = ''
 }
 
 const cancelBooking = (id: string) => {
@@ -1099,6 +1158,44 @@ onMounted(async () => {
   color: rgba(0, 0, 0, 0.6);
   margin: 0 0 24px;
   max-width: 400px;
+  letter-spacing: 0.25px;
+}
+
+/* Reschedule Modal */
+.reschedule-modal {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+.reschedule-info {
+  background: rgba(0, 0, 0, 0.02);
+  padding: 16px;
+  border-radius: 4px;
+}
+
+.reschedule-info p {
+  margin: 8px 0;
+  font-size: 14px;
+  color: rgba(0, 0, 0, 0.87);
+  letter-spacing: 0.25px;
+}
+
+.reschedule-info strong {
+  font-weight: 500;
+  color: rgba(0, 0, 0, 0.6);
+}
+
+.reschedule-picker {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.picker-label {
+  font-size: 14px;
+  font-weight: 500;
+  color: rgba(0, 0, 0, 0.6);
   letter-spacing: 0.25px;
 }
 
