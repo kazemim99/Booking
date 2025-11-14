@@ -62,7 +62,27 @@ import { computed, ref, onMounted, watch } from 'vue'
 import { PieChart, LineChart } from '@/shared/components/charts'
 import { convertEnglishToPersianNumbers } from '@/shared/utils/date/jalali.utils'
 import { bookingService } from '@/modules/booking/api/booking.service'
-import type { ChartData, ChartOptions } from 'chart.js'
+
+// Chart data types (compatible with both Chart.js and ECharts formats)
+interface ChartData<T = any> {
+  labels: string[]
+  datasets: Array<{
+    label?: string
+    data: number[]
+    backgroundColor?: string | string[]
+    borderColor?: string
+    borderWidth?: number
+    [key: string]: any
+  }>
+}
+
+interface ChartOptions {
+  responsive?: boolean
+  maintainAspectRatio?: boolean
+  plugins?: any
+  scales?: any
+  [key: string]: any
+}
 
 interface Props {
   providerId?: string

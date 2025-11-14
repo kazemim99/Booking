@@ -1,42 +1,51 @@
 <template>
   <div class="line-chart-container">
-    <Line :data="chartData" :options="chartOptions" />
+    <VChart :option="chartOption" :autoresize="true" />
   </div>
 </template>
 
 <script setup lang="ts">
 import { computed } from 'vue'
-import { Line } from 'vue-chartjs'
+import { use } from 'echarts/core'
+import { CanvasRenderer } from 'echarts/renderers'
+import { LineChart as EChartsLine } from 'echarts/charts'
 import {
-  Chart as ChartJS,
-  CategoryScale,
-  LinearScale,
-  PointElement,
-  LineElement,
-  Title,
-  Tooltip,
-  Legend,
-  Filler,
-  type ChartOptions,
-  type ChartData,
-} from 'chart.js'
+  TitleComponent,
+  TooltipComponent,
+  GridComponent,
+  LegendComponent,
+} from 'echarts/components'
+import VChart from 'vue-echarts'
 import { convertEnglishToPersianNumbers } from '@/shared/utils/date/jalali.utils'
 
-// Register Chart.js components
-ChartJS.register(
-  CategoryScale,
-  LinearScale,
-  PointElement,
-  LineElement,
-  Title,
-  Tooltip,
-  Legend,
-  Filler
-)
+use([
+  CanvasRenderer,
+  EChartsLine,
+  TitleComponent,
+  TooltipComponent,
+  GridComponent,
+  LegendComponent,
+])
+
+interface Dataset {
+  label: string
+  data: number[]
+  borderColor?: string
+  backgroundColor?: string
+  borderWidth?: number
+  tension?: number
+  fill?: boolean
+  [key: string]: any
+}
+
+interface ChartData {
+  labels: string[]
+  datasets: Dataset[]
+}
 
 interface Props {
-  data: ChartData<'line'>
-  options?: ChartOptions<'line'>
+  data: ChartData
+  options?: any
   rtl?: boolean
   usePersianNumbers?: boolean
 }
@@ -46,100 +55,104 @@ const props = withDefaults(defineProps<Props>(), {
   usePersianNumbers: true,
 })
 
-const chartData = computed(() => props.data)
+const chartOption = computed(() => {
+  const { labels, datasets } = props.data
 
-const chartOptions = computed<ChartOptions<'line'>>(() => {
-  const defaultOptions: ChartOptions<'line'> = {
-    responsive: true,
-    maintainAspectRatio: true,
-    interaction: {
-      mode: 'index',
-      intersect: false,
+  // Convert series data
+  const series = datasets.map((dataset) => ({
+    name: dataset.label,
+    type: 'line',
+    data: dataset.data,
+    smooth: dataset.tension ? true : false,
+    smoothMonotonicity: 'x',
+    lineStyle: {
+      color: dataset.borderColor || '#1976d2',
+      width: dataset.borderWidth || 2,
     },
-    plugins: {
-      legend: {
-        position: props.rtl ? 'right' : 'left',
-        rtl: props.rtl,
-        labels: {
-          font: {
-            family: 'IRANSans, sans-serif',
-          },
-          padding: 15,
-          usePointStyle: true,
-        },
-      },
-      tooltip: {
-        rtl: props.rtl,
-        titleFont: {
-          family: 'IRANSans, sans-serif',
-        },
-        bodyFont: {
-          family: 'IRANSans, sans-serif',
-        },
-        callbacks: {
-          label: (context) => {
-            const label = context.dataset.label || ''
-            const value = context.parsed.y || 0
-            const persianValue = props.usePersianNumbers
-              ? convertEnglishToPersianNumbers(value.toString())
-              : value.toString()
-            return `${label}: ${persianValue}`
-          },
-          title: (tooltipItems) => {
-            const title = tooltipItems[0]?.label || ''
-            return props.usePersianNumbers
-              ? convertEnglishToPersianNumbers(title)
-              : title
-          },
-        },
-      },
+    itemStyle: {
+      color: dataset.borderColor || '#1976d2',
     },
-    scales: {
-      x: {
-        grid: {
-          display: false,
-        },
-        ticks: {
-          font: {
-            family: 'IRANSans, sans-serif',
-          },
-          callback: function (value) {
-            const label = this.getLabelForValue(value as number)
-            return props.usePersianNumbers
-              ? convertEnglishToPersianNumbers(label)
-              : label
-          },
-        },
-      },
-      y: {
-        beginAtZero: true,
-        ticks: {
-          font: {
-            family: 'IRANSans, sans-serif',
-          },
-          callback: function (value) {
-            return props.usePersianNumbers
-              ? convertEnglishToPersianNumbers(value.toString())
-              : value.toString()
-          },
-        },
-      },
-    },
-  }
+    areaStyle: dataset.fill
+      ? {
+          color: dataset.backgroundColor || 'rgba(25, 118, 210, 0.1)',
+        }
+      : undefined,
+    symbol: 'circle',
+    symbolSize: 6,
+  }))
 
-  // Merge with custom options
   return {
-    ...defaultOptions,
-    ...props.options,
-    plugins: {
-      ...defaultOptions.plugins,
-      ...props.options?.plugins,
+    tooltip: {
+      trigger: 'axis',
+      axisPointer: {
+        type: 'cross',
+        label: {
+          backgroundColor: '#6a7985',
+        },
+      },
+      formatter: (params: any) => {
+        if (!Array.isArray(params)) params = [params]
+        let result = params[0].axisValueLabel
+        if (props.usePersianNumbers) {
+          result = convertEnglishToPersianNumbers(result)
+        }
+        result += '<br/>'
+        params.forEach((param: any) => {
+          const value = props.usePersianNumbers
+            ? convertEnglishToPersianNumbers(param.value.toString())
+            : param.value
+          result += `${param.marker} ${param.seriesName}: ${value}<br/>`
+        })
+        return result
+      },
     },
-    scales: {
-      ...defaultOptions.scales,
-      ...props.options?.scales,
+    legend: {
+      data: datasets.map((d) => d.label),
+      right: props.rtl ? undefined : 10,
+      left: props.rtl ? 10 : undefined,
+      textStyle: {
+        fontFamily: 'B Nazanin, IRANSans, sans-serif',
+      },
     },
-  } as ChartOptions<'line'>
+    grid: {
+      left: '3%',
+      right: '4%',
+      bottom: '3%',
+      top: '10%',
+      containLabel: true,
+    },
+    xAxis: {
+      type: 'category',
+      boundaryGap: false,
+      data: labels,
+      axisLabel: {
+        formatter: (value: string) =>
+          props.usePersianNumbers ? convertEnglishToPersianNumbers(value) : value,
+        fontFamily: 'B Nazanin, IRANSans, sans-serif',
+      },
+      axisLine: {
+        lineStyle: {
+          color: 'rgba(0, 0, 0, 0.12)',
+        },
+      },
+    },
+    yAxis: {
+      type: 'value',
+      axisLabel: {
+        formatter: (value: number) =>
+          props.usePersianNumbers
+            ? convertEnglishToPersianNumbers(value.toString())
+            : value.toString(),
+        fontFamily: 'B Nazanin, IRANSans, sans-serif',
+      },
+      splitLine: {
+        lineStyle: {
+          color: 'rgba(0, 0, 0, 0.06)',
+        },
+      },
+    },
+    series,
+  }
 })
 </script>
 

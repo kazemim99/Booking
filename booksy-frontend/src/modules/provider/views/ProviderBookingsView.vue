@@ -265,7 +265,7 @@
             type="datetime"
             :min="new Date().toISOString()"
             auto-submit
-            :color="#1976d2"
+            color="#1976d2"
             input-class="persian-datepicker-input"
           />
         </div>
