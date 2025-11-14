@@ -1,5 +1,8 @@
 <template>
   <DashboardLayout>
+    <!-- Toast Notifications -->
+    <Toast ref="toastRef" />
+
     <div class="bookings-page">
       <!-- Page Header -->
       <div class="page-header">
@@ -242,6 +245,55 @@
         </div>
       </div>
     </div>
+
+    <!-- Booking Details Modal -->
+    <Modal v-model="showBookingDetails" title="جزئیات رزرو" size="medium">
+      <div v-if="selectedBooking" class="booking-details-modal">
+        <div class="detail-row">
+          <div class="detail-label">نام مشتری:</div>
+          <div class="detail-value">{{ selectedBooking.customerName }}</div>
+        </div>
+        <div class="detail-row">
+          <div class="detail-label">شماره تماس:</div>
+          <div class="detail-value">{{ selectedBooking.customerPhone }}</div>
+        </div>
+        <div class="detail-row">
+          <div class="detail-label">خدمت:</div>
+          <div class="detail-value">{{ selectedBooking.service }}</div>
+        </div>
+        <div class="detail-row">
+          <div class="detail-label">تاریخ:</div>
+          <div class="detail-value">{{ selectedBooking.date }}</div>
+        </div>
+        <div class="detail-row">
+          <div class="detail-label">ساعت:</div>
+          <div class="detail-value">{{ selectedBooking.time }}</div>
+        </div>
+        <div class="detail-row">
+          <div class="detail-label">قیمت:</div>
+          <div class="detail-value">{{ formatCurrency(selectedBooking.price) }} تومان</div>
+        </div>
+        <div class="detail-row">
+          <div class="detail-label">وضعیت:</div>
+          <div class="detail-value">
+            <span :class="['status-badge', getStatusClass(selectedBooking.status)]">
+              {{ getStatusLabel(selectedBooking.status) }}
+            </span>
+          </div>
+        </div>
+      </div>
+
+      <template #footer>
+        <button class="btn-secondary" @click="showBookingDetails = false">بستن</button>
+        <button
+          v-if="selectedBooking && canConfirm(selectedBooking)"
+          class="btn-primary"
+          @click="confirmBookingFromModal"
+        >
+          تایید رزرو
+        </button>
+      </template>
+    </Modal>
   </DashboardLayout>
 </template>
 
@@ -249,7 +301,13 @@
 import { ref, computed, onMounted } from 'vue'
 import { useProviderStore } from '../stores/provider.store'
 import { convertEnglishToPersianNumbers } from '@/shared/utils/date/jalali.utils'
+import { useToast, setToastInstance } from '@/shared/composables/useToast'
 import DashboardLayout from '../components/dashboard/DashboardLayout.vue'
+import Toast from '@/shared/components/Toast.vue'
+import Modal from '@/shared/components/Modal.vue'
+
+const toast = useToast()
+const toastRef = ref()
 
 const providerStore = useProviderStore()
 
@@ -295,6 +353,8 @@ const searchQuery = ref('')
 const filterDate = ref('all')
 const filterService = ref('all')
 const showCreateBooking = ref(false)
+const showBookingDetails = ref(false)
+const selectedBooking = ref<any>(null)
 
 // Computed stats
 const todayBookings = computed(() => 8)
@@ -368,23 +428,47 @@ const canReschedule = (booking: any) => ['pending', 'confirmed'].includes(bookin
 const canCancel = (booking: any) => ['pending', 'confirmed'].includes(booking.status)
 
 const confirmBooking = (id: string) => {
-  console.log('Confirm booking:', id)
+  const booking = bookings.value.find(b => b.id === id)
+  if (booking) {
+    booking.status = 'confirmed'
+    toast.success(`رزرو ${booking.customerName} تایید شد`)
+  }
 }
 
 const completeBooking = (id: string) => {
-  console.log('Complete booking:', id)
+  const booking = bookings.value.find(b => b.id === id)
+  if (booking) {
+    booking.status = 'completed'
+    toast.success(`رزرو ${booking.customerName} به عنوان انجام شده علامت گذاری شد`)
+  }
 }
 
 const rescheduleBooking = (id: string) => {
-  console.log('Reschedule booking:', id)
+  const booking = bookings.value.find(b => b.id === id)
+  if (booking) {
+    toast.info(`زمان‌بندی مجدد رزرو ${booking.customerName}`)
+    // Here you would show a date picker modal
+  }
 }
 
 const cancelBooking = (id: string) => {
-  console.log('Cancel booking:', id)
+  const booking = bookings.value.find(b => b.id === id)
+  if (booking) {
+    booking.status = 'cancelled'
+    toast.warning(`رزرو ${booking.customerName} لغو شد`)
+  }
 }
 
 const selectBooking = (booking: any) => {
-  console.log('Selected booking:', booking)
+  selectedBooking.value = booking
+  showBookingDetails.value = true
+}
+
+const confirmBookingFromModal = () => {
+  if (selectedBooking.value) {
+    confirmBooking(selectedBooking.value.id)
+    showBookingDetails.value = false
+  }
 }
 
 const toggleCalendarView = () => {
@@ -397,12 +481,18 @@ const resetFilters = () => {
 }
 
 onMounted(async () => {
+  // Set toast instance
+  if (toastRef.value) {
+    setToastInstance(toastRef.value)
+  }
+
   try {
     if (!currentProvider.value) {
       await providerStore.loadCurrentProvider()
     }
   } catch (error) {
     console.error('Failed to load provider data:', error)
+    toast.error('خطا در بارگذاری اطلاعات ارائه‌دهنده')
   }
 })
 </script>
@@ -1010,6 +1100,40 @@ onMounted(async () => {
   margin: 0 0 24px;
   max-width: 400px;
   letter-spacing: 0.25px;
+}
+
+/* Modal Booking Details */
+.booking-details-modal {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.detail-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 12px 0;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.06);
+}
+
+.detail-row:last-child {
+  border-bottom: none;
+}
+
+.detail-label {
+  font-size: 14px;
+  font-weight: 500;
+  color: rgba(0, 0, 0, 0.6);
+  letter-spacing: 0.25px;
+}
+
+.detail-value {
+  font-size: 14px;
+  font-weight: 400;
+  color: rgba(0, 0, 0, 0.87);
+  letter-spacing: 0.25px;
+  text-align: left;
 }
 
 /* Responsive */
