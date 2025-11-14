@@ -3,8 +3,7 @@
     <!-- Debug Info (temporary) -->
     <div v-if="bookings.length > 0" class="debug-info">
       مجموع رزروها: {{ convertToPersian(bookings.length) }} |
-      رزروهای این ماه: {{ convertToPersian(currentMonthBookingsCount) }} |
-      رزروهای روز انتخاب شده: {{ selectedDay ? convertToPersian(selectedDayBookings.length) : '۰' }}
+      رزروهای این ماه: {{ convertToPersian(currentMonthBookingsCount) }}
     </div>
 
     <!-- Calendar Header -->
@@ -37,48 +36,74 @@
           {
             'other-month': day.isOtherMonth,
             'today': day.isToday,
-            'selected': isSelectedDay(day),
             'has-bookings': day.bookingsCount > 0
           }
         ]"
-        @click="selectDay(day)"
+        @click="openDayModal(day)"
       >
-        <div class="day-number">{{ convertToPersian(day.dayNumber) }}</div>
-        <div v-if="day.bookingsCount > 0" class="bookings-badge">
-          {{ convertToPersian(day.bookingsCount) }}
+        <div class="day-header">
+          <div class="day-number">{{ convertToPersian(day.dayNumber) }}</div>
+          <div v-if="day.bookingsCount > 0" class="bookings-count">
+            {{ convertToPersian(day.bookingsCount) }}
+          </div>
+        </div>
+
+        <!-- Mini booking previews (max 3) -->
+        <div v-if="day.bookingsCount > 0" class="mini-bookings">
+          <div
+            v-for="booking in getDayBookings(day).slice(0, 3)"
+            :key="booking.id"
+            :class="['mini-booking', `mini-${booking.status}`]"
+            @click.stop="$emit('booking-click', booking)"
+          >
+            <span class="mini-time">{{ booking.time }}</span>
+            <span class="mini-customer">{{ truncateText(booking.customerName, 10) }}</span>
+          </div>
+          <div v-if="day.bookingsCount > 3" class="mini-more">
+            +{{ convertToPersian(day.bookingsCount - 3) }} دیگر
+          </div>
         </div>
       </div>
     </div>
 
-    <!-- Selected Day Bookings -->
-    <div v-if="selectedDay" class="day-bookings">
-      <div class="day-bookings-header">
-        <h3 class="day-bookings-title">
-          رزروهای {{ convertToPersian(selectedDay.dayNumber) }} {{ jalaliMonthNames[currentJalaliMonth - 1] }}
-        </h3>
-        <span class="bookings-count-badge">{{ convertToPersian(selectedDayBookings.length) }} رزرو</span>
-      </div>
-      <div v-if="selectedDayBookings.length === 0" class="no-bookings">
-        هیچ رزروی برای این روز وجود ندارد
-      </div>
-      <div v-else class="bookings-list">
-        <div
-          v-for="booking in selectedDayBookings"
-          :key="booking.id"
-          class="booking-item"
-          @click="$emit('booking-click', booking)"
-        >
-          <div class="booking-time">{{ booking.time }}</div>
-          <div class="booking-info">
-            <div class="booking-customer">{{ booking.customerName }}</div>
-            <div class="booking-service">{{ booking.service }}</div>
-          </div>
-          <div :class="['booking-status', `status-${booking.status}`]">
-            {{ getStatusLabel(booking.status) }}
+    <!-- Day Details Modal -->
+    <Modal v-model="showDayModal" :title="dayModalTitle" size="medium">
+      <div v-if="selectedDay" class="day-modal-content">
+        <div v-if="selectedDayBookings.length === 0" class="no-bookings-modal">
+          <svg class="no-bookings-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+          </svg>
+          <p>هیچ رزروی برای این روز وجود ندارد</p>
+        </div>
+        <div v-else class="modal-bookings-list">
+          <div
+            v-for="booking in selectedDayBookings"
+            :key="booking.id"
+            class="modal-booking-item"
+            @click="$emit('booking-click', booking)"
+          >
+            <div class="modal-booking-time">
+              <svg class="time-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+              {{ booking.time }}
+            </div>
+            <div class="modal-booking-info">
+              <div class="modal-booking-customer">
+                <svg class="customer-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                </svg>
+                {{ booking.customerName }}
+              </div>
+              <div class="modal-booking-service">{{ booking.service }}</div>
+            </div>
+            <div :class="['modal-booking-status', `status-${booking.status}`]">
+              {{ getStatusLabel(booking.status) }}
+            </div>
           </div>
         </div>
       </div>
-    </div>
+    </Modal>
   </div>
 </template>
 
@@ -86,6 +111,7 @@
 import { ref, computed, watch } from 'vue'
 import { convertEnglishToPersianNumbers, gregorianToJalali } from '@/shared/utils/date/jalali.utils'
 import jalaali from 'jalaali-js'
+import Modal from '@/shared/components/Modal.vue'
 
 interface Booking {
   id: string
@@ -124,6 +150,7 @@ const currentJalaliYear = ref(todayJalali.year)
 const currentJalaliMonth = ref(todayJalali.month)
 
 const selectedDay = ref<CalendarDay | null>(null)
+const showDayModal = ref(false)
 
 const weekDays = ['شنبه', 'یکشنبه', 'دوشنبه', 'سه‌شنبه', 'چهارشنبه', 'پنج‌شنبه', 'جمعه']
 
@@ -227,8 +254,12 @@ const selectedDayBookings = computed(() => {
   const selectedDate = formatDateToString(selectedDay.value.gregorianDate)
   const bookings = props.bookings.filter(booking => booking.date === selectedDate)
 
-  console.log('Selected date:', selectedDate, 'Bookings found:', bookings.length)
   return bookings
+})
+
+const dayModalTitle = computed(() => {
+  if (!selectedDay.value) return ''
+  return `رزروهای ${convertToPersian(selectedDay.value.dayNumber)} ${jalaliMonthNames[currentJalaliMonth.value - 1]}`
 })
 
 const formatDateToString = (date: Date): string => {
@@ -249,14 +280,24 @@ const isSameDay = (date1: Date, date2: Date): boolean => {
          date1.getDate() === date2.getDate()
 }
 
+const getDayBookings = (day: CalendarDay) => {
+  const dateStr = formatDateToString(day.gregorianDate)
+  return props.bookings.filter(booking => booking.date === dateStr)
+}
+
+const truncateText = (text: string, maxLength: number): string => {
+  if (text.length <= maxLength) return text
+  return text.substring(0, maxLength) + '...'
+}
+
+const openDayModal = (day: CalendarDay) => {
+  selectedDay.value = day
+  showDayModal.value = true
+}
+
 const isSelectedDay = (day: CalendarDay) => {
   if (!selectedDay.value) return false
   return isSameDay(day.gregorianDate, selectedDay.value.gregorianDate)
-}
-
-const selectDay = (day: CalendarDay) => {
-  selectedDay.value = day
-  console.log('Day selected:', day.dayNumber, 'Month:', day.jalaliMonth, 'Bookings:', day.bookingsCount)
 }
 
 const previousMonth = () => {
@@ -292,16 +333,6 @@ const getStatusLabel = (status: string) => {
   }
   return labels[status] || status
 }
-
-// Auto-select today on mount
-watch(() => props.bookings, () => {
-  if (!selectedDay.value) {
-    const todayDay = calendarDays.value.find(day => day.isToday && !day.isOtherMonth)
-    if (todayDay) {
-      selectedDay.value = todayDay
-    }
-  }
-}, { immediate: true })
 </script>
 
 <style scoped lang="scss">
@@ -382,17 +413,19 @@ watch(() => props.bookings, () => {
 
 .calendar-day {
   position: relative;
-  aspect-ratio: 1;
-  padding: 8px;
+  min-height: 120px;
+  padding: 6px;
   border: 2px solid #e5e7eb;
   border-radius: 8px;
   cursor: pointer;
   transition: all 0.2s;
   background: white;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
 
   &:hover {
     border-color: #1976d2;
-    transform: translateY(-2px);
     box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
   }
 
@@ -405,36 +438,26 @@ watch(() => props.bookings, () => {
     border-color: #1976d2;
   }
 
-  &.selected {
-    background: #1976d2;
-    border-color: #1976d2;
-
-    .day-number {
-      color: white;
-    }
-
-    .bookings-badge {
-      background: white;
-      color: #1976d2;
-    }
-  }
-
   &.has-bookings {
     border-color: #4caf50;
   }
+}
+
+.day-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 4px;
+  flex-shrink: 0;
 }
 
 .day-number {
   font-size: 16px;
   font-weight: 600;
   color: #1f2937;
-  text-align: center;
 }
 
-.bookings-badge {
-  position: absolute;
-  bottom: 4px;
-  right: 4px;
+.bookings-count {
   min-width: 20px;
   height: 20px;
   padding: 0 6px;
@@ -448,96 +471,166 @@ watch(() => props.bookings, () => {
   justify-content: center;
 }
 
-.day-bookings {
-  margin-top: 32px;
-  padding: 24px;
-  background: #f9fafb;
-  border-radius: 12px;
-  border: 2px solid #1976d2;
+.mini-bookings {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  flex: 1;
+  overflow: hidden;
 }
 
-.day-bookings-header {
+.mini-booking {
   display: flex;
   align-items: center;
-  justify-content: space-between;
+  gap: 4px;
+  padding: 4px 6px;
+  border-radius: 4px;
+  font-size: 11px;
+  cursor: pointer;
+  transition: all 0.2s;
+  border-left: 3px solid transparent;
+
+  &:hover {
+    transform: translateX(-2px);
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  }
+
+  &.mini-pending {
+    background: #fff3cd;
+    border-left-color: #ff9800;
+  }
+
+  &.mini-confirmed {
+    background: #d1ecf1;
+    border-left-color: #0c5460;
+  }
+
+  &.mini-completed {
+    background: #d4edda;
+    border-left-color: #4caf50;
+  }
+
+  &.mini-cancelled {
+    background: #f8d7da;
+    border-left-color: #ef4444;
+  }
+}
+
+.mini-time {
+  font-weight: 600;
+  color: #1f2937;
+  flex-shrink: 0;
+}
+
+.mini-customer {
+  color: #6b7280;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.mini-more {
+  padding: 4px 6px;
+  text-align: center;
+  font-size: 10px;
+  font-weight: 600;
+  color: #6b7280;
+  background: #f3f4f6;
+  border-radius: 4px;
+  margin-top: 2px;
+}
+
+// Modal Styles
+.day-modal-content {
+  min-height: 200px;
+}
+
+.no-bookings-modal {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 48px 24px;
+  color: #6b7280;
+}
+
+.no-bookings-icon {
+  width: 64px;
+  height: 64px;
+  color: #d1d5db;
   margin-bottom: 16px;
 }
 
-.day-bookings-title {
-  font-size: 18px;
-  font-weight: 600;
-  color: #1f2937;
-  margin: 0;
-}
-
-.bookings-count-badge {
-  padding: 6px 12px;
-  background: #1976d2;
-  color: white;
-  border-radius: 16px;
-  font-size: 13px;
-  font-weight: 600;
-}
-
-.no-bookings {
-  padding: 24px;
-  text-align: center;
-  color: #6b7280;
-  font-size: 14px;
-  background: #f9fafb;
-  border-radius: 8px;
-}
-
-.bookings-list {
+.modal-bookings-list {
   display: flex;
   flex-direction: column;
   gap: 12px;
 }
 
-.booking-item {
+.modal-booking-item {
   display: flex;
   align-items: center;
   gap: 16px;
   padding: 16px;
   background: #f9fafb;
   border-radius: 8px;
+  border: 1px solid #e5e7eb;
   cursor: pointer;
   transition: all 0.2s;
 
   &:hover {
-    background: #f3f4f6;
+    background: white;
+    border-color: #1976d2;
+    box-shadow: 0 2px 8px rgba(25, 118, 210, 0.15);
     transform: translateX(-4px);
-    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
   }
 }
 
-.booking-time {
-  font-size: 14px;
-  font-weight: 600;
-  color: #1976d2;
-  min-width: 60px;
-}
-
-.booking-info {
-  flex: 1;
-}
-
-.booking-customer {
+.modal-booking-time {
+  display: flex;
+  align-items: center;
+  gap: 8px;
   font-size: 15px;
   font-weight: 600;
-  color: #1f2937;
-  margin-bottom: 4px;
+  color: #1976d2;
+  min-width: 80px;
+
+  .time-icon {
+    width: 18px;
+    height: 18px;
+  }
 }
 
-.booking-service {
-  font-size: 13px;
+.modal-booking-info {
+  flex: 1;
+  min-width: 0;
+}
+
+.modal-booking-customer {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 16px;
+  font-weight: 600;
+  color: #1f2937;
+  margin-bottom: 6px;
+
+  .customer-icon {
+    width: 16px;
+    height: 16px;
+    color: #6b7280;
+  }
+}
+
+.modal-booking-service {
+  font-size: 14px;
   color: #6b7280;
 }
 
-.booking-status {
-  padding: 4px 12px;
-  border-radius: 12px;
-  font-size: 12px;
+.modal-booking-status {
+  padding: 6px 14px;
+  border-radius: 16px;
+  font-size: 13px;
   font-weight: 600;
   white-space: nowrap;
 }
