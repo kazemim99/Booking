@@ -408,23 +408,10 @@ onMounted(async () => {
 </script>
 
 <style scoped>
-@font-face {
-  font-family: 'B Nazanin';
-  src: url('/Bnazanin/BNAZANIN.eot');
-  src: url('/Bnazanin/BNAZANIN.eot?#iefix') format('embedded-opentype'),
-       url('/Bnazanin/BNAZANIN.woff2') format('woff2'),
-       url('/Bnazanin/BNAZANIN.woff') format('woff'),
-       url('/Bnazanin/BNAZANIN.TTF') format('truetype');
-  font-weight: normal;
-  font-style: normal;
-  font-display: swap;
-}
-
 .bookings-page {
   padding: 0;
   background: #fafafa;
   min-height: 100vh;
-  font-family: 'B Nazanin', Tahoma, Arial, sans-serif;
 }
 
 /* Page Header */
