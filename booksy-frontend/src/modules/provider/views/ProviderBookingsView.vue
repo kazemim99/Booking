@@ -412,6 +412,7 @@ onMounted(async () => {
   padding: 0;
   background: #fafafa;
   min-height: 100vh;
+  font-family: 'Nazanin', 'B Nazanin', Tahoma, Arial, sans-serif;
 }
 
 /* Page Header */
