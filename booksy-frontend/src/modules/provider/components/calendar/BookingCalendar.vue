@@ -3,7 +3,8 @@
     <!-- Debug Info (temporary) -->
     <div v-if="bookings.length > 0" class="debug-info">
       مجموع رزروها: {{ convertToPersian(bookings.length) }} |
-      رزروهای این ماه: {{ convertToPersian(currentMonthBookingsCount) }}
+      رزروهای این ماه: {{ convertToPersian(currentMonthBookingsCount) }} |
+      رزروهای روز انتخاب شده: {{ selectedDay ? convertToPersian(selectedDayBookings.length) : '۰' }}
     </div>
 
     <!-- Calendar Header -->
@@ -13,7 +14,7 @@
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" />
         </svg>
       </button>
-      <h2 class="calendar-title">{{ currentMonthName }} {{ currentYear }}</h2>
+      <h2 class="calendar-title">{{ jalaliMonthNames[currentJalaliMonth - 1] }} {{ convertToPersian(currentJalaliYear.toString()) }}</h2>
       <button class="nav-btn" @click="nextMonth">
         <svg class="nav-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
@@ -29,8 +30,8 @@
 
       <!-- Calendar Days -->
       <div
-        v-for="day in calendarDays"
-        :key="`${day.date}`"
+        v-for="(day, index) in calendarDays"
+        :key="`day-${index}`"
         :class="[
           'calendar-day',
           {
@@ -42,19 +43,22 @@
         ]"
         @click="selectDay(day)"
       >
-        <div class="day-number">{{ day.dayNumber }}</div>
+        <div class="day-number">{{ convertToPersian(day.dayNumber.toString()) }}</div>
         <div v-if="day.bookingsCount > 0" class="bookings-badge">
-          {{ convertToPersian(day.bookingsCount) }}
+          {{ convertToPersian(day.bookingsCount.toString()) }}
         </div>
       </div>
     </div>
 
     <!-- Selected Day Bookings -->
-    <div v-if="selectedDay && selectedDayBookings.length > 0" class="day-bookings">
+    <div v-if="selectedDay" class="day-bookings">
       <h3 class="day-bookings-title">
-        رزروهای {{ selectedDay.dayNumber }} {{ currentMonthName }}
+        رزروهای {{ convertToPersian(selectedDay.dayNumber.toString()) }} {{ jalaliMonthNames[currentJalaliMonth - 1] }}
       </h3>
-      <div class="bookings-list">
+      <div v-if="selectedDayBookings.length === 0" class="no-bookings">
+        هیچ رزروی برای این روز وجود ندارد
+      </div>
+      <div v-else class="bookings-list">
         <div
           v-for="booking in selectedDayBookings"
           :key="booking.id"
@@ -77,7 +81,8 @@
 
 <script setup lang="ts">
 import { ref, computed, watch } from 'vue'
-import { convertEnglishToPersianNumbers } from '@/shared/utils/date/jalali.utils'
+import { convertEnglishToPersianNumbers, gregorianToJalali } from '@/shared/utils/date/jalali.utils'
+import jalaali from 'jalaali-js'
 
 interface Booking {
   id: string
@@ -89,7 +94,10 @@ interface Booking {
 }
 
 interface CalendarDay {
-  date: Date
+  gregorianDate: Date
+  jalaliDay: number
+  jalaliMonth: number
+  jalaliYear: number
   dayNumber: number
   isOtherMonth: boolean
   isToday: boolean
@@ -106,87 +114,104 @@ const emit = defineEmits<{
   'booking-click': [booking: Booking]
 }>()
 
-const currentDate = ref(new Date())
+// Current Jalali date
+const today = new Date()
+const todayJalali = gregorianToJalali(today)
+const currentJalaliYear = ref(todayJalali.year)
+const currentJalaliMonth = ref(todayJalali.month)
+
 const selectedDay = ref<CalendarDay | null>(null)
 
 const weekDays = ['شنبه', 'یکشنبه', 'دوشنبه', 'سه‌شنبه', 'چهارشنبه', 'پنج‌شنبه', 'جمعه']
 
-const persianMonths = [
+const jalaliMonthNames = [
   'فروردین', 'اردیبهشت', 'خرداد', 'تیر', 'مرداد', 'شهریور',
   'مهر', 'آبان', 'آذر', 'دی', 'بهمن', 'اسفند'
 ]
 
-const currentMonthName = computed(() => {
-  const month = currentDate.value.getMonth()
-  // Simple approximation for demo - in production use proper Jalali conversion
-  const jalaliMonth = (month + 9) % 12
-  return persianMonths[jalaliMonth]
-})
-
-const currentYear = computed(() => {
-  return convertEnglishToPersianNumbers((currentDate.value.getFullYear() - 621).toString())
-})
-
 const currentMonthBookingsCount = computed(() => {
-  const year = currentDate.value.getFullYear()
-  const month = currentDate.value.getMonth() + 1
   return props.bookings.filter(booking => {
-    const [bookingYear, bookingMonth] = booking.date.split('-')
-    return parseInt(bookingYear) === year && parseInt(bookingMonth) === month
+    const bookingDate = new Date(booking.date)
+    const bookingJalali = gregorianToJalali(bookingDate)
+    return bookingJalali.year === currentJalaliYear.value &&
+           bookingJalali.month === currentJalaliMonth.value
   }).length
 })
 
 const calendarDays = computed(() => {
-  const year = currentDate.value.getFullYear()
-  const month = currentDate.value.getMonth()
-
-  const firstDay = new Date(year, month, 1)
-  const lastDay = new Date(year, month + 1, 0)
-
-  // Adjust Saturday as first day (day 6 in JS, we want it as 0)
-  const firstDayOfWeek = (firstDay.getDay() + 1) % 7
-  const daysInMonth = lastDay.getDate()
-
   const days: CalendarDay[] = []
 
+  // Get first day of current Jalali month in Gregorian
+  const firstDayGregorian = jalaali.toGregorian(
+    currentJalaliYear.value,
+    currentJalaliMonth.value,
+    1
+  )
+  const firstDate = new Date(firstDayGregorian.gy, firstDayGregorian.gm - 1, firstDayGregorian.gd)
+
+  // Get days in current Jalali month
+  const daysInMonth = jalaali.jalaaliMonthLength(currentJalaliYear.value, currentJalaliMonth.value)
+
+  // Adjust Saturday as first day (day 6 in JS Date, we want it as 0)
+  let firstDayOfWeek = (firstDate.getDay() + 1) % 7
+
   // Previous month days
-  const prevMonthLastDay = new Date(year, month, 0)
-  const prevMonthDays = prevMonthLastDay.getDate()
+  const prevMonth = currentJalaliMonth.value === 1 ? 12 : currentJalaliMonth.value - 1
+  const prevYear = currentJalaliMonth.value === 1 ? currentJalaliYear.value - 1 : currentJalaliYear.value
+  const daysInPrevMonth = jalaali.jalaaliMonthLength(prevYear, prevMonth)
+
   for (let i = firstDayOfWeek - 1; i >= 0; i--) {
-    const date = new Date(year, month - 1, prevMonthDays - i)
+    const jalaliDay = daysInPrevMonth - i
+    const gregorian = jalaali.toGregorian(prevYear, prevMonth, jalaliDay)
+    const gregorianDate = new Date(gregorian.gy, gregorian.gm - 1, gregorian.gd)
+
     days.push({
-      date,
-      dayNumber: prevMonthDays - i,
+      gregorianDate,
+      jalaliDay,
+      jalaliMonth: prevMonth,
+      jalaliYear: prevYear,
+      dayNumber: jalaliDay,
       isOtherMonth: true,
-      isToday: false,
-      bookingsCount: getBookingsCountForDate(date)
+      isToday: isSameDay(gregorianDate, today),
+      bookingsCount: getBookingsCountForDate(gregorianDate)
     })
   }
 
   // Current month days
-  const today = new Date()
   for (let i = 1; i <= daysInMonth; i++) {
-    const date = new Date(year, month, i)
-    const isToday = date.toDateString() === today.toDateString()
+    const gregorian = jalaali.toGregorian(currentJalaliYear.value, currentJalaliMonth.value, i)
+    const gregorianDate = new Date(gregorian.gy, gregorian.gm - 1, gregorian.gd)
+
     days.push({
-      date,
+      gregorianDate,
+      jalaliDay: i,
+      jalaliMonth: currentJalaliMonth.value,
+      jalaliYear: currentJalaliYear.value,
       dayNumber: i,
       isOtherMonth: false,
-      isToday,
-      bookingsCount: getBookingsCountForDate(date)
+      isToday: isSameDay(gregorianDate, today),
+      bookingsCount: getBookingsCountForDate(gregorianDate)
     })
   }
 
   // Next month days
+  const nextMonth = currentJalaliMonth.value === 12 ? 1 : currentJalaliMonth.value + 1
+  const nextYear = currentJalaliMonth.value === 12 ? currentJalaliYear.value + 1 : currentJalaliYear.value
   const remainingDays = 42 - days.length // 6 rows * 7 days
+
   for (let i = 1; i <= remainingDays; i++) {
-    const date = new Date(year, month + 1, i)
+    const gregorian = jalaali.toGregorian(nextYear, nextMonth, i)
+    const gregorianDate = new Date(gregorian.gy, gregorian.gm - 1, gregorian.gd)
+
     days.push({
-      date,
+      gregorianDate,
+      jalaliDay: i,
+      jalaliMonth: nextMonth,
+      jalaliYear: nextYear,
       dayNumber: i,
       isOtherMonth: true,
-      isToday: false,
-      bookingsCount: getBookingsCountForDate(date)
+      isToday: isSameDay(gregorianDate, today),
+      bookingsCount: getBookingsCountForDate(gregorianDate)
     })
   }
 
@@ -196,8 +221,11 @@ const calendarDays = computed(() => {
 const selectedDayBookings = computed(() => {
   if (!selectedDay.value) return []
 
-  const selectedDate = formatDateToString(selectedDay.value.date)
-  return props.bookings.filter(booking => booking.date === selectedDate)
+  const selectedDate = formatDateToString(selectedDay.value.gregorianDate)
+  const bookings = props.bookings.filter(booking => booking.date === selectedDate)
+
+  console.log('Selected date:', selectedDate, 'Bookings found:', bookings.length)
+  return bookings
 })
 
 const formatDateToString = (date: Date): string => {
@@ -212,35 +240,44 @@ const getBookingsCountForDate = (date: Date) => {
   return props.bookings.filter(booking => booking.date === dateStr).length
 }
 
+const isSameDay = (date1: Date, date2: Date): boolean => {
+  return date1.getFullYear() === date2.getFullYear() &&
+         date1.getMonth() === date2.getMonth() &&
+         date1.getDate() === date2.getDate()
+}
+
 const isSelectedDay = (day: CalendarDay) => {
   if (!selectedDay.value) return false
-  return day.date.toDateString() === selectedDay.value.date.toDateString()
+  return isSameDay(day.gregorianDate, selectedDay.value.gregorianDate)
 }
 
 const selectDay = (day: CalendarDay) => {
   selectedDay.value = day
+  console.log('Day selected:', day.dayNumber, 'Month:', day.jalaliMonth, 'Bookings:', day.bookingsCount)
 }
 
 const previousMonth = () => {
-  currentDate.value = new Date(
-    currentDate.value.getFullYear(),
-    currentDate.value.getMonth() - 1,
-    1
-  )
+  if (currentJalaliMonth.value === 1) {
+    currentJalaliMonth.value = 12
+    currentJalaliYear.value--
+  } else {
+    currentJalaliMonth.value--
+  }
   selectedDay.value = null
 }
 
 const nextMonth = () => {
-  currentDate.value = new Date(
-    currentDate.value.getFullYear(),
-    currentDate.value.getMonth() + 1,
-    1
-  )
+  if (currentJalaliMonth.value === 12) {
+    currentJalaliMonth.value = 1
+    currentJalaliYear.value++
+  } else {
+    currentJalaliMonth.value++
+  }
   selectedDay.value = null
 }
 
-const convertToPersian = (num: number) => {
-  return convertEnglishToPersianNumbers(num.toString())
+const convertToPersian = (num: string) => {
+  return convertEnglishToPersianNumbers(num)
 }
 
 const getStatusLabel = (status: string) => {
@@ -256,9 +293,9 @@ const getStatusLabel = (status: string) => {
 // Auto-select today on mount
 watch(() => props.bookings, () => {
   if (!selectedDay.value) {
-    const today = calendarDays.value.find(day => day.isToday && !day.isOtherMonth)
-    if (today) {
-      selectedDay.value = today
+    const todayDay = calendarDays.value.find(day => day.isToday && !day.isOtherMonth)
+    if (todayDay) {
+      selectedDay.value = todayDay
     }
   }
 }, { immediate: true })
@@ -419,6 +456,15 @@ watch(() => props.bookings, () => {
   font-weight: 600;
   color: #1f2937;
   margin: 0 0 16px 0;
+}
+
+.no-bookings {
+  padding: 24px;
+  text-align: center;
+  color: #6b7280;
+  font-size: 14px;
+  background: #f9fafb;
+  border-radius: 8px;
 }
 
 .bookings-list {
