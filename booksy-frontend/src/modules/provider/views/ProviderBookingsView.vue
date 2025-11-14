@@ -410,21 +410,17 @@ onMounted(async () => {
 <style scoped>
 .bookings-page {
   padding: 0;
-  background: linear-gradient(135deg, #f6f8fb 0%, #fafbfd 100%);
+  background: #f8f9fa;
   min-height: 100vh;
 }
 
 /* Page Header */
 .page-header {
-  background: linear-gradient(135deg, rgba(255, 255, 255, 0.95) 0%, rgba(255, 255, 255, 0.9) 100%);
-  backdrop-filter: blur(20px);
-  border-radius: 20px;
+  background: white;
+  border-radius: 16px;
   padding: 32px;
   margin-bottom: 24px;
-  box-shadow:
-    0 4px 20px rgba(0, 0, 0, 0.06),
-    0 1px 3px rgba(0, 0, 0, 0.08);
-  border: 1px solid rgba(255, 255, 255, 0.8);
+  border: 1px solid #e9ecef;
 }
 
 .header-content {
@@ -462,60 +458,36 @@ onMounted(async () => {
   align-items: center;
   gap: 8px;
   padding: 12px 24px;
-  border-radius: 12px;
+  border-radius: 8px;
   font-size: 14px;
   font-weight: 600;
-  border: none;
   cursor: pointer;
-  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-  position: relative;
-  overflow: hidden;
+  transition: all 0.2s;
+  border: none;
 }
 
 .btn-primary {
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: #6366f1;
   color: white;
-  box-shadow: 0 4px 15px rgba(102, 126, 234, 0.3);
-}
-
-.btn-primary::before {
-  content: '';
-  position: absolute;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  background: linear-gradient(135deg, rgba(255, 255, 255, 0.2) 0%, rgba(255, 255, 255, 0) 100%);
-  opacity: 0;
-  transition: opacity 0.3s;
 }
 
 .btn-primary:hover {
-  transform: translateY(-3px);
-  box-shadow: 0 8px 25px rgba(102, 126, 234, 0.45);
-}
-
-.btn-primary:hover::before {
-  opacity: 1;
+  background: #4f46e5;
 }
 
 .btn-primary:active {
-  transform: translateY(-1px);
-  box-shadow: 0 4px 15px rgba(102, 126, 234, 0.3);
+  background: #4338ca;
 }
 
 .btn-secondary {
-  background: linear-gradient(135deg, rgba(255, 255, 255, 0.9) 0%, rgba(249, 250, 251, 0.9) 100%);
+  background: white;
   color: #374151;
-  border: 1px solid rgba(229, 231, 235, 0.8);
-  backdrop-filter: blur(10px);
+  border: 1px solid #d1d5db;
 }
 
 .btn-secondary:hover {
-  background: linear-gradient(135deg, rgba(255, 255, 255, 1) 0%, rgba(243, 244, 246, 1) 100%);
-  border-color: #d1d5db;
-  transform: translateY(-2px);
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  background: #f9fafb;
+  border-color: #9ca3af;
 }
 
 .btn-icon {
@@ -532,131 +504,80 @@ onMounted(async () => {
 }
 
 .stat-card {
-  background: linear-gradient(135deg, rgba(255, 255, 255, 0.95) 0%, rgba(255, 255, 255, 0.85) 100%);
-  backdrop-filter: blur(20px);
-  border-radius: 20px;
-  padding: 28px;
+  background: white;
+  border-radius: 12px;
+  padding: 24px;
   display: flex;
   align-items: center;
-  gap: 20px;
-  box-shadow:
-    0 4px 20px rgba(0, 0, 0, 0.06),
-    0 1px 3px rgba(0, 0, 0, 0.08);
-  border: 1px solid rgba(255, 255, 255, 0.8);
-  transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
-  position: relative;
-  overflow: hidden;
-}
-
-.stat-card::before {
-  content: '';
-  position: absolute;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  background: linear-gradient(135deg, rgba(102, 126, 234, 0.03) 0%, rgba(118, 75, 162, 0.03) 100%);
-  opacity: 0;
-  transition: opacity 0.4s;
+  gap: 16px;
+  border: 1px solid #e5e7eb;
+  transition: all 0.2s;
 }
 
 .stat-card:hover {
-  transform: translateY(-8px) scale(1.02);
-  box-shadow:
-    0 12px 40px rgba(0, 0, 0, 0.12),
-    0 4px 12px rgba(0, 0, 0, 0.08);
-  border-color: rgba(102, 126, 234, 0.3);
-}
-
-.stat-card:hover::before {
-  opacity: 1;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
 }
 
 .stat-icon {
-  width: 64px;
-  height: 64px;
-  border-radius: 18px;
+  width: 56px;
+  height: 56px;
+  border-radius: 12px;
   display: flex;
   align-items: center;
   justify-content: center;
-  position: relative;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.12);
-  transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
-}
-
-.stat-card:hover .stat-icon {
-  transform: scale(1.1) rotate(5deg);
-  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.2);
 }
 
 .stat-icon svg {
-  width: 32px;
-  height: 32px;
+  width: 28px;
+  height: 28px;
   color: white;
-  position: relative;
-  z-index: 1;
 }
 
 .stat-today .stat-icon {
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: #6366f1;
 }
 
 .stat-upcoming .stat-icon {
-  background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+  background: #ec4899;
 }
 
 .stat-completed .stat-icon {
-  background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+  background: #10b981;
 }
 
 .stat-revenue .stat-icon {
-  background: linear-gradient(135deg, #43e97b 0%, #38f9d7 100%);
+  background: #f59e0b;
 }
 
 .stat-content {
   flex: 1;
-  position: relative;
-  z-index: 1;
 }
 
 .stat-value {
-  font-size: 32px;
-  font-weight: 800;
-  background: linear-gradient(135deg, #1f2937 0%, #374151 100%);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  background-clip: text;
-  margin: 0 0 6px;
-  transition: all 0.3s;
-}
-
-.stat-card:hover .stat-value {
-  transform: scale(1.05);
+  font-size: 28px;
+  font-weight: 700;
+  color: #1f2937;
+  margin: 0 0 4px;
 }
 
 .stat-label {
   font-size: 14px;
   color: #6b7280;
   font-weight: 500;
-  letter-spacing: 0.3px;
 }
 
 /* Bookings Container */
 .bookings-container {
-  background: linear-gradient(135deg, rgba(255, 255, 255, 0.95) 0%, rgba(255, 255, 255, 0.9) 100%);
-  backdrop-filter: blur(20px);
-  border-radius: 24px;
-  box-shadow:
-    0 8px 32px rgba(0, 0, 0, 0.08),
-    0 2px 8px rgba(0, 0, 0, 0.06);
-  border: 1px solid rgba(255, 255, 255, 0.8);
+  background: white;
+  border-radius: 12px;
+  border: 1px solid #e5e7eb;
   overflow: hidden;
 }
 
 /* Tabs */
 .tabs-section {
-  border-bottom: 1px solid rgba(229, 231, 235, 0.5);
-  background: linear-gradient(135deg, rgba(249, 250, 251, 0.6) 0%, rgba(255, 255, 255, 0.6) 100%);
+  border-bottom: 1px solid #e5e7eb;
+  background: #f9fafb;
 }
 
 .tabs-header {
@@ -670,62 +591,39 @@ onMounted(async () => {
   display: flex;
   align-items: center;
   gap: 8px;
-  padding: 14px 24px;
+  padding: 14px 20px;
   border: none;
   background: transparent;
   color: #6b7280;
   font-size: 14px;
   font-weight: 600;
   cursor: pointer;
-  border-bottom: 3px solid transparent;
-  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  border-bottom: 2px solid transparent;
+  transition: all 0.2s;
   white-space: nowrap;
-  position: relative;
-}
-
-.tab-button::before {
-  content: '';
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background: linear-gradient(135deg, rgba(99, 102, 241, 0.08) 0%, rgba(139, 92, 246, 0.08) 100%);
-  opacity: 0;
-  transition: opacity 0.3s;
-  border-radius: 12px 12px 0 0;
-}
-
-.tab-button:hover::before {
-  opacity: 1;
 }
 
 .tab-button:hover {
   color: #4b5563;
-  transform: translateY(-2px);
 }
 
 .tab-button.active {
   color: #6366f1;
   border-bottom-color: #6366f1;
-  background: linear-gradient(135deg, rgba(99, 102, 241, 0.05) 0%, rgba(139, 92, 246, 0.05) 100%);
 }
 
 .tab-badge {
-  background: linear-gradient(135deg, #e5e7eb 0%, #f3f4f6 100%);
+  background: #e5e7eb;
   color: #374151;
   padding: 4px 10px;
-  border-radius: 16px;
+  border-radius: 12px;
   font-size: 11px;
-  font-weight: 700;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
-  transition: all 0.3s;
+  font-weight: 600;
 }
 
 .tab-button.active .tab-badge {
-  background: linear-gradient(135deg, #eef2ff 0%, #e0e7ff 100%);
+  background: #eef2ff;
   color: #6366f1;
-  box-shadow: 0 2px 8px rgba(99, 102, 241, 0.2);
 }
 
 /* Filters */
@@ -755,13 +653,12 @@ onMounted(async () => {
 
 .search-input {
   width: 100%;
-  padding: 12px 16px 12px 44px;
-  border: 1px solid rgba(229, 231, 235, 0.8);
-  border-radius: 12px;
+  padding: 10px 16px 10px 44px;
+  border: 1px solid #d1d5db;
+  border-radius: 8px;
   font-size: 14px;
-  background: linear-gradient(135deg, rgba(255, 255, 255, 0.9) 0%, rgba(249, 250, 251, 0.9) 100%);
-  backdrop-filter: blur(10px);
-  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  background: white;
+  transition: all 0.2s;
 }
 
 .search-input::placeholder {
@@ -771,9 +668,7 @@ onMounted(async () => {
 .search-input:focus {
   outline: none;
   border-color: #6366f1;
-  background: white;
-  box-shadow: 0 4px 20px rgba(99, 102, 241, 0.15);
-  transform: translateY(-2px);
+  box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1);
 }
 
 .filter-group {
@@ -782,29 +677,25 @@ onMounted(async () => {
 }
 
 .filter-select {
-  padding: 12px 16px;
-  border: 1px solid rgba(229, 231, 235, 0.8);
-  border-radius: 12px;
+  padding: 10px 16px;
+  border: 1px solid #d1d5db;
+  border-radius: 8px;
   font-size: 14px;
   font-weight: 500;
-  background: linear-gradient(135deg, rgba(255, 255, 255, 0.9) 0%, rgba(249, 250, 251, 0.9) 100%);
-  backdrop-filter: blur(10px);
+  background: white;
   cursor: pointer;
-  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  transition: all 0.2s;
   color: #374151;
 }
 
 .filter-select:hover {
-  border-color: #d1d5db;
-  transform: translateY(-2px);
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+  border-color: #9ca3af;
 }
 
 .filter-select:focus {
   outline: none;
   border-color: #6366f1;
-  background: white;
-  box-shadow: 0 4px 20px rgba(99, 102, 241, 0.15);
+  box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1);
 }
 
 .btn-filter {
@@ -844,40 +735,17 @@ onMounted(async () => {
 }
 
 .booking-card {
-  background: linear-gradient(135deg, rgba(255, 255, 255, 0.98) 0%, rgba(250, 251, 252, 0.98) 100%);
-  backdrop-filter: blur(10px);
-  border: 1px solid rgba(229, 231, 235, 0.6);
-  border-radius: 16px;
-  padding: 24px;
+  background: white;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  padding: 20px;
   cursor: pointer;
-  transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
-  position: relative;
-  overflow: hidden;
-}
-
-.booking-card::before {
-  content: '';
-  position: absolute;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  background: linear-gradient(135deg, rgba(102, 126, 234, 0.03) 0%, rgba(118, 75, 162, 0.03) 100%);
-  opacity: 0;
-  transition: opacity 0.4s;
-  pointer-events: none;
+  transition: all 0.2s;
 }
 
 .booking-card:hover {
-  border-color: rgba(99, 102, 241, 0.5);
-  box-shadow:
-    0 12px 40px rgba(99, 102, 241, 0.12),
-    0 4px 12px rgba(0, 0, 0, 0.08);
-  transform: translateY(-4px) scale(1.01);
-}
-
-.booking-card:hover::before {
-  opacity: 1;
+  border-color: #d1d5db;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
 }
 
 .booking-header {
@@ -894,25 +762,16 @@ onMounted(async () => {
 }
 
 .customer-avatar {
-  width: 56px;
-  height: 56px;
+  width: 48px;
+  height: 48px;
   border-radius: 50%;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: #6366f1;
   color: white;
   display: flex;
   align-items: center;
   justify-content: center;
-  font-weight: 700;
-  font-size: 18px;
-  box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
-  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-  position: relative;
-  z-index: 1;
-}
-
-.booking-card:hover .customer-avatar {
-  transform: scale(1.1);
-  box-shadow: 0 6px 20px rgba(102, 126, 234, 0.4);
+  font-weight: 600;
+  font-size: 16px;
 }
 
 .customer-info {
@@ -940,39 +799,29 @@ onMounted(async () => {
 .status-badge {
   display: inline-flex;
   align-items: center;
-  padding: 8px 16px;
-  border-radius: 24px;
+  padding: 6px 12px;
+  border-radius: 16px;
   font-size: 12px;
-  font-weight: 700;
-  letter-spacing: 0.3px;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
-  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-  position: relative;
-  z-index: 1;
-}
-
-.booking-card:hover .status-badge {
-  transform: translateY(-2px);
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.12);
+  font-weight: 600;
 }
 
 .status-pending {
-  background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%);
+  background: #fef3c7;
   color: #92400e;
 }
 
 .status-confirmed {
-  background: linear-gradient(135deg, #dbeafe 0%, #bfdbfe 100%);
+  background: #dbeafe;
   color: #1e40af;
 }
 
 .status-completed {
-  background: linear-gradient(135deg, #d1fae5 0%, #a7f3d0 100%);
+  background: #d1fae5;
   color: #065f46;
 }
 
 .status-cancelled {
-  background: linear-gradient(135deg, #fee2e2 0%, #fecaca 100%);
+  background: #fee2e2;
   color: #991b1b;
 }
 
@@ -1008,110 +857,55 @@ onMounted(async () => {
   display: flex;
   align-items: center;
   gap: 6px;
-  padding: 10px 18px;
-  border: 2px solid;
-  border-radius: 10px;
+  padding: 8px 16px;
+  border: 1px solid;
+  border-radius: 6px;
   font-size: 13px;
   font-weight: 600;
   cursor: pointer;
-  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-  position: relative;
-  z-index: 1;
-  overflow: hidden;
-}
-
-.action-btn::before {
-  content: '';
-  position: absolute;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  opacity: 0;
-  transition: opacity 0.3s;
-  z-index: -1;
-}
-
-.action-btn:hover::before {
-  opacity: 1;
-}
-
-.action-btn:active {
-  transform: scale(0.95);
+  transition: all 0.2s;
+  background: white;
 }
 
 .action-btn svg {
   width: 16px;
   height: 16px;
-  transition: transform 0.3s;
-}
-
-.action-btn:hover svg {
-  transform: scale(1.1);
 }
 
 .btn-confirm {
-  background: white;
   border-color: #22c55e;
   color: #16a34a;
 }
 
-.btn-confirm::before {
-  background: linear-gradient(135deg, #f0fdf4 0%, #dcfce7 100%);
-}
-
 .btn-confirm:hover {
-  border-color: #16a34a;
-  transform: translateY(-2px);
-  box-shadow: 0 4px 12px rgba(34, 197, 94, 0.2);
+  background: #f0fdf4;
 }
 
 .btn-complete {
-  background: white;
   border-color: #3b82f6;
   color: #2563eb;
 }
 
-.btn-complete::before {
-  background: linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%);
-}
-
 .btn-complete:hover {
-  border-color: #2563eb;
-  transform: translateY(-2px);
-  box-shadow: 0 4px 12px rgba(59, 130, 246, 0.2);
+  background: #eff6ff;
 }
 
 .btn-reschedule {
-  background: white;
   border-color: #f59e0b;
   color: #d97706;
 }
 
-.btn-reschedule::before {
-  background: linear-gradient(135deg, #fffbeb 0%, #fef3c7 100%);
-}
-
 .btn-reschedule:hover {
-  border-color: #d97706;
-  transform: translateY(-2px);
-  box-shadow: 0 4px 12px rgba(245, 158, 11, 0.2);
+  background: #fffbeb;
 }
 
 .btn-cancel {
-  background: white;
   border-color: #ef4444;
   color: #dc2626;
 }
 
-.btn-cancel::before {
-  background: linear-gradient(135deg, #fef2f2 0%, #fee2e2 100%);
-}
-
 .btn-cancel:hover {
-  border-color: #dc2626;
-  transform: translateY(-2px);
-  box-shadow: 0 4px 12px rgba(239, 68, 68, 0.2);
+  background: #fef2f2;
 }
 
 /* Loading State */
@@ -1125,14 +919,13 @@ onMounted(async () => {
 }
 
 .spinner {
-  width: 56px;
-  height: 56px;
-  border: 4px solid rgba(229, 231, 235, 0.3);
+  width: 48px;
+  height: 48px;
+  border: 3px solid #e5e7eb;
   border-top-color: #6366f1;
   border-radius: 50%;
   animation: spin 0.8s linear infinite;
-  margin-bottom: 20px;
-  box-shadow: 0 4px 12px rgba(99, 102, 241, 0.1);
+  margin-bottom: 16px;
 }
 
 @keyframes spin {
@@ -1156,45 +949,33 @@ onMounted(async () => {
 }
 
 .empty-icon {
-  width: 96px;
-  height: 96px;
+  width: 80px;
+  height: 80px;
   border-radius: 50%;
-  background: linear-gradient(135deg, #f3f4f6 0%, #e5e7eb 100%);
+  background: #f3f4f6;
   display: flex;
   align-items: center;
   justify-content: center;
-  margin-bottom: 24px;
-  box-shadow:
-    0 4px 20px rgba(0, 0, 0, 0.06),
-    inset 0 2px 4px rgba(255, 255, 255, 0.5);
-  transition: all 0.3s;
-}
-
-.empty-icon:hover {
-  transform: scale(1.05);
+  margin-bottom: 20px;
 }
 
 .empty-icon svg {
-  width: 48px;
-  height: 48px;
+  width: 40px;
+  height: 40px;
   color: #9ca3af;
 }
 
 .empty-state h3 {
-  font-size: 20px;
-  font-weight: 700;
-  background: linear-gradient(135deg, #1f2937 0%, #4b5563 100%);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  background-clip: text;
-  margin: 0 0 10px;
+  font-size: 18px;
+  font-weight: 600;
+  color: #1f2937;
+  margin: 0 0 8px;
 }
 
 .empty-state p {
-  font-size: 15px;
+  font-size: 14px;
   color: #6b7280;
-  font-weight: 500;
-  margin: 0 0 32px;
+  margin: 0 0 24px;
   max-width: 400px;
 }
 
