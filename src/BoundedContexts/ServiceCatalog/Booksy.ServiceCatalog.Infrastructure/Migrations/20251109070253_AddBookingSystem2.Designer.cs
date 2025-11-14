@@ -24,7 +24,6 @@ namespace Booksy.ServiceCatalog.Infrastructure.Migrations
                 .HasAnnotation("ProductVersion", "9.0.4")
                 .HasAnnotation("Relational:MaxIdentifierLength", 128);
 
-            SqlServerModelBuilderExtensions.UseIdentityColumns(modelBuilder);
 
             modelBuilder.Entity("Booksy.Core.Domain.Domain.Entities.ProvinceCities", b =>
                 {
@@ -2680,7 +2679,7 @@ namespace Booksy.ServiceCatalog.Infrastructure.Migrations
                                 .ValueGeneratedOnAdd()
                                 .HasColumnType("int");
 
-                            SqlServerPropertyBuilderExtensions.UseIdentityColumn(b1.Property<int>("Id"));
+                          
 
                             b1.Property<Guid>("BusinessHoursId")
                                 .HasColumnType("uniqueidentifier");
