@@ -410,17 +410,17 @@ onMounted(async () => {
 <style scoped>
 .bookings-page {
   padding: 0;
-  background: #f8f9fa;
+  background: #fafafa;
   min-height: 100vh;
 }
 
 /* Page Header */
 .page-header {
   background: white;
-  border-radius: 16px;
-  padding: 32px;
+  border-radius: 4px;
+  padding: 24px;
   margin-bottom: 24px;
-  border: 1px solid #e9ecef;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
 }
 
 .header-content {
@@ -437,15 +437,17 @@ onMounted(async () => {
 
 .page-title {
   font-size: 24px;
-  font-weight: 700;
-  color: #1f2937;
+  font-weight: 500;
+  color: rgba(0, 0, 0, 0.87);
   margin: 0 0 4px;
+  letter-spacing: 0.25px;
 }
 
 .page-subtitle {
   font-size: 14px;
-  color: #6b7280;
+  color: rgba(0, 0, 0, 0.6);
   margin: 0;
+  letter-spacing: 0.25px;
 }
 
 .header-actions {
@@ -457,37 +459,42 @@ onMounted(async () => {
   display: flex;
   align-items: center;
   gap: 8px;
-  padding: 12px 24px;
-  border-radius: 8px;
+  padding: 8px 16px;
+  border-radius: 4px;
   font-size: 14px;
-  font-weight: 600;
+  font-weight: 500;
   cursor: pointer;
-  transition: all 0.2s;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   border: none;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
 }
 
 .btn-primary {
-  background: #6366f1;
+  background: #1976d2;
   color: white;
 }
 
 .btn-primary:hover {
-  background: #4f46e5;
+  background: #1565c0;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
 }
 
 .btn-primary:active {
-  background: #4338ca;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
 }
 
 .btn-secondary {
   background: white;
-  color: #374151;
-  border: 1px solid #d1d5db;
+  color: rgba(0, 0, 0, 0.87);
+  border: 1px solid rgba(0, 0, 0, 0.23);
+  box-shadow: none;
 }
 
 .btn-secondary:hover {
-  background: #f9fafb;
-  border-color: #9ca3af;
+  background: rgba(0, 0, 0, 0.04);
+  border-color: rgba(0, 0, 0, 0.23);
 }
 
 .btn-icon {
@@ -505,48 +512,48 @@ onMounted(async () => {
 
 .stat-card {
   background: white;
-  border-radius: 12px;
-  padding: 24px;
+  border-radius: 4px;
+  padding: 16px;
   display: flex;
   align-items: center;
   gap: 16px;
-  border: 1px solid #e5e7eb;
-  transition: all 0.2s;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  transition: box-shadow 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 .stat-card:hover {
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
 }
 
 .stat-icon {
-  width: 56px;
-  height: 56px;
-  border-radius: 12px;
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
   display: flex;
   align-items: center;
   justify-content: center;
 }
 
 .stat-icon svg {
-  width: 28px;
-  height: 28px;
+  width: 24px;
+  height: 24px;
   color: white;
 }
 
 .stat-today .stat-icon {
-  background: #6366f1;
+  background: #2196f3;
 }
 
 .stat-upcoming .stat-icon {
-  background: #ec4899;
+  background: #ff9800;
 }
 
 .stat-completed .stat-icon {
-  background: #10b981;
+  background: #4caf50;
 }
 
 .stat-revenue .stat-icon {
-  background: #f59e0b;
+  background: #9c27b0;
 }
 
 .stat-content {
@@ -554,30 +561,32 @@ onMounted(async () => {
 }
 
 .stat-value {
-  font-size: 28px;
-  font-weight: 700;
-  color: #1f2937;
+  font-size: 24px;
+  font-weight: 400;
+  color: rgba(0, 0, 0, 0.87);
   margin: 0 0 4px;
+  letter-spacing: 0;
 }
 
 .stat-label {
   font-size: 14px;
-  color: #6b7280;
-  font-weight: 500;
+  color: rgba(0, 0, 0, 0.6);
+  font-weight: 400;
+  letter-spacing: 0.25px;
 }
 
 /* Bookings Container */
 .bookings-container {
   background: white;
-  border-radius: 12px;
-  border: 1px solid #e5e7eb;
+  border-radius: 4px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
   overflow: hidden;
 }
 
 /* Tabs */
 .tabs-section {
-  border-bottom: 1px solid #e5e7eb;
-  background: #f9fafb;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.12);
+  background: white;
 }
 
 .tabs-header {
@@ -591,39 +600,44 @@ onMounted(async () => {
   display: flex;
   align-items: center;
   gap: 8px;
-  padding: 14px 20px;
+  padding: 12px 16px;
   border: none;
   background: transparent;
-  color: #6b7280;
+  color: rgba(0, 0, 0, 0.6);
   font-size: 14px;
-  font-weight: 600;
+  font-weight: 500;
   cursor: pointer;
   border-bottom: 2px solid transparent;
-  transition: all 0.2s;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   white-space: nowrap;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
 }
 
 .tab-button:hover {
-  color: #4b5563;
+  color: rgba(0, 0, 0, 0.87);
+  background: rgba(0, 0, 0, 0.04);
 }
 
 .tab-button.active {
-  color: #6366f1;
-  border-bottom-color: #6366f1;
+  color: #1976d2;
+  border-bottom-color: #1976d2;
 }
 
 .tab-badge {
-  background: #e5e7eb;
-  color: #374151;
-  padding: 4px 10px;
-  border-radius: 12px;
+  background: rgba(0, 0, 0, 0.12);
+  color: rgba(0, 0, 0, 0.87);
+  padding: 2px 8px;
+  border-radius: 10px;
   font-size: 11px;
-  font-weight: 600;
+  font-weight: 500;
+  min-width: 20px;
+  text-align: center;
 }
 
 .tab-button.active .tab-badge {
-  background: #eef2ff;
-  color: #6366f1;
+  background: #e3f2fd;
+  color: #1976d2;
 }
 
 /* Filters */
@@ -654,21 +668,27 @@ onMounted(async () => {
 .search-input {
   width: 100%;
   padding: 10px 16px 10px 44px;
-  border: 1px solid #d1d5db;
-  border-radius: 8px;
+  border: 1px solid rgba(0, 0, 0, 0.23);
+  border-radius: 4px;
   font-size: 14px;
   background: white;
-  transition: all 0.2s;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  color: rgba(0, 0, 0, 0.87);
 }
 
 .search-input::placeholder {
-  color: #9ca3af;
+  color: rgba(0, 0, 0, 0.38);
+}
+
+.search-input:hover {
+  border-color: rgba(0, 0, 0, 0.87);
 }
 
 .search-input:focus {
   outline: none;
-  border-color: #6366f1;
-  box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1);
+  border-color: #1976d2;
+  border-width: 2px;
+  padding: 9px 15px 9px 43px;
 }
 
 .filter-group {
@@ -678,53 +698,58 @@ onMounted(async () => {
 
 .filter-select {
   padding: 10px 16px;
-  border: 1px solid #d1d5db;
-  border-radius: 8px;
+  border: 1px solid rgba(0, 0, 0, 0.23);
+  border-radius: 4px;
   font-size: 14px;
-  font-weight: 500;
+  font-weight: 400;
   background: white;
   cursor: pointer;
-  transition: all 0.2s;
-  color: #374151;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  color: rgba(0, 0, 0, 0.87);
 }
 
 .filter-select:hover {
-  border-color: #9ca3af;
+  border-color: rgba(0, 0, 0, 0.87);
 }
 
 .filter-select:focus {
   outline: none;
-  border-color: #6366f1;
-  box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1);
+  border-color: #1976d2;
+  border-width: 2px;
+  padding: 9px 15px;
 }
 
 .btn-filter {
-  width: 44px;
-  height: 44px;
+  width: 40px;
+  height: 40px;
   display: flex;
   align-items: center;
   justify-content: center;
-  border: 1px solid #e5e7eb;
-  border-radius: 8px;
+  border: 1px solid rgba(0, 0, 0, 0.23);
+  border-radius: 4px;
   background: white;
   cursor: pointer;
-  transition: all 0.2s;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 .btn-filter:hover {
-  border-color: #6366f1;
-  background: #f3f4f6;
+  background: rgba(0, 0, 0, 0.04);
+  border-color: rgba(0, 0, 0, 0.87);
 }
 
 .btn-filter.active {
-  background: #eef2ff;
-  border-color: #6366f1;
+  background: #e3f2fd;
+  border-color: #1976d2;
 }
 
 .btn-filter svg {
   width: 20px;
   height: 20px;
-  color: #6b7280;
+  color: rgba(0, 0, 0, 0.6);
+}
+
+.btn-filter.active svg {
+  color: #1976d2;
 }
 
 /* Bookings List */
@@ -736,16 +761,15 @@ onMounted(async () => {
 
 .booking-card {
   background: white;
-  border: 1px solid #e5e7eb;
-  border-radius: 8px;
-  padding: 20px;
+  border-radius: 4px;
+  padding: 16px;
   cursor: pointer;
-  transition: all 0.2s;
+  transition: box-shadow 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.12);
 }
 
 .booking-card:hover {
-  border-color: #d1d5db;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
 }
 
 .booking-header {
@@ -762,15 +786,15 @@ onMounted(async () => {
 }
 
 .customer-avatar {
-  width: 48px;
-  height: 48px;
+  width: 40px;
+  height: 40px;
   border-radius: 50%;
-  background: #6366f1;
+  background: #1976d2;
   color: white;
   display: flex;
   align-items: center;
   justify-content: center;
-  font-weight: 600;
+  font-weight: 500;
   font-size: 16px;
 }
 
@@ -780,17 +804,19 @@ onMounted(async () => {
 
 .customer-name {
   font-size: 16px;
-  font-weight: 600;
-  color: #1f2937;
+  font-weight: 500;
+  color: rgba(0, 0, 0, 0.87);
   margin: 0 0 4px;
+  letter-spacing: 0.15px;
 }
 
 .customer-phone {
-  font-size: 13px;
-  color: #6b7280;
+  font-size: 14px;
+  color: rgba(0, 0, 0, 0.6);
   margin: 0;
   direction: ltr;
   text-align: right;
+  letter-spacing: 0.25px;
 }
 
 .booking-status {
@@ -799,30 +825,31 @@ onMounted(async () => {
 .status-badge {
   display: inline-flex;
   align-items: center;
-  padding: 6px 12px;
+  padding: 4px 12px;
   border-radius: 16px;
   font-size: 12px;
-  font-weight: 600;
+  font-weight: 500;
+  letter-spacing: 0.25px;
 }
 
 .status-pending {
-  background: #fef3c7;
-  color: #92400e;
+  background: #fff3e0;
+  color: #e65100;
 }
 
 .status-confirmed {
-  background: #dbeafe;
-  color: #1e40af;
+  background: #e3f2fd;
+  color: #0d47a1;
 }
 
 .status-completed {
-  background: #d1fae5;
-  color: #065f46;
+  background: #e8f5e9;
+  color: #1b5e20;
 }
 
 .status-cancelled {
-  background: #fee2e2;
-  color: #991b1b;
+  background: #ffebee;
+  color: #b71c1c;
 }
 
 .booking-details {
@@ -837,13 +864,14 @@ onMounted(async () => {
   align-items: center;
   gap: 8px;
   font-size: 14px;
-  color: #374151;
+  color: rgba(0, 0, 0, 0.87);
+  letter-spacing: 0.25px;
 }
 
 .detail-icon {
-  width: 16px;
-  height: 16px;
-  color: #9ca3af;
+  width: 18px;
+  height: 18px;
+  color: rgba(0, 0, 0, 0.54);
   flex-shrink: 0;
 }
 
@@ -857,55 +885,57 @@ onMounted(async () => {
   display: flex;
   align-items: center;
   gap: 6px;
-  padding: 8px 16px;
+  padding: 6px 16px;
   border: 1px solid;
-  border-radius: 6px;
+  border-radius: 4px;
   font-size: 13px;
-  font-weight: 600;
+  font-weight: 500;
   cursor: pointer;
-  transition: all 0.2s;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   background: white;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
 }
 
 .action-btn svg {
-  width: 16px;
-  height: 16px;
+  width: 18px;
+  height: 18px;
 }
 
 .btn-confirm {
-  border-color: #22c55e;
-  color: #16a34a;
+  border-color: #4caf50;
+  color: #2e7d32;
 }
 
 .btn-confirm:hover {
-  background: #f0fdf4;
+  background: #e8f5e9;
 }
 
 .btn-complete {
-  border-color: #3b82f6;
-  color: #2563eb;
+  border-color: #2196f3;
+  color: #1565c0;
 }
 
 .btn-complete:hover {
-  background: #eff6ff;
+  background: #e3f2fd;
 }
 
 .btn-reschedule {
-  border-color: #f59e0b;
-  color: #d97706;
+  border-color: #ff9800;
+  color: #e65100;
 }
 
 .btn-reschedule:hover {
-  background: #fffbeb;
+  background: #fff3e0;
 }
 
 .btn-cancel {
-  border-color: #ef4444;
-  color: #dc2626;
+  border-color: #f44336;
+  color: #c62828;
 }
 
 .btn-cancel:hover {
-  background: #fef2f2;
+  background: #ffebee;
 }
 
 /* Loading State */
@@ -919,10 +949,10 @@ onMounted(async () => {
 }
 
 .spinner {
-  width: 48px;
-  height: 48px;
-  border: 3px solid #e5e7eb;
-  border-top-color: #6366f1;
+  width: 40px;
+  height: 40px;
+  border: 3px solid rgba(0, 0, 0, 0.1);
+  border-top-color: #1976d2;
   border-radius: 50%;
   animation: spin 0.8s linear infinite;
   margin-bottom: 16px;
@@ -933,9 +963,10 @@ onMounted(async () => {
 }
 
 .loading-state p {
-  color: #6b7280;
-  font-size: 15px;
-  font-weight: 500;
+  color: rgba(0, 0, 0, 0.6);
+  font-size: 14px;
+  font-weight: 400;
+  letter-spacing: 0.25px;
 }
 
 /* Empty State */
@@ -949,34 +980,36 @@ onMounted(async () => {
 }
 
 .empty-icon {
-  width: 80px;
-  height: 80px;
+  width: 72px;
+  height: 72px;
   border-radius: 50%;
-  background: #f3f4f6;
+  background: rgba(0, 0, 0, 0.04);
   display: flex;
   align-items: center;
   justify-content: center;
-  margin-bottom: 20px;
+  margin-bottom: 16px;
 }
 
 .empty-icon svg {
-  width: 40px;
-  height: 40px;
-  color: #9ca3af;
+  width: 36px;
+  height: 36px;
+  color: rgba(0, 0, 0, 0.38);
 }
 
 .empty-state h3 {
-  font-size: 18px;
-  font-weight: 600;
-  color: #1f2937;
+  font-size: 20px;
+  font-weight: 500;
+  color: rgba(0, 0, 0, 0.87);
   margin: 0 0 8px;
+  letter-spacing: 0.15px;
 }
 
 .empty-state p {
   font-size: 14px;
-  color: #6b7280;
+  color: rgba(0, 0, 0, 0.6);
   margin: 0 0 24px;
   max-width: 400px;
+  letter-spacing: 0.25px;
 }
 
 /* Responsive */
