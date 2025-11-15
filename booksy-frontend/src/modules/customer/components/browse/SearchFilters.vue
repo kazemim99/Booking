@@ -404,8 +404,8 @@ onMounted(() => {
 
 .search-input:focus {
   outline: none;
-  border-color: #667eea;
-  box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+  border-color: #1e96fc;
+  box-shadow: 0 0 0 3px rgba(30, 150, 252, 0.1);
 }
 
 .checkbox-group {
@@ -428,7 +428,7 @@ onMounted(() => {
   width: 18px;
   height: 18px;
   cursor: pointer;
-  accent-color: #667eea;
+  accent-color: #1e96fc;
 }
 
 .checkbox-label:hover {
@@ -452,7 +452,7 @@ onMounted(() => {
   width: 20px;
   height: 20px;
   border-radius: 50%;
-  background: #667eea;
+  background: #1e96fc;
   cursor: pointer;
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
 }
@@ -461,7 +461,7 @@ onMounted(() => {
   width: 20px;
   height: 20px;
   border-radius: 50%;
-  background: #667eea;
+  background: #1e96fc;
   cursor: pointer;
   border: none;
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
@@ -493,8 +493,8 @@ onMounted(() => {
 
 .price-input:focus {
   outline: none;
-  border-color: #667eea;
-  box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+  border-color: #1e96fc;
+  box-shadow: 0 0 0 3px rgba(30, 150, 252, 0.1);
 }
 
 .price-separator {
@@ -517,17 +517,17 @@ onMounted(() => {
 
 .sort-select:focus {
   outline: none;
-  border-color: #667eea;
-  box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+  border-color: #1e96fc;
+  box-shadow: 0 0 0 3px rgba(30, 150, 252, 0.1);
 }
 
 .apply-filters-btn {
   width: 100%;
   padding: 0.875rem 1.25rem;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: #1e96fc;
   color: white;
   border: none;
-  border-radius: 8px;
+  border-radius: 10px;
   font-size: 1rem;
   font-weight: 600;
   cursor: pointer;
@@ -537,7 +537,8 @@ onMounted(() => {
 
 .apply-filters-btn:hover {
   transform: translateY(-2px);
-  box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+  box-shadow: 0 4px 12px rgba(30, 150, 252, 0.3);
+  background: #0d7de3;
 }
 
 .apply-filters-btn:active {

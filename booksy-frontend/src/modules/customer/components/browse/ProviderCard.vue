@@ -216,7 +216,7 @@ function onImageError(event: Event) {
   width: 100%;
   height: 200px;
   overflow: hidden;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: #1e96fc;
 }
 
 .provider-image img {
@@ -410,11 +410,11 @@ function onImageError(event: Event) {
 }
 
 .book-now-btn {
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: #1e96fc;
   color: white;
   border: none;
   padding: 12px 20px;
-  border-radius: 8px;
+  border-radius: 10px;
   font-size: 1rem;
   font-weight: 600;
   cursor: pointer;
@@ -427,8 +427,9 @@ function onImageError(event: Event) {
 }
 
 .book-now-btn:hover {
-  transform: scale(1.02);
-  box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+  background: #0d7de3;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(30, 150, 252, 0.3);
 }
 
 .book-now-btn:active {
