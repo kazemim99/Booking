@@ -66,7 +66,11 @@ namespace Booksy.ServiceCatalog.Infrastructure.Persistence.Seeders
 
                 // 11. UserNotificationPreferences (depends on Bookings for customer IDs)
                 new UserNotificationPreferencesSeeder(_context,
-                    Microsoft.Extensions.Logging.Abstractions.NullLogger<UserNotificationPreferencesSeeder>.Instance)
+                    Microsoft.Extensions.Logging.Abstractions.NullLogger<UserNotificationPreferencesSeeder>.Instance),
+
+                // 12. Provider Statistics (depends on Bookings for calculation)
+                new ProviderStatisticsSeeder(_context,
+                    Microsoft.Extensions.Logging.Abstractions.NullLogger<ProviderStatisticsSeeder>.Instance)
             };
         }
 
