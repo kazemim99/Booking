@@ -3,8 +3,6 @@ using Booksy.Core.Domain.Exceptions;
 using Booksy.ServiceCatalog.Domain.Enums;
 using Booksy.ServiceCatalog.Domain.Repositories;
 using Booksy.ServiceCatalog.Domain.ValueObjects;
-using Booksy.ServiceCatalog.Infrastructure.Persistence.Context;
-using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 
 namespace Booksy.ServiceCatalog.Application.Queries.Provider.GetProviderAvailabilityCalendar;
@@ -12,16 +10,16 @@ namespace Booksy.ServiceCatalog.Application.Queries.Provider.GetProviderAvailabi
 public sealed class GetProviderAvailabilityCalendarQueryHandler
     : IQueryHandler<GetProviderAvailabilityCalendarQuery, ProviderAvailabilityCalendarViewModel>
 {
-    private readonly ServiceCatalogDbContext _context;
+    private readonly IProviderAvailabilityReadRepository _availabilityRepository;
     private readonly IProviderWriteRepository _providerRepository;
     private readonly ILogger<GetProviderAvailabilityCalendarQueryHandler> _logger;
 
     public GetProviderAvailabilityCalendarQueryHandler(
-        ServiceCatalogDbContext context,
+        IProviderAvailabilityReadRepository availabilityRepository,
         IProviderWriteRepository providerRepository,
         ILogger<GetProviderAvailabilityCalendarQueryHandler> logger)
     {
-        _context = context ?? throw new ArgumentNullException(nameof(context));
+        _availabilityRepository = availabilityRepository ?? throw new ArgumentNullException(nameof(availabilityRepository));
         _providerRepository = providerRepository ?? throw new ArgumentNullException(nameof(providerRepository));
         _logger = logger ?? throw new ArgumentNullException(nameof(logger));
     }
@@ -56,15 +54,12 @@ public sealed class GetProviderAvailabilityCalendarQueryHandler
             endDate,
             query.Days);
 
-        // Query availability slots from database
-        var availabilitySlots = await _context.ProviderAvailability
-            .AsNoTracking()
-            .Where(a => a.ProviderId == provider.Id.Value &&
-                       a.Date >= query.StartDate.ToDateTime(TimeOnly.MinValue) &&
-                       a.Date <= endDate.ToDateTime(TimeOnly.MinValue))
-            .OrderBy(a => a.Date)
-            .ThenBy(a => a.StartTime)
-            .ToListAsync(cancellationToken);
+        // Query availability slots from repository
+        var availabilitySlots = await _availabilityRepository.GetAvailabilityByDateRangeAsync(
+            provider.Id,
+            query.StartDate.ToDateTime(TimeOnly.MinValue),
+            endDate.ToDateTime(TimeOnly.MinValue),
+            cancellationToken);
 
         _logger.LogDebug("Found {Count} availability slots", availabilitySlots.Count);
 
