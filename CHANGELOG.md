@@ -7,6 +7,151 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added - 2025-11-16
+
+#### Database Migrations & Schema Updates
+
+##### ServiceCatalog Database Migrations
+- **Added**: Complete EF Core migration system for ServiceCatalog bounded context
+- **Migration**: `20251115202010_InitialCreate` - Created ProviderAvailability and Reviews tables
+- **Tables Created**:
+  - `ProviderAvailability` - Time slot management for provider availability calendar
+    - Columns: AvailabilityId, ProviderId, StaffId, Date, StartTime, EndTime, Status, BookingId, BlockReason, HoldExpiresAt
+    - Indexes: Optimized for date-based queries, booking lookups, and hold expiration cleanup
+    - Supports: Available, Booked, Blocked, TentativeHold, Break statuses
+  - `Reviews` - Customer review and rating system
+    - Columns: ReviewId, ProviderId, CustomerId, BookingId, RatingValue (1-5), Comment, IsVerified, ProviderResponse, HelpfulCount, NotHelpfulCount
+    - Indexes: Provider reviews, customer reviews, verified reviews, rating-based queries
+    - Features: Provider responses, helpful voting, verified review tracking
+- **Updated**: Payments table column types for PostgreSQL compatibility
+- **Files**:
+  - `src/BoundedContexts/ServiceCatalog/Booksy.ServiceCatalog.Infrastructure/Migrations/20251115202010_InitialCreate.cs`
+  - `src/BoundedContexts/ServiceCatalog/Booksy.ServiceCatalog.Infrastructure/Migrations/ServiceCatalogDbContextModelSnapshot.cs`
+
+##### Provider Availability System
+- **Added**: Complete domain model for provider availability management
+- **Aggregate**: `ProviderAvailability` with business logic for slot management
+- **Features**:
+  - Create available time slots with date, start/end times
+  - Mark slots as booked with booking references
+  - Block time slots with optional reasons
+  - Tentative hold with expiration (for booking flow)
+  - Release slots back to available status
+  - Conflict detection between overlapping slots
+- **Query Support**: Get availability by date range, status, and provider
+- **Files**:
+  - `src/BoundedContexts/ServiceCatalog/Booksy.ServiceCatalog.Domain/Aggregates/ProviderAvailabilityAggregate/ProviderAvailability.cs`
+  - `src/BoundedContexts/ServiceCatalog/Booksy.ServiceCatalog.Domain/Repositories/IProviderAvailabilityReadRepository.cs`
+  - `src/BoundedContexts/ServiceCatalog/Booksy.ServiceCatalog.Infrastructure/Persistence/Configurations/ProviderAvailabilityConfiguration.cs`
+
+##### Review & Rating System
+- **Added**: Complete domain model for customer reviews
+- **Aggregate**: `Review` with business logic for rating management
+- **Features**:
+  - Create verified reviews tied to actual bookings
+  - Rating system (1.0-5.0 with half-star increments)
+  - Provider response capability
+  - Helpful/Not Helpful voting
+  - Review statistics and aggregation
+- **Files**:
+  - `src/BoundedContexts/ServiceCatalog/Booksy.ServiceCatalog.Domain/Aggregates/Review.cs`
+  - `src/BoundedContexts/ServiceCatalog/Booksy.ServiceCatalog.Infrastructure/Persistence/Configurations/ReviewConfiguration.cs`
+
+#### API Enhancements
+
+##### Provider Availability API
+- **Added**: REST endpoint for provider availability calendar
+- **Endpoint**: `GET /api/v1/providers/{providerId}/availability`
+- **Query Parameters**:
+  - `startDate` (optional, yyyy-MM-dd format) - Defaults to today
+  - `days` (required, 7/14/30) - Number of days to fetch
+- **Response**:
+  - Time slots grouped by day with status (Available/Booked/Blocked)
+  - Availability heatmap with statistics for UI visualization
+  - Performance optimized with indexed queries
+- **Features**:
+  - Rate limiting to prevent abuse
+  - Anonymous access for public availability viewing
+  - Validation of date format and days parameter
+- **Files**:
+  - `src/BoundedContexts/ServiceCatalog/Booksy.ServiceCatalog.Api/Controllers/V1/ProviderAvailabilityController.cs`
+  - `src/BoundedContexts/ServiceCatalog/Booksy.ServiceCatalog.Application/Queries/Provider/GetProviderAvailabilityCalendar/`
+
+##### API Error Response Standardization
+- **Fixed**: ApiErrorResponse implementation in ServiceCatalog API
+- **Added**: Unified error response format for consistent client-side error handling
+- **Structure**:
+  - Success flag
+  - Error list with code, message, and optional field reference
+  - Optional trace ID for debugging
+- **Files**:
+  - `src/BoundedContexts/ServiceCatalog/Booksy.ServiceCatalog.Api/Models/Responses/ApiErrorResponse.cs`
+
+### Fixed - 2025-11-16
+
+#### Backend Compilation Fixes
+
+##### Specification Pattern Implementation
+- **Fixed**: Missing Specification base class in Core.Domain
+- **Added**: `Specification<T>` abstract base class implementing `ISpecification<T>`
+- **Features**: Expression-based query composition, And/Or/Not combinators, Include support
+- **Impact**: Enables clean query abstraction for complex filtering scenarios
+- **Files**: `src/Core/Booksy.Core.Domain/Abstractions/Entities/Specifications/Specification.cs`
+
+##### Namespace Conflict Resolution
+- **Fixed**: Booking class namespace conflicts using type aliases
+- **Pattern**: `using BookingAggregate = Booksy.Booking.Domain.Aggregates.Booking;`
+- **Impact**: Resolves ambiguity between Booking namespace and Booking class
+- **Files**: Multiple files across Booking.Domain, Booking.Application, Booking.Infrastructure
+
+##### Repository Pattern Refinement
+- **Fixed**: Separated read and write repository concerns
+- **Pattern**:
+  - Read repositories: `IBookingReadRepository` with query methods (GetByIdAsync, ListAsync, etc.)
+  - Write repositories: `IBookingWriteRepository` with persistence methods (SaveAsync, UpdateAsync, DeleteAsync)
+- **Base Classes**:
+  - `EfReadRepositoryBase<TEntity, TId, TContext>` for query operations
+  - `EfWriteRepositoryBase<TEntity, TId, TContext>` for persistence operations
+- **Impact**: Cleaner separation of concerns, better scalability for CQRS
+- **Files**: All repository implementations in Booking and ServiceCatalog bounded contexts
+
+##### Command/Query Fixes
+- **Fixed**: Missing IdempotencyKey property on commands
+- **Pattern**: Added `public Guid? IdempotencyKey { get; init; }` to all command classes
+- **Impact**: Enables proper idempotent command handling
+- **Files**: All command classes in Booking.Application and ServiceCatalog.Application
+
+##### DayOfWeek Enum Ambiguity
+- **Fixed**: Conflicts between System.DayOfWeek and Domain.DayOfWeek
+- **Pattern**: Type alias `using SystemDayOfWeek = System.DayOfWeek;` + mapper methods
+- **Impact**: Resolves compilation errors in seeders and query handlers
+- **Files**:
+  - `src/BoundedContexts/ServiceCatalog/Booksy.ServiceCatalog.Application/Queries/Provider/GetProviderAvailabilityCalendar/GetProviderAvailabilityCalendarQueryHandler.cs`
+  - `src/BoundedContexts/ServiceCatalog/Booksy.ServiceCatalog.Infrastructure/Persistence/Seeders/AvailabilitySeeder.cs`
+
+##### Database Context Improvements
+- **Fixed**: Removed invalid audit field setter logic from DbContext.SaveChangesAsync
+- **Issue**: IAuditableEntity setters are inaccessible (private/protected)
+- **Impact**: DbContext no longer attempts to set audit fields directly
+- **Files**: `src/BoundedContexts/Booking/Booksy.Booking.Infrastructure/Persistence/Context/BookingDbContext.cs`
+
+##### Pagination Request Fixes
+- **Fixed**: Wrong pagination class usage in API controllers
+- **Pattern**: Use `PaginationRequest.Create(pageNumber, pageSize)` from Core.Application.DTOs
+- **Impact**: Consistent pagination across all API endpoints
+- **Files**: Booking.Api and ServiceCatalog.Api controllers
+
+##### Invalid Migration Cleanup
+- **Removed**: Broken migration `20251109070253_AddBookingSystem2`
+- **Issue**: Migration tried to add column to non-existent table
+- **Impact**: Database migration process now works cleanly
+- **Files**: Removed from `src/BoundedContexts/ServiceCatalog/Booksy.ServiceCatalog.Infrastructure/Migrations/`
+
+#### Build Status
+- **Result**: ✅ Entire solution builds successfully with 0 compilation errors
+- **Verification**: All bounded contexts (Booking, ServiceCatalog, UserManagement) compile cleanly
+- **Database**: All migrations applied successfully to ServiceCatalog database
+
 ### Fixed - 2025-11-11
 
 #### Registration Flow Fixes
