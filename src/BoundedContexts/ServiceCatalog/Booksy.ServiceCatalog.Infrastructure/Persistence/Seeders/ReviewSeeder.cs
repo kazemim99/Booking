@@ -1,7 +1,5 @@
-using Booksy.Core.Domain.ValueObjects;
 using Booksy.Infrastructure.Core.Persistence.Base;
-using Booksy.ServiceCatalog.Domain.Aggregates.ReviewAggregate;
-using Booksy.ServiceCatalog.Domain.Enums;
+using Booksy.ServiceCatalog.Domain.Aggregates;
 using Booksy.ServiceCatalog.Infrastructure.Persistence.Context;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;

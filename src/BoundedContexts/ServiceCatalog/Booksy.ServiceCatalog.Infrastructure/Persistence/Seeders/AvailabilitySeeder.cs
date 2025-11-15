@@ -1,5 +1,5 @@
 using Booksy.Infrastructure.Core.Persistence.Base;
-using Booksy.ServiceCatalog.Domain.Aggregates.ProviderAvailabilityAggregate;
+using Booksy.ServiceCatalog.Domain.Aggregates;
 using Booksy.ServiceCatalog.Domain.Enums;
 using Booksy.ServiceCatalog.Domain.ValueObjects;
 using Booksy.ServiceCatalog.Infrastructure.Persistence.Context;
