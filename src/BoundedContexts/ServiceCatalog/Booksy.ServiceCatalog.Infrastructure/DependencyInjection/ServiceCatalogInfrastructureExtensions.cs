@@ -87,6 +87,7 @@ namespace Booksy.ServiceCatalog.Infrastructure.DependencyInjection
             services.AddScoped<IBookingReadRepository, BookingReadRepository>();
             services.AddScoped<IBookingWriteRepository, BookingWriteRepository>();
             services.AddScoped<IProviderAvailabilityReadRepository, ProviderAvailabilityReadRepository>();
+            services.AddScoped<IProviderAvailabilityWriteRepository, ProviderAvailabilityWriteRepository>();
 
             // Payment and Payout Repositories
             services.AddScoped<IPaymentReadRepository, PaymentReadRepository>();
