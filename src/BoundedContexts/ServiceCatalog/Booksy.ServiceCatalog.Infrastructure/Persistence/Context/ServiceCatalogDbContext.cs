@@ -45,6 +45,8 @@ namespace Booksy.ServiceCatalog.Infrastructure.Persistence.Context
         public DbSet<Notification> Notifications => Set<Notification>();
         public DbSet<NotificationTemplate> NotificationTemplates => Set<NotificationTemplate>();
         public DbSet<UserNotificationPreferences> UserNotificationPreferences => Set<UserNotificationPreferences>();
+        public DbSet<ProviderAvailability> ProviderAvailability => Set<ProviderAvailability>();
+        public DbSet<Review> Reviews => Set<Review>();
 
         // Entities
         public DbSet<Staff> Staff => Set<Staff>();
