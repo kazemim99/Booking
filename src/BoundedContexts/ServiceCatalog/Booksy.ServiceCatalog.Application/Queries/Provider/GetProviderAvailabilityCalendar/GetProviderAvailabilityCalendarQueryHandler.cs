@@ -4,6 +4,7 @@ using Booksy.ServiceCatalog.Domain.Enums;
 using Booksy.ServiceCatalog.Domain.Repositories;
 using Booksy.ServiceCatalog.Domain.ValueObjects;
 using Microsoft.Extensions.Logging;
+using SystemDayOfWeek = System.DayOfWeek;
 
 namespace Booksy.ServiceCatalog.Application.Queries.Provider.GetProviderAvailabilityCalendar;
 
@@ -72,7 +73,7 @@ public sealed class GetProviderAvailabilityCalendarQueryHandler
 
         while (currentDate <= endDate)
         {
-            var dayOfWeek = currentDate.DayOfWeek;
+            var dayOfWeek = MapSystemDayOfWeek(currentDate.DayOfWeek);
             var businessHoursForDay = businessHours.FirstOrDefault(bh => bh.DayOfWeek == dayOfWeek);
             var isOpen = businessHoursForDay?.IsOpen ?? false;
 
@@ -125,7 +126,7 @@ public sealed class GetProviderAvailabilityCalendarQueryHandler
         }
 
         // Calculate heatmap data
-        var heatmap = CalculateHeatmap(availabilitySlots, days);
+        var heatmap = CalculateHeatmap(availabilitySlots.ToList(), days);
 
         return new ProviderAvailabilityCalendarViewModel(
             ProviderId: query.ProviderId,
@@ -239,6 +240,21 @@ public sealed class GetProviderAvailabilityCalendarQueryHandler
             < 30 => "red",      // High demand (< 30% available)
             < 70 => "yellow",   // Moderate (30-70% available)
             _ => "green"        // Mostly available (> 70%)
+        };
+    }
+
+    private DayOfWeek MapSystemDayOfWeek(SystemDayOfWeek systemDayOfWeek)
+    {
+        return systemDayOfWeek switch
+        {
+            SystemDayOfWeek.Sunday => DayOfWeek.Sunday,
+            SystemDayOfWeek.Monday => DayOfWeek.Monday,
+            SystemDayOfWeek.Tuesday => DayOfWeek.Tuesday,
+            SystemDayOfWeek.Wednesday => DayOfWeek.Wednesday,
+            SystemDayOfWeek.Thursday => DayOfWeek.Thursday,
+            SystemDayOfWeek.Friday => DayOfWeek.Friday,
+            SystemDayOfWeek.Saturday => DayOfWeek.Saturday,
+            _ => throw new ArgumentOutOfRangeException(nameof(systemDayOfWeek))
         };
     }
 }

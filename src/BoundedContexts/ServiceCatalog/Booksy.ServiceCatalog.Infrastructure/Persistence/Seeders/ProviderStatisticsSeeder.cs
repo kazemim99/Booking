@@ -55,8 +55,8 @@ namespace Booksy.ServiceCatalog.Infrastructure.Persistence.Seeders
 
                     var reviewCount = (int)(completedBookingsCount * 0.6); // 60% review rate
 
-                    // Update provider with calculated rating
-                    provider.AverageRating = rating.Value;
+                    // TODO: AverageRating is now calculated property, update via domain method if needed
+                    // provider.UpdateRating(rating.Value); // Or similar domain method
 
                     updatedCount++;
 

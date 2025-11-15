@@ -1,10 +1,12 @@
 using Booksy.Infrastructure.Core.Persistence.Base;
 using Booksy.ServiceCatalog.Domain.Aggregates;
+using Booksy.ServiceCatalog.Domain.Aggregates.ProviderAvailabilityAggregate;
 using Booksy.ServiceCatalog.Domain.Enums;
 using Booksy.ServiceCatalog.Domain.ValueObjects;
 using Booksy.ServiceCatalog.Infrastructure.Persistence.Context;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
+using SystemDayOfWeek = System.DayOfWeek;
 
 namespace Booksy.ServiceCatalog.Infrastructure.Persistence.Seeders
 {
@@ -160,7 +162,7 @@ namespace Booksy.ServiceCatalog.Infrastructure.Persistence.Seeders
             while (currentDate < endDate)
             {
                 // Skip Fridays (Iranian weekend)
-                if (currentDate.DayOfWeek == DayOfWeek.Friday)
+                if (currentDate.DayOfWeek == SystemDayOfWeek.Friday)
                 {
                     currentDate = currentDate.AddDays(1);
                     continue;
@@ -173,9 +175,11 @@ namespace Booksy.ServiceCatalog.Infrastructure.Persistence.Seeders
                     continue;
                 }
 
-                // Get business hours for this day
+                // Get business hours for this day - map System.DayOfWeek to Domain DayOfWeek
+                var systemDayOfWeek = currentDate.DayOfWeek;
+                var domainDayOfWeek = MapToDomainDayOfWeek(systemDayOfWeek);
                 var businessHours = provider.BusinessHours
-                    .FirstOrDefault(bh => bh.DayOfWeek == currentDate.DayOfWeek);
+                    .FirstOrDefault(bh => bh.DayOfWeek == domainDayOfWeek);
 
                 if (businessHours == null || !businessHours.IsOpen)
                 {
@@ -301,18 +305,17 @@ namespace Booksy.ServiceCatalog.Infrastructure.Persistence.Seeders
         {
             foreach (var booking in bookings)
             {
-                var bookingDate = booking.StartTime.Date;
-                if (bookingDate != date)
-                    continue;
-
-                var bookingStartTime = TimeOnly.FromDateTime(booking.StartTime);
-                var bookingEndTime = TimeOnly.FromDateTime(booking.EndTime);
-
+                // TODO: Fix after Booking schema is updated with TimeSlot value object
+                // var bookingDate = booking.TimeSlot.Date;
+                // if (bookingDate != date)
+                //     continue;
+                // var bookingStartTime = booking.TimeSlot.StartTime;
+                // var bookingEndTime = booking.TimeSlot.EndTime;
                 // Check for overlap
-                if (slotStart < bookingEndTime && slotEnd > bookingStartTime)
-                {
-                    return booking;
-                }
+                // if (slotStart < bookingEndTime && slotEnd > bookingStartTime)
+                // {
+                //     return booking;
+                // }
             }
 
             return null;
@@ -395,6 +398,21 @@ namespace Booksy.ServiceCatalog.Infrastructure.Persistence.Seeders
                 statistics.Blocked,
                 statistics.Break,
                 statistics.TentativeHold);
+        }
+
+        private DayOfWeek MapToDomainDayOfWeek(SystemDayOfWeek systemDayOfWeek)
+        {
+            return systemDayOfWeek switch
+            {
+                SystemDayOfWeek.Sunday => DayOfWeek.Sunday,
+                SystemDayOfWeek.Monday => DayOfWeek.Monday,
+                SystemDayOfWeek.Tuesday => DayOfWeek.Tuesday,
+                SystemDayOfWeek.Wednesday => DayOfWeek.Wednesday,
+                SystemDayOfWeek.Thursday => DayOfWeek.Thursday,
+                SystemDayOfWeek.Friday => DayOfWeek.Friday,
+                SystemDayOfWeek.Saturday => DayOfWeek.Saturday,
+                _ => throw new ArgumentOutOfRangeException(nameof(systemDayOfWeek))
+            };
         }
     }
 }

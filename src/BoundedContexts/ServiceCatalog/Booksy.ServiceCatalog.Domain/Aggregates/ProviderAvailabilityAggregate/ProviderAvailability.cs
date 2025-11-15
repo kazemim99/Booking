@@ -7,7 +7,7 @@ using Booksy.Core.Domain.Exceptions;
 using Booksy.ServiceCatalog.Domain.Enums;
 using Booksy.ServiceCatalog.Domain.ValueObjects;
 
-namespace Booksy.ServiceCatalog.Domain.Aggregates
+namespace Booksy.ServiceCatalog.Domain.Aggregates.ProviderAvailabilityAggregate
 {
     /// <summary>
     /// Represents availability for a specific time slot for a provider

@@ -177,7 +177,7 @@ namespace Booksy.ServiceCatalog.Infrastructure.Persistence.Seeders
                     createdBy: "ReviewSeeder");
 
                 // Add helpful votes (older reviews have more votes)
-                var daysSinceBooking = (DateTime.UtcNow - booking.CompletedAt ?? DateTime.UtcNow).Days;
+                var daysSinceBooking = booking.CompletedAt.HasValue ? (DateTime.UtcNow - booking.CompletedAt.Value).Days : 0;
                 var voteCount = Math.Min(daysSinceBooking / 2, 20); // Max 20 votes
 
                 for (int i = 0; i < voteCount; i++)

@@ -127,30 +127,22 @@ public class ProviderAvailabilityController : ControllerBase
         else if (!DateOnly.TryParse(request.StartDate, out startDate))
         {
             _logger.LogWarning("Invalid start date format: {StartDate}", request.StartDate);
-            return BadRequest(new ApiErrorResponse
-            {
-                StatusCode = StatusCodes.Status400BadRequest,
-                Message = "Invalid start date format. Use yyyy-MM-dd (e.g., 2025-11-20)",
-                Errors = new Dictionary<string, string[]>
-                {
-                    ["StartDate"] = new[] { "Must be in yyyy-MM-dd format" }
-                }
-            });
+            return BadRequest(new ApiErrorResponse(
+                "ERR_VALIDATION",
+                "Invalid start date format. Use yyyy-MM-dd (e.g., 2025-11-20)",
+                "StartDate"
+            ));
         }
 
         // Validate days parameter
         if (request.Days != 7 && request.Days != 14 && request.Days != 30)
         {
             _logger.LogWarning("Invalid days parameter: {Days}", request.Days);
-            return BadRequest(new ApiErrorResponse
-            {
-                StatusCode = StatusCodes.Status400BadRequest,
-                Message = "Days parameter must be 7, 14, or 30",
-                Errors = new Dictionary<string, string[]>
-                {
-                    ["Days"] = new[] { "Must be 7, 14, or 30" }
-                }
-            });
+            return BadRequest(new ApiErrorResponse(
+                "ERR_VALIDATION",
+                "Days parameter must be 7, 14, or 30",
+                "Days"
+            ));
         }
 
         // Create and send query
@@ -177,11 +169,10 @@ public class ProviderAvailabilityController : ControllerBase
         catch (Core.Domain.Exceptions.DomainValidationException ex)
         {
             _logger.LogWarning(ex, "Domain validation error for provider {ProviderId}", providerId);
-            return NotFound(new ApiErrorResponse
-            {
-                StatusCode = StatusCodes.Status404NotFound,
-                Message = ex.Message
-            });
+            return NotFound(new ApiErrorResponse(
+                "ERR_NOT_FOUND",
+                ex.Message
+            ));
         }
         catch (Exception ex)
         {

@@ -1,7 +1,7 @@
 // ========================================
 // Booksy.ServiceCatalog.Infrastructure/Persistence/Configurations/ProviderAvailabilityConfiguration.cs
 // ========================================
-using Booksy.ServiceCatalog.Domain.Aggregates;
+using Booksy.ServiceCatalog.Domain.Aggregates.ProviderAvailabilityAggregate;
 using Booksy.ServiceCatalog.Domain.Enums;
 using Booksy.ServiceCatalog.Domain.ValueObjects;
 using Microsoft.EntityFrameworkCore;

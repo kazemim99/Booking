@@ -7,6 +7,7 @@ using Booksy.ServiceCatalog.Domain.Aggregates.NotificationTemplateAggregate;
 using Booksy.ServiceCatalog.Domain.Aggregates.UserNotificationPreferencesAggregate;
 using Booksy.ServiceCatalog.Domain.Aggregates.PaymentAggregate;
 using Booksy.ServiceCatalog.Domain.Aggregates.PayoutAggregate;
+using Booksy.ServiceCatalog.Domain.Aggregates.ProviderAvailabilityAggregate;
 using Booksy.ServiceCatalog.Domain.Entities;
 using Booksy.ServiceCatalog.Infrastructure.Persistence.Configurations;
 using Microsoft.EntityFrameworkCore;
