@@ -6,6 +6,16 @@
 import type { RouteRecordRaw } from 'vue-router'
 
 const customerRoutes: RouteRecordRaw[] = [
+  // TEMPORARY: Public test route for Phase 1 testing (REMOVE BEFORE PRODUCTION)
+  {
+    path: '/test/providers',
+    name: 'TestProviderList',
+    component: () => import('@/modules/customer/views/ProviderListView.vue'),
+    meta: {
+      title: 'Test - Provider Search',
+      requiresAuth: false, // No auth required for testing
+    },
+  },
   {
     path: '/customer',
     component: () => import('@/modules/customer/layouts/CustomerLayout.vue'),
