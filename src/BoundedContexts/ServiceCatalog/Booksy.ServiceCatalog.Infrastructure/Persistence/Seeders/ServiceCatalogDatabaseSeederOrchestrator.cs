@@ -56,19 +56,27 @@ namespace Booksy.ServiceCatalog.Infrastructure.Persistence.Seeders
                 new BookingSeeder(_context,
                     Microsoft.Extensions.Logging.Abstractions.NullLogger<BookingSeeder>.Instance),
 
-                // 9. Payments (depends on Bookings)
+                // 9. Availability (depends on BusinessHours and Bookings)
+                new AvailabilitySeeder(_context,
+                    Microsoft.Extensions.Logging.Abstractions.NullLogger<AvailabilitySeeder>.Instance),
+
+                // 10. Reviews (depends on Bookings - only completed bookings can have reviews)
+                new ReviewSeeder(_context,
+                    Microsoft.Extensions.Logging.Abstractions.NullLogger<ReviewSeeder>.Instance),
+
+                // 11. Payments (depends on Bookings)
                 new PaymentSeeder(_context,
                     Microsoft.Extensions.Logging.Abstractions.NullLogger<PaymentSeeder>.Instance),
 
-                // 10. Payouts (depends on Payments)
+                // 12. Payouts (depends on Payments)
                 new PayoutSeeder(_context,
                     Microsoft.Extensions.Logging.Abstractions.NullLogger<PayoutSeeder>.Instance),
 
-                // 11. UserNotificationPreferences (depends on Bookings for customer IDs)
+                // 13. UserNotificationPreferences (depends on Bookings for customer IDs)
                 new UserNotificationPreferencesSeeder(_context,
                     Microsoft.Extensions.Logging.Abstractions.NullLogger<UserNotificationPreferencesSeeder>.Instance),
 
-                // 12. Provider Statistics (depends on Bookings for calculation)
+                // 14. Provider Statistics (depends on Bookings and Reviews for calculation)
                 new ProviderStatisticsSeeder(_context,
                     Microsoft.Extensions.Logging.Abstractions.NullLogger<ProviderStatisticsSeeder>.Instance)
             };
