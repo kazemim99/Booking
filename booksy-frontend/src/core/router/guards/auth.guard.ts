@@ -68,8 +68,8 @@ export async function authGuard(
       (authStore.providerStatus === ProviderStatus.Drafted || authStore.providerStatus === null) &&
       to.name !== 'ProviderRegistration'
     ) {
-      // Allow access to profile and settings even for incomplete providers
-      const allowedGeneralRoutes = ['ProviderProfile', 'ProviderSettings', 'Forbidden', 'NotFound', 'ServerError']
+      // Allow access to profile, settings, and booking even for incomplete providers
+      const allowedGeneralRoutes = ['ProviderProfile', 'ProviderSettings', 'NewBooking', 'BookingDetails', 'Bookings', 'Forbidden', 'NotFound', 'ServerError']
       if (!allowedGeneralRoutes.includes(to.name as string)) {
         next({ name: 'ProviderRegistration' })
         return
