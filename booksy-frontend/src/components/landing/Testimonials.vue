@@ -1,10 +1,10 @@
 <template>
-  <section class="testimonials-section">
+  <section class="testimonials-section" dir="rtl">
     <div class="container">
       <div class="section-header">
-        <h2 class="section-title">Loved by Thousands of Customers</h2>
+        <h2 class="section-title">محبوب هزاران مشتری</h2>
         <p class="section-subtitle">
-          See what our happy customers have to say about their experiences
+          ببینید مشتریان راضی ما درباره تجربیات خود چه می‌گویند
         </p>
       </div>
 
@@ -49,27 +49,27 @@
             <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor">
               <path fill-rule="evenodd" d="M8.603 3.799A4.49 4.49 0 0112 2.25c1.357 0 2.573.6 3.397 1.549a4.49 4.49 0 013.498 1.307 4.491 4.491 0 011.307 3.497A4.49 4.49 0 0121.75 12a4.49 4.49 0 01-1.549 3.397 4.491 4.491 0 01-1.307 3.497 4.491 4.491 0 01-3.497 1.307A4.49 4.49 0 0112 21.75a4.49 4.49 0 01-3.397-1.549 4.49 4.49 0 01-3.498-1.306 4.491 4.491 0 01-1.307-3.498A4.49 4.49 0 012.25 12c0-1.357.6-2.573 1.549-3.397a4.49 4.49 0 011.307-3.497 4.49 4.49 0 013.497-1.307zm7.007 6.387a.75.75 0 10-1.22-.872l-3.236 4.53L9.53 12.22a.75.75 0 00-1.06 1.06l2.25 2.25a.75.75 0 001.14-.094l3.75-5.25z" clip-rule="evenodd" />
             </svg>
-            Verified Customer
+            مشتری تایید شده
           </div>
         </div>
       </div>
 
       <div class="stats-row">
         <div class="stat-box">
-          <div class="stat-number">50K+</div>
-          <div class="stat-label">Happy Customers</div>
+          <div class="stat-number">۵۰,۰۰۰+</div>
+          <div class="stat-label">مشتری راضی</div>
         </div>
         <div class="stat-box">
-          <div class="stat-number">4.8/5</div>
-          <div class="stat-label">Average Rating</div>
+          <div class="stat-number">۴.۸/۵</div>
+          <div class="stat-label">میانگین امتیاز</div>
         </div>
         <div class="stat-box">
-          <div class="stat-number">100K+</div>
-          <div class="stat-label">Bookings Completed</div>
+          <div class="stat-number">۱۰۰,۰۰۰+</div>
+          <div class="stat-label">رزرو تکمیل شده</div>
         </div>
         <div class="stat-box">
-          <div class="stat-number">98%</div>
-          <div class="stat-label">Satisfaction Rate</div>
+          <div class="stat-number">۹۸٪</div>
+          <div class="stat-label">نرخ رضایت</div>
         </div>
       </div>
     </div>
@@ -80,39 +80,39 @@
 const testimonials = [
   {
     id: 1,
-    name: 'Sarah Johnson',
-    service: 'Haircut & Styling',
-    text: 'Amazing experience! Found the perfect salon through this platform. The booking process was seamless, and the stylist was incredibly professional. Highly recommend!',
+    name: 'سارا احمدی',
+    service: 'کوتاهی و آرایش مو',
+    text: 'تجربه فوق‌العاده‌ای بود! بهترین سالن را از طریق این پلتفرم پیدا کردم. فرآیند رزرو بسیار ساده بود و آرایشگر کاملاً حرفه‌ای بود. قویاً توصیه می‌کنم!',
   },
   {
     id: 2,
-    name: 'Michael Chen',
-    service: 'Massage Therapy',
-    text: 'I love how easy it is to book appointments. The therapist was fantastic, and I could see real-time availability. This platform has become my go-to for wellness services.',
+    name: 'محمد رضایی',
+    service: 'ماساژ درمانی',
+    text: 'عاشق این هستم که چقدر رزرو نوبت آسان است. ماساژور عالی بود و می‌توانستم دسترسی آنلاین را ببینم. این پلتفرم اولین انتخاب من برای خدمات سلامتی شده است.',
   },
   {
     id: 3,
-    name: 'Emily Rodriguez',
-    service: 'Facial Treatment',
-    text: 'The variety of services and providers is outstanding. I read reviews, compared prices, and booked my favorite spa in minutes. My skin has never looked better!',
+    name: 'مریم کریمی',
+    service: 'پاکسازی پوست',
+    text: 'تنوع خدمات و ارائه‌دهندگان فوق‌العاده است. نظرات را خواندم، قیمت‌ها را مقایسه کردم و اسپای مورد علاقه‌ام را در چند دقیقه رزرو کردم. پوست من هرگز بهتر از این نبوده!',
   },
   {
     id: 4,
-    name: 'David Park',
-    service: 'Barbershop',
-    text: 'Best barbershop booking experience ever! The barber knew exactly what I wanted, and the online payment made everything so convenient. Will definitely use again.',
+    name: 'علی محمدی',
+    service: 'آرایشگاه مردانه',
+    text: 'بهترین تجربه رزرو آرایشگاه! سلمانی دقیقاً می‌دانست من چه می‌خواهم و پرداخت آنلاین همه چیز را راحت کرد. قطعاً دوباره استفاده خواهم کرد.',
   },
   {
     id: 5,
-    name: 'Jessica Williams',
-    service: 'Manicure & Pedicure',
-    text: 'Found an amazing nail salon near my office. The reviews were spot-on, and the technician did an incredible job. Love the loyalty rewards too!',
+    name: 'فاطمه حسینی',
+    service: 'مانیکور و پدیکور',
+    text: 'یک سالن ناخن شگفت‌انگیز نزدیک دفترم پیدا کردم. نظرات دقیقاً درست بود و متخصص کار فوق‌العاده‌ای انجام داد. جوایز وفاداری هم عالی است!',
   },
   {
     id: 6,
-    name: 'Alex Thompson',
-    service: 'Spa Package',
-    text: 'Treated myself to a spa day through this platform. Everything from booking to the actual service was top-notch. The instant confirmation gave me peace of mind.',
+    name: 'رضا نوری',
+    service: 'پکیج اسپا',
+    text: 'از طریق این پلتفرم یک روز اسپا برای خودم رزرو کردم. همه چیز از رزرو تا خدمات واقعی عالی بود. تایید فوری آرامش خاطر به من داد.',
   },
 ]
 

@@ -1,10 +1,10 @@
 <template>
-  <section class="how-it-works-section">
+  <section class="how-it-works-section" dir="rtl">
     <div class="container">
       <div class="section-header">
-        <h2 class="section-title">How It Works</h2>
+        <h2 class="section-title">چگونه کار می‌کند</h2>
         <p class="section-subtitle">
-          Book your perfect beauty & wellness experience in 3 simple steps
+          تجربه عالی زیبایی و سلامتی خود را در ۳ مرحله ساده رزرو کنید
         </p>
       </div>
 
@@ -45,11 +45,11 @@
       </div>
 
       <div class="cta-section">
-        <h3 class="cta-title">Ready to get started?</h3>
+        <h3 class="cta-title">آماده شروع هستید؟</h3>
         <button class="cta-btn" @click="getStarted">
-          Find Your Provider
+          ارائه‌دهنده خود را پیدا کنید
           <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7l5 5m0 0l-5 5m5-5H6" />
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 17l-5-5m0 0l5-5m-5 5h12" />
           </svg>
         </button>
       </div>
@@ -64,42 +64,42 @@ const router = useRouter()
 
 const steps = [
   {
-    id: 1,
-    title: 'Search & Discover',
-    description: 'Browse thousands of verified beauty and wellness professionals in your area',
+    id: '۱',
+    title: 'جستجو و کشف',
+    description: 'هزاران متخصص تاییدشده زیبایی و سلامتی را در منطقه خود مرور کنید',
     icon: '🔍',
     color: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
     gradient: 'linear-gradient(135deg, rgba(102, 126, 234, 0.1) 0%, rgba(118, 75, 162, 0.1) 100%)',
     features: [
-      'Filter by service type',
-      'Check ratings & reviews',
-      'View real-time availability',
+      'فیلتر بر اساس نوع خدمات',
+      'بررسی امتیازات و نظرات',
+      'مشاهده دسترسی آنلاین',
     ],
   },
   {
-    id: 2,
-    title: 'Book Instantly',
-    description: 'Choose your preferred time slot and book your appointment in seconds',
+    id: '۲',
+    title: 'رزرو فوری',
+    description: 'زمان دلخواه خود را انتخاب کنید و نوبت خود را در چند ثانیه رزرو کنید',
     icon: '📅',
     color: 'linear-gradient(135deg, #f093fb 0%, #f5576c 100%)',
     gradient: 'linear-gradient(135deg, rgba(240, 147, 251, 0.1) 0%, rgba(245, 87, 108, 0.1) 100%)',
     features: [
-      'Instant confirmation',
-      'Secure online payment',
-      'Calendar sync',
+      'تایید فوری',
+      'پرداخت امن آنلاین',
+      'همگام‌سازی با تقویم',
     ],
   },
   {
-    id: 3,
-    title: 'Enjoy & Relax',
-    description: 'Show up and enjoy your service. Leave a review to help others',
+    id: '۳',
+    title: 'لذت ببرید',
+    description: 'در قرار ملاقات حاضر شوید و از خدمات لذت ببرید. نظر خود را برای کمک به دیگران بنویسید',
     icon: '✨',
     color: 'linear-gradient(135deg, #4facfe 0%, #00f2fe 100%)',
     gradient: 'linear-gradient(135deg, rgba(79, 172, 254, 0.1) 0%, rgba(0, 242, 254, 0.1) 100%)',
     features: [
-      'Easy rescheduling',
-      'Digital receipts',
-      'Loyalty rewards',
+      'تغییر زمان آسان',
+      'رسید دیجیتال',
+      'جوایز وفاداری',
     ],
   },
 ]
@@ -328,7 +328,7 @@ const getStarted = () => {
 }
 
 .cta-btn:hover svg {
-  transform: translateX(4px);
+  transform: translateX(-4px);
 }
 
 /* Responsive */

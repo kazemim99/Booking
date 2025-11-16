@@ -1,22 +1,22 @@
 <template>
-  <section class="cta-section">
+  <section class="cta-section" dir="rtl">
     <div class="container">
       <div class="cta-content">
-        <h2 class="cta-title">Ready to Transform Your Look?</h2>
+        <h2 class="cta-title">آماده تغییر ظاهر خود هستید؟</h2>
         <p class="cta-subtitle">
-          Join thousands of happy customers who book their perfect beauty & wellness experiences with us
+          به هزاران مشتری راضی بپیوندید که تجربه‌های عالی زیبایی و سلامتی خود را با ما رزرو می‌کنند
         </p>
         <div class="cta-buttons">
           <button class="cta-btn primary" @click="getStarted">
             <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
             </svg>
-            Find Providers Near You
+            ارائه‌دهندگان نزدیک خود را پیدا کنید
           </button>
           <button class="cta-btn secondary" @click="learnMore">
-            Learn More
+            بیشتر بدانید
             <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" />
             </svg>
           </button>
         </div>

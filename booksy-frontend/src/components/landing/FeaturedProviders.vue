@@ -1,17 +1,17 @@
 <template>
-  <section class="featured-section">
+  <section class="featured-section" dir="rtl">
     <div class="container">
       <div class="section-header">
         <div class="header-content">
-          <h2 class="section-title">Top-Rated Providers</h2>
+          <h2 class="section-title">بهترین ارائه‌دهندگان</h2>
           <p class="section-subtitle">
-            Handpicked professionals loved by thousands of customers
+            متخصصان برگزیده محبوب هزاران مشتری
           </p>
         </div>
         <button class="view-all-btn" @click="viewAll">
-          View All
+          مشاهده همه
           <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" />
           </svg>
         </button>
       </div>
@@ -19,7 +19,7 @@
       <!-- Loading State -->
       <div v-if="loading" class="loading-state">
         <div class="loading-spinner"></div>
-        <p>Loading featured providers...</p>
+        <p>در حال بارگذاری ارائه‌دهندگان برتر...</p>
       </div>
 
       <!-- Providers Grid -->
@@ -41,7 +41,7 @@
               <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor">
                 <path d="M11.48 3.499a.562.562 0 011.04 0l2.125 5.111a.563.563 0 00.475.345l5.518.442c.499.04.701.663.321.988l-4.204 3.602a.563.563 0 00-.182.557l1.285 5.385a.562.562 0 01-.84.61l-4.725-2.885a.563.563 0 00-.586 0L6.982 20.54a.562.562 0 01-.84-.61l1.285-5.386a.562.562 0 00-.182-.557l-4.204-3.602a.563.563 0 01.321-.988l5.518-.442a.563.563 0 00.475-.345L11.48 3.5z" />
               </svg>
-              Top Rated
+              برتر
             </div>
           </div>
 
@@ -52,8 +52,8 @@
                 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor">
                   <path d="M11.48 3.499a.562.562 0 011.04 0l2.125 5.111a.563.563 0 00.475.345l5.518.442c.499.04.701.663.321.988l-4.204 3.602a.563.563 0 00-.182.557l1.285 5.385a.562.562 0 01-.84.61l-4.725-2.885a.563.563 0 00-.586 0L6.982 20.54a.562.562 0 01-.84-.61l1.285-5.386a.562.562 0 00-.182-.557l-4.204-3.602a.563.563 0 01.321-.988l5.518-.442a.563.563 0 00.475-.345L11.48 3.5z" />
                 </svg>
-                <span class="rating-value">{{ provider.averageRating || 5.0 }}</span>
-                <span class="rating-count">({{ provider.totalReviews || 0 }})</span>
+                <span class="rating-value">{{ convertToPersianNumber(provider.averageRating || 5.0) }}</span>
+                <span class="rating-count">({{ convertToPersianNumber(provider.totalReviews || 0) }})</span>
               </div>
             </div>
 
@@ -73,17 +73,17 @@
 
             <div class="provider-features">
               <span v-if="provider.allowOnlineBooking" class="feature-badge">
-                📅 Online Booking
+                📅 رزرو آنلاین
               </span>
               <span v-if="provider.offersMobileServices" class="feature-badge">
-                🚗 Mobile Service
+                🚗 خدمات سیار
               </span>
             </div>
 
             <button class="book-btn" @click.stop="bookProvider(provider.id)">
-              Book Now
+              رزرو کنید
               <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" />
               </svg>
             </button>
           </div>
@@ -153,6 +153,11 @@ const handleImageError = (event: Event) => {
   const img = event.target as HTMLImageElement
   img.src = 'https://via.placeholder.com/400x300?text=Provider'
 }
+
+const convertToPersianNumber = (num: number): string => {
+  const persianDigits = ['۰', '۱', '۲', '۳', '۴', '۵', '۶', '۷', '۸', '۹']
+  return num.toString().split('').map(digit => persianDigits[parseInt(digit)] || digit).join('')
+}
 </script>
 
 <style scoped>
@@ -216,7 +221,7 @@ const handleImageError = (event: Event) => {
   background: #667eea;
   color: white;
   border-color: #667eea;
-  transform: translateX(4px);
+  transform: translateX(-4px);
 }
 
 .loading-state {
@@ -298,7 +303,7 @@ const handleImageError = (event: Event) => {
 .provider-badge {
   position: absolute;
   top: 1rem;
-  right: 1rem;
+  left: 1rem;
   display: flex;
   align-items: center;
   gap: 0.375rem;

@@ -1,10 +1,10 @@
 <template>
-  <section class="category-section">
+  <section class="category-section" dir="rtl">
     <div class="container">
       <div class="section-header">
-        <h2 class="section-title">Popular Categories</h2>
+        <h2 class="section-title">دسته‌بندی‌های محبوب</h2>
         <p class="section-subtitle">
-          Explore top services from beauty salons, spas, wellness centers, and more
+          بهترین خدمات از سالون‌های زیبایی، اسپاها، مراکز سلامتی و بیشتر را کشف کنید
         </p>
       </div>
 
@@ -19,10 +19,10 @@
             <span class="icon">{{ category.icon }}</span>
           </div>
           <h3 class="category-name">{{ category.name }}</h3>
-          <p class="category-count">{{ category.providerCount }}+ providers</p>
+          <p class="category-count">{{ category.providerCount }}+ ارائه‌دهنده</p>
           <div class="category-arrow">
             <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" />
             </svg>
           </div>
         </div>
@@ -39,67 +39,67 @@ const router = useRouter()
 const categories = [
   {
     id: 1,
-    name: 'Hair Salon',
+    name: 'آرایشگاه مو',
     slug: 'haircut',
     icon: '💇',
     gradient: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-    providerCount: 2500,
+    providerCount: '۲,۵۰۰',
   },
   {
     id: 2,
-    name: 'Massage & Spa',
+    name: 'ماساژ و اسپا',
     slug: 'massage',
     icon: '💆',
     gradient: 'linear-gradient(135deg, #f093fb 0%, #f5576c 100%)',
-    providerCount: 1800,
+    providerCount: '۱,۸۰۰',
   },
   {
     id: 3,
-    name: 'Facial & Skincare',
+    name: 'پاکسازی پوست',
     slug: 'facial',
     icon: '✨',
     gradient: 'linear-gradient(135deg, #4facfe 0%, #00f2fe 100%)',
-    providerCount: 1200,
+    providerCount: '۱,۲۰۰',
   },
   {
     id: 4,
-    name: 'Nails',
+    name: 'مانیکور و پدیکور',
     slug: 'manicure',
     icon: '💅',
     gradient: 'linear-gradient(135deg, #fa709a 0%, #fee140 100%)',
-    providerCount: 1500,
+    providerCount: '۱,۵۰۰',
   },
   {
     id: 5,
-    name: 'Makeup',
+    name: 'آرایش',
     slug: 'makeup',
     icon: '💄',
     gradient: 'linear-gradient(135deg, #ffecd2 0%, #fcb69f 100%)',
-    providerCount: 900,
+    providerCount: '۹۰۰',
   },
   {
     id: 6,
-    name: 'Waxing',
+    name: 'اپیلاسیون',
     slug: 'waxing',
     icon: '🌿',
     gradient: 'linear-gradient(135deg, #a8edea 0%, #fed6e3 100%)',
-    providerCount: 800,
+    providerCount: '۸۰۰',
   },
   {
     id: 7,
-    name: 'Barbershop',
+    name: 'آرایشگاه مردانه',
     slug: 'barbering',
     icon: '💈',
     gradient: 'linear-gradient(135deg, #ffd89b 0%, #19547b 100%)',
-    providerCount: 1100,
+    providerCount: '۱,۱۰۰',
   },
   {
     id: 8,
-    name: 'Tattoo & Piercing',
+    name: 'خالکوبی و پیرسینگ',
     slug: 'tattoo',
     icon: '🎨',
     gradient: 'linear-gradient(135deg, #f857a6 0%, #ff5858 100%)',
-    providerCount: 600,
+    providerCount: '۶۰۰',
   },
 ]
 
@@ -223,7 +223,7 @@ const navigateToCategory = (slug: string) => {
 .category-arrow {
   position: absolute;
   top: 2rem;
-  right: 2rem;
+  left: 2rem;
   width: 32px;
   height: 32px;
   display: flex;
@@ -232,7 +232,7 @@ const navigateToCategory = (slug: string) => {
   background: #f1f5f9;
   border-radius: 50%;
   opacity: 0;
-  transform: translateX(-10px);
+  transform: translateX(10px);
   transition: all 0.3s;
 }
 
