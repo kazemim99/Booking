@@ -72,7 +72,8 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed, onMounted, watch } from 'vue'
+import { availabilityService } from '@/modules/booking/api/availability.service'
 
 interface CalendarDay {
   date: Date
@@ -102,17 +103,8 @@ const emit = defineEmits<{
 // State
 const currentDate = ref(new Date())
 const weekDays = ['ش', 'ی', 'د', 'س', 'چ', 'پ', 'ج'] // شنبه to جمعه
-
-// Mock availability data (replace with API call)
-const mockAvailability: Record<string, number> = {}
-
-// Generate mock availability for next 30 days
-for (let i = 0; i < 30; i++) {
-  const date = new Date()
-  date.setDate(date.getDate() + i)
-  const dateString = date.toISOString().split('T')[0]
-  mockAvailability[dateString] = Math.floor(Math.random() * 8) // 0-7 slots
-}
+const availabilityData = ref<Record<string, number>>({})
+const loading = ref(false)
 
 // Computed
 const currentMonthYear = computed(() => {
@@ -172,13 +164,55 @@ const calendarDays = computed((): CalendarDay[] => {
 })
 
 // Methods
+const fetchAvailability = async () => {
+  if (!props.serviceId) {
+    console.warn('[AvailabilityCalendar] No service selected, skipping availability fetch')
+    return
+  }
+
+  loading.value = true
+  try {
+    const year = currentDate.value.getFullYear()
+    const month = currentDate.value.getMonth()
+
+    // Get first and last day of current month
+    const fromDate = new Date(year, month, 1).toISOString().split('T')[0]
+    const toDate = new Date(year, month + 1, 0).toISOString().split('T')[0]
+
+    console.log('[AvailabilityCalendar] Fetching availability for:', { providerId: props.providerId, serviceId: props.serviceId, fromDate, toDate })
+
+    const response = await availabilityService.getAvailableDates({
+      providerId: props.providerId,
+      serviceId: props.serviceId,
+      fromDate,
+      toDate,
+    })
+
+    console.log('[AvailabilityCalendar] Availability response:', response)
+
+    // Convert to our format
+    const newAvailabilityData: Record<string, number> = {}
+    response.dates.forEach(dateInfo => {
+      newAvailabilityData[dateInfo.date] = dateInfo.availableSlots
+    })
+
+    availabilityData.value = newAvailabilityData
+  } catch (error) {
+    console.error('[AvailabilityCalendar] Failed to fetch availability:', error)
+    // Keep existing data or set to empty
+    availabilityData.value = {}
+  } finally {
+    loading.value = false
+  }
+}
+
 const createCalendarDay = (date: Date, isCurrentMonth: boolean): CalendarDay => {
   const today = new Date()
   today.setHours(0, 0, 0, 0)
   date.setHours(0, 0, 0, 0)
 
   const dateString = date.toISOString().split('T')[0]
-  const availableSlots = mockAvailability[dateString] || 0
+  const availableSlots = availabilityData.value[dateString] || 0
 
   return {
     date,
@@ -220,9 +254,19 @@ const convertToPersianNumber = (num: number): string => {
 }
 
 // Lifecycle
-onMounted(() => {
-  // TODO: Load availability from API
-  // await loadAvailability(props.providerId, props.serviceId)
+onMounted(async () => {
+  await fetchAvailability()
+})
+
+// Watch for service changes or month changes
+watch(() => props.serviceId, async (newServiceId) => {
+  if (newServiceId) {
+    await fetchAvailability()
+  }
+})
+
+watch(currentDate, async () => {
+  await fetchAvailability()
 })
 </script>
 

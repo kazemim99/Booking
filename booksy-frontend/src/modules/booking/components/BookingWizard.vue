@@ -153,9 +153,13 @@ import ServiceSelection from './ServiceSelection.vue'
 import SlotSelection from './SlotSelection.vue'
 import CustomerInfo from './CustomerInfo.vue'
 import BookingConfirmation from './BookingConfirmation.vue'
+import { bookingService } from '@/modules/booking/api/booking.service'
+import type { CreateBookingRequest } from '@/modules/booking/api/booking.service'
+import { useAuthStore } from '@/core/stores/modules/auth.store'
 
 const router = useRouter()
 const route = useRoute()
+const authStore = useAuthStore()
 
 // Props
 const providerId = ref(route.query.providerId as string || '')
@@ -279,23 +283,48 @@ const submitBooking = async () => {
   isSubmitting.value = true
 
   try {
-    // TODO: Call actual API
-    // const response = await bookingService.createBooking({
-    //   providerId: providerId.value,
-    //   serviceId: bookingData.value.serviceId,
-    //   startTime: `${bookingData.value.date}T${bookingData.value.startTime}`,
-    //   staffId: bookingData.value.staffId,
-    //   customerNotes: bookingData.value.customerInfo.notes,
-    // })
+    console.log('[BookingWizard] Submitting booking:', bookingData.value)
 
-    // Mock success
-    await new Promise(resolve => setTimeout(resolve, 2000))
-    bookingId.value = 'BK' + Math.random().toString(36).substring(2, 9).toUpperCase()
+    // Get current user ID
+    const customerId = authStore.user?.id
+    if (!customerId) {
+      throw new Error('User not authenticated')
+    }
+
+    // Calculate end time based on service duration
+    const startDateTime = new Date(`${bookingData.value.date}T${bookingData.value.startTime}:00`)
+    const endDateTime = new Date(startDateTime.getTime() + bookingData.value.serviceDuration * 60000)
+
+    // Format times to ISO 8601
+    const startTime = startDateTime.toISOString()
+    const endTime = endDateTime.toISOString()
+
+    // Prepare booking request
+    const request: CreateBookingRequest = {
+      customerId,
+      providerId: providerId.value,
+      serviceId: bookingData.value.serviceId!,
+      startTime,
+      endTime,
+      notes: bookingData.value.customerInfo.notes || undefined,
+      totalAmount: bookingData.value.servicePrice,
+    }
+
+    console.log('[BookingWizard] Booking request:', request)
+
+    // Call booking API
+    const response = await bookingService.createBooking(request)
+
+    console.log('[BookingWizard] Booking created successfully:', response)
+
+    // Set booking ID from response
+    bookingId.value = response.id || 'BK' + Math.random().toString(36).substring(2, 9).toUpperCase()
 
     showSuccessModal.value = true
   } catch (error) {
-    console.error('Booking failed:', error)
-    alert('خطا در ثبت رزرو. لطفاً دوباره تلاش کنید.')
+    console.error('[BookingWizard] Booking failed:', error)
+    const errorMessage = error instanceof Error ? error.message : 'خطا در ثبت رزرو'
+    alert(`خطا در ثبت رزرو: ${errorMessage}. لطفاً دوباره تلاش کنید.`)
   } finally {
     isSubmitting.value = false
   }

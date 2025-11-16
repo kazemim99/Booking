@@ -71,6 +71,8 @@
 <script setup lang="ts">
 import { ref, watch } from 'vue'
 import AvailabilityCalendar from './AvailabilityCalendar.vue'
+import { availabilityService } from '@/modules/booking/api/availability.service'
+import type { TimeSlot as AvailabilityTimeSlot } from '@/modules/booking/api/availability.service'
 
 interface TimeSlot {
   startTime: string
@@ -111,45 +113,39 @@ const handleDateSelected = async (dateString: string) => {
 }
 
 const loadAvailableSlots = async (dateString: string) => {
+  if (!props.serviceId) {
+    console.warn('[SlotSelection] No service selected')
+    return
+  }
+
   loadingSlots.value = true
 
   try {
-    // TODO: Call actual API
-    // const response = await bookingService.getAvailableSlots(props.providerId, props.serviceId, dateString)
-    // availableSlots.value = response.data
+    console.log('[SlotSelection] Fetching slots for:', { providerId: props.providerId, serviceId: props.serviceId, date: dateString })
 
-    // Mock data
-    await new Promise(resolve => setTimeout(resolve, 800))
-
-    const mockSlots: TimeSlot[] = []
-    const staffMembers = [
-      { id: '1', name: 'سارا احمدی' },
-      { id: '2', name: 'مینا رضایی' },
-      { id: '3', name: 'نگار کریمی' },
-    ]
-
-    const times = ['09:00', '10:00', '11:00', '14:00', '15:00', '16:00', '17:00']
-
-    times.forEach(time => {
-      const randomStaff = staffMembers[Math.floor(Math.random() * staffMembers.length)]
-      if (Math.random() > 0.3) { // 70% chance of slot being available
-        const [hours, minutes] = time.split(':').map(Number)
-        const endHours = hours + 1
-        const endTime = `${String(endHours).padStart(2, '0')}:${minutes === 0 ? '00' : minutes}`
-
-        mockSlots.push({
-          startTime: time,
-          endTime,
-          staffId: randomStaff.id,
-          staffName: randomStaff.name,
-          available: true,
-        })
-      }
+    // Call real availability API
+    const response = await availabilityService.getAvailableSlots({
+      providerId: props.providerId,
+      serviceId: props.serviceId!,
+      date: dateString,
     })
 
-    availableSlots.value = mockSlots
+    console.log('[SlotSelection] Slots received:', response)
+
+    // Filter for available slots and map to our interface
+    availableSlots.value = response.slots
+      .filter(slot => slot.available)
+      .map(slot => ({
+        startTime: new Date(slot.startTime).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: false }),
+        endTime: new Date(slot.endTime).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: false }),
+        staffId: slot.staffMemberId || '',
+        staffName: slot.staffName || 'کارشناس',
+        available: true,
+      }))
+
+    console.log('[SlotSelection] Processed slots:', availableSlots.value)
   } catch (error) {
-    console.error('Failed to load slots:', error)
+    console.error('[SlotSelection] Failed to load slots:', error)
     availableSlots.value = []
   } finally {
     loadingSlots.value = false
