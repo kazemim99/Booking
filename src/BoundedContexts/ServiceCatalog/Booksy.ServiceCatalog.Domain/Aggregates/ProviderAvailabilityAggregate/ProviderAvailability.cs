@@ -139,12 +139,25 @@ namespace Booksy.ServiceCatalog.Domain.Aggregates.ProviderAvailabilityAggregate
             if (Status != AvailabilityStatus.Available && Status != AvailabilityStatus.TentativeHold)
                 throw new DomainValidationException(
                     $"Cannot book slot with status {Status}. Only Available or TentativeHold slots can be booked.");
-            
+
+            var previousStatus = Status;
             Status = AvailabilityStatus.Booked;
             BookingId = bookingId;
             HoldExpiresAt = null; // Clear hold expiration
             LastModifiedAt = DateTime.UtcNow;
             LastModifiedBy = modifiedBy;
+
+            // Raise domain event for real-time updates
+            RaiseDomainEvent(new Events.AvailabilitySlotChangedEvent(
+                AvailabilityId: Id,
+                ProviderId: ProviderId,
+                Date: Date,
+                StartTime: StartTime,
+                EndTime: EndTime,
+                PreviousStatus: previousStatus,
+                NewStatus: Status,
+                BookingId: bookingId,
+                ChangedAt: LastModifiedAt.Value));
         }
         
         /// <summary>
@@ -155,12 +168,26 @@ namespace Booksy.ServiceCatalog.Domain.Aggregates.ProviderAvailabilityAggregate
             if (Status != AvailabilityStatus.Booked && Status != AvailabilityStatus.TentativeHold)
                 throw new DomainValidationException(
                     $"Cannot release slot with status {Status}. Only Booked or TentativeHold slots can be released.");
-            
+
+            var previousStatus = Status;
+            var previousBookingId = BookingId;
             Status = AvailabilityStatus.Available;
             BookingId = null;
             HoldExpiresAt = null;
             LastModifiedAt = DateTime.UtcNow;
             LastModifiedBy = modifiedBy;
+
+            // Raise domain event for real-time updates
+            RaiseDomainEvent(new Events.AvailabilitySlotChangedEvent(
+                AvailabilityId: Id,
+                ProviderId: ProviderId,
+                Date: Date,
+                StartTime: StartTime,
+                EndTime: EndTime,
+                PreviousStatus: previousStatus,
+                NewStatus: Status,
+                BookingId: previousBookingId,
+                ChangedAt: LastModifiedAt.Value));
         }
         
         /// <summary>
