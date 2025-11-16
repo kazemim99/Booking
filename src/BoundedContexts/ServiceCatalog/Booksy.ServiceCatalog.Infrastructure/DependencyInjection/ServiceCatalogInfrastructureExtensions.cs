@@ -69,6 +69,9 @@ namespace Booksy.ServiceCatalog.Infrastructure.DependencyInjection
                 }
             });
 
+            // Register ServiceCatalogDbContext as DbContext for OutboxProcessor
+            services.AddScoped<DbContext>(provider => provider.GetRequiredService<ServiceCatalogDbContext>());
+
             services.AddScoped<ISeeder, ServiceCatalogDatabaseSeederOrchestrator>();
             // Unit of Work
             services.AddScoped<IUnitOfWork>(provider =>

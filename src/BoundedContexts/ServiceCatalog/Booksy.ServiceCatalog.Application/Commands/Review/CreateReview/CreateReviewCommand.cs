@@ -9,7 +9,10 @@ public sealed record CreateReviewCommand(
     Guid BookingId,
     Guid CustomerId,
     decimal Rating,
-    string? Comment = null) : ICommand<CreateReviewResult>;
+    string? Comment = null) : ICommand<CreateReviewResult>
+{
+    public Guid? IdempotencyKey { get; init; }
+}
 
 /// <summary>
 /// Result of creating a review

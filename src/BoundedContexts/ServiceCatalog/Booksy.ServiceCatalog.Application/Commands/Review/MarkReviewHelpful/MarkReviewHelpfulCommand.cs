@@ -7,7 +7,10 @@ namespace Booksy.ServiceCatalog.Application.Commands.Review.MarkReviewHelpful;
 /// </summary>
 public sealed record MarkReviewHelpfulCommand(
     Guid ReviewId,
-    bool IsHelpful) : ICommand<MarkReviewHelpfulResult>;
+    bool IsHelpful) : ICommand<MarkReviewHelpfulResult>
+{
+    public Guid? IdempotencyKey { get; init; }
+}
 
 /// <summary>
 /// Result of marking a review as helpful

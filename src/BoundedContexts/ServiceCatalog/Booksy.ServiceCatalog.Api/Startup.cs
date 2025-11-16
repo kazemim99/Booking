@@ -216,7 +216,7 @@ namespace Booksy.API
             if (env.IsDevelopment() || env.EnvironmentName.Contains("Test"))
             {
                 using var scope = app.ApplicationServices.CreateScope();
-                var seeder = scope.ServiceProvider.InitializeDatabaseAsync();
+                scope.ServiceProvider.InitializeDatabaseAsync().GetAwaiter().GetResult();
             }
         }
     }
