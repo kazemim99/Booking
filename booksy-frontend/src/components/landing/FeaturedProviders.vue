@@ -33,9 +33,9 @@
         >
           <div class="provider-image">
             <img
-              :src="provider.logoUrl || 'https://via.placeholder.com/400x300?text=Provider'"
+              :src="provider.logoUrl || getProviderMockImage(index)"
               :alt="provider.businessName"
-              @error="handleImageError"
+              @error="(e) => handleImageError(e, index)"
             />
             <div class="provider-badge" v-if="provider.averageRating >= 4.5">
               <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor">
@@ -149,9 +149,23 @@ const viewAll = () => {
   router.push('/providers/search')
 }
 
-const handleImageError = (event: Event) => {
+const getProviderMockImage = (index: number): string => {
+  // Beautiful mock images from Unsplash for different beauty/wellness services
+  const mockImages = [
+    'https://images.unsplash.com/photo-1560066984-138dadb4c035?w=600&q=80', // Hair salon
+    'https://images.unsplash.com/photo-1540555700478-4be289fbecef?w=600&q=80', // Spa/Massage
+    'https://images.unsplash.com/photo-1487412947147-5cebf100ffc2?w=600&q=80', // Facial/Skincare
+    'https://images.unsplash.com/photo-1604902396830-aca29bb5b2e2?w=600&q=80', // Nails
+    'https://images.unsplash.com/photo-1522337360788-8b13dee7a37e?w=600&q=80', // Makeup
+    'https://images.unsplash.com/photo-1519415510236-718bdfcd89c8?w=600&q=80', // Barbershop
+  ]
+  return mockImages[index % mockImages.length]
+}
+
+const handleImageError = (event: Event, index: number) => {
   const img = event.target as HTMLImageElement
-  img.src = 'https://via.placeholder.com/400x300?text=Provider'
+  // Fallback to a different mock image if the first one fails
+  img.src = getProviderMockImage(index)
 }
 
 const convertToPersianNumber = (num: number): string => {

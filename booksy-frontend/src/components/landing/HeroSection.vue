@@ -1,6 +1,18 @@
 <template>
   <section class="hero-section" dir="rtl">
     <div class="hero-background">
+      <!-- Background Video -->
+      <video
+        class="hero-video"
+        autoplay
+        muted
+        loop
+        playsinline
+        poster="https://images.unsplash.com/photo-1560066984-138dadb4c035?w=1920&q=80"
+      >
+        <source src="https://cdn.coverr.co/videos/coverr-beauty-salon-reflection-8122/1080p.mp4" type="video/mp4" />
+        <!-- Fallback to gradient if video fails to load -->
+      </video>
       <div class="hero-overlay"></div>
       <div class="hero-pattern"></div>
     </div>
@@ -183,14 +195,40 @@ const quickSearch = (category: string) => {
   background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
 }
 
+.hero-video {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  min-width: 100%;
+  min-height: 100%;
+  width: auto;
+  height: auto;
+  transform: translate(-50%, -50%);
+  object-fit: cover;
+  z-index: 0;
+  opacity: 0.3;
+  filter: brightness(1.1) contrast(0.9);
+  animation: slowZoom 30s ease-in-out infinite alternate;
+}
+
+@keyframes slowZoom {
+  0% {
+    transform: translate(-50%, -50%) scale(1);
+  }
+  100% {
+    transform: translate(-50%, -50%) scale(1.1);
+  }
+}
+
 .hero-overlay {
   position: absolute;
   inset: 0;
   background: linear-gradient(
     135deg,
-    rgba(102, 126, 234, 0.95) 0%,
-    rgba(118, 75, 162, 0.9) 100%
+    rgba(102, 126, 234, 0.85) 0%,
+    rgba(118, 75, 162, 0.8) 100%
   );
+  z-index: 1;
 }
 
 .hero-pattern {
@@ -198,13 +236,14 @@ const quickSearch = (category: string) => {
   inset: 0;
   background-image: url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23ffffff' fill-opacity='0.05'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E");
   opacity: 0.4;
+  z-index: 2;
 }
 
 .hero-content {
   position: relative;
   max-width: 900px;
   width: 100%;
-  z-index: 1;
+  z-index: 3;
 }
 
 .hero-text {
@@ -433,6 +472,10 @@ const quickSearch = (category: string) => {
   .hero-section {
     min-height: 600px;
     padding: 2rem 1rem;
+  }
+
+  .hero-video {
+    display: none; /* Hide video on mobile to save bandwidth */
   }
 
   .search-inputs {
