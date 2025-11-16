@@ -21,6 +21,7 @@ namespace Booksy.ServiceCatalog.Application.Commands.Booking.CreateBooking
     public sealed class CreateBookingCommandHandler : ICommandHandler<CreateBookingCommand, CreateBookingResult>
     {
         private readonly IBookingWriteRepository _bookingWriteRepository;
+        private readonly IBookingReadRepository _bookingReadRepository;
         private readonly IProviderReadRepository _providerRepository;
         private readonly IServiceReadRepository _serviceRepository;
         private readonly IProviderAvailabilityWriteRepository _availabilityWriteRepository;
@@ -30,6 +31,7 @@ namespace Booksy.ServiceCatalog.Application.Commands.Booking.CreateBooking
 
         public CreateBookingCommandHandler(
             IBookingWriteRepository bookingWriteRepository,
+            IBookingReadRepository bookingReadRepository,
             IProviderReadRepository providerRepository,
             IServiceReadRepository serviceRepository,
             IProviderAvailabilityWriteRepository availabilityWriteRepository,
@@ -38,6 +40,7 @@ namespace Booksy.ServiceCatalog.Application.Commands.Booking.CreateBooking
             ILogger<CreateBookingCommandHandler> logger)
         {
             _bookingWriteRepository = bookingWriteRepository;
+            _bookingReadRepository = bookingReadRepository;
             _providerRepository = providerRepository;
             _serviceRepository = serviceRepository;
             _availabilityWriteRepository = availabilityWriteRepository;
@@ -77,19 +80,7 @@ namespace Booksy.ServiceCatalog.Application.Commands.Booking.CreateBooking
             if (staff == null)
                 throw new NotFoundException($"Staff member with ID {request.StaffId} not found");
 
-            // Validate availability
-            var isAvailable = await _availabilityService.IsTimeSlotAvailableAsync(
-                provider,
-                service,
-                staff,
-                request.StartTime,
-                service.Duration,
-                cancellationToken);
-
-            if (!isAvailable)
-                throw new ConflictException("The requested time slot is not available");
-
-            // Validate booking constraints
+            // Validate booking constraints (provider status, business hours, holidays, etc.)
             var validationResult = await _availabilityService.ValidateBookingConstraintsAsync(
                 provider,
                 service,
@@ -98,6 +89,25 @@ namespace Booksy.ServiceCatalog.Application.Commands.Booking.CreateBooking
 
             if (!validationResult.IsValid)
                 throw new ConflictException($"Booking validation failed: {string.Join(", ", validationResult.Errors)}");
+
+            // Check if staff is qualified for this service
+            if (!service.IsStaffQualified(staff.Id))
+                throw new ConflictException($"Staff member {staff.FullName} is not qualified to provide this service");
+
+            // Check if staff is active
+            if (!staff.IsActive)
+                throw new ConflictException($"Staff member {staff.FullName} is not currently active");
+
+            // Check for booking conflicts with existing appointments
+            var bookingEndTime = request.StartTime.AddMinutes(service.Duration.Value + 15); // Add 15-min buffer
+            var conflictingBookings = await _bookingReadRepository.GetConflictingBookingsAsync(
+                staff.Id,
+                request.StartTime,
+                bookingEndTime,
+                cancellationToken);
+
+            if (conflictingBookings.Any())
+                throw new ConflictException("This time slot conflicts with an existing booking");
 
             // Get booking policy from service or use default
             var bookingPolicy = service.BookingPolicy ?? BookingPolicy.Default;

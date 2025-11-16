@@ -27,18 +27,40 @@ public class BookingsControllerTests : ServiceCatalogIntegrationTestBase
     {
         // Arrange
         var provider = await CreateTestProviderWithServicesAsync();
+
+        // Set business hours (9 AM to 5 PM, Monday to Friday)
+        var businessHours = new Dictionary<DayOfWeek, (TimeOnly? Open, TimeOnly? Close)>
+        {
+            { DayOfWeek.Monday, (new TimeOnly(9, 0), new TimeOnly(17, 0)) },
+            { DayOfWeek.Tuesday, (new TimeOnly(9, 0), new TimeOnly(17, 0)) },
+            { DayOfWeek.Wednesday, (new TimeOnly(9, 0), new TimeOnly(17, 0)) },
+            { DayOfWeek.Thursday, (new TimeOnly(9, 0), new TimeOnly(17, 0)) },
+            { DayOfWeek.Friday, (new TimeOnly(9, 0), new TimeOnly(17, 0)) },
+            { DayOfWeek.Saturday, (null, null) }, // Closed
+            { DayOfWeek.Sunday, (null, null) }    // Closed
+        };
+        provider.SetBusinessHours(businessHours);
+        await UpdateEntityAsync(provider);
+
         var service = await GetFirstServiceForProviderAsync(provider.Id.Value);
         var staff = provider.Staff.First();
         var customerId = Guid.NewGuid();
 
         AuthenticateAsUser(customerId, "customer@test.com");
 
+        // Calculate a valid booking time: next Monday at 10 AM (within business hours)
+        var now = DateTime.UtcNow;
+        var daysUntilMonday = ((int)DayOfWeek.Monday - (int)now.DayOfWeek + 7) % 7;
+        if (daysUntilMonday == 0) daysUntilMonday = 7; // If today is Monday, schedule for next Monday
+        var nextMonday = now.AddDays(daysUntilMonday).Date;
+        var bookingTime = nextMonday.AddHours(10); // 10 AM
+
         var request = new CreateBookingRequest
         {
             ProviderId = provider.Id.Value,
             ServiceId = service.Id.Value,
             StaffId = staff.Id,
-            StartTime = DateTime.UtcNow.AddDays(2).AddHours(10), // 10 AM, 2 days from now
+            StartTime = bookingTime,
             CustomerNotes = "First time customer"
         };
 
@@ -47,6 +69,21 @@ public class BookingsControllerTests : ServiceCatalogIntegrationTestBase
             "/api/v1/bookings", request);
 
         // Assert
+        // First check if there's an error and log it for debugging
+        if (response.Error != null)
+        {
+            Console.WriteLine($"API Error: {response.Error.Message}");
+            Console.WriteLine($"Error Code: {response.Error.Code}");
+            if (response.Error.Errors != null)
+            {
+                foreach (var error in response.Error.Errors)
+                {
+                    Console.WriteLine($"Validation Error - {error.Key}: {string.Join(", ", error.Value)}");
+                }
+            }
+        }
+
+        response.Error.Should().BeNull("There should be no error in successful booking creation");
         response.StatusCode.Should().Be(HttpStatusCode.Created);
         response.Data.Should().NotBeNull();
         response.Data!.Id.Should().NotBeEmpty();

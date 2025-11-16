@@ -195,7 +195,7 @@ app.MapHealthChecks("/health/live", new HealthCheckOptions
 app.MapControllers();
 
 // Seed Database (Development only)
-if (app.Environment.IsDevelopment())
+if (app.Environment.IsDevelopment() || app.Environment.EnvironmentName.Contains("Test"))
 {
     using var scope = app.Services.CreateScope();
     var seeder = scope.ServiceProvider.InitializeDatabaseAsync();

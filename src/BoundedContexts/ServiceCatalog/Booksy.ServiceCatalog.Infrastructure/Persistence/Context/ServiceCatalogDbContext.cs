@@ -49,12 +49,7 @@ namespace Booksy.ServiceCatalog.Infrastructure.Persistence.Context
         public DbSet<ProviderAvailability> ProviderAvailability => Set<ProviderAvailability>();
         public DbSet<Review> Reviews => Set<Review>();
 
-        // Entities
-        public DbSet<Staff> Staff => Set<Staff>();
-        public DbSet<BusinessHours> BusinessHours => Set<BusinessHours>();
-        public DbSet<HolidaySchedule> Holidays => Set<HolidaySchedule>();
-        public DbSet<ExceptionSchedule> Exceptions => Set<ExceptionSchedule>();
-        // ServiceOption and PriceTier are owned entities (OwnsMany) - not exposed as DbSets
+        // Reference Data (not part of aggregates)
         public DbSet<ProvinceCities> ProvinceCities => Set<ProvinceCities>();
 
         protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)

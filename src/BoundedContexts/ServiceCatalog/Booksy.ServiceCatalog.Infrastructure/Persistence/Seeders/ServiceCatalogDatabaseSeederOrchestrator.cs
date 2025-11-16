@@ -48,17 +48,18 @@ namespace Booksy.ServiceCatalog.Infrastructure.Persistence.Seeders
                 new ServiceOptionSeeder(_context,
                     Microsoft.Extensions.Logging.Abstractions.NullLogger<ServiceOptionSeeder>.Instance),
 
-                // 7. Notification Templates (independent)
+                // 7. Availability (depends on Providers, Staff, BusinessHours, Services)
+                // MUST run BEFORE BookingSeeder because bookings need availability slots
+                new AvailabilitySeeder(_context,
+                    Microsoft.Extensions.Logging.Abstractions.NullLogger<AvailabilitySeeder>.Instance),
+
+                // 8. Notification Templates (independent)
                 new NotificationTemplateSeeder(_context,
                     Microsoft.Extensions.Logging.Abstractions.NullLogger<NotificationTemplateSeeder>.Instance),
 
-                // 8. Bookings (depends on Providers, Staff, Services)
+                // 9. Bookings (depends on Providers, Staff, Services, ProviderAvailability)
                 new BookingSeeder(_context,
                     Microsoft.Extensions.Logging.Abstractions.NullLogger<BookingSeeder>.Instance),
-
-                // 9. Availability (depends on BusinessHours and Bookings)
-                new AvailabilitySeeder(_context,
-                    Microsoft.Extensions.Logging.Abstractions.NullLogger<AvailabilitySeeder>.Instance),
 
                 // 10. Reviews (depends on Bookings - only completed bookings can have reviews)
                 new ReviewSeeder(_context,

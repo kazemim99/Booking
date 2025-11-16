@@ -42,6 +42,7 @@ namespace Booksy.ServiceCatalog.Infrastructure.DependencyInjection
             this IServiceCollection services,
             IConfiguration configuration)
         {
+            
             // Database Context
             services.AddDbContext<ServiceCatalogDbContext>(options =>
             {
@@ -51,11 +52,11 @@ namespace Booksy.ServiceCatalog.Infrastructure.DependencyInjection
                 options.UseNpgsql(connectionString, npgsqlOptions =>
                 {
                     npgsqlOptions.MigrationsAssembly(typeof(ServiceCatalogDbContext).Assembly.FullName);
-                    npgsqlOptions.MigrationsHistoryTable("__EFMigrationsHistory", "user_management");
+                    npgsqlOptions.MigrationsHistoryTable("__EFMigrationsHistory", "ServiceCatalog");
                     npgsqlOptions.CommandTimeout(30);
                     npgsqlOptions.EnableRetryOnFailure(
                         maxRetryCount: 3,
-                    maxRetryDelay: TimeSpan.FromSeconds(5),
+                        maxRetryDelay: TimeSpan.FromSeconds(5),
                         errorCodesToAdd: null);
                 });
 
@@ -65,11 +66,8 @@ namespace Booksy.ServiceCatalog.Infrastructure.DependencyInjection
                     options.EnableSensitiveDataLogging();
                     options.EnableDetailedErrors();
                     options.LogTo(Console.WriteLine, LogLevel.Information);
-
                 }
             });
-
-            services.AddScoped<DbContext>();
 
             services.AddScoped<ISeeder, ServiceCatalogDatabaseSeederOrchestrator>();
             // Unit of Work

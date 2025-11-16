@@ -213,7 +213,7 @@ namespace Booksy.API
             });
 
             // Run database seeder in development
-            if (env.IsDevelopment())
+            if (env.IsDevelopment() || env.EnvironmentName.Contains("Test"))
             {
                 using var scope = app.ApplicationServices.CreateScope();
                 var seeder = scope.ServiceProvider.InitializeDatabaseAsync();
