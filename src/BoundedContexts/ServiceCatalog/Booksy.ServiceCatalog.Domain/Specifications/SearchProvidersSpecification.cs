@@ -23,6 +23,7 @@ namespace Booksy.ServiceCatalog.Domain.Specifications.Provider
             bool? offersMobileServices = null,
             bool? verifiedOnly = null,
             decimal? minRating = null,
+            string? serviceCategory = null,
             bool includeInactive = false)
         {
             // Text search across multiple fields
@@ -82,6 +83,15 @@ namespace Booksy.ServiceCatalog.Domain.Specifications.Provider
                 AddCriteria(provider => provider.AverageRating >= minRating.Value);
             }
 
+            // Service category filter
+            if (!string.IsNullOrWhiteSpace(serviceCategory))
+            {
+                var categoryLower = serviceCategory.Trim().ToLower();
+                AddCriteria(provider => provider.Services.Any(s =>
+                    s.Category.Name.ToLower().Contains(categoryLower) &&
+                    s.Status == ServiceStatus.Active));
+            }
+
             // Status filter (default to active providers only)
             if (includeInactive)
             {
@@ -92,9 +102,8 @@ namespace Booksy.ServiceCatalog.Domain.Specifications.Provider
             //    AddCriteria(provider => provider.Status == );
             //}
 
-            // Default ordering by rating and business name
-            AddOrderByDescending(provider => provider.AverageRating);
-            AddThenBy(provider => provider.Profile.BusinessName);
+            // Note: Ordering is now handled dynamically in the query handler based on SortBy parameter
+            // Removed default ordering to allow flexible sorting (rating, popularity, price, distance)
         }
     }
 }
