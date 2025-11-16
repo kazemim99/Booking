@@ -36,7 +36,7 @@
           <span class="action-icon">🔍</span>
           <span class="action-label">جستجوی خدمات</span>
         </button>
-        <button @click="router.push('/customer/book')" class="action-card">
+        <button @click="router.push({ name: 'CustomerBooking' })" class="action-card">
           <span class="action-icon">➕</span>
           <span class="action-label">رزرو جدید</span>
         </button>
@@ -68,7 +68,7 @@
       </div>
       <div v-else class="empty-state">
         <p>رزرو آینده‌ای ندارید</p>
-        <button @click="router.push('/customer/book')" class="btn-primary">رزرو جدید</button>
+        <button @click="router.push({ name: 'CustomerBooking' })" class="btn-primary">رزرو جدید</button>
       </div>
     </div>
   </div>

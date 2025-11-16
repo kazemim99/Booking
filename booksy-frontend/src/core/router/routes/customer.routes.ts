@@ -74,7 +74,7 @@ const customerRoutes: RouteRecordRaw[] = [
       },
       {
         path: 'book',
-        name: 'NewBooking',
+        name: 'CustomerBooking',
         component: () => import('@/modules/customer/views/BookingWizardView.vue'),
         meta: {
           title: 'رزرو جدید',
