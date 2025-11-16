@@ -1,4 +1,71 @@
-/* B Nazanin Font - Persian/Farsi Font */
+/* Vazir Font - Persian/Farsi Font (Primary) */
+
+/* Vazir Regular */
+@font-face {
+  font-family: 'Vazir';
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url('/vazir-font-v16.1.0/Vazir.eot'); /* IE9 Compat Modes */
+  src: url('/vazir-font-v16.1.0/Vazir.eot?#iefix') format('embedded-opentype'), /* IE6-IE8 */
+       url('/vazir-font-v16.1.0/Vazir.woff2') format('woff2'), /* Modern Browsers */
+       url('/vazir-font-v16.1.0/Vazir.woff') format('woff'), /* Modern Browsers */
+       url('/vazir-font-v16.1.0/Vazir.ttf') format('truetype'); /* Safari, Android, iOS */
+}
+
+/* Vazir Light */
+@font-face {
+  font-family: 'Vazir';
+  font-style: normal;
+  font-weight: 300;
+  font-display: swap;
+  src: url('/vazir-font-v16.1.0/Vazir-Light.eot');
+  src: url('/vazir-font-v16.1.0/Vazir-Light.eot?#iefix') format('embedded-opentype'),
+       url('/vazir-font-v16.1.0/Vazir-Light.woff2') format('woff2'),
+       url('/vazir-font-v16.1.0/Vazir-Light.woff') format('woff'),
+       url('/vazir-font-v16.1.0/Vazir-Light.ttf') format('truetype');
+}
+
+/* Vazir Medium */
+@font-face {
+  font-family: 'Vazir';
+  font-style: normal;
+  font-weight: 500;
+  font-display: swap;
+  src: url('/vazir-font-v16.1.0/Vazir-Medium.eot');
+  src: url('/vazir-font-v16.1.0/Vazir-Medium.eot?#iefix') format('embedded-opentype'),
+       url('/vazir-font-v16.1.0/Vazir-Medium.woff2') format('woff2'),
+       url('/vazir-font-v16.1.0/Vazir-Medium.woff') format('woff'),
+       url('/vazir-font-v16.1.0/Vazir-Medium.ttf') format('truetype');
+}
+
+/* Vazir Bold */
+@font-face {
+  font-family: 'Vazir';
+  font-style: normal;
+  font-weight: 700;
+  font-display: swap;
+  src: url('/vazir-font-v16.1.0/Vazir-Bold.eot');
+  src: url('/vazir-font-v16.1.0/Vazir-Bold.eot?#iefix') format('embedded-opentype'),
+       url('/vazir-font-v16.1.0/Vazir-Bold.woff2') format('woff2'),
+       url('/vazir-font-v16.1.0/Vazir-Bold.woff') format('woff'),
+       url('/vazir-font-v16.1.0/Vazir-Bold.ttf') format('truetype');
+}
+
+/* Vazir Thin */
+@font-face {
+  font-family: 'Vazir';
+  font-style: normal;
+  font-weight: 100;
+  font-display: swap;
+  src: url('/vazir-font-v16.1.0/Vazir-Thin.eot');
+  src: url('/vazir-font-v16.1.0/Vazir-Thin.eot?#iefix') format('embedded-opentype'),
+       url('/vazir-font-v16.1.0/Vazir-Thin.woff2') format('woff2'),
+       url('/vazir-font-v16.1.0/Vazir-Thin.woff') format('woff'),
+       url('/vazir-font-v16.1.0/Vazir-Thin.ttf') format('truetype');
+}
+
+/* B Nazanin Font - Persian/Farsi Font (Fallback) */
 
 /* B Nazanin Regular */
 @font-face {
@@ -28,11 +95,11 @@
        url('/Bnazanin/BNAZANB.otf') format('opentype'); /* OpenType */
 }
 
-/* Apply B Nazanin font for Persian locale */
+/* Apply Vazir font for Persian locale */
 html[lang="fa"],
 html[lang="fa"] body,
 html[lang="fa"] * {
-  font-family: 'B Nazanin', Tahoma, 'Iranian Sans', sans-serif !important;
+  font-family: 'Vazir', 'B Nazanin', Tahoma, 'Iranian Sans', sans-serif !important;
 }
 
 /* Ensure proper text rendering for Persian */
@@ -42,7 +109,7 @@ html[lang="fa"] {
 }
 
 html[lang="fa"] body {
-  font-family: 'B Nazanin', Tahoma, 'Iranian Sans', sans-serif;
+  font-family: 'Vazir', 'B Nazanin', Tahoma, 'Iranian Sans', sans-serif;
   letter-spacing: 0;
   word-spacing: 0;
 }

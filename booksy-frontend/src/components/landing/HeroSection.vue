@@ -219,7 +219,6 @@ const quickSearch = (category: string) => {
   line-height: 1.4;
   margin: 0 0 1.5rem 0;
   text-shadow: 0 2px 20px rgba(0, 0, 0, 0.2);
-  font-family: 'Vazirmatn', -apple-system, BlinkMacSystemFont, sans-serif;
 }
 
 .highlight {
@@ -237,7 +236,6 @@ const quickSearch = (category: string) => {
   max-width: 600px;
   margin: 0 auto;
   text-shadow: 0 1px 10px rgba(0, 0, 0, 0.1);
-  font-family: 'Vazirmatn', -apple-system, BlinkMacSystemFont, sans-serif;
 }
 
 .hero-search {
@@ -287,7 +285,6 @@ const quickSearch = (category: string) => {
   color: #64748b;
   cursor: pointer;
   transition: all 0.3s;
-  font-family: 'Vazirmatn', sans-serif;
 }
 
 .tab-btn svg {
@@ -330,7 +327,6 @@ const quickSearch = (category: string) => {
   border-radius: 12px;
   font-size: 1rem;
   transition: all 0.3s;
-  font-family: 'Vazirmatn', sans-serif;
   text-align: right;
 }
 
@@ -354,7 +350,6 @@ const quickSearch = (category: string) => {
   cursor: pointer;
   transition: all 0.3s;
   white-space: nowrap;
-  font-family: 'Vazirmatn', sans-serif;
 }
 
 .search-btn svg {
@@ -378,7 +373,6 @@ const quickSearch = (category: string) => {
   font-size: 0.875rem;
   font-weight: 600;
   color: #64748b;
-  font-family: 'Vazirmatn', sans-serif;
 }
 
 .tag-btn {
@@ -390,7 +384,6 @@ const quickSearch = (category: string) => {
   color: #475569;
   cursor: pointer;
   transition: all 0.2s;
-  font-family: 'Vazirmatn', sans-serif;
 }
 
 .tag-btn:hover {
@@ -421,14 +414,12 @@ const quickSearch = (category: string) => {
   font-weight: 800;
   color: white;
   margin-bottom: 0.25rem;
-  font-family: 'Vazirmatn', sans-serif;
 }
 
 .stat-label {
   font-size: 0.875rem;
   color: rgba(255, 255, 255, 0.9);
   font-weight: 500;
-  font-family: 'Vazirmatn', sans-serif;
 }
 
 .stat-divider {
