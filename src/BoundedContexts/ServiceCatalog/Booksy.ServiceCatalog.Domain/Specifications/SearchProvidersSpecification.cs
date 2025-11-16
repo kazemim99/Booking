@@ -24,6 +24,7 @@ namespace Booksy.ServiceCatalog.Domain.Specifications.Provider
             bool? verifiedOnly = null,
             decimal? minRating = null,
             string? serviceCategory = null,
+            string? priceRange = null,
             bool includeInactive = false)
         {
             // Text search across multiple fields
@@ -90,6 +91,16 @@ namespace Booksy.ServiceCatalog.Domain.Specifications.Provider
                 AddCriteria(provider => provider.Services.Any(s =>
                     s.Category.Name.ToLower().Contains(categoryLower) &&
                     s.Status == ServiceStatus.Active));
+            }
+
+            // Price range filter
+            if (!string.IsNullOrWhiteSpace(priceRange))
+            {
+                // Parse the price range string to enum
+                if (Enum.TryParse<PriceRange>(priceRange, true, out var priceRangeEnum))
+                {
+                    AddCriteria(provider => provider.PriceRange == priceRangeEnum);
+                }
             }
 
             // Status filter (default to active providers only)

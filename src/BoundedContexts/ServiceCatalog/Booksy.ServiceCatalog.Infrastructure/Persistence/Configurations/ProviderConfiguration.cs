@@ -317,6 +317,12 @@ namespace Booksy.ServiceCatalog.Infrastructure.Persistence.Configurations
                 .IsRequired()
                 .HasDefaultValue(false);
 
+            builder.Property(p => p.PriceRange)
+                .HasConversion<string>()
+                .IsRequired()
+                .HasMaxLength(20)
+                .HasDefaultValue(Domain.Enums.PriceRange.Moderate);
+
             // Timestamps
             builder.Property(p => p.RegisteredAt)
                 .IsRequired();

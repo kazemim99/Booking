@@ -40,6 +40,7 @@ namespace Booksy.ServiceCatalog.Application.Queries.Provider.SearchProviders
                 request.VerifiedOnly,
                 request.MinRating,
                 request.ServiceCategory,
+                request.PriceRange,
                 request.SortBy,
                 request.SortDescending,
                 request.IncludeInactive,
@@ -59,6 +60,7 @@ namespace Booksy.ServiceCatalog.Application.Queries.Provider.SearchProviders
                     verifiedOnly: request.VerifiedOnly,
                     minRating: request.MinRating,
                     serviceCategory: request.ServiceCategory,
+                    priceRange: request.PriceRange,
                     includeInactive: request.IncludeInactive);
 
                 // Apply dynamic sorting based on request
