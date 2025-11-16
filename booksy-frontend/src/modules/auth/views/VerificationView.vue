@@ -119,6 +119,13 @@ const handleOtpComplete = async (code: string) => {
 }
 
 const verifyOtp = async () => {
+  // Prevent duplicate calls (race condition between auto-submit and manual submit)
+  if (isLoading.value) {
+    console.log('[VerificationView] ⚠️ Already processing, skipping duplicate call')
+    return
+  }
+
+  debugger;
   error.value = ''
   isLoading.value = true
 
@@ -141,9 +148,16 @@ const verifyOtp = async () => {
 
       console.log('[VerificationView] Creating user account from verified phone...')
 
+      // Get userType from sessionStorage (set by LoginView based on redirect context)
+      const storedUserType = sessionStorage.getItem('registration_user_type')
+      console.log('[VerificationView] 🔍 Raw stored userType from sessionStorage:', storedUserType)
+
+      const userType = (storedUserType || 'Provider') as 'Customer' | 'Provider'
+      console.log('[VerificationView] 🔑 Final userType for registration:', userType)
+
       const registerResult = await phoneVerificationApi.registerFromVerifiedPhone({
         verificationId,
-        userType: 'Provider',
+        userType: userType,
         firstName: undefined,
         lastName: undefined,
       })
@@ -163,8 +177,8 @@ const verifyOtp = async () => {
           phoneNumber: registerResult.data.phoneNumber,
           phoneVerified: true,
           emailVerified: false,
-          userType: 'Provider' as any,
-          roles: ['Provider'],
+          userType: userType as any,
+          roles: [userType],
           status: 'Active' as any,
           createdAt: now,
           updatedAt: now,
@@ -208,6 +222,7 @@ const verifyOtp = async () => {
         // Clear sessionStorage
         sessionStorage.removeItem('phone_verification_id')
         sessionStorage.removeItem('phone_verification_number')
+        sessionStorage.removeItem('registration_user_type')
 
         toast.success('ثبت‌نام شما با موفقیت انجام شد!')
 
@@ -248,10 +263,9 @@ const redirectBasedOnProviderStatus = async () => {
       console.log('[VerificationView] Phone verification complete, redirecting to:', redirectPath)
       await router.push(redirectPath)
     } else {
-      // Otherwise, redirect to registration route
-      // The route guard will check provider status and redirect to dashboard if needed
-      console.log('[VerificationView] Phone verification complete, no redirect found, going to registration')
-      await router.push({ name: 'ProviderRegistration' })
+      // No redirect path - use redirectToDashboard to handle role-based routing
+      console.log('[VerificationView] Phone verification complete, redirecting to dashboard')
+      await authStore.redirectToDashboard()
     }
   } catch (error) {
     console.error('[VerificationView] Error during redirect:', error)

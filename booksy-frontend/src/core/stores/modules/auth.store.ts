@@ -51,9 +51,9 @@ export const useAuthStore = defineStore('auth', () => {
   // Actions
 
   /**
-   * Decode JWT token and extract provider information
+   * Decode JWT token and extract user information
    */
-  function decodeTokenAndExtractProviderInfo(jwtToken: string) {
+  function decodeToken(jwtToken: string) {
     try {
       // JWT structure: header.payload.signature
       const parts = jwtToken.split('.')
@@ -65,24 +65,68 @@ export const useAuthStore = defineStore('auth', () => {
       // Decode payload (base64url)
       const payload = JSON.parse(atob(parts[1].replace(/-/g, '+').replace(/_/g, '/')))
 
-      // Extract providerId from token claims
-      const providerId = payload.providerId || payload.provider_id
-      const providerStatus = payload.provider_status
+      console.log('[AuthStore] Decoded token payload:', payload)
 
-      console.log('[AuthStore] Decoded token payload:', { providerId, providerStatus })
-
-      if (providerId) {
-        return {
-          providerId: providerId,
-          providerStatus: providerStatus || null
-        }
+      return {
+        userId: payload.sub || payload.nameid || payload['http://schemas.xmlsoap.org/ws/2005/05/identity/claims/nameidentifier'],
+        email: payload.email || payload['http://schemas.xmlsoap.org/ws/2005/05/identity/claims/emailaddress'],
+        userType: payload.user_type,
+        roles: payload.role || payload['http://schemas.microsoft.com/ws/2008/06/identity/claims/role'] || [],
+        providerId: payload.providerId || payload.provider_id,
+        providerStatus: payload.provider_status,
       }
-
-      return null
     } catch (error) {
       console.error('[AuthStore] Failed to decode JWT token:', error)
       return null
     }
+  }
+
+  /**
+   * Decode JWT token and extract provider information (for Provider users only)
+   */
+  function decodeTokenAndExtractProviderInfo(jwtToken: string) {
+    const tokenData = decodeToken(jwtToken)
+    if (!tokenData) return null
+
+    // Only extract provider info if user has Provider role or is Provider type
+    const roles = Array.isArray(tokenData.roles) ? tokenData.roles : [tokenData.roles]
+    const isProvider = roles.includes('Provider') ||
+                      roles.includes('ServiceProvider') ||
+                      tokenData.userType === 'Provider'
+
+    if (isProvider && tokenData.providerId) {
+      return {
+        providerId: tokenData.providerId,
+        providerStatus: tokenData.providerStatus || null
+      }
+    }
+
+    return null
+  }
+
+  /**
+   * Decode JWT token and extract customer information (for Customer users)
+   */
+  function decodeTokenAndExtractCustomerInfo(jwtToken: string) {
+    const tokenData = decodeToken(jwtToken)
+    if (!tokenData) return null
+
+    // Only extract customer info if user has Customer role or is Customer type
+    const roles = Array.isArray(tokenData.roles) ? tokenData.roles : [tokenData.roles]
+    const isCustomer = roles.includes('Customer') ||
+                      roles.includes('Client') ||
+                      tokenData.userType === 'Customer'
+
+    if (isCustomer) {
+      return {
+        userId: tokenData.userId,
+        email: tokenData.email,
+        userType: tokenData.userType,
+        roles: roles
+      }
+    }
+
+    return null
   }
 
   /**
@@ -93,11 +137,41 @@ export const useAuthStore = defineStore('auth', () => {
     if (newToken) {
       localStorage.setItem('access_token', newToken)
 
-      // Extract provider info from token
-      const providerInfo = decodeTokenAndExtractProviderInfo(newToken)
-      if (providerInfo) {
-        console.log('[AuthStore] Provider info extracted from token:', providerInfo)
-        setProviderStatus(providerInfo.providerStatus as ProviderStatus, providerInfo.providerId)
+      // Decode token to determine user type
+      const tokenData = decodeToken(newToken)
+
+      if (tokenData) {
+        const roles = Array.isArray(tokenData.roles) ? tokenData.roles : [tokenData.roles]
+        const isProvider = roles.includes('Provider') ||
+                          roles.includes('ServiceProvider') ||
+                          tokenData.userType === 'Provider'
+        const isCustomer = roles.includes('Customer') ||
+                          roles.includes('Client') ||
+                          tokenData.userType === 'Customer'
+
+        console.log('[AuthStore] Token user type:', {
+          userType: tokenData.userType,
+          roles: roles,
+          isProvider,
+          isCustomer
+        })
+
+        // Extract provider info ONLY for providers
+        if (isProvider) {
+          const providerInfo = decodeTokenAndExtractProviderInfo(newToken)
+          if (providerInfo) {
+            console.log('[AuthStore] ✅ Provider info extracted from token:', providerInfo)
+            setProviderStatus(providerInfo.providerStatus as ProviderStatus, providerInfo.providerId)
+          } else {
+            console.log('[AuthStore] ℹ️ Provider user but no provider profile yet')
+            setProviderStatus(null, null)
+          }
+        } else if (isCustomer) {
+          const customerInfo = decodeTokenAndExtractCustomerInfo(newToken)
+          console.log('[AuthStore] ✅ Customer info extracted from token:', customerInfo)
+          // For customers, explicitly set provider status to null (they don't have providers)
+          setProviderStatus(null, null)
+        }
       }
     } else {
       localStorage.removeItem('access_token')
@@ -331,14 +405,23 @@ export const useAuthStore = defineStore('auth', () => {
 
   /**
    * Redirect user to appropriate dashboard based on role and provider status
+   * @param redirectPath - Optional path to redirect to (e.g., from query param)
    */
-  async function redirectToDashboard() {
+  async function redirectToDashboard(redirectPath?: string) {
     if (!user.value || !user.value.roles) {
       router.push({ name: 'Login' })
       return
     }
 
     const roles = user.value.roles
+
+    // If there's a redirect path (e.g., customer booking flow), honor it
+    // But only for customers - providers should go through status check first
+    if (redirectPath && (roles.includes('Customer') || roles.includes('Client'))) {
+      console.log('[AuthStore] Customer with redirect path, navigating to:', redirectPath)
+      router.push(redirectPath)
+      return
+    }
 
     // Admin redirect
     if (roles.includes('Admin') || roles.includes('Administrator') || roles.includes('SysAdmin')) {
@@ -367,17 +450,34 @@ export const useAuthStore = defineStore('auth', () => {
       }
 
       // All other statuses (PendingVerification, Verified, Active, etc.) go to dashboard
+      // Honor redirect path if provided
+      if (redirectPath) {
+        console.log('[AuthStore] Provider with redirect path, navigating to:', redirectPath)
+        router.push(redirectPath)
+        return
+      }
+
       router.push({ path: '/dashboard' })
       return
     }
 
     // Customer/Client redirect
     if (roles.includes('Customer') || roles.includes('Client')) {
+      // Honor redirect path if provided
+      if (redirectPath) {
+        console.log('[AuthStore] Customer with redirect path, navigating to:', redirectPath)
+        router.push(redirectPath)
+        return
+      }
       router.push({ path: '/customer/dashboard' })
       return
     }
 
-    // Default fallback
+    // Default fallback - honor redirect if provided
+    if (redirectPath) {
+      router.push(redirectPath)
+      return
+    }
     router.push({ path: '/' })
   }
 
@@ -456,11 +556,41 @@ export const useAuthStore = defineStore('auth', () => {
       if (storedToken) {
         token.value = storedToken
 
-        // Extract provider info from token
-        const providerInfo = decodeTokenAndExtractProviderInfo(storedToken)
-        if (providerInfo) {
-          console.log('[AuthStore] Provider info loaded from stored token:', providerInfo)
-          setProviderStatus(providerInfo.providerStatus as ProviderStatus, providerInfo.providerId)
+        // Decode token to determine user type
+        const tokenData = decodeToken(storedToken)
+
+        if (tokenData) {
+          const roles = Array.isArray(tokenData.roles) ? tokenData.roles : [tokenData.roles]
+          const isProvider = roles.includes('Provider') ||
+                            roles.includes('ServiceProvider') ||
+                            tokenData.userType === 'Provider'
+          const isCustomer = roles.includes('Customer') ||
+                            roles.includes('Client') ||
+                            tokenData.userType === 'Customer'
+
+          console.log('[AuthStore] Loading from storage - user type:', {
+            userType: tokenData.userType,
+            roles: roles,
+            isProvider,
+            isCustomer
+          })
+
+          // Extract provider info ONLY for providers
+          if (isProvider) {
+            const providerInfo = decodeTokenAndExtractProviderInfo(storedToken)
+            if (providerInfo) {
+              console.log('[AuthStore] ✅ Provider info loaded from stored token:', providerInfo)
+              setProviderStatus(providerInfo.providerStatus as ProviderStatus, providerInfo.providerId)
+            } else {
+              console.log('[AuthStore] ℹ️ Provider user but no provider profile in token')
+              setProviderStatus(null, null)
+            }
+          } else if (isCustomer) {
+            const customerInfo = decodeTokenAndExtractCustomerInfo(storedToken)
+            console.log('[AuthStore] ✅ Customer info loaded from stored token:', customerInfo)
+            // For customers, explicitly set provider status to null
+            setProviderStatus(null, null)
+          }
         }
       }
 

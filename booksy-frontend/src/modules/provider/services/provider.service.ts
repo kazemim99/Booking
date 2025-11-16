@@ -153,7 +153,7 @@ class ProviderService {
         status: string
         userId: string
       }>(`${API_BASE}/current/status`)
-      debugger
+
       console.log(`[ProviderService] Provider status retrieved:`, response.data)
 
       return {

@@ -95,12 +95,42 @@ const handleSubmit = async () => {
     const result = await sendVerificationCode(phoneNumber.value, 'IR')
 
     if (result.success) {
-      // Store redirect path in sessionStorage for post-login redirect
-      // This is more reliable than passing through query params
-      if (route.query.redirect) {
-        sessionStorage.setItem('post_login_redirect', route.query.redirect as string)
-        console.log('[LoginView] Stored redirect path:', route.query.redirect)
+      // Determine user type based on redirect path
+      // If redirect path includes booking/customer routes, user is a Customer
+      // Otherwise, default to Provider (provider panel)
+      const redirectPath = route.query.redirect as string | undefined
+      let userType: 'Customer' | 'Provider' = 'Provider' // Default for provider panel
+
+      console.log('[LoginView] Redirect path:', redirectPath)
+
+      if (redirectPath) {
+        // Customer-specific routes
+        const customerRoutes = ['/bookings/new', '/my-appointments', '/customer']
+        const isCustomerRoute = customerRoutes.some(route => redirectPath.includes(route))
+
+        console.log('[LoginView] Checking if customer route:', {
+          redirectPath,
+          customerRoutes,
+          isCustomerRoute
+        })
+
+        if (isCustomerRoute) {
+          userType = 'Customer'
+          console.log('[LoginView] ✅ Customer booking flow detected, userType set to Customer')
+        } else {
+          console.log('[LoginView] ✅ Provider route detected, userType remains Provider')
+        }
+
+        // Store redirect path in sessionStorage for post-login redirect
+        sessionStorage.setItem('post_login_redirect', redirectPath)
+        console.log('[LoginView] Stored redirect path:', redirectPath)
+      } else {
+        console.log('[LoginView] ℹ️ No redirect path, defaulting to Provider')
       }
+
+      // Store userType in sessionStorage
+      sessionStorage.setItem('registration_user_type', userType)
+      console.log('[LoginView] 🔑 Registration userType set to:', userType)
 
       // Navigate to verification page
       router.push({
