@@ -17,6 +17,12 @@ export enum ProviderType {
   Professional = 'Professional',
 }
 
+export enum PriceRange {
+  Budget = 'Budget',
+  Moderate = 'Moderate',
+  Premium = 'Premium',
+}
+
 // ============================================
 // Core Domain Models
 // ============================================
@@ -130,6 +136,7 @@ export interface ProviderSummary {
   description: string
   type: ProviderType
   status: ProviderStatus
+  priceRange?: PriceRange // NEW: Price range for filtering
   logoUrl?: string
   city: string
   state: string
@@ -139,6 +146,8 @@ export interface ProviderSummary {
   allowOnlineBooking: boolean
   offersMobileServices: boolean
   tags: string[]
+  averageRating?: number // NEW: Average rating for display
+  totalReviews?: number // NEW: Total review count
   registeredAt: string
   lastActiveAt?: string
 }
@@ -190,6 +199,8 @@ export interface ProviderSearchFilters extends PaginationParams {
   country?: string
   type?: ProviderType
   status?: ProviderStatus
+  serviceCategory?: string // NEW: Filter by service category (e.g., "haircut", "massage")
+  priceRange?: PriceRange // NEW: Filter by price range (Budget, Moderate, Premium)
   offersMobileServices?: boolean
   allowOnlineBooking?: boolean
   tags?: string[]
@@ -197,6 +208,8 @@ export interface ProviderSearchFilters extends PaginationParams {
   longitude?: number
   radiusKm?: number
   minRating?: number
+  sortBy?: string // NEW: Sort field (rating, price, distance, name)
+  sortDescending?: boolean // NEW: Sort direction
 }
 
 // ============================================
