@@ -139,7 +139,7 @@ namespace Booksy.ServiceCatalog.Application.Commands.Booking.CancelBooking
                 {
                     _logger.LogDebug(
                         "Releasing availability slot {SlotId} for cancelled booking {BookingId}",
-                        slot.Id.Value, bookingId);
+                        slot.Id, bookingId);
 
                     slot.Release("CancelBookingCommandHandler");
                     await _availabilityWriteRepository.UpdateAsync(slot, cancellationToken);

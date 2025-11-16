@@ -22,7 +22,7 @@ namespace Booksy.ServiceCatalog.Application.Queries.Provider.GetProviderProfile
         public ProviderStatus Status { get; set; }
 
         // Contact & Location
-        public ContactInfo ContactInfo { get; set; } = null!;
+        public DTOs.Provider.ContactInfo ContactInfo { get; set; } = null!;
         public AddressInfo Address { get; set; } = null!;
 
         // Business Settings

@@ -61,22 +61,23 @@ namespace Booksy.ServiceCatalog.Application.Queries.Provider.GetProviderProfile
                 ServiceStatus.Active,
                 cancellationToken);
 
-            // Get reviews
+            // Get reviews (using pagination with page 1 and ReviewsLimit as pageSize)
             var reviews = await _reviewRepository.GetByProviderIdAsync(
                 providerId,
-                request.ReviewsLimit,
-                cancellationToken);
+                pageNumber: 1,
+                pageSize: request.ReviewsLimit,
+                cancellationToken: cancellationToken);
 
-            // Get bookings for statistics
-            var completedBookings = await _bookingRepository.GetByProviderIdAndStatusAsync(
+            // Get bookings for statistics (all bookings for the provider, then filter by status)
+            var allBookings = await _bookingRepository.GetByProviderIdAsync(
                 providerId,
-                BookingStatus.Completed,
                 cancellationToken);
+            var completedBookings = allBookings.Where(b => b.Status == BookingStatus.Completed).ToList();
 
             // Get availability summary for next 7 days
             var startDate = DateTime.UtcNow.Date;
             var endDate = startDate.AddDays(request.AvailabilityDays);
-            var availabilitySlots = await _availabilityRepository.GetByProviderAndDateRangeAsync(
+            var availabilitySlots = await _availabilityRepository.GetAvailabilityByDateRangeAsync(
                 providerId,
                 startDate,
                 endDate,
@@ -96,7 +97,7 @@ namespace Booksy.ServiceCatalog.Application.Queries.Provider.GetProviderProfile
                 PriceRange = provider.PriceRange,
 
                 // Contact & Location
-                ContactInfo = new ContactInfo(
+                ContactInfo = new DTOs.Provider.ContactInfo(
                     provider.ContactInfo.Email?.Value,
                     provider.ContactInfo.PrimaryPhone?.Value,
                     provider.ContactInfo.SecondaryPhone?.Value,
@@ -119,15 +120,15 @@ namespace Booksy.ServiceCatalog.Application.Queries.Provider.GetProviderProfile
 
                 // Rating & Social Proof
                 AverageRating = provider.AverageRating,
-                TotalReviews = reviews.Count,
-                RecentReviews = reviews.Take(request.ReviewsLimit).Select(r => new ReviewSummaryViewModel
+                TotalReviews = reviews.TotalCount,
+                RecentReviews = reviews.Reviews.Take(request.ReviewsLimit).Select(r => new ReviewSummaryViewModel
                 {
-                    ReviewId = r.Id.Value,
-                    CustomerName = $"{r.CustomerFirstName} {r.CustomerLastName?.Substring(0, 1)}.", // Privacy: "John D."
-                    Rating = r.Rating.Value,
+                    ReviewId = r.Id,
+                    CustomerName = "Anonymous", // TODO: Join with customer data for privacy-safe name
+                    Rating = r.RatingValue,
                     Comment = r.Comment,
                     CreatedAt = r.CreatedAt,
-                    ServiceName = r.ServiceName
+                    ServiceName = null // TODO: Join with service data for service name
                 }).ToList(),
 
                 // Services

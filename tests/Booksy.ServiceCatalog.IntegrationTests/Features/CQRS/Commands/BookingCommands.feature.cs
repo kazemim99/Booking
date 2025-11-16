@@ -26,8 +26,8 @@ namespace Booksy.ServiceCatalog.IntegrationTests.Features.CQRS.Commands
         
         private static string[] featureTags = ((string[])(null));
         
-        private static global::Reqnroll.FeatureInfo featureInfo = new global::Reqnroll.FeatureInfo(new System.Globalization.CultureInfo("en"), "Features/CQRS/Commands", "Booking Command Handlers - Complete Coverage", "  As a system\r\n  I want to test all booking command handlers\r\n  So that every cod" +
-                "e path and validation is covered", global::Reqnroll.ProgrammingLanguage.CSharp, featureTags);
+        private static global::Reqnroll.FeatureInfo featureInfo = new global::Reqnroll.FeatureInfo(new System.Globalization.CultureInfo("en"), "Features/CQRS/Commands", "Booking Command Handlers - Complete Coverage", ("  As a system\r\n  I want to test all booking command handlers\r\n  So that every cod" +
+                "e path and validation is covered"), global::Reqnroll.ProgrammingLanguage.CSharp, featureTags);
         
         private Xunit.Abstractions.ITestOutputHelper _testOutputHelper;
         
@@ -234,8 +234,8 @@ namespace Booksy.ServiceCatalog.IntegrationTests.Features.CQRS.Commands
                 await testRunner.AndAsync("another provider has a different service", ((string)(null)), ((global::Reqnroll.Table)(null)), "And ");
                 await testRunner.WhenAsync("I execute CreateBookingCommand with service from different provider", ((string)(null)), ((global::Reqnroll.Table)(null)), "When ");
                 await testRunner.ThenAsync("the command should fail with ConflictException", ((string)(null)), ((global::Reqnroll.Table)(null)), "Then ");
-                await testRunner.AndAsync("the error message should contain \"Service does not belong to the specified provid" +
-                        "er\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "And ");
+                await testRunner.AndAsync(("the error message should contain \"Service does not belong to the specified provid" +
+                        "er\""), ((string)(null)), ((global::Reqnroll.Table)(null)), "And ");
             }
             await this.ScenarioCleanupAsync();
         }

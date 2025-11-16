@@ -26,8 +26,8 @@ namespace Booksy.ServiceCatalog.IntegrationTests.Features.Payments.Behpardakht
         
         private static string[] featureTags = ((string[])(null));
         
-        private static global::Reqnroll.FeatureInfo featureInfo = new global::Reqnroll.FeatureInfo(new System.Globalization.CultureInfo("en"), "Features/Payments/Behpardakht", "Behpardakht Settlement and Reversal", "    As a system\r\n    I want to handle Behpardakht payment settlement and reversal" +
-                "\r\n    So that payments are properly finalized or reversed when needed", global::Reqnroll.ProgrammingLanguage.CSharp, featureTags);
+        private static global::Reqnroll.FeatureInfo featureInfo = new global::Reqnroll.FeatureInfo(new System.Globalization.CultureInfo("en"), "Features/Payments/Behpardakht", "Behpardakht Settlement and Reversal", ("    As a system\r\n    I want to handle Behpardakht payment settlement and reversal" +
+                "\r\n    So that payments are properly finalized or reversed when needed"), global::Reqnroll.ProgrammingLanguage.CSharp, featureTags);
         
         private Xunit.Abstractions.ITestOutputHelper _testOutputHelper;
         

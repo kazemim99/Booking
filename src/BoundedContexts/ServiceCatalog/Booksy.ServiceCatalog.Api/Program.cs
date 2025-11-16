@@ -25,9 +25,8 @@ namespace Booksy.API
             }
             catch (Exception ex)
             {
-                
                 Log.Fatal(ex, "ServiceCatalog API terminated unexpectedly");
-                throw new Exception(ex.Message);
+                throw;
             }
             finally
             {

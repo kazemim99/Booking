@@ -26,8 +26,8 @@ namespace Booksy.ServiceCatalog.IntegrationTests.Features.Payments.Behpardakht
         
         private static string[] featureTags = ((string[])(null));
         
-        private static global::Reqnroll.FeatureInfo featureInfo = new global::Reqnroll.FeatureInfo(new System.Globalization.CultureInfo("en"), "Features/Payments/Behpardakht", "Behpardakht Payment Creation", "    As a customer\r\n    I want to create a payment request through Behpardakht (Ba" +
-                "nk Mellat)\r\n    So that I can pay for my booking using Iranian payment gateway", global::Reqnroll.ProgrammingLanguage.CSharp, featureTags);
+        private static global::Reqnroll.FeatureInfo featureInfo = new global::Reqnroll.FeatureInfo(new System.Globalization.CultureInfo("en"), "Features/Payments/Behpardakht", "Behpardakht Payment Creation", ("    As a customer\r\n    I want to create a payment request through Behpardakht (Ba" +
+                "nk Mellat)\r\n    So that I can pay for my booking using Iranian payment gateway"), global::Reqnroll.ProgrammingLanguage.CSharp, featureTags);
         
         private Xunit.Abstractions.ITestOutputHelper _testOutputHelper;
         
@@ -462,8 +462,8 @@ namespace Booksy.ServiceCatalog.IntegrationTests.Features.Payments.Behpardakht
                             "USD payment"});
                 await testRunner.WhenAsync("I send a POST request to \"/api/v1/payments/behpardakht/create\" with:", ((string)(null)), table128, "When ");
                 await testRunner.ThenAsync("the response status code should be 400", ((string)(null)), ((global::Reqnroll.Table)(null)), "Then ");
-                await testRunner.AndAsync("the response should contain validation error \"Currency must be IRR for Behpardakh" +
-                        "t\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "And ");
+                await testRunner.AndAsync(("the response should contain validation error \"Currency must be IRR for Behpardakh" +
+                        "t\""), ((string)(null)), ((global::Reqnroll.Table)(null)), "And ");
             }
             await this.ScenarioCleanupAsync();
         }
