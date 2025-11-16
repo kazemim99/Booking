@@ -234,14 +234,17 @@ const verifyOtp = async () => {
 
 const redirectBasedOnProviderStatus = async () => {
   try {
-    // Check if there's a redirect parameter in the query
-    const redirectPath = route.query.redirect as string
+    // Check sessionStorage for post-login redirect (more reliable than query params)
+    const redirectPath = sessionStorage.getItem('post_login_redirect')
 
     console.log('[VerificationView] Current route query:', route.query)
-    console.log('[VerificationView] Redirect path:', redirectPath)
+    console.log('[VerificationView] Redirect path from sessionStorage:', redirectPath)
 
     if (redirectPath) {
-      // If there's a redirect parameter, honor it
+      // Clear the redirect from sessionStorage
+      sessionStorage.removeItem('post_login_redirect')
+
+      // Honor the redirect parameter
       console.log('[VerificationView] Phone verification complete, redirecting to:', redirectPath)
       await router.push(redirectPath)
     } else {

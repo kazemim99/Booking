@@ -95,15 +95,17 @@ const handleSubmit = async () => {
     const result = await sendVerificationCode(phoneNumber.value, 'IR')
 
     if (result.success) {
-      // Navigate to verification page, preserving redirect parameter if present
-      const query: Record<string, string> = { phone: phoneNumber.value }
+      // Store redirect path in sessionStorage for post-login redirect
+      // This is more reliable than passing through query params
       if (route.query.redirect) {
-        query.redirect = route.query.redirect as string
+        sessionStorage.setItem('post_login_redirect', route.query.redirect as string)
+        console.log('[LoginView] Stored redirect path:', route.query.redirect)
       }
 
+      // Navigate to verification page
       router.push({
         name: 'PhoneVerification',
-        query,
+        query: { phone: phoneNumber.value },
       })
     } else {
       error.value = result.error || 'خطا در ارسال کد تأیید'
