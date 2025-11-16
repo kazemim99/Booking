@@ -237,6 +237,9 @@ const redirectBasedOnProviderStatus = async () => {
     // Check if there's a redirect parameter in the query
     const redirectPath = route.query.redirect as string
 
+    console.log('[VerificationView] Current route query:', route.query)
+    console.log('[VerificationView] Redirect path:', redirectPath)
+
     if (redirectPath) {
       // If there's a redirect parameter, honor it
       console.log('[VerificationView] Phone verification complete, redirecting to:', redirectPath)
@@ -244,7 +247,7 @@ const redirectBasedOnProviderStatus = async () => {
     } else {
       // Otherwise, redirect to registration route
       // The route guard will check provider status and redirect to dashboard if needed
-      console.log('[VerificationView] Phone verification complete, redirecting to registration')
+      console.log('[VerificationView] Phone verification complete, no redirect found, going to registration')
       await router.push({ name: 'ProviderRegistration' })
     }
   } catch (error) {
