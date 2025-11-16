@@ -234,10 +234,19 @@ const verifyOtp = async () => {
 
 const redirectBasedOnProviderStatus = async () => {
   try {
-    // Simply redirect to registration route
-    // The route guard will check provider status and redirect to dashboard if needed
-    console.log('[VerificationView] Phone verification complete, redirecting to registration')
-    await router.push({ name: 'ProviderRegistration' })
+    // Check if there's a redirect parameter in the query
+    const redirectPath = route.query.redirect as string
+
+    if (redirectPath) {
+      // If there's a redirect parameter, honor it
+      console.log('[VerificationView] Phone verification complete, redirecting to:', redirectPath)
+      await router.push(redirectPath)
+    } else {
+      // Otherwise, redirect to registration route
+      // The route guard will check provider status and redirect to dashboard if needed
+      console.log('[VerificationView] Phone verification complete, redirecting to registration')
+      await router.push({ name: 'ProviderRegistration' })
+    }
   } catch (error) {
     console.error('[VerificationView] Error during redirect:', error)
   }
