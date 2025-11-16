@@ -1,5 +1,5 @@
 <template>
-  <section class="hero-section">
+  <section class="hero-section" dir="rtl">
     <div class="hero-background">
       <div class="hero-overlay"></div>
       <div class="hero-pattern"></div>
@@ -8,12 +8,12 @@
     <div class="hero-content">
       <div class="hero-text">
         <h1 class="hero-title">
-          Discover & Book
-          <span class="highlight">Beauty & Wellness</span>
-          Services Near You
+          کشف و رزرو
+          <span class="highlight">خدمات زیبایی و سلامت</span>
+          در نزدیکی شما
         </h1>
         <p class="hero-subtitle">
-          Find top-rated salons, spas, and wellness professionals. Book appointments instantly with just a few clicks.
+          بهترین سالن‌ها، اسپاها و متخصصان سلامتی را پیدا کنید. نوبت خود را در چند کلیک رزرو نمایید.
         </p>
       </div>
 
@@ -27,7 +27,7 @@
               <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
               </svg>
-              Search Services
+              جستجوی خدمات
             </button>
             <button
               :class="['tab-btn', { active: searchType === 'location' }]"
@@ -36,7 +36,7 @@
               <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
               </svg>
-              Near Me
+              نزدیک من
             </button>
           </div>
 
@@ -48,7 +48,7 @@
               <input
                 v-model="searchQuery"
                 type="text"
-                :placeholder="searchType === 'service' ? 'What service are you looking for?' : 'Enter your location...'"
+                :placeholder="searchType === 'service' ? 'به دنبال چه خدمتی هستید؟' : 'موقعیت مکانی خود را وارد کنید...'"
                 class="search-input"
                 @keydown.enter="handleSearch"
               />
@@ -61,7 +61,7 @@
               <input
                 v-model="location"
                 type="text"
-                placeholder="City, State"
+                placeholder="شهر، استان"
                 class="search-input"
                 @keydown.enter="handleSearch"
               />
@@ -71,19 +71,19 @@
               <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
               </svg>
-              Search
+              جستجو
             </button>
           </div>
 
           <div class="popular-searches">
-            <span class="label">Popular:</span>
+            <span class="label">محبوب‌ترین:</span>
             <button
               v-for="tag in popularSearches"
-              :key="tag"
+              :key="tag.slug"
               class="tag-btn"
-              @click="quickSearch(tag)"
+              @click="quickSearch(tag.slug)"
             >
-              {{ tag }}
+              {{ tag.name }}
             </button>
           </div>
         </div>
@@ -91,18 +91,18 @@
 
       <div class="hero-stats">
         <div class="stat-item">
-          <div class="stat-value">10,000+</div>
-          <div class="stat-label">Service Providers</div>
+          <div class="stat-value">۱۰,۰۰۰+</div>
+          <div class="stat-label">ارائه‌دهنده خدمات</div>
         </div>
         <div class="stat-divider"></div>
         <div class="stat-item">
-          <div class="stat-value">50,000+</div>
-          <div class="stat-label">Happy Customers</div>
+          <div class="stat-value">۵۰,۰۰۰+</div>
+          <div class="stat-label">مشتری راضی</div>
         </div>
         <div class="stat-divider"></div>
         <div class="stat-item">
-          <div class="stat-value">4.8★</div>
-          <div class="stat-label">Average Rating</div>
+          <div class="stat-value">★۴.۸</div>
+          <div class="stat-label">میانگین امتیاز</div>
         </div>
       </div>
     </div>
@@ -119,7 +119,13 @@ const searchType = ref<'service' | 'location'>('service')
 const searchQuery = ref('')
 const location = ref('')
 
-const popularSearches = ['Haircut', 'Massage', 'Facial', 'Manicure', 'Spa']
+const popularSearches = [
+  { name: 'کوتاهی مو', slug: 'haircut' },
+  { name: 'ماساژ', slug: 'massage' },
+  { name: 'پاکسازی پوست', slug: 'facial' },
+  { name: 'مانیکور', slug: 'manicure' },
+  { name: 'اسپا', slug: 'spa' },
+]
 
 const handleSearch = () => {
   const filters: any = {
@@ -136,7 +142,7 @@ const handleSearch = () => {
   }
 
   if (location.value) {
-    const [city, state] = location.value.split(',').map(s => s.trim())
+    const [city, state] = location.value.split('،').map(s => s.trim())
     if (city) filters.city = city
     if (state) filters.state = state
   }
@@ -149,9 +155,14 @@ const handleSearch = () => {
 }
 
 const quickSearch = (category: string) => {
-  searchQuery.value = category
-  searchType.value = 'service'
-  handleSearch()
+  router.push({
+    path: '/providers/search',
+    query: {
+      serviceCategory: category,
+      pageNumber: 1,
+      pageSize: 12,
+    }
+  })
 }
 </script>
 
@@ -205,9 +216,10 @@ const quickSearch = (category: string) => {
   font-size: clamp(2.5rem, 5vw, 3.5rem);
   font-weight: 800;
   color: white;
-  line-height: 1.2;
+  line-height: 1.4;
   margin: 0 0 1.5rem 0;
   text-shadow: 0 2px 20px rgba(0, 0, 0, 0.2);
+  font-family: 'Vazirmatn', -apple-system, BlinkMacSystemFont, sans-serif;
 }
 
 .highlight {
@@ -221,10 +233,11 @@ const quickSearch = (category: string) => {
 .hero-subtitle {
   font-size: 1.25rem;
   color: rgba(255, 255, 255, 0.95);
-  line-height: 1.6;
+  line-height: 1.8;
   max-width: 600px;
   margin: 0 auto;
   text-shadow: 0 1px 10px rgba(0, 0, 0, 0.1);
+  font-family: 'Vazirmatn', -apple-system, BlinkMacSystemFont, sans-serif;
 }
 
 .hero-search {
@@ -274,6 +287,7 @@ const quickSearch = (category: string) => {
   color: #64748b;
   cursor: pointer;
   transition: all 0.3s;
+  font-family: 'Vazirmatn', sans-serif;
 }
 
 .tab-btn svg {
@@ -302,7 +316,7 @@ const quickSearch = (category: string) => {
 
 .input-icon {
   position: absolute;
-  left: 1rem;
+  right: 1rem;
   width: 20px;
   height: 20px;
   color: #94a3b8;
@@ -311,11 +325,13 @@ const quickSearch = (category: string) => {
 
 .search-input {
   width: 100%;
-  padding: 1rem 1rem 1rem 3rem;
+  padding: 1rem 3rem 1rem 1rem;
   border: 2px solid #e2e8f0;
   border-radius: 12px;
   font-size: 1rem;
   transition: all 0.3s;
+  font-family: 'Vazirmatn', sans-serif;
+  text-align: right;
 }
 
 .search-input:focus {
@@ -338,6 +354,7 @@ const quickSearch = (category: string) => {
   cursor: pointer;
   transition: all 0.3s;
   white-space: nowrap;
+  font-family: 'Vazirmatn', sans-serif;
 }
 
 .search-btn svg {
@@ -361,6 +378,7 @@ const quickSearch = (category: string) => {
   font-size: 0.875rem;
   font-weight: 600;
   color: #64748b;
+  font-family: 'Vazirmatn', sans-serif;
 }
 
 .tag-btn {
@@ -372,6 +390,7 @@ const quickSearch = (category: string) => {
   color: #475569;
   cursor: pointer;
   transition: all 0.2s;
+  font-family: 'Vazirmatn', sans-serif;
 }
 
 .tag-btn:hover {
@@ -402,12 +421,14 @@ const quickSearch = (category: string) => {
   font-weight: 800;
   color: white;
   margin-bottom: 0.25rem;
+  font-family: 'Vazirmatn', sans-serif;
 }
 
 .stat-label {
   font-size: 0.875rem;
   color: rgba(255, 255, 255, 0.9);
   font-weight: 500;
+  font-family: 'Vazirmatn', sans-serif;
 }
 
 .stat-divider {
