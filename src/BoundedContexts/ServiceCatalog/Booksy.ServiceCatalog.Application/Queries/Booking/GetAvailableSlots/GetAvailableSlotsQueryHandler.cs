@@ -60,6 +60,13 @@ namespace Booksy.ServiceCatalog.Application.Queries.Booking.GetAvailableSlots
                     throw new NotFoundException($"Staff member with ID {request.StaffId.Value} not found");
             }
 
+            // Validate date-level constraints (not time-level since we're just selecting a date)
+            var validationResult = await _availabilityService.ValidateDateConstraintsAsync(
+                provider,
+                service,
+                request.Date,
+                cancellationToken);
+
             // Get available slots
             var availableSlots = await _availabilityService.GetAvailableTimeSlotsAsync(
                 provider,
@@ -75,16 +82,55 @@ namespace Booksy.ServiceCatalog.Application.Queries.Booking.GetAvailableSlots
                     slot.EndTime,
                     slot.Duration.Value,
                     slot.StaffId,
-                    slot.StaffName))
+                    slot.StaffName)
+                {
+                    IsAvailable = true,
+                    AvailableStaffId = slot.StaffId,
+                    AvailableStaffName = slot.StaffName
+                })
                 .ToList();
 
             _logger.LogInformation("Found {Count} available slots", slotDtos.Count);
+
+            // Include validation messages if no slots are available
+            List<string>? validationMessages = null;
+            if (slotDtos.Count == 0)
+            {
+                if (!validationResult.IsValid)
+                {
+                    // Date-level validation failed
+                    validationMessages = validationResult.Errors;
+                    _logger.LogInformation(
+                        "No slots available due to validation constraints: {ValidationErrors}",
+                        string.Join(", ", validationMessages));
+                }
+                else
+                {
+                    // Validation passed but no slots were generated
+                    // This happens when there's no qualified staff
+                    validationMessages = new List<string>();
+
+                    if (!provider.Staff.Any())
+                    {
+                        validationMessages.Add("این ارائه‌دهنده هنوز کارمندی اضافه نکرده است. لطفاً بعداً دوباره تلاش کنید.");
+                    }
+                    else
+                    {
+                        validationMessages.Add("متأسفانه هیچ کارمند واجد شرایطی برای این سرویس در دسترس نیست.");
+                    }
+
+                    _logger.LogInformation(
+                        "No slots available: {Reason}",
+                        string.Join(", ", validationMessages));
+                }
+            }
 
             return new GetAvailableSlotsResult(
                 request.ProviderId,
                 request.ServiceId,
                 request.Date,
-                slotDtos);
+                slotDtos,
+                validationMessages);
         }
     }
 }

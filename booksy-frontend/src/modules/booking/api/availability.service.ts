@@ -17,7 +17,12 @@ const API_BASE = `/${API_VERSION}/availability`
 export interface TimeSlot {
   startTime: string // ISO 8601 format
   endTime: string
-  available: boolean
+  durationMinutes: number
+  isAvailable: boolean
+  availableStaffId?: string
+  availableStaffName?: string
+  // Legacy fields for backward compatibility
+  available?: boolean
   staffMemberId?: string
   staffName?: string
   reason?: string // Why unavailable
@@ -82,7 +87,8 @@ export interface GetSlotsResponse {
   providerId: string
   serviceId: string
   slots: TimeSlot[]
-  timezone: string
+  validationMessages?: string[]
+  timezone?: string
 }
 
 /**

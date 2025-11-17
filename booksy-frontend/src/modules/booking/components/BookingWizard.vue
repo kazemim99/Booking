@@ -321,8 +321,50 @@ const submitBooking = async () => {
       throw new Error('No service selected')
     }
 
+    // Validate date and time before formatting
+    if (!bookingData.value.date) {
+      throw new Error('تاریخ انتخاب نشده است')
+    }
+    if (!bookingData.value.startTime) {
+      throw new Error('ساعت انتخاب نشده است')
+    }
+
+    // Convert Persian/Arabic digits to ASCII digits
+    const convertPersianToEnglish = (str: string): string => {
+      const persianDigits = ['۰', '۱', '۲', '۳', '۴', '۵', '۶', '۷', '۸', '۹']
+      const arabicDigits = ['٠', '١', '٢', '٣', '٤', '٥', '٦', '٧', '٨', '٩']
+
+      let result = str
+      for (let i = 0; i < 10; i++) {
+        result = result.replace(new RegExp(persianDigits[i], 'g'), i.toString())
+        result = result.replace(new RegExp(arabicDigits[i], 'g'), i.toString())
+      }
+      return result
+    }
+
+    // Normalize date and time (convert Persian/Arabic digits to ASCII)
+    const normalizedDate = convertPersianToEnglish(bookingData.value.date)
+    const normalizedTime = convertPersianToEnglish(bookingData.value.startTime)
+
     // Format start time to ISO 8601
-    const startDateTime = new Date(`${bookingData.value.date}T${bookingData.value.startTime}:00`)
+    // Date should be in YYYY-MM-DD format, startTime should be HH:mm format
+    const dateTimeString = `${normalizedDate}T${normalizedTime}:00`
+    console.log('[BookingWizard] Creating date from:', dateTimeString)
+
+    const startDateTime = new Date(dateTimeString)
+
+    // Check if date is valid
+    if (isNaN(startDateTime.getTime())) {
+      console.error('[BookingWizard] Invalid date/time:', {
+        date: bookingData.value.date,
+        normalizedDate,
+        startTime: bookingData.value.startTime,
+        normalizedTime,
+        combined: dateTimeString,
+      })
+      throw new Error('تاریخ یا ساعت نامعتبر است')
+    }
+
     const startTime = startDateTime.toISOString()
 
     // Prepare booking request (matches backend CreateBookingRequest.cs)

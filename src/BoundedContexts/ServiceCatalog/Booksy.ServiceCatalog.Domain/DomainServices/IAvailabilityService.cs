@@ -75,6 +75,21 @@ namespace Booksy.ServiceCatalog.Domain.DomainServices
             Service service,
             DateTime startTime,
             CancellationToken cancellationToken = default);
+
+        /// <summary>
+        /// Validate date-level constraints (holidays, day of week, max advance days) without time checks
+        /// Used when checking if a date has any availability before generating time slots
+        /// </summary>
+        /// <param name="provider">The provider</param>
+        /// <param name="service">The service</param>
+        /// <param name="date">The date to validate</param>
+        /// <param name="cancellationToken">Cancellation token</param>
+        /// <returns>Validation result with any errors</returns>
+        Task<AvailabilityValidationResult> ValidateDateConstraintsAsync(
+            Provider provider,
+            Service service,
+            DateTime date,
+            CancellationToken cancellationToken = default);
     }
 
     /// <summary>

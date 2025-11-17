@@ -69,7 +69,12 @@
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
             </svg>
             <h3>زمانی موجود نیست</h3>
-            <p>متأسفانه برای این روز زمان خالی موجود نیست. لطفاً روز دیگری را انتخاب کنید.</p>
+            <p v-if="!validationMessages.length">متأسفانه برای این روز زمان خالی موجود نیست. لطفاً روز دیگری را انتخاب کنید.</p>
+            <div v-else class="validation-messages">
+              <p v-for="(message, index) in validationMessages" :key="index" class="validation-message">
+                {{ message }}
+              </p>
+            </div>
           </div>
         </div>
       </div>
@@ -110,6 +115,7 @@ const selectedDate = ref(props.selectedDate)
 const selectedDateModel = ref(props.selectedDate || '')
 const loadingSlots = ref(false)
 const availableSlots = ref<TimeSlot[]>([])
+const validationMessages = ref<string[]>([])
 
 // Computed
 const minDate = computed(() => {
@@ -123,7 +129,7 @@ const maxDate = computed(() => {
   return maxDate.toISOString().split('T')[0]
 })
 
-// Watch for date selection
+// Watch for date selection from props
 watch(() => props.selectedDate, (newDate) => {
   selectedDate.value = newDate
   if (newDate) {
@@ -131,10 +137,74 @@ watch(() => props.selectedDate, (newDate) => {
   }
 })
 
-// Methods
-const handleDateChange = async (dateString: string) => {
-  if (!dateString) return
+// Watch for date selection from calendar v-model
+watch(selectedDateModel, (newDateValue) => {
+  console.log('[SlotSelection] selectedDateModel changed:', newDateValue)
+  if (newDateValue) {
+    handleDateChange(newDateValue)
+  }
+})
 
+// Methods
+const handleDateChange = async (dateValue: any) => {
+  console.log('[SlotSelection] handleDateChange called with:', dateValue, 'Type:', typeof dateValue)
+
+  if (!dateValue) {
+    console.warn('[SlotSelection] No date value provided')
+    return
+  }
+
+  // Extract clean date string from various possible formats
+  let dateString: string = ''
+
+  if (typeof dateValue === 'string') {
+    // Already a string - use directly
+    dateString = dateValue
+    console.log('[SlotSelection] Date is string:', dateString)
+  } else if (typeof dateValue === 'object') {
+    // Could be moment object or Date object
+    console.log('[SlotSelection] Date is object, keys:', Object.keys(dateValue))
+
+    // Try moment object format (_i property)
+    if (dateValue._i) {
+      // Check if _i is a string before splitting
+      if (typeof dateValue._i === 'string') {
+        dateString = dateValue._i.split('T')[0]
+        console.log('[SlotSelection] Extracted from moment._i (string):', dateString)
+      } else if (typeof dateValue._i === 'object' && dateValue._i.year) {
+        // _i might be an object with year, month, day properties
+        const year = dateValue._i.year
+        const month = String(dateValue._i.month + 1).padStart(2, '0') // month is 0-indexed
+        const day = String(dateValue._i.date || dateValue._i.day).padStart(2, '0')
+        dateString = `${year}-${month}-${day}`
+        console.log('[SlotSelection] Extracted from moment._i (object):', dateString)
+      }
+    }
+    // Try formatted value
+    else if (dateValue.format && typeof dateValue.format === 'function') {
+      dateString = dateValue.format('YYYY-MM-DD')
+      console.log('[SlotSelection] Extracted using .format():', dateString)
+    }
+    // Try direct conversion
+    else if (dateValue.toString) {
+      const str = dateValue.toString()
+      // Extract date pattern YYYY-MM-DD
+      const match = str.match(/\d{4}-\d{2}-\d{2}/)
+      if (match) {
+        dateString = match[0]
+        console.log('[SlotSelection] Extracted from toString:', dateString)
+      }
+    }
+  }
+
+  // Validate we got a proper date string
+  if (!dateString || !/^\d{4}-\d{2}-\d{2}$/.test(dateString)) {
+    console.error('[SlotSelection] Could not extract valid date string from:', dateValue)
+    console.error('[SlotSelection] Extracted value:', dateString)
+    return
+  }
+
+  console.log('[SlotSelection] ✅ Final date string:', dateString)
   selectedDate.value = dateString
   await loadAvailableSlots(dateString)
 }
@@ -159,21 +229,26 @@ const loadAvailableSlots = async (dateString: string) => {
 
     console.log('[SlotSelection] Slots received:', response)
 
+    // Capture validation messages if present
+    validationMessages.value = response.validationMessages || []
+
     // Filter for available slots and map to our interface
     availableSlots.value = response.slots
-      .filter(slot => slot.available)
+      .filter(slot => slot.isAvailable)
       .map(slot => ({
-        startTime: new Date(slot.startTime).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: false }),
-        endTime: new Date(slot.endTime).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: false }),
-        staffId: slot.staffMemberId || '',
-        staffName: slot.staffName || 'کارشناس',
+        startTime: new Date(slot.startTime).toLocaleTimeString('fa-IR', { hour: '2-digit', minute: '2-digit', hour12: false }),
+        endTime: new Date(slot.endTime).toLocaleTimeString('fa-IR', { hour: '2-digit', minute: '2-digit', hour12: false }),
+        staffId: slot.availableStaffId || '',
+        staffName: slot.availableStaffName || 'کارشناس',
         available: true,
       }))
 
     console.log('[SlotSelection] Processed slots:', availableSlots.value)
+    console.log('[SlotSelection] Validation messages:', validationMessages.value)
   } catch (error) {
     console.error('[SlotSelection] Failed to load slots:', error)
     availableSlots.value = []
+    validationMessages.value = []
   } finally {
     loadingSlots.value = false
   }
@@ -511,6 +586,21 @@ const convertToPersianNumber = (num: number | string): string => {
   font-size: 0.95rem;
   color: #64748b;
   margin: 0;
+}
+
+.validation-messages {
+  margin-top: 1rem;
+  text-align: center;
+}
+
+.validation-message {
+  font-size: 0.95rem;
+  color: #dc2626;
+  background-color: #fee2e2;
+  padding: 0.75rem 1rem;
+  border-radius: 0.5rem;
+  margin: 0.5rem 0;
+  border-right: 4px solid #dc2626;
 }
 
 /* Responsive */
