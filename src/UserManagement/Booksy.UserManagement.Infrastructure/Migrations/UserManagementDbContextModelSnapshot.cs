@@ -53,7 +53,7 @@ namespace Booksy.UserManagement.Infrastructure.Migrations
                         .HasColumnName("event_type");
 
                     b.Property<DateTime>("Timestamp")
-                        .HasColumnType("timestamp without time zone")
+                        .HasColumnType("timestamp with time zone")
                         .HasColumnName("timestamp");
 
                     b.Property<long>("Version")
@@ -85,7 +85,7 @@ namespace Booksy.UserManagement.Infrastructure.Migrations
                         .HasColumnName("id");
 
                     b.Property<DateTime>("CreatedAt")
-                        .HasColumnType("timestamp without time zone")
+                        .HasColumnType("timestamp with time zone")
                         .HasColumnName("created_at");
 
                     b.Property<string>("CreatedBy")
@@ -103,7 +103,7 @@ namespace Booksy.UserManagement.Infrastructure.Migrations
                         .HasColumnType("boolean");
 
                     b.Property<DateTime?>("LastModifiedAt")
-                        .HasColumnType("timestamp without time zone")
+                        .HasColumnType("timestamp with time zone")
                         .HasColumnName("last_modified_at");
 
                     b.Property<string>("LastModifiedBy")
@@ -144,12 +144,12 @@ namespace Booksy.UserManagement.Infrastructure.Migrations
                         .HasColumnName("id");
 
                     b.Property<DateTime?>("BlockedUntil")
-                        .HasColumnType("timestamp without time zone")
+                        .HasColumnType("timestamp with time zone")
                         .HasColumnName("blocked_until")
                         .HasComment("Timestamp until which verification is blocked");
 
                     b.Property<DateTime>("CreatedAt")
-                        .HasColumnType("timestamp without time zone")
+                        .HasColumnType("timestamp with time zone")
                         .HasColumnName("created_at")
                         .HasComment("Creation timestamp");
 
@@ -157,7 +157,7 @@ namespace Booksy.UserManagement.Infrastructure.Migrations
                         .HasColumnType("text");
 
                     b.Property<DateTime>("ExpiresAt")
-                        .HasColumnType("timestamp without time zone")
+                        .HasColumnType("timestamp with time zone")
                         .HasColumnName("expires_at")
                         .HasComment("Expiration timestamp for the verification code");
 
@@ -171,18 +171,18 @@ namespace Booksy.UserManagement.Infrastructure.Migrations
                         .HasColumnType("boolean");
 
                     b.Property<DateTime?>("LastAttemptAt")
-                        .HasColumnType("timestamp without time zone")
+                        .HasColumnType("timestamp with time zone")
                         .HasColumnName("last_attempt_at")
                         .HasComment("Timestamp of last verification attempt");
 
                     b.Property<DateTime?>("LastModifiedAt")
-                        .HasColumnType("timestamp without time zone");
+                        .HasColumnType("timestamp with time zone");
 
                     b.Property<string>("LastModifiedBy")
                         .HasColumnType("text");
 
                     b.Property<DateTime?>("LastSentAt")
-                        .HasColumnType("timestamp without time zone")
+                        .HasColumnType("timestamp with time zone")
                         .HasColumnName("last_sent_at")
                         .HasComment("Timestamp when OTP was last sent");
 
@@ -252,7 +252,7 @@ namespace Booksy.UserManagement.Infrastructure.Migrations
                         .HasComment("Number of verification attempts made");
 
                     b.Property<DateTime?>("VerifiedAt")
-                        .HasColumnType("timestamp without time zone")
+                        .HasColumnType("timestamp with time zone")
                         .HasColumnName("verified_at")
                         .HasComment("Timestamp when verification was completed");
 
@@ -280,17 +280,17 @@ namespace Booksy.UserManagement.Infrastructure.Migrations
                         .HasColumnName("id");
 
                     b.Property<DateTime?>("ActivatedAt")
-                        .HasColumnType("timestamp without time zone")
+                        .HasColumnType("timestamp with time zone")
                         .HasColumnName("activated_at");
 
                     b.Property<DateTime>("CreatedAt")
-                        .HasColumnType("timestamp without time zone");
+                        .HasColumnType("timestamp with time zone");
 
                     b.Property<string>("CreatedBy")
                         .HasColumnType("text");
 
                     b.Property<DateTime?>("DeactivatedAt")
-                        .HasColumnType("timestamp without time zone")
+                        .HasColumnType("timestamp with time zone")
                         .HasColumnName("deactivated_at");
 
                     b.Property<int>("FailedLoginAttempts")
@@ -303,31 +303,31 @@ namespace Booksy.UserManagement.Infrastructure.Migrations
                         .HasColumnType("boolean");
 
                     b.Property<DateTime?>("LastLoginAt")
-                        .HasColumnType("timestamp without time zone")
+                        .HasColumnType("timestamp with time zone")
                         .HasColumnName("last_login_at");
 
                     b.Property<DateTime?>("LastModifiedAt")
-                        .HasColumnType("timestamp without time zone");
+                        .HasColumnType("timestamp with time zone");
 
                     b.Property<string>("LastModifiedBy")
                         .HasColumnType("text");
 
                     b.Property<DateTime?>("LastPasswordChangeAt")
-                        .HasColumnType("timestamp without time zone")
+                        .HasColumnType("timestamp with time zone")
                         .HasColumnName("last_password_change_at");
 
                     b.Property<DateTime?>("LockedUntil")
-                        .HasColumnType("timestamp without time zone")
+                        .HasColumnType("timestamp with time zone")
                         .HasColumnName("locked_until");
 
                     b.Property<bool>("PhoneNumberVerified")
                         .HasColumnType("boolean");
 
                     b.Property<DateTime?>("PhoneVerifiedAt")
-                        .HasColumnType("timestamp without time zone");
+                        .HasColumnType("timestamp with time zone");
 
                     b.Property<DateTime>("RegisteredAt")
-                        .HasColumnType("timestamp without time zone")
+                        .HasColumnType("timestamp with time zone")
                         .HasColumnName("registered_at");
 
                     b.Property<string>("Status")
@@ -385,7 +385,7 @@ namespace Booksy.UserManagement.Infrastructure.Migrations
                         .HasColumnName("bio");
 
                     b.Property<DateTime>("CreatedAt")
-                        .HasColumnType("timestamp without time zone")
+                        .HasColumnType("timestamp with time zone")
                         .HasColumnName("created_at");
 
                     b.Property<string>("CreatedBy")
@@ -396,7 +396,7 @@ namespace Booksy.UserManagement.Infrastructure.Migrations
                         .HasColumnName("customer_id");
 
                     b.Property<DateTime?>("DateOfBirth")
-                        .HasColumnType("timestamp without time zone")
+                        .HasColumnType("timestamp with time zone")
                         .HasColumnName("date_of_birth");
 
                     b.Property<string>("FirstName")
@@ -414,7 +414,7 @@ namespace Booksy.UserManagement.Infrastructure.Migrations
                         .HasColumnType("boolean");
 
                     b.Property<DateTime?>("LastModifiedAt")
-                        .HasColumnType("timestamp without time zone");
+                        .HasColumnType("timestamp with time zone");
 
                     b.Property<string>("LastModifiedBy")
                         .HasColumnType("text");
@@ -446,7 +446,7 @@ namespace Booksy.UserManagement.Infrastructure.Migrations
                         .HasColumnName("time_zone");
 
                     b.Property<DateTime?>("UpdatedAt")
-                        .HasColumnType("timestamp without time zone")
+                        .HasColumnType("timestamp with time zone")
                         .HasColumnName("updated_at");
 
                     b.Property<Guid>("UserId")
@@ -472,7 +472,7 @@ namespace Booksy.UserManagement.Infrastructure.Migrations
                         .HasColumnName("id");
 
                     b.Property<DateTime>("AssignedAt")
-                        .HasColumnType("timestamp without time zone")
+                        .HasColumnType("timestamp with time zone")
                         .HasColumnName("assigned_at");
 
                     b.Property<string>("AssignedBy")
@@ -481,20 +481,20 @@ namespace Booksy.UserManagement.Infrastructure.Migrations
                         .HasColumnName("assigned_by");
 
                     b.Property<DateTime>("CreatedAt")
-                        .HasColumnType("timestamp without time zone");
+                        .HasColumnType("timestamp with time zone");
 
                     b.Property<string>("CreatedBy")
                         .HasColumnType("text");
 
                     b.Property<DateTime?>("ExpiresAt")
-                        .HasColumnType("timestamp without time zone")
+                        .HasColumnType("timestamp with time zone")
                         .HasColumnName("expires_at");
 
                     b.Property<bool>("IsDeleted")
                         .HasColumnType("boolean");
 
                     b.Property<DateTime?>("LastModifiedAt")
-                        .HasColumnType("timestamp without time zone");
+                        .HasColumnType("timestamp with time zone");
 
                     b.Property<string>("LastModifiedBy")
                         .HasColumnType("text");
@@ -529,6 +529,66 @@ namespace Booksy.UserManagement.Infrastructure.Migrations
                     b.ToTable("user_roles", "user_management");
                 });
 
+            modelBuilder.Entity("Booksy.UserManagement.Domain.ReadModels.CustomerBookingHistoryEntry", b =>
+                {
+                    b.Property<Guid>("BookingId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("booking_id");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at");
+
+                    b.Property<Guid>("CustomerId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("customer_id");
+
+                    b.Property<Guid>("ProviderId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("provider_id");
+
+                    b.Property<string>("ProviderName")
+                        .IsRequired()
+                        .HasMaxLength(255)
+                        .HasColumnType("character varying(255)")
+                        .HasColumnName("provider_name");
+
+                    b.Property<string>("ServiceName")
+                        .IsRequired()
+                        .HasMaxLength(255)
+                        .HasColumnType("character varying(255)")
+                        .HasColumnName("service_name");
+
+                    b.Property<DateTime>("StartTime")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("start_time");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("character varying(50)")
+                        .HasColumnName("status");
+
+                    b.Property<decimal?>("TotalPrice")
+                        .HasColumnType("decimal(10,2)")
+                        .HasColumnName("total_price");
+
+                    b.HasKey("BookingId");
+
+                    b.HasIndex("ProviderId")
+                        .HasDatabaseName("ix_customer_booking_history_provider");
+
+                    b.HasIndex("Status")
+                        .HasDatabaseName("ix_customer_booking_history_status");
+
+                    b.HasIndex("CustomerId", "StartTime")
+                        .IsDescending(false, true)
+                        .HasDatabaseName("ix_customer_booking_history_customer_time");
+
+                    b.ToTable("customer_booking_history", "user_management");
+                });
+
             modelBuilder.Entity("Booksy.UserManagement.Domain.Aggregates.CustomerAggregate.Customer", b =>
                 {
                     b.OwnsMany("Booksy.UserManagement.Domain.Entities.CustomerFavoriteProvider", "FavoriteProviders", b1 =>
@@ -539,11 +599,11 @@ namespace Booksy.UserManagement.Infrastructure.Migrations
                                 .HasColumnName("id");
 
                             b1.Property<DateTime>("AddedAt")
-                                .HasColumnType("timestamp without time zone")
+                                .HasColumnType("timestamp with time zone")
                                 .HasColumnName("added_at");
 
                             b1.Property<DateTime>("CreatedAt")
-                                .HasColumnType("timestamp without time zone");
+                                .HasColumnType("timestamp with time zone");
 
                             b1.Property<string>("CreatedBy")
                                 .HasColumnType("text");
@@ -555,7 +615,7 @@ namespace Booksy.UserManagement.Infrastructure.Migrations
                                 .HasColumnType("boolean");
 
                             b1.Property<DateTime?>("LastModifiedAt")
-                                .HasColumnType("timestamp without time zone");
+                                .HasColumnType("timestamp with time zone");
 
                             b1.Property<string>("LastModifiedBy")
                                 .HasColumnType("text");
@@ -582,7 +642,43 @@ namespace Booksy.UserManagement.Infrastructure.Migrations
                                 .HasForeignKey("CustomerId");
                         });
 
+                    b.OwnsOne("Booksy.UserManagement.Domain.ValueObjects.NotificationPreferences", "NotificationPreferences", b1 =>
+                        {
+                            b1.Property<Guid>("CustomerId")
+                                .HasColumnType("uuid");
+
+                            b1.Property<bool>("EmailEnabled")
+                                .ValueGeneratedOnAdd()
+                                .HasColumnType("boolean")
+                                .HasDefaultValue(true)
+                                .HasColumnName("notification_email_enabled");
+
+                            b1.Property<string>("ReminderTiming")
+                                .IsRequired()
+                                .ValueGeneratedOnAdd()
+                                .HasMaxLength(10)
+                                .HasColumnType("character varying(10)")
+                                .HasDefaultValue("24h")
+                                .HasColumnName("notification_reminder_timing");
+
+                            b1.Property<bool>("SmsEnabled")
+                                .ValueGeneratedOnAdd()
+                                .HasColumnType("boolean")
+                                .HasDefaultValue(true)
+                                .HasColumnName("notification_sms_enabled");
+
+                            b1.HasKey("CustomerId");
+
+                            b1.ToTable("customers", "user_management");
+
+                            b1.WithOwner()
+                                .HasForeignKey("CustomerId");
+                        });
+
                     b.Navigation("FavoriteProviders");
+
+                    b.Navigation("NotificationPreferences")
+                        .IsRequired();
                 });
 
             modelBuilder.Entity("Booksy.UserManagement.Domain.Aggregates.PhoneVerificationAggregate.PhoneVerification", b =>
@@ -699,11 +795,11 @@ namespace Booksy.UserManagement.Infrastructure.Migrations
                                 .HasColumnType("text");
 
                             b1.Property<DateTime?>("EndedAt")
-                                .HasColumnType("timestamp without time zone")
+                                .HasColumnType("timestamp with time zone")
                                 .HasColumnName("ended_at");
 
                             b1.Property<DateTime>("ExpiresAt")
-                                .HasColumnType("timestamp without time zone")
+                                .HasColumnType("timestamp with time zone")
                                 .HasColumnName("expires_at");
 
                             b1.Property<string>("IpAddress")
@@ -712,7 +808,7 @@ namespace Booksy.UserManagement.Infrastructure.Migrations
                                 .HasColumnName("ip_address");
 
                             b1.Property<DateTime>("LastActivityAt")
-                                .HasColumnType("timestamp without time zone")
+                                .HasColumnType("timestamp with time zone")
                                 .HasColumnName("last_activity_at");
 
                             b1.Property<string>("Metadata")
@@ -727,7 +823,7 @@ namespace Booksy.UserManagement.Infrastructure.Migrations
                                 .HasColumnName("session_token");
 
                             b1.Property<DateTime>("StartedAt")
-                                .HasColumnType("timestamp without time zone")
+                                .HasColumnType("timestamp with time zone")
                                 .HasColumnName("started_at");
 
                             b1.Property<string>("UserAgent")
@@ -758,7 +854,7 @@ namespace Booksy.UserManagement.Infrastructure.Migrations
                                 .HasColumnName("id");
 
                             b1.Property<DateTime>("AttemptedAt")
-                                .HasColumnType("timestamp without time zone")
+                                .HasColumnType("timestamp with time zone")
                                 .HasColumnName("attempted_at");
 
                             b1.Property<string>("FailureReason")
@@ -806,7 +902,7 @@ namespace Booksy.UserManagement.Infrastructure.Migrations
                                 .HasColumnType("uuid");
 
                             b1.Property<DateTime>("CreatedAt")
-                                .HasColumnType("timestamp without time zone")
+                                .HasColumnType("timestamp with time zone")
                                 .HasColumnName("created_at");
 
                             b1.Property<string>("CreatedByIp")
@@ -815,7 +911,7 @@ namespace Booksy.UserManagement.Infrastructure.Migrations
                                 .HasColumnName("created_by_ip");
 
                             b1.Property<DateTime>("ExpiresAt")
-                                .HasColumnType("timestamp without time zone")
+                                .HasColumnType("timestamp with time zone")
                                 .HasColumnName("expires_at");
 
                             b1.Property<string>("ReplacedByToken")
@@ -824,7 +920,7 @@ namespace Booksy.UserManagement.Infrastructure.Migrations
                                 .HasColumnName("replaced_by_token");
 
                             b1.Property<DateTime?>("RevokedAt")
-                                .HasColumnType("timestamp without time zone")
+                                .HasColumnType("timestamp with time zone")
                                 .HasColumnName("revoked_at");
 
                             b1.Property<string>("RevokedByIp")
@@ -866,11 +962,11 @@ namespace Booksy.UserManagement.Infrastructure.Migrations
                                 .HasColumnType("uuid");
 
                             b1.Property<DateTime>("CreatedAt")
-                                .HasColumnType("timestamp without time zone")
+                                .HasColumnType("timestamp with time zone")
                                 .HasColumnName("activation_token_created_at");
 
                             b1.Property<DateTime>("ExpiresAt")
-                                .HasColumnType("timestamp without time zone")
+                                .HasColumnType("timestamp with time zone")
                                 .HasColumnName("activation_token_expires_at");
 
                             b1.Property<string>("Token")
@@ -912,11 +1008,11 @@ namespace Booksy.UserManagement.Infrastructure.Migrations
                                 .HasColumnType("uuid");
 
                             b1.Property<DateTime>("CreatedAt")
-                                .HasColumnType("timestamp without time zone")
+                                .HasColumnType("timestamp with time zone")
                                 .HasColumnName("password_reset_token_created_at");
 
                             b1.Property<DateTime>("ExpiresAt")
-                                .HasColumnType("timestamp without time zone")
+                                .HasColumnType("timestamp with time zone")
                                 .HasColumnName("password_reset_token_expires_at");
 
                             b1.Property<string>("Token")

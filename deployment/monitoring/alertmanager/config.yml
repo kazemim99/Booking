@@ -1,0 +1,100 @@
+global:
+  resolve_timeout: 5m
+  slack_api_url: 'YOUR_SLACK_WEBHOOK_URL_HERE'  # Replace with your Slack webhook
+
+# Email configuration
+# smtp_from: 'alertmanager@booksy.com'
+# smtp_smarthost: 'smtp.gmail.com:587'
+# smtp_auth_username: 'your-email@gmail.com'
+# smtp_auth_password: 'your-app-password'
+
+# Route tree - defines how alerts are routed to receivers
+route:
+  receiver: 'default'
+  group_by: ['alertname', 'cluster', 'service']
+  group_wait: 10s
+  group_interval: 10s
+  repeat_interval: 12h
+
+  routes:
+    # Critical alerts - immediate notification
+    - match:
+        severity: critical
+      receiver: 'critical-alerts'
+      group_wait: 0s
+      repeat_interval: 5m
+
+    # Warning alerts - less urgent
+    - match:
+        severity: warning
+      receiver: 'warning-alerts'
+      repeat_interval: 1h
+
+    # Database alerts
+    - match_re:
+        alertname: '(PostgreSQLDown|HighDatabaseConnections)'
+      receiver: 'database-team'
+
+    # Infrastructure alerts
+    - match_re:
+        alertname: '(HighCPUUsage|HighMemoryUsage|DiskSpace.*)'
+      receiver: 'infrastructure-team'
+
+# Inhibit rules - suppress certain alerts when others fire
+inhibit_rules:
+  - source_match:
+      severity: 'critical'
+    target_match:
+      severity: 'warning'
+    equal: ['alertname', 'instance']
+
+# Receivers - define how to send notifications
+receivers:
+  # Default receiver
+  - name: 'default'
+    slack_configs:
+      - channel: '#booksy-alerts'
+        title: 'Booksy Production Alert'
+        text: '{{ range .Alerts }}{{ .Annotations.summary }}\n{{ .Annotations.description }}{{ end }}'
+        send_resolved: true
+
+  # Critical alerts - multiple channels
+  - name: 'critical-alerts'
+    slack_configs:
+      - channel: '#booksy-critical'
+        title: '🚨 CRITICAL: {{ .GroupLabels.alertname }}'
+        text: '{{ range .Alerts }}{{ .Annotations.description }}{{ end }}'
+        send_resolved: true
+    # Uncomment for email notifications
+    # email_configs:
+    #   - to: 'oncall@booksy.com'
+    #     subject: '🚨 CRITICAL: {{ .GroupLabels.alertname }}'
+    #     html: '{{ range .Alerts }}{{ .Annotations.description }}<br>{{ end }}'
+
+  # Warning alerts
+  - name: 'warning-alerts'
+    slack_configs:
+      - channel: '#booksy-warnings'
+        title: '⚠️ Warning: {{ .GroupLabels.alertname }}'
+        text: '{{ range .Alerts }}{{ .Annotations.description }}{{ end }}'
+        send_resolved: true
+
+  # Database team
+  - name: 'database-team'
+    slack_configs:
+      - channel: '#booksy-database'
+        title: '🗄️ Database Alert: {{ .GroupLabels.alertname }}'
+        text: '{{ range .Alerts }}{{ .Annotations.description }}{{ end }}'
+        send_resolved: true
+
+  # Infrastructure team
+  - name: 'infrastructure-team'
+    slack_configs:
+      - channel: '#booksy-infrastructure'
+        title: '🖥️ Infrastructure Alert: {{ .GroupLabels.alertname }}'
+        text: '{{ range .Alerts }}{{ .Annotations.description }}{{ end }}'
+        send_resolved: true
+
+# Templates for custom notification formats
+templates:
+  - '/etc/alertmanager/templates/*.tmpl'

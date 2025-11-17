@@ -26,8 +26,8 @@ namespace Booksy.ServiceCatalog.IntegrationTests.Features.CQRS.Commands
         
         private static string[] featureTags = ((string[])(null));
         
-        private static global::Reqnroll.FeatureInfo featureInfo = new global::Reqnroll.FeatureInfo(new System.Globalization.CultureInfo("en"), "Features/CQRS/Commands", "Payout Command Handlers - Complete Coverage", ("  As a system\r\n  I want to test all payout command handlers\r\n  So that every code" +
-                " path and validation is covered"), global::Reqnroll.ProgrammingLanguage.CSharp, featureTags);
+        private static global::Reqnroll.FeatureInfo featureInfo = new global::Reqnroll.FeatureInfo(new System.Globalization.CultureInfo("en"), "Features/CQRS/Commands", "Payout Command Handlers - Complete Coverage", "  As a system\r\n  I want to test all payout command handlers\r\n  So that every code" +
+                " path and validation is covered", global::Reqnroll.ProgrammingLanguage.CSharp, featureTags);
         
         private Xunit.Abstractions.ITestOutputHelper _testOutputHelper;
         
@@ -795,8 +795,8 @@ namespace Booksy.ServiceCatalog.IntegrationTests.Features.CQRS.Commands
                 await testRunner.GivenAsync("I am authenticated as an admin", ((string)(null)), ((global::Reqnroll.Table)(null)), "Given ");
                 await testRunner.AndAsync("there is a pending payout for period Jan 1 to Jan 31", ((string)(null)), ((global::Reqnroll.Table)(null)), "And ");
                 await testRunner.WhenAsync("I execute ExecutePayoutCommand", ((string)(null)), ((global::Reqnroll.Table)(null)), "When ");
-                await testRunner.ThenAsync(("the gateway request description should contain \"Payout for period 2025-01-01 to 2" +
-                        "025-01-31\""), ((string)(null)), ((global::Reqnroll.Table)(null)), "Then ");
+                await testRunner.ThenAsync("the gateway request description should contain \"Payout for period 2025-01-01 to 2" +
+                        "025-01-31\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "Then ");
             }
             await this.ScenarioCleanupAsync();
         }

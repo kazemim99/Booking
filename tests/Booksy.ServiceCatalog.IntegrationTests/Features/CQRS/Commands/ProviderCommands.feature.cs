@@ -26,8 +26,8 @@ namespace Booksy.ServiceCatalog.IntegrationTests.Features.CQRS.Commands
         
         private static string[] featureTags = ((string[])(null));
         
-        private static global::Reqnroll.FeatureInfo featureInfo = new global::Reqnroll.FeatureInfo(new System.Globalization.CultureInfo("en"), "Features/CQRS/Commands", "Provider Command Handlers - Complete Coverage", ("  As a system\r\n  I want to test all critical provider command handlers\r\n  So that" +
-                " every code path is validated"), global::Reqnroll.ProgrammingLanguage.CSharp, featureTags);
+        private static global::Reqnroll.FeatureInfo featureInfo = new global::Reqnroll.FeatureInfo(new System.Globalization.CultureInfo("en"), "Features/CQRS/Commands", "Provider Command Handlers - Complete Coverage", "  As a system\r\n  I want to test all critical provider command handlers\r\n  So that" +
+                " every code path is validated", global::Reqnroll.ProgrammingLanguage.CSharp, featureTags);
         
         private Xunit.Abstractions.ITestOutputHelper _testOutputHelper;
         
@@ -171,7 +171,8 @@ namespace Booksy.ServiceCatalog.IntegrationTests.Features.CQRS.Commands
                 await this.ScenarioStartAsync();
                 await testRunner.GivenAsync("a provider \"Existing Salon\" exists in \"Tehran\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "Given ");
                 await testRunner.AndAsync("I am authenticated as a customer", ((string)(null)), ((global::Reqnroll.Table)(null)), "And ");
-                await testRunner.WhenAsync("I execute RegisterProviderCommand with business name \"Existing Salon\" in \"Tehran\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "When ");
+                await testRunner.WhenAsync("I execute RegisterProviderCommand with business name \"Existing Salon\" in \"Tehran\"" +
+                        "", ((string)(null)), ((global::Reqnroll.Table)(null)), "When ");
                 await testRunner.ThenAsync("the command should fail with ConflictException", ((string)(null)), ((global::Reqnroll.Table)(null)), "Then ");
                 await testRunner.AndAsync("the error should indicate duplicate business name", ((string)(null)), ((global::Reqnroll.Table)(null)), "And ");
             }

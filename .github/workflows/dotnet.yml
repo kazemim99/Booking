@@ -150,25 +150,25 @@ jobs:
 
     services:
 
-      sqlserver:
+      postgres:
 
-        image: mcr.microsoft.com/mssql/server:2022-latest
+        image: postgres:16-alpine
 
         env:
 
-          ACCEPT_EULA: Y
+          POSTGRES_USER: booksy_admin
 
-          SA_PASSWORD: YourStrong@Passw0rd
+          POSTGRES_PASSWORD: TestPassword123!
 
-          MSSQL_PID: Developer
+          POSTGRES_DB: booksy_test
 
         ports:
 
-          - 1433:1433
+          - 5432:5432
 
         options: >-
 
-          --health-cmd "/opt/mssql-tools/bin/sqlcmd -S localhost -U sa -P YourStrong@Passw0rd -Q 'SELECT 1' || exit 1"
+          --health-cmd "pg_isready -U booksy_admin -d booksy_test"
 
           --health-interval 10s
 
@@ -176,7 +176,7 @@ jobs:
 
           --health-retries 5
 
- 
+
 
       redis:
 
@@ -248,7 +248,7 @@ jobs:
 
       env:
 
-        ConnectionStrings__DefaultConnection: "Server=localhost,1433;Database=BooksyTest;User Id=sa;Password=YourStrong@Passw0rd;TrustServerCertificate=True;"
+        ConnectionStrings__DefaultConnection: "Host=localhost;Port=5432;Database=booksy_test;Username=booksy_admin;Password=TestPassword123!;Include Error Detail=true"
 
         ConnectionStrings__Redis: "localhost:6379"
 

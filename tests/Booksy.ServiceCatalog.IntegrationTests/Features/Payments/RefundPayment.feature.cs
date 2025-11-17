@@ -26,8 +26,8 @@ namespace Booksy.ServiceCatalog.IntegrationTests.Features.Payments
         
         private static string[] featureTags = ((string[])(null));
         
-        private static global::Reqnroll.FeatureInfo featureInfo = new global::Reqnroll.FeatureInfo(new System.Globalization.CultureInfo("en"), "Features/Payments", "Refund Payment", ("  As a customer or provider\r\n  I want to process refunds for payments\r\n  So that " +
-                "I can return funds when services are cancelled"), global::Reqnroll.ProgrammingLanguage.CSharp, featureTags);
+        private static global::Reqnroll.FeatureInfo featureInfo = new global::Reqnroll.FeatureInfo(new System.Globalization.CultureInfo("en"), "Features/Payments", "Refund Payment", "  As a customer or provider\r\n  I want to process refunds for payments\r\n  So that " +
+                "I can return funds when services are cancelled", global::Reqnroll.ProgrammingLanguage.CSharp, featureTags);
         
         private Xunit.Abstractions.ITestOutputHelper _testOutputHelper;
         
@@ -272,8 +272,8 @@ namespace Booksy.ServiceCatalog.IntegrationTests.Features.Payments
                 table197.AddRow(new string[] {
                             "Reason",
                             "CustomerRequest"});
-                await testRunner.WhenAsync(("I send a POST request to refund payment \"00000000-0000-0000-0000-000000000000\" wi" +
-                        "th:"), ((string)(null)), table197, "When ");
+                await testRunner.WhenAsync("I send a POST request to refund payment \"00000000-0000-0000-0000-000000000000\" wi" +
+                        "th:", ((string)(null)), table197, "When ");
                 await testRunner.ThenAsync("the response status code should be 404", ((string)(null)), ((global::Reqnroll.Table)(null)), "Then ");
             }
             await this.ScenarioCleanupAsync();

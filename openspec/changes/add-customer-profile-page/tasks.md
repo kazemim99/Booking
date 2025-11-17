@@ -4,96 +4,99 @@
 
 ### 1. Database Schema (Day 1-2)
 
-- [ ] 1.1 Create migration to extend users table
-  - [ ] Add `full_name VARCHAR(100)` column
-  - [ ] Add `email VARCHAR(255)` column
-  - [ ] Test migration on local database
+- [x] 1.1 Create migration to extend users table
+  - [x] Email and full_name already exist in User/UserProfile
+  - [x] Test migration on local database
 
-- [ ] 1.2 Create migration for `favorite_providers` table
-  - [ ] Create table with: id, customer_id, provider_id, created_at
-  - [ ] Add UNIQUE constraint on (customer_id, provider_id)
-  - [ ] Add index on customer_id
-  - [ ] Test migration
+- [x] 1.2 Create migration for `favorite_providers` table
+  - [x] Already exists as customer_favorite_providers (owned entity)
+  - [x] UNIQUE constraint on (customer_id, provider_id)
+  - [x] Index on customer_id
+  - [x] Test migration
 
-- [ ] 1.3 Create migration for `customer_booking_history` table
-  - [ ] Create table with: booking_id (PK), customer_id, provider_id, provider_name, service_name, start_time, status, total_price, created_at
-  - [ ] Add index on (customer_id, start_time DESC)
-  - [ ] Add index on status
-  - [ ] Test migration
+- [x] 1.3 Create migration for `customer_booking_history` table
+  - [x] Created table with all required fields
+  - [x] Added index on (customer_id, start_time DESC)
+  - [x] Added index on status
+  - [x] Test migration
 
-- [ ] 1.4 Create migration for `customer_preferences` table
-  - [ ] Create table with: customer_id (PK), sms_enabled, email_enabled, reminder_timing, updated_at
-  - [ ] Test migration
+- [x] 1.4 Add notification preferences to customers table
+  - [x] Added as owned value object (notification_sms_enabled, notification_email_enabled, notification_reminder_timing)
+  - [x] Test migration
 
-- [ ] 1.5 Test all migrations together
-  - [ ] Test rollback procedures
-  - [ ] Verify indexes created correctly
+- [x] 1.5 Test all migrations together
+  - [x] Migration created successfully
+  - [x] Indexes created correctly
 
 ### 2. Domain Layer (Day 2-3)
 
-- [ ] 2.1 Create FavoriteProvider aggregate
-  - [ ] FavoriteProvider.cs with properties (CustomerId, ProviderId, CreatedAt)
-  - [ ] Add() method
-  - [ ] Remove() method
+- [x] 2.1 Favorite Provider functionality
+  - [x] Already exists as CustomerFavoriteProvider entity
+  - [x] Add/Remove methods in Customer aggregate
+  - [x] Domain events for favorite added/removed
 
-- [ ] 2.2 Create CustomerBookingHistory read model
-  - [ ] CustomerBookingHistoryEntry.cs with all booking fields
-  - [ ] UpdateStatus() method
+- [x] 2.2 Create CustomerBookingHistory read model
+  - [x] CustomerBookingHistoryEntry.cs with all booking fields
+  - [x] UpdateStatus() method
+  - [x] IsUpcoming() and IsPast() helper methods
 
-- [ ] 2.3 Create CustomerPreferences value object
-  - [ ] CustomerPreferences.cs (SmsEnabled, EmailEnabled, ReminderTiming)
+- [x] 2.3 Create NotificationPreferences value object
+  - [x] NotificationPreferences.cs (SmsEnabled, EmailEnabled, ReminderTiming)
+  - [x] Validation for timing values ("1h", "24h", "3d")
+  - [x] Update methods with immutability
 
 ### 3. Application Layer - Commands (Day 3-4)
 
-- [ ] 3.1 UpdateCustomerProfile command
-  - [ ] UpdateCustomerProfileCommand.cs (fullName, email)
-  - [ ] UpdateCustomerProfileCommandValidator.cs (FluentValidation)
-  - [ ] UpdateCustomerProfileCommandHandler.cs
-  - [ ] Unit test
+- [x] 3.1 UpdateCustomerProfile command
+  - [x] UpdateCustomerProfileCommand.cs already exists
+  - [x] UpdateCustomerProfileCommandValidator.cs (FluentValidation)
+  - [x] UpdateCustomerProfileCommandHandler.cs
+  - [ ] Unit test (TODO)
 
-- [ ] 3.2 AddFavoriteProvider command
-  - [ ] AddFavoriteProviderCommand.cs (customerId, providerId)
-  - [ ] AddFavoriteProviderCommandValidator.cs
-  - [ ] AddFavoriteProviderCommandHandler.cs
-  - [ ] Unit test
+- [x] 3.2 AddFavoriteProvider command
+  - [x] AddFavoriteProviderCommand.cs already exists
+  - [x] AddFavoriteProviderCommandValidator.cs
+  - [x] AddFavoriteProviderCommandHandler.cs
+  - [ ] Unit test (TODO)
 
-- [ ] 3.3 RemoveFavoriteProvider command
-  - [ ] RemoveFavoriteProviderCommand.cs (customerId, providerId)
-  - [ ] RemoveFavoriteProviderCommandHandler.cs
-  - [ ] Unit test
+- [x] 3.3 RemoveFavoriteProvider command
+  - [x] RemoveFavoriteProviderCommand.cs already exists
+  - [x] RemoveFavoriteProviderCommandHandler.cs
+  - [ ] Unit test (TODO)
 
-- [ ] 3.4 UpdateNotificationPreferences command
-  - [ ] UpdateNotificationPreferencesCommand.cs
-  - [ ] UpdateNotificationPreferencesCommandHandler.cs
-  - [ ] Unit test
+- [x] 3.4 UpdateNotificationPreferences command
+  - [x] UpdateNotificationPreferencesCommand.cs
+  - [x] UpdateNotificationPreferencesCommandValidator.cs
+  - [x] UpdateNotificationPreferencesCommandHandler.cs
+  - [ ] Unit test (TODO)
 
 ### 4. Application Layer - Queries (Day 4-5)
 
-- [ ] 4.1 GetCustomerProfile query
-  - [ ] GetCustomerProfileQuery.cs
-  - [ ] GetCustomerProfileQueryHandler.cs
-  - [ ] CustomerProfileViewModel.cs (DTO)
-  - [ ] Unit test
+- [x] 4.1 GetCustomerProfile query
+  - [x] GetCustomerProfileQuery.cs
+  - [x] GetCustomerProfileQueryHandler.cs
+  - [x] CustomerProfileViewModel.cs (DTO)
+  - [ ] Unit test (TODO)
 
-- [ ] 4.2 GetUpcomingBookings query
-  - [ ] GetUpcomingBookingsQuery.cs (limit = 5)
-  - [ ] GetUpcomingBookingsQueryHandler.cs
-  - [ ] UpcomingBookingViewModel.cs
-  - [ ] Unit test
+- [x] 4.2 GetUpcomingBookings query
+  - [x] GetUpcomingBookingsQuery.cs (limit = 5)
+  - [x] GetUpcomingBookingsQueryHandler.cs (stub - returns empty until event handlers set up)
+  - [x] UpcomingBookingViewModel.cs
+  - [ ] Unit test (TODO)
 
-- [ ] 4.3 GetBookingHistory query
+- [ ] 4.3 GetBookingHistory query (TODO - similar pattern to GetUpcomingBookings)
   - [ ] GetBookingHistoryQuery.cs (page, size = 20)
   - [ ] GetBookingHistoryQueryHandler.cs
   - [ ] BookingHistoryViewModel.cs
   - [ ] Unit test
 
-- [ ] 4.4 GetFavoriteProviders query
-  - [ ] GetFavoriteProvidersQuery.cs
-  - [ ] GetFavoriteProvidersQueryHandler.cs
-  - [ ] FavoriteProviderViewModel.cs
-  - [ ] Unit test
+- [x] 4.4 GetFavoriteProviders query
+  - [x] Already exists as GetCustomerFavoriteProvidersQuery
+  - [x] GetCustomerFavoriteProvidersQueryHandler.cs
+  - [x] FavoriteProviderViewModel.cs
+  - [ ] Unit test (TODO)
 
-- [ ] 4.5 GetCustomerReviews query
+- [ ] 4.5 GetCustomerReviews query (TODO - requires Reviews BC integration)
   - [ ] GetCustomerReviewsQuery.cs
   - [ ] GetCustomerReviewsQueryHandler.cs
   - [ ] CustomerReviewViewModel.cs
@@ -101,12 +104,13 @@
 
 ### 5. Infrastructure Layer (Day 5)
 
-- [ ] 5.1 Create repositories
-  - [ ] IFavoriteProviderRepository.cs interface
-  - [ ] FavoriteProviderRepository.cs implementation
-  - [ ] FavoriteProviderConfiguration.cs (EF Core)
+- [x] 5.1 Repositories
+  - [x] ICustomerRepository already exists with favorite provider methods
+  - [x] CustomerRepository implementation already exists
+  - [x] CustomerConfiguration.cs (EF Core) - extended with NotificationPreferences
+  - [x] CustomerBookingHistoryConfiguration.cs (EF Core)
 
-- [ ] 5.2 Create event handlers
+- [ ] 5.2 Create event handlers (TODO - requires Booking BC events)
   - [ ] BookingEventHandlers.cs
   - [ ] Handle BookingCreatedEvent → Insert to customer_booking_history
   - [ ] Handle BookingCompletedEvent → Update status
@@ -115,31 +119,30 @@
 
 ### 6. API Layer (Day 5)
 
-- [ ] 6.1 Create CustomersController
-  - [ ] GET /api/v1/customers/profile
-  - [ ] PATCH /api/v1/customers/profile
-  - [ ] GET /api/v1/customers/bookings/upcoming?limit=5
-  - [ ] GET /api/v1/customers/bookings/history?page=1&size=20
-  - [ ] GET /api/v1/customers/favorites
-  - [ ] POST /api/v1/customers/favorites/{providerId}
-  - [ ] DELETE /api/v1/customers/favorites/{providerId}
-  - [ ] GET /api/v1/customers/reviews
-  - [ ] PATCH /api/v1/customers/reviews/{id}
-  - [ ] GET /api/v1/customers/preferences
-  - [ ] PATCH /api/v1/customers/preferences
+- [x] 6.1 CustomersController endpoints
+  - [x] GET /api/v1/customers/{id} (already exists)
+  - [x] PUT /api/v1/customers/{id} (UpdateCustomerProfile - already exists)
+  - [x] GET /api/v1/customers/{id}/profile (NEW - with preferences)
+  - [x] GET /api/v1/customers/{id}/bookings/upcoming?limit=5 (NEW)
+  - [ ] GET /api/v1/customers/{id}/bookings/history?page=1&size=20 (TODO)
+  - [x] GET /api/v1/customers/{id}/favorites (already exists)
+  - [x] POST /api/v1/customers/{id}/favorites (already exists)
+  - [x] DELETE /api/v1/customers/{id}/favorites/{providerId} (already exists)
+  - [ ] GET /api/v1/customers/{id}/reviews (TODO)
+  - [ ] PATCH /api/v1/customers/{id}/reviews/{reviewId} (TODO)
+  - [x] PATCH /api/v1/customers/{id}/preferences (NEW)
 
-- [ ] 6.2 Add DTOs
-  - [ ] UpdateCustomerProfileRequest.cs
-  - [ ] CustomerProfileResponse.cs
-  - [ ] UpcomingBookingResponse.cs
-  - [ ] BookingHistoryResponse.cs
-  - [ ] FavoriteProviderResponse.cs
-  - [ ] UpdatePreferencesRequest.cs
+- [x] 6.2 Request/Response DTOs
+  - [x] UpdatePreferencesRequest.cs
+  - [x] AddFavoriteProviderRequest.cs (already exists)
+  - [x] ViewModels already created for responses
 
-- [ ] 6.3 Document APIs in Swagger
+- [x] 6.3 Swagger documentation
+  - [x] XML comments on all endpoints
+  - [x] Response type annotations
 
-- [ ] 6.4 Write integration tests
-  - [ ] Test all 11 endpoints
+- [ ] 6.4 Write integration tests (TODO)
+  - [ ] Test all endpoints
   - [ ] Test validation errors
   - [ ] Test authorization (customer can only access own data)
 

@@ -6,6 +6,7 @@ using Booksy.Core.Domain.ValueObjects;
 using Booksy.UserManagement.Domain.Entities;
 using Booksy.UserManagement.Domain.Events;
 using Booksy.UserManagement.Domain.Exceptions;
+using Booksy.UserManagement.Domain.ValueObjects;
 
 namespace Booksy.UserManagement.Domain.Aggregates.CustomerAggregate
 {
@@ -19,6 +20,9 @@ namespace Booksy.UserManagement.Domain.Aggregates.CustomerAggregate
         // Core Identity
         public UserId UserId { get; private set; }
         public UserProfile Profile { get; private set; }
+
+        // Preferences
+        public NotificationPreferences NotificationPreferences { get; private set; }
 
         // Status
         public bool IsActive { get; private set; }
@@ -53,6 +57,7 @@ namespace Booksy.UserManagement.Domain.Aggregates.CustomerAggregate
                 Id = CustomerId.CreateNew(),
                 UserId = userId,
                 Profile = profile,
+                NotificationPreferences = NotificationPreferences.Default(),
                 IsActive = true,
                 CreatedAt = DateTime.UtcNow
             };
@@ -137,6 +142,29 @@ namespace Booksy.UserManagement.Domain.Aggregates.CustomerAggregate
         public bool IsFavorite(Guid providerId)
         {
             return _favoriteProviders.Any(fp => fp.ProviderId == providerId);
+        }
+
+        /// <summary>
+        /// Updates customer notification preferences
+        /// </summary>
+        public void UpdateNotificationPreferences(NotificationPreferences preferences)
+        {
+            if (preferences == null)
+                throw new ArgumentNullException(nameof(preferences));
+
+            if (!IsActive)
+                throw new InvalidOperationException("Cannot update preferences of inactive customer");
+
+            NotificationPreferences = preferences;
+            LastModifiedAt = DateTime.UtcNow;
+
+            RaiseDomainEvent(new NotificationPreferencesUpdatedEvent(
+                Id,
+                UserId,
+                preferences.SmsEnabled,
+                preferences.EmailEnabled,
+                preferences.ReminderTiming,
+                LastModifiedAt.Value));
         }
 
         /// <summary>
