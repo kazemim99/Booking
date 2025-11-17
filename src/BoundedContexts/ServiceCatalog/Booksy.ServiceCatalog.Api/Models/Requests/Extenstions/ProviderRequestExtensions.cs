@@ -35,6 +35,13 @@ namespace Booksy.ServiceCatalog.Api.Models.Requests.Extenstions
                 OffersMobileServices: request.OffersMobileServices,
                 VerifiedOnly: request.VerifiedOnly,
                 MinRating: request.MinRating,
+                ServiceCategory: request.ServiceCategory,
+                AvailableOn: request.AvailableOn,
+                PriceRange: request.PriceRange,
+                SortBy: request.SortBy,
+                SortDescending: request.SortDescending,
+                UserLatitude: request.UserLatitude,
+                UserLongitude: request.UserLongitude,
                 IncludeInactive: request.IncludeInactive
               )
             {

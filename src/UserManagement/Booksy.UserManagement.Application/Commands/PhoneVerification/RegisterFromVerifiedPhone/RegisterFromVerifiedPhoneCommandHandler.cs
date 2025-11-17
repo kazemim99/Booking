@@ -104,7 +104,6 @@ public sealed class RegisterFromVerifiedPhoneCommandHandler
                 profile,
                 request.UserType);
 
-            await _userRepository.SaveAsync(user, cancellationToken);
             isNewUser = true;
 
             _logger.LogInformation(
@@ -167,6 +166,7 @@ public sealed class RegisterFromVerifiedPhoneCommandHandler
             expirationDays: 30,
             createdByIp: request.IpAddress);
         user.AddRefreshToken(refreshToken);
+
         await _userRepository.SaveAsync(user, cancellationToken);
 
         _logger.LogInformation(

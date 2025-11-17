@@ -2,7 +2,7 @@
   <div class="my-bookings" dir="rtl">
     <div class="bookings-header">
       <h2>رزروهای من</h2>
-      <button @click="router.push('/customer/book')" class="btn-new-booking">
+      <button @click="router.push({ name: 'CustomerBooking' })" class="btn-new-booking">
         + رزرو جدید
       </button>
     </div>

@@ -22,6 +22,13 @@ namespace Booksy.ServiceCatalog.Application.Queries.Provider.SearchProviders
         bool? OffersMobileServices = null,
         bool? VerifiedOnly = null,
         decimal? MinRating = null,
+        string? ServiceCategory = null,
+        DateTime? AvailableOn = null,
+        string? PriceRange = null,
+        string SortBy = "rating",
+        bool SortDescending = true,
+        double? UserLatitude = null,
+        double? UserLongitude = null,
         bool IncludeInactive = false) : PaginatedQueryBase<ProviderSearchItem>();
 }
 

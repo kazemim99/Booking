@@ -6,6 +6,15 @@ import { ProviderStatus } from '@/core/types/enums.types'
 const providerRoutes: RouteRecordRaw[] = [
   // Public Provider Pages (customer-facing)
   {
+    path: '/providers/search',
+    name: 'ProviderSearch',
+    component: () => import('@/modules/provider/views/ProviderSearchView.vue'),
+    meta: {
+      requiresAuth: false,
+      title: 'Search Providers',
+    },
+  },
+  {
     path: '/providers',
     name: 'ProviderList',
     component: () => import('@/modules/provider/views/ProviderListView.vue'),

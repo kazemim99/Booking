@@ -97,7 +97,7 @@ namespace Booksy.ServiceCatalog.Application.Queries.Provider.GetProviderById
                     FirstName = staff.FirstName,
                     LastName = staff.LastName,
                     FullName = staff.FullName,
-                    Email = staff.Email.Value,
+                    Email = staff.Email?.Value,
                     Phone = staff.Phone?.Value,
                     Role = staff.Role,
                     IsActive = staff.IsActive,

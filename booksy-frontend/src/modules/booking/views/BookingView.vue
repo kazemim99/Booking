@@ -1,10 +1,15 @@
 <template>
-  <div>
-    <!-- Booking View Content Goes Here -->
-    <h1>Booking View</h1>
+  <div class="booking-view" dir="rtl">
+    <BookingWizard />
   </div>
 </template>
 
 <script setup lang="ts">
-// Add your script logic here
+import BookingWizard from '../components/BookingWizard.vue'
 </script>
+
+<style scoped>
+.booking-view {
+  min-height: 100vh;
+}
+</style>

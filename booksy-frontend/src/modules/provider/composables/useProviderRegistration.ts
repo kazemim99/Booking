@@ -725,7 +725,6 @@ export function useProviderRegistration() {
         console.log('⏭️  Skipping draft load - user not authenticated (new registration)')
         return { success: true, message: 'No authentication - starting fresh registration' }
       }
-      debugger
       const response = await providerRegistrationService.getRegistrationProgress()
 
       // Handle completed registration (hasDraft: false but providerId exists)

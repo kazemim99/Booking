@@ -15,10 +15,10 @@ const routes: RouteRecordRaw[] = [
   {
     path: '/',
     name: 'Home',
-    component: () => import('@/modules/booking/views/BookingView.vue'),
+    component: () => import('@/views/HomeView.vue'),
     meta: {
-      requiresAuth: true,
-      title: 'Home',
+      requiresAuth: false, // Landing page is public
+      title: 'Booksy - Find & Book Beauty & Wellness Services',
     },
   },
   ...authRoutes,

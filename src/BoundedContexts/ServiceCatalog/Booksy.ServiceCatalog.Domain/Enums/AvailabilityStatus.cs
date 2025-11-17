@@ -1,82 +1,33 @@
-﻿namespace Booksy.ServiceCatalog.Domain.Enums;
-
-/// <summary>
-/// Represents the availability status of providers, staff, or time slots
-/// </summary>
-public enum AvailabilityStatus
+namespace Booksy.ServiceCatalog.Domain.Enums
 {
     /// <summary>
-    /// Available for booking - normal operating state
+    /// Represents the availability status of a time slot
     /// </summary>
-    Available = 1,
+    public enum AvailabilityStatus
+    {
+        /// <summary>
+        /// Time slot is available for booking
+        /// </summary>
+        Available,
 
-    /// <summary>
-    /// Currently busy with an existing appointment
-    /// </summary>
-    Busy = 2,
+        /// <summary>
+        /// Time slot has been booked by a customer
+        /// </summary>
+        Booked,
 
-    /// <summary>
-    /// Temporarily blocked/unavailable (break, lunch, personal time)
-    /// </summary>
-    Blocked = 3,
+        /// <summary>
+        /// Time slot is blocked by provider (vacation, personal time, etc.)
+        /// </summary>
+        Blocked,
 
-    /// <summary>
-    /// On scheduled break
-    /// </summary>
-    OnBreak = 4,
+        /// <summary>
+        /// Time slot is during break period (lunch, prayer, etc.)
+        /// </summary>
+        Break,
 
-    /// <summary>
-    /// Out to lunch
-    /// </summary>
-    AtLunch = 5,
-
-    /// <summary>
-    /// Out of office (vacation, sick leave, etc.)
-    /// </summary>
-    OutOfOffice = 6,
-
-    /// <summary>
-    /// Offline or not working today
-    /// </summary>
-    Offline = 7,
-
-    /// <summary>
-    /// In training or meeting
-    /// </summary>
-    InTraining = 8,
-
-    /// <summary>
-    /// Tentatively booked (pending confirmation)
-    /// </summary>
-    Tentative = 9,
-
-    /// <summary>
-    /// Available but with limited capacity
-    /// </summary>
-    LimitedAvailability = 10,
-
-    /// <summary>
-    /// Emergency unavailable (unexpected absence)
-    /// </summary>
-    Emergency = 11,
-
-    /// <summary>
-    /// Preparing for next appointment (buffer time)
-    /// </summary>
-    Preparing = 12,
-
-    /// <summary>
-    /// Overtime work (available but outside normal hours)
-    /// </summary>
-    Overtime = 13,
-
-    /// <summary>
-    /// On call - available for urgent appointments only
-    /// </summary>
-    OnCall = 14,
-
-    /// <summary>
-    /// Maintenance or setup time (equipment, room preparation)
-    /// </summary>
-    Maintenance = 15
+        /// <summary>
+        /// Time slot is tentatively held during booking process (5-15 min hold)
+        /// </summary>
+        TentativeHold
+    }
 }

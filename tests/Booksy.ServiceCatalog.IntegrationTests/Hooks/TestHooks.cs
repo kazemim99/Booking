@@ -1,6 +1,8 @@
+using Booksy.ServiceCatalog.Api;
 using Booksy.ServiceCatalog.IntegrationTests.Infrastructure;
 using Booksy.ServiceCatalog.IntegrationTests.Support;
 using Reqnroll;
+using Reqnroll.BoDi;
 
 namespace Booksy.ServiceCatalog.IntegrationTests.Hooks;
 
@@ -10,21 +12,30 @@ namespace Booksy.ServiceCatalog.IntegrationTests.Hooks;
 [Binding]
 public class TestHooks
 {
-    private readonly ServiceCatalogIntegrationTestBase _testBase;
+    private readonly ServiceCatalogReqnrollTestBase _testBase;
     private readonly ScenarioContext _scenarioContext;
-    private readonly ReqnrollContext _reqnrollContext;
 
     public TestHooks(
-        ServiceCatalogIntegrationTestBase testBase,
-        ScenarioContext scenarioContext,
-        ReqnrollContext reqnrollContext)
+        ServiceCatalogReqnrollTestBase testBase,
+        ScenarioContext scenarioContext)
     {
         _testBase = testBase;
         _scenarioContext = scenarioContext;
-        _reqnrollContext = reqnrollContext;
     }
 
-    [BeforeScenario]
+    [BeforeTestRun(Order = 0)]
+    public static void RegisterDependencies(IObjectContainer container)
+    {
+        // Register factory for ServiceCatalogIntegrationTestBase
+        // This allows step definitions to inject the abstract base class
+        container.RegisterFactoryAs<ServiceCatalogIntegrationTestBase>(() =>
+        {
+            var factory = container.Resolve<ServiceCatalogTestWebApplicationFactory<Startup>>();
+            return new ServiceCatalogReqnrollTestBase(factory);
+        });
+    }
+
+    [BeforeScenario(Order = 100)]
     public async Task BeforeScenario()
     {
         // Initialize test base (database, client, etc.)
