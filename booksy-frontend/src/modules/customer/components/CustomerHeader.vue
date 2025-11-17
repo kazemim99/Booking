@@ -28,7 +28,7 @@ const pageTitle = computed(() => route.meta.title || 'داشبورد')
 const userName = computed(() => authStore.user?.firstName || 'کاربر')
 
 function handleNewBooking() {
-  router.push('/customer/book')
+  router.push({ name: 'CustomerBooking' })
 }
 </script>
 

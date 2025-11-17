@@ -26,8 +26,8 @@ namespace Booksy.ServiceCatalog.IntegrationTests.Features.Payments.ZarinPal
         
         private static string[] featureTags = ((string[])(null));
         
-        private static global::Reqnroll.FeatureInfo featureInfo = new global::Reqnroll.FeatureInfo(new System.Globalization.CultureInfo("en"), "Features/Payments/ZarinPal", "ZarinPal Provider Revenue Analytics", "    As a provider\r\n    I want to view my revenue statistics from ZarinPal payment" +
-                "s\r\n    So that I can track my earnings and business performance", global::Reqnroll.ProgrammingLanguage.CSharp, featureTags);
+        private static global::Reqnroll.FeatureInfo featureInfo = new global::Reqnroll.FeatureInfo(new System.Globalization.CultureInfo("en"), "Features/Payments/ZarinPal", "ZarinPal Provider Revenue Analytics", ("    As a provider\r\n    I want to view my revenue statistics from ZarinPal payment" +
+                "s\r\n    So that I can track my earnings and business performance"), global::Reqnroll.ProgrammingLanguage.CSharp, featureTags);
         
         private Xunit.Abstractions.ITestOutputHelper _testOutputHelper;
         
@@ -323,8 +323,8 @@ namespace Booksy.ServiceCatalog.IntegrationTests.Features.Payments.ZarinPal
                 table257.AddRow(new string[] {
                             "EndDate",
                             "2024-02-29"});
-                await testRunner.WhenAsync("I send a GET request to \"/api/v1/payments/provider/{providerId}/revenue\" with par" +
-                        "ameters:", ((string)(null)), table257, "When ");
+                await testRunner.WhenAsync(("I send a GET request to \"/api/v1/payments/provider/{providerId}/revenue\" with par" +
+                        "ameters:"), ((string)(null)), table257, "When ");
                 await testRunner.ThenAsync("the response should only include February 2024 payments", ((string)(null)), ((global::Reqnroll.Table)(null)), "Then ");
             }
             await this.ScenarioCleanupAsync();
@@ -357,8 +357,8 @@ namespace Booksy.ServiceCatalog.IntegrationTests.Features.Payments.ZarinPal
                 table258.AddRow(new string[] {
                             "EndDate",
                             "2024-06-30"});
-                await testRunner.WhenAsync("I send a GET request to \"/api/v1/payments/provider/{providerId}/revenue\" with par" +
-                        "ameters:", ((string)(null)), table258, "When ");
+                await testRunner.WhenAsync(("I send a GET request to \"/api/v1/payments/provider/{providerId}/revenue\" with par" +
+                        "ameters:"), ((string)(null)), table258, "When ");
                 await testRunner.ThenAsync("the response should show June 2024 revenue statistics", ((string)(null)), ((global::Reqnroll.Table)(null)), "Then ");
             }
             await this.ScenarioCleanupAsync();
@@ -447,8 +447,8 @@ namespace Booksy.ServiceCatalog.IntegrationTests.Features.Payments.ZarinPal
                 table262.AddRow(new string[] {
                             "PaymentMethod",
                             "ZarinPal"});
-                await testRunner.WhenAsync("I send a GET request to \"/api/v1/payments/provider/{providerId}/revenue\" with par" +
-                        "ameters:", ((string)(null)), table262, "When ");
+                await testRunner.WhenAsync(("I send a GET request to \"/api/v1/payments/provider/{providerId}/revenue\" with par" +
+                        "ameters:"), ((string)(null)), table262, "When ");
                 global::Reqnroll.Table table263 = new global::Reqnroll.Table(new string[] {
                             "Field",
                             "Value"});
@@ -573,8 +573,8 @@ namespace Booksy.ServiceCatalog.IntegrationTests.Features.Payments.ZarinPal
                 table268.AddRow(new string[] {
                             "GroupBy",
                             "Month"});
-                await testRunner.WhenAsync("I send a GET request to \"/api/v1/payments/provider/{providerId}/revenue/trend\" wi" +
-                        "th parameters:", ((string)(null)), table268, "When ");
+                await testRunner.WhenAsync(("I send a GET request to \"/api/v1/payments/provider/{providerId}/revenue/trend\" wi" +
+                        "th parameters:"), ((string)(null)), table268, "When ");
                 await testRunner.ThenAsync("the response should contain monthly breakdown", ((string)(null)), ((global::Reqnroll.Table)(null)), "Then ");
             }
             await this.ScenarioCleanupAsync();
@@ -661,8 +661,8 @@ namespace Booksy.ServiceCatalog.IntegrationTests.Features.Payments.ZarinPal
                 table269.AddRow(new string[] {
                             "ComparePrevious",
                             "true"});
-                await testRunner.WhenAsync("I send a GET request to \"/api/v1/payments/provider/{providerId}/revenue\" with par" +
-                        "ameters:", ((string)(null)), table269, "When ");
+                await testRunner.WhenAsync(("I send a GET request to \"/api/v1/payments/provider/{providerId}/revenue\" with par" +
+                        "ameters:"), ((string)(null)), table269, "When ");
                 global::Reqnroll.Table table270 = new global::Reqnroll.Table(new string[] {
                             "Field",
                             "Present"});
@@ -704,8 +704,8 @@ namespace Booksy.ServiceCatalog.IntegrationTests.Features.Payments.ZarinPal
                 table271.AddRow(new string[] {
                             "Format",
                             "CSV"});
-                await testRunner.WhenAsync("I send a GET request to \"/api/v1/payments/provider/{providerId}/revenue/export\" w" +
-                        "ith parameters:", ((string)(null)), table271, "When ");
+                await testRunner.WhenAsync(("I send a GET request to \"/api/v1/payments/provider/{providerId}/revenue/export\" w" +
+                        "ith parameters:"), ((string)(null)), table271, "When ");
                 await testRunner.ThenAsync("the response should be a CSV file", ((string)(null)), ((global::Reqnroll.Table)(null)), "Then ");
                 await testRunner.AndAsync("the CSV should contain all revenue metrics", ((string)(null)), ((global::Reqnroll.Table)(null)), "And ");
             }
@@ -736,8 +736,8 @@ namespace Booksy.ServiceCatalog.IntegrationTests.Features.Payments.ZarinPal
                 table272.AddRow(new string[] {
                             "Limit",
                             "10"});
-                await testRunner.WhenAsync("I send a GET request to \"/api/v1/payments/provider/{providerId}/revenue/top-days\"" +
-                        " with parameters:", ((string)(null)), table272, "When ");
+                await testRunner.WhenAsync(("I send a GET request to \"/api/v1/payments/provider/{providerId}/revenue/top-days\"" +
+                        " with parameters:"), ((string)(null)), table272, "When ");
                 await testRunner.ThenAsync("the response should contain top 10 earning days", ((string)(null)), ((global::Reqnroll.Table)(null)), "Then ");
                 await testRunner.AndAsync("each day should show total revenue", ((string)(null)), ((global::Reqnroll.Table)(null)), "And ");
             }
@@ -788,8 +788,8 @@ namespace Booksy.ServiceCatalog.IntegrationTests.Features.Payments.ZarinPal
                 await this.FeatureBackgroundAsync();
                 await testRunner.GivenAsync("the provider is in Tehran timezone (IRST)", ((string)(null)), ((global::Reqnroll.Table)(null)), "Given ");
                 await testRunner.AndAsync("payments were made at different times", ((string)(null)), ((global::Reqnroll.Table)(null)), "And ");
-                await testRunner.WhenAsync("I send a GET request to \"/api/v1/payments/provider/{providerId}/revenue\" with dat" +
-                        "e range", ((string)(null)), ((global::Reqnroll.Table)(null)), "When ");
+                await testRunner.WhenAsync(("I send a GET request to \"/api/v1/payments/provider/{providerId}/revenue\" with dat" +
+                        "e range"), ((string)(null)), ((global::Reqnroll.Table)(null)), "When ");
                 await testRunner.ThenAsync("the dates should be calculated in provider\'s timezone", ((string)(null)), ((global::Reqnroll.Table)(null)), "Then ");
             }
             await this.ScenarioCleanupAsync();
@@ -858,8 +858,8 @@ namespace Booksy.ServiceCatalog.IntegrationTests.Features.Payments.ZarinPal
                 await this.ScenarioStartAsync();
                 await this.FeatureBackgroundAsync();
                 await testRunner.GivenAsync("the provider has payments with various statuses", ((string)(null)), ((global::Reqnroll.Table)(null)), "Given ");
-                await testRunner.WhenAsync("I send a GET request to \"/api/v1/payments/provider/{providerId}/revenue/breakdown" +
-                        "\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "When ");
+                await testRunner.WhenAsync(("I send a GET request to \"/api/v1/payments/provider/{providerId}/revenue/breakdown" +
+                        "\""), ((string)(null)), ((global::Reqnroll.Table)(null)), "When ");
                 global::Reqnroll.Table table275 = new global::Reqnroll.Table(new string[] {
                             "Status",
                             "Present"});

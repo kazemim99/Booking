@@ -7,6 +7,7 @@ using Booksy.ServiceCatalog.Domain.Aggregates.NotificationTemplateAggregate;
 using Booksy.ServiceCatalog.Domain.Aggregates.UserNotificationPreferencesAggregate;
 using Booksy.ServiceCatalog.Domain.Aggregates.PaymentAggregate;
 using Booksy.ServiceCatalog.Domain.Aggregates.PayoutAggregate;
+using Booksy.ServiceCatalog.Domain.Aggregates.ProviderAvailabilityAggregate;
 using Booksy.ServiceCatalog.Domain.Entities;
 using Booksy.ServiceCatalog.Infrastructure.Persistence.Configurations;
 using Microsoft.EntityFrameworkCore;
@@ -45,13 +46,10 @@ namespace Booksy.ServiceCatalog.Infrastructure.Persistence.Context
         public DbSet<Notification> Notifications => Set<Notification>();
         public DbSet<NotificationTemplate> NotificationTemplates => Set<NotificationTemplate>();
         public DbSet<UserNotificationPreferences> UserNotificationPreferences => Set<UserNotificationPreferences>();
+        public DbSet<ProviderAvailability> ProviderAvailability => Set<ProviderAvailability>();
+        public DbSet<Review> Reviews => Set<Review>();
 
-        // Entities
-        public DbSet<Staff> Staff => Set<Staff>();
-        public DbSet<BusinessHours> BusinessHours => Set<BusinessHours>();
-        public DbSet<HolidaySchedule> Holidays => Set<HolidaySchedule>();
-        public DbSet<ExceptionSchedule> Exceptions => Set<ExceptionSchedule>();
-        // ServiceOption and PriceTier are owned entities (OwnsMany) - not exposed as DbSets
+        // Reference Data (not part of aggregates)
         public DbSet<ProvinceCities> ProvinceCities => Set<ProvinceCities>();
 
         protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)

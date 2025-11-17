@@ -629,7 +629,7 @@ namespace Booksy.ServiceCatalog.Infrastructure.Migrations
                     b.Property<string>("Provider")
                         .IsRequired()
                         .HasMaxLength(50)
-                        .HasColumnType("nvarchar(50)")
+                        .HasColumnType("character varying(50)")
                         .HasColumnName("Provider");
 
                     b.Property<Guid>("ProviderId")
@@ -859,6 +859,13 @@ namespace Booksy.ServiceCatalog.Infrastructure.Migrations
                         .HasColumnType("uuid")
                         .HasColumnName("OwnerId");
 
+                    b.Property<string>("PriceRange")
+                        .IsRequired()
+                        .ValueGeneratedOnAdd()
+                        .HasMaxLength(20)
+                        .HasColumnType("character varying(20)")
+                        .HasDefaultValue("Moderate");
+
                     b.Property<string>("ProviderType")
                         .IsRequired()
                         .HasMaxLength(50)
@@ -905,6 +912,206 @@ namespace Booksy.ServiceCatalog.Infrastructure.Migrations
                         .HasDatabaseName("IX_Providers_Status");
 
                     b.ToTable("Providers", "ServiceCatalog");
+                });
+
+            modelBuilder.Entity("Booksy.ServiceCatalog.Domain.Aggregates.ProviderAvailabilityAggregate.ProviderAvailability", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("AvailabilityId");
+
+                    b.Property<string>("BlockReason")
+                        .HasMaxLength(500)
+                        .HasColumnType("character varying(500)")
+                        .HasColumnName("BlockReason");
+
+                    b.Property<Guid?>("BookingId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("BookingId");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("CreatedAt");
+
+                    b.Property<string>("CreatedBy")
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)")
+                        .HasColumnName("CreatedBy");
+
+                    b.Property<DateTime>("Date")
+                        .HasColumnType("date")
+                        .HasColumnName("Date");
+
+                    b.Property<TimeOnly>("EndTime")
+                        .HasColumnType("time")
+                        .HasColumnName("EndTime");
+
+                    b.Property<DateTime?>("HoldExpiresAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("HoldExpiresAt");
+
+                    b.Property<bool>("IsDeleted")
+                        .HasColumnType("boolean");
+
+                    b.Property<DateTime?>("LastModifiedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("LastModifiedAt");
+
+                    b.Property<string>("LastModifiedBy")
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)")
+                        .HasColumnName("LastModifiedBy");
+
+                    b.Property<Guid>("ProviderId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("ProviderId");
+
+                    b.Property<Guid?>("StaffId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("StaffId");
+
+                    b.Property<TimeOnly>("StartTime")
+                        .HasColumnType("time")
+                        .HasColumnName("StartTime");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("character varying(50)")
+                        .HasColumnName("Status");
+
+                    b.Property<int>("Version")
+                        .IsConcurrencyToken()
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer")
+                        .HasDefaultValue(0)
+                        .HasColumnName("Version");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("BookingId")
+                        .HasDatabaseName("IX_ProviderAvailability_BookingId");
+
+                    b.HasIndex("Date", "Status")
+                        .HasDatabaseName("IX_ProviderAvailability_Date_Status");
+
+                    b.HasIndex("HoldExpiresAt", "Status")
+                        .HasDatabaseName("IX_ProviderAvailability_HoldExpiration_Status")
+                        .HasFilter("\"HoldExpiresAt\" IS NOT NULL");
+
+                    b.HasIndex("ProviderId", "Date", "StartTime")
+                        .HasDatabaseName("IX_ProviderAvailability_Provider_Date_StartTime");
+
+                    b.ToTable("ProviderAvailability", "ServiceCatalog");
+                });
+
+            modelBuilder.Entity("Booksy.ServiceCatalog.Domain.Aggregates.Review", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("ReviewId");
+
+                    b.Property<Guid>("BookingId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("BookingId");
+
+                    b.Property<string>("Comment")
+                        .HasMaxLength(2000)
+                        .HasColumnType("character varying(2000)")
+                        .HasColumnName("Comment");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("CreatedAt");
+
+                    b.Property<string>("CreatedBy")
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)")
+                        .HasColumnName("CreatedBy");
+
+                    b.Property<Guid>("CustomerId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("CustomerId");
+
+                    b.Property<int>("HelpfulCount")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer")
+                        .HasDefaultValue(0)
+                        .HasColumnName("HelpfulCount");
+
+                    b.Property<bool>("IsDeleted")
+                        .HasColumnType("boolean");
+
+                    b.Property<bool>("IsVerified")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("boolean")
+                        .HasDefaultValue(true)
+                        .HasColumnName("IsVerified");
+
+                    b.Property<DateTime?>("LastModifiedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("LastModifiedAt");
+
+                    b.Property<string>("LastModifiedBy")
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)")
+                        .HasColumnName("LastModifiedBy");
+
+                    b.Property<int>("NotHelpfulCount")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer")
+                        .HasDefaultValue(0)
+                        .HasColumnName("NotHelpfulCount");
+
+                    b.Property<Guid>("ProviderId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("ProviderId");
+
+                    b.Property<string>("ProviderResponse")
+                        .HasMaxLength(1000)
+                        .HasColumnType("character varying(1000)")
+                        .HasColumnName("ProviderResponse");
+
+                    b.Property<DateTime?>("ProviderResponseAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("ProviderResponseAt");
+
+                    b.Property<decimal>("RatingValue")
+                        .HasPrecision(3, 1)
+                        .HasColumnType("decimal(3,1)")
+                        .HasColumnName("RatingValue");
+
+                    b.Property<int>("Version")
+                        .IsConcurrencyToken()
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer")
+                        .HasDefaultValue(0)
+                        .HasColumnName("Version");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("BookingId")
+                        .IsUnique()
+                        .HasDatabaseName("IX_Reviews_BookingId");
+
+                    b.HasIndex("CustomerId")
+                        .HasDatabaseName("IX_Reviews_CustomerId");
+
+                    b.HasIndex("ProviderId")
+                        .HasDatabaseName("IX_Reviews_ProviderId");
+
+                    b.HasIndex("IsVerified", "CreatedAt")
+                        .HasDatabaseName("IX_Reviews_Verified_CreatedAt");
+
+                    b.HasIndex("ProviderId", "CreatedAt")
+                        .HasDatabaseName("IX_Reviews_Provider_CreatedAt");
+
+                    b.HasIndex("ProviderId", "RatingValue")
+                        .HasDatabaseName("IX_Reviews_Provider_Rating");
+
+                    b.ToTable("Reviews", "ServiceCatalog");
                 });
 
             modelBuilder.Entity("Booksy.ServiceCatalog.Domain.Aggregates.Service", b =>

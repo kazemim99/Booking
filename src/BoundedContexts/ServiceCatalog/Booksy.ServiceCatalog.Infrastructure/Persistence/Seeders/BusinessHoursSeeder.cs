@@ -28,14 +28,7 @@ namespace Booksy.ServiceCatalog.Infrastructure.Persistence.Seeders
         {
             try
             {
-                if (await _context.BusinessHours.AnyAsync(cancellationToken))
-                {
-                    _logger.LogInformation("BusinessHours already seeded. Skipping...");
-                    return;
-                }
-
-                _logger.LogInformation("Starting Iranian business hours seeding...");
-
+                // ✅ DDD: Query through Provider aggregate, not child entity directly
                 var providers = await _context.Providers
                     .Include(p => p.BusinessHours)
                     .Where(p => !p.BusinessHours.Any())
@@ -43,9 +36,11 @@ namespace Booksy.ServiceCatalog.Infrastructure.Persistence.Seeders
 
                 if (!providers.Any())
                 {
-                    _logger.LogWarning("No providers without business hours found.");
+                    _logger.LogInformation("BusinessHours already seeded for all providers. Skipping...");
                     return;
                 }
+
+                _logger.LogInformation("Starting Iranian business hours seeding...");
 
                 foreach (var provider in providers)
                 {

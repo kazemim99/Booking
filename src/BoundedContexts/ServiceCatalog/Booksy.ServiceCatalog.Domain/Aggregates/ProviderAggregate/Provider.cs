@@ -44,6 +44,7 @@ namespace Booksy.ServiceCatalog.Domain.Aggregates
         public bool RequiresApproval { get; private set; }
         public bool AllowOnlineBooking { get; private set; }
         public bool OffersMobileServices { get; private set; }
+        public PriceRange PriceRange { get; private set; }
 
         // Timestamps
         public DateTime RegisteredAt { get; private set; }
@@ -94,6 +95,7 @@ namespace Booksy.ServiceCatalog.Domain.Aggregates
                 RequiresApproval = false,
                 AllowOnlineBooking = true,
                 OffersMobileServices = false,
+                PriceRange = PriceRange.Moderate,
                 RegisteredAt = DateTime.UtcNow,
                 RegistrationStep = registrationStep,
                 IsRegistrationComplete = false
@@ -134,6 +136,7 @@ namespace Booksy.ServiceCatalog.Domain.Aggregates
                 RequiresApproval = false,
                 AllowOnlineBooking = true,
                 OffersMobileServices = false,
+                PriceRange = PriceRange.Moderate,
                 RegisteredAt = DateTime.UtcNow,
                 RegistrationStep = 9,
                 IsRegistrationComplete = true
@@ -487,6 +490,11 @@ namespace Booksy.ServiceCatalog.Domain.Aggregates
             RequiresApproval = requiresApproval;
             AllowOnlineBooking = allowOnlineBooking;
             OffersMobileServices = offersMobileServices;
+        }
+
+        public void UpdatePriceRange(PriceRange priceRange)
+        {
+            PriceRange = priceRange;
         }
 
         public void RecordActivity()

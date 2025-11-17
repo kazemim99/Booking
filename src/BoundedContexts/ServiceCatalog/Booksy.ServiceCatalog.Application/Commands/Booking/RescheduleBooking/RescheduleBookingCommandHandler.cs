@@ -13,12 +13,14 @@ namespace Booksy.ServiceCatalog.Application.Commands.Booking.RescheduleBooking
 {
     /// <summary>
     /// Handler for rescheduling an existing booking
+    /// Atomically releases old availability slot and books new slot
     /// </summary>
     public sealed class RescheduleBookingCommandHandler : ICommandHandler<RescheduleBookingCommand, RescheduleBookingResult>
     {
         private readonly IBookingWriteRepository _bookingWriteRepository;
         private readonly IProviderReadRepository _providerRepository;
         private readonly IServiceReadRepository _serviceRepository;
+        private readonly IProviderAvailabilityWriteRepository _availabilityWriteRepository;
         private readonly IAvailabilityService _availabilityService;
         private readonly IUnitOfWork _unitOfWork;
         private readonly ILogger<RescheduleBookingCommandHandler> _logger;
@@ -27,6 +29,7 @@ namespace Booksy.ServiceCatalog.Application.Commands.Booking.RescheduleBooking
             IBookingWriteRepository bookingWriteRepository,
             IProviderReadRepository providerRepository,
             IServiceReadRepository serviceRepository,
+            IProviderAvailabilityWriteRepository availabilityWriteRepository,
             IAvailabilityService availabilityService,
             IUnitOfWork unitOfWork,
             ILogger<RescheduleBookingCommandHandler> logger)
@@ -34,6 +37,7 @@ namespace Booksy.ServiceCatalog.Application.Commands.Booking.RescheduleBooking
             _bookingWriteRepository = bookingWriteRepository;
             _providerRepository = providerRepository;
             _serviceRepository = serviceRepository;
+            _availabilityWriteRepository = availabilityWriteRepository;
             _availabilityService = availabilityService;
             _unitOfWork = unitOfWork;
             _logger = logger;
@@ -110,6 +114,26 @@ namespace Booksy.ServiceCatalog.Application.Commands.Booking.RescheduleBooking
             // Save new booking
             await _bookingWriteRepository.SaveBookingAsync(newBooking, cancellationToken);
 
+            // ========================================
+            // ATOMIC AVAILABILITY SLOT MANAGEMENT
+            // ========================================
+
+            // Step 1: Release old availability slots
+            await ReleaseOldAvailabilitySlotsAsync(
+                existingBooking.ProviderId,
+                existingBooking.TimeSlot.StartTime,
+                existingBooking.TimeSlot.EndTime,
+                existingBooking.Id.Value,
+                cancellationToken);
+
+            // Step 2: Mark new availability slots as booked
+            await MarkNewAvailabilitySlotsAsBookedAsync(
+                newBooking.ProviderId,
+                newBooking.TimeSlot.StartTime,
+                newBooking.TimeSlot.EndTime,
+                newBooking.Id.Value,
+                cancellationToken);
+
             // Commit transaction and publish events
             await _unitOfWork.CommitAndPublishEventsAsync(cancellationToken);
 
@@ -123,6 +147,115 @@ namespace Booksy.ServiceCatalog.Application.Commands.Booking.RescheduleBooking
                 NewStartTime: newBooking.TimeSlot.StartTime,
                 NewEndTime: newBooking.TimeSlot.EndTime,
                 Status: newBooking.Status.ToString());
+        }
+
+        /// <summary>
+        /// Release old availability slots back to Available status
+        /// Finds all slots that overlap with the old booking time
+        /// </summary>
+        private async Task ReleaseOldAvailabilitySlotsAsync(
+            ProviderId providerId,
+            DateTime startTime,
+            DateTime endTime,
+            Guid bookingId,
+            CancellationToken cancellationToken)
+        {
+            var date = DateOnly.FromDateTime(startTime);
+            var startTimeOnly = TimeOnly.FromDateTime(startTime);
+            var endTimeOnly = TimeOnly.FromDateTime(endTime);
+
+            // Find all availability slots that overlap with the old booking
+            var overlappingSlots = await _availabilityWriteRepository.FindOverlappingSlotsAsync(
+                providerId,
+                date.ToDateTime(TimeOnly.MinValue),
+                startTimeOnly,
+                endTimeOnly,
+                null,
+                cancellationToken);
+
+            // Release slots that were booked by this booking
+            foreach (var slot in overlappingSlots)
+            {
+                if (slot.Status == Domain.Enums.AvailabilityStatus.Booked &&
+                    slot.BookingId == bookingId)
+                {
+                    // Release the slot back to Available
+                    slot.Release("RescheduleBookingCommandHandler");
+                    await _availabilityWriteRepository.UpdateAsync(slot, cancellationToken);
+
+                    _logger.LogDebug(
+                        "Released availability slot {SlotId} for old booking {BookingId}",
+                        slot.Id,
+                        bookingId);
+                }
+            }
+
+            _logger.LogInformation(
+                "Released {Count} availability slots for old booking {BookingId}",
+                overlappingSlots.Count(s => s.BookingId == bookingId),
+                bookingId);
+        }
+
+        /// <summary>
+        /// Mark new availability slots as booked
+        /// Finds all slots that overlap with the new booking time
+        /// </summary>
+        private async Task MarkNewAvailabilitySlotsAsBookedAsync(
+            ProviderId providerId,
+            DateTime startTime,
+            DateTime endTime,
+            Guid newBookingId,
+            CancellationToken cancellationToken)
+        {
+            var date = DateOnly.FromDateTime(startTime);
+            var startTimeOnly = TimeOnly.FromDateTime(startTime);
+            var endTimeOnly = TimeOnly.FromDateTime(endTime);
+
+            // Find all availability slots that overlap with the new booking
+            var overlappingSlots = await _availabilityWriteRepository.FindOverlappingSlotsAsync(
+                providerId,
+                date.ToDateTime(TimeOnly.MinValue),
+                startTimeOnly,
+                endTimeOnly,
+                null,
+                cancellationToken);
+
+            if (!overlappingSlots.Any())
+            {
+                _logger.LogWarning(
+                    "No availability slots found for new booking time {StartTime} to {EndTime}. " +
+                    "Provider may not have availability data seeded for this time range.",
+                    startTime,
+                    endTime);
+                return;
+            }
+
+            // Mark slots as booked
+            foreach (var slot in overlappingSlots)
+            {
+                if (slot.Status == Domain.Enums.AvailabilityStatus.Available ||
+                    slot.Status == Domain.Enums.AvailabilityStatus.TentativeHold)
+                {
+                    slot.MarkAsBooked(newBookingId, "RescheduleBookingCommandHandler");
+                    await _availabilityWriteRepository.UpdateAsync(slot, cancellationToken);
+
+                    _logger.LogDebug(
+                        "Marked availability slot {SlotId} as booked for new booking {BookingId}",
+                        slot.Id,
+                        newBookingId);
+                }
+                else if (slot.Status == Domain.Enums.AvailabilityStatus.Booked)
+                {
+                    // This should not happen if validation passed
+                    throw new ConflictException(
+                        $"Availability slot {slot.Id} is already booked. Concurrent booking conflict detected.");
+                }
+            }
+
+            _logger.LogInformation(
+                "Marked {Count} availability slots as booked for new booking {BookingId}",
+                overlappingSlots.Count,
+                newBookingId);
         }
     }
 }

@@ -4,9 +4,18 @@ Modern, responsive Vue 3 + TypeScript frontend for the Booksy service booking pl
 
 ---
 
-## Recent Updates (2025-11-11) 🎉
+## Recent Updates (2025-11-16) 🎉
 
-### Critical Bug Fixes
+### Landing Page Implementation ✨
+✅ **Persian/RTL Landing Page** - Complete customer-facing landing page with 6 beautiful components
+✅ **Vazir Font Integration** - Professional Persian typography using Vazir font v16.1.0
+✅ **Background Video** - Dynamic hero section with subtle beauty salon video
+✅ **Mock Images** - High-quality Unsplash images for provider showcase
+✅ **Mobile Optimized** - Responsive design with video disabled on mobile for performance
+
+See [WEEK_7-8_FRONTEND_PLAN.md](./WEEK_7-8_FRONTEND_PLAN.md) for detailed frontend development plan.
+
+### Previous Updates (2025-11-11)
 ✅ **Gallery Image Submission** - Fixed gallery images not submitting during provider registration (Step 7)
 ✅ **UI Fixes** - Resolved distorted UI in CompletionStep and OptionalFeedbackStep components
 ✅ **Registration Progress** - Fixed "not found" error after completing registration
@@ -35,6 +44,14 @@ See [CHANGELOG.md](../CHANGELOG.md) for detailed information.
 ```
 booksy-frontend/
 ├── src/
+│   ├── components/              # Shared components
+│   │   └── landing/             # Landing page components
+│   │       ├── HeroSection.vue
+│   │       ├── CategoryGrid.vue
+│   │       ├── FeaturedProviders.vue
+│   │       ├── HowItWorks.vue
+│   │       ├── Testimonials.vue
+│   │       └── CTASection.vue
 │   ├── core/                    # Core infrastructure
 │   │   ├── api/                 # API clients & interceptors
 │   │   ├── router/              # Routes & navigation guards
@@ -47,14 +64,21 @@ booksy-frontend/
 │   │   │   ├── composables/     # usePhoneVerification
 │   │   │   └── stores/          # authStore
 │   │   ├── provider/            # Provider features
-│   │   │   ├── views/           # Registration, Dashboard, Gallery
-│   │   │   ├── components/      # Registration steps, gallery components
+│   │   │   ├── views/           # Registration, Dashboard, Gallery, Search
+│   │   │   ├── components/      # Registration steps, gallery, filters
 │   │   │   ├── composables/     # useProviderRegistration, useLocations
 │   │   │   ├── stores/          # providerStore, galleryStore
 │   │   │   ├── services/        # API services
 │   │   │   └── types/           # TypeScript types
-│   │   ├── customer/            # Customer features (future)
+│   │   ├── customer/            # Customer features
 │   │   └── booking/             # Booking features (future)
+│   ├── assets/                  # Static assets
+│   │   ├── styles/              # Global styles
+│   │   │   ├── fonts.css        # Vazir font declarations
+│   │   │   └── main.scss        # Main styles
+│   │   └── images/              # Images and icons
+│   ├── views/                   # Top-level views
+│   │   └── HomeView.vue         # Landing page
 │   └── shared/                  # Shared UI components
 │       └── components/          # Buttons, Inputs, Cards, etc.
 ```
@@ -62,6 +86,23 @@ booksy-frontend/
 ---
 
 ## Key Features
+
+### 🏠 Customer Landing Page (Persian/RTL)
+Beautiful, modern landing page with 6 components:
+1. **HeroSection** - Dynamic video background with search interface
+2. **CategoryGrid** - 8 service categories (Hair, Spa, Facial, Nails, Makeup, Waxing, Barbershop, Tattoo)
+3. **FeaturedProviders** - Top-rated providers with real-time data
+4. **HowItWorks** - 3-step booking process explanation
+5. **Testimonials** - Customer reviews and satisfaction stats
+6. **CTASection** - Call-to-action for user registration
+
+**Features:**
+- ✨ Vazir font v16.1.0 for professional Persian typography
+- 🎥 Background video with subtle zoom animation (hidden on mobile)
+- 🖼️ High-quality Unsplash mock images
+- 📱 Fully responsive with mobile optimization
+- 🔄 Persian number conversion (۱,۲,۳...)
+- ⬅️ Complete RTL support
 
 ### 🌐 Provider Registration Flow (9 Steps)
 1. **Business Info** - Name, owner details

@@ -26,8 +26,8 @@ namespace Booksy.ServiceCatalog.IntegrationTests.Features.Payments.ZarinPal
         
         private static string[] featureTags = ((string[])(null));
         
-        private static global::Reqnroll.FeatureInfo featureInfo = new global::Reqnroll.FeatureInfo(new System.Globalization.CultureInfo("en"), "Features/Payments/ZarinPal", "ZarinPal Payment Reconciliation", "    As a finance admin\r\n    I want to reconcile ZarinPal payments\r\n    So that I " +
-                "can ensure payment records match ZarinPal gateway records", global::Reqnroll.ProgrammingLanguage.CSharp, featureTags);
+        private static global::Reqnroll.FeatureInfo featureInfo = new global::Reqnroll.FeatureInfo(new System.Globalization.CultureInfo("en"), "Features/Payments/ZarinPal", "ZarinPal Payment Reconciliation", ("    As a finance admin\r\n    I want to reconcile ZarinPal payments\r\n    So that I " +
+                "can ensure payment records match ZarinPal gateway records"), global::Reqnroll.ProgrammingLanguage.CSharp, featureTags);
         
         private Xunit.Abstractions.ITestOutputHelper _testOutputHelper;
         
@@ -513,8 +513,7 @@ namespace Booksy.ServiceCatalog.IntegrationTests.Features.Payments.ZarinPal
                 table288.AddRow(new string[] {
                             "EndDate",
                             "2024-01-31"});
-                await testRunner.WhenAsync("I send a GET request to \"/api/v1/payments/reconciliation/export\" with parameters:" +
-                        "", ((string)(null)), table288, "When ");
+                await testRunner.WhenAsync("I send a GET request to \"/api/v1/payments/reconciliation/export\" with parameters:", ((string)(null)), table288, "When ");
                 await testRunner.ThenAsync("the response should be an Excel file", ((string)(null)), ((global::Reqnroll.Table)(null)), "Then ");
                 global::Reqnroll.Table table289 = new global::Reqnroll.Table(new string[] {
                             "Sheet"});
@@ -766,8 +765,8 @@ namespace Booksy.ServiceCatalog.IntegrationTests.Features.Payments.ZarinPal
                 table295.AddRow(new string[] {
                             "Month",
                             "1"});
-                await testRunner.WhenAsync("I send a GET request to \"/api/v1/payments/reconciliation/monthly\" with parameters" +
-                        ":", ((string)(null)), table295, "When ");
+                await testRunner.WhenAsync(("I send a GET request to \"/api/v1/payments/reconciliation/monthly\" with parameters" +
+                        ":"), ((string)(null)), table295, "When ");
                 await testRunner.ThenAsync("the response should contain monthly summary", ((string)(null)), ((global::Reqnroll.Table)(null)), "Then ");
                 await testRunner.AndAsync("daily breakdowns should be included", ((string)(null)), ((global::Reqnroll.Table)(null)), "And ");
             }

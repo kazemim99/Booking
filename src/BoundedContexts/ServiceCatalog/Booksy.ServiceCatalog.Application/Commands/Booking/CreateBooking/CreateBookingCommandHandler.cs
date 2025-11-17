@@ -15,28 +15,35 @@ using Microsoft.Extensions.Logging;
 namespace Booksy.ServiceCatalog.Application.Commands.Booking.CreateBooking
 {
     /// <summary>
-    /// Handler for creating a new booking request
+    /// Handler for creating a new booking request with atomic availability slot locking
+    /// Prevents double-booking through Serializable transaction isolation
     /// </summary>
     public sealed class CreateBookingCommandHandler : ICommandHandler<CreateBookingCommand, CreateBookingResult>
     {
         private readonly IBookingWriteRepository _bookingWriteRepository;
+        private readonly IBookingReadRepository _bookingReadRepository;
         private readonly IProviderReadRepository _providerRepository;
         private readonly IServiceReadRepository _serviceRepository;
+        private readonly IProviderAvailabilityWriteRepository _availabilityWriteRepository;
         private readonly IAvailabilityService _availabilityService;
         private readonly IUnitOfWork _unitOfWork;
         private readonly ILogger<CreateBookingCommandHandler> _logger;
 
         public CreateBookingCommandHandler(
             IBookingWriteRepository bookingWriteRepository,
+            IBookingReadRepository bookingReadRepository,
             IProviderReadRepository providerRepository,
             IServiceReadRepository serviceRepository,
+            IProviderAvailabilityWriteRepository availabilityWriteRepository,
             IAvailabilityService availabilityService,
             IUnitOfWork unitOfWork,
             ILogger<CreateBookingCommandHandler> logger)
         {
             _bookingWriteRepository = bookingWriteRepository;
+            _bookingReadRepository = bookingReadRepository;
             _providerRepository = providerRepository;
             _serviceRepository = serviceRepository;
+            _availabilityWriteRepository = availabilityWriteRepository;
             _availabilityService = availabilityService;
             _unitOfWork = unitOfWork;
             _logger = logger;
@@ -73,19 +80,7 @@ namespace Booksy.ServiceCatalog.Application.Commands.Booking.CreateBooking
             if (staff == null)
                 throw new NotFoundException($"Staff member with ID {request.StaffId} not found");
 
-            // Validate availability
-            var isAvailable = await _availabilityService.IsTimeSlotAvailableAsync(
-                provider,
-                service,
-                staff,
-                request.StartTime,
-                service.Duration,
-                cancellationToken);
-
-            if (!isAvailable)
-                throw new ConflictException("The requested time slot is not available");
-
-            // Validate booking constraints
+            // Validate booking constraints (provider status, business hours, holidays, etc.)
             var validationResult = await _availabilityService.ValidateBookingConstraintsAsync(
                 provider,
                 service,
@@ -94,6 +89,25 @@ namespace Booksy.ServiceCatalog.Application.Commands.Booking.CreateBooking
 
             if (!validationResult.IsValid)
                 throw new ConflictException($"Booking validation failed: {string.Join(", ", validationResult.Errors)}");
+
+            // Check if staff is qualified for this service
+            if (!service.IsStaffQualified(staff.Id))
+                throw new ConflictException($"Staff member {staff.FullName} is not qualified to provide this service");
+
+            // Check if staff is active
+            if (!staff.IsActive)
+                throw new ConflictException($"Staff member {staff.FullName} is not currently active");
+
+            // Check for booking conflicts with existing appointments
+            var bookingEndTime = request.StartTime.AddMinutes(service.Duration.Value + 15); // Add 15-min buffer
+            var conflictingBookings = await _bookingReadRepository.GetConflictingBookingsAsync(
+                staff.Id,
+                request.StartTime,
+                bookingEndTime,
+                cancellationToken);
+
+            if (conflictingBookings.Any())
+                throw new ConflictException("This time slot conflicts with an existing booking");
 
             // Get booking policy from service or use default
             var bookingPolicy = service.BookingPolicy ?? BookingPolicy.Default;
@@ -113,10 +127,20 @@ namespace Booksy.ServiceCatalog.Application.Commands.Booking.CreateBooking
             // Save booking
             await _bookingWriteRepository.SaveBookingAsync(booking, cancellationToken);
 
+            // Mark availability slot as booked atomically
+            var endTime = request.StartTime.Add(service.Duration.ToTimeSpan());
+            await MarkAvailabilityAsBookedAsync(
+                provider.Id,
+                request.StartTime,
+                endTime,
+                booking.Id.Value,
+                cancellationToken);
+
             // Commit transaction and publish domain events
+            // Uses Serializable isolation to prevent race conditions
             await _unitOfWork.CommitAndPublishEventsAsync(cancellationToken);
 
-            _logger.LogInformation("Booking {BookingId} created successfully", booking.Id);
+            _logger.LogInformation("Booking {BookingId} created successfully and availability slot marked as booked", booking.Id);
 
             // Return result
             return new CreateBookingResult(
@@ -132,6 +156,76 @@ namespace Booksy.ServiceCatalog.Application.Commands.Booking.CreateBooking
                 RequiresDeposit: booking.Policy.RequireDeposit,
                 Status: booking.Status.ToString(),
                 RequestedAt: booking.RequestedAt);
+        }
+
+        /// <summary>
+        /// Marks availability slots as booked for the booking time range
+        /// Handles multi-slot bookings (bookings spanning multiple 30-min slots)
+        /// </summary>
+        private async Task MarkAvailabilityAsBookedAsync(
+            ProviderId providerId,
+            DateTime startTime,
+            DateTime endTime,
+            Guid bookingId,
+            CancellationToken cancellationToken)
+        {
+            var date = startTime.Date;
+            var startTimeOnly = TimeOnly.FromDateTime(startTime);
+            var endTimeOnly = TimeOnly.FromDateTime(endTime);
+
+            // Find all overlapping availability slots
+            var overlappingSlots = await _availabilityWriteRepository.FindOverlappingSlotsAsync(
+                providerId,
+                date,
+                startTimeOnly,
+                endTimeOnly,
+                null,
+                cancellationToken);
+
+            if (overlappingSlots.Count == 0)
+            {
+                _logger.LogWarning(
+                    "No availability slots found for Provider {ProviderId} on {Date} from {StartTime} to {EndTime}. " +
+                    "Booking will be created but availability calendar won't reflect it.",
+                    providerId.Value,
+                    date,
+                    startTimeOnly,
+                    endTimeOnly);
+                return;
+            }
+
+            // Mark all overlapping slots as booked
+            foreach (var slot in overlappingSlots)
+            {
+                if (slot.Status == Domain.Enums.AvailabilityStatus.Available ||
+                    slot.Status == Domain.Enums.AvailabilityStatus.TentativeHold)
+                {
+                    slot.MarkAsBooked(bookingId, "CreateBookingCommandHandler");
+                    await _availabilityWriteRepository.UpdateAsync(slot, cancellationToken);
+
+                    _logger.LogDebug(
+                        "Marked availability slot {SlotId} as booked for booking {BookingId}",
+                        slot.Id,
+                        bookingId);
+                }
+                else if (slot.Status == Domain.Enums.AvailabilityStatus.Booked)
+                {
+                    // Slot already booked - this is a race condition that should be prevented by Serializable isolation
+                    _logger.LogError(
+                        "Race condition detected: Availability slot {SlotId} is already booked. " +
+                        "This should not happen with Serializable isolation.",
+                        slot.Id);
+
+                    throw new ConflictException(
+                        "The selected time slot has just been booked by another customer. " +
+                        "Please select a different time.");
+                }
+            }
+
+            _logger.LogInformation(
+                "Marked {Count} availability slots as booked for booking {BookingId}",
+                overlappingSlots.Count,
+                bookingId);
         }
     }
 }

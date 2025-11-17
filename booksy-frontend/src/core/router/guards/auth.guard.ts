@@ -19,8 +19,11 @@ export async function authGuard(
     // If authenticated user tries to access login/register pages (but NOT registration page)
     // Registration page may be needed for providers with Drafted status
     if (authStore.isAuthenticated && (to.name === 'Login' || to.name === 'Register')) {
-      // Use redirectToDashboard which now handles provider status checking
-      await authStore.redirectToDashboard()
+      // Check if there's a redirect param (e.g., customer trying to book)
+      const redirectPath = to.query.redirect as string | undefined
+
+      // Use redirectToDashboard which now handles provider status checking AND redirect path
+      await authStore.redirectToDashboard(redirectPath)
       return
     }
     next()
@@ -68,8 +71,8 @@ export async function authGuard(
       (authStore.providerStatus === ProviderStatus.Drafted || authStore.providerStatus === null) &&
       to.name !== 'ProviderRegistration'
     ) {
-      // Allow access to profile and settings even for incomplete providers
-      const allowedGeneralRoutes = ['ProviderProfile', 'ProviderSettings', 'Forbidden', 'NotFound', 'ServerError']
+      // Allow access to profile, settings, and booking even for incomplete providers
+      const allowedGeneralRoutes = ['ProviderProfile', 'ProviderSettings', 'NewBooking', 'BookingDetails', 'Bookings', 'Forbidden', 'NotFound', 'ServerError']
       if (!allowedGeneralRoutes.includes(to.name as string)) {
         next({ name: 'ProviderRegistration' })
         return

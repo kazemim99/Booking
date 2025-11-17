@@ -51,6 +51,39 @@
         </div>
       </div>
 
+      <!-- Service Category (NEW) -->
+      <div class="filter-section">
+        <label class="filter-label">Service Category</label>
+        <select
+          v-model="localFilters.serviceCategory"
+          class="filter-select"
+          @change="handleChange"
+        >
+          <option :value="undefined">All Categories</option>
+          <option value="haircut">Haircut & Styling</option>
+          <option value="coloring">Hair Coloring</option>
+          <option value="massage">Massage Therapy</option>
+          <option value="spa">Spa Treatments</option>
+          <option value="facial">Facial & Skincare</option>
+          <option value="manicure">Manicure & Pedicure</option>
+          <option value="waxing">Waxing</option>
+          <option value="makeup">Makeup & Beauty</option>
+          <option value="barbering">Barbering</option>
+          <option value="tattoo">Tattoo & Piercing</option>
+        </select>
+      </div>
+
+      <!-- Price Range (NEW) -->
+      <div class="filter-section">
+        <label class="filter-label">Price Range</label>
+        <select v-model="localFilters.priceRange" class="filter-select" @change="handleChange">
+          <option :value="undefined">All Prices</option>
+          <option value="Budget">Budget-Friendly ($)</option>
+          <option value="Moderate">Moderate ($$)</option>
+          <option value="Premium">Premium ($$$)</option>
+        </select>
+      </div>
+
       <!-- Location Filters -->
       <div class="filter-section">
         <label class="filter-label">Location</label>
@@ -166,7 +199,7 @@
         </div>
       </div>
 
-      <!-- Rating Filter (future) -->
+      <!-- Rating Filter -->
       <div v-if="showRatingFilter" class="filter-section">
         <label class="filter-label">Minimum Rating</label>
         <div class="rating-select">
@@ -188,6 +221,27 @@
           </button>
         </div>
       </div>
+
+      <!-- Sort By (NEW) -->
+      <div class="filter-section">
+        <label class="filter-label">Sort By</label>
+        <select v-model="localFilters.sortBy" class="filter-select" @change="handleChange">
+          <option value="rating">Highest Rated</option>
+          <option value="name">Name (A-Z)</option>
+          <option value="distance">Distance (Nearest)</option>
+          <option value="price">Price</option>
+        </select>
+        <div class="sort-direction">
+          <label class="checkbox-label">
+            <input
+              v-model="localFilters.sortDescending"
+              type="checkbox"
+              @change="handleChange"
+            />
+            <span>Descending Order</span>
+          </label>
+        </div>
+      </div>
     </div>
 
     <div class="filters-footer">
@@ -198,7 +252,12 @@
 
 <script setup lang="ts">
 import { ref, computed, watch } from 'vue'
-import type { ProviderSearchFilters, ProviderType, ProviderStatus } from '../types/provider.types'
+import type {
+  ProviderSearchFilters,
+  ProviderType,
+  ProviderStatus,
+  PriceRange,
+} from '../types/provider.types'
 
 // Props
 interface Props {
@@ -213,7 +272,7 @@ interface Props {
 const props = withDefaults(defineProps<Props>(), {
   showStatusFilter: false,
   showLocationRadius: false,
-  showRatingFilter: false,
+  showRatingFilter: true, // Enable rating filter by default for customer search
   autoApply: false,
   debounceMs: 500,
 })
@@ -233,6 +292,8 @@ const localFilters = ref<ProviderSearchFilters>({
   city: '',
   state: '',
   country: '',
+  serviceCategory: undefined, // NEW
+  priceRange: undefined, // NEW
   type: undefined,
   status: undefined,
   allowOnlineBooking: undefined,
@@ -240,6 +301,8 @@ const localFilters = ref<ProviderSearchFilters>({
   tags: [],
   radiusKm: 10,
   minRating: undefined,
+  sortBy: 'rating', // NEW: Default sort by rating
+  sortDescending: true, // NEW: Default descending (highest first)
 })
 
 const tagInput = ref('')
@@ -249,6 +312,8 @@ let debounceTimeout: ReturnType<typeof setTimeout> | null = null
 const hasActiveFilters = computed(() => {
   return Object.entries(localFilters.value).some(([key, value]) => {
     if (key === 'tags') return Array.isArray(value) && value.length > 0
+    if (key === 'pageNumber' || key === 'pageSize') return false // Don't count pagination
+    if (key === 'sortBy' || key === 'sortDescending') return false // Don't count sort as active filter
     return value !== undefined && value !== '' && value !== null
   })
 })
@@ -299,6 +364,8 @@ const handleClearAll = () => {
     city: '',
     state: '',
     country: '',
+    serviceCategory: undefined,
+    priceRange: undefined,
     type: undefined,
     status: undefined,
     allowOnlineBooking: undefined,
@@ -306,12 +373,19 @@ const handleClearAll = () => {
     tags: [],
     radiusKm: 10,
     minRating: undefined,
+    sortBy: 'rating',
+    sortDescending: true,
   }
   tagInput.value = ''
   emit('clear')
 
   if (props.autoApply) {
-    emit('apply', { pageNumber: 1, pageSize: 20 })
+    emit('apply', {
+      pageNumber: 1,
+      pageSize: 20,
+      sortBy: 'rating',
+      sortDescending: true,
+    })
   }
 }
 
@@ -361,6 +435,12 @@ const getCleanFilters = (): ProviderSearchFilters => {
   if (localFilters.value.country?.trim()) {
     filters.country = localFilters.value.country.trim()
   }
+  if (localFilters.value.serviceCategory) {
+    filters.serviceCategory = localFilters.value.serviceCategory
+  }
+  if (localFilters.value.priceRange) {
+    filters.priceRange = localFilters.value.priceRange
+  }
   if (localFilters.value.type) {
     filters.type = localFilters.value.type as ProviderType
   }
@@ -385,6 +465,12 @@ const getCleanFilters = (): ProviderSearchFilters => {
   if (localFilters.value.latitude && localFilters.value.longitude) {
     filters.latitude = localFilters.value.latitude
     filters.longitude = localFilters.value.longitude
+  }
+  if (localFilters.value.sortBy) {
+    filters.sortBy = localFilters.value.sortBy
+  }
+  if (localFilters.value.sortDescending !== undefined) {
+    filters.sortDescending = localFilters.value.sortDescending
   }
 
   return filters
@@ -540,6 +626,10 @@ defineExpose({
   cursor: pointer;
 }
 
+.sort-direction {
+  margin-top: 0.5rem;
+}
+
 .tags-input-wrapper {
   border: 1px solid var(--color-border);
   border-radius: 8px;
@@ -638,6 +728,7 @@ defineExpose({
 .rating-select {
   display: flex;
   gap: 0.5rem;
+  flex-wrap: wrap;
 }
 
 .rating-btn {

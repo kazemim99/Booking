@@ -4,9 +4,22 @@ A modern, scalable service booking platform built with Domain-Driven Design (DDD
 
 ---
 
-## Recent Updates (2025-11-11) 🎉
+## Recent Updates (2025-11-16) 🎉
 
-### Provider Registration Flow - Critical Fixes
+### Backend Architecture - Compilation Fixes & Database Migrations
+
+✅ **Compilation Fixes** - Resolved all compilation errors across Booking and ServiceCatalog bounded contexts
+✅ **Domain Model Improvements** - Implemented Specification pattern, fixed namespace conflicts, separated read/write repositories
+✅ **Database Migrations** - Generated and applied EF Core migrations for ServiceCatalog infrastructure
+✅ **New Features** - Added ProviderAvailability and Reviews tables for booking calendar and rating system
+✅ **API Error Handling** - Fixed ApiErrorResponse implementation in ServiceCatalog API
+
+**Impact**:
+- Complete solution builds successfully with 0 errors
+- Database schema fully migrated and ready for availability management
+- Cleaner architecture with proper DDD patterns implemented
+
+### Provider Registration Flow - Critical Fixes (2025-11-11)
 
 ✅ **Gallery Image Submission** - Images now properly submit to backend during registration
 ✅ **UI Fixes** - Resolved distorted UI in CompletionStep and OptionalFeedbackStep
@@ -95,11 +108,26 @@ Manages service providers, their offerings, staff, and business profiles.
   - Duration
   - Categories
 
+- `ProviderAvailability` (Aggregate Root) ✨ **NEW**
+  - Time Slot Management
+  - Availability Status (Available, Booked, Blocked, TentativeHold, Break)
+  - Booking References
+  - Hold Expiration Management
+
+- `Review` (Aggregate Root) ✨ **NEW**
+  - Customer Ratings (1-5 stars)
+  - Review Comments
+  - Provider Responses
+  - Helpful Voting System
+  - Verified Review Status
+
 **Key Responsibilities:**
 - Provider registration and profile management
 - Service catalog management
 - Staff scheduling and availability
 - Business hours and exception management
+- Provider availability calendar management ✨ **NEW**
+- Customer review and rating system ✨ **NEW**
 
 #### 2. UserManagement (Identity Context)
 Handles authentication, authorization, and user identity.
@@ -160,10 +188,11 @@ Handles payment processing and transactions.
 - **CAP (Planned)**: Distributed transaction and event bus
 
 #### Data & Persistence
-- **Entity Framework Core 8**: ORM and data access
-- **PostgreSQL**: Primary database (production)
-- **SQL Server**: Development database
-- **Npgsql**: PostgreSQL provider
+- **Entity Framework Core 9**: ORM and data access with latest features
+- **PostgreSQL**: Primary database (production) with full schema migrations
+- **Npgsql 9.0.4**: PostgreSQL provider for .NET
+- **EF Core Migrations**: Database versioning and schema management
+- **Specification Pattern**: Query abstraction for complex filtering
 
 #### Authentication & Security
 - **JWT Bearer Tokens**: Stateless authentication
@@ -341,13 +370,23 @@ cd src/UserManagement/Booksy.UserManagement.API
 
 **Run Migrations:**
 ```bash
-# ServiceCatalog
+# ServiceCatalog (with startup project specified)
 cd src/BoundedContexts/ServiceCatalog/Booksy.ServiceCatalog.Infrastructure
-dotnet ef database update
+dotnet ef database update --startup-project ../Booksy.ServiceCatalog.Api --context ServiceCatalogDbContext
 
 # UserManagement
 cd src/UserManagement/Booksy.UserManagement.Infrastructure
 dotnet ef database update
+```
+
+**Create New Migrations (if needed):**
+```bash
+# ServiceCatalog - Create new migration
+cd src/BoundedContexts/ServiceCatalog/Booksy.ServiceCatalog.Api
+dotnet ef migrations add MigrationName --project ../Booksy.ServiceCatalog.Infrastructure --context ServiceCatalogDbContext
+
+# List migrations
+dotnet ef migrations list --project ../Booksy.ServiceCatalog.Infrastructure --context ServiceCatalogDbContext
 ```
 
 **Run APIs:**
@@ -404,6 +443,22 @@ Once the APIs are running:
 - ✅ Staff roles and permissions
 - ✅ Staff activation/deactivation
 - ✅ Staff schedules and working hours
+
+#### Provider Availability Management ✨ **NEW**
+- ✅ Time slot management system
+- ✅ Availability status tracking (Available, Booked, Blocked, TentativeHold, Break)
+- ✅ Booking reference tracking
+- ✅ Tentative hold expiration management
+- ✅ Calendar heatmap queries for UI
+- ✅ Performance-optimized indexes for date-based queries
+
+#### Review & Rating System ✨ **NEW**
+- ✅ Customer review creation (1-5 star ratings)
+- ✅ Review comments and feedback
+- ✅ Provider response capability
+- ✅ Helpful/Not Helpful voting system
+- ✅ Verified review tracking (tied to actual bookings)
+- ✅ Review statistics and aggregation
 
 #### Authentication & Authorization
 - ✅ Email/password authentication
@@ -532,6 +587,19 @@ Once the APIs are running:
 - `POST /providers/{id}/staff` - Add staff member
 - `PUT /providers/{id}/staff/{staffId}` - Update staff
 - `DELETE /providers/{id}/staff/{staffId}` - Remove staff
+
+#### Provider Availability ✨ **NEW**
+- `GET /providers/{providerId}/availability` - Get availability calendar with heatmap
+  - Query params: `startDate` (optional, yyyy-MM-dd), `days` (7/14/30)
+  - Returns: Time slots grouped by day + availability heatmap for UI visualization
+- `POST /providers/{providerId}/availability/block` - Block time slots (planned)
+- `POST /providers/{providerId}/availability/release` - Release blocked slots (planned)
+
+#### Reviews ✨ **NEW**
+- `GET /providers/{providerId}/reviews` - Get provider reviews (planned)
+- `POST /providers/{providerId}/reviews` - Create review (planned)
+- `PUT /reviews/{reviewId}/respond` - Provider response (planned)
+- `POST /reviews/{reviewId}/helpful` - Mark review helpful (planned)
 
 #### Services
 - `GET /services/{id}` - Get service details

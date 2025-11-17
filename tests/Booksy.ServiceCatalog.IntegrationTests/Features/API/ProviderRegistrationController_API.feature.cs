@@ -26,8 +26,8 @@ namespace Booksy.ServiceCatalog.IntegrationTests.Features.API
         
         private static string[] featureTags = ((string[])(null));
         
-        private static global::Reqnroll.FeatureInfo featureInfo = new global::Reqnroll.FeatureInfo(new System.Globalization.CultureInfo("en"), "Features/API", "ProviderRegistrationController API - Complete Coverage", "  As a system\r\n  I want to test all ProviderRegistrationController HTTP endpoints" +
-                "\r\n  So that the API contract is properly validated", global::Reqnroll.ProgrammingLanguage.CSharp, featureTags);
+        private static global::Reqnroll.FeatureInfo featureInfo = new global::Reqnroll.FeatureInfo(new System.Globalization.CultureInfo("en"), "Features/API", "ProviderRegistrationController API - Complete Coverage", ("  As a system\r\n  I want to test all ProviderRegistrationController HTTP endpoints" +
+                "\r\n  So that the API contract is properly validated"), global::Reqnroll.ProgrammingLanguage.CSharp, featureTags);
         
         private Xunit.Abstractions.ITestOutputHelper _testOutputHelper;
         
@@ -325,8 +325,8 @@ namespace Booksy.ServiceCatalog.IntegrationTests.Features.API
             {
                 await this.ScenarioStartAsync();
                 await this.FeatureBackgroundAsync();
-                await testRunner.WhenAsync("I send POST request to \"/api/v1/registration/step-3/location\" with:", "{\r\n  \"businessName\": \"\",\r\n  \"category\": \"InvalidCategory\",\r\n  \"email\": \"not-an-em" +
-                        "ail\"\r\n}", ((global::Reqnroll.Table)(null)), "When ");
+                await testRunner.WhenAsync("I send POST request to \"/api/v1/registration/step-3/location\" with:", ("{\r\n  \"businessName\": \"\",\r\n  \"category\": \"InvalidCategory\",\r\n  \"email\": \"not-an-em" +
+                        "ail\"\r\n}"), ((global::Reqnroll.Table)(null)), "When ");
                 await testRunner.ThenAsync("the response status code should be 400", ((string)(null)), ((global::Reqnroll.Table)(null)), "Then ");
                 await testRunner.AndAsync("response should contain validation errors", ((string)(null)), ((global::Reqnroll.Table)(null)), "And ");
             }
@@ -430,9 +430,9 @@ namespace Booksy.ServiceCatalog.IntegrationTests.Features.API
                 await this.ScenarioStartAsync();
                 await this.FeatureBackgroundAsync();
                 await testRunner.GivenAsync("I have a draft provider at step 3", ((string)(null)), ((global::Reqnroll.Table)(null)), "Given ");
-                await testRunner.WhenAsync("I send POST request to \"/api/v1/registration/step-4/services\" with:", "{\r\n  \"providerId\": \"{currentProviderId}\",\r\n  \"services\": [\r\n    {\r\n      \"name\": " +
+                await testRunner.WhenAsync("I send POST request to \"/api/v1/registration/step-4/services\" with:", ("{\r\n  \"providerId\": \"{currentProviderId}\",\r\n  \"services\": [\r\n    {\r\n      \"name\": " +
                         "\"Haircut\",\r\n      \"durationMinutes\": 30,\r\n      \"price\": 50.00,\r\n      \"currency" +
-                        "\": \"USD\"\r\n    }\r\n  ]\r\n}", ((global::Reqnroll.Table)(null)), "When ");
+                        "\": \"USD\"\r\n    }\r\n  ]\r\n}"), ((global::Reqnroll.Table)(null)), "When ");
                 await testRunner.ThenAsync("the response status code should be 200", ((string)(null)), ((global::Reqnroll.Table)(null)), "Then ");
                 global::Reqnroll.Table table3 = new global::Reqnroll.Table(new string[] {
                             "Field",
@@ -472,8 +472,8 @@ namespace Booksy.ServiceCatalog.IntegrationTests.Features.API
             {
                 await this.ScenarioStartAsync();
                 await this.FeatureBackgroundAsync();
-                await testRunner.WhenAsync("I send POST request to \"/api/v1/registration/step-4/services\" with non-existent p" +
-                        "rovider ID", ((string)(null)), ((global::Reqnroll.Table)(null)), "When ");
+                await testRunner.WhenAsync(("I send POST request to \"/api/v1/registration/step-4/services\" with non-existent p" +
+                        "rovider ID"), ((string)(null)), ((global::Reqnroll.Table)(null)), "When ");
                 await testRunner.ThenAsync("the response status code should be 404", ((string)(null)), ((global::Reqnroll.Table)(null)), "Then ");
             }
             await this.ScenarioCleanupAsync();
@@ -542,9 +542,9 @@ namespace Booksy.ServiceCatalog.IntegrationTests.Features.API
                 await this.ScenarioStartAsync();
                 await this.FeatureBackgroundAsync();
                 await testRunner.GivenAsync("I have a draft provider at step 4", ((string)(null)), ((global::Reqnroll.Table)(null)), "Given ");
-                await testRunner.WhenAsync("I send POST request to \"/api/v1/registration/step-5/staff\" with:", "{\r\n  \"providerId\": \"{currentProviderId}\",\r\n  \"staff\": [\r\n    {\r\n      \"name\": \"Jo" +
+                await testRunner.WhenAsync("I send POST request to \"/api/v1/registration/step-5/staff\" with:", ("{\r\n  \"providerId\": \"{currentProviderId}\",\r\n  \"staff\": [\r\n    {\r\n      \"name\": \"Jo" +
                         "hn Smith\",\r\n      \"email\": \"john@salon.com\",\r\n      \"role\": \"Stylist\"\r\n    }\r\n  " +
-                        "]\r\n}", ((global::Reqnroll.Table)(null)), "When ");
+                        "]\r\n}"), ((global::Reqnroll.Table)(null)), "When ");
                 await testRunner.ThenAsync("the response status code should be 200", ((string)(null)), ((global::Reqnroll.Table)(null)), "Then ");
                 global::Reqnroll.Table table4 = new global::Reqnroll.Table(new string[] {
                             "Field",
@@ -584,8 +584,8 @@ namespace Booksy.ServiceCatalog.IntegrationTests.Features.API
             {
                 await this.ScenarioStartAsync();
                 await this.FeatureBackgroundAsync();
-                await testRunner.WhenAsync("I send POST request to \"/api/v1/registration/step-5/staff\" with non-existent prov" +
-                        "ider ID", ((string)(null)), ((global::Reqnroll.Table)(null)), "When ");
+                await testRunner.WhenAsync(("I send POST request to \"/api/v1/registration/step-5/staff\" with non-existent prov" +
+                        "ider ID"), ((string)(null)), ((global::Reqnroll.Table)(null)), "When ");
                 await testRunner.ThenAsync("the response status code should be 404", ((string)(null)), ((global::Reqnroll.Table)(null)), "Then ");
             }
             await this.ScenarioCleanupAsync();
@@ -619,8 +619,8 @@ namespace Booksy.ServiceCatalog.IntegrationTests.Features.API
                 await this.ScenarioStartAsync();
                 await this.FeatureBackgroundAsync();
                 await testRunner.GivenAsync("I have a draft provider with staff \"john@salon.com\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "Given ");
-                await testRunner.WhenAsync("I send POST request to \"/api/v1/registration/step-5/staff\" adding another staff w" +
-                        "ith same email", ((string)(null)), ((global::Reqnroll.Table)(null)), "When ");
+                await testRunner.WhenAsync(("I send POST request to \"/api/v1/registration/step-5/staff\" adding another staff w" +
+                        "ith same email"), ((string)(null)), ((global::Reqnroll.Table)(null)), "When ");
                 await testRunner.ThenAsync("the response status code should be 400", ((string)(null)), ((global::Reqnroll.Table)(null)), "Then ");
             }
             await this.ScenarioCleanupAsync();
@@ -654,9 +654,9 @@ namespace Booksy.ServiceCatalog.IntegrationTests.Features.API
                 await this.ScenarioStartAsync();
                 await this.FeatureBackgroundAsync();
                 await testRunner.GivenAsync("I have a draft provider at step 5", ((string)(null)), ((global::Reqnroll.Table)(null)), "Given ");
-                await testRunner.WhenAsync("I send POST request to \"/api/v1/registration/step-6/working-hours\" with:", "{\r\n  \"providerId\": \"{currentProviderId}\",\r\n  \"businessHours\": [\r\n    {\r\n      \"da" +
+                await testRunner.WhenAsync("I send POST request to \"/api/v1/registration/step-6/working-hours\" with:", ("{\r\n  \"providerId\": \"{currentProviderId}\",\r\n  \"businessHours\": [\r\n    {\r\n      \"da" +
                         "yOfWeek\": 1,\r\n      \"isOpen\": true,\r\n      \"openTime\": \"09:00\",\r\n      \"closeTim" +
-                        "e\": \"18:00\"\r\n    }\r\n  ]\r\n}", ((global::Reqnroll.Table)(null)), "When ");
+                        "e\": \"18:00\"\r\n    }\r\n  ]\r\n}"), ((global::Reqnroll.Table)(null)), "When ");
                 await testRunner.ThenAsync("the response status code should be 200", ((string)(null)), ((global::Reqnroll.Table)(null)), "Then ");
                 global::Reqnroll.Table table5 = new global::Reqnroll.Table(new string[] {
                             "Field",
@@ -696,8 +696,8 @@ namespace Booksy.ServiceCatalog.IntegrationTests.Features.API
             {
                 await this.ScenarioStartAsync();
                 await this.FeatureBackgroundAsync();
-                await testRunner.WhenAsync("I send POST request to \"/api/v1/registration/step-6/working-hours\" with non-exist" +
-                        "ent provider ID", ((string)(null)), ((global::Reqnroll.Table)(null)), "When ");
+                await testRunner.WhenAsync(("I send POST request to \"/api/v1/registration/step-6/working-hours\" with non-exist" +
+                        "ent provider ID"), ((string)(null)), ((global::Reqnroll.Table)(null)), "When ");
                 await testRunner.ThenAsync("the response status code should be 404", ((string)(null)), ((global::Reqnroll.Table)(null)), "Then ");
             }
             await this.ScenarioCleanupAsync();
@@ -731,8 +731,8 @@ namespace Booksy.ServiceCatalog.IntegrationTests.Features.API
                 await this.ScenarioStartAsync();
                 await this.FeatureBackgroundAsync();
                 await testRunner.GivenAsync("I have a draft provider at step 5", ((string)(null)), ((global::Reqnroll.Table)(null)), "Given ");
-                await testRunner.WhenAsync("I send POST request to \"/api/v1/registration/step-6/working-hours\" with closeTime" +
-                        " before openTime", ((string)(null)), ((global::Reqnroll.Table)(null)), "When ");
+                await testRunner.WhenAsync(("I send POST request to \"/api/v1/registration/step-6/working-hours\" with closeTime" +
+                        " before openTime"), ((string)(null)), ((global::Reqnroll.Table)(null)), "When ");
                 await testRunner.ThenAsync("the response status code should be 400", ((string)(null)), ((global::Reqnroll.Table)(null)), "Then ");
             }
             await this.ScenarioCleanupAsync();
@@ -766,8 +766,8 @@ namespace Booksy.ServiceCatalog.IntegrationTests.Features.API
                 await this.ScenarioStartAsync();
                 await this.FeatureBackgroundAsync();
                 await testRunner.GivenAsync("I have a draft provider at step 6", ((string)(null)), ((global::Reqnroll.Table)(null)), "Given ");
-                await testRunner.WhenAsync("I send POST request to \"/api/v1/registration/step-7/gallery\" with:", "{\r\n  \"providerId\": \"{currentProviderId}\",\r\n  \"imageUrls\": [\r\n    \"https://example" +
-                        ".com/image1.jpg\",\r\n    \"https://example.com/image2.jpg\"\r\n  ]\r\n}", ((global::Reqnroll.Table)(null)), "When ");
+                await testRunner.WhenAsync("I send POST request to \"/api/v1/registration/step-7/gallery\" with:", ("{\r\n  \"providerId\": \"{currentProviderId}\",\r\n  \"imageUrls\": [\r\n    \"https://example" +
+                        ".com/image1.jpg\",\r\n    \"https://example.com/image2.jpg\"\r\n  ]\r\n}"), ((global::Reqnroll.Table)(null)), "When ");
                 await testRunner.ThenAsync("the response status code should be 200", ((string)(null)), ((global::Reqnroll.Table)(null)), "Then ");
                 global::Reqnroll.Table table6 = new global::Reqnroll.Table(new string[] {
                             "Field",
@@ -807,8 +807,8 @@ namespace Booksy.ServiceCatalog.IntegrationTests.Features.API
             {
                 await this.ScenarioStartAsync();
                 await this.FeatureBackgroundAsync();
-                await testRunner.WhenAsync("I send POST request to \"/api/v1/registration/step-7/gallery\" with non-existent pr" +
-                        "ovider ID", ((string)(null)), ((global::Reqnroll.Table)(null)), "When ");
+                await testRunner.WhenAsync(("I send POST request to \"/api/v1/registration/step-7/gallery\" with non-existent pr" +
+                        "ovider ID"), ((string)(null)), ((global::Reqnroll.Table)(null)), "When ");
                 await testRunner.ThenAsync("the response status code should be 404", ((string)(null)), ((global::Reqnroll.Table)(null)), "Then ");
             }
             await this.ScenarioCleanupAsync();
@@ -876,8 +876,8 @@ namespace Booksy.ServiceCatalog.IntegrationTests.Features.API
                 await this.ScenarioStartAsync();
                 await this.FeatureBackgroundAsync();
                 await testRunner.GivenAsync("I have a draft provider at step 7", ((string)(null)), ((global::Reqnroll.Table)(null)), "Given ");
-                await testRunner.WhenAsync("I send POST request to \"/api/v1/registration/step-8/feedback\" with:", "{\r\n  \"providerId\": \"{currentProviderId}\",\r\n  \"rating\": 5,\r\n  \"comments\": \"Great p" +
-                        "rocess!\",\r\n  \"source\": \"Google Search\"\r\n}", ((global::Reqnroll.Table)(null)), "When ");
+                await testRunner.WhenAsync("I send POST request to \"/api/v1/registration/step-8/feedback\" with:", ("{\r\n  \"providerId\": \"{currentProviderId}\",\r\n  \"rating\": 5,\r\n  \"comments\": \"Great p" +
+                        "rocess!\",\r\n  \"source\": \"Google Search\"\r\n}"), ((global::Reqnroll.Table)(null)), "When ");
                 await testRunner.ThenAsync("the response status code should be 200", ((string)(null)), ((global::Reqnroll.Table)(null)), "Then ");
                 global::Reqnroll.Table table7 = new global::Reqnroll.Table(new string[] {
                             "Field",
@@ -917,8 +917,8 @@ namespace Booksy.ServiceCatalog.IntegrationTests.Features.API
             {
                 await this.ScenarioStartAsync();
                 await this.FeatureBackgroundAsync();
-                await testRunner.WhenAsync("I send POST request to \"/api/v1/registration/step-8/feedback\" with non-existent p" +
-                        "rovider ID", ((string)(null)), ((global::Reqnroll.Table)(null)), "When ");
+                await testRunner.WhenAsync(("I send POST request to \"/api/v1/registration/step-8/feedback\" with non-existent p" +
+                        "rovider ID"), ((string)(null)), ((global::Reqnroll.Table)(null)), "When ");
                 await testRunner.ThenAsync("the response status code should be 404", ((string)(null)), ((global::Reqnroll.Table)(null)), "Then ");
             }
             await this.ScenarioCleanupAsync();
@@ -952,8 +952,7 @@ namespace Booksy.ServiceCatalog.IntegrationTests.Features.API
                 await this.ScenarioStartAsync();
                 await this.FeatureBackgroundAsync();
                 await testRunner.GivenAsync("I have a draft provider at step 7", ((string)(null)), ((global::Reqnroll.Table)(null)), "Given ");
-                await testRunner.WhenAsync("I send POST request to \"/api/v1/registration/step-8/feedback\" with empty feedback" +
-                        "", ((string)(null)), ((global::Reqnroll.Table)(null)), "When ");
+                await testRunner.WhenAsync("I send POST request to \"/api/v1/registration/step-8/feedback\" with empty feedback", ((string)(null)), ((global::Reqnroll.Table)(null)), "When ");
                 await testRunner.ThenAsync("the response status code should be 200", ((string)(null)), ((global::Reqnroll.Table)(null)), "Then ");
             }
             await this.ScenarioCleanupAsync();
@@ -1028,8 +1027,8 @@ namespace Booksy.ServiceCatalog.IntegrationTests.Features.API
             {
                 await this.ScenarioStartAsync();
                 await this.FeatureBackgroundAsync();
-                await testRunner.WhenAsync("I send POST request to \"/api/v1/registration/step-9/complete\" with non-existent p" +
-                        "rovider ID", ((string)(null)), ((global::Reqnroll.Table)(null)), "When ");
+                await testRunner.WhenAsync(("I send POST request to \"/api/v1/registration/step-9/complete\" with non-existent p" +
+                        "rovider ID"), ((string)(null)), ((global::Reqnroll.Table)(null)), "When ");
                 await testRunner.ThenAsync("the response status code should be 404", ((string)(null)), ((global::Reqnroll.Table)(null)), "Then ");
             }
             await this.ScenarioCleanupAsync();
@@ -1165,8 +1164,8 @@ namespace Booksy.ServiceCatalog.IntegrationTests.Features.API
             {
                 await this.ScenarioStartAsync();
                 await this.FeatureBackgroundAsync();
-                await testRunner.WhenAsync("I send POST request to \"/api/v1/registration/step-3/location\" with Content-Type \"" +
-                        "application/json\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "When ");
+                await testRunner.WhenAsync(("I send POST request to \"/api/v1/registration/step-3/location\" with Content-Type \"" +
+                        "application/json\""), ((string)(null)), ((global::Reqnroll.Table)(null)), "When ");
                 await testRunner.ThenAsync("the response should have Content-Type \"application/json\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "Then ");
             }
             await this.ScenarioCleanupAsync();
@@ -1197,8 +1196,8 @@ namespace Booksy.ServiceCatalog.IntegrationTests.Features.API
             {
                 await this.ScenarioStartAsync();
                 await this.FeatureBackgroundAsync();
-                await testRunner.WhenAsync("I send POST request to \"/api/v1/registration/step-3/location\" with Content-Type \"" +
-                        "text/xml\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "When ");
+                await testRunner.WhenAsync(("I send POST request to \"/api/v1/registration/step-3/location\" with Content-Type \"" +
+                        "text/xml\""), ((string)(null)), ((global::Reqnroll.Table)(null)), "When ");
                 await testRunner.ThenAsync("the response status code should be 415", ((string)(null)), ((global::Reqnroll.Table)(null)), "Then ");
             }
             await this.ScenarioCleanupAsync();
@@ -1348,8 +1347,8 @@ namespace Booksy.ServiceCatalog.IntegrationTests.Features.API
             {
                 await this.ScenarioStartAsync();
                 await this.FeatureBackgroundAsync();
-                await testRunner.WhenAsync("I send POST request to \"/api/v1/registration/step-3/location\" with malformed JSON" +
-                        ":", "{ invalid json }", ((global::Reqnroll.Table)(null)), "When ");
+                await testRunner.WhenAsync(("I send POST request to \"/api/v1/registration/step-3/location\" with malformed JSON" +
+                        ":"), "{ invalid json }", ((global::Reqnroll.Table)(null)), "When ");
                 await testRunner.ThenAsync("the response status code should be 400", ((string)(null)), ((global::Reqnroll.Table)(null)), "Then ");
                 await testRunner.AndAsync("error message should indicate JSON parsing error", ((string)(null)), ((global::Reqnroll.Table)(null)), "And ");
             }
@@ -1413,8 +1412,8 @@ namespace Booksy.ServiceCatalog.IntegrationTests.Features.API
             {
                 await this.ScenarioStartAsync();
                 await this.FeatureBackgroundAsync();
-                await testRunner.WhenAsync("I send POST request to \"/api/v1/registration/step-3/location\" with multiple valid" +
-                        "ation errors", ((string)(null)), ((global::Reqnroll.Table)(null)), "When ");
+                await testRunner.WhenAsync(("I send POST request to \"/api/v1/registration/step-3/location\" with multiple valid" +
+                        "ation errors"), ((string)(null)), ((global::Reqnroll.Table)(null)), "When ");
                 await testRunner.ThenAsync("the response status code should be 400", ((string)(null)), ((global::Reqnroll.Table)(null)), "Then ");
                 await testRunner.AndAsync("response should contain array of validation errors", ((string)(null)), ((global::Reqnroll.Table)(null)), "And ");
                 await testRunner.AndAsync("each error should have field name and error message", ((string)(null)), ((global::Reqnroll.Table)(null)), "And ");
@@ -1480,8 +1479,8 @@ namespace Booksy.ServiceCatalog.IntegrationTests.Features.API
             {
                 await this.ScenarioStartAsync();
                 await this.FeatureBackgroundAsync();
-                await testRunner.WhenAsync("I send POST request to \"/api/v1/registration/step-3/location\" with idempotency ke" +
-                        "y \"abc-123\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "When ");
+                await testRunner.WhenAsync(("I send POST request to \"/api/v1/registration/step-3/location\" with idempotency ke" +
+                        "y \"abc-123\""), ((string)(null)), ((global::Reqnroll.Table)(null)), "When ");
                 await testRunner.AndAsync("I send the same POST request again with same idempotency key \"abc-123\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "And ");
                 await testRunner.ThenAsync("both requests should return 200/201", ((string)(null)), ((global::Reqnroll.Table)(null)), "Then ");
                 await testRunner.AndAsync("no duplicate provider should be created", ((string)(null)), ((global::Reqnroll.Table)(null)), "And ");
