@@ -10,7 +10,7 @@
                 stroke-linecap="round"
                 stroke-linejoin="round"
                 stroke-width="2"
-                d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"
+                d="M21 13.255A23.931 23.931 0 0112 15c-3.183 0-6.22-.62-9-1.745M16 6V4a2 2 0 00-2-2h-4a2 2 0 00-2 2v2m4 6h.01M5 20h14a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"
               />
             </svg>
           </div>
@@ -18,9 +18,9 @@
 
         <!-- Header -->
         <div class="auth-header">
-          <h1 class="auth-title">به بوکسی خوش آمدید</h1>
+          <h1 class="auth-title">ورود به پنل کسب و کار</h1>
           <p class="auth-description">
-            برای رزرو نوبت، شماره موبایل خود را وارد کنید
+            برای ورود به پنل ارائه‌دهندگان، شماره موبایل خود را وارد کنید
           </p>
         </div>
 
@@ -53,11 +53,11 @@
           را می‌پذیرید
         </p>
 
-        <!-- Provider Login Link -->
+        <!-- Customer Login Link -->
         <div class="auth-footer">
           <p class="auth-footer-text">
-            ارائه‌دهنده خدمات هستید؟
-            <router-link to="/provider/login" class="auth-link">ورود به پنل کسب و کار</router-link>
+            مشتری هستید؟
+            <router-link to="/login" class="auth-link">ورود برای رزرو نوبت</router-link>
           </p>
         </div>
       </div>
@@ -67,12 +67,11 @@
 
 <script setup lang="ts">
 import { ref } from 'vue'
-import { useRouter, useRoute } from 'vue-router'
+import { useRouter } from 'vue-router'
 import { usePhoneVerification } from '../composables/usePhoneVerification'
 import AppButton from '@/shared/components/ui/Button/AppButton.vue'
 
 const router = useRouter()
-const route = useRoute()
 const { sendVerificationCode } = usePhoneVerification()
 
 // State
@@ -103,20 +102,12 @@ const handleSubmit = async () => {
     const result = await sendVerificationCode(phoneNumber.value, 'IR')
 
     if (result.success) {
-      // Customer login page - explicitly set userType to Customer
-      const redirectPath = route.query.redirect as string | undefined
-
-      // Store redirect path if provided (for post-login navigation)
-      if (redirectPath) {
-        sessionStorage.setItem('post_login_redirect', redirectPath)
-      }
-
       // Navigate to verification page with explicit userType
       router.push({
         name: 'PhoneVerification',
         query: {
           phone: phoneNumber.value,
-          userType: 'Customer'  // Explicit customer type
+          userType: 'Provider'  // Explicit provider type
         },
       })
     } else {
@@ -255,6 +246,7 @@ const handleSubmit = async () => {
   text-align: center;
   font-size: 0.875rem;
   color: #6b7280;
+  margin-bottom: 1rem;
 }
 
 .auth-link {

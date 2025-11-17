@@ -63,6 +63,11 @@ const currentYear = computed(() => new Date().getFullYear())
 
 const footerLinks: FooterLink[] = [
   {
+    name: 'provider-login',
+    label: 'For Businesses',
+    href: '/provider/login',
+  },
+  {
     name: 'about',
     label: 'About',
     href: '/about',
