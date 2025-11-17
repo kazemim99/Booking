@@ -34,15 +34,15 @@
         <ServiceSelection
           v-if="currentStep === 1"
           :provider-id="providerId"
-          :selected-service-id="bookingData.serviceId"
-          @service-selected="handleServiceSelected"
+          :selected-service-ids="bookingData.services.map(s => s.id)"
+          @services-selected="handleServicesSelected"
         />
 
         <!-- Step 2: Date & Time Selection -->
         <SlotSelection
           v-if="currentStep === 2"
           :provider-id="providerId"
-          :service-id="bookingData.serviceId"
+          :service-id="bookingData.services[0]?.id || null"
           :selected-date="bookingData.date"
           :selected-time="bookingData.startTime"
           :selected-staff-id="bookingData.staffId"
@@ -177,11 +177,15 @@ const steps = [
   { id: 4, label: 'تایید نهایی', description: 'بررسی و تایید رزرو' },
 ]
 
+interface Service {
+  id: string
+  name: string
+  basePrice: number
+  duration: number
+}
+
 interface BookingData {
-  serviceId: string | null
-  serviceName: string
-  servicePrice: number
-  serviceDuration: number
+  services: Service[]
   date: string | null
   startTime: string | null
   endTime: string | null
@@ -196,10 +200,7 @@ interface BookingData {
 }
 
 const bookingData = ref<BookingData>({
-  serviceId: route.query.serviceId as string || null,
-  serviceName: '',
-  servicePrice: 0,
-  serviceDuration: 0,
+  services: [],
   date: null,
   startTime: null,
   endTime: null,
@@ -217,7 +218,7 @@ const bookingData = ref<BookingData>({
 const canProceed = computed(() => {
   switch (currentStep.value) {
     case 1:
-      return !!bookingData.value.serviceId
+      return bookingData.value.services.length > 0
     case 2:
       return !!bookingData.value.date && !!bookingData.value.startTime
     case 3:
@@ -239,11 +240,13 @@ const convertToPersianNumber = (num: number | string): string => {
   }).join('')
 }
 
-const handleServiceSelected = (service: any) => {
-  bookingData.value.serviceId = service.id
-  bookingData.value.serviceName = service.name
-  bookingData.value.servicePrice = service.basePrice
-  bookingData.value.serviceDuration = service.duration
+const handleServicesSelected = (services: Service[]) => {
+  bookingData.value.services = services.map(s => ({
+    id: s.id,
+    name: s.name,
+    basePrice: s.basePrice,
+    duration: s.duration
+  }))
 }
 
 const handleSlotSelected = (slot: any) => {

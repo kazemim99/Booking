@@ -1,10 +1,14 @@
 <template>
   <div class="service-selection" dir="rtl">
     <div class="step-header">
-      <h2 class="step-title">انتخاب خدمت</h2>
+      <h2 class="step-title">انتخاب خدمات</h2>
       <p class="step-description">
-        خدمت مورد نظر خود را از لیست زیر انتخاب کنید
+        خدمات مورد نظر خود را از لیست زیر انتخاب کنید (چند انتخابی)
       </p>
+      <div v-if="selectedServices.length > 0" class="selected-summary">
+        <span class="selected-count">{{ convertToPersianNumber(selectedServices.length) }} خدمت انتخاب شده</span>
+        <span class="total-price">جمع: {{ formatPrice(totalPrice) }} تومان</span>
+      </div>
     </div>
 
     <!-- Loading State -->
@@ -19,8 +23,8 @@
         v-for="service in services"
         :key="service.id"
         class="service-card"
-        :class="{ selected: selectedServiceId === service.id }"
-        @click="selectService(service)"
+        :class="{ selected: isSelected(service.id) }"
+        @click="toggleService(service)"
       >
         <div class="service-image">
           <img
@@ -32,7 +36,7 @@
             <span class="service-icon">{{ getServiceIcon(service.category) }}</span>
           </div>
 
-          <div v-if="selectedServiceId === service.id" class="selected-badge">
+          <div v-if="isSelected(service.id)" class="selected-badge">
             <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor">
               <path fill-rule="evenodd" d="M2.25 12c0-5.385 4.365-9.75 9.75-9.75s9.75 4.365 9.75 9.75-4.365 9.75-9.75 9.75S2.25 17.385 2.25 12zm13.36-1.814a.75.75 0 10-1.22-.872l-3.236 4.53L9.53 12.22a.75.75 0 00-1.06 1.06l2.25 2.25a.75.75 0 001.14-.094l3.75-5.25z" clip-rule="evenodd" />
             </svg>
@@ -78,19 +82,19 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted } from 'vue'
+import { ref, onMounted, computed } from 'vue'
 import { useProviderStore } from '@/modules/provider/stores/provider.store'
 import type { ServiceSummary } from '@/modules/provider/types/provider.types'
 
 interface Props {
   providerId: string
-  selectedServiceId: string | null
+  selectedServiceIds: string[]
 }
 
 const props = defineProps<Props>()
 
 const emit = defineEmits<{
-  (e: 'service-selected', service: ServiceSummary): void
+  (e: 'services-selected', services: ServiceSummary[]): void
 }>()
 
 const providerStore = useProviderStore()
@@ -98,6 +102,12 @@ const providerStore = useProviderStore()
 // State
 const loading = ref(false)
 const services = ref<ServiceSummary[]>([])
+const selectedServices = ref<ServiceSummary[]>([])
+
+// Computed
+const totalPrice = computed(() => {
+  return selectedServices.value.reduce((sum, service) => sum + service.basePrice, 0)
+})
 
 // Lifecycle
 onMounted(async () => {
@@ -105,6 +115,13 @@ onMounted(async () => {
   try {
     await providerStore.getProviderById(props.providerId, true, false)
     services.value = providerStore.currentProvider?.services || []
+
+    // Initialize selected services if passed via props
+    if (props.selectedServiceIds.length > 0) {
+      selectedServices.value = services.value.filter(s =>
+        props.selectedServiceIds.includes(s.id)
+      )
+    }
   } catch (error) {
     console.error('Failed to load services:', error)
   } finally {
@@ -113,8 +130,22 @@ onMounted(async () => {
 })
 
 // Methods
-const selectService = (service: ServiceSummary) => {
-  emit('service-selected', service)
+const isSelected = (serviceId: string): boolean => {
+  return selectedServices.value.some(s => s.id === serviceId)
+}
+
+const toggleService = (service: ServiceSummary) => {
+  const index = selectedServices.value.findIndex(s => s.id === service.id)
+
+  if (index > -1) {
+    // Remove service
+    selectedServices.value.splice(index, 1)
+  } else {
+    // Add service
+    selectedServices.value.push(service)
+  }
+
+  emit('services-selected', selectedServices.value)
 }
 
 const getCategoryLabel = (category: string): string => {
@@ -206,7 +237,30 @@ const truncate = (text: string, length: number): string => {
 .step-description {
   font-size: 1.05rem;
   color: #64748b;
-  margin: 0;
+  margin: 0 0 1rem 0;
+}
+
+.selected-summary {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 2rem;
+  padding: 1rem 2rem;
+  background: linear-gradient(135deg, rgba(16, 185, 129, 0.1) 0%, rgba(5, 150, 105, 0.1) 100%);
+  border-radius: 12px;
+  margin-top: 1rem;
+}
+
+.selected-count {
+  font-size: 1rem;
+  font-weight: 600;
+  color: #059669;
+}
+
+.total-price {
+  font-size: 1.125rem;
+  font-weight: 700;
+  color: #10b981;
 }
 
 .loading-state {

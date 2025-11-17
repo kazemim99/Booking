@@ -8,14 +8,23 @@
     </div>
 
     <div class="selection-container">
-      <!-- Calendar Section -->
+      <!-- Persian Calendar Section -->
       <div class="calendar-section">
-        <AvailabilityCalendar
-          :selected-date="selectedDate"
-          :provider-id="providerId"
-          :service-id="serviceId"
-          @date-selected="handleDateSelected"
-        />
+        <div class="persian-calendar-wrapper">
+          <h3>انتخاب تاریخ</h3>
+          <VuePersianDatetimePicker
+            v-model="selectedDateModel"
+            display-format="jYYYY/jMM/jDD"
+            format="YYYY-MM-DD"
+            :min="minDate"
+            :max="maxDate"
+            :auto-submit="true"
+            :clearable="false"
+            :inline="true"
+            type="date"
+            @change="handleDateChange"
+          />
+        </div>
       </div>
 
       <!-- Time Slots Section -->
@@ -69,8 +78,8 @@
 </template>
 
 <script setup lang="ts">
-import { ref, watch } from 'vue'
-import AvailabilityCalendar from './AvailabilityCalendar.vue'
+import { ref, watch, computed } from 'vue'
+import VuePersianDatetimePicker from 'vue3-persian-datetime-picker'
 import { availabilityService } from '@/modules/booking/api/availability.service'
 import type { TimeSlot as AvailabilityTimeSlot } from '@/modules/booking/api/availability.service'
 
@@ -98,16 +107,34 @@ const emit = defineEmits<{
 
 // State
 const selectedDate = ref(props.selectedDate)
+const selectedDateModel = ref(props.selectedDate || '')
 const loadingSlots = ref(false)
 const availableSlots = ref<TimeSlot[]>([])
+
+// Computed
+const minDate = computed(() => {
+  const today = new Date()
+  return today.toISOString().split('T')[0]
+})
+
+const maxDate = computed(() => {
+  const maxDate = new Date()
+  maxDate.setMonth(maxDate.getMonth() + 3) // 3 months ahead
+  return maxDate.toISOString().split('T')[0]
+})
 
 // Watch for date selection
 watch(() => props.selectedDate, (newDate) => {
   selectedDate.value = newDate
+  if (newDate) {
+    selectedDateModel.value = newDate
+  }
 })
 
 // Methods
-const handleDateSelected = async (dateString: string) => {
+const handleDateChange = async (dateString: string) => {
+  if (!dateString) return
+
   selectedDate.value = dateString
   await loadAvailableSlots(dateString)
 }
@@ -165,16 +192,17 @@ const selectTimeSlot = (slot: TimeSlot) => {
 const formatSelectedDate = (dateString: string): string => {
   const date = new Date(dateString)
   const weekDays = ['یکشنبه', 'دوشنبه', 'سه‌شنبه', 'چهارشنبه', 'پنج‌شنبه', 'جمعه', 'شنبه']
-  const months = [
-    'ژانویه', 'فوریه', 'مارس', 'آوریل', 'می', 'ژوئن',
-    'ژوئیه', 'اوت', 'سپتامبر', 'اکتبر', 'نوامبر', 'دسامبر'
+  const persianMonths = [
+    'فروردین', 'اردیبهشت', 'خرداد', 'تیر', 'مرداد', 'شهریور',
+    'مهر', 'آبان', 'آذر', 'دی', 'بهمن', 'اسفند'
   ]
 
   const dayName = weekDays[date.getDay()]
-  const day = convertToPersianNumber(date.getDate())
-  const month = months[date.getMonth()]
 
-  return `${dayName}، ${day} ${month}`
+  // Format date string for display
+  const formattedDate = convertToPersianNumber(dateString)
+
+  return `${dayName}، ${formattedDate}`
 }
 
 const convertToPersianTime = (time: string): string => {
@@ -225,6 +253,40 @@ const convertToPersianNumber = (num: number): string => {
 
 .calendar-section {
   /* Calendar takes 60% */
+}
+
+.persian-calendar-wrapper {
+  background: white;
+  border-radius: 20px;
+  padding: 2rem;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+}
+
+.persian-calendar-wrapper h3 {
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: #1e293b;
+  margin: 0 0 1.5rem 0;
+  text-align: center;
+}
+
+/* Persian Calendar Custom Styles */
+.persian-calendar-wrapper :deep(.vpd-main) {
+  width: 100%;
+  box-shadow: none;
+  border: none;
+}
+
+.persian-calendar-wrapper :deep(.vpd-header) {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+}
+
+.persian-calendar-wrapper :deep(.vpd-day-effect) {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+}
+
+.persian-calendar-wrapper :deep(.vpd-selected) {
+  background: linear-gradient(135deg, #10b981 0%, #059669 100%);
 }
 
 .slots-section {
