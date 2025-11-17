@@ -34,15 +34,15 @@
         <ServiceSelection
           v-if="currentStep === 1"
           :provider-id="providerId"
-          :selected-service-id="bookingData.serviceId"
-          @service-selected="handleServiceSelected"
+          :selected-service-ids="bookingData.services.map(s => s.id)"
+          @services-selected="handleServicesSelected"
         />
 
         <!-- Step 2: Date & Time Selection -->
         <SlotSelection
           v-if="currentStep === 2"
           :provider-id="providerId"
-          :service-id="bookingData.serviceId"
+          :service-id="bookingData.services[0]?.id || null"
           :selected-date="bookingData.date"
           :selected-time="bookingData.startTime"
           :selected-staff-id="bookingData.staffId"
@@ -59,7 +59,7 @@
         <!-- Step 4: Confirmation -->
         <BookingConfirmation
           v-if="currentStep === 4"
-          :booking-data="bookingData"
+          :booking-data="confirmationData"
           :provider-id="providerId"
         />
       </div>
@@ -177,11 +177,15 @@ const steps = [
   { id: 4, label: 'تایید نهایی', description: 'بررسی و تایید رزرو' },
 ]
 
+interface Service {
+  id: string
+  name: string
+  basePrice: number
+  duration: number
+}
+
 interface BookingData {
-  serviceId: string | null
-  serviceName: string
-  servicePrice: number
-  serviceDuration: number
+  services: Service[]
   date: string | null
   startTime: string | null
   endTime: string | null
@@ -196,10 +200,7 @@ interface BookingData {
 }
 
 const bookingData = ref<BookingData>({
-  serviceId: route.query.serviceId as string || null,
-  serviceName: '',
-  servicePrice: 0,
-  serviceDuration: 0,
+  services: [],
   date: null,
   startTime: null,
   endTime: null,
@@ -217,7 +218,7 @@ const bookingData = ref<BookingData>({
 const canProceed = computed(() => {
   switch (currentStep.value) {
     case 1:
-      return !!bookingData.value.serviceId
+      return bookingData.value.services.length > 0
     case 2:
       return !!bookingData.value.date && !!bookingData.value.startTime
     case 3:
@@ -230,6 +231,27 @@ const canProceed = computed(() => {
   }
 })
 
+// Transform booking data for confirmation component
+const confirmationData = computed(() => {
+  const firstService = bookingData.value.services[0]
+  const totalPrice = bookingData.value.services.reduce((sum, s) => sum + s.basePrice, 0)
+  const totalDuration = bookingData.value.services.reduce((sum, s) => sum + s.duration, 0)
+  const serviceNames = bookingData.value.services.map(s => s.name).join('، ')
+
+  return {
+    serviceId: firstService?.id || null,
+    serviceName: serviceNames || 'انتخاب نشده',
+    servicePrice: totalPrice,
+    serviceDuration: totalDuration,
+    date: bookingData.value.date,
+    startTime: bookingData.value.startTime,
+    endTime: bookingData.value.endTime,
+    staffId: bookingData.value.staffId,
+    staffName: bookingData.value.staffName,
+    customerInfo: bookingData.value.customerInfo
+  }
+})
+
 // Methods
 const convertToPersianNumber = (num: number | string): string => {
   const persianDigits = ['۰', '۱', '۲', '۳', '۴', '۵', '۶', '۷', '۸', '۹']
@@ -239,11 +261,13 @@ const convertToPersianNumber = (num: number | string): string => {
   }).join('')
 }
 
-const handleServiceSelected = (service: any) => {
-  bookingData.value.serviceId = service.id
-  bookingData.value.serviceName = service.name
-  bookingData.value.servicePrice = service.basePrice
-  bookingData.value.serviceDuration = service.duration
+const handleServicesSelected = (services: Service[]) => {
+  bookingData.value.services = services.map(s => ({
+    id: s.id,
+    name: s.name,
+    basePrice: s.basePrice,
+    duration: s.duration
+  }))
 }
 
 const handleSlotSelected = (slot: any) => {
@@ -291,23 +315,73 @@ const submitBooking = async () => {
       throw new Error('User not authenticated')
     }
 
-    // Calculate end time based on service duration
-    const startDateTime = new Date(`${bookingData.value.date}T${bookingData.value.startTime}:00`)
-    const endDateTime = new Date(startDateTime.getTime() + bookingData.value.serviceDuration * 60000)
+    // Use first service for the booking (TODO: handle multiple services properly)
+    const firstService = bookingData.value.services[0]
+    if (!firstService) {
+      throw new Error('No service selected')
+    }
 
-    // Format times to ISO 8601
+    // Validate date and time before formatting
+    if (!bookingData.value.date) {
+      throw new Error('تاریخ انتخاب نشده است')
+    }
+    if (!bookingData.value.startTime) {
+      throw new Error('ساعت انتخاب نشده است')
+    }
+
+    // Convert Persian/Arabic digits to ASCII digits
+    const convertPersianToEnglish = (str: string): string => {
+      const persianDigits = ['۰', '۱', '۲', '۳', '۴', '۵', '۶', '۷', '۸', '۹']
+      const arabicDigits = ['٠', '١', '٢', '٣', '٤', '٥', '٦', '٧', '٨', '٩']
+
+      let result = str
+      for (let i = 0; i < 10; i++) {
+        result = result.replace(new RegExp(persianDigits[i], 'g'), i.toString())
+        result = result.replace(new RegExp(arabicDigits[i], 'g'), i.toString())
+      }
+      return result
+    }
+
+    // Normalize date and time (convert Persian/Arabic digits to ASCII)
+    const normalizedDate = convertPersianToEnglish(bookingData.value.date)
+    const normalizedTime = convertPersianToEnglish(bookingData.value.startTime)
+
+    // Parse date components
+    const [year, month, day] = normalizedDate.split('-').map(Number)
+    const [hour, minute] = normalizedTime.split(':').map(Number)
+
+    // Create date in UTC to preserve the exact time (no timezone conversion)
+    // This treats the selected time as if it were in UTC
+    const startDateTime = new Date(Date.UTC(year, month - 1, day, hour, minute, 0))
+
+    console.log('[BookingWizard] Creating date from:', {
+      date: normalizedDate,
+      time: normalizedTime,
+      parsed: { year, month, day, hour, minute },
+      utcDateTime: startDateTime.toISOString(),
+    })
+
+    // Check if date is valid
+    if (isNaN(startDateTime.getTime())) {
+      console.error('[BookingWizard] Invalid date/time:', {
+        date: bookingData.value.date,
+        normalizedDate,
+        startTime: bookingData.value.startTime,
+        normalizedTime,
+      })
+      throw new Error('تاریخ یا ساعت نامعتبر است')
+    }
+
     const startTime = startDateTime.toISOString()
-    const endTime = endDateTime.toISOString()
 
-    // Prepare booking request
+    // Prepare booking request (matches backend CreateBookingRequest.cs)
     const request: CreateBookingRequest = {
       customerId,
       providerId: providerId.value,
-      serviceId: bookingData.value.serviceId!,
+      serviceId: firstService.id,
+      staffId: bookingData.value.staffId || undefined,
       startTime,
-      endTime,
-      notes: bookingData.value.customerInfo.notes || undefined,
-      totalAmount: bookingData.value.servicePrice,
+      customerNotes: bookingData.value.customerInfo.notes || undefined,
     }
 
     console.log('[BookingWizard] Booking request:', request)

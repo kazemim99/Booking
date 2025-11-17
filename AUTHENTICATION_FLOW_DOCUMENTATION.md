@@ -4,18 +4,21 @@
 
 This document describes the complete authentication flow for the Booksy application, covering both **Customer** and **Provider** user types. The system uses phone verification (OTP) for authentication and role-based routing for post-login redirects.
 
+**🆕 UPDATE (2025-11-17):** The authentication flow has been simplified with **separate login pages** for customers and providers, removing complex redirect-path detection logic.
+
 ---
 
 ## Table of Contents
 
 1. [Architecture Overview](#architecture-overview)
-2. [Customer Booking Flow](#customer-booking-flow)
-3. [Provider Registration Flow](#provider-registration-flow)
-4. [Backend Implementation](#backend-implementation)
-5. [Frontend Implementation](#frontend-implementation)
-6. [Token Structure](#token-structure)
-7. [Security Considerations](#security-considerations)
-8. [Troubleshooting](#troubleshooting)
+2. [Separate Login Pages (NEW)](#separate-login-pages-new)
+3. [Customer Booking Flow](#customer-booking-flow)
+4. [Provider Registration Flow](#provider-registration-flow)
+5. [Backend Implementation](#backend-implementation)
+6. [Frontend Implementation](#frontend-implementation)
+7. [Token Structure](#token-structure)
+8. [Security Considerations](#security-considerations)
+9. [Troubleshooting](#troubleshooting)
 
 ---
 
@@ -30,11 +33,82 @@ This document describes the complete authentication flow for the Booksy applicat
 - `IProviderInfoService` - Fetches provider status (only for Provider users)
 
 **Frontend (Vue 3 / TypeScript)**
-- `LoginView.vue` - Phone number entry, detects user type from redirect context
-- `VerificationView.vue` - OTP verification and user registration
+- **`LoginView.vue`** - Customer login (phone entry) with explicit userType = 'Customer'
+- **`ProviderLoginView.vue`** - Provider login (phone entry) with explicit userType = 'Provider'
+- `VerificationView.vue` - OTP verification and user registration (receives userType from route)
 - `auth.store.ts` - Authentication state management, role-based token decoding
 - `auth.guard.ts` - Navigation guard for protected routes
 - `provider.routes.ts` - Provider-specific route guards
+
+---
+
+## Separate Login Pages (NEW)
+
+### Overview
+
+The application now uses **two distinct login pages** for better UX and simpler code:
+
+| Login Page | Route | User Type | Audience | Messaging |
+|------------|-------|-----------|----------|-----------|
+| **Customer Login** | `/login` | `Customer` | People booking services | "به بوکسی خوش آمدید" / "برای رزرو نوبت" |
+| **Provider Login** | `/provider/login` | `Provider` | Business owners | "ورود به پنل کسب و کار" |
+
+### Key Changes:
+
+✅ **Removed**: Complex redirect-path detection logic
+✅ **Removed**: `sessionStorage.getItem('registration_user_type')`
+✅ **Added**: Explicit userType on each login page
+✅ **Added**: userType passed via route query params to VerificationView
+
+### Navigation Flow:
+
+**Customer Journey:**
+```
+Homepage → Search/Browse → Provider Detail → "رزرو نوبت"
+  → Auth Guard (if not logged in) → /login → VerificationView (userType=Customer)
+```
+
+**Provider Journey:**
+```
+Homepage Footer "For Businesses" → /provider/login
+  → VerificationView (userType=Provider)
+```
+
+### Implementation Details:
+
+**LoginView.vue (Customer):**
+```typescript
+// Explicit customer type - no detection needed
+router.push({
+  name: 'PhoneVerification',
+  query: {
+    phone: phoneNumber.value,
+    userType: 'Customer'  // ✅ Explicit
+  }
+})
+```
+
+**ProviderLoginView.vue (Provider):**
+```typescript
+// Explicit provider type - no detection needed
+router.push({
+  name: 'PhoneVerification',
+  query: {
+    phone: phoneNumber.value,
+    userType: 'Provider'  // ✅ Explicit
+  }
+})
+```
+
+**VerificationView.vue:**
+```typescript
+// Receive userType from route query params
+const userTypeFromQuery = route.query.userType as string | undefined
+
+const userType = (userTypeFromQuery === 'Provider' || userTypeFromQuery === 'Customer'
+  ? userTypeFromQuery
+  : 'Customer') as 'Customer' | 'Provider'
+```
 
 ---
 
@@ -74,35 +148,32 @@ if (requiresAuth && !authStore.isAuthenticated) {
 }
 ```
 
-#### 3. User Type Detection
+#### 3. User Type Handling (UPDATED)
 
-**File**: `LoginView.vue` (Line 97-133)
+**🆕 New Approach** - Explicit user type from login page:
+
+The system no longer uses redirect-path detection. Instead, each login page explicitly sets the userType:
+
+- **Customer Login (`/login`)**: Sets `userType = 'Customer'` and passes it via route query
+- **Provider Login (`/provider/login`)**: Sets `userType = 'Provider'` and passes it via route query
+
+**File**: `LoginView.vue` (Customer)
 ```typescript
-const redirectPath = route.query.redirect as string | undefined
-let userType: 'Customer' | 'Provider' = 'Provider' // Default
-
-if (redirectPath) {
-  // Customer-specific routes
-  const customerRoutes = ['/bookings/new', '/my-appointments', '/customer']
-  const isCustomerRoute = customerRoutes.some(route => redirectPath.includes(route))
-
-  if (isCustomerRoute) {
-    userType = 'Customer'  // ✅ Detected as Customer
-    console.log('[LoginView] ✅ Customer booking flow detected')
+// Simple: explicit customer type, no detection
+router.push({
+  name: 'PhoneVerification',
+  query: {
+    phone: phoneNumber.value,
+    userType: 'Customer'  // ✅ Explicit
   }
-
-  sessionStorage.setItem('post_login_redirect', redirectPath)
-}
-
-// Store userType for VerificationView
-sessionStorage.setItem('registration_user_type', userType)
+})
 ```
 
-**Detection Logic**:
-- `redirectPath` contains `/bookings/new` → Customer
-- `redirectPath` contains `/customer` → Customer
-- `redirectPath` contains `/my-appointments` → Customer
-- No redirect or other paths → Provider (default)
+**Benefits:**
+- ✅ No complex detection logic
+- ✅ No sessionStorage dependency
+- ✅ Clearer user intent
+- ✅ Easier to maintain
 
 #### 4. Phone Verification
 

@@ -7,7 +7,16 @@ const authRoutes: RouteRecordRaw[] = [
     component: () => import('@/modules/auth/views/LoginView.vue'),
     meta: {
       isPublic: true,
-      title: 'Log In or Sign Up'
+      title: 'ورود مشتری - رزرو نوبت | Booksy'
+    }
+  },
+  {
+    path: '/provider/login',
+    name: 'ProviderLogin',
+    component: () => import('@/modules/auth/views/ProviderLoginView.vue'),
+    meta: {
+      isPublic: true,
+      title: 'ورود ارائه‌دهندگان - پنل کسب و کار | Booksy'
     }
   },
   {

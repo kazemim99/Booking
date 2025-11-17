@@ -39,7 +39,7 @@ public class AvailabilityController : ControllerBase
     /// <response code="404">Provider or service not found</response>
     [HttpGet("slots")]
     [AllowAnonymous]
-    [ProducesResponseType(typeof(IReadOnlyList<AvailableSlotResponse>), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(AvailableSlotsResponse), StatusCodes.Status200OK)]
     public async Task<IActionResult> GetAvailableSlots(
         [FromQuery] GetAvailableSlotsRequest request,
         CancellationToken cancellationToken = default)
@@ -62,7 +62,7 @@ public class AvailabilityController : ControllerBase
             "Retrieved {SlotCount} available slots for service {ServiceId} on {Date}",
             result.AvailableSlots.Count, request.ServiceId, request.Date.Date);
 
-        var response = result.AvailableSlots.Select(slot => new AvailableSlotResponse
+        var slots = result.AvailableSlots.Select(slot => new AvailableSlotResponse
         {
             StartTime = slot.StartTime,
             EndTime = slot.EndTime,
@@ -71,6 +71,23 @@ public class AvailabilityController : ControllerBase
             AvailableStaffId = slot.AvailableStaffId,
             AvailableStaffName = slot.AvailableStaffName
         }).ToList();
+
+        var response = new AvailableSlotsResponse
+        {
+            ProviderId = result.ProviderId,
+            ServiceId = result.ServiceId,
+            Date = result.Date,
+            Slots = slots,
+            ValidationMessages = result.ValidationMessages
+        };
+
+        // Log validation messages if present
+        if (response.ValidationMessages?.Any() == true)
+        {
+            _logger.LogInformation(
+                "No slots available due to: {ValidationMessages}",
+                string.Join(", ", response.ValidationMessages));
+        }
 
         return Ok(response);
     }

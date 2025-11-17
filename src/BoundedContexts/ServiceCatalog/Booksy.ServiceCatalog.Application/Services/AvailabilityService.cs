@@ -55,11 +55,11 @@ namespace Booksy.ServiceCatalog.Application.Services
                 return Array.Empty<AvailableTimeSlot>();
             }
 
-            // Check if date is within booking window
-            var validationResult = await ValidateBookingConstraintsAsync(provider, service, date, cancellationToken);
+            // Check if date is within booking window (date-level validation only)
+            var validationResult = await ValidateDateConstraintsAsync(provider, service, date, cancellationToken);
             if (!validationResult.IsValid)
             {
-                _logger.LogWarning("Booking constraints validation failed: {Errors}",
+                _logger.LogWarning("Date constraints validation failed: {Errors}",
                     string.Join(", ", validationResult.Errors));
                 return Array.Empty<AvailableTimeSlot>();
             }
@@ -105,7 +105,15 @@ namespace Booksy.ServiceCatalog.Application.Services
             var qualifiedStaff = GetQualifiedStaff(provider, service, staff);
             if (!qualifiedStaff.Any())
             {
-                _logger.LogWarning("No qualified staff found for service {ServiceId}", service.Id);
+                // Check if provider has NO staff at all
+                if (!provider.Staff.Any())
+                {
+                    _logger.LogWarning("Provider {ProviderId} has no staff members. Solo providers must add themselves as staff.", provider.Id);
+                }
+                else
+                {
+                    _logger.LogWarning("No qualified staff found for service {ServiceId}. Staff exist but none are qualified for this service.", service.Id);
+                }
                 return Array.Empty<AvailableTimeSlot>();
             }
 
@@ -221,6 +229,17 @@ namespace Booksy.ServiceCatalog.Application.Services
         {
             var errors = new List<string>();
 
+            // Ensure startTime is in UTC for proper comparison
+            // If DateTimeKind is Unspecified, assume it's already meant to be UTC
+            if (startTime.Kind == DateTimeKind.Unspecified)
+            {
+                startTime = DateTime.SpecifyKind(startTime, DateTimeKind.Utc);
+            }
+            else if (startTime.Kind == DateTimeKind.Local)
+            {
+                startTime = startTime.ToUniversalTime();
+            }
+
             // Check if provider is active
             if (provider.Status != ProviderStatus.Active)
             {
@@ -312,6 +331,82 @@ namespace Booksy.ServiceCatalog.Application.Services
                 : AvailabilityValidationResult.Success();
         }
 
+        public Task<AvailabilityValidationResult> ValidateDateConstraintsAsync(
+            Provider provider,
+            Service service,
+            DateTime date,
+            CancellationToken cancellationToken = default)
+        {
+            var errors = new List<string>();
+
+            // Ensure date is in UTC for proper comparison
+            if (date.Kind == DateTimeKind.Unspecified)
+            {
+                date = DateTime.SpecifyKind(date, DateTimeKind.Utc);
+            }
+            else if (date.Kind == DateTimeKind.Local)
+            {
+                date = date.ToUniversalTime();
+            }
+
+            // Check if provider is active
+            if (provider.Status != ProviderStatus.Active)
+            {
+                errors.Add("Provider is not active");
+            }
+
+            // Check if provider allows online booking
+            if (!provider.AllowOnlineBooking)
+            {
+                errors.Add("Provider does not allow online booking");
+            }
+
+            // Check if service is active
+            if (service.Status != ServiceStatus.Active)
+            {
+                errors.Add("Service is not active");
+            }
+
+            // Check maximum advance booking time (DATE-LEVEL only, not time-level)
+            var daysUntilBooking = (date.Date - DateTime.UtcNow.Date).TotalDays;
+            if (service.MaxAdvanceBookingDays.HasValue && daysUntilBooking > service.MaxAdvanceBookingDays.Value)
+            {
+                errors.Add($"Booking cannot be made more than {service.MaxAdvanceBookingDays.Value} days in advance");
+            }
+
+            // Check if date is in the past
+            if (date.Date < DateTime.UtcNow.Date)
+            {
+                errors.Add("Cannot book appointments in the past");
+            }
+
+            // Check if provider is open on this day of week
+            var dayOfWeek = (DayOfWeek)(int)date.DayOfWeek;
+            var businessHours = provider.BusinessHours.FirstOrDefault(h => h.DayOfWeek == dayOfWeek);
+
+            if (businessHours == null || !businessHours.IsOpen)
+            {
+                errors.Add($"Provider is closed on {dayOfWeek}");
+            }
+
+            // Check for holidays
+            if (IsHoliday(provider, date.Date))
+            {
+                errors.Add("Provider is closed on this date (holiday)");
+            }
+
+            // Check exceptions
+            var exception = GetExceptionSchedule(provider, date.Date);
+            if (exception != null && exception.IsClosed)
+            {
+                errors.Add("Provider is closed on this date (exception)");
+            }
+
+            return Task.FromResult(errors.Any()
+                ? AvailabilityValidationResult.Failure(errors.ToArray())
+                : AvailabilityValidationResult.Success());
+        }
+
         // ========================================
         // PRIVATE HELPER METHODS
         // ========================================
@@ -359,8 +454,13 @@ namespace Booksy.ServiceCatalog.Application.Services
                     return slotStart < bookingEnd && slotEnd > bookingStart;
                 });
 
+                // Ensure slotStart is in UTC for comparison
+                var slotStartUtc = slotStart.Kind == DateTimeKind.Unspecified
+                    ? DateTime.SpecifyKind(slotStart, DateTimeKind.Utc)
+                    : slotStart.ToUniversalTime();
+
                 // Only add slot if it's in the future and has no conflicts
-                if (!hasConflict && slotStart > DateTime.UtcNow)
+                if (!hasConflict && slotStartUtc > DateTime.UtcNow)
                 {
                     availableSlots.Add(new AvailableTimeSlot(
                         slotStart,
@@ -390,9 +490,22 @@ namespace Booksy.ServiceCatalog.Application.Services
             }
 
             // Get all active qualified staff
-            return provider.Staff
+            var qualifiedStaff = provider.Staff
                 .Where(s => s.IsActive && service.IsStaffQualified(s.Id))
                 .ToList();
+
+            // Handle solo/individual providers with no staff entries
+            // For Individual providers, if no staff is found, return all staff (owner can perform service)
+            if (!qualifiedStaff.Any() && provider.ProviderType == ProviderType.Individual)
+            {
+                // Return all active staff (likely just the owner)
+                // If QualifiedStaff is empty, it means owner can do all services
+                return provider.Staff
+                    .Where(s => s.IsActive)
+                    .ToList();
+            }
+
+            return qualifiedStaff;
         }
 
         private bool IsHoliday(Provider provider, DateTime date)

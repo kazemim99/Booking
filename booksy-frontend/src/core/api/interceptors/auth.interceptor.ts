@@ -7,6 +7,7 @@
 import type { InternalAxiosRequestConfig } from 'axios'
 import axios from 'axios'
 import { localStorageService } from '@/core/services/storage/local-storage.service'
+import { microservices } from '../config/api-config'
 
 /**
  * Adds JWT token to request headers
@@ -35,11 +36,15 @@ export async function authErrorInterceptor(error: any) {
       const refreshToken = localStorage.getItem('refresh_token')
 
       if (!refreshToken) {
+        console.error('[Auth] No refresh token available')
         throw new Error('No refresh token available')
       }
 
-      // Refresh token endpoint
-      const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/api/v1/auth/refresh`, {
+      // Refresh token endpoint - use User Management API
+      const userManagementBaseUrl = microservices.userManagement.baseURL
+      console.log('[Auth] Refreshing token using:', `${userManagementBaseUrl}/v1/auth/refresh`)
+
+      const response = await fetch(`${userManagementBaseUrl}/v1/auth/refresh`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -48,12 +53,37 @@ export async function authErrorInterceptor(error: any) {
         body: JSON.stringify({ refreshToken })
       })
 
+      console.log('[Auth] Refresh response status:', response.status)
+
       if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}))
+        console.error('[Auth] Token refresh failed:', errorData)
         throw new Error('Token refresh failed')
       }
 
       const data = await response.json()
-      const { accessToken, refreshToken: newRefreshToken } = data.data || data
+      console.log('[Auth] Refresh response data:', data)
+
+      // Extract tokens - handle both nested data.data and flat data structure
+      // Also handle PascalCase from .NET API (since we're using fetch, not axios)
+      const accessToken =
+        data.data?.accessToken ||
+        data.data?.AccessToken ||
+        data.accessToken ||
+        data.AccessToken
+
+      const newRefreshToken =
+        data.data?.refreshToken ||
+        data.data?.RefreshToken ||
+        data.refreshToken ||
+        data.RefreshToken
+
+      if (!accessToken) {
+        console.error('[Auth] No access token in refresh response:', data)
+        throw new Error('No access token in refresh response')
+      }
+
+      console.log('[Auth] Token refreshed successfully')
 
       // Update tokens
       localStorage.setItem('access_token', accessToken)
@@ -63,6 +93,7 @@ export async function authErrorInterceptor(error: any) {
 
       // Retry original request with new token
       originalRequest.headers.Authorization = `Bearer ${accessToken}`
+      console.log('[Auth] Retrying original request with new token')
       return axios(originalRequest)
 
     } catch (refreshError) {

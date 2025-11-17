@@ -12,6 +12,8 @@ namespace Booksy.ServiceCatalog.Application.Commands.Provider.RegisterProvider
     /// </summary>
     public sealed record RegisterProviderCommand(
         Guid OwnerId,
+        string OwnerFirstName,
+        string OwnerLastName,
         string BusinessName,
         string Description,
         string Email,

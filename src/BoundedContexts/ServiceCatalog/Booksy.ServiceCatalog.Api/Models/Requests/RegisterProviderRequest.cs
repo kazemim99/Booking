@@ -15,6 +15,20 @@ public sealed class RegisterProviderRequest
     public Guid OwnerId { get; set; }
 
     /// <summary>
+    /// Owner's first name
+    /// </summary>
+    [Required(ErrorMessage = "Owner first name is required")]
+    [StringLength(100, MinimumLength = 2, ErrorMessage = "First name must be between 2 and 100 characters")]
+    public string OwnerFirstName { get; set; } = string.Empty;
+
+    /// <summary>
+    /// Owner's last name
+    /// </summary>
+    [Required(ErrorMessage = "Owner last name is required")]
+    [StringLength(100, MinimumLength = 2, ErrorMessage = "Last name must be between 2 and 100 characters")]
+    public string OwnerLastName { get; set; } = string.Empty;
+
+    /// <summary>
     /// Business name
     /// </summary>
     [Required(ErrorMessage = "Business name is required")]

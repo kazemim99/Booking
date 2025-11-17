@@ -123,6 +123,7 @@
 
 <script setup lang="ts">
 import { ref, watch } from 'vue'
+import { useAuthStore } from '@/core/stores/modules/auth.store'
 
 interface CustomerData {
   fullName: string
@@ -141,11 +142,34 @@ const emit = defineEmits<{
   (e: 'info-updated', data: CustomerData): void
 }>()
 
-// State
+const authStore = useAuthStore()
+
+// Get user data from authenticated user profile
+const getUserPhoneNumber = (): string => {
+  // User already authenticated with phone, use it
+  return authStore.user?.phoneNumber || props.customerData.phoneNumber || ''
+}
+
+const getUserFullName = (): string => {
+  // Use stored full name or combine first name and last name if available
+  if (authStore.user?.fullName) {
+    return authStore.user.fullName
+  }
+  if (authStore.user?.firstName && authStore.user?.lastName) {
+    return `${authStore.user.firstName} ${authStore.user.lastName}`
+  }
+  return props.customerData.fullName || ''
+}
+
+const getUserEmail = (): string => {
+  return authStore.user?.email || props.customerData.email || ''
+}
+
+// State - Auto-populate from user profile for faster booking
 const formData = ref<CustomerData>({
-  fullName: props.customerData.fullName || '',
-  phoneNumber: props.customerData.phoneNumber || '',
-  email: props.customerData.email || '',
+  fullName: props.customerData.fullName || getUserFullName(),
+  phoneNumber: getUserPhoneNumber(),
+  email: props.customerData.email || getUserEmail(),
   notes: props.customerData.notes || '',
 })
 

@@ -148,11 +148,14 @@ const verifyOtp = async () => {
 
       console.log('[VerificationView] Creating user account from verified phone...')
 
-      // Get userType from sessionStorage (set by LoginView based on redirect context)
-      const storedUserType = sessionStorage.getItem('registration_user_type')
-      console.log('[VerificationView] 🔍 Raw stored userType from sessionStorage:', storedUserType)
+      // Get userType from route query params (explicitly passed by login page)
+      const userTypeFromQuery = route.query.userType as string | undefined
+      console.log('[VerificationView] 🔍 UserType from route query:', userTypeFromQuery)
 
-      const userType = (storedUserType || 'Provider') as 'Customer' | 'Provider'
+      // Validate and use userType, default to Customer if not provided
+      const userType = (userTypeFromQuery === 'Provider' || userTypeFromQuery === 'Customer'
+        ? userTypeFromQuery
+        : 'Customer') as 'Customer' | 'Provider'
       console.log('[VerificationView] 🔑 Final userType for registration:', userType)
 
       const registerResult = await phoneVerificationApi.registerFromVerifiedPhone({

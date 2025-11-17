@@ -36,10 +36,22 @@ public class UserRepository : EfRepositoryBase<User, UserId, UserManagementDbCon
     public async Task<User?> GetByPhoneNumberAsync(string phoneNumber, CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(phoneNumber);
+
+        // Support both full phone number (+989123131312) and national number (9123131312)
+        // Strip country code if present for comparison
+        var normalizedPhone = phoneNumber.TrimStart('+');
+        if (normalizedPhone.StartsWith("98"))
+        {
+            normalizedPhone = normalizedPhone.Substring(2); // Remove +98 prefix
+        }
+
         return await DbSet
             .Include(u => u.Profile)
             .Include(u => u.Roles)
-            .FirstOrDefaultAsync(u => u.PhoneNumber != null && u.PhoneNumber.NationalNumber == phoneNumber, cancellationToken);
+            .FirstOrDefaultAsync(u => u.PhoneNumber != null &&
+                (u.PhoneNumber.NationalNumber == normalizedPhone ||
+                 u.PhoneNumber.Value == phoneNumber),
+                cancellationToken);
     }
 
     // ✅ Enhanced GetByIdAsync with includes for domain operations
@@ -76,8 +88,8 @@ public class UserRepository : EfRepositoryBase<User, UserId, UserManagementDbCon
         await Task.FromResult(DbSet.Update(user));
     }
 
-    public Task<List<User>> GetAllAsync(CancellationToken cancellationToken)
+    public async Task<List<User>> GetAllAsync(CancellationToken cancellationToken)
     {
-        throw new NotImplementedException();
+        return await DbSet.Include(c=>c.Profile).Include(c=>c.Roles).ToListAsync();
     }
 }

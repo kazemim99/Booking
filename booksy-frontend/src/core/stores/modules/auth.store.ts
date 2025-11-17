@@ -469,7 +469,9 @@ export const useAuthStore = defineStore('auth', () => {
         router.push(redirectPath)
         return
       }
-      router.push({ path: '/customer/dashboard' })
+      // Redirect customers to home page instead of dashboard
+      console.log('[AuthStore] Customer logged in, redirecting to home page')
+      router.push({ path: '/' })
       return
     }
 

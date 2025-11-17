@@ -7,7 +7,8 @@ namespace Booksy.ServiceCatalog.Application.Queries.Booking.GetAvailableSlots
         Guid ProviderId,
         Guid ServiceId,
         DateTime Date,
-        List<TimeSlotDto> AvailableSlots);
+        List<TimeSlotDto> AvailableSlots,
+        List<string>? ValidationMessages = null);
 
     public sealed record TimeSlotDto(
         DateTime StartTime,

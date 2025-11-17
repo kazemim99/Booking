@@ -7,6 +7,88 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added - 2025-11-17
+
+#### Split Login Pages & Authentication Improvements
+- **Added**: Separate login pages for customers and providers
+  - Customer login at `/login` with customer-specific messaging
+  - Provider login at `/provider/login` with business-focused messaging
+  - "For Businesses" link in footer for provider portal discoverability
+- **Improved**: User type handling with explicit route query params instead of sessionStorage
+- **Removed**: 35+ lines of complex redirect-path detection logic
+- **Files**:
+  - `booksy-frontend/src/modules/auth/views/ProviderLoginView.vue` (new)
+  - `booksy-frontend/src/modules/auth/views/LoginView.vue`
+  - `booksy-frontend/src/modules/auth/views/VerificationView.vue`
+  - `booksy-frontend/src/core/router/routes/auth.routes.ts`
+  - `booksy-frontend/src/shared/components/layout/Footer/AppFooter.vue`
+
+#### Multiple Service Selection in Booking Flow
+- **Added**: Multi-select functionality for booking multiple services in one appointment
+  - Toggle behavior for selecting/deselecting services
+  - Real-time total price and duration calculation
+  - Selected services summary with count and totals
+  - Visual feedback with checkmarks and highlighting
+- **Updated**: BookingWizard to handle service arrays instead of single service
+- **Added**: `confirmationData` computed property to transform multi-service data
+- **Files**:
+  - `booksy-frontend/src/modules/booking/components/ServiceSelection.vue`
+  - `booksy-frontend/src/modules/booking/components/BookingWizard.vue`
+
+#### Persian Calendar Integration
+- **Added**: Jalali (Persian/Solar Hijri) calendar support using `vue3-persian-datetime-picker`
+  - Persian month names and weekday display
+  - Gregorian to Jalali date conversion algorithm
+  - Persian number formatting for dates
+  - Enhanced calendar styling with larger size (min-height: 400px)
+- **Improved**: Date display format showing "یکشنبه، ۲۵ دی ۱۴۰۲" in time slots section
+- **Added**: Null check for date string to prevent runtime errors
+- **Files**:
+  - `booksy-frontend/src/modules/booking/components/SlotSelection.vue`
+
+### Fixed - 2025-11-17
+
+#### Booking Confirmation Page Display
+- **Fixed**: Empty/white space issue on confirmation page after multi-service implementation
+  - Root cause: Data structure mismatch between BookingWizard and BookingConfirmation
+  - Solution: Added transformation layer to convert service array to expected format
+  - Combines multiple service names with comma separator
+  - Aggregates total price and duration
+- **Files**:
+  - `booksy-frontend/src/modules/booking/components/BookingWizard.vue`
+
+#### Booking API Request Format
+- **Fixed**: Frontend-backend interface mismatch in CreateBookingRequest
+  - Updated frontend interface to match backend `CreateBookingRequest.cs`
+  - Changed from `{endTime, notes, totalAmount}` to `{staffId, customerNotes}`
+  - Backend now calculates endTime and price from service definition
+- **Fixed**: Submit booking errors accessing non-existent properties
+  - Fixed access to `serviceDuration`, `serviceId`, `servicePrice` that don't exist
+  - Now correctly uses `services[0]` for first service data
+  - Added TODO for backend multi-service support
+- **Files**:
+  - `booksy-frontend/src/modules/booking/api/booking.service.ts`
+  - `booksy-frontend/src/modules/booking/components/BookingWizard.vue`
+
+#### Timezone Handling in Booking Validation
+- **Fixed**: "Cannot book appointments in the past" error for valid future bookings
+  - Root cause: Frontend sends DateTime without timezone info (DateTimeKind.Unspecified)
+  - Backend was comparing unspecified DateTime with DateTime.UtcNow causing ~7.8 hour offset
+  - Calculation `(startTime - DateTime.UtcNow).TotalHours` returned negative values like -7.797
+- **Solution**: Explicit timezone conversion in `ValidateBookingConstraintsAsync`
+  - Converts DateTimeKind.Unspecified to UTC using `DateTime.SpecifyKind`
+  - Converts DateTimeKind.Local to UTC using `ToUniversalTime`
+  - Applied same logic in `GenerateTimeSlotsForStaffAsync` for slot filtering
+- **Impact**: All DateTime comparisons now use consistent UTC timezone
+- **Files**:
+  - `src/BoundedContexts/ServiceCatalog/Booksy.ServiceCatalog.Application/Services/AvailabilityService.cs`
+
+### Documentation - 2025-11-17
+- **Added**: `openspec/changes/split-login-pages/IMPLEMENTATION_SUMMARY.md` - Complete implementation summary
+- **Added**: `docs/BOOKING_FLOW_IMPROVEMENTS.md` - Technical documentation for booking enhancements
+- **Updated**: `AUTHENTICATION_FLOW_DOCUMENTATION.md` - Added section on separate login pages
+- **Updated**: `CHANGELOG.md` - Documented all recent changes
+
 ### Added - 2025-11-16
 
 #### Database Migrations & Schema Updates
