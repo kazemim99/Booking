@@ -20,6 +20,7 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Booksy.Core.Domain.Exceptions;
 using Booksy.Core.Domain.ValueObjects;
+using System.Security.Claims;
 
 namespace Booksy.ServiceCatalog.API.Controllers.V1;
 
@@ -622,7 +623,7 @@ public class BookingsController : ControllerBase
 
     private string? GetCurrentUserId()
     {
-        return User.FindFirst("sub")?.Value ?? User.FindFirst("userId")?.Value;
+        return User.FindFirstValue(ClaimTypes.NameIdentifier);
     }
 
     private string? GetCurrentUserProviderId()

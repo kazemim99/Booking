@@ -346,12 +346,20 @@ const submitBooking = async () => {
     const normalizedDate = convertPersianToEnglish(bookingData.value.date)
     const normalizedTime = convertPersianToEnglish(bookingData.value.startTime)
 
-    // Format start time to ISO 8601
-    // Date should be in YYYY-MM-DD format, startTime should be HH:mm format
-    const dateTimeString = `${normalizedDate}T${normalizedTime}:00`
-    console.log('[BookingWizard] Creating date from:', dateTimeString)
+    // Parse date components
+    const [year, month, day] = normalizedDate.split('-').map(Number)
+    const [hour, minute] = normalizedTime.split(':').map(Number)
 
-    const startDateTime = new Date(dateTimeString)
+    // Create date in UTC to preserve the exact time (no timezone conversion)
+    // This treats the selected time as if it were in UTC
+    const startDateTime = new Date(Date.UTC(year, month - 1, day, hour, minute, 0))
+
+    console.log('[BookingWizard] Creating date from:', {
+      date: normalizedDate,
+      time: normalizedTime,
+      parsed: { year, month, day, hour, minute },
+      utcDateTime: startDateTime.toISOString(),
+    })
 
     // Check if date is valid
     if (isNaN(startDateTime.getTime())) {
@@ -360,7 +368,6 @@ const submitBooking = async () => {
         normalizedDate,
         startTime: bookingData.value.startTime,
         normalizedTime,
-        combined: dateTimeString,
       })
       throw new Error('تاریخ یا ساعت نامعتبر است')
     }

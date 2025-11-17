@@ -870,6 +870,8 @@ public class ProvidersController : ControllerBase
     {
         return new RegisterProviderCommand(
             OwnerId: request.OwnerId,
+            OwnerFirstName: request.OwnerFirstName,
+            OwnerLastName: request.OwnerLastName,
             BusinessName: request.BusinessName,
             Description: request.Description,
             Email: request.ContactInfo.Email,
