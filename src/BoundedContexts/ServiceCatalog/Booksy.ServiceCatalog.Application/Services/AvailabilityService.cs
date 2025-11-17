@@ -221,6 +221,17 @@ namespace Booksy.ServiceCatalog.Application.Services
         {
             var errors = new List<string>();
 
+            // Ensure startTime is in UTC for proper comparison
+            // If DateTimeKind is Unspecified, assume it's already meant to be UTC
+            if (startTime.Kind == DateTimeKind.Unspecified)
+            {
+                startTime = DateTime.SpecifyKind(startTime, DateTimeKind.Utc);
+            }
+            else if (startTime.Kind == DateTimeKind.Local)
+            {
+                startTime = startTime.ToUniversalTime();
+            }
+
             // Check if provider is active
             if (provider.Status != ProviderStatus.Active)
             {
@@ -359,8 +370,13 @@ namespace Booksy.ServiceCatalog.Application.Services
                     return slotStart < bookingEnd && slotEnd > bookingStart;
                 });
 
+                // Ensure slotStart is in UTC for comparison
+                var slotStartUtc = slotStart.Kind == DateTimeKind.Unspecified
+                    ? DateTime.SpecifyKind(slotStart, DateTimeKind.Utc)
+                    : slotStart.ToUniversalTime();
+
                 // Only add slot if it's in the future and has no conflicts
-                if (!hasConflict && slotStart > DateTime.UtcNow)
+                if (!hasConflict && slotStartUtc > DateTime.UtcNow)
                 {
                     availableSlots.Add(new AvailableTimeSlot(
                         slotStart,
