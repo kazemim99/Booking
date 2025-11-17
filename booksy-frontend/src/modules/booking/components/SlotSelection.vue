@@ -189,7 +189,11 @@ const selectTimeSlot = (slot: TimeSlot) => {
   })
 }
 
-const formatSelectedDate = (dateString: string): string => {
+const formatSelectedDate = (dateString: string | null): string => {
+  if (!dateString || typeof dateString !== 'string') {
+    return ''
+  }
+
   const weekDays = ['یکشنبه', 'دوشنبه', 'سه‌شنبه', 'چهارشنبه', 'پنج‌شنبه', 'جمعه', 'شنبه']
   const persianMonths = [
     'فروردین', 'اردیبهشت', 'خرداد', 'تیر', 'مرداد', 'شهریور',
