@@ -59,7 +59,7 @@
         <!-- Step 4: Confirmation -->
         <BookingConfirmation
           v-if="currentStep === 4"
-          :booking-data="bookingData"
+          :booking-data="confirmationData"
           :provider-id="providerId"
         />
       </div>
@@ -231,6 +231,27 @@ const canProceed = computed(() => {
   }
 })
 
+// Transform booking data for confirmation component
+const confirmationData = computed(() => {
+  const firstService = bookingData.value.services[0]
+  const totalPrice = bookingData.value.services.reduce((sum, s) => sum + s.basePrice, 0)
+  const totalDuration = bookingData.value.services.reduce((sum, s) => sum + s.duration, 0)
+  const serviceNames = bookingData.value.services.map(s => s.name).join('، ')
+
+  return {
+    serviceId: firstService?.id || null,
+    serviceName: serviceNames || 'انتخاب نشده',
+    servicePrice: totalPrice,
+    serviceDuration: totalDuration,
+    date: bookingData.value.date,
+    startTime: bookingData.value.startTime,
+    endTime: bookingData.value.endTime,
+    staffId: bookingData.value.staffId,
+    staffName: bookingData.value.staffName,
+    customerInfo: bookingData.value.customerInfo
+  }
+})
+
 // Methods
 const convertToPersianNumber = (num: number | string): string => {
   const persianDigits = ['۰', '۱', '۲', '۳', '۴', '۵', '۶', '۷', '۸', '۹']
@@ -294,23 +315,24 @@ const submitBooking = async () => {
       throw new Error('User not authenticated')
     }
 
-    // Calculate end time based on service duration
+    // Use first service for the booking (TODO: handle multiple services properly)
+    const firstService = bookingData.value.services[0]
+    if (!firstService) {
+      throw new Error('No service selected')
+    }
+
+    // Format start time to ISO 8601
     const startDateTime = new Date(`${bookingData.value.date}T${bookingData.value.startTime}:00`)
-    const endDateTime = new Date(startDateTime.getTime() + bookingData.value.serviceDuration * 60000)
-
-    // Format times to ISO 8601
     const startTime = startDateTime.toISOString()
-    const endTime = endDateTime.toISOString()
 
-    // Prepare booking request
+    // Prepare booking request (matches backend CreateBookingRequest.cs)
     const request: CreateBookingRequest = {
       customerId,
       providerId: providerId.value,
-      serviceId: bookingData.value.serviceId!,
+      serviceId: firstService.id,
+      staffId: bookingData.value.staffId || undefined,
       startTime,
-      endTime,
-      notes: bookingData.value.customerInfo.notes || undefined,
-      totalAmount: bookingData.value.servicePrice,
+      customerNotes: bookingData.value.customerInfo.notes || undefined,
     }
 
     console.log('[BookingWizard] Booking request:', request)

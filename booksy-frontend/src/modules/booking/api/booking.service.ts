@@ -33,17 +33,15 @@ export interface BookingListFilters {
 }
 
 /**
- * Create booking request (matches Postman collection payload)
+ * Create booking request (matches backend CreateBookingRequest.cs)
  */
 export interface CreateBookingRequest {
   customerId: string
   providerId: string
   serviceId: string
+  staffId?: string | null
   startTime: string // ISO 8601 format
-  endTime: string
-  notes?: string
-  depositAmount?: number
-  totalAmount: number
+  customerNotes?: string
 }
 
 /**
