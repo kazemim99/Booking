@@ -1,516 +1,474 @@
-# Customer Profile Page - Implementation Tasks
+# Customer Profile - Minimal Implementation Tasks (3 Weeks)
 
-## 1. Database Schema & Migrations
+## Week 1: Backend Implementation
 
-- [ ] 1.1 Create migration for `customer_profiles` table
-  - [ ] Add columns: customer_id (FK to users), avatar_url, birth_date, gender, preferences_json, loyalty_points, tier, created_at, updated_at
-  - [ ] Add unique index on customer_id
-  - [ ] Create trigger to initialize profile for new users
+### 1. Database Schema (Day 1-2)
+
+- [ ] 1.1 Create migration to extend users table
+  - [ ] Add `full_name VARCHAR(100)` column
+  - [ ] Add `email VARCHAR(255)` column
+  - [ ] Test migration on local database
+
 - [ ] 1.2 Create migration for `favorite_providers` table
-  - [ ] Add columns: id (PK), customer_id (FK), provider_id (FK), created_at, last_visited_at, total_bookings
-  - [ ] Add composite unique index on (customer_id, provider_id)
-  - [ ] Add index on customer_id for fast lookups
-- [ ] 1.3 Create migration for `loyalty_transactions` table
-  - [ ] Add columns: id (PK), customer_id (FK), transaction_type, points_amount, balance_after, reason, related_booking_id, expires_at, created_at
-  - [ ] Add index on (customer_id, created_at DESC)
-  - [ ] Add index on expires_at for expiration job
-- [ ] 1.4 Create migration for `customer_booking_history` read model
-  - [ ] Add columns: booking_id (PK), customer_id, provider_id, provider_name, service_name, staff_name, start_time, status, total_price, created_at
-  - [ ] Add composite index on (customer_id, start_time DESC)
-  - [ ] Add index on status for filtering
-- [ ] 1.5 Seed existing users with default customer profiles
-- [ ] 1.6 Test migrations on staging database
-- [ ] 1.7 Verify rollback procedures
+  - [ ] Create table with: id, customer_id, provider_id, created_at
+  - [ ] Add UNIQUE constraint on (customer_id, provider_id)
+  - [ ] Add index on customer_id
+  - [ ] Test migration
 
-## 2. Backend - Domain Layer
+- [ ] 1.3 Create migration for `customer_booking_history` table
+  - [ ] Create table with: booking_id (PK), customer_id, provider_id, provider_name, service_name, start_time, status, total_price, created_at
+  - [ ] Add index on (customer_id, start_time DESC)
+  - [ ] Add index on status
+  - [ ] Test migration
 
-- [ ] 2.1 Create CustomerProfile aggregate
-  - [ ] CustomerProfile.cs with properties (FullName, Email, AvatarUrl, BirthDate, Gender, LoyaltyPoints, Tier)
-  - [ ] UpdateProfile() method
-  - [ ] UpdateAvatar() method
-  - [ ] AddLoyaltyPoints() method
-  - [ ] RedeemLoyaltyPoints() method
-- [ ] 2.2 Create FavoriteProvider aggregate
-  - [ ] FavoriteProvider.cs with properties (CustomerId, ProviderId, CreatedAt, LastVisitedAt, TotalBookings)
-  - [ ] AddFavorite() method
-  - [ ] RemoveFavorite() method
-  - [ ] UpdateVisitStats() method
+- [ ] 1.4 Create migration for `customer_preferences` table
+  - [ ] Create table with: customer_id (PK), sms_enabled, email_enabled, reminder_timing, updated_at
+  - [ ] Test migration
+
+- [ ] 1.5 Test all migrations together
+  - [ ] Test rollback procedures
+  - [ ] Verify indexes created correctly
+
+### 2. Domain Layer (Day 2-3)
+
+- [ ] 2.1 Create FavoriteProvider aggregate
+  - [ ] FavoriteProvider.cs with properties (CustomerId, ProviderId, CreatedAt)
+  - [ ] Add() method
+  - [ ] Remove() method
+
+- [ ] 2.2 Create CustomerBookingHistory read model
+  - [ ] CustomerBookingHistoryEntry.cs with all booking fields
+  - [ ] UpdateStatus() method
+
 - [ ] 2.3 Create CustomerPreferences value object
-  - [ ] NotificationSettings (SmsEnabled, EmailEnabled, PushEnabled)
-  - [ ] PrivacySettings (ProfileVisibility, AllowRecommendations)
-  - [ ] ReminderTiming enum
-- [ ] 2.4 Create domain events
-  - [ ] CustomerProfileUpdatedEvent
-  - [ ] FavoriteProviderAddedEvent
-  - [ ] FavoriteProviderRemovedEvent
-  - [ ] LoyaltyPointsEarnedEvent
-  - [ ] LoyaltyPointsRedeemedEvent
+  - [ ] CustomerPreferences.cs (SmsEnabled, EmailEnabled, ReminderTiming)
 
-## 3. Backend - Application Layer (Commands)
+### 3. Application Layer - Commands (Day 3-4)
 
-- [ ] 3.1 Implement UpdateCustomerProfile command
-  - [ ] UpdateCustomerProfileCommand.cs
+- [ ] 3.1 UpdateCustomerProfile command
+  - [ ] UpdateCustomerProfileCommand.cs (fullName, email)
   - [ ] UpdateCustomerProfileCommandValidator.cs (FluentValidation)
   - [ ] UpdateCustomerProfileCommandHandler.cs
-  - [ ] Write unit tests
-- [ ] 3.2 Implement UpdateCustomerAvatar command
-  - [ ] UpdateCustomerAvatarCommand.cs
-  - [ ] UpdateCustomerAvatarCommandHandler.cs (request S3 pre-signed URL)
-  - [ ] Write unit tests
-- [ ] 3.3 Implement AddFavoriteProvider command
-  - [ ] AddFavoriteProviderCommand.cs
+  - [ ] Unit test
+
+- [ ] 3.2 AddFavoriteProvider command
+  - [ ] AddFavoriteProviderCommand.cs (customerId, providerId)
   - [ ] AddFavoriteProviderCommandValidator.cs
   - [ ] AddFavoriteProviderCommandHandler.cs
-  - [ ] Write unit tests
-- [ ] 3.4 Implement RemoveFavoriteProvider command
-  - [ ] RemoveFavoriteProviderCommand.cs
+  - [ ] Unit test
+
+- [ ] 3.3 RemoveFavoriteProvider command
+  - [ ] RemoveFavoriteProviderCommand.cs (customerId, providerId)
   - [ ] RemoveFavoriteProviderCommandHandler.cs
-  - [ ] Write unit tests
-- [ ] 3.5 Implement UpdateNotificationPreferences command
+  - [ ] Unit test
+
+- [ ] 3.4 UpdateNotificationPreferences command
   - [ ] UpdateNotificationPreferencesCommand.cs
   - [ ] UpdateNotificationPreferencesCommandHandler.cs
-  - [ ] Write unit tests
+  - [ ] Unit test
 
-## 4. Backend - Application Layer (Queries)
+### 4. Application Layer - Queries (Day 4-5)
 
-- [ ] 4.1 Implement GetCustomerProfile query
+- [ ] 4.1 GetCustomerProfile query
   - [ ] GetCustomerProfileQuery.cs
   - [ ] GetCustomerProfileQueryHandler.cs
   - [ ] CustomerProfileViewModel.cs (DTO)
-  - [ ] Write unit tests
-- [ ] 4.2 Implement GetUpcomingBookings query
-  - [ ] GetUpcomingBookingsQuery.cs (top 3, sorted by date)
+  - [ ] Unit test
+
+- [ ] 4.2 GetUpcomingBookings query
+  - [ ] GetUpcomingBookingsQuery.cs (limit = 5)
   - [ ] GetUpcomingBookingsQueryHandler.cs
   - [ ] UpcomingBookingViewModel.cs
-  - [ ] Write unit tests
-- [ ] 4.3 Implement GetCustomerBookingHistory query
-  - [ ] GetCustomerBookingHistoryQuery.cs (with pagination, filters)
-  - [ ] GetCustomerBookingHistoryQueryHandler.cs
+  - [ ] Unit test
+
+- [ ] 4.3 GetBookingHistory query
+  - [ ] GetBookingHistoryQuery.cs (page, size = 20)
+  - [ ] GetBookingHistoryQueryHandler.cs
   - [ ] BookingHistoryViewModel.cs
-  - [ ] Write unit tests
-- [ ] 4.4 Implement GetFavoriteProviders query
+  - [ ] Unit test
+
+- [ ] 4.4 GetFavoriteProviders query
   - [ ] GetFavoriteProvidersQuery.cs
   - [ ] GetFavoriteProvidersQueryHandler.cs
   - [ ] FavoriteProviderViewModel.cs
-  - [ ] Write unit tests
-- [ ] 4.5 Implement GetCustomerStatistics query
-  - [ ] GetCustomerStatisticsQuery.cs
-  - [ ] GetCustomerStatisticsQueryHandler.cs (total bookings, total spent, loyalty points)
-  - [ ] CustomerStatisticsViewModel.cs
-  - [ ] Write unit tests
-- [ ] 4.6 Implement GetLoyaltyTransactions query
-  - [ ] GetLoyaltyTransactionsQuery.cs
-  - [ ] GetLoyaltyTransactionsQueryHandler.cs
-  - [ ] LoyaltyTransactionViewModel.cs
-  - [ ] Write unit tests
+  - [ ] Unit test
 
-## 5. Backend - Infrastructure Layer
+- [ ] 4.5 GetCustomerReviews query
+  - [ ] GetCustomerReviewsQuery.cs
+  - [ ] GetCustomerReviewsQueryHandler.cs
+  - [ ] CustomerReviewViewModel.cs
+  - [ ] Unit test
 
-- [ ] 5.1 Create CustomerProfile repository
-  - [ ] ICustomerProfileRepository.cs interface
-  - [ ] CustomerProfileRepository.cs implementation
-  - [ ] CustomerProfileConfiguration.cs (EF Core)
-- [ ] 5.2 Create FavoriteProvider repository
+### 5. Infrastructure Layer (Day 5)
+
+- [ ] 5.1 Create repositories
   - [ ] IFavoriteProviderRepository.cs interface
   - [ ] FavoriteProviderRepository.cs implementation
   - [ ] FavoriteProviderConfiguration.cs (EF Core)
-- [ ] 5.3 Create LoyaltyTransaction repository
-  - [ ] ILoyaltyTransactionRepository.cs interface
-  - [ ] LoyaltyTransactionRepository.cs implementation
-  - [ ] LoyaltyTransactionConfiguration.cs (EF Core)
-- [ ] 5.4 Implement integration event handlers
-  - [ ] BookingCompletedEventHandler.cs (add to history read model, award points)
-  - [ ] BookingCancelledEventHandler.cs (update history status)
-  - [ ] ProviderDeletedEventHandler.cs (soft-delete favorites)
-- [ ] 5.5 Implement S3 service for avatar uploads
-  - [ ] IAvatarStorageService.cs interface
-  - [ ] S3AvatarStorageService.cs (generate pre-signed URLs)
-  - [ ] Configure AWS S3 bucket and CDN
 
-## 6. Backend - API Layer
+- [ ] 5.2 Create event handlers
+  - [ ] BookingEventHandlers.cs
+  - [ ] Handle BookingCreatedEvent → Insert to customer_booking_history
+  - [ ] Handle BookingCompletedEvent → Update status
+  - [ ] Handle BookingCancelledEvent → Update status
+  - [ ] Handle ProviderDeletedEvent → Soft-delete favorites
+
+### 6. API Layer (Day 5)
 
 - [ ] 6.1 Create CustomersController
-  - [ ] GET /api/v1/customers/profile - Get customer profile
-  - [ ] PATCH /api/v1/customers/profile - Update profile
-  - [ ] POST /api/v1/customers/avatar/upload-url - Get S3 pre-signed URL
-  - [ ] GET /api/v1/customers/bookings/upcoming - Get upcoming bookings
-  - [ ] GET /api/v1/customers/bookings/history - Get booking history (paginated)
-  - [ ] GET /api/v1/customers/favorites - Get favorite providers
-  - [ ] POST /api/v1/customers/favorites/{providerId} - Add favorite
-  - [ ] DELETE /api/v1/customers/favorites/{providerId} - Remove favorite
-  - [ ] GET /api/v1/customers/statistics - Get customer stats
-  - [ ] GET /api/v1/customers/loyalty/transactions - Get loyalty transactions
-  - [ ] PATCH /api/v1/customers/preferences - Update notification preferences
-- [ ] 6.2 Add request/response DTOs
+  - [ ] GET /api/v1/customers/profile
+  - [ ] PATCH /api/v1/customers/profile
+  - [ ] GET /api/v1/customers/bookings/upcoming?limit=5
+  - [ ] GET /api/v1/customers/bookings/history?page=1&size=20
+  - [ ] GET /api/v1/customers/favorites
+  - [ ] POST /api/v1/customers/favorites/{providerId}
+  - [ ] DELETE /api/v1/customers/favorites/{providerId}
+  - [ ] GET /api/v1/customers/reviews
+  - [ ] PATCH /api/v1/customers/reviews/{id}
+  - [ ] GET /api/v1/customers/preferences
+  - [ ] PATCH /api/v1/customers/preferences
+
+- [ ] 6.2 Add DTOs
   - [ ] UpdateCustomerProfileRequest.cs
   - [ ] CustomerProfileResponse.cs
   - [ ] UpcomingBookingResponse.cs
   - [ ] BookingHistoryResponse.cs
   - [ ] FavoriteProviderResponse.cs
-- [ ] 6.3 Add validation attributes and filters
-- [ ] 6.4 Document all endpoints in Swagger
-- [ ] 6.5 Write integration tests for all endpoints
+  - [ ] UpdatePreferencesRequest.cs
 
-## 7. Frontend - Module Setup
+- [ ] 6.3 Document APIs in Swagger
 
-- [ ] 7.1 Create customer module structure
+- [ ] 6.4 Write integration tests
+  - [ ] Test all 11 endpoints
+  - [ ] Test validation errors
+  - [ ] Test authorization (customer can only access own data)
+
+---
+
+## Week 2: Frontend Core Implementation
+
+### 7. Project Setup (Day 1)
+
+- [ ] 7.1 Create module structure
   - [ ] Create `booksy-frontend/src/modules/customer/` directory
-  - [ ] Create subdirectories: views/, components/, stores/, api/, types/
-- [ ] 7.2 Set up routing
-  - [ ] Add routes in `customer.routes.ts`:
-    - `/customer/profile` (default to bookings tab)
-    - `/customer/profile/bookings`
-    - `/customer/profile/favorites`
-    - `/customer/profile/history`
-    - `/customer/profile/payments`
-    - `/customer/profile/reviews`
-    - `/customer/profile/settings`
-  - [ ] Add auth guard to protect routes
-  - [ ] Add profile link to main navigation
+  - [ ] Create subdirectories: components/, stores/, api/, types/
 
-## 8. Frontend - Pinia Stores
-
-- [ ] 8.1 Create customer-profile store
-  - [ ] `stores/modules/customer-profile.store.ts`
-  - [ ] State: profile, loading, error
-  - [ ] Actions: fetchProfile, updateProfile, uploadAvatar
-  - [ ] Getters: fullName, isVerified, loyaltyTier
-- [ ] 8.2 Create customer-bookings store
-  - [ ] `stores/modules/customer-bookings.store.ts`
-  - [ ] State: upcomingBookings, historyPage, historyData, filters, loading
-  - [ ] Actions: fetchUpcoming, fetchHistory, filterHistory, exportHistory
-  - [ ] Getters: hasUpcoming, historyCount
-- [ ] 8.3 Create customer-favorites store
-  - [ ] `stores/modules/customer-favorites.store.ts`
-  - [ ] State: favorites, sortBy, loading
-  - [ ] Actions: fetchFavorites, addFavorite, removeFavorite, sortFavorites
-  - [ ] Getters: favoriteIds, favoriteCount
-
-## 9. Frontend - API Services
-
-- [ ] 9.1 Create customer API service
-  - [ ] `api/customer.service.ts`
-  - [ ] getProfile()
-  - [ ] updateProfile(data)
-  - [ ] getAvatarUploadUrl()
-  - [ ] uploadAvatarToS3(file, presignedUrl)
-  - [ ] getUpcomingBookings()
-  - [ ] getBookingHistory(page, filters)
-  - [ ] getFavoriteProviders()
-  - [ ] addFavoriteProvider(providerId)
-  - [ ] removeFavoriteProvider(providerId)
-  - [ ] getStatistics()
-  - [ ] getLoyaltyTransactions()
-  - [ ] updatePreferences(preferences)
-
-## 10. Frontend - TypeScript Types
-
-- [ ] 10.1 Create customer types
-  - [ ] `types/customer.types.ts`
+- [ ] 7.2 Create TypeScript types
+  - [ ] types/customer.types.ts
   - [ ] CustomerProfile interface
   - [ ] UpcomingBooking interface
   - [ ] BookingHistoryEntry interface
   - [ ] FavoriteProvider interface
-  - [ ] CustomerStatistics interface
-  - [ ] LoyaltyTransaction interface
+  - [ ] CustomerReview interface
   - [ ] NotificationPreferences interface
-  - [ ] PrivacySettings interface
 
-## 11. Frontend - Main Views
+### 8. API Service (Day 1)
 
-- [ ] 11.1 Implement ProfilePage.vue
-  - [ ] Create layout with header, tabs, content area, sidebar
-  - [ ] Implement tab navigation with URL sync
-  - [ ] Add responsive breakpoints (mobile/tablet/desktop)
-  - [ ] Implement loading states (skeletons)
-  - [ ] Add error boundaries
-- [ ] 11.2 Implement BookingsView.vue (default tab)
-  - [ ] Display upcoming bookings widget at top
-  - [ ] Add countdown timers with Persian numbers
-  - [ ] Implement action buttons (Cancel, Reschedule, Details)
-  - [ ] Add empty state for no bookings
-- [ ] 11.3 Implement FavoritesView.vue
-  - [ ] Grid layout (responsive columns)
-  - [ ] Provider cards with stats
-  - [ ] Sort dropdown (Recent, Rating, Distance, Visits)
-  - [ ] Add/remove favorite toggle
-  - [ ] Empty state with CTA
-- [ ] 11.4 Implement HistoryView.vue
-  - [ ] Data table with pagination
-  - [ ] Filter panel (date range, provider, status, service)
-  - [ ] Sort by columns (date, provider, price)
-  - [ ] Export buttons (PDF, Excel)
-  - [ ] Rebook action
-- [ ] 11.5 Implement SettingsView.vue
-  - [ ] Notification preferences section
-  - [ ] Privacy settings section
-  - [ ] Security section (2FA, active sessions)
-  - [ ] Language & region section
-  - [ ] Account actions (export data, delete account)
+- [ ] 8.1 Create customer API service
+  - [ ] api/customer.service.ts
+  - [ ] getProfile()
+  - [ ] updateProfile(data)
+  - [ ] getUpcomingBookings(limit)
+  - [ ] getBookingHistory(page, size)
+  - [ ] getFavoriteProviders()
+  - [ ] addFavoriteProvider(providerId)
+  - [ ] removeFavoriteProvider(providerId)
+  - [ ] getReviews()
+  - [ ] updateReview(id, data)
+  - [ ] getPreferences()
+  - [ ] updatePreferences(data)
 
-## 12. Frontend - Components
+### 9. Pinia Store (Day 2)
 
-- [ ] 12.1 ProfileHeader.vue
-  - [ ] Avatar display with upload button
-  - [ ] Name, phone, email display
-  - [ ] Verification badges
-  - [ ] Edit button toggle
-  - [ ] Inline edit form with validation
-- [ ] 12.2 UpcomingBookingsWidget.vue
-  - [ ] Booking card component
-  - [ ] Countdown timer logic
-  - [ ] Action buttons with modals
-  - [ ] Empty state
-- [ ] 12.3 BookingHistoryTable.vue
-  - [ ] Table with sortable columns
-  - [ ] Pagination controls (Persian numbers)
-  - [ ] Filter chips display
-  - [ ] Action buttons per row
-- [ ] 12.4 FavoriteProviderCard.vue
-  - [ ] Provider info display
-  - [ ] Heart toggle icon
-  - [ ] Quick book button
-  - [ ] Distance calculation
-- [ ] 12.5 AvatarUploadModal.vue
-  - [ ] File picker trigger
-  - [ ] Image crop interface (vue-advanced-cropper)
-  - [ ] Upload progress indicator
-  - [ ] Error handling
-- [ ] 12.6 LoyaltyCard.vue
-  - [ ] Points balance display
-  - [ ] Tier badge with icon
-  - [ ] Progress bar to next tier
-  - [ ] Expiring points warning
-  - [ ] Transaction history link
-- [ ] 12.7 NotificationPreferencesForm.vue
-  - [ ] Toggle switches for channels
-  - [ ] Dropdown for reminder timing
-  - [ ] Auto-save on change
-- [ ] 12.8 PrivacySettingsForm.vue
-  - [ ] Toggle switches for privacy options
-  - [ ] Explanatory text for each option
-- [ ] 12.9 ActiveSessionsList.vue
-  - [ ] Session cards with device/location info
-  - [ ] Logout button per session
-  - [ ] Current session indicator
-- [ ] 12.10 DataExportButton.vue
-  - [ ] Confirmation dialog
-  - [ ] Progress indicator
-  - [ ] Success notification with email prompt
-- [ ] 12.11 DeleteAccountButton.vue
-  - [ ] Multi-step confirmation
-  - [ ] Re-authentication prompt
-  - [ ] Warning about consequences
+- [ ] 9.1 Create customer store
+  - [ ] stores/customer.store.ts
+  - [ ] State: profile, upcomingBookings, bookingHistory, favorites, reviews, preferences, activeModal
+  - [ ] Actions: fetchProfile, updateProfile, fetchUpcomingBookings, fetchBookingHistory
+  - [ ] Actions: fetchFavorites, addFavorite, removeFavorite
+  - [ ] Actions: fetchReviews, updateReview
+  - [ ] Actions: fetchPreferences, updatePreferences
+  - [ ] Actions: openModal, closeModal
+  - [ ] Getters: userInitial, userColor
 
-## 13. Frontend - Styling (RTL)
+### 10. User Menu Dropdown (Day 2)
 
-- [ ] 13.1 Create profile-specific CSS
-  - [ ] `styles/modules/profile.scss`
-  - [ ] RTL-specific rules (flexbox direction, margins, padding)
-  - [ ] Responsive grid layouts
-  - [ ] Tab navigation styles
-- [ ] 13.2 Add dark mode support (if applicable)
-- [ ] 13.3 Test across breakpoints (320px, 768px, 1024px, 1440px)
+- [ ] 10.1 Create UserMenuDropdown component
+  - [ ] components/UserMenuDropdown.vue
+  - [ ] Display user initial circle (colored, with first letter)
+  - [ ] Display full name and phone number
+  - [ ] Menu items: Edit Profile, Bookings, Favorites, Reviews, Settings, Logout
+  - [ ] RTL dropdown positioning
+  - [ ] Click outside to close
+  - [ ] ESC key to close
 
-## 14. Frontend - Internationalization
+- [ ] 10.2 Integrate into AppHeader
+  - [ ] Add UserMenuDropdown to header (right side for RTL)
+  - [ ] Show "ورود / ثبت‌نام" button for guests
+  - [ ] Show user menu for authenticated users
 
-- [ ] 14.1 Add Persian translations
-  - [ ] Update `core/i18n/locales/fa.json` with 100+ keys:
-    - Profile header labels
-    - Tab names
-    - Form labels and placeholders
-    - Button texts
-    - Error messages
-    - Empty state messages
-    - Confirmation dialogs
-    - Success/error toasts
-- [ ] 14.2 Add English translations (if required)
-  - [ ] Update `core/i18n/locales/en.json`
+### 11. ProfileEditModal (Day 2)
 
-## 15. Frontend - State Management Integration
+- [ ] 11.1 Create ProfileEditModal component
+  - [ ] components/ProfileEditModal.vue
+  - [ ] Full name input (pre-filled)
+  - [ ] Phone number display (disabled field)
+  - [ ] Email input (optional, pre-filled)
+  - [ ] Validation: name 3-100 chars, email format
+  - [ ] Save/Cancel buttons
+  - [ ] Success/error toasts
+  - [ ] Modal overlay and animations
 
-- [ ] 15.1 Connect ProfilePage to stores
-  - [ ] Fetch profile on mount
-  - [ ] Subscribe to profile updates
-  - [ ] Handle loading/error states
-- [ ] 15.2 Implement optimistic updates
-  - [ ] Update local state immediately on user action
-  - [ ] Revert on API error
-- [ ] 15.3 Add caching strategy
-  - [ ] Cache profile data (5 min)
-  - [ ] Invalidate cache on update
-  - [ ] Stale-while-revalidate pattern
+### 12. BookingsSidebar (Day 3)
 
-## 16. Testing - Backend
+- [ ] 12.1 Create BookingsSidebar component
+  - [ ] components/BookingsSidebar.vue
+  - [ ] Slide-in from left animation
+  - [ ] Two tabs: "آینده" (Upcoming) and "گذشته" (History)
+  - [ ] Tab switching logic
 
-- [ ] 16.1 Unit tests for domain aggregates
-  - [ ] CustomerProfile aggregate tests
-  - [ ] FavoriteProvider aggregate tests
-- [ ] 16.2 Unit tests for command handlers
-  - [ ] UpdateCustomerProfile handler test
-  - [ ] AddFavoriteProvider handler test
-  - [ ] RemoveFavoriteProvider handler test
-- [ ] 16.3 Unit tests for query handlers
-  - [ ] GetCustomerProfile handler test
-  - [ ] GetUpcomingBookings handler test
-  - [ ] GetBookingHistory handler test
-- [ ] 16.4 Integration tests for API endpoints
-  - [ ] Test all GET endpoints
-  - [ ] Test all POST/PATCH/DELETE endpoints
-  - [ ] Test authentication and authorization
-  - [ ] Test validation errors
-  - [ ] Test pagination and filtering
-- [ ] 16.5 Test integration event handlers
-  - [ ] BookingCompletedEvent → booking history update
-  - [ ] ProviderDeletedEvent → favorite cleanup
+- [ ] 12.2 Create BookingCard component
+  - [ ] components/BookingCard.vue
+  - [ ] Display provider logo, name
+  - [ ] Display service name
+  - [ ] Display date/time (Jalali, Persian numbers)
+  - [ ] Display status badge
+  - [ ] Action buttons: Cancel, Reschedule (upcoming), Rebook (history)
 
-## 17. Testing - Frontend
+- [ ] 12.3 Implement upcoming bookings tab
+  - [ ] Fetch upcoming bookings (limit 5)
+  - [ ] Display booking cards
+  - [ ] Empty state: "شما نوبت آینده‌ای ندارید"
 
-- [ ] 17.1 Unit tests for stores
-  - [ ] customer-profile.store.spec.ts
-  - [ ] customer-bookings.store.spec.ts
-  - [ ] customer-favorites.store.spec.ts
-- [ ] 17.2 Unit tests for components
-  - [ ] ProfileHeader.spec.ts
-  - [ ] UpcomingBookingsWidget.spec.ts
-  - [ ] FavoriteProviderCard.spec.ts
-  - [ ] AvatarUploadModal.spec.ts
-- [ ] 17.3 Unit tests for API services
-  - [ ] customer.service.spec.ts (mock axios)
-- [ ] 17.4 E2E tests with Cypress
-  - [ ] Profile page navigation
+- [ ] 12.4 Implement history tab
+  - [ ] Fetch booking history (paginated, 20 per page)
+  - [ ] "بارگذاری بیشتر" button
+  - [ ] Rebook functionality (redirect to booking wizard with pre-fill)
+
+### 13. FavoritesModal and Favorite Button (Day 4)
+
+- [ ] 13.1 Create FavoriteButton component
+  - [ ] components/FavoriteButton.vue
+  - [ ] Heart icon (outlined/filled based on favorite status)
+  - [ ] Click toggles favorite
+  - [ ] Confirmation dialog on remove
+  - [ ] Toast notifications
+
+- [ ] 13.2 Add FavoriteButton to provider cards
+  - [ ] Integrate FavoriteButton into FeaturedProviders.vue
+  - [ ] Position heart icon (top-right corner)
+  - [ ] Fetch favorite status on mount
+
+- [ ] 13.3 Create FavoritesModal component
+  - [ ] components/FavoritesModal.vue
+  - [ ] Grid layout (2 columns desktop, 1 mobile)
+  - [ ] Display favorite provider cards
+  - [ ] Each card: logo, name, category, rating, Quick Book button, Remove heart
+  - [ ] Empty state: "شما هنوز ارائه‌دهنده‌ای را به علاقه‌مندی‌ها اضافه نکرده‌اید"
+
+### 14. ReviewsModal (Day 4)
+
+- [ ] 14.1 Create ReviewsModal component
+  - [ ] components/ReviewsModal.vue
+  - [ ] List of customer's reviews
+  - [ ] Each review: provider logo/name, service, rating, text, date
+  - [ ] Edit button (if review <7 days old)
+  - [ ] Empty state: "شما هنوز نظری ثبت نکرده‌اید"
+
+- [ ] 14.2 Create ReviewEditForm component
+  - [ ] Inline edit form (or nested modal)
+  - [ ] Star rating selector
+  - [ ] Text area (max 500 chars)
+  - [ ] Character counter
+  - [ ] Save/Cancel buttons
+
+### 15. SettingsModal (Day 5)
+
+- [ ] 15.1 Create SettingsModal component
+  - [ ] components/SettingsModal.vue
+  - [ ] Notifications section
+  - [ ] SMS notifications toggle
+  - [ ] Email notifications toggle
+  - [ ] Reminder timing dropdown ("۱ ساعت قبل", "۱ روز قبل", "۳ روز قبل")
+  - [ ] Auto-save on change (with brief toast)
+  - [ ] Account section with support contact info
+
+- [ ] 15.2 Warning for disabling all notifications
+  - [ ] Show confirmation dialog if both SMS and Email toggled off
+
+### 16. Persian Translations (Day 5)
+
+- [ ] 16.1 Add translations to fa.json
+  - [ ] User menu items (~10 keys)
+  - [ ] Profile edit modal (~10 keys)
+  - [ ] Bookings sidebar (~15 keys)
+  - [ ] Favorites modal (~8 keys)
+  - [ ] Reviews modal (~10 keys)
+  - [ ] Settings modal (~10 keys)
+  - [ ] Toast messages (~10 keys)
+  - [ ] Error messages (~10 keys)
+  - [ ] Total: ~80 translation keys
+
+### 17. Styling (Day 5 - Weekend)
+
+- [ ] 17.1 Create customer profile styles
+  - [ ] User menu dropdown styles (RTL positioning)
+  - [ ] Modal overlay and animations
+  - [ ] Sidebar slide-in animations
+  - [ ] User initial circle colors
+  - [ ] Responsive breakpoints (desktop, tablet, mobile)
+
+---
+
+## Week 3: Mobile, Integration & Deployment
+
+### 18. Mobile Bottom Navigation (Day 1)
+
+- [ ] 18.1 Create BottomNavigation component
+  - [ ] components/BottomNavigation.vue
+  - [ ] 5 tabs: Home, Search, Bookings, Favorites, Profile
+  - [ ] Icons for each tab
+  - [ ] Active tab highlighting
+  - [ ] Fixed at bottom (only show on mobile <768px)
+
+- [ ] 18.2 Create BottomSheet component
+  - [ ] components/BottomSheet.vue
+  - [ ] Swipe down to dismiss
+  - [ ] Snap to half/full height
+  - [ ] Overlay background
+
+- [ ] 18.3 Convert modals to bottom sheets on mobile
+  - [ ] ProfileEditModal → BottomSheet
+  - [ ] BookingsSidebar → Full-screen BottomSheet
+  - [ ] FavoritesModal → BottomSheet
+  - [ ] ReviewsModal → BottomSheet
+  - [ ] SettingsModal → BottomSheet
+
+### 19. Integration with Booking Flow (Day 1-2)
+
+- [ ] 19.1 Connect Cancel Booking action
+  - [ ] Integrate with existing cancel booking API
+  - [ ] Update booking status in sidebar
+  - [ ] Remove from upcoming list
+
+- [ ] 19.2 Connect Reschedule Booking action
+  - [ ] Redirect to booking wizard with booking ID
+  - [ ] Pre-fill provider, service, customer info
+  - [ ] Allow date/time change
+
+- [ ] 19.3 Connect Rebook action
+  - [ ] Redirect to booking wizard `/booking/{providerId}`
+  - [ ] Pre-fill provider and service from history
+  - [ ] Allow customer to select new date/time
+
+- [ ] 19.4 Connect Review Edit to Reviews API
+  - [ ] Use existing review update endpoint
+  - [ ] Validate 7-day edit window
+  - [ ] Update review display after edit
+
+### 20. Performance Optimization (Day 2-3)
+
+- [ ] 20.1 Implement caching
+  - [ ] Cache profile data in store (5 min TTL)
+  - [ ] Cache upcoming bookings (2 min TTL)
+  - [ ] Cache favorites (5 min TTL)
+  - [ ] Invalidate cache on mutations
+
+- [ ] 20.2 Lazy loading
+  - [ ] Lazy load modal components (defineAsyncComponent)
+  - [ ] Load modal content only when opened
+  - [ ] Prefetch on hover (for desktop)
+
+- [ ] 20.3 Optimize images
+  - [ ] Lazy load provider logos
+  - [ ] Use responsive images (different sizes for mobile/desktop)
+
+- [ ] 20.4 Bundle optimization
+  - [ ] Verify customer module is code-split
+  - [ ] Check bundle size (<30KB target)
+
+### 21. Testing (Day 3-4)
+
+- [ ] 21.1 Unit tests for store
+  - [ ] customer.store.spec.ts
+  - [ ] Test all actions
+  - [ ] Test state mutations
+
+- [ ] 21.2 Unit tests for components
+  - [ ] UserMenuDropdown.spec.ts
+  - [ ] ProfileEditModal.spec.ts
+  - [ ] BookingsSidebar.spec.ts
+  - [ ] FavoriteButton.spec.ts
+
+- [ ] 21.3 E2E tests (Cypress or Playwright)
+  - [ ] User menu dropdown interaction
   - [ ] Profile edit flow
-  - [ ] Avatar upload flow
   - [ ] Add/remove favorite provider
-  - [ ] Booking history filtering
-  - [ ] Settings update flow
+  - [ ] View bookings and rebook
+  - [ ] Edit review flow
+  - [ ] Update notification preferences
 
-## 18. Performance Optimization
+- [ ] 21.4 Accessibility testing
+  - [ ] Keyboard navigation (Tab, ESC, Enter)
+  - [ ] Screen reader labels (ARIA)
+  - [ ] Focus management in modals
+  - [ ] Color contrast (WCAG AA)
 
-- [ ] 18.1 Implement lazy loading
-  - [ ] Route-based code splitting
-  - [ ] Component-level lazy loading
-  - [ ] Image lazy loading with Intersection Observer
-- [ ] 18.2 Implement caching
-  - [ ] Redis cache for profile data (5 min TTL)
-  - [ ] Browser cache for static assets (CDN)
-  - [ ] LocalStorage for user preferences
-- [ ] 18.3 Optimize images
-  - [ ] Convert avatars to WebP format
-  - [ ] Implement responsive images (srcset)
-  - [ ] Use CloudFront CDN for delivery
-- [ ] 18.4 Database optimization
-  - [ ] Add composite indexes for common queries
-  - [ ] Analyze query execution plans
-  - [ ] Implement read replicas if needed
-- [ ] 18.5 Frontend bundle optimization
-  - [ ] Tree-shaking unused code
-  - [ ] Minification and compression
-  - [ ] Analyze bundle size with webpack-bundle-analyzer
+### 22. Bug Fixes & Polish (Day 4-5)
 
-## 19. Accessibility (WCAG 2.1 AA)
+- [ ] 22.1 Cross-browser testing
+  - [ ] Chrome (desktop & mobile)
+  - [ ] Safari (desktop & mobile)
+  - [ ] Firefox
+  - [ ] Edge
 
-- [ ] 19.1 Semantic HTML
-  - [ ] Use proper heading hierarchy
-  - [ ] Add ARIA labels to interactive elements
-  - [ ] Add alt text to all images
-- [ ] 19.2 Keyboard navigation
-  - [ ] Ensure all interactive elements are keyboard accessible
-  - [ ] Add visible focus indicators
-  - [ ] Implement skip navigation link
-  - [ ] Test tab order (RTL)
-- [ ] 19.3 Screen reader support
-  - [ ] Add ARIA live regions for dynamic content
-  - [ ] Add status announcements for actions
-  - [ ] Test with NVDA/JAWS
-- [ ] 19.4 Color contrast
-  - [ ] Verify 4.5:1 ratio for text
-  - [ ] Ensure status not conveyed by color alone
-- [ ] 19.5 Accessibility audit
-  - [ ] Run axe DevTools audit
-  - [ ] Fix all issues
-  - [ ] Manual testing with assistive technologies
+- [ ] 22.2 RTL layout verification
+  - [ ] Check all modals/sidebars RTL
+  - [ ] Verify Jalali dates
+  - [ ] Verify Persian numbers
+  - [ ] Check dropdown positioning
 
-## 20. Security
+- [ ] 22.3 Loading states
+  - [ ] Add skeleton screens for modals
+  - [ ] Loading spinners for async actions
+  - [ ] Disable buttons during API calls
 
-- [ ] 20.1 Implement input validation
-  - [ ] Validate all user inputs (backend + frontend)
-  - [ ] Sanitize HTML to prevent XSS
-  - [ ] Use parameterized queries (prevent SQL injection)
-- [ ] 20.2 Implement authentication checks
-  - [ ] Verify customer owns profile before updates
-  - [ ] Add rate limiting to sensitive endpoints
-  - [ ] Implement CSRF protection
-- [ ] 20.3 Secure avatar uploads
-  - [ ] Validate file types (whitelist: JPEG, PNG)
-  - [ ] Limit file size (max 5MB)
-  - [ ] Scan for malware (ClamAV or similar)
-  - [ ] Strip EXIF data
-- [ ] 20.4 Payment data security
-  - [ ] Never store raw card data (use tokenization)
-  - [ ] Ensure PCI DSS compliance
-  - [ ] Encrypt sensitive data at rest (AES-256)
-- [ ] 20.5 Security audit
-  - [ ] Run OWASP ZAP scan
-  - [ ] Fix all high/medium vulnerabilities
-  - [ ] Conduct penetration testing
+- [ ] 22.4 Error handling
+  - [ ] Toast notifications for all errors
+  - [ ] Retry buttons for failed requests
+  - [ ] Offline detection and messaging
 
-## 21. Documentation
+### 23. Deployment (Day 5 - Weekend)
 
-- [ ] 21.1 API documentation
-  - [ ] Document all endpoints in Swagger/OpenAPI
-  - [ ] Add request/response examples
-  - [ ] Document authentication requirements
-- [ ] 21.2 Code documentation
-  - [ ] Add XML comments to C# public APIs
-  - [ ] Add JSDoc comments to TypeScript interfaces/functions
-- [ ] 21.3 User guide
-  - [ ] Create customer profile page user guide (Persian)
-  - [ ] Add screenshots for key features
-  - [ ] Document common workflows
-- [ ] 21.4 Implementation summary
-  - [ ] Write IMPLEMENTATION_SUMMARY.md documenting key decisions
-
-## 22. Deployment
-
-- [ ] 22.1 Staging deployment
+- [ ] 23.1 Staging deployment
   - [ ] Deploy backend to staging
+  - [ ] Run database migrations on staging
   - [ ] Deploy frontend to staging
-  - [ ] Run smoke tests
-- [ ] 22.2 UAT (User Acceptance Testing)
+  - [ ] Smoke test all features
+
+- [ ] 23.2 UAT (User Acceptance Testing)
   - [ ] Create test accounts
   - [ ] Test all workflows with stakeholders
-  - [ ] Collect feedback and address issues
-- [ ] 22.3 Production deployment
-  - [ ] Create deployment plan with rollback procedure
+  - [ ] Collect feedback
+  - [ ] Fix critical issues
+
+- [ ] 23.3 Production deployment
+  - [ ] Create deployment plan
   - [ ] Schedule maintenance window (if needed)
-  - [ ] Deploy database migrations
-  - [ ] Deploy backend with feature flag (disabled)
-  - [ ] Deploy frontend with feature flag (disabled)
-  - [ ] Enable feature flag for 10% of users
-  - [ ] Monitor error rates, performance metrics
-  - [ ] Gradual rollout to 50%, then 100%
-- [ ] 22.4 Post-deployment monitoring
-  - [ ] Monitor application logs for errors
-  - [ ] Track Core Web Vitals (LCP, FID, CLS)
-  - [ ] Monitor API response times
-  - [ ] Set up alerts for anomalies
-- [ ] 22.5 Support preparation
-  - [ ] Train support team on new features
-  - [ ] Create FAQ for customer profile features
-  - [ ] Prepare canned responses for common issues
+  - [ ] Deploy database migrations to production
+  - [ ] Deploy backend
+  - [ ] Deploy frontend
+  - [ ] Monitor error rates
 
-## 23. Post-Launch
+- [ ] 23.4 Post-deployment monitoring
+  - [ ] Monitor application logs
+  - [ ] Track API response times
+  - [ ] Monitor error rates
+  - [ ] Check user adoption metrics
 
-- [ ] 23.1 Gather user feedback
-  - [ ] Implement in-app feedback form
-  - [ ] Conduct user interviews (5-10 customers)
-  - [ ] Analyze usage metrics (page views, feature adoption)
-- [ ] 23.2 Performance monitoring
-  - [ ] Review Core Web Vitals weekly
-  - [ ] Identify and fix performance bottlenecks
-  - [ ] Optimize slow database queries
-- [ ] 23.3 Iterate based on feedback
-  - [ ] Prioritize top requested features
-  - [ ] Fix usability issues
-  - [ ] Plan Phase 2 enhancements
+---
+
+## Total: ~60 Tasks (vs 200+ in original proposal)
+
+**Duration**: 3 weeks (vs 6 weeks)
+**Complexity**: Minimal (vs Comprehensive)
+**Focus**: Essential features only

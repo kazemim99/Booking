@@ -1,419 +1,363 @@
-# customer-profile Specification Delta
+# customer-profile Specification Delta (Minimal)
 
 ## ADDED Requirements
 
-### Requirement: Customer Profile Display
-The system SHALL provide a comprehensive profile page where customers can view and manage their account information, booking history, preferences, and settings.
+### Requirement: User Menu Integration
+The system SHALL provide a user menu dropdown in the header for authenticated customers to access profile features without leaving the landing page.
 
-#### Scenario: Customer accesses profile page
+#### Scenario: Authenticated customer views user menu
 **GIVEN** a customer is authenticated
-**WHEN** the customer navigates to "/customer/profile"
-**THEN** the system displays the profile page with:
-- Profile header showing avatar, name, phone, email, and verification badges
-- Tabbed navigation with sections: Bookings, Favorites, History, Payments, Reviews, Settings
-- Quick actions sidebar with "New Booking", "Messages", and "Loyalty Points"
-**AND** the page loads in under 2 seconds
+**WHEN** the customer clicks on their name/initial in the header
+**THEN** the system displays a dropdown menu with:
+- Colored circle with user's first initial
+- Full name and phone number
+- Menu items: "ویرایش پروفایل", "نوبت‌های من", "علاقه‌مندی‌ها", "نظرات من", "تنظیمات", "خروج"
+**AND** the menu is positioned correctly for RTL layout
 
-#### Scenario: Customer views profile on mobile
-**GIVEN** a customer accesses the profile page on a mobile device
-**WHEN** the page loads
-**THEN** the system displays:
-- Mobile-optimized layout with bottom navigation
-- Swipeable tabs for section switching
-- Touch-optimized buttons with minimum 44px height
-- Responsive grid layout adapting to screen size
+#### Scenario: Guest user views header
+**GIVEN** a user is not authenticated
+**WHEN** the user views the landing page
+**THEN** the system displays "ورود / ثبت‌نام" button instead of user menu
+**AND** clicking the button redirects to login page
 
-### Requirement: Personal Information Management
-Customers MUST be able to view and edit their personal information including name, phone number, email, and profile picture.
+### Requirement: Basic Profile Management
+Customers MUST be able to view and edit their name and email address through a simple modal dialog.
 
-#### Scenario: Customer updates profile information
-**GIVEN** a customer is on the profile page
-**WHEN** the customer clicks "ویرایش" (Edit) button
-**THEN** the system displays editable form fields for:
-- Full name (3-100 characters, Persian/English letters only)
-- Email address (optional, validated email format)
-- Birth date (optional, Jalali calendar picker)
-**AND** phone number is displayed but not editable (requires verification flow)
+#### Scenario: Customer opens profile edit modal
+**GIVEN** a customer is authenticated
+**WHEN** the customer clicks "ویرایش پروفایل" in user menu
+**THEN** the system displays ProfileEditModal with:
+- Full name input field (pre-filled with current name)
+- Phone number field (display only, not editable)
+- Email input field (pre-filled with current email, optional)
+- Save and Cancel buttons
+**AND** the modal loads in under 500ms
 
-#### Scenario: Customer uploads profile avatar
-**GIVEN** a customer is editing their profile
-**WHEN** the customer clicks on the avatar placeholder
-**THEN** the system opens file picker accepting JPEG, PNG (max 5MB)
-**AND** displays crop interface for selected image
-**AND** upon confirming crop, uploads to S3 via pre-signed URL
-**AND** updates profile with new avatar URL
-**AND** displays new avatar with CDN URL
-
-#### Scenario: Customer saves profile changes
-**GIVEN** a customer has edited profile fields
-**WHEN** the customer clicks "ذخیره" (Save)
-**THEN** the system validates all fields (name length, email format)
-**AND** if validation passes, sends PATCH request to /api/v1/customers/profile
+#### Scenario: Customer updates profile
+**GIVEN** the customer is editing their profile
+**WHEN** the customer changes their name to "سارا احمدی" and email to "sara@example.com"
+**AND** clicks "ذخیره"
+**THEN** the system validates name (3-100 chars, letters only)
+**AND** validates email format (if provided)
+**AND** sends PATCH /api/v1/customers/profile
 **AND** displays success toast: "اطلاعات با موفقیت ذخیره شد"
-**AND** updates local state optimistically
-**AND** if API fails, reverts state and shows error toast
+**AND** closes the modal
+**AND** updates user menu to show new name
 
-### Requirement: Upcoming Appointments Widget
-The system SHALL display a dashboard widget showing the customer's next 3 upcoming bookings with quick action buttons.
+#### Scenario: Customer tries to edit phone number
+**GIVEN** the customer is viewing their profile in edit modal
+**WHEN** the customer clicks on phone number field
+**THEN** the field is disabled (not editable)
+**AND** a tooltip displays: "برای تغییر شماره موبایل با پشتیبانی تماس بگیرید"
 
-#### Scenario: Customer views upcoming bookings
-**GIVEN** a customer has upcoming confirmed bookings
-**WHEN** the customer views the profile page
-**THEN** the system displays up to 3 upcoming bookings sorted by date ascending
-**AND** each booking shows:
-- Provider name and avatar
+### Requirement: Upcoming Bookings Display
+The system SHALL display the customer's next 5 upcoming bookings in a sidebar for quick access.
+
+#### Scenario: Customer opens bookings sidebar
+**GIVEN** a customer has 3 upcoming bookings
+**WHEN** the customer clicks "نوبت‌های من" in user menu
+**THEN** the system displays BookingsSidebar (slides in from left)
+**AND** shows "آینده" and "گذشته" tabs
+**AND** "آینده" tab is selected by default
+**AND** displays 3 booking cards with:
+- Provider name and logo
 - Service name
-- Persian date and time (Jalali format)
-- Countdown timer ("۲ روز و ۳ ساعت باقی مانده")
-- Status badge (Confirmed, Pending, etc.)
-- Quick action buttons: "لغو" (Cancel), "تغییر زمان" (Reschedule), "جزئیات" (Details)
+- Date and time (Jalali format, Persian numbers)
+- Status badge (e.g., "تایید شده")
+- "لغو" and "تغییر زمان" buttons
 
 #### Scenario: Customer has no upcoming bookings
-**GIVEN** a customer has no confirmed future bookings
-**WHEN** the customer views the profile page
+**GIVEN** a customer has no future bookings
+**WHEN** the customer opens bookings sidebar on "آینده" tab
 **THEN** the system displays empty state with:
 - Illustration or icon
 - Message: "شما نوبت آینده‌ای ندارید"
-- Call-to-action button: "رزرو نوبت جدید"
+- "رزرو نوبت جدید" button
 
-### Requirement: Booking History
-Customers MUST be able to view their complete booking history with filtering, sorting, and export capabilities.
+#### Scenario: Customer cancels booking from sidebar
+**GIVEN** the customer is viewing upcoming bookings
+**WHEN** the customer clicks "لغو" on a booking
+**THEN** the system displays confirmation dialog: "آیا از لغو این نوبت مطمئن هستید؟"
+**AND** upon confirmation, sends cancellation request
+**AND** removes booking from upcoming list
+**AND** displays toast: "نوبت با موفقیت لغو شد"
+
+### Requirement: Booking History Display
+Customers MUST be able to view their past bookings (last 20) with pagination and rebooking capability.
 
 #### Scenario: Customer views booking history
-**GIVEN** a customer selects the "تاریخچه" (History) tab
-**WHEN** the tab loads
-**THEN** the system displays a paginated table (20 items per page) with columns:
-- Date (Jalali format, sortable)
-- Provider (name + avatar)
-- Service (name + duration)
-- Staff member (if assigned)
-- Status (badge: Completed, Cancelled, No-Show)
-- Amount paid (Persian numbers, تومان)
-- Actions (View Receipt, Rebook, Review)
-
-#### Scenario: Customer filters booking history
-**GIVEN** a customer is viewing booking history
-**WHEN** the customer applies filters (date range, provider, status, service type)
-**THEN** the system sends filtered query to backend
-**AND** displays filtered results
-**AND** updates URL query parameters for bookmarkability
-**AND** shows count: "۴۵ نتیجه یافت شد"
-
-#### Scenario: Customer exports booking history
-**GIVEN** a customer is viewing booking history
-**WHEN** the customer clicks "دانلود PDF" or "دانلود Excel"
-**THEN** the system generates export file with applied filters
-**AND** initiates download with filename: "booking-history-YYYY-MM-DD.pdf"
+**GIVEN** a customer has 25 completed bookings
+**WHEN** the customer switches to "گذشته" tab in bookings sidebar
+**THEN** the system displays first 20 bookings sorted by date (newest first)
+**AND** each booking shows:
+- Provider name
+- Service name
+- Date (Jalali format)
+- Status badge (e.g., "تکمیل شده", "لغو شده")
+- "رزرو مجدد" button
+**AND** shows "بارگذاری بیشتر" button at bottom
 
 #### Scenario: Customer rebooks from history
-**GIVEN** a customer views a completed booking in history
-**WHEN** the customer clicks "رزرو مجدد" (Rebook)
-**THEN** the system redirects to booking wizard
-**AND** pre-fills provider, service, and staff selections from historical booking
+**GIVEN** the customer is viewing past bookings
+**WHEN** the customer clicks "رزرو مجدد" on a booking
+**THEN** the system redirects to booking wizard `/booking/{providerId}`
+**AND** pre-fills provider and service selections
 **AND** allows customer to select new date/time
 
 ### Requirement: Favorite Providers Management
-Customers MUST be able to save favorite providers for quick access and receive personalized recommendations.
+Customers MUST be able to save favorite providers for quick access and rebooking.
 
-#### Scenario: Customer views favorite providers
-**GIVEN** a customer selects the "علاقه‌مندی‌ها" (Favorites) tab
-**WHEN** the tab loads
-**THEN** the system displays saved providers in grid view (3 columns on desktop, 1 on mobile)
-**AND** each provider card shows:
-- Provider logo/avatar
-- Business name
-- Category (رستوران, سالن زیبایی, etc.)
-- Rating (۴.۵ ⭐ - ۱۲۳ نظر)
-- Distance from customer ("۲.۵ کیلومتر")
-- Last visit date ("آخرین بازدید: ۱۵ آذر")
-- Total bookings count ("۸ نوبت")
-- Quick book button and view profile link
+#### Scenario: Customer adds provider to favorites
+**GIVEN** the customer is viewing a provider card on landing page
+**WHEN** the customer clicks the heart icon (outlined)
+**THEN** the system sends POST /api/v1/customers/favorites/{providerId}
+**AND** the heart icon fills with color
+**AND** displays toast: "به علاقه‌مندی‌ها اضافه شد"
 
-#### Scenario: Customer sorts favorite providers
-**GIVEN** a customer is viewing favorites
-**WHEN** the customer selects sort option (Recent, Rating, Distance, Total Visits)
-**THEN** the system reorders favorites based on selected criterion
-**AND** preserves sort preference in local storage
-
-#### Scenario: Customer removes favorite provider
-**GIVEN** a customer is viewing favorites
-**WHEN** the customer clicks heart icon (filled) on a provider card
-**THEN** the system prompts confirmation: "این ارائه‌دهنده از لیست علاقه‌مندی‌ها حذف شود؟"
+#### Scenario: Customer removes provider from favorites
+**GIVEN** the customer has previously favorited a provider
+**WHEN** the customer clicks the heart icon (filled)
+**THEN** the system displays confirmation: "این ارائه‌دهنده از لیست علاقه‌مندی‌ها حذف شود؟"
 **AND** upon confirmation, sends DELETE /api/v1/customers/favorites/{providerId}
-**AND** removes card from view with fade-out animation
+**AND** the heart icon becomes outlined
+**AND** displays toast: "از علاقه‌مندی‌ها حذف شد"
+
+#### Scenario: Customer views favorites list
+**GIVEN** the customer has 8 favorite providers
+**WHEN** the customer clicks "علاقه‌مندی‌ها" in user menu
+**THEN** the system displays FavoritesModal with:
+- Grid layout (2 columns on desktop, 1 on mobile)
+- 8 provider cards showing logo, name, category, rating
+- Filled heart icon on each card (click to remove)
+- "رزرو" button on each card (redirects to booking wizard)
 
 #### Scenario: Customer has no favorites
-**GIVEN** a customer has not saved any favorite providers
-**WHEN** the customer views favorites tab
-**THEN** the system displays empty state with:
-- Illustration of heart icon
+**GIVEN** the customer has not favorited any providers
+**WHEN** the customer opens favorites modal
+**THEN** the system displays empty state:
+- Heart icon illustration
 - Message: "شما هنوز ارائه‌دهنده‌ای را به علاقه‌مندی‌ها اضافه نکرده‌اید"
-- Call-to-action: "جستجوی ارائه‌دهندگان"
-
-### Requirement: Payment Methods Management
-Customers MUST be able to securely view, add, and manage saved payment methods for faster checkout.
-
-#### Scenario: Customer views saved payment methods
-**GIVEN** a customer selects the "پرداخت‌ها" (Payments) tab
-**WHEN** the tab loads
-**THEN** the system displays saved payment methods with:
-- Card type icon (Visa, Mastercard, etc.)
-- Masked card number (•••• •••• •••• ۱۲۳۴)
-- Card holder name
-- Expiry date (MM/YY)
-- "Default" badge for primary payment method
-- Actions: Set as Default, Remove
-
-#### Scenario: Customer adds new payment method
-**GIVEN** a customer is viewing payment methods
-**WHEN** the customer clicks "افزودن کارت جدید" (Add New Card)
-**THEN** the system displays secure payment form (Stripe Elements or similar)
-**AND** validates card number, expiry, CVV as customer types
-**AND** upon submission, tokenizes card data via payment provider API
-**AND** stores payment method token in backend (never stores actual card data)
-**AND** adds new card to list with success notification
-
-#### Scenario: Customer removes payment method
-**GIVEN** a customer has multiple payment methods saved
-**WHEN** the customer clicks "حذف" (Remove) on a non-default payment method
-**THEN** the system prompts confirmation: "این کارت حذف شود؟"
-**AND** upon confirmation, sends DELETE /api/v1/customers/payment-methods/{id}
-**AND** removes from list
-**AND** if removing default, prompts to select new default
-
-### Requirement: Loyalty Points Tracking
-The system MUST display customer's loyalty points balance, transaction history, and tier status.
-
-#### Scenario: Customer views loyalty points
-**GIVEN** a customer views the loyalty card widget
-**WHEN** the widget loads
-**THEN** the system displays:
-- Current points balance (Persian numbers: "۱۲۵ امتیاز")
-- Tier status (Bronze, Silver, Gold, Platinum) with icon
-- Progress bar to next tier ("۷۵ امتیاز تا سطح طلایی")
-- Expiring points warning ("۲۰ امتیاز تا ۳۰ روز دیگر منقضی می‌شود")
-- Points earning rate (e.g., "۱ امتیاز به ازای هر ۱۰٬۰۰۰ تومان")
-
-#### Scenario: Customer views loyalty transaction history
-**GIVEN** a customer clicks "مشاهده تراکنش‌ها" (View Transactions)
-**WHEN** the transactions modal opens
-**THEN** the system displays chronological list of transactions:
-- Transaction type (Earned, Redeemed, Expired, Adjusted)
-- Points amount (+۱۰, -۵۰, etc.)
-- Balance after transaction
-- Reason ("نوبت تکمیل شد", "استفاده در تخفیف", etc.)
-- Related booking link (if applicable)
-- Date (Jalali format)
+- "جستجوی ارائه‌دهندگان" button (redirects to search page)
 
 ### Requirement: Review Management
-Customers MUST be able to view all their submitted reviews, edit recent reviews, and track review impact.
+Customers MUST be able to view all their submitted reviews and edit recent reviews (within 7 days).
 
-#### Scenario: Customer views submitted reviews
-**GIVEN** a customer selects the "نظرات" (Reviews) tab
-**WHEN** the tab loads
-**THEN** the system displays list of customer's reviews with:
+#### Scenario: Customer views their reviews
+**GIVEN** the customer has submitted 5 reviews
+**WHEN** the customer clicks "نظرات من" in user menu
+**THEN** the system displays ReviewsModal with list of 5 reviews
+**AND** each review shows:
 - Provider name and logo
 - Service name
-- Review date (Jalali format)
-- Star rating (۱-۵ ⭐)
+- Star rating (1-5)
 - Review text
-- Provider response (if any)
-- Helpful votes count ("۱۲ نفر مفید دانستند")
-- Edit/Delete buttons (if within edit window)
+- Submission date (Jalali format)
+- "ویرایش" button (if review is <7 days old)
 
 #### Scenario: Customer edits recent review
-**GIVEN** a customer's review is less than 7 days old
-**WHEN** the customer clicks "ویرایش" (Edit)
-**THEN** the system displays edit form with current rating and text
-**AND** allows modification of rating and text
-**AND** upon save, sends PATCH /api/v1/reviews/{id}
-**AND** adds "(ویرایش شده)" (Edited) label to review
-**AND** updates display with new content
+**GIVEN** the customer submitted a review 3 days ago
+**WHEN** the customer clicks "ویرایش" on the review
+**THEN** the system displays edit form with:
+- Star rating selector (pre-filled with current rating)
+- Text area (pre-filled with current review text)
+- Character counter (max 500 chars)
+- "ذخیره" and "انصراف" buttons
+**AND** upon clicking "ذخیره", validates input
+**AND** sends PATCH /api/v1/customers/reviews/{id}
+**AND** updates review display with "(ویرایش شده)" label
+**AND** displays toast: "نظر شما با موفقیت ویرایش شد"
 
-#### Scenario: Customer deletes review
-**GIVEN** a customer wants to remove their review
-**WHEN** the customer clicks "حذف" (Delete)
-**THEN** the system prompts confirmation: "این نظر حذف شود؟"
-**AND** upon confirmation, sends DELETE /api/v1/reviews/{id}
-**AND** removes review from list
-**AND** notifies provider of deletion
+#### Scenario: Customer tries to edit old review
+**GIVEN** the customer submitted a review 10 days ago
+**WHEN** the customer views the review in reviews modal
+**THEN** the "ویرایش" button is not displayed
+**AND** a message shows: "فقط نظرات کمتر از ۷ روز قابل ویرایش هستند"
+
+#### Scenario: Customer has no reviews
+**GIVEN** the customer has not submitted any reviews
+**WHEN** the customer opens reviews modal
+**THEN** the system displays empty state:
+- Star icon illustration
+- Message: "شما هنوز نظری ثبت نکرده‌اید"
+- "جستجوی خدمات" button
 
 ### Requirement: Notification Preferences
-Customers MUST be able to configure notification channels and frequency for booking reminders, offers, and updates.
+Customers MUST be able to control notification channels and reminder timing for their bookings.
 
-#### Scenario: Customer manages notification settings
-**GIVEN** a customer is in the "تنظیمات" (Settings) tab
-**WHEN** the customer views notification preferences section
-**THEN** the system displays toggle switches for:
-- SMS notifications (on/off)
-- Email notifications (on/off)
-- Push notifications (on/off)
-- Marketing communications (opt-in)
-**AND** dropdowns for reminder timing:
-- Booking reminders (1 hour, 24 hours, 3 days before)
-- Special offers (Weekly, Monthly, Never)
+#### Scenario: Customer opens settings modal
+**GIVEN** a customer is authenticated
+**WHEN** the customer clicks "تنظیمات" in user menu
+**THEN** the system displays SettingsModal with:
+- "اعلان‌ها" section
+- SMS notifications toggle (current state: on/off)
+- Email notifications toggle (current state: on/off)
+- Reminder timing dropdown with options: "۱ ساعت قبل", "۱ روز قبل", "۳ روز قبل"
+- "حساب کاربری" section with support contact info
 
 #### Scenario: Customer updates notification preferences
-**GIVEN** a customer changes notification settings
-**WHEN** the customer toggles a switch or changes dropdown
-**THEN** the system immediately saves preference via PATCH /api/v1/customers/preferences
-**AND** displays brief confirmation toast (auto-dismiss in 2 seconds)
-**AND** respects preferences in future notifications
+**GIVEN** the customer has SMS enabled and email disabled
+**WHEN** the customer toggles email notifications ON
+**AND** changes reminder timing to "۳ روز قبل"
+**THEN** the system immediately sends PATCH /api/v1/customers/preferences
+**AND** displays brief success toast (auto-dismiss after 2 seconds): "تنظیمات ذخیره شد"
+**AND** future bookings respect new preferences
 
-### Requirement: Privacy and Security Settings
-Customers MUST be able to manage account security, privacy controls, and view active sessions.
+#### Scenario: Customer disables all notifications
+**GIVEN** the customer is in settings modal
+**WHEN** the customer toggles both SMS and Email notifications OFF
+**THEN** the system displays warning: "با غیرفعال کردن تمام اعلان‌ها، یادآوری نوبت دریافت نخواهید کرد. ادامه می‌دهید؟"
+**AND** upon confirmation, saves preferences
+**AND** customer receives no booking reminders
 
-#### Scenario: Customer views privacy settings
-**GIVEN** a customer is in the Settings tab
-**WHEN** the customer views privacy section
-**THEN** the system displays options:
-- Profile visibility (Public, Private)
-- Show booking history to providers (toggle)
-- Allow personalized recommendations (toggle)
-- Data sharing preferences (toggle for analytics)
+### Requirement: Mobile Bottom Navigation
+On mobile devices, the system SHALL provide a bottom navigation bar for quick access to customer features.
 
-#### Scenario: Customer enables two-factor authentication
-**GIVEN** a customer wants to enhance account security
-**WHEN** the customer toggles "فعال‌سازی احراز هویت دو مرحله‌ای" (Enable 2FA)
-**THEN** the system initiates OTP verification flow
-**AND** sends verification code to registered phone number
-**AND** upon successful verification, enables 2FA
-**AND** displays backup codes for emergency access
+#### Scenario: Customer views landing page on mobile
+**GIVEN** the customer is authenticated on a mobile device (<768px width)
+**WHEN** the landing page loads
+**THEN** the system displays bottom navigation bar with 5 tabs:
+- "خانه" (Home icon) - Scrolls to top of landing page
+- "جستجو" (Search icon) - Opens provider search
+- "نوبت‌ها" (Calendar icon) - Opens bookings bottom sheet
+- "علاقه‌مندی‌ها" (Heart icon) - Opens favorites bottom sheet
+- "پروفایل" (User icon) - Opens user menu as bottom sheet
+**AND** the active tab is highlighted
 
-#### Scenario: Customer views active sessions
-**GIVEN** a customer clicks "مدیریت دستگاه‌ها" (Manage Devices)
-**WHEN** the sessions modal opens
-**THEN** the system displays list of active sessions:
-- Device type (Desktop, Mobile)
-- Browser (Chrome, Safari, etc.)
-- Location (approximate city)
-- IP address (masked: 192.168.x.x)
-- Last active timestamp
-- "Current session" badge for active device
-- Logout button for each session
+#### Scenario: Customer opens bookings on mobile
+**GIVEN** the customer is on mobile
+**WHEN** the customer taps "نوبت‌ها" in bottom navigation
+**THEN** the system displays bookings as bottom sheet (not sidebar)
+**AND** bottom sheet can be swiped down to dismiss
+**AND** bottom sheet snaps to half/full height
 
-#### Scenario: Customer logs out other sessions
-**GIVEN** a customer views active sessions
-**WHEN** the customer clicks "خروج" (Logout) on a non-current session
-**THEN** the system invalidates that session's tokens
-**AND** removes session from list
-**AND** that device must re-authenticate to access account
+### Requirement: Persian RTL Support
+All customer profile components MUST support Persian language with RTL layout and cultural formatting.
 
-### Requirement: Account Data Export and Deletion (GDPR)
-The system MUST provide customers with ability to export their data or delete their account in compliance with GDPR.
-
-#### Scenario: Customer requests data export
-**GIVEN** a customer is in Settings tab
-**WHEN** the customer clicks "دانلود اطلاعات من" (Download My Data)
-**THEN** the system confirms: "فایل شامل تمام اطلاعات شما تهیه خواهد شد. این کار چند دقیقه طول می‌کشد."
-**AND** upon confirmation, queues background job for data export
-**AND** displays: "درخواست شما در حال پردازش است. لینک دانلود به ایمیل شما ارسال خواهد شد."
-**AND** within 15 minutes, sends email with time-limited S3 download link
-**AND** export includes: profile data, booking history, reviews, payment history (JSON format)
-
-#### Scenario: Customer requests account deletion
-**GIVEN** a customer wants to delete their account
-**WHEN** the customer clicks "حذف حساب کاربری" (Delete Account)
-**THEN** the system displays warning: "این عملیات غیرقابل بازگشت است. تمام اطلاعات، نوبت‌ها و امتیازها حذف خواهند شد."
-**AND** requires password/OTP re-authentication
-**AND** upon confirmation, queues account deletion job
-**AND** cancels all future bookings with notifications to providers
-**AND** anonymizes historical data (replaces name with "کاربر حذف شده")
-**AND** permanently deletes personal data within 30 days
-**AND** logs out customer immediately
-
-### Requirement: Mobile Responsiveness
-All profile page features MUST be fully functional and optimized for mobile devices with touch-friendly interactions.
-
-#### Scenario: Customer uses profile on mobile
-**GIVEN** a customer accesses profile on screen width < 768px
-**WHEN** the page loads
-**THEN** the system displays:
-- Single-column layout (no sidebar)
-- Bottom navigation bar instead of horizontal tabs
-- Swipeable tabs with smooth transitions
-- Touch-optimized buttons (minimum 44px height)
-- Pull-to-refresh functionality
-- Bottom sheets for modals (not centered popups)
-**AND** maintains <2 second load time on 3G connection
-
-### Requirement: Accessibility Compliance
-The customer profile page MUST comply with WCAG 2.1 AA standards for accessibility.
-
-#### Scenario: Screen reader navigation
-**GIVEN** a customer uses a screen reader
-**WHEN** the customer navigates the profile page
-**THEN** the system provides:
-- Semantic HTML structure (header, nav, main, section)
-- ARIA labels for all interactive elements
-- Descriptive alt text for images
-- Live region announcements for dynamic updates
-- Proper heading hierarchy (h1 → h2 → h3)
-- Skip navigation link
-
-#### Scenario: Keyboard-only navigation
-**GIVEN** a customer navigates without a mouse
-**WHEN** the customer uses Tab key to navigate
-**THEN** the system:
-- Follows logical RTL tab order (right to left, top to bottom)
-- Displays visible focus indicators (2px solid outline)
-- Allows Enter/Space to activate buttons
-- Enables Escape to close modals
-- Provides keyboard shortcuts for common actions
+#### Scenario: Customer views profile components
+**GIVEN** the customer is viewing any profile modal/sidebar
+**WHEN** the component loads
+**THEN** all text is displayed in Persian
+**AND** layout direction is RTL (right-to-left)
+**AND** dates are formatted in Jalali calendar
+**AND** numbers are displayed in Persian digits (۰۱۲۳۴۵۶۷۸۹)
+**AND** currency is formatted as "۱۲۳٬۴۵۶ تومان"
 
 ### Requirement: Performance Optimization
-The profile page MUST load within 2 seconds and maintain smooth 60fps interactions.
+All modals and sidebars MUST load quickly with minimal impact on page performance.
 
-#### Scenario: Initial page load
-**GIVEN** a customer navigates to /customer/profile
-**WHEN** the page begins loading
-**THEN** the system:
-- Loads critical CSS inline (<10KB)
-- Defers non-critical JavaScript
-- Shows skeleton screens for loading content
-- Loads profile data in parallel with upcoming bookings
-- Lazy loads tab content (only load active tab)
-- Uses CDN for images and static assets
-- Achieves <2 second Time to Interactive (TTI)
+#### Scenario: Customer opens any modal
+**GIVEN** the customer clicks a menu item
+**WHEN** the modal/sidebar begins to load
+**THEN** the system displays loading skeleton within 100ms
+**AND** fetches data from API
+**AND** renders content within 500ms total
+**AND** uses cached data if available (5 min cache)
 
-#### Scenario: Tab switching
-**GIVEN** a customer switches between tabs
-**WHEN** the customer clicks a new tab
-**THEN** the system:
-- Uses KeepAlive to cache previously viewed tabs (max 3)
-- Lazy loads tab content on first visit
-- Shows loading skeleton during data fetch
-- Maintains scroll position when returning to cached tab
-- Completes transition in <200ms
+#### Scenario: Customer repeatedly opens/closes modals
+**GIVEN** the customer opens and closes the bookings sidebar multiple times
+**WHEN** reopening within 5 minutes
+**THEN** the system displays cached data immediately (no API call)
+**AND** refreshes data in background
+**AND** updates UI if data changed
 
-### Requirement: Error Handling and Edge Cases
-The system MUST gracefully handle errors, network failures, and edge cases with user-friendly messaging.
+### Requirement: Error Handling
+The system SHALL gracefully handle API errors and network failures with user-friendly messages.
 
 #### Scenario: API request fails
-**GIVEN** a customer performs an action requiring API call
-**WHEN** the API returns error or times out
-**THEN** the system displays error toast with:
-- User-friendly Persian message (not technical error)
-- Retry button for retryable errors
-- Support contact link for persistent errors
-**AND** logs error to monitoring system
-**AND** does not break page functionality
+**GIVEN** the customer tries to update their profile
+**WHEN** the API returns 500 Internal Server Error
+**THEN** the system displays error toast: "خطایی رخ داد. لطفاً دوباره تلاش کنید."
+**AND** provides retry button in toast
+**AND** keeps modal open with user's entered data
 
-#### Scenario: Customer has no data
-**GIVEN** a new customer with no bookings, favorites, or reviews
-**WHEN** the customer views various tabs
-**THEN** the system displays appropriate empty states with:
-- Relevant illustration or icon
-- Encouraging message
-- Clear call-to-action to populate data
-**AND** does not show errors or broken UI
+#### Scenario: Network is offline
+**GIVEN** the customer loses internet connection
+**WHEN** the customer tries to open bookings sidebar
+**THEN** the system displays offline banner at top: "اتصال اینترنت قطع است"
+**AND** shows cached bookings if available
+**AND** disables action buttons (Cancel, Rebook)
 
-#### Scenario: Offline access
-**GIVEN** a customer loses internet connection
-**WHEN** the customer interacts with profile page
-**THEN** the system:
-- Displays cached profile data (if available)
-- Shows offline indicator banner at top
-- Queues write operations for retry when online
-- Prevents actions requiring network (e.g., avatar upload)
-- Provides helpful message: "اتصال اینترنت قطع است. برخی ویژگی‌ها در دسترس نیستند."
+### Requirement: User Initial Display (No Avatar)
+The system SHALL display a colored circle with the customer's first initial instead of avatar images.
+
+#### Scenario: Customer views their initial
+**GIVEN** a customer named "سارا احمدی" is authenticated
+**WHEN** the customer views the user menu
+**THEN** the system displays a colored circle
+**AND** the circle contains the letter "س" (first letter of first name)
+**AND** the circle has a consistent color (based on user ID)
+**AND** color is chosen from predefined palette (4 colors)
+
+#### Scenario: Customer with English name
+**GIVEN** a customer named "Sara Ahmadi" is authenticated
+**WHEN** the customer views the user menu
+**THEN** the system displays "S" in the circle
+
+### Requirement: Session Management
+The system SHALL maintain customer authentication state and provide logout functionality.
+
+#### Scenario: Customer logs out
+**GIVEN** the customer is authenticated
+**WHEN** the customer clicks "خروج" in user menu
+**THEN** the system displays confirmation: "آیا می‌خواهید از حساب کاربری خود خارج شوید؟"
+**AND** upon confirmation, clears authentication token
+**AND** redirects to landing page (guest view)
+**AND** clears all cached customer data
+
+#### Scenario: Session expires
+**GIVEN** the customer's session has expired (token invalid)
+**WHEN** the customer tries to access profile features
+**THEN** the system redirects to login page
+**AND** displays message: "جلسه شما منقضی شده است. لطفاً دوباره وارد شوید."
+**AND** returns to requested page after re-authentication
+
+### Requirement: Accessibility (WCAG 2.1 AA)
+Customer profile components MUST be accessible to users with disabilities.
+
+#### Scenario: Screen reader navigation
+**GIVEN** a customer using a screen reader
+**WHEN** the customer navigates the user menu
+**THEN** each menu item has descriptive ARIA label
+**AND** modals announce their title when opened
+**AND** focus is trapped within open modal
+**AND** ESC key closes modal
+**AND** focus returns to trigger element after closing
+
+#### Scenario: Keyboard navigation
+**GIVEN** a customer using keyboard only
+**WHEN** the customer presses Tab key in user menu dropdown
+**THEN** focus moves through menu items in RTL order (right to left)
+**AND** each focused element has visible focus indicator (2px outline)
+**AND** Enter/Space key activates buttons
+**AND** ESC key closes dropdown
+
+### Requirement: Data Validation
+All user inputs MUST be validated on both client and server sides.
+
+#### Scenario: Invalid name entry
+**GIVEN** the customer is editing their profile
+**WHEN** the customer enters name "A" (too short)
+**AND** clicks "ذخیره"
+**THEN** the system displays error: "نام باید حداقل ۳ کاراکتر باشد"
+**AND** does not submit to server
+
+#### Scenario: Invalid email format
+**GIVEN** the customer is editing their profile
+**WHEN** the customer enters email "invalid-email"
+**AND** clicks "ذخیره"
+**THEN** the system displays error: "فرمت ایمیل معتبر نیست"
+**AND** does not submit to server
+
+#### Scenario: Server-side validation failure
+**GIVEN** the customer submits a valid-looking email
+**WHEN** the server detects email is already in use
+**THEN** the system displays error from server: "این ایمیل قبلاً ثبت شده است"
+**AND** keeps the modal open for correction
+
+## MODIFIED Requirements
+
+None - This is a new feature with no modifications to existing specs.
+
+## REMOVED Requirements
+
+None - This is purely additive functionality.
