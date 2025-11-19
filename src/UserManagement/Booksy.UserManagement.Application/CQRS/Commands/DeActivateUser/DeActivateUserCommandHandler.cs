@@ -7,7 +7,7 @@ using Booksy.UserManagement.Application.Services.Interfaces;
 using Booksy.UserManagement.Domain.Exceptions;
 using Microsoft.Extensions.Logging;
 
-namespace Booksy.UserManagement.Application.CQRS.Commands.ActivateUser
+namespace Booksy.UserManagement.Application.CQRS.Commands.DeActivateUser
 {
     public sealed class DeActivateUserCommandHandler : ICommandHandler<DeActivateUserCommand, DeActivateUserResult>
     {

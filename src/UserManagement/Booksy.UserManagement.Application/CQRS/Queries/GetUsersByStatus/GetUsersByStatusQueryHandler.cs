@@ -1,7 +1,7 @@
 ﻿using Booksy.UserManagement.Application.Abstractions.Queries;
 using Booksy.UserManagement.Domain.Specifications;
 
-namespace Booksy.UserManagement.Application.Queries.GetUsersByStatus
+namespace Booksy.UserManagement.Application.CQRS.Queries.GetUsersByStatus
 {
     /// <summary>
     /// Handler for retrieving users filtered by status

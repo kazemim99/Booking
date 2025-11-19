@@ -5,7 +5,7 @@ using FluentValidation;
 using Booksy.UserManagement.Domain.Enums;
 using Booksy.Core.Application.Validators;
 
-namespace Booksy.UserManagement.Application.Queries.SearchUsers;
+namespace Booksy.UserManagement.Application.CQRS.Queries.SearchUsers;
 
 /// <summary>
 /// Simplified validator for SearchUsersQuery

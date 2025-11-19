@@ -4,7 +4,7 @@
  *
  * Architecture:
  * - ServiceCategory API (port 5010): Handles providers, services, bookings, schedules
- * - UserManagement API (port 5021): Handles authentication, users, profiles
+ * - UserManagement API (port 5020): Handles authentication, users, profiles, customers
  */
 export const microservices = {
   serviceCategory: {
@@ -13,7 +13,7 @@ export const microservices = {
     withCredentials: true,
   },
   userManagement: {
-    baseURL: import.meta.env.VITE_USER_MANAGEMENT_API_URL || 'https://localhost:5021/api',
+    baseURL: import.meta.env.VITE_USER_MANAGEMENT_API_URL || 'http://localhost:5020/api',
     timeout: 30000,
     withCredentials: true,
   },

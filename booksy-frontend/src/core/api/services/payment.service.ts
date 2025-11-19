@@ -4,11 +4,11 @@
  * Currently supports ZarinPal
  */
 
-import { httpClient } from '@/core/api/client/http-client'
+import { serviceCategoryClient } from '@/core/api/client/http-client'
 import type { ApiResponse } from '@/core/api/client/api-response'
 
 const API_VERSION = 'v1'
-const API_BASE = `/${API_VERSION}/payments`
+const API_BASE = `/${API_VERSION}/Payments`
 
 // ==================== Types ====================
 
@@ -156,7 +156,7 @@ class PaymentService {
     try {
       console.log('[PaymentService] Creating ZarinPal payment:', data)
 
-      const response = await httpClient.post<ApiResponse<ZarinPalCreateResponse>>(
+      const response = await serviceCategoryClient.post<ApiResponse<ZarinPalCreateResponse>>(
         `${API_BASE}/zarinpal/create`,
         data
       )
@@ -198,7 +198,7 @@ class PaymentService {
     try {
       console.log('[PaymentService] Verifying ZarinPal payment:', data)
 
-      const response = await httpClient.post<ApiResponse<ZarinPalVerifyResponse>>(
+      const response = await serviceCategoryClient.post<ApiResponse<ZarinPalVerifyResponse>>(
         `${API_BASE}/zarinpal/verify`,
         data
       )
@@ -226,7 +226,7 @@ class PaymentService {
     try {
       console.log(`[PaymentService] Fetching payment: ${id}`)
 
-      const response = await httpClient.get<ApiResponse<Payment>>(
+      const response = await serviceCategoryClient.get<ApiResponse<Payment>>(
         `${API_BASE}/${id}`
       )
 
@@ -248,7 +248,7 @@ class PaymentService {
     try {
       console.log(`[PaymentService] Fetching payments for booking: ${bookingId}`)
 
-      const response = await httpClient.get<ApiResponse<Payment[]>>(
+      const response = await serviceCategoryClient.get<ApiResponse<Payment[]>>(
         `${API_BASE}/booking/${bookingId}`
       )
 
@@ -275,7 +275,7 @@ class PaymentService {
     try {
       console.log(`[PaymentService] Fetching payments for customer: ${customerId}`)
 
-      const response = await httpClient.get<ApiResponse<{
+      const response = await serviceCategoryClient.get<ApiResponse<{
         items: Payment[]
         totalItems: number
         pageNumber: number
@@ -290,7 +290,12 @@ class PaymentService {
       console.log('[PaymentService] Customer payments retrieved:', response.data)
 
       const payments = response.data?.data || response.data
-      return payments as any
+      return payments as {
+        items: Payment[]
+        totalItems: number
+        pageNumber: number
+        pageSize: number
+      }
     } catch (error) {
       console.error(`[PaymentService] Error fetching customer payments:`, error)
       throw this.handleError(error)
@@ -310,7 +315,7 @@ class PaymentService {
     try {
       console.log(`[PaymentService] Fetching payments for provider: ${providerId}`)
 
-      const response = await httpClient.get<ApiResponse<{
+      const response = await serviceCategoryClient.get<ApiResponse<{
         items: Payment[]
         totalItems: number
         pageNumber: number
@@ -325,7 +330,12 @@ class PaymentService {
       console.log('[PaymentService] Provider payments retrieved:', response.data)
 
       const payments = response.data?.data || response.data
-      return payments as any
+      return payments as {
+        items: Payment[]
+        totalItems: number
+        pageNumber: number
+        pageSize: number
+      }
     } catch (error) {
       console.error(`[PaymentService] Error fetching provider payments:`, error)
       throw this.handleError(error)
@@ -344,7 +354,7 @@ class PaymentService {
     try {
       console.log(`[PaymentService] Requesting refund for payment: ${paymentId}`, data)
 
-      const response = await httpClient.post<ApiResponse<RefundResponse>>(
+      const response = await serviceCategoryClient.post<ApiResponse<RefundResponse>>(
         `${API_BASE}/${paymentId}/refund`,
         data
       )

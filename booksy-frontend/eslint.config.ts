@@ -22,12 +22,12 @@ export default defineConfigWithVueTs(
 
   pluginVue.configs['flat/essential'],
   vueTsConfigs.recommended,
-  
+
   {
     ...pluginVitest.configs.recommended,
     files: ['src/**/__tests__/*'],
   },
-  
+
   {
     ...pluginCypress.configs.recommended,
     files: [
@@ -35,5 +35,20 @@ export default defineConfigWithVueTs(
       'cypress/support/**/*.{js,ts,jsx,tsx}'
     ],
   },
+
+  {
+    name: 'app/custom-rules',
+    rules: {
+      '@typescript-eslint/no-explicit-any': 'warn',
+      '@typescript-eslint/no-empty-object-type': 'warn',
+      '@typescript-eslint/no-unused-vars': ['warn', {
+        argsIgnorePattern: '^_',
+        varsIgnorePattern: '^_',
+        caughtErrorsIgnorePattern: '^_',
+      }],
+      'vue/multi-word-component-names': 'warn',
+    },
+  },
+
   skipFormatting,
 )

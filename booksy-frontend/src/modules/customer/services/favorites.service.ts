@@ -3,7 +3,7 @@
  * Handles customer favorite providers and quick rebooking
  */
 
-import { httpClient } from '@/core/api/client/http-client'
+import { userManagementClient } from '@/core/api/client/http-client'
 import type { ApiResponse } from '@/core/api/client/api-response'
 import type {
   FavoriteProvider,
@@ -14,7 +14,7 @@ import type {
 } from '../types/favorites.types'
 
 const API_VERSION = 'v1'
-const FAVORITES_BASE = `/${API_VERSION}/customers`
+const FAVORITES_BASE = `/${API_VERSION}/Customers`
 
 // ==================== Favorites Cache ====================
 
@@ -92,7 +92,7 @@ class FavoritesService {
         return cached
       }
 
-      const response = await httpClient.get<ApiResponse<FavoriteProvider[]>>(
+      const response = await userManagementClient.get<ApiResponse<FavoriteProvider[]>>(
         `${FAVORITES_BASE}/${request.customerId}/favorites`,
         {
           params: {
@@ -142,7 +142,7 @@ class FavoritesService {
     try {
       console.log('[FavoritesService] Adding favorite:', request)
 
-      const response = await httpClient.post<ApiResponse<FavoriteProvider>>(
+      const response = await userManagementClient.post<ApiResponse<FavoriteProvider>>(
         `${FAVORITES_BASE}/${customerId}/favorites`,
         request
       )
@@ -177,7 +177,7 @@ class FavoritesService {
     try {
       console.log(`[FavoritesService] Removing favorite: ${providerId}`)
 
-      await httpClient.delete(
+      await userManagementClient.delete(
         `${FAVORITES_BASE}/${customerId}/favorites/${providerId}`
       )
 
@@ -254,7 +254,7 @@ class FavoritesService {
     try {
       console.log(`[FavoritesService] Fetching quick rebook suggestions for ${providerId}`)
 
-      const response = await httpClient.get<ApiResponse<QuickRebookSuggestion[]>>(
+      const response = await userManagementClient.get<ApiResponse<QuickRebookSuggestion[]>>(
         `${FAVORITES_BASE}/${customerId}/favorites/${providerId}/quick-rebook`,
         {
           params: { limit },

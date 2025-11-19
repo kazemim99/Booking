@@ -59,6 +59,9 @@ public class PhoneVerificationConfiguration : IEntityTypeConfiguration<PhoneVeri
             // Index on phone number value (configured within owned entity)
             pn.HasIndex(p => p.Value)
                 .HasDatabaseName("ix_phone_verifications_phone_number");
+
+            // Prevent EF Core from trying to create a back-reference
+            pn.WithOwner();
         });
 
         // OtpCode - owned value object (for validation, not persisted hash)

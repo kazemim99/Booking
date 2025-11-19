@@ -160,9 +160,9 @@
 import { ref, computed, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useHoursStore } from '@/modules/provider/stores/hours.store'
-import type { BusinessHoursWithBreaks, HolidaySchedule, ExceptionSchedule } from '@/modules/provider/types/hours.types'
+import type { BusinessHoursWithBreaks } from '@/modules/provider/types/hours.types'
 import { RecurrencePattern } from '@/modules/provider/types/hours.types'
-import { formatTimeDisplay, toPersianNumber } from '@/modules/provider/utils/dateHelpers'
+import { formatTimeDisplay, toPersianNumber, formatMonthYear, getDayName, formatDayNumber } from '@/modules/provider/utils/dateHelpers'
 import TimePicker from './TimePicker.vue'
 
 const { t, locale } = useI18n()
@@ -212,7 +212,6 @@ const modalTitle = computed(() => {
 
     if (locale.value === 'fa') {
       // Use Jalali calendar for Persian locale
-      const { formatMonthYear, getDayName, formatDayNumber } = require('@/modules/provider/utils/dateHelpers')
       const dayName = getDayName(date, 'fa')
       const dayNumber = formatDayNumber(date, 'fa')
       const monthYear = formatMonthYear(date, 'fa')

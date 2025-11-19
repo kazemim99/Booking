@@ -63,7 +63,7 @@ function getRetryDelay(retryCount: number, baseDelay: number): number {
 /**
  * Retry interceptor for failed requests
  */
-export async function retryInterceptor(error: AxiosError): Promise<any> {
+export async function retryInterceptor(error: AxiosError): Promise<unknown> {
   const config = error.config as RetryableRequestConfig
 
   if (!config || !shouldRetry(error, config)) {

@@ -296,7 +296,7 @@ const gregorianToJalali = (gy: number, gm: number, gd: number): [number, number,
   let jy = gy <= 1600 ? 0 : 979
   gy -= gy <= 1600 ? 621 : 1600
 
-  let gy2 = gm > 2 ? gy + 1 : gy
+  const gy2 = gm > 2 ? gy + 1 : gy
   let days = 365 * gy + Math.floor((gy2 + 3) / 4) - Math.floor((gy2 + 99) / 100) +
              Math.floor((gy2 + 399) / 400) - 80 + gd + g_d_m[gm - 1]
 
@@ -310,8 +310,8 @@ const gregorianToJalali = (gy: number, gm: number, gd: number): [number, number,
     days = (days - 1) % 365
   }
 
-  let jm = days < 186 ? 1 + Math.floor(days / 31) : 7 + Math.floor((days - 186) / 30)
-  let jd = 1 + (days < 186 ? days % 31 : (days - 186) % 30)
+  const jm = days < 186 ? 1 + Math.floor(days / 31) : 7 + Math.floor((days - 186) / 30)
+  const jd = 1 + (days < 186 ? days % 31 : (days - 186) % 30)
 
   return [jy, jm, jd]
 }

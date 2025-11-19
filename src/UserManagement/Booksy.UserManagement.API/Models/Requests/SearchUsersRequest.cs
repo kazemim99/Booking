@@ -1,8 +1,8 @@
 ﻿using Microsoft.AspNetCore.Mvc;
 using System.ComponentModel.DataAnnotations;
 using Booksy.UserManagement.Domain.Enums;
-using Booksy.UserManagement.Application.Queries.SearchUsers;
 using Booksy.Core.Application.DTOs;
+using Booksy.UserManagement.Application.CQRS.Queries.SearchUsers;
 
 
 namespace Booksy.UserManagement.API.Models.Requests;

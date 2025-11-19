@@ -3,8 +3,7 @@
  * Persian (Jalaali) and Gregorian date picker support
  */
 
-import { ref, computed, watch } from 'vue'
-import type { Ref } from 'vue'
+import { ref, computed } from 'vue'
 import type { DateFormat } from '@/core/types/enums.types'
 
 // ==================== Types ====================
@@ -33,7 +32,6 @@ export function useDatePicker(
     minDate,
     maxDate,
     disabledDates = [],
-    locale = 'fa',
   } = options
 
   // ==================== State ====================
@@ -214,7 +212,7 @@ export function useDatePicker(
 
 export function useDateRange(
   initialRange?: DateRange,
-  options: UseDatePickerOptions = {}
+  _options: UseDatePickerOptions = {}
 ) {
   const startDate = ref<Date | null>(initialRange?.start || null)
   const endDate = ref<Date | null>(initialRange?.end || null)

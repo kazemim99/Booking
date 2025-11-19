@@ -6,6 +6,8 @@
  */
 
 import { digitsEnToFa, digitsFaToEn } from '@persian-tools/persian-tools'
+// eslint-disable-next-line @typescript-eslint/ban-ts-comment
+// @ts-ignore - jalaali-js doesn't have type declarations
 import jalaali from 'jalaali-js'
 
 /**

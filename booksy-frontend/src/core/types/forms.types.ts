@@ -3,7 +3,8 @@
  * Types for form fields, validation, and state management
  */
 
-import type { ValidationError } from './common.types'
+// Re-export ValidationError for backwards compatibility
+export type { ValidationError } from './common.types'
 
 // ==================== Field Types ====================
 

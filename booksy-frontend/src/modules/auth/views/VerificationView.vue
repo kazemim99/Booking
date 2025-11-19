@@ -76,16 +76,20 @@ import { ref, computed, onMounted } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { usePhoneVerification } from '../composables/usePhoneVerification'
 import { useAuthStore } from '@/core/stores/modules/auth.store'
-import { useToast } from '@/core/composables'
-import { phoneVerificationApi } from '../api/phoneVerification.api'
 import AppButton from '@/shared/components/ui/Button/AppButton.vue'
 import OtpInput from '../components/OtpInput.vue'
 
 const router = useRouter()
 const route = useRoute()
-const { state, canResend, resendCountdown, verifyCode, resendCode } = usePhoneVerification()
+const {
+  state,
+  canResend,
+  resendCountdown,
+  completeCustomerAuthentication,
+  completeProviderAuthentication,
+  resendCode
+} = usePhoneVerification()
 const authStore = useAuthStore()
-const toast = useToast()
 
 // State
 const otpCode = ref('')
@@ -125,118 +129,47 @@ const verifyOtp = async () => {
     return
   }
 
-  debugger;
   error.value = ''
   isLoading.value = true
 
   console.log('[VerificationView] Verifying OTP:', otpCode.value, 'with phone:', phoneNumber.value)
 
   try {
-    // Step 1: Verify OTP code (verificationId is retrieved from sessionStorage in composable)
-    const result = await verifyCode(otpCode.value)
+    // Get userType from route query params (explicitly passed by login page)
+    const userTypeFromQuery = route.query.userType as string | undefined
+    console.log('[VerificationView] 🔍 UserType from route query:', userTypeFromQuery)
 
-    console.log('[VerificationView] Verification result:', result)
+    // Validate and use userType, default to Customer if not provided
+    const userType = (userTypeFromQuery === 'Provider' || userTypeFromQuery === 'Customer'
+      ? userTypeFromQuery
+      : 'Customer') as 'Customer' | 'Provider'
+    console.log('[VerificationView] 🔑 Final userType for authentication:', userType)
+
+    // Use unified authentication endpoint based on user type
+    let result
+    if (userType === 'Customer') {
+      result = await completeCustomerAuthentication(otpCode.value)
+    } else {
+      result = await completeProviderAuthentication(otpCode.value)
+    }
+
+    console.log('[VerificationView] Authentication result:', result)
 
     if (result.success) {
-      console.log('[VerificationView] Phone verified successfully!')
+      console.log('[VerificationView] Authentication successful!')
 
-      // Step 2: Create user account and get authentication tokens
-      const verificationId = sessionStorage.getItem('phone_verification_id')
-      if (!verificationId) {
-        throw new Error('Verification ID not found')
-      }
+      // The composable already stored tokens and user info in authStore
+      // Now we just need to redirect based on user type and status
 
-      console.log('[VerificationView] Creating user account from verified phone...')
-
-      // Get userType from route query params (explicitly passed by login page)
-      const userTypeFromQuery = route.query.userType as string | undefined
-      console.log('[VerificationView] 🔍 UserType from route query:', userTypeFromQuery)
-
-      // Validate and use userType, default to Customer if not provided
-      const userType = (userTypeFromQuery === 'Provider' || userTypeFromQuery === 'Customer'
-        ? userTypeFromQuery
-        : 'Customer') as 'Customer' | 'Provider'
-      console.log('[VerificationView] 🔑 Final userType for registration:', userType)
-
-      const registerResult = await phoneVerificationApi.registerFromVerifiedPhone({
-        verificationId,
-        userType: userType,
-        firstName: undefined,
-        lastName: undefined,
-      })
-
-      if (registerResult.success && registerResult.data) {
-        // Step 3: Store authentication tokens
-        console.log('[VerificationView] User account created, storing tokens...')
-
-        authStore.setToken(registerResult.data.accessToken)
-        authStore.setRefreshToken(registerResult.data.refreshToken)
-
-        // Store user info - create complete User object
-        const now = new Date().toISOString()
-        authStore.setUser({
-          id: registerResult.data.userId,
-          email: undefined, // Temp email like 09123456789@booksy.temp
-          phoneNumber: registerResult.data.phoneNumber,
-          phoneVerified: true,
-          emailVerified: false,
-          userType: userType as any,
-          roles: [userType],
-          status: 'Active' as any,
-          createdAt: now,
-          updatedAt: now,
-          lastModifiedAt: now,
-          profile: {
-            firstName: '',
-            lastName: '',
-            phoneNumber: registerResult.data.phoneNumber,
-          },
-          preferences: {
-            theme: 'light',
-            language: 'fa',
-            timezone: 'Asia/Tehran',
-            currency: 'IRR',
-            dateFormat: 'YYYY/MM/DD',
-            timeFormat: '24h',
-            notifications: {
-              email: true,
-              sms: true,
-              push: true,
-            },
-            notificationSettings: {
-              emailNotifications: true,
-              smsNotifications: true,
-              pushNotifications: true,
-              appointmentReminders: true,
-              promotionalEmails: false,
-            },
-            privacySettings: undefined,
-          },
-          metadata: {
-            totalBookings: 0,
-            completedBookings: 0,
-            cancelledBookings: 0,
-            noShows: 0,
-            favoriteProviders: [],
-            lastActivityAt: now,
-          },
-        } as any)
-
-        // Clear sessionStorage
-        sessionStorage.removeItem('phone_verification_id')
-        sessionStorage.removeItem('phone_verification_number')
-        sessionStorage.removeItem('registration_user_type')
-
-        toast.success('ثبت‌نام شما با موفقیت انجام شد!')
-
-        // Step 4: Check provider status and redirect accordingly
-        console.log('[VerificationView] Checking provider status...')
-        await redirectBasedOnProviderStatus()
+      if (userType === 'Provider' && 'requiresOnboarding' in result && result.requiresOnboarding) {
+        console.log('[VerificationView] Provider requires onboarding, redirecting...')
+        await router.push({ name: 'ProviderOnboarding' })
       } else {
-        throw new Error(registerResult.error || 'خطا در ثبت‌نام')
+        console.log('[VerificationView] Checking redirect path...')
+        await redirectBasedOnProviderStatus()
       }
     } else {
-      console.error('[VerificationView] Verification failed:', result.error)
+      console.error('[VerificationView] Authentication failed:', result.error)
       error.value = result.error || 'کد وارد شده صحیح نیست'
       // Clear OTP input
       otpInputRef.value?.clear()

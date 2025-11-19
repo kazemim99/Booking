@@ -1,5 +1,4 @@
 import type { RouteRecordRaw, NavigationGuardNext, RouteLocationNormalized } from 'vue-router'
-import { useProviderStore } from '@/modules/provider/stores/provider.store'
 import { useAuthStore } from '@/core/stores/modules/auth.store'
 import { ProviderStatus } from '@/core/types/enums.types'
 
@@ -11,6 +10,7 @@ const providerRoutes: RouteRecordRaw[] = [
     component: () => import('@/modules/provider/views/ProviderSearchView.vue'),
     meta: {
       requiresAuth: false,
+      layout: 'focused', // Use FocusedLayout for search page
       title: 'Search Providers',
     },
   },
@@ -20,6 +20,7 @@ const providerRoutes: RouteRecordRaw[] = [
     component: () => import('@/modules/provider/views/ProviderListView.vue'),
     meta: {
       requiresAuth: false,
+      layout: 'focused', // Use FocusedLayout for browse page
       title: 'Browse Providers',
     },
   },
@@ -29,6 +30,7 @@ const providerRoutes: RouteRecordRaw[] = [
     component: () => import('@/modules/provider/views/ProviderDetailsView.vue'),
     meta: {
       requiresAuth: false,
+      layout: 'focused', // Use FocusedLayout for provider details
       title: 'Provider Details',
     },
   },

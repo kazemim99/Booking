@@ -47,7 +47,7 @@ public class PhoneVerificationRepository
         CancellationToken cancellationToken = default)
     {
         return await DbSet
-            .Where(v => v.PhoneNumber == phoneNumber && v.ExpiresAt > DateTime.UtcNow)
+            .Where(v => v.PhoneNumber.Value == phoneNumber.Value && v.ExpiresAt > DateTime.UtcNow)
             .OrderByDescending(v => v.CreatedAt)
             .FirstOrDefaultAsync(cancellationToken);
     }

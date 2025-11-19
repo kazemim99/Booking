@@ -95,7 +95,7 @@ interface Props {
   provider: Provider
 }
 
-const props = defineProps<Props>()
+defineProps<Props>()
 
 // State
 const lightboxOpen = ref(false)

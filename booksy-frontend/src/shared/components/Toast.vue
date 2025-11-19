@@ -37,6 +37,10 @@
 <script setup lang="ts">
 import { ref } from 'vue'
 
+defineOptions({
+  name: 'ToastNotification'
+})
+
 interface Toast {
   id: number
   message: string

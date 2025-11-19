@@ -56,9 +56,9 @@ namespace Booksy.UserManagement.Application.CQRS.Queries.Customer.GetCustomerPro
                 {
                     CustomerId = customer.Id.Value,
                     UserId = customer.UserId.Value,
-                    FirstName = customer.Profile.FirstName,
-                    LastName = customer.Profile.LastName,
-                    FullName = customer.Profile.GetFullName(),
+                    FirstName = user.Profile?.FirstName ?? string.Empty,
+                    LastName = user.Profile?.LastName ?? string.Empty,
+                    FullName = user.Profile?.GetFullName() ?? string.Empty,
                     Email = user.Email.Value,
                     PhoneNumber = user.PhoneNumber?.Value,
                     SmsEnabled = customer.NotificationPreferences.SmsEnabled,

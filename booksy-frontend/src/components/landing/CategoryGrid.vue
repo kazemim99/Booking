@@ -11,7 +11,7 @@
       <div class="category-grid">
         <div
           v-for="category in categories"
-          :key="category.id"
+          :key="category.slug"
           class="category-card"
           @click="navigateToCategory(category.slug)"
         >
@@ -19,7 +19,7 @@
             <span class="icon">{{ category.icon }}</span>
           </div>
           <h3 class="category-name">{{ category.name }}</h3>
-          <p class="category-count">{{ category.providerCount }}+ ارائه‌دهنده</p>
+          <p class="category-count">{{ formatProviderCount(category.providerCount) }}+ ارائه‌دهنده</p>
           <div class="category-arrow">
             <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" />
@@ -32,76 +32,43 @@
 </template>
 
 <script setup lang="ts">
+import { ref, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
+import { categoryService } from '@/core/api/services/category.service'
+import type { PopularCategory } from '@/core/api/services/category.service'
 
 const router = useRouter()
 
-const categories = [
-  {
-    id: 1,
-    name: 'آرایشگاه مو',
-    slug: 'haircut',
-    icon: '💇',
-    gradient: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-    providerCount: '۲,۵۰۰',
-  },
-  {
-    id: 2,
-    name: 'ماساژ و اسپا',
-    slug: 'massage',
-    icon: '💆',
-    gradient: 'linear-gradient(135deg, #f093fb 0%, #f5576c 100%)',
-    providerCount: '۱,۸۰۰',
-  },
-  {
-    id: 3,
-    name: 'پاکسازی پوست',
-    slug: 'facial',
-    icon: '✨',
-    gradient: 'linear-gradient(135deg, #4facfe 0%, #00f2fe 100%)',
-    providerCount: '۱,۲۰۰',
-  },
-  {
-    id: 4,
-    name: 'مانیکور و پدیکور',
-    slug: 'manicure',
-    icon: '💅',
-    gradient: 'linear-gradient(135deg, #fa709a 0%, #fee140 100%)',
-    providerCount: '۱,۵۰۰',
-  },
-  {
-    id: 5,
-    name: 'آرایش',
-    slug: 'makeup',
-    icon: '💄',
-    gradient: 'linear-gradient(135deg, #ffecd2 0%, #fcb69f 100%)',
-    providerCount: '۹۰۰',
-  },
-  {
-    id: 6,
-    name: 'اپیلاسیون',
-    slug: 'waxing',
-    icon: '🌿',
-    gradient: 'linear-gradient(135deg, #a8edea 0%, #fed6e3 100%)',
-    providerCount: '۸۰۰',
-  },
-  {
-    id: 7,
-    name: 'آرایشگاه مردانه',
-    slug: 'barbering',
-    icon: '💈',
-    gradient: 'linear-gradient(135deg, #ffd89b 0%, #19547b 100%)',
-    providerCount: '۱,۱۰۰',
-  },
-  {
-    id: 8,
-    name: 'خالکوبی و پیرسینگ',
-    slug: 'tattoo',
-    icon: '🎨',
-    gradient: 'linear-gradient(135deg, #f857a6 0%, #ff5858 100%)',
-    providerCount: '۶۰۰',
-  },
-]
+const categories = ref<PopularCategory[]>([])
+
+// Load popular categories on mount
+onMounted(async () => {
+  try {
+    const data = await categoryService.getPopularCategories(8)
+    categories.value = data
+  } catch (error) {
+    console.error('Error loading categories:', error)
+  }
+})
+
+// Helper function to convert Western numbers to Persian
+const toPersianNumber = (num: number): string => {
+  const persianDigits = ['۰', '۱', '۲', '۳', '۴', '۵', '۶', '۷', '۸', '۹']
+  return num.toString().replace(/\d/g, (digit) => persianDigits[parseInt(digit)])
+}
+
+// Format provider count
+const formatProviderCount = (count: number): string => {
+  if (count >= 1000) {
+    const thousands = Math.floor(count / 1000)
+    const remainder = count % 1000
+    if (remainder === 0) {
+      return `${toPersianNumber(thousands)},۰۰۰`
+    }
+    return `${toPersianNumber(thousands)},${toPersianNumber(remainder)}`
+  }
+  return toPersianNumber(count)
+}
 
 const navigateToCategory = (slug: string) => {
   router.push({

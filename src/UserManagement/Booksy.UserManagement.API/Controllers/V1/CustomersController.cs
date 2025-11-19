@@ -13,6 +13,7 @@ using Booksy.UserManagement.Application.CQRS.Queries.Customer.GetCustomerById;
 using Booksy.UserManagement.Application.CQRS.Queries.Customer.GetCustomerFavoriteProviders;
 using Booksy.UserManagement.Application.CQRS.Queries.Customer.GetCustomerProfile;
 using Booksy.UserManagement.Application.CQRS.Queries.Customer.GetUpcomingBookings;
+using Booksy.UserManagement.Application.CQRS.Queries.Customer.GetBookingHistory;
 
 namespace Booksy.UserManagement.API.Controllers.V1;
 
@@ -144,11 +145,6 @@ public class CustomersController : ControllerBase
     {
         try
         {
-            // Ensure the ID in the route matches the command
-            if (id != request.CustomerId)
-            {
-                return BadRequest(new { error = "Customer ID mismatch" });
-            }
 
             // Check if user can update this profile
             if (!await CanAccessCustomerProfile(id))
@@ -158,7 +154,10 @@ public class CustomersController : ControllerBase
                 return Forbid();
             }
 
-            var result = await _mediator.Send(request, cancellationToken);
+            // Set the CustomerId from the route parameter
+            var command = request with { CustomerId = id };
+
+            var result = await _mediator.Send(command, cancellationToken);
 
             return Ok(result);
         }
@@ -439,6 +438,44 @@ public class CustomersController : ControllerBase
             _logger.LogError(ex, "Error retrieving upcoming bookings for customer {CustomerId}", id);
             return StatusCode(StatusCodes.Status500InternalServerError,
                 new { error = "An error occurred while retrieving upcoming bookings" });
+        }
+    }
+
+    /// <summary>
+    /// Gets customer's booking history (paginated)
+    /// </summary>
+    /// <param name="id">Customer ID</param>
+    /// <param name="page">Page number (default 1)</param>
+    /// <param name="pageSize">Page size (default 20)</param>
+    /// <param name="cancellationToken">Cancellation token</param>
+    /// <returns>Paginated booking history</returns>
+    [HttpGet("{id:guid}/bookings/history")]
+    [Authorize(Roles = "Customer,Admin")]
+    [ProducesResponseType(typeof(BookingHistoryResult), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> GetBookingHistory(
+        [FromRoute] Guid id,
+        [FromQuery] int page = 1,
+        [FromQuery] int pageSize = 20,
+        CancellationToken cancellationToken = default)
+    {
+        try
+        {
+            if (!await CanAccessCustomerProfile(id))
+            {
+                return Forbid();
+            }
+
+            var query = new GetBookingHistoryQuery(id, page, pageSize);
+            var result = await _mediator.Send(query, cancellationToken);
+
+            return Ok(result);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error retrieving booking history for customer {CustomerId}", id);
+            return StatusCode(StatusCodes.Status500InternalServerError,
+                new { error = "An error occurred while retrieving booking history" });
         }
     }
 

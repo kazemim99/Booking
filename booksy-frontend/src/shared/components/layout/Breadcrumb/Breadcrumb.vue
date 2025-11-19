@@ -76,6 +76,10 @@
 import { computed } from 'vue'
 import { useRoute } from 'vue-router'
 
+defineOptions({
+  name: 'BreadcrumbNav'
+})
+
 interface Breadcrumb {
   label: string
   path: string

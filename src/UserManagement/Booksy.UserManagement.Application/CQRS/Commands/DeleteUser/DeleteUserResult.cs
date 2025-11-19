@@ -5,7 +5,7 @@
 // ========================================
 // Booksy.UserManagement.Application/Commands/ActivateUser/ActivateUserCommand.cs
 // ========================================
-namespace Booksy.UserManagement.Application.CQRS.Commands.ActivateUser
+namespace Booksy.UserManagement.Application.CQRS.Commands.DeleteUser
 {
     public class DeleteUserResult
     {

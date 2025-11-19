@@ -6,23 +6,20 @@
 
 /**
  * Request phone number verification - sends OTP code
- * Maps to: RequestPhoneVerificationRequest (C#)
+ * Maps to: SendVerificationCodeCommand (C#)
  */
 export interface SendVerificationCodeRequest {
-  phoneNumber: string // Phone number to verify (supports formats: 09xxx, +989xxx)
-  method?: 'SMS' | 'Call' | 'WhatsApp' // Verification method (default: SMS)
-  purpose?: 'Registration' | 'Login' | 'PasswordReset' | 'PhoneChange' // Purpose (default: Registration)
-  userId?: string // Optional user ID if associated with existing user
+  phoneNumber: string // Phone number to verify (e.g., "09121234567")
+  countryCode?: string // Country code (default: "+98" for Iran)
 }
 
 /**
  * Response after requesting phone verification
- * Maps to: PhoneVerificationResponse (C#)
+ * Maps to: SendVerificationCodeResponse (C#)
  */
 export interface SendVerificationCodeResponse {
   verificationId: string // Unique verification identifier (Guid)
-  phoneNumber: string // Masked phone number (e.g., *****1234)
-  method: string // Verification method used
+  maskedPhoneNumber: string // Masked phone number (e.g., •••1234)
   expiresAt: string // ISO 8601 datetime when code expires
   maxAttempts: number // Maximum verification attempts allowed
   message: string // Message to display to user
@@ -146,4 +143,68 @@ export const PHONE_PATTERNS: Record<string, RegExp> = {
   US: /^(\+1|1)?[2-9]\d{9}$/,
   GB: /^(\+44|0)[1-9]\d{8,9}$/,
   // Add more as needed
+}
+
+// ==================== NEW UNIFIED AUTHENTICATION TYPES ====================
+
+/**
+ * Complete customer authentication request
+ * POST /api/v1/auth/customer/complete-authentication
+ */
+export interface CompleteCustomerAuthenticationRequest {
+  phoneNumber: string // Phone number (e.g., "09121234567")
+  code: string // 6-digit OTP code
+  firstName?: string // Optional: Customer first name
+  lastName?: string // Optional: Customer last name
+  email?: string // Optional: Customer email
+}
+
+/**
+ * Complete customer authentication response
+ * Includes customer details + JWT tokens
+ */
+export interface CompleteCustomerAuthenticationResponse {
+  isNewCustomer: boolean // true if this is first-time registration
+  userId: string // User ID (Guid)
+  customerId: string // Customer ID (Guid)
+  phoneNumber: string // Customer's phone number
+  email: string | null // Customer's email (if provided)
+  fullName: string // Customer's full name
+  accessToken: string // JWT access token
+  refreshToken: string // JWT refresh token
+  expiresIn: number // Token expiration in seconds (86400 = 24h)
+  tokenType: string // "Bearer"
+  message: string // Success message (e.g., "Welcome! Your account has been created successfully.")
+}
+
+/**
+ * Complete provider authentication request
+ * POST /api/v1/auth/provider/complete-authentication
+ */
+export interface CompleteProviderAuthenticationRequest {
+  phoneNumber: string // Phone number (e.g., "09121234567")
+  code: string // 6-digit OTP code
+  firstName?: string // Optional: Provider first name
+  lastName?: string // Optional: Provider last name
+  email?: string // Optional: Provider email
+}
+
+/**
+ * Complete provider authentication response
+ * Includes provider details + JWT tokens with provider claims
+ */
+export interface CompleteProviderAuthenticationResponse {
+  isNewProvider: boolean // true if this is first-time registration
+  userId: string // User ID (Guid)
+  providerId: string | null // Provider ID from ServiceCatalog (null if not created yet)
+  providerStatus: string | null // "Pending", "Active", "Inactive", etc.
+  phoneNumber: string // Provider's phone number
+  email: string | null // Provider's email (if provided)
+  fullName: string // Provider's full name
+  accessToken: string // JWT access token with provider claims
+  refreshToken: string // JWT refresh token
+  expiresIn: number // Token expiration in seconds (86400 = 24h)
+  tokenType: string // "Bearer"
+  requiresOnboarding: boolean // true if provider needs to complete onboarding
+  message: string // Success message (e.g., "Welcome! Please complete your provider profile.")
 }

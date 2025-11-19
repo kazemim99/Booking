@@ -10,6 +10,7 @@ namespace Booksy.UserManagement.Application.CQRS.Commands.AuthenticateUser
     public sealed class AuthenticateUserCommandHandler : ICommandHandler<AuthenticateUserCommand, AuthenticateUserResult>
     {
         private readonly IUserRepository _userRepository;
+        private readonly ICustomerRepository _customerRepository;
         private readonly IJwtTokenService _jwtTokenService;
         private readonly IAuditUserService _auditService;
         private readonly IProviderInfoService _providerInfoService;
@@ -17,12 +18,14 @@ namespace Booksy.UserManagement.Application.CQRS.Commands.AuthenticateUser
 
         public AuthenticateUserCommandHandler(
             IUserRepository userWriteRepository,
+            ICustomerRepository customerRepository,
             IJwtTokenService jwtTokenService,
             IAuditUserService auditService,
             IProviderInfoService providerInfoService,
             ILogger<AuthenticateUserCommandHandler> logger)
         {
             _userRepository = userWriteRepository;
+            _customerRepository = customerRepository;
             _jwtTokenService = jwtTokenService;
             _auditService = auditService;
             _providerInfoService = providerInfoService;
@@ -82,6 +85,24 @@ namespace Booksy.UserManagement.Application.CQRS.Commands.AuthenticateUser
                     }
                 }
 
+                // Query customer information if user has Customer role
+                string? customerId = null;
+                if (authResult.Roles.Contains("Customer") || authResult.Roles.Contains("Client"))
+                {
+                    _logger.LogInformation("User has Customer role, querying customer info for UserId: {UserId}", user.Id);
+                    var customer = await _customerRepository.GetByUserIdAsync(user.Id, cancellationToken);
+
+                    if (customer != null)
+                    {
+                        customerId = customer.Id.Value.ToString();
+                        _logger.LogInformation("Customer found: CustomerId={CustomerId}", customerId);
+                    }
+                    else
+                    {
+                        _logger.LogInformation("No customer found for UserId: {UserId}", user.Id);
+                    }
+                }
+
                 // Generate JWT token
                 var tokenExpirationHours = request.RememberMe ? 168 : 24; // 7 days or 1 day
                 var accessToken = _jwtTokenService.GenerateAccessToken(
@@ -93,6 +114,7 @@ namespace Booksy.UserManagement.Application.CQRS.Commands.AuthenticateUser
                     authResult.Roles,
                     providerId,
                     providerStatus,
+                    customerId,
                     tokenExpirationHours);
 
                 await _auditService.LogSuccessfulLoginAsync(

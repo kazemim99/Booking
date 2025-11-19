@@ -6,7 +6,6 @@
 
 import type { InternalAxiosRequestConfig } from 'axios'
 import axios from 'axios'
-import { localStorageService } from '@/core/services/storage/local-storage.service'
 import { microservices } from '../config/api-config'
 
 /**
@@ -25,11 +24,12 @@ export function authInterceptor(config: InternalAxiosRequestConfig): InternalAxi
 /**
  * Handles token refresh on 401 errors
  */
-export async function authErrorInterceptor(error: any) {
-  const originalRequest = error.config
+export async function authErrorInterceptor(error: unknown) {
+  const errorObj = error as { config?: InternalAxiosRequestConfig & { _retry?: boolean }; response?: { status?: number } }
+  const originalRequest = errorObj.config
 
   // If 401 and haven't retried yet
-  if (error.response?.status === 401 && !originalRequest._retry) {
+  if (errorObj.response?.status === 401 && originalRequest && !originalRequest._retry) {
     originalRequest._retry = true
 
     try {

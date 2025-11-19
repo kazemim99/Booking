@@ -23,7 +23,7 @@ export function requestLoggingInterceptor(config: InternalAxiosRequestConfig) {
   }
 
   // Add request timestamp for performance tracking
-  ;(config as any).metadata = { startTime: new Date() }
+  ;(config as InternalAxiosRequestConfig & { metadata?: { startTime: Date } }).metadata = { startTime: new Date() }
 
   return config
 }
@@ -34,7 +34,7 @@ export function requestLoggingInterceptor(config: InternalAxiosRequestConfig) {
 export function responseLoggingInterceptor(response: AxiosResponse) {
   if (import.meta.env.DEV) {
     const { status, config, data } = response
-    const metadata = (config as any).metadata
+    const metadata = (config as InternalAxiosRequestConfig & { metadata?: { startTime: Date } }).metadata
     const duration = metadata ? new Date().getTime() - metadata.startTime.getTime() : 0
 
     loggerService.info('✅ API Response', {
@@ -51,13 +51,14 @@ export function responseLoggingInterceptor(response: AxiosResponse) {
 /**
  * Logs API errors
  */
-export function errorLoggingInterceptor(error: any) {
-  const { config, response } = error
+export function errorLoggingInterceptor(error: unknown) {
+  const errorObj = error as { config?: InternalAxiosRequestConfig & { metadata?: { startTime: Date } }; response?: { status?: number; data?: unknown }; message?: string }
+  const { config, response } = errorObj
   const metadata = config?.metadata
   const duration = metadata ? new Date().getTime() - metadata.startTime.getTime() : 0
 
   loggerService.error('❌ API Error', {
-    message: error.message,
+    message: errorObj.message || 'Unknown error',
     status: response?.status,
     url: config?.url,
     duration: `${duration}ms`,

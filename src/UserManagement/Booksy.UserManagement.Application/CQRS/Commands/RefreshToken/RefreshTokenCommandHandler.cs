@@ -6,18 +6,20 @@ namespace Booksy.UserManagement.Application.CQRS.Commands.RefreshToken
     public sealed class RefreshTokenCommandHandler : ICommandHandler<RefreshTokenCommand, RefreshTokenResult>
     {
         private readonly IUserRepository _userRepository;
+        private readonly ICustomerRepository _customerRepository;
         private readonly IJwtTokenService _jwtTokenService;
         private readonly IProviderInfoService _providerInfoService;
         private readonly ILogger<RefreshTokenCommandHandler> _logger;
 
         public RefreshTokenCommandHandler(
             IUserRepository userWriteRepository,
+            ICustomerRepository customerRepository,
             IJwtTokenService jwtTokenService,
             IProviderInfoService providerInfoService,
             ILogger<RefreshTokenCommandHandler> logger)
         {
             _userRepository = userWriteRepository;
-
+            _customerRepository = customerRepository;
             _jwtTokenService = jwtTokenService;
             _providerInfoService = providerInfoService;
             _logger = logger;
@@ -71,6 +73,24 @@ namespace Booksy.UserManagement.Application.CQRS.Commands.RefreshToken
                 }
             }
 
+            // Query customer information if user has Customer role
+            string? customerId = null;
+            if (user.Roles.Any(r => r.Name == "Customer" || r.Name == "Client"))
+            {
+                _logger.LogInformation("User has Customer role, querying customer info for UserId: {UserId}", user.Id);
+                var customer = await _customerRepository.GetByUserIdAsync(user.Id, cancellationToken);
+
+                if (customer != null)
+                {
+                    customerId = customer.Id.Value.ToString();
+                    _logger.LogInformation("Customer found: CustomerId={CustomerId}", customerId);
+                }
+                else
+                {
+                    _logger.LogInformation("No customer found for UserId: {UserId}", user.Id);
+                }
+            }
+
             // Generate new access token
             var accessToken = _jwtTokenService.GenerateAccessToken(
                 user.Id,
@@ -81,6 +101,7 @@ namespace Booksy.UserManagement.Application.CQRS.Commands.RefreshToken
                 user.Roles.Select(r => r.Name).ToList(),
                 providerId,
                 providerStatus,
+                customerId,
                 24); // 24 hours
 
             await _userRepository.UpdateAsync(user, cancellationToken);

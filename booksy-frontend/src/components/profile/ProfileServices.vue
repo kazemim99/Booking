@@ -179,7 +179,7 @@ const truncateText = (text: string, maxLength: number): string => {
   return text.length > maxLength ? text.substring(0, maxLength) + '...' : text
 }
 
-const handleImageError = (event: Event, index: number) => {
+const handleImageError = (event: Event) => {
   const img = event.target as HTMLImageElement
   img.style.display = 'none'
 }

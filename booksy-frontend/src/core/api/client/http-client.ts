@@ -1,6 +1,5 @@
-import axios, { AxiosInstance, AxiosRequestConfig, AxiosResponse, AxiosError } from 'axios'
+import axios, { AxiosInstance, AxiosRequestConfig, AxiosResponse, AxiosError, InternalAxiosRequestConfig } from 'axios'
 import { apiConfig, microservices } from '../config/api-config'
-import { ApiError } from './api-error'
 import type { ApiResponse } from './api-response'
 import {
   authInterceptor,
@@ -22,26 +21,27 @@ import {
   cacheResponseInterceptor,
 } from '../interceptors/request-cache'
 
-interface ErrorResponse {
-  success?: boolean
-  statusCode?: number
-  message?: string
-  data?: unknown
-  error?: {
-    code?: string
-    message?: string
-    errors?: Record<string, string[]>
-  }
-  errors?: Record<string, string[]>
-  title?: string
-  status?: number
-  metadata?: {
-    requestId?: string
-    timestamp?: string
-    path?: string
-    method?: string
-  }
-}
+// Removed unused ErrorResponse interface
+// interface ErrorResponse {
+//   success?: boolean
+//   statusCode?: number
+//   message?: string
+//   data?: unknown
+//   error?: {
+//     code?: string
+//     message?: string
+//     errors?: Record<string, string[]>
+//   }
+//   errors?: Record<string, string[]>
+//   title?: string
+//   status?: number
+//   metadata?: {
+//     requestId?: string
+//     timestamp?: string
+//     path?: string
+//     method?: string
+//   }
+// }
 
 interface HttpClientConfig {
   baseURL: string
@@ -51,10 +51,8 @@ interface HttpClientConfig {
 
 class HttpClient {
   private axiosInstance: AxiosInstance
-  private readonly baseURL: string
 
   constructor(config: HttpClientConfig = apiConfig) {
-    this.baseURL = config.baseURL
     this.axiosInstance = axios.create({
       baseURL: config.baseURL,
       timeout: config.timeout,
@@ -75,8 +73,8 @@ class HttpClient {
 
     // 1. Cache - Check cache before making request (GET only)
     this.axiosInstance.interceptors.request.use(
-      cacheRequestInterceptor as any,
-      (error: AxiosError) => Promise.reject(error),
+      cacheRequestInterceptor as (config: InternalAxiosRequestConfig) => InternalAxiosRequestConfig | Promise<InternalAxiosRequestConfig>,
+      (error: unknown) => Promise.reject(error),
     )
 
     // 2. Logging - Track request start time and log request details

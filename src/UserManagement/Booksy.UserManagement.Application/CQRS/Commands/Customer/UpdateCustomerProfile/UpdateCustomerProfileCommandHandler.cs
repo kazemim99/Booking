@@ -16,13 +16,16 @@ namespace Booksy.UserManagement.Application.CQRS.Commands.Customer.UpdateCustome
     public sealed class UpdateCustomerProfileCommandHandler : ICommandHandler<UpdateCustomerProfileCommand, UpdateCustomerProfileResult>
     {
         private readonly ICustomerRepository _customerRepository;
+        private readonly IUserRepository _userRepository;
         private readonly ILogger<UpdateCustomerProfileCommandHandler> _logger;
 
         public UpdateCustomerProfileCommandHandler(
             ICustomerRepository customerRepository,
+            IUserRepository userRepository,
             ILogger<UpdateCustomerProfileCommandHandler> logger)
         {
             _customerRepository = customerRepository;
+            _userRepository = userRepository;
             _logger = logger;
         }
 
@@ -43,15 +46,21 @@ namespace Booksy.UserManagement.Application.CQRS.Commands.Customer.UpdateCustome
                     throw new InvalidOperationException($"Customer not found with ID: {request.CustomerId}");
                 }
 
-                // Create updated profile
-                var updatedProfile = UserProfile.Create(
+                // Get associated user (User aggregate owns the Profile)
+                var user = await _userRepository.GetByIdAsync(customer.UserId, cancellationToken);
+
+                if (user == null)
+                {
+                    throw new InvalidOperationException($"User not found with ID: {customer.UserId}");
+                }
+
+                // Update user profile with new information
+                user.Profile.UpdateName(
                     request.FirstName,
                     request.LastName,
-                    request.MiddleName,
-                    request.DateOfBirth,
-                    request.Gender);
+                    request.MiddleName);
 
-                // Update contact information
+                // Update contact information if provided
                 if (!string.IsNullOrWhiteSpace(request.PhoneNumber))
                 {
                     var phoneNumber = PhoneNumber.Create(request.PhoneNumber);
@@ -68,35 +77,43 @@ namespace Booksy.UserManagement.Application.CQRS.Commands.Customer.UpdateCustome
                             request.Address.Unit);
                     }
 
-                    updatedProfile.UpdateContactInfo(phoneNumber, null, address);
+                    user.Profile.UpdateContactInfo(phoneNumber, null, address);
                 }
 
-                // Update avatar
+                // Update avatar if provided
                 if (!string.IsNullOrWhiteSpace(request.AvatarUrl))
                 {
-                    updatedProfile.UpdateAvatar(request.AvatarUrl);
+                    user.Profile.UpdateAvatar(request.AvatarUrl);
                 }
 
-                // Update bio
+                // Update bio if provided
                 if (!string.IsNullOrWhiteSpace(request.Bio))
                 {
-                    updatedProfile.UpdateBio(request.Bio);
+                    user.Profile.UpdateBio(request.Bio);
                 }
 
-                // Update customer profile
-                customer.UpdateProfile(updatedProfile);
+                // Update date of birth and gender if provided
+                if (request.DateOfBirth.HasValue)
+                {
+                    user.Profile.UpdateDateOfBirth(request.DateOfBirth.Value);
+                }
 
-                // Persist changes
-                await _customerRepository.UpdateAsync(customer, cancellationToken);
+                if (!string.IsNullOrWhiteSpace(request.Gender))
+                {
+                    user.Profile.UpdateGender(request.Gender);
+                }
+
+                // Persist changes to User (which owns the Profile)
+                await _userRepository.UpdateAsync(user, cancellationToken);
 
                 _logger.LogInformation(
-                    "Customer profile updated successfully. CustomerId: {CustomerId}",
-                    customer.Id);
+                    "Customer profile updated successfully. CustomerId: {CustomerId}, UserId: {UserId}",
+                    customer.Id, user.Id);
 
                 return new UpdateCustomerProfileResult(
                     CustomerId: customer.Id.Value,
-                    FullName: updatedProfile.GetFullName(),
-                    UpdatedAt: customer.LastModifiedAt ?? DateTime.UtcNow);
+                    FullName: user.Profile.GetFullName(),
+                    UpdatedAt: DateTime.UtcNow);
             }
             catch (Exception ex)
             {
