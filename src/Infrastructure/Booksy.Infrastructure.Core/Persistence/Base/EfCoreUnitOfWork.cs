@@ -228,19 +228,33 @@ public class EfCoreUnitOfWork<TContext> : IUnitOfWork
 
         return await strategy.ExecuteAsync(async () =>
         {
+            // Check if transaction is already active
+            if (_currentTransaction != null)
+            {
+                _logger.LogDebug("Transaction already active, reusing existing transaction");
+                return await operation();
+            }
 
-            await using var transaction = await _context.Database.BeginTransactionAsync(cancellationToken);
+            _currentTransaction = await _context.Database.BeginTransactionAsync(cancellationToken);
             try
             {
                 var result = await operation();
                 await CommitAndPublishEventsAsync(cancellationToken);
-                await transaction.CommitAsync(cancellationToken);
+                await _currentTransaction.CommitAsync(cancellationToken);
                 return result;
             }
             catch
             {
-                await transaction.RollbackAsync(cancellationToken);
+                await _currentTransaction.RollbackAsync(cancellationToken);
                 throw;
+            }
+            finally
+            {
+                if (_currentTransaction != null)
+                {
+                    _currentTransaction.Dispose();
+                    _currentTransaction = null;
+                }
             }
         });
     }
@@ -251,17 +265,33 @@ public class EfCoreUnitOfWork<TContext> : IUnitOfWork
 
         await strategy.ExecuteAsync(async () =>
         {
-            await using var transaction = await _context.Database.BeginTransactionAsync(cancellationToken);
+            // Check if transaction is already active
+            if (_currentTransaction != null)
+            {
+                _logger.LogDebug("Transaction already active, reusing existing transaction");
+                await operation();
+                return;
+            }
+
+            _currentTransaction = await _context.Database.BeginTransactionAsync(cancellationToken);
             try
             {
-                await operation(); 
+                await operation();
                 await CommitAndPublishEventsAsync(cancellationToken);
-                await transaction.CommitAsync(cancellationToken);
+                await _currentTransaction.CommitAsync(cancellationToken);
             }
             catch
             {
-                await transaction.RollbackAsync(cancellationToken);
+                await _currentTransaction.RollbackAsync(cancellationToken);
                 throw;
+            }
+            finally
+            {
+                if (_currentTransaction != null)
+                {
+                    _currentTransaction.Dispose();
+                    _currentTransaction = null;
+                }
             }
         });
     }
@@ -271,20 +301,35 @@ public class EfCoreUnitOfWork<TContext> : IUnitOfWork
 
         await strategy.ExecuteAsync(async () =>
         {
-            await using var transaction = await _context.Database.BeginTransactionAsync(cancellationToken);
+            // Check if transaction is already active
+            if (_currentTransaction != null)
+            {
+                _logger.LogDebug("Transaction already active, reusing existing transaction");
+                await operation();
+                return;
+            }
+
+            _currentTransaction = await _context.Database.BeginTransactionAsync(cancellationToken);
             try
             {
                 await operation();
                 var result = await _context.SaveChangesAsync(cancellationToken);
-                await transaction.CommitAsync(cancellationToken);
+                await _currentTransaction.CommitAsync(cancellationToken);
 
                 _logger.LogDebug("Saved {Count} changes and events", result);
-
             }
             catch
             {
-                await transaction.RollbackAsync(cancellationToken);
+                await _currentTransaction.RollbackAsync(cancellationToken);
                 throw;
+            }
+            finally
+            {
+                if (_currentTransaction != null)
+                {
+                    _currentTransaction.Dispose();
+                    _currentTransaction = null;
+                }
             }
         });
     }

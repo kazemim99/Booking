@@ -7,7 +7,7 @@
 // ========================================
 using Booksy.Core.Application.Abstractions.CQRS;
 
-namespace Booksy.UserManagement.Application.CQRS.Commands.ActivateUser
+namespace Booksy.UserManagement.Application.CQRS.Commands.DeActivateUser
 {
     /// <summary>
     /// Command to activate a user account

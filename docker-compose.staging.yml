@@ -1,0 +1,179 @@
+version: '3.8'
+
+# Staging Environment Configuration
+# Similar to production but with different ports and resource limits
+
+services:
+  # Backend Services
+  usermanagement-api-staging:
+    image: ghcr.io/${GITHUB_REPOSITORY_OWNER}/booksy-usermanagement:${STAGING_TAG:-develop}
+    container_name: booksy-usermanagement-api-staging
+    env_file:
+      - .env.staging
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Staging
+      - ASPNETCORE_URLS=http://+:80
+      - ConnectionStrings__DefaultConnection=${DB_CONNECTION_STRING_STAGING}
+      - ConnectionStrings__Redis=${REDIS_CONNECTION_STRING_STAGING}
+      - ConnectionStrings__RabbitMQ=${RABBITMQ_CONNECTION_STRING_STAGING}
+      - Seq__ServerUrl=${SEQ_SERVER_URL_STAGING}
+    ports:
+      - "6001:80"
+    depends_on:
+      postgres-staging:
+        condition: service_healthy
+      redis-staging:
+        condition: service_healthy
+    networks:
+      - booksy-staging-network
+    restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          cpus: '0.5'
+          memory: 512M
+
+  servicecatalog-api-staging:
+    image: ghcr.io/${GITHUB_REPOSITORY_OWNER}/booksy-servicecatalog:${STAGING_TAG:-develop}
+    container_name: booksy-servicecatalog-api-staging
+    env_file:
+      - .env.staging
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Staging
+      - ASPNETCORE_URLS=http://+:80
+      - ConnectionStrings__DefaultConnection=${DB_CONNECTION_STRING_STAGING}
+      - ConnectionStrings__Redis=${REDIS_CONNECTION_STRING_STAGING}
+      - ConnectionStrings__RabbitMQ=${RABBITMQ_CONNECTION_STRING_STAGING}
+      - Seq__ServerUrl=${SEQ_SERVER_URL_STAGING}
+    ports:
+      - "6002:80"
+    depends_on:
+      postgres-staging:
+        condition: service_healthy
+      redis-staging:
+        condition: service_healthy
+    networks:
+      - booksy-staging-network
+    restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          cpus: '0.5'
+          memory: 512M
+
+  gateway-staging:
+    image: ghcr.io/${GITHUB_REPOSITORY_OWNER}/booksy-gateway:${STAGING_TAG:-develop}
+    container_name: booksy-gateway-staging
+    env_file:
+      - .env.staging
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Staging
+      - ASPNETCORE_URLS=http://+:80
+      - Services__UserManagement=http://usermanagement-api-staging:80
+      - Services__ServiceCatalog=http://servicecatalog-api-staging:80
+      - Seq__ServerUrl=${SEQ_SERVER_URL_STAGING}
+    ports:
+      - "6000:80"
+    depends_on:
+      - usermanagement-api-staging
+      - servicecatalog-api-staging
+    networks:
+      - booksy-staging-network
+    restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          cpus: '0.25'
+          memory: 256M
+
+  frontend-staging:
+    image: ghcr.io/${GITHUB_REPOSITORY_OWNER}/booksy-frontend:${STAGING_TAG:-develop}
+    container_name: booksy-frontend-staging
+    env_file:
+      - .env.staging
+    ports:
+      - "8080:80"
+    depends_on:
+      - gateway-staging
+    networks:
+      - booksy-staging-network
+    restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          cpus: '0.25'
+          memory: 128M
+
+  # Infrastructure Services
+  postgres-staging:
+    image: postgres:16-alpine
+    container_name: booksy-postgres-staging
+    env_file:
+      - .env.staging
+    environment:
+      - POSTGRES_USER=${POSTGRES_USER_STAGING:-booksy_staging}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD_STAGING}
+      - POSTGRES_DB=${POSTGRES_DB_STAGING:-booksy_staging}
+    ports:
+      - "127.0.0.1:6432:5432"
+    volumes:
+      - postgres_staging_data:/var/lib/postgresql/data
+    networks:
+      - booksy-staging-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER_STAGING:-booksy_staging} -d ${POSTGRES_DB_STAGING:-booksy_staging}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  redis-staging:
+    image: redis:7-alpine
+    container_name: booksy-redis-staging
+    env_file:
+      - .env.staging
+    command: redis-server --requirepass ${REDIS_PASSWORD_STAGING} --maxmemory 256mb --maxmemory-policy allkeys-lru
+    ports:
+      - "127.0.0.1:6380:6379"
+    volumes:
+      - redis_staging_data:/data
+    networks:
+      - booksy-staging-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+
+  seq-staging:
+    image: datalust/seq:latest
+    container_name: booksy-seq-staging
+    env_file:
+      - .env.staging
+    environment:
+      - ACCEPT_EULA=Y
+      - SEQ_FIRSTRUN_ADMINUSERNAME=${SEQ_ADMIN_USER_STAGING:-admin}
+      - SEQ_FIRSTRUN_ADMINPASSWORD=${SEQ_ADMIN_PASSWORD_STAGING}
+    ports:
+      - "6341:80"
+    volumes:
+      - seq_staging_data:/data
+    networks:
+      - booksy-staging-network
+    restart: unless-stopped
+
+volumes:
+  postgres_staging_data:
+    driver: local
+  redis_staging_data:
+    driver: local
+  seq_staging_data:
+    driver: local
+
+networks:
+  booksy-staging-network:
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 172.26.0.0/16

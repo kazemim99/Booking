@@ -29,6 +29,7 @@ const DEFAULT_CACHE_CONFIG: CacheConfig = {
 interface CacheableRequestConfig extends InternalAxiosRequestConfig {
   cache?: boolean | Partial<CacheConfig>
   cacheKey?: string
+  __cacheConfig?: CacheConfig
 }
 
 /**
@@ -219,7 +220,7 @@ export function cacheRequestInterceptor(
   }
 
   // Store cache config in request for response interceptor
-  ;(config as any).__cacheConfig = cacheConfig
+  ;(config as CacheableRequestConfig).__cacheConfig = cacheConfig
 
   return config
 }
@@ -241,7 +242,7 @@ export function cacheResponseInterceptor(response: AxiosResponse): AxiosResponse
   }
 
   // Get cache config from request
-  const cacheConfig = (config as any).__cacheConfig as CacheConfig | undefined
+  const cacheConfig = (config as CacheableRequestConfig).__cacheConfig
 
   if (cacheConfig?.enabled) {
     cache.set(config, response, cacheConfig.ttl)

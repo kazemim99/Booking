@@ -2,6 +2,7 @@
 // Booksy.UserManagement.Application/CQRS/Commands/Customer/UpdateCustomerProfile/UpdateCustomerProfileCommand.cs
 // ========================================
 using Booksy.Core.Application.Abstractions.CQRS;
+using Booksy.UserManagement.Application.DTOs;
 
 namespace Booksy.UserManagement.Application.CQRS.Commands.Customer.UpdateCustomerProfile
 {
@@ -23,12 +24,4 @@ namespace Booksy.UserManagement.Application.CQRS.Commands.Customer.UpdateCustome
 
         public Guid? IdempotencyKey { get; init; }
     }
-
-    public sealed record AddressDto(
-        string Street,
-        string City,
-        string State,
-        string PostalCode,
-        string Country,
-        string? Unit = null);
 }

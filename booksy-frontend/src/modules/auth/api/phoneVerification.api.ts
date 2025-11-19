@@ -3,60 +3,112 @@ import type { ApiResponse } from '@/core/api/client/api-response'
 import type {
   SendVerificationCodeRequest,
   SendVerificationCodeResponse,
-  VerifyCodeRequest,
-  VerifyCodeResponse,
+  CompleteCustomerAuthenticationRequest,
+  CompleteCustomerAuthenticationResponse,
+  CompleteProviderAuthenticationRequest,
+  CompleteProviderAuthenticationResponse,
   ResendOtpRequest,
   ResendOtpResponse,
-  RegisterFromVerifiedPhoneRequest,
-  RegisterFromVerifiedPhoneResponse,
 } from '../types/phoneVerification.types'
 
 /**
- * Phone Verification API
- * Base URL: /api/v1/phone-verification
+ * Phone Verification & Authentication API
+ * Base URL: /api/v1/auth
  * Backend: UserManagement API (port 5020)
+ *
+ * New unified flow:
+ * 1. sendVerificationCode() - Send OTP to phone
+ * 2. completeCustomerAuthentication() or completeProviderAuthentication() - Verify OTP + Login/Register
  */
 export const phoneVerificationApi = {
   /**
-   * Request phone number verification - sends OTP code
-   * POST /api/v1/phone-verification/request
+   * Send OTP verification code to phone number
+   * POST /api/v1/auth/send-verification-code
    */
   async sendVerificationCode(
     request: SendVerificationCodeRequest
   ): Promise<ApiResponse<SendVerificationCodeResponse>> {
     return userManagementClient.post<SendVerificationCodeResponse>(
-      '/v1/phone-verification/request',
+      '/v1/auth/send-verification-code',
+      {
+        phoneNumber: request.phoneNumber,
+        countryCode: request.countryCode || '+98',
+      }
+    )
+  },
+
+  /**
+   * Complete customer authentication (verify code + login/register)
+   * POST /api/v1/auth/customer/complete-authentication
+   *
+   * This endpoint:
+   * - Verifies the OTP code
+   * - Creates User if doesn't exist
+   * - Creates Customer aggregate if doesn't exist
+   * - Returns JWT tokens
+   */
+  async completeCustomerAuthentication(
+    request: CompleteCustomerAuthenticationRequest
+  ): Promise<ApiResponse<CompleteCustomerAuthenticationResponse>> {
+    return userManagementClient.post<CompleteCustomerAuthenticationResponse>(
+      '/v1/auth/customer/complete-authentication',
       request
     )
   },
 
   /**
-   * Verify phone number with OTP code
-   * POST /api/v1/phone-verification/verify
+   * Complete provider authentication (verify code + login/register)
+   * POST /api/v1/auth/provider/complete-authentication
+   *
+   * This endpoint:
+   * - Verifies the OTP code
+   * - Creates User if doesn't exist
+   * - Queries Provider aggregate from ServiceCatalog
+   * - Returns JWT tokens with provider claims
    */
-  async verifyCode(request: VerifyCodeRequest): Promise<ApiResponse<VerifyCodeResponse>> {
-    return userManagementClient.post<VerifyCodeResponse>('/v1/phone-verification/verify', request)
+  async completeProviderAuthentication(
+    request: CompleteProviderAuthenticationRequest
+  ): Promise<ApiResponse<CompleteProviderAuthenticationResponse>> {
+    return userManagementClient.post<CompleteProviderAuthenticationResponse>(
+      '/v1/auth/provider/complete-authentication',
+      request
+    )
   },
 
   /**
    * Resend OTP code for existing verification
-   * POST /api/v1/phone-verification/resend
+   * POST /api/v1/phoneverification/resend
+   *
+   * Note: This still uses the old endpoint as it's still available
    */
   async resendOtp(request: ResendOtpRequest): Promise<ApiResponse<ResendOtpResponse>> {
-    return userManagementClient.post<ResendOtpResponse>('/v1/phone-verification/resend', request)
+    return userManagementClient.post<ResendOtpResponse>('/v1/phoneverification/resend', request)
+  },
+
+  // ==================== DEPRECATED METHODS ====================
+  // These are kept for backward compatibility but should not be used in new code
+
+  /**
+   * @deprecated Use completeCustomerAuthentication() or completeProviderAuthentication() instead
+   */
+  async verifyCode(phoneNumber: string, code: string): Promise<ApiResponse<any>> {
+    console.warn(
+      'phoneVerificationApi.verifyCode() is deprecated. Use completeCustomerAuthentication() or completeProviderAuthentication() instead.'
+    )
+    throw new Error(
+      'This endpoint has been removed. Please use completeCustomerAuthentication() or completeProviderAuthentication()'
+    )
   },
 
   /**
-   * Register/login user from verified phone number
-   * Creates user account and returns authentication tokens
-   * POST /api/v1/phone-verification/register
+   * @deprecated Use completeCustomerAuthentication() or completeProviderAuthentication() instead
    */
-  async registerFromVerifiedPhone(
-    request: RegisterFromVerifiedPhoneRequest
-  ): Promise<ApiResponse<RegisterFromVerifiedPhoneResponse>> {
-    return userManagementClient.post<RegisterFromVerifiedPhoneResponse>(
-      '/v1/phone-verification/register',
-      request
+  async registerFromVerifiedPhone(request: any): Promise<ApiResponse<any>> {
+    console.warn(
+      'phoneVerificationApi.registerFromVerifiedPhone() is deprecated. Use completeCustomerAuthentication() or completeProviderAuthentication() instead.'
+    )
+    throw new Error(
+      'This endpoint has been removed. Please use completeCustomerAuthentication() or completeProviderAuthentication()'
     )
   },
 }

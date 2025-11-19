@@ -40,6 +40,7 @@ namespace Booksy.UserManagement.Infrastructure.Services.Security
             IEnumerable<string> roles,
             string? providerId = null,
             string? providerStatus = null,
+            string? customerId = null,
             int expirationHours = 24)
         {
             var claims = new List<Claim>
@@ -63,6 +64,12 @@ namespace Booksy.UserManagement.Infrastructure.Services.Security
             if (!string.IsNullOrEmpty(providerStatus))
             {
                 claims.Add(new Claim("provider_status", providerStatus));
+            }
+
+            // Add customerId claim if user is a customer
+            if (!string.IsNullOrEmpty(customerId))
+            {
+                claims.Add(new Claim("customerId", customerId));
             }
 
             foreach (var role in roles)

@@ -13,10 +13,12 @@ using Booksy.UserManagement.Application.CQRS.Queries.GetUserById;
 using Booksy.UserManagement.Application.DTOs;
 using Booksy.UserManagement.Domain.Enums;
 using Booksy.UserManagement.Application.CQRS.Commands.UpldateUserProfile;
-using Booksy.UserManagement.Application.Queries.GetUsersByStatus;
 using Booksy.API.Extensions;
 using Booksy.API.Middleware;
 using Booksy.Core.Domain.Exceptions;
+using Booksy.UserManagement.Application.CQRS.Queries.GetUsersByStatus;
+using Booksy.UserManagement.Application.CQRS.Commands.DeActivateUser;
+using Booksy.UserManagement.Application.CQRS.Commands.DeleteUser;
 
 namespace Booksy.UserManagement.API.Controllers.V1;
 

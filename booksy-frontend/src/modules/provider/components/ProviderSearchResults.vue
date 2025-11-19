@@ -12,12 +12,25 @@
       </div>
 
       <div class="results-controls">
+        <!-- Sort By Dropdown -->
+        <div class="sort-dropdown">
+          <label for="sort-select" class="sort-label">مرتب‌سازی:</label>
+          <select id="sort-select" v-model="selectedSort" class="sort-select" @change="handleSortChange">
+            <option value="rating-desc">بالاترین امتیاز</option>
+            <option value="rating-asc">کمترین امتیاز</option>
+            <option value="name-asc">نام (الف-ی)</option>
+            <option value="name-desc">نام (ی-الف)</option>
+            <option value="distance-asc">نزدیک‌ترین</option>
+            <option value="distance-desc">دورترین</option>
+          </select>
+        </div>
+
         <!-- View Mode Toggle -->
         <div class="view-toggle">
           <button
             :class="['view-btn', { active: viewMode === 'grid' }]"
             @click="emit('viewModeChange', 'grid')"
-            title="Grid View"
+            title="نمایش شبکه‌ای"
           >
             <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z" />
@@ -26,10 +39,19 @@
           <button
             :class="['view-btn', { active: viewMode === 'list' }]"
             @click="emit('viewModeChange', 'list')"
-            title="List View"
+            title="نمایش لیستی"
           >
             <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16" />
+            </svg>
+          </button>
+          <button
+            :class="['view-btn', { active: viewMode === 'map' }]"
+            @click="emit('viewModeChange', 'map')"
+            title="نمایش نقشه"
+          >
+            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-.553-.894L15 4m0 13V4m0 0L9 7" />
             </svg>
           </button>
         </div>
@@ -108,7 +130,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed } from 'vue'
+import { ref, computed } from 'vue'
 import { useRouter } from 'vue-router'
 import ProviderCard from './ProviderCard.vue'
 import type { ProviderSummary } from '../types/provider.types'
@@ -120,7 +142,7 @@ interface Props {
   currentPage?: number
   totalPages?: number
   totalResults?: number
-  viewMode?: 'grid' | 'list'
+  viewMode?: 'grid' | 'list' | 'map'
   resultsTitle?: string
 }
 
@@ -136,7 +158,8 @@ const props = withDefaults(defineProps<Props>(), {
 // Emits
 const emit = defineEmits<{
   (e: 'pageChange', page: number): void
-  (e: 'viewModeChange', mode: 'grid' | 'list'): void
+  (e: 'viewModeChange', mode: 'grid' | 'list' | 'map'): void
+  (e: 'sortChange', sortBy: string, sortDescending: boolean): void
   (e: 'providerClick', provider: ProviderSummary): void
   (e: 'bookClick', provider: ProviderSummary): void
   (e: 'clearFilters'): void
@@ -145,12 +168,15 @@ const emit = defineEmits<{
 // Router
 const router = useRouter()
 
+// State
+const selectedSort = ref('rating-desc')
+
 // Computed
 const visiblePages = computed(() => {
   const pages: number[] = []
   const maxVisible = 5
   let start = Math.max(1, props.currentPage - Math.floor(maxVisible / 2))
-  let end = Math.min(props.totalPages, start + maxVisible - 1)
+  const end = Math.min(props.totalPages, start + maxVisible - 1)
 
   if (end - start < maxVisible - 1) {
     start = Math.max(1, end - maxVisible + 1)
@@ -164,6 +190,12 @@ const visiblePages = computed(() => {
 })
 
 // Methods
+const handleSortChange = () => {
+  const [sortBy, direction] = selectedSort.value.split('-')
+  const sortDescending = direction === 'desc'
+  emit('sortChange', sortBy, sortDescending)
+}
+
 const handleProviderClick = (provider: ProviderSummary) => {
   emit('providerClick', provider)
   router.push(`/providers/${provider.id}`)
@@ -210,7 +242,52 @@ const handleBookClick = (provider: ProviderSummary) => {
 .results-controls {
   display: flex;
   align-items: center;
-  gap: 1rem;
+  gap: 1.5rem;
+  flex-wrap: wrap;
+}
+
+/* Sort Dropdown */
+.sort-dropdown {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.sort-label {
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: #374151;
+  font-family: 'Vazir', 'IRANSans', sans-serif;
+  white-space: nowrap;
+}
+
+.sort-select {
+  padding: 0.5rem 2.5rem 0.5rem 1rem;
+  background: white;
+  border: 1px solid #d1d5db;
+  border-radius: 8px;
+  font-size: 0.875rem;
+  font-family: 'Vazir', 'IRANSans', sans-serif;
+  color: #111827;
+  cursor: pointer;
+  transition: all 0.2s;
+  appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%236b7280'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M19 9l-7 7-7-7'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: left 0.5rem center;
+  background-size: 1.25rem;
+  direction: rtl;
+}
+
+.sort-select:hover {
+  border-color: #8b5cf6;
+  box-shadow: 0 0 0 3px rgba(139, 92, 246, 0.1);
+}
+
+.sort-select:focus {
+  outline: none;
+  border-color: #8b5cf6;
+  box-shadow: 0 0 0 3px rgba(139, 92, 246, 0.2);
 }
 
 .view-toggle {
@@ -421,6 +498,29 @@ const handleBookClick = (provider: ProviderSummary) => {
   .results-header {
     flex-direction: column;
     align-items: flex-start;
+    gap: 1rem;
+  }
+
+  .results-controls {
+    width: 100%;
+    flex-direction: column;
+    align-items: stretch;
+    gap: 1rem;
+  }
+
+  .sort-dropdown {
+    width: 100%;
+    justify-content: space-between;
+  }
+
+  .sort-select {
+    flex: 1;
+    min-width: 0;
+  }
+
+  .view-toggle {
+    width: 100%;
+    justify-content: center;
   }
 
   .results-container.view-mode-grid {

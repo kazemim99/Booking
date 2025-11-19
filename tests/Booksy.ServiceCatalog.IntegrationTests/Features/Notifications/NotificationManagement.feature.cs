@@ -26,8 +26,8 @@ namespace Booksy.ServiceCatalog.IntegrationTests.Features.Notifications
         
         private static string[] featureTags = ((string[])(null));
         
-        private static global::Reqnroll.FeatureInfo featureInfo = new global::Reqnroll.FeatureInfo(new System.Globalization.CultureInfo("en"), "Features/Notifications", "Notification Management", ("  As a system and provider\r\n  I want to send and manage notifications\r\n  So that " +
-                "users are informed about important events"), global::Reqnroll.ProgrammingLanguage.CSharp, featureTags);
+        private static global::Reqnroll.FeatureInfo featureInfo = new global::Reqnroll.FeatureInfo(new System.Globalization.CultureInfo("en"), "Features/Notifications", "Notification Management", "  As a system and provider\r\n  I want to send and manage notifications\r\n  So that " +
+                "users are informed about important events", global::Reqnroll.ProgrammingLanguage.CSharp, featureTags);
         
         private Xunit.Abstractions.ITestOutputHelper _testOutputHelper;
         
@@ -322,8 +322,8 @@ namespace Booksy.ServiceCatalog.IntegrationTests.Features.Notifications
                 await this.ScenarioStartAsync();
                 await this.FeatureBackgroundAsync();
                 await testRunner.GivenAsync("I have a scheduled notification for tomorrow", ((string)(null)), ((global::Reqnroll.Table)(null)), "Given ");
-                await testRunner.WhenAsync(("I send a POST request to cancel the notification with reason \"Customer cancelled " +
-                        "appointment\""), ((string)(null)), ((global::Reqnroll.Table)(null)), "When ");
+                await testRunner.WhenAsync("I send a POST request to cancel the notification with reason \"Customer cancelled " +
+                        "appointment\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "When ");
                 await testRunner.ThenAsync("the response status code should be 200", ((string)(null)), ((global::Reqnroll.Table)(null)), "Then ");
                 await testRunner.AndAsync("the notification status should be \"Cancelled\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "And ");
             }

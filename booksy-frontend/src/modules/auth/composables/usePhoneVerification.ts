@@ -59,8 +59,7 @@ export function usePhoneVerification() {
 
       const response = await phoneVerificationApi.sendVerificationCode({
         phoneNumber: fullPhoneNumber,
-        method: 'SMS',
-        purpose: 'Registration',
+        countryCode: countryCode,
       })
 
       if (response.success && response.data) {
@@ -79,7 +78,7 @@ export function usePhoneVerification() {
         // Update state
         state.value.phoneNumber = fullPhoneNumber
         state.value.countryCode = countryCode
-        state.value.maskedPhone = response.data.phoneNumber // Already masked by backend
+        state.value.maskedPhone = response.data.maskedPhoneNumber
         state.value.expiresIn = expiresInSeconds
         state.value.step = 'otp'
         state.value.remainingAttempts = response.data.maxAttempts
@@ -89,7 +88,7 @@ export function usePhoneVerification() {
 
         return {
           success: true,
-          maskedPhone: response.data.phoneNumber,
+          maskedPhone: response.data.maskedPhoneNumber,
           isNewUser: false // Backend doesn't tell us this yet, will be determined during verification
         }
       } else {
@@ -105,12 +104,249 @@ export function usePhoneVerification() {
   }
 
   /**
-   * Verify OTP code
-   * NOTE: Backend phone verification only confirms the phone number is valid.
-   * After successful verification, user must complete registration or login separately.
-   * @param code - The 6-digit OTP code to verify
+   * Complete customer authentication (unified verify + login/register)
+   * This replaces the old 2-step flow (verifyCode → registerFromVerifiedPhone)
+   */
+  const completeCustomerAuthentication = async (code: string, userInfo?: { firstName?: string; lastName?: string; email?: string }) => {
+    state.value.isLoading = true
+    state.value.error = null
+
+    if (!state.value.phoneNumber) {
+      const errorMessage = 'Phone number is missing. Please request a new code.'
+      state.value.error = errorMessage
+      toast.error(errorMessage)
+      state.value.isLoading = false
+      return { success: false, error: errorMessage }
+    }
+
+    try {
+      const response = await phoneVerificationApi.completeCustomerAuthentication({
+        phoneNumber: state.value.phoneNumber,
+        code,
+        firstName: userInfo?.firstName,
+        lastName: userInfo?.lastName,
+        email: userInfo?.email,
+      })
+
+      if (response.success && response.data) {
+        state.value.step = 'success'
+
+        // Clear sessionStorage
+        sessionStorage.removeItem(VERIFICATION_ID_KEY)
+        sessionStorage.removeItem(PHONE_NUMBER_KEY)
+
+        toast.success(response.data.isNewCustomer ? 'ثبت‌نام شما با موفقیت انجام شد!' : 'ورود موفقیت‌آمیز بود!')
+
+        // Store authentication tokens
+        authStore.setToken(response.data.accessToken)
+        authStore.setRefreshToken(response.data.refreshToken)
+
+        // Store user info
+        const now = new Date().toISOString()
+        authStore.setUser({
+          id: response.data.userId,
+          email: response.data.email || undefined,
+          phoneNumber: response.data.phoneNumber,
+          phoneVerified: true,
+          emailVerified: !!response.data.email,
+          userType: 'Customer' as any,
+          roles: ['Customer'],
+          status: 'Active' as any,
+          createdAt: now,
+          updatedAt: now,
+          lastModifiedAt: now,
+          profile: {
+            firstName: response.data.fullName?.split(' ')[0] || '',
+            lastName: response.data.fullName?.split(' ').slice(1).join(' ') || '',
+            phoneNumber: response.data.phoneNumber,
+          },
+          preferences: {
+            theme: 'light',
+            language: 'fa',
+            timezone: 'Asia/Tehran',
+            currency: 'IRR',
+            dateFormat: 'YYYY/MM/DD',
+            timeFormat: '24h',
+            notifications: {
+              email: true,
+              sms: true,
+              push: true,
+            },
+            notificationSettings: {
+              emailNotifications: true,
+              smsNotifications: true,
+              pushNotifications: true,
+              appointmentReminders: true,
+              promotionalEmails: false,
+            },
+            privacySettings: undefined,
+          },
+          metadata: {
+            totalBookings: 0,
+            completedBookings: 0,
+            cancelledBookings: 0,
+            noShows: 0,
+            favoriteProviders: [],
+            lastActivityAt: now,
+          },
+        } as any)
+
+        isNewUser.value = response.data.isNewCustomer
+
+        return {
+          success: true,
+          isNewCustomer: response.data.isNewCustomer,
+          userId: response.data.userId,
+          customerId: response.data.customerId,
+          phoneNumber: response.data.phoneNumber,
+        }
+      } else {
+        const errorMessage =
+          typeof response.error === 'string' ? response.error : 'خطا در تأیید کد'
+        state.value.error = errorMessage
+        toast.error(errorMessage)
+
+        return {
+          success: false,
+          error: errorMessage,
+        }
+      }
+    } catch (error: any) {
+      const errorMessage = error.response?.data?.message || error.message || 'خطا در تأیید کد'
+      state.value.error = errorMessage
+      toast.error(errorMessage)
+
+      return { success: false, error: errorMessage }
+    } finally {
+      state.value.isLoading = false
+    }
+  }
+
+  /**
+   * Complete provider authentication (unified verify + login/register)
+   */
+  const completeProviderAuthentication = async (code: string, userInfo?: { firstName?: string; lastName?: string; email?: string }) => {
+    state.value.isLoading = true
+    state.value.error = null
+
+    if (!state.value.phoneNumber) {
+      const errorMessage = 'Phone number is missing. Please request a new code.'
+      state.value.error = errorMessage
+      toast.error(errorMessage)
+      state.value.isLoading = false
+      return { success: false, error: errorMessage }
+    }
+
+    try {
+      const response = await phoneVerificationApi.completeProviderAuthentication({
+        phoneNumber: state.value.phoneNumber,
+        code,
+        firstName: userInfo?.firstName,
+        lastName: userInfo?.lastName,
+        email: userInfo?.email,
+      })
+
+      if (response.success && response.data) {
+        state.value.step = 'success'
+
+        // Clear sessionStorage
+        sessionStorage.removeItem(VERIFICATION_ID_KEY)
+        sessionStorage.removeItem(PHONE_NUMBER_KEY)
+
+        toast.success(response.data.isNewProvider ? 'ثبت‌نام شما با موفقیت انجام شد!' : 'ورود موفقیت‌آمیز بود!')
+
+        // Store authentication tokens
+        authStore.setToken(response.data.accessToken)
+        authStore.setRefreshToken(response.data.refreshToken)
+
+        // Store user info
+        const now = new Date().toISOString()
+        authStore.setUser({
+          id: response.data.userId,
+          email: response.data.email || undefined,
+          phoneNumber: response.data.phoneNumber,
+          phoneVerified: true,
+          emailVerified: !!response.data.email,
+          userType: 'Provider' as any,
+          roles: ['Provider'],
+          status: 'Active' as any,
+          createdAt: now,
+          updatedAt: now,
+          lastModifiedAt: now,
+          profile: {
+            firstName: response.data.fullName?.split(' ')[0] || '',
+            lastName: response.data.fullName?.split(' ').slice(1).join(' ') || '',
+            phoneNumber: response.data.phoneNumber,
+          },
+          preferences: {
+            theme: 'light',
+            language: 'fa',
+            timezone: 'Asia/Tehran',
+            currency: 'IRR',
+            dateFormat: 'YYYY/MM/DD',
+            timeFormat: '24h',
+            notifications: {
+              email: true,
+              sms: true,
+              push: true,
+            },
+            notificationSettings: {
+              emailNotifications: true,
+              smsNotifications: true,
+              pushNotifications: true,
+              appointmentReminders: true,
+              promotionalEmails: false,
+            },
+            privacySettings: undefined,
+          },
+          metadata: {
+            totalBookings: 0,
+            completedBookings: 0,
+            cancelledBookings: 0,
+            noShows: 0,
+            favoriteProviders: [],
+            lastActivityAt: now,
+          },
+        } as any)
+
+        isNewUser.value = response.data.isNewProvider
+
+        return {
+          success: true,
+          isNewProvider: response.data.isNewProvider,
+          userId: response.data.userId,
+          providerId: response.data.providerId,
+          providerStatus: response.data.providerStatus,
+          requiresOnboarding: response.data.requiresOnboarding,
+        }
+      } else {
+        const errorMessage =
+          typeof response.error === 'string' ? response.error : 'خطا در تأیید کد'
+        state.value.error = errorMessage
+        toast.error(errorMessage)
+
+        return {
+          success: false,
+          error: errorMessage,
+        }
+      }
+    } catch (error: any) {
+      const errorMessage = error.response?.data?.message || error.message || 'خطا در تأیید کد'
+      state.value.error = errorMessage
+      toast.error(errorMessage)
+
+      return { success: false, error: errorMessage }
+    } finally {
+      state.value.isLoading = false
+    }
+  }
+
+  /**
+   * @deprecated Use completeCustomerAuthentication or completeProviderAuthentication instead
+   * Verify OTP code (old 2-step flow)
    */
   const verifyCode = async (code: string) => {
+    console.warn('verifyCode() is deprecated. Use completeCustomerAuthentication() or completeProviderAuthentication() instead.')
     state.value.isLoading = true
     state.value.error = null
 
@@ -131,14 +367,7 @@ export function usePhoneVerification() {
       if (response.success && response.data?.success) {
         state.value.step = 'success'
 
-        // DON'T clear sessionStorage here - we need verificationId for registration
-        // It will be cleared in VerificationView after account creation
-
         toast.success('Phone verified successfully!')
-
-        // NOTE: After phone verification, the next step is to create a user account
-        // The verificationId is needed for the registerFromVerifiedPhone call
-        // VerificationView.vue handles the account creation and token storage
 
         return {
           success: true,
@@ -146,7 +375,6 @@ export function usePhoneVerification() {
           verifiedAt: response.data.verifiedAt,
         }
       } else {
-        // Update remaining attempts
         if (response.data?.remainingAttempts !== undefined) {
           state.value.remainingAttempts = response.data.remainingAttempts
         }
@@ -155,8 +383,6 @@ export function usePhoneVerification() {
           response.data?.message ||
           (typeof response.error === 'string' ? response.error : 'Invalid verification code')
         state.value.error = errorMessage
-
-        // Show toast for error
         toast.error(errorMessage)
 
         return {
@@ -168,8 +394,6 @@ export function usePhoneVerification() {
     } catch (error: any) {
       const errorMessage = error.response?.data?.message || error.message || 'Verification failed'
       state.value.error = errorMessage
-
-      // Show toast for error
       toast.error(errorMessage)
 
       return { success: false, error: errorMessage }
@@ -306,7 +530,9 @@ export function usePhoneVerification() {
 
     // Actions
     sendVerificationCode,
-    verifyCode,
+    completeCustomerAuthentication,
+    completeProviderAuthentication,
+    verifyCode, // Deprecated - kept for backwards compatibility
     resendCode,
     reset,
     changePhoneNumber,

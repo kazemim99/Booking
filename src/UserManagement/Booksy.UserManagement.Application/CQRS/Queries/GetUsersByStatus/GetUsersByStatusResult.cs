@@ -1,7 +1,7 @@
 ﻿// 📁 Booksy.UserManagement.Application/Queries/GetUsersByStatus/GetUsersByStatusResult.cs
 using Booksy.UserManagement.Domain.Enums;
 
-namespace Booksy.UserManagement.Application.Queries.GetUsersByStatus
+namespace Booksy.UserManagement.Application.CQRS.Queries.GetUsersByStatus
 {
     public sealed class GetUsersByStatusResult
     {

@@ -53,29 +53,37 @@
           </div>
 
           <div class="search-inputs">
-            <div class="input-group">
+            <div class="input-group" v-if="searchType === 'service'">
+              <SearchableDropdown
+                v-model="selectedCategory"
+                :options="categories"
+                placeholder="به دنبال چه خدمتی هستید؟"
+                @select="handleCategorySelect"
+              />
+            </div>
+
+            <div class="input-group" v-else>
               <svg class="input-icon" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
               </svg>
               <input
-                v-model="searchQuery"
+                v-model="locationSearchQuery"
                 type="text"
-                :placeholder="searchType === 'service' ? 'به دنبال چه خدمتی هستید؟' : 'موقعیت مکانی خود را وارد کنید...'"
+                placeholder="موقعیت مکانی خود را وارد کنید..."
                 class="search-input"
                 @keydown.enter="handleSearch"
               />
             </div>
 
             <div class="input-group location-group">
-              <svg class="input-icon" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
-              </svg>
-              <input
-                v-model="location"
-                type="text"
-                placeholder="شهر، استان"
-                class="search-input"
-                @keydown.enter="handleSearch"
+              <SearchableDropdown
+                v-model="selectedCity"
+                :options="cities"
+                :loading="isLoadingCities"
+                :min-search-length="2"
+                placeholder="شهر"
+                @search="searchCities"
+                @select="handleCitySelect"
               />
             </div>
 
@@ -117,46 +125,115 @@
           <div class="stat-label">میانگین امتیاز</div>
         </div>
       </div>
+
+      <!-- Provider CTA Banner -->
+      <div class="provider-cta-banner">
+        <div class="provider-cta-content">
+          <div class="provider-cta-text">
+            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 13.255A23.931 23.931 0 0112 15c-3.183 0-6.22-.62-9-1.745M16 6V4a2 2 0 00-2-2h-4a2 2 0 00-2 2v2m4 6h.01M5 20h14a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+            </svg>
+            <span class="provider-cta-title">صاحب کسب‌وکار هستید؟</span>
+            <span class="provider-cta-subtitle">کسب‌وکار خود را رشد دهید</span>
+          </div>
+          <router-link to="/provider/login" class="provider-cta-button">
+            ورود به پنل کسب‌وکار
+            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" />
+            </svg>
+          </router-link>
+        </div>
+      </div>
     </div>
   </section>
 </template>
 
 <script setup lang="ts">
-import { ref } from 'vue'
+import { ref, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
+import SearchableDropdown from '@/shared/components/ui/SearchableDropdown.vue'
+import type { DropdownOption } from '@/shared/components/ui/SearchableDropdown.vue'
+import { categoryService } from '@/core/api/services/category.service'
+import { locationService } from '@/core/api/services/location.service'
 
 const router = useRouter()
 
 const searchType = ref<'service' | 'location'>('service')
-const searchQuery = ref('')
-const location = ref('')
+const selectedCategory = ref<string | number>('')
+const selectedCity = ref<string | number>('')
+const locationSearchQuery = ref('')
 
-const popularSearches = [
-  { name: 'کوتاهی مو', slug: 'haircut' },
-  { name: 'ماساژ', slug: 'massage' },
-  { name: 'پاکسازی پوست', slug: 'facial' },
-  { name: 'مانیکور', slug: 'manicure' },
-  { name: 'اسپا', slug: 'spa' },
-]
+const categories = ref<DropdownOption[]>([])
+const cities = ref<DropdownOption[]>([])
+const popularSearches = ref<Array<{ name: string; slug: string }>>([])
+const isLoadingCities = ref(false)
+
+// Load categories on mount (cities will be loaded on-demand)
+onMounted(async () => {
+  try {
+    // Load categories
+    const categoriesData = await categoryService.getCategories()
+    categories.value = categoriesData.map(cat => ({
+      label: cat.name,
+      value: cat.slug,
+      description: cat.description,
+    }))
+
+    // Load popular categories
+    const popularData = await categoryService.getPopularCategories(5)
+    popularSearches.value = popularData.map(cat => ({
+      name: cat.name,
+      slug: cat.slug,
+    }))
+  } catch (error) {
+    console.error('Error loading data:', error)
+  }
+})
+
+// Search cities based on user input (minimum 2 characters)
+const searchCities = async (query: string) => {
+  if (!query || query.length < 2) {
+    cities.value = []
+    return
+  }
+
+  try {
+    isLoadingCities.value = true
+    const results = await locationService.searchLocations(query)
+
+    // Filter only cities (not provinces)
+    const cityResults = results.filter(loc => loc.type === 'city')
+
+    cities.value = cityResults.map(city => ({
+      label: city.name,
+      value: city.id,
+      description: city.provinceName ? `${city.provinceName}` : undefined,
+    }))
+  } catch (error) {
+    console.error('Error searching cities:', error)
+    cities.value = []
+  } finally {
+    isLoadingCities.value = false
+  }
+}
 
 const handleSearch = () => {
-  const filters: any = {
+  const filters: Record<string, string | number> = {
     pageNumber: 1,
     pageSize: 12,
   }
 
-  if (searchQuery.value) {
-    if (searchType.value === 'service') {
-      filters.serviceCategory = searchQuery.value.toLowerCase()
-    } else {
-      filters.searchTerm = searchQuery.value
-    }
+  if (searchType.value === 'service' && selectedCategory.value) {
+    filters.serviceCategory = selectedCategory.value
+  } else if (searchType.value === 'location' && locationSearchQuery.value) {
+    filters.searchTerm = locationSearchQuery.value
   }
 
-  if (location.value) {
-    const [city, state] = location.value.split('،').map(s => s.trim())
-    if (city) filters.city = city
-    if (state) filters.state = state
+  if (selectedCity.value) {
+    const city = cities.value.find(c => c.value === selectedCity.value)
+    if (city) {
+      filters.city = city.label
+    }
   }
 
   // Navigate to provider search with filters
@@ -175,6 +252,14 @@ const quickSearch = (category: string) => {
       pageSize: 12,
     }
   })
+}
+
+const handleCategorySelect = (option: DropdownOption) => {
+  selectedCategory.value = option.value
+}
+
+const handleCitySelect = (option: DropdownOption) => {
+  selectedCity.value = option.value
 }
 </script>
 
@@ -467,6 +552,92 @@ const quickSearch = (category: string) => {
   background: rgba(255, 255, 255, 0.2);
 }
 
+/* Provider CTA Banner */
+.provider-cta-banner {
+  margin-top: 2rem;
+  animation: slideUp 0.8s ease-out 0.3s both;
+}
+
+.provider-cta-content {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1.5rem;
+  padding: 1.25rem 2rem;
+  background: rgba(255, 255, 255, 0.15);
+  backdrop-filter: blur(10px);
+  border-radius: 16px;
+  border: 1px solid rgba(255, 255, 255, 0.25);
+  transition: all 0.3s ease;
+
+  &:hover {
+    background: rgba(255, 255, 255, 0.2);
+    border-color: rgba(255, 255, 255, 0.4);
+  }
+}
+
+.provider-cta-text {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  color: white;
+
+  svg {
+    width: 28px;
+    height: 28px;
+    flex-shrink: 0;
+  }
+}
+
+.provider-cta-title {
+  font-size: 1rem;
+  font-weight: 700;
+  display: block;
+}
+
+.provider-cta-subtitle {
+  font-size: 0.875rem;
+  opacity: 0.9;
+  display: block;
+  margin-top: 0.125rem;
+}
+
+.provider-cta-button {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.75rem 1.5rem;
+  background: white;
+  color: #667eea;
+  text-decoration: none;
+  border-radius: 10px;
+  font-weight: 600;
+  font-size: 0.9375rem;
+  white-space: nowrap;
+  transition: all 0.3s ease;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+
+  svg {
+    width: 18px;
+    height: 18px;
+    transition: transform 0.3s ease;
+  }
+
+  &:hover {
+    background: #f8f9fa;
+    transform: translateY(-2px);
+    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.15);
+
+    svg {
+      transform: translateX(-3px);
+    }
+  }
+
+  &:active {
+    transform: translateY(0);
+  }
+}
+
 /* Responsive */
 @media (max-width: 768px) {
   .hero-section {
@@ -499,6 +670,23 @@ const quickSearch = (category: string) => {
 
   .search-card {
     padding: 1.5rem;
+  }
+
+  .provider-cta-content {
+    flex-direction: column;
+    text-align: center;
+    padding: 1.5rem 1rem;
+  }
+
+  .provider-cta-text {
+    flex-direction: column;
+    text-align: center;
+    gap: 0.75rem;
+  }
+
+  .provider-cta-button {
+    width: 100%;
+    justify-content: center;
   }
 }
 </style>

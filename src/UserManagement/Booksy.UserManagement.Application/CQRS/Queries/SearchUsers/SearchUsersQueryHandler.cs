@@ -8,7 +8,7 @@ using Booksy.UserManagement.Domain.Repositories;
 using Booksy.UserManagement.Domain.Specifications;
 using Microsoft.Extensions.Logging;
 
-namespace Booksy.UserManagement.Application.Queries.SearchUsers;
+namespace Booksy.UserManagement.Application.CQRS.Queries.SearchUsers;
 
 /// <summary>
 /// Simplified handler for user search using specifications

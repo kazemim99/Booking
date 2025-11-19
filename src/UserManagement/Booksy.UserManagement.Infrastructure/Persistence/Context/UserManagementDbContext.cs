@@ -11,6 +11,7 @@ using Booksy.UserManagement.Domain.Entities;
 using Booksy.UserManagement.Domain.Aggregates;
 using Booksy.UserManagement.Domain.Aggregates.CustomerAggregate;
 using Booksy.UserManagement.Domain.Aggregates.PhoneVerificationAggregate;
+using Booksy.UserManagement.Domain.ReadModels;
 using Booksy.Infrastructure.Core.EventBus.Abstractions;
 using System.Threading;
 
@@ -30,6 +31,7 @@ namespace Booksy.UserManagement.Infrastructure.Persistence.Context
         public DbSet<UserRole> UserRoles { get; set; } = null!;
         public DbSet<UserProfile> UserProfiles { get; set; } = null!;
         public DbSet<PhoneVerification> PhoneVerifications { get; set; } = null!;
+        public DbSet<CustomerBookingHistoryEntry> CustomerBookingHistory { get; set; } = null!;
 
         public bool HasActiveTransaction => throw new NotImplementedException();
 

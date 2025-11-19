@@ -17,7 +17,7 @@ import type {
 import type { PagedResult } from '@/core/types/common.types'
 
 const API_VERSION = 'v1'
-const API_BASE = `/${API_VERSION}/providers`
+const API_BASE = `/${API_VERSION}/Providers`
 
 class ProviderService {
   // ============================================

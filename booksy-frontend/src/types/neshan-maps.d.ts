@@ -1,8 +1,8 @@
-/// <reference types="@neshan-maps-platform/ol" />
+// Import types instead of using triple-slash reference
+import type { Map } from '@neshan-maps-platform/ol'
 
 declare module '@neshan-maps-platform/vue3-openlayers' {
   import { DefineComponent } from 'vue'
-  import { Map } from '@neshan-maps-platform/ol'
 
   export interface NeshanMapProps {
     defaultType?: string
@@ -20,7 +20,16 @@ declare module '@neshan-maps-platform/vue3-openlayers' {
     'on-init': (map: Map) => void
   }
 
-  const NeshanMap: DefineComponent<NeshanMapProps, {}, {}, {}, {}, {}, {}, NeshanMapEvents>
+  const NeshanMap: DefineComponent<
+    NeshanMapProps,
+    Record<string, never>,
+    Record<string, never>,
+    Record<string, never>,
+    Record<string, never>,
+    Record<string, never>,
+    Record<string, never>,
+    NeshanMapEvents
+  >
   export default NeshanMap
 }
 

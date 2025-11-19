@@ -4,7 +4,7 @@
 using Booksy.Core.Application.CQRS;
 using Booksy.UserManagement.Domain.Enums;
 
-namespace Booksy.UserManagement.Application.Queries.SearchUsers;
+namespace Booksy.UserManagement.Application.CQRS.Queries.SearchUsers;
 
 /// <summary>
 /// Simplified query for user search with essential filtering options

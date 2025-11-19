@@ -46,6 +46,26 @@ namespace Booksy.UserManagement.Infrastructure.Persistence.Configurations
             // The Profile entity is owned by User aggregate, so we ignore it here
             builder.Ignore(c => c.Profile);
 
+            // NotificationPreferences (owned value object)
+            builder.OwnsOne(c => c.NotificationPreferences, np =>
+            {
+                np.Property(p => p.SmsEnabled)
+                    .HasColumnName("notification_sms_enabled")
+                    .IsRequired()
+                    .HasDefaultValue(true);
+
+                np.Property(p => p.EmailEnabled)
+                    .HasColumnName("notification_email_enabled")
+                    .IsRequired()
+                    .HasDefaultValue(true);
+
+                np.Property(p => p.ReminderTiming)
+                    .HasColumnName("notification_reminder_timing")
+                    .HasMaxLength(10)
+                    .IsRequired()
+                    .HasDefaultValue("24h");
+            });
+
             // Status
             builder.Property(c => c.IsActive)
                 .HasColumnName("is_active")

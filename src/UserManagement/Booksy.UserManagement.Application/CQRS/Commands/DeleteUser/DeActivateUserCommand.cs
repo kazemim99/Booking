@@ -5,9 +5,17 @@
 // ========================================
 // Booksy.UserManagement.Application/Commands/ActivateUser/ActivateUserCommand.cs
 // ========================================
+
+// ========================================
+// Booksy.UserManagement.Application/Commands/ActivateUser/ActivateUserCommand.cs
+// ========================================
+
+// ========================================
+// Booksy.UserManagement.Application/Commands/ActivateUser/ActivateUserCommand.cs
+// ========================================
 using Booksy.Core.Application.Abstractions.CQRS;
 
-namespace Booksy.UserManagement.Application.CQRS.Commands.ActivateUser
+namespace Booksy.UserManagement.Application.CQRS.Commands.DeleteUser
 {
     /// <summary>
     /// Command to activate a user account

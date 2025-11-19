@@ -16,8 +16,8 @@
     "test:integration:coverage": "vitest run --config vitest.integration.config.ts --coverage",
     "test:e2e": "cypress open",
     "test:e2e:ci": "cypress run",
-    "lint": "eslint . --ext .vue,.js,.jsx,.cjs,.mjs,.ts,.tsx,.cts,.mts --fix --ignore-path .gitignore",
-    "lint:check": "eslint . --ext .vue,.js,.jsx,.cjs,.mjs,.ts,.tsx,.cts,.mts --ignore-path .gitignore",
+    "lint": "eslint . --ext .vue,.js,.jsx,.cjs,.mjs,.ts,.tsx,.cts,.mts --fix",
+    "lint:check": "eslint . --ext .vue,.js,.jsx,.cjs,.mjs,.ts,.tsx,.cts,.mts",
     "format": "prettier --write src/",
     "format:check": "prettier --check src/",
     "type-check": "vue-tsc --noEmit"

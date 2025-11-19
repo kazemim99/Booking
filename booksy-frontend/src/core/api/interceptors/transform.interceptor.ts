@@ -40,7 +40,7 @@ export function responseTransformInterceptor(response: AxiosResponse) {
  * Convert object keys to PascalCase (C# convention)
  * Example: phoneNumber → PhoneNumber
  */
-function toPascalCase(obj: any): any {
+function toPascalCase(obj: unknown): unknown {
   if (obj === null || obj === undefined) {
     return obj
   }
@@ -57,15 +57,15 @@ function toPascalCase(obj: any): any {
     return Object.keys(obj).reduce((result, key) => {
       // Skip if key is not a valid string or is empty
       if (!key || typeof key !== 'string' || key.length === 0) {
-        result[key] = toPascalCase(obj[key])
+        result[key] = toPascalCase((obj as Record<string, unknown>)[key])
         return result
       }
 
       // Convert first character to uppercase, keep rest as is
       const pascalKey = key.charAt(0).toUpperCase() + key.slice(1)
-      result[pascalKey] = toPascalCase(obj[key])
+      result[pascalKey] = toPascalCase((obj as Record<string, unknown>)[key])
       return result
-    }, {} as any)
+    }, {} as Record<string, unknown>)
   }
 
   return obj
@@ -75,7 +75,7 @@ function toPascalCase(obj: any): any {
  * Convert object keys to camelCase (JavaScript convention)
  * Example: PhoneNumber → phoneNumber
  */
-function toCamelCase(obj: any): any {
+function toCamelCase(obj: unknown): unknown {
   if (obj === null || obj === undefined) {
     return obj
   }
@@ -92,15 +92,15 @@ function toCamelCase(obj: any): any {
     return Object.keys(obj).reduce((result, key) => {
       // Skip if key is not a valid string or is empty
       if (!key || typeof key !== 'string' || key.length === 0) {
-        result[key] = toCamelCase(obj[key])
+        result[key] = toCamelCase((obj as Record<string, unknown>)[key])
         return result
       }
 
       // Convert first character to lowercase, keep rest as is
       const camelKey = key.charAt(0).toLowerCase() + key.slice(1)
-      result[camelKey] = toCamelCase(obj[key])
+      result[camelKey] = toCamelCase((obj as Record<string, unknown>)[key])
       return result
-    }, {} as any)
+    }, {} as Record<string, unknown>)
   }
 
   return obj

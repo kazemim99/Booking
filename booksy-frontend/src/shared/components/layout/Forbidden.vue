@@ -42,6 +42,10 @@
 import { useRouter, useRoute } from 'vue-router'
 import { computed } from 'vue'
 
+defineOptions({
+  name: 'ForbiddenPage'
+})
+
 const router = useRouter()
 const route = useRoute()
 

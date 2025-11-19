@@ -1,0 +1,278 @@
+name: Deploy to Production
+
+on:
+  push:
+    branches: [ "master" ]
+  workflow_dispatch:
+
+env:
+  DOTNET_VERSION: '9.0.x'
+  SOLUTION_PATH: './Booksy.sln'
+  REGISTRY: ghcr.io
+  IMAGE_PREFIX: ${{ github.repository_owner }}/booksy
+
+jobs:
+  # Run all tests before deploying
+  test:
+    name: Run Tests
+    runs-on: ubuntu-latest
+
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: booksy_admin
+          POSTGRES_PASSWORD: TestPassword123!
+          POSTGRES_DB: booksy_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U booksy_admin -d booksy_test"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+      redis:
+        image: redis:7-alpine
+        ports:
+          - 6379:6379
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Setup .NET
+      uses: actions/setup-dotnet@v4
+      with:
+        dotnet-version: ${{ env.DOTNET_VERSION }}
+
+    - name: Cache NuGet packages
+      uses: actions/cache@v4
+      with:
+        path: ~/.nuget/packages
+        key: ${{ runner.os }}-nuget-${{ hashFiles('**/*.csproj') }}
+        restore-keys: |
+          ${{ runner.os }}-nuget-
+
+    - name: Restore dependencies
+      run: dotnet restore ${{ env.SOLUTION_PATH }}
+
+    - name: Build solution
+      run: dotnet build ${{ env.SOLUTION_PATH }} --configuration Release --no-restore
+
+    - name: Run Unit Tests
+      run: |
+        dotnet test ${{ env.SOLUTION_PATH }} \
+          --configuration Release \
+          --no-build \
+          --filter "FullyQualifiedName~UnitTests" \
+          --verbosity normal
+
+    - name: Run Integration Tests
+      env:
+        ConnectionStrings__DefaultConnection: "Host=localhost;Port=5432;Database=booksy_test;Username=booksy_admin;Password=TestPassword123!;Include Error Detail=true"
+        ConnectionStrings__Redis: "localhost:6379"
+      run: |
+        dotnet test ${{ env.SOLUTION_PATH }} \
+          --configuration Release \
+          --no-build \
+          --filter "FullyQualifiedName~IntegrationTests" \
+          --verbosity normal
+
+  # Build and push Docker images
+  build-and-push:
+    name: Build & Push Docker Images
+    runs-on: ubuntu-latest
+    needs: test
+    permissions:
+      contents: read
+      packages: write
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Set up Docker Buildx
+      uses: docker/setup-buildx-action@v3
+
+    - name: Log in to GitHub Container Registry
+      uses: docker/login-action@v3
+      with:
+        registry: ${{ env.REGISTRY }}
+        username: ${{ github.actor }}
+        password: ${{ secrets.GITHUB_TOKEN }}
+
+    - name: Extract metadata for images
+      id: meta
+      run: |
+        echo "date=$(date +'%Y%m%d%H%M%S')" >> $GITHUB_OUTPUT
+        echo "sha_short=$(git rev-parse --short HEAD)" >> $GITHUB_OUTPUT
+
+    - name: Build and push UserManagement API
+      uses: docker/build-push-action@v5
+      with:
+        context: .
+        file: ./src/UserManagement/Booksy.UserManagement.API/Dockerfile
+        push: true
+        tags: |
+          ${{ env.REGISTRY }}/${{ env.IMAGE_PREFIX }}-usermanagement:latest
+          ${{ env.REGISTRY }}/${{ env.IMAGE_PREFIX }}-usermanagement:${{ steps.meta.outputs.sha_short }}
+        cache-from: type=gha
+        cache-to: type=gha,mode=max
+
+    - name: Build and push ServiceCatalog API
+      uses: docker/build-push-action@v5
+      with:
+        context: .
+        file: ./src/BoundedContexts/ServiceCatalog/Booksy.ServiceCatalog.Api/Dockerfile
+        push: true
+        tags: |
+          ${{ env.REGISTRY }}/${{ env.IMAGE_PREFIX }}-servicecatalog:latest
+          ${{ env.REGISTRY }}/${{ env.IMAGE_PREFIX }}-servicecatalog:${{ steps.meta.outputs.sha_short }}
+        cache-from: type=gha
+        cache-to: type=gha,mode=max
+
+    - name: Build and push API Gateway
+      uses: docker/build-push-action@v5
+      with:
+        context: .
+        file: ./src/APIGateway/Booksy.Gateway/Dockerfile
+        push: true
+        tags: |
+          ${{ env.REGISTRY }}/${{ env.IMAGE_PREFIX }}-gateway:latest
+          ${{ env.REGISTRY }}/${{ env.IMAGE_PREFIX }}-gateway:${{ steps.meta.outputs.sha_short }}
+        cache-from: type=gha
+        cache-to: type=gha,mode=max
+
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '20'
+        cache: 'npm'
+        cache-dependency-path: booksy-frontend/package-lock.json
+
+    - name: Install frontend dependencies
+      working-directory: booksy-frontend
+      run: npm ci
+
+    - name: Build frontend
+      working-directory: booksy-frontend
+      run: npm run build
+
+    - name: Build and push Frontend
+      uses: docker/build-push-action@v5
+      with:
+        context: ./booksy-frontend
+        file: ./booksy-frontend/Dockerfile
+        push: true
+        tags: |
+          ${{ env.REGISTRY }}/${{ env.IMAGE_PREFIX }}-frontend:latest
+          ${{ env.REGISTRY }}/${{ env.IMAGE_PREFIX }}-frontend:${{ steps.meta.outputs.sha_short }}
+        cache-from: type=gha
+        cache-to: type=gha,mode=max
+
+  # Deploy to Ubuntu server
+  deploy:
+    name: Deploy to Production Server
+    runs-on: ubuntu-latest
+    needs: build-and-push
+    environment:
+      name: production
+      url: http://${{ secrets.SERVER_HOST }}
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Create deployment package
+      run: |
+        mkdir -p deployment-package
+        cp docker-compose.prod.yml deployment-package/
+        cp -r deployment/scripts deployment-package/
+        tar -czf deployment.tar.gz deployment-package/
+
+    - name: Copy deployment files to server
+      uses: appleboy/scp-action@v0.1.7
+      with:
+        host: ${{ secrets.SERVER_HOST }}
+        username: ${{ secrets.SERVER_USER }}
+        key: ${{ secrets.SERVER_SSH_KEY }}
+        port: 22
+        source: "deployment.tar.gz"
+        target: ${{ secrets.SERVER_DEPLOY_PATH }}
+
+    - name: Deploy application on server
+      uses: appleboy/ssh-action@v1.0.3
+      with:
+        host: ${{ secrets.SERVER_HOST }}
+        username: ${{ secrets.SERVER_USER }}
+        key: ${{ secrets.SERVER_SSH_KEY }}
+        port: 22
+        script: |
+          set -e
+
+          # Navigate to deployment directory
+          cd ${{ secrets.SERVER_DEPLOY_PATH }}
+
+          # Extract deployment files
+          tar -xzf deployment.tar.gz
+          cd deployment-package
+
+          # Login to GitHub Container Registry
+          echo "${{ secrets.GITHUB_TOKEN }}" | docker login ${{ env.REGISTRY }} -u ${{ github.actor }} --password-stdin
+
+          # Pull latest images
+          docker-compose -f docker-compose.prod.yml pull
+
+          # Stop old containers
+          docker-compose -f docker-compose.prod.yml down
+
+          # Start new containers
+          docker-compose -f docker-compose.prod.yml up -d
+
+          # Wait for services to be healthy
+          sleep 10
+
+          # Check service health
+          docker-compose -f docker-compose.prod.yml ps
+
+          # Clean up old images
+          docker image prune -af --filter "until=24h"
+
+          echo "Deployment completed successfully!"
+
+    - name: Health check
+      run: |
+        sleep 30
+        response=$(curl -s -o /dev/null -w "%{http_code}" http://${{ secrets.SERVER_HOST }}/health || echo "000")
+        if [ "$response" != "200" ]; then
+          echo "Health check failed with status: $response"
+          exit 1
+        fi
+        echo "Health check passed!"
+
+  # Notify deployment status
+  notify:
+    name: Notify Deployment Status
+    runs-on: ubuntu-latest
+    needs: [deploy]
+    if: always()
+
+    steps:
+    - name: Deployment Success
+      if: needs.deploy.result == 'success'
+      run: |
+        echo "Deployment to production completed successfully!"
+        echo "Version: ${{ github.sha }}"
+        echo "Deployed by: ${{ github.actor }}"
+
+    - name: Deployment Failed
+      if: needs.deploy.result == 'failure'
+      run: |
+        echo "Deployment to production failed!"
+        exit 1

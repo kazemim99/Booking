@@ -26,13 +26,16 @@ export const useAuthStore = defineStore('auth', () => {
   const providerStatus = ref<ProviderStatus | null>(null)
   const providerId = ref<string | null>(null)
 
+  // Customer state
+  const customerId = ref<string | null>(null)
+
   // Getters
   const isAuthenticated = computed(() => !!token.value && !!user.value)
   const currentUser = computed(() => user.value)
   const userRoles = computed(() => user.value?.roles || [])
   const userName = computed(() => {
     if (!user.value) return 'Guest'
-    return user.value.fullName || user.value.email || 'User'
+    return user.value.firstName || user.value.email || 'User'
   })
 
   // Provider status getters
@@ -74,6 +77,7 @@ export const useAuthStore = defineStore('auth', () => {
         roles: payload.role || payload['http://schemas.microsoft.com/ws/2008/06/identity/claims/role'] || [],
         providerId: payload.providerId || payload.provider_id,
         providerStatus: payload.provider_status,
+        customerId: payload.customerId || payload.customer_id,
       }
     } catch (error) {
       console.error('[AuthStore] Failed to decode JWT token:', error)
@@ -120,6 +124,7 @@ export const useAuthStore = defineStore('auth', () => {
     if (isCustomer) {
       return {
         userId: tokenData.userId,
+        customerId: tokenData.customerId || tokenData.customer_id,
         email: tokenData.email,
         userType: tokenData.userType,
         roles: roles
@@ -171,6 +176,11 @@ export const useAuthStore = defineStore('auth', () => {
           console.log('[AuthStore] ✅ Customer info extracted from token:', customerInfo)
           // For customers, explicitly set provider status to null (they don't have providers)
           setProviderStatus(null, null)
+          // Store customerId
+          if (customerInfo?.customerId) {
+            customerId.value = customerInfo.customerId
+            console.log('[AuthStore] ✅ CustomerId set:', customerInfo.customerId)
+          }
         }
       }
     } else {
@@ -435,7 +445,7 @@ export const useAuthStore = defineStore('auth', () => {
       if (providerStatus.value === null && providerId.value === null) {
         try {
           await fetchProviderStatus()
-        } catch (err) {
+        } catch {
           console.error('[AuthStore] Error fetching provider status, redirecting to registration')
           router.push({ name: 'ProviderRegistration' })
           return
@@ -503,14 +513,30 @@ export const useAuthStore = defineStore('auth', () => {
       clearValidationErrors()
       clearProviderStatus()
 
-      router.push({ name: 'Login' })
+      // Stay on current page if it's a public route (like Home)
+      // Only redirect to Login if on a protected route
+      const currentPath = router.currentRoute.value.path
+      const publicRoutes = ['/', '/providers', '/search', '/about', '/contact']
+      const isPublicRoute = publicRoutes.includes(currentPath) || currentPath.startsWith('/provider/')
+
+      if (!isPublicRoute) {
+        router.push({ name: 'Login' })
+      }
     } catch (err: unknown) {
       console.error('Logout error:', err)
       setToken(null)
       setRefreshToken(null)
       setUser(null)
       clearProviderStatus()
-      router.push({ name: 'Login' })
+
+      // Stay on current page if it's a public route
+      const currentPath = router.currentRoute.value.path
+      const publicRoutes = ['/', '/providers', '/search', '/about', '/contact']
+      const isPublicRoute = publicRoutes.includes(currentPath) || currentPath.startsWith('/provider/')
+
+      if (!isPublicRoute) {
+        router.push({ name: 'Login' })
+      }
     } finally {
       setLoading(false)
     }
@@ -592,6 +618,11 @@ export const useAuthStore = defineStore('auth', () => {
             console.log('[AuthStore] ✅ Customer info loaded from stored token:', customerInfo)
             // For customers, explicitly set provider status to null
             setProviderStatus(null, null)
+            // Store customerId
+            if (customerInfo?.customerId) {
+              customerId.value = customerInfo.customerId
+              console.log('[AuthStore] ✅ CustomerId loaded:', customerInfo.customerId)
+            }
           }
         }
       }
@@ -649,6 +680,7 @@ export const useAuthStore = defineStore('auth', () => {
     validationErrors,
     providerStatus,
     providerId,
+    customerId,
 
     // Getters
     isAuthenticated,

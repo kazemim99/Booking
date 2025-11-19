@@ -43,6 +43,12 @@
               </svg>
               برتر
             </div>
+
+            <!-- Favorite Button -->
+            <FavoriteButton
+              :provider-id="provider.id"
+              @click.stop
+            />
           </div>
 
           <div class="provider-content">
@@ -94,16 +100,23 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted } from 'vue'
+import { ref, onMounted, computed } from 'vue'
 import { useRouter } from 'vue-router'
 import { useProviderStore } from '@/modules/provider/stores/provider.store'
+import { useCustomerStore } from '@/modules/customer/stores/customer.store'
+import { useAuthStore } from '@/core/stores/modules/auth.store'
+import FavoriteButton from '@/modules/customer/components/favorites/FavoriteButton.vue'
 import type { ProviderSummary, PriceRange } from '@/modules/provider/types/provider.types'
 
 const router = useRouter()
 const providerStore = useProviderStore()
+const customerStore = useCustomerStore()
+const authStore = useAuthStore()
 
 const loading = ref(false)
 const featuredProviders = ref<ProviderSummary[]>([])
+
+const isAuthenticated = computed(() => authStore.isAuthenticated)
 
 onMounted(async () => {
   loading.value = true
@@ -116,6 +129,15 @@ onMounted(async () => {
       sortDescending: true,
     })
     featuredProviders.value = providerStore.providers.slice(0, 6)
+
+    // Fetch customer favorites if authenticated
+    if (isAuthenticated.value && authStore.customerId) {
+      try {
+        await customerStore.fetchFavorites(authStore.customerId)
+      } catch (error) {
+        console.error('Failed to load favorites:', error)
+      }
+    }
   } catch (error) {
     console.error('Failed to load featured providers:', error)
   } finally {
@@ -333,6 +355,39 @@ const convertToPersianNumber = (num: number): string => {
 .provider-badge svg {
   width: 14px;
   height: 14px;
+}
+
+/* Favorite Button Positioning */
+.provider-image :deep(.favorite-btn) {
+  position: absolute;
+  top: 1rem;
+  right: 1rem;
+  width: 40px;
+  height: 40px;
+  padding: 0.5rem;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.95);
+  backdrop-filter: blur(8px);
+  border: none;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  z-index: 10;
+}
+
+.provider-image :deep(.favorite-btn:hover) {
+  transform: scale(1.1);
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.15);
+  background: white;
+}
+
+.provider-image :deep(.favorite-btn.active) {
+  background: rgba(254, 215, 215, 0.95);
+  border-color: transparent;
+}
+
+.provider-image :deep(.favorite-btn svg) {
+  width: 20px;
+  height: 20px;
 }
 
 .provider-content {

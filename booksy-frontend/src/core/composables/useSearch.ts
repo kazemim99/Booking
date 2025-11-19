@@ -3,8 +3,7 @@
  * Search and filter functionality with debouncing
  */
 
-import { ref, computed, watch } from 'vue'
-import type { Ref } from 'vue'
+import { ref, computed } from 'vue'
 import type { FilterParams, SearchParams } from '@/core/types/common.types'
 import { useDebounce } from './useDebounce'
 

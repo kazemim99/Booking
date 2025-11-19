@@ -2,6 +2,7 @@
 // Booksy.UserManagement.Application/CQRS/Commands/Customer/RegisterCustomer/RegisterCustomerCommand.cs
 // ========================================
 using Booksy.Core.Application.Abstractions.CQRS;
+using Booksy.UserManagement.Application.DTOs;
 
 namespace Booksy.UserManagement.Application.CQRS.Commands.Customer.RegisterCustomer
 {
@@ -25,12 +26,4 @@ namespace Booksy.UserManagement.Application.CQRS.Commands.Customer.RegisterCusto
 
         public Guid? IdempotencyKey { get; init; }
     }
-
-    public sealed record AddressDto(
-        string Street,
-        string City,
-        string State,
-        string PostalCode,
-        string Country,
-        string? Unit = null);
 }

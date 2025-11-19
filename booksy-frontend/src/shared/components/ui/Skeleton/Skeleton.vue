@@ -1,11 +1,10 @@
-<template>
-  <div :class="skeletonClasses" :style="skeletonStyles">
-    <slot />
-  </div>
-</template>
-
 <script setup lang="ts">
 import { computed } from 'vue'
+
+// Rename component to SkeletonLoader to follow multi-word naming convention
+defineOptions({
+  name: 'SkeletonLoader'
+})
 
 interface Props {
   width?: string
@@ -36,6 +35,12 @@ const skeletonStyles = computed(() => {
   }
 })
 </script>
+
+<template>
+  <div :class="skeletonClasses" :style="skeletonStyles">
+    <slot />
+  </div>
+</template>
 
 <style scoped>
 .skeleton {

@@ -8,8 +8,12 @@ using Booksy.UserManagement.Application.CQRS.Commands.Customer.RegisterCustomer;
 using Booksy.UserManagement.Application.CQRS.Commands.Customer.UpdateCustomerProfile;
 using Booksy.UserManagement.Application.CQRS.Commands.Customer.AddFavoriteProvider;
 using Booksy.UserManagement.Application.CQRS.Commands.Customer.RemoveFavoriteProvider;
+using Booksy.UserManagement.Application.CQRS.Commands.Customer.UpdateNotificationPreferences;
 using Booksy.UserManagement.Application.CQRS.Queries.Customer.GetCustomerById;
 using Booksy.UserManagement.Application.CQRS.Queries.Customer.GetCustomerFavoriteProviders;
+using Booksy.UserManagement.Application.CQRS.Queries.Customer.GetCustomerProfile;
+using Booksy.UserManagement.Application.CQRS.Queries.Customer.GetUpcomingBookings;
+using Booksy.UserManagement.Application.CQRS.Queries.Customer.GetBookingHistory;
 
 namespace Booksy.UserManagement.API.Controllers.V1;
 
@@ -141,11 +145,6 @@ public class CustomersController : ControllerBase
     {
         try
         {
-            // Ensure the ID in the route matches the command
-            if (id != request.CustomerId)
-            {
-                return BadRequest(new { error = "Customer ID mismatch" });
-            }
 
             // Check if user can update this profile
             if (!await CanAccessCustomerProfile(id))
@@ -155,7 +154,10 @@ public class CustomersController : ControllerBase
                 return Forbid();
             }
 
-            var result = await _mediator.Send(request, cancellationToken);
+            // Set the CustomerId from the route parameter
+            var command = request with { CustomerId = id };
+
+            var result = await _mediator.Send(command, cancellationToken);
 
             return Ok(result);
         }
@@ -364,6 +366,168 @@ public class CustomersController : ControllerBase
         }
     }
 
+    /// <summary>
+    /// Gets customer profile with notification preferences
+    /// </summary>
+    /// <param name="id">Customer ID</param>
+    /// <param name="cancellationToken">Cancellation token</param>
+    /// <returns>Customer profile</returns>
+    [HttpGet("{id:guid}/profile")]
+    [Authorize(Roles = "Customer,Admin")]
+    [ProducesResponseType(typeof(CustomerProfileViewModel), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> GetCustomerProfile(
+        [FromRoute] Guid id,
+        CancellationToken cancellationToken = default)
+    {
+        try
+        {
+            if (!await CanAccessCustomerProfile(id))
+            {
+                return Forbid();
+            }
+
+            var query = new GetCustomerProfileQuery(id);
+            var result = await _mediator.Send(query, cancellationToken);
+
+            return Ok(result);
+        }
+        catch (InvalidOperationException ex)
+        {
+            _logger.LogWarning(ex, "Customer not found: {CustomerId}", id);
+            return NotFound(new { error = ex.Message });
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error retrieving customer profile {CustomerId}", id);
+            return StatusCode(StatusCodes.Status500InternalServerError,
+                new { error = "An error occurred while retrieving the profile" });
+        }
+    }
+
+    /// <summary>
+    /// Gets customer's upcoming bookings
+    /// </summary>
+    /// <param name="id">Customer ID</param>
+    /// <param name="limit">Number of bookings to retrieve (default 5)</param>
+    /// <param name="cancellationToken">Cancellation token</param>
+    /// <returns>List of upcoming bookings</returns>
+    [HttpGet("{id:guid}/bookings/upcoming")]
+    [Authorize(Roles = "Customer,Admin")]
+    [ProducesResponseType(typeof(List<UpcomingBookingViewModel>), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> GetUpcomingBookings(
+        [FromRoute] Guid id,
+        [FromQuery] int limit = 5,
+        CancellationToken cancellationToken = default)
+    {
+        try
+        {
+            if (!await CanAccessCustomerProfile(id))
+            {
+                return Forbid();
+            }
+
+            var query = new GetUpcomingBookingsQuery(id, limit);
+            var result = await _mediator.Send(query, cancellationToken);
+
+            return Ok(result);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error retrieving upcoming bookings for customer {CustomerId}", id);
+            return StatusCode(StatusCodes.Status500InternalServerError,
+                new { error = "An error occurred while retrieving upcoming bookings" });
+        }
+    }
+
+    /// <summary>
+    /// Gets customer's booking history (paginated)
+    /// </summary>
+    /// <param name="id">Customer ID</param>
+    /// <param name="page">Page number (default 1)</param>
+    /// <param name="pageSize">Page size (default 20)</param>
+    /// <param name="cancellationToken">Cancellation token</param>
+    /// <returns>Paginated booking history</returns>
+    [HttpGet("{id:guid}/bookings/history")]
+    [Authorize(Roles = "Customer,Admin")]
+    [ProducesResponseType(typeof(BookingHistoryResult), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> GetBookingHistory(
+        [FromRoute] Guid id,
+        [FromQuery] int page = 1,
+        [FromQuery] int pageSize = 20,
+        CancellationToken cancellationToken = default)
+    {
+        try
+        {
+            if (!await CanAccessCustomerProfile(id))
+            {
+                return Forbid();
+            }
+
+            var query = new GetBookingHistoryQuery(id, page, pageSize);
+            var result = await _mediator.Send(query, cancellationToken);
+
+            return Ok(result);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error retrieving booking history for customer {CustomerId}", id);
+            return StatusCode(StatusCodes.Status500InternalServerError,
+                new { error = "An error occurred while retrieving booking history" });
+        }
+    }
+
+    /// <summary>
+    /// Updates customer notification preferences
+    /// </summary>
+    /// <param name="id">Customer ID</param>
+    /// <param name="request">Notification preferences</param>
+    /// <param name="cancellationToken">Cancellation token</param>
+    /// <returns>Updated preferences</returns>
+    [HttpPatch("{id:guid}/preferences")]
+    [Authorize(Roles = "Customer")]
+    [ProducesResponseType(typeof(UpdateNotificationPreferencesResult), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> UpdateNotificationPreferences(
+        [FromRoute] Guid id,
+        [FromBody][Required] UpdatePreferencesRequest request,
+        CancellationToken cancellationToken = default)
+    {
+        try
+        {
+            if (!await CanAccessCustomerProfile(id))
+            {
+                return Forbid();
+            }
+
+            var command = new UpdateNotificationPreferencesCommand
+            {
+                CustomerId = id,
+                SmsEnabled = request.SmsEnabled,
+                EmailEnabled = request.EmailEnabled,
+                ReminderTiming = request.ReminderTiming
+            };
+
+            var result = await _mediator.Send(command, cancellationToken);
+
+            return Ok(result);
+        }
+        catch (InvalidOperationException ex)
+        {
+            _logger.LogWarning(ex, "Customer not found: {CustomerId}", id);
+            return NotFound(new { error = ex.Message });
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error updating notification preferences for customer {CustomerId}", id);
+            return StatusCode(StatusCodes.Status500InternalServerError,
+                new { error = "An error occurred while updating preferences" });
+        }
+    }
+
     #region Helper Methods
 
     private string? GetCurrentUserId()
@@ -388,3 +552,11 @@ public class CustomersController : ControllerBase
 public sealed record AddFavoriteProviderRequest(
     Guid ProviderId,
     string? Notes = null);
+
+/// <summary>
+/// Request model for updating notification preferences
+/// </summary>
+public sealed record UpdatePreferencesRequest(
+    bool SmsEnabled,
+    bool EmailEnabled,
+    string ReminderTiming);

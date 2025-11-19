@@ -4,12 +4,12 @@
  * Optimized for frequent name lookups in booking lists
  */
 
-import { httpClient } from '@/core/api/client/http-client'
+import { userManagementClient } from '@/core/api/client/http-client'
 import type { ApiResponse } from '@/core/api/client/api-response'
 import type { User } from '../types/user.types'
 
 const API_VERSION = 'v1'
-const API_BASE = `/${API_VERSION}/users`
+const API_BASE = `/${API_VERSION}/Users`
 
 // ==================== Cache Configuration ====================
 
@@ -217,7 +217,7 @@ class CustomerService {
 
       console.log(`[CustomerService] Fetching customer: ${id}`)
 
-      const response = await httpClient.get<ApiResponse<User>>(
+      const response = await userManagementClient.get<ApiResponse<User>>(
         `${API_BASE}/${id}`
       )
 
@@ -248,7 +248,7 @@ class CustomerService {
     try {
       console.log(`[CustomerService] Searching customers: "${query}"`)
 
-      const response = await httpClient.get<ApiResponse<{ items: User[] }>>(
+      const response = await userManagementClient.get<ApiResponse<{ items: User[] }>>(
         `${API_BASE}/search`,
         {
           params: {

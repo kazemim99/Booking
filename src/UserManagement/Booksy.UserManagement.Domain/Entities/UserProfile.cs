@@ -142,6 +142,23 @@ namespace Booksy.UserManagement.Domain.Entities
         {
             return Preferences.TryGetValue(key, out var value) ? value : null;
         }
+
+        public void UpdateName(string firstName, string lastName, string? middleName)
+        {
+            this.FirstName = firstName;
+            this.LastName = lastName;
+            this.MiddleName = middleName;
+        }
+
+        public void UpdateDateOfBirth(DateTime value)
+        {
+            this.DateOfBirth = value;
+        }
+
+        public void UpdateGender(string gender)
+        {
+            this.Gender = gender;
+        }
     }
 }
 

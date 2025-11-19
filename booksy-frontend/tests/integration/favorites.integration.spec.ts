@@ -33,7 +33,7 @@ describe('Customer Favorites Integration Tests', () => {
     for (const favoriteId of createdFavoriteIds) {
       try {
         await favoritesService.removeFavorite(customerId, favoriteId)
-      } catch (error) {
+      } catch {
         // Ignore cleanup errors
       }
     }

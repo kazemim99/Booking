@@ -4,7 +4,7 @@
  * Based on Booksy API Collection v1
  */
 
-import { httpClient } from '@/core/api/client/http-client'
+import { serviceCategoryClient } from '@/core/api/client/http-client'
 import type { ApiResponse } from '@/core/api/client/api-response'
 import type { BookingStatus } from '@/core/types/enums.types'
 import type {
@@ -15,7 +15,7 @@ import type {
 } from '../types/booking.types'
 
 const API_VERSION = 'v1'
-const API_BASE = `/${API_VERSION}/bookings`
+const API_BASE = `/${API_VERSION}/Bookings`
 
 // ==================== Request/Response Types ====================
 
@@ -136,7 +136,7 @@ class BookingService {
         ...(filters.endDate && { endDate: filters.endDate }),
       }
 
-      const response = await httpClient.get<ApiResponse<PaginatedBookingsResponse>>(
+      const response = await serviceCategoryClient.get<ApiResponse<PaginatedBookingsResponse>>(
         API_BASE,
         { params }
       )
@@ -186,7 +186,7 @@ class BookingService {
     try {
       console.log(`[BookingService] Fetching booking: ${id}`)
 
-      const response = await httpClient.get<ApiResponse<Appointment>>(
+      const response = await serviceCategoryClient.get<ApiResponse<Appointment>>(
         `${API_BASE}/${id}`
       )
 
@@ -225,7 +225,7 @@ class BookingService {
     try {
       console.log('[BookingService] Creating booking:', data)
 
-      const response = await httpClient.post<ApiResponse<Appointment>>(
+      const response = await serviceCategoryClient.post<ApiResponse<Appointment>>(
         API_BASE,
         data
       )
@@ -276,7 +276,7 @@ class BookingService {
     try {
       console.log(`[BookingService] Confirming booking: ${id}`, data)
 
-      const response = await httpClient.post<ApiResponse<Appointment>>(
+      const response = await serviceCategoryClient.post<ApiResponse<Appointment>>(
         `${API_BASE}/${id}/confirm`,
         data || {}
       )
@@ -306,7 +306,7 @@ class BookingService {
     try {
       console.log(`[BookingService] Completing booking: ${id}`, data)
 
-      const response = await httpClient.post<ApiResponse<Appointment>>(
+      const response = await serviceCategoryClient.post<ApiResponse<Appointment>>(
         `${API_BASE}/${id}/complete`,
         data || {}
       )
@@ -336,7 +336,7 @@ class BookingService {
     try {
       console.log(`[BookingService] Cancelling booking: ${id}`, data)
 
-      const response = await httpClient.post<ApiResponse<Appointment>>(
+      const response = await serviceCategoryClient.post<ApiResponse<Appointment>>(
         `${API_BASE}/${id}/cancel`,
         data
       )
@@ -380,7 +380,7 @@ class BookingService {
     try {
       console.log('[BookingService] Rescheduling booking:', request)
 
-      const response = await httpClient.post<ApiResponse<Appointment>>(
+      const response = await serviceCategoryClient.post<ApiResponse<Appointment>>(
         `${API_BASE}/${request.appointmentId}/reschedule`,
         {
           newStartTime: request.newStartTime,
@@ -415,7 +415,7 @@ class BookingService {
     try {
       console.log(`[BookingService] Assigning staff ${staffMemberId} to booking ${bookingId}`)
 
-      const response = await httpClient.put<ApiResponse<Appointment>>(
+      const response = await serviceCategoryClient.put<ApiResponse<Appointment>>(
         `${API_BASE}/${bookingId}/assign-staff/${staffMemberId}`,
         { reason }
       )
@@ -448,7 +448,7 @@ class BookingService {
     try {
       console.log(`[BookingService] Adding notes to booking ${bookingId}`)
 
-      const response = await httpClient.post<ApiResponse<Appointment>>(
+      const response = await serviceCategoryClient.post<ApiResponse<Appointment>>(
         `${API_BASE}/${bookingId}/notes`,
         { notes, isInternal }
       )
@@ -481,7 +481,7 @@ class BookingService {
     try {
       console.log(`[BookingService] Marking booking ${bookingId} as no-show`)
 
-      const response = await httpClient.post<ApiResponse<Appointment>>(
+      const response = await serviceCategoryClient.post<ApiResponse<Appointment>>(
         `${API_BASE}/${bookingId}/no-show`,
         { reason, chargeNoShowFee }
       )

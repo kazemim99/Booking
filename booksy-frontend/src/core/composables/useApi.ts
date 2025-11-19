@@ -8,7 +8,7 @@ interface AuthErrorWithMessage {
   message?: string
 }
 
-export function useAuth() {
+export function useApiAuth() {
   const authStore = useAuthStore()
   const notificationStore = useNotificationStore()
   const router = useRouter()

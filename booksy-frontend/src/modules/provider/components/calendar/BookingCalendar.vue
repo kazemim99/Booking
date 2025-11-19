@@ -183,7 +183,7 @@ const calendarDays = computed(() => {
   const daysInMonth = jalaali.jalaaliMonthLength(currentJalaliYear.value, currentJalaliMonth.value)
 
   // Adjust Saturday as first day (day 6 in JS Date, we want it as 0)
-  let firstDayOfWeek = (firstDate.getDay() + 1) % 7
+  const firstDayOfWeek = (firstDate.getDay() + 1) % 7
 
   // Previous month days
   const prevMonth = currentJalaliMonth.value === 1 ? 12 : currentJalaliMonth.value - 1

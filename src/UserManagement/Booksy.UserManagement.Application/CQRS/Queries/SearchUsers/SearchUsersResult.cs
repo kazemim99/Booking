@@ -3,7 +3,7 @@
 // ========================================
 using Booksy.UserManagement.Domain.Enums;
 
-namespace Booksy.UserManagement.Application.Queries.SearchUsers;
+namespace Booksy.UserManagement.Application.CQRS.Queries.SearchUsers;
 
 /// <summary>
 /// Simplified result model for user search operations

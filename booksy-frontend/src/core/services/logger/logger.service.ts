@@ -15,7 +15,7 @@ export enum LogLevel {
 export interface LogEntry {
   level: LogLevel
   message: string
-  data?: any
+  data?: unknown
   timestamp: Date
   context?: string
 }
@@ -35,35 +35,35 @@ class LoggerService {
   /**
    * Log a debug message
    */
-  debug(message: string, data?: any, context?: string): void {
+  debug(message: string, data?: unknown, context?: string): void {
     this.log(LogLevel.DEBUG, message, data, context)
   }
 
   /**
    * Log an info message
    */
-  info(message: string, data?: any, context?: string): void {
+  info(message: string, data?: unknown, context?: string): void {
     this.log(LogLevel.INFO, message, data, context)
   }
 
   /**
    * Log a warning message
    */
-  warn(message: string, data?: any, context?: string): void {
+  warn(message: string, data?: unknown, context?: string): void {
     this.log(LogLevel.WARN, message, data, context)
   }
 
   /**
    * Log an error message
    */
-  error(message: string, data?: any, context?: string): void {
+  error(message: string, data?: unknown, context?: string): void {
     this.log(LogLevel.ERROR, message, data, context)
   }
 
   /**
    * Core logging method
    */
-  private log(level: LogLevel, message: string, data?: any, context?: string): void {
+  private log(level: LogLevel, message: string, data?: unknown, context?: string): void {
     if (level < this.logLevel) {
       return // Skip logs below current log level
     }

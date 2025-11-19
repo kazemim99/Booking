@@ -33,6 +33,10 @@
 <script setup lang="ts">
 import { computed, watch } from 'vue'
 
+defineOptions({
+  name: 'BaseModal'
+})
+
 interface Props {
   modelValue: boolean
   title?: string

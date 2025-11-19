@@ -2,7 +2,7 @@
 using FluentValidation;
 using Booksy.UserManagement.Domain.Enums;
 
-namespace Booksy.UserManagement.Application.Queries.GetUsersByStatus
+namespace Booksy.UserManagement.Application.CQRS.Queries.GetUsersByStatus
 {
     /// <summary>
     /// Validator for GetUsersByStatusQuery

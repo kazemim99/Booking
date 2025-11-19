@@ -20,6 +20,7 @@ namespace Booksy.UserManagement.Application.Services.Interfaces
             IEnumerable<string> roles,
             string? providerId = null,
             string? providerStatus = null,
+            string? customerId = null,
             int expirationHours = 24);
 
         ClaimsPrincipal? ValidateToken(string token);

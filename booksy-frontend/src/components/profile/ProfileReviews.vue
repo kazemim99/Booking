@@ -135,7 +135,7 @@ interface Props {
   provider: Provider
 }
 
-const props = defineProps<Props>()
+defineProps<Props>()
 
 // Mock reviews (replace with real API data)
 const mockReviews: Review[] = [

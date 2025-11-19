@@ -20,7 +20,6 @@ public class CustomerRepository : EfRepositoryBase<Customer, CustomerId, UserMan
         ArgumentNullException.ThrowIfNull(userId);
 
         return await DbSet
-            .Include(c => c.Profile)
             .Include(c => c.FavoriteProviders)
             .FirstOrDefaultAsync(c => c.UserId == userId, cancellationToken);
     }
@@ -39,7 +38,6 @@ public class CustomerRepository : EfRepositoryBase<Customer, CustomerId, UserMan
             throw new ArgumentException("ProviderId cannot be empty", nameof(providerId));
 
         return await DbSet
-            .Include(c => c.Profile)
             .Include(c => c.FavoriteProviders)
             .Where(c => c.FavoriteProviders.Any(fp => fp.ProviderId == providerId))
             .ToListAsync(cancellationToken);
@@ -64,7 +62,6 @@ public class CustomerRepository : EfRepositoryBase<Customer, CustomerId, UserMan
     public async Task<List<Customer>> GetAllAsync(CancellationToken cancellationToken = default)
     {
         return await DbSet
-            .Include(c => c.Profile)
             .Include(c => c.FavoriteProviders)
             .ToListAsync(cancellationToken);
     }
@@ -73,8 +70,8 @@ public class CustomerRepository : EfRepositoryBase<Customer, CustomerId, UserMan
     public override async Task<Customer?> GetByIdAsync(CustomerId id, CancellationToken cancellationToken = default)
     {
         return await DbSet
-            .Include(c => c.Profile)
             .Include(c => c.FavoriteProviders)
+            .Include(c=>c.NotificationPreferences)
             .FirstOrDefaultAsync(c => c.Id == id, cancellationToken);
     }
 
