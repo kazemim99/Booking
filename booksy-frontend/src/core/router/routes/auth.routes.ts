@@ -1,15 +1,28 @@
 import type { RouteRecordRaw } from 'vue-router'
 
 const authRoutes: RouteRecordRaw[] = [
+  // Customer Authentication Routes
   {
-    path: '/login',
-    name: 'Login',
+    path: '/customer/login',
+    name: 'CustomerLogin',
     component: () => import('@/modules/auth/views/LoginView.vue'),
     meta: {
       isPublic: true,
       title: 'ورود مشتری - رزرو نوبت | Booksy'
     }
   },
+  {
+    path: '/customer/phone-verification',
+    name: 'CustomerPhoneVerification',
+    component: () => import('@/modules/auth/views/VerificationView.vue'),
+    meta: {
+      isPublic: true,
+      title: 'تأیید شماره تلفن - مشتری | Booksy',
+      userType: 'Customer' // Meta field to identify route type
+    }
+  },
+
+  // Provider Authentication Routes
   {
     path: '/provider/login',
     name: 'ProviderLogin',
@@ -20,13 +33,24 @@ const authRoutes: RouteRecordRaw[] = [
     }
   },
   {
-    path: '/phone-verification',
-    name: 'PhoneVerification',
+    path: '/provider/phone-verification',
+    name: 'ProviderPhoneVerification',
     component: () => import('@/modules/auth/views/VerificationView.vue'),
     meta: {
       isPublic: true,
-      title: 'Phone Verification'
+      title: 'تأیید شماره تلفن - ارائه‌دهنده | Booksy',
+      userType: 'Provider' // Meta field to identify route type
     }
+  },
+
+  // Legacy routes (redirects for backwards compatibility)
+  {
+    path: '/login',
+    redirect: '/customer/login'
+  },
+  {
+    path: '/phone-verification',
+    redirect: '/customer/phone-verification'
   }
 ]
 

@@ -420,7 +420,7 @@ export const useAuthStore = defineStore('auth', () => {
    */
   async function redirectToDashboard(redirectPath?: string) {
     if (!user.value || !user.value.roles) {
-      router.push({ name: 'Login' })
+      router.push({ name: 'CustomerLogin' })
       return
     }
 
@@ -564,7 +564,7 @@ export const useAuthStore = defineStore('auth', () => {
       const isPublicRoute = publicRoutes.includes(currentPath) || currentPath.startsWith('/provider/')
 
       if (!isPublicRoute) {
-        router.push({ name: 'Login' })
+        router.push({ name: 'CustomerLogin' })
       }
     } catch (err: unknown) {
       console.error('Logout error:', err)
@@ -579,7 +579,7 @@ export const useAuthStore = defineStore('auth', () => {
       const isPublicRoute = publicRoutes.includes(currentPath) || currentPath.startsWith('/provider/')
 
       if (!isPublicRoute) {
-        router.push({ name: 'Login' })
+        router.push({ name: 'CustomerLogin' })
       }
     } finally {
       setLoading(false)

@@ -153,14 +153,23 @@ const verifyOtp = async () => {
   console.log('[VerificationView] Verifying OTP:', otpCode.value, 'with phone:', phoneNumber.value)
 
   try {
-    // Get userType from route query params (explicitly passed by login page)
-    const userTypeFromQuery = route.query.userType as string | undefined
-    console.log('[VerificationView] 🔍 UserType from route query:', userTypeFromQuery)
+    // Get userType from route meta (set in router config based on route path)
+    const userTypeFromMeta = route.meta.userType as string | undefined
+    console.log('[VerificationView] 🔍 UserType from route meta:', userTypeFromMeta)
 
-    // Validate and use userType, default to Customer if not provided
-    const userType = (userTypeFromQuery === 'Provider' || userTypeFromQuery === 'Customer'
-      ? userTypeFromQuery
-      : 'Customer') as 'Customer' | 'Provider'
+    // Determine userType: from meta, fallback to route name, default to Customer
+    let userType: 'Customer' | 'Provider' = 'Customer'
+
+    if (userTypeFromMeta === 'Provider') {
+      userType = 'Provider'
+    } else if (userTypeFromMeta === 'Customer') {
+      userType = 'Customer'
+    } else if (route.name === 'ProviderPhoneVerification') {
+      userType = 'Provider'
+    } else {
+      userType = 'Customer'
+    }
+
     console.log('[VerificationView] 🔑 Final userType for authentication:', userType)
 
     // Use unified authentication endpoint based on user type
@@ -239,15 +248,13 @@ const handleResendCode = async () => {
 }
 
 const handleBackToLogin = () => {
-  // Check userType from route query to redirect to correct login page
-  const userTypeFromQuery = route.query.userType as string | undefined
-
-  if (userTypeFromQuery === 'Provider') {
+  // Check route to determine which login page to return to
+  if (route.name === 'ProviderPhoneVerification' || route.meta.userType === 'Provider') {
     // Provider login page
     router.push({ name: 'ProviderLogin' })
   } else {
     // Customer login page (default)
-    router.push({ name: 'Login' })
+    router.push({ name: 'CustomerLogin' })
   }
 }
 
