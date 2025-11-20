@@ -1,4 +1,5 @@
 using Booksy.Core.Application.Abstractions.CQRS;
+using Booksy.ServiceCatalog.Application.Abstractions;
 using Booksy.ServiceCatalog.Application.DTOs.Provider;
 using Booksy.ServiceCatalog.Domain.Repositories;
 using Booksy.ServiceCatalog.Domain.ValueObjects;
@@ -9,10 +10,14 @@ public sealed class GetGalleryImagesQueryHandler
     : IQueryHandler<GetGalleryImagesQuery, List<GalleryImageDto>>
 {
     private readonly IProviderReadRepository _providerRepository;
+    private readonly IUrlService _urlService;
 
-    public GetGalleryImagesQueryHandler(IProviderReadRepository providerRepository)
+    public GetGalleryImagesQueryHandler(
+        IProviderReadRepository providerRepository,
+        IUrlService urlService)
     {
         _providerRepository = providerRepository;
+        _urlService = urlService;
     }
 
     public async Task<List<GalleryImageDto>> Handle(
@@ -27,16 +32,16 @@ public sealed class GetGalleryImagesQueryHandler
             return new List<GalleryImageDto>();
         }
 
-        return provider.Profile.GalleryImages
+        var response = provider.Profile.GalleryImages
             .Where(img => img.IsActive)
             .OrderByDescending(img => img.IsPrimary)
             .ThenBy(img => img.DisplayOrder)
             .Select(img => new GalleryImageDto
             {
                 Id = img.Id,
-                ThumbnailUrl = img.ThumbnailUrl,
-                MediumUrl = img.MediumUrl,
-                OriginalUrl = img.ImageUrl,
+                ThumbnailUrl = _urlService.ToAbsoluteUrl(img.ThumbnailUrl),
+                MediumUrl = _urlService.ToAbsoluteUrl(img.MediumUrl),
+                OriginalUrl = _urlService.ToAbsoluteUrl(img.ImageUrl),
                 DisplayOrder = img.DisplayOrder,
                 Caption = img.Caption,
                 AltText = img.AltText,
@@ -45,5 +50,6 @@ public sealed class GetGalleryImagesQueryHandler
                 IsPrimary = img.IsPrimary
             })
             .ToList();
+        return response;
     }
 }

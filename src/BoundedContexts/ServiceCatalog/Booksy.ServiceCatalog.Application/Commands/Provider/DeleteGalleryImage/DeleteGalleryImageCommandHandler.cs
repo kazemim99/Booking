@@ -1,4 +1,5 @@
 using Booksy.Core.Application.Abstractions.CQRS;
+using Booksy.Core.Application.Abstractions.Persistence;
 using Booksy.Core.Domain.Exceptions;
 using Booksy.ServiceCatalog.Domain.Repositories;
 using Booksy.ServiceCatalog.Domain.Services;
@@ -38,15 +39,21 @@ public sealed class DeleteGalleryImageCommandHandler
             throw new DomainValidationException($"Gallery image {request.ImageId} not found");
         }
 
-        // Soft delete in domain
+        // Store image URLs before removal (needed for file deletion)
+        var thumbnailUrl = image.ThumbnailUrl;
+        var mediumUrl = image.MediumUrl;
+        var originalUrl = image.ImageUrl;
+
+        // Hard delete - remove from domain collection
         provider.Profile.RemoveGalleryImage(request.ImageId);
 
-        // Mark entity as modified for EF Core change tracking
-        await _providerRepository.SaveAsync(provider, cancellationToken);
+        // Mark the provider as modified to ensure EF Core detects the change
+        // For owned collections, we need to explicitly tell the repository to update
+        await _providerRepository.UpdateProviderAsync(provider, cancellationToken);
 
         // Delete files asynchronously (best effort)
-        await _fileStorageService.DeleteImageAsync(image.ThumbnailUrl, cancellationToken);
-        await _fileStorageService.DeleteImageAsync(image.MediumUrl, cancellationToken);
-        await _fileStorageService.DeleteImageAsync(image.ImageUrl, cancellationToken);
+        await _fileStorageService.DeleteImageAsync(thumbnailUrl, cancellationToken);
+        await _fileStorageService.DeleteImageAsync(mediumUrl, cancellationToken);
+        await _fileStorageService.DeleteImageAsync(originalUrl, cancellationToken);
     }
 }

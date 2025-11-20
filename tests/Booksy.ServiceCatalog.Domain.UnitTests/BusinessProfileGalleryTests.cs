@@ -65,7 +65,7 @@ public class BusinessProfileGalleryTests
     }
 
     [Fact]
-    public void RemoveGalleryImage_Should_Deactivate_Image()
+    public void RemoveGalleryImage_Should_Remove_Image_Completely()
     {
         // Arrange
         var profile = BusinessProfile.Create("Test Business", "Test Description", "\"profileImageUrl\"");
@@ -74,9 +74,8 @@ public class BusinessProfileGalleryTests
         // Act
         profile.RemoveGalleryImage(image.Id);
 
-        // Assert
-        Assert.False(image.IsActive);
-        Assert.Single(profile.GalleryImages);
+        // Assert - Image should be completely removed from collection
+        Assert.Empty(profile.GalleryImages);
     }
 
     [Fact]
