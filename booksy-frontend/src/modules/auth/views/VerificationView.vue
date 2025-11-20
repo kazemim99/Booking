@@ -239,7 +239,16 @@ const handleResendCode = async () => {
 }
 
 const handleBackToLogin = () => {
-  router.push({ name: 'Login' })
+  // Check userType from route query to redirect to correct login page
+  const userTypeFromQuery = route.query.userType as string | undefined
+
+  if (userTypeFromQuery === 'Provider') {
+    // Provider login page
+    router.push({ name: 'ProviderLogin' })
+  } else {
+    // Customer login page (default)
+    router.push({ name: 'Login' })
+  }
 }
 
 // Auto-focus OTP input on mount
