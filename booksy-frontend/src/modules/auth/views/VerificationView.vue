@@ -95,6 +95,7 @@ const authStore = useAuthStore()
 const otpCode = ref('')
 const error = ref('')
 const isLoading = ref(false)
+const isVerifying = ref(false) // Additional flag to prevent duplicate API calls
 const otpInputRef = ref<InstanceType<typeof OtpInput>>()
 
 // Computed
@@ -119,11 +120,27 @@ const handleOtpComplete = async (code: string) => {
   // Auto-submit when OTP is complete
   console.log('OTP complete event received:', code)
   otpCode.value = code
+
+  // Small delay to debounce and prevent race condition with handleSubmit
+  // This ensures if user presses Enter immediately after typing, we don't double-call
+  await new Promise(resolve => setTimeout(resolve, 100))
+
+  // Check again if already processing (in case handleSubmit was called)
+  if (isLoading.value) {
+    console.log('[VerificationView] ⚠️ Already processing from manual submit, skipping auto-submit')
+    return
+  }
+
   await verifyOtp()
 }
 
 const verifyOtp = async () => {
   // Prevent duplicate calls (race condition between auto-submit and manual submit)
+  if (isVerifying.value) {
+    console.log('[VerificationView] ⚠️ Already verifying, skipping duplicate call')
+    return
+  }
+
   if (isLoading.value) {
     console.log('[VerificationView] ⚠️ Already processing, skipping duplicate call')
     return
@@ -131,6 +148,7 @@ const verifyOtp = async () => {
 
   error.value = ''
   isLoading.value = true
+  isVerifying.value = true // Set flag immediately to prevent race condition
 
   console.log('[VerificationView] Verifying OTP:', otpCode.value, 'with phone:', phoneNumber.value)
 
@@ -180,6 +198,7 @@ const verifyOtp = async () => {
     otpInputRef.value?.clear()
   } finally {
     isLoading.value = false
+    isVerifying.value = false // Reset flag
   }
 }
 
