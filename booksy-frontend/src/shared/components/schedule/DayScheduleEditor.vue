@@ -200,6 +200,14 @@ const editingDayData = ref<DayScheduleData>({
 })
 
 const handleToggleDay = (index: number) => {
+  // If toggling from closed to open, set default values
+  if (localSchedule.value[index].isOpen && (!localSchedule.value[index].startTime || !localSchedule.value[index].endTime)) {
+    localSchedule.value[index].startTime = '10:00'
+    localSchedule.value[index].endTime = '22:00'
+    if (!localSchedule.value[index].breaks) {
+      localSchedule.value[index].breaks = []
+    }
+  }
   emitUpdate()
 }
 
