@@ -1,9 +1,12 @@
 ﻿// ========================================
-// Booksy.ServiceCatalog.Application/Queries/Provider/GetProviderById/ServiceSummaryViewModel.cs
+// Booksy.ServiceCatalog.Application/Queries/Provider/GetProviderById/ProviderServiceItem.cs
 // ========================================
 namespace Booksy.ServiceCatalog.Application.Queries.Provider.GetProviderById
 {
-    public sealed class ServiceSummaryViewModel
+    /// <summary>
+    /// Service summary item in GetProviderById result
+    /// </summary>
+    public sealed class ProviderServiceItem
     {
         public Guid Id { get; set; }
         public string Name { get; set; } = string.Empty;

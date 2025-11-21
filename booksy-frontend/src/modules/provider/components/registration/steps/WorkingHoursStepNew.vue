@@ -72,16 +72,23 @@ const weekDays = ['شنبه', 'یکشنبه', 'دوشنبه', 'سه‌شنبه',
 // Initialize schedule from props or default
 const initializeSchedule = (): DayHours[] => {
   if (props.modelValue && props.modelValue.length === 7) {
-    return props.modelValue
+    // Sort by dayOfWeek to ensure correct order (0=Saturday to 6=Friday)
+    return [...props.modelValue].sort((a, b) => a.dayOfWeek - b.dayOfWeek)
   }
 
-  // Default schedule (Saturday-Thursday open, Friday closed)
+  // Default schedule (all days open)
   return weekDays.map((_, index) => ({
     dayOfWeek: index,
-    isOpen: index !== 6, // Friday (index 6) is closed by default
-    openTime: { hours: 9, minutes: 0 },
-    closeTime: { hours: 18, minutes: 0 },
-    breaks: [],
+    isOpen: true,
+    openTime: { hours: 10, minutes: 0 },
+    closeTime: { hours: 22, minutes: 0 },
+    breaks: [
+      {
+        id: '1',
+        start: { hours: 13, minutes: 0 },
+        end: { hours: 15, minutes: 0 },
+      }
+    ],
   }))
 }
 

@@ -1,5 +1,7 @@
 using Booksy.Core.Application.Abstractions.CQRS;
 using Booksy.Core.Application.Abstractions.Services;
+using Booksy.ServiceCatalog.Application.Abstractions;
+using Booksy.ServiceCatalog.Domain.Entities;
 using Booksy.ServiceCatalog.Domain.Repositories;
 using Booksy.ServiceCatalog.Domain.ValueObjects;
 
@@ -11,15 +13,18 @@ public sealed class GetRegistrationProgressQueryHandler
     private readonly IProviderWriteRepository _providerRepository;
     private readonly IServiceWriteRepository _serviceRepository;
     private readonly ICurrentUserService _currentUserService;
+    private readonly IUrlService _urlService;
 
     public GetRegistrationProgressQueryHandler(
         IProviderWriteRepository providerRepository,
         IServiceWriteRepository serviceRepository,
-        ICurrentUserService currentUserService)
+        ICurrentUserService currentUserService,
+        IUrlService urlService)
     {
         _providerRepository = providerRepository;
         _serviceRepository = serviceRepository;
         _currentUserService = currentUserService;
+        _urlService = urlService;
     }
 
     public async Task<GetRegistrationProgressResult> Handle(
@@ -118,15 +123,16 @@ public sealed class GetRegistrationProgressQueryHandler
             )).ToList()
         )).ToList();
 
+
         // Map gallery images from provider's business profile
         var galleryImages = draftProvider.Profile.GalleryImages
             .Where(img => img.IsActive)
             .OrderBy(img => img.DisplayOrder)
             .Select(img => new GalleryImageData(
                 Id: img.Id.ToString(),
-                ImageUrl: img.ImageUrl,
-                ThumbnailUrl: img.ThumbnailUrl,
-                MediumUrl: img.MediumUrl,
+                ImageUrl: _urlService.ToAbsoluteUrl(img.ImageUrl),
+                ThumbnailUrl: _urlService.ToAbsoluteUrl(img.ThumbnailUrl),
+                MediumUrl: _urlService.ToAbsoluteUrl(img.MediumUrl) ,
                 DisplayOrder: img.DisplayOrder,
                 IsPrimary: img.IsPrimary,
                 Caption: img.Caption,

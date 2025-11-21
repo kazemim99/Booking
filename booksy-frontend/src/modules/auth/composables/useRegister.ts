@@ -77,9 +77,9 @@ export function useRegister() {
    */
   async function handlePostRegistrationRedirect(userType: UserType): Promise<void> {
     if (userType === UserType.Provider) {
-      // Provider users go to provider onboarding
+      // Provider users go to provider registration
       await router.push({
-        name: 'ProviderOnboarding',
+        name: 'ProviderRegistration',
         query: { welcome: 'true' },
       })
     } else if (userType === UserType.Client) {

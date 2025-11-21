@@ -140,6 +140,7 @@ export const useGalleryStore = defineStore('gallery', () => {
    * Delete a gallery image
    */
   async function deleteImage(providerId: string, imageId: string): Promise<void> {
+    console.log('📦 Gallery Store: deleteImage called', { providerId, imageId })
     error.value = null
 
     // Store original images for rollback
@@ -148,14 +149,18 @@ export const useGalleryStore = defineStore('gallery', () => {
     try {
       // Optimistically remove from UI
       galleryImages.value = galleryImages.value.filter((img) => img.id !== imageId)
+      console.log('📦 Gallery Store: Optimistically removed image from store')
 
+      console.log('📦 Gallery Store: Calling gallery service deleteImage...')
       await galleryService.deleteImage(providerId, imageId)
+      console.log('📦 Gallery Store: Delete request successful')
     } catch (err: any) {
       // Rollback on error
+      console.log('📦 Gallery Store: Delete failed, rolling back')
       galleryImages.value = originalImages
 
       error.value = err.response?.data?.message || 'Failed to delete image'
-      console.error('Error deleting image:', err)
+      console.error('📦 Gallery Store: Error deleting image:', err)
       throw err
     }
   }

@@ -190,7 +190,7 @@ const verifyOtp = async () => {
 
       if (userType === 'Provider' && 'requiresOnboarding' in result && result.requiresOnboarding) {
         console.log('[VerificationView] Provider requires onboarding, redirecting...')
-        await router.push({ name: 'ProviderOnboarding' })
+        await router.push({ name: 'ProviderRegistration' })
       } else {
         console.log('[VerificationView] Checking redirect path...')
         await redirectBasedOnProviderStatus()

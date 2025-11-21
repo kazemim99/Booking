@@ -11,19 +11,8 @@
       </div>
 
       <div class="modal-body">
-        <!-- Day Status Toggle -->
-        <div class="form-group">
-          <label class="toggle-label">
-            <span class="toggle-text">روز کاری</span>
-            <label class="toggle-switch">
-              <input type="checkbox" v-model="localData.isOpen" />
-              <span class="toggle-slider"></span>
-            </label>
-          </label>
-        </div>
-
-        <!-- Time Inputs (shown when day is open) -->
-        <div v-if="localData.isOpen" class="time-section">
+        <!-- Time Inputs -->
+        <div class="time-section">
           <div class="time-row">
             <div class="form-group">
               <label class="form-label">{{ startTimeLabel }}</label>
@@ -94,14 +83,6 @@
             </div>
             <p v-else class="no-breaks-text">{{ noBreaksText }}</p>
           </div>
-        </div>
-
-        <!-- Closed Message -->
-        <div v-else class="closed-message">
-          <svg class="closed-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-          </svg>
-          <p>این روز تعطیل است</p>
         </div>
       </div>
 
@@ -243,6 +224,41 @@ const handleClose = () => {
 }
 
 const handleSave = () => {
+  // Convert time string to minutes for comparison
+  const timeToMinutes = (time: string): number => {
+    const [hours, minutes] = time.split(':').map(Number)
+    return hours * 60 + minutes
+  }
+
+  // Validate business hours
+  const startMinutes = timeToMinutes(localData.value.startTime)
+  const endMinutes = timeToMinutes(localData.value.endTime)
+
+  if (endMinutes <= startMinutes) {
+    alert('ساعت پایان باید بعد از ساعت شروع باشد')
+    return
+  }
+
+  // Validate breaks
+  if (localData.value.breaks && localData.value.breaks.length > 0) {
+    for (let i = 0; i < localData.value.breaks.length; i++) {
+      const breakItem = localData.value.breaks[i]
+      const breakStartMinutes = timeToMinutes(breakItem.start)
+      const breakEndMinutes = timeToMinutes(breakItem.end)
+
+      if (breakEndMinutes <= breakStartMinutes) {
+        alert(`ساعت پایان استراحت ${i + 1} باید بعد از ساعت شروع آن باشد`)
+        return
+      }
+
+      // Validate break is within business hours
+      if (breakStartMinutes < startMinutes || breakEndMinutes > endMinutes) {
+        alert(`استراحت ${i + 1} باید در بازه ساعات کاری باشد`)
+        return
+      }
+    }
+  }
+
   emit('save', JSON.parse(JSON.stringify(localData.value)))
   emit('close')
 }
@@ -337,74 +353,10 @@ const handleSave = () => {
   color: #6b7280;
 }
 
-.toggle-label {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 1rem;
-  background: #f9fafb;
-  border-radius: 0.5rem;
-  border: 1px solid #e5e7eb;
-}
-
-.toggle-text {
-  font-size: 1rem;
-  font-weight: 500;
-  color: #111827;
-}
-
-/* Toggle Switch */
-.toggle-switch {
-  position: relative;
-  display: inline-block;
-  width: 3rem;
-  height: 1.75rem;
-  flex-shrink: 0;
-}
-
-.toggle-switch input {
-  opacity: 0;
-  width: 0;
-  height: 0;
-}
-
-.toggle-slider {
-  position: absolute;
-  cursor: pointer;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background-color: #e5e7eb;
-  transition: 0.3s;
-  border-radius: 1.75rem;
-}
-
-.toggle-slider:before {
-  position: absolute;
-  content: '';
-  height: 1.25rem;
-  width: 1.25rem;
-  left: 0.25rem;
-  bottom: 0.25rem;
-  background-color: white;
-  transition: 0.3s;
-  border-radius: 50%;
-}
-
-.toggle-switch input:checked + .toggle-slider {
-  background-color: #8b5cf6;
-}
-
-.toggle-switch input:checked + .toggle-slider:before {
-  transform: translateX(1.25rem);
-}
-
 .time-section {
   display: flex;
   flex-direction: column;
   gap: 1.5rem;
-  margin-top: 1.5rem;
 }
 
 .time-row {
@@ -531,28 +483,6 @@ const handleSave = () => {
   color: #9ca3af;
   font-size: 0.875rem;
   padding: 2rem 1rem;
-  margin: 0;
-}
-
-.closed-message {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  padding: 3rem 1rem;
-  text-align: center;
-  color: #6b7280;
-}
-
-.closed-icon {
-  width: 4rem;
-  height: 4rem;
-  margin-bottom: 1rem;
-  opacity: 0.5;
-}
-
-.closed-message p {
-  font-size: 1rem;
   margin: 0;
 }
 

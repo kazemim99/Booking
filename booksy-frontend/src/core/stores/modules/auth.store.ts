@@ -547,6 +547,11 @@ export const useAuthStore = defineStore('auth', () => {
     try {
       setLoading(true)
 
+      // Determine user role BEFORE clearing user data
+      const isProvider = user.value?.roles?.some(role =>
+        role === 'Provider' || role === 'ServiceProvider'
+      ) ?? false
+
       // Call logout endpoint
       await authApi.logout()
 
@@ -564,10 +569,21 @@ export const useAuthStore = defineStore('auth', () => {
       const isPublicRoute = publicRoutes.includes(currentPath) || currentPath.startsWith('/provider/')
 
       if (!isPublicRoute) {
-        router.push({ name: 'CustomerLogin' })
+        // Redirect to role-specific login page with redirect query param
+        const loginRoute = isProvider ? 'ProviderLogin' : 'CustomerLogin'
+        router.push({
+          name: loginRoute,
+          query: { redirect: currentPath }
+        })
       }
     } catch (err: unknown) {
       console.error('Logout error:', err)
+
+      // Determine user role BEFORE clearing user data
+      const isProvider = user.value?.roles?.some(role =>
+        role === 'Provider' || role === 'ServiceProvider'
+      ) ?? false
+
       setToken(null)
       setRefreshToken(null)
       setUser(null)
@@ -579,7 +595,12 @@ export const useAuthStore = defineStore('auth', () => {
       const isPublicRoute = publicRoutes.includes(currentPath) || currentPath.startsWith('/provider/')
 
       if (!isPublicRoute) {
-        router.push({ name: 'CustomerLogin' })
+        // Redirect to role-specific login page with redirect query param
+        const loginRoute = isProvider ? 'ProviderLogin' : 'CustomerLogin'
+        router.push({
+          name: loginRoute,
+          query: { redirect: currentPath }
+        })
       }
     } finally {
       setLoading(false)

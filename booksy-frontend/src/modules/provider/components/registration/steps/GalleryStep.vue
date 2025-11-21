@@ -49,7 +49,9 @@
       <!-- Gallery Upload Area -->
       <div class="gallery-section">
         <GalleryUpload
-          :max-images="maxImages"
+          :max-images="remainingSlots"
+          :current-count="localGalleryImages.length"
+          :total-limit="maxImages"
           :is-uploading="isUploading"
           :upload-progress="uploadProgress"
           @upload="handleUpload"
@@ -164,13 +166,16 @@ const galleryStore = useGalleryStore()
 const registration = useProviderRegistration()
 
 // State
-const maxImages = 50
+const maxImages = 20
 const error = ref<string | null>(null)
 const successMessage = ref<string | null>(null)
 const isUploading = ref(false)
 const isDeleting = ref(false)
 const uploadProgress = ref(0)
 const localGalleryImages = ref<GalleryImageData[]>([])
+
+// Computed
+const remainingSlots = computed(() => maxImages - localGalleryImages.value.length)
 
 // Computed
 const currentProviderId = computed(() => providerStore.currentProvider?.id)
@@ -210,6 +215,13 @@ onMounted(async () => {
 
 // Methods
 async function handleUpload(files: File[]) {
+  // Check if adding these files would exceed the limit
+  const totalAfterUpload = localGalleryImages.value.length + files.length
+  if (totalAfterUpload > maxImages) {
+    error.value = `شما نمی‌توانید بیش از ${maxImages} تصویر آپلود کنید. در حال حاضر ${localGalleryImages.value.length} تصویر دارید و ${remainingSlots.value} جای خالی باقی مانده است.`
+    return
+  }
+
   const providerId = currentProviderId.value
 
   // If no provider yet (during registration), store files locally
@@ -224,7 +236,18 @@ async function handleUpload(files: File[]) {
   uploadProgress.value = 0
 
   try {
+    // Start progress animation
+    const progressInterval = setInterval(() => {
+      if (uploadProgress.value < 90) {
+        uploadProgress.value += 10
+      }
+    }, 200)
+
     const uploadedImages = await galleryStore.uploadImages(providerId, files)
+
+    // Complete progress
+    clearInterval(progressInterval)
+    uploadProgress.value = 100
 
     // Convert to registration format
     const newImages: GalleryImageData[] = uploadedImages.map((img) => ({
@@ -253,6 +276,13 @@ async function handleUpload(files: File[]) {
 }
 
 function handleLocalUpload(files: File[]) {
+  // Check limit for local upload too
+  const totalAfterUpload = localGalleryImages.value.length + files.length
+  if (totalAfterUpload > maxImages) {
+    error.value = `شما نمی‌توانید بیش از ${maxImages} تصویر آپلود کنید. در حال حاضر ${localGalleryImages.value.length} تصویر دارید و ${remainingSlots.value} جای خالی باقی مانده است.`
+    return
+  }
+
   // Store files locally for upload after provider is created
   const newImages: GalleryImageData[] = files.map((file, index) => ({
     id: `temp-${Date.now()}-${index}`,
@@ -271,12 +301,26 @@ function handleLocalUpload(files: File[]) {
 }
 
 async function handleDeleteImage(imageId: string) {
-  const providerId = currentProviderId.value
+  console.log('🗑️ Delete button clicked for image:', imageId)
 
-  // If it's a temporary local image, just remove it
-  if (imageId.startsWith('temp-')) {
+  // Show confirmation dialog
+  const confirmed = window.confirm('آیا مطمئن هستید که می‌خواهید این تصویر را حذف کنید؟')
+  console.log('🗑️ User confirmation:', confirmed)
+
+  if (!confirmed) {
+    console.log('🗑️ Deletion cancelled by user')
+    return
+  }
+
+  const providerId = currentProviderId.value
+  console.log('🗑️ Provider ID:', providerId)
+
+  // If no provider ID exists, just remove from local state (not persisted yet)
+  if (!providerId) {
+    console.log('🗑️ No provider ID - deleting from local state only')
     const imageToDelete = localGalleryImages.value.find((img) => img.id === imageId)
-    if (imageToDelete?.url) {
+    if (imageToDelete?.url && imageId.startsWith('temp-')) {
+      // Only revoke object URLs for temp images (created from File objects)
       URL.revokeObjectURL(imageToDelete.url)
     }
     localGalleryImages.value = localGalleryImages.value.filter((img) => img.id !== imageId)
@@ -289,16 +333,13 @@ async function handleDeleteImage(imageId: string) {
   }
 
   // If provider exists, delete from backend
-  if (!providerId) {
-    error.value = 'خطا در حذف تصویر'
-    return
-  }
-
   isDeleting.value = true
   error.value = null
 
   try {
+    console.log('🗑️ Sending delete request to backend...')
     await galleryStore.deleteImage(providerId, imageId)
+    console.log('🗑️ Delete successful, updating local state')
     localGalleryImages.value = localGalleryImages.value.filter((img) => img.id !== imageId)
     registration.setGalleryImages(localGalleryImages.value)
     successMessage.value = 'تصویر با موفقیت حذف شد'
@@ -306,7 +347,7 @@ async function handleDeleteImage(imageId: string) {
       successMessage.value = null
     }, 2000)
   } catch (err: any) {
-    console.error('Error deleting image:', err)
+    console.error('🗑️ Error deleting image:', err)
     error.value = err.message || 'خطا در حذف تصویر. لطفاً دوباره تلاش کنید.'
   } finally {
     isDeleting.value = false

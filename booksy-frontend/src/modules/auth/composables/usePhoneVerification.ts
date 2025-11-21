@@ -499,7 +499,7 @@ export function usePhoneVerification() {
               !provider?.services?.length
 
             if (needsOnboarding) {
-              router.push({ name: 'ProviderOnboarding' })
+              router.push({ name: 'ProviderRegistration' })
             } else {
               router.push({ path: '/dashboard' })
             }

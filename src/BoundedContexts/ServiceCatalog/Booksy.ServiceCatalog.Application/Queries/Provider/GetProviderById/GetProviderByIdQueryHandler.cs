@@ -1,12 +1,13 @@
 ﻿using Booksy.Core.Application.Abstractions.CQRS;
 using Booksy.ServiceCatalog.Application.DTOs.Provider;
+using Booksy.ServiceCatalog.Application.Queries.Provider.GetRegistrationProgress;
 using Booksy.ServiceCatalog.Domain.Repositories;
 using Booksy.ServiceCatalog.Domain.ValueObjects;
 using Microsoft.Extensions.Logging;
 
 namespace Booksy.ServiceCatalog.Application.Queries.Provider.GetProviderById
 {
-    public sealed class GetProviderByIdQueryHandler : IQueryHandler<GetProviderByIdQuery, ProviderDetailsViewModel?>
+    public sealed class GetProviderByIdQueryHandler : IQueryHandler<GetProviderByIdQuery, ProviderDetailsResult?>
     {
         private readonly IProviderReadRepository _providerRepository;
         private readonly IServiceReadRepository _serviceRepository;
@@ -22,7 +23,7 @@ namespace Booksy.ServiceCatalog.Application.Queries.Provider.GetProviderById
             _logger = logger;
         }
 
-        public async Task<ProviderDetailsViewModel?> Handle(
+        public async Task<ProviderDetailsResult?> Handle(
             GetProviderByIdQuery request,
             CancellationToken cancellationToken)
         {
@@ -37,7 +38,7 @@ namespace Booksy.ServiceCatalog.Application.Queries.Provider.GetProviderById
                 return null;
             }
 
-            var viewModel = new ProviderDetailsViewModel
+            var viewModel = new ProviderDetailsResult
             {
                 Id = provider.Id.Value,
                 OwnerId = provider.OwnerId.Value,
@@ -63,15 +64,21 @@ namespace Booksy.ServiceCatalog.Application.Queries.Provider.GetProviderById
                     provider.Address.Country,
                     provider.Address.Latitude,
                     provider.Address.Longitude),
-                BusinessHours = provider.BusinessHours.ToDictionary(
-                    bh => bh.DayOfWeek,
-                    bh => bh.IsOpen ? new BusinessHoursDto
-                    {
-                        DayOfWeek = bh.DayOfWeek,
-                        IsOpen = bh.IsOpen,
-                        OpenTime = bh.OpenTime,
-                        CloseTime = bh.CloseTime
-                    } : null),
+                BusinessHours = provider.BusinessHours.Select(bh => new BusinessHoursData(
+            DayOfWeek: (int)bh.DayOfWeek,
+            IsOpen: bh.IsOpen,
+            OpenTimeHours: bh.OpenTime?.Hour,
+            OpenTimeMinutes: bh.OpenTime?.Minute,
+            CloseTimeHours: bh.CloseTime?.Hour,
+            CloseTimeMinutes: bh.CloseTime?.Minute,
+            Breaks: bh.Breaks.Select(br => new BreakPeriodData(
+                StartTimeHours: br.StartTime.Hour,
+                StartTimeMinutes: br.StartTime.Minute,
+                EndTimeHours: br.EndTime.Hour,
+                EndTimeMinutes: br.EndTime.Minute,
+                Label: br.Label
+            )).ToList()
+        )),
                 WebsiteUrl = provider.ContactInfo.Website,
                 AllowOnlineBooking = provider.AllowOnlineBooking,
                 OffersMobileServices = provider.OffersMobileServices,
@@ -91,7 +98,7 @@ namespace Booksy.ServiceCatalog.Application.Queries.Provider.GetProviderById
 
             if (request.IncludeStaff)
             {
-                viewModel.Staff = provider.Staff.Select(staff => new StaffViewModel
+                viewModel.Staff = provider.Staff.Select(staff => new ProviderStaffItem
                 {
                     Id = staff.Id,
                     FirstName = staff.FirstName,
@@ -113,7 +120,7 @@ namespace Booksy.ServiceCatalog.Application.Queries.Provider.GetProviderById
                     cancellationToken);
 
                 viewModel.ActiveServicesCount = services.Count;
-                viewModel.Services = services.Select(service => new ServiceSummaryViewModel
+                viewModel.Services = services.Select(service => new ProviderServiceItem
                 {
                     Id = service.Id.Value,
                     Name = service.Name,

@@ -2,7 +2,11 @@
   <div class="gallery-upload">
     <div
       class="upload-area"
-      :class="{ 'is-dragging': isDragging, 'is-uploading': isUploading }"
+      :class="{
+        'is-dragging': isDragging,
+        'is-uploading': isUploading,
+        'is-disabled': maxImages <= 0
+      }"
       @click="triggerFileInput"
       @dragover.prevent="handleDragOver"
       @dragleave.prevent="handleDragLeave"
@@ -36,7 +40,12 @@
         <h3 class="upload-title">تصاویر را اینجا بکشید و رها کنید</h3>
         <p class="upload-subtitle">یا برای انتخاب کلیک کنید</p>
         <p class="upload-hint">
-          فرمت‌های مجاز: JPG، PNG، WebP | حداکثر حجم: {{ maxFileSize }}MB | حداکثر {{ maxImages }} تصویر
+          فرمت‌های مجاز: JPG، PNG، WebP | حداکثر حجم: {{ maxFileSize }}MB
+        </p>
+        <p v-if="currentCount > 0" class="upload-count">
+          {{ currentCount }} از {{ totalLimit }} تصویر آپلود شده
+          <span v-if="maxImages > 0" class="remaining">({{ maxImages }} جای خالی باقی مانده)</span>
+          <span v-else class="limit-reached">حداکثر تعداد رسیده است</span>
         </p>
       </div>
 
@@ -74,7 +83,9 @@ import { ref, computed } from 'vue'
 
 // Props
 interface Props {
-  maxImages?: number
+  maxImages?: number // Remaining slots available
+  currentCount?: number // Current number of images
+  totalLimit?: number // Total limit (e.g., 20)
   maxFileSize?: number // in MB
   acceptedFormats?: string[]
   isUploading?: boolean
@@ -82,7 +93,9 @@ interface Props {
 }
 
 const props = withDefaults(defineProps<Props>(), {
-  maxImages: 50,
+  maxImages: 20,
+  currentCount: 0,
+  totalLimit: 20,
   maxFileSize: 10,
   acceptedFormats: () => ['image/jpeg', 'image/png', 'image/webp'],
   isUploading: false,
@@ -105,13 +118,13 @@ const overallProgress = computed(() => Math.round(props.uploadProgress))
 
 // Methods
 function triggerFileInput() {
-  if (!props.isUploading) {
+  if (!props.isUploading && props.maxImages > 0) {
     fileInput.value?.click()
   }
 }
 
 function handleDragOver(event: DragEvent) {
-  if (!props.isUploading) {
+  if (!props.isUploading && props.maxImages > 0) {
     isDragging.value = true
   }
 }
@@ -123,7 +136,7 @@ function handleDragLeave() {
 function handleDrop(event: DragEvent) {
   isDragging.value = false
 
-  if (props.isUploading) {
+  if (props.isUploading || props.maxImages <= 0) {
     return
   }
 
@@ -216,6 +229,12 @@ function validateFile(file: File): string[] {
   opacity: 0.8;
 }
 
+.upload-area.is-disabled {
+  cursor: not-allowed;
+  opacity: 0.5;
+  pointer-events: none;
+}
+
 .file-input {
   display: none;
 }
@@ -250,6 +269,22 @@ function validateFile(file: File): string[] {
   font-size: 0.75rem;
   color: #9ca3af;
   margin: 0;
+}
+
+.upload-count {
+  font-size: 0.875rem;
+  color: #6b7280;
+  margin: 0.5rem 0 0 0;
+  font-weight: 500;
+}
+
+.upload-count .remaining {
+  color: #10b981;
+}
+
+.upload-count .limit-reached {
+  color: #ef4444;
+  font-weight: 600;
 }
 
 .upload-progress {

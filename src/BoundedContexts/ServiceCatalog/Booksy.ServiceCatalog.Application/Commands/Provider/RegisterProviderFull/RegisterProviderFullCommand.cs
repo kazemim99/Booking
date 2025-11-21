@@ -3,6 +3,7 @@
 // ========================================
 
 using Booksy.Core.Application.Abstractions.CQRS;
+using Booksy.ServiceCatalog.Application.Commands.Provider.Registration;
 
 namespace Booksy.ServiceCatalog.Application.Commands.Provider.RegisterProviderFull
 {
@@ -50,12 +51,7 @@ namespace Booksy.ServiceCatalog.Application.Commands.Provider.RegisterProviderFu
     /// <summary>
     /// Day hours DTO
     /// </summary>
-    public sealed record DayHoursDto(
-        int DayOfWeek,
-        bool IsOpen,
-        TimeSlotDto? OpenTime,
-        TimeSlotDto? CloseTime,
-        List<BreakTimeDto> Breaks);
+
 
     /// <summary>
     /// Time slot DTO

@@ -1,5 +1,4 @@
 ﻿using Booksy.API.Extensions;
-using Booksy.API.Middleware;
 using Booksy.Core.Application.DTOs;
 using Booksy.Core.Application.Exceptions;
 using Booksy.Core.Domain.Exceptions;
@@ -9,13 +8,13 @@ using Booksy.ServiceCatalog.Api.Models.Responses;
 using Booksy.ServiceCatalog.API.Models.Requests;
 using Booksy.ServiceCatalog.API.Models.Responses;
 using Booksy.ServiceCatalog.Application.Commands.Provider.ActivateProvider;
-using Booksy.ServiceCatalog.Application.Commands.Provider.ActivateProviderStaff;
 using Booksy.ServiceCatalog.Application.Commands.Provider.AddStaffToProvider;
 using Booksy.ServiceCatalog.Application.Commands.Provider.CompleteProviderRegistration;
 using Booksy.ServiceCatalog.Application.Commands.Provider.CreateProviderDraft;
 using Booksy.ServiceCatalog.Application.Commands.Provider.DeactivateProviderStaff;
 using Booksy.ServiceCatalog.Application.Commands.Provider.RegisterProvider;
 using Booksy.ServiceCatalog.Application.Commands.Provider.RegisterProviderFull;
+using Booksy.ServiceCatalog.Application.Commands.Provider.Registration;
 using Booksy.ServiceCatalog.Application.Commands.Provider.UpdateBusinessProfile;
 using Booksy.ServiceCatalog.Application.Commands.Provider.UpdateProviderStaff;
 using Booksy.ServiceCatalog.Application.Queries.Provider.GetCurrentProviderStatus;
@@ -29,6 +28,9 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.RateLimiting;
 using System.Security.Claims;
+using BreakTimeDto = Booksy.ServiceCatalog.Application.Commands.Provider.Registration.BreakTimeDto;
+using ServiceDto = Booksy.ServiceCatalog.Application.Commands.Provider.RegisterProviderFull.ServiceDto;
+using TimeSlotDto = Booksy.ServiceCatalog.Application.Commands.Provider.Registration.TimeSlotDto;
 
 namespace Booksy.ServiceCatalog.API.Controllers.V1;
 
@@ -980,7 +982,7 @@ public class ProvidersController : ControllerBase
         };
     }
 
-    private ProviderDetailsResponse MapToProviderDetailsResponse(ProviderDetailsViewModel result)
+    private ProviderDetailsResponse MapToProviderDetailsResponse(ProviderDetailsResult result)
     {
         return new ProviderDetailsResponse
         {
@@ -1010,13 +1012,7 @@ public class ProvidersController : ControllerBase
                 Latitude = result.Address.Latitude,
                 Longitude = result.Address.Longitude
             },
-            BusinessHours = result.BusinessHours.Any() ? result.BusinessHours.ToDictionary(
-                bh => bh.Key,
-                bh => bh.Value != null ? new BusinessHoursResponse
-                {
-                    OpenTime = bh.Value.OpenTime,
-                    CloseTime = bh.Value.CloseTime
-                } : null) : new Dictionary<Domain.Enums.DayOfWeek, BusinessHoursResponse?>(),
+            BusinessHours = result.BusinessHours,
             LogoUrl = result.LogoUrl,
             WebsiteUrl = result.WebsiteUrl,
             AllowOnlineBooking = result.AllowOnlineBooking,

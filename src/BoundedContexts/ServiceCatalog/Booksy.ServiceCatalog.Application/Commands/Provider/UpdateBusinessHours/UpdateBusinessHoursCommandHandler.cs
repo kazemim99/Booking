@@ -31,43 +31,64 @@ public sealed class UpdateBusinessHoursCommandHandler
         if (provider == null)
             throw new DomainValidationException("Provider not found");
 
-        // Convert DTOs to domain model with breaks
-        var hoursWithBreaks = new Dictionary<DayOfWeek, (TimeOnly? Open, TimeOnly? Close, IEnumerable<BreakPeriod>? Breaks)>();
+        var hasBreaks = command.BusinessHours.Any(dh => dh.Breaks != null && dh.Breaks.Any());
 
-        foreach (var dayDto in command.BusinessHours)
+        if (hasBreaks)
         {
-            var dayOfWeek = (DayOfWeek)dayDto.DayOfWeek;
+            // Use SetBusinessHoursWithBreaks for hours that include breaks
+            var hoursWithBreaks = new Dictionary<DayOfWeek, (TimeOnly? Open, TimeOnly? Close, IEnumerable<BreakPeriod>? Breaks)>();
 
-            if (dayDto.IsOpen && dayDto.OpenTime != null && dayDto.CloseTime != null)
+            foreach (var dayDto in command.BusinessHours)
             {
-                var openTime = TimeOnly.Parse(dayDto.OpenTime);
-                var closeTime = TimeOnly.Parse(dayDto.CloseTime);
+                var day = (DayOfWeek)dayDto.DayOfWeek;
 
-                // Validate time range
-                if (openTime >= closeTime)
-                    throw new DomainValidationException($"Open time must be before close time for {dayOfWeek}");
-
-                // Parse breaks if provided
-                IEnumerable<BreakPeriod>? breaks = null;
-                if (dayDto.Breaks?.Any() == true)
+                if (!dayDto.IsOpen || dayDto.OpenTime == null || dayDto.CloseTime == null)
                 {
-                    breaks = dayDto.Breaks.Select(b =>
-                        BreakPeriod.Create(
-                            TimeOnly.Parse(b.StartTime),
-                            TimeOnly.Parse(b.EndTime),
-                            b.Label)).ToList();
+                    hoursWithBreaks[day] = (null, null, null);
+                    continue;
                 }
 
-                hoursWithBreaks[dayOfWeek] = (openTime, closeTime, breaks);
+                var openTime = new TimeOnly(dayDto.OpenTime.Hours, dayDto.OpenTime.Minutes);
+                var closeTime = new TimeOnly(dayDto.CloseTime.Hours, dayDto.CloseTime.Minutes);
+
+                // Convert breaks
+                var breaks = dayDto.Breaks?.Select(b =>
+                {
+                    var start = new TimeOnly(b.Start.Hours, b.Start.Minutes);
+                    var end = new TimeOnly(b.End.Hours, b.End.Minutes);
+                    return BreakPeriod.Create(start, end);
+                }).ToList() ?? new List<BreakPeriod>();
+
+                hoursWithBreaks[day] = (openTime, closeTime, breaks);
             }
-            else
+
+            provider.SetBusinessHoursWithBreaks(hoursWithBreaks);
+        }
+        else
+        {
+            // Use simple SetBusinessHours for hours without breaks
+            var hours = new Dictionary<DayOfWeek, (TimeOnly? Open, TimeOnly? Close)>();
+
+            foreach (var dayDto in command.BusinessHours)
             {
-                hoursWithBreaks[dayOfWeek] = (null, null, null);
+                var day = (DayOfWeek)dayDto.DayOfWeek;
+
+                if (!dayDto.IsOpen || dayDto.OpenTime == null || dayDto.CloseTime == null)
+                {
+                    hours[day] = (null, null);
+                    continue;
+                }
+
+                var openTime = new TimeOnly(dayDto.OpenTime.Hours, dayDto.OpenTime.Minutes);
+                var closeTime = new TimeOnly(dayDto.CloseTime.Hours, dayDto.CloseTime.Minutes);
+
+                hours[day] = (openTime, closeTime);
             }
+
+            provider.SetBusinessHours(hours);
         }
 
         // Update business hours with breaks
-        provider.SetBusinessHoursWithBreaks(hoursWithBreaks);
 
         // Save changes
         await _providerRepository.UpdateAsync(provider, cancellationToken);

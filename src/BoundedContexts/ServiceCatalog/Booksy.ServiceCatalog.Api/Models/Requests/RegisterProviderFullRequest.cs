@@ -49,14 +49,14 @@ public sealed class RegisterProviderFullRequest
     /// </summary>
     [Required(ErrorMessage = "Business hours are required")]
     [MinLength(1, ErrorMessage = "At least one working day is required")]
-    public Dictionary<int, DayHoursRequest?> BusinessHours { get; set; } = new();
+    public Dictionary<int, RegistrationDayScheduleRequest?> BusinessHours { get; set; } = new();
 
     /// <summary>
     /// Services offered by the provider
     /// </summary>
     [Required(ErrorMessage = "Services are required")]
     [MinLength(1, ErrorMessage = "At least one service is required")]
-    public List<ServiceRequest> Services { get; set; } = new();
+    public List<RegistrationServiceRequest> Services { get; set; } = new();
 
     /// <summary>
     /// Assistance options selected by provider
@@ -124,9 +124,9 @@ public sealed class BusinessLocationRequest
 
 
 /// <summary>
-/// Service offering
+/// Service offering in registration flow
 /// </summary>
-public sealed class ServiceRequest
+public sealed class RegistrationServiceRequest
 {
     [Required(ErrorMessage = "Service name is required")]
     [StringLength(200)]

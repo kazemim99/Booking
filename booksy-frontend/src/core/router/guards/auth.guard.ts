@@ -32,8 +32,16 @@ export async function authGuard(
 
   // Check authentication
   if (requiresAuth && !authStore.isAuthenticated) {
+    // Determine appropriate login page based on target route
+    // Provider routes should redirect to provider login
+    const isProviderRoute = to.path.startsWith('/dashboard') ||
+                           to.path.startsWith('/provider/') ||
+                           to.name?.toString().startsWith('Provider')
+
+    const loginRoute = isProviderRoute ? 'ProviderLogin' : 'CustomerLogin'
+
     next({
-      name: 'CustomerLogin',
+      name: loginRoute,
       query: { redirect: to.fullPath },
     })
     return

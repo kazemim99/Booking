@@ -1,6 +1,9 @@
 ﻿namespace Booksy.ServiceCatalog.Application.Queries.Provider.GetProviderById
 {
-    public sealed class StaffViewModel
+    /// <summary>
+    /// Staff member item in GetProviderById result
+    /// </summary>
+    public sealed class ProviderStaffItem
     {
         public Guid Id { get; set; }
         public string FirstName { get; set; } = string.Empty;

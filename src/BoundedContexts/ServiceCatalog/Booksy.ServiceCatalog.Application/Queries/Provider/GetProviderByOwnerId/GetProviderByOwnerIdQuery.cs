@@ -9,5 +9,5 @@ namespace Booksy.ServiceCatalog.Application.Queries.Provider.GetProviderByOwnerI
     /// Query to get provider details by owner ID
     /// </summary>
     public sealed record GetProviderByOwnerIdQuery(
-        Guid OwnerUserId) : IQuery<ProviderDetailsViewModel?>;
+        Guid OwnerUserId) : IQuery<ProviderDetailsResult?>;
 }

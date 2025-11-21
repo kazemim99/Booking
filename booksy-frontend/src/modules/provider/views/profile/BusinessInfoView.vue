@@ -518,7 +518,7 @@ async function handleSubmit() {
 
     // Redirect after a short delay
     setTimeout(() => {
-      router.push({ name: 'ProviderOnboarding' })
+      router.push({ name: 'ProviderRegistration' })
     }, 1500)
   } catch (error) {
     console.error('Error saving business information:', error)
@@ -531,7 +531,7 @@ async function handleSubmit() {
 }
 
 function goBack() {
-  router.push({ name: 'ProviderOnboarding' })
+  router.push({ name: 'ProviderRegistration' })
 }
 </script>
 

@@ -1,4 +1,6 @@
 ﻿using Booksy.ServiceCatalog.Api.Models.Responses;
+using Booksy.ServiceCatalog.Application.Queries.Provider.GetRegistrationProgress;
+using Swashbuckle.AspNetCore.SwaggerGen;
 
 namespace Booksy.ServiceCatalog.API.Models.Responses;
 
@@ -11,7 +13,7 @@ public class ProviderDetailsResponse
     public string Status { get; set; } = string.Empty;
     public ContactInfoResponse ContactInfo { get; set; } = new();
     public AddressResponse Address { get; set; } = new();
-    public Dictionary<DayOfWeek, BusinessHoursResponse>? BusinessHours { get; set; }
+    public IEnumerable<BusinessHoursData>? BusinessHours { get; set; }
     public bool AllowOnlineBooking { get; set; }
     public bool OffersMobileServices { get; set; }
     public string? LogoUrl { get; set; }
