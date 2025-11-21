@@ -231,10 +231,10 @@ const selectedDaysToCopy = ref<number[]>([])
 const copyToAll = (sourceIndex: number) => {
   copySourceIndex.value = sourceIndex
   copySourceDayName.value = props.weekDays[sourceIndex]
-  // Pre-select all days except the source day (including closed days)
+  // Pre-select only open days except the source day (closed days are unchecked by default)
   selectedDaysToCopy.value = props.weekDays
     .map((_, index) => index)
-    .filter(index => index !== sourceIndex)
+    .filter(index => index !== sourceIndex && localSchedule.value[index].isOpen)
   copyModalOpen.value = true
 }
 
