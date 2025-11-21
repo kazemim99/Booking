@@ -63,7 +63,7 @@ const copyToAll = (sourceIndex: number) => {
 }
 ```
 
-**After:**
+**After (v1):**
 ```typescript
 const copyToAll = (sourceIndex: number) => {
   copySourceIndex.value = sourceIndex
@@ -72,6 +72,19 @@ const copyToAll = (sourceIndex: number) => {
   selectedDaysToCopy.value = props.weekDays
     .map((_, index) => index)
     .filter(index => index !== sourceIndex)
+  copyModalOpen.value = true
+}
+```
+
+**After (v2 - Final):**
+```typescript
+const copyToAll = (sourceIndex: number) => {
+  copySourceIndex.value = sourceIndex
+  copySourceDayName.value = props.weekDays[sourceIndex]
+  // Pre-select only open days except the source day (closed days are unchecked by default)
+  selectedDaysToCopy.value = props.weekDays
+    .map((_, index) => index)
+    .filter(index => index !== sourceIndex && localSchedule.value[index].isOpen)
   copyModalOpen.value = true
 }
 ```
@@ -87,7 +100,7 @@ const copyToAll = (sourceIndex: number) => {
 ### After
 - **All days are selectable** (except the source day)
 - Closed days show a **(تعطیل)** tag for clarity
-- All days are **pre-selected by default**
+- **Only open days are pre-selected** (closed days unchecked by default)
 - Checking a closed day **opens it** with the copied schedule
 - Unchecking any day leaves it unchanged
 
@@ -97,9 +110,10 @@ const copyToAll = (sourceIndex: number) => {
 2. Friday is currently closed
 3. User clicks "Copy" button on Saturday
 4. Modal opens showing all days
-5. Friday is pre-selected and shows "(تعطیل)" tag
-6. User clicks "Apply Changes"
-7. **Result:** Friday is now open with the same schedule as Saturday (10:00 - 22:00 with the same break)
+5. Friday is **unchecked** and shows "(تعطیل)" tag
+6. User **manually checks** Friday
+7. User clicks "Apply Changes"
+8. **Result:** Friday is now open with the same schedule as Saturday (10:00 - 22:00 with the same break)
 
 ## Use Cases
 
@@ -107,24 +121,25 @@ const copyToAll = (sourceIndex: number) => {
 Provider wants to set all weekdays to the same schedule:
 1. Set Monday's hours and breaks
 2. Click copy on Monday
-3. Keep all weekdays checked (pre-selected)
+3. All other open weekdays are pre-selected
 4. Click apply
-5. All weekdays now have the same schedule
+5. All open weekdays now have the same schedule
 
 ### Use Case 2: Selective Copying
 Provider wants to copy only to specific days:
 1. Set Saturday's hours
 2. Click copy on Saturday
-3. Uncheck days that should remain different (e.g., keep Friday closed)
+3. Uncheck days that should remain different
 4. Click apply
 5. Only selected days are updated
 
 ### Use Case 3: Converting Closed Day to Open
 Provider decided to open on a previously closed day:
 1. Click copy on any open day
-2. Closed day is pre-selected
-3. Click apply
-4. Closed day becomes open with copied schedule
+2. Closed day is **unchecked** by default
+3. **Manually check** the closed day
+4. Click apply
+5. Closed day becomes open with copied schedule
 
 ## Technical Notes
 
