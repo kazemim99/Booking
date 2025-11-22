@@ -1081,9 +1081,9 @@ public class ProvidersController : ControllerBase
         return User.FindFirstValue(ClaimTypes.NameIdentifier);
     }
 
-    private string? GetCurrentUserProviderId()
+    private Guid? GetCurrentUserProviderId()
     {
-        return User.FindFirst("providerId")?.Value;
+        return Guid.Parse(User.FindFirst("providerId")?.Value);
     }
 
     private async Task<bool> CanManageProvider(Guid providerId)
@@ -1097,7 +1097,7 @@ public class ProvidersController : ControllerBase
             return true;
 
         // Provider owners can manage their own provider
-        var currentProviderId = GetCurrentUserProviderId();
+        var currentProviderId = GetCurrentUserProviderId().ToString();
         if (!string.IsNullOrEmpty(currentProviderId) && currentProviderId == providerId.ToString())
             return true;
 
@@ -1472,17 +1472,10 @@ public class ProvidersController : ControllerBase
             return Unauthorized();
         }
 
-        // Query for provider by owner ID
-        var query = new GetProviderByOwnerIdQuery(userId);
-        var provider = await _mediator.Send(query, cancellationToken);
-
-        if (provider == null)
-        {
-            throw new NotFoundException("Provider not found for current user");
-        }
+        var providerId = GetCurrentUserProviderId();
 
         var command = new UpdateBusinessProfileCommand(
-            ProviderId: provider.Id,
+            ProviderId: providerId.Value,
             BusinessName: request.BusinessName,
             Description: request.Description);
 
@@ -1492,13 +1485,13 @@ public class ProvidersController : ControllerBase
         if (!string.IsNullOrWhiteSpace(request.LogoUrl))
         {
             var updateLogoCommand = new Application.Commands.Provider.UpdateBusinessLogo.UpdateBusinessLogoCommand(
-                provider.Id,
+                providerId.Value,
                 request.LogoUrl);
 
             await _mediator.Send(updateLogoCommand, cancellationToken);
         }
 
-        _logger.LogInformation("Business information updated for provider {ProviderId}", provider.Id);
+        _logger.LogInformation("Business information updated for provider {ProviderId}", providerId);
 
         return NoContent();
     }

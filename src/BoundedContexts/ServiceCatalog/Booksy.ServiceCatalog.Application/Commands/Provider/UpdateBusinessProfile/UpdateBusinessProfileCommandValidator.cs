@@ -20,24 +20,11 @@ namespace Booksy.ServiceCatalog.Application.Commands.Provider.UpdateBusinessProf
                 .WithMessage("Business name cannot exceed 200 characters");
 
             RuleFor(x => x.Description)
-                .NotEmpty()
-                .WithMessage("Description is required")
                 .MaximumLength(1000)
                 .WithMessage("Description cannot exceed 1000 characters");
 
-            When(x => !string.IsNullOrEmpty(x.Website), () =>
-            {
-                RuleFor(x => x.Website)
-                    .Must(BeValidUrl)
-                    .WithMessage("Website must be a valid URL");
-            });
-
          
         }
-
-        private static bool BeValidUrl(string? url)
-        {
-            return Uri.TryCreate(url, UriKind.Absolute, out _);
-        }
+      
     }
 }

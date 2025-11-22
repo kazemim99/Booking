@@ -400,7 +400,7 @@ const ImageIcon = () =>
 
 const providerStore = useProviderStore()
 const authStore = useAuthStore()
-const { provinces, loadProvinces, loadCitiesByProvinceId, getCitiesByProvinceId, getProvinceByName } = useLocations()
+const { provinces, loadProvinces, loadCitiesByProvinceId, getCitiesByProvinceId, getProvinceByName, getCityByName } = useLocations()
 
 const activeTab = ref('personal')
 
@@ -481,17 +481,40 @@ const tabs = [
 ]
 
 // Function to load location data
-const loadLocationData = () => {
+const loadLocationData = async () => {
   if (currentProvider.value) {
+    const address = currentProvider.value.address
+    let provinceId = address?.provinceId || null
+    let cityId = address?.cityId || null
+
+    // If IDs are not available but names are, resolve IDs from names
+    if (!provinceId && address?.state) {
+      // Ensure provinces are loaded first
+      await loadProvinces()
+      const province = getProvinceByName(address.state)
+      if (province) {
+        provinceId = province.id
+
+        // Now try to resolve city if we have province and city name
+        if (!cityId && address?.city) {
+          await loadCitiesByProvinceId(province.id)
+          const city = getCityByName(province.id, address.city)
+          if (city) {
+            cityId = city.id
+          }
+        }
+      }
+    }
+
     locationForm.value = {
-      formattedAddress: currentProvider.value.address?.formattedAddress || '',
-      provinceId: currentProvider.value.address?.provinceId || null,
-      cityId: currentProvider.value.address?.cityId || null,
+      formattedAddress: address?.formattedAddress || '',
+      provinceId,
+      cityId,
       coordinates:
-        currentProvider.value.address?.latitude && currentProvider.value.address?.longitude
+        address?.latitude && address?.longitude
           ? {
-              lat: currentProvider.value.address.latitude,
-              lng: currentProvider.value.address.longitude,
+              lat: address.latitude,
+              lng: address.longitude,
             }
           : null,
     }
@@ -556,7 +579,7 @@ watch(activeTab, async (newTab) => {
     try {
       // Fetch fresh provider data from backend
       await providerStore.loadCurrentProvider(true) // Force refresh
-      loadLocationData()
+      await loadLocationData()
     } catch (error) {
       console.error('Error loading location data:', error)
     }
@@ -604,7 +627,7 @@ onMounted(async () => {
       }
 
       // Load location
-      loadLocationData()
+      await loadLocationData()
 
       // Load business hours
       loadBusinessHoursData()
@@ -899,7 +922,7 @@ const saveLocation = async () => {
     await providerStore.loadCurrentProvider(true)
 
     // Reload location form with fresh data
-    loadLocationData()
+    await loadLocationData()
 
     alert('موقعیت مکانی با موفقیت ذخیره شد')
   } catch (error) {
