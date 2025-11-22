@@ -98,11 +98,12 @@ const filteredOptions = computed(() => {
 const selectedOption = computed(() => props.options.find((opt) => opt.value === props.modelValue))
 
 // Update search query when selection changes from outside
+// Watch both modelValue and options to handle async loading
 watch(
-  () => props.modelValue,
-  (newValue) => {
+  [() => props.modelValue, () => props.options],
+  ([newValue, newOptions]) => {
     if (newValue) {
-      const option = props.options.find((opt) => opt.value === newValue)
+      const option = newOptions.find((opt) => opt.value === newValue)
       if (option) {
         searchQuery.value = option.label
       }

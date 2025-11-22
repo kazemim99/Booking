@@ -45,12 +45,14 @@ class ProviderService {
     id: string,
     includeServices = false,
     includeStaff = false,
+    includeBusinessHours = true,
   ): Promise<Provider> {
     try {
       const response = await serviceCategoryClient.get<ProviderResponse>(`${API_BASE}/${id}`, {
         params: {
           includeServices,
           includeStaff,
+          includeBusinessHours,
         },
       })
 

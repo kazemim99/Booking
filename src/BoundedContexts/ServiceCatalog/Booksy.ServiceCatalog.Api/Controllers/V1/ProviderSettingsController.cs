@@ -4,6 +4,7 @@ using Booksy.ServiceCatalog.Application.Commands.Provider.AddException;
 using Booksy.ServiceCatalog.Application.Commands.Provider.AddHoliday;
 using Booksy.ServiceCatalog.Application.Commands.Provider.DeleteException;
 using Booksy.ServiceCatalog.Application.Commands.Provider.DeleteHoliday;
+using Booksy.ServiceCatalog.Application.Commands.Provider.Registration;
 using Booksy.ServiceCatalog.Application.Commands.Provider.UpdateBusinessHours;
 using Booksy.ServiceCatalog.Application.Commands.Provider.UpdateBusinessProfile;
 using Booksy.ServiceCatalog.Application.Commands.Provider.UpdateLocation;
@@ -20,6 +21,8 @@ using Booksy.ServiceCatalog.Domain.Repositories;
 using MediatR;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using BreakTimeDto = Booksy.ServiceCatalog.Application.Commands.Provider.Registration.BreakTimeDto;
+using TimeSlotDto = Booksy.ServiceCatalog.Application.Commands.Provider.Registration.TimeSlotDto;
 
 namespace Booksy.ServiceCatalog.API.Controllers.V1;
 
@@ -209,39 +212,39 @@ public class ProviderSettingsController : ControllerBase
     /// <summary>
     /// Get provider working hours
     /// </summary>
-    [HttpGet("{id:guid}/working-hours")]
-    [ProducesResponseType(typeof(WorkingHoursResponse), StatusCodes.Status200OK)]
-    [ProducesResponseType(StatusCodes.Status404NotFound)]
-    [ProducesResponseType(StatusCodes.Status403Forbidden)]
-    public async Task<IActionResult> GetWorkingHours(
-        [FromRoute] Guid id,
-        CancellationToken cancellationToken = default)
-    {
+    //[HttpGet("{id:guid}/working-hours")]
+    //[ProducesResponseType(typeof(WorkingHoursResponse), StatusCodes.Status200OK)]
+    //[ProducesResponseType(StatusCodes.Status404NotFound)]
+    //[ProducesResponseType(StatusCodes.Status403Forbidden)]
+    //public async Task<IActionResult> GetWorkingHours(
+    //    [FromRoute] Guid id,
+    //    CancellationToken cancellationToken = default)
+    //{
      
-        var query = new GetProviderByIdQuery(id, false, false);
-        var provider = await _mediator.Send(query, cancellationToken);
+    //    var query = new GetProviderByIdQuery(id, false, false);
+    //    var provider = await _mediator.Send(query, cancellationToken);
 
-        if (provider == null)
-        {
-            return NotFound();
-        }
+    //    if (provider == null)
+    //    {
+    //        return NotFound();
+    //    }
 
-        var response = new WorkingHoursResponse
-        {
-            BusinessHours = provider.BusinessHours?.ToDictionary(
-                kvp => kvp.Key.ToString(),
-                kvp => kvp.Value != null ? new BusinessHoursDetailResponse
-                {
-                    DayOfWeek = (int)kvp.Key,
-                    IsOpen = true,
-                    OpenTime = kvp.Value.OpenTime?.ToString("HH:mm") ?? "",
-                    CloseTime = kvp.Value.CloseTime?.ToString("HH:mm") ?? ""
-                } : null) ?? [],
+    //    var response = new WorkingHoursResponse
+    //    {
+    //        BusinessHours = provider.BusinessHours?.ToDictionary(
+    //            kvp => kvp.Key.ToString(),
+    //            kvp => kvp.Value != null ? new BusinessHoursDetailResponse
+    //            {
+    //                DayOfWeek = (int)kvp.Key,
+    //                IsOpen = true,
+    //                OpenTime = kvp.Value.OpenTime?.ToString("HH:mm") ?? "",
+    //                CloseTime = kvp.Value.CloseTime?.ToString("HH:mm") ?? ""
+    //            } : null) ?? [],
             
-        };
+    //    };
 
-        return Ok(response);
-    }
+    //    return Ok(response);
+    //}
 
     /// <summary>
     /// Update provider working hours
@@ -758,7 +761,7 @@ public sealed class UpdateProviderServiceRequest
 /// </summary>
 public sealed class UpdateBusinessHoursRequestDto
 {
-    public List<BusinessHoursDayDto> BusinessHours { get; set; } = new();
+    public List<DayHoursDto> BusinessHours { get; set; } = new();
 }
 
 /// <summary>

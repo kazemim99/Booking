@@ -96,6 +96,11 @@ export function useLocations() {
     return provinces.value.find(p => p.name === name)
   }
 
+  const getCityByName = (provinceId: number, cityName: string): Location | undefined => {
+    const cities = getCitiesByProvinceId(provinceId)
+    return cities.find(c => c.name === cityName)
+  }
+
   // Load provinces on mount
   onMounted(async () => {
     await loadProvinces()
@@ -113,5 +118,6 @@ export function useLocations() {
     searchCities,
     getLocationById,
     getProvinceByName,
+    getCityByName,
   }
 }

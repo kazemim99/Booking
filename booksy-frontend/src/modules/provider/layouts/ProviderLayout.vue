@@ -139,7 +139,7 @@ const dismissAlert = () => {
 }
 
 const goToOnboarding = () => {
-  router.push({ name: 'ProviderOnboarding' })
+  router.push({ name: 'ProviderRegistration' })
 }
 
 const checkMobile = () => {

@@ -97,13 +97,39 @@ export async function authErrorInterceptor(error: unknown) {
       return axios(originalRequest)
 
     } catch (refreshError) {
-      // Clear tokens and redirect to login
+      // Determine user role before clearing tokens
+      let userRole: 'provider' | 'customer' = 'customer'
+      try {
+        const token = localStorage.getItem('access_token')
+        if (token) {
+          const payload = JSON.parse(atob(token.split('.')[1]))
+          const roles = Array.isArray(payload.role) ? payload.role : [payload.role]
+          const isProvider = roles.includes('Provider') ||
+                            roles.includes('ServiceProvider') ||
+                            payload.user_type === 'Provider'
+          if (isProvider) {
+            userRole = 'provider'
+          }
+        }
+      } catch (err) {
+        console.error('[Auth] Error detecting user role:', err)
+      }
+
+      // Clear tokens and redirect to appropriate login page
       localStorage.removeItem('access_token')
       localStorage.removeItem('refresh_token')
       localStorage.removeItem('user')
 
-      // Redirect to login (using correct route path)
-      window.location.href = '/login'
+      // Redirect to role-specific login page
+      const loginPath = userRole === 'provider' ? '/provider/login' : '/customer/login'
+      const currentPath = window.location.pathname
+
+      // Add redirect query param if not already on a login page
+      if (!currentPath.includes('/login')) {
+        window.location.href = `${loginPath}?redirect=${encodeURIComponent(currentPath)}`
+      } else {
+        window.location.href = loginPath
+      }
 
       return Promise.reject(refreshError)
     }

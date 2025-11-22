@@ -13,7 +13,6 @@ public class LocalFileStorageService : IFileStorageService
     private readonly IConfiguration _configuration;
     private readonly IImageOptimizationService _imageOptimizationService;
     private readonly string _basePath;
-    private readonly string _baseUrl;
 
     public LocalFileStorageService(
         IWebHostEnvironment environment,
@@ -25,8 +24,6 @@ public class LocalFileStorageService : IFileStorageService
         _imageOptimizationService = imageOptimizationService;
 
         _basePath = configuration["FileStorage:BasePath"] ?? "wwwroot/uploads";
-        var applicationBaseUrl = configuration["Application:BaseUrl"] ?? "https://localhost:7002";
-        _baseUrl = $"{applicationBaseUrl}/uploads";
     }
 
     public async Task<StorageResult> UploadImageAsync(
@@ -63,10 +60,11 @@ public class LocalFileStorageService : IFileStorageService
         await File.WriteAllBytesAsync(mediumPath, optimized.Medium, cancellationToken);
         await File.WriteAllBytesAsync(originalPath, optimized.Original, cancellationToken);
 
-        // Generate URLs
-        var thumbnailUrl = $"{_baseUrl}/providers/{providerId}/gallery/{imageId}_thumb.webp";
-        var mediumUrl = $"{_baseUrl}/providers/{providerId}/gallery/{imageId}_medium.webp";
-        var originalUrl = $"{_baseUrl}/providers/{providerId}/gallery/{imageId}_original.webp";
+        // Generate RELATIVE paths (not absolute URLs)
+        // The UrlService will convert these to absolute URLs when fetching
+        var thumbnailUrl = $"uploads/providers/{providerId}/gallery/{imageId}_thumb.webp";
+        var mediumUrl = $"uploads/providers/{providerId}/gallery/{imageId}_medium.webp";
+        var originalUrl = $"uploads/providers/{providerId}/gallery/{imageId}_original.webp";
 
         return new StorageResult(originalUrl, thumbnailUrl, mediumUrl);
     }
@@ -75,12 +73,24 @@ public class LocalFileStorageService : IFileStorageService
     {
         try
         {
-            // Extract relative path from URL
-            var uri = new Uri(imageUrl);
-            var relativePath = uri.AbsolutePath.TrimStart('/');
+            string relativePath;
 
-            // Get file path
-            var filePath = Path.Combine(_environment.ContentRootPath, "wwwroot", relativePath);
+            // Handle both absolute URLs and relative paths
+            if (imageUrl.StartsWith("http://", StringComparison.OrdinalIgnoreCase) ||
+                imageUrl.StartsWith("https://", StringComparison.OrdinalIgnoreCase))
+            {
+                // Extract relative path from absolute URL
+                var uri = new Uri(imageUrl);
+                relativePath = uri.AbsolutePath.TrimStart('/');
+            }
+            else
+            {
+                // Already a relative path
+                relativePath = imageUrl.TrimStart('/');
+            }
+
+            // Get file path - files are stored in ContentRootPath/basePath
+            var filePath = Path.Combine(_environment.ContentRootPath, _basePath, relativePath.Replace("uploads/", ""));
 
             if (File.Exists(filePath))
             {
@@ -90,15 +100,18 @@ public class LocalFileStorageService : IFileStorageService
 
             return false;
         }
-        catch (Exception)
+        catch (Exception ex)
         {
             // Log error but don't throw - file deletion is best effort
+            Console.WriteLine($"Error deleting image {imageUrl}: {ex.Message}");
             return false;
         }
     }
 
     public string GetImageUrl(string relativePath)
     {
-        return $"{_baseUrl}/{relativePath}";
+        // Return the relative path as-is
+        // The UrlService will convert it to an absolute URL when needed
+        return relativePath;
     }
 }

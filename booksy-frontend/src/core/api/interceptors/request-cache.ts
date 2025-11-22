@@ -78,11 +78,18 @@ class RequestCache {
 
     // Ensure the cached response has a valid config object with method
     const cachedResponse = { ...entry.data }
-    if (cachedResponse.config) {
-      cachedResponse.config = {
-        ...cachedResponse.config,
-        method: cachedResponse.config.method || config.method || 'get',
-      }
+
+    // Always ensure config exists with all required properties
+    // Use the current request config as the base to ensure method and url are always defined
+    const cachedConfig = cachedResponse.config || {}
+    cachedResponse.config = {
+      ...config, // Use the current request config as base (has method, url, etc.)
+      ...cachedConfig, // Override with cached config properties
+      // Explicitly ensure method and url are never undefined
+      method: config.method || cachedConfig.method || 'get',
+      url: config.url || cachedConfig.url || '',
+      // Preserve metadata from current config for logging interceptor
+      metadata: config.metadata || cachedConfig.metadata,
     }
 
     return cachedResponse
@@ -102,8 +109,19 @@ class RequestCache {
 
     const key = this.generateKey(config)
 
+    // Deep clone the config to prevent mutation issues
+    // Use the original request config as base and preserve essential response config properties
+    const clonedConfig = {
+      ...config,
+      method: response.config.method || config.method,
+      url: response.config.url || config.url,
+    }
+
     this.cache.set(key, {
-      data: { ...response },
+      data: {
+        ...response,
+        config: clonedConfig,
+      },
       timestamp: Date.now(),
       ttl,
     })
@@ -187,10 +205,11 @@ if (typeof window !== 'undefined') {
 
 /**
  * Request interceptor - Check cache before making request
+ * Uses a custom adapter to properly short-circuit axios when cache hits
  */
 export function cacheRequestInterceptor(
   config: CacheableRequestConfig,
-): InternalAxiosRequestConfig | Promise<AxiosResponse> {
+): InternalAxiosRequestConfig {
   // Only cache GET requests
   if (config.method?.toLowerCase() !== 'get') {
     return config
@@ -211,12 +230,38 @@ export function cacheRequestInterceptor(
     return config
   }
 
-  // Try to get from cache
-  const cachedResponse = cache.get(config)
+  // Try to get from cache with error handling
+  try {
+    const cachedResponse = cache.get(config)
 
-  if (cachedResponse) {
-    // Return cached response (bypass actual request)
-    return Promise.resolve(cachedResponse)
+    if (cachedResponse) {
+      // Validate cached response has required structure
+      if (!cachedResponse.config || !cachedResponse.config.method) {
+        if (import.meta.env.DEV) {
+          console.warn('💾 Cache INVALID: Response missing valid config, fetching fresh data')
+        }
+        // Invalidate this cache entry and proceed with fresh request
+        cache.delete(config)
+        ;(config as CacheableRequestConfig).__cacheConfig = cacheConfig
+        return config
+      }
+
+      // Store original adapter and replace with cache adapter
+      const originalAdapter = config.adapter
+      config.adapter = () => {
+        // Restore original adapter for future requests
+        config.adapter = originalAdapter
+        // Return cached response as a resolved promise
+        return Promise.resolve(cachedResponse)
+      }
+
+      return config
+    }
+  } catch (e) {
+    // If cache retrieval fails, log and proceed with fresh request
+    if (import.meta.env.DEV) {
+      console.warn('💾 Cache ERROR: Failed to retrieve cached response:', e)
+    }
   }
 
   // Store cache config in request for response interceptor

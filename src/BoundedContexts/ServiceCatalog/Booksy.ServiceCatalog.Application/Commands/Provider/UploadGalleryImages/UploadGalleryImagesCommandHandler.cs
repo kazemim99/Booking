@@ -64,6 +64,8 @@ public sealed class UploadGalleryImagesCommandHandler
                 storageResult.ThumbnailUrl,
                 storageResult.MediumUrl);
 
+            // Return relative paths as stored - client will use them as-is
+            // URL conversion happens only when fetching images via GetGalleryImagesQuery
             uploadedImages.Add(new GalleryImageDto
             {
                 Id = galleryImage.Id,

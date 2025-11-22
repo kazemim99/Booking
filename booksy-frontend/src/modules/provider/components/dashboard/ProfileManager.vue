@@ -319,6 +319,8 @@ import LocationSelector from '@/shared/components/forms/LocationSelector.vue'
 import { convertEnglishToPersianNumbers } from '@/shared/utils/date/jalali.utils'
 import { providerProfileService } from '../../services/provider-profile.service'
 import { useLocations } from '@/shared/composables/useLocations'
+import type { DayHoursString } from '@/shared/types/business-hours.types'
+import { PERSIAN_WEEKDAYS, PERSIAN_TO_BACKEND_DAY_MAP } from '@/shared/types/business-hours.types'
 
 interface CustomDayData {
   date: Date
@@ -398,7 +400,7 @@ const ImageIcon = () =>
 
 const providerStore = useProviderStore()
 const authStore = useAuthStore()
-const { provinces, loadProvinces, loadCitiesByProvinceId, getCitiesByProvinceId, getProvinceByName } = useLocations()
+const { provinces, loadProvinces, loadCitiesByProvinceId, getCitiesByProvinceId, getProvinceByName, getCityByName } = useLocations()
 
 const activeTab = ref('personal')
 
@@ -442,18 +444,19 @@ const locationForm = ref({
   coordinates: null as { lat: number; lng: number } | null,
 })
 
-// Working hours data
+// Working hours data - now using centralized types
 const weekDays = [
-  { persian: 'شنبه', english: 'Saturday' },
-  { persian: 'یکشنبه', english: 'Sunday' },
-  { persian: 'دوشنبه', english: 'Monday' },
-  { persian: 'سه‌شنبه', english: 'Tuesday' },
-  { persian: 'چهارشنبه', english: 'Wednesday' },
-  { persian: 'پنجشنبه', english: 'Thursday' },
-  { persian: 'جمعه', english: 'Friday' },
+  { persian: PERSIAN_WEEKDAYS[0], english: 'Saturday', backendDayOfWeek: PERSIAN_TO_BACKEND_DAY_MAP[0] },
+  { persian: PERSIAN_WEEKDAYS[1], english: 'Sunday', backendDayOfWeek: PERSIAN_TO_BACKEND_DAY_MAP[1] },
+  { persian: PERSIAN_WEEKDAYS[2], english: 'Monday', backendDayOfWeek: PERSIAN_TO_BACKEND_DAY_MAP[2] },
+  { persian: PERSIAN_WEEKDAYS[3], english: 'Tuesday', backendDayOfWeek: PERSIAN_TO_BACKEND_DAY_MAP[3] },
+  { persian: PERSIAN_WEEKDAYS[4], english: 'Wednesday', backendDayOfWeek: PERSIAN_TO_BACKEND_DAY_MAP[4] },
+  { persian: PERSIAN_WEEKDAYS[5], english: 'Thursday', backendDayOfWeek: PERSIAN_TO_BACKEND_DAY_MAP[5] },
+  { persian: PERSIAN_WEEKDAYS[6], english: 'Friday', backendDayOfWeek: PERSIAN_TO_BACKEND_DAY_MAP[6] },
 ]
 
-const workingHours = ref([
+// Initialize with default values - will be populated from backend on mount
+const workingHours = ref<DayHoursString[]>([
   { isOpen: true, startTime: '10:00', endTime: '22:00', breaks: [] },
   { isOpen: true, startTime: '10:00', endTime: '22:00', breaks: [] },
   { isOpen: true, startTime: '10:00', endTime: '22:00', breaks: [] },
@@ -478,59 +481,163 @@ const tabs = [
 ]
 
 // Function to load location data
-const loadLocationData = () => {
+const loadLocationData = async () => {
   if (currentProvider.value) {
+    const address = currentProvider.value.address
+    let provinceId = address?.provinceId || null
+    let cityId = address?.cityId || null
+
+    // If IDs are not available but names are, resolve IDs from names
+    if (!provinceId && address?.state) {
+      // Ensure provinces are loaded first
+      await loadProvinces()
+      const province = getProvinceByName(address.state)
+      if (province) {
+        provinceId = province.id
+
+        // Now try to resolve city if we have province and city name
+        if (!cityId && address?.city) {
+          await loadCitiesByProvinceId(province.id)
+          const city = getCityByName(province.id, address.city)
+          if (city) {
+            cityId = city.id
+          }
+        }
+      }
+    }
+
     locationForm.value = {
-      formattedAddress: currentProvider.value.address?.formattedAddress || '',
-      provinceId: currentProvider.value.address?.provinceId || null,
-      cityId: currentProvider.value.address?.cityId || null,
+      formattedAddress: address?.formattedAddress || '',
+      provinceId,
+      cityId,
       coordinates:
-        currentProvider.value.address?.latitude && currentProvider.value.address?.longitude
+        address?.latitude && address?.longitude
           ? {
-              lat: currentProvider.value.address.latitude,
-              lng: currentProvider.value.address.longitude,
+              lat: address.latitude,
+              lng: address.longitude,
             }
           : null,
     }
   }
 }
 
-// Watch for location tab activation to reload data
+// Helper function to format time from hours and minutes
+const formatTimeFromHoursMinutes = (hours?: number, minutes?: number): string => {
+  if (hours === undefined || hours === null) return '10:00'
+  const h = hours.toString().padStart(2, '0')
+  const m = (minutes || 0).toString().padStart(2, '0')
+  return `${h}:${m}`
+}
+
+// Function to load business hours data
+const loadBusinessHoursData = () => {
+  if (currentProvider.value?.businessHours && currentProvider.value.businessHours.length > 0) {
+    console.log('📋 ProfileManager: Loading business hours from backend:', currentProvider.value.businessHours)
+
+    // Create a map of backend dayOfWeek to business hours
+    const hoursMap = new Map<number, any>()
+    currentProvider.value.businessHours.forEach(bh => {
+      hoursMap.set(bh.dayOfWeek, bh)
+    })
+
+    // Map to our working hours array (Persian week order)
+    workingHours.value = weekDays.map((day) => {
+      const backendHours = hoursMap.get(day.backendDayOfWeek)
+
+      if (backendHours && backendHours.isOpen) {
+        return {
+          isOpen: true,
+          startTime: formatTimeFromHoursMinutes(backendHours.openTimeHours, backendHours.openTimeMinutes),
+          endTime: formatTimeFromHoursMinutes(backendHours.closeTimeHours, backendHours.closeTimeMinutes),
+          breaks: backendHours.breaks?.map((b: any) => ({
+            id: `break_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`,
+            start: formatTimeFromHoursMinutes(b.startTimeHours, b.startTimeMinutes),
+            end: formatTimeFromHoursMinutes(b.endTimeHours, b.endTimeMinutes),
+          })) || [],
+        }
+      } else {
+        return {
+          isOpen: false,
+          startTime: '',
+          endTime: '',
+          breaks: [],
+        }
+      }
+    })
+
+    console.log('📋 ProfileManager: Business hours loaded successfully:', workingHours.value)
+  } else {
+    console.log('📋 ProfileManager: No business hours found in backend, using defaults')
+  }
+}
+
+// Watch for tab changes to reload data as needed
 watch(activeTab, async (newTab) => {
+  console.log(`📋 ProfileManager: Tab changed to ${newTab}`)
+
   if (newTab === 'location') {
     try {
       // Fetch fresh provider data from backend
       await providerStore.loadCurrentProvider(true) // Force refresh
-      loadLocationData()
+      await loadLocationData()
     } catch (error) {
       console.error('Error loading location data:', error)
     }
+  } else if (newTab === 'hours') {
+    try {
+      // Load business hours from current provider (no need to force refresh)
+      loadBusinessHoursData()
+    } catch (error) {
+      console.error('Error loading business hours data:', error)
+    }
+  } else if (newTab === 'gallery') {
+    console.log('📋 ProfileManager: Gallery tab activated - GalleryManager will load images automatically')
+    // No need to do anything - GalleryManager component loads images on mount and watches providerId
   }
 })
 
 // Load data on mount
-onMounted(() => {
-  if (currentProvider.value) {
-    // Load personal info
-    personalForm.value = {
-      fullName: currentProvider.value.profile?.businessName || '',
-      email: currentProvider.value.contactInfo?.email || authStore.user?.email || '',
-      phone: currentProvider.value.contactInfo?.phone || authStore.user?.phoneNumber || '',
-      profileImage: currentProvider.value.profileImageUrl || null,
-      profileImageUrl: currentProvider.value.profileImageUrl || '',
-    }
+onMounted(async () => {
+  console.log('📋 ProfileManager: Loading provider information...')
 
-    // Load business info
-    businessForm.value = {
-      name: currentProvider.value.profile?.businessName || '',
-      category: 'آرایشگاه', // Placeholder
-      description: currentProvider.value.profile?.description || '',
-      logo: currentProvider.value.profile?.logoUrl || null,
-      logoUrl: currentProvider.value.profile?.logoUrl || '',
-    }
+  try {
+    // Force refresh provider data from backend (similar to /progress API)
+    await providerStore.loadCurrentProvider(true)
+    console.log('📋 ProfileManager: Provider data loaded successfully')
 
-    // Load location
-    loadLocationData()
+    if (currentProvider.value) {
+      console.log('📋 ProfileManager: Current provider:', currentProvider.value)
+
+      // Load personal info
+      personalForm.value = {
+        fullName: currentProvider.value.profile?.businessName || '',
+        email: currentProvider.value.contactInfo?.email || authStore.user?.email || '',
+        phone: currentProvider.value.contactInfo?.phone || authStore.user?.phoneNumber || '',
+        profileImage: currentProvider.value.profileImageUrl || null,
+        profileImageUrl: currentProvider.value.profileImageUrl || '',
+      }
+
+      // Load business info
+      businessForm.value = {
+        name: currentProvider.value.profile?.businessName || '',
+        category: 'آرایشگاه', // Placeholder
+        description: currentProvider.value.profile?.description || '',
+        logo: currentProvider.value.profile?.logoUrl || null,
+        logoUrl: currentProvider.value.profile?.logoUrl || '',
+      }
+
+      // Load location
+      await loadLocationData()
+
+      // Load business hours
+      loadBusinessHoursData()
+
+      console.log('📋 ProfileManager: Forms initialized with provider data')
+    } else {
+      console.warn('📋 ProfileManager: No provider data available')
+    }
+  } catch (error) {
+    console.error('📋 ProfileManager: Error loading provider information:', error)
   }
 })
 
@@ -815,7 +922,7 @@ const saveLocation = async () => {
     await providerStore.loadCurrentProvider(true)
 
     // Reload location form with fresh data
-    loadLocationData()
+    await loadLocationData()
 
     alert('موقعیت مکانی با موفقیت ذخیره شد')
   } catch (error) {
@@ -845,9 +952,85 @@ const clearAllHours = () => {
   }))
 }
 
-const saveHours = () => {
-  console.log('Saving hours:', workingHours.value)
-  alert('ساعات کاری با موفقیت ذخیره شد')
+// Helper function to parse time string to hours and minutes
+const parseTimeToHoursMinutes = (timeStr: string): { hours: number; minutes: number } => {
+  const [hours, minutes] = timeStr.split(':').map(Number)
+  return { hours: hours || 0, minutes: minutes || 0 }
+}
+
+const saveHours = async () => {
+  try {
+    console.log('💾 Saving hours:', workingHours.value)
+
+    if (!currentProvider.value?.id) {
+      alert('خطا: شناسه ارائه‌دهنده یافت نشد')
+      return
+    }
+
+    // Transform working hours to backend format (all days, including closed ones)
+    const businessHoursToSave = weekDays.map((day, index) => {
+      const hours = workingHours.value[index]
+
+      if (hours.isOpen) {
+        const openTime = parseTimeToHoursMinutes(hours.startTime)
+        const closeTime = parseTimeToHoursMinutes(hours.endTime)
+
+        return {
+          dayOfWeek: day.backendDayOfWeek,
+          isOpen: true,
+          openTime: {
+            hours: openTime.hours,
+            minutes: openTime.minutes,
+          },
+          closeTime: {
+            hours: closeTime.hours,
+            minutes: closeTime.minutes,
+          },
+          breaks: hours.breaks ? hours.breaks.map((b: any) => {
+            const startTime = parseTimeToHoursMinutes(b.start)
+            const endTime = parseTimeToHoursMinutes(b.end)
+            return {
+              start: {
+                hours: startTime.hours,
+                minutes: startTime.minutes,
+              },
+              end: {
+                hours: endTime.hours,
+                minutes: endTime.minutes,
+              },
+            }
+          }) : [],
+        }
+      } else {
+        return {
+          dayOfWeek: day.backendDayOfWeek,
+          isOpen: false,
+          openTime: null,
+          closeTime: null,
+          breaks: [],
+        }
+      }
+    })
+
+    console.log('💾 Transformed hours for backend:', businessHoursToSave)
+
+    // Call API to save business hours
+    const response = await providerProfileService.updateBusinessHours(currentProvider.value.id, businessHoursToSave)
+    console.log('💾 Save response:', response)
+
+    alert('ساعات کاری با موفقیت ذخیره شد')
+
+    // Optionally reload in the background (don't wait for it)
+    providerStore.loadCurrentProvider(true).then(() => {
+      loadBusinessHoursData()
+      console.log('✅ Provider data refreshed after save')
+    }).catch(err => {
+      console.error('⚠️ Error refreshing provider data (non-critical):', err)
+    })
+  } catch (error) {
+    console.error('Error saving hours:', error)
+    alert('خطا در ذخیره ساعات کاری. لطفاً دوباره تلاش کنید.')
+  }
 }
 
 // Calendar methods

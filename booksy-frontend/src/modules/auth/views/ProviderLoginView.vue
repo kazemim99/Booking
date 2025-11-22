@@ -102,12 +102,11 @@ const handleSubmit = async () => {
     const result = await sendVerificationCode(phoneNumber.value, 'IR')
 
     if (result.success) {
-      // Navigate to verification page with explicit userType
+      // Navigate to provider verification page
       router.push({
-        name: 'PhoneVerification',
+        name: 'ProviderPhoneVerification',
         query: {
-          phone: phoneNumber.value,
-          userType: 'Provider'  // Explicit provider type
+          phone: phoneNumber.value
         },
       })
     } else {

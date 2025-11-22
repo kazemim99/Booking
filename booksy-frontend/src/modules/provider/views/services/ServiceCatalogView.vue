@@ -696,13 +696,13 @@ async function deleteService() {
 
 // Navigation
 function goBack() {
-  router.push({ name: 'ProviderOnboarding' })
+  router.push({ name: 'ProviderRegistration' })
 }
 
 function finishAndGoBack() {
   successMessage.value = 'Service catalog saved successfully!'
   setTimeout(() => {
-    router.push({ name: 'ProviderOnboarding' })
+    router.push({ name: 'ProviderRegistration' })
   }, 1500)
 }
 </script>

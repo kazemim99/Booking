@@ -6,10 +6,18 @@ Welcome to the Booksy booking platform documentation. This directory contains co
 
 ### Recent Features (November 2025)
 
+#### Latest (Nov 20, 2025) - Role-Based Navigation 🎯
+- **[Session Summary Nov 20](./SESSION_SUMMARY_2025_11_20.md)** - Complete UX redesign session
+- **[Quick Reference](./QUICK_REFERENCE_ROLE_NAVIGATION.md)** - Role navigation quick start guide
+- **[UX Design Document](./UX_ROLE_BASED_NAVIGATION.md)** - Comprehensive UX design and flow diagrams
+- **[Implementation Guide](./UX_IMPLEMENTATION_SUMMARY.md)** - Integration and testing guide
+- **[Double Auth Call Fix](./FIX_DOUBLE_AUTH_CALL.md)** - Authentication issue resolution
+
+#### Previous Features
 - **[Calendar View](./CALENDAR_VIEW.md)** - Persian/Jalali calendar component for booking visualization
 - **[Create Booking Modal](./CREATE_BOOKING_MODAL.md)** - Comprehensive booking creation form
 - **[Package Consolidation](./PACKAGE_CONSOLIDATION.md)** - Dependency cleanup and optimization
-- **[Session Summary Nov 14](./SESSION_SUMMARY_2025_11_14.md)** - Complete development session overview
+- **[Session Summary Nov 14](./SESSION_SUMMARY_2025_11_14.md)** - Development session overview
 
 ### Existing Documentation
 

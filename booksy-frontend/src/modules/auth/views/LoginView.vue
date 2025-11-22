@@ -111,12 +111,11 @@ const handleSubmit = async () => {
         sessionStorage.setItem('post_login_redirect', redirectPath)
       }
 
-      // Navigate to verification page with explicit userType
+      // Navigate to customer verification page
       router.push({
-        name: 'PhoneVerification',
+        name: 'CustomerPhoneVerification',
         query: {
-          phone: phoneNumber.value,
-          userType: 'Customer'  // Explicit customer type
+          phone: phoneNumber.value
         },
       })
     } else {

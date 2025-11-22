@@ -33,6 +33,8 @@ using Booksy.Infrastructure.External.Payment.Parsian;
 using Booksy.Infrastructure.External.Payment.Saman;
 using Booksy.ServiceCatalog.Infrastructure.ExternalServices.Sms;
 using System.Threading;
+using Booksy.ServiceCatalog.Application.Abstractions;
+using Booksy.ServiceCatalog.Infrastructure.Services;
 
 namespace Booksy.ServiceCatalog.Infrastructure.DependencyInjection
 {
@@ -42,7 +44,9 @@ namespace Booksy.ServiceCatalog.Infrastructure.DependencyInjection
             this IServiceCollection services,
             IConfiguration configuration)
         {
-            
+            // HTTP Context Accessor (needed for URL generation)
+            services.AddHttpContextAccessor();
+
             // Database Context
             services.AddDbContext<ServiceCatalogDbContext>(options =>
             {
@@ -113,6 +117,7 @@ namespace Booksy.ServiceCatalog.Infrastructure.DependencyInjection
             services.AddScoped<IProviderRegistrationService, ProviderRegistrationService>();
             services.AddScoped<IServiceQueryRepository, ServiceQueryRepository>();
             services.AddScoped<ITokenService, TokenService>();
+            services.AddScoped<IUrlService, UrlService>();
 
 
             // Domain Services

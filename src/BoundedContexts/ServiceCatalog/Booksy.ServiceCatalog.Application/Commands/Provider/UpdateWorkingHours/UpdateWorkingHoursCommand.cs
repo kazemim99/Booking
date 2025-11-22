@@ -1,4 +1,5 @@
 using Booksy.Core.Application.Abstractions.CQRS;
+using Booksy.ServiceCatalog.Application.Commands.Provider.Registration;
 
 namespace Booksy.ServiceCatalog.Application.Commands.Provider.UpdateWorkingHours;
 
@@ -7,12 +8,7 @@ public sealed record UpdateWorkingHoursCommand(
     Dictionary<string, DayHoursDto?> BusinessHours,
     Guid? IdempotencyKey = null) : ICommand<UpdateWorkingHoursResult>;
 
-public sealed record DayHoursDto(
-    int DayOfWeek,
-    bool IsOpen,
-    TimeSlotDto? OpenTime,
-    TimeSlotDto? CloseTime,
-    List<BreakTimeDto> Breaks);
+
 
 public sealed record TimeSlotDto(int Hours, int Minutes);
 

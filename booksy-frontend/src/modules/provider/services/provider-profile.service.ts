@@ -26,6 +26,29 @@ export interface UpdateLocationRequest {
   longitude: number
 }
 
+export interface BusinessHoursRequest {
+  dayOfWeek: number
+  isOpen: boolean
+  openTime?: {
+    hours: number
+    minutes: number
+  } | null
+  closeTime?: {
+    hours: number
+    minutes: number
+  } | null
+  breaks: {
+    start: {
+      hours: number
+      minutes: number
+    }
+    end: {
+      hours: number
+      minutes: number
+    }
+  }[]
+}
+
 class ProviderProfileService {
   private readonly basePath = '/v1/providers'
 
@@ -96,6 +119,15 @@ class ProviderProfileService {
    */
   async updateLocation(providerId: string, data: UpdateLocationRequest): Promise<void> {
     await serviceCategoryClient.put(`${this.basePath}/${providerId}/location`, data)
+  }
+
+  /**
+   * Update business hours
+   */
+  async updateBusinessHours(providerId: string, hours: BusinessHoursRequest[]): Promise<void> {
+    await serviceCategoryClient.put(`${this.basePath}/${providerId}/business-hours`, {
+      businessHours: hours
+    })
   }
 
   /**

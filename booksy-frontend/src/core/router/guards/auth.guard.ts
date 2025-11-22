@@ -18,7 +18,7 @@ export async function authGuard(
   if (isPublic) {
     // If authenticated user tries to access login/register pages (but NOT registration page)
     // Registration page may be needed for providers with Drafted status
-    if (authStore.isAuthenticated && (to.name === 'Login' || to.name === 'Register')) {
+    if (authStore.isAuthenticated && (to.name === 'CustomerLogin' || to.name === 'ProviderLogin' || to.name === 'Login' || to.name === 'Register')) {
       // Check if there's a redirect param (e.g., customer trying to book)
       const redirectPath = to.query.redirect as string | undefined
 
@@ -32,8 +32,16 @@ export async function authGuard(
 
   // Check authentication
   if (requiresAuth && !authStore.isAuthenticated) {
+    // Determine appropriate login page based on target route
+    // Provider routes should redirect to provider login
+    const isProviderRoute = to.path.startsWith('/dashboard') ||
+                           to.path.startsWith('/provider/') ||
+                           to.name?.toString().startsWith('Provider')
+
+    const loginRoute = isProviderRoute ? 'ProviderLogin' : 'CustomerLogin'
+
     next({
-      name: 'Login',
+      name: loginRoute,
       query: { redirect: to.fullPath },
     })
     return

@@ -239,7 +239,6 @@ public sealed class CompleteProviderAuthenticationCommandHandler
             profile,
             UserType.Provider);
 
-        await _userRepository.SaveAsync(user, cancellationToken);
 
         return user;
     }

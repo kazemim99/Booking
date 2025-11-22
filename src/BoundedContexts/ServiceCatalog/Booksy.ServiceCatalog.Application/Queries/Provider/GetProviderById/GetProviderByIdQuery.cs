@@ -11,5 +11,5 @@ namespace Booksy.ServiceCatalog.Application.Queries.Provider.GetProviderById
     public sealed record GetProviderByIdQuery(
         Guid ProviderId,
         bool IncludeServices = false,
-        bool IncludeStaff = false) : IQuery<ProviderDetailsViewModel?>;
+        bool IncludeStaff = false) : IQuery<ProviderDetailsResult?>;
 }

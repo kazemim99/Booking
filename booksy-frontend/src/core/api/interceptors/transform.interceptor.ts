@@ -54,18 +54,28 @@ function toPascalCase(obj: unknown): unknown {
   }
 
   if (typeof obj === 'object') {
-    return Object.keys(obj).reduce((result, key) => {
-      // Skip if key is not a valid string or is empty
-      if (!key || typeof key !== 'string' || key.length === 0) {
-        result[key] = toPascalCase((obj as Record<string, unknown>)[key])
-        return result
-      }
+    // Safety check: ensure obj is a plain object we can iterate
+    try {
+      const keys = Object.keys(obj)
+      return keys.reduce((result, key) => {
+        // Skip if key is not a valid string or is empty
+        if (!key || typeof key !== 'string' || key.length === 0) {
+          result[key] = toPascalCase((obj as Record<string, unknown>)[key])
+          return result
+        }
 
-      // Convert first character to uppercase, keep rest as is
-      const pascalKey = key.charAt(0).toUpperCase() + key.slice(1)
-      result[pascalKey] = toPascalCase((obj as Record<string, unknown>)[key])
-      return result
-    }, {} as Record<string, unknown>)
+        // Convert first character to uppercase, keep rest as is
+        const pascalKey = key.charAt(0).toUpperCase() + key.slice(1)
+        result[pascalKey] = toPascalCase((obj as Record<string, unknown>)[key])
+        return result
+      }, {} as Record<string, unknown>)
+    } catch (e) {
+      // If transformation fails, return original object
+      if (import.meta.env.DEV) {
+        console.warn('[Transform] Failed to transform object to PascalCase:', e, obj)
+      }
+      return obj
+    }
   }
 
   return obj
@@ -89,18 +99,28 @@ function toCamelCase(obj: unknown): unknown {
   }
 
   if (typeof obj === 'object') {
-    return Object.keys(obj).reduce((result, key) => {
-      // Skip if key is not a valid string or is empty
-      if (!key || typeof key !== 'string' || key.length === 0) {
-        result[key] = toCamelCase((obj as Record<string, unknown>)[key])
-        return result
-      }
+    // Safety check: ensure obj is a plain object we can iterate
+    try {
+      const keys = Object.keys(obj)
+      return keys.reduce((result, key) => {
+        // Skip if key is not a valid string or is empty
+        if (!key || typeof key !== 'string' || key.length === 0) {
+          result[key] = toCamelCase((obj as Record<string, unknown>)[key])
+          return result
+        }
 
-      // Convert first character to lowercase, keep rest as is
-      const camelKey = key.charAt(0).toLowerCase() + key.slice(1)
-      result[camelKey] = toCamelCase((obj as Record<string, unknown>)[key])
-      return result
-    }, {} as Record<string, unknown>)
+        // Convert first character to lowercase, keep rest as is
+        const camelKey = key.charAt(0).toLowerCase() + key.slice(1)
+        result[camelKey] = toCamelCase((obj as Record<string, unknown>)[key])
+        return result
+      }, {} as Record<string, unknown>)
+    } catch (e) {
+      // If transformation fails, return original object
+      if (import.meta.env.DEV) {
+        console.warn('[Transform] Failed to transform object to camelCase:', e, obj)
+      }
+      return obj
+    }
   }
 
   return obj

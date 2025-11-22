@@ -1,7 +1,9 @@
-﻿
-namespace Booksy.ServiceCatalog.API.Models.Requests;
+﻿namespace Booksy.ServiceCatalog.API.Models.Requests;
 
-public class BusinessHoursRequest
+/// <summary>
+/// Request to update a single day's business hours for a provider
+/// </summary>
+public class UpdateProviderBusinessHoursRequest
 {
     public bool IsOpen { get; set; }
 

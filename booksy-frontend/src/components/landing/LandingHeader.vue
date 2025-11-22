@@ -25,7 +25,7 @@
           </router-link>
 
           <!-- Customer Login Button -->
-          <router-link to="/login" class="login-button">
+          <router-link to="/customer/login" class="login-button">
             <span>ورود / ثبت‌نام</span>
           </router-link>
         </template>

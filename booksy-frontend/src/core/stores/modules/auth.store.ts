@@ -415,82 +415,126 @@ export const useAuthStore = defineStore('auth', () => {
 
   /**
    * Redirect user to appropriate dashboard based on role and provider status
+   * Enhanced with role-based redirect validation
    * @param redirectPath - Optional path to redirect to (e.g., from query param)
    */
   async function redirectToDashboard(redirectPath?: string) {
     if (!user.value || !user.value.roles) {
-      router.push({ name: 'Login' })
+      router.push({ name: 'CustomerLogin' })
       return
     }
 
     const roles = user.value.roles
 
-    // If there's a redirect path (e.g., customer booking flow), honor it
-    // But only for customers - providers should go through status check first
-    if (redirectPath && (roles.includes('Customer') || roles.includes('Client'))) {
-      console.log('[AuthStore] Customer with redirect path, navigating to:', redirectPath)
-      router.push(redirectPath)
-      return
+    console.log('[AuthStore] redirectToDashboard called', {
+      roles,
+      redirectPath,
+      providerStatus: providerStatus.value,
+      providerId: providerId.value
+    })
+
+    // Determine primary role (priority: Admin > Provider > Customer)
+    let primaryRole: 'admin' | 'provider' | 'customer' | null = null
+    if (roles.includes('Admin') || roles.includes('Administrator')) {
+      primaryRole = 'admin'
+    } else if (roles.includes('Provider') || roles.includes('ServiceProvider')) {
+      primaryRole = 'provider'
+    } else if (roles.includes('Customer') || roles.includes('Client')) {
+      primaryRole = 'customer'
+    }
+
+    // Helper: Check if redirect path is valid for user role
+    const isValidRedirect = (path: string, role: 'admin' | 'provider' | 'customer'): boolean => {
+      if (!path || path === '/') return false
+
+      if (role === 'admin') {
+        return path.startsWith('/admin')
+      }
+
+      if (role === 'provider') {
+        // Providers can only redirect to provider routes if onboarding complete
+        const isOnboardingComplete = providerStatus.value !== null &&
+                                     providerStatus.value !== ProviderStatus.Drafted
+        if (!isOnboardingComplete) return false
+
+        return path.startsWith('/dashboard') ||
+               path.startsWith('/provider') ||
+               path.startsWith('/bookings')
+      }
+
+      if (role === 'customer') {
+        const publicRoutes = ['/', '/providers', '/search', '/about', '/contact']
+        const isPublic = publicRoutes.some(route => path.startsWith(route))
+        const isCustomerRoute = path.startsWith('/booking')
+        return isPublic || isCustomerRoute
+      }
+
+      return false
     }
 
     // Admin redirect
-    if (roles.includes('Admin') || roles.includes('Administrator') || roles.includes('SysAdmin')) {
-      router.push({ path: '/admin/dashboard' })
+    if (primaryRole === 'admin') {
+      if (redirectPath && isValidRedirect(redirectPath, 'admin')) {
+        console.log('[AuthStore] Admin redirect to:', redirectPath)
+        await router.push(redirectPath)
+      } else {
+        console.log('[AuthStore] Admin redirect to default dashboard')
+        await router.push({ path: '/admin/dashboard' })
+      }
       return
     }
 
     // Provider redirect - check status first
-    if (roles.includes('Provider') || roles.includes('ServiceProvider')) {
+    if (primaryRole === 'provider') {
       // Fetch provider status if not already loaded
       if (providerStatus.value === null && providerId.value === null) {
         try {
+          console.log('[AuthStore] Fetching provider status before redirect...')
           await fetchProviderStatus()
-        } catch {
-          console.error('[AuthStore] Error fetching provider status, redirecting to registration')
-          router.push({ name: 'ProviderRegistration' })
+        } catch (error) {
+          console.error('[AuthStore] Error fetching provider status, redirecting to registration', error)
+          await router.push({ name: 'ProviderRegistration' })
           return
         }
       }
 
-      // Redirect based on provider status
-      if (providerStatus.value === ProviderStatus.Drafted || providerStatus.value === null) {
-        // Provider needs to complete registration
-        router.push({ name: 'ProviderRegistration' })
+      // Check if onboarding is complete
+      const isOnboardingComplete = providerStatus.value !== null &&
+                                   providerStatus.value !== ProviderStatus.Drafted
+
+      if (!isOnboardingComplete) {
+        // Provider needs to complete registration - ignore redirect path
+        console.log('[AuthStore] Provider onboarding incomplete, forcing registration')
+        await router.push({ name: 'ProviderRegistration' })
         return
       }
 
-      // All other statuses (PendingVerification, Verified, Active, etc.) go to dashboard
-      // Honor redirect path if provided
-      if (redirectPath) {
-        console.log('[AuthStore] Provider with redirect path, navigating to:', redirectPath)
-        router.push(redirectPath)
-        return
+      // Onboarding complete - check redirect path
+      if (redirectPath && isValidRedirect(redirectPath, 'provider')) {
+        console.log('[AuthStore] Provider redirect to:', redirectPath)
+        await router.push(redirectPath)
+      } else {
+        console.log('[AuthStore] Provider redirect to dashboard')
+        await router.push({ path: '/dashboard' })
       }
-
-      router.push({ path: '/dashboard' })
       return
     }
 
-    // Customer/Client redirect
-    if (roles.includes('Customer') || roles.includes('Client')) {
-      // Honor redirect path if provided
-      if (redirectPath) {
-        console.log('[AuthStore] Customer with redirect path, navigating to:', redirectPath)
-        router.push(redirectPath)
-        return
+    // Customer redirect
+    if (primaryRole === 'customer') {
+      if (redirectPath && isValidRedirect(redirectPath, 'customer')) {
+        console.log('[AuthStore] Customer redirect to:', redirectPath)
+        await router.push(redirectPath)
+      } else {
+        console.log('[AuthStore] Customer redirect to homepage')
+        await router.push({ path: '/' })
       }
-      // Redirect customers to home page instead of dashboard
-      console.log('[AuthStore] Customer logged in, redirecting to home page')
-      router.push({ path: '/' })
       return
     }
 
-    // Default fallback - honor redirect if provided
-    if (redirectPath) {
-      router.push(redirectPath)
-      return
-    }
-    router.push({ path: '/' })
+    // Fallback - no recognized role
+    console.log('[AuthStore] No recognized role, redirecting to homepage')
+    await router.push({ path: '/' })
   }
 
 
@@ -502,6 +546,11 @@ export const useAuthStore = defineStore('auth', () => {
   async function logout() {
     try {
       setLoading(true)
+
+      // Determine user role BEFORE clearing user data
+      const isProvider = user.value?.roles?.some(role =>
+        role === 'Provider' || role === 'ServiceProvider'
+      ) ?? false
 
       // Call logout endpoint
       await authApi.logout()
@@ -520,10 +569,21 @@ export const useAuthStore = defineStore('auth', () => {
       const isPublicRoute = publicRoutes.includes(currentPath) || currentPath.startsWith('/provider/')
 
       if (!isPublicRoute) {
-        router.push({ name: 'Login' })
+        // Redirect to role-specific login page with redirect query param
+        const loginRoute = isProvider ? 'ProviderLogin' : 'CustomerLogin'
+        router.push({
+          name: loginRoute,
+          query: { redirect: currentPath }
+        })
       }
     } catch (err: unknown) {
       console.error('Logout error:', err)
+
+      // Determine user role BEFORE clearing user data
+      const isProvider = user.value?.roles?.some(role =>
+        role === 'Provider' || role === 'ServiceProvider'
+      ) ?? false
+
       setToken(null)
       setRefreshToken(null)
       setUser(null)
@@ -535,7 +595,12 @@ export const useAuthStore = defineStore('auth', () => {
       const isPublicRoute = publicRoutes.includes(currentPath) || currentPath.startsWith('/provider/')
 
       if (!isPublicRoute) {
-        router.push({ name: 'Login' })
+        // Redirect to role-specific login page with redirect query param
+        const loginRoute = isProvider ? 'ProviderLogin' : 'CustomerLogin'
+        router.push({
+          name: loginRoute,
+          query: { redirect: currentPath }
+        })
       }
     } finally {
       setLoading(false)

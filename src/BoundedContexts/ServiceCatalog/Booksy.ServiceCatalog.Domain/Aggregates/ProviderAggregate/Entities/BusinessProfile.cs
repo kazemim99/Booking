@@ -118,7 +118,8 @@ namespace Booksy.ServiceCatalog.Domain.Entities
                 throw new DomainValidationException("Gallery image not found");
             }
 
-            image.Deactivate();
+            // Hard delete - completely remove from collection and database
+            _galleryImages.Remove(image);
             LastUpdatedAt = DateTime.UtcNow;
         }
 

@@ -95,6 +95,7 @@ const authStore = useAuthStore()
 const otpCode = ref('')
 const error = ref('')
 const isLoading = ref(false)
+const isVerifying = ref(false) // Additional flag to prevent duplicate API calls
 const otpInputRef = ref<InstanceType<typeof OtpInput>>()
 
 // Computed
@@ -119,11 +120,27 @@ const handleOtpComplete = async (code: string) => {
   // Auto-submit when OTP is complete
   console.log('OTP complete event received:', code)
   otpCode.value = code
+
+  // Small delay to debounce and prevent race condition with handleSubmit
+  // This ensures if user presses Enter immediately after typing, we don't double-call
+  await new Promise(resolve => setTimeout(resolve, 100))
+
+  // Check again if already processing (in case handleSubmit was called)
+  if (isLoading.value) {
+    console.log('[VerificationView] ⚠️ Already processing from manual submit, skipping auto-submit')
+    return
+  }
+
   await verifyOtp()
 }
 
 const verifyOtp = async () => {
   // Prevent duplicate calls (race condition between auto-submit and manual submit)
+  if (isVerifying.value) {
+    console.log('[VerificationView] ⚠️ Already verifying, skipping duplicate call')
+    return
+  }
+
   if (isLoading.value) {
     console.log('[VerificationView] ⚠️ Already processing, skipping duplicate call')
     return
@@ -131,18 +148,28 @@ const verifyOtp = async () => {
 
   error.value = ''
   isLoading.value = true
+  isVerifying.value = true // Set flag immediately to prevent race condition
 
   console.log('[VerificationView] Verifying OTP:', otpCode.value, 'with phone:', phoneNumber.value)
 
   try {
-    // Get userType from route query params (explicitly passed by login page)
-    const userTypeFromQuery = route.query.userType as string | undefined
-    console.log('[VerificationView] 🔍 UserType from route query:', userTypeFromQuery)
+    // Get userType from route meta (set in router config based on route path)
+    const userTypeFromMeta = route.meta.userType as string | undefined
+    console.log('[VerificationView] 🔍 UserType from route meta:', userTypeFromMeta)
 
-    // Validate and use userType, default to Customer if not provided
-    const userType = (userTypeFromQuery === 'Provider' || userTypeFromQuery === 'Customer'
-      ? userTypeFromQuery
-      : 'Customer') as 'Customer' | 'Provider'
+    // Determine userType: from meta, fallback to route name, default to Customer
+    let userType: 'Customer' | 'Provider' = 'Customer'
+
+    if (userTypeFromMeta === 'Provider') {
+      userType = 'Provider'
+    } else if (userTypeFromMeta === 'Customer') {
+      userType = 'Customer'
+    } else if (route.name === 'ProviderPhoneVerification') {
+      userType = 'Provider'
+    } else {
+      userType = 'Customer'
+    }
+
     console.log('[VerificationView] 🔑 Final userType for authentication:', userType)
 
     // Use unified authentication endpoint based on user type
@@ -163,7 +190,7 @@ const verifyOtp = async () => {
 
       if (userType === 'Provider' && 'requiresOnboarding' in result && result.requiresOnboarding) {
         console.log('[VerificationView] Provider requires onboarding, redirecting...')
-        await router.push({ name: 'ProviderOnboarding' })
+        await router.push({ name: 'ProviderRegistration' })
       } else {
         console.log('[VerificationView] Checking redirect path...')
         await redirectBasedOnProviderStatus()
@@ -180,6 +207,7 @@ const verifyOtp = async () => {
     otpInputRef.value?.clear()
   } finally {
     isLoading.value = false
+    isVerifying.value = false // Reset flag
   }
 }
 
@@ -220,7 +248,14 @@ const handleResendCode = async () => {
 }
 
 const handleBackToLogin = () => {
-  router.push({ name: 'Login' })
+  // Check route to determine which login page to return to
+  if (route.name === 'ProviderPhoneVerification' || route.meta.userType === 'Provider') {
+    // Provider login page
+    router.push({ name: 'ProviderLogin' })
+  } else {
+    // Customer login page (default)
+    router.push({ name: 'CustomerLogin' })
+  }
 }
 
 // Auto-focus OTP input on mount

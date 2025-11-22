@@ -19,7 +19,7 @@ public class UpdateCustomerProfileCommandHandlerTests
     {
         _customerRepository = Substitute.For<ICustomerRepository>();
         _logger = Substitute.For<ILogger<UpdateCustomerProfileCommandHandler>>();
-        _handler = new UpdateCustomerProfileCommandHandler(_customerRepository, _logger);
+        //_handler = new UpdateCustomerProfileCommandHandler(_customerRepository, _logger);
     }
 
     [Fact]

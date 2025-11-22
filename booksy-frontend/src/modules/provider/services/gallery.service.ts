@@ -45,11 +45,11 @@ class GalleryService {
    * Get all gallery images for a provider
    */
   async getGalleryImages(providerId: string): Promise<GalleryImage[]> {
-    const response = await serviceCategoryClient.get<ApiResponse<GalleryImage[]>>(
+    const response = await serviceCategoryClient.get<GalleryImage[]>(
       `${this.baseUrl}/${providerId}/gallery`
     )
 
-    const images = response.data?.data || []
+    const images = response.data || []
     return images.map(this.mapGalleryImageDates)
   }
 
@@ -71,7 +71,9 @@ class GalleryService {
    * Delete a gallery image
    */
   async deleteImage(providerId: string, imageId: string): Promise<void> {
-    await serviceCategoryClient.delete(`${this.baseUrl}/${providerId}/gallery/${imageId}`)
+    await serviceCategoryClient.delete(
+      `${this.baseUrl}/${providerId}/gallery/${imageId}`
+    )
   }
 
   /**
@@ -100,11 +102,20 @@ class GalleryService {
 
   /**
    * Map gallery image dates from string to Date objects
+   * Backend returns properly formatted URLs, use them as-is (no wrapping/normalization)
    */
-  private mapGalleryImageDates(image: any): GalleryImage {
+  private mapGalleryImageDates = (image: any): GalleryImage => {
     return {
-      ...image,
-      uploadedAt: new Date(image.uploadedAt)
+      id: image.id,
+      thumbnailUrl: image.thumbnailUrl,
+      mediumUrl: image.mediumUrl,
+      originalUrl: image.originalUrl,
+      displayOrder: image.displayOrder,
+      caption: image.caption,
+      altText: image.altText,
+      uploadedAt: new Date(image.uploadedAt),
+      isActive: image.isActive ?? true,
+      isPrimary: image.isPrimary ?? false,
     }
   }
 }

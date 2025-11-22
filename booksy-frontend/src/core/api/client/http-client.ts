@@ -72,8 +72,9 @@ class HttpClient {
     // ============================================
 
     // 1. Cache - Check cache before making request (GET only)
+    // Uses custom adapter pattern to properly short-circuit requests on cache hit
     this.axiosInstance.interceptors.request.use(
-      cacheRequestInterceptor as (config: InternalAxiosRequestConfig) => InternalAxiosRequestConfig | Promise<InternalAxiosRequestConfig>,
+      cacheRequestInterceptor,
       (error: unknown) => Promise.reject(error),
     )
 
