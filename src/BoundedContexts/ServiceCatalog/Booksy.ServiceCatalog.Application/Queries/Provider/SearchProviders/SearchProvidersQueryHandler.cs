@@ -88,7 +88,13 @@ namespace Booksy.ServiceCatalog.Application.Queries.Provider.SearchProviders
                         provider.Status == ProviderStatus.Verified,
                        //OperatingHours: GetFormattedOperatingHours(provider.BusinessHours),
                        provider.RegisteredAt,
-                        provider.LastActiveAt),
+                        provider.LastActiveAt,
+                        // Hierarchy information
+                        provider.HierarchyType,
+                        provider.IsIndependent,
+                        provider.ParentProviderId != null ? provider.ParentProviderId.Value : (Guid?)null,
+                        null, // ParentProviderName - would require join, can be fetched separately
+                        0), // StaffProviderCount - would require count query, can be fetched separately
                     cancellationToken);
 
                 _logger.LogInformation("Provider search completed. Found {TotalCount} providers, returning page {PageNumber} of {PageSize}. Sort: {SortBy} {Direction}",

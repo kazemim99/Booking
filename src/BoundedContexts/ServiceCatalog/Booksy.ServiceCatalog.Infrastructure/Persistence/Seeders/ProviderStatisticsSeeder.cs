@@ -28,6 +28,9 @@ namespace Booksy.ServiceCatalog.Infrastructure.Persistence.Seeders
         {
             try
             {
+                // Clear change tracker to avoid conflicts from previous seeders
+                _context.ChangeTracker.Clear();
+
                 _logger.LogInformation("Starting provider statistics calculation...");
 
                 var providers = await _context.Providers

@@ -134,5 +134,21 @@ namespace Booksy.ServiceCatalog.Infrastructure.Persistence.Repositories
 
         public Task<PagedResult<TProjection>> GetPaginatedAsync<TProjection>(ISpecification<Provider> specification, PaginationRequest pagination, System.Linq.Expressions.Expression<Func<Provider, TProjection>> projection, CancellationToken cancellationToken = default) =>
             _inner.GetPaginatedAsync(specification, pagination, projection, cancellationToken);
+
+        // Hierarchy-related methods (delegating to inner repository)
+        public Task<IReadOnlyList<Provider>> GetStaffByOrganizationIdAsync(ProviderId organizationId, CancellationToken cancellationToken = default) =>
+            _inner.GetStaffByOrganizationIdAsync(organizationId, cancellationToken);
+
+        public Task<Provider?> GetOrganizationByStaffIdAsync(ProviderId staffProviderId, CancellationToken cancellationToken = default) =>
+            _inner.GetOrganizationByStaffIdAsync(staffProviderId, cancellationToken);
+
+        public Task<IReadOnlyList<Provider>> GetByHierarchyTypeAsync(ProviderHierarchyType hierarchyType, CancellationToken cancellationToken = default) =>
+            _inner.GetByHierarchyTypeAsync(hierarchyType, cancellationToken);
+
+        public Task<IReadOnlyList<Provider>> GetIndependentIndividualsAsync(CancellationToken cancellationToken = default) =>
+            _inner.GetIndependentIndividualsAsync(cancellationToken);
+
+        public Task<int> CountStaffByOrganizationAsync(ProviderId organizationId, CancellationToken cancellationToken = default) =>
+            _inner.CountStaffByOrganizationAsync(organizationId, cancellationToken);
     }
 }

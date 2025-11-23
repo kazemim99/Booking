@@ -61,6 +61,13 @@ namespace Booksy.ServiceCatalog.Infrastructure.Persistence.Configurations
                 .IsRequired()
                 .HasColumnName("StaffId");
 
+            // Individual Provider ID (for hierarchy - tracks which individual provider performs the service)
+            builder.Property(b => b.IndividualProviderId)
+                .HasConversion(
+                    id => id != null ? id.Value : (Guid?)null,
+                    value => value.HasValue ? ProviderId.From(value.Value) : null)
+                .HasColumnName("IndividualProviderId");
+
             // TimeSlot (Owned Value Object)
             builder.OwnsOne(b => b.TimeSlot, timeSlot =>
             {
@@ -327,6 +334,10 @@ namespace Booksy.ServiceCatalog.Infrastructure.Persistence.Configurations
 
             builder.HasIndex(b => b.ServiceId)
                 .HasDatabaseName("IX_Bookings_ServiceId");
+
+            // Index for querying bookings by individual provider in hierarchy
+            builder.HasIndex(b => b.IndividualProviderId)
+                .HasDatabaseName("IX_Bookings_IndividualProviderId");
 
             //builder.HasIndex(b => b.StaffId)
             //    .HasDatabaseName("IX_Bookings_StaffId");

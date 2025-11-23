@@ -2,6 +2,7 @@
 // Booksy.ServiceCatalog.Application/Queries/Provider/GetProviderByOwnerId/GetProviderByOwnerIdQuery.cs
 // ========================================
 using Booksy.Core.Application.Abstractions.CQRS;
+using Booksy.ServiceCatalog.Application.Queries.Provider.SearchProviders;
 
 namespace Booksy.ServiceCatalog.Application.Queries.Provider.GetProviderByOwnerId
 {

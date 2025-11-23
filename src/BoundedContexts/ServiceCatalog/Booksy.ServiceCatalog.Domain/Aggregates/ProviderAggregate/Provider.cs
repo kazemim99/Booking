@@ -32,6 +32,11 @@ namespace Booksy.ServiceCatalog.Domain.Aggregates
         public ProviderStatus Status { get; private set; }
         public ProviderType ProviderType { get; private set; }
 
+        // Hierarchy Properties
+        public ProviderHierarchyType HierarchyType { get; private set; }
+        public ProviderId? ParentProviderId { get; private set; }
+        public bool IsIndependent { get; private set; }
+
         // Registration Progress Tracking
         public int RegistrationStep { get; private set; }
         public bool IsRegistrationComplete { get; private set; }
@@ -79,6 +84,7 @@ namespace Booksy.ServiceCatalog.Domain.Aggregates
             ProviderType type,
             ContactInfo contactInfo,
             BusinessAddress address,
+            ProviderHierarchyType hierarchyType = ProviderHierarchyType.Organization,
             int registrationStep = 3)
         {
             var profile = BusinessProfile.Create(businessName, description,"profileImageUrl");
@@ -90,6 +96,9 @@ namespace Booksy.ServiceCatalog.Domain.Aggregates
                 Profile = profile,
                 Status = ProviderStatus.Drafted,
                 ProviderType = type,
+                HierarchyType = hierarchyType,
+                ParentProviderId = null,
+                IsIndependent = hierarchyType == ProviderHierarchyType.Individual,
                 ContactInfo = contactInfo,
                 Address = address,
                 RequiresApproval = false,
@@ -120,7 +129,8 @@ namespace Booksy.ServiceCatalog.Domain.Aggregates
             string description,
             ProviderType type,
             ContactInfo contactInfo,
-            BusinessAddress address)
+            BusinessAddress address,
+            ProviderHierarchyType hierarchyType = ProviderHierarchyType.Organization)
         {
             var profile = BusinessProfile.Create(businessName, description, "profileImageUrl");
 
@@ -131,6 +141,9 @@ namespace Booksy.ServiceCatalog.Domain.Aggregates
                 Profile = profile,
                 Status = ProviderStatus.PendingVerification,
                 ProviderType = type,
+                HierarchyType = hierarchyType,
+                ParentProviderId = null,
+                IsIndependent = hierarchyType == ProviderHierarchyType.Individual,
                 ContactInfo = contactInfo,
                 Address = address,
                 RequiresApproval = false,
@@ -582,6 +595,112 @@ namespace Booksy.ServiceCatalog.Domain.Aggregates
         public IReadOnlyList<Staff> GetActiveStaff()
         {
             return _staff.Where(s => s.IsActive).ToImmutableList();
+        }
+
+        // ============================================
+        // Provider Hierarchy Methods
+        // ============================================
+
+        /// <summary>
+        /// Converts an individual provider to an organization
+        /// Useful when a solo professional wants to hire staff
+        /// </summary>
+        public void ConvertToOrganization()
+        {
+            if (HierarchyType == ProviderHierarchyType.Organization)
+                throw new InvalidProviderException("Provider is already an organization");
+
+            if (ParentProviderId != null)
+                throw new InvalidProviderException("Cannot convert a staff member to organization. Must leave parent organization first.");
+
+            HierarchyType = ProviderHierarchyType.Organization;
+            IsIndependent = false;
+
+            RaiseDomainEvent(new ProviderConvertedToOrganizationEvent(Id, DateTime.UtcNow));
+        }
+
+        /// <summary>
+        /// Links an individual provider to an organization as a staff member
+        /// </summary>
+        public void LinkToOrganization(ProviderId organizationId)
+        {
+            if (HierarchyType != ProviderHierarchyType.Individual)
+                throw new InvalidProviderException("Only individual providers can be linked to organizations");
+
+            if (ParentProviderId != null)
+                throw new InvalidProviderException("Provider is already linked to an organization");
+
+            // Prevent circular relationships
+            if (organizationId == Id)
+                throw new InvalidProviderException("Provider cannot be its own parent");
+
+            ParentProviderId = organizationId;
+            IsIndependent = false;
+
+            RaiseDomainEvent(new StaffMemberAddedToOrganizationEvent(organizationId, Id, DateTime.UtcNow));
+        }
+
+        /// <summary>
+        /// Unlinks an individual provider from their parent organization
+        /// </summary>
+        public void UnlinkFromOrganization(string reason)
+        {
+            if (ParentProviderId == null)
+                throw new InvalidProviderException("Provider is not linked to any organization");
+
+            var parentId = ParentProviderId;
+            ParentProviderId = null;
+            IsIndependent = true;
+
+            RaiseDomainEvent(new StaffMemberRemovedFromOrganizationEvent(parentId, Id, reason, DateTime.UtcNow));
+        }
+
+        /// <summary>
+        /// Checks if this provider can accept direct bookings
+        /// Organizations can accept bookings if they work solo or have staff
+        /// Individuals can accept bookings if they're independent or linked to an org
+        /// </summary>
+        public bool CanAcceptDirectBookings()
+        {
+            if (!AllowOnlineBooking || Status != ProviderStatus.Active)
+                return false;
+
+            // Organizations can always accept bookings (handled by owner or staff)
+            if (HierarchyType == ProviderHierarchyType.Organization)
+                return true;
+
+            // Independent individuals can accept bookings
+            if (IsIndependent)
+                return true;
+
+            // Staff members linked to organizations can accept bookings
+            return ParentProviderId != null;
+        }
+
+        /// <summary>
+        /// Checks if this provider can have staff members
+        /// </summary>
+        public bool CanHaveStaff()
+        {
+            return HierarchyType == ProviderHierarchyType.Organization;
+        }
+
+        /// <summary>
+        /// Validates hierarchy consistency
+        /// </summary>
+        public void ValidateHierarchy()
+        {
+            // Individuals shouldn't have ParentProviderId if they're independent
+            if (HierarchyType == ProviderHierarchyType.Individual && IsIndependent && ParentProviderId != null)
+                throw new InvalidProviderException("Independent individuals cannot have a parent organization");
+
+            // Organizations should not have a parent
+            if (HierarchyType == ProviderHierarchyType.Organization && ParentProviderId != null)
+                throw new InvalidProviderException("Organizations cannot be linked to another organization");
+
+            // Non-independent individuals must have a parent
+            if (HierarchyType == ProviderHierarchyType.Individual && !IsIndependent && ParentProviderId == null)
+                throw new InvalidProviderException("Non-independent individuals must be linked to an organization");
         }
     }
 }

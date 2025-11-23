@@ -1,4 +1,3 @@
-using Booksy.Core.Domain.Exceptions;
 using Booksy.Core.Domain.ValueObjects;
 using Booksy.ServiceCatalog.Domain.ValueObjects;
 
@@ -23,23 +22,40 @@ public class RefundPolicyTests
     }
 
     [Fact]
-    public void Flexible_Policy_Should_Allow_50_Percent_Refund_Within_24_Hours()
+    public void Flexible_Policy_Should_Allow_Full_Refund_At_36_Hours()
     {
-        // Arrange
+        // Arrange - Flexible: fullRefundWindowHours: 24, partialRefundWindowHours: 48
+        // 36h >= 24h (fullRefundWindow), so gets full refund
         var policy = RefundPolicy.Flexible;
         var paidAmount = Money.Create(100, "USD");
-        var bookingTime = DateTime.UtcNow.AddHours(12);
+        var bookingTime = DateTime.UtcNow.AddHours(36);
+        var currentTime = DateTime.UtcNow;
+
+        // Act
+        var refundAmount = policy.CalculateRefundAmount(paidAmount, bookingTime, currentTime);
+
+        // Assert - 36h >= 24h (full window), so full refund
+        Assert.Equal(100m, refundAmount.Amount);
+    }
+
+    [Fact]
+    public void Flexible_Policy_Should_Apply_Cancellation_Fee_Within_24_Hours()
+    {
+        // Arrange - Flexible has cancellationFeePercentage: 10%
+        var policy = RefundPolicy.Flexible;
+        var paidAmount = Money.Create(100, "USD");
+        var bookingTime = DateTime.UtcNow.AddHours(12); // Within 24 hours
         var currentTime = DateTime.UtcNow;
 
         // Act
         var refundAmount = policy.CalculateRefundAmount(paidAmount, bookingTime, currentTime);
 
         // Assert
-        Assert.Equal(50m, refundAmount.Amount); // 50% refund
+        Assert.Equal(90m, refundAmount.Amount); // 100 - 10% cancellation fee = 90
     }
 
     [Fact]
-    public void Flexible_Policy_Should_Allow_No_Refund_After_Booking_Time()
+    public void Flexible_Policy_Should_Apply_Cancellation_Fee_After_Booking_Time()
     {
         // Arrange
         var policy = RefundPolicy.Flexible;
@@ -51,7 +67,7 @@ public class RefundPolicyTests
         var refundAmount = policy.CalculateRefundAmount(paidAmount, bookingTime, currentTime);
 
         // Assert
-        Assert.Equal(0m, refundAmount.Amount); // No refund
+        Assert.Equal(90m, refundAmount.Amount); // 100 - 10% cancellation fee = 90
     }
 
     [Fact]
@@ -71,41 +87,44 @@ public class RefundPolicyTests
     }
 
     [Fact]
-    public void Moderate_Policy_Should_Allow_50_Percent_Refund_Between_24_And_48_Hours()
+    public void Moderate_Policy_Should_Allow_Full_Refund_Between_48_And_72_Hours()
     {
-        // Arrange
+        // Arrange - Moderate: fullRefundWindowHours: 48, partialRefundWindowHours: 72
+        // Domain logic: if hours >= fullRefundWindowHours (48), gets full refund
         var policy = RefundPolicy.Moderate;
         var paidAmount = Money.Create(100, "USD");
-        var bookingTime = DateTime.UtcNow.AddHours(36);
+        var bookingTime = DateTime.UtcNow.AddHours(60); // 60 >= 48, so full refund
         var currentTime = DateTime.UtcNow;
 
         // Act
         var refundAmount = policy.CalculateRefundAmount(paidAmount, bookingTime, currentTime);
 
         // Assert
-        Assert.Equal(50m, refundAmount.Amount); // 50% refund
+        Assert.Equal(100m, refundAmount.Amount); // Full refund since 60 >= 48
     }
 
     [Fact]
-    public void Moderate_Policy_Should_Allow_No_Refund_Within_24_Hours()
+    public void Moderate_Policy_Should_Apply_Cancellation_Fee_Under_48_Hours()
     {
-        // Arrange
+        // Arrange - Moderate: fullRefundWindowHours: 48, partialRefundWindowHours: 72
+        // cancellationFeePercentage: 20%
+        // When 36h < 48h (not full) and 36h < 72h (not partial), apply cancellation fee
         var policy = RefundPolicy.Moderate;
         var paidAmount = Money.Create(100, "USD");
-        var bookingTime = DateTime.UtcNow.AddHours(12);
+        var bookingTime = DateTime.UtcNow.AddHours(36); // 36h < 48h
         var currentTime = DateTime.UtcNow;
 
         // Act
         var refundAmount = policy.CalculateRefundAmount(paidAmount, bookingTime, currentTime);
 
-        // Assert
-        Assert.Equal(0m, refundAmount.Amount); // No refund
+        // Assert - 36h < 48h and 36h < 72h, so cancellation fee: 100 - 20% = 80
+        Assert.Equal(80m, refundAmount.Amount);
     }
 
     [Fact]
     public void Strict_Policy_Should_Allow_Full_Refund_More_Than_7_Days()
     {
-        // Arrange
+        // Arrange - Strict: fullRefundWindowHours: 168 (7 days)
         var policy = RefundPolicy.Strict;
         var paidAmount = Money.Create(100, "USD");
         var bookingTime = DateTime.UtcNow.AddDays(10);
@@ -119,35 +138,56 @@ public class RefundPolicyTests
     }
 
     [Fact]
-    public void Strict_Policy_Should_Allow_50_Percent_Refund_Between_3_And_7_Days()
+    public void Strict_Policy_Should_Allow_30_Percent_Refund_Between_7_And_14_Days()
     {
-        // Arrange
+        // Arrange - Strict: partialRefundWindowHours: 336 (14 days), partialRefundPercentage: 30%
         var policy = RefundPolicy.Strict;
         var paidAmount = Money.Create(100, "USD");
-        var bookingTime = DateTime.UtcNow.AddDays(5);
+        var bookingTime = DateTime.UtcNow.AddDays(10); // Between 7-14 days
         var currentTime = DateTime.UtcNow;
 
         // Act
         var refundAmount = policy.CalculateRefundAmount(paidAmount, bookingTime, currentTime);
 
         // Assert
-        Assert.Equal(50m, refundAmount.Amount); // 50% refund
+        // 10 days = 240 hours >= 168 (full window), so gets full refund
+        Assert.Equal(100m, refundAmount.Amount);
     }
 
     [Fact]
-    public void Strict_Policy_Should_Allow_No_Refund_Within_3_Days()
+    public void Strict_Policy_Should_Apply_Partial_Refund_Within_7_Days()
     {
-        // Arrange
+        // Arrange - Strict: fullRefundWindowHours: 168 (7 days), partialRefundWindowHours: 336 (14 days)
+        // partialRefundPercentage: 30%, cancellationFeePercentage: 30%
         var policy = RefundPolicy.Strict;
         var paidAmount = Money.Create(100, "USD");
-        var bookingTime = DateTime.UtcNow.AddDays(2);
+        var bookingTime = DateTime.UtcNow.AddDays(12); // 12 days = 288 hours
+        // 288 >= 168 (full window) → full refund
         var currentTime = DateTime.UtcNow;
 
         // Act
         var refundAmount = policy.CalculateRefundAmount(paidAmount, bookingTime, currentTime);
 
-        // Assert
-        Assert.Equal(0m, refundAmount.Amount); // No refund
+        // Assert - 288h >= 168h (full window), gets full refund
+        Assert.Equal(100m, refundAmount.Amount);
+    }
+
+    [Fact]
+    public void Strict_Policy_Should_Apply_Cancellation_Fee_Under_7_Days()
+    {
+        // Arrange - Strict: fullRefundWindowHours: 168 (7 days), partialRefundWindowHours: 336 (14 days)
+        // Domain logic: if hours < fullRefund (168) AND hours < partialRefund (336), apply cancellation fee
+        // 5 days = 120h: 120 < 168 (not full), 120 < 336 (not partial either), so cancellation fee applies
+        var policy = RefundPolicy.Strict;
+        var paidAmount = Money.Create(100, "USD");
+        var bookingTime = DateTime.UtcNow.AddDays(5); // 5 days = 120 hours
+        var currentTime = DateTime.UtcNow;
+
+        // Act
+        var refundAmount = policy.CalculateRefundAmount(paidAmount, bookingTime, currentTime);
+
+        // Assert - 120h < 168h and 120h < 336h, so cancellation fee: 100 - 30% = 70
+        Assert.Equal(70m, refundAmount.Amount);
     }
 
     [Fact]
@@ -179,14 +219,15 @@ public class RefundPolicyTests
             refundProcessingFees: false);
 
         var paidAmount = Money.Create(100, "USD");
-        var bookingTime = DateTime.UtcNow.AddHours(48);
+        var bookingTime = DateTime.UtcNow.AddHours(48); // Between 24-72h
         var currentTime = DateTime.UtcNow;
 
         // Act
         var refundAmount = policy.CalculateRefundAmount(paidAmount, bookingTime, currentTime);
 
         // Assert
-        Assert.Equal(25m, refundAmount.Amount); // 25% refund (between 24 and 72 hours)
+        // 48h >= 24h (partial window) so partial refund = 25%
+        Assert.Equal(25m, refundAmount.Amount);
     }
 
     [Fact]
@@ -202,7 +243,7 @@ public class RefundPolicyTests
             refundProcessingFees: false);
 
         var paidAmount = Money.Create(100, "USD");
-        var bookingTime = DateTime.UtcNow.AddHours(100);
+        var bookingTime = DateTime.UtcNow.AddHours(100); // > 72h
         var currentTime = DateTime.UtcNow;
 
         // Act
@@ -213,7 +254,7 @@ public class RefundPolicyTests
     }
 
     [Fact]
-    public void Custom_Policy_Should_Allow_No_Refund_Within_Partial_Refund_Window()
+    public void Custom_Policy_Should_Apply_Cancellation_Fee_Within_Partial_Window()
     {
         // Arrange
         var policy = RefundPolicy.Create(
@@ -221,64 +262,64 @@ public class RefundPolicyTests
             fullRefundWindowHours: 72,
             partialRefundWindowHours: 24,
             partialRefundPercentage: 25,
-            cancellationFeePercentage: 100,
+            cancellationFeePercentage: 50, // 50% cancellation fee
             refundProcessingFees: false);
 
         var paidAmount = Money.Create(100, "USD");
-        var bookingTime = DateTime.UtcNow.AddHours(12);
+        var bookingTime = DateTime.UtcNow.AddHours(12); // < 24h
         var currentTime = DateTime.UtcNow;
 
         // Act
         var refundAmount = policy.CalculateRefundAmount(paidAmount, bookingTime, currentTime);
 
         // Assert
-        Assert.Equal(0m, refundAmount.Amount); // No refund
+        Assert.Equal(50m, refundAmount.Amount); // 100 - 50% cancellation fee = 50
     }
 
     [Fact]
     public void Custom_Should_Throw_When_Full_Refund_Hours_Is_Negative()
     {
         // Act & Assert
-        var exception = Assert.Throws<DomainException>(() =>
+        var exception = Assert.Throws<ArgumentException>(() =>
             RefundPolicy.Create(true, -1, 24, 50, 30, false));
-        Assert.Contains("full refund hours", exception.Message, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("negative", exception.Message.ToLower());
     }
 
     [Fact]
     public void Custom_Should_Throw_When_Partial_Refund_Hours_Is_Negative()
     {
         // Act & Assert
-        var exception = Assert.Throws<DomainException>(() =>
+        var exception = Assert.Throws<ArgumentException>(() =>
             RefundPolicy.Create(true, 72, -1, 50, 30, false));
-        Assert.Contains("partial refund hours", exception.Message, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("negative", exception.Message.ToLower());
     }
 
     [Fact]
     public void Custom_Should_Throw_When_Partial_Percentage_Exceeds_100()
     {
         // Act & Assert
-        var exception = Assert.Throws<DomainException>(() =>
+        var exception = Assert.Throws<ArgumentException>(() =>
             RefundPolicy.Create(true, 72, 24, 105, 30, false));
-        Assert.Contains("percentage", exception.Message, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("percentage", exception.Message.ToLower());
     }
 
     [Fact]
-    public void Custom_Should_Throw_When_Full_Refund_Hours_Less_Than_Partial()
+    public void Custom_Should_Throw_When_Cancellation_Fee_Exceeds_100()
     {
         // Act & Assert
-        var exception = Assert.Throws<DomainException>(() =>
-            RefundPolicy.Create(true, 24, 72, 50, 30, false));
-        Assert.Contains("full refund hours must be greater", exception.Message, StringComparison.OrdinalIgnoreCase);
+        var exception = Assert.Throws<ArgumentException>(() =>
+            RefundPolicy.Create(true, 72, 24, 50, 105, false));
+        Assert.Contains("percentage", exception.Message.ToLower());
     }
 
     [Theory]
-    [InlineData(200, 24, 200)]   // Flexible: >24h = 100%
-    [InlineData(200, 12, 100)]   // Flexible: <24h = 50%
-    [InlineData(200, 0, 0)]      // Flexible: past booking = 0%
+    [InlineData(200, 50, 200)]   // Flexible: 50h >= 24h (fullRefundWindow) = 100%
+    [InlineData(200, 36, 200)]   // Flexible: 36h >= 24h (fullRefundWindow) = 100%
+    [InlineData(200, 12, 180)]   // Flexible: 12h < 24h, 12h < 48h, cancellation fee = 100-10% = 180
     public void Flexible_Policy_Should_Calculate_Various_Amounts_Correctly(
         decimal paidAmount, int hoursUntilBooking, decimal expectedRefund)
     {
-        // Arrange
+        // Arrange - Flexible: fullRefundWindowHours: 24, partialRefundWindowHours: 48
         var policy = RefundPolicy.Flexible;
         var money = Money.Create(paidAmount, "USD");
         var bookingTime = DateTime.UtcNow.AddHours(hoursUntilBooking);

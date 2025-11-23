@@ -21,7 +21,10 @@
 
       <!-- Registration Flow -->
       <div class="flow-container">
-        <ProviderRegistrationFlow />
+        <ProviderTypeSelection
+          @select="handleTypeSelection"
+          @back="handleBack"
+        />
       </div>
     </div>
 
@@ -36,11 +39,26 @@
 
 <script setup lang="ts">
 import { onMounted } from 'vue'
-import ProviderRegistrationFlow from './ProviderRegistrationFlow.vue'
+import { useRouter } from 'vue-router'
+import ProviderTypeSelection from '../../components/registration/ProviderTypeSelection.vue'
 import LanguageSwitcher from '@/shared/components/layout/Header/LanguageSwitcher.vue'
 import { useRTL } from '@/core/composables/useRTL'
+import { ProviderHierarchyType } from '../../types/hierarchy.types'
 
 const { direction, initializeRTL } = useRTL()
+const router = useRouter()
+
+function handleTypeSelection(type: ProviderHierarchyType) {
+  if (type === ProviderHierarchyType.Organization) {
+    router.push({ name: 'OrganizationRegistration' })
+  } else if (type === ProviderHierarchyType.Individual) {
+    router.push({ name: 'IndividualRegistration' })
+  }
+}
+
+function handleBack() {
+  router.push({ name: 'Home' })
+}
 
 onMounted(() => {
   initializeRTL()

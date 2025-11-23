@@ -39,6 +39,16 @@ export interface Provider {
   status: ProviderStatus
   type: ProviderType
 
+  // Hierarchy Information (NEW)
+  hierarchyType?: 'Organization' | 'Individual'
+  isIndependent?: boolean
+  parentProviderId?: string | null
+  parentOrganization?: {
+    id: string
+    businessName: string
+    logoUrl?: string
+  }
+
   // Contact Information
   contactInfo: ContactInfo
 
@@ -150,6 +160,12 @@ export interface ProviderSummary {
   totalReviews?: number // NEW: Total review count
   registeredAt: string
   lastActiveAt?: string
+
+  // Hierarchy Information (NEW)
+  hierarchyType?: 'Organization' | 'Individual'
+  isIndependent?: boolean
+  parentProviderId?: string | null
+  staffCount?: number
 }
 
 export interface ServiceSummary {
@@ -333,6 +349,17 @@ export interface ProviderResponse {
   coverImageUrl?: string
   profileImageUrl?: string // Provider profile image
   websiteUrl?: string
+
+  // Hierarchy Information (NEW)
+  hierarchyType?: 'Organization' | 'Individual'
+  isIndependent?: boolean
+  parentProviderId?: string | null
+  parentOrganization?: {
+    id: string
+    businessName: string
+    logoUrl?: string
+  }
+  staffCount?: number
 
   // Nested objects (new structure)
   contactInfo?: ContactInfo

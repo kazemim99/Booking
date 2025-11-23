@@ -108,6 +108,12 @@ namespace Booksy.ServiceCatalog.Infrastructure.DependencyInjection
             services.AddScoped<INotificationTemplateRepository, NotificationTemplateRepository>();
             services.AddScoped<IUserNotificationPreferencesRepository, UserNotificationPreferencesRepository>();
 
+            // Provider Hierarchy Repositories (Invitations & Join Requests)
+            services.AddScoped<IProviderInvitationReadRepository, ProviderInvitationReadRepository>();
+            services.AddScoped<IProviderInvitationWriteRepository, ProviderInvitationWriteRepository>();
+            services.AddScoped<IProviderJoinRequestReadRepository, ProviderJoinRequestReadRepository>();
+            services.AddScoped<IProviderJoinRequestWriteRepository, ProviderJoinRequestWriteRepository>();
+
             // Notification Services
             services.AddNotificationServices();
 
