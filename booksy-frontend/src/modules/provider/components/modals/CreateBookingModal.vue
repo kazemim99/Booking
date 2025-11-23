@@ -1,5 +1,5 @@
 <template>
-  <Modal v-model="isOpen" title="رزرو جدید" size="medium">
+  <Modal v-model="isOpen" title="رزرو جدید" size="large">
     <form @submit.prevent="handleSubmit" class="booking-form">
       <!-- Customer Selection -->
       <div class="form-group">
@@ -34,12 +34,25 @@
       <!-- Service Selection -->
       <div class="form-group">
         <label class="form-label required">خدمت</label>
-        <select v-model="formData.serviceId" class="form-select" required>
+        <select v-model="formData.serviceId" class="form-select" required @change="handleServiceChange">
           <option value="">انتخاب کنید</option>
           <option v-for="service in services" :key="service.id" :value="service.id">
             {{ service.name }} - {{ convertToPersian(service.duration) }} دقیقه - {{ convertToPersian(service.price) }} تومان
           </option>
         </select>
+      </div>
+
+      <!-- Staff Selection (only for organizations with staff) -->
+      <div v-if="shouldShowStaffSelector" class="form-group">
+        <label class="form-label" :class="{ required: requiresStaffSelection }">
+          انتخاب کارمند
+        </label>
+        <StaffSelector
+          v-if="providerId"
+          :organization-id="providerId"
+          v-model="formData.staffId"
+          @select="handleStaffSelect"
+        />
       </div>
 
       <!-- Date & Time -->
@@ -80,6 +93,10 @@
           <span class="summary-label">هزینه:</span>
           <span class="summary-value">{{ convertToPersian(selectedService.price) }} تومان</span>
         </div>
+        <div v-if="selectedStaffMember" class="summary-item">
+          <span class="summary-label">کارمند:</span>
+          <span class="summary-value">{{ selectedStaffMember.fullName }}</span>
+        </div>
       </div>
     </form>
 
@@ -98,10 +115,14 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, watch } from 'vue'
+import { ref, computed, watch, onMounted } from 'vue'
 import Modal from '@/shared/components/Modal.vue'
 import VuePersianDatetimePicker from 'vue3-persian-datetime-picker'
+import StaffSelector from '@/modules/booking/components/StaffSelector.vue'
 import { convertEnglishToPersianNumbers } from '@/shared/utils/date/jalali.utils'
+import { useHierarchyStore } from '@/modules/provider/stores/hierarchy.store'
+import { ProviderHierarchyType } from '@/modules/provider/types/hierarchy.types'
+import type { StaffMember } from '@/modules/provider/types/hierarchy.types'
 
 interface Customer {
   id: string
@@ -119,25 +140,30 @@ interface Service {
 interface BookingFormData {
   customerId: string
   serviceId: string
+  staffId: string | null
   dateTime: string
   notes: string
 }
 
 interface Props {
   modelValue: boolean
+  providerId?: string
   customers?: Customer[]
   services?: Service[]
 }
 
 const props = withDefaults(defineProps<Props>(), {
   customers: () => [],
-  services: () => []
+  services: () => [],
+  providerId: ''
 })
 
 const emit = defineEmits<{
   'update:modelValue': [value: boolean]
   'submit': [data: BookingFormData]
 }>()
+
+const hierarchyStore = useHierarchyStore()
 
 const isOpen = computed({
   get: () => props.modelValue,
@@ -148,10 +174,12 @@ const searchCustomer = ref('')
 const showCustomerDropdown = ref(false)
 const filteredCustomers = ref<Customer[]>([])
 const selectedCustomerName = ref('')
+const selectedStaffMember = ref<StaffMember | null>(null)
 
 const formData = ref<BookingFormData>({
   customerId: '',
   serviceId: '',
+  staffId: null,
   dateTime: '',
   notes: ''
 })
@@ -160,10 +188,30 @@ const selectedService = computed(() => {
   return props.services.find(s => s.id === formData.value.serviceId)
 })
 
+// Check if provider is an organization with staff
+const providerHierarchy = computed(() => hierarchyStore.currentHierarchy)
+const isOrganizationWithStaff = computed(() => {
+  return providerHierarchy.value?.provider?.hierarchyType === ProviderHierarchyType.Organization &&
+         (providerHierarchy.value?.provider?.staffCount ?? 0) > 0
+})
+
+// Show staff selector if organization has staff
+const shouldShowStaffSelector = computed(() => isOrganizationWithStaff.value)
+
+// Require staff selection for organizations with staff
+const requiresStaffSelection = computed(() => isOrganizationWithStaff.value)
+
 const isFormValid = computed(() => {
-  return formData.value.customerId &&
+  const basicValid = formData.value.customerId &&
          formData.value.serviceId &&
          formData.value.dateTime
+
+  // If staff selection is required, validate it too
+  if (requiresStaffSelection.value) {
+    return basicValid && !!formData.value.staffId
+  }
+
+  return basicValid
 })
 
 const filterCustomers = () => {
@@ -187,6 +235,17 @@ const selectCustomer = (customer: Customer) => {
   showCustomerDropdown.value = false
 }
 
+const handleServiceChange = () => {
+  // Reset staff selection when service changes
+  // (different services may have different staff availability)
+  formData.value.staffId = null
+  selectedStaffMember.value = null
+}
+
+const handleStaffSelect = (staff: StaffMember) => {
+  selectedStaffMember.value = staff
+}
+
 const handleSubmit = () => {
   if (!isFormValid.value) return
 
@@ -204,17 +263,33 @@ const resetForm = () => {
   formData.value = {
     customerId: '',
     serviceId: '',
+    staffId: null,
     dateTime: '',
     notes: ''
   }
   searchCustomer.value = ''
   selectedCustomerName.value = ''
+  selectedStaffMember.value = null
   showCustomerDropdown.value = false
 }
 
 const convertToPersian = (num: number) => {
   return convertEnglishToPersianNumbers(num.toString())
 }
+
+// Load provider hierarchy when modal opens
+watch(() => isOpen.value, async (newValue) => {
+  if (newValue && props.providerId) {
+    try {
+      await hierarchyStore.loadProviderHierarchy(props.providerId)
+    } catch (error) {
+      console.error('Error loading provider hierarchy:', error)
+    }
+  }
+  if (!newValue) {
+    resetForm()
+  }
+})
 
 // Initialize filtered customers
 watch(() => props.customers, () => {
@@ -223,10 +298,14 @@ watch(() => props.customers, () => {
   }
 }, { immediate: true })
 
-// Close dropdown when clicking outside
-watch(() => isOpen.value, (newValue) => {
-  if (!newValue) {
-    resetForm()
+onMounted(async () => {
+  // Load provider hierarchy if providerId is available
+  if (props.providerId) {
+    try {
+      await hierarchyStore.loadProviderHierarchy(props.providerId)
+    } catch (error) {
+      console.error('Error loading provider hierarchy:', error)
+    }
   }
 })
 </script>
