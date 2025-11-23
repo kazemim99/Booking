@@ -46,6 +46,11 @@
             <ProfileServices :provider="provider" />
           </div>
 
+          <!-- Team Tab (Organizations only) -->
+          <div v-if="activeTab === 'team'" class="tab-panel">
+            <ProfileTeam :provider="provider" @book-with-staff="handleBookWithStaff" />
+          </div>
+
           <!-- Gallery Tab -->
           <div v-if="activeTab === 'gallery'" class="tab-panel">
             <ProfileGallery :provider="provider" />
@@ -70,41 +75,78 @@
 import { ref, computed, onMounted } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { useProviderStore } from '../stores/provider.store'
+import { useHierarchyStore } from '../stores/hierarchy.store'
+import { ProviderHierarchyType } from '../types/hierarchy.types'
 import ProfileHeader from '@/components/profile/ProfileHeader.vue'
 import ProfileServices from '@/components/profile/ProfileServices.vue'
 import ProfileGallery from '@/components/profile/ProfileGallery.vue'
 import ProfileReviews from '@/components/profile/ProfileReviews.vue'
 import ProfileAbout from '@/components/profile/ProfileAbout.vue'
+import ProfileTeam from '@/components/profile/ProfileTeam.vue'
 
 const router = useRouter()
 const route = useRoute()
 const providerStore = useProviderStore()
+const hierarchyStore = useHierarchyStore()
 
 // State
 const activeTab = ref('services')
-
-const tabs = [
-  { id: 'services', label: 'خدمات', icon: '✨' },
-  { id: 'gallery', label: 'گالری', icon: '🖼️' },
-  { id: 'reviews', label: 'نظرات', icon: '⭐' },
-  { id: 'about', label: 'درباره', icon: 'ℹ️' },
-]
 
 // Computed
 const provider = computed(() => providerStore.currentProvider)
 const isLoading = computed(() => providerStore.isLoading)
 const error = computed(() => providerStore.error)
 
+// Check if provider is an organization with staff
+const providerHierarchy = computed(() => hierarchyStore.currentHierarchy)
+const isOrganizationWithStaff = computed(() => {
+  return providerHierarchy.value?.provider?.hierarchyType === ProviderHierarchyType.Organization &&
+         (providerHierarchy.value?.provider?.staffCount ?? 0) > 0
+})
+
+// Tabs configuration with conditional team tab
+const tabs = computed(() => {
+  const baseTabs = [
+    { id: 'services', label: 'خدمات', icon: '✨' },
+    { id: 'gallery', label: 'گالری', icon: '🖼️' },
+    { id: 'reviews', label: 'نظرات', icon: '⭐' },
+    { id: 'about', label: 'درباره', icon: 'ℹ️' },
+  ]
+
+  // Add team tab for organizations with staff
+  if (isOrganizationWithStaff.value) {
+    baseTabs.splice(1, 0, { id: 'team', label: 'تیم ما', icon: '👥' })
+  }
+
+  return baseTabs
+})
+
 // Methods
 const goHome = () => {
   router.push('/')
+}
+
+const handleBookWithStaff = (staffId: string) => {
+  // Navigate to booking page with pre-selected staff member
+  // You can also show a booking modal here
+  console.log('Booking with staff:', staffId)
+  // TODO: Implement booking flow with pre-selected staff
+  // Option 1: Navigate to booking page with staff ID
+  // router.push({ name: 'booking', query: { providerId: provider.value?.id, staffId } })
+  // Option 2: Show booking modal
+  // showBookingModal.value = true
+  // selectedStaffId.value = staffId
 }
 
 // Lifecycle
 onMounted(async () => {
   const providerId = route.params.id as string
   if (providerId) {
-    await providerStore.getProviderById(providerId, true, true)
+    // Load provider and hierarchy data
+    await Promise.all([
+      providerStore.getProviderById(providerId, true, true),
+      hierarchyStore.loadProviderHierarchy(providerId)
+    ])
   }
 })
 </script>
