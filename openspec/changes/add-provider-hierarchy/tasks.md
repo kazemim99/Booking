@@ -82,7 +82,7 @@
 - [x] 7.6 Update existing `ProviderDto` to include type and hierarchy info
 - [x] 7.7 Create AutoMapper profiles for all new DTOs
 
-## 8. Frontend - Type Definitions
+## 8. Frontend - Type Definitions ✅
 - [x] 8.1 Create `ProviderType` enum in TypeScript
 - [x] 8.2 Create `OrganizationProvider` interface
 - [x] 8.3 Create `IndividualProvider` interface
@@ -91,7 +91,7 @@
 - [x] 8.6 Update existing `Provider` type to include hierarchy fields
 - [x] 8.7 Create `StaffMember` interface
 
-## 9. Frontend - API Services
+## 9. Frontend - API Services ✅
 - [x] 9.1 Create `registerOrganization()` service method
 - [x] 9.2 Create `registerIndividual()` service method
 - [x] 9.3 Create `inviteStaffMember()` service method
@@ -104,7 +104,7 @@
 - [x] 9.10 Create `convertToOrganization()` service method
 - [x] 9.11 Update existing provider services for hierarchy support
 
-## 10. Frontend - Pinia Stores
+## 10. Frontend - Pinia Stores ✅
 - [x] 10.1 Update `providerStore` to handle provider types
 - [x] 10.2 Create `staffStore` for managing organization staff
 - [x] 10.3 Create `invitationStore` for invitation workflow
