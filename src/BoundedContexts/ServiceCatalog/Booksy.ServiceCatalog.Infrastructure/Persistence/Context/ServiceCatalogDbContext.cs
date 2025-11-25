@@ -48,6 +48,8 @@ namespace Booksy.ServiceCatalog.Infrastructure.Persistence.Context
         public DbSet<UserNotificationPreferences> UserNotificationPreferences => Set<UserNotificationPreferences>();
         public DbSet<ProviderAvailability> ProviderAvailability => Set<ProviderAvailability>();
         public DbSet<Review> Reviews => Set<Review>();
+        public DbSet<ProviderInvitation> ProviderInvitations => Set<ProviderInvitation>();
+        public DbSet<ProviderJoinRequest> ProviderJoinRequests => Set<ProviderJoinRequest>();
 
         // Reference Data (not part of aggregates)
         public DbSet<ProvinceCities> ProvinceCities => Set<ProvinceCities>();

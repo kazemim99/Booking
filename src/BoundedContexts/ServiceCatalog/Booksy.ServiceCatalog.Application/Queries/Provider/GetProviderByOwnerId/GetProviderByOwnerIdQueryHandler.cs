@@ -1,6 +1,7 @@
 ﻿using Booksy.Core.Application.Abstractions.CQRS;
 using Booksy.ServiceCatalog.Application.DTOs.Provider;
 using Booksy.ServiceCatalog.Application.Queries.Provider.GetRegistrationProgress;
+using Booksy.ServiceCatalog.Application.Queries.Provider.SearchProviders;
 using Booksy.ServiceCatalog.Domain.Repositories;
 using Booksy.ServiceCatalog.Domain.ValueObjects;
 using Microsoft.Extensions.Logging;

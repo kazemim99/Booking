@@ -163,5 +163,48 @@ namespace Booksy.ServiceCatalog.Infrastructure.Persistence.Repositories
                 .Take(count)
                 .ToListAsync(cancellationToken);
         }
+
+        // Hierarchy-related methods
+        public async Task<IReadOnlyList<Provider>> GetStaffByOrganizationIdAsync(ProviderId organizationId, CancellationToken cancellationToken = default)
+        {
+            return await DbSet
+                .Include(p => p.Staff)
+                .Include(p => p.BusinessHours)
+                .Where(p => p.ParentProviderId == organizationId)
+                .ToListAsync(cancellationToken);
+        }
+
+        public async Task<Provider?> GetOrganizationByStaffIdAsync(ProviderId staffProviderId, CancellationToken cancellationToken = default)
+        {
+            var staffProvider = await DbSet.FirstOrDefaultAsync(p => p.Id == staffProviderId, cancellationToken);
+            if (staffProvider?.ParentProviderId == null)
+                return null;
+
+            return await GetByIdAsync(staffProvider.ParentProviderId, cancellationToken);
+        }
+
+        public async Task<IReadOnlyList<Provider>> GetByHierarchyTypeAsync(ProviderHierarchyType hierarchyType, CancellationToken cancellationToken = default)
+        {
+            return await DbSet
+                .Include(p => p.Staff)
+                .Include(p => p.BusinessHours)
+                .Where(p => p.HierarchyType == hierarchyType)
+                .ToListAsync(cancellationToken);
+        }
+
+        public async Task<IReadOnlyList<Provider>> GetIndependentIndividualsAsync(CancellationToken cancellationToken = default)
+        {
+            return await DbSet
+                .Include(p => p.Staff)
+                .Include(p => p.BusinessHours)
+                .Where(p => p.HierarchyType == ProviderHierarchyType.Individual && p.IsIndependent)
+                .ToListAsync(cancellationToken);
+        }
+
+        public async Task<int> CountStaffByOrganizationAsync(ProviderId organizationId, CancellationToken cancellationToken = default)
+        {
+            return await DbSet
+                .CountAsync(p => p.ParentProviderId == organizationId, cancellationToken);
+        }
     }
 }

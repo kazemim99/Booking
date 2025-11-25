@@ -65,13 +65,14 @@ namespace Booksy.ServiceCatalog.Infrastructure.Persistence.Seeders
                 new ReviewSeeder(_context,
                     Microsoft.Extensions.Logging.Abstractions.NullLogger<ReviewSeeder>.Instance),
 
-                // 11. Payments (depends on Bookings)
-                new PaymentSeeder(_context,
-                    Microsoft.Extensions.Logging.Abstractions.NullLogger<PaymentSeeder>.Instance),
+                // 11. Payments (depends on Bookings) - DISABLED due to EF Core owned entity tracking issues
+                // TODO: Fix PaymentSeeder to handle multiple owned Money entities with same currency
+                // new PaymentSeeder(_context,
+                //     Microsoft.Extensions.Logging.Abstractions.NullLogger<PaymentSeeder>.Instance),
 
-                // 12. Payouts (depends on Payments)
-                new PayoutSeeder(_context,
-                    Microsoft.Extensions.Logging.Abstractions.NullLogger<PayoutSeeder>.Instance),
+                // 12. Payouts (depends on Payments) - DISABLED because it depends on Payments
+                // new PayoutSeeder(_context,
+                //     Microsoft.Extensions.Logging.Abstractions.NullLogger<PayoutSeeder>.Instance),
 
                 // 13. UserNotificationPreferences (depends on Bookings for customer IDs)
                 new UserNotificationPreferencesSeeder(_context,

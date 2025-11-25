@@ -75,6 +75,52 @@ const providerRoutes: RouteRecordRaw[] = [
     },
   },
 
+  // Organization Registration Flow
+  {
+    path: '/registration/organization',
+    name: 'OrganizationRegistration',
+    component: () => import('@/modules/provider/views/registration/OrganizationRegistrationFlow.vue'),
+    meta: {
+      requiresAuth: true,
+      roles: ['Provider', 'ServiceProvider'],
+      title: 'Organization Registration',
+    },
+    beforeEnter(to: RouteLocationNormalized, from: RouteLocationNormalized, next: NavigationGuardNext) {
+      const authStore = useAuthStore()
+      const tokenProviderStatus = authStore.providerStatus
+
+      // Only allow if no provider or drafted status
+      if (tokenProviderStatus === null || tokenProviderStatus === ProviderStatus.Drafted) {
+        next()
+      } else {
+        next({ name: 'ProviderDashboard' })
+      }
+    },
+  },
+
+  // Individual Registration Flow
+  {
+    path: '/registration/individual',
+    name: 'IndividualRegistration',
+    component: () => import('@/modules/provider/views/registration/IndividualRegistrationFlow.vue'),
+    meta: {
+      requiresAuth: true,
+      roles: ['Provider', 'ServiceProvider'],
+      title: 'Individual Registration',
+    },
+    beforeEnter(to: RouteLocationNormalized, from: RouteLocationNormalized, next: NavigationGuardNext) {
+      const authStore = useAuthStore()
+      const tokenProviderStatus = authStore.providerStatus
+
+      // Only allow if no provider or drafted status
+      if (tokenProviderStatus === null || tokenProviderStatus === ProviderStatus.Drafted) {
+        next()
+      } else {
+        next({ name: 'ProviderDashboard' })
+      }
+    },
+  },
+
   // Provider Dashboard (main overview page)
   {
     path: '/dashboard',
