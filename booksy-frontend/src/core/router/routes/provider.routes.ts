@@ -195,6 +195,64 @@ const providerRoutes: RouteRecordRaw[] = [
     },
   },
 
+  // Staff Management
+  {
+    path: '/staff',
+    name: 'ProviderStaffManagement',
+    component: () => import('@/modules/provider/components/staff/StaffManagementDashboard.vue'),
+    meta: {
+      requiresAuth: true,
+      roles: ['Provider', 'ServiceProvider'],
+      title: 'Staff Management',
+    },
+  },
+
+  // Invitation Routes
+  {
+    path: '/invitations/:id/accept',
+    name: 'AcceptInvitation',
+    component: () => import('@/modules/provider/views/invitation/AcceptInvitationView.vue'),
+    meta: {
+      requiresAuth: false,
+      layout: 'auth',
+      title: 'Accept Invitation',
+    },
+  },
+
+  // Join Request Routes
+  {
+    path: '/organizations/search',
+    name: 'SearchOrganizations',
+    component: () => import('@/modules/provider/components/joinrequest/SearchOrganizations.vue'),
+    meta: {
+      requiresAuth: true,
+      roles: ['Provider', 'ServiceProvider'],
+      title: 'Search Organizations',
+    },
+  },
+  {
+    path: '/join-requests',
+    name: 'MyJoinRequests',
+    component: () => import('@/modules/provider/views/joinrequest/MyJoinRequestsView.vue'),
+    meta: {
+      requiresAuth: true,
+      roles: ['Provider', 'ServiceProvider'],
+      title: 'My Join Requests',
+    },
+  },
+
+  // Conversion Route
+  {
+    path: '/convert-to-organization',
+    name: 'ConvertToOrganization',
+    component: () => import('@/modules/provider/views/conversion/ConvertToOrganizationView.vue'),
+    meta: {
+      requiresAuth: true,
+      roles: ['Provider', 'ServiceProvider'],
+      title: 'Convert to Organization',
+    },
+  },
+
 ]
 
 export default providerRoutes

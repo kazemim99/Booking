@@ -154,10 +154,10 @@
 ## 15. Frontend - Hierarchy Display
 - [x] 15.1 Update `ProviderCard.vue` to show organization badge
 - [x] 15.2 Create `ProviderHierarchy.vue` component (org + staff tree)
-- [ ] 15.3 Update search results to display nested staff
-- [ ] 15.4 Update provider detail page with staff selection
+- [x] 15.3 Update search results to display nested staff
+- [x] 15.4 Update provider detail page with staff selection
 - [x] 15.5 Create `StaffSelector.vue` for booking flow
-- [ ] 15.6 Add "About this organization" section
+- [x] 15.6 Add "About this organization" section
 - [ ] 15.7 Write component unit tests
 
 ## 16. Frontend - Conversion Tool

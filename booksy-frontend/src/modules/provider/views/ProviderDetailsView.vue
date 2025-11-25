@@ -46,6 +46,11 @@
             <ProfileServices :provider="provider" />
           </div>
 
+          <!-- Staff Tab -->
+          <div v-if="activeTab === 'staff'" class="tab-panel">
+            <ProfileStaff :provider="provider" />
+          </div>
+
           <!-- Gallery Tab -->
           <div v-if="activeTab === 'gallery'" class="tab-panel">
             <ProfileGallery :provider="provider" />
@@ -72,6 +77,7 @@ import { useRouter, useRoute } from 'vue-router'
 import { useProviderStore } from '../stores/provider.store'
 import ProfileHeader from '@/components/profile/ProfileHeader.vue'
 import ProfileServices from '@/components/profile/ProfileServices.vue'
+import ProfileStaff from '@/components/profile/ProfileStaff.vue'
 import ProfileGallery from '@/components/profile/ProfileGallery.vue'
 import ProfileReviews from '@/components/profile/ProfileReviews.vue'
 import ProfileAbout from '@/components/profile/ProfileAbout.vue'
@@ -85,6 +91,7 @@ const activeTab = ref('services')
 
 const tabs = [
   { id: 'services', label: 'خدمات', icon: '✨' },
+  { id: 'staff', label: 'متخصصین', icon: '👥' },
   { id: 'gallery', label: 'گالری', icon: '🖼️' },
   { id: 'reviews', label: 'نظرات', icon: '⭐' },
   { id: 'about', label: 'درباره', icon: 'ℹ️' },

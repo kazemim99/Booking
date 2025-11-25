@@ -150,6 +150,9 @@ export interface ProviderSummary {
   totalReviews?: number // NEW: Total review count
   registeredAt: string
   lastActiveAt?: string
+  // Hierarchy fields for organization/staff display
+  staffCount?: number // Number of active staff members
+  isOrganization?: boolean // True if provider is an organization with staff
 }
 
 export interface ServiceSummary {
