@@ -108,7 +108,7 @@
 import { ref, computed, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useHierarchyStore } from '../../stores/hierarchy.store'
-import { useAuthStore } from '@/modules/auth/stores/auth.store'
+import { useAuthStore } from '@/core/stores/modules/auth.store'
 import AppButton from '@/shared/components/ui/Button/AppButton.vue'
 import CompleteStaffProfile from '../../components/invitation/CompleteStaffProfile.vue'
 import type { ProviderInvitation } from '../../types/hierarchy.types'

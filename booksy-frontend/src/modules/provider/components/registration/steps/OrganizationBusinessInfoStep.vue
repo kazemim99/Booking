@@ -58,7 +58,7 @@
           <h3 class="section-title">اطلاعات تماس</h3>
           <div class="form-row">
             <div class="form-group">
-              <label class="form-label required">ایمیل</label>
+              <label class="form-label">ایمیل (اختیاری)</label>
               <input
                 v-model="localData.email"
                 type="email"
@@ -78,9 +78,11 @@
                 class="form-input"
                 placeholder="09123456789"
                 dir="ltr"
+                disabled
                 @blur="validatePhone"
               />
               <span v-if="errors.phone" class="form-error">{{ errors.phone }}</span>
+              <span class="form-hint">شماره تماس تأیید شده شما</span>
             </div>
           </div>
         </div>
@@ -97,39 +99,29 @@
           <span class="form-hint">{{ localData.description.length }} / 500 کاراکتر</span>
         </div>
 
-        <!-- Logo & Cover Image (Optional) -->
+        <!-- Logo (Optional) -->
         <div class="form-section">
-          <h3 class="section-title">تصاویر (اختیاری)</h3>
-          <div class="form-row">
-            <div class="form-group">
-              <label class="form-label">لوگو کسب‌و‌کار</label>
-              <div class="image-upload">
-                <div v-if="localData.logoUrl" class="image-preview">
-                  <img :src="localData.logoUrl" alt="Logo" />
-                  <button class="remove-image" @click="localData.logoUrl = ''">
-                    <i class="icon-close"></i>
-                  </button>
-                </div>
-                <div v-else class="image-placeholder">
-                  <i class="icon-image"></i>
-                  <span>آپلود لوگو</span>
-                </div>
+          <h3 class="section-title">لوگو (اختیاری)</h3>
+          <div class="form-group">
+            <label class="form-label">لوگو کسب‌و‌کار</label>
+            <div class="image-upload">
+              <input
+                ref="logoInputRef"
+                type="file"
+                accept="image/*"
+                style="display: none"
+                @change="handleLogoUpload"
+              />
+              <div v-if="localData.logoUrl" class="image-preview">
+                <img :src="localData.logoUrl" alt="Logo" />
+                <button type="button" class="remove-image" @click="removeLogo">
+                  ×
+                </button>
               </div>
-            </div>
-
-            <div class="form-group">
-              <label class="form-label">تصویر کاور</label>
-              <div class="image-upload">
-                <div v-if="localData.coverImageUrl" class="image-preview">
-                  <img :src="localData.coverImageUrl" alt="Cover" />
-                  <button class="remove-image" @click="localData.coverImageUrl = ''">
-                    <i class="icon-close"></i>
-                  </button>
-                </div>
-                <div v-else class="image-placeholder">
-                  <i class="icon-image"></i>
-                  <span>آپلود تصویر کاور</span>
-                </div>
+              <div v-else class="image-placeholder" @click="triggerLogoUpload">
+                <i class="icon-image"></i>
+                <span>آپلود لوگو</span>
+                <span class="upload-hint">PNG, JPG تا 5MB</span>
               </div>
             </div>
           </div>
@@ -139,13 +131,11 @@
       <!-- Actions -->
       <div class="step-actions">
         <AppButton variant="secondary" size="large" @click="$emit('back')">
-          <i class="icon-arrow-right"></i>
-          بازگشت
+          ← بازگشت
         </AppButton>
 
         <AppButton variant="primary" size="large" :disabled="!isValid" @click="handleNext">
-          ادامه
-          <i class="icon-arrow-left"></i>
+          ادامه →
         </AppButton>
       </div>
     </div>
@@ -154,7 +144,7 @@
 
 <script setup lang="ts">
 import { ref, computed, watch } from 'vue'
-import AppButton from '@/shared/components/AppButton.vue'
+import AppButton from '@/shared/components/ui/Button/AppButton.vue'
 
 // ============================================
 // Props & Emits
@@ -187,6 +177,7 @@ const emit = defineEmits<{
 // ============================================
 
 const localData = ref<BusinessInfo>({ ...props.modelValue })
+const logoInputRef = ref<HTMLInputElement>()
 
 const errors = ref({
   businessName: '',
@@ -205,7 +196,6 @@ const isValid = computed(() => {
     localData.value.businessName.trim() !== '' &&
     localData.value.ownerFirstName.trim() !== '' &&
     localData.value.ownerLastName.trim() !== '' &&
-    localData.value.email.trim() !== '' &&
     localData.value.phone.trim() !== '' &&
     !errors.value.businessName &&
     !errors.value.ownerFirstName &&
@@ -247,9 +237,8 @@ function validateOwnerLastName() {
 
 function validateEmail() {
   const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
-  if (!localData.value.email.trim()) {
-    errors.value.email = 'ایمیل الزامی است'
-  } else if (!emailPattern.test(localData.value.email)) {
+  // Email is optional, only validate if provided
+  if (localData.value.email.trim() && !emailPattern.test(localData.value.email)) {
     errors.value.email = 'ایمیل معتبر نیست'
   } else {
     errors.value.email = ''
@@ -264,6 +253,43 @@ function validatePhone() {
     errors.value.phone = 'شماره تماس معتبر نیست (مثال: 09123456789)'
   } else {
     errors.value.phone = ''
+  }
+}
+
+function triggerLogoUpload() {
+  logoInputRef.value?.click()
+}
+
+function handleLogoUpload(event: Event) {
+  const target = event.target as HTMLInputElement
+  const file = target.files?.[0]
+
+  if (!file) return
+
+  // Validate file size (5MB max)
+  if (file.size > 5 * 1024 * 1024) {
+    alert('حجم فایل باید کمتر از 5 مگابایت باشد')
+    return
+  }
+
+  // Validate file type
+  if (!file.type.startsWith('image/')) {
+    alert('فقط فایل‌های تصویری مجاز هستند')
+    return
+  }
+
+  // Read file and convert to base64/data URL
+  const reader = new FileReader()
+  reader.onload = (e) => {
+    localData.value.logoUrl = e.target?.result as string
+  }
+  reader.readAsDataURL(file)
+}
+
+function removeLogo() {
+  localData.value.logoUrl = ''
+  if (logoInputRef.value) {
+    logoInputRef.value.value = ''
   }
 }
 
@@ -285,6 +311,35 @@ function handleNext() {
 // Watchers
 // ============================================
 
+// Watch individual fields to auto-clear errors when user types
+watch(() => localData.value.businessName, () => {
+  if (localData.value.businessName.trim()) {
+    validateBusinessName()
+  }
+})
+
+watch(() => localData.value.ownerFirstName, () => {
+  if (localData.value.ownerFirstName.trim()) {
+    validateOwnerFirstName()
+  }
+})
+
+watch(() => localData.value.ownerLastName, () => {
+  if (localData.value.ownerLastName.trim()) {
+    validateOwnerLastName()
+  }
+})
+
+watch(() => localData.value.email, () => {
+  validateEmail()
+})
+
+watch(() => localData.value.phone, () => {
+  if (localData.value.phone.trim()) {
+    validatePhone()
+  }
+})
+
 watch(
   localData,
   (newValue) => {
@@ -296,4 +351,10 @@ watch(
 
 <style scoped lang="scss">
 @import './steps-common.scss';
+
+.upload-hint {
+  font-size: 0.75rem;
+  color: #9ca3af;
+  margin-top: 0.25rem;
+}
 </style>

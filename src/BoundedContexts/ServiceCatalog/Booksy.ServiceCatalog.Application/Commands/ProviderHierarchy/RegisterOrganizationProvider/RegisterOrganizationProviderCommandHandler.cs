@@ -54,12 +54,10 @@ namespace Booksy.ServiceCatalog.Application.Commands.ProviderHierarchy.RegisterO
                     "Draft provider already exists. Resuming registration.");
             }
 
-            // 3. Map category string to ProviderType enum
-            if (!Enum.TryParse<ProviderType>(request.Category, true, out var providerType))
-            {
-                throw new InvalidOperationException($"Invalid category: {request.Category}");
-            }
+          var providerType =  MapCategoryToProviderType(request.Category);
 
+
+          
             // 4. Create value objects
             var contactInfo = ContactInfo.Create(
                 Email.Create(request.Email),
@@ -107,6 +105,26 @@ namespace Booksy.ServiceCatalog.Application.Commands.ProviderHierarchy.RegisterO
                 provider.HierarchyType.ToString(),
                 provider.RegistrationStep,
                 "Organization provider created successfully");
+        }
+
+
+        private ProviderType MapCategoryToProviderType(string categoryId)
+        {
+            return categoryId.ToLowerInvariant() switch
+            {
+                "nail_salon" => ProviderType.Salon,
+                "hair_salon" => ProviderType.Salon,
+                "brows_lashes" => ProviderType.Salon,
+                "braids_locs" => ProviderType.Salon,
+                "massage" => ProviderType.Spa,
+                "barbershop" => ProviderType.Salon,
+                "aesthetic_medicine" => ProviderType.Medical,
+                "dental_orthodontics" => ProviderType.Medical,
+                "hair_removal" => ProviderType.Spa,
+                "health_fitness" => ProviderType.GymFitness,
+                "home_services" => ProviderType.HomeServices,
+                _ => ProviderType.Salon // Default
+            };
         }
     }
 }

@@ -86,7 +86,7 @@
 import { ref, watch, computed } from 'vue'
 import VuePersianDatetimePicker from 'vue3-persian-datetime-picker'
 import { availabilityService } from '@/modules/booking/api/availability.service'
-import type { TimeSlot as AvailabilityTimeSlot } from '@/modules/booking/api/availability.service'
+// import type { TimeSlot as AvailabilityTimeSlot } from '@/modules/booking/api/availability.service'
 
 interface TimeSlot {
   startTime: string

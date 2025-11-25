@@ -112,7 +112,7 @@
 
 <script setup lang="ts">
 import { ref, computed, watch } from 'vue'
-import AppButton from '@/shared/components/AppButton.vue'
+import AppButton from '@/shared/components/ui/Button/AppButton.vue'
 
 // ============================================
 // Props & Emits

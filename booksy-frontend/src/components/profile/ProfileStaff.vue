@@ -88,7 +88,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed, ref, onMounted } from 'vue'
+import { computed, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import type { Provider, StaffMember } from '@/modules/provider/types/provider.types'
 

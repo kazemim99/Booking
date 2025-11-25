@@ -6,7 +6,7 @@
  * Organizations, Individuals, Invitations, Join Requests, and Conversions
  */
 
-import apiClient from '@/core/services/api-client.service'
+import { serviceCategoryClient } from '@/core/api/client/http-client'
 import type {
   RegisterOrganizationRequest,
   RegisterIndependentIndividualRequest,
@@ -25,7 +25,8 @@ import type {
   OrganizationSearchFilters,
 } from '../types/hierarchy.types'
 
-const API_BASE = '/v1/providers'
+const API_VERSION = 'v1'
+const API_BASE = `/${API_VERSION}/providers`
 
 class HierarchyService {
   // ============================================================================
@@ -33,16 +34,32 @@ class HierarchyService {
   // ============================================================================
 
   /**
+   * Get current user's draft provider (if exists)
+   */
+  async getDraftProvider(): Promise<any> {
+    try {
+      const response = await serviceCategoryClient.get<any>(`${API_BASE}/draft`)
+      return response.data
+    } catch (error: any) {
+      // Return null if no draft found (404)
+      if (error.response?.status === 404) {
+        return null
+      }
+      throw error
+    }
+  }
+
+  /**
    * Register a new organization provider
    */
   async registerOrganization(
     request: RegisterOrganizationRequest
   ): Promise<HierarchyApiResponse<{ providerId: string; hierarchyType: string }>> {
-    const response = await apiClient.post<HierarchyApiResponse<{ providerId: string; hierarchyType: string }>>(
+    const response = await serviceCategoryClient.post<{ providerId: string; hierarchyType: string }>(
       `${API_BASE}/organizations`,
       request
     )
-    return response.data
+    return response as unknown as HierarchyApiResponse<{ providerId: string; hierarchyType: string }>
   }
 
   /**
@@ -51,11 +68,11 @@ class HierarchyService {
   async registerIndividual(
     request: RegisterIndependentIndividualRequest
   ): Promise<HierarchyApiResponse<{ providerId: string; hierarchyType: string }>> {
-    const response = await apiClient.post<HierarchyApiResponse<{ providerId: string; hierarchyType: string }>>(
+    const response = await serviceCategoryClient.post<{ providerId: string; hierarchyType: string }>(
       `${API_BASE}/individuals`,
       request
     )
-    return response.data
+    return response as unknown as HierarchyApiResponse<{ providerId: string; hierarchyType: string }>
   }
 
   // ============================================================================
@@ -66,10 +83,10 @@ class HierarchyService {
    * Get provider hierarchy details including staff and parent organization
    */
   async getProviderHierarchy(providerId: string): Promise<ProviderHierarchyDetails> {
-    const response = await apiClient.get<ProviderHierarchyDetails>(
+    const response = await serviceCategoryClient.get<ProviderHierarchyDetails>(
       `${API_BASE}/${providerId}/hierarchy`
     )
-    return response.data
+    return response.data!
   }
 
   /**
@@ -81,20 +98,20 @@ class HierarchyService {
     if (request.page) params.append('page', String(request.page))
     if (request.pageSize) params.append('pageSize', String(request.pageSize))
 
-    const response = await apiClient.get<PagedHierarchyResponse<StaffMember>>(
+    const response = await serviceCategoryClient.get<PagedHierarchyResponse<StaffMember>>(
       `${API_BASE}/${request.organizationId}/hierarchy/staff?${params.toString()}`
     )
-    return response.data
+    return response.data!
   }
 
   /**
    * Remove a staff member from an organization
    */
   async removeStaffMember(organizationId: string, staffId: string): Promise<HierarchyApiResponse<void>> {
-    const response = await apiClient.delete<HierarchyApiResponse<void>>(
+    const response = await serviceCategoryClient.delete<HierarchyApiResponse<void>>(
       `${API_BASE}/${organizationId}/hierarchy/staff/${staffId}`
     )
-    return response.data
+    return response.data!
   }
 
   // ============================================================================
@@ -108,41 +125,41 @@ class HierarchyService {
     organizationId: string,
     request: SendInvitationRequest
   ): Promise<HierarchyApiResponse<ProviderInvitation>> {
-    const response = await apiClient.post<HierarchyApiResponse<ProviderInvitation>>(
+    const response = await serviceCategoryClient.post<HierarchyApiResponse<ProviderInvitation>>(
       `${API_BASE}/${organizationId}/hierarchy/invitations`,
       request
     )
-    return response.data
+    return response.data!
   }
 
   /**
    * Get all invitations sent by an organization
    */
   async getSentInvitations(organizationId: string): Promise<ProviderInvitation[]> {
-    const response = await apiClient.get<ProviderInvitation[]>(
+    const response = await serviceCategoryClient.get<ProviderInvitation[]>(
       `${API_BASE}/${organizationId}/hierarchy/invitations`
     )
-    return response.data
+    return response.data!
   }
 
   /**
    * Get all invitations received by an individual
    */
   async getReceivedInvitations(individualId: string): Promise<ProviderInvitation[]> {
-    const response = await apiClient.get<ProviderInvitation[]>(
+    const response = await serviceCategoryClient.get<ProviderInvitation[]>(
       `${API_BASE}/${individualId}/hierarchy/invitations/received`
     )
-    return response.data
+    return response.data!
   }
 
   /**
    * Get a specific invitation by ID
    */
   async getInvitation(organizationId: string, invitationId: string): Promise<ProviderInvitation> {
-    const response = await apiClient.get<ProviderInvitation>(
+    const response = await serviceCategoryClient.get<ProviderInvitation>(
       `${API_BASE}/${organizationId}/hierarchy/invitations/${invitationId}`
     )
-    return response.data
+    return response.data!
   }
 
   /**
@@ -153,11 +170,11 @@ class HierarchyService {
     invitationId: string,
     request: AcceptInvitationRequest
   ): Promise<HierarchyApiResponse<{ staffMemberId: string; organizationId: string }>> {
-    const response = await apiClient.post<HierarchyApiResponse<{ staffMemberId: string; organizationId: string }>>(
+    const response = await serviceCategoryClient.post<HierarchyApiResponse<{ staffMemberId: string; organizationId: string }>>(
       `${API_BASE}/${organizationId}/hierarchy/invitations/${invitationId}/accept`,
       request
     )
-    return response.data
+    return response.data!
   }
 
   /**
@@ -167,10 +184,10 @@ class HierarchyService {
     organizationId: string,
     invitationId: string
   ): Promise<HierarchyApiResponse<void>> {
-    const response = await apiClient.post<HierarchyApiResponse<void>>(
+    const response = await serviceCategoryClient.post<HierarchyApiResponse<void>>(
       `${API_BASE}/${organizationId}/hierarchy/invitations/${invitationId}/reject`
     )
-    return response.data
+    return response.data!
   }
 
   /**
@@ -180,10 +197,10 @@ class HierarchyService {
     organizationId: string,
     invitationId: string
   ): Promise<HierarchyApiResponse<ProviderInvitation>> {
-    const response = await apiClient.post<HierarchyApiResponse<ProviderInvitation>>(
+    const response = await serviceCategoryClient.post<HierarchyApiResponse<ProviderInvitation>>(
       `${API_BASE}/${organizationId}/hierarchy/invitations/${invitationId}/resend`
     )
-    return response.data
+    return response.data!
   }
 
   /**
@@ -193,10 +210,10 @@ class HierarchyService {
     organizationId: string,
     invitationId: string
   ): Promise<HierarchyApiResponse<void>> {
-    const response = await apiClient.delete<HierarchyApiResponse<void>>(
+    const response = await serviceCategoryClient.delete<HierarchyApiResponse<void>>(
       `${API_BASE}/${organizationId}/hierarchy/invitations/${invitationId}`
     )
-    return response.data
+    return response.data!
   }
 
   // ============================================================================
@@ -210,31 +227,31 @@ class HierarchyService {
     organizationId: string,
     request: CreateJoinRequestRequest
   ): Promise<HierarchyApiResponse<JoinRequest>> {
-    const response = await apiClient.post<HierarchyApiResponse<JoinRequest>>(
+    const response = await serviceCategoryClient.post<HierarchyApiResponse<JoinRequest>>(
       `${API_BASE}/${organizationId}/hierarchy/join-requests`,
       request
     )
-    return response.data
+    return response.data!
   }
 
   /**
    * Get all join requests sent by an individual
    */
   async getSentJoinRequests(individualId: string): Promise<JoinRequest[]> {
-    const response = await apiClient.get<JoinRequest[]>(
+    const response = await serviceCategoryClient.get<JoinRequest[]>(
       `${API_BASE}/${individualId}/hierarchy/join-requests/sent`
     )
-    return response.data
+    return response.data!
   }
 
   /**
    * Get all join requests received by an organization
    */
   async getReceivedJoinRequests(organizationId: string): Promise<JoinRequest[]> {
-    const response = await apiClient.get<JoinRequest[]>(
+    const response = await serviceCategoryClient.get<JoinRequest[]>(
       `${API_BASE}/${organizationId}/hierarchy/join-requests`
     )
-    return response.data
+    return response.data!
   }
 
   /**
@@ -244,10 +261,10 @@ class HierarchyService {
     organizationId: string,
     requestId: string
   ): Promise<HierarchyApiResponse<{ staffMemberId: string }>> {
-    const response = await apiClient.post<HierarchyApiResponse<{ staffMemberId: string }>>(
+    const response = await serviceCategoryClient.post<HierarchyApiResponse<{ staffMemberId: string }>>(
       `${API_BASE}/${organizationId}/hierarchy/join-requests/${requestId}/approve`
     )
-    return response.data
+    return response.data!
   }
 
   /**
@@ -258,11 +275,11 @@ class HierarchyService {
     requestId: string,
     reason?: string
   ): Promise<HierarchyApiResponse<void>> {
-    const response = await apiClient.post<HierarchyApiResponse<void>>(
+    const response = await serviceCategoryClient.post<HierarchyApiResponse<void>>(
       `${API_BASE}/${organizationId}/hierarchy/join-requests/${requestId}/reject`,
       { reason }
     )
-    return response.data
+    return response.data!
   }
 
   /**
@@ -272,10 +289,10 @@ class HierarchyService {
     organizationId: string,
     requestId: string
   ): Promise<HierarchyApiResponse<void>> {
-    const response = await apiClient.delete<HierarchyApiResponse<void>>(
+    const response = await serviceCategoryClient.delete<HierarchyApiResponse<void>>(
       `${API_BASE}/${organizationId}/hierarchy/join-requests/${requestId}`
     )
-    return response.data
+    return response.data!
   }
 
   // ============================================================================
@@ -289,11 +306,11 @@ class HierarchyService {
     individualId: string,
     request: ConvertToOrganizationRequest
   ): Promise<HierarchyApiResponse<{ newProviderId: string; hierarchyType: string }>> {
-    const response = await apiClient.post<HierarchyApiResponse<{ newProviderId: string; hierarchyType: string }>>(
+    const response = await serviceCategoryClient.post<HierarchyApiResponse<{ newProviderId: string; hierarchyType: string }>>(
       `${API_BASE}/${individualId}/hierarchy/convert-to-organization`,
       request
     )
-    return response.data
+    return response.data!
   }
 
   // ============================================================================
@@ -314,20 +331,20 @@ class HierarchyService {
     if (filters.verifiedOnly) params.append('verifiedOnly', 'true')
     if (filters.searchTerm) params.append('search', filters.searchTerm)
 
-    const response = await apiClient.get<PagedHierarchyResponse<OrganizationSummary>>(
+    const response = await serviceCategoryClient.get<PagedHierarchyResponse<OrganizationSummary>>(
       `${API_BASE}/organizations/search?${params.toString()}`
     )
-    return response.data
+    return response.data!
   }
 
   /**
    * Get organization details by ID
    */
   async getOrganization(organizationId: string): Promise<OrganizationSummary> {
-    const response = await apiClient.get<OrganizationSummary>(
+    const response = await serviceCategoryClient.get<OrganizationSummary>(
       `${API_BASE}/organizations/${organizationId}`
     )
-    return response.data
+    return response.data!
   }
 }
 

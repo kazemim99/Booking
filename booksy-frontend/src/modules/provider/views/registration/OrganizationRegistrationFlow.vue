@@ -119,7 +119,7 @@ const registrationData = ref({
     ownerFirstName: '',
     ownerLastName: '',
     email: '',
-    phone: '',
+    phone: authStore.user?.phoneNumber || '',
     description: '',
     logoUrl: '',
     coverImageUrl: '',
@@ -157,7 +157,6 @@ const canProceed = computed(() => {
         registrationData.value.businessInfo.businessName &&
         registrationData.value.businessInfo.ownerFirstName &&
         registrationData.value.businessInfo.ownerLastName &&
-        registrationData.value.businessInfo.email &&
         registrationData.value.businessInfo.phone
       )
     case 2:
@@ -231,30 +230,24 @@ async function handleNext() {
       // Step 3: Create organization draft
       console.log('✅ Step 3 complete - Creating organization draft...')
       const request: RegisterOrganizationRequest = {
-        ownerId: authStore.userId!,
         businessName: registrationData.value.businessInfo.businessName,
-        description: registrationData.value.businessInfo.description || '',
-        type: registrationData.value.categoryId,
-        email: registrationData.value.businessInfo.email,
-        phone: registrationData.value.businessInfo.phone,
+        businessDescription: registrationData.value.businessInfo.description || '-',
+        category: registrationData.value.categoryId,
+        phoneNumber: registrationData.value.businessInfo.phone,
+        email: registrationData.value.businessInfo.email || '-',
         addressLine1: registrationData.value.address.addressLine1,
-        addressLine2: registrationData.value.address.addressLine2,
-        city: registrationData.value.address.city,
-        state: registrationData.value.address.state,
-        postalCode: registrationData.value.address.postalCode,
-        country: registrationData.value.address.country,
-        provinceId: registrationData.value.address.provinceId,
-        cityId: registrationData.value.address.cityId,
-        latitude: registrationData.value.location.latitude,
-        longitude: registrationData.value.location.longitude,
-        logoUrl: registrationData.value.businessInfo.logoUrl,
-        coverImageUrl: registrationData.value.businessInfo.coverImageUrl,
-        allowOnlineBooking: true,
-        offersMobileServices: false,
+        addressLine2: registrationData.value.address.addressLine2 || undefined,
+        city: registrationData.value.address.city || '-',
+        province: registrationData.value.address.state || '-',
+        postalCode: registrationData.value.address.postalCode || '-',
+        latitude: registrationData.value.location.latitude || 0,
+        longitude: registrationData.value.location.longitude || 0,
+        ownerFirstName: registrationData.value.businessInfo.ownerFirstName,
+        ownerLastName: registrationData.value.businessInfo.ownerLastName,
       }
 
       const response = await hierarchyService.registerOrganization(request)
-      draftProviderId = response.id
+      draftProviderId = response.data?.providerId || response.data?.ProviderId
       console.log('✅ Organization draft created:', draftProviderId)
       toastService.success('اطلاعات شما ذخیره شد')
     } else if (currentStep.value === 4) {
@@ -321,8 +314,68 @@ function handleBeforeUnload(e: BeforeUnloadEvent) {
 // Lifecycle
 // ============================================
 
-onMounted(() => {
+onMounted(async () => {
   window.addEventListener('beforeunload', handleBeforeUnload)
+
+  // Check if user has an existing draft provider
+  try {
+    const draft = await hierarchyService.getDraftProvider()
+    if (draft && draft.hierarchyType === 'Organization') {
+      console.log('📋 Found existing draft provider:', draft)
+
+      // Restore provider ID
+      draftProviderId = draft.providerId
+
+      // Restore registration step (minimum step 3 since draft was created)
+      if (draft.registrationStep && draft.registrationStep >= 3) {
+        currentStep.value = draft.registrationStep
+      }
+
+      // Restore business info
+      if (draft.businessName) {
+        registrationData.value.businessInfo.businessName = draft.businessName
+      }
+      if (draft.businessDescription) {
+        registrationData.value.businessInfo.description = draft.businessDescription
+      }
+      if (draft.ownerFirstName) {
+        registrationData.value.businessInfo.ownerFirstName = draft.ownerFirstName
+      }
+      if (draft.ownerLastName) {
+        registrationData.value.businessInfo.ownerLastName = draft.ownerLastName
+      }
+      if (draft.email) {
+        registrationData.value.businessInfo.email = draft.email
+      }
+      if (draft.phoneNumber) {
+        registrationData.value.businessInfo.phone = draft.phoneNumber
+      }
+
+      // Restore category
+      if (draft.category) {
+        registrationData.value.categoryId = draft.category
+      }
+
+      // Restore address
+      if (draft.address) {
+        registrationData.value.address.addressLine1 = draft.address.street || ''
+        registrationData.value.address.city = draft.address.city || ''
+        registrationData.value.address.state = draft.address.state || ''
+        registrationData.value.address.postalCode = draft.address.postalCode || ''
+
+        // Restore location coordinates
+        if (draft.address.latitude && draft.address.longitude) {
+          registrationData.value.location.latitude = draft.address.latitude
+          registrationData.value.location.longitude = draft.address.longitude
+        }
+      }
+
+      toastService.success('ثبت‌نام شما بازیابی شد. می‌توانید از جایی که متوقف شده بودید ادامه دهید.')
+    }
+  } catch (error) {
+    console.error('Error loading draft provider:', error)
+    // Don't show error to user, just start fresh
+  }
 })
 
 onBeforeUnmount(() => {
@@ -340,7 +393,7 @@ onBeforeUnmount(() => {
 .progress-container {
   position: sticky;
   top: 0;
-  z-index: 100;
+  z-index: 1000;
   background: #fff;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
   padding: 1rem 0;

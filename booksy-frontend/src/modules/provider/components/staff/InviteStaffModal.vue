@@ -105,7 +105,7 @@
 import { ref, computed, reactive } from 'vue'
 import { useHierarchyStore } from '../../stores/hierarchy.store'
 import type { SendInvitationRequest } from '../../types/hierarchy.types'
-import AppButton from '@/shared/components/AppButton.vue'
+import AppButton from '@/shared/components/ui/Button/AppButton.vue'
 import { useToast } from '@/core/composables/useToast'
 
 // ============================================

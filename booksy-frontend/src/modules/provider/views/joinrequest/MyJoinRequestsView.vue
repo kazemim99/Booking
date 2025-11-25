@@ -42,7 +42,7 @@
 <script setup lang="ts">
 import { ref, onMounted } from 'vue'
 import { useHierarchyStore } from '../../stores/hierarchy.store'
-import { useAuthStore } from '@/modules/auth/stores/auth.store'
+import { useAuthStore } from '@/core/stores/modules/auth.store'
 import AppButton from '@/shared/components/ui/Button/AppButton.vue'
 import JoinRequestCard from '../../components/staff/JoinRequestCard.vue'
 import type { ProviderJoinRequest } from '../../types/hierarchy.types'

@@ -47,7 +47,7 @@ const providerRoutes: RouteRecordRaw[] = [
       roles: ['Provider', 'ServiceProvider'],
       title: 'Complete Your Provider Profile',
     },
-    beforeEnter(to: RouteLocationNormalized, from: RouteLocationNormalized, next: NavigationGuardNext) {
+    beforeEnter(_to: RouteLocationNormalized, _from: RouteLocationNormalized, next: NavigationGuardNext) {
       // Check provider status from token (no API call needed)
       const authStore = useAuthStore()
       const tokenProviderStatus = authStore.providerStatus
@@ -85,7 +85,7 @@ const providerRoutes: RouteRecordRaw[] = [
       roles: ['Provider', 'ServiceProvider'],
       title: 'Organization Registration',
     },
-    beforeEnter(to: RouteLocationNormalized, from: RouteLocationNormalized, next: NavigationGuardNext) {
+    beforeEnter(_to: RouteLocationNormalized, _from: RouteLocationNormalized, next: NavigationGuardNext) {
       const authStore = useAuthStore()
       const tokenProviderStatus = authStore.providerStatus
 
@@ -108,7 +108,7 @@ const providerRoutes: RouteRecordRaw[] = [
       roles: ['Provider', 'ServiceProvider'],
       title: 'Individual Registration',
     },
-    beforeEnter(to: RouteLocationNormalized, from: RouteLocationNormalized, next: NavigationGuardNext) {
+    beforeEnter(_to: RouteLocationNormalized, _from: RouteLocationNormalized, next: NavigationGuardNext) {
       const authStore = useAuthStore()
       const tokenProviderStatus = authStore.providerStatus
 

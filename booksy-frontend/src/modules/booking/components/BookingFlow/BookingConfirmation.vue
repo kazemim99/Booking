@@ -147,7 +147,7 @@ interface Props {
   providerId: string
 }
 
-const props = defineProps<Props>()
+defineProps<Props>()
 
 const convertToPersianNumber = (value: number | string): string => {
   const persianDigits = ['۰', '۱', '۲', '۳', '۴', '۵', '۶', '۷', '۸', '۹']

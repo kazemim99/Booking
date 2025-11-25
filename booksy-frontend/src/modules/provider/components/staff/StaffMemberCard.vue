@@ -102,7 +102,7 @@
 import { ref, computed } from 'vue'
 import { onClickOutside } from '@vueuse/core'
 import type { StaffMember } from '../../types/hierarchy.types'
-import AppButton from '@/shared/components/AppButton.vue'
+import AppButton from '@/shared/components/ui/Button/AppButton.vue'
 
 // ============================================
 // Props

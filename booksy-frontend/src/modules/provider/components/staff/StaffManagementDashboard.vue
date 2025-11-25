@@ -247,7 +247,7 @@
 import { ref, computed, onMounted, watch } from 'vue'
 import { useHierarchyStore } from '../../stores/hierarchy.store'
 import type { StaffMember, ProviderInvitation, ProviderJoinRequest } from '../../types/hierarchy.types'
-import AppButton from '@/shared/components/AppButton.vue'
+import AppButton from '@/shared/components/ui/Button/AppButton.vue'
 import StaffMemberCard from './StaffMemberCard.vue'
 import InvitationCard from './InvitationCard.vue'
 import JoinRequestCard from './JoinRequestCard.vue'
@@ -344,7 +344,7 @@ const displayedPages = computed(() => {
   const pages = []
   const maxPages = 5
   let start = Math.max(1, currentPage.value - 2)
-  let end = Math.min(totalPages.value, start + maxPages - 1)
+  const end = Math.min(totalPages.value, start + maxPages - 1)
 
   if (end - start < maxPages - 1) {
     start = Math.max(1, end - maxPages + 1)

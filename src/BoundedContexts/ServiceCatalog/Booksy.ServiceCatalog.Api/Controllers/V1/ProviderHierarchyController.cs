@@ -1,5 +1,6 @@
 using Booksy.ServiceCatalog.Application.Commands.ProviderHierarchy.AcceptInvitation;
 using Booksy.ServiceCatalog.Application.Commands.ProviderHierarchy.ApproveJoinRequest;
+using Booksy.ServiceCatalog.Application.Commands.ProviderHierarchy.CancelJoinRequest;
 using Booksy.ServiceCatalog.Application.Commands.ProviderHierarchy.ConvertToOrganization;
 using Booksy.ServiceCatalog.Application.Commands.ProviderHierarchy.CreateJoinRequest;
 using Booksy.ServiceCatalog.Application.Commands.ProviderHierarchy.RejectJoinRequest;
@@ -8,6 +9,7 @@ using Booksy.ServiceCatalog.Application.Commands.ProviderHierarchy.SendInvitatio
 using Booksy.ServiceCatalog.Application.Queries.ProviderHierarchy.GetPendingInvitations;
 using Booksy.ServiceCatalog.Application.Queries.ProviderHierarchy.GetPendingJoinRequests;
 using Booksy.ServiceCatalog.Application.Queries.ProviderHierarchy.GetProviderWithStaff;
+using Booksy.ServiceCatalog.Application.Queries.ProviderHierarchy.GetSentJoinRequests;
 using Booksy.ServiceCatalog.Application.Queries.ProviderHierarchy.GetStaffMembers;
 using MediatR;
 using Microsoft.AspNetCore.Authorization;
@@ -216,6 +218,36 @@ public class ProviderHierarchyController : ControllerBase
     {
         var result = await _mediator.Send(
             new RejectJoinRequestCommand(requestId, request.ReviewerId, request.Reason),
+            cancellationToken);
+        return Ok(result);
+    }
+
+    /// <summary>
+    /// Get join requests sent by an individual provider
+    /// </summary>
+    [HttpGet("join-requests/sent")]
+    [ProducesResponseType(typeof(GetSentJoinRequestsResult), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> GetSentJoinRequests(Guid providerId, CancellationToken cancellationToken)
+    {
+        var result = await _mediator.Send(new GetSentJoinRequestsQuery(providerId), cancellationToken);
+        return Ok(result);
+    }
+
+    /// <summary>
+    /// Cancel a pending join request (withdraw by requester)
+    /// </summary>
+    [HttpDelete("join-requests/{requestId}")]
+    [ProducesResponseType(typeof(CancelJoinRequestResult), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> CancelJoinRequest(
+        Guid providerId,
+        Guid requestId,
+        CancellationToken cancellationToken)
+    {
+        var result = await _mediator.Send(
+            new CancelJoinRequestCommand(requestId, providerId),
             cancellationToken);
         return Ok(result);
     }

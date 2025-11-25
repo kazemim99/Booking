@@ -353,12 +353,11 @@ import { useServiceStore } from '../../stores/service.store'
 import { useProviderStore } from '../../stores/provider.store'
 import { useAuthStore } from '@/core/stores/modules/auth.store'
 import {
-  ServiceStatus,
   type CreateServiceRequest,
   type UpdateServiceRequest,
 } from '../../types/service.types'
 
-const router = useRouter()
+const _router = useRouter()
 const { t } = useI18n()
 const serviceStore = useServiceStore()
 const providerStore = useProviderStore()

@@ -41,7 +41,7 @@
 
 <script setup lang="ts">
 import { ref, computed } from 'vue'
-import AppButton from './ui/AppButton.vue'
+import AppButton from './ui/Button/AppButton.vue'
 
 // ============================================
 // Props & Emits

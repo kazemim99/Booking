@@ -86,11 +86,11 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 import AppButton from '@/shared/components/ui/Button/AppButton.vue'
-import type { ProviderHierarchyType } from '../../types/hierarchy.types'
+import type { HierarchyType } from '../../types/hierarchy.types'
 
 interface Provider {
   id: string
-  hierarchyType?: ProviderHierarchyType
+  hierarchyType?: HierarchyType
   businessName?: string
   description?: string
   parentOrganization?: {

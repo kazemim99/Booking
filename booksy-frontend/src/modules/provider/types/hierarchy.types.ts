@@ -39,24 +39,29 @@ export enum ProviderBusinessType {
   Other = 'Other',
 }
 
+// Alias for backward compatibility
+export const ProviderHierarchyType = HierarchyType
+
 // ============================================================================
 // REQUEST TYPES
 // ============================================================================
 
 export interface RegisterOrganizationRequest {
-  ownerId: string
   businessName: string
-  description?: string
-  type: ProviderBusinessType
+  businessDescription: string
+  category: string
+  phoneNumber: string
   email: string
-  phone: string
   addressLine1: string
   addressLine2?: string
   city: string
-  state: string
+  province: string
   postalCode: string
-  country: string
-  logoUrl?: string
+  latitude: number
+  longitude: number
+  ownerFirstName: string
+  ownerLastName: string
+  idempotencyKey?: string
 }
 
 export interface RegisterIndependentIndividualRequest {
@@ -307,4 +312,22 @@ export interface OrganizationSearchFilters {
   minStaffCount?: number
   verifiedOnly?: boolean
   searchTerm?: string
+}
+
+// ============================================================================
+// HELPER FUNCTIONS
+// ============================================================================
+
+export function getJoinRequestStatusLabel(status: JoinRequestStatus): string {
+  const labels: Record<JoinRequestStatus, string> = {
+    [JoinRequestStatus.Pending]: 'در انتظار',
+    [JoinRequestStatus.Approved]: 'تایید شده',
+    [JoinRequestStatus.Rejected]: 'رد شده',
+    [JoinRequestStatus.Cancelled]: 'لغو شده',
+  }
+  return labels[status] || status
+}
+
+export function canApproveJoinRequest(request: JoinRequest): boolean {
+  return request.status === JoinRequestStatus.Pending
 }

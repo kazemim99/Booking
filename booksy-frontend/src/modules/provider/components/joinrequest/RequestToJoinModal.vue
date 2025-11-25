@@ -129,7 +129,7 @@
 <script setup lang="ts">
 import { ref, computed, reactive } from 'vue'
 import { useHierarchyStore } from '../../stores/hierarchy.store'
-import { useAuthStore } from '@/modules/auth/stores/auth.store'
+import { useAuthStore } from '@/core/stores/modules/auth.store'
 import AppButton from '@/shared/components/ui/Button/AppButton.vue'
 
 interface Organization {

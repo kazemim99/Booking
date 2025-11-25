@@ -50,9 +50,12 @@ export async function authGuard(
   // Provider status-based routing
   // Check if user is a Provider and needs status-based routing
   if (authStore.isAuthenticated && authStore.hasAnyRole(['Provider', 'ServiceProvider'])) {
-    // If already going to ProviderRegistration, allow it without fetching status
+    // Define all registration routes that should skip status checking
+    const registrationRoutes = ['ProviderRegistration', 'OrganizationRegistration', 'IndividualRegistration']
+
+    // If already going to any registration route, allow it without fetching status
     // This prevents unnecessary API calls and redirect loops for new users
-    if (to.name === 'ProviderRegistration') {
+    if (registrationRoutes.includes(to.name as string)) {
       next()
       return
     }
@@ -64,7 +67,7 @@ export async function authGuard(
       } catch (err) {
         console.error('[AuthGuard] Error fetching provider status:', err)
         // On error, redirect to registration as a safe fallback
-        const allowedRoutesOnError = ['ProviderRegistration', 'Forbidden', 'NotFound']
+        const allowedRoutesOnError = [...registrationRoutes, 'Forbidden', 'NotFound']
         if (!allowedRoutesOnError.includes(to.name as string)) {
           next({ name: 'ProviderRegistration' })
           return
@@ -77,7 +80,7 @@ export async function authGuard(
     // BUT allow access to profile, settings, and other general routes
     if (
       (authStore.providerStatus === ProviderStatus.Drafted || authStore.providerStatus === null) &&
-      to.name !== 'ProviderRegistration'
+      !registrationRoutes.includes(to.name as string)
     ) {
       // Allow access to profile, settings, and booking even for incomplete providers
       const allowedGeneralRoutes = ['ProviderProfile', 'ProviderSettings', 'NewBooking', 'BookingDetails', 'Bookings', 'Forbidden', 'NotFound', 'ServerError']

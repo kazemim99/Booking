@@ -93,12 +93,12 @@ export function useToast() {
       notification.remove(loadingId)
       success('موفقیت', messages.success)
       return result
-    } catch (error) {
+    } catch (err) {
       notification.remove(loadingId)
       const errorMessage =
-        error instanceof Error ? error.message : messages.error
+        err instanceof Error ? err.message : messages.error
       error('خطا', errorMessage)
-      throw error
+      throw err
     }
   }
 

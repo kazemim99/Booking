@@ -1,6 +1,5 @@
 <template>
   <div class="registration-step">
-    <ProgressIndicator :current-step="2" :total-steps="9" />
 
     <div class="step-card">
       <div class="step-header">

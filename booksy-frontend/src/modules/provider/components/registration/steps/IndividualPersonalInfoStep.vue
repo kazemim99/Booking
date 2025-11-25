@@ -13,15 +13,23 @@
         <div class="form-group">
           <label class="form-label">عکس پروفایل (اختیاری)</label>
           <div class="avatar-upload">
+            <input
+              ref="avatarInputRef"
+              type="file"
+              accept="image/*"
+              style="display: none"
+              @change="handleAvatarUpload"
+            />
             <div v-if="localData.avatarUrl" class="avatar-preview">
               <img :src="localData.avatarUrl" alt="Avatar" />
-              <button class="remove-avatar" @click="localData.avatarUrl = ''">
-                <i class="icon-close"></i>
+              <button type="button" class="remove-avatar" @click="removeAvatar">
+                ×
               </button>
             </div>
-            <div v-else class="avatar-placeholder">
+            <div v-else class="avatar-placeholder" @click="triggerAvatarUpload">
               <i class="icon-user"></i>
               <span>آپلود عکس</span>
+              <span class="upload-hint">PNG, JPG تا 5MB</span>
             </div>
           </div>
         </div>
@@ -58,7 +66,7 @@
           <h3 class="section-title">اطلاعات تماس</h3>
           <div class="form-row">
             <div class="form-group">
-              <label class="form-label required">ایمیل</label>
+              <label class="form-label">ایمیل (اختیاری)</label>
               <input
                 v-model="localData.email"
                 type="email"
@@ -78,9 +86,11 @@
                 class="form-input"
                 placeholder="09123456789"
                 dir="ltr"
+                disabled
                 @blur="validatePhone"
               />
               <span v-if="errors.phone" class="form-error">{{ errors.phone }}</span>
+              <span class="form-hint">شماره تماس تأیید شده شما</span>
             </div>
           </div>
         </div>
@@ -118,7 +128,7 @@
             >
               <span>{{ spec }}</span>
               <button @click="removeSpecialization(index)">
-                <i class="icon-close"></i>
+                ×
               </button>
             </div>
           </div>
@@ -129,13 +139,11 @@
       <!-- Actions -->
       <div class="step-actions">
         <AppButton variant="secondary" size="large" @click="$emit('back')">
-          <i class="icon-arrow-right"></i>
-          بازگشت
+          ← بازگشت
         </AppButton>
 
         <AppButton variant="primary" size="large" :disabled="!isValid" @click="handleNext">
-          ادامه
-          <i class="icon-arrow-left"></i>
+          ادامه →
         </AppButton>
       </div>
     </div>
@@ -144,7 +152,7 @@
 
 <script setup lang="ts">
 import { ref, computed, watch } from 'vue'
-import AppButton from '@/shared/components/AppButton.vue'
+import AppButton from '@/shared/components/ui/Button/AppButton.vue'
 
 // ============================================
 // Props & Emits
@@ -177,6 +185,7 @@ const emit = defineEmits<{
 
 const localData = ref<PersonalInfo>({ ...props.modelValue })
 const specializationInput = ref('')
+const avatarInputRef = ref<HTMLInputElement>()
 
 const errors = ref({
   firstName: '',
@@ -193,7 +202,6 @@ const isValid = computed(() => {
   return (
     localData.value.firstName.trim() !== '' &&
     localData.value.lastName.trim() !== '' &&
-    localData.value.email.trim() !== '' &&
     localData.value.phone.trim() !== '' &&
     !errors.value.firstName &&
     !errors.value.lastName &&
@@ -224,9 +232,8 @@ function validateLastName() {
 
 function validateEmail() {
   const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
-  if (!localData.value.email.trim()) {
-    errors.value.email = 'ایمیل الزامی است'
-  } else if (!emailPattern.test(localData.value.email)) {
+  // Email is optional, only validate if provided
+  if (localData.value.email.trim() && !emailPattern.test(localData.value.email)) {
     errors.value.email = 'ایمیل معتبر نیست'
   } else {
     errors.value.email = ''
@@ -256,6 +263,43 @@ function removeSpecialization(index: number) {
   localData.value.specializations.splice(index, 1)
 }
 
+function triggerAvatarUpload() {
+  avatarInputRef.value?.click()
+}
+
+function handleAvatarUpload(event: Event) {
+  const target = event.target as HTMLInputElement
+  const file = target.files?.[0]
+
+  if (!file) return
+
+  // Validate file size (5MB max)
+  if (file.size > 5 * 1024 * 1024) {
+    alert('حجم فایل باید کمتر از 5 مگابایت باشد')
+    return
+  }
+
+  // Validate file type
+  if (!file.type.startsWith('image/')) {
+    alert('فقط فایل‌های تصویری مجاز هستند')
+    return
+  }
+
+  // Read file and convert to base64/data URL
+  const reader = new FileReader()
+  reader.onload = (e) => {
+    localData.value.avatarUrl = e.target?.result as string
+  }
+  reader.readAsDataURL(file)
+}
+
+function removeAvatar() {
+  localData.value.avatarUrl = ''
+  if (avatarInputRef.value) {
+    avatarInputRef.value.value = ''
+  }
+}
+
 function handleNext() {
   // Validate all fields
   validateFirstName()
@@ -272,6 +316,29 @@ function handleNext() {
 // ============================================
 // Watchers
 // ============================================
+
+// Watch individual fields to auto-clear errors when user types
+watch(() => localData.value.firstName, () => {
+  if (localData.value.firstName.trim()) {
+    validateFirstName()
+  }
+})
+
+watch(() => localData.value.lastName, () => {
+  if (localData.value.lastName.trim()) {
+    validateLastName()
+  }
+})
+
+watch(() => localData.value.email, () => {
+  validateEmail()
+})
+
+watch(() => localData.value.phone, () => {
+  if (localData.value.phone.trim()) {
+    validatePhone()
+  }
+})
 
 watch(
   localData,
@@ -352,6 +419,12 @@ watch(
     color: #7c3aed;
     background: #f8f5ff;
   }
+}
+
+.upload-hint {
+  font-size: 0.75rem;
+  color: #9ca3af;
+  margin-top: 0.25rem;
 }
 
 .specializations-input {
