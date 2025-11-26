@@ -215,7 +215,7 @@ public abstract class UserManagementIntegrationTestBase
         var profile = UserProfile.Create(firstName, lastName, null, null, null);
 
         // Update profile with phone number
-        var phone = PhoneNumber.Create(phoneNumber);
+        var phone = PhoneNumber.From(phoneNumber);
         profile.UpdateContactInfo(phone, null, null);
 
         var customer = Customer.Create(userId, profile);
@@ -298,7 +298,7 @@ public abstract class UserManagementIntegrationTestBase
     /// </summary>
     public PhoneNumber CreatePhoneNumber(string number = "+989123456789")
     {
-        return PhoneNumber.Create(number);
+        return PhoneNumber.From(number);
     }
 
     /// <summary>

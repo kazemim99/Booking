@@ -45,7 +45,7 @@ public class SendInvitationCommandHandlerTests
             "Test Salon",
             "Test description",
             ProviderType.Individual,
-            ContactInfo.Create(Email.Create("salon@test.com"), PhoneNumber.Create("+989123456789")),
+            ContactInfo.Create(Email.Create("salon@test.com"), PhoneNumber.From("+989123456789")),
             BusinessAddress.Create("123 Test St", "Suite 1", "Test City", "TS", "12345", "IR"),
             ProviderHierarchyType.Organization);
     }
@@ -57,7 +57,7 @@ public class SendInvitationCommandHandlerTests
             "Solo Barber",
             "Test description",
             ProviderType.Individual,
-            ContactInfo.Create(Email.Create("barber@test.com"), PhoneNumber.Create("+989123456788")),
+            ContactInfo.Create(Email.Create("barber@test.com"), PhoneNumber.From("+989123456788")),
             BusinessAddress.Create("123 Test St", "Suite 1", "Test City", "TS", "12345", "IR"),
             ProviderHierarchyType.Individual);
     }
@@ -153,7 +153,7 @@ public class SendInvitationCommandHandlerTests
 
         var existingInvitation = ProviderInvitation.Create(
             organization.Id,
-            PhoneNumber.Create("+989121234567"));
+            PhoneNumber.From("+989121234567"));
 
         _invitationReadRepository.GetByPhoneNumberAndOrganizationAsync(
             Arg.Any<string>(), Arg.Any<ProviderId>(), Arg.Any<CancellationToken>())

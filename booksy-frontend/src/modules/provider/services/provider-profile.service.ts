@@ -156,7 +156,7 @@ class ProviderProfileService {
    */
   async sendPhoneVerificationCode(userId: string, phoneNumber: string): Promise<SendVerificationCodeResponse> {
     const response = await userManagementClient.post<SendVerificationCodeResponse>(
-      `/api/v1/Users/${userId}/phone/send-verification`,
+      `/v1/Users/${userId}/phone/send-verification`,
       { phoneNumber }
     )
 

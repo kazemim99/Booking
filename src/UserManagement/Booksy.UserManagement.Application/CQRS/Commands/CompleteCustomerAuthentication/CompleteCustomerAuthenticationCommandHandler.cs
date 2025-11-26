@@ -50,7 +50,7 @@ public sealed class CompleteCustomerAuthenticationCommandHandler
             MaskPhoneNumber(request.PhoneNumber));
 
         // Step 1: Verify the phone number and code
-        var phoneNumber = PhoneNumber.Create(request.PhoneNumber);
+        var phoneNumber = PhoneNumber.From(request.PhoneNumber);
         var verification = await _verificationRepo.GetByPhoneNumberAsync(phoneNumber, cancellationToken);
 
         if (verification == null)

@@ -48,7 +48,7 @@ public sealed class AddStaffToProviderCommandHandler
 
         // Create value objects
         var phone = !string.IsNullOrWhiteSpace(request.PhoneNumber)
-            ? PhoneNumber.Create(request.PhoneNumber)
+            ? PhoneNumber.From(request.PhoneNumber)
             : null;
         var role = ParseRole(request.Role);
 

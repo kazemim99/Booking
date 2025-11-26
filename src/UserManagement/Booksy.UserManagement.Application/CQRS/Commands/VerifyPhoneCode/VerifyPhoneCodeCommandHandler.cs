@@ -1,9 +1,7 @@
-using Booksy.Core.Domain.Exceptions;
+using Booksy.Core.Application.Exceptions;
 using Booksy.Core.Domain.ValueObjects;
-using Booksy.UserManagement.Domain.Abstractions;
 using MediatR;
 using Microsoft.Extensions.Caching.Distributed;
-using Microsoft.Extensions.Logging;
 
 namespace Booksy.UserManagement.Application.CQRS.Commands.VerifyPhoneCode;
 
@@ -34,7 +32,8 @@ public class VerifyPhoneCodeCommandHandler : IRequestHandler<VerifyPhoneCodeComm
             request.PhoneNumber, request.UserId);
 
         // Validate user exists
-        var user = await _userRepository.GetByIdAsync(request.UserId, cancellationToken);
+        var userId = UserId.From(request.UserId);
+        var user = await _userRepository.GetByIdAsync(userId, cancellationToken);
         if (user == null)
         {
             throw new NotFoundException("User", request.UserId.ToString());

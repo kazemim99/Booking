@@ -47,7 +47,7 @@ namespace Booksy.ServiceCatalog.Application.Commands.Provider.UpdateProviderStaf
             {
                 var email = Email.Create(request.Email);
                 var phone = !string.IsNullOrWhiteSpace(request.PhoneNumber)
-                    ? PhoneNumber.Create(request.PhoneNumber)
+                    ? PhoneNumber.From(request.PhoneNumber)
                     : null;
                 var role = ParseRole(request.Role);
 

@@ -313,7 +313,7 @@ namespace Booksy.UserManagement.Infrastructure.Testing.Builders
             if (address != null)
             {
                 profile.UpdateContactInfo(
-                    PhoneNumber.Create("+15551234567"),
+                    PhoneNumber.From("+15551234567"),
                     null,
                     address);
             }

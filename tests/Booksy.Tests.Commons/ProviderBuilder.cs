@@ -61,7 +61,7 @@ public class ProviderBuilder
     {
         _contactInfo = ContactInfo.Create(
             Email.Create(email),
-            PhoneNumber.Create("+1234567890")
+            PhoneNumber.From("+1234567890")
         );
         return this;
     }
@@ -99,7 +99,7 @@ public class ProviderBuilder
             _providerType,
             _contactInfo ?? ContactInfo.Create(
                 Email.Create("test@example.com"),
-                PhoneNumber.Create("+1234567890")
+                PhoneNumber.From("+1234567890")
             ),
             _address ?? BusinessAddress.Create(
                 "123 Test St",

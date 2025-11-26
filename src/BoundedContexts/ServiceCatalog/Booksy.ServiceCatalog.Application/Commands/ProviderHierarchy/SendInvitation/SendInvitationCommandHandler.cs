@@ -55,7 +55,7 @@ namespace Booksy.ServiceCatalog.Application.Commands.ProviderHierarchy.SendInvit
                 throw new DomainValidationException($"A pending invitation already exists for phone number {request.PhoneNumber}");
 
             // Create invitation
-            var phoneNumber = PhoneNumber.Create(request.PhoneNumber);
+            var phoneNumber = PhoneNumber.From(request.PhoneNumber);
             var invitation = ProviderInvitation.Create(
                 organizationId,
                 phoneNumber,

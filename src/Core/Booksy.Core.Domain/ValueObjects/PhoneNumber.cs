@@ -29,7 +29,7 @@ namespace Booksy.Core.Domain.ValueObjects
             NationalNumber = nationalNumber;
         }
 
-        public static PhoneNumber Create(string phoneNumber)
+        public static PhoneNumber From(string phoneNumber)
         {
             if (string.IsNullOrWhiteSpace(phoneNumber))
                 throw new ArgumentException("Phone number cannot be empty", nameof(phoneNumber));

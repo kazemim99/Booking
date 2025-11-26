@@ -45,7 +45,7 @@ public sealed class UpdateProviderProfileCommandHandler : ICommandHandler<Update
         if (!string.IsNullOrWhiteSpace(request.Email))
         {
             var email = Email.Create(request.Email);
-            var existingPrimaryPhone = provider.ContactInfo?.PrimaryPhone ?? PhoneNumber.Create("+10000000000");
+            var existingPrimaryPhone = provider.ContactInfo?.PrimaryPhone ?? PhoneNumber.From("+10000000000");
 
             var contactInfo = ContactInfo.Create(
                 email,

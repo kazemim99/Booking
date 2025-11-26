@@ -106,7 +106,7 @@ public class TestDataSteps
                 "Test",
                 "Staff",
                 StaffRole.ServiceProvider,
-                PhoneNumber.Create("+1234567890"));
+                PhoneNumber.From("+1234567890"));
 
             await _testBase.UpdateEntityAsync(provider);
         }

@@ -31,7 +31,7 @@ namespace Booksy.ServiceCatalog.Infrastructure.Persistence.Configurations
             builder.Property(s => s.Email)
        .HasConversion(email => email.Value, value => Email.Create(value)).IsRequired(false);
 
-            builder.Property(s => s.Phone).HasConversion(phone => phone.Value, value => PhoneNumber.Create(value));
+            builder.Property(s => s.Phone).HasConversion(phone => phone.Value, value => PhoneNumber.From(value));
 
 
 

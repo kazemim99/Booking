@@ -185,7 +185,7 @@ namespace Booksy.ServiceCatalog.Infrastructure.Persistence.Seeders
         {
             var ownerId = UserId.From(Guid.NewGuid());
             var emailValue = Email.Create(email);
-            var phoneValue = PhoneNumber.Create("5551234567");
+            var phoneValue = PhoneNumber.From("5551234567");
 
             var contactInfo = ContactInfo.Create(
                 emailValue,

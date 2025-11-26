@@ -54,9 +54,9 @@ namespace Booksy.ServiceCatalog.Application.Commands.Provider.RegisterProvider
             // Create value objects
             
             var email = String.IsNullOrEmpty(request.Email) ? null : Email.Create(request.Email);
-            var primaryPhone = PhoneNumber.Create(request.PrimaryPhone);
+            var primaryPhone = PhoneNumber.From(request.PrimaryPhone);
             var secondaryPhone = !string.IsNullOrEmpty(request.SecondaryPhone)
-                ? PhoneNumber.Create(request.SecondaryPhone)
+                ? PhoneNumber.From(request.SecondaryPhone)
                 : null;
 
             var contactInfo = ContactInfo.Create(
@@ -92,7 +92,7 @@ namespace Booksy.ServiceCatalog.Application.Commands.Provider.RegisterProvider
             if (request.ProviderType == Domain.Enums.ProviderType.Individual)
             {
                 var ownerPhone = !string.IsNullOrEmpty(request.PrimaryPhone)
-                    ? PhoneNumber.Create(request.PrimaryPhone)
+                    ? PhoneNumber.From(request.PrimaryPhone)
                     : null;
 
                 provider.AddStaff(

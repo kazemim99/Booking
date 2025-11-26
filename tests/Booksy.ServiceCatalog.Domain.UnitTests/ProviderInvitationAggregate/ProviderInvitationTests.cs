@@ -14,7 +14,7 @@ namespace Booksy.ServiceCatalog.Domain.UnitTests.ProviderInvitationAggregate;
 public class ProviderInvitationTests
 {
     private readonly ProviderId _organizationId = ProviderId.New();
-    private readonly PhoneNumber _phoneNumber = PhoneNumber.Create("+989123456789");
+    private readonly PhoneNumber _phoneNumber = PhoneNumber.From("+989123456789");
 
     #region Create Tests
 

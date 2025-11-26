@@ -47,7 +47,7 @@ namespace Booksy.ServiceCatalog.Application.Commands.ProviderHierarchy.RegisterO
             // 3. Create value objects
             var contactInfo = ContactInfo.Create(
                 Email.Create(request.Email),
-                PhoneNumber.Create(request.PhoneNumber));
+                PhoneNumber.From(request.PhoneNumber));
 
             var street = string.IsNullOrWhiteSpace(request.AddressLine2)
                 ? request.AddressLine1

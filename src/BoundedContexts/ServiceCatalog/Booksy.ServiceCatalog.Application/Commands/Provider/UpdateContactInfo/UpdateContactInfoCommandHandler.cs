@@ -40,9 +40,9 @@ namespace Booksy.ServiceCatalog.Application.Commands.Provider.UpdateContactInfo
                 throw new InvalidProviderException("Provider not found");
 
             var email = Email.Create(request.Email);
-            var primaryPhone = PhoneNumber.Create(request.PrimaryPhone);
+            var primaryPhone = PhoneNumber.From(request.PrimaryPhone);
             var secondaryPhone = !string.IsNullOrEmpty(request.SecondaryPhone)
-                ? PhoneNumber.Create(request.SecondaryPhone)
+                ? PhoneNumber.From(request.SecondaryPhone)
                 : null;
 
             var contactInfo = ContactInfo.Create(

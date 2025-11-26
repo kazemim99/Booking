@@ -17,7 +17,7 @@ public class ProviderHierarchyTests
     private readonly UserId _ownerId = UserId.From(Guid.NewGuid());
     private readonly ContactInfo _contactInfo = ContactInfo.Create(
         Email.Create("test@example.com"),
-        PhoneNumber.Create("+1234567890"));
+        PhoneNumber.From("+1234567890"));
     private readonly BusinessAddress _address = BusinessAddress.Create(
         "123 Test St",
         "Suite 100",

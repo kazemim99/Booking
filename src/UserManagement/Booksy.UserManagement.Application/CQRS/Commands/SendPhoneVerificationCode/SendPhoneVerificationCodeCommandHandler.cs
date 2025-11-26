@@ -1,9 +1,8 @@
-using Booksy.Core.Domain.Exceptions;
-using Booksy.UserManagement.Domain.Abstractions;
+using Booksy.Core.Application.Exceptions;
+using Booksy.Core.Domain.ValueObjects;
+using Booksy.ServiceCatalog.Application.Exceptions;
 using MediatR;
 using Microsoft.Extensions.Caching.Distributed;
-using Microsoft.Extensions.Logging;
-using System.Text;
 
 namespace Booksy.UserManagement.Application.CQRS.Commands.SendPhoneVerificationCode;
 
@@ -35,7 +34,9 @@ public class SendPhoneVerificationCodeCommandHandler : IRequestHandler<SendPhone
             request.PhoneNumber, request.UserId);
 
         // Validate user exists
-        var user = await _userRepository.GetByIdAsync(request.UserId, cancellationToken);
+        var userId = UserId.From(request.UserId);
+        var user = await _userRepository.GetByIdAsync(userId, cancellationToken);
+
         if (user == null)
         {
             throw new NotFoundException("User", request.UserId.ToString());

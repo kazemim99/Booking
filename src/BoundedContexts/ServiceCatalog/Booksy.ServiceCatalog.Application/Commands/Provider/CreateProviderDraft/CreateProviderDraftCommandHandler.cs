@@ -44,7 +44,7 @@ public sealed class CreateProviderDraftCommandHandler
         // 3. Create value objects
         var contactInfo = ContactInfo.Create(
             Email.Create(request.Email),
-            PhoneNumber.Create(request.PhoneNumber));
+            PhoneNumber.From(request.PhoneNumber));
 
         // Combine address lines into street
         var street = string.IsNullOrWhiteSpace(request.AddressLine2)

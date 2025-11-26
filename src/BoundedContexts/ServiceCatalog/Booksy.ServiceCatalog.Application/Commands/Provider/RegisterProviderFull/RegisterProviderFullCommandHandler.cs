@@ -72,7 +72,7 @@ namespace Booksy.ServiceCatalog.Application.Commands.Provider.RegisterProviderFu
                 ? Email.Create($"{request.BusinessInfo.PhoneNumber}@temp.booksy.com") // Temporary email
                 : null;
 
-            var primaryPhone = PhoneNumber.Create(request.BusinessInfo.PhoneNumber);
+            var primaryPhone = PhoneNumber.From(request.BusinessInfo.PhoneNumber);
 
             var contactInfo = ContactInfo.Create(
                 email,
@@ -200,7 +200,7 @@ namespace Booksy.ServiceCatalog.Application.Commands.Provider.RegisterProviderFu
                     if (memberDto.IsOwner)
                         continue; // Owner is already set
 
-                    var staffPhone = PhoneNumber.Create(memberDto.PhoneNumber);
+                    var staffPhone = PhoneNumber.From(memberDto.PhoneNumber);
                     var staffEmail = Email.Create(memberDto.Email);
 
                     // Parse staff name
