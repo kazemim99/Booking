@@ -61,13 +61,25 @@
 
             <div class="form-group">
               <label for="phone" class="form-label">شماره موبایل</label>
-              <input
-                id="phone"
-                v-model="personalForm.phone"
-                type="text"
-                class="form-input"
-                disabled
-              />
+              <div class="phone-input-wrapper">
+                <input
+                  id="phone"
+                  v-model="personalForm.phone"
+                  type="text"
+                  class="form-input"
+                  dir="ltr"
+                  placeholder="09123456789"
+                  maxlength="11"
+                  @input="handlePhoneInput"
+                />
+                <span v-if="isPhoneChanged" class="phone-changed-badge">
+                  نیاز به تأیید
+                </span>
+              </div>
+              <span v-if="phoneError" class="form-error">{{ phoneError }}</span>
+              <span v-else-if="isPhoneChanged" class="form-hint">
+                بعد از ذخیره، کد تأیید به شماره جدید ارسال می‌شود
+              </span>
             </div>
           </div>
 
@@ -76,6 +88,15 @@
           </button>
         </form>
       </div>
+
+      <!-- Phone Verification Modal -->
+      <PhoneVerificationModal
+        v-model="showPhoneVerification"
+        :phone-number="pendingPhoneNumber"
+        :user-id="authStore.user?.id || ''"
+        @verified="handlePhoneVerified"
+        @cancel="handlePhoneVerificationCancel"
+      />
 
       <!-- Business Tab -->
       <div v-if="activeTab === 'business'" class="tab-content">
@@ -138,10 +159,26 @@
       <!-- Location Tab -->
       <div v-if="activeTab === 'location'" class="tab-content">
         <h3 class="section-title">موقعیت مکانی و آدرس</h3>
-        <form @submit.prevent="saveLocation" class="profile-form">
+
+        <form @submit.prevent="saveLocation" class="location-form">
+          <!-- City Search -->
           <div class="form-group">
-            <label class="form-label">موقعیت روی نقشه</label>
-            <p class="form-hint">روی نقشه کلیک کنید تا موقعیت کسب‌وکار خود را انتخاب کنید</p>
+            <label class="form-label-small required">شهر</label>
+            <SearchableSelect
+              v-model="locationForm.cityId"
+              :options="allCityOptions"
+              label=""
+              placeholder="جستجوی شهر..."
+              :required="true"
+              @update:model-value="handleCityChange"
+            />
+            <span class="form-hint">برای یافتن شهر مورد نظر تایپ کنید</span>
+          </div>
+
+          <!-- Neshan Map Picker -->
+          <div class="form-group">
+            <label class="form-label-small">موقعیت روی نقشه</label>
+            <p class="form-hint">روی نقشه کلیک کنید تا موقعیت دقیق کسب‌وکار خود را انتخاب کنید</p>
             <NeshanMapPicker
               v-model="locationForm.coordinates"
               :map-key="neshanMapKey"
@@ -151,24 +188,30 @@
             />
           </div>
 
-          <!-- Province and City Selector -->
-          <LocationSelector
-            :province-id="locationForm.provinceId"
-            :city-id="locationForm.cityId"
-            @update:province-id="handleProvinceChange"
-            @update:city-id="handleCityChange"
-          />
-
+          <!-- Address Field -->
           <div class="form-group">
-            <label for="formattedAddress" class="form-label">آدرس <span class="required">*</span></label>
+            <label for="formattedAddress" class="form-label-small required">آدرس دقیق</label>
             <input
               id="formattedAddress"
               v-model="locationForm.formattedAddress"
               type="text"
               class="form-input"
-              placeholder="آدرس از نقشه انتخاب شده"
-              readonly
+              placeholder="مثال: خیابان ولیعصر، کوچه پنجم، پلاک ۱۲"
               required
+            />
+          </div>
+
+          <!-- Postal Code -->
+          <div class="form-group">
+            <label for="postalCode" class="form-label-small">کد پستی (اختیاری)</label>
+            <input
+              id="postalCode"
+              v-model="locationForm.postalCode"
+              type="text"
+              dir="ltr"
+              class="form-input"
+              placeholder="1234567890"
+              maxlength="10"
             />
           </div>
 
@@ -315,7 +358,8 @@ import DayScheduleEditor from '@/shared/components/schedule/DayScheduleEditor.vu
 import CustomDayModal from '../../../provider/views/hours/CustomDayModal.vue'
 import ImageUpload from '@/shared/components/ui/ImageUpload.vue'
 import NeshanMapPicker from '@/shared/components/map/NeshanMapPicker.vue'
-import LocationSelector from '@/shared/components/forms/LocationSelector.vue'
+import SearchableSelect, { type SelectOption } from '@/shared/components/forms/SearchableSelect.vue'
+import PhoneVerificationModal from './PhoneVerificationModal.vue'
 import { convertEnglishToPersianNumbers } from '@/shared/utils/date/jalali.utils'
 import { providerProfileService } from '../../services/provider-profile.service'
 import { useLocations } from '@/shared/composables/useLocations'
@@ -400,11 +444,29 @@ const ImageIcon = () =>
 
 const providerStore = useProviderStore()
 const authStore = useAuthStore()
-const { provinces, loadProvinces, loadCitiesByProvinceId, getCitiesByProvinceId, getProvinceByName, getCityByName } = useLocations()
+const { provinces, loadProvinces, loadCitiesByProvinceId, getCitiesByProvinceId, getProvinceByName, getCityByName, getLocationById } = useLocations()
 
 const activeTab = ref('personal')
 
 const currentProvider = computed(() => providerStore.currentProvider)
+
+// Get all cities from all provinces for searchable dropdown
+const allCityOptions = computed<SelectOption[]>(() => {
+  const allCities: SelectOption[] = []
+  const provincesList = provinces.value
+
+  provincesList.forEach(province => {
+    const cities = getCitiesByProvinceId(province.id)
+    cities.forEach(city => {
+      allCities.push({
+        label: `${city.name} (${province.name})`,
+        value: city.id,
+      })
+    })
+  })
+
+  return allCities
+})
 
 // Loading states
 const uploadingProfileImage = ref(false)
@@ -427,6 +489,16 @@ const personalForm = ref({
   profileImageUrl: '' as string, // Permanent URL from backend
 })
 
+// Phone verification state
+const originalPhone = ref('')
+const pendingPhoneNumber = ref('')
+const showPhoneVerification = ref(false)
+const phoneError = ref('')
+
+const isPhoneChanged = computed(() => {
+  return personalForm.value.phone !== originalPhone.value && personalForm.value.phone.length > 0
+})
+
 // Business form
 const businessForm = ref({
   name: '',
@@ -439,9 +511,11 @@ const businessForm = ref({
 // Location form
 const locationForm = ref({
   formattedAddress: '',
+  city: '',
   provinceId: null as number | null,
   cityId: null as number | null,
   coordinates: null as { lat: number; lng: number } | null,
+  postalCode: '',
 })
 
 // Working hours data - now using centralized types
@@ -508,6 +582,7 @@ const loadLocationData = async () => {
 
     locationForm.value = {
       formattedAddress: address?.formattedAddress || '',
+      city: address?.city || '',
       provinceId,
       cityId,
       coordinates:
@@ -517,6 +592,7 @@ const loadLocationData = async () => {
               lng: address.longitude,
             }
           : null,
+      postalCode: address?.postalCode || '',
     }
   }
 }
@@ -601,6 +677,13 @@ onMounted(async () => {
   console.log('📋 ProfileManager: Loading provider information...')
 
   try {
+    // Load all provinces and their cities for the searchable dropdown
+    await loadProvinces()
+    const provincesList = provinces.value
+    for (const province of provincesList) {
+      await loadCitiesByProvinceId(province.id)
+    }
+
     // Force refresh provider data from backend (similar to /progress API)
     await providerStore.loadCurrentProvider(true)
     console.log('📋 ProfileManager: Provider data loaded successfully')
@@ -609,13 +692,17 @@ onMounted(async () => {
       console.log('📋 ProfileManager: Current provider:', currentProvider.value)
 
       // Load personal info
+      const userPhone = currentProvider.value.contactInfo?.phone || authStore.user?.phoneNumber || ''
       personalForm.value = {
         fullName: currentProvider.value.profile?.businessName || '',
         email: currentProvider.value.contactInfo?.email || authStore.user?.email || '',
-        phone: currentProvider.value.contactInfo?.phone || authStore.user?.phoneNumber || '',
+        phone: userPhone,
         profileImage: currentProvider.value.profileImageUrl || null,
         profileImageUrl: currentProvider.value.profileImageUrl || '',
       }
+
+      // Store original phone for comparison
+      originalPhone.value = userPhone
 
       // Load business info
       businessForm.value = {
@@ -641,33 +728,26 @@ onMounted(async () => {
   }
 })
 
-// Location handlers
-const handleProvinceChange = async (value: number | null) => {
-  locationForm.value.provinceId = value
-  // Reset city when province changes
-  locationForm.value.cityId = null
-
-  // Center map to province location
-  if (value) {
-    const province = provinces.value.find(p => p.id === value)
-    if (province) {
-      await centerMapToLocation(province.name)
-    }
+// Handle city change - auto-set province when city is selected
+const handleCityChange = async (cityId: string | number | null) => {
+  if (typeof cityId === 'string') {
+    locationForm.value.cityId = parseInt(cityId, 10)
+  } else {
+    locationForm.value.cityId = cityId
   }
-}
 
-const handleCityChange = async (value: number | null) => {
-  locationForm.value.cityId = value
+  // Auto-set province when city is selected
+  if (locationForm.value.cityId) {
+    const city = getLocationById(locationForm.value.cityId)
+    if (city?.parentId) {
+      locationForm.value.provinceId = city.parentId
+    }
 
-  // Center map to city location
-  if (value && locationForm.value.provinceId) {
-    const cities = getCitiesByProvinceId(locationForm.value.provinceId)
-    const city = cities.find(c => c.id === value)
-    const province = provinces.value.find(p => p.id === locationForm.value.provinceId)
-
+    // Center map to city location
+    const province = locationForm.value.provinceId ? getLocationById(locationForm.value.provinceId) : null
     if (city && province) {
-      // Search for "city, province" for better accuracy
-      await centerMapToLocation(`${city.name}, ${province.name}`)
+      const searchTerm = `${city.name}, ${province.name}`
+      await centerMapToLocation(searchTerm)
     }
   }
 }
@@ -753,13 +833,65 @@ const handleBusinessLogoUpload = async (file: File) => {
   }
 }
 
+// Phone handlers
+const handlePhoneInput = () => {
+  // Clear error when user types
+  phoneError.value = ''
+
+  // Remove non-numeric characters
+  personalForm.value.phone = personalForm.value.phone.replace(/[^0-9]/g, '')
+}
+
+const validatePhone = (phone: string): boolean => {
+  // Iranian phone number validation: must start with 09 and be 11 digits
+  const phoneRegex = /^09\d{9}$/
+  return phoneRegex.test(phone)
+}
+
+const handlePhoneVerified = (verifiedPhone: string) => {
+  console.log('Phone verified:', verifiedPhone)
+
+  // Update original phone to the verified one
+  originalPhone.value = verifiedPhone
+  personalForm.value.phone = verifiedPhone
+
+  // Show success message
+  alert('شماره موبایل شما با موفقیت تأیید شد')
+
+  // Refresh provider data
+  providerStore.loadCurrentProvider(true)
+}
+
+const handlePhoneVerificationCancel = () => {
+  console.log('Phone verification cancelled')
+
+  // Revert phone to original
+  personalForm.value.phone = originalPhone.value
+  phoneError.value = ''
+}
+
 // Form handlers
 const savePersonalInfo = async () => {
   try {
     savingProfile.value = true
     console.log('Saving personal info:', personalForm.value)
 
-    // Send to backend
+    // If phone changed, validate and show verification modal
+    if (isPhoneChanged.value) {
+      if (!validatePhone(personalForm.value.phone)) {
+        phoneError.value = 'شماره موبایل باید با 09 شروع شود و 11 رقم باشد'
+        savingProfile.value = false
+        return
+      }
+
+      // Show verification modal
+      pendingPhoneNumber.value = personalForm.value.phone
+      showPhoneVerification.value = true
+      savingProfile.value = false
+      return
+    }
+
+    // Send to backend (without phone if unchanged)
     await providerProfileService.updateProfile({
       fullName: personalForm.value.fullName,
       email: personalForm.value.email,
@@ -1254,6 +1386,40 @@ const formatPersianDateShort = (dateKey: string) => {
   margin-bottom: 0.75rem;
 }
 
+.form-error {
+  font-size: 0.8125rem;
+  color: #ef4444;
+  margin-top: 0.25rem;
+  display: block;
+}
+
+/* Phone Input Wrapper */
+.phone-input-wrapper {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.phone-input-wrapper .form-input {
+  flex: 1;
+}
+
+.phone-changed-badge {
+  position: absolute;
+  left: 0.75rem;
+  top: 50%;
+  transform: translateY(-50%);
+  background: #fef3c7;
+  color: #92400e;
+  font-size: 0.75rem;
+  font-weight: 600;
+  padding: 0.25rem 0.5rem;
+  border-radius: 0.375rem;
+  white-space: nowrap;
+  pointer-events: none;
+}
+
 .form-input {
   width: 100%;
   padding: 0.75rem 1rem;
@@ -1639,5 +1805,111 @@ const formatPersianDateShort = (dateKey: string) => {
 .required {
   color: #ef4444;
   margin-right: 0.25rem;
+}
+
+/* Location Map Section with Search Overlay */
+.location-map-section {
+  margin-bottom: 1.5rem;
+}
+
+.map-container-with-search {
+  position: relative;
+  border-radius: 0.75rem;
+  overflow: hidden;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+.address-search-overlay {
+  position: absolute;
+  top: 1rem;
+  left: 1rem;
+  right: 1rem;
+  z-index: 1000;
+  max-width: 400px;
+}
+
+.search-input-wrapper {
+  position: relative;
+  display: flex;
+  align-items: center;
+  background: white;
+  border-radius: 0.5rem;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+}
+
+.search-icon {
+  position: absolute;
+  right: 1rem;
+  width: 1.25rem;
+  height: 1.25rem;
+  color: #9ca3af;
+  pointer-events: none;
+}
+
+.address-search-input {
+  width: 100%;
+  padding: 0.75rem 1rem 0.75rem 3rem;
+  border: none;
+  border-radius: 0.5rem;
+  font-size: 0.875rem;
+  color: #1f2937;
+  background: transparent;
+  outline: none;
+}
+
+.address-search-input::placeholder {
+  color: #9ca3af;
+}
+
+.search-results-dropdown {
+  margin-top: 0.5rem;
+  background: white;
+  border-radius: 0.5rem;
+  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+  max-height: 300px;
+  overflow-y: auto;
+}
+
+.search-result-item {
+  padding: 0.75rem 1rem;
+  cursor: pointer;
+  border-bottom: 1px solid #f3f4f6;
+  transition: background-color 0.15s;
+}
+
+.search-result-item:last-child {
+  border-bottom: none;
+}
+
+.search-result-item:hover {
+  background-color: #f9fafb;
+}
+
+.result-title {
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: #1f2937;
+  margin-bottom: 0.25rem;
+}
+
+.result-address {
+  font-size: 0.75rem;
+  color: #6b7280;
+}
+
+/* Form labels matching BusinessLocationStep */
+.form-label-small {
+  display: block;
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: #374151;
+  margin-bottom: 0.5rem;
+}
+
+/* Location form spacing */
+.location-form {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
 }
 </style>

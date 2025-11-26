@@ -19,6 +19,8 @@ using Booksy.Core.Domain.Exceptions;
 using Booksy.UserManagement.Application.CQRS.Queries.GetUsersByStatus;
 using Booksy.UserManagement.Application.CQRS.Commands.DeActivateUser;
 using Booksy.UserManagement.Application.CQRS.Commands.DeleteUser;
+using Booksy.UserManagement.Application.CQRS.Commands.SendPhoneVerificationCode;
+using Booksy.UserManagement.Application.CQRS.Commands.VerifyPhoneCode;
 
 namespace Booksy.UserManagement.API.Controllers.V1;
 
@@ -347,6 +349,93 @@ public class UsersController : ControllerBase
         return Ok(result);
     }
 
+    /// <summary>
+    /// Sends a verification code to a phone number
+    /// </summary>
+    /// <param name="id">User ID</param>
+    /// <param name="request">Phone number to verify</param>
+    /// <returns>Success message with code expiration time</returns>
+    /// <response code="200">Verification code sent successfully</response>
+    /// <response code="400">Invalid phone number format</response>
+    /// <response code="403">Not authorized</response>
+    /// <response code="404">User not found</response>
+    [HttpPost("{id:guid}/phone/send-verification")]
+    [Authorize]
+    [EnableRateLimiting("otp")]
+    [ProducesResponseType(typeof(SendVerificationCodeResponse), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> SendPhoneVerificationCode(
+        [FromRoute] Guid id,
+        [FromBody][Required] SendPhoneVerificationRequest request,
+        CancellationToken cancellationToken = default)
+    {
+        // Users can only verify their own phone number
+        if (!await CanModifyUser(id))
+        {
+            _logger.LogWarning("User {RequestingUser} attempted to send verification code for user {UserId}",
+                GetCurrentUserId(), id);
+            return Forbid();
+        }
+
+        var command = new SendPhoneVerificationCodeCommand(id, request.PhoneNumber);
+        var result = await _mediator.Send(command, cancellationToken);
+
+        return Ok(new SendVerificationCodeResponse
+        {
+            Success = result.Success,
+            Message = result.Message,
+            ExpiresAt = result.ExpiresAt
+        });
+    }
+
+    /// <summary>
+    /// Verifies a phone number with the sent code
+    /// </summary>
+    /// <param name="id">User ID</param>
+    /// <param name="request">Verification code and phone number</param>
+    /// <returns>Verification result</returns>
+    /// <response code="200">Phone number verified successfully</response>
+    /// <response code="400">Invalid verification code</response>
+    /// <response code="403">Not authorized</response>
+    /// <response code="404">User not found</response>
+    [HttpPost("{id:guid}/phone/verify")]
+    [Authorize]
+    [EnableRateLimiting("otp")]
+    [ProducesResponseType(typeof(VerifyPhoneCodeResponse), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> VerifyPhoneCode(
+        [FromRoute] Guid id,
+        [FromBody][Required] VerifyPhoneCodeRequest request,
+        CancellationToken cancellationToken = default)
+    {
+        // Users can only verify their own phone number
+        if (!await CanModifyUser(id))
+        {
+            _logger.LogWarning("User {RequestingUser} attempted to verify phone for user {UserId}",
+                GetCurrentUserId(), id);
+            return Forbid();
+        }
+
+        var command = new VerifyPhoneCodeCommand(id, request.PhoneNumber, request.VerificationCode);
+        var result = await _mediator.Send(command, cancellationToken);
+
+        if (!result.Success)
+        {
+            return BadRequest(new { message = result.Message });
+        }
+
+        return Ok(new VerifyPhoneCodeResponse
+        {
+            Success = result.Success,
+            Message = result.Message,
+            PhoneNumber = result.PhoneNumber,
+            VerifiedAt = result.VerifiedAt
+        });
+    }
 
     #region Private Helper Methods
 

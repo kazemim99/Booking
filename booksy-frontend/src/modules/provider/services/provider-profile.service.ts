@@ -1,4 +1,4 @@
-import { serviceCategoryClient } from '@/core/api/client/http-client'
+import { serviceCategoryClient, userManagementClient } from '@/core/api/client/http-client'
 
 export interface UploadImageResponse {
   imageUrl: string
@@ -47,6 +47,19 @@ export interface BusinessHoursRequest {
       minutes: number
     }
   }[]
+}
+
+export interface SendVerificationCodeResponse {
+  success: boolean
+  message: string
+  expiresAt: string
+}
+
+export interface VerifyPhoneCodeResponse {
+  success: boolean
+  message: string
+  phoneNumber?: string
+  verifiedAt?: string
 }
 
 class ProviderProfileService {
@@ -135,6 +148,42 @@ class ProviderProfileService {
    */
   async getProfile(): Promise<any> {
     const response = await serviceCategoryClient.get(`${this.basePath}/profile`)
+    return response.data
+  }
+
+  /**
+   * Send phone verification code
+   */
+  async sendPhoneVerificationCode(userId: string, phoneNumber: string): Promise<SendVerificationCodeResponse> {
+    const response = await userManagementClient.post<SendVerificationCodeResponse>(
+      `/api/v1/Users/${userId}/phone/send-verification`,
+      { phoneNumber }
+    )
+
+    if (!response.data) {
+      throw new Error('No response data received from server')
+    }
+
+    return response.data
+  }
+
+  /**
+   * Verify phone number with code
+   */
+  async verifyPhoneCode(
+    userId: string,
+    phoneNumber: string,
+    verificationCode: string
+  ): Promise<VerifyPhoneCodeResponse> {
+    const response = await userManagementClient.post<VerifyPhoneCodeResponse>(
+      `/api/v1/Users/${userId}/phone/verify`,
+      { phoneNumber, verificationCode }
+    )
+
+    if (!response.data) {
+      throw new Error('No response data received from server')
+    }
+
     return response.data
   }
 }
