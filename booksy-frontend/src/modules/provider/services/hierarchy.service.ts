@@ -35,11 +35,24 @@ class HierarchyService {
 
   /**
    * Get current user's draft provider (if exists)
+   * Uses the /registration/progress endpoint for consistency
    */
   async getDraftProvider(): Promise<any> {
     try {
-      const response = await serviceCategoryClient.get<any>(`${API_BASE}/draft`)
-      return response.data
+      const response = await serviceCategoryClient.get<any>('v1/registration/progress')
+
+      // Extract draft data from progress response
+      if (response.data?.hasDraft && response.data?.draftData) {
+        const draft = response.data.draftData
+
+        // Add registration step to the response for consistency
+        return {
+          ...draft,
+          registrationStep: response.data.currentStep || draft.registrationStep
+        }
+      }
+
+      return null
     } catch (error: any) {
       // Return null if no draft found (404)
       if (error.response?.status === 404) {

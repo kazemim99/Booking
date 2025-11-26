@@ -22,6 +22,13 @@
             </AppButton>
           </div>
           <div class="preview-section-content">
+            <!-- Logo Display -->
+            <div v-if="data.businessInfo.logoUrl" class="logo-preview-container">
+              <div class="logo-preview">
+                <img :src="data.businessInfo.logoUrl" alt="لوگوی کسب‌وکار" />
+              </div>
+            </div>
+
             <div class="preview-item">
               <span class="preview-label">نام کسب‌و‌کار:</span>
               <span class="preview-value">{{ data.businessInfo.businessName }}</span>
@@ -93,9 +100,21 @@
           </div>
           <div class="preview-section-content">
             <div v-if="data.services.length > 0" class="preview-list">
-              <div v-for="(service, index) in data.services" :key="index" class="preview-list-item">
-                <i class="icon-check-circle"></i>
-                <span>{{ service.name || `خدمت ${index + 1}` }}</span>
+              <div v-for="(service, index) in data.services" :key="index" class="preview-list-item-detailed">
+                <div class="service-header">
+                  <i class="icon-check-circle"></i>
+                  <span class="service-name">{{ service.name || `خدمت ${index + 1}` }}</span>
+                </div>
+                <div class="service-details">
+                  <span class="service-detail">
+                    <i class="icon-clock-small"></i>
+                    {{ formatDuration(service.durationHours, service.durationMinutes) }}
+                  </span>
+                  <span class="service-detail">
+                    <i class="icon-currency"></i>
+                    {{ formatPrice(service.price) }} تومان
+                  </span>
+                </div>
               </div>
             </div>
             <div v-else class="preview-empty">
@@ -119,9 +138,23 @@
           </div>
           <div class="preview-section-content">
             <div v-if="data.businessHours.length > 0" class="preview-list">
-              <div v-for="(hour, index) in data.businessHours" :key="index" class="preview-list-item">
-                <i class="icon-check-circle"></i>
-                <span>{{ hour.day || `روز ${index + 1}` }}</span>
+              <div v-for="(hour, index) in data.businessHours.filter(h => h.isOpen)" :key="index" class="preview-list-item-detailed">
+                <div class="hours-header">
+                  <i class="icon-check-circle"></i>
+                  <span class="day-name">{{ getDayName(hour.dayOfWeek) }}</span>
+                </div>
+                <div class="hours-details">
+                  <span class="hours-time">
+                    از {{ formatTime(hour.openTime) }} تا {{ formatTime(hour.closeTime) }}
+                  </span>
+                  <div v-if="hour.breaks && hour.breaks.length > 0" class="breaks-info">
+                    <span class="breaks-label">استراحت:</span>
+                    <span v-for="(breakItem, bIndex) in hour.breaks" :key="bIndex" class="break-time">
+                      {{ formatTime(breakItem.start) }} - {{ formatTime(breakItem.end) }}
+                      <span v-if="bIndex < hour.breaks.length - 1">،</span>
+                    </span>
+                  </div>
+                </div>
               </div>
             </div>
             <div v-else class="preview-empty">
@@ -144,9 +177,9 @@
             </AppButton>
           </div>
           <div class="preview-section-content">
-            <div v-if="data.gallery && data.gallery.length > 0" class="gallery-preview">
-              <div v-for="(image, index) in data.gallery" :key="index" class="gallery-thumbnail">
-                <img :src="image" alt="Gallery image" />
+            <div v-if="galleryImages.length > 0" class="gallery-preview">
+              <div v-for="(image, index) in galleryImages" :key="index" class="gallery-thumbnail">
+                <img :src="image.url" :alt="image.altText || 'تصویر گالری'" />
               </div>
             </div>
             <div v-else class="preview-empty">
@@ -187,7 +220,8 @@
 </template>
 
 <script setup lang="ts">
-import { ref } from 'vue'
+import { ref, computed } from 'vue'
+import { useProviderRegistration } from '@/modules/provider/composables/useProviderRegistration'
 import AppButton from '@/shared/components/ui/Button/AppButton.vue'
 
 // ============================================
@@ -207,14 +241,63 @@ const emit = defineEmits<{
 }>()
 
 // ============================================
+// Composables
+// ============================================
+
+const registration = useProviderRegistration()
+
+// ============================================
 // State
 // ============================================
 
 const confirmed = ref(false)
 
 // ============================================
+// Computed
+// ============================================
+
+const galleryImages = computed(() => {
+  return registration.registrationData.value.galleryImages || []
+})
+
+// ============================================
 // Methods
 // ============================================
+
+// Format duration (hours and minutes)
+function formatDuration(hours?: number, minutes?: number): string {
+  const h = hours || 0
+  const m = minutes || 0
+
+  if (h > 0 && m > 0) {
+    return `${h} ساعت و ${m} دقیقه`
+  } else if (h > 0) {
+    return `${h} ساعت`
+  } else if (m > 0) {
+    return `${m} دقیقه`
+  }
+  return '-'
+}
+
+// Format price with thousand separators
+function formatPrice(price?: number): string {
+  if (!price) return '0'
+  return price.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ',')
+}
+
+// Format time from object {hours, minutes}
+function formatTime(time?: { hours: number; minutes: number }): string {
+  if (!time) return '00:00'
+  const h = String(time.hours).padStart(2, '0')
+  const m = String(time.minutes).padStart(2, '0')
+  return `${h}:${m}`
+}
+
+// Get Persian day name
+function getDayName(dayOfWeek: number): string {
+  const days = ['شنبه', 'یکشنبه', 'دوشنبه', 'سه‌شنبه', 'چهارشنبه', 'پنج‌شنبه', 'جمعه']
+  return days[dayOfWeek] || `روز ${dayOfWeek + 1}`
+}
 
 function handleSubmit() {
   if (confirmed.value) {
@@ -356,11 +439,161 @@ function handleSubmit() {
   }
 }
 
+.logo-preview-container {
+  display: flex;
+  justify-content: center;
+  margin-bottom: 1.5rem;
+  padding: 1rem;
+  background: #f9fafb;
+  border-radius: 8px;
+}
+
+.logo-preview {
+  width: 120px;
+  height: 120px;
+  border-radius: 8px;
+  overflow: hidden;
+  border: 2px solid #e5e7eb;
+  background: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  img {
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+  }
+}
+
 .confirmation-section {
   margin-top: 2rem;
   padding: 1.5rem;
   background: linear-gradient(135deg, #f8f5ff 0%, #fff 100%);
   border: 2px solid #7c3aed;
   border-radius: 12px;
+}
+
+// Detailed list items for services and working hours
+.preview-list-item-detailed {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  padding: 1rem;
+  background: #f9fafb;
+  border-radius: 8px;
+  border: 1px solid #e5e7eb;
+  transition: all 0.2s ease;
+
+  &:hover {
+    border-color: #d1d5db;
+    box-shadow: 0 1px 4px rgba(0, 0, 0, 0.05);
+  }
+}
+
+// Service section styling
+.service-header {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  font-weight: 600;
+  color: #111827;
+  font-size: 1rem;
+
+  i {
+    color: #10b981;
+    font-size: 1.125rem;
+    flex-shrink: 0;
+  }
+}
+
+.service-name {
+  flex: 1;
+}
+
+.service-details {
+  display: flex;
+  align-items: center;
+  gap: 1.5rem;
+  padding-right: 2rem;
+  flex-wrap: wrap;
+}
+
+.service-detail {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.875rem;
+  color: #6b7280;
+
+  i {
+    color: #7c3aed;
+    font-size: 0.875rem;
+    flex-shrink: 0;
+  }
+}
+
+// Working hours section styling
+.hours-header {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  font-weight: 600;
+  color: #111827;
+  font-size: 1rem;
+
+  i {
+    color: #10b981;
+    font-size: 1.125rem;
+    flex-shrink: 0;
+  }
+}
+
+.day-name {
+  flex: 1;
+}
+
+.hours-details {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  padding-right: 2rem;
+}
+
+.hours-time {
+  font-size: 0.875rem;
+  color: #6b7280;
+}
+
+.breaks-info {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.875rem;
+  color: #6b7280;
+  flex-wrap: wrap;
+}
+
+.breaks-label {
+  font-weight: 600;
+  color: #7c3aed;
+}
+
+.break-time {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+}
+
+// Responsive adjustments
+@media (max-width: 640px) {
+  .service-details,
+  .hours-details {
+    padding-right: 1.5rem;
+  }
+
+  .service-details {
+    gap: 1rem;
+  }
 }
 </style>

@@ -20,6 +20,7 @@ namespace Booksy.ServiceCatalog.Application.Commands.ProviderHierarchy.RegisterO
         decimal Longitude,
         string OwnerFirstName,
         string OwnerLastName,
+        string? LogoUrl = null,
         Guid? IdempotencyKey = null
     ) : ICommand<RegisterOrganizationProviderResult>;
 

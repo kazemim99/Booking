@@ -68,7 +68,10 @@ public sealed class GetRegistrationProgressQueryHandler
             BusinessDescription: draftProvider.Profile.BusinessDescription ?? "",
             Category: draftProvider.ProviderType.ToString(),
             PhoneNumber: draftProvider.ContactInfo.PrimaryPhone?.Value ?? "",
-            Email: draftProvider.ContactInfo.Email?.Value ?? ""
+            Email: draftProvider.ContactInfo.Email?.Value ?? "",
+            OwnerFirstName: draftProvider.OwnerFirstName,
+            OwnerLastName: draftProvider.OwnerLastName,
+            LogoUrl: draftProvider.Profile.LogoUrl
         );
 
         // Map location

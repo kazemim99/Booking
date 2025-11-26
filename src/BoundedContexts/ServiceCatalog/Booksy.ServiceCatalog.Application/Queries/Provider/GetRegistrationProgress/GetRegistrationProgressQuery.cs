@@ -32,7 +32,10 @@ public sealed record BusinessInfoData(
     string BusinessDescription,
     string Category,
     string PhoneNumber,
-    string Email
+    string Email,
+    string? OwnerFirstName,
+    string? OwnerLastName,
+    string? LogoUrl
 );
 
 public sealed record LocationData(

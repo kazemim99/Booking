@@ -44,8 +44,8 @@ public sealed class DeleteGalleryImageCommandHandler
         var mediumUrl = image.MediumUrl;
         var originalUrl = image.ImageUrl;
 
-        // Hard delete - remove from domain collection
-        provider.Profile.RemoveGalleryImage(request.ImageId);
+        // Hard delete - remove from domain collection (this raises GalleryImageDeletedEvent for cache invalidation)
+        provider.DeleteGalleryImage(request.ImageId);
 
         // Mark the provider as modified to ensure EF Core detects the change
         // For owned collections, we need to explicitly tell the repository to update

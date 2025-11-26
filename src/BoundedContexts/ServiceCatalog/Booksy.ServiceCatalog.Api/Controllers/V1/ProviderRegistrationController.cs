@@ -1,5 +1,7 @@
 using Booksy.ServiceCatalog.Application.Commands.Provider.Registration;
 using Booksy.ServiceCatalog.Application.Queries.Provider.GetRegistrationProgress;
+using Booksy.ServiceCatalog.Application.Services;
+using Booksy.Core.Domain.Exceptions;
 using MediatR;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
@@ -20,10 +22,12 @@ namespace Booksy.ServiceCatalog.Api.Controllers.V1;
 public class ProviderRegistrationController : ControllerBase
 {
     private readonly ISender _sender;
+    private readonly IImageStorageService _imageStorageService;
 
-    public ProviderRegistrationController(ISender sender)
+    public ProviderRegistrationController(ISender sender, IImageStorageService imageStorageService)
     {
         _sender = sender;
+        _imageStorageService = imageStorageService;
     }
 
     /// <summary>
@@ -41,6 +45,46 @@ public class ProviderRegistrationController : ControllerBase
         var result = await _sender.Send(query, cancellationToken);
 
         return result.HasDraft ? Ok(result) : NotFound();
+    }
+
+    /// <summary>
+    /// Upload business logo during registration (before draft is created)
+    /// This is a temporary upload endpoint that stores the image and returns a URL
+    /// The URL can be used when creating the provider draft in Step 3
+    /// </summary>
+    /// <param name="image">Business logo image file (max 5MB, jpg/png/webp)</param>
+    /// <param name="cancellationToken">Cancellation token</param>
+    /// <returns>URL of uploaded business logo</returns>
+    /// <response code="200">Logo uploaded successfully</response>
+    /// <response code="400">Invalid image file</response>
+    [HttpPost("upload-logo")]
+    [Consumes("multipart/form-data")]
+    [RequestSizeLimit(5242880)] // 5MB
+    [ProducesResponseType(typeof(UploadLogoResponse), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    public async Task<IActionResult> UploadLogo(
+        IFormFile image,
+        CancellationToken cancellationToken = default)
+    {
+        if (image == null || image.Length == 0)
+        {
+            throw new DomainValidationException("image", "Image file is required");
+        }
+
+        if (!_imageStorageService.IsValidImageType(image))
+        {
+            throw new DomainValidationException("image", "Only JPG, PNG, GIF, and WebP images are allowed");
+        }
+
+        // Use a temporary ID for pre-registration uploads
+        // The actual provider ID will be assigned when the draft is created
+        var tempProviderId = Guid.NewGuid();
+        var imageUrl = await _imageStorageService.SaveBusinessLogoAsync(tempProviderId, image);
+
+        return Ok(new UploadLogoResponse
+        {
+            ImageUrl = imageUrl
+        });
     }
 
     /// <summary>
@@ -212,4 +256,12 @@ public class ProviderRegistrationController : ControllerBase
         var result = await _sender.Send(command, cancellationToken);
         return Ok(result);
     }
+}
+
+/// <summary>
+/// Response for logo upload
+/// </summary>
+public sealed class UploadLogoResponse
+{
+    public string ImageUrl { get; set; } = string.Empty;
 }

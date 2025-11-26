@@ -46,8 +46,8 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted } from 'vue'
-import ProgressIndicator from '../shared/ProgressIndicator.vue'
+import { ref, computed, onMounted, watch } from 'vue'
+
 import AppButton from '@/shared/components/ui/Button/AppButton.vue'
 import DayScheduleEditor from '@/shared/components/schedule/DayScheduleEditor.vue'
 import type { DayScheduleItem, BreakPeriod } from '@/shared/components/schedule/DayScheduleEditor.vue'
@@ -76,17 +76,17 @@ const initializeSchedule = (): DayHours[] => {
     return [...props.modelValue].sort((a, b) => a.dayOfWeek - b.dayOfWeek)
   }
 
-  // Default schedule (all days open)
+  // Default schedule (all days open with default break 14:00-17:00)
   return weekDays.map((_, index) => ({
     dayOfWeek: index,
-    isOpen: true,
+    isOpen: true, // All days open by default
     openTime: { hours: 10, minutes: 0 },
     closeTime: { hours: 22, minutes: 0 },
     breaks: [
       {
         id: '1',
-        start: { hours: 13, minutes: 0 },
-        end: { hours: 15, minutes: 0 },
+        start: { hours: 14, minutes: 0 },
+        end: { hours: 17, minutes: 0 },
       }
     ],
   }))
@@ -94,6 +94,18 @@ const initializeSchedule = (): DayHours[] => {
 
 const schedule = ref<DayHours[]>(initializeSchedule())
 const error = ref('')
+
+// Watch for changes to props.modelValue to sync with parent
+watch(
+  () => props.modelValue,
+  (newValue) => {
+    if (newValue && newValue.length === 7) {
+      schedule.value = [...newValue].sort((a, b) => a.dayOfWeek - b.dayOfWeek)
+      console.log('✅ WorkingHoursStepNew: Synced schedule from props:', newValue.length, 'days')
+    }
+  },
+  { immediate: true }
+)
 
 // Convert TimeSlot to string (HH:mm format)
 const timeToString = (time: { hours: number; minutes: number } | null): string => {
@@ -190,6 +202,55 @@ const handleNext = () => {
     return
   }
 
+  // Validate breaks are within business hours
+  const invalidBreaks: string[] = []
+  schedule.value.forEach((day, index) => {
+    if (day.isOpen && day.breaks && day.breaks.length > 0 && day.openTime && day.closeTime) {
+      const openMinutes = day.openTime.hours * 60 + day.openTime.minutes
+      const closeMinutes = day.closeTime.hours * 60 + day.closeTime.minutes
+
+      day.breaks.forEach((breakPeriod, breakIndex) => {
+        if (!breakPeriod.start || !breakPeriod.end) {
+          return
+        }
+
+        const breakStartMinutes = breakPeriod.start.hours * 60 + breakPeriod.start.minutes
+        const breakEndMinutes = breakPeriod.end.hours * 60 + breakPeriod.end.minutes
+
+        // Format times for error messages
+        const formatTime = (time: { hours: number; minutes: number }) =>
+          `${String(time.hours).padStart(2, '0')}:${String(time.minutes).padStart(2, '0')}`
+
+        // Check if break start/end are valid
+        if (breakEndMinutes <= breakStartMinutes) {
+          invalidBreaks.push(
+            `${weekDays[index]}: استراحت ${breakIndex + 1} - زمان پایان (${formatTime(breakPeriod.end)}) باید بعد از شروع (${formatTime(breakPeriod.start)}) باشد`
+          )
+          return
+        }
+
+        // Check if break is within business hours
+        if (breakStartMinutes < openMinutes || breakEndMinutes > closeMinutes) {
+          invalidBreaks.push(
+            `${weekDays[index]}: استراحت ${breakIndex + 1} (${formatTime(breakPeriod.start)}-${formatTime(breakPeriod.end)}) خارج از ساعات کاری (${formatTime(day.openTime!)}-${formatTime(day.closeTime!)}) است`
+          )
+        }
+
+        // Check if break is completely outside business hours
+        if (breakStartMinutes >= closeMinutes || breakEndMinutes <= openMinutes) {
+          invalidBreaks.push(
+            `${weekDays[index]}: استراحت ${breakIndex + 1} (${formatTime(breakPeriod.start)}-${formatTime(breakPeriod.end)}) کاملاً خارج از ساعات کاری (${formatTime(day.openTime!)}-${formatTime(day.closeTime!)}) است`
+          )
+        }
+      })
+    }
+  })
+
+  if (invalidBreaks.length > 0) {
+    error.value = invalidBreaks.join('\n')
+    return
+  }
+
   emit('next')
 }
 </script>
@@ -237,7 +298,14 @@ const handleNext = () => {
 .error-message {
   font-size: 0.875rem;
   color: #ef4444;
-  text-align: center;
+  text-align: right;
+  white-space: pre-line;
+  line-height: 1.6;
+  background: #fef2f2;
+  border: 1px solid #fecaca;
+  border-radius: 0.5rem;
+  padding: 1rem;
+  margin-top: 1rem;
 }
 
 /* Navigation */

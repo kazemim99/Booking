@@ -15,11 +15,14 @@
             </label>
           </div>
           <span v-if="!day.isOpen" class="closed-badge">تعطیل</span>
-          <span v-else class="time-info">
+          <span v-else-if="day.startTime && day.endTime" class="time-info">
             {{ day.startTime }} - {{ day.endTime }}
             <span v-if="day.breaks && day.breaks.length > 0" class="breaks-count">
               ({{ day.breaks.length }} استراحت)
             </span>
+          </span>
+          <span v-else class="time-info text-muted">
+            در حال بارگذاری...
           </span>
         </div>
         <div class="day-actions">
@@ -200,14 +203,34 @@ const editingDayData = ref<DayScheduleData>({
 })
 
 const handleToggleDay = (index: number) => {
+  const day = localSchedule.value[index]
+
   // If toggling from closed to open, set default values
-  if (localSchedule.value[index].isOpen && (!localSchedule.value[index].startTime || !localSchedule.value[index].endTime)) {
-    localSchedule.value[index].startTime = '10:00'
-    localSchedule.value[index].endTime = '22:00'
-    if (!localSchedule.value[index].breaks) {
-      localSchedule.value[index].breaks = []
+  if (day.isOpen) {
+    // Always set default values when opening a day if they're missing or invalid
+    if (!day.startTime || !day.endTime || day.startTime === '' || day.endTime === '') {
+      day.startTime = '10:00'
+      day.endTime = '22:00'
     }
+
+    // Add default break from 14:00 to 17:00 if no breaks exist
+    if (!day.breaks || day.breaks.length === 0) {
+      day.breaks = [
+        {
+          id: '1',
+          start: '14:00',
+          end: '17:00',
+        }
+      ]
+    }
+  } else {
+    // When toggling to closed, clear the times and breaks (optional)
+    // This prevents showing "NaN" or invalid times
+    day.startTime = ''
+    day.endTime = ''
+    day.breaks = []
   }
+
   emitUpdate()
 }
 
@@ -390,6 +413,11 @@ const emitUpdate = () => {
   align-items: center;
   gap: 0.5rem;
   flex-wrap: wrap;
+}
+
+.text-muted {
+  opacity: 0.6;
+  font-style: italic;
 }
 
 .breaks-count {

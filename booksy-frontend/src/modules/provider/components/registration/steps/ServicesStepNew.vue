@@ -190,8 +190,8 @@
 </template>
 
 <script setup lang="ts">
-import { ref } from 'vue'
-import ProgressIndicator from '../shared/ProgressIndicator.vue'
+import { ref, watch } from 'vue'
+
 import AppButton from '@/shared/components/ui/Button/AppButton.vue'
 import type { Service } from '@/modules/provider/types/registration.types'
 
@@ -210,6 +210,18 @@ const emit = defineEmits<Emits>()
 
 // State
 const services = ref<Service[]>(props.modelValue || [])
+
+// Watch for changes to props.modelValue to sync with parent
+watch(
+  () => props.modelValue,
+  (newValue) => {
+    if (newValue && newValue.length > 0) {
+      services.value = newValue
+      console.log('✅ ServicesStepNew: Synced services from props:', newValue.length)
+    }
+  },
+  { immediate: true }
+)
 const isAdding = ref(false)
 const editingId = ref<string | null>(null)
 const formData = ref({

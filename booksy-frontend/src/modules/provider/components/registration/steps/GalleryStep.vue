@@ -1,6 +1,5 @@
 <template>
   <div class="registration-step">
-    <ProgressIndicator :current-step="7" :total-steps="9" />
 
     <div class="step-card">
       <div class="step-header">
@@ -148,7 +147,7 @@ import { ref, computed, onMounted } from 'vue'
 import { useProviderStore } from '@/modules/provider/stores/provider.store'
 import { useGalleryStore } from '@/modules/provider/stores/gallery.store'
 import { useProviderRegistration } from '@/modules/provider/composables/useProviderRegistration'
-import ProgressIndicator from '../shared/ProgressIndicator.vue'
+
 import AppButton from '@/shared/components/ui/Button/AppButton.vue'
 import GalleryUpload from '@/modules/provider/components/gallery/GalleryUpload.vue'
 import type { GalleryImageData } from '@/modules/provider/types/registration.types'
@@ -182,16 +181,26 @@ const currentProviderId = computed(() => providerStore.currentProvider?.id)
 
 // Lifecycle
 onMounted(async () => {
-  // Load existing gallery images from registration state
+  // PRIORITY 1: Load existing gallery images from registration state (composable)
   const existingImages = registration.registrationData.value.galleryImages
+  console.log('🖼️ GalleryStep onMounted: Checking for existing images in composable')
+  console.log('🖼️ Existing images count:', existingImages?.length || 0)
+  console.log('🖼️ Existing images data:', existingImages)
+
   if (existingImages && existingImages.length > 0) {
+    console.log('✅ GalleryStep: Loading images from composable - PRIORITY SOURCE')
     localGalleryImages.value = existingImages
+    // Don't fetch from store if we have composable data (during registration)
+    return
   }
 
-  // If provider already exists, load their gallery
+  // PRIORITY 2: If no composable data AND provider exists, load from store
   const providerId = currentProviderId.value
+  console.log('🖼️ GalleryStep: No composable data, checking Provider ID:', providerId)
+
   if (providerId) {
     try {
+      console.log('🖼️ GalleryStep: Fetching gallery from store...')
       await galleryStore.fetchGalleryImages(providerId)
 
       // Convert gallery store images to registration format
@@ -204,10 +213,12 @@ onMounted(async () => {
         altText: img.altText,
       }))
 
+      console.log('✅ GalleryStep: Loaded images from store:', storeImages.length)
+      console.log('✅ Store images data:', storeImages)
       localGalleryImages.value = storeImages
       registration.setGalleryImages(storeImages)
     } catch (err) {
-      console.error('Error loading gallery:', err)
+      console.error('❌ GalleryStep: Error loading gallery:', err)
       // Don't show error - it's OK if provider doesn't have images yet
     }
   }

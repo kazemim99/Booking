@@ -89,13 +89,15 @@
 
         <!-- Description -->
         <div class="form-group">
-          <label class="form-label">توضیحات کسب‌و‌کار</label>
+          <label class="form-label required">توضیحات کسب‌و‌کار</label>
           <textarea
             v-model="localData.description"
             class="form-textarea"
             placeholder="توضیحات کوتاهی درباره کسب‌و‌کار خود بنویسید..."
             rows="4"
+            @blur="validateDescription"
           ></textarea>
+          <span v-if="errors.description" class="form-error">{{ errors.description }}</span>
           <span class="form-hint">{{ localData.description.length }} / 500 کاراکتر</span>
         </div>
 
@@ -145,6 +147,7 @@
 <script setup lang="ts">
 import { ref, computed, watch } from 'vue'
 import AppButton from '@/shared/components/ui/Button/AppButton.vue'
+import { providerRegistrationService } from '@/modules/provider/services/provider-registration.service'
 
 // ============================================
 // Props & Emits
@@ -185,6 +188,7 @@ const errors = ref({
   ownerLastName: '',
   email: '',
   phone: '',
+  description: '',
 })
 
 // ============================================
@@ -197,11 +201,13 @@ const isValid = computed(() => {
     localData.value.ownerFirstName.trim() !== '' &&
     localData.value.ownerLastName.trim() !== '' &&
     localData.value.phone.trim() !== '' &&
+    localData.value.description.trim() !== '' &&
     !errors.value.businessName &&
     !errors.value.ownerFirstName &&
     !errors.value.ownerLastName &&
     !errors.value.email &&
-    !errors.value.phone
+    !errors.value.phone &&
+    !errors.value.description
   )
 })
 
@@ -256,11 +262,21 @@ function validatePhone() {
   }
 }
 
+function validateDescription() {
+  if (!localData.value.description.trim()) {
+    errors.value.description = 'توضیحات کسب‌و‌کار الزامی است'
+  } else if (localData.value.description.length > 500) {
+    errors.value.description = 'توضیحات نباید بیشتر از 500 کاراکتر باشد'
+  } else {
+    errors.value.description = ''
+  }
+}
+
 function triggerLogoUpload() {
   logoInputRef.value?.click()
 }
 
-function handleLogoUpload(event: Event) {
+async function handleLogoUpload(event: Event) {
   const target = event.target as HTMLInputElement
   const file = target.files?.[0]
 
@@ -278,12 +294,27 @@ function handleLogoUpload(event: Event) {
     return
   }
 
-  // Read file and convert to base64/data URL
-  const reader = new FileReader()
-  reader.onload = (e) => {
-    localData.value.logoUrl = e.target?.result as string
+  try {
+    // Show loading state - use base64 preview while uploading
+    const reader = new FileReader()
+    reader.onload = (e) => {
+      localData.value.logoUrl = e.target?.result as string
+    }
+    reader.readAsDataURL(file)
+
+    // Upload the file and get back the URL
+    const imageUrl = await providerRegistrationService.uploadBusinessLogo(file)
+
+    // Replace the base64 preview with the actual uploaded URL
+    localData.value.logoUrl = imageUrl
+  } catch (error) {
+    console.error('Failed to upload logo:', error)
+    alert('خطا در آپلود لوگو. لطفا دوباره تلاش کنید')
+    localData.value.logoUrl = ''
+    if (logoInputRef.value) {
+      logoInputRef.value.value = ''
+    }
   }
-  reader.readAsDataURL(file)
 }
 
 function removeLogo() {
@@ -300,6 +331,7 @@ function handleNext() {
   validateOwnerLastName()
   validateEmail()
   validatePhone()
+  validateDescription()
 
   if (isValid.value) {
     emit('update:modelValue', localData.value)
@@ -340,6 +372,12 @@ watch(() => localData.value.phone, () => {
   }
 })
 
+watch(() => localData.value.description, () => {
+  if (localData.value.description.trim()) {
+    validateDescription()
+  }
+})
+
 watch(
   localData,
   (newValue) => {
@@ -356,5 +394,18 @@ watch(
   font-size: 0.75rem;
   color: #9ca3af;
   margin-top: 0.25rem;
+}
+
+// Override image upload size for logo (make it smaller)
+.image-upload {
+  max-width: 200px;
+  margin: 0 auto;
+}
+
+.image-preview,
+.image-placeholder {
+  width: 200px;
+  height: 200px;
+  aspect-ratio: 1;
 }
 </style>

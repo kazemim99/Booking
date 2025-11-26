@@ -97,7 +97,7 @@
 
 <script setup lang="ts">
 import { ref } from 'vue'
-import ProgressIndicator from '../shared/ProgressIndicator.vue'
+
 import AppButton from '@/shared/components/ui/Button/AppButton.vue'
 
 interface Emits {

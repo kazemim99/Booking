@@ -9,6 +9,20 @@
       />
     </div>
 
+    <!-- Validation Error Alert -->
+    <div v-if="validationError.show" class="error-container">
+      <ValidationAlert
+        v-model="validationError.show"
+        variant="error"
+        :title="validationError.title"
+        :message="validationError.message"
+        :errors="validationError.errors"
+        :dismissible="true"
+        :auto-dismiss="true"
+        :auto-dismiss-delay="8000"
+      />
+    </div>
+
     <!-- Step 1: Business Information -->
     <OrganizationBusinessInfoStep
       v-if="currentStep === 1"
@@ -78,8 +92,12 @@ import { ref, computed, onMounted, onBeforeUnmount } from 'vue'
 import { useRouter } from 'vue-router'
 import { toastService } from '@/core/services/toast.service'
 import { useAuthStore } from '@/core/stores/modules/auth.store'
+import { useLocations } from '@/shared/composables/useLocations'
+import { useProviderRegistration } from '../../composables/useProviderRegistration'
 import { hierarchyService } from '../../services/hierarchy.service'
+import { providerRegistrationService } from '../../services/provider-registration.service'
 import type { RegisterOrganizationRequest } from '../../types/hierarchy.types'
+import { parseApiError } from '@/shared/utils/validation/error-parser'
 
 // Components
 import RegistrationProgressIndicator from '../../components/registration/RegistrationProgressIndicator.vue'
@@ -91,6 +109,7 @@ import WorkingHoursStepNew from '../../components/registration/steps/WorkingHour
 import GalleryStep from '../../components/registration/steps/GalleryStep.vue'
 import OrganizationPreviewStep from '../../components/registration/steps/OrganizationPreviewStep.vue'
 import CompletionStep from '../../components/registration/steps/CompletionStep.vue'
+import ValidationAlert from '@/shared/components/ui/Alert/ValidationAlert.vue'
 
 // ============================================
 // State
@@ -98,6 +117,16 @@ import CompletionStep from '../../components/registration/steps/CompletionStep.v
 
 const router = useRouter()
 const authStore = useAuthStore()
+const locationStore = useLocations()
+const registration = useProviderRegistration()
+
+// Validation error state
+const validationError = ref({
+  show: false,
+  title: 'خطا در ذخیره اطلاعات',
+  message: undefined as string | string[] | undefined,
+  errors: undefined as Record<string, string[]> | undefined,
+})
 
 const currentStep = ref(1)
 const totalSteps = 8
@@ -219,6 +248,9 @@ function handleBack() {
 async function handleNext() {
   console.log('🚀 OrganizationRegistrationFlow: handleNext called, current step:', currentStep.value)
 
+  // Hide any previous validation errors
+  validationError.value.show = false
+
   if (!canProceed.value) {
     toastService.error('لطفاً تمام فیلدهای الزامی را تکمیل کنید')
     return
@@ -244,10 +276,11 @@ async function handleNext() {
         longitude: registrationData.value.location.longitude || 0,
         ownerFirstName: registrationData.value.businessInfo.ownerFirstName,
         ownerLastName: registrationData.value.businessInfo.ownerLastName,
+        logoUrl: registrationData.value.businessInfo.logoUrl || undefined,
       }
 
       const response = await hierarchyService.registerOrganization(request)
-      draftProviderId = response.data?.providerId || response.data?.ProviderId
+      draftProviderId = response.data?.providerId
       console.log('✅ Organization draft created:', draftProviderId)
       toastService.success('اطلاعات شما ذخیره شد')
     } else if (currentStep.value === 4) {
@@ -256,8 +289,11 @@ async function handleNext() {
         toastService.error('خطا: شناسه سازمان یافت نشد')
         return
       }
-      console.log('✅ Step 4 complete - Saving services...')
-      // Services will be saved via the existing provider service API
+      console.log('✅ Step 4 - Saving services to backend...')
+      await providerRegistrationService.saveStep4Services(
+        draftProviderId,
+        registrationData.value.services
+      )
       toastService.success('خدمات ذخیره شد')
     } else if (currentStep.value === 5) {
       // Step 5: Save working hours
@@ -265,22 +301,67 @@ async function handleNext() {
         toastService.error('خطا: شناسه سازمان یافت نشد')
         return
       }
-      console.log('✅ Step 5 complete - Saving working hours...')
+      console.log('✅ Step 5 - Saving working hours to backend...')
+      await providerRegistrationService.saveStep6WorkingHours(
+        draftProviderId,
+        registrationData.value.businessHours
+      )
       toastService.success('ساعات کاری ذخیره شد')
     } else if (currentStep.value === 6) {
-      // Step 6: Save gallery (optional)
+      // Step 6: Save gallery images (optional)
       if (!draftProviderId) {
         toastService.error('خطا: شناسه سازمان یافت نشد')
         return
       }
-      console.log('✅ Step 6 - Saving gallery...')
-      toastService.success('گالری ذخیره شد')
+
+      // Check if there are any images to upload from the composable
+      const galleryImages = registration.registrationData.value.galleryImages
+      console.log('🖼️ Gallery images in registration data (from composable):', galleryImages)
+
+      if (galleryImages && galleryImages.length > 0) {
+        console.log('✅ Step 6 - Found gallery images, checking for uploads...')
+
+        // Filter images that have File objects (not yet uploaded)
+        const filesToUpload = galleryImages
+          .filter((img: any) => img.file instanceof File)
+          .map((img: any) => img.file as File)
+
+        console.log('📤 Files to upload:', filesToUpload.length)
+
+        if (filesToUpload.length > 0) {
+          console.log(`📤 Uploading ${filesToUpload.length} image(s) to backend...`)
+          await providerRegistrationService.saveStep7Gallery(filesToUpload)
+          console.log('✅ Upload successful!')
+          toastService.success(`${filesToUpload.length} تصویر آپلود شد`)
+        } else {
+          console.log('✅ All images already uploaded (no File objects found)')
+          toastService.success('گالری ذخیره شد')
+        }
+      } else {
+        console.log('ℹ️ No gallery images to upload - skipping step 7')
+        toastService.success('مرحله گالری رد شد')
+      }
     }
 
     nextStep()
-  } catch (error) {
-    console.error('Error in handleNext:', error)
-    toastService.error((error as Error).message || 'خطا در ذخیره اطلاعات')
+  } catch (error: any) {
+    console.error('❌ Error in handleNext:', error)
+
+    // Parse the error and display validation alert
+    const parsedError = parseApiError(error)
+
+    validationError.value = {
+      show: true,
+      title: parsedError.title,
+      message: parsedError.message,
+      errors: parsedError.errors,
+    }
+
+    // Also show a toast for quick feedback
+    toastService.error(parsedError.message || parsedError.title)
+
+    // Scroll to top to show the error alert
+    window.scrollTo({ top: 0, behavior: 'smooth' })
   }
 }
 
@@ -293,8 +374,9 @@ async function handleFinalSubmit() {
 
     console.log('✅ Completing organization registration with ID:', draftProviderId)
 
-    // Mark registration as complete (would need backend endpoint)
-    // For now, just move to completion step
+    // Step 9: Complete the registration
+    await providerRegistrationService.saveStep9Complete(draftProviderId)
+
     nextStep()
     toastService.success('ثبت‌نام سازمان شما با موفقیت تکمیل شد!')
   } catch (error) {
@@ -320,54 +402,153 @@ onMounted(async () => {
   // Check if user has an existing draft provider
   try {
     const draft = await hierarchyService.getDraftProvider()
-    if (draft && draft.hierarchyType === 'Organization') {
+    if (draft) {
       console.log('📋 Found existing draft provider:', draft)
 
       // Restore provider ID
       draftProviderId = draft.providerId
 
       // Restore registration step (minimum step 3 since draft was created)
-      if (draft.registrationStep && draft.registrationStep >= 3) {
+      if (draft.registrationStep && draft.registrationStep >= 1) {
         currentStep.value = draft.registrationStep
+        console.log('✅ Restored to step:', draft.registrationStep)
       }
 
-      // Restore business info
-      if (draft.businessName) {
-        registrationData.value.businessInfo.businessName = draft.businessName
-      }
-      if (draft.businessDescription) {
-        registrationData.value.businessInfo.description = draft.businessDescription
-      }
-      if (draft.ownerFirstName) {
-        registrationData.value.businessInfo.ownerFirstName = draft.ownerFirstName
-      }
-      if (draft.ownerLastName) {
-        registrationData.value.businessInfo.ownerLastName = draft.ownerLastName
-      }
-      if (draft.email) {
-        registrationData.value.businessInfo.email = draft.email
-      }
-      if (draft.phoneNumber) {
-        registrationData.value.businessInfo.phone = draft.phoneNumber
+      // Restore business info from nested businessInfo object
+      if (draft.businessInfo) {
+        if (draft.businessInfo.businessName) {
+          registrationData.value.businessInfo.businessName = draft.businessInfo.businessName
+        }
+        if (draft.businessInfo.businessDescription) {
+          registrationData.value.businessInfo.description = draft.businessInfo.businessDescription
+        }
+        if (draft.businessInfo.email) {
+          registrationData.value.businessInfo.email = draft.businessInfo.email
+        }
+        if (draft.businessInfo.phoneNumber) {
+          registrationData.value.businessInfo.phone = draft.businessInfo.phoneNumber
+        }
+
+        // Restore owner names directly from businessInfo
+        if (draft.businessInfo.ownerFirstName) {
+          registrationData.value.businessInfo.ownerFirstName = draft.businessInfo.ownerFirstName
+        }
+        if (draft.businessInfo.ownerLastName) {
+          registrationData.value.businessInfo.ownerLastName = draft.businessInfo.ownerLastName
+        }
+
+        // Restore logo URL from businessInfo
+        if (draft.businessInfo.logoUrl) {
+          registrationData.value.businessInfo.logoUrl = draft.businessInfo.logoUrl
+        }
+
+        // Restore category from businessInfo
+        if (draft.businessInfo.category) {
+          registrationData.value.categoryId = draft.businessInfo.category
+        }
       }
 
-      // Restore category
-      if (draft.category) {
-        registrationData.value.categoryId = draft.category
-      }
+      // Restore address and location from nested location object
+      if (draft.location) {
+        registrationData.value.address.addressLine1 = draft.location.addressLine1 || ''
+        registrationData.value.address.addressLine2 = draft.location.addressLine2 || ''
+        registrationData.value.address.city = draft.location.city || ''
+        registrationData.value.address.state = draft.location.province || ''
+        registrationData.value.address.postalCode = draft.location.postalCode || ''
 
-      // Restore address
-      if (draft.address) {
-        registrationData.value.address.addressLine1 = draft.address.street || ''
-        registrationData.value.address.city = draft.address.city || ''
-        registrationData.value.address.state = draft.address.state || ''
-        registrationData.value.address.postalCode = draft.address.postalCode || ''
+        // Resolve province ID from name
+        if (draft.location.province) {
+          const province = locationStore.getProvinceByName(draft.location.province)
+          if (province) {
+            registrationData.value.address.provinceId = province.id
+            console.log('✅ Resolved provinceId:', province.id, 'for', draft.location.province)
+
+            // Load cities for this province
+            await locationStore.loadCitiesByProvinceId(province.id)
+
+            // Resolve city ID from name
+            if (draft.location.city) {
+              const cities = locationStore.getCitiesByProvinceId(province.id)
+              const city = cities.find(c => c.name === draft.location.city)
+              if (city) {
+                registrationData.value.address.cityId = city.id
+                console.log('✅ Resolved cityId:', city.id, 'for', draft.location.city)
+              }
+            }
+          }
+        }
 
         // Restore location coordinates
-        if (draft.address.latitude && draft.address.longitude) {
-          registrationData.value.location.latitude = draft.address.latitude
-          registrationData.value.location.longitude = draft.address.longitude
+        if (draft.location.latitude && draft.location.longitude) {
+          registrationData.value.location.latitude = draft.location.latitude
+          registrationData.value.location.longitude = draft.location.longitude
         }
+      }
+
+      // Restore services
+      if (draft.services && draft.services.length > 0) {
+        registrationData.value.services = draft.services
+        console.log('✅ Restored services:', draft.services.length)
+      }
+
+      // Restore business hours
+      if (draft.businessHours && draft.businessHours.length > 0) {
+        registrationData.value.businessHours = draft.businessHours.map((bh: any) => {
+          // Map breaks from API format to component format
+          let breaks = []
+          if (bh.breaks && bh.breaks.length > 0) {
+            breaks = bh.breaks.map((brk: any, index: number) => ({
+              id: (index + 1).toString(),
+              start: {
+                hours: brk.startTimeHours ?? 0,
+                minutes: brk.startTimeMinutes ?? 0
+              },
+              end: {
+                hours: brk.endTimeHours ?? 0,
+                minutes: brk.endTimeMinutes ?? 0
+              }
+            }))
+            console.log(`✅ Restored ${breaks.length} break(s) for day ${bh.dayOfWeek}`)
+          } else if (bh.isOpen) {
+            // Add default break 14:00-17:00 for open days that don't have breaks
+            breaks = [{
+              id: '1',
+              start: { hours: 14, minutes: 0 },
+              end: { hours: 17, minutes: 0 }
+            }]
+            console.log(`🔄 Auto-migrated day ${bh.dayOfWeek}: Added default break 14:00-17:00`)
+          }
+
+          return {
+            dayOfWeek: bh.dayOfWeek,
+            isOpen: bh.isOpen,
+            openTime: bh.openTimeHours !== null && bh.openTimeMinutes !== null
+              ? { hours: bh.openTimeHours, minutes: bh.openTimeMinutes }
+              : null,
+            closeTime: bh.closeTimeHours !== null && bh.closeTimeMinutes !== null
+              ? { hours: bh.closeTimeHours, minutes: bh.closeTimeMinutes }
+              : null,
+            breaks: breaks
+          }
+        })
+        console.log('✅ Restored business hours:', draft.businessHours.length)
+      }
+
+      // Restore gallery images to composable
+      if (draft.galleryImages && draft.galleryImages.length > 0) {
+        // Map API format to component format
+        registration.registrationData.value.galleryImages = draft.galleryImages.map((img: any) => ({
+          id: img.id,
+          url: img.imageUrl || img.mediumUrl || img.thumbnailUrl,
+          thumbnailUrl: img.thumbnailUrl,
+          mediumUrl: img.mediumUrl,
+          imageUrl: img.imageUrl,
+          altText: `تصویر گالری ${img.displayOrder + 1}`,
+          displayOrder: img.displayOrder,
+          isPrimary: img.isPrimary,
+          uploadedAt: img.uploadedAt,
+        }))
+        console.log('✅ Restored gallery images to composable:', draft.galleryImages.length)
       }
 
       toastService.success('ثبت‌نام شما بازیابی شد. می‌توانید از جایی که متوقف شده بودید ادامه دهید.')
@@ -398,5 +579,11 @@ onBeforeUnmount(() => {
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
   padding: 1rem 0;
   margin-bottom: 2rem;
+}
+
+.error-container {
+  max-width: 48rem;
+  margin: 0 auto 2rem;
+  padding: 0 1rem;
 }
 </style>

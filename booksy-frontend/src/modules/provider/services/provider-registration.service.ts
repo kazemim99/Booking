@@ -87,6 +87,9 @@ export interface CreateProviderDraftRequest {
   category: string
   phoneNumber: string
   email: string
+  ownerFirstName: string
+  ownerLastName: string
+  logoUrl?: string
   addressLine1: string
   addressLine2?: string
   city: string
@@ -140,6 +143,9 @@ export interface RegistrationProgressResponse {
       category: string
       phoneNumber: string
       email: string
+      ownerFirstName?: string
+      ownerLastName?: string
+      logoUrl?: string
     }
     location: {
       addressLine1: string
@@ -259,6 +265,8 @@ class ProviderRegistrationService {
 
   /**
    * Get the current user's draft provider
+   * @deprecated Use getRegistrationProgress() instead - this endpoint may be removed
+   * @see getRegistrationProgress
    */
   async getDraftProvider(): Promise<GetDraftProviderResponse> {
     const response = await serviceCategoryClient.get<GetDraftProviderResponse>(
@@ -438,6 +446,26 @@ class ProviderRegistrationService {
     }
 
     return response.data!
+  }
+
+  /**
+   * Upload business logo during registration (before draft is created)
+   * This uploads the image file and returns a URL that can be used in the draft
+   */
+  async uploadBusinessLogo(file: File): Promise<string> {
+    const formData = new FormData()
+    formData.append('image', file)
+
+    const response = await serviceCategoryClient.post<{ imageUrl: string }>(
+      'v1/registration/upload-logo',
+      formData,
+      {
+        headers: {
+          'Content-Type': 'multipart/form-data'
+        }
+      }
+    )
+    return response.data!.imageUrl
   }
 
   /**

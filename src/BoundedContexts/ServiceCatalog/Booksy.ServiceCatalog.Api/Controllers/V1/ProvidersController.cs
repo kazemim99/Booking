@@ -101,7 +101,8 @@ public class ProvidersController : ControllerBase
             Latitude: request.Latitude,
             Longitude: request.Longitude,
             OwnerFirstName: request.OwnerFirstName,
-            OwnerLastName: request.OwnerLastName
+            OwnerLastName: request.OwnerLastName,
+            LogoUrl: request.LogoUrl
         );
 
         var result = await _mediator.Send(command, cancellationToken);
@@ -218,6 +219,9 @@ public class ProvidersController : ControllerBase
             Category: request.Category,
             PhoneNumber: request.PhoneNumber,
             Email: request.Email,
+            OwnerFirstName: request.OwnerFirstName,
+            OwnerLastName: request.OwnerLastName,
+            LogoUrl: request.LogoUrl,
             AddressLine1: request.AddressLine1,
             AddressLine2: request.AddressLine2,
             City: request.City,
@@ -789,7 +793,7 @@ public class ProvidersController : ControllerBase
         [FromBody] AddStaffRequest request,
         CancellationToken cancellationToken = default)
     {
-  
+
 
         var command = new AddStaffToProviderCommand(
             providerId,
@@ -1120,7 +1124,7 @@ public class ProvidersController : ControllerBase
     {
         return new ProviderDetailsResponse
         {
-           
+
             Id = result.Id,
             OwnerId = result.OwnerId,
             BusinessName = result.BusinessName,
@@ -1632,7 +1636,8 @@ public class ProvidersController : ControllerBase
         var command = new UpdateBusinessProfileCommand(
             ProviderId: providerId.Value,
             BusinessName: request.BusinessName,
-            Description: request.Description);
+            Description: request.Description, 
+            LogoUrl: request.LogoUrl);
 
         var result = await _mediator.Send(command, cancellationToken);
 
@@ -1672,6 +1677,7 @@ public sealed class RegisterOrganizationProviderRequest
     public decimal Longitude { get; set; }
     public string OwnerFirstName { get; set; } = string.Empty;
     public string OwnerLastName { get; set; } = string.Empty;
+    public string? LogoUrl { get; set; }
 }
 
 public sealed class RegisterOrganizationProviderResponse
@@ -1716,6 +1722,9 @@ public sealed class CreateProviderDraftRequest
     public string Category { get; set; } = string.Empty;
     public string PhoneNumber { get; set; } = string.Empty;
     public string Email { get; set; } = string.Empty;
+    public string OwnerFirstName { get; set; } = string.Empty;
+    public string OwnerLastName { get; set; } = string.Empty;
+    public string? LogoUrl { get; set; }
     public string AddressLine1 { get; set; } = string.Empty;
     public string? AddressLine2 { get; set; }
     public string City { get; set; } = string.Empty;

@@ -26,6 +26,8 @@ namespace Booksy.ServiceCatalog.Domain.Aggregates
 
         // Core Identity
         public UserId OwnerId { get; private set; }
+        public string OwnerFirstName { get; private set; }
+        public string OwnerLastName { get; private set; }
         public BusinessProfile Profile { get; private set; }
 
         // Status & Type
@@ -85,14 +87,17 @@ namespace Booksy.ServiceCatalog.Domain.Aggregates
             ContactInfo contactInfo,
             BusinessAddress address,
             ProviderHierarchyType hierarchyType = ProviderHierarchyType.Organization,
-            int registrationStep = 3)
+            int registrationStep = 3,
+            string? logoUrl = null)
         {
-            var profile = BusinessProfile.Create(businessName, description,"profileImageUrl");
+            var profile = BusinessProfile.Create(businessName, description, logoUrl);
 
             var provider = new Provider
             {
                 Id = ProviderId.New(),
                 OwnerId = ownerId,
+                OwnerFirstName = ownerFirstName,
+                OwnerLastName = ownerLastName,
                 Profile = profile,
                 Status = ProviderStatus.Drafted,
                 ProviderType = type,
@@ -132,7 +137,7 @@ namespace Booksy.ServiceCatalog.Domain.Aggregates
             BusinessAddress address,
             ProviderHierarchyType hierarchyType = ProviderHierarchyType.Organization)
         {
-            var profile = BusinessProfile.Create(businessName, description, "profileImageUrl");
+            var profile = BusinessProfile.Create(businessName, description, logoUrl: null, profileImageUrl: null);
 
             var provider = new Provider
             {
@@ -194,7 +199,9 @@ namespace Booksy.ServiceCatalog.Domain.Aggregates
 
         public void UpdateBusinessProfile(string businessName, string description, string? profileImageUrl)
         {
-            Profile = BusinessProfile.Create(businessName, description,profileImageUrl);
+            // Preserve existing LogoUrl when updating profile
+            var existingLogoUrl = Profile.LogoUrl;
+            Profile = BusinessProfile.Create(businessName, description, logoUrl: existingLogoUrl, profileImageUrl: profileImageUrl);
 
             RaiseDomainEvent(new BusinessProfileUpdatedEvent(Id, businessName, description, DateTime.UtcNow));
         }
@@ -207,6 +214,33 @@ namespace Booksy.ServiceCatalog.Domain.Aggregates
         public void UpdateAddress(BusinessAddress newAddress)
         {
             Address = newAddress;
+        }
+
+        /// <summary>
+        /// Updates draft provider information (used when user goes back in registration flow)
+        /// </summary>
+        public void UpdateDraftInfo(
+            string ownerFirstName,
+            string ownerLastName,
+            string businessName,
+            string description,
+            ProviderType type,
+            ContactInfo contactInfo,
+            BusinessAddress address,
+            string? logoUrl = null)
+        {
+            // Only allow updating draft providers
+            if (Status != ProviderStatus.Drafted)
+                throw new InvalidOperationException("Can only update draft providers");
+
+            OwnerFirstName = ownerFirstName;
+            OwnerLastName = ownerLastName;
+            Profile = BusinessProfile.Create(businessName, description, logoUrl);
+            ProviderType = type;
+            ContactInfo = contactInfo;
+            Address = address;
+
+            RaiseDomainEvent(new BusinessProfileUpdatedEvent(Id, businessName, description, DateTime.UtcNow));
         }
 
         // Registration Progress Methods
@@ -701,6 +735,53 @@ namespace Booksy.ServiceCatalog.Domain.Aggregates
             // Non-independent individuals must have a parent
             if (HierarchyType == ProviderHierarchyType.Individual && !IsIndependent && ParentProviderId == null)
                 throw new InvalidProviderException("Non-independent individuals must be linked to an organization");
+        }
+
+        // ============================================
+        // Gallery Management Methods
+        // ============================================
+
+        /// <summary>
+        /// Uploads a gallery image and raises domain event for cache invalidation
+        /// </summary>
+        public GalleryImage UploadGalleryImage(string imageUrl, string thumbnailUrl, string mediumUrl)
+        {
+            var galleryImage = Profile.AddGalleryImage(Id, imageUrl, thumbnailUrl, mediumUrl);
+
+            RaiseDomainEvent(new GalleryImageUploadedEvent(Id, galleryImage.Id, imageUrl, DateTime.UtcNow));
+
+            return galleryImage;
+        }
+
+        /// <summary>
+        /// Deletes a gallery image and raises domain event for cache invalidation
+        /// </summary>
+        public void DeleteGalleryImage(Guid imageId)
+        {
+            Profile.RemoveGalleryImage(imageId);
+
+            RaiseDomainEvent(new GalleryImageDeletedEvent(Id, imageId, DateTime.UtcNow));
+        }
+
+        /// <summary>
+        /// Reorders gallery images and raises domain event for cache invalidation
+        /// </summary>
+        public void ReorderGalleryImages(Dictionary<Guid, int> imageOrders)
+        {
+            Profile.ReorderGalleryImages(imageOrders);
+
+            RaiseDomainEvent(new GalleryImagesReorderedEvent(Id, imageOrders, DateTime.UtcNow));
+        }
+
+        /// <summary>
+        /// Sets a gallery image as primary and raises domain event for cache invalidation
+        /// </summary>
+        public void SetPrimaryGalleryImage(Guid imageId)
+        {
+            Profile.SetPrimaryGalleryImage(imageId);
+
+            // Reuse GalleryImageUploadedEvent since it updates the provider
+            RaiseDomainEvent(new GalleryImageUploadedEvent(Id, imageId, string.Empty, DateTime.UtcNow));
         }
     }
 }

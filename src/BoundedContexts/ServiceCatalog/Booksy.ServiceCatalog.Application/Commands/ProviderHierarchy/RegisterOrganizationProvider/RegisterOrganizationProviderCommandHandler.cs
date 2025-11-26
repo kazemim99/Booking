@@ -41,24 +41,10 @@ namespace Booksy.ServiceCatalog.Application.Commands.ProviderHierarchy.RegisterO
             var userId = UserId.From(_currentUserService.UserId
                 ?? throw new UnauthorizedAccessException("User not authenticated"));
 
-            // 2. Check if user already has a draft provider
-            var existingProvider = await _providerRepository
-                .GetDraftProviderByOwnerIdAsync(userId, cancellationToken);
+            // 2. Map category to provider type
+            var providerType = MapCategoryToProviderType(request.Category);
 
-            if (existingProvider != null)
-            {
-                return new RegisterOrganizationProviderResult(
-                    existingProvider.Id.Value,
-                    existingProvider.HierarchyType.ToString(),
-                    existingProvider.RegistrationStep,
-                    "Draft provider already exists. Resuming registration.");
-            }
-
-          var providerType =  MapCategoryToProviderType(request.Category);
-
-
-          
-            // 4. Create value objects
+            // 3. Create value objects
             var contactInfo = ContactInfo.Create(
                 Email.Create(request.Email),
                 PhoneNumber.Create(request.PhoneNumber));
@@ -81,30 +67,60 @@ namespace Booksy.ServiceCatalog.Application.Commands.ProviderHierarchy.RegisterO
                 (double)request.Latitude,
                 (double)request.Longitude);
 
-            // 5. Create organization provider (draft)
-            var provider = Domain.Aggregates.Provider.CreateDraft(
-                userId,
-                request.OwnerFirstName,
-                request.OwnerLastName,
-                request.BusinessName,
-                request.BusinessDescription,
-                providerType,
-                contactInfo,
-                address,
-                ProviderHierarchyType.Organization,
-                registrationStep: 3);
+            // 4. Check if user already has a draft provider
+            var existingProvider = await _providerRepository
+                .GetDraftProviderByOwnerIdAsync(userId, cancellationToken);
 
-            // 6. Save
-            await _providerRepository.SaveProviderAsync(provider, cancellationToken);
-            await _unitOfWork.CommitAsync(cancellationToken);
+            Domain.Aggregates.Provider provider;
 
-            _logger.LogInformation("Organization provider created: {ProviderId}", provider.Id.Value);
+            if (existingProvider != null)
+            {
+                // Update existing draft with new information
+                _logger.LogInformation("Updating existing draft provider: {ProviderId}", existingProvider.Id.Value);
+
+                existingProvider.UpdateDraftInfo(
+                    request.OwnerFirstName,
+                    request.OwnerLastName,
+                    request.BusinessName,
+                    request.BusinessDescription,
+                    providerType,
+                    contactInfo,
+                    address,
+                    request.LogoUrl);
+
+                provider = existingProvider;
+                await _providerRepository.UpdateProviderAsync(provider, cancellationToken);
+
+                _logger.LogInformation("Draft provider updated: {ProviderId}", provider.Id.Value);
+            }
+            else
+            {
+                // Create new organization provider (draft)
+                provider = Domain.Aggregates.Provider.CreateDraft(
+                    userId,
+                    request.OwnerFirstName,
+                    request.OwnerLastName,
+                    request.BusinessName,
+                    request.BusinessDescription,
+                    providerType,
+                    contactInfo,
+                    address,
+                    ProviderHierarchyType.Organization,
+                    registrationStep: 3,
+                    logoUrl: request.LogoUrl);
+
+                await _providerRepository.SaveProviderAsync(provider, cancellationToken);
+
+                _logger.LogInformation("Organization provider created: {ProviderId}", provider.Id.Value);
+            }
 
             return new RegisterOrganizationProviderResult(
                 provider.Id.Value,
                 provider.HierarchyType.ToString(),
                 provider.RegistrationStep,
-                "Organization provider created successfully");
+                existingProvider != null
+                    ? "Draft provider updated successfully"
+                    : "Organization provider created successfully");
         }
 
 

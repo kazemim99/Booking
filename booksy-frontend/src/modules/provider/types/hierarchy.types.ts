@@ -61,6 +61,7 @@ export interface RegisterOrganizationRequest {
   longitude: number
   ownerFirstName: string
   ownerLastName: string
+  logoUrl?: string
   idempotencyKey?: string
 }
 
