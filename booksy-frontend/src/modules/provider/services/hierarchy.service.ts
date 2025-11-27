@@ -28,6 +28,46 @@ import type {
 const API_VERSION = 'v1'
 const API_BASE = `/${API_VERSION}/providers`
 
+/**
+ * Convert relative URL to absolute URL using the API base URL
+ */
+function toAbsoluteUrl(url: string | undefined): string | undefined {
+  if (!url) return url
+  if (url.startsWith('http://') || url.startsWith('https://')) return url
+  if (url.startsWith('/')) {
+    // Get the API base URL from environment or use default
+    const apiBaseUrl = import.meta.env.VITE_SERVICE_CATEGORY_API_URL || 'http://localhost:5010/api'
+    // Remove /api suffix to get just the domain
+    const baseUrl = apiBaseUrl.replace(/\/api\/?$/, '')
+    return `${baseUrl}${url}`
+  }
+  return url
+}
+
+/**
+ * Map backend invitation response to frontend ProviderInvitation type
+ * Backend uses different field names than frontend
+ */
+function mapInvitationResponse(backendInvitation: any): ProviderInvitation {
+  return {
+    id: backendInvitation.invitationId || backendInvitation.id,
+    organizationId: backendInvitation.organizationId,
+    organizationName: backendInvitation.organizationName || '',
+    organizationLogo: toAbsoluteUrl(backendInvitation.organizationLogo),
+    organizationType: backendInvitation.organizationType,
+    inviteePhoneNumber: backendInvitation.phoneNumber || backendInvitation.inviteePhoneNumber,
+    inviteeName: backendInvitation.inviteeName || '',
+    message: backendInvitation.message,
+    status: backendInvitation.status,
+    sentAt: new Date(backendInvitation.createdAt || backendInvitation.sentAt),
+    expiresAt: new Date(backendInvitation.expiresAt),
+    respondedAt: backendInvitation.respondedAt ? new Date(backendInvitation.respondedAt) : undefined,
+    acceptedByProviderId: backendInvitation.acceptedByProviderId,
+    createdBy: backendInvitation.createdBy,
+    createdByName: backendInvitation.createdByName,
+  }
+}
+
 class HierarchyService {
   // ============================================================================
   // ORGANIZATION & INDIVIDUAL REGISTRATION
@@ -111,10 +151,37 @@ class HierarchyService {
     if (request.page) params.append('page', String(request.page))
     if (request.pageSize) params.append('pageSize', String(request.pageSize))
 
-    const response = await serviceCategoryClient.get<PagedHierarchyResponse<StaffMember>>(
+    const response = await serviceCategoryClient.get<any>(
       `${API_BASE}/${request.organizationId}/hierarchy/staff?${params.toString()}`
     )
-    return response.data!
+
+    console.log('getStaffMembers raw response:', response.data)
+
+    // Backend returns { organizationId, staffMembers: [...] }
+    // Extract the staffMembers array and wrap in PagedHierarchyResponse format
+    if (response.data && response.data.staffMembers && Array.isArray(response.data.staffMembers)) {
+      return {
+        items: response.data.staffMembers,
+        totalCount: response.data.staffMembers.length,
+        page: request.page || 1,
+        pageSize: request.pageSize || response.data.staffMembers.length,
+        hasNextPage: false,
+      }
+    }
+
+    // Fallback: if response.data already has the expected format
+    if (response.data && response.data.items) {
+      return response.data as PagedHierarchyResponse<StaffMember>
+    }
+
+    // No staff members found
+    return {
+      items: [],
+      totalCount: 0,
+      page: request.page || 1,
+      pageSize: request.pageSize || 10,
+      hasNextPage: false,
+    }
   }
 
   /**
@@ -138,21 +205,64 @@ class HierarchyService {
     organizationId: string,
     request: SendInvitationRequest
   ): Promise<HierarchyApiResponse<ProviderInvitation>> {
-    const response = await serviceCategoryClient.post<HierarchyApiResponse<ProviderInvitation>>(
+    const response = await serviceCategoryClient.post<any>(
       `${API_BASE}/${organizationId}/hierarchy/invitations`,
       request
     )
-    return response.data!
+
+    console.log('sendInvitation raw response:', response.data)
+
+    // Check if response is already wrapped in HierarchyApiResponse format
+    if (response.data && typeof response.data === 'object' && 'success' in response.data) {
+      return {
+        success: response.data.success,
+        data: response.data.data ? mapInvitationResponse(response.data.data) : undefined,
+        message: response.data.message,
+        errorCode: response.data.errorCode,
+      }
+    }
+
+    // Check if response has the invitation data directly (201 Created response)
+    if (response.data && typeof response.data === 'object') {
+      // If it has invitationId, it's the invitation object itself
+      if ('invitationId' in response.data || 'id' in response.data) {
+        return {
+          success: true,
+          data: mapInvitationResponse(response.data),
+        }
+      }
+    }
+
+    // Otherwise, wrap the response data
+    return {
+      success: true,
+      data: mapInvitationResponse(response.data),
+    }
   }
 
   /**
    * Get all invitations sent by an organization
    */
   async getSentInvitations(organizationId: string): Promise<ProviderInvitation[]> {
-    const response = await serviceCategoryClient.get<ProviderInvitation[]>(
+    const response = await serviceCategoryClient.get<any>(
       `${API_BASE}/${organizationId}/hierarchy/invitations`
     )
-    return response.data!
+
+    console.log('getSentInvitations raw response:', response.data)
+
+    // Backend returns { data: { organizationId, invitations: [...] } }
+    // Extract the invitations array
+    if (response.data && response.data.invitations && Array.isArray(response.data.invitations)) {
+      return response.data.invitations.map(mapInvitationResponse)
+    }
+
+    // Fallback: if response.data is already an array
+    if (Array.isArray(response.data)) {
+      return response.data.map(mapInvitationResponse)
+    }
+
+    // No invitations found
+    return []
   }
 
   /**
@@ -169,10 +279,12 @@ class HierarchyService {
    * Get a specific invitation by ID
    */
   async getInvitation(organizationId: string, invitationId: string): Promise<ProviderInvitation> {
-    const response = await serviceCategoryClient.get<ProviderInvitation>(
+    const response = await serviceCategoryClient.get<any>(
       `${API_BASE}/${organizationId}/hierarchy/invitations/${invitationId}`
     )
-    return response.data!
+
+    // Map the backend response to frontend format
+    return mapInvitationResponse(response.data!)
   }
 
   /**
@@ -261,10 +373,30 @@ class HierarchyService {
    * Get all join requests received by an organization
    */
   async getReceivedJoinRequests(organizationId: string): Promise<JoinRequest[]> {
-    const response = await serviceCategoryClient.get<JoinRequest[]>(
+    const response = await serviceCategoryClient.get<any>(
       `${API_BASE}/${organizationId}/hierarchy/join-requests`
     )
-    return response.data!
+
+    console.log('getReceivedJoinRequests raw response:', response.data)
+
+    // Backend returns { organizationId, joinRequests: [...] }
+    // Extract the joinRequests array
+    if (response.data && response.data.joinRequests && Array.isArray(response.data.joinRequests)) {
+      return response.data.joinRequests as JoinRequest[]
+    }
+
+    // Fallback: if it uses 'requests' field name
+    if (response.data && response.data.requests && Array.isArray(response.data.requests)) {
+      return response.data.requests as JoinRequest[]
+    }
+
+    // Fallback: if response.data is already an array
+    if (Array.isArray(response.data)) {
+      return response.data as JoinRequest[]
+    }
+
+    // No requests found
+    return []
   }
 
   /**

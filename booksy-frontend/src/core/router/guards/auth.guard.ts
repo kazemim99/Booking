@@ -34,8 +34,7 @@ export async function authGuard(
   if (requiresAuth && !authStore.isAuthenticated) {
     // Determine appropriate login page based on target route
     // Provider routes should redirect to provider login
-    const isProviderRoute = to.path.startsWith('/dashboard') ||
-                           to.path.startsWith('/provider/') ||
+    const isProviderRoute = to.path.startsWith('/provider/') ||
                            to.name?.toString().startsWith('Provider')
 
     const loginRoute = isProviderRoute ? 'ProviderLogin' : 'CustomerLogin'
@@ -98,8 +97,8 @@ export async function authGuard(
       authStore.providerStatus === ProviderStatus.PendingVerification
     ) {
       if (to.name === 'Home' || to.name === 'ProviderRegistration') {
-        console.log('[AuthGuard] Redirecting from', to.name, 'to /dashboard')
-        next({ path: '/dashboard' })
+        console.log('[AuthGuard] Redirecting from', to.name, 'to /provider/dashboard')
+        next({ path: '/provider/dashboard' })
         return
       }
     }

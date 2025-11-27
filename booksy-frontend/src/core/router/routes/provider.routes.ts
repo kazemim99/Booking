@@ -39,7 +39,7 @@ const providerRoutes: RouteRecordRaw[] = [
   // User must be authenticated (phone verification creates User + returns JWT)
   // This route is for Providers with Drafted status to complete their profile
   {
-    path: '/registration',
+    path: '/provider/registration',
     name: 'ProviderRegistration',
     component: () => import('@/modules/provider/views/registration/ProviderRegistrationView.vue'),
     meta: {
@@ -77,7 +77,7 @@ const providerRoutes: RouteRecordRaw[] = [
 
   // Organization Registration Flow
   {
-    path: '/registration/organization',
+    path: '/provider/registration/organization',
     name: 'OrganizationRegistration',
     component: () => import('@/modules/provider/views/registration/OrganizationRegistrationFlow.vue'),
     meta: {
@@ -100,7 +100,7 @@ const providerRoutes: RouteRecordRaw[] = [
 
   // Individual Registration Flow
   {
-    path: '/registration/individual',
+    path: '/provider/registration/individual',
     name: 'IndividualRegistration',
     component: () => import('@/modules/provider/views/registration/IndividualRegistrationFlow.vue'),
     meta: {
@@ -123,7 +123,7 @@ const providerRoutes: RouteRecordRaw[] = [
 
   // Provider Dashboard (main overview page)
   {
-    path: '/dashboard',
+    path: '/provider/dashboard',
     name: 'ProviderDashboard',
     component: () => import('@/modules/provider/views/dashboard/ProviderDashboardView.vue'),
     meta: {
@@ -135,7 +135,7 @@ const providerRoutes: RouteRecordRaw[] = [
 
   // Provider Bookings
   {
-    path: '/bookings',
+    path: '/provider/bookings',
     name: 'ProviderBookings',
     component: () => import('@/modules/provider/views/ProviderBookingsView.vue'),
     meta: {
@@ -147,7 +147,7 @@ const providerRoutes: RouteRecordRaw[] = [
 
   // Provider Profile
   {
-    path: '/profile',
+    path: '/provider/profile',
     name: 'ProviderProfile',
     component: () => import('@/modules/provider/views/dashboard/ProviderProfileView.vue'),
     meta: {
@@ -159,7 +159,7 @@ const providerRoutes: RouteRecordRaw[] = [
 
   // Provider Financial
   {
-    path: '/financial',
+    path: '/provider/financial',
     name: 'ProviderFinancial',
     component: () => import('@/modules/provider/views/dashboard/ProviderFinancialView.vue'),
     meta: {
@@ -171,7 +171,7 @@ const providerRoutes: RouteRecordRaw[] = [
 
   // Business Hours Management
   {
-    path: '/hours',
+    path: '/provider/hours',
     name: 'ProviderBusinessHours',
     component: () => import('@/modules/provider/views/hours/BusinessHoursView.vue'),
     meta: {
@@ -183,9 +183,9 @@ const providerRoutes: RouteRecordRaw[] = [
 
   // Gallery Management
   {
-    path: '/gallery',
+    path: '/provider/gallery',
     name: 'ProviderGallery',
-    component: () => import('@/modules/provider/views/gallery/GalleryViewNew.vue'),
+    component: () => import('@/modules/provider/views/gallery/GalleryView.vue'),
     meta: {
       requiresAuth: true,
       roles: ['Provider', 'ServiceProvider'],
@@ -195,7 +195,7 @@ const providerRoutes: RouteRecordRaw[] = [
 
   // Services Management
   {
-    path: '/services',
+    path: '/provider/services',
     name: 'ProviderServices',
     component: () => import('@/modules/provider/views/ProviderServicesView.vue'),
     meta: {
@@ -207,7 +207,7 @@ const providerRoutes: RouteRecordRaw[] = [
 
   // Staff Management (now integrated into Profile page)
   // {
-  //   path: '/staff',
+  //   path: '/provider/staff',
   //   name: 'ProviderStaff',
   //   component: () => import('@/modules/provider/views/ProviderStaffView.vue'),
   //   meta: {
@@ -219,7 +219,7 @@ const providerRoutes: RouteRecordRaw[] = [
 
   // Settings
   {
-    path: '/settings',
+    path: '/provider/settings',
     name: 'ProviderSettings',
     component: () => import('@/modules/provider/views/ProviderSettingsView.vue'),
     meta: {
@@ -231,7 +231,7 @@ const providerRoutes: RouteRecordRaw[] = [
 
   // Analytics
   {
-    path: '/analytics',
+    path: '/provider/analytics',
     name: 'ProviderAnalytics',
     component: () => import('@/modules/provider/views/ProviderAnalyticsView.vue'),
     meta: {
@@ -243,9 +243,9 @@ const providerRoutes: RouteRecordRaw[] = [
 
   // Staff Management
   {
-    path: '/staff',
+    path: '/provider/staff',
     name: 'ProviderStaffManagement',
-    component: () => import('@/modules/provider/components/staff/StaffManagementDashboard.vue'),
+    component: () => import('@/modules/provider/views/staff/StaffManagementView.vue'),
     meta: {
       requiresAuth: true,
       roles: ['Provider', 'ServiceProvider'],
@@ -255,7 +255,7 @@ const providerRoutes: RouteRecordRaw[] = [
 
   // Invitation Routes
   {
-    path: '/invitations/:id/accept',
+    path: '/provider/invitations/:id/accept',
     name: 'AcceptInvitation',
     component: () => import('@/modules/provider/views/invitation/AcceptInvitationView.vue'),
     meta: {
@@ -267,7 +267,7 @@ const providerRoutes: RouteRecordRaw[] = [
 
   // Join Request Routes
   {
-    path: '/organizations/search',
+    path: '/provider/organizations/search',
     name: 'SearchOrganizations',
     component: () => import('@/modules/provider/components/joinrequest/SearchOrganizations.vue'),
     meta: {
@@ -277,7 +277,7 @@ const providerRoutes: RouteRecordRaw[] = [
     },
   },
   {
-    path: '/join-requests',
+    path: '/provider/join-requests',
     name: 'MyJoinRequests',
     component: () => import('@/modules/provider/views/joinrequest/MyJoinRequestsView.vue'),
     meta: {
@@ -289,7 +289,7 @@ const providerRoutes: RouteRecordRaw[] = [
 
   // Conversion Route
   {
-    path: '/convert-to-organization',
+    path: '/provider/convert-to-organization',
     name: 'ConvertToOrganization',
     component: () => import('@/modules/provider/views/conversion/ConvertToOrganizationView.vue'),
     meta: {

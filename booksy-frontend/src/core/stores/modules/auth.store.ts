@@ -457,9 +457,7 @@ export const useAuthStore = defineStore('auth', () => {
                                      providerStatus.value !== ProviderStatus.Drafted
         if (!isOnboardingComplete) return false
 
-        return path.startsWith('/dashboard') ||
-               path.startsWith('/provider') ||
-               path.startsWith('/bookings')
+        return path.startsWith('/provider')
       }
 
       if (role === 'customer') {
@@ -523,7 +521,7 @@ export const useAuthStore = defineStore('auth', () => {
         await router.push(redirectPath)
       } else {
         console.log('[AuthStore] Provider redirect to dashboard')
-        await router.push({ path: '/dashboard' })
+        await router.push({ path: '/provider/dashboard' })
       }
       return
     }

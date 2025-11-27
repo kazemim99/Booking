@@ -101,7 +101,7 @@ watch(
   (newValue) => {
     if (newValue && newValue.length === 7) {
       schedule.value = [...newValue].sort((a, b) => a.dayOfWeek - b.dayOfWeek)
-      console.log('✅ WorkingHoursStepNew: Synced schedule from props:', newValue.length, 'days')
+      console.log('✅ WorkingHoursStep: Synced schedule from props:', newValue.length, 'days')
     }
   },
   { immediate: true }

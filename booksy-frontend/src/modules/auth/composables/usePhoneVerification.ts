@@ -501,7 +501,7 @@ export function usePhoneVerification() {
             if (needsOnboarding) {
               router.push({ name: 'ProviderRegistration' })
             } else {
-              router.push({ path: '/dashboard' })
+              router.push({ path: '/provider/dashboard' })
             }
           } else {
             // No provider profile, redirect to registration

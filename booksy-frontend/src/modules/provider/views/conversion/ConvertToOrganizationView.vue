@@ -175,7 +175,24 @@
           </label>
         </div>
 
-        <div class="step-actions">
+        <!-- Error State with Retry Options -->
+        <div v-if="conversionError" class="error-state">
+          <div class="error-content">
+            <i class="icon-alert-circle"></i>
+            <h4>خطا در تبدیل</h4>
+            <p>{{ conversionError }}</p>
+          </div>
+          <div class="error-actions">
+            <AppButton variant="secondary" @click="goBackToEdit">
+              ویرایش اطلاعات
+            </AppButton>
+            <AppButton variant="primary" @click="retryConversion" :loading="isSubmitting">
+              تلاش مجدد
+            </AppButton>
+          </div>
+        </div>
+
+        <div v-else class="step-actions">
           <AppButton variant="secondary" @click="previousStep" :disabled="isSubmitting">
             بازگشت
           </AppButton>
@@ -208,11 +225,13 @@ import { ref, reactive } from 'vue'
 import { useRouter } from 'vue-router'
 import { useHierarchyStore } from '../../stores/hierarchy.store'
 import { useAuthStore } from '@/core/stores/modules/auth.store'
+import { useToast } from '@/core/composables/useToast'
 import AppButton from '@/shared/components/ui/Button/AppButton.vue'
 
 const router = useRouter()
 const hierarchyStore = useHierarchyStore()
 const authStore = useAuthStore()
+const toast = useToast()
 
 const steps = [
   { label: 'پیش‌نمایش' },
@@ -223,6 +242,8 @@ const steps = [
 const currentStep = ref(0)
 const isConfirmed = ref(false)
 const isSubmitting = ref(false)
+const conversionError = ref<string | null>(null)
+const canRetry = ref(false)
 
 const formData = reactive({
   businessName: '',
@@ -253,10 +274,21 @@ function getBusinessTypeLabel(type: string): string {
   return labels[type] || type
 }
 
+function resetError() {
+  conversionError.value = null
+  canRetry.value = false
+}
+
+function goBackToEdit() {
+  resetError()
+  currentStep.value = 1
+}
+
 async function handleConvert() {
   if (!isConfirmed.value) return
 
   isSubmitting.value = true
+  resetError()
 
   try {
     const currentProviderId = authStore.currentUser?.providerId
@@ -272,13 +304,28 @@ async function handleConvert() {
       logoUrl: formData.logoUrl || undefined,
     })
 
+    toast.success('موفقیت', 'پروفایل شما با موفقیت به سازمان تبدیل شد')
     currentStep.value = 3
-  } catch (error) {
+  } catch (error: any) {
     console.error('Error converting to organization:', error)
-    alert('خطا در تبدیل به سازمان. لطفاً دوباره تلاش کنید.')
+
+    // Parse error message for user-friendly display
+    const errorMessage = error.response?.data?.message
+      || error.message
+      || 'خطا در تبدیل به سازمان'
+
+    conversionError.value = errorMessage
+    canRetry.value = true
+
+    toast.error('خطا', errorMessage)
   } finally {
     isSubmitting.value = false
   }
+}
+
+async function retryConversion() {
+  resetError()
+  await handleConvert()
 }
 </script>
 
@@ -544,6 +591,46 @@ async function handleConvert() {
   p {
     color: #718096;
     margin-bottom: 2rem;
+  }
+}
+
+.error-state {
+  background: #fff5f5;
+  border: 1px solid #feb2b2;
+  border-radius: 12px;
+  padding: 1.5rem;
+  margin-top: 1.5rem;
+
+  .error-content {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+    margin-bottom: 1.5rem;
+
+    i {
+      font-size: 3rem;
+      color: #e53e3e;
+      margin-bottom: 1rem;
+    }
+
+    h4 {
+      font-size: 1.25rem;
+      color: #c53030;
+      margin-bottom: 0.5rem;
+    }
+
+    p {
+      color: #742a2a;
+      font-size: 0.95rem;
+      line-height: 1.6;
+    }
+  }
+
+  .error-actions {
+    display: flex;
+    gap: 1rem;
+    justify-content: center;
   }
 }
 

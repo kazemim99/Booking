@@ -140,7 +140,7 @@
 - [x] 13.2 Create `CompleteStaffProfile.vue` wizard for invited individuals
 - [ ] 13.3 Create SMS/email templates for invitation notifications
 - [x] 13.4 Add invitation expiry handling (integrated in AcceptInvitation.vue)
-- [ ] 13.5 Add resend invitation functionality
+- [x] 13.5 Add resend invitation functionality (StaffManagementDashboard + hierarchy.store)
 - [ ] 13.6 Write E2E tests for invitation flow
 
 ## 14. Frontend - Join Request Flow UI
@@ -164,7 +164,7 @@
 - [x] 16.1 Create `ConvertToOrganization.vue` wizard
 - [x] 16.2 Add impact preview before conversion
 - [x] 16.3 Add data migration progress indicator (built into wizard)
-- [ ] 16.4 Add rollback option (if conversion fails)
+- [x] 16.4 Add rollback option (if conversion fails) - Error handling with retry and go-back options
 - [x] 16.5 Create success confirmation with next steps
 - [ ] 16.6 Write E2E tests for conversion flow
 
@@ -179,8 +179,8 @@
 
 ## 18. Search & Discovery
 - [ ] 18.1 Update search indexing to include hierarchy
-- [ ] 18.2 Update search filters to handle organization vs individual
-- [ ] 18.3 Add "Professionals at this location" section in search
+- [x] 18.2 Update search filters to handle organization vs individual (ProviderFilters.vue + type definitions)
+- [x] 18.3 Add "Professionals at this location" section in search (ProviderCard.vue professionals preview)
 - [ ] 18.4 Update SEO metadata for hierarchical providers
 - [ ] 18.5 Test search relevance with new structure
 

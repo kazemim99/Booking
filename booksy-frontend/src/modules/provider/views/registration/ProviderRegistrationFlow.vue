@@ -27,7 +27,7 @@
     />
 
     <!-- Step 4: Services (NEW Figma Design) -->
-    <ServicesStepNew
+    <ServicesStep
       v-else-if="currentStep === 4"
       v-model="registrationData.services"
       @next="handleNext"
@@ -35,7 +35,7 @@
     />
 
     <!-- Step 5: Staff/Team Members (NEW Figma Design) -->
-    <StaffStepNew
+    <StaffStep
       v-else-if="currentStep === 5"
       v-model="registrationData.teamMembers"
       :owner-name="ownerFullName"
@@ -44,7 +44,7 @@
     />
 
     <!-- Step 6: Working Hours (NEW Figma Design) -->
-    <WorkingHoursStepNew
+    <WorkingHoursStep
       v-else-if="currentStep === 6"
       v-model="registrationData.businessHours"
       @next="handleNext"
@@ -77,9 +77,9 @@ import { ProviderStatus } from '../../types/provider.types'
 import BusinessInfoStep from '../../components/registration/steps/BusinessInfoStep.vue'
 import CategorySelectionStep from '../../components/registration/steps/CategorySelectionStep.vue'
 import LocationStep from '../../components/registration/steps/LocationStep.vue'
-import ServicesStepNew from '../../components/registration/steps/ServicesStepNew.vue'
-import StaffStepNew from '../../components/registration/steps/StaffStepNew.vue'
-import WorkingHoursStepNew from '../../components/registration/steps/WorkingHoursStepNew.vue'
+import ServicesStep from '../../components/registration/steps/ServicesStep.vue'
+import StaffStep from '../../components/registration/steps/StaffStep.vue'
+import WorkingHoursStep from '../../components/registration/steps/WorkingHoursStep.vue'
 import GalleryStep from '../../components/registration/steps/GalleryStep.vue'
 import OptionalFeedbackStep from '../../components/registration/steps/OptionalFeedbackStep.vue'
 import CompletionStep from '../../components/registration/steps/CompletionStep.vue'

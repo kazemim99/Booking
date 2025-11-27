@@ -158,6 +158,34 @@
         </div>
       </div>
 
+      <!-- Professionals Preview (for Organizations) -->
+      <div v-if="isOrganization && staffMembers.length > 0" class="professionals-preview">
+        <div class="professionals-header">
+          <span class="professionals-label">متخصصین این مرکز:</span>
+        </div>
+        <div class="professionals-avatars">
+          <div
+            v-for="(staff, index) in visibleStaff"
+            :key="staff.id"
+            class="professional-avatar"
+            :title="getStaffDisplayName(staff)"
+          >
+            <img
+              v-if="staff.photoUrl"
+              :src="staff.photoUrl"
+              :alt="getStaffDisplayName(staff)"
+              @error="handleImageError"
+            />
+            <span v-else class="avatar-initials" :style="{ background: getAvatarColor(index) }">
+              {{ getStaffInitials(staff) }}
+            </span>
+          </div>
+          <div v-if="hasMoreStaff" class="professional-avatar more-indicator">
+            <span>+{{ remainingStaffCount }}</span>
+          </div>
+        </div>
+      </div>
+
       <!-- Tags -->
       <div v-if="provider.tags && provider.tags.length > 0" class="provider-tags">
         <span v-for="(tag, index) in visibleTags" :key="index" class="tag">
@@ -247,6 +275,24 @@ const staffCount = computed(() => {
   return props.provider.staffCount || 0
 })
 
+const staffMembers = computed(() => {
+  return props.provider.staff || []
+})
+
+const maxVisibleStaff = 4
+
+const visibleStaff = computed(() => {
+  return staffMembers.value.slice(0, maxVisibleStaff)
+})
+
+const hasMoreStaff = computed(() => {
+  return staffMembers.value.length > maxVisibleStaff
+})
+
+const remainingStaffCount = computed(() => {
+  return staffMembers.value.length - maxVisibleStaff
+})
+
 // Methods
 const handleClick = () => {
   if (props.isClickable) {
@@ -309,6 +355,28 @@ const formatDate = (dateString: string): string => {
     const years = Math.floor(diffDays / 365)
     return `${years} year${years > 1 ? 's' : ''} ago`
   }
+}
+
+const getStaffDisplayName = (staff: any): string => {
+  return `${staff.firstName || ''} ${staff.lastName || ''}`.trim() || 'Unknown'
+}
+
+const getStaffInitials = (staff: any): string => {
+  const first = staff.firstName?.charAt(0) || ''
+  const last = staff.lastName?.charAt(0) || ''
+  return `${first}${last}`.toUpperCase() || '??'
+}
+
+const avatarColors = [
+  'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+  'linear-gradient(135deg, #f093fb 0%, #f5576c 100%)',
+  'linear-gradient(135deg, #4facfe 0%, #00f2fe 100%)',
+  'linear-gradient(135deg, #43e97b 0%, #38f9d7 100%)',
+  'linear-gradient(135deg, #fa709a 0%, #fee140 100%)',
+]
+
+const getAvatarColor = (index: number): string => {
+  return avatarColors[index % avatarColors.length]
 }
 </script>
 
@@ -517,6 +585,82 @@ const formatDate = (dateString: string): string => {
 
 .feature-badge.staff-badge svg {
   color: var(--color-primary);
+}
+
+/* Professionals Preview */
+.professionals-preview {
+  margin-bottom: 1rem;
+  padding: 0.75rem;
+  background: linear-gradient(135deg, rgba(102, 126, 234, 0.05) 0%, rgba(118, 75, 162, 0.05) 100%);
+  border-radius: 10px;
+  border: 1px solid rgba(102, 126, 234, 0.1);
+}
+
+.professionals-header {
+  margin-bottom: 0.5rem;
+}
+
+.professionals-label {
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--color-text-secondary);
+}
+
+.professionals-avatars {
+  display: flex;
+  gap: 0.25rem;
+  align-items: center;
+}
+
+.professional-avatar {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  overflow: hidden;
+  border: 2px solid white;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
+  margin-right: -8px;
+  transition: transform 0.2s;
+  cursor: pointer;
+}
+
+.professional-avatar:first-child {
+  margin-right: 0;
+}
+
+.professional-avatar:hover {
+  transform: scale(1.1);
+  z-index: 1;
+}
+
+.professional-avatar img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.professional-avatar .avatar-initials {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: white;
+}
+
+.professional-avatar.more-indicator {
+  background: linear-gradient(135deg, #e2e8f0 0%, #cbd5e1 100%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.professional-avatar.more-indicator span {
+  font-size: 0.7rem;
+  font-weight: 700;
+  color: #64748b;
 }
 
 /* Tags */

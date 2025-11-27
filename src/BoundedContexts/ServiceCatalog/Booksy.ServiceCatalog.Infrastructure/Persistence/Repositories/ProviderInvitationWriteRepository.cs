@@ -18,19 +18,24 @@ namespace Booksy.ServiceCatalog.Infrastructure.Persistence.Repositories
         public async Task SaveAsync(ProviderInvitation invitation, CancellationToken cancellationToken = default)
         {
             await DbSet.AddAsync(invitation, cancellationToken);
-            await Context.SaveChangesAsync(cancellationToken);
+            // Note: Do NOT call SaveChangesAsync here
+            // The UnitOfWork handles saving and dispatching domain events
         }
 
-        public async Task UpdateAsync(ProviderInvitation invitation, CancellationToken cancellationToken = default)
+        public new Task UpdateAsync(ProviderInvitation invitation, CancellationToken cancellationToken = default)
         {
             DbSet.Update(invitation);
-            await Context.SaveChangesAsync(cancellationToken);
+            // Note: Do NOT call SaveChangesAsync here
+            // The UnitOfWork handles saving and dispatching domain events
+            return Task.CompletedTask;
         }
 
-        public async Task DeleteAsync(ProviderInvitation invitation, CancellationToken cancellationToken = default)
+        public Task DeleteAsync(ProviderInvitation invitation, CancellationToken cancellationToken = default)
         {
             DbSet.Remove(invitation);
-            await Context.SaveChangesAsync(cancellationToken);
+            // Note: Do NOT call SaveChangesAsync here
+            // The UnitOfWork handles saving and dispatching domain events
+            return Task.CompletedTask;
         }
     }
 }

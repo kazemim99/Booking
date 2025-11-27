@@ -179,7 +179,7 @@
           <p>در حال بارگذاری دعوت‌ها...</p>
         </div>
 
-        <div v-else-if="pendingInvitations.length === 0" class="empty-state">
+        <div v-else-if="pendingInvitationsList.length === 0" class="empty-state">
           <i class="icon-mail"></i>
           <h3>دعوتی وجود ندارد</h3>
           <p>دعوت‌های ارسال شده در اینجا نمایش داده می‌شوند</p>
@@ -187,7 +187,7 @@
 
         <div v-else class="invitations-list">
           <InvitationCard
-            v-for="invitation in pendingInvitations"
+            v-for="invitation in pendingInvitationsList"
             :key="invitation.id"
             :invitation="invitation"
             @resend="resendInvitation"
@@ -203,7 +203,7 @@
           <p>در حال بارگذاری درخواست‌ها...</p>
         </div>
 
-        <div v-else-if="pendingJoinRequests.length === 0" class="empty-state">
+        <div v-else-if="pendingJoinRequestsList.length === 0" class="empty-state">
           <i class="icon-clipboard"></i>
           <h3>درخواستی وجود ندارد</h3>
           <p>درخواست‌های پیوستن در اینجا نمایش داده می‌شوند</p>
@@ -211,7 +211,7 @@
 
         <div v-else class="requests-list">
           <JoinRequestCard
-            v-for="request in pendingJoinRequests"
+            v-for="request in pendingJoinRequestsList"
             :key="request.id"
             :request="request"
             @approve="approveRequest"
@@ -246,7 +246,7 @@
 <script setup lang="ts">
 import { ref, computed, onMounted, watch } from 'vue'
 import { useHierarchyStore } from '../../stores/hierarchy.store'
-import type { StaffMember, ProviderInvitation, ProviderJoinRequest } from '../../types/hierarchy.types'
+import type { StaffMember, JoinRequest } from '../../types/hierarchy.types'
 import AppButton from '@/shared/components/ui/Button/AppButton.vue'
 import StaffMemberCard from './StaffMemberCard.vue'
 import InvitationCard from './InvitationCard.vue'
@@ -270,7 +270,7 @@ const props = defineProps<Props>()
 // ============================================
 
 const hierarchyStore = useHierarchyStore()
-const { showSuccess, showError } = useToast()
+const toast = useToast()
 
 // ============================================
 // State
@@ -290,10 +290,10 @@ const staffToRemove = ref<StaffMember | null>(null)
 // Computed
 // ============================================
 
-const staffCount = computed(() => hierarchyStore.staffCount)
+const staffCount = computed(() => hierarchyStore.staffMembers.length)
 const activeStaffCount = computed(() => hierarchyStore.activeStaffCount)
 
-const staffList = computed(() => hierarchyStore.staffMembers?.items || [])
+const staffList = computed(() => hierarchyStore.staffMembers)
 
 const filteredStaff = computed(() => {
   let result = staffList.value
@@ -302,41 +302,41 @@ const filteredStaff = computed(() => {
   if (searchQuery.value) {
     const query = searchQuery.value.toLowerCase()
     result = result.filter(
-      (staff) =>
+      (staff: StaffMember) =>
         staff.fullName.toLowerCase().includes(query) ||
         staff.email?.toLowerCase().includes(query) ||
-        staff.phone?.toLowerCase().includes(query)
+        staff.phoneNumber?.toLowerCase().includes(query)
     )
   }
 
   // Status filter
   if (statusFilter.value !== 'all') {
     const isActive = statusFilter.value === 'active'
-    result = result.filter((staff) => staff.isActive === isActive)
+    result = result.filter((staff: StaffMember) => staff.isActive === isActive)
   }
 
   return result
 })
 
-const pendingInvitations = computed(
-  () => hierarchyStore.pendingInvitations?.items || []
+const pendingInvitationsList = computed(
+  () => hierarchyStore.pendingInvitations
 )
 
 const pendingInvitationsCount = computed(
-  () => hierarchyStore.pendingInvitations?.totalCount || 0
+  () => hierarchyStore.pendingInvitations.length
 )
 
-const pendingJoinRequests = computed(
-  () => hierarchyStore.pendingJoinRequests?.items || []
+const pendingJoinRequestsList = computed(
+  () => hierarchyStore.pendingJoinRequests
 )
 
 const pendingRequestsCount = computed(
-  () => hierarchyStore.pendingJoinRequests?.totalCount || 0
+  () => hierarchyStore.pendingJoinRequests.length
 )
 
-const isLoadingStaff = computed(() => hierarchyStore.isLoadingStaff)
-const isLoadingInvitations = computed(() => hierarchyStore.isLoadingInvitations)
-const isLoadingRequests = computed(() => hierarchyStore.isLoadingJoinRequests)
+const isLoadingStaff = computed(() => hierarchyStore.loading.staff)
+const isLoadingInvitations = computed(() => hierarchyStore.loading.invitations)
+const isLoadingRequests = computed(() => hierarchyStore.loading.joinRequests)
 
 const totalPages = computed(() => Math.ceil(filteredStaff.value.length / pageSize.value))
 
@@ -365,11 +365,11 @@ async function loadData(): Promise<void> {
   try {
     await Promise.all([
       hierarchyStore.loadStaffMembers({ organizationId: props.organizationId }),
-      hierarchyStore.loadPendingInvitations({ organizationId: props.organizationId }),
-      hierarchyStore.loadPendingJoinRequests({ organizationId: props.organizationId }),
+      hierarchyStore.loadSentInvitations(props.organizationId),
+      hierarchyStore.loadReceivedJoinRequests(props.organizationId),
     ])
   } catch (error) {
-    showError('خطا در بارگذاری اطلاعات')
+    toast.error('خطا', 'خطا در بارگذاری اطلاعات')
     console.error('Error loading staff data:', error)
   }
 }
@@ -393,63 +393,63 @@ async function handleRemoveStaff(): Promise<void> {
   if (!staffToRemove.value) return
 
   try {
-    await hierarchyStore.removeStaffMember(props.organizationId, staffToRemove.value.id, {
-      organizationId: props.organizationId,
-      staffMemberId: staffToRemove.value.id,
-      reason: 'Removed by organization',
-    })
+    await hierarchyStore.removeStaffMember(props.organizationId, staffToRemove.value.id)
 
-    showSuccess('کارمند با موفقیت حذف شد')
+    toast.success('موفقیت', 'کارمند با موفقیت حذف شد')
     showRemoveConfirm.value = false
     staffToRemove.value = null
   } catch (error) {
-    showError('خطا در حذف کارمند')
+    toast.error('خطا', 'خطا در حذف کارمند')
     console.error('Error removing staff:', error)
   }
 }
 
 function handleInvitationSent(): void {
   showInviteModal.value = false
-  showSuccess('دعوت با موفقیت ارسال شد')
+  toast.success('موفقیت', 'دعوت با موفقیت ارسال شد')
   loadData()
 }
 
-async function resendInvitation(invitation: ProviderInvitation): Promise<void> {
-  // Implement resend logic
-  console.log('Resend invitation:', invitation)
-  showSuccess('دعوت مجدداً ارسال شد')
-}
-
-async function cancelInvitation(invitation: ProviderInvitation): Promise<void> {
-  // Implement cancel logic
-  console.log('Cancel invitation:', invitation)
-  showSuccess('دعوت لغو شد')
-  loadData()
-}
-
-async function approveRequest(request: ProviderJoinRequest): Promise<void> {
+async function resendInvitation(invitationId: string): Promise<void> {
   try {
-    await hierarchyStore.approveJoinRequest(props.organizationId, request.id, {
-      joinRequestId: request.id,
-      approvedBy: props.organizationId,
-    })
-    showSuccess('درخواست تأیید شد')
+    await hierarchyStore.resendInvitation(props.organizationId, invitationId)
+    toast.success('موفقیت', 'دعوت مجدداً ارسال شد')
+    // Reload invitations to reflect updated status
+    await hierarchyStore.loadSentInvitations(props.organizationId)
   } catch (error) {
-    showError('خطا در تأیید درخواست')
+    toast.error('خطا', 'خطا در ارسال مجدد دعوت')
+    console.error('Error resending invitation:', error)
+  }
+}
+
+async function cancelInvitation(invitationId: string): Promise<void> {
+  try {
+    await hierarchyStore.cancelInvitation(props.organizationId, invitationId)
+    toast.success('موفقیت', 'دعوت لغو شد')
+    // Reload invitations to reflect the cancelled invitation
+    await hierarchyStore.loadSentInvitations(props.organizationId)
+  } catch (error) {
+    toast.error('خطا', 'خطا در لغو دعوت')
+    console.error('Error cancelling invitation:', error)
+  }
+}
+
+async function approveRequest(request: JoinRequest): Promise<void> {
+  try {
+    await hierarchyStore.approveJoinRequest(props.organizationId, request.id)
+    toast.success('موفقیت', 'درخواست تأیید شد')
+  } catch (error) {
+    toast.error('خطا', 'خطا در تأیید درخواست')
     console.error('Error approving request:', error)
   }
 }
 
-async function rejectRequest(request: ProviderJoinRequest): Promise<void> {
+async function rejectRequest(request: JoinRequest): Promise<void> {
   try {
-    await hierarchyStore.rejectJoinRequest(props.organizationId, request.id, {
-      joinRequestId: request.id,
-      rejectedBy: props.organizationId,
-      rejectionReason: 'Not suitable at this time',
-    })
-    showSuccess('درخواست رد شد')
+    await hierarchyStore.rejectJoinRequest(props.organizationId, request.id, 'Not suitable at this time')
+    toast.success('موفقیت', 'درخواست رد شد')
   } catch (error) {
-    showError('خطا در رد درخواست')
+    toast.error('خطا', 'خطا در رد درخواست')
     console.error('Error rejecting request:', error)
   }
 }
@@ -470,10 +470,10 @@ onMounted(() => {
 
 // Watch for tab changes and reload data
 watch(activeTab, () => {
-  if (activeTab.value === 'invitations' && pendingInvitations.value.length === 0) {
-    hierarchyStore.loadPendingInvitations({ organizationId: props.organizationId })
-  } else if (activeTab.value === 'requests' && pendingJoinRequests.value.length === 0) {
-    hierarchyStore.loadPendingJoinRequests({ organizationId: props.organizationId })
+  if (activeTab.value === 'invitations' && pendingInvitationsList.value.length === 0) {
+    hierarchyStore.loadSentInvitations(props.organizationId)
+  } else if (activeTab.value === 'requests' && pendingJoinRequestsList.value.length === 0) {
+    hierarchyStore.loadReceivedJoinRequests(props.organizationId)
   }
 })
 </script>

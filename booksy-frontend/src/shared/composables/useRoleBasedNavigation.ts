@@ -98,7 +98,7 @@ export function useRoleBasedNavigation() {
       case 'admin':
         return '/admin/dashboard'
       case 'provider':
-        return isProviderOnboardingComplete.value ? '/dashboard' : '/provider/registration'
+        return isProviderOnboardingComplete.value ? '/provider/dashboard' : '/provider/registration'
       case 'customer':
         return '/'
       default:
@@ -128,9 +128,7 @@ export function useRoleBasedNavigation() {
         return false // Force onboarding
       }
       return (
-        redirectPath.startsWith('/dashboard') ||
-        redirectPath.startsWith('/provider') ||
-        redirectPath.startsWith('/bookings')
+        redirectPath.startsWith('/provider')
       )
     }
 

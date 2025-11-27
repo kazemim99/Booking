@@ -16,20 +16,41 @@
               <label for="phoneNumber" class="form-label">
                 شماره موبایل <span class="required">*</span>
               </label>
-              <div class="phone-input-wrapper">
-                <span class="country-code">+98</span>
+              <div class="phone-input-container" :class="{ 'has-error': errors.phoneNumber }">
+                <!-- Clear Button (on the left for RTL) -->
+                <button
+                  v-if="formData.phoneNumber"
+                  type="button"
+                  class="clear-button"
+                  @click="clearPhoneNumber"
+                  tabindex="-1"
+                >
+                  <svg class="clear-icon" viewBox="0 0 20 20" fill="currentColor">
+                    <path
+                      fill-rule="evenodd"
+                      d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z"
+                      clip-rule="evenodd"
+                    />
+                  </svg>
+                </button>
+
+                <!-- Phone Number Input -->
                 <input
                   id="phoneNumber"
                   v-model="formData.phoneNumber"
                   type="tel"
                   dir="ltr"
-                  class="form-input phone-input"
-                  :class="{ 'form-input-error': errors.phoneNumber }"
+                  class="phone-input"
                   placeholder="9123456789"
                   maxlength="10"
                   @input="validatePhoneNumber"
                   @blur="validateField('phoneNumber')"
                 />
+
+                <!-- Country Code (on the right for RTL) -->
+                <div class="country-code-display">
+                  +98
+                </div>
               </div>
               <span v-if="errors.phoneNumber" class="form-error">{{ errors.phoneNumber }}</span>
               <span v-else class="form-hint">شماره موبایل کارمند جدید را وارد کنید</span>
@@ -128,7 +149,7 @@ const emit = defineEmits<{
 // ============================================
 
 const hierarchyStore = useHierarchyStore()
-const { showSuccess, showError } = useToast()
+const toast = useToast()
 
 // ============================================
 // State
@@ -176,6 +197,23 @@ function validatePhoneNumber(): void {
   }
 }
 
+/**
+ * Validate Iranian mobile number
+ * Iranian mobile numbers start with 9 and are 10 digits long
+ * Valid operators: 901-905, 910-920, 930-939, 990-999
+ */
+function validateIranianMobile(phoneNumber: string): boolean {
+  // Must be exactly 10 digits
+  if (phoneNumber.length !== 10) return false
+
+  // Must start with 9
+  if (!phoneNumber.startsWith('9')) return false
+
+  // Check if it matches Iranian operator patterns
+  const validPrefixes = /^(901|902|903|904|905|910|911|912|913|914|915|916|917|918|919|920|930|933|935|936|937|938|939|990|991|992|993|994|999)/
+  return validPrefixes.test(phoneNumber)
+}
+
 function validateField(field: keyof typeof formData): void {
   errors[field] = ''
 
@@ -186,8 +224,15 @@ function validateField(field: keyof typeof formData): void {
       errors.phoneNumber = 'شماره موبایل باید 10 رقم باشد'
     } else if (!formData.phoneNumber.startsWith('9')) {
       errors.phoneNumber = 'شماره موبایل باید با 9 شروع شود'
+    } else if (!validateIranianMobile(formData.phoneNumber)) {
+      errors.phoneNumber = 'شماره موبایل معتبر نیست (اپراتور نامعتبر)'
     }
   }
+}
+
+function clearPhoneNumber(): void {
+  formData.phoneNumber = ''
+  errors.phoneNumber = ''
 }
 
 function validateForm(): boolean {
@@ -202,6 +247,12 @@ function validateForm(): boolean {
 async function handleSubmit(): Promise<void> {
   if (!validateForm() || isSubmitting.value) return
 
+  // Validate organization ID
+  if (!props.organizationId || props.organizationId.trim() === '') {
+    toast.error('خطا', 'شناسه سازمان نامعتبر است. لطفاً دوباره وارد شوید.')
+    return
+  }
+
   isSubmitting.value = true
 
   try {
@@ -214,12 +265,12 @@ async function handleSubmit(): Promise<void> {
 
     await hierarchyStore.sendInvitation(props.organizationId, request)
 
-    showSuccess('دعوت با موفقیت ارسال شد')
+    toast.success('موفقیت', 'دعوت با موفقیت ارسال شد')
     emit('invited')
     handleClose()
   } catch (error) {
     console.error('Error sending invitation:', error)
-    showError('خطا در ارسال دعوت. لطفاً دوباره تلاش کنید.')
+    toast.error('خطا', 'خطا در ارسال دعوت. لطفاً دوباره تلاش کنید.')
   } finally {
     isSubmitting.value = false
   }
@@ -326,23 +377,90 @@ function handleClose(): void {
   }
 }
 
-.phone-input-wrapper {
+// Phone Input Container (RTL layout)
+.phone-input-container {
   display: flex;
   align-items: center;
-  gap: 0.5rem;
-}
-
-.country-code {
-  padding: 0.75rem 1rem;
-  background: #f3f4f6;
   border: 1px solid #d1d5db;
   border-radius: 8px;
+  background-color: #ffffff;
+  transition: all 0.2s;
+  direction: rtl;
+  overflow: hidden;
+
+  &:focus-within {
+    border-color: #7c3aed;
+    box-shadow: 0 0 0 3px rgba(124, 58, 237, 0.1);
+  }
+
+  &.has-error {
+    border-color: #dc2626;
+
+    &:focus-within {
+      border-color: #dc2626;
+      box-shadow: 0 0 0 3px rgba(220, 38, 38, 0.1);
+    }
+  }
+}
+
+// Country Code Display (on the right for RTL)
+.country-code-display {
+  padding: 0.75rem 1rem;
   font-size: 0.95rem;
   font-weight: 600;
   color: #374151;
+  background-color: #f9fafb;
+  border-left: 1px solid #e5e7eb;
+  user-select: none;
+  flex-shrink: 0;
   direction: ltr;
 }
 
+// Phone Input Field
+.phone-input {
+  flex: 1;
+  padding: 0.75rem 1rem;
+  border: none;
+  background: none;
+  font-size: 0.95rem;
+  color: #111827;
+  outline: none;
+  direction: ltr;
+  text-align: left;
+
+  &::placeholder {
+    color: #9ca3af;
+  }
+}
+
+// Clear Button (on the left for RTL)
+.clear-button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0.5rem;
+  border: none;
+  background: none;
+  cursor: pointer;
+  color: #9ca3af;
+  transition: color 0.2s ease;
+  flex-shrink: 0;
+
+  &:hover {
+    color: #6b7280;
+  }
+
+  &:focus {
+    outline: none;
+  }
+}
+
+.clear-icon {
+  width: 1.25rem;
+  height: 1.25rem;
+}
+
+// General Form Inputs
 .form-input,
 .form-textarea {
   width: 100%;
@@ -365,12 +483,6 @@ function handleClose(): void {
       box-shadow: 0 0 0 3px rgba(220, 38, 38, 0.1);
     }
   }
-}
-
-.phone-input {
-  flex: 1;
-  direction: ltr;
-  text-align: left;
 }
 
 .form-textarea {

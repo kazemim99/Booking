@@ -18,7 +18,7 @@
     <div class="invitation-meta">
       <div class="meta-item">
         <i class="icon-calendar"></i>
-        <span>ارسال شده: {{ formatDate(invitation.createdAt) }}</span>
+        <span>ارسال شده: {{ formatDate(invitation.sentAt) }}</span>
       </div>
       <div class="meta-item" :class="{ expired: isExpired }">
         <i class="icon-clock"></i>
@@ -111,6 +111,7 @@ function getStatusLabel(status: InvitationStatus): string {
     [InvitationStatus.Accepted]: 'پذیرفته شده',
     [InvitationStatus.Rejected]: 'رد شده',
     [InvitationStatus.Expired]: 'منقضی شده',
+    [InvitationStatus.Cancelled]: 'لغو شده',
   }
   return labels[status] || status
 }
@@ -126,8 +127,19 @@ function formatPhone(phone: string): string {
   return `+۹۸ ${convertToPersian(phone)}`
 }
 
-function formatDate(dateString: string): string {
+function formatDate(dateString: string | Date | null | undefined): string {
+  if (!dateString) {
+    return 'نامشخص'
+  }
+
   const date = new Date(dateString)
+
+  // Check if date is valid
+  if (isNaN(date.getTime())) {
+    console.warn('Invalid date value:', dateString)
+    return 'نامشخص'
+  }
+
   return new Intl.DateTimeFormat('fa-IR', {
     year: 'numeric',
     month: 'long',
@@ -239,6 +251,11 @@ function handleViewDetails() {
   }
 
   &.badge-expired {
+    background: #f3f4f6;
+    color: #6b7280;
+  }
+
+  &.badge-cancelled {
     background: #f3f4f6;
     color: #6b7280;
   }

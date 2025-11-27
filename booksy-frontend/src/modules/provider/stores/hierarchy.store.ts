@@ -84,15 +84,15 @@ export const useHierarchyStore = defineStore('hierarchy', () => {
   })
 
   const activeStaffCount = computed(() => {
-    return staffMembers.value.filter(s => s.isActive).length
+    return staffMembers.value?.filter(s => s.isActive).length || 0
   })
 
   const pendingInvitations = computed(() => {
-    return sentInvitations.value.filter(inv => inv.status === 'Pending' as InvitationStatus)
+    return sentInvitations.value?.filter(inv => inv.status === 'Pending' as InvitationStatus) || []
   })
 
   const pendingJoinRequests = computed(() => {
-    return receivedJoinRequests.value.filter(req => req.status === 'Pending' as JoinRequestStatus)
+    return receivedJoinRequests.value?.filter(req => req.status === 'Pending' as JoinRequestStatus) || []
   })
 
   // ============================================================================
@@ -166,10 +166,20 @@ export const useHierarchyStore = defineStore('hierarchy', () => {
       errors.value.staff = undefined
 
       const result = await hierarchyService.getStaffMembers(request)
-      staffMembers.value = result.items
+
+      console.log('loadStaffMembers result:', result)
+
+      // Ensure items is an array
+      if (result && Array.isArray(result.items)) {
+        staffMembers.value = result.items
+      } else {
+        staffMembers.value = []
+      }
+
       return result
     } catch (error: any) {
       errors.value.staff = error.message || 'Failed to load staff members'
+      staffMembers.value = [] // Reset to empty array on error
       throw error
     } finally {
       loading.value.staff = false
@@ -207,14 +217,17 @@ export const useHierarchyStore = defineStore('hierarchy', () => {
 
       const result = await hierarchyService.sendInvitation(organizationId, request)
 
+      console.log('sendInvitation result:', result)
+
       if (result.success && result.data) {
-        // Add to sent invitations
+        // Add to sent invitations at the beginning of the list
         sentInvitations.value.unshift(result.data)
         return result.data
       } else {
         throw new Error(result.message || 'Failed to send invitation')
       }
     } catch (error: any) {
+      console.error('Error in sendInvitation:', error)
       errors.value.invitations = error.message || 'Failed to send invitation'
       throw error
     } finally {
@@ -244,6 +257,20 @@ export const useHierarchyStore = defineStore('hierarchy', () => {
       receivedInvitations.value = await hierarchyService.getReceivedInvitations(individualId)
     } catch (error: any) {
       errors.value.invitations = error.message || 'Failed to load received invitations'
+      throw error
+    } finally {
+      loading.value.invitations = false
+    }
+  }
+
+  async function getInvitation(organizationId: string, invitationId: string): Promise<ProviderInvitation> {
+    try {
+      loading.value.invitations = true
+      errors.value.invitations = undefined
+
+      return await hierarchyService.getInvitation(organizationId, invitationId)
+    } catch (error: any) {
+      errors.value.invitations = error.message || 'Failed to load invitation'
       throw error
     } finally {
       loading.value.invitations = false
@@ -394,9 +421,19 @@ export const useHierarchyStore = defineStore('hierarchy', () => {
       loading.value.joinRequests = true
       errors.value.joinRequests = undefined
 
-      receivedJoinRequests.value = await hierarchyService.getReceivedJoinRequests(organizationId)
+      const result = await hierarchyService.getReceivedJoinRequests(organizationId)
+
+      console.log('loadReceivedJoinRequests result:', result)
+
+      // Ensure result is an array
+      if (Array.isArray(result)) {
+        receivedJoinRequests.value = result
+      } else {
+        receivedJoinRequests.value = []
+      }
     } catch (error: any) {
       errors.value.joinRequests = error.message || 'Failed to load received join requests'
+      receivedJoinRequests.value = [] // Reset to empty array on error
       throw error
     } finally {
       loading.value.joinRequests = false
@@ -577,6 +614,7 @@ export const useHierarchyStore = defineStore('hierarchy', () => {
     sendInvitation,
     loadSentInvitations,
     loadReceivedInvitations,
+    getInvitation,
     acceptInvitation,
     rejectInvitation,
     resendInvitation,

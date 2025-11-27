@@ -56,6 +56,11 @@ export interface Provider {
   staff?: StaffMember[]
   businessHours?: BusinessHours[]
 
+  // Provider Hierarchy (NEW)
+  hierarchyType?: 'Organization' | 'Individual' // Provider hierarchy type
+  isIndependent?: boolean // True if independent individual provider
+  parentProviderId?: string // For individuals linked to organizations
+
   // Timestamps
   registeredAt: string
   activatedAt?: string
@@ -201,6 +206,7 @@ export interface ProviderSearchFilters extends PaginationParams {
   state?: string
   country?: string
   type?: ProviderType
+  hierarchyType?: string // Filter by hierarchy type: 'Organization' or 'Individual'
   status?: ProviderStatus
   serviceCategory?: string // NEW: Filter by service category (e.g., "haircut", "massage")
   priceRange?: PriceRange // NEW: Filter by price range (Budget, Moderate, Premium)
@@ -365,6 +371,11 @@ export interface ProviderResponse {
   services?: ServiceSummary[]
   staff?: StaffMember[]
   businessHours?: BusinessHours[]
+
+  // Provider hierarchy fields (from backend)
+  hierarchyType?: string // "Organization" | "Individual"
+  isIndependent?: boolean
+  parentProviderId?: string
 }
 
 // ============================================

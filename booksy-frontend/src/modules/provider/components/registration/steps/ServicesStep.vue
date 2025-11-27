@@ -1,178 +1,198 @@
 <template>
-  <StepContainer
-    :title="$t('provider.registration.services.title')"
-    :subtitle="$t('provider.registration.services.subtitle')"
-  >
-    <!-- Service Cards Grid -->
-    <div v-if="services.length > 0" class="services-grid">
-      <div v-for="service in services" :key="service.id" class="service-card">
-        <div class="service-card-header">
-          <div class="service-icon">
-            <svg viewBox="0 0 20 20" fill="currentColor">
-              <path
-                fill-rule="evenodd"
-                d="M6 2a2 2 0 00-2 2v12a2 2 0 002 2h8a2 2 0 002-2V7.414A2 2 0 0015.414 6L12 2.586A2 2 0 0010.586 2H6zm5 6a1 1 0 10-2 0v3.586l-1.293-1.293a1 1 0 10-1.414 1.414l3 3a1 1 0 001.414 0l3-3a1 1 0 00-1.414-1.414L11 11.586V8z"
-                clip-rule="evenodd"
-              />
-            </svg>
-          </div>
-          <button type="button" class="btn-card-delete" @click="removeService(service.id)" title="Remove service">
-            <svg viewBox="0 0 20 20" fill="currentColor">
-              <path
-                fill-rule="evenodd"
-                d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z"
-                clip-rule="evenodd"
-              />
-            </svg>
-          </button>
-        </div>
-        <div class="service-card-body">
-          <h4 class="service-card-name">{{ service.name }}</h4>
-          <div class="service-card-details">
-            <div class="detail-item">
-              <svg class="detail-icon" viewBox="0 0 20 20" fill="currentColor">
-                <path
-                  fill-rule="evenodd"
-                  d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-12a1 1 0 10-2 0v4a1 1 0 00.293.707l2.828 2.829a1 1 0 101.415-1.415L11 9.586V6z"
-                  clip-rule="evenodd"
-                />
-              </svg>
-              <span>{{ formatDuration(service.durationHours, service.durationMinutes) }}</span>
+  <div class="registration-step">
+
+    <div class="step-card">
+      <div class="step-header">
+        <h2 class="step-title">خدمات</h2>
+        <p class="step-description">خدماتی که ارائه می‌دهید را اضافه کنید</p>
+      </div>
+
+      <div class="step-content">
+        <!-- Service List -->
+        <div v-if="services.length > 0" class="service-list">
+          <template v-for="service in services" :key="service.id">
+            <div class="service-item">
+              <div class="service-info">
+                <h4 class="service-name">{{ service.name }}</h4>
+                <p class="service-details">
+                  قیمت: {{ formatPrice(service.price) }} تومان • مدت: {{ service.durationHours * 60 + service.durationMinutes }} دقیقه
+                </p>
+              </div>
+              <div class="service-actions">
+                <button
+                  type="button"
+                  class="btn-icon"
+                  @click="handleEdit(service)"
+                  title="ویرایش"
+                >
+                  <svg class="icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
+                      stroke-width="2"
+                      d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"
+                    />
+                  </svg>
+                </button>
+                <button
+                  type="button"
+                  class="btn-icon btn-delete"
+                  @click="handleDelete(service.id)"
+                  title="حذف"
+                >
+                  <svg class="icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
+                      stroke-width="2"
+                      d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
+                    />
+                  </svg>
+                </button>
+              </div>
             </div>
-            <div class="detail-item">
-              <svg class="detail-icon" viewBox="0 0 20 20" fill="currentColor">
-                <path
-                  d="M8.433 7.418c.155-.103.346-.196.567-.267v1.698a2.305 2.305 0 01-.567-.267C8.07 8.34 8 8.114 8 8c0-.114.07-.34.433-.582zM11 12.849v-1.698c.22.071.412.164.567.267.364.243.433.468.433.582 0 .114-.07.34-.433.582a2.305 2.305 0 01-.567.267z"
+
+            <!-- Inline Edit Form (shown right after the service being edited) -->
+            <div v-if="editingId === service.id" class="service-form">
+              <div class="form-group">
+                <label for="serviceName" class="form-label">نام خدمت</label>
+                <input
+                  id="serviceName"
+                  v-model="formData.name"
+                  type="text"
+                  class="form-input"
+                  placeholder="مثال: اصلاح مو"
                 />
-                <path
-                  fill-rule="evenodd"
-                  d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-13a1 1 0 10-2 0v.092a4.535 4.535 0 00-1.676.662C6.602 6.234 6 7.009 6 8c0 .99.602 1.765 1.324 2.246.48.32 1.054.545 1.676.662v1.941c-.391-.127-.68-.317-.843-.504a1 1 0 10-1.51 1.31c.562.649 1.413 1.076 2.353 1.253V15a1 1 0 102 0v-.092a4.535 4.535 0 001.676-.662C13.398 13.766 14 12.991 14 12c0-.99-.602-1.765-1.324-2.246A4.535 4.535 0 0011 9.092V7.151c.391.127.68.317.843.504a1 1 0 101.511-1.31c-.563-.649-1.413-1.076-2.354-1.253V5z"
-                  clip-rule="evenodd"
-                />
-              </svg>
-              <span class="price">{{ formatPrice(service.price) }}</span>
+              </div>
+
+              <div class="form-row">
+                <div class="form-group">
+                  <label for="price" class="form-label">قیمت (تومان)</label>
+                  <input
+                    id="price"
+                    v-model="formData.price"
+                    type="number"
+                    dir="ltr"
+                    class="form-input"
+                    placeholder="100000"
+                  />
+                </div>
+
+                <div class="form-group">
+                  <label for="duration" class="form-label">مدت زمان (دقیقه)</label>
+                  <input
+                    id="duration"
+                    v-model="formData.duration"
+                    type="number"
+                    dir="ltr"
+                    class="form-input"
+                    placeholder="30"
+                  />
+                </div>
+              </div>
+
+              <div class="form-actions">
+                <AppButton type="button" variant="primary" size="medium" @click="handleAddService">
+                  ویرایش
+                </AppButton>
+                <AppButton type="button" variant="outline" size="medium" @click="handleCancelAdd">
+                  لغو
+                </AppButton>
+              </div>
             </div>
-          </div>
+          </template>
         </div>
-      </div>
 
-      <!-- Add Service Card -->
-      <div class="service-card service-card-add" @click="showAddModal = true">
-        <div class="add-card-content">
-          <div class="add-icon">
-            <svg viewBox="0 0 20 20" fill="currentColor">
-              <path
-                fill-rule="evenodd"
-                d="M10 5a1 1 0 011 1v3h3a1 1 0 110 2h-3v3a1 1 0 11-2 0v-3H6a1 1 0 110-2h3V6a1 1 0 011-1z"
-                clip-rule="evenodd"
-              />
-            </svg>
-          </div>
-          <p class="add-text">{{ $t('provider.registration.services.addService') }}</p>
-        </div>
-      </div>
-    </div>
-
-    <!-- Empty State -->
-    <div v-else class="empty-state">
-      <div class="empty-icon">
-        <svg viewBox="0 0 20 20" fill="currentColor">
-          <path
-            fill-rule="evenodd"
-            d="M6 2a2 2 0 00-2 2v12a2 2 0 002 2h8a2 2 0 002-2V7.414A2 2 0 0015.414 6L12 2.586A2 2 0 0010.586 2H6zm1 8a1 1 0 100 2h6a1 1 0 100-2H7z"
-            clip-rule="evenodd"
-          />
-        </svg>
-      </div>
-      <h3 class="empty-title">{{ $t('provider.registration.services.noServices') }}</h3>
-      <p class="empty-subtitle">{{ $t('provider.registration.services.noServicesDesc') }}</p>
-      <button type="button" class="btn-add-first" @click="showAddModal = true">
-        + {{ $t('provider.registration.services.addFirstService') }}
-      </button>
-    </div>
-
-    <!-- Validation Error -->
-    <p v-if="services.length === 0 && showValidationError" class="error-message">
-      {{ $t('provider.registration.services.minRequired') }}
-    </p>
-
-    <NavigationButtons
-      :show-back="true"
-      :can-continue="services.length > 0"
-      @back="$emit('back')"
-      @next="handleNext"
-    />
-
-    <!-- Enhanced Add Service Modal -->
-    <div v-if="showAddModal" class="modal-overlay" @click="showAddModal = false">
-      <div class="modal-content" @click.stop>
-        <div class="modal-header">
-          <h3 class="modal-title">{{ $t('provider.registration.services.addService') }}</h3>
-          <button class="modal-close" @click="showAddModal = false">
-            <svg viewBox="0 0 20 20" fill="currentColor">
-              <path
-                fill-rule="evenodd"
-                d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z"
-                clip-rule="evenodd"
-              />
-            </svg>
-          </button>
-        </div>
-        <form @submit.prevent="handleAddService">
+        <!-- Add New Service Form -->
+        <div v-if="isAdding && !editingId" class="service-form">
           <div class="form-group">
-            <label class="form-label">Service Name *</label>
+            <label for="serviceName" class="form-label">نام خدمت</label>
             <input
-              v-model="newService.name"
+              id="serviceName"
+              v-model="formData.name"
               type="text"
               class="form-input"
-              placeholder="e.g., Haircut, Massage, Consultation"
-              required
+              placeholder="مثال: اصلاح مو"
             />
           </div>
 
           <div class="form-row">
             <div class="form-group">
-              <label class="form-label">Duration (minutes) *</label>
+              <label for="price" class="form-label">قیمت (تومان)</label>
               <input
-                v-model.number="newService.durationMinutes"
+                id="price"
+                v-model="formData.price"
                 type="number"
-                min="1"
-                max="1440"
+                dir="ltr"
                 class="form-input"
-                placeholder="30"
-                required
+                placeholder="100000"
               />
             </div>
+
             <div class="form-group">
-              <label class="form-label">Price (IRR) *</label>
+              <label for="duration" class="form-label">مدت زمان (دقیقه)</label>
               <input
-                v-model.number="newService.price"
+                id="duration"
+                v-model="formData.duration"
                 type="number"
-                min="0"
-                step="1000"
+                dir="ltr"
                 class="form-input"
-                placeholder="50000"
-                required
+                placeholder="30"
               />
             </div>
           </div>
 
-          <div class="modal-actions">
-            <button type="button" class="btn-modal-cancel" @click="showAddModal = false">
-              Cancel
-            </button>
-            <button type="submit" class="btn-modal-submit">Add Service</button>
+          <div class="form-actions">
+            <AppButton type="button" variant="primary" size="medium" @click="handleAddService">
+              افزودن
+            </AppButton>
+            <AppButton type="button" variant="outline" size="medium" @click="handleCancelAdd">
+              لغو
+            </AppButton>
           </div>
-        </form>
+        </div>
+
+        <!-- Add Service Button -->
+        <AppButton
+          v-if="!isAdding"
+          type="button"
+          variant="outline"
+          size="large"
+          class="btn-add-service"
+          @click="isAdding = true"
+        >
+          <svg class="icon-plus" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              stroke-width="2"
+              d="M12 4v16m8-8H4"
+            />
+          </svg>
+          افزودن خدمت جدید
+        </AppButton>
+
+        <!-- Error Message -->
+        <p v-if="error" class="error-message">{{ error }}</p>
+
+        <!-- Navigation -->
+        <div class="step-actions">
+          <AppButton type="button" variant="outline" size="large" @click="$emit('back')">
+            قبلی
+          </AppButton>
+          <AppButton type="button" variant="primary" size="large" @click="handleNext">
+            بعدی
+          </AppButton>
+        </div>
       </div>
     </div>
-  </StepContainer>
+  </div>
 </template>
 
 <script setup lang="ts">
-import { ref } from 'vue'
-import StepContainer from '../shared/StepContainer.vue'
-import NavigationButtons from '../shared/NavigationButtons.vue'
+import { ref, watch } from 'vue'
+
+import AppButton from '@/shared/components/ui/Button/AppButton.vue'
 import type { Service } from '@/modules/provider/types/registration.types'
 
 interface Props {
@@ -188,369 +208,225 @@ interface Emits {
 const props = defineProps<Props>()
 const emit = defineEmits<Emits>()
 
+// State
 const services = ref<Service[]>(props.modelValue || [])
-const showAddModal = ref(false)
-const showValidationError = ref(false)
-const newService = ref({
+
+// Watch for changes to props.modelValue to sync with parent
+watch(
+  () => props.modelValue,
+  (newValue) => {
+    if (newValue && newValue.length > 0) {
+      services.value = newValue
+      console.log('✅ ServicesStep: Synced services from props:', newValue.length)
+    }
+  },
+  { immediate: true }
+)
+const isAdding = ref(false)
+const editingId = ref<string | null>(null)
+const formData = ref({
   name: '',
-  durationMinutes: 30,
-  price: 50000,
+  price: '',
+  duration: '',
 })
+const error = ref('')
 
-const formatDuration = (hours: number, minutes: number): string => {
-  const totalMinutes = hours * 60 + minutes
-  if (totalMinutes < 60) {
-    return `${totalMinutes}min`
-  }
-  const h = Math.floor(totalMinutes / 60)
-  const m = totalMinutes % 60
-  return m > 0 ? `${h}h ${m}min` : `${h}h`
-}
-
-const formatPrice = (price: number): string => {
-  return new Intl.NumberFormat('fa-IR', {
-    style: 'currency',
-    currency: 'IRR',
-    minimumFractionDigits: 0,
-  }).format(price)
+// Methods
+const formatPrice = (price: number) => {
+  return new Intl.NumberFormat('fa-IR').format(price)
 }
 
 const handleAddService = () => {
-  if (!newService.value.name.trim()) {
+  if (!formData.value.name || !formData.value.price || !formData.value.duration) {
+    error.value = 'لطفاً تمام فیلدها را پر کنید'
     return
   }
 
-  services.value.push({
-    id: Date.now().toString(),
-    name: newService.value.name.trim(),
-    durationHours: Math.floor(newService.value.durationMinutes / 60),
-    durationMinutes: newService.value.durationMinutes % 60,
-    price: newService.value.price,
+  const totalMinutes = parseInt(formData.value.duration)
+  const newService: Service = {
+    id: editingId.value || Date.now().toString(),
+    name: formData.value.name,
+    price: parseFloat(formData.value.price),
+    durationHours: Math.floor(totalMinutes / 60),
+    durationMinutes: totalMinutes % 60,
     priceType: 'fixed',
-  })
-
-  // Reset form
-  newService.value = {
-    name: '',
-    durationMinutes: 30,
-    price: 50000,
   }
-  showAddModal.value = false
-  showValidationError.value = false
+
+  if (editingId.value) {
+    // Edit existing service
+    services.value = services.value.map((s) =>
+      s.id === editingId.value ? newService : s
+    )
+  } else {
+    // Add new service
+    services.value.push(newService)
+  }
+
+  // Reset form and state
+  formData.value = { name: '', price: '', duration: '' }
+  isAdding.value = false
+  editingId.value = null
+  error.value = ''
+
+  // Emit update
+  emit('update:modelValue', services.value)
 }
 
-const removeService = (id: string) => {
+const handleEdit = (service: Service) => {
+  // Cancel any active add form
+  if (isAdding.value) {
+    isAdding.value = false
+  }
+
+  const totalMinutes = service.durationHours * 60 + service.durationMinutes
+  formData.value = {
+    name: service.name,
+    price: service.price.toString(),
+    duration: totalMinutes.toString(),
+  }
+  editingId.value = service.id
+}
+
+const handleDelete = (id: string) => {
   services.value = services.value.filter((s) => s.id !== id)
+  emit('update:modelValue', services.value)
+}
+
+const handleCancelAdd = () => {
+  isAdding.value = false
+  editingId.value = null
+  formData.value = { name: '', price: '', duration: '' }
+  error.value = ''
 }
 
 const handleNext = () => {
   if (services.value.length === 0) {
-    showValidationError.value = true
+    error.value = 'لطفاً حداقل یک خدمت اضافه کنید'
     return
   }
-
-  emit('update:modelValue', services.value)
+  error.value = ''
   emit('next')
 }
 </script>
 
 <style scoped>
-/* Services Grid */
-.services-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
-  gap: 1.25rem;
+.registration-step {
+  min-height: 100vh;
+  padding: 2rem 1rem;
+  background: #f9fafb;
+  direction: rtl;
+}
+
+.step-card {
+  max-width: 42rem;
+  margin: 0 auto;
+  background: white;
+  border-radius: 1rem;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  padding: 2rem;
+}
+
+.step-header {
   margin-bottom: 2rem;
 }
 
-.service-card {
-  background: white;
-  border: 2px solid #e5e7eb;
-  border-radius: 0.75rem;
-  padding: 1.25rem;
-  transition: all 0.2s ease;
-  cursor: default;
-}
-
-.service-card:hover {
-  border-color: #10b981;
-  box-shadow: 0 4px 12px rgba(16, 185, 129, 0.1);
-}
-
-.service-card-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: flex-start;
-  margin-bottom: 1rem;
-}
-
-.service-icon {
-  width: 2.5rem;
-  height: 2.5rem;
-  background: #f0fdf4;
-  border-radius: 0.5rem;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  color: #10b981;
-}
-
-.service-icon svg {
-  width: 1.5rem;
-  height: 1.5rem;
-}
-
-.btn-card-delete {
-  width: 2rem;
-  height: 2rem;
-  background: none;
-  border: none;
-  color: #9ca3af;
-  cursor: pointer;
-  transition: color 0.2s;
-  padding: 0.25rem;
-  border-radius: 0.375rem;
-}
-
-.btn-card-delete:hover {
-  color: #ef4444;
-  background: #fef2f2;
-}
-
-.service-card-body {
-  display: flex;
-  flex-direction: column;
-  gap: 0.75rem;
-}
-
-.service-card-name {
-  font-size: 1.125rem;
-  font-weight: 600;
-  color: #111827;
-  line-height: 1.4;
-}
-
-.service-card-details {
-  display: flex;
-  flex-direction: column;
-  gap: 0.5rem;
-}
-
-.detail-item {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  font-size: 0.875rem;
-  color: #6b7280;
-}
-
-.detail-icon {
-  width: 1.125rem;
-  height: 1.125rem;
-  flex-shrink: 0;
-}
-
-.price {
-  font-weight: 600;
-  color: #10b981;
-}
-
-/* Add Service Card */
-.service-card-add {
-  border-style: dashed;
-  border-width: 2px;
-  border-color: #d1d5db;
-  background: #f9fafb;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  min-height: 180px;
-  cursor: pointer;
-  transition: all 0.2s ease;
-}
-
-.service-card-add:hover {
-  border-color: #10b981;
-  background: #f0fdf4;
-}
-
-.add-card-content {
-  text-align: center;
-  color: #6b7280;
-}
-
-.add-icon {
-  width: 3rem;
-  height: 3rem;
-  background: white;
-  border-radius: 50%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  margin: 0 auto 0.75rem;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
-}
-
-.add-icon svg {
-  width: 1.5rem;
-  height: 1.5rem;
-}
-
-.service-card-add:hover .add-icon {
-  background: #10b981;
-  color: white;
-}
-
-.add-text {
-  font-weight: 600;
-  font-size: 0.875rem;
-}
-
-/* Empty State */
-.empty-state {
-  text-align: center;
-  padding: 3rem 2rem;
-  background: #f9fafb;
-  border-radius: 0.75rem;
-  margin-bottom: 2rem;
-}
-
-.empty-icon {
-  width: 4rem;
-  height: 4rem;
-  background: white;
-  border-radius: 50%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  margin: 0 auto 1.5rem;
-  color: #9ca3af;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
-}
-
-.empty-icon svg {
-  width: 2rem;
-  height: 2rem;
-}
-
-.empty-title {
-  font-size: 1.25rem;
+.step-title {
+  font-size: 1.5rem;
   font-weight: 700;
   color: #111827;
   margin-bottom: 0.5rem;
 }
 
-.empty-subtitle {
+.step-description {
   font-size: 0.875rem;
   color: #6b7280;
-  margin-bottom: 1.5rem;
 }
 
-.btn-add-first {
-  padding: 0.75rem 1.5rem;
-  background: #10b981;
-  color: white;
-  border: none;
+.step-content {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+/* Service List */
+.service-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.service-item {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 1rem;
+  background: rgba(139, 92, 246, 0.05);
+  border: 1px solid #e5e7eb;
   border-radius: 0.5rem;
+}
+
+.service-info {
+  flex: 1;
+}
+
+.service-name {
+  font-size: 1rem;
   font-weight: 600;
-  cursor: pointer;
-  transition: background 0.2s;
+  color: #111827;
+  margin-bottom: 0.25rem;
 }
 
-.btn-add-first:hover {
-  background: #059669;
-}
-
-/* Error Message */
-.error-message {
-  color: #ef4444;
+.service-details {
   font-size: 0.875rem;
-  text-align: center;
-  margin: -1rem 0 1.5rem;
-  font-weight: 500;
+  color: #6b7280;
 }
 
-/* Modal */
-.modal-overlay {
-  position: fixed;
-  inset: 0;
-  background: rgba(0, 0, 0, 0.5);
-  backdrop-filter: blur(4px);
+.service-actions {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.btn-icon {
+  padding: 0.5rem;
+  background: none;
+  border: none;
+  border-radius: 0.375rem;
+  cursor: pointer;
+  transition: all 0.2s ease;
   display: flex;
   align-items: center;
   justify-content: center;
-  z-index: 1000;
-  animation: fadeIn 0.2s ease;
 }
 
-@keyframes fadeIn {
-  from {
-    opacity: 0;
-  }
-  to {
-    opacity: 1;
-  }
+.btn-icon:hover {
+  background: rgba(0, 0, 0, 0.05);
 }
 
-.modal-content {
-  background: white;
-  padding: 0;
-  border-radius: 1rem;
-  width: 90%;
-  max-width: 480px;
-  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1);
-  animation: slideUp 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+.btn-icon .icon {
+  width: 1.25rem;
+  height: 1.25rem;
+  color: #6b7280;
 }
 
-@keyframes slideUp {
-  from {
-    opacity: 0;
-    transform: translateY(1rem);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
+.btn-delete .icon {
+  color: #ef4444;
 }
 
-.modal-header {
+/* Service Form */
+.service-form {
+  padding: 1rem;
+  background: rgba(139, 92, 246, 0.05);
+  border: 1px solid rgba(139, 92, 246, 0.2);
+  border-radius: 0.5rem;
   display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 1.5rem;
-  border-bottom: 1px solid #e5e7eb;
-}
-
-.modal-title {
-  font-size: 1.25rem;
-  font-weight: 700;
-  color: #111827;
-  margin: 0;
-}
-
-.modal-close {
-  width: 2rem;
-  height: 2rem;
-  background: none;
-  border: none;
-  color: #9ca3af;
-  cursor: pointer;
-  padding: 0.25rem;
-  border-radius: 0.375rem;
-  transition: all 0.2s;
-}
-
-.modal-close:hover {
-  background: #f3f4f6;
-  color: #111827;
-}
-
-form {
-  padding: 1.5rem;
+  flex-direction: column;
+  gap: 1rem;
 }
 
 .form-group {
-  margin-bottom: 1.25rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
 }
 
 .form-row {
@@ -560,75 +436,78 @@ form {
 }
 
 .form-label {
-  display: block;
   font-size: 0.875rem;
-  font-weight: 600;
+  font-weight: 500;
   color: #374151;
-  margin-bottom: 0.5rem;
 }
 
 .form-input {
   width: 100%;
   padding: 0.75rem 1rem;
-  font-size: 0.9375rem;
+  font-size: 1rem;
   border: 1px solid #d1d5db;
   border-radius: 0.5rem;
-  outline: none;
+  background: white;
   transition: all 0.2s ease;
 }
 
 .form-input:focus {
-  border-color: #10b981;
-  box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.1);
+  outline: none;
+  border-color: #8b5cf6;
+  box-shadow: 0 0 0 3px rgba(139, 92, 246, 0.1);
 }
 
-.form-input::placeholder {
-  color: #9ca3af;
+.form-actions {
+  display: flex;
+  gap: 0.5rem;
 }
 
-.modal-actions {
+.form-actions > * {
+  flex: 1;
+}
+
+/* Add Service Button */
+.btn-add-service {
+  width: 100%;
+  border-style: dashed !important;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+}
+
+.icon-plus {
+  width: 1.25rem;
+  height: 1.25rem;
+}
+
+/* Error Message */
+.error-message {
+  font-size: 0.875rem;
+  color: #ef4444;
+  text-align: center;
+}
+
+/* Navigation */
+.step-actions {
   display: flex;
   gap: 0.75rem;
-  margin-top: 1.5rem;
+  margin-top: 1rem;
   padding-top: 1.5rem;
   border-top: 1px solid #e5e7eb;
 }
 
-.btn-modal-cancel,
-.btn-modal-submit {
+.step-actions > * {
   flex: 1;
-  padding: 0.75rem 1.5rem;
-  border-radius: 0.5rem;
-  font-weight: 600;
-  cursor: pointer;
-  transition: all 0.2s;
-  font-size: 0.9375rem;
-}
-
-.btn-modal-cancel {
-  background: transparent;
-  border: 1px solid #d1d5db;
-  color: #6b7280;
-}
-
-.btn-modal-cancel:hover {
-  background: #f9fafb;
-  border-color: #9ca3af;
-}
-
-.btn-modal-submit {
-  background: #10b981;
-  border: none;
-  color: white;
-}
-
-.btn-modal-submit:hover {
-  background: #059669;
 }
 
 @media (max-width: 640px) {
-  .services-grid {
-    grid-template-columns: 1fr;
+  .step-card {
+    padding: 1.5rem;
+  }
+
+  .step-title {
+    font-size: 1.25rem;
   }
 
   .form-row {

@@ -359,4 +359,30 @@ public class EfCoreUnitOfWork<TContext> : IUnitOfWork
             throw;
         }
     }
+
+    /// <summary>
+    /// Saves changes to database first, then dispatches domain events.
+    /// Use this when events trigger external actions (e.g., SMS, email) that reference the saved entity.
+    /// </summary>
+    public async Task<int> SaveAndPublishEventsAsync(CancellationToken cancellationToken = default)
+    {
+        try
+        {
+            // Save changes to database first
+            var result = await _context.SaveChangesAsync(cancellationToken);
+
+            _logger.LogDebug("Saved {Count} changes to database", result);
+
+            // Then dispatch domain events
+            await DispatchDomainEventsAsync(cancellationToken);
+
+            _logger.LogDebug("Dispatched domain events after save");
+            return result;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error during save and publish events");
+            throw;
+        }
+    }
 }

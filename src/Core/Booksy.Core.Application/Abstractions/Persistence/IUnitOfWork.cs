@@ -18,11 +18,19 @@ namespace Booksy.Core.Application.Abstractions.Persistence
         Task<int> CommitAsync(CancellationToken cancellationToken = default);
 
         /// <summary>
-        /// Commits all changes and publishes domain events
+        /// Commits all changes and publishes domain events (events dispatched BEFORE saving)
         /// </summary>
         /// <param name="cancellationToken">Cancellation token</param>
         /// <returns>The number of state entries written to the database</returns>
         Task<int> CommitAndPublishEventsAsync(CancellationToken cancellationToken = default);
+
+        /// <summary>
+        /// Saves changes to database first, then publishes domain events (events dispatched AFTER saving)
+        /// Use this when events trigger external actions (e.g., SMS, email) that reference the saved entity.
+        /// </summary>
+        /// <param name="cancellationToken">Cancellation token</param>
+        /// <returns>The number of state entries written to the database</returns>
+        Task<int> SaveAndPublishEventsAsync(CancellationToken cancellationToken = default);
 
         /// <summary>
         /// Rolls back all changes made in this unit of work

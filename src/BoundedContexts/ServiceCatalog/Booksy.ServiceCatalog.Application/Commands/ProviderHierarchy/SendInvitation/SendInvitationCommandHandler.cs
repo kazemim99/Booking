@@ -62,15 +62,27 @@ namespace Booksy.ServiceCatalog.Application.Commands.ProviderHierarchy.SendInvit
                 request.InviteeName,
                 request.Message);
 
+            _logger.LogInformation("Created invitation with ID: {InvitationId}", invitation.Id);
+
             await _invitationWriteRepository.SaveAsync(invitation, cancellationToken);
-            await _unitOfWork.CommitAndPublishEventsAsync(cancellationToken);
+
+            _logger.LogInformation("Saving invitation to DB with ID: {InvitationId}", invitation.Id);
+
+            // Use SaveAndPublishEventsAsync to save FIRST, then dispatch events
+            // This ensures the invitation exists in DB before SMS is sent with the invitation link
+            await _unitOfWork.SaveAndPublishEventsAsync(cancellationToken);
 
             _logger.LogInformation("Invitation {InvitationId} sent successfully", invitation.Id);
 
             return new SendInvitationResult(
                 InvitationId: invitation.Id,
                 OrganizationId: organization.Id.Value,
+                OrganizationName: organization.Profile.BusinessName,
+                OrganizationLogo: organization.Profile.LogoUrl,
                 PhoneNumber: request.PhoneNumber,
+                InviteeName: request.InviteeName,
+                Message: request.Message,
+                CreatedAt: invitation.CreatedAt,
                 ExpiresAt: invitation.ExpiresAt,
                 Status: invitation.Status.ToString());
         }

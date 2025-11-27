@@ -6,6 +6,7 @@ using Booksy.ServiceCatalog.Application.Commands.ProviderHierarchy.CreateJoinReq
 using Booksy.ServiceCatalog.Application.Commands.ProviderHierarchy.RejectJoinRequest;
 using Booksy.ServiceCatalog.Application.Commands.ProviderHierarchy.RemoveStaffMember;
 using Booksy.ServiceCatalog.Application.Commands.ProviderHierarchy.SendInvitation;
+using Booksy.ServiceCatalog.Application.Queries.ProviderHierarchy.GetInvitation;
 using Booksy.ServiceCatalog.Application.Queries.ProviderHierarchy.GetPendingInvitations;
 using Booksy.ServiceCatalog.Application.Queries.ProviderHierarchy.GetPendingJoinRequests;
 using Booksy.ServiceCatalog.Application.Queries.ProviderHierarchy.GetProviderWithStaff;
@@ -115,6 +116,22 @@ public class ProviderHierarchyController : ControllerBase
     }
 
     /// <summary>
+    /// Get a specific invitation by ID (public endpoint for invitation acceptance page)
+    /// </summary>
+    [HttpGet("invitations/{invitationId}")]
+    [AllowAnonymous]
+    [ProducesResponseType(typeof(GetInvitationResult), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> GetInvitation(
+        Guid providerId,
+        Guid invitationId,
+        CancellationToken cancellationToken)
+    {
+        var result = await _mediator.Send(new GetInvitationQuery(providerId, invitationId), cancellationToken);
+        return Ok(result);
+    }
+
+    /// <summary>
     /// Send an invitation to join an organization
     /// </summary>
     [HttpPost("invitations")]
@@ -127,7 +144,7 @@ public class ProviderHierarchyController : ControllerBase
         CancellationToken cancellationToken)
     {
         var result = await _mediator.Send(
-            new SendInvitationCommand(providerId, request.PhoneNumber, request.InviteeName, request.Message),
+            new SendInvitationCommand(providerId, request.InviteePhoneNumber, request.InviteeName, request.Message),
             cancellationToken);
         return CreatedAtAction(nameof(GetPendingInvitations), new { providerId }, result);
     }
@@ -275,7 +292,7 @@ public class ProviderHierarchyController : ControllerBase
 #region Request DTOs
 
 public record SendInvitationRequest(
-    string PhoneNumber,
+    string InviteePhoneNumber,
     string? InviteeName = null,
     string? Message = null);
 

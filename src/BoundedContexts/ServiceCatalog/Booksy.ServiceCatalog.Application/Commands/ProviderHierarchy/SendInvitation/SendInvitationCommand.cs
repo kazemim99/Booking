@@ -12,7 +12,12 @@ namespace Booksy.ServiceCatalog.Application.Commands.ProviderHierarchy.SendInvit
     public sealed record SendInvitationResult(
         Guid InvitationId,
         Guid OrganizationId,
+        string OrganizationName,
+        string? OrganizationLogo,
         string PhoneNumber,
+        string? InviteeName,
+        string? Message,
+        DateTime CreatedAt,
         DateTime ExpiresAt,
         string Status);
 }

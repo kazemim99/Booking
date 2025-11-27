@@ -125,7 +125,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, h } from 'vue'
+import { ref, computed, h, onMounted } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { useProviderStore } from '../../stores/provider.store'
 import { useAuthStore } from '@/core/stores/modules/auth.store'
@@ -147,11 +147,23 @@ const LogoutIcon = () => h('svg', { class: 'w-5 h-5', fill: 'none', stroke: 'cur
   h('path', { 'stroke-linecap': 'round', 'stroke-linejoin': 'round', 'stroke-width': '2', d: 'M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1' })
 ])
 
+const UsersIcon = () => h('svg', { class: 'w-5 h-5', fill: 'none', stroke: 'currentColor', viewBox: '0 0 24 24' }, [
+  h('path', { 'stroke-linecap': 'round', 'stroke-linejoin': 'round', 'stroke-width': '2', d: 'M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z' })
+])
+
 const router = useRouter()
 const route = useRoute()
 const providerStore = useProviderStore()
 const authStore = useAuthStore()
 const mobileMenuOpen = ref(false)
+
+// Load provider data on mount
+onMounted(async () => {
+  // Load current provider if not already loaded
+  if (!providerStore.currentProvider) {
+    await providerStore.loadCurrentProvider()
+  }
+})
 
 const currentProvider = computed(() => providerStore.currentProvider)
 
@@ -169,12 +181,15 @@ const DashboardIcon = () => h('svg', { class: 'w-5 h-5', fill: 'none', stroke: '
   h('path', { 'stroke-linecap': 'round', 'stroke-linejoin': 'round', 'stroke-width': '2', d: 'M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z' })
 ])
 
-const menuItems = [
-  { id: 'dashboard', label: 'داشبورد', icon: DashboardIcon, route: '/dashboard' },
-  { id: 'bookings', label: 'رزروها', icon: CalendarIcon, route: '/bookings' },
-  { id: 'financial', label: 'مالی', icon: CurrencyIcon, route: '/financial' },
-  { id: 'profile', label: 'پروفایل', icon: UserIcon, route: '/profile' }
-]
+const menuItems = computed(() => {
+  return [
+    { id: 'dashboard', label: 'داشبورد', icon: DashboardIcon, route: '/provider/dashboard' },
+    { id: 'bookings', label: 'رزروها', icon: CalendarIcon, route: '/provider/bookings' },
+    { id: 'financial', label: 'مالی', icon: CurrencyIcon, route: '/provider/financial' },
+    { id: 'staff', label: 'پرسنل', icon: UsersIcon, route: '/provider/staff' },
+    { id: 'profile', label: 'پروفایل', icon: UserIcon, route: '/provider/profile' }
+  ]
+})
 
 // Determine if a menu item is active based on current route
 const isMenuItemActive = (itemRoute: string) => {

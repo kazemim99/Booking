@@ -45,7 +45,15 @@
       <div v-else class="invitation-details">
         <div class="invitation-header">
           <div class="organization-logo" v-if="invitation?.organizationLogo">
-            <img :src="invitation.organizationLogo" :alt="invitation.organizationName" />
+            <img
+              :src="invitation.organizationLogo"
+              :alt="invitation.organizationName"
+              @error="handleImageError"
+              @load="handleImageLoad"
+            />
+          </div>
+          <div class="organization-logo organization-logo-fallback" v-else>
+            <i class="icon-briefcase"></i>
           </div>
           <h1 class="invitation-title">دعوت برای پیوستن به تیم</h1>
           <h2 class="organization-name">{{ invitation?.organizationName }}</h2>
@@ -59,7 +67,7 @@
         <div class="invitation-info">
           <div class="info-item">
             <i class="icon-calendar"></i>
-            <span>تاریخ دعوت: {{ formatDate(invitation?.createdAt) }}</span>
+            <span>تاریخ دعوت: {{ formatDate(invitation?.sentAt) }}</span>
           </div>
           <div class="info-item">
             <i class="icon-clock"></i>
@@ -152,9 +160,7 @@ async function loadInvitation() {
     invitationId.value = id
 
     // Load invitation details from API
-    // This should be implemented in the hierarchy service
-    // For now, using a placeholder
-    // invitation.value = await hierarchyService.getInvitationById(orgId, id)
+    invitation.value = await hierarchyStore.getInvitation(orgId, id)
 
   } catch (err) {
     error.value = err instanceof Error ? err.message : 'خطا در بارگذاری دعوت'
@@ -167,12 +173,50 @@ async function loadInvitation() {
 async function handleAccept() {
   if (!invitation.value || !isUserRegistered.value) return
 
+  // Get current user's provider ID
+  const currentProviderId = authStore.providerId
+  console.log('=== ACCEPT INVITATION DEBUG ===')
+  console.log('Current Provider ID from authStore:', currentProviderId)
+  console.log('Organization ID from invitation:', invitation.value.organizationId)
+
+  if (!currentProviderId) {
+    error.value = 'لطفاً ابتدا ثبت‌نام کنید'
+    return
+  }
+
+  // Check if current provider has hierarchy info loaded
+  if (!hierarchyStore.currentHierarchy) {
+    // Try to load hierarchy to check if user is Individual type
+    try {
+      console.log('Loading hierarchy for provider:', currentProviderId)
+      await hierarchyStore.loadProviderHierarchy(currentProviderId)
+      console.log('Hierarchy loaded:', hierarchyStore.currentHierarchy)
+    } catch (err) {
+      console.error('Could not load provider hierarchy:', err)
+      // If we can't load hierarchy, let the backend validate
+      // The backend will return a proper error if the user is not an Individual
+    }
+  }
+
+  // Validate that current user is an Individual provider (if hierarchy is loaded)
+  const hierarchyType = hierarchyStore.currentHierarchy?.provider?.hierarchyType
+  console.log('Current provider hierarchy type:', hierarchyType)
+
+  if (hierarchyType === 'Organization') {
+    error.value = 'فقط ارائه‌دهندگان فردی می‌توانند دعوت را بپذیرند. شما با حساب سازمانی وارد شده‌اید.'
+    return
+  }
+
   isSubmitting.value = true
   error.value = null
 
   try {
+    console.log('Calling acceptInvitation with provider ID:', currentProviderId)
+    console.log('API URL will be: /api/v1/providers/' + currentProviderId + '/hierarchy/invitations/' + invitationId.value + '/accept')
+
+    // Use current user's provider ID (not organization ID) in the API call
     await hierarchyStore.acceptInvitation(
-      invitation.value.organizationId,
+      currentProviderId,
       invitationId.value,
       {
         invitationId: invitationId.value,
@@ -207,9 +251,30 @@ function handleProfileCompleted() {
   invitation.value!.status = InvitationStatus.Accepted
 }
 
-function formatDate(dateString?: string): string {
-  if (!dateString) return ''
+function handleImageError(event: Event) {
+  console.error('Failed to load organization logo:', invitation.value?.organizationLogo)
+  const img = event.target as HTMLImageElement
+  // Hide the image on error
+  if (img.parentElement) {
+    img.parentElement.style.display = 'none'
+  }
+}
+
+function handleImageLoad() {
+  console.log('Organization logo loaded successfully:', invitation.value?.organizationLogo)
+}
+
+function formatDate(dateString?: string | Date): string {
+  if (!dateString) return 'نامشخص'
+
   const date = new Date(dateString)
+
+  // Check if date is valid
+  if (isNaN(date.getTime())) {
+    console.warn('Invalid date value:', dateString)
+    return 'نامشخص'
+  }
+
   return new Intl.DateTimeFormat('fa-IR', {
     year: 'numeric',
     month: 'long',
@@ -319,6 +384,18 @@ function formatDate(dateString?: string): string {
         width: 100%;
         height: 100%;
         object-fit: cover;
+      }
+
+      &.organization-logo-fallback {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+
+        i {
+          font-size: 3rem;
+          color: #fff;
+        }
       }
     }
 
