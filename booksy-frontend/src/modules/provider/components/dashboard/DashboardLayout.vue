@@ -41,6 +41,10 @@
 
         <!-- User Info -->
         <div class="user-section">
+          <!-- Role Badge -->
+          <div v-if="roleLabel" class="role-badge" :class="roleBadgeClass">
+            {{ roleLabel }}
+          </div>
           <div class="user-name">
             <p>{{ displayName }}</p>
           </div>
@@ -128,7 +132,9 @@
 import { ref, computed, h, onMounted } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { useProviderStore } from '../../stores/provider.store'
+import { useHierarchyStore } from '../../stores/hierarchy.store'
 import { useAuthStore } from '@/core/stores/modules/auth.store'
+import { HierarchyType } from '../../types/hierarchy.types'
 
 // Icon Components (Simple SVG-based)
 const CalendarIcon = () => h('svg', { class: 'w-5 h-5', fill: 'none', stroke: 'currentColor', viewBox: '0 0 24 24' }, [
@@ -154,6 +160,7 @@ const UsersIcon = () => h('svg', { class: 'w-5 h-5', fill: 'none', stroke: 'curr
 const router = useRouter()
 const route = useRoute()
 const providerStore = useProviderStore()
+const hierarchyStore = useHierarchyStore()
 const authStore = useAuthStore()
 const mobileMenuOpen = ref(false)
 
@@ -163,9 +170,19 @@ onMounted(async () => {
   if (!providerStore.currentProvider) {
     await providerStore.loadCurrentProvider()
   }
+
+  // Load hierarchy information using the provider ID
+  if (!hierarchyStore.currentHierarchy && providerStore.currentProvider?.id) {
+    try {
+      await hierarchyStore.loadProviderHierarchy(providerStore.currentProvider.id)
+    } catch (error) {
+      console.error('[DashboardLayout] Failed to load hierarchy:', error)
+    }
+  }
 })
 
 const currentProvider = computed(() => providerStore.currentProvider)
+const currentHierarchy = computed(() => hierarchyStore.currentHierarchy)
 
 const displayName = computed(() => {
   if (!currentProvider.value) return 'مدیر'
@@ -176,19 +193,96 @@ const avatarLetter = computed(() => {
   return displayName.value.charAt(0)
 })
 
+// Role-based badge label
+const roleLabel = computed(() => {
+  const provider = currentHierarchy.value?.provider
+  const hierarchyType = provider?.hierarchyType
+  const hasParentOrg = !!provider?.parentOrganizationId
+
+  if (hierarchyType === HierarchyType.Organization) {
+    return 'سازمان'
+  }
+
+  if (hierarchyType === HierarchyType.Individual && hasParentOrg) {
+    return 'کارمند'
+  }
+
+  if (hierarchyType === HierarchyType.Individual && !hasParentOrg) {
+    return 'فردی'
+  }
+
+  return null
+})
+
+const roleBadgeClass = computed(() => {
+  const provider = currentHierarchy.value?.provider
+  const hierarchyType = provider?.hierarchyType
+  const hasParentOrg = !!provider?.parentOrganizationId
+
+  if (hierarchyType === HierarchyType.Organization) {
+    return 'badge-organization'
+  }
+
+  if (hierarchyType === HierarchyType.Individual && hasParentOrg) {
+    return 'badge-staff'
+  }
+
+  if (hierarchyType === HierarchyType.Individual && !hasParentOrg) {
+    return 'badge-individual'
+  }
+
+  return ''
+})
+
 // Dashboard Icon
 const DashboardIcon = () => h('svg', { class: 'w-5 h-5', fill: 'none', stroke: 'currentColor', viewBox: '0 0 24 24' }, [
   h('path', { 'stroke-linecap': 'round', 'stroke-linejoin': 'round', 'stroke-width': '2', d: 'M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z' })
 ])
 
 const menuItems = computed(() => {
-  return [
-    { id: 'dashboard', label: 'داشبورد', icon: DashboardIcon, route: '/provider/dashboard' },
-    { id: 'bookings', label: 'رزروها', icon: CalendarIcon, route: '/provider/bookings' },
-    { id: 'financial', label: 'مالی', icon: CurrencyIcon, route: '/provider/financial' },
-    { id: 'staff', label: 'پرسنل', icon: UsersIcon, route: '/provider/staff' },
-    { id: 'profile', label: 'پروفایل', icon: UserIcon, route: '/provider/profile' }
+  const provider = currentHierarchy.value?.provider
+  const hierarchyType = provider?.hierarchyType
+  const hasParentOrg = !!provider?.parentOrganizationId
+
+  // Base menu items for all providers
+  const baseItems = [
+    { id: 'dashboard', label: 'داشبورد', icon: DashboardIcon, route: '/provider/dashboard' }
   ]
+
+  // ORGANIZATION MENU - Full management capabilities
+  if (hierarchyType === HierarchyType.Organization) {
+    return [
+      ...baseItems,
+      { id: 'bookings', label: 'رزروها', icon: CalendarIcon, route: '/provider/bookings' },
+      { id: 'financial', label: 'مالی', icon: CurrencyIcon, route: '/provider/financial' },
+      { id: 'staff', label: 'پرسنل', icon: UsersIcon, route: '/provider/staff' }, // ← ORG ONLY
+      { id: 'profile', label: 'پروفایل سازمان', icon: UserIcon, route: '/provider/profile' }
+    ]
+  }
+
+  // STAFF MEMBER MENU - Limited to own data
+  if (hierarchyType === HierarchyType.Individual && hasParentOrg) {
+    return [
+      ...baseItems,
+      { id: 'my-bookings', label: 'رزروهای من', icon: CalendarIcon, route: '/provider/my-bookings' },
+      { id: 'my-earnings', label: 'درآمد من', icon: CurrencyIcon, route: '/provider/my-earnings' },
+      { id: 'my-profile', label: 'پروفایل من', icon: UserIcon, route: '/provider/my-profile' },
+      { id: 'organization', label: 'سازمان من', icon: UsersIcon, route: '/provider/my-organization' }
+    ]
+  }
+
+  // INDEPENDENT INDIVIDUAL MENU - Full control, no staff management
+  if (hierarchyType === HierarchyType.Individual && !hasParentOrg) {
+    return [
+      ...baseItems,
+      { id: 'bookings', label: 'رزروها', icon: CalendarIcon, route: '/provider/bookings' },
+      { id: 'financial', label: 'مالی', icon: CurrencyIcon, route: '/provider/financial' },
+      { id: 'profile', label: 'پروفایل من', icon: UserIcon, route: '/provider/profile' }
+    ]
+  }
+
+  // FALLBACK - Default menu if hierarchy type is not loaded yet
+  return baseItems
 })
 
 // Determine if a menu item is active based on current route
@@ -291,6 +385,29 @@ const handleLogout = async () => {
   display: flex;
   align-items: center;
   gap: 12px;
+}
+
+.role-badge {
+  padding: 4px 12px;
+  border-radius: 12px;
+  font-size: 12px;
+  font-weight: 600;
+  white-space: nowrap;
+
+  &.badge-organization {
+    background: #dbeafe;
+    color: #1e40af;
+  }
+
+  &.badge-staff {
+    background: #fef3c7;
+    color: #92400e;
+  }
+
+  &.badge-individual {
+    background: #e0e7ff;
+    color: #4338ca;
+  }
 }
 
 .user-name {

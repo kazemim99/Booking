@@ -45,7 +45,9 @@ public sealed record LocationData(
     string Province,
     string PostalCode,
     decimal Latitude,
-    decimal Longitude
+    decimal Longitude,
+    int? ProvinceId,
+    int? CityId
 );
 
 public sealed record ServiceData(

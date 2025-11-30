@@ -79,7 +79,7 @@ const initializeSchedule = (): DayHours[] => {
   // Default schedule (all days open with default break 14:00-17:00)
   return weekDays.map((_, index) => ({
     dayOfWeek: index,
-    isOpen: true, // All days open by default
+    isOpen: true, // All days open by default (including Thursday at index 5)
     openTime: { hours: 10, minutes: 0 },
     closeTime: { hours: 22, minutes: 0 },
     breaks: [

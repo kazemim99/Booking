@@ -556,6 +556,9 @@ const tabs = [
 
 // Function to load location data
 const loadLocationData = async () => {
+  // ✅ ALWAYS load provinces/cities when location tab opens (in 1 API call)
+  await loadProvinces()
+
   if (currentProvider.value) {
     const address = currentProvider.value.address
     let provinceId = address?.provinceId || null
@@ -563,15 +566,12 @@ const loadLocationData = async () => {
 
     // If IDs are not available but names are, resolve IDs from names
     if (!provinceId && address?.state) {
-      // Ensure provinces are loaded first
-      await loadProvinces()
       const province = getProvinceByName(address.state)
       if (province) {
         provinceId = province.id
 
         // Now try to resolve city if we have province and city name
         if (!cityId && address?.city) {
-          await loadCitiesByProvinceId(province.id)
           const city = getCityByName(province.id, address.city)
           if (city) {
             cityId = city.id
@@ -677,12 +677,8 @@ onMounted(async () => {
   console.log('📋 ProfileManager: Loading provider information...')
 
   try {
-    // Load all provinces and their cities for the searchable dropdown
-    await loadProvinces()
-    const provincesList = provinces.value
-    for (const province of provincesList) {
-      await loadCitiesByProvinceId(province.id)
-    }
+    // ❌ DON'T load provinces here - only load when Location tab is opened!
+    // This prevents unnecessary API calls on page load
 
     // Force refresh provider data from backend (similar to /progress API)
     await providerStore.loadCurrentProvider(true)

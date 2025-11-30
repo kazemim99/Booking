@@ -52,8 +52,6 @@ namespace Booksy.ServiceCatalog.Application.Commands.Booking.AddNotes
             // Update booking
             await _bookingRepository.UpdateBookingAsync(booking, cancellationToken);
 
-            // Commit transaction and publish events
-            await _unitOfWork.CommitAndPublishEventsAsync(cancellationToken);
 
             _logger.LogInformation("Notes added to booking {BookingId} successfully", booking.Id);
 

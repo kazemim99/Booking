@@ -8,16 +8,10 @@ using Booksy.ServiceCatalog.Domain.Aggregates.UserNotificationPreferencesAggrega
 using Booksy.ServiceCatalog.Domain.Aggregates.PaymentAggregate;
 using Booksy.ServiceCatalog.Domain.Aggregates.PayoutAggregate;
 using Booksy.ServiceCatalog.Domain.Aggregates.ProviderAvailabilityAggregate;
-using Booksy.ServiceCatalog.Domain.Entities;
 using Booksy.ServiceCatalog.Infrastructure.Persistence.Configurations;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.ChangeTracking;
 using Microsoft.EntityFrameworkCore.Diagnostics;
-using System.Collections.Generic;
-using System.Reflection.Emit;
-using BusinessHours = Booksy.ServiceCatalog.Domain.Entities.BusinessHours;
-using HolidaySchedule = Booksy.ServiceCatalog.Domain.Entities.HolidaySchedule;
-using ExceptionSchedule = Booksy.ServiceCatalog.Domain.Entities.ExceptionSchedule;
 using Booksy.Core.Domain.Domain.Entities;
 
 namespace Booksy.ServiceCatalog.Infrastructure.Persistence.Context

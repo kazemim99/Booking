@@ -56,7 +56,6 @@ namespace Booksy.ServiceCatalog.Application.Commands.ProviderHierarchy.RemoveSta
             staffProvider.UnlinkFromOrganization(request.Reason);
 
             await _providerWriteRepository.UpdateAsync(staffProvider, cancellationToken);
-            await _unitOfWork.CommitAndPublishEventsAsync(cancellationToken);
 
             _logger.LogInformation("Staff member {StaffProviderId} removed from organization {OrganizationId}",
                 staffProviderId, organizationId);

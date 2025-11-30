@@ -12,6 +12,8 @@ import type {
   RegisterIndependentIndividualRequest,
   SendInvitationRequest,
   AcceptInvitationRequest,
+  AcceptInvitationWithRegistrationRequest,
+  AcceptInvitationWithRegistrationResponse,
   CreateJoinRequestRequest,
   ConvertToOrganizationRequest,
   GetStaffMembersRequest,
@@ -136,10 +138,40 @@ class HierarchyService {
    * Get provider hierarchy details including staff and parent organization
    */
   async getProviderHierarchy(providerId: string): Promise<ProviderHierarchyDetails> {
-    const response = await serviceCategoryClient.get<ProviderHierarchyDetails>(
+    const response = await serviceCategoryClient.get<any>(
       `${API_BASE}/${providerId}/hierarchy`
     )
-    return response.data!
+
+    // Map the flat API response to the expected nested structure
+    const data = response.data
+    return {
+      provider: {
+        id: data.providerId,
+        hierarchyType: data.hierarchyType as HierarchyType,
+        businessName: data.businessName,
+        businessType: data.businessType,
+        description: data.description,
+        logoUrl: data.logoUrl,
+        firstName: data.firstName,
+        lastName: data.lastName,
+        fullName: data.fullName,
+        bio: data.bio,
+        photoUrl: data.photoUrl,
+        parentOrganizationId: data.parentOrganizationId,
+        staffCount: data.totalStaffCount,
+        activeStaffCount: data.activeStaffCount,
+      },
+      staff: data.staffMembers || [],
+      parentOrganization: data.parentOrganization ? {
+        id: data.parentOrganization.id,
+        businessName: data.parentOrganization.businessName,
+        businessType: data.parentOrganization.businessType,
+        logoUrl: data.parentOrganization.logoUrl,
+        city: data.parentOrganization.city,
+        state: data.parentOrganization.state,
+      } : undefined,
+      organizationOwner: data.organizationOwner,
+    }
   }
 
   /**
@@ -157,11 +189,18 @@ class HierarchyService {
 
     console.log('getStaffMembers raw response:', response.data)
 
+    // Map staff member to ensure fullName is present
+    const mapStaffMember = (staff: any): StaffMember => ({
+      ...staff,
+      fullName: staff.fullName || `${staff.firstName || ''} ${staff.lastName || ''}`.trim(),
+      specializations: staff.specializations || [],
+    })
+
     // Backend returns { organizationId, staffMembers: [...] }
     // Extract the staffMembers array and wrap in PagedHierarchyResponse format
     if (response.data && response.data.staffMembers && Array.isArray(response.data.staffMembers)) {
       return {
-        items: response.data.staffMembers,
+        items: response.data.staffMembers.map(mapStaffMember),
         totalCount: response.data.staffMembers.length,
         page: request.page || 1,
         pageSize: request.pageSize || response.data.staffMembers.length,
@@ -171,7 +210,10 @@ class HierarchyService {
 
     // Fallback: if response.data already has the expected format
     if (response.data && response.data.items) {
-      return response.data as PagedHierarchyResponse<StaffMember>
+      return {
+        ...response.data,
+        items: response.data.items.map(mapStaffMember),
+      } as PagedHierarchyResponse<StaffMember>
     }
 
     // No staff members found
@@ -187,9 +229,16 @@ class HierarchyService {
   /**
    * Remove a staff member from an organization
    */
-  async removeStaffMember(organizationId: string, staffId: string): Promise<HierarchyApiResponse<void>> {
+  async removeStaffMember(
+    organizationId: string,
+    staffId: string,
+    reason: string = 'Removed by organization'
+  ): Promise<HierarchyApiResponse<void>> {
     const response = await serviceCategoryClient.delete<HierarchyApiResponse<void>>(
-      `${API_BASE}/${organizationId}/hierarchy/staff/${staffId}`
+      `${API_BASE}/${organizationId}/hierarchy/staff/${staffId}`,
+      {
+        data: { reason }
+      }
     )
     return response.data!
   }
@@ -253,12 +302,18 @@ class HierarchyService {
     // Backend returns { data: { organizationId, invitations: [...] } }
     // Extract the invitations array
     if (response.data && response.data.invitations && Array.isArray(response.data.invitations)) {
-      return response.data.invitations.map(mapInvitationResponse)
+      return response.data.invitations.map((inv: any) => ({
+        ...mapInvitationResponse(inv),
+        organizationId: inv.organizationId || organizationId, // Ensure organizationId is set
+      }))
     }
 
     // Fallback: if response.data is already an array
     if (Array.isArray(response.data)) {
-      return response.data.map(mapInvitationResponse)
+      return response.data.map((inv: any) => ({
+        ...mapInvitationResponse(inv),
+        organizationId: inv.organizationId || organizationId, // Ensure organizationId is set
+      }))
     }
 
     // No invitations found
@@ -288,7 +343,7 @@ class HierarchyService {
   }
 
   /**
-   * Accept an invitation to join an organization
+   * Accept an invitation to join an organization (existing registered user)
    */
   async acceptInvitation(
     organizationId: string,
@@ -299,6 +354,27 @@ class HierarchyService {
       `${API_BASE}/${organizationId}/hierarchy/invitations/${invitationId}/accept`,
       request
     )
+    return response.data!
+  }
+
+  /**
+   * Accept invitation with quick registration (for unregistered users)
+   * This endpoint:
+   * - Verifies OTP code
+   * - Creates user account
+   * - Creates individual provider profile
+   * - Clones services, hours, and gallery from organization
+   * - Accepts the invitation
+   * - Returns authentication tokens and cloning statistics
+   */
+  async acceptInvitationWithRegistration(
+    request: AcceptInvitationWithRegistrationRequest
+  ): Promise<AcceptInvitationWithRegistrationResponse> {
+    const response = await serviceCategoryClient.post<AcceptInvitationWithRegistrationResponse>(
+      `${API_BASE}/${request.organizationId}/hierarchy/invitations/${request.invitationId}/accept-with-registration`,
+      request
+    )
+    // Backend returns the data directly, not wrapped
     return response.data!
   }
 
@@ -317,15 +393,24 @@ class HierarchyService {
 
   /**
    * Resend an expired or rejected invitation
+   * Reuses the existing send invitation endpoint with the same phone number
    */
   async resendInvitation(
     organizationId: string,
-    invitationId: string
+    invitation: ProviderInvitation
   ): Promise<HierarchyApiResponse<ProviderInvitation>> {
-    const response = await serviceCategoryClient.post<HierarchyApiResponse<ProviderInvitation>>(
-      `${API_BASE}/${organizationId}/hierarchy/invitations/${invitationId}/resend`
-    )
-    return response.data!
+    // Reuse the send invitation endpoint with the same details
+    const request: SendInvitationRequest = {
+      organizationId: organizationId,
+      inviteePhoneNumber: invitation.inviteePhoneNumber,
+      inviteeName: invitation.inviteeName || '',
+      firstName: invitation.inviteeName?.split(' ')[0] || '',
+      lastName: invitation.inviteeName?.split(' ').slice(1).join(' ') || '',
+      email: undefined,
+      message: invitation.message,
+    }
+
+    return await this.sendInvitation(organizationId, request)
   }
 
   /**

@@ -66,7 +66,6 @@ namespace Booksy.ServiceCatalog.Application.Commands.ProviderHierarchy.AcceptInv
 
             await _invitationWriteRepository.UpdateAsync(invitation, cancellationToken);
             await _providerWriteRepository.UpdateAsync(individualProvider, cancellationToken);
-            await _unitOfWork.CommitAndPublishEventsAsync(cancellationToken);
 
             _logger.LogInformation("Invitation {InvitationId} accepted. Provider {ProviderId} linked to organization {OrganizationId}",
                 invitation.Id, individualProviderId, invitation.OrganizationId);

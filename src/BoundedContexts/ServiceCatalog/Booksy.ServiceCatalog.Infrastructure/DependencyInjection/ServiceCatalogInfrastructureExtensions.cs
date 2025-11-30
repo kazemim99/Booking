@@ -35,6 +35,7 @@ using Booksy.ServiceCatalog.Infrastructure.ExternalServices.Sms;
 using System.Threading;
 using Booksy.ServiceCatalog.Application.Abstractions;
 using Booksy.ServiceCatalog.Infrastructure.Services;
+using Booksy.Infrastructure.External.OTP;
 
 namespace Booksy.ServiceCatalog.Infrastructure.DependencyInjection
 {
@@ -124,6 +125,10 @@ namespace Booksy.ServiceCatalog.Infrastructure.DependencyInjection
             services.AddScoped<IServiceQueryRepository, ServiceQueryRepository>();
             services.AddScoped<ITokenService, TokenService>();
             services.AddScoped<IUrlService, UrlService>();
+
+            // Invitation & Registration Services
+            services.AddScoped<IInvitationRegistrationService, InvitationRegistrationService>();
+            services.AddScoped<IDataCloningService, DataCloningService>();
 
 
             // Domain Services

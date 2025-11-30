@@ -92,8 +92,10 @@ public class ProviderBuilder
 
     public Provider Build()
     {
-        var provider = Provider.RegisterProvider(
+        var provider = Provider.CreateDraft(
             _ownerId ?? UserId.From(Guid.NewGuid()),
+            "Test",
+            "User",
             _businessName ?? _fixture.Create<string>(),
             _description ?? _fixture.Create<string>(),
             _providerType,
@@ -108,9 +110,12 @@ public class ProviderBuilder
                 "TS",
                 "12345",
                 "USA"
-            )
+            ),
+            ProviderHierarchyType.Organization,
+            registrationStep: 9
         );
 
+        provider.CompleteRegistration();
         provider.SetSatus(_status);
         provider.SetAllowOnlineBooking(_allowOnlineBooking);
 

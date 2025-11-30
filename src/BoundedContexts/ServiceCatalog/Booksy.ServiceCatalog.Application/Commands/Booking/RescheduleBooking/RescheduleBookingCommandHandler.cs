@@ -134,9 +134,6 @@ namespace Booksy.ServiceCatalog.Application.Commands.Booking.RescheduleBooking
                 newBooking.Id.Value,
                 cancellationToken);
 
-            // Commit transaction and publish events
-            await _unitOfWork.CommitAndPublishEventsAsync(cancellationToken);
-
             _logger.LogInformation(
                 "Booking {OldBookingId} rescheduled successfully. New booking: {NewBookingId}",
                 existingBooking.Id, newBooking.Id);

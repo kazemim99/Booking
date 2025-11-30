@@ -168,11 +168,8 @@ namespace Booksy.ServiceCatalog.Infrastructure.Persistence.Configurations
                         .IsRequired()
                         .HasDefaultValue(false);
 
-                    // Add row version for the gallery image as well
-                    galleryImage.Property<byte[]>("RowVersion")
-                        .IsConcurrencyToken()
-                        .HasColumnName("row_version")
-                        .ValueGeneratedOnAddOrUpdate();
+                    // Note: GalleryImage is an owned entity - concurrency is handled at Provider level
+                    // No separate RowVersion needed here to avoid concurrency conflicts on INSERT operations
 
                     // Indexes
                     galleryImage.HasIndex(gi => new { gi.ProviderId, gi.DisplayOrder })

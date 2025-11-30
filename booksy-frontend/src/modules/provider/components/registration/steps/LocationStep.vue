@@ -386,14 +386,9 @@ const handleSubmit = () => {
 
 // Initialize from props on mount
 onMounted(async () => {
-  // Load all provinces and their cities for the searchable dropdown
+  // ✅ OPTIMIZED: Load all provinces with their cities in ONE API call
   await locationStore.loadProvinces()
-
-  // Load cities for all provinces
-  const provinces = locationStore.provinces.value
-  for (const province of provinces) {
-    await locationStore.loadCitiesByProvinceId(province.id)
-  }
+  // No need to loop through provinces - all cities are already loaded! ✅
 
   if (props.address?.provinceId) {
     formData.value.provinceId = props.address.provinceId

@@ -1,6 +1,11 @@
 import type { RouteRecordRaw, NavigationGuardNext, RouteLocationNormalized } from 'vue-router'
 import { useAuthStore } from '@/core/stores/modules/auth.store'
 import { ProviderStatus } from '@/core/types/enums.types'
+import {
+  organizationOnlyGuard,
+  staffMemberOnlyGuard,
+  independentIndividualOnlyGuard
+} from '../guards/hierarchy.guard'
 
 const providerRoutes: RouteRecordRaw[] = [
   // Public Provider Pages (customer-facing)
@@ -241,7 +246,7 @@ const providerRoutes: RouteRecordRaw[] = [
     },
   },
 
-  // Staff Management
+  // Staff Management (Organization Only)
   {
     path: '/provider/staff',
     name: 'ProviderStaffManagement',
@@ -251,6 +256,7 @@ const providerRoutes: RouteRecordRaw[] = [
       roles: ['Provider', 'ServiceProvider'],
       title: 'Staff Management',
     },
+    beforeEnter: organizationOnlyGuard,
   },
 
   // Invitation Routes
@@ -287,7 +293,7 @@ const providerRoutes: RouteRecordRaw[] = [
     },
   },
 
-  // Conversion Route
+  // Conversion Route (Independent Individual Only)
   {
     path: '/provider/convert-to-organization',
     name: 'ConvertToOrganization',
@@ -297,6 +303,63 @@ const providerRoutes: RouteRecordRaw[] = [
       roles: ['Provider', 'ServiceProvider'],
       title: 'Convert to Organization',
     },
+    beforeEnter: independentIndividualOnlyGuard,
+  },
+
+  // ============================================================================
+  // STAFF MEMBER ROUTES (Individual with Parent Organization)
+  // ============================================================================
+
+  // My Bookings (Staff Member Only)
+  {
+    path: '/provider/my-bookings',
+    name: 'MyBookings',
+    component: () => import('@/modules/provider/views/staff/MyBookingsView.vue'),
+    meta: {
+      requiresAuth: true,
+      roles: ['Provider', 'ServiceProvider'],
+      title: 'My Bookings',
+    },
+    beforeEnter: staffMemberOnlyGuard,
+  },
+
+  // My Earnings (Staff Member Only)
+  {
+    path: '/provider/my-earnings',
+    name: 'MyEarnings',
+    component: () => import('@/modules/provider/views/staff/MyEarningsView.vue'),
+    meta: {
+      requiresAuth: true,
+      roles: ['Provider', 'ServiceProvider'],
+      title: 'My Earnings',
+    },
+    beforeEnter: staffMemberOnlyGuard,
+  },
+
+  // My Profile (Staff Member Only)
+  {
+    path: '/provider/my-profile',
+    name: 'MyProfile',
+    component: () => import('@/modules/provider/views/staff/MyProfileView.vue'),
+    meta: {
+      requiresAuth: true,
+      roles: ['Provider', 'ServiceProvider'],
+      title: 'My Profile',
+    },
+    beforeEnter: staffMemberOnlyGuard,
+  },
+
+  // My Organization (Staff Member Only - Read-only view)
+  {
+    path: '/provider/my-organization',
+    name: 'MyOrganization',
+    component: () => import('@/modules/provider/views/staff/MyOrganizationView.vue'),
+    meta: {
+      requiresAuth: true,
+      roles: ['Provider', 'ServiceProvider'],
+      title: 'My Organization',
+    },
+    beforeEnter: staffMemberOnlyGuard,
   },
 
 ]

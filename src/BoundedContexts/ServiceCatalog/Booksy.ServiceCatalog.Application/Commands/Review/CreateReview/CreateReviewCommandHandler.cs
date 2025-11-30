@@ -93,8 +93,6 @@ public sealed class CreateReviewCommandHandler : ICommandHandler<CreateReviewCom
         // 6. Save the review
         await _reviewWriteRepository.SaveAsync(review, cancellationToken);
 
-        // 7. Commit transaction and publish domain events
-        await _unitOfWork.CommitAndPublishEventsAsync(cancellationToken);
 
         _logger.LogInformation(
             "Review {ReviewId} created successfully for Booking {BookingId} with rating {Rating}★",

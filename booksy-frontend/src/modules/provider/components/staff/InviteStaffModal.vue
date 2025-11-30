@@ -56,17 +56,59 @@
               <span v-else class="form-hint">شماره موبایل کارمند جدید را وارد کنید</span>
             </div>
 
-            <!-- Invitee Name -->
+            <!-- First Name -->
             <div class="form-group">
-              <label for="inviteeName" class="form-label">نام کارمند (اختیاری)</label>
+              <label for="firstName" class="form-label">
+                نام <span class="required">*</span>
+              </label>
               <input
-                id="inviteeName"
-                v-model="formData.inviteeName"
+                id="firstName"
+                v-model="formData.firstName"
                 type="text"
                 class="form-input"
-                placeholder="مثال: رضا احمدی"
+                :class="{ 'form-input-error': errors.firstName }"
+                placeholder="مثال: رضا"
+                maxlength="50"
+                @blur="validateField('firstName')"
               />
-              <span class="form-hint">نام کارمند برای شناسایی آسان‌تر دعوت</span>
+              <span v-if="errors.firstName" class="form-error">{{ errors.firstName }}</span>
+              <span v-else class="form-hint">نام کارمند (حداقل 2 کاراکتر)</span>
+            </div>
+
+            <!-- Last Name -->
+            <div class="form-group">
+              <label for="lastName" class="form-label">
+                نام خانوادگی <span class="required">*</span>
+              </label>
+              <input
+                id="lastName"
+                v-model="formData.lastName"
+                type="text"
+                class="form-input"
+                :class="{ 'form-input-error': errors.lastName }"
+                placeholder="مثال: احمدی"
+                maxlength="50"
+                @blur="validateField('lastName')"
+              />
+              <span v-if="errors.lastName" class="form-error">{{ errors.lastName }}</span>
+              <span v-else class="form-hint">نام خانوادگی کارمند (حداقل 2 کاراکتر)</span>
+            </div>
+
+            <!-- Email (Optional) -->
+            <div class="form-group">
+              <label for="email" class="form-label">ایمیل (اختیاری)</label>
+              <input
+                id="email"
+                v-model="formData.email"
+                type="email"
+                dir="ltr"
+                class="form-input"
+                :class="{ 'form-input-error': errors.email }"
+                placeholder="example@email.com"
+                @blur="validateField('email')"
+              />
+              <span v-if="errors.email" class="form-error">{{ errors.email }}</span>
+              <span v-else class="form-hint">ایمیل برای اطلاع‌رسانی‌های آینده</span>
             </div>
 
             <!-- Message -->
@@ -157,13 +199,17 @@ const toast = useToast()
 
 const formData = reactive({
   phoneNumber: '',
-  inviteeName: '',
+  firstName: '',
+  lastName: '',
+  email: '',
   message: '',
 })
 
 const errors = reactive({
   phoneNumber: '',
-  inviteeName: '',
+  firstName: '',
+  lastName: '',
+  email: '',
   message: '',
 })
 
@@ -178,7 +224,12 @@ const messageLength = computed(() => formData.message.length)
 const isFormValid = computed(() => {
   return (
     formData.phoneNumber.length === 10 &&
+    formData.firstName.trim().length >= 2 &&
+    formData.lastName.trim().length >= 2 &&
     !errors.phoneNumber &&
+    !errors.firstName &&
+    !errors.lastName &&
+    !errors.email &&
     !isSubmitting.value
   )
 })
@@ -227,6 +278,29 @@ function validateField(field: keyof typeof formData): void {
     } else if (!validateIranianMobile(formData.phoneNumber)) {
       errors.phoneNumber = 'شماره موبایل معتبر نیست (اپراتور نامعتبر)'
     }
+  } else if (field === 'firstName') {
+    if (!formData.firstName.trim()) {
+      errors.firstName = 'نام الزامی است'
+    } else if (formData.firstName.trim().length < 2) {
+      errors.firstName = 'نام باید حداقل 2 کاراکتر باشد'
+    } else if (formData.firstName.trim().length > 50) {
+      errors.firstName = 'نام نباید بیشتر از 50 کاراکتر باشد'
+    }
+  } else if (field === 'lastName') {
+    if (!formData.lastName.trim()) {
+      errors.lastName = 'نام خانوادگی الزامی است'
+    } else if (formData.lastName.trim().length < 2) {
+      errors.lastName = 'نام خانوادگی باید حداقل 2 کاراکتر باشد'
+    } else if (formData.lastName.trim().length > 50) {
+      errors.lastName = 'نام خانوادگی نباید بیشتر از 50 کاراکتر باشد'
+    }
+  } else if (field === 'email') {
+    if (formData.email && formData.email.trim()) {
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+      if (!emailRegex.test(formData.email)) {
+        errors.email = 'فرمت ایمیل معتبر نیست'
+      }
+    }
   }
 }
 
@@ -237,7 +311,10 @@ function clearPhoneNumber(): void {
 
 function validateForm(): boolean {
   validateField('phoneNumber')
-  return !errors.phoneNumber
+  validateField('firstName')
+  validateField('lastName')
+  validateField('email')
+  return !errors.phoneNumber && !errors.firstName && !errors.lastName && !errors.email
 }
 
 // ============================================
@@ -259,7 +336,10 @@ async function handleSubmit(): Promise<void> {
     const request: SendInvitationRequest = {
       organizationId: props.organizationId,
       inviteePhoneNumber: `+98${formData.phoneNumber}`,
-      inviteeName: formData.inviteeName || undefined,
+      inviteeName: `${formData.firstName.trim()} ${formData.lastName.trim()}`,
+      firstName: formData.firstName.trim(),
+      lastName: formData.lastName.trim(),
+      email: formData.email.trim() || undefined,
       message: formData.message || undefined,
     }
 

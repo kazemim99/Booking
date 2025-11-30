@@ -54,6 +54,17 @@ namespace Booksy.ServiceCatalog.Application.Commands.ProviderHierarchy.SendInvit
             if (existingInvitation != null)
                 throw new DomainValidationException($"A pending invitation already exists for phone number {request.PhoneNumber}");
 
+            // TODO: Check if user with this phone number already exists
+            // This validation should be added to prevent inviting registered users
+            // var existingUser = await _userRepository.GetByPhoneNumberAsync(request.PhoneNumber, cancellationToken);
+            // if (existingUser != null)
+            // {
+            //     // If user exists, they should use the regular join request flow instead
+            //     throw new DomainValidationException(
+            //         $"A user account with phone number {request.PhoneNumber} already exists. " +
+            //         "This user can join the organization by accepting the invitation through their account.");
+            // }
+
             // Create invitation
             var phoneNumber = PhoneNumber.From(request.PhoneNumber);
             var invitation = ProviderInvitation.Create(

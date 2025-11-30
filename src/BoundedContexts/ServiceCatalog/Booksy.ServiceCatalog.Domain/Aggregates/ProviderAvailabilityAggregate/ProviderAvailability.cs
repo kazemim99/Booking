@@ -293,8 +293,8 @@ namespace Booksy.ServiceCatalog.Domain.Aggregates.ProviderAvailabilityAggregate
             if (duration < 15)
                 throw new DomainValidationException("Time slot must be at least 15 minutes");
             
-            if (duration > 480) // 8 hours
-                throw new DomainValidationException("Time slot cannot exceed 8 hours");
+            if (duration > 999) // 8 hours
+                throw new DomainValidationException("Time slot cannot exceed 16 hours");
         }
         
         public override string ToString()

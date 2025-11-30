@@ -10,9 +10,20 @@ namespace Booksy.ServiceCatalog.Application.Queries.ProviderHierarchy.GetStaffMe
         IReadOnlyList<StaffMemberDto> StaffMembers);
 
     public sealed record StaffMemberDto(
+        Guid Id,
         Guid ProviderId,
-        string BusinessName,
-        string? ProfileImageUrl,
-        string Status,
-        DateTime JoinedAt);
+        Guid OrganizationId,
+        string FirstName,
+        string LastName,
+        string FullName,
+        string? Email,
+        string? PhoneNumber,
+        string? PhotoUrl,
+        string Role,
+        string? Title,
+        string? Bio,
+        IReadOnlyList<string>? Specializations,
+        bool IsActive,
+        DateTime JoinedAt,
+        DateTime? LeftAt);
 }

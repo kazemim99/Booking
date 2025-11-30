@@ -82,7 +82,9 @@ public sealed class GetRegistrationProgressQueryHandler
             Province: draftProvider.Address.State,
             PostalCode: draftProvider.Address.PostalCode,
             Latitude: (decimal)(draftProvider.Address.Latitude ?? 0),
-            Longitude: (decimal)(draftProvider.Address.Longitude ?? 0)
+            Longitude: (decimal)(draftProvider.Address.Longitude ?? 0),
+            ProvinceId: draftProvider.Address.ProvinceId,
+            CityId: draftProvider.Address.CityId
         );
 
         // Map services - Load from ServiceRepository (Service is separate aggregate)

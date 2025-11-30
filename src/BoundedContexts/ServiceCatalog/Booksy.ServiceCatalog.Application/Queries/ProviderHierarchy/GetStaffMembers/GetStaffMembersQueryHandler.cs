@@ -38,12 +38,30 @@ namespace Booksy.ServiceCatalog.Application.Queries.ProviderHierarchy.GetStaffMe
             // Get staff members
             var staffMembers = await _providerRepository.GetStaffByOrganizationIdAsync(organizationId, cancellationToken);
 
-            var staffDtos = staffMembers.Select(s => new StaffMemberDto(
-                ProviderId: s.Id.Value,
-                BusinessName: s.Profile.BusinessName,
-                ProfileImageUrl: s.Profile.ProfileImageUrl,
-                Status: s.Status.ToString(),
-                JoinedAt: s.CreatedAt)).ToList();
+            var staffDtos = staffMembers.Select(s =>
+            {
+                var fullName = $"{s.OwnerFirstName} {s.OwnerLastName}".Trim();
+                // Use LastModifiedAt if available (when they joined), otherwise RegisteredAt, fallback to CreatedAt
+                var joinedAt = s.LastModifiedAt ?? s.RegisteredAt;
+
+                return new StaffMemberDto(
+                    Id: s.Id.Value,
+                    ProviderId: s.Id.Value,
+                    OrganizationId: organizationId.Value,
+                    FirstName: s.OwnerFirstName,
+                    LastName: s.OwnerLastName,
+                    FullName: string.IsNullOrEmpty(fullName) ? s.Profile.BusinessName : fullName,
+                    Email: s.ContactInfo.Email?.Value,
+                    PhoneNumber: s.ContactInfo.PrimaryPhone?.Value,
+                    PhotoUrl: s.Profile.ProfileImageUrl,
+                    Role: "Staff", // Default role for now
+                    Title: null, // Not stored in Provider aggregate currently
+                    Bio: s.Profile.BusinessDescription,
+                    Specializations: null, // Not stored in Provider aggregate currently
+                    IsActive: s.Status == ProviderStatus.Active,
+                    JoinedAt: joinedAt,
+                    LeftAt: null); // Not tracking this currently
+            }).ToList();
 
             return new GetStaffMembersResult(
                 OrganizationId: organizationId.Value,

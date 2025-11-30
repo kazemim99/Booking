@@ -82,21 +82,27 @@ namespace Booksy.ServiceCatalog.Infrastructure.Persistence.Seeders
                     "Full-service beauty salon offering hair, nails, and skincare",
                     ProviderType.Individual,
                     "New York",
-                    "bella@beautysalon.com"),
+                    "bella@beautysalon.com",
+                    "Bella",
+                    "Martinez"),
 
                 CreateSampleProvider(
                     "Mike's Barbershop",
                     "Traditional barbershop with modern techniques",
                     ProviderType.Salon,
                     "Los Angeles",
-                    "mike@barbershop.com"),
+                    "mike@barbershop.com",
+                    "Mike",
+                    "Johnson"),
 
                 CreateSampleProvider(
                     "Wellness Spa & Massage",
                     "Luxury spa offering massage therapy and wellness treatments",
                     ProviderType.Spa,
                     "Miami",
-                    "info@wellnessspa.com")
+                    "info@wellnessspa.com",
+                    "Sarah",
+                    "Williams")
             };
 
             await _context.Providers.AddRangeAsync(providers, cancellationToken);
@@ -181,7 +187,9 @@ namespace Booksy.ServiceCatalog.Infrastructure.Persistence.Seeders
             string description,
             ProviderType type,
             string city,
-            string email)
+            string email,
+            string ownerFirstName,
+            string ownerLastName)
         {
             var ownerId = UserId.From(Guid.NewGuid());
             var emailValue = Email.Create(email);
@@ -205,13 +213,23 @@ namespace Booksy.ServiceCatalog.Infrastructure.Persistence.Seeders
                 40.7128,
                 -74.0060);
 
-            return Provider.RegisterProvider(
+            var provider = Provider.CreateDraft(
                 ownerId,
+                ownerFirstName,
+                ownerLastName,
                 businessName,
                 description,
                 type,
                 contactInfo,
-                address);
+                address,
+                ProviderHierarchyType.Organization,
+                registrationStep: 9);
+
+            // Complete registration and activate the provider for seeding
+            provider.CompleteRegistration();
+            provider.Activate();
+
+            return provider;
         }
 
         private async Task SeedServicesAsync(CancellationToken cancellationToken)

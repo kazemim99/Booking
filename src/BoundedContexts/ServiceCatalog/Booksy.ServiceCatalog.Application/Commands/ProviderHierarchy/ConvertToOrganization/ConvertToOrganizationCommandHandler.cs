@@ -48,7 +48,6 @@ namespace Booksy.ServiceCatalog.Application.Commands.ProviderHierarchy.ConvertTo
             provider.ConvertToOrganization();
 
             await _providerWriteRepository.UpdateAsync(provider, cancellationToken);
-            await _unitOfWork.CommitAndPublishEventsAsync(cancellationToken);
 
             _logger.LogInformation("Provider {ProviderId} converted to organization", provider.Id);
 

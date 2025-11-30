@@ -59,8 +59,6 @@ public sealed class MarkReviewHelpfulCommandHandler
         // 3. Update the review
         await _reviewWriteRepository.UpdateAsync(review, cancellationToken);
 
-        // 4. Commit transaction
-        await _unitOfWork.CommitAndPublishEventsAsync(cancellationToken);
 
         _logger.LogInformation(
             "Review {ReviewId} marked as {Helpful}. New counts: {HelpfulCount} helpful, {NotHelpfulCount} not helpful",

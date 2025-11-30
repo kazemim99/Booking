@@ -60,7 +60,6 @@ namespace Booksy.ServiceCatalog.Application.Commands.ProviderHierarchy.ApproveJo
 
             await _joinRequestWriteRepository.UpdateAsync(joinRequest, cancellationToken);
             await _providerWriteRepository.UpdateAsync(requester, cancellationToken);
-            await _unitOfWork.CommitAndPublishEventsAsync(cancellationToken);
 
             _logger.LogInformation("Join request {RequestId} approved. Provider {RequesterId} linked to organization {OrganizationId}",
                 joinRequest.Id, joinRequest.RequesterId, joinRequest.OrganizationId);

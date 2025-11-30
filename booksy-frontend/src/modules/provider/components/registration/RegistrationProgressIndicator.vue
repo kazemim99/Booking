@@ -14,7 +14,21 @@
         >
           <div class="step-indicator">
             <div class="step-circle">
-              <i v-if="index + 1 < currentStep" class="icon-check"></i>
+              <svg
+                v-if="index + 1 < currentStep"
+                xmlns="http://www.w3.org/2000/svg"
+                width="20"
+                height="20"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="3"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                class="check-icon"
+              >
+                <polyline points="20 6 9 17 4 12"></polyline>
+              </svg>
               <span v-else>{{ index + 1 }}</span>
             </div>
             <div v-if="index < stepLabels.length - 1" class="step-line"></div>
@@ -137,8 +151,10 @@ const progressPercentage = computed(() => {
     border: none;
     color: #fff;
 
-    i {
-      font-size: 1.2rem;
+    .check-icon {
+      width: 20px;
+      height: 20px;
+      stroke-width: 3;
     }
   }
 }

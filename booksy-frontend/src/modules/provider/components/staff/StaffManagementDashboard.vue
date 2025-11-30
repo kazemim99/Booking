@@ -229,6 +229,13 @@
       @invited="handleInvitationSent"
     />
 
+    <!-- Staff Details Modal -->
+    <StaffDetailsModal
+      :is-open="showDetailsModal"
+      :staff="staffToView"
+      @close="showDetailsModal = false"
+    />
+
     <!-- Remove Staff Confirmation Modal -->
     <ConfirmationModal
       v-if="showRemoveConfirm"
@@ -252,6 +259,7 @@ import StaffMemberCard from './StaffMemberCard.vue'
 import InvitationCard from './InvitationCard.vue'
 import JoinRequestCard from './JoinRequestCard.vue'
 import InviteStaffModal from './InviteStaffModal.vue'
+import StaffDetailsModal from './StaffDetailsModal.vue'
 import ConfirmationModal from '@/shared/components/ConfirmationModal.vue'
 import { useToast } from '@/core/composables/useToast'
 
@@ -283,8 +291,10 @@ const currentPage = ref(1)
 const pageSize = ref(12)
 
 const showInviteModal = ref(false)
+const showDetailsModal = ref(false)
 const showRemoveConfirm = ref(false)
 const staffToRemove = ref<StaffMember | null>(null)
+const staffToView = ref<StaffMember | null>(null)
 
 // ============================================
 // Computed
@@ -375,8 +385,8 @@ async function loadData(): Promise<void> {
 }
 
 function viewStaffDetails(staff: StaffMember): void {
-  // Navigate to staff details page or show modal
-  console.log('View staff:', staff)
+  staffToView.value = staff
+  showDetailsModal.value = true
 }
 
 function editStaff(staff: StaffMember): void {

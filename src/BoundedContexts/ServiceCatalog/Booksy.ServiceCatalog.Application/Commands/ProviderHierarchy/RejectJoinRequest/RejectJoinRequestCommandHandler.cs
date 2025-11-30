@@ -43,7 +43,6 @@ namespace Booksy.ServiceCatalog.Application.Commands.ProviderHierarchy.RejectJoi
             joinRequest.Reject(request.ReviewerId, request.Reason);
 
             await _joinRequestWriteRepository.UpdateAsync(joinRequest, cancellationToken);
-            await _unitOfWork.CommitAndPublishEventsAsync(cancellationToken);
 
             _logger.LogInformation("Join request {RequestId} rejected by reviewer {ReviewerId}",
                 joinRequest.Id, request.ReviewerId);

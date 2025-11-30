@@ -70,7 +70,6 @@ namespace Booksy.ServiceCatalog.Application.Commands.ProviderHierarchy.CreateJoi
             var joinRequest = ProviderJoinRequest.Create(organizationId, requesterId, request.Message);
 
             await _joinRequestWriteRepository.SaveAsync(joinRequest, cancellationToken);
-            await _unitOfWork.CommitAndPublishEventsAsync(cancellationToken);
 
             _logger.LogInformation("Join request {RequestId} created successfully", joinRequest.Id);
 

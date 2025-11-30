@@ -1,5 +1,7 @@
 using Booksy.ServiceCatalog.Application.Commands.ProviderHierarchy.AcceptInvitation;
+using Booksy.ServiceCatalog.Application.Commands.ProviderHierarchy.AcceptInvitationWithRegistration;
 using Booksy.ServiceCatalog.Application.Commands.ProviderHierarchy.ApproveJoinRequest;
+using Booksy.ServiceCatalog.Application.Commands.ProviderHierarchy.CancelInvitation;
 using Booksy.ServiceCatalog.Application.Commands.ProviderHierarchy.CancelJoinRequest;
 using Booksy.ServiceCatalog.Application.Commands.ProviderHierarchy.ConvertToOrganization;
 using Booksy.ServiceCatalog.Application.Commands.ProviderHierarchy.CreateJoinRequest;
@@ -167,6 +169,62 @@ public class ProviderHierarchyController : ControllerBase
         return Ok(result);
     }
 
+    /// <summary>
+    /// Accept an invitation with quick registration for unregistered users
+    /// </summary>
+    /// <remarks>
+    /// This endpoint handles the complete onboarding flow for unregistered users:
+    /// - Verifies OTP code
+    /// - Creates user account and provider profile
+    /// - Clones organization data (services, working hours, gallery)
+    /// - Links new provider to organization
+    /// - Returns JWT authentication tokens
+    /// </remarks>
+    [HttpPost("invitations/{invitationId}/accept-with-registration")]
+    [AllowAnonymous]
+    [ProducesResponseType(typeof(AcceptInvitationWithRegistrationResult), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> AcceptInvitationWithRegistration(
+        Guid providerId,
+        Guid invitationId,
+        [FromBody] AcceptInvitationWithRegistrationRequest request,
+        CancellationToken cancellationToken)
+    {
+        var command = new AcceptInvitationWithRegistrationCommand(
+            InvitationId: invitationId,
+            OrganizationId: providerId,
+            PhoneNumber: request.PhoneNumber,
+            FirstName: request.FirstName,
+            LastName: request.LastName,
+            Email: request.Email,
+            OtpCode: request.OtpCode,
+            CloneServices: request.CloneServices,
+            CloneWorkingHours: request.CloneWorkingHours,
+            CloneGallery: request.CloneGallery);
+
+        var result = await _mediator.Send(command, cancellationToken);
+        return Ok(result);
+    }
+
+    /// <summary>
+    /// Cancel a pending invitation (called by the organization that sent it)
+    /// </summary>
+    [HttpDelete("invitations/{invitationId}")]
+    [ProducesResponseType(typeof(CancelInvitationResult), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> CancelInvitation(
+        Guid providerId,
+        Guid invitationId,
+        CancellationToken cancellationToken)
+    {
+        var result = await _mediator.Send(
+            new CancelInvitationCommand(invitationId, providerId),
+            cancellationToken);
+        return Ok(result);
+    }
+
     #endregion
 
     #region Join Requests
@@ -294,7 +352,20 @@ public class ProviderHierarchyController : ControllerBase
 public record SendInvitationRequest(
     string InviteePhoneNumber,
     string? InviteeName = null,
+    string? FirstName = null,
+    string? LastName = null,
+    string? Email = null,
     string? Message = null);
+
+public record AcceptInvitationWithRegistrationRequest(
+    string PhoneNumber,
+    string FirstName,
+    string LastName,
+    string? Email,
+    string OtpCode,
+    bool CloneServices,
+    bool CloneWorkingHours,
+    bool CloneGallery);
 
 public record RemoveStaffMemberRequest(string Reason);
 

@@ -136,9 +136,6 @@ namespace Booksy.ServiceCatalog.Application.Commands.Booking.CreateBooking
                 booking.Id.Value,
                 cancellationToken);
 
-            // Commit transaction and publish domain events
-            // Uses Serializable isolation to prevent race conditions
-            await _unitOfWork.CommitAndPublishEventsAsync(cancellationToken);
 
             _logger.LogInformation("Booking {BookingId} created successfully and availability slot marked as booked", booking.Id);
 

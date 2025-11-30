@@ -27,16 +27,31 @@
     </div>
 
     <div class="invitation-actions">
-      <!-- Resend Button (only for expired or pending invitations) -->
+      <!-- Resend Button (for pending, expired, or rejected invitations) -->
       <button
         v-if="canResend"
         class="btn-action btn-resend"
         @click="handleResend"
-        :disabled="isResending"
+        :disabled="isResending || resendCooldown > 0"
+        :title="resendCooldown > 0 ? `لطفاً ${convertToPersian(resendCooldown)} ثانیه صبر کنید` : ''"
       >
-        <i class="icon-refresh-cw"></i>
-        {{ isResending ? 'در حال ارسال...' : 'ارسال مجدد' }}
+        <i class="icon-refresh-cw" :class="{ 'spinning': isResending }"></i>
+        <span v-if="resendCooldown > 0">
+          ارسال مجدد در {{ convertToPersian(resendCooldown) }}ث
+        </span>
+        <span v-else-if="isResending">
+          در حال ارسال...
+        </span>
+        <span v-else>
+          ارسال مجدد
+        </span>
       </button>
+
+      <!-- Resend count indicator (if resent before) -->
+      <div v-if="resendCount > 0" class="resend-indicator">
+        <i class="icon-info"></i>
+        <span>{{ convertToPersian(resendCount) }} بار ارسال شده</span>
+      </div>
 
       <!-- Cancel Button (only for pending invitations) -->
       <button
@@ -58,24 +73,37 @@
 </template>
 
 <script setup lang="ts">
-import { computed, ref } from 'vue'
+import { computed, ref, onUnmounted } from 'vue'
 import type { ProviderInvitation } from '../../types/hierarchy.types'
 import { InvitationStatus } from '../../types/hierarchy.types'
+import { hierarchyService } from '../../services/hierarchy.service'
+import { useToast } from '@/core/composables/useToast'
 
 interface Props {
   invitation: ProviderInvitation
 }
 
 interface Emits {
-  (e: 'resend', invitationId: string): void
+  (e: 'resent', invitation: ProviderInvitation): void  // Changed: emit updated invitation after resend
   (e: 'cancel', invitationId: string): void
   (e: 'view-details', invitation: ProviderInvitation): void
 }
 
 const props = defineProps<Props>()
 const emit = defineEmits<Emits>()
+const toast = useToast()
 
 const isResending = ref(false)
+const resendCooldown = ref(0)
+const resendCount = ref(0)
+const cooldownInterval = ref<number | null>(null)
+
+// Cleanup interval on unmount
+onUnmounted(() => {
+  if (cooldownInterval.value) {
+    clearInterval(cooldownInterval.value)
+  }
+})
 
 const isExpired = computed(() => {
   return props.invitation.status === InvitationStatus.Expired ||
@@ -84,7 +112,14 @@ const isExpired = computed(() => {
 })
 
 const canResend = computed(() => {
-  return isExpired.value || props.invitation.status === InvitationStatus.Rejected
+  // Allow resend for pending (if not in cooldown), expired, or rejected invitations
+  // Maximum 5 resends to prevent abuse
+  const maxResends = 5
+  return (
+    (props.invitation.status === InvitationStatus.Pending && !isExpired.value) ||
+    isExpired.value ||
+    props.invitation.status === InvitationStatus.Rejected
+  ) && resendCount.value < maxResends
 })
 
 const expiryText = computed(() => {
@@ -156,15 +191,58 @@ function convertToPersian(value: string | number): string {
 }
 
 async function handleResend() {
-  if (isResending.value) return
+  if (isResending.value || resendCooldown.value > 0) return
 
   const confirmed = confirm('آیا مطمئن هستید که می‌خواهید دعوت را مجدداً ارسال کنید؟')
   if (!confirmed) return
 
   isResending.value = true
+
   try {
-    emit('resend', props.invitation.id)
+    // Call backend API to resend invitation (reuses send invitation endpoint)
+    const response = await hierarchyService.resendInvitation(
+      props.invitation.organizationId,
+      props.invitation
+    )
+
+    // Show success message
+    toast.success('موفق', 'دعوت مجدد با موفقیت ارسال شد')
+
+    // Increment resend count
+    resendCount.value++
+
+    // Emit event with updated invitation (if backend returns it)
+    if (response.data) {
+      emit('resent', response.data)
+    }
+
+    // Start 60-second cooldown timer
+    resendCooldown.value = 60
+
+    // Clear any existing interval
+    if (cooldownInterval.value) {
+      clearInterval(cooldownInterval.value)
+    }
+
+    // Start countdown
+    cooldownInterval.value = window.setInterval(() => {
+      resendCooldown.value--
+      if (resendCooldown.value <= 0) {
+        if (cooldownInterval.value) {
+          clearInterval(cooldownInterval.value)
+          cooldownInterval.value = null
+        }
+      }
+    }, 1000)
+
+  } catch (error) {
+    // Show error message
+    const err = error as { response?: { data?: { message?: string } }; message?: string }
+    const errorMessage = err.response?.data?.message || err.message || 'خطا در ارسال مجدد دعوت'
+    toast.error('خطا', errorMessage)
+    console.error('Error resending invitation:', error)
   } finally {
+    // Keep isResending true for a moment to show feedback
     setTimeout(() => {
       isResending.value = false
     }, 1000)
@@ -374,6 +452,37 @@ function handleViewDetails() {
       }
     }
   }
+}
+
+.resend-indicator {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.5rem 1rem;
+  background: #f0f9ff;
+  border: 1px solid #bae6fd;
+  border-radius: 8px;
+  color: #0369a1;
+  font-size: 0.8rem;
+  font-weight: 500;
+
+  i {
+    font-size: 0.875rem;
+  }
+}
+
+// Spinning animation for loading icon
+@keyframes spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.spinning {
+  animation: spin 1s linear infinite;
 }
 
 @media (max-width: 640px) {

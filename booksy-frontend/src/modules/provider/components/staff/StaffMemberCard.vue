@@ -17,8 +17,8 @@
       </div>
 
       <div class="card-menu">
-        <button class="menu-button" @click="toggleMenu">
-          <i class="icon-more-vertical"></i>
+        <button class="menu-button" @click="toggleMenu" title="منوی بیشتر">
+          <i class="icon-more-vertical">⋮</i>
         </button>
 
         <div v-if="showMenu" class="menu-dropdown">
@@ -26,11 +26,6 @@
             <i class="icon-eye"></i>
             <span>مشاهده جزئیات</span>
           </button>
-          <button class="menu-item" @click="handleEdit">
-            <i class="icon-edit"></i>
-            <span>ویرایش</span>
-          </button>
-          <div class="menu-divider"></div>
           <button class="menu-item danger" @click="handleRemove">
             <i class="icon-trash"></i>
             <span>حذف کارمند</span>
@@ -41,7 +36,7 @@
 
     <!-- Staff Info -->
     <div class="card-body">
-      <h3 class="staff-name">{{ staff.fullName }}</h3>
+      <h3 class="staff-name">{{ staff.fullName || `${staff.firstName} ${staff.lastName}` }}</h3>
 
       <div v-if="staff.title" class="staff-title">
         {{ staff.title }}
@@ -120,7 +115,6 @@ const props = defineProps<Props>()
 
 const emit = defineEmits<{
   (e: 'view', staff: StaffMember): void
-  (e: 'edit', staff: StaffMember): void
   (e: 'remove', staff: StaffMember): void
 }>()
 
@@ -136,11 +130,18 @@ const menuRef = ref<HTMLElement | null>(null)
 // ============================================
 
 const initials = computed(() => {
-  const names = props.staff.fullName.split(' ')
+  // Fallback to firstName + lastName if fullName is not available
+  const fullName = props.staff.fullName || `${props.staff.firstName || ''} ${props.staff.lastName || ''}`.trim()
+
+  if (!fullName) {
+    return '??'
+  }
+
+  const names = fullName.split(' ')
   if (names.length >= 2) {
     return `${names[0][0]}${names[1][0]}`.toUpperCase()
   }
-  return props.staff.fullName.substring(0, 2).toUpperCase()
+  return fullName.substring(0, 2).toUpperCase()
 })
 
 const statusClass = computed(() => {
@@ -162,11 +163,6 @@ function toggleMenu(): void {
 function handleView(): void {
   showMenu.value = false
   emit('view', props.staff)
-}
-
-function handleEdit(): void {
-  showMenu.value = false
-  emit('edit', props.staff)
 }
 
 function handleRemove(): void {
@@ -291,16 +287,23 @@ onClickOutside(menuRef, () => {
   display: flex;
   align-items: center;
   justify-content: center;
-  border: none;
-  background: transparent;
+  border: 1px solid #e5e7eb;
+  background: #fff;
   border-radius: 6px;
   cursor: pointer;
   color: #6b7280;
   transition: all 0.2s;
+  font-size: 1.25rem;
+  font-weight: bold;
 
   &:hover {
     background: #f3f4f6;
     color: #1a1a1a;
+    border-color: #d1d5db;
+  }
+
+  i {
+    font-style: normal;
   }
 }
 

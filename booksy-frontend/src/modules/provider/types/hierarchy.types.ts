@@ -82,6 +82,9 @@ export interface SendInvitationRequest {
   organizationId: string
   inviteePhoneNumber: string
   inviteeName: string
+  firstName: string
+  lastName: string
+  email?: string
   message?: string
   expiresInHours?: number // default 72
 }
@@ -94,6 +97,29 @@ export interface AcceptInvitationRequest {
     bio?: string
     photoUrl?: string
   }
+}
+
+export interface AcceptInvitationWithRegistrationRequest {
+  invitationId: string
+  organizationId: string
+  phoneNumber: string
+  firstName: string
+  lastName: string
+  email?: string
+  otpCode: string
+  cloneServices: boolean
+  cloneWorkingHours: boolean
+  cloneGallery: boolean
+}
+
+export interface AcceptInvitationWithRegistrationResponse {
+  userId: string
+  providerId: string
+  accessToken: string
+  refreshToken: string
+  clonedServicesCount: number
+  clonedWorkingHoursCount: number
+  clonedGalleryCount: number
 }
 
 export interface CreateJoinRequestRequest {

@@ -32,9 +32,10 @@ namespace Booksy.ServiceCatalog.Infrastructure.Persistence.Seeders
                 new ProviderSeeder(_context,
                     Microsoft.Extensions.Logging.Abstractions.NullLogger<ProviderSeeder>.Instance),
 
-                // 3. Staff (depends on Providers)
-                new StaffSeeder(_context,
-                    Microsoft.Extensions.Logging.Abstractions.NullLogger<StaffSeeder>.Instance),
+                // 3. Staff - REMOVED: Now using Provider Hierarchy system with invitations
+                // Staff members are added via SendInvitation/AcceptInvitation flow, not seeded
+                // new StaffSeeder(_context,
+                //     Microsoft.Extensions.Logging.Abstractions.NullLogger<StaffSeeder>.Instance),
 
                 // 4. BusinessHours (depends on Providers)
                 new BusinessHoursSeeder(_context,

@@ -23,9 +23,9 @@
           </div>
           <div class="preview-section-content">
             <!-- Logo Display -->
-            <div v-if="data.businessInfo.logoUrl" class="logo-preview-container">
+            <div v-if="logoUrl" class="logo-preview-container">
               <div class="logo-preview">
-                <img :src="data.businessInfo.logoUrl" alt="لوگوی کسب‌وکار" />
+                <img :src="logoUrl" alt="لوگوی کسب‌وکار" />
               </div>
             </div>
 
@@ -223,6 +223,7 @@
 import { ref, computed } from 'vue'
 import { useProviderRegistration } from '@/modules/provider/composables/useProviderRegistration'
 import AppButton from '@/shared/components/ui/Button/AppButton.vue'
+import { microservices } from '@/core/api/config/api-config'
 
 // ============================================
 // Props & Emits
@@ -232,7 +233,7 @@ interface Props {
   data: any
 }
 
-defineProps<Props>()
+const props = defineProps<Props>()
 
 const emit = defineEmits<{
   (e: 'next'): void
@@ -258,6 +259,23 @@ const confirmed = ref(false)
 
 const galleryImages = computed(() => {
   return registration.registrationData.value.galleryImages || []
+})
+
+// Get full logo URL with API base URL
+const logoUrl = computed(() => {
+  // Try to get logoUrl from the data prop or registration store
+  const relativeUrl = (props.data.businessInfo as any)?.logoUrl ||
+                      registration.registrationData.value.businessInfo?.logoUrl
+  if (!relativeUrl) return null
+
+  // If it's already a full URL (starts with http:// or https://), return as is
+  if (relativeUrl.startsWith('http://') || relativeUrl.startsWith('https://')) {
+    return relativeUrl
+  }
+
+  // Otherwise, prepend the ServiceCatalog API base URL
+  const baseUrl = microservices.serviceCategory.baseURL.replace('/api', '')
+  return `${baseUrl}${relativeUrl}`
 })
 
 // ============================================

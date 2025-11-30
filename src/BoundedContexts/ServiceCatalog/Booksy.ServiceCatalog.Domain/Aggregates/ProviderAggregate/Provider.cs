@@ -199,9 +199,14 @@ namespace Booksy.ServiceCatalog.Domain.Aggregates
 
         public void UpdateBusinessProfile(string businessName, string description, string? profileImageUrl)
         {
-            // Preserve existing LogoUrl when updating profile
+            // Preserve existing LogoUrl and ProfileImageUrl when updating profile
             var existingLogoUrl = Profile.LogoUrl;
-            Profile = BusinessProfile.Create(businessName, description, logoUrl: existingLogoUrl, profileImageUrl: profileImageUrl);
+            var existingProfileImageUrl = Profile.ProfileImageUrl;
+
+            // Only update ProfileImageUrl if a new one is provided, otherwise keep existing
+            var updatedProfileImageUrl = profileImageUrl ?? existingProfileImageUrl;
+
+            Profile = BusinessProfile.Create(businessName, description, logoUrl: existingLogoUrl, profileImageUrl: updatedProfileImageUrl);
 
             RaiseDomainEvent(new BusinessProfileUpdatedEvent(Id, businessName, description, DateTime.UtcNow));
         }
@@ -213,7 +218,27 @@ namespace Booksy.ServiceCatalog.Domain.Aggregates
 
         public void UpdateAddress(BusinessAddress newAddress)
         {
+            var previousAddress = Address;
+            var previousCoordinates = previousAddress.Latitude.HasValue && previousAddress.Longitude.HasValue
+                ? Coordinates.Create(previousAddress.Latitude.Value, previousAddress.Longitude.Value)
+                : null;
+
             Address = newAddress;
+
+            var newCoordinates = Coordinates.Create(newAddress.Latitude ?? 0, newAddress.Longitude ?? 0);
+
+            RaiseDomainEvent(new ProviderLocationUpdatedEvent(
+                providerId: Id,
+                providerName: Profile.BusinessName,
+                newAddress: newAddress,
+                newCoordinates: newCoordinates,
+                changeType: LocationChangeType.Relocation,
+                updatedByUserId: OwnerId.Value.ToString(),
+                effectiveDate: DateTime.UtcNow,
+                affectedAppointmentIds: Array.Empty<string>().ToList().AsReadOnly(),
+                previousAddress: previousAddress,
+                previousCoordinates: previousCoordinates
+            ));
         }
 
         /// <summary>

@@ -114,9 +114,18 @@
                 style="display: none"
                 @change="handleLogoUpload"
               />
-              <div v-if="localData.logoUrl" class="image-preview">
-                <img :src="localData.logoUrl" alt="Logo" />
-                <button type="button" class="remove-image" @click="removeLogo">
+              <div v-if="localData.logoPreview || localData.logoUrl" class="image-preview">
+                <img :src="localData.logoPreview || localData.logoUrl" alt="Logo" />
+                <div v-if="isUploadingLogo" class="upload-overlay">
+                  <div class="upload-spinner"></div>
+                  <span>در حال آپلود...</span>
+                </div>
+                <button
+                  v-if="!isUploadingLogo"
+                  type="button"
+                  class="remove-image"
+                  @click="removeLogo"
+                >
                   ×
                 </button>
               </div>
@@ -132,12 +141,18 @@
 
       <!-- Actions -->
       <div class="step-actions">
-        <AppButton variant="secondary" size="large" @click="$emit('back')">
+        <AppButton variant="secondary" size="large" :disabled="isUploadingLogo" @click="$emit('back')">
           ← بازگشت
         </AppButton>
 
-        <AppButton variant="primary" size="large" :disabled="!isValid" @click="handleNext">
-          ادامه →
+        <AppButton
+          variant="primary"
+          size="large"
+          :disabled="!isValid || isUploadingLogo"
+          @click="handleNext"
+        >
+          <span v-if="isUploadingLogo">در حال آپلود لوگو...</span>
+          <span v-else>ادامه →</span>
         </AppButton>
       </div>
     </div>
@@ -164,6 +179,11 @@ interface BusinessInfo {
   coverImageUrl: string
 }
 
+interface LocalBusinessInfo extends BusinessInfo {
+  logoFile?: File
+  logoPreview?: string
+}
+
 interface Props {
   modelValue: BusinessInfo
 }
@@ -179,8 +199,13 @@ const emit = defineEmits<{
 // State
 // ============================================
 
-const localData = ref<BusinessInfo>({ ...props.modelValue })
+const localData = ref<LocalBusinessInfo>({
+  ...props.modelValue,
+  logoFile: undefined,
+  logoPreview: undefined
+})
 const logoInputRef = ref<HTMLInputElement>()
+const isUploadingLogo = ref(false)
 
 const errors = ref({
   businessName: '',
@@ -276,7 +301,7 @@ function triggerLogoUpload() {
   logoInputRef.value?.click()
 }
 
-async function handleLogoUpload(event: Event) {
+function handleLogoUpload(event: Event) {
   const target = event.target as HTMLInputElement
   const file = target.files?.[0]
 
@@ -294,37 +319,27 @@ async function handleLogoUpload(event: Event) {
     return
   }
 
-  try {
-    // Show loading state - use base64 preview while uploading
-    const reader = new FileReader()
-    reader.onload = (e) => {
-      localData.value.logoUrl = e.target?.result as string
-    }
-    reader.readAsDataURL(file)
+  // Store the file object for later upload
+  localData.value.logoFile = file
 
-    // Upload the file and get back the URL
-    const imageUrl = await providerRegistrationService.uploadBusinessLogo(file)
-
-    // Replace the base64 preview with the actual uploaded URL
-    localData.value.logoUrl = imageUrl
-  } catch (error) {
-    console.error('Failed to upload logo:', error)
-    alert('خطا در آپلود لوگو. لطفا دوباره تلاش کنید')
-    localData.value.logoUrl = ''
-    if (logoInputRef.value) {
-      logoInputRef.value.value = ''
-    }
+  // Show base64 preview immediately (no server upload yet)
+  const reader = new FileReader()
+  reader.onload = (e) => {
+    localData.value.logoPreview = e.target?.result as string
   }
+  reader.readAsDataURL(file)
 }
 
 function removeLogo() {
   localData.value.logoUrl = ''
+  localData.value.logoPreview = undefined
+  localData.value.logoFile = undefined
   if (logoInputRef.value) {
     logoInputRef.value.value = ''
   }
 }
 
-function handleNext() {
+async function handleNext() {
   // Validate all fields
   validateBusinessName()
   validateOwnerFirstName()
@@ -333,9 +348,32 @@ function handleNext() {
   validatePhone()
   validateDescription()
 
-  if (isValid.value) {
-    emit('update:modelValue', localData.value)
+  if (!isValid.value) {
+    return
+  }
+
+  try {
+    // Upload logo if a new file was selected
+    if (localData.value.logoFile) {
+      isUploadingLogo.value = true
+
+      const imageUrl = await providerRegistrationService.uploadBusinessLogo(localData.value.logoFile)
+
+      // Set the uploaded URL and clear temporary data
+      localData.value.logoUrl = imageUrl
+      localData.value.logoPreview = undefined
+      localData.value.logoFile = undefined
+    }
+
+    // Emit the data without the temporary File object and preview
+    const { logoFile: _logoFile, logoPreview: _logoPreview, ...businessData } = localData.value
+    emit('update:modelValue', businessData)
     emit('next')
+  } catch (error) {
+    console.error('Failed to upload logo:', error)
+    alert('خطا در آپلود لوگو. لطفا دوباره تلاش کنید')
+  } finally {
+    isUploadingLogo.value = false
   }
 }
 
@@ -400,12 +438,50 @@ watch(
 .image-upload {
   max-width: 200px;
   margin: 0 auto;
+
+  .image-preview,
+  .image-placeholder {
+    width: 200px;
+    height: 200px;
+
+    img {
+      width: 100%;
+      height: 100%;
+      object-fit: contain;
+      background-color: #f9fafb;
+    }
+  }
+
+  .upload-overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.7);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 0.75rem;
+    color: #fff;
+    font-size: 0.875rem;
+    border-radius: 8px;
+  }
+
+  .upload-spinner {
+    width: 32px;
+    height: 32px;
+    border: 3px solid rgba(255, 255, 255, 0.3);
+    border-top-color: #fff;
+    border-radius: 50%;
+    animation: spin 0.8s linear infinite;
+  }
 }
 
-.image-preview,
-.image-placeholder {
-  width: 200px;
-  height: 200px;
-  aspect-ratio: 1;
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
 }
 </style>
