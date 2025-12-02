@@ -104,37 +104,16 @@
         <!-- Logo (Optional) -->
         <div class="form-section">
           <h3 class="section-title">لوگو (اختیاری)</h3>
-          <div class="form-group">
-            <label class="form-label">لوگو کسب‌و‌کار</label>
-            <div class="image-upload">
-              <input
-                ref="logoInputRef"
-                type="file"
-                accept="image/*"
-                style="display: none"
-                @change="handleLogoUpload"
-              />
-              <div v-if="localData.logoPreview || localData.logoUrl" class="image-preview">
-                <img :src="localData.logoPreview || localData.logoUrl" alt="Logo" />
-                <div v-if="isUploadingLogo" class="upload-overlay">
-                  <div class="upload-spinner"></div>
-                  <span>در حال آپلود...</span>
-                </div>
-                <button
-                  v-if="!isUploadingLogo"
-                  type="button"
-                  class="remove-image"
-                  @click="removeLogo"
-                >
-                  ×
-                </button>
-              </div>
-              <div v-else class="image-placeholder" @click="triggerLogoUpload">
-                <i class="icon-image"></i>
-                <span>آپلود لوگو</span>
-                <span class="upload-hint">PNG, JPG تا 5MB</span>
-              </div>
-            </div>
+          <div class="form-group logo-upload-container">
+            <SingleImageUpload
+              v-model="logoPreviewUrl"
+              upload-title="آپلود لوگو کسب‌و‌کار"
+              alt-text="لوگو کسب‌و‌کار"
+              :max-file-size="5"
+              :is-uploading="isUploadingLogo"
+              aspect-ratio="square"
+              @upload="handleLogoUpload"
+            />
           </div>
         </div>
       </div>
@@ -162,6 +141,7 @@
 <script setup lang="ts">
 import { ref, computed, watch } from 'vue'
 import AppButton from '@/shared/components/ui/Button/AppButton.vue'
+import SingleImageUpload from '@/shared/components/ui/ImageUpload/SingleImageUpload.vue'
 import { providerRegistrationService } from '@/modules/provider/services/provider-registration.service'
 
 // ============================================
@@ -181,7 +161,6 @@ interface BusinessInfo {
 
 interface LocalBusinessInfo extends BusinessInfo {
   logoFile?: File
-  logoPreview?: string
 }
 
 interface Props {
@@ -201,10 +180,9 @@ const emit = defineEmits<{
 
 const localData = ref<LocalBusinessInfo>({
   ...props.modelValue,
-  logoFile: undefined,
-  logoPreview: undefined
+  logoFile: undefined
 })
-const logoInputRef = ref<HTMLInputElement>()
+const logoPreviewUrl = ref<string>(props.modelValue.logoUrl || '')
 const isUploadingLogo = ref(false)
 
 const errors = ref({
@@ -297,46 +275,10 @@ function validateDescription() {
   }
 }
 
-function triggerLogoUpload() {
-  logoInputRef.value?.click()
-}
-
-function handleLogoUpload(event: Event) {
-  const target = event.target as HTMLInputElement
-  const file = target.files?.[0]
-
-  if (!file) return
-
-  // Validate file size (5MB max)
-  if (file.size > 5 * 1024 * 1024) {
-    alert('حجم فایل باید کمتر از 5 مگابایت باشد')
-    return
-  }
-
-  // Validate file type
-  if (!file.type.startsWith('image/')) {
-    alert('فقط فایل‌های تصویری مجاز هستند')
-    return
-  }
-
+function handleLogoUpload(file: File) {
   // Store the file object for later upload
   localData.value.logoFile = file
-
-  // Show base64 preview immediately (no server upload yet)
-  const reader = new FileReader()
-  reader.onload = (e) => {
-    localData.value.logoPreview = e.target?.result as string
-  }
-  reader.readAsDataURL(file)
-}
-
-function removeLogo() {
-  localData.value.logoUrl = ''
-  localData.value.logoPreview = undefined
-  localData.value.logoFile = undefined
-  if (logoInputRef.value) {
-    logoInputRef.value.value = ''
-  }
+  // The preview URL is already set by the SingleImageUpload component via v-model
 }
 
 async function handleNext() {
@@ -361,12 +303,12 @@ async function handleNext() {
 
       // Set the uploaded URL and clear temporary data
       localData.value.logoUrl = imageUrl
-      localData.value.logoPreview = undefined
+      logoPreviewUrl.value = imageUrl
       localData.value.logoFile = undefined
     }
 
-    // Emit the data without the temporary File object and preview
-    const { logoFile: _logoFile, logoPreview: _logoPreview, ...businessData } = localData.value
+    // Emit the data without the temporary File object
+    const { logoFile: _logoFile, ...businessData } = localData.value
     emit('update:modelValue', businessData)
     emit('next')
   } catch (error) {
@@ -428,60 +370,8 @@ watch(
 <style scoped lang="scss">
 @import './steps-common.scss';
 
-.upload-hint {
-  font-size: 0.75rem;
-  color: #9ca3af;
-  margin-top: 0.25rem;
-}
-
-// Override image upload size for logo (make it smaller)
-.image-upload {
-  max-width: 200px;
+.logo-upload-container {
+  max-width: 300px;
   margin: 0 auto;
-
-  .image-preview,
-  .image-placeholder {
-    width: 200px;
-    height: 200px;
-
-    img {
-      width: 100%;
-      height: 100%;
-      object-fit: contain;
-      background-color: #f9fafb;
-    }
-  }
-
-  .upload-overlay {
-    position: absolute;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    background: rgba(0, 0, 0, 0.7);
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    gap: 0.75rem;
-    color: #fff;
-    font-size: 0.875rem;
-    border-radius: 8px;
-  }
-
-  .upload-spinner {
-    width: 32px;
-    height: 32px;
-    border: 3px solid rgba(255, 255, 255, 0.3);
-    border-top-color: #fff;
-    border-radius: 50%;
-    animation: spin 0.8s linear infinite;
-  }
-}
-
-@keyframes spin {
-  to {
-    transform: rotate(360deg);
-  }
 }
 </style>

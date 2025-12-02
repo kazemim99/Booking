@@ -99,7 +99,7 @@ public sealed class AcceptInvitationWithRegistrationCommandHandler
         var organizationProviderId = invitation.OrganizationId;
 
         // 5. Create individual provider profile
-        var providerId = await _registrationService.CreateIndividualProviderAsync(
+        var provider = await _registrationService.CreateIndividualProviderAsync(
             userId: userId,
             firstName: request.FirstName,
             lastName: request.LastName,
@@ -108,7 +108,10 @@ public sealed class AcceptInvitationWithRegistrationCommandHandler
             organizationId: organizationProviderId,
             cancellationToken);
 
-        _logger.LogInformation("Individual provider profile created with ID {ProviderId}", providerId);
+        _logger.LogInformation("Individual provider profile created with ID {ProviderId}", provider.Id);
+
+        // IMPORTANT: Save changes so the new provider exists in database before cloning
+        _logger.LogInformation("New provider persisted to database");
 
         // 6. Clone organization data to new provider profile
         int clonedServicesCount = 0;
@@ -119,45 +122,45 @@ public sealed class AcceptInvitationWithRegistrationCommandHandler
         {
             clonedServicesCount = await _dataCloningService.CloneServicesAsync(
                 sourceProviderId: organizationProviderId,
-                targetProviderId: providerId,
+                targetProvider: provider,
                 cancellationToken);
 
             _logger.LogInformation(
                 "Cloned {Count} services from organization {OrgId} to provider {ProviderId}",
-                clonedServicesCount, organizationProviderId, providerId);
+                clonedServicesCount, organizationProviderId, provider.Id);
         }
 
         if (request.CloneWorkingHours)
         {
             clonedWorkingHoursCount = await _dataCloningService.CloneWorkingHoursAsync(
                 sourceProviderId: organizationProviderId,
-                targetProviderId: providerId,
+                targetProvider: provider,
                 cancellationToken);
 
             _logger.LogInformation(
                 "Cloned {Count} working hours from organization {OrgId} to provider {ProviderId}",
-                clonedWorkingHoursCount, organizationProviderId, providerId);
+                clonedWorkingHoursCount, organizationProviderId, provider.Id);
         }
 
         if (request.CloneGallery)
         {
             clonedGalleryCount = await _dataCloningService.CloneGalleryAsync(
                 sourceProviderId: organizationProviderId,
-                targetProviderId: providerId,
+                targetProviderId: provider,
                 markAsCloned: true,
                 cancellationToken);
 
             _logger.LogInformation(
                 "Cloned {Count} gallery images from organization {OrgId} to provider {ProviderId}",
-                clonedGalleryCount, organizationProviderId, providerId);
+                clonedGalleryCount, organizationProviderId, provider.Id);
         }
 
         // 7. Accept invitation (provider is already linked in CreateIndividualProviderAsync)
-        invitation.Accept(providerId);
+        invitation.Accept(provider.Id);
         await _invitationWriteRepository.UpdateAsync(invitation, cancellationToken);
         _logger.LogInformation(
             "Invitation {InvitationId} accepted. New provider {ProviderId} linked to organization {OrganizationId}",
-            invitation.Id, providerId, organizationProviderId);
+            invitation.Id, provider.Id, organizationProviderId);
 
         // 8. Generate JWT tokens
         var userEmail = string.IsNullOrWhiteSpace(request.Email)
@@ -168,7 +171,7 @@ public sealed class AcceptInvitationWithRegistrationCommandHandler
 
         var tokens = await _registrationService.GenerateAuthTokensAsync(
             userId: userId,
-            providerId: providerId,
+            providerId: provider.Id,
             email: userEmail,
             displayName: displayName,
             cancellationToken);
@@ -178,7 +181,7 @@ public sealed class AcceptInvitationWithRegistrationCommandHandler
 
         return new AcceptInvitationWithRegistrationResult(
             UserId: userId,
-            ProviderId: providerId.Value,
+            ProviderId: provider.Id.Value,
             AccessToken: accessToken,
             RefreshToken: refreshToken,
             ClonedServicesCount: clonedServicesCount,

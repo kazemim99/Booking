@@ -338,12 +338,177 @@
         />
       </div>
 
+      <!-- Services Tab -->
+      <div v-if="activeTab === 'services'" class="tab-content">
+        <h3 class="section-title">خدمات</h3>
+
+        <!-- Loading State -->
+        <div v-if="loadingServices" class="loading-state">
+          <div class="spinner"></div>
+          <p>در حال بارگذاری خدمات...</p>
+        </div>
+
+        <!-- Service List -->
+        <div v-else-if="services.length > 0" class="service-list">
+          <template v-for="service in services" :key="service.id">
+            <div class="service-item">
+              <div class="service-info">
+                <h4 class="service-name">{{ service.name }}</h4>
+                <p class="service-details">
+                  قیمت: {{ formatPrice(service.basePrice) }} تومان • مدت: {{ service.duration }} دقیقه
+                </p>
+              </div>
+              <div class="service-actions">
+                <button
+                  type="button"
+                  class="btn-icon"
+                  @click="handleEditService(service)"
+                  title="ویرایش"
+                >
+                  <svg class="icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
+                      stroke-width="2"
+                      d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"
+                    />
+                  </svg>
+                </button>
+                <button
+                  type="button"
+                  class="btn-icon btn-delete"
+                  @click="handleDeleteService(service.id)"
+                  title="حذف"
+                >
+                  <svg class="icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
+                      stroke-width="2"
+                      d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
+                    />
+                  </svg>
+                </button>
+              </div>
+            </div>
+          </template>
+        </div>
+
+        <!-- Add Service Button -->
+        <button
+          v-if="!loadingServices"
+          type="button"
+          class="btn-add-service"
+          @click="handleAddNewService"
+        >
+          <svg class="icon-plus" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              stroke-width="2"
+              d="M12 4v16m8-8H4"
+            />
+          </svg>
+          افزودن خدمت جدید
+        </button>
+
+        <!-- Error Message -->
+        <div v-if="serviceError" class="error-message">
+          <svg class="error-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              stroke-width="2"
+              d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+            />
+          </svg>
+          <div class="error-text">{{ serviceError }}</div>
+        </div>
+      </div>
+
       <!-- Gallery Tab -->
       <div v-if="activeTab === 'gallery'" class="tab-content">
         <h3 class="section-title">گالری تصاویر</h3>
         <ProfileGallery />
       </div>
     </div>
+
+    <!-- Service Edit/Add Modal -->
+    <Modal
+      v-model="showServiceModal"
+      :title="editingServiceId ? 'ویرایش خدمت' : 'افزودن خدمت جدید'"
+      size="medium"
+    >
+      <div class="service-modal-form">
+        <div class="form-group">
+          <label for="modal-serviceName" class="form-label">نام خدمت</label>
+          <input
+            id="modal-serviceName"
+            v-model="serviceFormData.name"
+            type="text"
+            class="form-input"
+            placeholder="مثال: اصلاح مو"
+          />
+        </div>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label for="modal-price" class="form-label">قیمت (تومان)</label>
+            <input
+              id="modal-price"
+              v-model="serviceFormData.price"
+              type="number"
+              dir="ltr"
+              class="form-input"
+              placeholder="100000"
+            />
+          </div>
+
+          <div class="form-group">
+            <label for="modal-duration" class="form-label">مدت زمان</label>
+            <select
+              id="modal-duration"
+              v-model.number="serviceFormData.durationMinutes"
+              class="form-input"
+              :class="{ 'form-input-error': fieldErrors.duration }"
+            >
+              <option
+                v-for="option in durationOptions"
+                :key="option.value"
+                :value="option.value"
+              >
+                {{ option.label }}
+              </option>
+            </select>
+            <span v-if="fieldErrors.duration" class="field-error">
+              {{ fieldErrors.duration.join(', ') }}
+            </span>
+          </div>
+        </div>
+
+        <!-- Field Errors Display -->
+        <div v-if="serviceError" class="modal-error-message">
+          <svg class="error-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              stroke-width="2"
+              d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+            />
+          </svg>
+          <div class="error-text">{{ serviceError }}</div>
+        </div>
+      </div>
+
+      <template #footer>
+        <button type="button" class="btn-modal-outline" @click="handleCancelServiceEdit" :disabled="savingService">
+          لغو
+        </button>
+        <button type="button" class="btn-modal-primary" @click="handleSaveService" :disabled="savingService">
+          {{ savingService ? 'در حال ذخیره...' : (editingServiceId ? 'ذخیره تغییرات' : 'افزودن خدمت') }}
+        </button>
+      </template>
+    </Modal>
   </div>
 </template>
 
@@ -360,11 +525,14 @@ import ImageUpload from '@/shared/components/ui/ImageUpload.vue'
 import NeshanMapPicker from '@/shared/components/map/NeshanMapPicker.vue'
 import SearchableSelect, { type SelectOption } from '@/shared/components/forms/SearchableSelect.vue'
 import PhoneVerificationModal from './PhoneVerificationModal.vue'
+import Modal from '@/shared/components/Modal.vue'
 import { convertEnglishToPersianNumbers } from '@/shared/utils/date/jalali.utils'
 import { providerProfileService } from '../../services/provider-profile.service'
 import { useLocations } from '@/shared/composables/useLocations'
 import type { DayHoursString } from '@/shared/types/business-hours.types'
 import { PERSIAN_WEEKDAYS, PERSIAN_TO_BACKEND_DAY_MAP } from '@/shared/types/business-hours.types'
+import { serviceService } from '../../services/service.service'
+import type { Service } from '../../types/service.types'
 
 interface CustomDayData {
   date: Date
@@ -545,10 +713,54 @@ const selectedDate = ref<Date | null>(null)
 const modalOpen = ref(false)
 const customDays = ref<Map<string, CustomDayData>>(new Map())
 
+// Services state
+const services = ref<Service[]>([])
+const showServiceModal = ref(false)
+const editingServiceId = ref<string | null>(null)
+const serviceFormData = ref({
+  name: '',
+  price: '',
+  durationMinutes: 30, // Total duration in minutes (default 30 minutes)
+})
+const serviceError = ref('')
+const fieldErrors = ref<Record<string, string[]>>({})
+const loadingServices = ref(false)
+const savingService = ref(false)
+
+// Duration options in minutes (15-minute increments up to 8 hours)
+const durationOptions = computed(() => {
+  const options = []
+  for (let i = 15; i <= 480; i += 15) {
+    const hours = Math.floor(i / 60)
+    const mins = i % 60
+    let label = ''
+    if (hours > 0 && mins > 0) {
+      label = `${hours} ساعت و ${mins} دقیقه`
+    } else if (hours > 0) {
+      label = `${hours} ساعت`
+    } else {
+      label = `${mins} دقیقه`
+    }
+    options.push({ value: i, label })
+  }
+  return options
+})
+
+const BriefcaseIcon = () =>
+  h('svg', { class: 'w-4 h-4', fill: 'none', stroke: 'currentColor', viewBox: '0 0 24 24' }, [
+    h('path', {
+      'stroke-linecap': 'round',
+      'stroke-linejoin': 'round',
+      'stroke-width': '2',
+      d: 'M21 13.255A23.931 23.931 0 0112 15c-3.183 0-6.22-.62-9-1.745M16 6V4a2 2 0 00-2-2h-4a2 2 0 00-2 2v2m4 6h.01M5 20h14a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z',
+    }),
+  ])
+
 const tabs = [
   { id: 'personal', label: 'پروفایل من', icon: UserIcon },
   { id: 'business', label: 'کسب‌وکار', icon: BuildingIcon },
   { id: 'location', label: 'موقعیت', icon: MapPinIcon },
+  { id: 'services', label: 'خدمات', icon: BriefcaseIcon },
   { id: 'staff', label: 'پرسنل', icon: UsersIcon },
   { id: 'hours', label: 'ساعات کاری', icon: ClockIcon },
   { id: 'gallery', label: 'گالری', icon: ImageIcon },
@@ -665,6 +877,13 @@ watch(activeTab, async (newTab) => {
       loadBusinessHoursData()
     } catch (error) {
       console.error('Error loading business hours data:', error)
+    }
+  } else if (newTab === 'services') {
+    try {
+      // Load services from API
+      await loadServices()
+    } catch (error) {
+      console.error('Error loading services:', error)
     }
   } else if (newTab === 'gallery') {
     console.log('📋 ProfileManager: Gallery tab activated - GalleryManager will load images automatically')
@@ -1178,6 +1397,229 @@ const formatPersianDateShort = (dateKey: string) => {
   const date = new Date(dateKey)
   return `${convertEnglishToPersianNumbers(date.getDate().toString())}/${convertEnglishToPersianNumbers((date.getMonth() + 1).toString())}`
 }
+
+// Service management methods
+const formatPrice = (price: number) => {
+  return new Intl.NumberFormat('fa-IR').format(price)
+}
+
+// Load services from API
+const loadServices = async () => {
+  if (!currentProvider.value?.id) {
+    console.warn('No provider ID available')
+    return
+  }
+
+  try {
+    loadingServices.value = true
+    serviceError.value = '' // Clear previous errors
+    console.log('📋 ProfileManager: Loading services for provider:', currentProvider.value.id)
+    const loadedServices = await serviceService.getServicesByProvider(currentProvider.value.id)
+    services.value = loadedServices || []
+    console.log('📋 ProfileManager: Services loaded:', services.value.length)
+  } catch (error: any) {
+    console.error('📋 ProfileManager: Error loading services:', error)
+
+    const status = error?.response?.status
+    const errorCode = error?.response?.data?.error?.code
+    const message = error?.response?.data?.message || error?.message || ''
+
+    // Only suppress 404 (endpoint not found) - show all other errors
+    if (status === 404) {
+      // No services endpoint - this is normal for new providers
+      console.log('📋 ProfileManager: No services endpoint (expected for new providers)')
+      services.value = []
+      serviceError.value = '' // Clear error
+    } else {
+      // Real error - show to user with details
+      console.error('📋 ProfileManager: Service loading error:', {
+        status,
+        errorCode,
+        message,
+        fullError: error
+      })
+
+      // Show specific error message if available, otherwise generic
+      if (status === 500) {
+        serviceError.value = 'خطای سرور در بارگذاری خدمات. لطفاً دوباره تلاش کنید.'
+      } else if (status === 403) {
+        serviceError.value = 'شما اجازه دسترسی به این خدمات را ندارید.'
+      } else if (message) {
+        serviceError.value = `خطا در بارگذاری خدمات: ${message}`
+      } else {
+        serviceError.value = 'خطا در بارگذاری خدمات. لطفاً دوباره تلاش کنید.'
+      }
+      services.value = []
+    }
+  } finally {
+    loadingServices.value = false
+  }
+}
+
+const handleAddNewService = () => {
+  // Reset form for new service
+  serviceFormData.value = {
+    name: '',
+    price: '',
+    durationMinutes: 30,
+  }
+  editingServiceId.value = null
+  serviceError.value = ''
+  fieldErrors.value = {}
+  showServiceModal.value = true
+}
+
+const handleEditService = (service: Service) => {
+  serviceFormData.value = {
+    name: service.name,
+    price: service.basePrice.toString(),
+    durationMinutes: service.duration, // Total duration in minutes
+  }
+  editingServiceId.value = service.id
+  serviceError.value = ''
+  fieldErrors.value = {}
+  showServiceModal.value = true
+}
+
+const handleDeleteService = async (id: string) => {
+  if (!currentProvider.value?.id) {
+    serviceError.value = 'خطا: شناسه ارائه‌دهنده یافت نشد'
+    return
+  }
+
+  if (!confirm('آیا از حذف این خدمت اطمینان دارید؟')) {
+    return
+  }
+
+  try {
+    console.log('📋 ProfileManager: Deleting service:', id)
+    await serviceService.deleteService(id, currentProvider.value.id)
+
+    // Remove from local state
+    services.value = services.value.filter((s) => s.id !== id)
+    console.log('📋 ProfileManager: Service deleted successfully')
+  } catch (error) {
+    console.error('📋 ProfileManager: Error deleting service:', error)
+    serviceError.value = 'خطا در حذف خدمت'
+  }
+}
+
+const handleSaveService = async () => {
+  if (!serviceFormData.value.name || !serviceFormData.value.price) {
+    serviceError.value = 'لطفاً تمام فیلدها را پر کنید'
+    return
+  }
+
+  const totalMinutes = serviceFormData.value.durationMinutes
+
+  if (!totalMinutes || totalMinutes === 0) {
+    serviceError.value = 'لطفاً مدت زمان را مشخص کنید'
+    return
+  }
+
+  if (!currentProvider.value?.id) {
+    serviceError.value = 'خطا: شناسه ارائه‌دهنده یافت نشد'
+    return
+  }
+
+  // Convert total minutes to hours and minutes
+  const durationHours = Math.floor(totalMinutes / 60)
+  const durationMinutes = totalMinutes % 60
+
+  try {
+    savingService.value = true
+    serviceError.value = ''
+    fieldErrors.value = {}
+
+    if (editingServiceId.value) {
+      // Edit existing service
+      console.log('📋 ProfileManager: Updating service:', editingServiceId.value)
+      console.log('📋 Duration breakdown:', { totalMinutes, durationHours, durationMinutes })
+
+      const updatedService = await serviceService.updateService(editingServiceId.value, {
+        providerId: currentProvider.value.id,
+        serviceName: serviceFormData.value.name,
+        price: parseFloat(serviceFormData.value.price),
+        durationHours,
+        durationMinutes,
+        currency: 'IRR',
+      })
+
+      // Update in local state
+      services.value = services.value.map((s) =>
+        s.id === editingServiceId.value ? updatedService : s
+      )
+      console.log('📋 ProfileManager: Service updated successfully')
+    } else {
+      // Add new service
+      console.log('📋 ProfileManager: Creating new service')
+      console.log('📋 Duration breakdown:', { totalMinutes, durationHours, durationMinutes })
+
+      const newService = await serviceService.createService({
+        providerId: currentProvider.value.id,
+        serviceName: serviceFormData.value.name,
+        price: parseFloat(serviceFormData.value.price),
+        durationHours,
+        durationMinutes,
+        currency: 'IRR',
+      })
+
+      // Add to local state
+      services.value.push(newService)
+      console.log('📋 ProfileManager: Service created successfully')
+    }
+
+    // Reset form and state
+    serviceFormData.value = { name: '', price: '', durationMinutes: 30 }
+    editingServiceId.value = null
+    showServiceModal.value = false
+  } catch (error: any) {
+    console.error('📋 ProfileManager: Error saving service:', error)
+
+    // Clear previous errors
+    fieldErrors.value = {}
+    serviceError.value = ''
+
+    // Handle validation errors from backend
+    if (error?.response?.data?.error?.errors) {
+      const errors = error.response.data.error.errors
+
+      // Store field-specific errors
+      fieldErrors.value = errors
+
+      // Also create a general error message
+      const errorMessages = Object.entries(errors)
+        .map(([field, messages]) => {
+          const fieldNameMap: Record<string, string> = {
+            duration: 'مدت زمان',
+            price: 'قیمت',
+            serviceName: 'نام خدمت',
+            name: 'نام خدمت'
+          }
+          const fieldName = fieldNameMap[field] || field
+          return `${fieldName}: ${(messages as string[]).join(', ')}`
+        })
+        .join('\n')
+      serviceError.value = errorMessages
+    } else if (error?.response?.data?.message) {
+      serviceError.value = error.response.data.message
+    } else if (error instanceof Error) {
+      serviceError.value = error.message
+    } else {
+      serviceError.value = 'خطا در ذخیره خدمت'
+    }
+  } finally {
+    savingService.value = false
+  }
+}
+
+const handleCancelServiceEdit = () => {
+  editingServiceId.value = null
+  serviceFormData.value = { name: '', price: '', durationMinutes: 30 }
+  serviceError.value = ''
+  fieldErrors.value = {}
+  showServiceModal.value = false
+}
 </script>
 
 <style scoped>
@@ -1215,7 +1657,7 @@ const formatPersianDateShort = (dateKey: string) => {
 
 @media (min-width: 768px) {
   .tabs-header {
-    grid-template-columns: repeat(6, 1fr);
+    grid-template-columns: repeat(7, 1fr);
   }
 }
 
@@ -1543,7 +1985,7 @@ const formatPersianDateShort = (dateKey: string) => {
   }
 }
 
-.btn-icon {
+.tab-icon {
   width: 1rem;
   height: 1rem;
   flex-shrink: 0;
@@ -1907,5 +2349,326 @@ const formatPersianDateShort = (dateKey: string) => {
   display: flex;
   flex-direction: column;
   gap: 1.5rem;
+}
+
+/* Services Tab Styles */
+.service-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.service-item {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 1rem;
+  background: rgba(139, 92, 246, 0.05);
+  border: 1px solid #e5e7eb;
+  border-radius: 0.5rem;
+}
+
+.service-info {
+  flex: 1;
+}
+
+.service-name {
+  font-size: 1rem;
+  font-weight: 600;
+  color: #111827;
+  margin-bottom: 0.25rem;
+}
+
+.service-details {
+  font-size: 0.875rem;
+  color: #6b7280;
+}
+
+.service-actions {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.btn-icon {
+  padding: 0.5rem;
+  background: none;
+  border: none;
+  border-radius: 0.375rem;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.btn-icon:hover {
+  background: rgba(0, 0, 0, 0.05);
+}
+
+.btn-icon .icon {
+  width: 1.25rem;
+  height: 1.25rem;
+  color: #6b7280;
+}
+
+.btn-delete .icon {
+  color: #ef4444;
+}
+
+/* Service Form */
+.service-form {
+  padding: 1rem;
+  background: rgba(139, 92, 246, 0.05);
+  border: 1px solid rgba(139, 92, 246, 0.2);
+  border-radius: 0.5rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.form-actions {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.form-actions > * {
+  flex: 1;
+}
+
+.btn-action-primary {
+  padding: 0.75rem 1.5rem;
+  background: #8b5cf6;
+  color: white;
+  border: none;
+  border-radius: 0.5rem;
+  font-size: 1rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.btn-action-primary:hover:not(:disabled) {
+  background: #7c3aed;
+}
+
+.btn-action-primary:active:not(:disabled) {
+  background: #6d28d9;
+}
+
+.btn-action-primary:disabled {
+  background: #d1d5db;
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+
+.btn-action-outline {
+  padding: 0.75rem 1.5rem;
+  background: white;
+  color: #6b7280;
+  border: 1px solid #d1d5db;
+  border-radius: 0.5rem;
+  font-size: 1rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.btn-action-outline:hover:not(:disabled) {
+  background: #f9fafb;
+  border-color: #8b5cf6;
+  color: #8b5cf6;
+}
+
+.btn-action-outline:disabled {
+  background: #f3f4f6;
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+
+/* Add Service Button */
+.btn-add-service {
+  width: 100%;
+  padding: 0.875rem 1.5rem;
+  border: 2px dashed #d1d5db;
+  background: white;
+  border-radius: 0.5rem;
+  color: #8b5cf6;
+  font-size: 1rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+}
+
+.btn-add-service:hover {
+  background: rgba(139, 92, 246, 0.05);
+  border-color: #8b5cf6;
+}
+
+.icon-plus {
+  width: 1.25rem;
+  height: 1.25rem;
+}
+
+/* Error Message */
+.error-message {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.75rem;
+  padding: 1rem;
+  background: #fef2f2;
+  border: 1px solid #fecaca;
+  border-radius: 0.5rem;
+  margin-top: 0.5rem;
+}
+
+.error-icon {
+  width: 1.25rem;
+  height: 1.25rem;
+  color: #ef4444;
+  flex-shrink: 0;
+  margin-top: 0.125rem;
+}
+
+.error-text {
+  flex: 1;
+  font-size: 0.875rem;
+  color: #991b1b;
+  line-height: 1.5;
+  white-space: pre-line;
+}
+
+/* Loading State */
+.loading-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 3rem;
+  gap: 1rem;
+}
+
+.loading-state p {
+  color: #6b7280;
+  font-size: 0.875rem;
+}
+
+.spinner {
+  width: 2.5rem;
+  height: 2.5rem;
+  border: 3px solid #e5e7eb;
+  border-top-color: #8b5cf6;
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* Select Dropdown Styling */
+.form-input[type="number"],
+select.form-input {
+  cursor: pointer;
+}
+
+select.form-input {
+  background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%236b7280' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='M6 8l4 4 4-4'/%3e%3c/svg%3e");
+  background-position: left 0.5rem center;
+  background-repeat: no-repeat;
+  background-size: 1.5em 1.5em;
+  padding-left: 2.5rem;
+  -webkit-appearance: none;
+  -moz-appearance: none;
+  appearance: none;
+}
+
+select.form-input:focus {
+  background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%238b5cf6' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='M6 8l4 4 4-4'/%3e%3c/svg%3e");
+}
+
+/* Field Error Styling */
+.form-input-error {
+  border-color: #ef4444 !important;
+  background-color: #fef2f2;
+}
+
+.form-input-error:focus {
+  border-color: #dc2626 !important;
+  box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.1) !important;
+}
+
+.field-error {
+  display: block;
+  font-size: 0.8125rem;
+  color: #dc2626;
+  margin-top: 0.375rem;
+  font-weight: 500;
+}
+
+/* Service Modal Styles */
+.service-modal-form {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+.modal-error-message {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.75rem;
+  padding: 1rem;
+  background: #fef2f2;
+  border: 1px solid #fecaca;
+  border-radius: 0.5rem;
+  margin-top: 0.5rem;
+}
+
+.btn-modal-primary {
+  padding: 0.625rem 1.5rem;
+  background: #8b5cf6;
+  color: white;
+  border: none;
+  border-radius: 0.5rem;
+  font-size: 0.875rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.btn-modal-primary:hover:not(:disabled) {
+  background: #7c3aed;
+}
+
+.btn-modal-primary:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.btn-modal-outline {
+  padding: 0.625rem 1.5rem;
+  background: white;
+  color: #6b7280;
+  border: 1px solid #d1d5db;
+  border-radius: 0.5rem;
+  font-size: 0.875rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.btn-modal-outline:hover:not(:disabled) {
+  background: #f9fafb;
+  border-color: #9ca3af;
+}
+
+.btn-modal-outline:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
 }
 </style>

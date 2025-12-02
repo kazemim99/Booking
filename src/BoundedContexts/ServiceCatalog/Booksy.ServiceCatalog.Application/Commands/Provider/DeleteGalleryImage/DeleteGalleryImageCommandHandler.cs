@@ -12,13 +12,16 @@ public sealed class DeleteGalleryImageCommandHandler
 {
     private readonly IProviderWriteRepository _providerRepository;
     private readonly IFileStorageService _fileStorageService;
+    private readonly IUnitOfWork _unitOfWork;
 
     public DeleteGalleryImageCommandHandler(
         IProviderWriteRepository providerRepository,
-        IFileStorageService fileStorageService)
+        IFileStorageService fileStorageService,
+        IUnitOfWork unitOfWork)
     {
         _providerRepository = providerRepository;
         _fileStorageService = fileStorageService;
+        _unitOfWork = unitOfWork;
     }
 
     public async Task Handle(
@@ -50,6 +53,9 @@ public sealed class DeleteGalleryImageCommandHandler
         // Mark the provider as modified to ensure EF Core detects the change
         // For owned collections, we need to explicitly tell the repository to update
         await _providerRepository.UpdateProviderAsync(provider, cancellationToken);
+
+        // IMPORTANT: Save changes to persist the deletion to the database
+        await _unitOfWork.SaveChangesAsync(cancellationToken);
 
         // Delete files asynchronously (best effort)
         await _fileStorageService.DeleteImageAsync(thumbnailUrl, cancellationToken);

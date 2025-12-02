@@ -79,15 +79,20 @@
                 </div>
 
                 <div class="form-group">
-                  <label for="duration" class="form-label">مدت زمان (دقیقه)</label>
-                  <input
-                    id="duration"
-                    v-model="formData.duration"
-                    type="number"
-                    dir="ltr"
+                  <label for="duration-edit" class="form-label">مدت زمان</label>
+                  <select
+                    id="duration-edit"
+                    v-model.number="formData.duration"
                     class="form-input"
-                    placeholder="30"
-                  />
+                  >
+                    <option
+                      v-for="option in durationOptions"
+                      :key="option.value"
+                      :value="option.value"
+                    >
+                      {{ option.label }}
+                    </option>
+                  </select>
                 </div>
               </div>
 
@@ -130,15 +135,20 @@
             </div>
 
             <div class="form-group">
-              <label for="duration" class="form-label">مدت زمان (دقیقه)</label>
-              <input
-                id="duration"
-                v-model="formData.duration"
-                type="number"
-                dir="ltr"
+              <label for="duration-add" class="form-label">مدت زمان</label>
+              <select
+                id="duration-add"
+                v-model.number="formData.duration"
                 class="form-input"
-                placeholder="30"
-              />
+              >
+                <option
+                  v-for="option in durationOptions"
+                  :key="option.value"
+                  :value="option.value"
+                >
+                  {{ option.label }}
+                </option>
+              </select>
             </div>
           </div>
 
@@ -190,7 +200,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, watch } from 'vue'
+import { ref, computed, watch } from 'vue'
 
 import AppButton from '@/shared/components/ui/Button/AppButton.vue'
 import type { Service } from '@/modules/provider/types/registration.types'
@@ -227,9 +237,28 @@ const editingId = ref<string | null>(null)
 const formData = ref({
   name: '',
   price: '',
-  duration: '',
+  duration: '30', // Default to 30 minutes
 })
 const error = ref('')
+
+// Duration options in minutes (15-minute increments up to 8 hours)
+const durationOptions = computed(() => {
+  const options = []
+  for (let i = 15; i <= 480; i += 15) {
+    const hours = Math.floor(i / 60)
+    const mins = i % 60
+    let label = ''
+    if (hours > 0 && mins > 0) {
+      label = `${hours} ساعت و ${mins} دقیقه`
+    } else if (hours > 0) {
+      label = `${hours} ساعت`
+    } else {
+      label = `${mins} دقیقه`
+    }
+    options.push({ value: i, label })
+  }
+  return options
+})
 
 // Methods
 const formatPrice = (price: number) => {
@@ -479,6 +508,27 @@ const handleNext = () => {
 .icon-plus {
   width: 1.25rem;
   height: 1.25rem;
+}
+
+/* Select Dropdown Styling */
+.form-input[type="number"],
+select.form-input {
+  cursor: pointer;
+}
+
+select.form-input {
+  background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%236b7280' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='M6 8l4 4 4-4'/%3e%3c/svg%3e");
+  background-position: left 0.5rem center;
+  background-repeat: no-repeat;
+  background-size: 1.5em 1.5em;
+  padding-left: 2.5rem;
+  -webkit-appearance: none;
+  -moz-appearance: none;
+  appearance: none;
+}
+
+select.form-input:focus {
+  background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%238b5cf6' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='M6 8l4 4 4-4'/%3e%3c/svg%3e");
 }
 
 /* Error Message */

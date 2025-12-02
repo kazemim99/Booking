@@ -132,8 +132,8 @@ public class ServicesController : ControllerBase
             request.ServiceName,
             request.Description,
             request.DurationHours,
-            request.Duration,
-            request.BasePrice,
+            request.DurationMinutes,
+            request.Price,
             request.Currency ?? "IRR",
             request.Category);
 

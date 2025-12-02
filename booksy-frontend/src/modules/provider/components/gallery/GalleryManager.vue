@@ -2,170 +2,114 @@
   <div class="gallery-manager" dir="rtl">
     <!-- Header -->
     <div class="gallery-header">
-      <div>
-        <h2 class="gallery-title">مدیریت گالری تصاویر</h2>
-        <p class="gallery-subtitle">
-          {{ images.length }} تصویر
-          <span v-if="maxImages"> از {{ maxImages }}</span>
-        </p>
-      </div>
-      <button
-        v-if="!showUploader"
-        @click="showUploader = true"
-        :disabled="isMaxImagesReached"
-        class="btn btn-primary"
-      >
-        <svg class="icon" viewBox="0 0 20 20" fill="currentColor">
-          <path fill-rule="evenodd" d="M10 3a1 1 0 011 1v5h5a1 1 0 110 2h-5v5a1 1 0 11-2 0v-5H4a1 1 0 110-2h5V4a1 1 0 011-1z" clip-rule="evenodd" />
-        </svg>
-        افزودن تصویر
-      </button>
+      <h2 class="gallery-title">گالری تصاویر</h2>
+      <p class="gallery-subtitle">
+        تصاویر نمونه کار خود را آپلود کنید تا مشتریان بتوانند کیفیت خدمات شما را ببینند
+      </p>
     </div>
 
-    <!-- Upload Section -->
-    <div v-if="showUploader" class="upload-section">
-      <div class="upload-header">
-        <h3>آپلود تصاویر جدید</h3>
-        <button @click="showUploader = false" class="btn-close" type="button">
-          ×
-        </button>
-      </div>
-      <ImageUploadWidget
-        ref="uploadWidget"
-        :max-files="remainingSlots"
-        :max-size-m-b="maxSizeMB"
-        @files-selected="handleFilesSelected"
-        @upload-complete="handleUploadComplete"
+    <!-- Gallery Upload Area -->
+    <div class="gallery-section">
+      <GalleryUpload
+        :max-images="remainingSlots"
+        :current-count="images.length"
+        :total-limit="props.maxImages"
+        :is-uploading="isUploading"
+        :upload-progress="uploadProgress"
+        @upload="handleGalleryUpload"
       />
-      <div class="upload-actions">
-        <button
-          @click="handleUpload"
-          :disabled="isUploading || queuedFiles.length === 0"
-          class="btn btn-primary"
-        >
-          <span v-if="isUploading">در حال آپلود...</span>
-          <span v-else>آپلود {{ queuedFiles.length }} تصویر</span>
-        </button>
-        <button
-          @click="cancelUpload"
-          :disabled="isUploading"
-          class="btn btn-secondary"
-        >
-          انصراف
-        </button>
-      </div>
-    </div>
 
-    <!-- Loading State -->
-    <div v-if="loading" class="loading-state">
-      <div class="spinner"></div>
-      <p>در حال بارگذاری تصاویر...</p>
-    </div>
+      <!-- Image Preview Grid -->
+      <div v-if="images.length > 0" class="gallery-preview">
+        <div class="gallery-preview-header">
+          <h3 class="preview-title">تصاویر آپلود شده</h3>
+          <p class="preview-count">{{ images.length }} تصویر</p>
+        </div>
 
-    <!-- Error State -->
-    <div v-else-if="error" class="error-state">
-      <svg class="icon-error" viewBox="0 0 20 20" fill="currentColor">
-        <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clip-rule="evenodd" />
-      </svg>
-      <p>{{ error }}</p>
-      <button @click="loadImages" class="btn btn-secondary">تلاش مجدد</button>
-    </div>
-
-    <!-- Empty State -->
-    <div v-else-if="images.length === 0" class="empty-state">
-      <svg class="icon-empty" viewBox="0 0 20 20" fill="currentColor">
-        <path fill-rule="evenodd" d="M4 3a2 2 0 00-2 2v10a2 2 0 002 2h12a2 2 0 002-2V5a2 2 0 00-2-2H4zm12 12H4l4-8 3 6 2-4 3 6z" clip-rule="evenodd" />
-      </svg>
-      <h3>گالری خالی است</h3>
-      <p>برای شروع، تصاویری از کارهای خود آپلود کنید</p>
-      <button @click="showUploader = true" class="btn btn-primary">
-        افزودن اولین تصویر
-      </button>
-    </div>
-
-    <!-- Gallery Grid -->
-    <div v-else class="gallery-grid">
-      <div
-        v-for="(image, index) in sortedImages"
-        :key="image.id"
-        class="gallery-item"
-        :class="{ 'dragging': draggingId === image.id }"
-        draggable="true"
-        @dragstart="handleDragStart($event, image, index)"
-        @dragover="handleDragOver($event, index)"
-        @dragend="handleDragEnd"
-        @drop="handleDrop($event, index)"
-      >
-        <!-- Image Card -->
-        <div class="image-card">
-          <!-- Thumbnail -->
-          <div class="image-thumbnail">
-            <img
-              :src="image.thumbnailUrl"
-              :alt="image.altText || image.caption || 'عکس گالری'"
-              @click="handleImageClick(image)"
-            />
-            <div class="image-overlay">
-              <button
+        <div class="image-grid">
+          <div
+            v-for="image in sortedImages"
+            :key="image.id"
+            class="image-card"
+          >
+            <div class="image-wrapper">
+              <img
+                :src="image.thumbnailUrl"
+                :alt="image.altText || image.caption || 'تصویر گالری'"
+                class="image"
                 @click="handleViewImage(image)"
-                class="overlay-btn"
-                title="مشاهده"
-              >
-                <svg viewBox="0 0 20 20" fill="currentColor">
-                  <path d="M10 12a2 2 0 100-4 2 2 0 000 4z" />
-                  <path fill-rule="evenodd" d="M.458 10C1.732 5.943 5.522 3 10 3s8.268 2.943 9.542 7c-1.274 4.057-5.064 7-9.542 7S1.732 14.057.458 10zM14 10a4 4 0 11-8 0 4 4 0 018 0z" clip-rule="evenodd" />
-                </svg>
-              </button>
-              <button
-                v-if="!image.isPrimary"
-                @click="handleSetPrimary(image)"
-                class="overlay-btn btn-primary"
-                title="تنظیم به عنوان تصویر اصلی"
-              >
+              />
+
+              <!-- Primary Badge -->
+              <div v-if="image.isPrimary" class="primary-badge" title="تصویر اصلی">
                 <svg viewBox="0 0 20 20" fill="currentColor">
                   <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
                 </svg>
-              </button>
-              <button
-                @click="handleEditMetadata(image)"
-                class="overlay-btn"
-                title="ویرایش"
-              >
-                <svg viewBox="0 0 20 20" fill="currentColor">
-                  <path d="M13.586 3.586a2 2 0 112.828 2.828l-.793.793-2.828-2.828.793-.793zM11.379 5.793L3 14.172V17h2.828l8.38-8.379-2.83-2.828z" />
-                </svg>
-              </button>
-              <button
-                @click="handleDeleteImage(image)"
-                class="overlay-btn btn-danger"
-                title="حذف"
-              >
-                <svg viewBox="0 0 20 20" fill="currentColor">
-                  <path fill-rule="evenodd" d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v6a1 1 0 102 0V8a1 1 0 00-1-1z" clip-rule="evenodd" />
-                </svg>
-              </button>
-            </div>
-            <!-- Primary Badge -->
-            <div v-if="image.isPrimary" class="primary-badge" title="تصویر اصلی">
-              <svg viewBox="0 0 20 20" fill="currentColor">
-                <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
-              </svg>
-            </div>
-            <!-- Drag Handle -->
-            <div class="drag-handle" title="جابجایی">
-              <svg viewBox="0 0 20 20" fill="currentColor">
-                <path d="M7 2a2 2 0 10-4 0 2 2 0 004 0zM7 10a2 2 0 10-4 0 2 2 0 004 0zM7 18a2 2 0 10-4 0 2 2 0 004 0zM17 2a2 2 0 10-4 0 2 2 0 004 0zM17 10a2 2 0 10-4 0 2 2 0 004 0zM17 18a2 2 0 10-4 0 2 2 0 004 0z" />
-              </svg>
-            </div>
-          </div>
+              </div>
 
-          <!-- Image Info -->
-          <div class="image-info">
-            <p v-if="image.caption" class="image-caption">{{ image.caption }}</p>
-            <p v-else class="image-caption placeholder">بدون عنوان</p>
-            <p class="image-date">{{ formatDate(image.uploadedAt) }}</p>
+              <!-- Action Buttons Overlay -->
+              <div class="image-overlay">
+                <button
+                  v-if="!image.isPrimary"
+                  @click.stop="handleSetPrimary(image)"
+                  class="overlay-btn btn-primary"
+                  title="تنظیم به عنوان تصویر اصلی"
+                >
+                  <svg viewBox="0 0 20 20" fill="currentColor">
+                    <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
+                  </svg>
+                </button>
+                <button
+                  @click.stop="handleEditMetadata(image)"
+                  class="overlay-btn"
+                  title="ویرایش"
+                >
+                  <svg viewBox="0 0 20 20" fill="currentColor">
+                    <path d="M13.586 3.586a2 2 0 112.828 2.828l-.793.793-2.828-2.828.793-.793zM11.379 5.793L3 14.172V17h2.828l8.38-8.379-2.83-2.828z" />
+                  </svg>
+                </button>
+                <button
+                  type="button"
+                  class="overlay-btn btn-danger"
+                  :disabled="isDeleting"
+                  @click.stop="handleDeleteImage(image)"
+                  title="حذف"
+                >
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    viewBox="0 0 20 20"
+                    fill="currentColor"
+                  >
+                    <path
+                      fill-rule="evenodd"
+                      d="M8.75 1A2.75 2.75 0 006 3.75v.443c-.795.077-1.584.176-2.365.298a.75.75 0 10.23 1.482l.149-.022.841 10.518A2.75 2.75 0 007.596 19h4.807a2.75 2.75 0 002.742-2.53l.841-10.52.149.023a.75.75 0 00.23-1.482A41.03 41.03 0 0014 4.193V3.75A2.75 2.75 0 0011.25 1h-2.5zM10 4c.84 0 1.673.025 2.5.075V3.75c0-.69-.56-1.25-1.25-1.25h-2.5c-.69 0-1.25.56-1.25 1.25v.325C8.327 4.025 9.16 4 10 4zM8.58 7.72a.75.75 0 00-1.5.06l.3 7.5a.75.75 0 101.5-.06l-.3-7.5zm4.34.06a.75.75 0 10-1.5-.06l-.3 7.5a.75.75 0 101.5.06l.3-7.5z"
+                      clip-rule="evenodd"
+                    />
+                  </svg>
+                </button>
+              </div>
+            </div>
+            <div v-if="image.caption" class="image-caption">{{ image.caption }}</div>
+            <div v-else class="image-caption placeholder">بدون عنوان</div>
           </div>
         </div>
+      </div>
+
+      <!-- Empty State -->
+      <div v-else-if="!loading" class="empty-state">
+        <svg
+          xmlns="http://www.w3.org/2000/svg"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          class="empty-icon"
+        >
+          <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
+          <circle cx="8.5" cy="8.5" r="1.5"></circle>
+          <polyline points="21 15 16 10 5 21"></polyline>
+        </svg>
+        <p class="empty-text">هنوز تصویری آپلود نکرده‌اید</p>
+        <p class="empty-hint">تصاویر خود را با کشیدن و رها کردن یا کلیک روی دکمه بالا آپلود کنید</p>
       </div>
     </div>
 
@@ -175,7 +119,7 @@
         <div class="modal-content" @click.stop>
           <div class="modal-header">
             <h3>ویرایش اطلاعات تصویر</h3>
-            <button @click="closeEditModal" class="btn-close" type="button">×</button>
+            <button @click="closeEditModal" class="modal-close" type="button">×</button>
           </div>
 
           <div class="modal-body">
@@ -232,7 +176,7 @@
         <div class="modal-content modal-sm" @click.stop>
           <div class="modal-header">
             <h3>حذف تصویر</h3>
-            <button @click="closeDeleteModal" class="btn-close" type="button">×</button>
+            <button @click="closeDeleteModal" class="modal-close" type="button">×</button>
           </div>
 
           <div class="modal-body">
@@ -248,7 +192,7 @@
           <div class="modal-footer">
             <button @click="confirmDelete" :disabled="isDeleting" class="btn btn-danger">
               <span v-if="isDeleting">در حال حذف...</span>
-              <span v-else>بله، حذف شود</span>
+              <span v-else">بله، حذف شود</span>
             </button>
             <button @click="closeDeleteModal" :disabled="isDeleting" class="btn btn-secondary">
               انصراف
@@ -278,7 +222,8 @@ import { ref, computed, onMounted, watch } from 'vue'
 import { useProviderStore } from '@/modules/provider/stores/provider.store'
 import { galleryService } from '@/modules/provider/services/gallery.service'
 import type { GalleryImage, ImageMetadata } from '@/modules/provider/types/gallery.types'
-import ImageUploadWidget from './ImageUploadWidget.vue'
+import GalleryUpload from './GalleryUpload.vue'
+import { toastService } from '@/core/services/toast.service'
 
 // ============================================================================
 // Props & Emits
@@ -290,7 +235,7 @@ interface Props {
 }
 
 const props = withDefaults(defineProps<Props>(), {
-  maxImages: 50,
+  maxImages: 20,
   maxSizeMB: 5,
 })
 
@@ -310,13 +255,10 @@ const providerId = computed(() => providerStore.currentProvider?.id || '')
 // Gallery State
 const images = ref<GalleryImage[]>([])
 const loading = ref(false)
-const error = ref<string | null>(null)
 
 // Upload State
-const showUploader = ref(false)
-const uploadWidget = ref<InstanceType<typeof ImageUploadWidget> | null>(null)
-const queuedFiles = ref<File[]>([])
 const isUploading = ref(false)
+const uploadProgress = ref(0)
 
 // Edit State
 const editingImage = ref<GalleryImage | null>(null)
@@ -333,10 +275,6 @@ const isDeleting = ref(false)
 // View State
 const viewingImage = ref<GalleryImage | null>(null)
 
-// Drag & Drop State
-const draggingId = ref<string | null>(null)
-const dragOverIndex = ref<number | null>(null)
-
 // ============================================================================
 // Computed
 // ============================================================================
@@ -347,10 +285,6 @@ const sortedImages = computed(() => {
 
 const remainingSlots = computed(() => {
   return props.maxImages - images.value.length
-})
-
-const isMaxImagesReached = computed(() => {
-  return images.value.length >= props.maxImages
 })
 
 // ============================================================================
@@ -373,19 +307,18 @@ watch(() => providerId.value, () => {
 
 async function loadImages(): Promise<void> {
   if (!providerId.value) {
-    error.value = 'شناسه ارائه‌دهنده یافت نشد'
+    toastService.error('شناسه ارائه‌دهنده یافت نشد')
     return
   }
 
   loading.value = true
-  error.value = null
 
   try {
     images.value = await galleryService.getGalleryImages(providerId.value)
     console.log(`[GalleryManager] Loaded ${images.value.length} images`)
   } catch (err) {
     console.error('[GalleryManager] Error loading images:', err)
-    error.value = 'خطا در بارگذاری تصاویر'
+    toastService.error('خطا در بارگذاری تصاویر')
   } finally {
     loading.value = false
   }
@@ -395,60 +328,42 @@ async function loadImages(): Promise<void> {
 // Upload Operations
 // ============================================================================
 
-function handleFilesSelected(files: File[]): void {
-  queuedFiles.value = files
-}
-
-async function handleUpload(): Promise<void> {
-  if (!providerId.value || queuedFiles.value.length === 0) return
+async function handleGalleryUpload(files: File[]): Promise<void> {
+  if (!providerId.value || files.length === 0) return
 
   isUploading.value = true
+  uploadProgress.value = 0
 
   try {
     const uploadedImages = await galleryService.uploadImages(
       providerId.value,
-      queuedFiles.value,
-      (progress) => {
-        // Update progress in widget
-        progress.forEach(p => {
-          uploadWidget.value?.setItemProgress(p.file, p.progress)
-          if (p.status === 'success') {
-            uploadWidget.value?.setItemStatus(p.file, 'success')
-          } else if (p.status === 'error') {
-            uploadWidget.value?.setItemStatus(p.file, 'error', p.error)
-          }
-        })
+      files,
+      (progressEvent) => {
+        // Calculate progress from axios progress event
+        if (progressEvent.total) {
+          uploadProgress.value = Math.round((progressEvent.loaded / progressEvent.total) * 100)
+        }
       }
     )
 
     console.log(`[GalleryManager] Uploaded ${uploadedImages.length} images`)
 
-    // Reload gallery
+    // Reload gallery (cache is disabled for getGalleryImages)
     await loadImages()
 
+    toastService.success(`${uploadedImages.length} تصویر با موفقیت آپلود شد`)
     emit('upload-success', uploadedImages)
     emit('images-updated', images.value)
 
     // Reset upload state
-    showUploader.value = false
-    queuedFiles.value = []
+    uploadProgress.value = 0
   } catch (err) {
     console.error('[GalleryManager] Error uploading images:', err)
-    error.value = 'خطا در آپلود تصاویر'
+    toastService.error('خطا در آپلود تصاویر')
     emit('upload-error', err as Error)
   } finally {
     isUploading.value = false
   }
-}
-
-function handleUploadComplete(succeeded: File[], failed: File[]): void {
-  console.log(`[GalleryManager] Upload complete: ${succeeded.length} succeeded, ${failed.length} failed`)
-}
-
-function cancelUpload(): void {
-  showUploader.value = false
-  queuedFiles.value = []
-  uploadWidget.value?.clearSuccessful()
 }
 
 // ============================================================================
@@ -487,11 +402,12 @@ async function saveMetadata(): Promise<void> {
       }
     }
 
+    toastService.success('اطلاعات تصویر با موفقیت ذخیره شد')
     emit('images-updated', images.value)
     closeEditModal()
   } catch (err) {
     console.error('[GalleryManager] Error updating metadata:', err)
-    error.value = 'خطا در ذخیره تغییرات'
+    toastService.error('خطا در ذخیره تغییرات')
   } finally {
     savingMetadata.value = false
   }
@@ -523,11 +439,12 @@ async function confirmDelete(): Promise<void> {
     // Remove from local state
     images.value = images.value.filter(img => img.id !== deletingImage.value!.id)
 
+    toastService.success('تصویر با موفقیت حذف شد')
     emit('images-updated', images.value)
     closeDeleteModal()
   } catch (err) {
     console.error('[GalleryManager] Error deleting image:', err)
-    error.value = 'خطا در حذف تصویر'
+    toastService.error('خطا در حذف تصویر')
   } finally {
     isDeleting.value = false
   }
@@ -540,10 +457,6 @@ function closeDeleteModal(): void {
 // ============================================================================
 // View Operations
 // ============================================================================
-
-function handleImageClick(image: GalleryImage): void {
-  viewingImage.value = image
-}
 
 function handleViewImage(image: GalleryImage): void {
   viewingImage.value = image
@@ -571,249 +484,101 @@ async function handleSetPrimary(image: GalleryImage): Promise<void> {
       isPrimary: img.id === image.id
     }))
 
+    toastService.success('تصویر اصلی تنظیم شد')
     emit('images-updated', images.value)
   } catch (err) {
     console.error('[GalleryManager] Error setting primary image:', err)
-    error.value = 'خطا در تنظیم تصویر اصلی'
+    toastService.error('خطا در تنظیم تصویر اصلی')
   }
-}
-
-// ============================================================================
-// Drag & Drop Reordering
-// ============================================================================
-
-function handleDragStart(event: DragEvent, image: GalleryImage, index: number): void {
-  draggingId.value = image.id
-  if (event.dataTransfer) {
-    event.dataTransfer.effectAllowed = 'move'
-    event.dataTransfer.setData('text/html', index.toString())
-  }
-}
-
-function handleDragOver(event: DragEvent, index: number): void {
-  event.preventDefault()
-  if (event.dataTransfer) {
-    event.dataTransfer.dropEffect = 'move'
-  }
-  dragOverIndex.value = index
-}
-
-function handleDragEnd(): void {
-  draggingId.value = null
-  dragOverIndex.value = null
-}
-
-async function handleDrop(event: DragEvent, dropIndex: number): Promise<void> {
-  event.preventDefault()
-
-  if (!providerId.value || !draggingId.value) return
-
-  const dragIndex = sortedImages.value.findIndex(img => img.id === draggingId.value)
-
-  if (dragIndex === dropIndex || dragIndex === -1) {
-    handleDragEnd()
-    return
-  }
-
-  // Reorder locally first for immediate feedback
-  const reordered = [...sortedImages.value]
-  const [draggedItem] = reordered.splice(dragIndex, 1)
-  reordered.splice(dropIndex, 0, draggedItem)
-
-  // Update display order
-  const updatedImages = reordered.map((img, idx) => ({
-    ...img,
-    displayOrder: idx,
-  }))
-
-  images.value = updatedImages
-
-  // Persist to backend
-  try {
-    // Build imageOrders dictionary: { imageId: displayOrder }
-    const imageOrders: Record<string, number> = {}
-    updatedImages.forEach(img => {
-      imageOrders[img.id] = img.displayOrder
-    })
-
-    await galleryService.reorderImages(providerId.value, {
-      imageOrders
-    })
-
-    console.log('[GalleryManager] Images reordered successfully')
-    emit('images-updated', images.value)
-  } catch (err) {
-    console.error('[GalleryManager] Error reordering images:', err)
-    // Rollback on error
-    await loadImages()
-    error.value = 'خطا در تغییر ترتیب تصاویر'
-  } finally {
-    handleDragEnd()
-  }
-}
-
-// ============================================================================
-// Utilities
-// ============================================================================
-
-function formatDate(date: Date | string): string {
-  const d = typeof date === 'string' ? new Date(date) : date
-  const now = new Date()
-  const diffMs = now.getTime() - d.getTime()
-  const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24))
-
-  if (diffDays === 0) return 'امروز'
-  if (diffDays === 1) return 'دیروز'
-  if (diffDays < 7) return `${diffDays} روز پیش`
-  if (diffDays < 30) return `${Math.floor(diffDays / 7)} هفته پیش`
-  if (diffDays < 365) return `${Math.floor(diffDays / 30)} ماه پیش`
-  return `${Math.floor(diffDays / 365)} سال پیش`
 }
 </script>
 
 <style scoped>
 .gallery-manager {
   padding: 1.5rem;
+  direction: rtl;
 }
 
 /* Header */
 .gallery-header {
+  margin-bottom: 2rem;
+}
+
+.gallery-title {
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: #111827;
+  margin: 0 0 0.5rem 0;
+}
+
+.gallery-subtitle {
+  font-size: 0.875rem;
+  color: #6b7280;
+  margin: 0;
+}
+
+/* Gallery Section */
+.gallery-section {
+  display: flex;
+  flex-direction: column;
+  gap: 2rem;
+}
+
+/* Gallery Preview */
+.gallery-preview {
+  margin-top: 2rem;
+}
+
+.gallery-preview-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
   margin-bottom: 1.5rem;
 }
 
-.gallery-title {
-  font-size: 1.5rem;
-  font-weight: 700;
-  color: #1a202c;
-  margin: 0 0 0.25rem 0;
-}
-
-.gallery-subtitle {
-  color: #718096;
-  font-size: 0.875rem;
-  margin: 0;
-}
-
-/* Upload Section */
-.upload-section {
-  background: #f7fafc;
-  border: 2px dashed #cbd5e0;
-  border-radius: 0.5rem;
-  padding: 1.5rem;
-  margin-bottom: 2rem;
-}
-
-.upload-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 1rem;
-}
-
-.upload-header h3 {
+.preview-title {
   font-size: 1.125rem;
   font-weight: 600;
-  color: #2d3748;
+  color: #111827;
   margin: 0;
 }
 
-.upload-actions {
-  display: flex;
-  gap: 0.75rem;
-  margin-top: 1rem;
+.preview-count {
+  font-size: 0.875rem;
+  color: #6b7280;
+  margin: 0;
 }
 
-/* States */
-.loading-state,
-.error-state,
-.empty-state {
-  text-align: center;
-  padding: 3rem 1rem;
-}
-
-.spinner {
-  width: 3rem;
-  height: 3rem;
-  border: 4px solid #e2e8f0;
-  border-top-color: #3182ce;
-  border-radius: 50%;
-  animation: spin 0.8s linear infinite;
-  margin: 0 auto 1rem;
-}
-
-@keyframes spin {
-  to { transform: rotate(360deg); }
-}
-
-.icon-error,
-.icon-empty {
-  width: 4rem;
-  height: 4rem;
-  color: #cbd5e0;
-  margin: 0 auto 1rem;
-}
-
-.icon-error {
-  color: #f56565;
-}
-
-.error-state p,
-.empty-state h3 {
-  color: #2d3748;
-  margin: 0.5rem 0;
-}
-
-.empty-state p {
-  color: #718096;
-  margin: 0.5rem 0 1.5rem;
-}
-
-/* Gallery Grid */
-.gallery-grid {
+/* Image Grid */
+.image-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
   gap: 1.5rem;
 }
 
-.gallery-item {
-  position: relative;
-  transition: transform 0.2s, opacity 0.2s;
-}
-
-.gallery-item:hover {
-  transform: translateY(-4px);
-}
-
-.gallery-item.dragging {
-  opacity: 0.5;
-}
-
-/* Image Card */
 .image-card {
   background: white;
   border-radius: 0.5rem;
   overflow: hidden;
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
-  transition: box-shadow 0.2s;
+  transition: all 0.2s;
 }
 
 .image-card:hover {
-  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.15);
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+  transform: translateY(-2px);
 }
 
-/* Thumbnail */
-.image-thumbnail {
+/* Image Wrapper */
+.image-wrapper {
   position: relative;
   width: 100%;
   aspect-ratio: 4 / 3;
   overflow: hidden;
-  background: #f7fafc;
+  background-color: #f3f4f6;
 }
 
-.image-thumbnail img {
+.image {
   width: 100%;
   height: 100%;
   object-fit: cover;
@@ -821,11 +586,33 @@ function formatDate(date: Date | string): string {
   transition: transform 0.3s;
 }
 
-.image-thumbnail:hover img {
+.image-wrapper:hover .image {
   transform: scale(1.05);
 }
 
-/* Overlay */
+/* Primary Badge */
+.primary-badge {
+  position: absolute;
+  top: 0.5rem;
+  right: 0.5rem;
+  width: 2rem;
+  height: 2rem;
+  background: linear-gradient(135deg, #fbbf24 0%, #f59e0b 100%);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 2px 8px rgba(251, 191, 36, 0.5);
+  z-index: 10;
+}
+
+.primary-badge svg {
+  width: 1.25rem;
+  height: 1.25rem;
+  color: white;
+}
+
+/* Image Overlay */
 .image-overlay {
   position: absolute;
   top: 0;
@@ -841,13 +628,13 @@ function formatDate(date: Date | string): string {
   transition: opacity 0.2s;
 }
 
-.image-thumbnail:hover .image-overlay {
+.image-wrapper:hover .image-overlay {
   opacity: 1;
 }
 
 .overlay-btn {
-  width: 2.5rem;
-  height: 2.5rem;
+  width: 2.25rem;
+  height: 2.25rem;
   border-radius: 50%;
   background: white;
   border: none;
@@ -860,72 +647,68 @@ function formatDate(date: Date | string): string {
 
 .overlay-btn:hover {
   transform: scale(1.1);
-  background: #f7fafc;
 }
 
 .overlay-btn svg {
-  width: 1.25rem;
-  height: 1.25rem;
-  color: #2d3748;
+  width: 1.125rem;
+  height: 1.125rem;
+  color: #374151;
+}
+
+.overlay-btn.btn-primary {
+  background: linear-gradient(135deg, #fbbf24 0%, #f59e0b 100%);
+}
+
+.overlay-btn.btn-primary svg {
+  color: white;
 }
 
 .overlay-btn.btn-danger:hover {
-  background: #f56565;
+  background: #ef4444;
 }
 
 .overlay-btn.btn-danger:hover svg {
   color: white;
 }
 
-/* Drag Handle */
-.drag-handle {
-  position: absolute;
-  top: 0.5rem;
-  left: 0.5rem;
-  width: 2rem;
-  height: 2rem;
-  background: rgba(255, 255, 255, 0.9);
-  border-radius: 0.25rem;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  cursor: move;
-  opacity: 0;
-  transition: opacity 0.2s;
-}
-
-.image-thumbnail:hover .drag-handle {
-  opacity: 1;
-}
-
-.drag-handle svg {
-  width: 1.25rem;
-  height: 1.25rem;
-  color: #718096;
-}
-
-/* Image Info */
-.image-info {
-  padding: 0.75rem 1rem;
-}
-
+/* Image Caption */
 .image-caption {
+  padding: 0.75rem;
   font-size: 0.875rem;
-  color: #2d3748;
-  margin: 0 0 0.25rem 0;
+  color: #374151;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
 
 .image-caption.placeholder {
-  color: #a0aec0;
+  color: #9ca3af;
   font-style: italic;
 }
 
-.image-date {
-  font-size: 0.75rem;
-  color: #a0aec0;
+/* Empty State */
+.empty-state {
+  text-align: center;
+  padding: 3rem 1rem;
+}
+
+.empty-icon {
+  width: 4rem;
+  height: 4rem;
+  color: #d1d5db;
+  margin: 0 auto 1rem;
+}
+
+.empty-text {
+  font-size: 1rem;
+  font-weight: 500;
+  color: #374151;
+  margin: 0 0 0.5rem 0;
+}
+
+.empty-hint {
+  font-size: 0.875rem;
+  color: #9ca3af;
   margin: 0;
 }
 
@@ -946,7 +729,7 @@ function formatDate(date: Date | string): string {
 
 .modal-content {
   background: white;
-  border-radius: 0.5rem;
+  border-radius: 0.75rem;
   max-width: 500px;
   width: 100%;
   max-height: 90vh;
@@ -963,29 +746,33 @@ function formatDate(date: Date | string): string {
   justify-content: space-between;
   align-items: center;
   padding: 1.5rem;
-  border-bottom: 1px solid #e2e8f0;
+  border-bottom: 1px solid #e5e7eb;
 }
 
 .modal-header h3 {
-  font-size: 1.25rem;
+  font-size: 1.125rem;
   font-weight: 600;
-  color: #2d3748;
+  color: #111827;
   margin: 0;
 }
 
-.btn-close {
+.modal-close {
   width: 2rem;
   height: 2rem;
   border: none;
   background: transparent;
   font-size: 1.5rem;
-  color: #718096;
+  color: #6b7280;
   cursor: pointer;
   transition: color 0.2s;
+  padding: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
-.btn-close:hover {
-  color: #2d3748;
+.modal-close:hover {
+  color: #111827;
 }
 
 .modal-body {
@@ -997,16 +784,16 @@ function formatDate(date: Date | string): string {
   justify-content: flex-end;
   gap: 0.75rem;
   padding: 1.5rem;
-  border-top: 1px solid #e2e8f0;
+  border-top: 1px solid #e5e7eb;
 }
 
 /* Edit Preview */
 .edit-preview {
   width: 100%;
   aspect-ratio: 16 / 9;
-  border-radius: 0.375rem;
+  border-radius: 0.5rem;
   overflow: hidden;
-  background: #f7fafc;
+  background: #f3f4f6;
   margin-bottom: 1.5rem;
 }
 
@@ -1020,7 +807,7 @@ function formatDate(date: Date | string): string {
 .delete-preview {
   width: 200px;
   aspect-ratio: 4 / 3;
-  border-radius: 0.375rem;
+  border-radius: 0.5rem;
   overflow: hidden;
   margin: 0 auto 1rem;
 }
@@ -1040,7 +827,7 @@ function formatDate(date: Date | string): string {
   display: block;
   font-size: 0.875rem;
   font-weight: 500;
-  color: #2d3748;
+  color: #374151;
   margin-bottom: 0.5rem;
 }
 
@@ -1048,22 +835,68 @@ function formatDate(date: Date | string): string {
   width: 100%;
   padding: 0.625rem 0.875rem;
   font-size: 0.875rem;
-  border: 1px solid #cbd5e0;
-  border-radius: 0.375rem;
+  border: 1px solid #d1d5db;
+  border-radius: 0.5rem;
   transition: all 0.2s;
 }
 
 .form-control:focus {
   outline: none;
-  border-color: #3182ce;
-  box-shadow: 0 0 0 3px rgba(49, 130, 206, 0.1);
+  border-color: #8b5cf6;
+  box-shadow: 0 0 0 3px rgba(139, 92, 246, 0.1);
 }
 
 .form-text {
   display: block;
   font-size: 0.75rem;
-  color: #a0aec0;
+  color: #9ca3af;
   margin-top: 0.25rem;
+}
+
+/* Buttons */
+.btn {
+  padding: 0.625rem 1.25rem;
+  font-size: 0.875rem;
+  font-weight: 500;
+  border: none;
+  border-radius: 0.5rem;
+  cursor: pointer;
+  transition: all 0.2s;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.btn-primary {
+  background: #8b5cf6;
+  color: white;
+}
+
+.btn-primary:hover:not(:disabled) {
+  background: #7c3aed;
+}
+
+.btn-secondary {
+  background: #e5e7eb;
+  color: #374151;
+}
+
+.btn-secondary:hover:not(:disabled) {
+  background: #d1d5db;
+}
+
+.btn-danger {
+  background: #ef4444;
+  color: white;
+}
+
+.btn-danger:hover:not(:disabled) {
+  background: #dc2626;
 }
 
 /* Image Viewer */
@@ -1096,6 +929,10 @@ function formatDate(date: Date | string): string {
   cursor: pointer;
   border-radius: 0.25rem;
   transition: background 0.2s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
 }
 
 .viewer-close:hover {
@@ -1111,101 +948,13 @@ function formatDate(date: Date | string): string {
   border-radius: 0.25rem;
 }
 
-/* Buttons */
-.btn {
-  padding: 0.625rem 1.25rem;
-  font-size: 0.875rem;
-  font-weight: 500;
-  border: none;
-  border-radius: 0.375rem;
-  cursor: pointer;
-  transition: all 0.2s;
-  display: inline-flex;
-  align-items: center;
-  gap: 0.5rem;
-}
-
-.btn:disabled {
-  opacity: 0.6;
-  cursor: not-allowed;
-}
-
-.btn-primary {
-  background: #3182ce;
-  color: white;
-}
-
-.btn-primary:hover:not(:disabled) {
-  background: #2c5aa0;
-}
-
-.btn-secondary {
-  background: #e2e8f0;
-  color: #2d3748;
-}
-
-.btn-secondary:hover:not(:disabled) {
-  background: #cbd5e0;
-}
-
-.btn-danger {
-  background: #f56565;
-  color: white;
-}
-
-.btn-danger:hover:not(:disabled) {
-  background: #e53e3e;
-}
-
-.btn .icon {
-  width: 1.25rem;
-  height: 1.25rem;
-}
-
 /* Utility */
 .text-center {
   text-align: center;
 }
 
 .text-muted {
-  color: #a0aec0;
+  color: #9ca3af;
   font-size: 0.875rem;
-}
-
-/* Primary Image Badge */
-.primary-badge {
-  position: absolute;
-  top: 0.5rem;
-  right: 0.5rem;
-  width: 2.5rem;
-  height: 2.5rem;
-  background: linear-gradient(135deg, #fbbf24 0%, #f59e0b 100%);
-  border-radius: 50%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  box-shadow: 0 2px 8px rgba(251, 191, 36, 0.5);
-  z-index: 10;
-}
-
-.primary-badge svg {
-  width: 1.5rem;
-  height: 1.5rem;
-  color: white;
-}
-
-/* Primary Button Styling */
-.overlay-btn.btn-primary {
-  background: linear-gradient(135deg, #fbbf24 0%, #f59e0b 100%);
-  border: none;
-}
-
-.overlay-btn.btn-primary svg {
-  color: white;
-}
-
-.overlay-btn.btn-primary:hover {
-  transform: scale(1.1);
-  box-shadow: 0 4px 12px rgba(251, 191, 36, 0.4);
 }
 </style>

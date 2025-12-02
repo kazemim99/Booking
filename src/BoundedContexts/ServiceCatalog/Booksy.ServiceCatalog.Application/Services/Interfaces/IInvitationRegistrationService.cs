@@ -1,4 +1,5 @@
 using Booksy.Core.Domain.ValueObjects;
+using Booksy.ServiceCatalog.Domain.Aggregates;
 using Booksy.ServiceCatalog.Domain.ValueObjects;
 
 namespace Booksy.ServiceCatalog.Application.Services.Interfaces;
@@ -27,7 +28,7 @@ public interface IInvitationRegistrationService
     /// <summary>
     /// Creates an individual provider profile for a staff member
     /// </summary>
-    Task<ProviderId> CreateIndividualProviderAsync(
+    Task<Provider> CreateIndividualProviderAsync(
         UserId userId,
         string firstName,
         string lastName,

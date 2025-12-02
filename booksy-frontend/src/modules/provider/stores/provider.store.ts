@@ -372,7 +372,13 @@ export const useProviderStore = defineStore('provider', () => {
         }
 
         // Fetch provider details using the providerId from token
-        const provider = await providerService.getProviderById(providerIdFromToken)
+        // Include services and staff in the response
+        const provider = await providerService.getProviderById(
+          providerIdFromToken,
+          true, // includeServices
+          true, // includeStaff
+          true  // includeBusinessHours
+        )
         if (provider) {
           console.log('[ProviderStore] Provider loaded successfully:', provider.id)
           currentProvider.value = provider

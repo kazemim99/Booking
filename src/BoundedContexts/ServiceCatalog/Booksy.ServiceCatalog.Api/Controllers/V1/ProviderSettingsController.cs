@@ -574,8 +574,8 @@ public class ProviderSettingsController : ControllerBase
             request.ServiceName,
             request.Description,
             request.DurationHours,
-            request.Duration,
-            request.BasePrice,
+            request.DurationMinutes,
+            request.Price,
             request.Currency ?? "IRR",
             request.Category,
             request.IsMobileService);
@@ -737,8 +737,8 @@ public sealed class AddServiceRequest
     public string ServiceName { get; set; } = string.Empty;
     public string? Description { get; set; }
     public int DurationHours { get; set; }
-    public int Duration { get; set; }
-    public decimal BasePrice { get; set; }
+    public int DurationMinutes { get; set; }
+    public decimal Price { get; set; }
     public string? Currency { get; set; }
     public string? Category { get; set; }
     public bool IsMobileService { get; set; }

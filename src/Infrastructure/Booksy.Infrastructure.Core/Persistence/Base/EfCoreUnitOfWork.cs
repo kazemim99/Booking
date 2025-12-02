@@ -313,7 +313,8 @@ public class EfCoreUnitOfWork<TContext> : IUnitOfWork
             try
             {
                 await operation();
-                var result = await _context.SaveChangesAsync(cancellationToken);
+                // IMPORTANT: Call SaveChangesAsync which dispatches domain events
+                var result = await SaveChangesAsync(cancellationToken);
                 await _currentTransaction.CommitAsync(cancellationToken);
 
                 _logger.LogDebug("Saved {Count} changes and events", result);

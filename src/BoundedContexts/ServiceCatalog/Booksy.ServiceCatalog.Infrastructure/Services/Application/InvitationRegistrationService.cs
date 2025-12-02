@@ -134,7 +134,7 @@ public class InvitationRegistrationService : IInvitationRegistrationService
         }
     }
 
-    public async Task<ProviderId> CreateIndividualProviderAsync(
+    public async Task<Provider> CreateIndividualProviderAsync(
         UserId userId,
         string firstName,
         string lastName,
@@ -210,7 +210,7 @@ public class InvitationRegistrationService : IInvitationRegistrationService
                 "Individual provider {ProviderId} created and linked to organization {OrgId}",
                 individualProvider.Id, organizationId);
 
-            return individualProvider.Id;
+            return individualProvider;
         }
         catch (Exception ex)
         {

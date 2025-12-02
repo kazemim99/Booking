@@ -153,9 +153,8 @@ namespace Booksy.ServiceCatalog.Application.Queries.Provider.GetProviderById
 
             if (request.IncludeServices)
             {
-                var services = await _serviceRepository.GetByProviderIdAndStatusAsync(
+                var services = await _serviceRepository.GetByProviderIdAsync(
                     providerId,
-                    Domain.Enums.ServiceStatus.Active,
                     cancellationToken);
 
                 viewModel.ActiveServicesCount = services.Count;

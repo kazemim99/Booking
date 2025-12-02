@@ -2,9 +2,11 @@
  * Error Interceptor
  *
  * Global error handler for API responses with Persian error messages
+ * Shows toast notifications for all errors using the toast service
  */
 
 import type { AxiosError } from 'axios'
+import { toastService } from '@/core/services/toast.service'
 
 interface ApiError {
   message: string
@@ -18,7 +20,7 @@ interface ApiError {
 export function errorInterceptor(error: AxiosError<ApiError>) {
   // Network error
   if (!error.response) {
-    console.error('خطا در برقراری ارتباط با سرور')
+    toastService.error('خطا در برقراری ارتباط با سرور. لطفاً اتصال اینترنت خود را بررسی کنید', 'خطای شبکه')
     return Promise.reject(error)
   }
 
@@ -31,19 +33,19 @@ export function errorInterceptor(error: AxiosError<ApiError>) {
       break
 
     case 401:
-      // Handled by auth interceptor
+      // Handled by auth interceptor - don't show duplicate toast
       break
 
     case 403:
-      console.error('شما اجازه دسترسی به این بخش را ندارید')
+      toastService.error('شما اجازه دسترسی به این بخش را ندارید', 'دسترسی ممنوع')
       break
 
     case 404:
-      console.error('اطلاعات مورد نظر یافت نشد')
+      toastService.error('اطلاعات مورد نظر یافت نشد', 'یافت نشد')
       break
 
     case 409:
-      console.error('تداخل در داده‌ها. این اطلاعات قبلاً ثبت شده است')
+      toastService.error('این اطلاعات قبلاً ثبت شده است', 'تداخل در داده‌ها')
       break
 
     case 422:
@@ -51,17 +53,20 @@ export function errorInterceptor(error: AxiosError<ApiError>) {
       break
 
     case 429:
-      console.error('تعداد درخواست‌های شما بیش از حد مجاز است. لطفاً کمی صبر کنید')
+      toastService.warning('تعداد درخواست‌های شما بیش از حد مجاز است. لطفاً کمی صبر کنید', 'محدودیت درخواست')
       break
 
     case 500:
     case 502:
     case 503:
-      console.error('خطای سرور. لطفاً بعداً تلاش کنید')
+    case 504:
+      // Show server error with the backend message if available
+      const serverMessage = data?.message || 'خطای سرور رخ داده است. لطفاً بعداً تلاش کنید'
+      toastService.error(serverMessage, 'خطای سرور')
       break
 
     default:
-      console.error(data?.message || 'خطای نامشخص')
+      toastService.error(data?.message || 'خطای نامشخصی رخ داده است', 'خطا')
   }
 
   return Promise.reject(error)
@@ -69,15 +74,20 @@ export function errorInterceptor(error: AxiosError<ApiError>) {
 
 function handleValidationError(data: ApiError) {
   if (data.errors) {
-    // Show first validation error
-    const firstError = Object.values(data.errors)[0]?.[0]
-    if (firstError) {
-      console.error(firstError)
-      return
-    }
+    // Show all validation errors as separate toasts
+    const errorMessages = Object.entries(data.errors).flatMap(([field, messages]) => {
+      return messages
+    })
+
+    // Show each validation error
+    errorMessages.forEach((message) => {
+      toastService.error(message, 'خطای اعتبارسنجی', 6000)
+    })
+    return
   }
 
-  console.error(data.message || 'داده‌های ورودی نامعتبر است')
+  // If no structured errors, show the general error message
+  toastService.error(data.message || 'داده‌های ورودی نامعتبر است', 'خطای اعتبارسنجی')
 }
 
 /**

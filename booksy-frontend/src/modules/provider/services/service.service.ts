@@ -122,17 +122,25 @@ class ServiceService {
       console.log(`[ServiceService] Fetching services for provider: ${providerId}`)
 
       // Backend returns: { success, statusCode, message, data: { items: [...], pageNumber, ... } }
+      // GET /api/v1/services/provider/{providerId} - Returns all services for this provider
       const response = await serviceCategoryClient.get<any>(
         `${API_BASE}/provider/${providerId}`,
         {
           params: {
             pageNumber: 1,
             pageSize: 100 // Get all services (adjust if needed)
+            // No filters - get all services regardless of status
           }
         }
       )
 
-      console.log(`[ServiceService] Services response:`, response.data)
+      console.log(`[ServiceService] Services response:`, response)
+
+      // Handle null or undefined response
+      if (!response || !response.data) {
+        console.warn('[ServiceService] Empty response from server')
+        return []
+      }
 
       // Extract items from paginated response
       // Handle both wrapped { data: { items: [] } } and direct { items: [] } formats
@@ -144,18 +152,47 @@ class ServiceService {
       } else if (response.data?.items) {
         // Direct paginated format: { items: [] }
         services = response.data.items
+      } else if (Array.isArray(response.data?.data)) {
+        // Direct array in data field: { data: [...] }
+        services = response.data.data
       } else if (Array.isArray(response.data)) {
         // Direct array format: [...]
         services = response.data
       } else {
         console.warn('[ServiceService] Unexpected response format:', response.data)
-        services = []
+        // Return empty array instead of throwing error
+        return []
       }
 
       console.log(`[ServiceService] ${services.length} services retrieved`)
-      return services
-    } catch (error) {
+      return services || []
+    } catch (error: any) {
       console.error(`[ServiceService] Error fetching services for provider ${providerId}:`, error)
+
+      // Only catch expected "no data" scenarios - let real errors propagate
+      const status = error?.response?.status
+      const errorCode = error?.response?.data?.error?.code
+      const message = error?.response?.data?.message || error?.message || ''
+
+      // Only return empty array for these specific cases:
+      // 1. 404 Not Found - provider/services endpoint doesn't exist yet
+      // 2. Empty result with success=true
+      if (status === 404) {
+        console.log('[ServiceService] No services endpoint found (404) - returning empty array')
+        return []
+      }
+
+      // For all other errors (400, 500, network errors, storage errors), throw
+      // This ensures we don't hide real problems like:
+      // - Database connection failures
+      // - Permission issues
+      // - Data corruption
+      // - API bugs
+      console.error('[ServiceService] Throwing error to caller:', {
+        status,
+        errorCode,
+        message
+      })
       throw this.handleError(error)
     }
   }

@@ -35,19 +35,18 @@ public class DataCloningService : IDataCloningService
 
     public async Task<int> CloneServicesAsync(
         ProviderId sourceProviderId,
-        ProviderId targetProviderId,
+        Provider targetProvider,
         CancellationToken cancellationToken = default)
     {
         try
         {
             _logger.LogInformation(
                 "Cloning services from provider {SourceId} to {TargetId}",
-                sourceProviderId, targetProviderId);
+                sourceProviderId, targetProvider.Id);
 
             // Get all active services from source provider
-            var sourceServices = await _serviceReadRepository.GetByProviderIdAndStatusAsync(
-                sourceProviderId,
-                ServiceStatus.Active,
+            var sourceServices = await _serviceReadRepository.GetByProviderIdAsync(
+                sourceProviderId.Value,
                 cancellationToken);
 
             if (!sourceServices.Any())
@@ -64,7 +63,7 @@ public class DataCloningService : IDataCloningService
                 {
                     // Create a new service for target provider with same properties
                     var clonedService = Service.Create(
-                        providerId: targetProviderId,
+                        providerId: targetProvider.Id,
                         name: sourceService.Name,
                         description: sourceService.Description,
                         category: sourceService.Category,
@@ -109,47 +108,45 @@ public class DataCloningService : IDataCloningService
                     // Note: Service will remain in Draft status
                     // Individual provider can activate when ready
 
-                    await _serviceWriteRepository.SaveServiceAsync(clonedService, cancellationToken);
                     clonedCount++;
 
                     _logger.LogDebug("Cloned service {ServiceName} from {SourceId} to {TargetId}",
-                        sourceService.Name, sourceProviderId, targetProviderId);
+                        sourceService.Name, sourceProviderId, targetProvider.Id);
                 }
                 catch (Exception ex)
                 {
                     _logger.LogError(ex, "Error cloning service {ServiceId} from {SourceId} to {TargetId}",
-                        sourceService.Id, sourceProviderId, targetProviderId);
+                        sourceService.Id, sourceProviderId, targetProvider.Id);
                     // Continue with next service
                 }
             }
 
             _logger.LogInformation("Successfully cloned {Count} services from {SourceId} to {TargetId}",
-                clonedCount, sourceProviderId, targetProviderId);
+                clonedCount, sourceProviderId, targetProvider.Id);
 
             return clonedCount;
         }
         catch (Exception ex)
         {
             _logger.LogError(ex, "Error cloning services from {SourceId} to {TargetId}",
-                sourceProviderId, targetProviderId);
+                sourceProviderId, targetProvider.Id);
             throw;
         }
     }
 
     public async Task<int> CloneWorkingHoursAsync(
         ProviderId sourceProviderId,
-        ProviderId targetProviderId,
+        Provider targetProvider,
         CancellationToken cancellationToken = default)
     {
         try
         {
             _logger.LogInformation(
                 "Cloning working hours from provider {SourceId} to {TargetId}",
-                sourceProviderId, targetProviderId);
+                sourceProviderId, targetProvider.Id);
 
             // Get source and target providers
             var sourceProvider = await _providerReadRepository.GetByIdAsync(sourceProviderId, cancellationToken);
-            var targetProvider = await _providerReadRepository.GetByIdAsync(targetProviderId, cancellationToken);
 
             if (sourceProvider == null || targetProvider == null)
             {
@@ -192,21 +189,21 @@ public class DataCloningService : IDataCloningService
             }
 
             _logger.LogInformation("Successfully cloned {Count} working hours entries from {SourceId} to {TargetId}",
-                clonedCount, sourceProviderId, targetProviderId);
+                clonedCount, sourceProviderId, targetProvider.Id);
 
             return clonedCount;
         }
         catch (Exception ex)
         {
             _logger.LogError(ex, "Error cloning working hours from {SourceId} to {TargetId}",
-                sourceProviderId, targetProviderId);
+                sourceProviderId, targetProvider.Id);
             throw;
         }
     }
 
     public async Task<int> CloneGalleryAsync(
         ProviderId sourceProviderId,
-        ProviderId targetProviderId,
+        Provider targetProvider,
         bool markAsCloned = true,
         CancellationToken cancellationToken = default)
     {
@@ -214,11 +211,10 @@ public class DataCloningService : IDataCloningService
         {
             _logger.LogInformation(
                 "Cloning gallery from provider {SourceId} to {TargetId}",
-                sourceProviderId, targetProviderId);
+                sourceProviderId, targetProvider.Id);
 
             // Get source and target providers
             var sourceProvider = await _providerReadRepository.GetByIdAsync(sourceProviderId, cancellationToken);
-            var targetProvider = await _providerReadRepository.GetByIdAsync(targetProviderId, cancellationToken);
 
             if (sourceProvider == null || targetProvider == null)
             {
@@ -250,14 +246,14 @@ public class DataCloningService : IDataCloningService
 
             _logger.LogInformation(
                 "Gallery cloning placeholder - {Count} images would be cloned from {SourceId} to {TargetId}",
-                clonedCount, sourceProviderId, targetProviderId);
+                clonedCount, sourceProviderId, targetProvider.Id);
 
             return clonedCount;
         }
         catch (Exception ex)
         {
             _logger.LogError(ex, "Error cloning gallery from {SourceId} to {TargetId}",
-                sourceProviderId, targetProviderId);
+                sourceProviderId, targetProvider.Id);
             throw;
         }
     }

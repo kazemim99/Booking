@@ -1,3 +1,4 @@
+using Booksy.ServiceCatalog.Domain.Aggregates;
 using Booksy.ServiceCatalog.Domain.ValueObjects;
 
 namespace Booksy.ServiceCatalog.Application.Services.Interfaces;
@@ -13,7 +14,7 @@ public interface IDataCloningService
     /// </summary>
     Task<int> CloneServicesAsync(
         ProviderId sourceProviderId,
-        ProviderId targetProviderId,
+        Provider targetProvider,
         CancellationToken cancellationToken = default);
 
     /// <summary>
@@ -22,7 +23,7 @@ public interface IDataCloningService
     /// </summary>
     Task<int> CloneWorkingHoursAsync(
         ProviderId sourceProviderId,
-        ProviderId targetProviderId,
+        Provider targetProvider,
         CancellationToken cancellationToken = default);
 
     /// <summary>
@@ -32,7 +33,7 @@ public interface IDataCloningService
     /// </summary>
     Task<int> CloneGalleryAsync(
         ProviderId sourceProviderId,
-        ProviderId targetProviderId,
+        Provider targetProviderId,
         bool markAsCloned = true,
         CancellationToken cancellationToken = default);
 }
