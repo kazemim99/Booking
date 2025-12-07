@@ -43,7 +43,7 @@ namespace Booksy.ServiceCatalog.Application.Commands.Service.UpdateService
 
 
             var price = Price.Create(request.BasePrice, request.Currency);
-            var category = ServiceCategory.Create(request.CategoryName);
+            var category = ServiceCategory.Create(request.CategoryName, request.CategoryName.ToLowerInvariant().Replace(" ", "_").Replace("&", "and"));
             var duration = Duration.FromMinutes(request.DurationMinutes);
             var preparationTime = request.PreparationMinutes.HasValue
                 ? Duration.FromMinutes(request.PreparationMinutes.Value)

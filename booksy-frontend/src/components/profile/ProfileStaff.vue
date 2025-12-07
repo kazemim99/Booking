@@ -17,31 +17,42 @@
     <div v-else-if="staffMembers.length > 0" class="staff-grid">
       <div
         v-for="(staff, index) in staffMembers"
-        :key="staff.id"
+        :key="getStaffId(staff)"
         class="staff-card"
-        :class="{ selected: selectedStaffId === staff.id }"
+        :class="{ selected: selectedStaffId === getStaffId(staff) }"
         :style="{ animationDelay: `${index * 0.1}s` }"
         @click="handleStaffSelect(staff)"
       >
         <!-- Staff Avatar -->
         <div class="staff-avatar">
           <img
-            v-if="staff.photoUrl"
-            :src="staff.photoUrl"
+            v-if="getStaffPhotoUrl(staff)"
+            :src="getStaffPhotoUrl(staff)"
             :alt="getStaffName(staff)"
             @error="handleImageError"
           />
           <div v-else class="avatar-placeholder" :style="{ background: getAvatarGradient(index) }">
             <span class="avatar-initials">{{ getInitials(staff) }}</span>
           </div>
-          <div v-if="staff.isActive" class="status-indicator active"></div>
+          <div v-if="isStaffActive(staff)" class="status-indicator active"></div>
           <div v-else class="status-indicator inactive"></div>
         </div>
 
         <!-- Staff Info -->
         <div class="staff-info">
           <h3 class="staff-name">{{ getStaffName(staff) }}</h3>
-          <p v-if="staff.title" class="staff-title">{{ staff.title }}</p>
+          <p v-if="'title' in staff && staff.title" class="staff-title">{{ staff.title }}</p>
+
+          <!-- For StaffProvider: Show rating and service count -->
+          <div v-if="isDisplayingStaffProviders && 'averageRating' in staff" class="staff-stats">
+            <span v-if="staff.averageRating > 0" class="stat-item">
+              ⭐ {{ staff.averageRating.toFixed(1) }}
+            </span>
+            <span v-if="staff.serviceCount > 0" class="stat-item">
+              {{ staff.serviceCount }} خدمت
+            </span>
+          </div>
+
           <p v-if="staff.bio" class="staff-bio">{{ truncateText(staff.bio, 80) }}</p>
 
           <!-- Specializations -->
@@ -57,7 +68,7 @@
 
         <!-- Selection Indicator -->
         <div v-if="selectable" class="selection-indicator">
-          <svg v-if="selectedStaffId === staff.id" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor">
+          <svg v-if="selectedStaffId === getStaffId(staff)" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor">
             <path fill-rule="evenodd" d="M2.25 12c0-5.385 4.365-9.75 9.75-9.75s9.75 4.365 9.75 9.75-4.365 9.75-9.75 9.75S2.25 17.385 2.25 12zm13.36-1.814a.75.75 0 10-1.22-.872l-3.236 4.53L9.53 12.22a.75.75 0 00-1.06 1.06l2.25 2.25a.75.75 0 001.14-.094l3.75-5.25z" clip-rule="evenodd" />
           </svg>
           <span v-else class="select-text">انتخاب</span>
@@ -90,7 +101,7 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue'
 import { useRouter } from 'vue-router'
-import type { Provider, StaffMember } from '@/modules/provider/types/provider.types'
+import type { Provider, StaffMember, StaffProvider } from '@/modules/provider/types/provider.types'
 
 interface Props {
   provider: Provider
@@ -104,8 +115,8 @@ const props = withDefaults(defineProps<Props>(), {
 })
 
 const emit = defineEmits<{
-  (e: 'staff-selected', staff: StaffMember): void
-  (e: 'book-with-staff', staff: StaffMember): void
+  (e: 'staff-selected', staff: StaffMember | StaffProvider): void
+  (e: 'book-with-staff', staff: StaffMember | StaffProvider): void
 }>()
 
 const router = useRouter()
@@ -115,19 +126,69 @@ const loading = ref(false)
 
 // Computed
 const staffMembers = computed(() => {
-  // Filter to only show active staff
+  // For organizations, use staffProviders (individual providers linked to the organization)
+  if (props.provider.hierarchyType === 'Organization' && props.provider.staffProviders) {
+    return props.provider.staffProviders
+  }
+  // Otherwise, use traditional staff members (filter to only show active staff)
   return (props.provider.staff || []).filter(s => s.isActive)
 })
 
+// Check if we're displaying staff providers (organizations) or traditional staff members
+const isDisplayingStaffProviders = computed(() => {
+  return props.provider.hierarchyType === 'Organization' && props.provider.staffProviders && props.provider.staffProviders.length > 0
+})
+
 // Methods
-const getStaffName = (staff: StaffMember): string => {
+const getStaffName = (staff: StaffMember | StaffProvider): string => {
+  // Check if it's a StaffProvider (has businessName)
+  if ('businessName' in staff) {
+    return staff.businessName || 'بدون نام'
+  }
+  // It's a StaffMember (has firstName/lastName)
   return `${staff.firstName} ${staff.lastName}`.trim() || 'بدون نام'
 }
 
-const getInitials = (staff: StaffMember): string => {
+const getInitials = (staff: StaffMember | StaffProvider): string => {
+  // Check if it's a StaffProvider
+  if ('businessName' in staff) {
+    const words = staff.businessName.split(' ')
+    if (words.length >= 2) {
+      return `${words[0].charAt(0)}${words[1].charAt(0)}`.toUpperCase()
+    }
+    return staff.businessName.substring(0, 2).toUpperCase() || '??'
+  }
+  // It's a StaffMember
   const first = staff.firstName?.charAt(0) || ''
   const last = staff.lastName?.charAt(0) || ''
   return `${first}${last}`.toUpperCase() || '??'
+}
+
+const getStaffId = (staff: StaffMember | StaffProvider): string => {
+  // StaffProvider uses providerId, StaffMember uses id
+  if ('providerId' in staff) {
+    return staff.providerId
+  }
+  // It's a StaffMember
+  return (staff as StaffMember).id
+}
+
+const isStaffActive = (staff: StaffMember | StaffProvider): boolean => {
+  // StaffProvider checks status, StaffMember checks isActive
+  if ('isActive' in staff) {
+    return staff.isActive
+  }
+  // For StaffProvider, consider active if status is Active or PendingVerification
+  return staff.status === 'Active' || staff.status === 'PendingVerification'
+}
+
+const getStaffPhotoUrl = (staff: StaffMember | StaffProvider): string | undefined => {
+  // StaffProvider uses profileImageUrl, StaffMember uses photoUrl
+  if ('profileImageUrl' in staff) {
+    return staff.profileImageUrl
+  }
+  // It's a StaffMember
+  return (staff as StaffMember).photoUrl
 }
 
 const getAvatarGradient = (index: number): string => {
@@ -152,19 +213,19 @@ const handleImageError = (event: Event) => {
   img.style.display = 'none'
 }
 
-const handleStaffSelect = (staff: StaffMember) => {
+const handleStaffSelect = (staff: StaffMember | StaffProvider) => {
   if (props.selectable) {
     emit('staff-selected', staff)
   }
 }
 
-const handleBookWithStaff = (staff: StaffMember) => {
+const handleBookWithStaff = (staff: StaffMember | StaffProvider) => {
   emit('book-with-staff', staff)
   router.push({
     name: 'NewBooking',
     query: {
       providerId: props.provider.id,
-      staffId: staff.id,
+      staffId: getStaffId(staff),
     },
   })
 }
@@ -327,6 +388,22 @@ const handleBookWithStaff = (staff: StaffMember) => {
   color: #667eea;
   font-weight: 600;
   margin: 0 0 0.75rem 0;
+}
+
+.staff-stats {
+  display: flex;
+  gap: 1rem;
+  justify-content: center;
+  margin-bottom: 0.75rem;
+}
+
+.stat-item {
+  font-size: 0.875rem;
+  color: #64748b;
+  font-weight: 500;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
 }
 
 .staff-bio {

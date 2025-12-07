@@ -221,10 +221,7 @@
         </form>
       </div>
 
-      <!-- Staff Tab -->
-      <div v-if="activeTab === 'staff'" class="tab-content">
-        <ProfileStaffSection />
-      </div>
+
 
       <!-- Hours Tab - Complete Redesign -->
       <div v-if="activeTab === 'hours'" class="tab-content">
@@ -761,7 +758,6 @@ const tabs = [
   { id: 'business', label: 'کسب‌وکار', icon: BuildingIcon },
   { id: 'location', label: 'موقعیت', icon: MapPinIcon },
   { id: 'services', label: 'خدمات', icon: BriefcaseIcon },
-  { id: 'staff', label: 'پرسنل', icon: UsersIcon },
   { id: 'hours', label: 'ساعات کاری', icon: ClockIcon },
   { id: 'gallery', label: 'گالری', icon: ImageIcon },
 ]

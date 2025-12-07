@@ -386,4 +386,17 @@ public class EfCoreUnitOfWork<TContext> : IUnitOfWork
             throw;
         }
     }
+
+    public async Task PublishEventsAsync(CancellationToken cancellationToken = default)
+    {
+        try
+        {
+            await DispatchDomainEventsAsync(cancellationToken);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error during save and publish events");
+            throw;
+        }
+    }
 }

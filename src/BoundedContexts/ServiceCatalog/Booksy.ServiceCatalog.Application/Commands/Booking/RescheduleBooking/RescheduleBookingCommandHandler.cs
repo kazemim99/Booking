@@ -5,9 +5,11 @@ using Booksy.Core.Application.Abstractions.CQRS;
 using Booksy.Core.Application.Abstractions.Persistence;
 using Booksy.Core.Application.Exceptions;
 using Booksy.ServiceCatalog.Domain.DomainServices;
+using Booksy.ServiceCatalog.Domain.Enums;
 using Booksy.ServiceCatalog.Domain.Repositories;
 using Booksy.ServiceCatalog.Domain.ValueObjects;
 using Microsoft.Extensions.Logging;
+using ProviderAggregate = Booksy.ServiceCatalog.Domain.Aggregates.Provider;
 
 namespace Booksy.ServiceCatalog.Application.Commands.Booking.RescheduleBooking
 {
@@ -75,16 +77,27 @@ namespace Booksy.ServiceCatalog.Application.Commands.Booking.RescheduleBooking
             // Determine staff ID (use new staff if provided, otherwise keep current)
             var newStaffId = request.NewStaffId ?? existingBooking.StaffId;
 
-            // Get staff member
-            var staff = provider.Staff.FirstOrDefault(s => s.Id == newStaffId);
-            if (staff == null)
-                throw new NotFoundException($"Staff member with ID {newStaffId} not found");
+            // Load individual provider (staff member) using hierarchy
+            var individualProvider = await _providerRepository.GetByIdAsync(
+                ProviderId.From(newStaffId),
+                cancellationToken);
+
+            if (individualProvider == null)
+                throw new NotFoundException($"Individual provider with ID {newStaffId} not found");
+
+            // Verify they belong to this organization
+            if (individualProvider.ParentProviderId != provider.Id)
+                throw new NotFoundException($"Individual provider {newStaffId} does not belong to organization");
+
+            // Verify they are an individual provider
+            if (individualProvider.HierarchyType != ProviderHierarchyType.Individual)
+                throw new NotFoundException($"Provider {newStaffId} is not an individual provider");
 
             // Validate availability for new time slot
             var isAvailable = await _availabilityService.IsTimeSlotAvailableAsync(
                 provider,
                 service,
-                staff,
+                individualProvider,
                 request.NewStartTime,
                 service.Duration,
                 cancellationToken);

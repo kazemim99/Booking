@@ -30,5 +30,6 @@ namespace Booksy.ServiceCatalog.Domain.Repositories
         Task<IReadOnlyList<Provider>> GetByHierarchyTypeAsync(ProviderHierarchyType hierarchyType, CancellationToken cancellationToken = default);
         Task<IReadOnlyList<Provider>> GetIndependentIndividualsAsync(CancellationToken cancellationToken = default);
         Task<int> CountStaffByOrganizationAsync(ProviderId organizationId, CancellationToken cancellationToken = default);
+        Task<Provider?> GetByPhoneNumber(PhoneNumber phoneNumber);
     }
 }

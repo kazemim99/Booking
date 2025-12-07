@@ -108,6 +108,9 @@ public class DataCloningService : IDataCloningService
                     // Note: Service will remain in Draft status
                     // Individual provider can activate when ready
 
+                    // Add the cloned service to repository
+                    await _serviceWriteRepository.SaveAsync(clonedService, cancellationToken);
+
                     clonedCount++;
 
                     _logger.LogDebug("Cloned service {ServiceName} from {SourceId} to {TargetId}",

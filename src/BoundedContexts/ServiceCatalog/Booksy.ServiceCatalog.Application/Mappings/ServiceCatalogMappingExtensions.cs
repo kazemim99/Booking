@@ -94,7 +94,8 @@ namespace Booksy.ServiceCatalog.Application.Mappings
 
         public static ServiceCategory ToServiceCategory(this string categoryName)
         {
-            return ServiceCategory.Create(categoryName);
+            var slug = categoryName.ToLowerInvariant().Replace(" ", "_").Replace("&", "and");
+            return ServiceCategory.Create(categoryName, slug);
         }
     }
 

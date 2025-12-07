@@ -55,7 +55,7 @@ public class ServiceBuilder
 
     public ServiceBuilder WithCategory(string categoryName)
     {
-        _category = ServiceCategory.Create(categoryName);
+        _category = ServiceCategory.Create(categoryName, "beauty");
         return this;
     }
 
@@ -101,7 +101,7 @@ public class ServiceBuilder
             _providerId ?? ProviderId.From(Guid.NewGuid()),
             _name ?? _fixture.Create<string>(),
             _description ?? _fixture.Create<string>(),
-            _category ?? ServiceCategory.Create("Test Category"),
+            _category ?? ServiceCategory.Create("Test Category", "beauty"),
             _serviceType,
             _price ?? Price.Create(50m, "USD"),
             _duration ?? Duration.FromMinutes(60)

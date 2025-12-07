@@ -61,7 +61,8 @@ namespace Booksy.ServiceCatalog.Application.Queries.Provider.SearchProviders
                     minRating: request.MinRating,
                     serviceCategory: request.ServiceCategory,
                     priceRange: request.PriceRange,
-                    includeInactive: request.IncludeInactive);
+                    includeInactive: request.IncludeInactive,
+                    excludeStaffIndividuals: true); // Filter out staff individuals from search results
 
                 // Apply dynamic sorting based on request
                 ApplySorting(specification, request.SortBy, request.SortDescending, request.UserLatitude, request.UserLongitude);
@@ -74,6 +75,7 @@ namespace Booksy.ServiceCatalog.Application.Queries.Provider.SearchProviders
                          provider.Id.Value,
                          provider.Profile.BusinessName,
                         provider.Profile.BusinessDescription,
+                        provider.Profile.ProfileImageUrl,
                          provider.ProviderType,
                         provider.Status,
                             provider.Address.City,

@@ -32,20 +32,7 @@ namespace Booksy.Core.Application.Abstractions.Persistence
         /// <returns>The number of state entries written to the database</returns>
         Task<int> SaveAndPublishEventsAsync(CancellationToken cancellationToken = default);
 
-        /// <summary>
-        /// Rolls back all changes made in this unit of work
-        /// </summary>
-        //Task RollbackAsync(CancellationToken cancellationToken = default);
-
-        /// <summary>
-        /// Begins a new transaction
-        /// </summary>
-        //Task BeginTransactionAsync(CancellationToken cancellationToken = default);
-
-        ///// <summary>
-        ///// Commits the current transaction
-        ///// </summary>
-        //Task CommitTransactionAsync(CancellationToken cancellationToken = default);
+        Task PublishEventsAsync(CancellationToken cancellationToken = default);
 
         /// <summary>
         /// Rolls back the current transaction

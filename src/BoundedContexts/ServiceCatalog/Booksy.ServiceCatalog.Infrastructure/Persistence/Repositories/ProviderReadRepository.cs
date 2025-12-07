@@ -9,6 +9,7 @@ using Booksy.ServiceCatalog.Infrastructure.Persistence.Context;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 using System.Collections.Generic;
+using System.Threading;
 
 namespace Booksy.ServiceCatalog.Infrastructure.Persistence.Repositories
 {
@@ -205,6 +206,14 @@ namespace Booksy.ServiceCatalog.Infrastructure.Persistence.Repositories
         {
             return await DbSet
                 .CountAsync(p => p.ParentProviderId == organizationId, cancellationToken);
+        }
+
+        public async Task<Provider?> GetByPhoneNumber(PhoneNumber phoneNumber)
+        {
+            return await DbSet
+                       .Include(p => p.Staff)
+                       .Include(p => p.BusinessHours)
+                       .FirstOrDefaultAsync(p => p.ContactInfo.PrimaryPhone == phoneNumber);
         }
     }
 }

@@ -4,6 +4,7 @@ public sealed class ProviderSearchItem
 {
     public Guid Id { get; init; }
     public string BusinessName { get; init; }
+    public string? ProfileImageUrl { get; init; }
     public string Description { get; init; }
     public ProviderType Type { get; init; }
     public ProviderStatus Status { get; init; }
@@ -33,6 +34,7 @@ public sealed class ProviderSearchItem
         Guid id,
         string businessName,
         string description,
+        string? profileImageUrl,
         ProviderType type,
         ProviderStatus status,
         string city,
@@ -55,6 +57,7 @@ public sealed class ProviderSearchItem
     {
         Id = id;
         BusinessName = businessName;
+        ProfileImageUrl = profileImageUrl;
         Description = description;
         Type = type;
         Status = status;

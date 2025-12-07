@@ -6,6 +6,8 @@
 // Core services
 export * from './payment.service'
 export * from './location.service'
+export * from './platform.service'
+export * from './category.service'
 
 // Re-export commonly used types
 export type {
@@ -25,3 +27,12 @@ export type {
   City,
   LocationSearchResult,
 } from './location.service'
+
+export type {
+  PlatformStatistics,
+} from './platform.service'
+
+export type {
+  ServiceCategory,
+  PopularCategory,
+} from './category.service'

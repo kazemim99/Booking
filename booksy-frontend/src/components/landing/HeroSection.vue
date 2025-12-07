@@ -111,17 +111,17 @@
 
       <div class="hero-stats">
         <div class="stat-item">
-          <div class="stat-value">۱۰,۰۰۰+</div>
+          <div class="stat-value">{{ statsDisplay.providers }}</div>
           <div class="stat-label">ارائه‌دهنده خدمات</div>
         </div>
         <div class="stat-divider"></div>
         <div class="stat-item">
-          <div class="stat-value">۵۰,۰۰۰+</div>
+          <div class="stat-value">{{ statsDisplay.customers }}</div>
           <div class="stat-label">مشتری راضی</div>
         </div>
         <div class="stat-divider"></div>
         <div class="stat-item">
-          <div class="stat-value">★۴.۸</div>
+          <div class="stat-value">{{ statsDisplay.rating }}</div>
           <div class="stat-label">میانگین امتیاز</div>
         </div>
       </div>
@@ -149,12 +149,14 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted } from 'vue'
+import { ref, onMounted, computed } from 'vue'
 import { useRouter } from 'vue-router'
 import SearchableDropdown from '@/shared/components/ui/SearchableDropdown.vue'
 import type { DropdownOption } from '@/shared/components/ui/SearchableDropdown.vue'
 import { categoryService } from '@/core/api/services/category.service'
 import { locationService } from '@/core/api/services/location.service'
+import { platformService } from '@/core/api/services/platform.service'
+import type { PlatformStatistics } from '@/core/api/services/platform.service'
 
 const router = useRouter()
 
@@ -167,9 +169,42 @@ const categories = ref<DropdownOption[]>([])
 const cities = ref<DropdownOption[]>([])
 const popularSearches = ref<Array<{ name: string; slug: string }>>([])
 const isLoadingCities = ref(false)
+const platformStats = ref<PlatformStatistics | null>(null)
+const isLoadingStats = ref(false)
 
-// Load categories on mount (cities will be loaded on-demand)
+// Computed statistics with Persian numbers
+const statsDisplay = computed(() => {
+  if (!platformStats.value) {
+    // Fallback to mock data while loading
+    return {
+      providers: '۱۰,۰۰۰+',
+      customers: '۵۰,۰۰۰+',
+      rating: '★۴.۸'
+    }
+  }
+
+  const formatted = platformService.formatForDisplay(platformStats.value)
+  return {
+    providers: formatted.providers,
+    customers: formatted.customers,
+    rating: `★${formatted.rating}`
+  }
+})
+
+// Load categories and platform statistics on mount
 onMounted(async () => {
+  try {
+    // Load platform statistics
+    isLoadingStats.value = true
+    platformStats.value = await platformService.getStatistics()
+    console.log('Platform stats loaded:', platformStats.value)
+  } catch (error) {
+    console.error('Error loading platform statistics:', error)
+    // Stats will fallback to mock data
+  } finally {
+    isLoadingStats.value = false
+  }
+
   try {
     // Load categories
     const categoriesData = await categoryService.getCategories()

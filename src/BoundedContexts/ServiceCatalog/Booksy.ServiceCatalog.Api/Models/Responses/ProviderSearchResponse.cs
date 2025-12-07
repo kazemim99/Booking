@@ -51,5 +51,6 @@ namespace Booksy.ServiceCatalog.Api.Models.Responses
         /// Number of staff members as individual providers (if this is an organization)
         /// </summary>
         public int StaffProviderCount { get; set; }
+        public string? ProfileImageUrl { get;  set; }
     }
 }

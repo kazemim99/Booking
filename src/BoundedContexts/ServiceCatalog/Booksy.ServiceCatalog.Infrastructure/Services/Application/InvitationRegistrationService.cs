@@ -87,14 +87,16 @@ public class InvitationRegistrationService : IInvitationRegistrationService
 
             var requestPayload = new
             {
+                
                 phoneNumber,
                 firstName,
                 lastName,
                 email = email ?? $"{phoneNumber.Replace("+", "")}@booksy.temp",
+                password = "!Q@W#E$R5t6y7u8i",
                 userType = "Provider"
             };
 
-            var response = await client.PostAsJsonAsync("/api/v1/users/register-with-phone", requestPayload, cancellationToken);
+            var response = await client.PostAsJsonAsync("/api/v1/users", requestPayload, cancellationToken);
 
             if (!response.IsSuccessStatusCode)
             {

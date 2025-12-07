@@ -19,7 +19,7 @@ namespace Booksy.ServiceCatalog.Domain.Aggregates
     public sealed class Provider : AggregateRoot<ProviderId>, IAuditableEntity
     {
         private readonly List<Staff> _staff = new();
-        private readonly List<Service> _service = new();
+        private readonly List<Service> _services = new();
         private readonly List<BusinessHours> _businessHours = new();
         private readonly List<HolidaySchedule> _holidays = new();
         private readonly List<ExceptionSchedule> _exceptions = new();
@@ -61,7 +61,7 @@ namespace Booksy.ServiceCatalog.Domain.Aggregates
 
         // Collections
         public IReadOnlyList<Staff> Staff => _staff.AsReadOnly();
-        public IReadOnlyList<Service> Services => _service.AsReadOnly();
+        public IReadOnlyList<Service> Services => _services.AsReadOnly();
         public IReadOnlyList<BusinessHours> BusinessHours => _businessHours.AsReadOnly();
         public IReadOnlyList<HolidaySchedule> Holidays => _holidays.AsReadOnly();
         public IReadOnlyList<ExceptionSchedule> Exceptions => _exceptions.AsReadOnly();

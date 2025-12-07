@@ -1,7 +1,13 @@
 <template>
   <section class="profile-header" dir="rtl">
     <!-- Hero Section with Cover Image -->
-    <div class="hero-section" :style="heroStyle">
+    <div class="hero-section" :class="{ 'has-gradient': !heroCoverUrl }">
+      <img
+        v-if="heroCoverUrl"
+        :src="heroCoverUrl"
+        alt="Cover Image"
+        class="hero-image"
+      />
       <div class="hero-overlay"></div>
       <button class="btn-back" @click="goBack">
         <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -18,14 +24,10 @@
         <div class="provider-main-info">
           <div class="provider-logo">
             <img
-              v-if="provider.profile.logoUrl"
-              :src="provider.profile.logoUrl"
+              :src="buildProviderImageUrl(provider.profileImageUrl, provider.profile.logoUrl)"
               :alt="provider.profile.businessName"
               @error="handleLogoError"
             />
-            <div v-else class="logo-placeholder">
-              <span class="logo-initials">{{ getInitials(provider.profile.businessName) }}</span>
-            </div>
           </div>
 
           <div class="provider-details">
@@ -125,6 +127,8 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 import { useRouter } from 'vue-router'
+import { buildProviderImageUrl, toAbsoluteUrl } from '@/core/utils/url.service'
+
 import type { Provider } from '@/modules/provider/types/provider.types'
 
 interface Props {
@@ -135,16 +139,8 @@ const props = defineProps<Props>()
 const router = useRouter()
 
 // Computed
-const heroStyle = computed(() => {
-  if (props.provider.profile.coverImageUrl) {
-    return {
-      backgroundImage: `url(${props.provider.profile.coverImageUrl})`,
-    }
-  }
-  // Fallback to beautiful gradient
-  return {
-    background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-  }
+const heroCoverUrl = computed(() => {
+  return toAbsoluteUrl(props.provider.profileImageUrl, true)
 })
 
 const averageRating = computed(() => {
@@ -235,11 +231,22 @@ const handleFavorite = () => {
 
 .hero-section {
   height: 320px;
-  background-size: cover;
-  background-position: center;
   position: relative;
   border-radius: 0 0 32px 32px;
   overflow: hidden;
+}
+
+.hero-section.has-gradient {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+}
+
+.hero-image {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  position: absolute;
+  top: 0;
+  left: 0;
 }
 
 .hero-overlay {

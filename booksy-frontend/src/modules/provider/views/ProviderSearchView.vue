@@ -115,7 +115,7 @@
 
 <script setup lang="ts">
 import { onMounted, onUnmounted, computed, watch, ref } from 'vue'
-import { useRoute } from 'vue-router'
+import { useRoute, useRouter } from 'vue-router'
 import { useProviderStore } from '../stores/provider.store'
 import ProviderFilters from '../components/ProviderFilters.vue'
 import ProviderSearchResults from '../components/ProviderSearchResults.vue'
@@ -124,6 +124,7 @@ import type { ProviderSearchFilters, ProviderSummary } from '../types/provider.t
 
 // Router
 const route = useRoute()
+const router = useRouter()
 
 // Store
 const providerStore = useProviderStore()
@@ -174,6 +175,15 @@ const handleClearFilters = async () => {
 
 const handlePageChange = async (page: number) => {
   console.log('[ProviderSearchView] Page change:', page)
+
+  // Update URL query parameters to reflect the new page number
+  await router.push({
+    query: {
+      ...route.query,
+      pageNumber: page.toString(),
+    },
+  })
+
   await providerStore.goToPage(page)
   // Scroll to top on page change
   scrollToTop()

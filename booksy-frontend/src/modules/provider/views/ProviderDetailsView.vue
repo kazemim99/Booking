@@ -60,11 +60,6 @@
           <div v-if="activeTab === 'reviews'" class="tab-panel">
             <ProfileReviews :provider="provider" />
           </div>
-
-          <!-- About Tab -->
-          <div v-if="activeTab === 'about'" class="tab-panel">
-            <ProfileAbout :provider="provider" />
-          </div>
         </div>
       </div>
     </div>
@@ -80,7 +75,6 @@ import ProfileServices from '@/components/profile/ProfileServices.vue'
 import ProfileStaff from '@/components/profile/ProfileStaff.vue'
 import ProfileGallery from '@/components/profile/ProfileGallery.vue'
 import ProfileReviews from '@/components/profile/ProfileReviews.vue'
-import ProfileAbout from '@/components/profile/ProfileAbout.vue'
 
 const router = useRouter()
 const route = useRoute()
@@ -94,7 +88,6 @@ const tabs = [
   { id: 'staff', label: 'متخصصین', icon: '👥' },
   { id: 'gallery', label: 'گالری', icon: '🖼️' },
   { id: 'reviews', label: 'نظرات', icon: '⭐' },
-  { id: 'about', label: 'درباره', icon: 'ℹ️' },
 ]
 
 // Computed

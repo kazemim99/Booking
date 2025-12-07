@@ -36,9 +36,13 @@ public sealed class UpdateProviderProfileCommandHandler : ICommandHandler<Update
         }
 
         // Update profile image if provided
+        // Use UpdateBusinessProfile to ensure domain events are raised for cache invalidation
         if (!string.IsNullOrWhiteSpace(request.ProfileImageUrl))
         {
-            provider.Profile.UpdateProfileImage(request.ProfileImageUrl);
+            provider.UpdateBusinessProfile(
+                provider.Profile.BusinessName,
+                provider.Profile.BusinessDescription,
+                request.ProfileImageUrl);
         }
 
         // Update contact info if email provided

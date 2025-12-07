@@ -4,11 +4,11 @@
     :class="[`view-mode-${viewMode}`, { clickable: isClickable }]"
     @click="handleClick"
   >
-    <!-- Logo/Image -->
+    <!-- Profile Image / Logo -->
     <div class="provider-image">
       <img
-        v-if="provider.logoUrl"
-        :src="provider.logoUrl"
+        v-if="providerImageUrl"
+        :src="providerImageUrl"
         :alt="provider.businessName"
         @error="handleImageError"
       />
@@ -226,6 +226,7 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 import { Badge } from '../../../shared/components'
+import { buildProviderImageUrl } from '@/core/utils/url.service'
 import type { ProviderSummary } from '../types/provider.types'
 
 // Props
@@ -255,6 +256,13 @@ const emit = defineEmits<{
 }>()
 
 // Computed
+const providerImageUrl = computed(() => {
+
+  // Use centralized URL service to build image URL
+  // Automatically handles relative paths, absolute URLs, and API base URL
+  return buildProviderImageUrl(props.provider.profileImageUrl, props.provider.logoUrl)
+})
+
 const visibleTags = computed(() => {
   return props.provider.tags.slice(0, props.maxTags)
 })

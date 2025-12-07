@@ -428,7 +428,7 @@ Frontend: Store tokens, redirect to dashboard
 ## Environment Variables
 
 No new environment variables required. Existing configuration sufficient:
-- `VITE_SERVICE_CATEGORY_API_URL`: Service Catalog API base URL
+- `VITE_SERVICE_CATALOG_API_URL`: Service Catalog API base URL
 - `VITE_USER_MANAGEMENT_API_URL`: UserManagement API base URL
 
 ## Deployment Notes

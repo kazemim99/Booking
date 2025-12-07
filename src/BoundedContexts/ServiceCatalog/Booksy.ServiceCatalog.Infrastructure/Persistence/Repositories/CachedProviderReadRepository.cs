@@ -150,5 +150,7 @@ namespace Booksy.ServiceCatalog.Infrastructure.Persistence.Repositories
 
         public Task<int> CountStaffByOrganizationAsync(ProviderId organizationId, CancellationToken cancellationToken = default) =>
             _inner.CountStaffByOrganizationAsync(organizationId, cancellationToken);
+
+      
     }
 }

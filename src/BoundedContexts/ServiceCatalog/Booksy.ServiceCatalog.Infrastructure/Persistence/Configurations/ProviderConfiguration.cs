@@ -365,6 +365,16 @@ namespace Booksy.ServiceCatalog.Infrastructure.Persistence.Configurations
                 .HasForeignKey("ProviderId")
                 .OnDelete(DeleteBehavior.Cascade);
 
+            // Services navigation - using backing field
+            builder.HasMany(p => p.Services)
+                .WithOne(s => s.Provider)
+                .HasForeignKey(s => s.ProviderId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            builder.Navigation(p => p.Services)
+                .UsePropertyAccessMode(PropertyAccessMode.Field)
+                .HasField("_services");
+
             // BusinessHours as child entities with proper lifecycle management
             builder.HasMany(p => p.BusinessHours)
         .WithOne()

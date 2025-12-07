@@ -33,7 +33,7 @@
         >
           <div class="provider-image">
             <img
-              :src="provider.logoUrl || getProviderMockImage(index)"
+              :src="buildProviderImageUrl(provider.profileImageUrl, provider.logoUrl) || getProviderMockImage(index)"
               :alt="provider.businessName"
               @error="(e) => handleImageError(e, index)"
             />
@@ -105,6 +105,7 @@ import { useRouter } from 'vue-router'
 import { useProviderStore } from '@/modules/provider/stores/provider.store'
 import { useCustomerStore } from '@/modules/customer/stores/customer.store'
 import { useAuthStore } from '@/core/stores/modules/auth.store'
+import { buildProviderImageUrl } from '@/core/utils/url.service'
 import FavoriteButton from '@/modules/customer/components/favorites/FavoriteButton.vue'
 import type { ProviderSummary, PriceRange } from '@/modules/provider/types/provider.types'
 

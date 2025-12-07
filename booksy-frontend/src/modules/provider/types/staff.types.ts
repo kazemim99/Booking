@@ -210,22 +210,6 @@ export interface StaffAvailabilityQuery {
 // ============================================================================
 
 /**
- * Simplified staff card view
- */
-export interface StaffCardView {
-  id: string
-  fullName: string
-  email: string
-  phone?: string
-  role: StaffRole
-  roleLabel: string
-  isActive: boolean
-  hiredAt: string
-  assignedServicesCount?: number
-  avatarUrl?: string
-}
-
-/**
  * Staff details view
  */
 export interface StaffDetailsView extends Staff {

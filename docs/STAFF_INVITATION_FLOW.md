@@ -562,12 +562,12 @@ Redirect to /provider/dashboard
 
 **.env:**
 ```env
-VITE_SERVICE_CATEGORY_API_URL=http://localhost:5010/api
+VITE_SERVICE_CATALOG_API_URL=http://localhost:5010/api
 ```
 
 **.env.production:**
 ```env
-VITE_SERVICE_CATEGORY_API_URL=https://api.yourdomain.com/api
+VITE_SERVICE_CATALOG_API_URL=https://api.yourdomain.com/api
 ```
 
 ---
@@ -659,7 +659,7 @@ sentAt: new Date(backendInvitation.createdAt || backendInvitation.sentAt)
 ```
 
 **Check:**
-1. Verify `VITE_SERVICE_CATEGORY_API_URL` is set correctly
+1. Verify `VITE_SERVICE_CATALOG_API_URL` is set correctly
 2. Check browser console for image load errors
 3. Verify image file exists on server
 4. Check CORS settings on backend

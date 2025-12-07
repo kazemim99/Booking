@@ -588,6 +588,7 @@ public class ProvidersController : ControllerBase
             Type = searchResult.Type.ToString(),
             Status = searchResult.Status.ToString(),
             City = searchResult.City,
+            ProfileImageUrl = searchResult.ProfileImageUrl,
             State = searchResult.State,
             Country = searchResult.Country,
             LogoUrl = searchResult.LogoUrl,

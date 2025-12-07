@@ -2498,12 +2498,6 @@ namespace Booksy.ServiceCatalog.Infrastructure.Migrations
                                         .HasColumnType("uuid")
                                         .HasColumnName("provider_id");
 
-                                    b2.Property<byte[]>("RowVersion")
-                                        .IsConcurrencyToken()
-                                        .ValueGeneratedOnAddOrUpdate()
-                                        .HasColumnType("bytea")
-                                        .HasColumnName("row_version");
-
                                     b2.Property<string>("ThumbnailUrl")
                                         .IsRequired()
                                         .HasMaxLength(500)

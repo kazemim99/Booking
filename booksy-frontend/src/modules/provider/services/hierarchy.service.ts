@@ -34,11 +34,12 @@ const API_BASE = `/${API_VERSION}/providers`
  * Convert relative URL to absolute URL using the API base URL
  */
 function toAbsoluteUrl(url: string | undefined): string | undefined {
+
   if (!url) return url
   if (url.startsWith('http://') || url.startsWith('https://')) return url
   if (url.startsWith('/')) {
     // Get the API base URL from environment or use default
-    const apiBaseUrl = import.meta.env.VITE_SERVICE_CATEGORY_API_URL || 'http://localhost:5010/api'
+    const apiBaseUrl = import.meta.env.VITE_SERVICE_CATALOG_API_URL || 'http://localhost:5010/api'
     // Remove /api suffix to get just the domain
     const baseUrl = apiBaseUrl.replace(/\/api\/?$/, '')
     return `${baseUrl}${url}`
