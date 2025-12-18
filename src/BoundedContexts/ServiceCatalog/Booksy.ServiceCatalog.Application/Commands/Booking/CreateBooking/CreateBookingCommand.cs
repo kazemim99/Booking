@@ -12,7 +12,7 @@ namespace Booksy.ServiceCatalog.Application.Commands.Booking.CreateBooking
         Guid CustomerId,
         Guid ProviderId,
         Guid ServiceId,
-        Guid StaffId,
+        Guid StaffProviderId,
         DateTime StartTime,
         string? CustomerNotes = null,
         Guid? IdempotencyKey = null) : ICommand<CreateBookingResult>;

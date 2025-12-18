@@ -255,11 +255,14 @@ public class AuthController : ControllerBase
                 userType,
                 Core.Domain.ValueObjects.Email.Create(user.Email ?? string.Empty),
                 user.DisplayName ?? string.Empty,
+                user.FirstName ?? string.Empty,
+                user.LastName ?? string.Empty,
                 user.Status ?? "Active",
                 roleNames,
                 providerId,
                 providerStatus,
                 customerId: null,
+                user.PhoneNumber,
                 15 // 15 minutes expiration
             );
 

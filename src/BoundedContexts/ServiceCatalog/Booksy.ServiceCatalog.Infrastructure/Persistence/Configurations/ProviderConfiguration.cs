@@ -168,11 +168,8 @@ namespace Booksy.ServiceCatalog.Infrastructure.Persistence.Configurations
                         .IsRequired()
                         .HasDefaultValue(false);
 
-                    // Add row version for the gallery image as well
-                    galleryImage.Property<byte[]>("RowVersion")
-                        .IsConcurrencyToken()
-                        .HasColumnName("row_version")
-                        .ValueGeneratedOnAddOrUpdate();
+                    // Note: GalleryImage is an owned entity - concurrency is handled at Provider level
+                    // No separate RowVersion needed here to avoid concurrency conflicts on INSERT operations
 
                     // Indexes
                     galleryImage.HasIndex(gi => new { gi.ProviderId, gi.DisplayOrder })
@@ -295,6 +292,25 @@ namespace Booksy.ServiceCatalog.Infrastructure.Persistence.Configurations
                 .IsRequired()
                 .HasMaxLength(50);
 
+            // Hierarchy Properties
+            builder.Property<Domain.Enums.ProviderHierarchyType>(p => p.HierarchyType)
+                .HasConversion<string>()
+                .IsRequired()
+                .HasMaxLength(20)
+                .HasColumnName("HierarchyType")
+                .HasDefaultValue(Domain.Enums.ProviderHierarchyType.Organization);
+
+            builder.Property(p => p.ParentProviderId)
+                .HasConversion(
+                    id => id != null ? id.Value : (Guid?)null,
+                    value => value.HasValue ? ProviderId.From(value.Value) : null)
+                .HasColumnName("ParentProviderId");
+
+            builder.Property(p => p.IsIndependent)
+                .IsRequired()
+                .HasDefaultValue(false)
+                .HasColumnName("IsIndependent");
+
             // Registration Progress
             builder.Property(p => p.RegistrationStep)
                 .IsRequired()
@@ -349,6 +365,16 @@ namespace Booksy.ServiceCatalog.Infrastructure.Persistence.Configurations
                 .HasForeignKey("ProviderId")
                 .OnDelete(DeleteBehavior.Cascade);
 
+            // Services navigation - using backing field
+            builder.HasMany(p => p.Services)
+                .WithOne(s => s.Provider)
+                .HasForeignKey(s => s.ProviderId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            builder.Navigation(p => p.Services)
+                .UsePropertyAccessMode(PropertyAccessMode.Field)
+                .HasField("_services");
+
             // BusinessHours as child entities with proper lifecycle management
             builder.HasMany(p => p.BusinessHours)
         .WithOne()
@@ -378,6 +404,15 @@ namespace Booksy.ServiceCatalog.Infrastructure.Persistence.Configurations
 
             builder.HasIndex(p => p.ProviderType)
                 .HasDatabaseName("IX_Providers_Type");
+
+            builder.HasIndex(p => (object)p.HierarchyType)
+                .HasDatabaseName("IX_Providers_HierarchyType");
+
+            builder.HasIndex(p => p.ParentProviderId)
+                .HasDatabaseName("IX_Providers_ParentProviderId");
+
+            builder.HasIndex(p => new { p.HierarchyType, p.IsIndependent })
+                .HasDatabaseName("IX_Providers_Hierarchy_Independent");
         }
     }
 }

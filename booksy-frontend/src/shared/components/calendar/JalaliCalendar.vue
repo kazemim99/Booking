@@ -84,8 +84,6 @@ import {
   getJalaliMonthName,
   convertEnglishToPersianNumbers,
   jalaliToGregorian,
-  gregorianToJalali,
-  isValidJalaliDate
 } from '@/shared/utils/date/jalali.utils'
 
 export interface CalendarDay {

@@ -8,7 +8,7 @@
  */
 export const microservices = {
   serviceCategory: {
-    baseURL: import.meta.env.VITE_SERVICE_CATEGORY_API_URL || 'http://localhost:5010/api',
+    baseURL: import.meta.env.VITE_SERVICE_CATALOG_API_URL || 'http://localhost:5010/api',
     timeout: 30000,
     withCredentials: true,
   },

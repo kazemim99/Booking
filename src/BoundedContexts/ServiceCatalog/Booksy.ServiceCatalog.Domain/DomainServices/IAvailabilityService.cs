@@ -15,25 +15,25 @@ namespace Booksy.ServiceCatalog.Domain.DomainServices
         /// <summary>
         /// Get available time slots for a service at a provider on a specific date
         /// </summary>
-        /// <param name="provider">The provider offering the service</param>
+        /// <param name="provider">The provider offering the service (organization)</param>
         /// <param name="service">The service to be booked</param>
         /// <param name="date">The date to check availability</param>
-        /// <param name="staff">Optional specific staff member</param>
+        /// <param name="individualProvider">Optional specific individual provider (staff member)</param>
         /// <param name="cancellationToken">Cancellation token</param>
         /// <returns>List of available time slots</returns>
         Task<IReadOnlyList<AvailableTimeSlot>> GetAvailableTimeSlotsAsync(
             Provider provider,
             Service service,
             DateTime date,
-            Staff? staff = null,
+            Provider? individualProvider = null,
             CancellationToken cancellationToken = default);
 
         /// <summary>
         /// Check if a specific time slot is available for booking
         /// </summary>
-        /// <param name="provider">The provider</param>
+        /// <param name="provider">The provider (organization)</param>
         /// <param name="service">The service</param>
-        /// <param name="staff">The staff member</param>
+        /// <param name="individualProvider">The individual provider (staff member)</param>
         /// <param name="startTime">Requested start time</param>
         /// <param name="duration">Service duration</param>
         /// <param name="cancellationToken">Cancellation token</param>
@@ -41,21 +41,21 @@ namespace Booksy.ServiceCatalog.Domain.DomainServices
         Task<bool> IsTimeSlotAvailableAsync(
             Provider provider,
             Service service,
-            Staff staff,
+            Provider individualProvider,
             DateTime startTime,
             Duration duration,
             CancellationToken cancellationToken = default);
 
         /// <summary>
-        /// Get available staff for a service at a specific time
+        /// Get available individual providers (staff) for a service at a specific time
         /// </summary>
-        /// <param name="provider">The provider</param>
+        /// <param name="provider">The provider (organization)</param>
         /// <param name="service">The service</param>
         /// <param name="startTime">Desired start time</param>
         /// <param name="duration">Service duration</param>
         /// <param name="cancellationToken">Cancellation token</param>
-        /// <returns>List of available qualified staff</returns>
-        Task<IReadOnlyList<Staff>> GetAvailableStaffAsync(
+        /// <returns>List of available qualified individual providers</returns>
+        Task<IReadOnlyList<Provider>> GetAvailableStaffAsync(
             Provider provider,
             Service service,
             DateTime startTime,

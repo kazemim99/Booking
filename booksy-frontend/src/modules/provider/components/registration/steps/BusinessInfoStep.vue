@@ -1,6 +1,5 @@
 <template>
   <div class="registration-step">
-    <ProgressIndicator :current-step="1" :total-steps="9" />
 
     <div class="step-card">
       <div class="step-header">
@@ -88,7 +87,7 @@
 <script setup lang="ts">
 import { ref, computed } from 'vue'
 import { useAuthStore } from '@/core/stores/modules/auth.store'
-import ProgressIndicator from '../shared/ProgressIndicator.vue'
+
 import AppButton from '@/shared/components/ui/Button/AppButton.vue'
 import type { BusinessInfo } from '@/modules/provider/types/registration.types'
 

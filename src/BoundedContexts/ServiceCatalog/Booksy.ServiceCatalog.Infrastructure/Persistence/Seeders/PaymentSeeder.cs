@@ -11,6 +11,18 @@ using Microsoft.Extensions.Logging;
 namespace Booksy.ServiceCatalog.Infrastructure.Persistence.Seeders
 {
     /// <summary>
+    /// DTO for booking data needed for payment seeding (avoids EF Core tracking issues with owned entities)
+    /// </summary>
+    internal class BookingPaymentData
+    {
+        public BookingId BookingId { get; init; } = null!;
+        public UserId CustomerId { get; init; } = null!;
+        public ProviderId ProviderId { get; init; } = null!;
+        public decimal TotalAmount { get; init; }
+        public Domain.Enums.BookingStatus Status { get; init; }
+    }
+
+    /// <summary>
     /// Seeds payment records for bookings with Iranian payment providers (ZarinPal, etc.)
     /// </summary>
     public sealed class PaymentSeeder : ISeeder
@@ -31,41 +43,64 @@ namespace Booksy.ServiceCatalog.Infrastructure.Persistence.Seeders
         {
             try
             {
-                if (await _context.Payments.AnyAsync(cancellationToken))
+                // Clear existing payments to avoid tracking conflicts
+                var existingPayments = await _context.Payments.ToListAsync(cancellationToken);
+                if (existingPayments.Any())
                 {
-                    _logger.LogInformation("Payments already seeded. Skipping...");
-                    return;
+                    _logger.LogInformation("Clearing {Count} existing payments before reseeding", existingPayments.Count);
+                    _context.Payments.RemoveRange(existingPayments);
+                    await _context.SaveChangesAsync(cancellationToken);
+                    _context.ChangeTracker.Clear();
                 }
 
                 _logger.LogInformation("Starting Iranian payment data seeding...");
 
-                // Get completed and confirmed bookings that need payments
-                var bookings = await _context.Bookings
-                    .Include(b => b.PaymentInfo)
+                // Get completed and confirmed bookings that need payments - use AsNoTracking and project to DTOs
+                // to avoid EF Core tracking owned entities which causes conflicts
+                var bookingData = await _context.Bookings
+                    .AsNoTracking()
                     .Where(b => b.Status == Domain.Enums.BookingStatus.Completed ||
                                b.Status == Domain.Enums.BookingStatus.Confirmed)
+                    .Select(b => new BookingPaymentData
+                    {
+                        BookingId = b.Id,
+                        CustomerId = b.CustomerId,
+                        ProviderId = b.ProviderId,
+                        TotalAmount = b.TotalPrice.Amount,
+                        Status = b.Status
+                    })
                     .ToListAsync(cancellationToken);
 
-                if (!bookings.Any())
+                if (!bookingData.Any())
                 {
                     _logger.LogWarning("No bookings found for payment seeding.");
                     return;
                 }
 
+                // Clear change tracker to start fresh
+                _context.ChangeTracker.Clear();
+
                 var payments = new List<Payment>();
 
-                foreach (var booking in bookings)
+                foreach (var data in bookingData)
                 {
-                    // Create payment for this booking
-                    var payment = CreatePaymentForBooking(booking);
+                    // Create payment using the projected data (no entity references)
+                    var payment = CreatePaymentFromData(data);
                     if (payment != null)
                     {
                         payments.Add(payment);
                     }
                 }
 
-                await _context.Payments.AddRangeAsync(payments, cancellationToken);
-                await _context.SaveChangesAsync(cancellationToken);
+                // Process payments one by one to avoid EF Core owned entity tracking conflicts
+                // When multiple Payment entities with owned Money types are added together,
+                // EF Core can get confused tracking owned entities with identical values
+                foreach (var payment in payments)
+                {
+                    await _context.Payments.AddAsync(payment, cancellationToken);
+                    await _context.SaveChangesAsync(cancellationToken);
+                    _context.ChangeTracker.Clear();
+                }
 
                 _logger.LogInformation("Successfully seeded {Count} Iranian payments", payments.Count);
                 LogPaymentStatistics(payments);
@@ -77,11 +112,11 @@ namespace Booksy.ServiceCatalog.Infrastructure.Persistence.Seeders
             }
         }
 
-        private Payment? CreatePaymentForBooking(Domain.Aggregates.BookingAggregate.Booking booking)
+        private Payment? CreatePaymentFromData(BookingPaymentData data)
         {
             try
             {
-                var amount = Money.Create(booking.TotalPrice.Amount, "IRR");
+                var amount = Money.Create(data.TotalAmount, "IRR");
 
                 // Determine payment method (mostly Iranian methods)
                 var paymentMethod = GetRandomIranianPaymentMethod();
@@ -91,12 +126,12 @@ namespace Booksy.ServiceCatalog.Infrastructure.Persistence.Seeders
                     ? PaymentProvider.ZarinPal
                     : GetRandomIranianPaymentProvider();
 
-                var description = $"پرداخت برای رزرو شماره {booking.Id}";
+                var description = $"پرداخت برای رزرو شماره {data.BookingId}";
 
                 var payment = Payment.Create(
-                    booking.Id,
-                    booking.CustomerId,
-                    booking.ProviderId,
+                    data.BookingId,
+                    data.CustomerId,
+                    data.ProviderId,
                     amount,
                     paymentMethod,
                     paymentProvider,
@@ -104,7 +139,7 @@ namespace Booksy.ServiceCatalog.Infrastructure.Persistence.Seeders
                     null);
 
                 // Simulate payment flow based on booking status
-                if (booking.Status == Domain.Enums.BookingStatus.Completed)
+                if (data.Status == Domain.Enums.BookingStatus.Completed)
                 {
                     // For completed bookings, mark payment as paid
                     if (paymentProvider == PaymentProvider.ZarinPal)
@@ -123,7 +158,7 @@ namespace Booksy.ServiceCatalog.Infrastructure.Persistence.Seeders
                         payment.Capture();
                     }
                 }
-                else if (booking.Status == Domain.Enums.BookingStatus.Confirmed)
+                else if (data.Status == Domain.Enums.BookingStatus.Confirmed)
                 {
                     // For confirmed bookings, might be paid or just pending
                     if (_random.Next(100) < 70) // 70% paid
@@ -163,7 +198,7 @@ namespace Booksy.ServiceCatalog.Infrastructure.Persistence.Seeders
             }
             catch (Exception ex)
             {
-                _logger.LogWarning(ex, "Failed to create payment for booking {BookingId}", booking.Id);
+                _logger.LogWarning(ex, "Failed to create payment for booking {BookingId}", data.BookingId);
                 return null;
             }
         }

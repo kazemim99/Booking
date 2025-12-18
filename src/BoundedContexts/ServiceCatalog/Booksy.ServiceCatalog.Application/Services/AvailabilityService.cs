@@ -17,6 +17,7 @@ namespace Booksy.ServiceCatalog.Application.Services
     public sealed class AvailabilityService : IAvailabilityService
     {
         private readonly IBookingReadRepository _bookingRepository;
+        private readonly IProviderReadRepository _providerRepository;
         private readonly ILogger<AvailabilityService> _logger;
 
         // Configuration constants
@@ -25,9 +26,11 @@ namespace Booksy.ServiceCatalog.Application.Services
 
         public AvailabilityService(
             IBookingReadRepository bookingRepository,
+            IProviderReadRepository providerRepository,
             ILogger<AvailabilityService> logger)
         {
             _bookingRepository = bookingRepository;
+            _providerRepository = providerRepository;
             _logger = logger;
         }
 
@@ -35,7 +38,7 @@ namespace Booksy.ServiceCatalog.Application.Services
             Provider provider,
             Service service,
             DateTime date,
-            Staff? staff = null,
+            Provider? individualProvider = null,
             CancellationToken cancellationToken = default)
         {
             _logger.LogInformation(
@@ -101,33 +104,25 @@ namespace Booksy.ServiceCatalog.Application.Services
                 closeTime = businessHours.CloseTime!.Value;
             }
 
-            // Get qualified staff
-            var qualifiedStaff = GetQualifiedStaff(provider, service, staff);
-            if (!qualifiedStaff.Any())
+            // Get qualified individual providers (staff) - NOW USING HIERARCHY
+            var qualifiedIndividuals = await GetQualifiedIndividualProvidersAsync(provider, service, individualProvider, cancellationToken);
+            if (!qualifiedIndividuals.Any())
             {
-                // Check if provider has NO staff at all
-                if (!provider.Staff.Any())
-                {
-                    _logger.LogWarning("Provider {ProviderId} has no staff members. Solo providers must add themselves as staff.", provider.Id);
-                }
-                else
-                {
-                    _logger.LogWarning("No qualified staff found for service {ServiceId}. Staff exist but none are qualified for this service.", service.Id);
-                }
+                _logger.LogWarning("No qualified individual providers found for service {ServiceId}", service.Id);
                 return Array.Empty<AvailableTimeSlot>();
             }
 
             // Generate time slots
             var availableSlots = new List<AvailableTimeSlot>();
 
-            foreach (var staffMember in qualifiedStaff)
+            foreach (var individual in qualifiedIndividuals)
             {
-                var staffSlots = await GenerateTimeSlotsForStaffAsync(
+                var staffSlots = await GenerateTimeSlotsForIndividualAsync(
                     date,
                     openTime,
                     closeTime,
                     service.Duration,
-                    staffMember,
+                    individual,
                     cancellationToken);
 
                 availableSlots.AddRange(staffSlots);
@@ -140,14 +135,14 @@ namespace Booksy.ServiceCatalog.Application.Services
         public async Task<bool> IsTimeSlotAvailableAsync(
             Provider provider,
             Service service,
-            Staff staff,
+            Provider individualProvider,
             DateTime startTime,
             Duration duration,
             CancellationToken cancellationToken = default)
         {
             _logger.LogInformation(
-                "Checking if time slot is available: Staff {StaffId}, Start {StartTime}, Duration {Duration}",
-                staff.Id, startTime, duration);
+                "Checking if time slot is available: Individual Provider {ProviderId}, Start {StartTime}, Duration {Duration}",
+                individualProvider.Id, startTime, duration);
 
             // Validate basic constraints
             var validationResult = await ValidateBookingConstraintsAsync(provider, service, startTime, cancellationToken);
@@ -156,24 +151,25 @@ namespace Booksy.ServiceCatalog.Application.Services
                 return false;
             }
 
-            // Check if staff is qualified
-            if (!service.IsStaffQualified(staff.Id))
+            // Check if individual provider is active
+            if (individualProvider.Status != ProviderStatus.Active)
             {
-                _logger.LogWarning("Staff {StaffId} is not qualified for service {ServiceId}", staff.Id, service.Id);
+                _logger.LogWarning("Individual Provider {ProviderId} is not active", individualProvider.Id);
                 return false;
             }
 
-            // Check if staff is active
-            if (!staff.IsActive)
+            // Check if individual provider is qualified for the service
+            if (!service.IsStaffQualified(individualProvider.Id.Value))
             {
-                _logger.LogWarning("Staff {StaffId} is not active", staff.Id);
+                _logger.LogWarning("Individual Provider {ProviderId} is not qualified for service {ServiceId}",
+                    individualProvider.Id, service.Id);
                 return false;
             }
 
             // Check for conflicts with existing bookings
             var endTime = startTime.AddMinutes(duration.Value + BufferTimeMinutes);
             var conflictingBookings = await _bookingRepository.GetConflictingBookingsAsync(
-                staff.Id,
+                individualProvider.Id.Value,
                 startTime,
                 endTime,
                 cancellationToken);
@@ -187,7 +183,7 @@ namespace Booksy.ServiceCatalog.Application.Services
             return true;
         }
 
-        public async Task<IReadOnlyList<Staff>> GetAvailableStaffAsync(
+        public async Task<IReadOnlyList<Provider>> GetAvailableStaffAsync(
             Provider provider,
             Service service,
             DateTime startTime,
@@ -195,30 +191,30 @@ namespace Booksy.ServiceCatalog.Application.Services
             CancellationToken cancellationToken = default)
         {
             _logger.LogInformation(
-                "Getting available staff for Service {ServiceId} at {StartTime}",
+                "Getting available individual providers for Service {ServiceId} at {StartTime}",
                 service.Id, startTime);
 
-            var qualifiedStaff = GetQualifiedStaff(provider, service, null);
-            var availableStaff = new List<Staff>();
+            var qualifiedIndividuals = await GetQualifiedIndividualProvidersAsync(provider, service, null, cancellationToken);
+            var availableIndividuals = new List<Provider>();
 
-            foreach (var staff in qualifiedStaff)
+            foreach (var individual in qualifiedIndividuals)
             {
                 var isAvailable = await IsTimeSlotAvailableAsync(
                     provider,
                     service,
-                    staff,
+                    individual,
                     startTime,
                     duration,
                     cancellationToken);
 
                 if (isAvailable)
                 {
-                    availableStaff.Add(staff);
+                    availableIndividuals.Add(individual);
                 }
             }
 
-            _logger.LogInformation("Found {Count} available staff members", availableStaff.Count);
-            return availableStaff.AsReadOnly();
+            _logger.LogInformation("Found {Count} available individual providers", availableIndividuals.Count);
+            return availableIndividuals.AsReadOnly();
         }
 
         public async Task<AvailabilityValidationResult> ValidateBookingConstraintsAsync(
@@ -408,15 +404,18 @@ namespace Booksy.ServiceCatalog.Application.Services
         }
 
         // ========================================
-        // PRIVATE HELPER METHODS
+        // PRIVATE HELPER METHODS - USING HIERARCHY MODEL
         // ========================================
 
-        private async Task<List<AvailableTimeSlot>> GenerateTimeSlotsForStaffAsync(
+        /// <summary>
+        /// Generate time slots for a specific individual provider (staff member)
+        /// </summary>
+        private async Task<List<AvailableTimeSlot>> GenerateTimeSlotsForIndividualAsync(
             DateTime date,
             TimeOnly openTime,
             TimeOnly closeTime,
             Duration serviceDuration,
-            Staff staff,
+            Provider individualProvider,
             CancellationToken cancellationToken)
         {
             var availableSlots = new List<AvailableTimeSlot>();
@@ -425,11 +424,11 @@ namespace Booksy.ServiceCatalog.Application.Services
             var currentTime = openTime;
             var serviceDurationMinutes = serviceDuration.Value;
 
-            // Get existing bookings for this staff member on this date
+            // Get existing bookings for this individual provider on this date
             var dayStart = date.Date;
             var dayEnd = date.Date.AddDays(1);
             var existingBookings = await _bookingRepository.GetStaffBookingsInDateRangeAsync(
-                staff.Id,
+                individualProvider.Id.Value,
                 dayStart,
                 dayEnd,
                 cancellationToken);
@@ -460,14 +459,18 @@ namespace Booksy.ServiceCatalog.Application.Services
                     : slotStart.ToUniversalTime();
 
                 // Only add slot if it's in the future and has no conflicts
-                if (!hasConflict && slotStartUtc > DateTime.UtcNow)
+                if (!hasConflict && slotStartUtc > DateTime.Now)
                 {
+                    var staffName = $"{individualProvider.OwnerFirstName} {individualProvider.OwnerLastName}".Trim();
+                    if (string.IsNullOrEmpty(staffName))
+                        staffName = individualProvider.Profile.BusinessName;
+
                     availableSlots.Add(new AvailableTimeSlot(
                         slotStart,
                         slotEnd,
                         Duration.FromMinutes(serviceDurationMinutes),
-                        staff.Id,
-                        staff.FullName));
+                        individualProvider.Id.Value,
+                        staffName));
                 }
 
                 // Move to next slot (every 30 minutes by default)
@@ -477,33 +480,39 @@ namespace Booksy.ServiceCatalog.Application.Services
             return availableSlots;
         }
 
-        private List<Staff> GetQualifiedStaff(Provider provider, Service service, Staff? specificStaff)
+        /// <summary>
+        /// Get qualified individual providers (staff) for a service using hierarchy model
+        /// </summary>
+        private async Task<List<Provider>> GetQualifiedIndividualProvidersAsync(
+            Provider provider,
+            Service service,
+            Provider? specificIndividual,
+            CancellationToken cancellationToken)
         {
-            if (specificStaff != null)
+            if (specificIndividual != null)
             {
-                // Check if the specific staff is qualified and active
-                if (service.IsStaffQualified(specificStaff.Id) && specificStaff.IsActive)
+                // Check if the specific individual is qualified and active
+                if (service.IsStaffQualified(specificIndividual.Id.Value) &&
+                    specificIndividual.Status == ProviderStatus.Active)
                 {
-                    return new List<Staff> { specificStaff };
+                    return new List<Provider> { specificIndividual };
                 }
-                return new List<Staff>();
+                return new List<Provider>();
             }
 
-            // Get all active qualified staff
-            var qualifiedStaff = provider.Staff
-                .Where(s => s.IsActive && service.IsStaffQualified(s.Id))
+            // Get all staff members (individual providers) for this organization
+            var staffMembers = await _providerRepository.GetStaffByOrganizationIdAsync(
+                provider.Id,
+                cancellationToken);
+
+            // Filter for active and qualified staff
+            var qualifiedStaff = staffMembers
+                .Where(s => s.Status == ProviderStatus.Active)
                 .ToList();
 
-            // Handle solo/individual providers with no staff entries
-            // For Individual providers, if no staff is found, return all staff (owner can perform service)
-            if (!qualifiedStaff.Any() && provider.ProviderType == ProviderType.Individual)
-            {
-                // Return all active staff (likely just the owner)
-                // If QualifiedStaff is empty, it means owner can do all services
-                return provider.Staff
-                    .Where(s => s.IsActive)
-                    .ToList();
-            }
+            _logger.LogInformation(
+                "Found {TotalStaff} staff members, {QualifiedCount} are qualified for service {ServiceId}",
+                staffMembers.Count, qualifiedStaff.Count, service.Id);
 
             return qualifiedStaff;
         }

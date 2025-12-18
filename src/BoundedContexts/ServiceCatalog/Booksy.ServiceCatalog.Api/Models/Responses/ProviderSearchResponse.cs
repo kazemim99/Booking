@@ -25,5 +25,32 @@ namespace Booksy.ServiceCatalog.Api.Models.Responses
         public string? OperatingHours { get; set; }
         public DateTime RegisteredAt { get; set; }
         public DateTime? LastActiveAt { get; set; }
+
+        // Hierarchy information
+        /// <summary>
+        /// The provider's hierarchy type (Organization or Individual)
+        /// </summary>
+        public string HierarchyType { get; set; } = string.Empty;
+
+        /// <summary>
+        /// Whether this provider is independent (not linked to any organization)
+        /// </summary>
+        public bool IsIndependent { get; set; }
+
+        /// <summary>
+        /// Parent organization ID if this is a linked individual provider
+        /// </summary>
+        public Guid? ParentProviderId { get; set; }
+
+        /// <summary>
+        /// Parent organization name (if this is a linked individual)
+        /// </summary>
+        public string? ParentProviderName { get; set; }
+
+        /// <summary>
+        /// Number of staff members as individual providers (if this is an organization)
+        /// </summary>
+        public int StaffProviderCount { get; set; }
+        public string? ProfileImageUrl { get;  set; }
     }
 }

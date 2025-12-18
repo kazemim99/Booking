@@ -85,6 +85,10 @@ namespace Booksy.ServiceCatalog.Infrastructure.Persistence.Configurations
                 category.Property(c => c.IconUrl)
                     .HasMaxLength(500)
                     .HasColumnName("CategoryIconUrl");
+
+                // EF Core 9: Explicitly configure foreign key to not be part of composite key
+                category.WithOwner().HasForeignKey("ServiceId");
+                category.Property<Guid>("ServiceId").ValueGeneratedNever();
             });
 
             // Base Price
@@ -99,6 +103,10 @@ namespace Booksy.ServiceCatalog.Infrastructure.Persistence.Configurations
                     .HasMaxLength(3)
                     .IsRequired()
                     .HasColumnName("BasePriceCurrency");
+
+                // EF Core 9: Explicitly configure foreign key to not be part of composite key
+                price.WithOwner().HasForeignKey("ServiceId");
+                price.Property<Guid>("ServiceId").ValueGeneratedNever();
             });
 
             // Durations
@@ -157,6 +165,10 @@ namespace Booksy.ServiceCatalog.Infrastructure.Persistence.Configurations
                     .HasColumnName("BookingPolicyDepositPercentage")
                     .HasColumnType("decimal(5,2)")
                     .IsRequired();
+
+                // EF Core 9: Explicitly configure foreign key to not be part of composite key
+                policy.WithOwner().HasForeignKey("ServiceId");
+                policy.Property<Guid>("ServiceId").ValueGeneratedNever();
             });
 
             // ========================================
@@ -253,6 +265,10 @@ namespace Booksy.ServiceCatalog.Infrastructure.Persistence.Configurations
                         .HasMaxLength(3)
                         .IsRequired()
                         .HasColumnName("AdditionalPriceCurrency");
+
+                    // EF Core 9: Explicitly configure foreign key
+                    price.WithOwner().HasForeignKey("ServiceOptionId");
+                    price.Property<Guid>("ServiceOptionId").ValueGeneratedNever();
                 });
 
                 // Additional Duration
@@ -352,6 +368,10 @@ namespace Booksy.ServiceCatalog.Infrastructure.Persistence.Configurations
                         .HasColumnName("Currency")
                         .HasMaxLength(3)
                         .IsRequired();
+
+                    // EF Core 9: Explicitly configure foreign key
+                    price.WithOwner().HasForeignKey("PriceTierId");
+                    price.Property<Guid>("PriceTierId").ValueGeneratedNever();
                 });
 
                 // Attributes Dictionary

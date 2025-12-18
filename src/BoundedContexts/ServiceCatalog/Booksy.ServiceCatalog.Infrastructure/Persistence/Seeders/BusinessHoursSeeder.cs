@@ -61,9 +61,9 @@ namespace Booksy.ServiceCatalog.Infrastructure.Persistence.Seeders
         private void SetIranianBusinessHours(Domain.Aggregates.Provider provider)
         {
             // Iranian business culture:
-            // - Weekend is Friday (and often Thursday afternoon or Saturday)
-            // - Most businesses: Saturday-Wednesday 9AM-9PM or 10AM-10PM
-            // - Thursday: Often half day (9AM-2PM) or normal hours
+            // - Weekend is Friday (Islamic weekend)
+            // - Most businesses: Saturday-Thursday 9AM-9PM or 10AM-10PM
+            // - Thursday: FULL DAY (modern business practices)
             // - Friday: Closed (Islamic weekend)
             // - Lunch break: 1PM-4PM (some businesses)
 
@@ -75,14 +75,14 @@ namespace Booksy.ServiceCatalog.Infrastructure.Persistence.Seeders
             switch (pattern)
             {
                 case BusinessPattern.StandardSalon:
-                    // Saturday - Wednesday: 10:00 - 20:00
+                    // Saturday - Thursday: 10:00 - 20:00 (Thursday now FULL day)
                     businessHours[DayOfWeek.Saturday] = (new TimeOnly(10, 0), new TimeOnly(20, 0));
                     businessHours[DayOfWeek.Sunday] = (new TimeOnly(10, 0), new TimeOnly(20, 0));
                     businessHours[DayOfWeek.Monday] = (new TimeOnly(10, 0), new TimeOnly(20, 0));
                     businessHours[DayOfWeek.Tuesday] = (new TimeOnly(10, 0), new TimeOnly(20, 0));
                     businessHours[DayOfWeek.Wednesday] = (new TimeOnly(10, 0), new TimeOnly(20, 0));
-                    // Thursday: Half day
-                    businessHours[DayOfWeek.Thursday] = (new TimeOnly(10, 0), new TimeOnly(14, 0));
+                    // Thursday: FULL day (changed from half day)
+                    businessHours[DayOfWeek.Thursday] = (new TimeOnly(10, 0), new TimeOnly(20, 0));
                     // Friday: Closed (Islamic weekend)
                     businessHours[DayOfWeek.Friday] = (null, null);
                     break;
@@ -100,13 +100,14 @@ namespace Booksy.ServiceCatalog.Infrastructure.Persistence.Seeders
                     break;
 
                 case BusinessPattern.Clinic:
-                    // Saturday - Thursday: 8:00 - 18:00 (medical hours)
+                    // Saturday - Thursday: 8:00 - 18:00 (medical hours, Thursday now FULL day)
                     businessHours[DayOfWeek.Saturday] = (new TimeOnly(8, 0), new TimeOnly(18, 0));
                     businessHours[DayOfWeek.Sunday] = (new TimeOnly(8, 0), new TimeOnly(18, 0));
                     businessHours[DayOfWeek.Monday] = (new TimeOnly(8, 0), new TimeOnly(18, 0));
                     businessHours[DayOfWeek.Tuesday] = (new TimeOnly(8, 0), new TimeOnly(18, 0));
                     businessHours[DayOfWeek.Wednesday] = (new TimeOnly(8, 0), new TimeOnly(18, 0));
-                    businessHours[DayOfWeek.Thursday] = (new TimeOnly(8, 0), new TimeOnly(13, 0));
+                    // Thursday: FULL day (changed from half day)
+                    businessHours[DayOfWeek.Thursday] = (new TimeOnly(8, 0), new TimeOnly(18, 0));
                     // Friday: Closed
                     businessHours[DayOfWeek.Friday] = (null, null);
                     break;

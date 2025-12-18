@@ -124,7 +124,7 @@ export const useAuthStore = defineStore('auth', () => {
     if (isCustomer) {
       return {
         userId: tokenData.userId,
-        customerId: tokenData.customerId || tokenData.customer_id,
+        customerId: tokenData.customerId || (tokenData as any).customer_id,
         email: tokenData.email,
         userType: tokenData.userType,
         roles: roles
@@ -457,9 +457,7 @@ export const useAuthStore = defineStore('auth', () => {
                                      providerStatus.value !== ProviderStatus.Drafted
         if (!isOnboardingComplete) return false
 
-        return path.startsWith('/dashboard') ||
-               path.startsWith('/provider') ||
-               path.startsWith('/bookings')
+        return path.startsWith('/provider')
       }
 
       if (role === 'customer') {
@@ -486,6 +484,14 @@ export const useAuthStore = defineStore('auth', () => {
 
     // Provider redirect - check status first
     if (primaryRole === 'provider') {
+      // Check if already on a registration route - if so, don't redirect
+      const currentRoute = router.currentRoute.value
+      const registrationRoutes = ['ProviderRegistration', 'OrganizationRegistration', 'IndividualRegistration']
+      if (registrationRoutes.includes(currentRoute.name as string)) {
+        console.log('[AuthStore] Already on registration route, skipping redirect')
+        return
+      }
+
       // Fetch provider status if not already loaded
       if (providerStatus.value === null && providerId.value === null) {
         try {
@@ -515,7 +521,7 @@ export const useAuthStore = defineStore('auth', () => {
         await router.push(redirectPath)
       } else {
         console.log('[AuthStore] Provider redirect to dashboard')
-        await router.push({ path: '/dashboard' })
+        await router.push({ path: '/provider/dashboard' })
       }
       return
     }

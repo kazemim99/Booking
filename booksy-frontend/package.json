@@ -26,6 +26,7 @@
     "@neshan-maps-platform/ol": "^1.0.5",
     "@neshan-maps-platform/vue3-openlayers": "^2.0.1",
     "@persian-tools/persian-tools": "^4.0.4",
+    "@vueuse/core": "^14.0.0",
     "echarts": "^6.0.0",
     "jalaali-js": "^1.2.8",
     "pinia": "^3.0.3",

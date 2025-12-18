@@ -47,8 +47,6 @@ namespace Booksy.ServiceCatalog.Application.Commands.Booking.AssignStaff
             // Update booking
             await _bookingRepository.UpdateBookingAsync(booking, cancellationToken);
 
-            // Commit transaction and publish events
-            await _unitOfWork.CommitAndPublishEventsAsync(cancellationToken);
 
             _logger.LogInformation("Staff {StaffId} assigned to booking {BookingId} successfully",
                 request.StaffId, booking.Id);

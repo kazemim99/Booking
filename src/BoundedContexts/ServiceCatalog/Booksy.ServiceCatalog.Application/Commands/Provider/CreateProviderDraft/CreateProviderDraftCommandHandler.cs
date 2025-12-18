@@ -35,29 +35,16 @@ public sealed class CreateProviderDraftCommandHandler
         var userId = UserId.From(_currentUserService.UserId
             ?? throw new UnauthorizedAccessException("User not authenticated"));
 
-        // 2. Check if user already has a draft provider
-        var existingProvider = await _providerRepository
-            .GetDraftProviderByOwnerIdAsync(userId, cancellationToken);
-
-        if (existingProvider != null)
-        {
-            // Return existing draft
-            return new CreateProviderDraftResult(
-                existingProvider.Id.Value,
-                existingProvider.RegistrationStep,
-                "Draft provider already exists. Resuming registration.");
-        }
-
-        // 3. Map category string to ProviderType enum
+        // 2. Map category string to ProviderType enum
         if (!Enum.TryParse<ProviderType>(request.Category, true, out var providerType))
         {
             throw new InvalidOperationException($"Invalid category: {request.Category}");
         }
 
-        // 4. Create value objects
+        // 3. Create value objects
         var contactInfo = ContactInfo.Create(
             Email.Create(request.Email),
-            PhoneNumber.Create(request.PhoneNumber));
+            PhoneNumber.From(request.PhoneNumber));
 
         // Combine address lines into street
         var street = string.IsNullOrWhiteSpace(request.AddressLine2)
@@ -78,19 +65,47 @@ public sealed class CreateProviderDraftCommandHandler
             (double)request.Latitude,
             (double)request.Longitude);
 
-        // 5. Create draft provider
-        // Note: This is a legacy endpoint. Owner names are not collected here.
-        // Use SaveStep3LocationCommand from ProviderRegistrationController for the full registration flow.
-        var provider = Domain.Aggregates.Provider.CreateDraft(
+        // 4. Check if user already has a draft provider
+        var existingProvider = await _providerRepository
+            .GetDraftProviderByOwnerIdAsync(userId, cancellationToken);
+
+        Domain.Aggregates.Provider provider;
+
+        if (existingProvider != null)
+        {
+            // Update existing draft with new information
+            existingProvider.UpdateDraftInfo(
+                request.OwnerFirstName,
+                request.OwnerLastName,
+                request.BusinessName,
+                request.BusinessDescription,
+                providerType,
+                contactInfo,
+                address,
+                request.LogoUrl);
+
+            provider = existingProvider;
+            await _providerRepository.UpdateProviderAsync(provider, cancellationToken);
+            await _unitOfWork.CommitAsync(cancellationToken);
+
+            return new CreateProviderDraftResult(
+                provider.Id.Value,
+                provider.RegistrationStep,
+                "Draft provider updated successfully");
+        }
+
+        // 5. Create new draft provider
+        provider = Domain.Aggregates.Provider.CreateDraft(
             userId,
-            ownerFirstName: string.Empty, // Legacy endpoint - no owner name collected
-            ownerLastName: string.Empty,  // Legacy endpoint - no owner name collected
+            request.OwnerFirstName,
+            request.OwnerLastName,
             request.BusinessName,
             request.BusinessDescription,
             providerType,
             contactInfo,
             address,
-            registrationStep: 3); // Created after completing Step 3
+            registrationStep: 3,
+            logoUrl: request.LogoUrl);
 
         // 6. Save
         await _providerRepository.SaveProviderAsync(provider, cancellationToken);

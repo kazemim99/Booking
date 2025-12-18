@@ -1,7 +1,10 @@
-﻿public sealed class ProviderSearchItem
+﻿using Booksy.ServiceCatalog.Domain.Enums;
+
+public sealed class ProviderSearchItem
 {
     public Guid Id { get; init; }
     public string BusinessName { get; init; }
+    public string? ProfileImageUrl { get; init; }
     public string Description { get; init; }
     public ProviderType Type { get; init; }
     public ProviderStatus Status { get; init; }
@@ -20,10 +23,18 @@
     public DateTime RegisteredAt { get; init; }
     public DateTime? LastActiveAt { get; init; }
 
+    // Hierarchy information
+    public ProviderHierarchyType HierarchyType { get; init; }
+    public bool IsIndependent { get; init; }
+    public Guid? ParentProviderId { get; init; }
+    public string? ParentProviderName { get; init; }
+    public int StaffProviderCount { get; init; }
+
     public ProviderSearchItem(
         Guid id,
         string businessName,
         string description,
+        string? profileImageUrl,
         ProviderType type,
         ProviderStatus status,
         string city,
@@ -37,10 +48,16 @@
         int yearsInBusiness,
         bool isVerified,
         DateTime registeredAt,
-        DateTime? lastActiveAt)
+        DateTime? lastActiveAt,
+        ProviderHierarchyType hierarchyType = ProviderHierarchyType.Organization,
+        bool isIndependent = false,
+        Guid? parentProviderId = null,
+        string? parentProviderName = null,
+        int staffProviderCount = 0)
     {
         Id = id;
         BusinessName = businessName;
+        ProfileImageUrl = profileImageUrl;
         Description = description;
         Type = type;
         Status = status;
@@ -56,5 +73,10 @@
         IsVerified = isVerified;
         RegisteredAt = registeredAt;
         LastActiveAt = lastActiveAt;
+        HierarchyType = hierarchyType;
+        IsIndependent = isIndependent;
+        ParentProviderId = parentProviderId;
+        ParentProviderName = parentProviderName;
+        StaffProviderCount = staffProviderCount;
     }
 }

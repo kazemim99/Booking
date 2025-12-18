@@ -6,7 +6,16 @@ Welcome to the Booksy booking platform documentation. This directory contains co
 
 ### Recent Features (November 2025)
 
-#### Latest (Nov 20, 2025) - Role-Based Navigation 🎯
+#### Latest (Nov 26, 2025) - Registration Data Sync & Gallery Fix 🔧
+- **[Cache Invalidation Problem](./CACHE_INVALIDATION_PROBLEM_AND_SOLUTION.md)** - Provider profile cache invalidation fix
+- **[Registration Step Data Sync Fix](./FIX_REGISTRATION_STEP_DATA_SYNC.md)** - Fixed services/staff/hours not displaying
+- **[Gallery Images Implementation](./GALLERY_IMAGES_IMPLEMENTATION.md)** - Gallery upload, display, and restoration
+- **[Working Hours Validation](./WORKING_HOURS_VALIDATION.md)** - Comprehensive validation rules
+- **[Validation Error Handling](./VALIDATION_ERROR_HANDLING.md)** - Server error display system
+- **[Owner Names Implementation](./OWNER_NAMES_IMPLEMENTATION_SUMMARY.md)** - Proper storage of owner names
+- **[API Consolidation](./REGISTRATION_PROGRESS_API_CONSOLIDATION.md)** - Registration progress endpoint
+
+#### Nov 20, 2025 - Role-Based Navigation 🎯
 - **[Session Summary Nov 20](./SESSION_SUMMARY_2025_11_20.md)** - Complete UX redesign session
 - **[Quick Reference](./QUICK_REFERENCE_ROLE_NAVIGATION.md)** - Role navigation quick start guide
 - **[UX Design Document](./UX_ROLE_BASED_NAVIGATION.md)** - Comprehensive UX design and flow diagrams
@@ -457,6 +466,6 @@ For questions or issues:
 
 ---
 
-**Last Updated**: November 14, 2025
+**Last Updated**: November 26, 2025
 **Version**: 1.0.0
 **Maintained By**: Development Team

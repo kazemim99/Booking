@@ -110,11 +110,14 @@ namespace Booksy.UserManagement.Application.CQRS.Commands.AuthenticateUser
                     user.Type,
                     user.Email,
                     user.Profile.GetDisplayName(),
+                    user.Profile.FirstName,
+                    user.Profile.LastName,
                     user.Status.ToString(),
                     authResult.Roles,
                     providerId,
                     providerStatus,
                     customerId,
+                    user.PhoneNumber?.Value,
                     tokenExpirationHours);
 
                 await _auditService.LogSuccessfulLoginAsync(

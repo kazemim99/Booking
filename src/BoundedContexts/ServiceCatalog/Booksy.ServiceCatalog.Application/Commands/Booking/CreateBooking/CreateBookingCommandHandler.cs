@@ -52,10 +52,10 @@ namespace Booksy.ServiceCatalog.Application.Commands.Booking.CreateBooking
         public async Task<CreateBookingResult> Handle(CreateBookingCommand request, CancellationToken cancellationToken)
         {
             _logger.LogInformation(
-                "Creating booking for Customer {CustomerId}, Service {ServiceId}, Staff {StaffId} at {StartTime}",
-                request.CustomerId, request.ServiceId, request.StaffId, request.StartTime);
+                "Creating booking for Customer {CustomerId}, Service {ServiceId}, StaffProvider {StaffProviderId} at {StartTime}",
+                request.CustomerId, request.ServiceId, request.StaffProviderId, request.StartTime);
 
-            // Load provider with all necessary data
+            // Load organization provider
             var provider = await _providerRepository.GetByIdAsync(
                 ProviderId.From(request.ProviderId),
                 cancellationToken);
@@ -75,10 +75,26 @@ namespace Booksy.ServiceCatalog.Application.Commands.Booking.CreateBooking
             if (service.ProviderId != provider.Id)
                 throw new ConflictException("Service does not belong to the specified provider");
 
-            // Get staff member
-            var staff = provider.Staff.FirstOrDefault(s => s.Id == request.StaffId);
-            if (staff == null)
-                throw new NotFoundException($"Staff member with ID {request.StaffId} not found");
+            // Load staff provider (individual provider in hierarchy)
+            var staffProvider = await _providerRepository.GetByIdAsync(
+                ProviderId.From(request.StaffProviderId),
+                cancellationToken);
+
+            if (staffProvider == null)
+                throw new NotFoundException($"Staff provider with ID {request.StaffProviderId} not found");
+
+            // Verify staff provider belongs to organization hierarchy
+            if (staffProvider.ParentProviderId != provider.Id)
+                throw new ConflictException("Staff provider does not belong to the specified organization");
+
+            // Check if staff provider is active
+            if (staffProvider.Status != Domain.Enums.ProviderStatus.Active)
+            {
+                var staffName = $"{staffProvider.OwnerFirstName} {staffProvider.OwnerLastName}".Trim();
+                if (string.IsNullOrEmpty(staffName))
+                    staffName = staffProvider.Profile.BusinessName;
+                throw new ConflictException($"Staff provider {staffName} is not currently active");
+            }
 
             // Validate booking constraints (provider status, business hours, holidays, etc.)
             var validationResult = await _availabilityService.ValidateBookingConstraintsAsync(
@@ -90,18 +106,10 @@ namespace Booksy.ServiceCatalog.Application.Commands.Booking.CreateBooking
             if (!validationResult.IsValid)
                 throw new ConflictException($"Booking validation failed: {string.Join(", ", validationResult.Errors)}");
 
-            // Check if staff is qualified for this service
-            if (!service.IsStaffQualified(staff.Id))
-                throw new ConflictException($"Staff member {staff.FullName} is not qualified to provide this service");
-
-            // Check if staff is active
-            if (!staff.IsActive)
-                throw new ConflictException($"Staff member {staff.FullName} is not currently active");
-
             // Check for booking conflicts with existing appointments
             var bookingEndTime = request.StartTime.AddMinutes(service.Duration.Value + 15); // Add 15-min buffer
             var conflictingBookings = await _bookingReadRepository.GetConflictingBookingsAsync(
-                staff.Id,
+                staffProvider.Id.Value,
                 request.StartTime,
                 bookingEndTime,
                 cancellationToken);
@@ -117,7 +125,7 @@ namespace Booksy.ServiceCatalog.Application.Commands.Booking.CreateBooking
                 customerId: UserId.From(request.CustomerId),
                 providerId: provider.Id,
                 serviceId: service.Id,
-                staffId: staff.Id,
+                staffId: staffProvider.Id.Value,
                 startTime: request.StartTime,
                 duration: service.Duration,
                 totalPrice: service.BasePrice,
@@ -130,15 +138,12 @@ namespace Booksy.ServiceCatalog.Application.Commands.Booking.CreateBooking
             // Mark availability slot as booked atomically
             var endTime = request.StartTime.Add(service.Duration.ToTimeSpan());
             await MarkAvailabilityAsBookedAsync(
-                provider.Id,
+                staffProvider.Id,
                 request.StartTime,
                 endTime,
                 booking.Id.Value,
                 cancellationToken);
 
-            // Commit transaction and publish domain events
-            // Uses Serializable isolation to prevent race conditions
-            await _unitOfWork.CommitAndPublishEventsAsync(cancellationToken);
 
             _logger.LogInformation("Booking {BookingId} created successfully and availability slot marked as booked", booking.Id);
 
@@ -148,7 +153,7 @@ namespace Booksy.ServiceCatalog.Application.Commands.Booking.CreateBooking
                 CustomerId: booking.CustomerId.Value,
                 ProviderId: booking.ProviderId.Value,
                 ServiceId: booking.ServiceId.Value,
-                StaffId: booking.StaffId,
+                StaffProviderId: booking.StaffId,
                 StartTime: booking.TimeSlot.StartTime,
                 EndTime: booking.TimeSlot.EndTime,
                 TotalPrice: booking.TotalPrice.Amount,

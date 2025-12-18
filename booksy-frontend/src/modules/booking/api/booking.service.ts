@@ -13,6 +13,7 @@ import type {
   CancellationRequest,
   RescheduleRequest,
 } from '../types/booking.types'
+import type { CustomerBookingsResponse, CustomerBookingDto } from '../types/booking-api.types'
 
 const API_VERSION = 'v1'
 const API_BASE = `/${API_VERSION}/Bookings`
@@ -39,7 +40,7 @@ export interface CreateBookingRequest {
   customerId: string
   providerId: string
   serviceId: string
-  staffId?: string | null
+  staffProviderId: string
   startTime: string // ISO 8601 format
   customerNotes?: string
 }
@@ -154,15 +155,68 @@ class BookingService {
 
   /**
    * Get bookings for current customer
-   * Convenience method that filters by authenticated customer
+   * Uses dedicated /my-bookings endpoint that filters by authenticated user
+   * GET /api/v1/bookings/my-bookings
    */
   async getMyBookings(
-    status?: BookingStatus,
+    filtersOrStatus?: any | BookingStatus,
     pageNumber = 1,
-    pageSize = 10
-  ): Promise<PaginatedBookingsResponse> {
-    // The API will automatically filter by authenticated user
-    return this.getBookings({ status, pageNumber, pageSize })
+    pageSize = 20
+  ): Promise<CustomerBookingsResponse> {
+    try {
+      let params: any
+
+      // Support both object filters and individual parameters
+      if (typeof filtersOrStatus === 'object' && filtersOrStatus !== null) {
+        // New API: filters object with GetMyBookingsParams format
+        params = {
+          pageNumber: filtersOrStatus.page || 1,
+          pageSize: filtersOrStatus.size || 20,
+        }
+
+        if (filtersOrStatus.status) {
+          params.status = filtersOrStatus.status
+        }
+        if (filtersOrStatus.from) {
+          params.from = filtersOrStatus.from
+        }
+        if (filtersOrStatus.to) {
+          params.to = filtersOrStatus.to
+        }
+        if (filtersOrStatus.sort) {
+          params.sort = filtersOrStatus.sort
+        }
+        if (filtersOrStatus.sortDesc !== undefined) {
+          params.sortDesc = filtersOrStatus.sortDesc
+        }
+      } else {
+        // Legacy API: individual parameters
+        params = {
+          pageNumber,
+          pageSize,
+        }
+
+        if (filtersOrStatus) {
+          params.status = filtersOrStatus
+        }
+      }
+
+      console.log('[BookingService] Fetching my bookings with filters:', params)
+
+      const response = await serviceCategoryClient.get<ApiResponse<CustomerBookingsResponse>>(
+        `${API_BASE}/my-bookings`,
+        { params }
+      )
+
+      console.log('[BookingService] My bookings retrieved:', response.data)
+
+      // Handle wrapped response format
+      const data = response.data?.data || response.data
+      return data as CustomerBookingsResponse
+    } catch (error) {
+      console.error('[BookingService] Error fetching my bookings:', error)
+      throw this.handleError(error)
+    }
   }
 
   /**
@@ -503,25 +557,25 @@ class BookingService {
   /**
    * Get upcoming bookings for customer
    */
-  async getUpcomingBookings(pageSize = 10): Promise<Appointment[]> {
+  async getUpcomingBookings(pageSize = 10): Promise<CustomerBookingDto[]> {
     const response = await this.getMyBookings(undefined, 1, pageSize)
 
-    // Filter for upcoming bookings (status: Confirmed or Pending)
+    // Filter for upcoming bookings (status: Requested, Confirmed or Pending)
     return response.items.filter(booking =>
-      ['Confirmed', 'Pending'].includes(booking.status) &&
-      new Date(booking.scheduledStartTime) > new Date()
+      ['Requested', 'Confirmed', 'Pending'].includes(booking.status) &&
+      new Date(booking.startTime) > new Date()
     )
   }
 
   /**
    * Get past bookings for customer
    */
-  async getPastBookings(pageSize = 10): Promise<Appointment[]> {
+  async getPastBookings(pageSize = 10): Promise<CustomerBookingDto[]> {
     const response = await this.getMyBookings(undefined, 1, pageSize)
 
     // Filter for past bookings
     return response.items.filter(booking =>
-      new Date(booking.scheduledStartTime) < new Date()
+      new Date(booking.startTime) < new Date()
     )
   }
 

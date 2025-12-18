@@ -3,7 +3,7 @@
  */
 
 const SERVICE_CATEGORY_BASE_URL =
-  import.meta.env.VITE_SERVICE_CATEGORY_API_URL || 'http://localhost:5010/api'
+  import.meta.env.VITE_SERVICE_CATALOG_API_URL || 'http://localhost:5010/api'
 
 /**
  * Converts a relative image path from the backend to a full URL

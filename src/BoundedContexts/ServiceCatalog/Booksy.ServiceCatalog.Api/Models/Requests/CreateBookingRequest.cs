@@ -20,9 +20,10 @@ public class CreateBookingRequest
     public Guid ServiceId { get; set; }
 
     /// <summary>
-    /// Staff member ID (optional - system can assign if not specified)
+    /// Staff provider ID (required - individual provider in hierarchy who will perform the service)
     /// </summary>
-    public Guid? StaffId { get; set; }
+    [Required]
+    public Guid StaffProviderId { get; set; }
 
     /// <summary>
     /// Desired booking start time

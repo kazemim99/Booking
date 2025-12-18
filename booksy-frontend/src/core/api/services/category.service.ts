@@ -3,12 +3,11 @@
  * Handles service category data
  */
 
-// Future: Will use httpClient for API calls when backend endpoints are ready
-// import { httpClient } from '@/core/api/client/http-client'
-// import type { ApiResponse } from '@/core/api/client/api-response'
+import { httpClient } from '@/core/api/client/http-client'
+import type { ApiResponse } from '@/core/api/client/api-response'
 
-// const API_VERSION = 'v1'
-// const API_BASE = `/${API_VERSION}/services`
+const API_VERSION = 'v1'
+const API_BASE = `/${API_VERSION}/categories`
 
 // ==================== Types ====================
 
@@ -32,67 +31,58 @@ export interface PopularCategory {
   icon: string
   gradient: string
   providerCount: number
+  description?: string
+  color?: string
+  displayOrder?: number
 }
 
 // ==================== Category Service Class ====================
 
 class CategoryService {
   // Cache for categories to reduce API calls
-  private categoriesCache: ServiceCategory[] | null = null
+  private categoriesCache: PopularCategory[] | null = null
   private popularCategoriesCache: PopularCategory[] | null = null
+  private cacheTimestamp: number = 0
+  private readonly CACHE_DURATION = 5 * 60 * 1000 // 5 minutes
 
   // ============================================
   // Categories
   // ============================================
 
   /**
-   * Get all service categories
-   * This returns predefined categories from the backend
+   * Get all service categories with provider counts
+   * GET /api/v1/categories?limit=25
    */
-  async getCategories(useCache = true): Promise<ServiceCategory[]> {
+  async getCategories(limit = 25, useCache = true): Promise<PopularCategory[]> {
     try {
-      // Return cached data if available
-      if (useCache && this.categoriesCache) {
+      // Check if cache is still valid
+      const now = Date.now()
+      const cacheIsValid = this.categoriesCache &&
+                          useCache &&
+                          (now - this.cacheTimestamp) < this.CACHE_DURATION
+
+      if (cacheIsValid) {
         console.log('[CategoryService] Returning cached categories')
-        return this.categoriesCache
+        return this.categoriesCache!
       }
 
       console.log('[CategoryService] Fetching categories from API')
 
-      // For now, return hardcoded categories that match backend ServiceCategory enum
-      // In the future, this could be an API endpoint
-      const categories: ServiceCategory[] = [
-        { name: 'آرایشگاه مو', slug: 'haircut', color: '#667eea', description: 'کوتاهی و مدل مو' },
-        { name: 'رنگ مو', slug: 'hair_coloring', color: '#f093fb', description: 'رنگ و هایلایت مو' },
-        { name: 'حالت دهی مو', slug: 'hair_styling', color: '#4facfe', description: 'فر و صافی مو' },
-        { name: 'درمان مو', slug: 'hair_treatment', color: '#fa709a', description: 'درمان‌های تخصصی مو' },
-        { name: 'آرایش', slug: 'makeup', color: '#ffecd2', description: 'آرایش صورت و چشم' },
-        { name: 'پاکسازی پوست', slug: 'facial', color: '#a8edea', description: 'فیشیال و پاکسازی' },
-        { name: 'مراقبت پوست', slug: 'skincare', color: '#fed6e3', description: 'مراقبت‌های پوستی' },
-        { name: 'اپیلاسیون', slug: 'waxing', color: '#ffd89b', description: 'اپیلاسیون بدن' },
-        { name: 'بند انداختن', slug: 'threading', color: '#f857a6', description: 'بند ابرو و صورت' },
-        { name: 'مانیکور', slug: 'manicure', color: '#ec4899', description: 'مانیکور و ناخن دست' },
-        { name: 'پدیکور', slug: 'pedicure', color: '#10b981', description: 'پدیکور و ناخن پا' },
-        { name: 'طراحی ناخن', slug: 'nail_art', color: '#f59e0b', description: 'طراحی و هنر ناخن' },
-        { name: 'ماساژ', slug: 'massage', color: '#3b82f6', description: 'ماساژ درمانی و آرامش‌بخش' },
-        { name: 'اسپا', slug: 'spa', color: '#6366f1', description: 'خدمات اسپا' },
-        { name: 'آروماتراپی', slug: 'aromatherapy', color: '#8b5cf6', description: 'درمان با رایحه' },
-        { name: 'لیزر', slug: 'laser', color: '#ef4444', description: 'لیزر موهای زائد' },
-        { name: 'بوتاکس', slug: 'botox', color: '#06b6d4', description: 'تزریق بوتاکس' },
-        { name: 'فیلر', slug: 'filler', color: '#84cc16', description: 'تزریق فیلر' },
-        { name: 'مزوتراپی', slug: 'mesotherapy', color: '#f43f5e', description: 'تزریق مزوتراپی' },
-        { name: 'پی آر پی', slug: 'prp', color: '#14b8a6', description: 'درمان با پلاسمای غنی از پلاکت' },
-        { name: 'مربی شخصی', slug: 'personal_training', color: '#eab308', description: 'تمرینات ورزشی شخصی' },
-        { name: 'یوگا', slug: 'yoga', color: '#a855f7', description: 'کلاس یوگا' },
-        { name: 'پیلاتس', slug: 'pilates', color: '#ec4899', description: 'کلاس پیلاتس' },
-        { name: 'زومبا', slug: 'zumba', color: '#f97316', description: 'کلاس زومبا' },
-        { name: 'مشاوره', slug: 'consultation', color: '#64748b', description: 'مشاوره تخصصی' },
-      ]
+      const response = await httpClient.get<ApiResponse<PopularCategory[]>>(
+        `${API_BASE}?limit=${limit}`
+      )
+
+      console.log('[CategoryService] Categories retrieved:', response.data)
+
+      // Handle wrapped response format
+      const categories = response.data?.data || response.data
+      const categoriesList = categories as PopularCategory[]
 
       // Cache the results
-      this.categoriesCache = categories
+      this.categoriesCache = categoriesList
+      this.cacheTimestamp = now
 
-      return categories
+      return categoriesList
     } catch (error) {
       console.error('[CategoryService] Error fetching categories:', error)
       throw this.handleError(error)
@@ -102,7 +92,7 @@ class CategoryService {
   /**
    * Get category by slug
    */
-  async getCategoryBySlug(slug: string): Promise<ServiceCategory | null> {
+  async getCategoryBySlug(slug: string): Promise<PopularCategory | null> {
     const categories = await this.getCategories()
     return categories.find(c => c.slug === slug) || null
   }
@@ -110,7 +100,7 @@ class CategoryService {
   /**
    * Search categories by name
    */
-  async searchCategories(query: string): Promise<ServiceCategory[]> {
+  async searchCategories(query: string): Promise<PopularCategory[]> {
     const categories = await this.getCategories()
     const lowerQuery = query.toLowerCase()
 
@@ -123,83 +113,40 @@ class CategoryService {
 
   /**
    * Get popular categories
-   * This would ideally come from analytics, but for now we'll use predefined popular ones
+   * GET /api/v1/categories/popular?limit=8
+   *
+   * Returns categories sorted by provider count (most popular first)
    */
-  async getPopularCategories(limit = 8): Promise<PopularCategory[]> {
+  async getPopularCategories(limit = 8, useCache = true): Promise<PopularCategory[]> {
     try {
-      // Return cached data if available
-      if (this.popularCategoriesCache) {
+      // Check if cache is still valid
+      const now = Date.now()
+      const cacheIsValid = this.popularCategoriesCache &&
+                          useCache &&
+                          (now - this.cacheTimestamp) < this.CACHE_DURATION
+
+      if (cacheIsValid) {
         console.log('[CategoryService] Returning cached popular categories')
-        return this.popularCategoriesCache.slice(0, limit)
+        return this.popularCategoriesCache!.slice(0, limit)
       }
 
-      console.log('[CategoryService] Fetching popular categories')
+      console.log('[CategoryService] Fetching popular categories from API')
 
-      // For now, return hardcoded popular categories
-      // In the future, this should come from analytics API
-      const popularCategories: PopularCategory[] = [
-        {
-          name: 'آرایشگاه مو',
-          slug: 'haircut',
-          icon: '💇',
-          gradient: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-          providerCount: 2500,
-        },
-        {
-          name: 'ماساژ و اسپا',
-          slug: 'massage',
-          icon: '💆',
-          gradient: 'linear-gradient(135deg, #f093fb 0%, #f5576c 100%)',
-          providerCount: 1800,
-        },
-        {
-          name: 'پاکسازی پوست',
-          slug: 'facial',
-          icon: '✨',
-          gradient: 'linear-gradient(135deg, #4facfe 0%, #00f2fe 100%)',
-          providerCount: 1200,
-        },
-        {
-          name: 'مانیکور و پدیکور',
-          slug: 'manicure',
-          icon: '💅',
-          gradient: 'linear-gradient(135deg, #fa709a 0%, #fee140 100%)',
-          providerCount: 1500,
-        },
-        {
-          name: 'آرایش',
-          slug: 'makeup',
-          icon: '💄',
-          gradient: 'linear-gradient(135deg, #ffecd2 0%, #fcb69f 100%)',
-          providerCount: 900,
-        },
-        {
-          name: 'اپیلاسیون',
-          slug: 'waxing',
-          icon: '🌿',
-          gradient: 'linear-gradient(135deg, #a8edea 0%, #fed6e3 100%)',
-          providerCount: 800,
-        },
-        {
-          name: 'آرایشگاه مردانه',
-          slug: 'barbering',
-          icon: '💈',
-          gradient: 'linear-gradient(135deg, #ffd89b 0%, #19547b 100%)',
-          providerCount: 1100,
-        },
-        {
-          name: 'خالکوبی و پیرسینگ',
-          slug: 'tattoo',
-          icon: '🎨',
-          gradient: 'linear-gradient(135deg, #f857a6 0%, #ff5858 100%)',
-          providerCount: 600,
-        },
-      ]
+      const response = await httpClient.get<ApiResponse<PopularCategory[]>>(
+        `${API_BASE}/popular?limit=${limit}`
+      )
+
+      console.log('[CategoryService] Popular categories retrieved:', response.data)
+
+      // Handle wrapped response format
+      const categories = response.data?.data || response.data
+      const categoriesList = categories as PopularCategory[]
 
       // Cache the results
-      this.popularCategoriesCache = popularCategories
+      this.popularCategoriesCache = categoriesList
+      this.cacheTimestamp = now
 
-      return popularCategories.slice(0, limit)
+      return categoriesList
     } catch (error) {
       console.error('[CategoryService] Error fetching popular categories:', error)
       throw this.handleError(error)
@@ -216,6 +163,7 @@ class CategoryService {
   clearCache(): void {
     this.categoriesCache = null
     this.popularCategoriesCache = null
+    this.cacheTimestamp = 0
     console.log('[CategoryService] Cache cleared')
   }
 

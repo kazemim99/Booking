@@ -100,6 +100,27 @@ export interface GetAvailableDatesResponse {
   availableDays: number
 }
 
+/**
+ * Qualified staff member
+ */
+export interface QualifiedStaffMember {
+  id: string
+  name: string
+  photoUrl?: string
+  rating?: number
+  reviewCount?: number
+  specialization?: string
+}
+
+/**
+ * Get qualified staff response
+ */
+export interface GetQualifiedStaffResponse {
+  providerId: string
+  serviceId: string
+  qualifiedStaff: QualifiedStaffMember[]
+}
+
 // ==================== Availability Service Class ====================
 
 class AvailabilityService {
@@ -229,6 +250,49 @@ class AvailabilityService {
       return data as AvailabilityCheckResult
     } catch (error) {
       console.error('[AvailabilityService] Error checking availability:', error)
+      throw this.handleError(error)
+    }
+  }
+
+  // ============================================
+  // Get Qualified Staff
+  // ============================================
+
+  /**
+   * Get qualified staff members for a service
+   * GET /api/v1/services/provider/{providerId}/{serviceId}/qualified-staff
+   *
+   * Example response:
+   * {
+   *   "providerId": "provider-123",
+   *   "serviceId": "service-456",
+   *   "qualifiedStaff": [
+   *     {
+   *       "id": "staff-789",
+   *       "name": "احمد محمدی",
+   *       "photoUrl": "https://...",
+   *       "rating": 4.8,
+   *       "reviewCount": 120,
+   *       "specialization": "متخصص پوست"
+   *     }
+   *   ]
+   * }
+   */
+  async getQualifiedStaff(providerId: string, serviceId: string): Promise<GetQualifiedStaffResponse> {
+    try {
+      console.log('[AvailabilityService] Getting qualified staff:', { providerId, serviceId })
+
+      const response = await httpClient.get<ApiResponse<GetQualifiedStaffResponse>>(
+        `/v1/services/provider/${providerId}/${serviceId}/qualified-staff`
+      )
+
+      console.log('[AvailabilityService] Qualified staff retrieved:', response.data)
+
+      // Handle wrapped response format
+      const data = response.data?.data || response.data
+      return data as GetQualifiedStaffResponse
+    } catch (error) {
+      console.error('[AvailabilityService] Error getting qualified staff:', error)
       throw this.handleError(error)
     }
   }

@@ -102,9 +102,9 @@
               <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
               </svg>
-              نام
+              نام و نام خانوادگی
             </div>
-            <div class="detail-value">{{ bookingData.customerInfo.fullName }}</div>
+            <div class="detail-value">{{ bookingData.customerInfo.firstName }} {{ bookingData.customerInfo.lastName }}</div>
           </div>
 
           <div class="detail-row">
@@ -127,14 +127,22 @@
             <div class="detail-value" dir="ltr">{{ bookingData.customerInfo.email }}</div>
           </div>
 
-          <div v-if="bookingData.customerInfo.notes" class="detail-row notes-row">
+          <div class="detail-row notes-row full-width">
             <div class="detail-label">
               <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 8h10M7 12h4m1 8l-4-4H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-3l-4 4z" />
               </svg>
-              یادداشت
+              یادداشت (اختیاری)
             </div>
-            <div class="detail-value notes-value">{{ bookingData.customerInfo.notes }}</div>
+            <textarea
+              v-model="localNotes"
+              class="notes-input"
+              placeholder="یادداشت یا توضیحات اضافی برای ارائه‌دهنده..."
+              rows="3"
+              maxlength="500"
+              @input="emitNotesUpdate"
+            ></textarea>
+            <div class="character-count">{{ localNotes.length }}/500 کاراکتر</div>
           </div>
         </div>
       </div>
@@ -181,7 +189,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted } from 'vue'
+import { ref, onMounted, watch } from 'vue'
 import { useProviderStore } from '@/modules/provider/stores/provider.store'
 import type { Provider } from '@/modules/provider/types/provider.types'
 
@@ -196,7 +204,8 @@ interface BookingData {
   staffId: string | null
   staffName: string
   customerInfo: {
-    fullName: string
+    firstName: string
+    lastName: string
     phoneNumber: string
     email: string
     notes: string
@@ -210,8 +219,22 @@ interface Props {
 
 const props = defineProps<Props>()
 
+const emit = defineEmits<{
+  (e: 'notes-updated', notes: string): void
+}>()
+
 const providerStore = useProviderStore()
 const provider = ref<Provider | null>(null)
+const localNotes = ref('')
+
+// Initialize notes from bookingData
+watch(() => props.bookingData.customerInfo.notes, (newNotes) => {
+  localNotes.value = newNotes || ''
+}, { immediate: true })
+
+const emitNotesUpdate = () => {
+  emit('notes-updated', localNotes.value)
+}
 
 // Lifecycle
 onMounted(async () => {
@@ -235,18 +258,25 @@ const formatDate = (dateString: string | null): string => {
   if (!dateString) return 'انتخاب نشده'
 
   const date = new Date(dateString)
-  const weekDays = ['یکشنبه', 'دوشنبه', 'سه‌شنبه', 'چهارشنبه', 'پنج‌شنبه', 'جمعه', 'شنبه']
-  const months = [
-    'ژانویه', 'فوریه', 'مارس', 'آوریل', 'می', 'ژوئن',
-    'ژوئیه', 'اوت', 'سپتامبر', 'اکتبر', 'نوامبر', 'دسامبر'
-  ]
 
-  const dayName = weekDays[date.getDay()]
-  const day = convertToPersianNumber(date.getDate())
-  const month = months[date.getMonth()]
-  const year = convertToPersianNumber(date.getFullYear())
+  // Use Persian locale to format date
+  const options: Intl.DateTimeFormatOptions = {
+    weekday: 'long',
+    year: 'numeric',
+    month: 'long',
+    day: 'numeric',
+    calendar: 'persian'
+  }
 
-  return `${dayName}، ${day} ${month} ${year}`
+  try {
+    const formatter = new Intl.DateTimeFormat('fa-IR', options)
+    return formatter.format(date)
+  } catch (_error) {
+    // Fallback to simple format if Intl fails
+    const weekDays = ['یکشنبه', 'دوشنبه', 'سه‌شنبه', 'چهارشنبه', 'پنج‌شنبه', 'جمعه', 'شنبه']
+    const dayName = weekDays[date.getDay()]
+    return `${dayName}، ${convertToPersianNumber(date.getDate())} ${convertToPersianNumber(date.getMonth() + 1)} ${convertToPersianNumber(date.getFullYear())}`
+  }
 }
 
 const convertToPersianTime = (time: string | null): string => {
@@ -411,6 +441,42 @@ const formatPrice = (price: number): string => {
   flex-direction: column;
   align-items: flex-start;
   gap: 0.75rem;
+}
+
+.notes-row.full-width {
+  width: 100%;
+}
+
+.notes-input {
+  width: 100%;
+  padding: 1rem;
+  background: #f8fafc;
+  border: 2px solid #e2e8f0;
+  border-radius: 12px;
+  font-size: 0.95rem;
+  font-family: inherit;
+  line-height: 1.6;
+  color: #475569;
+  resize: vertical;
+  transition: all 0.3s;
+}
+
+.notes-input:focus {
+  outline: none;
+  border-color: #667eea;
+  background: white;
+  box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+}
+
+.notes-input::placeholder {
+  color: #94a3b8;
+}
+
+.character-count {
+  align-self: flex-end;
+  font-size: 0.75rem;
+  color: #94a3b8;
+  margin-top: -0.5rem;
 }
 
 .notes-value {

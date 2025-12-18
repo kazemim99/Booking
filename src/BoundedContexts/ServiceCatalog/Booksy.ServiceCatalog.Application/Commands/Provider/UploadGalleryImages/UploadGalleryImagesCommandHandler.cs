@@ -57,9 +57,8 @@ public sealed class UploadGalleryImagesCommandHandler
                 file.FileName,
                 cancellationToken);
 
-            // Add to domain through the aggregate
-            var galleryImage = provider.Profile.AddGalleryImage(
-                providerId,
+            // Add to domain through the aggregate (this raises GalleryImageUploadedEvent for cache invalidation)
+            var galleryImage = provider.UploadGalleryImage(
                 storageResult.OriginalUrl,
                 storageResult.ThumbnailUrl,
                 storageResult.MediumUrl);

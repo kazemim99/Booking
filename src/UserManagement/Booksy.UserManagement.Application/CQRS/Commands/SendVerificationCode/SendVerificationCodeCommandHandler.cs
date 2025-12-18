@@ -46,7 +46,7 @@ public sealed class SendVerificationCodeCommandHandler
         PhoneNumber phoneNumber;
         try
         {
-            phoneNumber = PhoneNumber.Create(phoneNumberString);
+            phoneNumber = PhoneNumber.From(phoneNumberString);
         }
         catch (ArgumentException ex)
         {

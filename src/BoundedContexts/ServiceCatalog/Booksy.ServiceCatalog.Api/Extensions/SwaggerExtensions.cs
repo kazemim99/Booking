@@ -18,9 +18,21 @@ public static class SwaggerExtensions
         {
             options.SwaggerDoc("v1", new OpenApiInfo
             {
-                Title = "Booksy Service Category API",
+                Title = "Booksy Service Catalog API",
                 Version = "v1",
-                Description = "API for managing users in the Booksy platform",
+                Description = @"API for managing service providers, bookings, and services in the Booksy platform.
+
+## Provider Hierarchy
+This API supports a provider hierarchy model:
+- **Organizations**: Business entities (salons, clinics, etc.) that can have staff members
+- **Individuals**: Single professionals who can be independent or linked to an organization
+
+### Key Features:
+- Register as Organization or Individual provider
+- Invite staff members to join an organization
+- Submit join requests to organizations
+- Convert individual provider to organization
+- Manage staff members and invitations",
                 Contact = new OpenApiContact
                 {
                     Name = "Booksy Team",

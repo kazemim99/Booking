@@ -55,6 +55,13 @@ export interface Provider {
   services?: ServiceSummary[]
   staff?: StaffMember[]
   businessHours?: BusinessHours[]
+  gallery?: GalleryImage[] // Gallery images
+
+  // Provider Hierarchy (NEW)
+  hierarchyType?: 'Organization' | 'Individual' // Provider hierarchy type
+  isIndependent?: boolean // True if independent individual provider
+  parentProviderId?: string // For individuals linked to organizations
+  staffProviders?: StaffProvider[] // Staff as individual providers (for organizations)
 
   // Timestamps
   registeredAt: string
@@ -138,6 +145,7 @@ export interface ProviderSummary {
   status: ProviderStatus
   priceRange?: PriceRange // NEW: Price range for filtering
   logoUrl?: string
+  profileImageUrl?: string // Profile/professional image (preferred for search cards)
   city: string
   state: string
   country: string
@@ -150,6 +158,11 @@ export interface ProviderSummary {
   totalReviews?: number // NEW: Total review count
   registeredAt: string
   lastActiveAt?: string
+  // Hierarchy fields for organization/staff display
+  staffCount?: number // Number of active staff members
+  isOrganization?: boolean // True if provider is an organization with staff
+  hierarchyType?: 'Organization' | 'Individual' // Provider hierarchy type
+  staff?: StaffMember[] // Staff members (for displaying in cards)
 }
 
 export interface ServiceSummary {
@@ -167,6 +180,19 @@ export interface ServiceSummary {
   tags: string[]
 }
 
+export interface GalleryImage {
+  id: string
+  thumbnailUrl: string
+  mediumUrl: string
+  originalUrl: string
+  displayOrder: number
+  caption?: string
+  altText?: string
+  uploadedAt: string
+  isActive: boolean
+  isPrimary: boolean
+}
+
 export interface StaffMember {
   id: string
   providerId: string
@@ -179,6 +205,21 @@ export interface StaffMember {
   photoUrl?: string
   isActive: boolean
   specializations: string[]
+}
+
+// Staff Provider (for organization hierarchy - individual providers linked to an organization)
+export interface StaffProvider {
+  providerId: string
+  businessName: string
+  profileImageUrl?: string
+  status: string
+  isIndependent: boolean
+  joinedAt?: string
+  averageRating: number
+  totalReviews?: number
+  serviceCount: number
+  specializations?: string[]
+  bio?: string
 }
 
 // ============================================
@@ -198,6 +239,7 @@ export interface ProviderSearchFilters extends PaginationParams {
   state?: string
   country?: string
   type?: ProviderType
+  hierarchyType?: string // Filter by hierarchy type: 'Organization' or 'Individual'
   status?: ProviderStatus
   serviceCategory?: string // NEW: Filter by service category (e.g., "haircut", "massage")
   priceRange?: PriceRange // NEW: Filter by price range (Budget, Moderate, Premium)
@@ -362,6 +404,12 @@ export interface ProviderResponse {
   services?: ServiceSummary[]
   staff?: StaffMember[]
   businessHours?: BusinessHours[]
+
+  // Provider hierarchy fields (from backend)
+  hierarchyType?: string // "Organization" | "Individual"
+  isIndependent?: boolean
+  parentProviderId?: string
+  staffProviders?: StaffProvider[] // Staff as individual providers (for organizations)
 }
 
 // ============================================

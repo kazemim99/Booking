@@ -87,11 +87,11 @@
 <script setup lang="ts">
 import { ref, computed } from 'vue'
 import BaseModal from '@/shared/components/ui/BaseModal.vue'
-import type { UpcomingBooking } from '../../types/customer.types'
+import type { EnrichedBookingView } from '@/modules/booking/mappers/booking-dto.mapper'
 
 interface Props {
   isOpen: boolean
-  booking?: UpcomingBooking | null
+  booking?: EnrichedBookingView | null
 }
 
 const props = defineProps<Props>()

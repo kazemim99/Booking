@@ -91,7 +91,7 @@ export const phoneVerificationApi = {
   /**
    * @deprecated Use completeCustomerAuthentication() or completeProviderAuthentication() instead
    */
-  async verifyCode(phoneNumber: string, code: string): Promise<ApiResponse<any>> {
+  async verifyCode(_phoneNumber: string, _code: string): Promise<ApiResponse<any>> {
     console.warn(
       'phoneVerificationApi.verifyCode() is deprecated. Use completeCustomerAuthentication() or completeProviderAuthentication() instead.'
     )
@@ -103,7 +103,7 @@ export const phoneVerificationApi = {
   /**
    * @deprecated Use completeCustomerAuthentication() or completeProviderAuthentication() instead
    */
-  async registerFromVerifiedPhone(request: any): Promise<ApiResponse<any>> {
+  async registerFromVerifiedPhone(_request: any): Promise<ApiResponse<any>> {
     console.warn(
       'phoneVerificationApi.registerFromVerifiedPhone() is deprecated. Use completeCustomerAuthentication() or completeProviderAuthentication() instead.'
     )

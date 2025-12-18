@@ -1,6 +1,11 @@
 import type { RouteRecordRaw, NavigationGuardNext, RouteLocationNormalized } from 'vue-router'
 import { useAuthStore } from '@/core/stores/modules/auth.store'
 import { ProviderStatus } from '@/core/types/enums.types'
+import {
+  organizationOnlyGuard,
+  staffMemberOnlyGuard,
+  independentIndividualOnlyGuard
+} from '../guards/hierarchy.guard'
 
 const providerRoutes: RouteRecordRaw[] = [
   // Public Provider Pages (customer-facing)
@@ -39,7 +44,7 @@ const providerRoutes: RouteRecordRaw[] = [
   // User must be authenticated (phone verification creates User + returns JWT)
   // This route is for Providers with Drafted status to complete their profile
   {
-    path: '/registration',
+    path: '/provider/registration',
     name: 'ProviderRegistration',
     component: () => import('@/modules/provider/views/registration/ProviderRegistrationView.vue'),
     meta: {
@@ -47,7 +52,7 @@ const providerRoutes: RouteRecordRaw[] = [
       roles: ['Provider', 'ServiceProvider'],
       title: 'Complete Your Provider Profile',
     },
-    beforeEnter(to: RouteLocationNormalized, from: RouteLocationNormalized, next: NavigationGuardNext) {
+    beforeEnter(_to: RouteLocationNormalized, _from: RouteLocationNormalized, next: NavigationGuardNext) {
       // Check provider status from token (no API call needed)
       const authStore = useAuthStore()
       const tokenProviderStatus = authStore.providerStatus
@@ -75,9 +80,55 @@ const providerRoutes: RouteRecordRaw[] = [
     },
   },
 
+  // Organization Registration Flow
+  {
+    path: '/provider/registration/organization',
+    name: 'OrganizationRegistration',
+    component: () => import('@/modules/provider/views/registration/OrganizationRegistrationFlow.vue'),
+    meta: {
+      requiresAuth: true,
+      roles: ['Provider', 'ServiceProvider'],
+      title: 'Organization Registration',
+    },
+    beforeEnter(_to: RouteLocationNormalized, _from: RouteLocationNormalized, next: NavigationGuardNext) {
+      const authStore = useAuthStore()
+      const tokenProviderStatus = authStore.providerStatus
+
+      // Only allow if no provider or drafted status
+      if (tokenProviderStatus === null || tokenProviderStatus === ProviderStatus.Drafted) {
+        next()
+      } else {
+        next({ name: 'ProviderDashboard' })
+      }
+    },
+  },
+
+  // Individual Registration Flow
+  {
+    path: '/provider/registration/individual',
+    name: 'IndividualRegistration',
+    component: () => import('@/modules/provider/views/registration/IndividualRegistrationFlow.vue'),
+    meta: {
+      requiresAuth: true,
+      roles: ['Provider', 'ServiceProvider'],
+      title: 'Individual Registration',
+    },
+    beforeEnter(_to: RouteLocationNormalized, _from: RouteLocationNormalized, next: NavigationGuardNext) {
+      const authStore = useAuthStore()
+      const tokenProviderStatus = authStore.providerStatus
+
+      // Only allow if no provider or drafted status
+      if (tokenProviderStatus === null || tokenProviderStatus === ProviderStatus.Drafted) {
+        next()
+      } else {
+        next({ name: 'ProviderDashboard' })
+      }
+    },
+  },
+
   // Provider Dashboard (main overview page)
   {
-    path: '/dashboard',
+    path: '/provider/dashboard',
     name: 'ProviderDashboard',
     component: () => import('@/modules/provider/views/dashboard/ProviderDashboardView.vue'),
     meta: {
@@ -89,7 +140,7 @@ const providerRoutes: RouteRecordRaw[] = [
 
   // Provider Bookings
   {
-    path: '/bookings',
+    path: '/provider/bookings',
     name: 'ProviderBookings',
     component: () => import('@/modules/provider/views/ProviderBookingsView.vue'),
     meta: {
@@ -101,7 +152,7 @@ const providerRoutes: RouteRecordRaw[] = [
 
   // Provider Profile
   {
-    path: '/profile',
+    path: '/provider/profile',
     name: 'ProviderProfile',
     component: () => import('@/modules/provider/views/dashboard/ProviderProfileView.vue'),
     meta: {
@@ -113,7 +164,7 @@ const providerRoutes: RouteRecordRaw[] = [
 
   // Provider Financial
   {
-    path: '/financial',
+    path: '/provider/financial',
     name: 'ProviderFinancial',
     component: () => import('@/modules/provider/views/dashboard/ProviderFinancialView.vue'),
     meta: {
@@ -125,7 +176,7 @@ const providerRoutes: RouteRecordRaw[] = [
 
   // Business Hours Management
   {
-    path: '/hours',
+    path: '/provider/hours',
     name: 'ProviderBusinessHours',
     component: () => import('@/modules/provider/views/hours/BusinessHoursView.vue'),
     meta: {
@@ -137,9 +188,9 @@ const providerRoutes: RouteRecordRaw[] = [
 
   // Gallery Management
   {
-    path: '/gallery',
+    path: '/provider/gallery',
     name: 'ProviderGallery',
-    component: () => import('@/modules/provider/views/gallery/GalleryViewNew.vue'),
+    component: () => import('@/modules/provider/views/gallery/GalleryView.vue'),
     meta: {
       requiresAuth: true,
       roles: ['Provider', 'ServiceProvider'],
@@ -149,7 +200,7 @@ const providerRoutes: RouteRecordRaw[] = [
 
   // Services Management
   {
-    path: '/services',
+    path: '/provider/services',
     name: 'ProviderServices',
     component: () => import('@/modules/provider/views/ProviderServicesView.vue'),
     meta: {
@@ -161,7 +212,7 @@ const providerRoutes: RouteRecordRaw[] = [
 
   // Staff Management (now integrated into Profile page)
   // {
-  //   path: '/staff',
+  //   path: '/provider/staff',
   //   name: 'ProviderStaff',
   //   component: () => import('@/modules/provider/views/ProviderStaffView.vue'),
   //   meta: {
@@ -173,7 +224,7 @@ const providerRoutes: RouteRecordRaw[] = [
 
   // Settings
   {
-    path: '/settings',
+    path: '/provider/settings',
     name: 'ProviderSettings',
     component: () => import('@/modules/provider/views/ProviderSettingsView.vue'),
     meta: {
@@ -185,7 +236,7 @@ const providerRoutes: RouteRecordRaw[] = [
 
   // Analytics
   {
-    path: '/analytics',
+    path: '/provider/analytics',
     name: 'ProviderAnalytics',
     component: () => import('@/modules/provider/views/ProviderAnalyticsView.vue'),
     meta: {
@@ -193,6 +244,122 @@ const providerRoutes: RouteRecordRaw[] = [
       roles: ['Provider', 'ServiceProvider'],
       title: 'Analytics',
     },
+  },
+
+  // Staff Management (Organization Only)
+  {
+    path: '/provider/staff',
+    name: 'ProviderStaffManagement',
+    component: () => import('@/modules/provider/views/staff/StaffManagementView.vue'),
+    meta: {
+      requiresAuth: true,
+      roles: ['Provider', 'ServiceProvider'],
+      title: 'Staff Management',
+    },
+    beforeEnter: organizationOnlyGuard,
+  },
+
+  // Invitation Routes
+  {
+    path: '/provider/invitations/:id/accept',
+    name: 'AcceptInvitation',
+    component: () => import('@/modules/provider/views/invitation/AcceptInvitationView.vue'),
+    meta: {
+      requiresAuth: false,
+      layout: 'auth',
+      title: 'Accept Invitation',
+    },
+  },
+
+  // Join Request Routes
+  {
+    path: '/provider/organizations/search',
+    name: 'SearchOrganizations',
+    component: () => import('@/modules/provider/components/joinrequest/SearchOrganizations.vue'),
+    meta: {
+      requiresAuth: true,
+      roles: ['Provider', 'ServiceProvider'],
+      title: 'Search Organizations',
+    },
+  },
+  {
+    path: '/provider/join-requests',
+    name: 'MyJoinRequests',
+    component: () => import('@/modules/provider/views/joinrequest/MyJoinRequestsView.vue'),
+    meta: {
+      requiresAuth: true,
+      roles: ['Provider', 'ServiceProvider'],
+      title: 'My Join Requests',
+    },
+  },
+
+  // Conversion Route (Independent Individual Only)
+  {
+    path: '/provider/convert-to-organization',
+    name: 'ConvertToOrganization',
+    component: () => import('@/modules/provider/views/conversion/ConvertToOrganizationView.vue'),
+    meta: {
+      requiresAuth: true,
+      roles: ['Provider', 'ServiceProvider'],
+      title: 'Convert to Organization',
+    },
+    beforeEnter: independentIndividualOnlyGuard,
+  },
+
+  // ============================================================================
+  // STAFF MEMBER ROUTES (Individual with Parent Organization)
+  // ============================================================================
+
+  // My Bookings (Staff Member Only)
+  {
+    path: '/provider/my-bookings',
+    name: 'MyBookings',
+    component: () => import('@/modules/provider/views/staff/MyBookingsView.vue'),
+    meta: {
+      requiresAuth: true,
+      roles: ['Provider', 'ServiceProvider'],
+      title: 'My Bookings',
+    },
+    beforeEnter: staffMemberOnlyGuard,
+  },
+
+  // My Earnings (Staff Member Only)
+  {
+    path: '/provider/my-earnings',
+    name: 'MyEarnings',
+    component: () => import('@/modules/provider/views/staff/MyEarningsView.vue'),
+    meta: {
+      requiresAuth: true,
+      roles: ['Provider', 'ServiceProvider'],
+      title: 'My Earnings',
+    },
+    beforeEnter: staffMemberOnlyGuard,
+  },
+
+  // My Profile (Staff Member Only)
+  {
+    path: '/provider/my-profile',
+    name: 'MyProfile',
+    component: () => import('@/modules/provider/views/staff/MyProfileView.vue'),
+    meta: {
+      requiresAuth: true,
+      roles: ['Provider', 'ServiceProvider'],
+      title: 'My Profile',
+    },
+    beforeEnter: staffMemberOnlyGuard,
+  },
+
+  // My Organization (Staff Member Only - Read-only view)
+  {
+    path: '/provider/my-organization',
+    name: 'MyOrganization',
+    component: () => import('@/modules/provider/views/staff/MyOrganizationView.vue'),
+    meta: {
+      requiresAuth: true,
+      roles: ['Provider', 'ServiceProvider'],
+      title: 'My Organization',
+    },
+    beforeEnter: staffMemberOnlyGuard,
   },
 
 ]

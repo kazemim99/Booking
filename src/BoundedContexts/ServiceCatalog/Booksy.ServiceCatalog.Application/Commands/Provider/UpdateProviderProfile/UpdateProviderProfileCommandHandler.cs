@@ -36,16 +36,20 @@ public sealed class UpdateProviderProfileCommandHandler : ICommandHandler<Update
         }
 
         // Update profile image if provided
+        // Use UpdateBusinessProfile to ensure domain events are raised for cache invalidation
         if (!string.IsNullOrWhiteSpace(request.ProfileImageUrl))
         {
-            provider.Profile.UpdateProfileImage(request.ProfileImageUrl);
+            provider.UpdateBusinessProfile(
+                provider.Profile.BusinessName,
+                provider.Profile.BusinessDescription,
+                request.ProfileImageUrl);
         }
 
         // Update contact info if email provided
         if (!string.IsNullOrWhiteSpace(request.Email))
         {
             var email = Email.Create(request.Email);
-            var existingPrimaryPhone = provider.ContactInfo?.PrimaryPhone ?? PhoneNumber.Create("+10000000000");
+            var existingPrimaryPhone = provider.ContactInfo?.PrimaryPhone ?? PhoneNumber.From("+10000000000");
 
             var contactInfo = ContactInfo.Create(
                 email,

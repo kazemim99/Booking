@@ -25,6 +25,13 @@ namespace Booksy.ServiceCatalog.Domain.Aggregates.BookingAggregate
         public ServiceId ServiceId { get; private set; }
         public Guid StaffId { get; private set; }
 
+        /// <summary>
+        /// The individual provider (professional) who will perform the service.
+        /// This is used when booking at an organization with staff hierarchy.
+        /// For solo organizations or independent individuals, this can be null.
+        /// </summary>
+        public ProviderId? IndividualProviderId { get; private set; }
+
         // Booking Details
         public TimeSlot TimeSlot { get; private set; }
         public Duration Duration { get; private set; }
@@ -68,6 +75,7 @@ namespace Booksy.ServiceCatalog.Domain.Aggregates.BookingAggregate
         /// <summary>
         /// Factory method - Create a new booking request
         /// </summary>
+        /// <param name="individualProviderId">Optional individual provider ID when booking at an organization with staff hierarchy</param>
         public static Booking CreateBookingRequest(
             UserId customerId,
             ProviderId providerId,
@@ -77,7 +85,8 @@ namespace Booksy.ServiceCatalog.Domain.Aggregates.BookingAggregate
             Duration duration,
             Price totalPrice,
             BookingPolicy policy,
-            string? customerNotes = null)
+            string? customerNotes = null,
+            ProviderId? individualProviderId = null)
         {
             var timeSlot = TimeSlot.Create(startTime, duration);
             var depositAmount = policy.CalculateDepositAmount(
@@ -94,6 +103,7 @@ namespace Booksy.ServiceCatalog.Domain.Aggregates.BookingAggregate
                 ProviderId = providerId,
                 ServiceId = serviceId,
                 StaffId = staffId,
+                IndividualProviderId = individualProviderId,
                 TimeSlot = timeSlot,
                 Duration = duration,
                 Status = BookingStatus.Requested,

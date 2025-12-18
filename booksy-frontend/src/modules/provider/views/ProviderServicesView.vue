@@ -1,7 +1,7 @@
 <template>
-  <ServiceListViewNew />
+  <ServiceListView />
 </template>
 
 <script setup lang="ts">
-import ServiceListViewNew from './services/ServiceListViewNew.vue'
+import ServiceListView from './services/ServiceListView.vue'
 </script>

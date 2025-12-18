@@ -20,10 +20,6 @@
         </svg>
       </button>
     </div>
-    <div class="coordinates-display">
-      <span class="coord-label">مختصات:</span>
-      <span class="coord-value">{{ displayCoordinates }}</span>
-    </div>
   </div>
 </template>
 

@@ -23,7 +23,7 @@ export interface Appointment {
     providerId: string
     clientId: string
     serviceId: string
-    staffMemberId?: string
+    staffProviderId?: string
 
     // Scheduling
     scheduledStartTime: string
@@ -64,7 +64,7 @@ export interface Appointment {
 export interface BookingRequest {
     providerId: string
     serviceId: string
-    staffMemberId?: string
+    staffProviderId?: string
     scheduledStartTime: string
     bookingNotes?: string
 }
@@ -180,7 +180,7 @@ export interface ServiceOption {
 export interface Schedule {
     id: string
     providerId: string
-    staffMemberId?: string
+    staffProviderId?: string
 
     workingHours: WorkingHours[]
     exceptions: ScheduleException[]
@@ -230,13 +230,13 @@ export interface AvailabilitySlot {
     startTime: string
     endTime: string
     available: boolean
-    staffMemberId?: string
+    staffProviderId?: string
 }
 
 export interface AvailabilityRequest {
     providerId: string
     serviceId: string
-    staffMemberId?: string
+    staffProviderId?: string
     startDate: string
     endDate: string
 }

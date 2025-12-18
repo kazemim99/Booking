@@ -70,7 +70,7 @@ namespace Booksy.UserManagement.Application.CQRS.Commands.Customer.RegisterCusto
                     request.Gender);
 
                 // Set contact information
-                var phoneNumber = PhoneNumber.Create(request.PhoneNumber);
+                var phoneNumber = PhoneNumber.From(request.PhoneNumber);
                 Address? address = null;
 
                 if (request.Address != null)

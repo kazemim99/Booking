@@ -40,7 +40,7 @@ namespace Booksy.ServiceCatalog.Application.Commands.Provider.AddStaff
                 throw new InvalidProviderException("Provider not found");
 
             var email = Email.Create(request.Email);
-            var phone = !string.IsNullOrEmpty(request.Phone) ? PhoneNumber.Create(request.Phone) : null;
+            var phone = !string.IsNullOrEmpty(request.Phone) ? PhoneNumber.From(request.Phone) : null;
 
             provider.AddStaff(request.FirstName, request.LastName, request.Role, phone);
 

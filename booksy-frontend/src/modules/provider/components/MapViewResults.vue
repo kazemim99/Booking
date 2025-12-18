@@ -76,7 +76,7 @@
         @click="selectProvider(provider)"
       >
         <div class="card-image">
-          <img v-if="provider.logoUrl" :src="provider.logoUrl" :alt="provider.businessName" />
+          <img v-if="buildProviderImageUrl(provider.profileImageUrl, provider.logoUrl)" :src="buildProviderImageUrl(provider.profileImageUrl, provider.logoUrl)" :alt="provider.businessName" />
           <div v-else class="card-placeholder">
             {{ getInitials(provider.businessName) }}
           </div>
@@ -107,6 +107,7 @@ import { Point } from '@neshan-maps-platform/ol/geom'
 import { Vector as VectorSource } from '@neshan-maps-platform/ol/source'
 import { Vector as VectorLayer } from '@neshan-maps-platform/ol/layer'
 import { Style, Icon } from '@neshan-maps-platform/ol/style'
+import { buildProviderImageUrl } from '@/core/utils/url.service'
 import type { ProviderSummary } from '../types/provider.types'
 
 import '@neshan-maps-platform/ol/ol.css'

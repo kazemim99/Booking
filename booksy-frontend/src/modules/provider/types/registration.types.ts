@@ -44,9 +44,12 @@ export interface BusinessAddress {
   addressLine2?: string
   city?: string  // Optional - resolved from cityId
   province?: string  // Optional - resolved from provinceId
+  state?: string  // Alias for province (for backend compatibility)
   provinceId?: number  // Province ID for API
   cityId?: number  // City ID for API
   zipCode?: string
+  postalCode?: string  // Alias for zipCode (for backend compatibility)
+  country?: string
   formattedAddress?: string  // Full formatted address from map
   isShared?: boolean
 }

@@ -22,6 +22,103 @@
       </div>
     </div>
 
+    <!-- Organization Info Section (shown for organizations with staff) -->
+    <div v-if="hasStaffMembers" class="organization-section">
+      <div class="section-header">
+        <h2 class="section-title">درباره این مجموعه</h2>
+        <div class="org-badge">
+          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
+          </svg>
+          <span>{{ getProviderTypeLabel(provider.type) }}</span>
+        </div>
+      </div>
+
+      <div class="organization-content">
+        <!-- Organization Stats -->
+        <div class="org-stats-grid">
+          <div class="org-stat-card">
+            <div class="stat-icon staff">
+              <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
+              </svg>
+            </div>
+            <div class="stat-info">
+              <div class="stat-value">{{ convertToPersianNumber(activeStaffCount) }}</div>
+              <div class="stat-label">متخصص فعال</div>
+            </div>
+          </div>
+
+          <div class="org-stat-card">
+            <div class="stat-icon services">
+              <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4" />
+              </svg>
+            </div>
+            <div class="stat-info">
+              <div class="stat-value">{{ convertToPersianNumber(totalServices) }}</div>
+              <div class="stat-label">خدمات ارائه شده</div>
+            </div>
+          </div>
+
+          <div class="org-stat-card">
+            <div class="stat-icon calendar">
+              <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+              </svg>
+            </div>
+            <div class="stat-info">
+              <div class="stat-value">{{ yearsActive }}</div>
+              <div class="stat-label">سال فعالیت</div>
+            </div>
+          </div>
+
+          <div v-if="provider.verifiedAt" class="org-stat-card verified">
+            <div class="stat-icon verified">
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor">
+                <path fill-rule="evenodd" d="M8.603 3.799A4.49 4.49 0 0112 2.25c1.357 0 2.573.6 3.397 1.549a4.49 4.49 0 013.498 1.307 4.491 4.491 0 011.307 3.497A4.49 4.49 0 0121.75 12a4.49 4.49 0 01-1.549 3.397 4.491 4.491 0 01-1.307 3.497 4.491 4.491 0 01-3.497 1.307A4.49 4.49 0 0112 21.75a4.49 4.49 0 01-3.397-1.549 4.49 4.49 0 01-3.498-1.306 4.491 4.491 0 01-1.307-3.498A4.49 4.49 0 012.25 12c0-1.357.6-2.573 1.549-3.397a4.49 4.49 0 011.307-3.497 4.49 4.49 0 013.497-1.307zm7.007 6.387a.75.75 0 10-1.22-.872l-3.236 4.53L9.53 12.22a.75.75 0 00-1.06 1.06l2.25 2.25a.75.75 0 001.14-.094l3.75-5.25z" clip-rule="evenodd" />
+              </svg>
+            </div>
+            <div class="stat-info">
+              <div class="stat-value">تایید شده</div>
+              <div class="stat-label">هویت تایید شده</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Organization Features -->
+        <div class="org-features">
+          <h3 class="features-title">امکانات و ویژگی‌ها</h3>
+          <div class="features-list">
+            <div v-if="provider.allowOnlineBooking" class="feature-item">
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+                <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd" />
+              </svg>
+              <span>امکان رزرو آنلاین</span>
+            </div>
+            <div v-if="provider.offersMobileServices" class="feature-item">
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+                <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd" />
+              </svg>
+              <span>خدمات سیار</span>
+            </div>
+            <div v-if="hasStaffMembers" class="feature-item">
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+                <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd" />
+              </svg>
+              <span>تیم متخصص با تجربه</span>
+            </div>
+            <div v-if="provider.requiresApproval" class="feature-item">
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+                <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd" />
+              </svg>
+              <span>رزرو با تایید مدیر</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
     <!-- Business Hours Section -->
     <div class="hours-section">
       <div class="section-header">
@@ -195,6 +292,28 @@ const isCurrentlyOpen = computed(() => {
   return true
 })
 
+// Organization computed properties
+const hasStaffMembers = computed(() => {
+  return props.provider.staff && props.provider.staff.length > 0
+})
+
+const activeStaffCount = computed(() => {
+  if (!props.provider.staff) return 0
+  return props.provider.staff.filter(s => s.isActive).length
+})
+
+const totalServices = computed(() => {
+  return props.provider.services?.length || 0
+})
+
+const yearsActive = computed(() => {
+  if (!props.provider.registeredAt) return convertToPersianNumber(1)
+  const registeredDate = new Date(props.provider.registeredAt)
+  const now = new Date()
+  const years = Math.floor((now.getTime() - registeredDate.getTime()) / (365.25 * 24 * 60 * 60 * 1000))
+  return convertToPersianNumber(Math.max(1, years))
+})
+
 // Methods
 const getDayName = (day: DayOfWeek): string => {
   const days = ['دوشنبه', 'سه‌شنبه', 'چهارشنبه', 'پنج‌شنبه', 'جمعه', 'شنبه', 'یکشنبه']
@@ -243,6 +362,18 @@ const getDirections = () => {
     window.open(`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(address)}`, '_blank')
   }
 }
+
+const getProviderTypeLabel = (type: string): string => {
+  const labels: Record<string, string> = {
+    Salon: 'سالن زیبایی',
+    Spa: 'اسپا',
+    Clinic: 'کلینیک',
+    Studio: 'استودیو',
+    Individual: 'فردی',
+    Professional: 'حرفه‌ای',
+  }
+  return labels[type] || type
+}
 </script>
 
 <style scoped>
@@ -254,6 +385,7 @@ const getDirections = () => {
 
 /* Common Section Styles */
 .about-section,
+.organization-section,
 .hours-section,
 .contact-section,
 .location-section {
@@ -476,6 +608,149 @@ const getDirections = () => {
   color: #667eea;
 }
 
+/* Organization Section */
+.org-badge {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.625rem 1.25rem;
+  background: linear-gradient(135deg, rgba(102, 126, 234, 0.1) 0%, rgba(118, 75, 162, 0.1) 100%);
+  color: #667eea;
+  border-radius: 12px;
+  font-size: 0.95rem;
+  font-weight: 600;
+  border: 1px solid rgba(102, 126, 234, 0.2);
+}
+
+.org-badge svg {
+  width: 20px;
+  height: 20px;
+}
+
+.organization-content {
+  display: flex;
+  flex-direction: column;
+  gap: 2rem;
+}
+
+.org-stats-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 1.5rem;
+}
+
+.org-stat-card {
+  display: flex;
+  align-items: center;
+  gap: 1.25rem;
+  padding: 1.5rem;
+  background: #f8fafc;
+  border-radius: 16px;
+  transition: all 0.3s;
+}
+
+.org-stat-card:hover {
+  background: #f1f5f9;
+  transform: translateY(-2px);
+}
+
+.org-stat-card.verified {
+  background: linear-gradient(135deg, rgba(16, 185, 129, 0.05) 0%, rgba(5, 150, 105, 0.05) 100%);
+  border: 1px solid rgba(16, 185, 129, 0.2);
+}
+
+.stat-icon {
+  width: 56px;
+  height: 56px;
+  flex-shrink: 0;
+  border-radius: 14px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.stat-icon svg {
+  width: 28px;
+  height: 28px;
+  color: white;
+}
+
+.stat-icon.staff {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+}
+
+.stat-icon.services {
+  background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+}
+
+.stat-icon.calendar {
+  background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+}
+
+.stat-icon.verified {
+  background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+}
+
+.stat-info {
+  flex: 1;
+}
+
+.stat-value {
+  font-size: 1.75rem;
+  font-weight: 800;
+  color: #1e293b;
+  margin-bottom: 0.25rem;
+}
+
+.stat-label {
+  font-size: 0.875rem;
+  color: #64748b;
+  font-weight: 500;
+}
+
+.org-features {
+  padding: 1.5rem;
+  background: #f8fafc;
+  border-radius: 16px;
+}
+
+.features-title {
+  font-size: 1.125rem;
+  font-weight: 700;
+  color: #1e293b;
+  margin: 0 0 1.25rem 0;
+}
+
+.features-list {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 1rem;
+}
+
+.feature-item {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.75rem 1rem;
+  background: white;
+  border-radius: 12px;
+  font-size: 0.95rem;
+  font-weight: 500;
+  color: #475569;
+  transition: all 0.2s;
+}
+
+.feature-item:hover {
+  background: #f1f5f9;
+}
+
+.feature-item svg {
+  width: 20px;
+  height: 20px;
+  color: #10b981;
+  flex-shrink: 0;
+}
+
 /* Location Section */
 .location-content {
   display: grid;
@@ -578,6 +853,7 @@ const getDirections = () => {
 
 @media (max-width: 768px) {
   .about-section,
+  .organization-section,
   .hours-section,
   .contact-section,
   .location-section {
@@ -595,6 +871,14 @@ const getDirections = () => {
   }
 
   .contact-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .org-stats-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .features-list {
     grid-template-columns: 1fr;
   }
 

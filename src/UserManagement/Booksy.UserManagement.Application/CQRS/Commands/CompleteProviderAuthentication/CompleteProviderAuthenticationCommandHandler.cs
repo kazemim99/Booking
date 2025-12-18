@@ -55,7 +55,7 @@ public sealed class CompleteProviderAuthenticationCommandHandler
             MaskPhoneNumber(request.PhoneNumber));
 
         // Step 1: Verify the phone number and code
-        var phoneNumber = PhoneNumber.Create(request.PhoneNumber);
+        var phoneNumber = PhoneNumber.From(request.PhoneNumber);
         var verification = await _verificationRepo.GetByPhoneNumberAsync(phoneNumber, cancellationToken);
 
         if (verification == null)
@@ -155,10 +155,13 @@ public sealed class CompleteProviderAuthenticationCommandHandler
             userType: UserType.Provider,
             email: user.Email,
             displayName: displayName,
+            firstName: user.Profile.FirstName,
+            lastName: user.Profile.LastName,
             status: user.Status.ToString(),
             roles: roles,
             providerId: providerId,
             providerStatus: providerStatus,
+            phoneNumber: user.PhoneNumber?.Value,
             expirationHours: 24
         );
 

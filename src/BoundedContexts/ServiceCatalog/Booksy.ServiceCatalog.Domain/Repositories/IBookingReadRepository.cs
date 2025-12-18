@@ -119,6 +119,8 @@ namespace Booksy.ServiceCatalog.Domain.Repositories
             UserId customerId,
             PaginationRequest pagination,
             BookingStatus? status = null,
+            DateTime? fromDate = null,
+            DateTime? toDate = null,
             CancellationToken cancellationToken = default);
 
         /// <summary>

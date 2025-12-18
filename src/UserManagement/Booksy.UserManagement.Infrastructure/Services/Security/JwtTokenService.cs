@@ -36,11 +36,14 @@ namespace Booksy.UserManagement.Infrastructure.Services.Security
             UserType userType,
             Email email,
             string displayName,
+            string firstName,
+            string lastName,
             string status,
             IEnumerable<string> roles,
             string? providerId = null,
             string? providerStatus = null,
             string? customerId = null,
+            string? phoneNumber = null,
             int expirationHours = 24)
         {
             var claims = new List<Claim>
@@ -48,6 +51,8 @@ namespace Booksy.UserManagement.Infrastructure.Services.Security
                 new(ClaimTypes.NameIdentifier, userId.Value.ToString()),
                 new(ClaimTypes.Email, email.Value),
                 new(ClaimTypes.Name, displayName),
+                new(ClaimTypes.GivenName, firstName),
+                new(ClaimTypes.Surname, lastName),
                 new("user_type", userType.ToString()),
                 new("user-status", status),
                 new(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString()),
@@ -70,6 +75,12 @@ namespace Booksy.UserManagement.Infrastructure.Services.Security
             if (!string.IsNullOrEmpty(customerId))
             {
                 claims.Add(new Claim("customerId", customerId));
+            }
+
+            // Add phoneNumber claim if available
+            if (!string.IsNullOrEmpty(phoneNumber))
+            {
+                claims.Add(new Claim(ClaimTypes.MobilePhone, phoneNumber));
             }
 
             foreach (var role in roles)

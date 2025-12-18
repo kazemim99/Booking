@@ -8,7 +8,7 @@ import type { ApiResponse } from '@/core/api/client/api-response'
 import type {
   FavoriteProvider,
   AddFavoriteRequest,
-  RemoveFavoriteRequest,
+  // RemoveFavoriteRequest,
   GetFavoritesRequest,
   QuickRebookSuggestion,
 } from '../types/favorites.types'

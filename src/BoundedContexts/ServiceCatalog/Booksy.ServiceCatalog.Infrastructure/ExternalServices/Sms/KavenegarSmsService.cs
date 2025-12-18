@@ -166,6 +166,13 @@ namespace Booksy.ServiceCatalog.Infrastructure.ExternalServices.Sms
         {
             try
             {
+
+                if (!_isEnabled)
+                {
+                    _logger.LogInformation("SMS notifications disabled. Skipping booking completed SMS to {Receptor}", receptor);
+                    return;
+                }
+
                 var url = $"{_apiKey}/sms/send.json?sender={_sender}&receptor={receptor}&message={Uri.EscapeDataString(message)}";
 
                 var response = await _httpClient.PostAsJsonAsync(url, cancellationToken);

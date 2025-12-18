@@ -13,6 +13,7 @@ import type {
   ProviderResponse,
   ProviderType,
   ProviderSearchFilters,
+  GalleryImage,
 } from '../types/provider.types'
 import type { PagedResult } from '@/core/types/common.types'
 
@@ -262,6 +263,19 @@ class ProviderService {
     }
   }
 
+  /**
+   * Get provider gallery images
+   */
+  async getProviderGallery(id: string): Promise<GalleryImage[]> {
+    try {
+      const response = await serviceCategoryClient.get<GalleryImage[]>(`${API_BASE}/${id}/gallery`)
+      return response.data!
+    } catch (error) {
+      console.error(`Error fetching gallery for provider ${id}:`, error)
+      throw this.handleError(error)
+    }
+  }
+
   // ============================================
   // Admin Endpoints
   // ============================================
@@ -346,6 +360,11 @@ class ProviderService {
       lastActiveAt: response.lastActiveAt,
       createdAt: response.registeredAt,
       lastModifiedAt: response.lastActiveAt,
+      // Provider hierarchy fields
+      hierarchyType: response.hierarchyType as 'Organization' | 'Individual' | undefined,
+      isIndependent: response.isIndependent,
+      parentProviderId: response.parentProviderId,
+      staffProviders: response.staffProviders, // Staff as individual providers (for organizations)
     }
   }
 

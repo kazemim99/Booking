@@ -253,7 +253,7 @@ public abstract class ServiceCatalogIntegrationTestBase
             Domain.Enums.ProviderType.Individual,
             ContactInfo.Create(
                 Email.Create(email),
-                PhoneNumber.Create("+1234567890")
+                PhoneNumber.From("+1234567890")
             ),
             BusinessAddress.Create(
                 "123 Test St",
@@ -264,7 +264,7 @@ public abstract class ServiceCatalogIntegrationTestBase
                 "USA"
             )
         );
-        provider.AddStaff("John", "Doe", Domain.Enums.StaffRole.ServiceProvider, PhoneNumber.Create("09123131311"));
+        provider.AddStaff("John", "Doe", Domain.Enums.StaffRole.ServiceProvider, PhoneNumber.From("09123131311"));
         provider.SetSatus(Domain.Enums.ProviderStatus.Active);
         provider.SetAllowOnlineBooking(true);
 
@@ -310,7 +310,7 @@ public abstract class ServiceCatalogIntegrationTestBase
             Domain.Enums.ProviderType.Individual,
             ContactInfo.Create(
                 Email.Create("provider@test.com"),
-                PhoneNumber.Create("+1234567890")
+                PhoneNumber.From("+1234567890")
             ),
             BusinessAddress.Create(
                 "123 Test St",
@@ -353,7 +353,7 @@ public abstract class ServiceCatalogIntegrationTestBase
             Domain.Enums.ProviderType.Individual,
             ContactInfo.Create(
                 Email.Create("provider@test.com"),
-                PhoneNumber.Create("+1234567890")
+                PhoneNumber.From("+1234567890")
             ),
             BusinessAddress.Create(
                 "123 Test St",
@@ -366,7 +366,7 @@ public abstract class ServiceCatalogIntegrationTestBase
         );
 
         // Add staff member (required for bookings/payments)
-        provider.AddStaff("John", "Doe", Domain.Enums.StaffRole.ServiceProvider, PhoneNumber.Create("09123131311"));
+        provider.AddStaff("John", "Doe", Domain.Enums.StaffRole.ServiceProvider, PhoneNumber.From("09123131311"));
         provider.SetSatus(Domain.Enums.ProviderStatus.Active);
         provider.SetAllowOnlineBooking(true);
         await CreateEntityAsync(provider);
@@ -517,7 +517,7 @@ public abstract class ServiceCatalogIntegrationTestBase
             Domain.Enums.ProviderType.Individual,
             ContactInfo.Create(
                 Email.Create($"{userId}@test.com"),
-                PhoneNumber.Create("+1234567890")
+                PhoneNumber.From("+1234567890")
             ),
             BusinessAddress.Create(
                 "123 Test St",
@@ -559,7 +559,7 @@ public abstract class ServiceCatalogIntegrationTestBase
                 "Firstname Staff",
                 "Lastname Staff",
                 StaffRole.Maintenance,
-                PhoneNumber.Create("+1234567890"));
+                PhoneNumber.From("+1234567890"));
         }
 
         await DbContext.SaveChangesAsync();
@@ -588,7 +588,7 @@ public abstract class ServiceCatalogIntegrationTestBase
             Domain.Enums.ProviderType.Individual,
             ContactInfo.Create(
                 Email.Create(email),
-                PhoneNumber.Create("+1234567890")
+                PhoneNumber.From("+1234567890")
             ),
             BusinessAddress.Create(
                 "123 Test St",

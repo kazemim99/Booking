@@ -1,7 +1,11 @@
 /**
  * Toast Notification Service
  * Provides centralized toast notifications for success, error, warning, and info messages
+ * This service acts as a bridge to the Pinia notification store
  */
+
+import { getActivePinia } from 'pinia'
+import { useNotificationStore } from '@/core/stores/modules/notification.store'
 
 export interface ToastOptions {
   title?: string
@@ -25,6 +29,20 @@ class ToastService {
   private idCounter = 0
 
   /**
+   * Get the notification store if Pinia is available
+   */
+  private getNotificationStore() {
+    try {
+      if (getActivePinia()) {
+        return useNotificationStore()
+      }
+    } catch {
+      // Pinia not available, fallback to local state
+    }
+    return null
+  }
+
+  /**
    * Subscribe to toast changes
    */
   subscribe(callback: (toasts: Toast[]) => void): () => void {
@@ -46,6 +64,19 @@ class ToastService {
    * Add a toast notification
    */
   private addToast(type: Toast['type'], options: ToastOptions): string {
+    const store = this.getNotificationStore()
+
+    if (store) {
+      // Use Pinia store if available
+      return store.addNotification(
+        type,
+        options.title || '',
+        options.message,
+        options.duration
+      )
+    }
+
+    // Fallback to local state
     const id = `toast-${++this.idCounter}-${Date.now()}`
     const toast: Toast = {
       id,
@@ -110,6 +141,14 @@ class ToastService {
    * Remove a specific toast
    */
   remove(id: string): void {
+    const store = this.getNotificationStore()
+
+    if (store) {
+      store.removeNotification(id)
+      return
+    }
+
+    // Fallback to local state
     const index = this.toasts.findIndex(t => t.id === id)
     if (index !== -1) {
       this.toasts.splice(index, 1)
@@ -121,6 +160,14 @@ class ToastService {
    * Clear all toasts
    */
   clearAll(): void {
+    const store = this.getNotificationStore()
+
+    if (store) {
+      store.clearAll()
+      return
+    }
+
+    // Fallback to local state
     this.toasts = []
     this.notify()
   }

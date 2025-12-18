@@ -32,4 +32,30 @@ public class ProviderDetailsResponse
     public List<ServiceSummaryResponse> Services { get; internal set; }
     public List<StaffMemberResponse>? Staff { get; internal set; }
     public string? ProfileImageUrl { get;  set; }
+
+    // Hierarchy information
+    /// <summary>
+    /// The provider's hierarchy type (Organization or Individual)
+    /// </summary>
+    public string? HierarchyType { get; set; }
+
+    /// <summary>
+    /// Whether this provider is independent (not linked to any organization)
+    /// </summary>
+    public bool IsIndependent { get; set; }
+
+    /// <summary>
+    /// Parent organization ID if this is a linked individual provider
+    /// </summary>
+    public Guid? ParentProviderId { get; set; }
+
+    /// <summary>
+    /// Parent organization details (if this is a linked individual)
+    /// </summary>
+    public ParentOrganizationResponse? ParentOrganization { get; set; }
+
+    /// <summary>
+    /// Staff members as individual providers (for organizations)
+    /// </summary>
+    public List<StaffProviderResponse>? StaffProviders { get; set; }
 }

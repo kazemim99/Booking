@@ -7,11 +7,22 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <Folder Include="Commands\Provider\UpdateProviderSettings\" />
-    <Folder Include="Commands\Provider\SetBusinessHours\" />
-    <Folder Include="Commands\Provider\RemoveStaff\" />
+    <Compile Remove="Commands\Provider\RemoveStaff\**" />
+    <Compile Remove="Commands\Provider\SetBusinessHours\**" />
+    <Compile Remove="Commands\Provider\UpdateProviderSettings\**" />
+    <Compile Remove="Queries\Provider\GetPaginatedProviders\**" />
+    <EmbeddedResource Remove="Commands\Provider\RemoveStaff\**" />
+    <EmbeddedResource Remove="Commands\Provider\SetBusinessHours\**" />
+    <EmbeddedResource Remove="Commands\Provider\UpdateProviderSettings\**" />
+    <EmbeddedResource Remove="Queries\Provider\GetPaginatedProviders\**" />
+    <None Remove="Commands\Provider\RemoveStaff\**" />
+    <None Remove="Commands\Provider\SetBusinessHours\**" />
+    <None Remove="Commands\Provider\UpdateProviderSettings\**" />
+    <None Remove="Queries\Provider\GetPaginatedProviders\**" />
+  </ItemGroup>
+
+  <ItemGroup>
     <Folder Include="Commands\Service\UpdateServicePricing\" />
-    <Folder Include="Queries\Provider\GetPaginatedProviders\" />
     <Folder Include="Queries\Service\GetServicesByCategory\" />
     <Folder Include="Services\Implementations\" />
     <Folder Include="Validators\FluentValidation\" />

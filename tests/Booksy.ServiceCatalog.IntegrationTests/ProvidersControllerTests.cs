@@ -1,16 +1,7 @@
-using Booksy.API;
 using Booksy.Core.Application.DTOs;
-using Booksy.Core.Domain.ValueObjects;
-using Booksy.ServiceCatalog.API.Models.Requests;
-using Booksy.ServiceCatalog.API.Models.Responses;
 using Booksy.ServiceCatalog.Api.Models.Responses;
 using Booksy.ServiceCatalog.Domain.Aggregates;
 using Booksy.ServiceCatalog.Domain.Enums;
-using Booksy.ServiceCatalog.IntegrationTests.Infrastructure;
-using FluentAssertions;
-using System.Net;
-using Xunit;
-using Booksy.ServiceCatalog.Api.Models.Requests;
 using System.Net.Http.Json;
 
 namespace Booksy.ServiceCatalog.IntegrationTests.API.Providers;

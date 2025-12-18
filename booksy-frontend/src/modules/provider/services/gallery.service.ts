@@ -37,7 +37,7 @@ class GalleryService {
       }
     )
 
-    const images = response.data?.data || []
+    const images = response.data || []
     return images.map(this.mapGalleryImageDates)
   }
 
@@ -46,7 +46,8 @@ class GalleryService {
    */
   async getGalleryImages(providerId: string): Promise<GalleryImage[]> {
     const response = await serviceCategoryClient.get<GalleryImage[]>(
-      `${this.baseUrl}/${providerId}/gallery`
+      `${this.baseUrl}/${providerId}/gallery`,
+      { cache: false } // Disable caching for gallery images to ensure fresh data
     )
 
     const images = response.data || []

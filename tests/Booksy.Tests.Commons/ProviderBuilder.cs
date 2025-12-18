@@ -61,7 +61,7 @@ public class ProviderBuilder
     {
         _contactInfo = ContactInfo.Create(
             Email.Create(email),
-            PhoneNumber.Create("+1234567890")
+            PhoneNumber.From("+1234567890")
         );
         return this;
     }
@@ -92,14 +92,16 @@ public class ProviderBuilder
 
     public Provider Build()
     {
-        var provider = Provider.RegisterProvider(
+        var provider = Provider.CreateDraft(
             _ownerId ?? UserId.From(Guid.NewGuid()),
+            "Test",
+            "User",
             _businessName ?? _fixture.Create<string>(),
             _description ?? _fixture.Create<string>(),
             _providerType,
             _contactInfo ?? ContactInfo.Create(
                 Email.Create("test@example.com"),
-                PhoneNumber.Create("+1234567890")
+                PhoneNumber.From("+1234567890")
             ),
             _address ?? BusinessAddress.Create(
                 "123 Test St",
@@ -108,9 +110,12 @@ public class ProviderBuilder
                 "TS",
                 "12345",
                 "USA"
-            )
+            ),
+            ProviderHierarchyType.Organization,
+            registrationStep: 9
         );
 
+        provider.CompleteRegistration();
         provider.SetSatus(_status);
         provider.SetAllowOnlineBooking(_allowOnlineBooking);
 

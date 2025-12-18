@@ -4,9 +4,11 @@
 using Booksy.Core.Application.Abstractions.CQRS;
 using Booksy.Core.Application.Exceptions;
 using Booksy.ServiceCatalog.Domain.DomainServices;
+using Booksy.ServiceCatalog.Domain.Enums;
 using Booksy.ServiceCatalog.Domain.Repositories;
 using Booksy.ServiceCatalog.Domain.ValueObjects;
 using Microsoft.Extensions.Logging;
+using ProviderAggregate = Booksy.ServiceCatalog.Domain.Aggregates.Provider;
 
 namespace Booksy.ServiceCatalog.Application.Queries.Booking.GetAvailableSlots
 {
@@ -35,7 +37,7 @@ namespace Booksy.ServiceCatalog.Application.Queries.Booking.GetAvailableSlots
                 "Getting available slots for Provider {ProviderId}, Service {ServiceId} on {Date}",
                 request.ProviderId, request.ServiceId, request.Date);
 
-            // Load provider
+            // Load provider (organization)
             var provider = await _providerRepository.GetByIdAsync(
                 ProviderId.From(request.ProviderId),
                 cancellationToken);
@@ -51,13 +53,29 @@ namespace Booksy.ServiceCatalog.Application.Queries.Booking.GetAvailableSlots
             if (service == null)
                 throw new NotFoundException($"Service with ID {request.ServiceId} not found");
 
-            // Get specific staff if requested
-            Domain.Entities.Staff? staff = null;
+            // Get specific individual provider (staff) if requested - USING HIERARCHY
+            ProviderAggregate? individualProvider = null;
             if (request.StaffId.HasValue)
             {
-                staff = provider.Staff.FirstOrDefault(s => s.Id == request.StaffId.Value);
-                if (staff == null)
-                    throw new NotFoundException($"Staff member with ID {request.StaffId.Value} not found");
+                var staffProviderId = ProviderId.From(request.StaffId.Value);
+
+                // Load the individual provider
+                individualProvider = await _providerRepository.GetByIdAsync(
+                    staffProviderId,
+                    cancellationToken);
+
+                if (individualProvider == null)
+                    throw new NotFoundException($"Individual provider with ID {request.StaffId.Value} not found");
+
+                // Verify they belong to this organization
+                if (individualProvider.ParentProviderId != provider.Id)
+                    throw new NotFoundException(
+                        $"Individual provider {request.StaffId.Value} does not belong to organization {request.ProviderId}");
+
+                // Verify they are actually an individual (not an organization)
+                if (individualProvider.HierarchyType != ProviderHierarchyType.Individual)
+                    throw new NotFoundException(
+                        $"Provider {request.StaffId.Value} is not an individual provider");
             }
 
             // Validate date-level constraints (not time-level since we're just selecting a date)
@@ -67,12 +85,12 @@ namespace Booksy.ServiceCatalog.Application.Queries.Booking.GetAvailableSlots
                 request.Date,
                 cancellationToken);
 
-            // Get available slots
+            // Get available slots - using hierarchy model
             var availableSlots = await _availabilityService.GetAvailableTimeSlotsAsync(
                 provider,
                 service,
                 request.Date,
-                staff,
+                individualProvider,
                 cancellationToken);
 
             // Map to DTOs
@@ -110,7 +128,12 @@ namespace Booksy.ServiceCatalog.Application.Queries.Booking.GetAvailableSlots
                     // This happens when there's no qualified staff
                     validationMessages = new List<string>();
 
-                    if (!provider.Staff.Any())
+                    // Check if organization has staff (individual providers) - USING HIERARCHY
+                    var staffCount = await _providerRepository.CountStaffByOrganizationAsync(
+                        provider.Id,
+                        cancellationToken);
+
+                    if (staffCount == 0)
                     {
                         validationMessages.Add("این ارائه‌دهنده هنوز کارمندی اضافه نکرده است. لطفاً بعداً دوباره تلاش کنید.");
                     }

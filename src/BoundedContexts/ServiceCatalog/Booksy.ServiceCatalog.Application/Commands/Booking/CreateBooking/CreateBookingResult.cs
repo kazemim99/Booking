@@ -11,7 +11,7 @@ namespace Booksy.ServiceCatalog.Application.Commands.Booking.CreateBooking
         Guid CustomerId,
         Guid ProviderId,
         Guid ServiceId,
-        Guid StaffId,
+        Guid StaffProviderId,
         DateTime StartTime,
         DateTime EndTime,
         decimal TotalPrice,

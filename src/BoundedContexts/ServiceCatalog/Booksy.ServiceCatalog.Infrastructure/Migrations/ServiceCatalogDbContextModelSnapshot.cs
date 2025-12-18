@@ -115,6 +115,10 @@ namespace Booksy.ServiceCatalog.Infrastructure.Migrations
                         .HasColumnType("integer")
                         .HasColumnName("DurationMinutes");
 
+                    b.Property<Guid?>("IndividualProviderId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("IndividualProviderId");
+
                     b.Property<bool>("IsDeleted")
                         .HasColumnType("boolean");
 
@@ -167,6 +171,9 @@ namespace Booksy.ServiceCatalog.Infrastructure.Migrations
                         .HasColumnName("Version");
 
                     b.HasKey("Id");
+
+                    b.HasIndex("IndividualProviderId")
+                        .HasDatabaseName("IX_Bookings_IndividualProviderId");
 
                     b.HasIndex("ServiceId")
                         .HasDatabaseName("IX_Bookings_ServiceId");
@@ -832,8 +839,22 @@ namespace Booksy.ServiceCatalog.Infrastructure.Migrations
                         .HasMaxLength(100)
                         .HasColumnType("character varying(100)");
 
+                    b.Property<string>("HierarchyType")
+                        .IsRequired()
+                        .ValueGeneratedOnAdd()
+                        .HasMaxLength(20)
+                        .HasColumnType("character varying(20)")
+                        .HasDefaultValue("Organization")
+                        .HasColumnName("HierarchyType");
+
                     b.Property<bool>("IsDeleted")
                         .HasColumnType("boolean");
+
+                    b.Property<bool>("IsIndependent")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("boolean")
+                        .HasDefaultValue(false)
+                        .HasColumnName("IsIndependent");
 
                     b.Property<bool>("IsRegistrationComplete")
                         .ValueGeneratedOnAdd()
@@ -855,9 +876,21 @@ namespace Booksy.ServiceCatalog.Infrastructure.Migrations
                         .HasColumnType("boolean")
                         .HasDefaultValue(false);
 
+                    b.Property<string>("OwnerFirstName")
+                        .IsRequired()
+                        .HasColumnType("text");
+
                     b.Property<Guid>("OwnerId")
                         .HasColumnType("uuid")
                         .HasColumnName("OwnerId");
+
+                    b.Property<string>("OwnerLastName")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<Guid?>("ParentProviderId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("ParentProviderId");
 
                     b.Property<string>("PriceRange")
                         .IsRequired()
@@ -901,15 +934,24 @@ namespace Booksy.ServiceCatalog.Infrastructure.Migrations
 
                     b.HasKey("Id");
 
+                    b.HasIndex("HierarchyType")
+                        .HasDatabaseName("IX_Providers_HierarchyType");
+
                     b.HasIndex("OwnerId")
                         .IsUnique()
                         .HasDatabaseName("IX_Providers_OwnerId");
+
+                    b.HasIndex("ParentProviderId")
+                        .HasDatabaseName("IX_Providers_ParentProviderId");
 
                     b.HasIndex("ProviderType")
                         .HasDatabaseName("IX_Providers_Type");
 
                     b.HasIndex("Status")
                         .HasDatabaseName("IX_Providers_Status");
+
+                    b.HasIndex("HierarchyType", "IsIndependent")
+                        .HasDatabaseName("IX_Providers_Hierarchy_Independent");
 
                     b.ToTable("Providers", "ServiceCatalog");
                 });
@@ -1004,6 +1046,153 @@ namespace Booksy.ServiceCatalog.Infrastructure.Migrations
                         .HasDatabaseName("IX_ProviderAvailability_Provider_Date_StartTime");
 
                     b.ToTable("ProviderAvailability", "ServiceCatalog");
+                });
+
+            modelBuilder.Entity("Booksy.ServiceCatalog.Domain.Aggregates.ProviderInvitation", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<Guid?>("AcceptedByProviderId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("accepted_by_provider_id");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at");
+
+                    b.Property<string>("CreatedBy")
+                        .HasColumnType("text");
+
+                    b.Property<DateTime>("ExpiresAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("expires_at");
+
+                    b.Property<string>("InviteeName")
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)")
+                        .HasColumnName("invitee_name");
+
+                    b.Property<bool>("IsDeleted")
+                        .HasColumnType("boolean");
+
+                    b.Property<DateTime?>("LastModifiedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("LastModifiedBy")
+                        .HasColumnType("text");
+
+                    b.Property<string>("Message")
+                        .HasMaxLength(500)
+                        .HasColumnType("character varying(500)")
+                        .HasColumnName("message");
+
+                    b.Property<Guid>("OrganizationId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("organization_id");
+
+                    b.Property<DateTime?>("RespondedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("responded_at");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("character varying(20)")
+                        .HasColumnName("status");
+
+                    b.Property<int>("Version")
+                        .HasColumnType("integer");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("ExpiresAt")
+                        .HasDatabaseName("IX_ProviderInvitations_ExpiresAt");
+
+                    b.HasIndex("OrganizationId")
+                        .HasDatabaseName("IX_ProviderInvitations_OrganizationId");
+
+                    b.HasIndex("Status")
+                        .HasDatabaseName("IX_ProviderInvitations_Status");
+
+                    b.ToTable("provider_invitations", "ServiceCatalog");
+                });
+
+            modelBuilder.Entity("Booksy.ServiceCatalog.Domain.Aggregates.ProviderJoinRequest", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at");
+
+                    b.Property<string>("CreatedBy")
+                        .HasColumnType("text");
+
+                    b.Property<bool>("IsDeleted")
+                        .HasColumnType("boolean");
+
+                    b.Property<DateTime?>("LastModifiedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("LastModifiedBy")
+                        .HasColumnType("text");
+
+                    b.Property<string>("Message")
+                        .HasMaxLength(500)
+                        .HasColumnType("character varying(500)")
+                        .HasColumnName("message");
+
+                    b.Property<Guid>("OrganizationId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("organization_id");
+
+                    b.Property<Guid>("RequesterId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("requester_id");
+
+                    b.Property<string>("ReviewNote")
+                        .HasMaxLength(500)
+                        .HasColumnType("character varying(500)")
+                        .HasColumnName("review_note");
+
+                    b.Property<DateTime?>("ReviewedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("reviewed_at");
+
+                    b.Property<Guid?>("ReviewedBy")
+                        .HasColumnType("uuid")
+                        .HasColumnName("reviewed_by");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("character varying(20)")
+                        .HasColumnName("status");
+
+                    b.Property<int>("Version")
+                        .HasColumnType("integer");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("OrganizationId")
+                        .HasDatabaseName("IX_ProviderJoinRequests_OrganizationId");
+
+                    b.HasIndex("RequesterId")
+                        .HasDatabaseName("IX_ProviderJoinRequests_RequesterId");
+
+                    b.HasIndex("Status")
+                        .HasDatabaseName("IX_ProviderJoinRequests_Status");
+
+                    b.HasIndex("OrganizationId", "Status")
+                        .HasDatabaseName("IX_ProviderJoinRequests_OrgId_Status");
+
+                    b.ToTable("provider_join_requests", "ServiceCatalog");
                 });
 
             modelBuilder.Entity("Booksy.ServiceCatalog.Domain.Aggregates.Review", b =>
@@ -2309,12 +2498,6 @@ namespace Booksy.ServiceCatalog.Infrastructure.Migrations
                                         .HasColumnType("uuid")
                                         .HasColumnName("provider_id");
 
-                                    b2.Property<byte[]>("RowVersion")
-                                        .IsConcurrencyToken()
-                                        .ValueGeneratedOnAddOrUpdate()
-                                        .HasColumnType("bytea")
-                                        .HasColumnName("row_version");
-
                                     b2.Property<string>("ThumbnailUrl")
                                         .IsRequired()
                                         .HasMaxLength(500)
@@ -2524,6 +2707,43 @@ namespace Booksy.ServiceCatalog.Infrastructure.Migrations
                         .IsRequired();
 
                     b.Navigation("Profile")
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("Booksy.ServiceCatalog.Domain.Aggregates.ProviderInvitation", b =>
+                {
+                    b.OwnsOne("Booksy.Core.Domain.ValueObjects.PhoneNumber", "PhoneNumber", b1 =>
+                        {
+                            b1.Property<Guid>("ProviderInvitationId")
+                                .HasColumnType("uuid");
+
+                            b1.Property<string>("CountryCode")
+                                .IsRequired()
+                                .HasMaxLength(5)
+                                .HasColumnType("character varying(5)")
+                                .HasColumnName("phone_country_code");
+
+                            b1.Property<string>("NationalNumber")
+                                .IsRequired()
+                                .HasMaxLength(15)
+                                .HasColumnType("character varying(15)")
+                                .HasColumnName("phone_national_number");
+
+                            b1.Property<string>("Value")
+                                .IsRequired()
+                                .HasMaxLength(20)
+                                .HasColumnType("character varying(20)")
+                                .HasColumnName("phone_number");
+
+                            b1.HasKey("ProviderInvitationId");
+
+                            b1.ToTable("provider_invitations", "ServiceCatalog");
+
+                            b1.WithOwner()
+                                .HasForeignKey("ProviderInvitationId");
+                        });
+
+                    b.Navigation("PhoneNumber")
                         .IsRequired();
                 });
 

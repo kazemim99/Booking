@@ -63,7 +63,9 @@ namespace Booksy.ServiceCatalog.Infrastructure.Persistence.Seeders
                     "Tehran",
                     "Vanak",
                     "info@zibaparsi.ir",
-                    "02188776655"),
+                    "02188776655",
+                    "Sara",
+                    "Rezaei"),
 
                 CreateProvider(
                     "سالن زیبایی نگین",
@@ -73,7 +75,9 @@ namespace Booksy.ServiceCatalog.Infrastructure.Persistence.Seeders
                     "Tehran",
                     "Saadat Abad",
                     "contact@neginbeauty.ir",
-                    "02188123456"),
+                    "02188123456",
+                    "Mina",
+                    "Karimi"),
 
                 CreateProvider(
                     "آرایشگاه مردانه آریا",
@@ -83,7 +87,9 @@ namespace Booksy.ServiceCatalog.Infrastructure.Persistence.Seeders
                     "Tehran",
                     "Jordan",
                     "info@aryabarbershop.ir",
-                    "02188234567"),
+                    "02188234567",
+                    "Reza",
+                    "Mohammadi"),
 
                 CreateProvider(
                     "اسپا و ماساژ درمانی کوهسار",
@@ -93,7 +99,9 @@ namespace Booksy.ServiceCatalog.Infrastructure.Persistence.Seeders
                     "Tehran",
                     "Farmanieh",
                     "info@koohsarspa.ir",
-                    "02188345678"),
+                    "02188345678",
+                    "Amir",
+                    "Hosseini"),
 
                 // Mashhad Providers
                 CreateProvider(
@@ -104,7 +112,9 @@ namespace Booksy.ServiceCatalog.Infrastructure.Persistence.Seeders
                     "Mashhad",
                     "Ahmadabad",
                     "info@mehrclinic.ir",
-                    "05138112233"),
+                    "05138112233",
+                    "Dr. Maryam",
+                    "Abbasi"),
 
                 CreateProvider(
                     "سالن زیبایی گلستان",
@@ -114,7 +124,9 @@ namespace Booksy.ServiceCatalog.Infrastructure.Persistence.Seeders
                     "Mashhad",
                     "Koohsangi",
                     "contact@golestanbeauty.ir",
-                    "05138223344"),
+                    "05138223344",
+                    "Zahra",
+                    "Gholami"),
 
                 // Isfahan Providers
                 CreateProvider(
@@ -125,7 +137,9 @@ namespace Booksy.ServiceCatalog.Infrastructure.Persistence.Seeders
                     "Isfahan",
                     "Enghelab",
                     "info@zarrinkoob.ir",
-                    "03136334455"),
+                    "03136334455",
+                    "Fatemeh",
+                    "Bahrami"),
 
                 CreateProvider(
                     "اسپا سیمرغ",
@@ -135,7 +149,9 @@ namespace Booksy.ServiceCatalog.Infrastructure.Persistence.Seeders
                     "Isfahan",
                     "Shahrak Azadi",
                     "info@simorghspa.ir",
-                    "03136445566"),
+                    "03136445566",
+                    "Hassan",
+                    "Sadeghi"),
 
                 // Shiraz Providers
                 CreateProvider(
@@ -146,7 +162,9 @@ namespace Booksy.ServiceCatalog.Infrastructure.Persistence.Seeders
                     "Shiraz",
                     "Chamran",
                     "info@parinazbeauty.ir",
-                    "07138556677"),
+                    "07138556677",
+                    "Parinaz",
+                    "Jafari"),
 
                 CreateProvider(
                     "آرایشگاه مردانه پارس",
@@ -156,7 +174,9 @@ namespace Booksy.ServiceCatalog.Infrastructure.Persistence.Seeders
                     "Shiraz",
                     "Zand",
                     "info@parsbarbershop.ir",
-                    "07138667788"),
+                    "07138667788",
+                    "Ali",
+                    "Rahimi"),
 
                 // Tabriz Providers
                 CreateProvider(
@@ -167,7 +187,9 @@ namespace Booksy.ServiceCatalog.Infrastructure.Persistence.Seeders
                     "Tabriz",
                     "Valiasr",
                     "info@azarclinic.ir",
-                    "04138778899"),
+                    "04138778899",
+                    "Dr. Leila",
+                    "Ahmadi"),
 
                 CreateProvider(
                     "سالن زیبایی شاهدخت",
@@ -177,7 +199,9 @@ namespace Booksy.ServiceCatalog.Infrastructure.Persistence.Seeders
                     "Tabriz",
                     "Elgoli",
                     "contact@shahdokht.ir",
-                    "04138889900"),
+                    "04138889900",
+                    "Nazanin",
+                    "Moradi"),
 
                 // Karaj Providers
                 CreateProvider(
@@ -188,7 +212,9 @@ namespace Booksy.ServiceCatalog.Infrastructure.Persistence.Seeders
                     "Karaj",
                     "Gohardasht",
                     "info@alborzspa.ir",
-                    "02632990011"),
+                    "02632990011",
+                    "Mehdi",
+                    "Rahmani"),
 
                 CreateProvider(
                     "آرایشگاه مهسا",
@@ -198,7 +224,9 @@ namespace Booksy.ServiceCatalog.Infrastructure.Persistence.Seeders
                     "Karaj",
                     "Rajaee Shahr",
                     "info@mahsasalon.ir",
-                    "02632001122"),
+                    "02632001122",
+                    "Mahsa",
+                    "Salehi"),
 
                 // Qom Providers
                 CreateProvider(
@@ -209,7 +237,9 @@ namespace Booksy.ServiceCatalog.Infrastructure.Persistence.Seeders
                     "Qom",
                     "Moalem",
                     "info@fatemehsalon.ir",
-                    "02538112233"),
+                    "02538112233",
+                    "Fatemeh",
+                    "Kazemi"),
 
                 // Ahvaz Providers
                 CreateProvider(
@@ -220,7 +250,9 @@ namespace Booksy.ServiceCatalog.Infrastructure.Persistence.Seeders
                     "Ahvaz",
                     "Kianpars",
                     "info@karounclinic.ir",
-                    "06138223344"),
+                    "06138223344",
+                    "Dr. Saeed",
+                    "Najafi"),
 
                 CreateProvider(
                     "باشگاه بدنسازی پارسیان",
@@ -230,7 +262,9 @@ namespace Booksy.ServiceCatalog.Infrastructure.Persistence.Seeders
                     "Tehran",
                     "Niavaran",
                     "info@parsianfitness.ir",
-                    "02188998877"),
+                    "02188998877",
+                    "Mohammad",
+                    "Azizi"),
 
                 CreateProvider(
                     "مرکز ماساژ درمانی سپید",
@@ -240,7 +274,9 @@ namespace Booksy.ServiceCatalog.Infrastructure.Persistence.Seeders
                     "Tehran",
                     "Elahieh",
                     "info@sepidmassage.ir",
-                    "02188776644"),
+                    "02188776644",
+                    "Saman",
+                    "Rostami"),
 
                 CreateProvider(
                     "سالن زیبایی یاس",
@@ -250,7 +286,9 @@ namespace Booksy.ServiceCatalog.Infrastructure.Persistence.Seeders
                     "Kerman",
                     "Azadi Square",
                     "info@yasbeauty.ir",
-                    "03438334455"),
+                    "03438334455",
+                    "Yasamin",
+                    "Hashemi"),
 
                 CreateProvider(
                     "آرایشگاه مردانه شاهین",
@@ -260,7 +298,9 @@ namespace Booksy.ServiceCatalog.Infrastructure.Persistence.Seeders
                     "Rasht",
                     "Golsar",
                     "info@shahingroom.ir",
-                    "01338445566")
+                    "01338445566",
+                    "Shahin",
+                    "Farahani")
             };
         }
 
@@ -272,11 +312,13 @@ namespace Booksy.ServiceCatalog.Infrastructure.Persistence.Seeders
             string city,
             string district,
             string email,
-            string phone)
+            string phone,
+            string ownerFirstName,
+            string ownerLastName)
         {
             var ownerId = UserId.From(Guid.NewGuid());
             var emailValue = Email.Create(email);
-            var phoneValue = PhoneNumber.Create(phone);
+            var phoneValue = PhoneNumber.From(phone);
 
             var contactInfo = ContactInfo.Create(
                 emailValue,
@@ -296,13 +338,21 @@ namespace Booksy.ServiceCatalog.Infrastructure.Persistence.Seeders
                 35.6892, // Default Tehran coordinates
                 51.3890);
 
-            var provider = Provider.RegisterProvider(
+            var provider = Provider.CreateDraft(
                 ownerId,
+                ownerFirstName,
+                ownerLastName,
                 $"{englishName} - {persianName}",
                 description,
                 type,
                 contactInfo,
-                address);
+                address,
+                ProviderHierarchyType.Organization,
+                registrationStep: 9);
+
+            // Complete registration and activate the provider for seeding
+            provider.CompleteRegistration();
+            provider.Activate();
 
             return provider;
         }

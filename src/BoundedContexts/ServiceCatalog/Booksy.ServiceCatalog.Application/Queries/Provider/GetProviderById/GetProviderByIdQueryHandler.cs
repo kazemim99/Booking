@@ -1,6 +1,8 @@
 ﻿using Booksy.Core.Application.Abstractions.CQRS;
 using Booksy.ServiceCatalog.Application.DTOs.Provider;
 using Booksy.ServiceCatalog.Application.Queries.Provider.GetRegistrationProgress;
+using Booksy.ServiceCatalog.Application.Queries.Provider.SearchProviders;
+using Booksy.ServiceCatalog.Domain.Enums;
 using Booksy.ServiceCatalog.Domain.Repositories;
 using Booksy.ServiceCatalog.Domain.ValueObjects;
 using Microsoft.Extensions.Logging;
@@ -93,8 +95,45 @@ namespace Booksy.ServiceCatalog.Application.Queries.Provider.GetProviderById
                 Tags = provider.Profile.Tags.AsReadOnly(),
                 RegisteredAt = provider.RegisteredAt,
                 ActivatedAt = provider.ActivatedAt,
-                LastActiveAt = provider.LastActiveAt
+                LastActiveAt = provider.LastActiveAt,
+                // Hierarchy information
+                HierarchyType = provider.HierarchyType,
+                IsIndependent = provider.IsIndependent,
+                ParentProviderId = provider.ParentProviderId?.Value
             };
+
+            // Fetch parent provider info if this is a linked individual
+            if (provider.ParentProviderId != null)
+            {
+                var parentProvider = await _providerRepository.GetByIdAsync(provider.ParentProviderId, cancellationToken);
+                if (parentProvider != null)
+                {
+                    viewModel.ParentProvider = new ParentProviderInfo
+                    {
+                        Id = parentProvider.Id.Value,
+                        BusinessName = parentProvider.Profile.BusinessName,
+                        ProfileImageUrl = parentProvider.Profile.ProfileImageUrl,
+                        Status = parentProvider.Status
+                    };
+                }
+            }
+
+            // Fetch staff providers if this is an organization
+            if (provider.HierarchyType == Domain.Enums.ProviderHierarchyType.Organization)
+            {
+                var staffProviders = await _providerRepository.GetStaffByOrganizationIdAsync(providerId, cancellationToken);
+                viewModel.StaffProviderCount = staffProviders.Count;
+                viewModel.StaffProviders = staffProviders.Select(sp => new StaffProviderInfo
+                {
+                    Id = sp.Id.Value,
+                    BusinessName = sp.Profile.BusinessName,
+                    ProfileImageUrl = sp.Profile.ProfileImageUrl,
+                    Status = sp.Status,
+                    IsIndependent = sp.IsIndependent,
+                    AverageRating = sp.AverageRating,
+                    ServiceCount = sp.Services.Count
+                }).ToList();
+            }
 
             if (request.IncludeStaff)
             {
@@ -114,9 +153,8 @@ namespace Booksy.ServiceCatalog.Application.Queries.Provider.GetProviderById
 
             if (request.IncludeServices)
             {
-                var services = await _serviceRepository.GetByProviderIdAndStatusAsync(
+                var services = await _serviceRepository.GetByProviderIdAsync(
                     providerId,
-                    Domain.Enums.ServiceStatus.Active,
                     cancellationToken);
 
                 viewModel.ActiveServicesCount = services.Count;

@@ -4,7 +4,7 @@ import { useAuthStore } from '@/core/stores/modules/auth.store'
 import { useToast } from '@/shared/composables/useToast'
 import phoneVerificationApi from '../api/phoneVerification.api'
 import type { PhoneVerificationState } from '../types/phoneVerification.types'
-import { UserType } from '@/modules/user-management/types/user-profile.types'
+// import { UserType } from '@/modules/user-management/types/user-profile.types'
 
 /**
  * Composable for handling phone verification flow (both login and registration)
@@ -501,7 +501,7 @@ export function usePhoneVerification() {
             if (needsOnboarding) {
               router.push({ name: 'ProviderRegistration' })
             } else {
-              router.push({ path: '/dashboard' })
+              router.push({ path: '/provider/dashboard' })
             }
           } else {
             // No provider profile, redirect to registration

@@ -16,7 +16,8 @@ const bookingRoutes: RouteRecordRaw[] = [
     component: () => import('@/modules/booking/views/BookingView.vue'),
     meta: {
       requiresAuth: true,
-      title: 'New Booking'
+      title: 'New Booking',
+      layout: 'focused'
     }
   },
   {

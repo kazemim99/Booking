@@ -7,8 +7,14 @@
       </p>
     </div>
 
+    <!-- Loading State -->
+    <div v-if="isLoading" class="loading-container">
+      <div class="loading-spinner"></div>
+      <p>در حال بارگذاری تصاویر...</p>
+    </div>
+
     <!-- Gallery Grid -->
-    <div v-if="galleryImages.length > 0" class="gallery-grid">
+    <div v-else-if="galleryImages.length > 0" class="gallery-grid">
       <div
         v-for="(image, index) in galleryImages"
         :key="image.id || index"
@@ -57,7 +63,7 @@
 
           <div class="lightbox-image-container">
             <img
-              :src="galleryImages[currentImageIndex]?.url"
+              :src="galleryImages[currentImageIndex]?.fullUrl || galleryImages[currentImageIndex]?.url"
               :alt="galleryImages[currentImageIndex]?.caption || 'تصویر گالری'"
             />
             <div v-if="galleryImages[currentImageIndex]?.caption" class="lightbox-caption">
@@ -81,12 +87,14 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted, onUnmounted } from 'vue'
-import type { Provider } from '@/modules/provider/types/provider.types'
+import { ref, computed, onMounted, onUnmounted, watch } from 'vue'
+import type { Provider, GalleryImage } from '@/modules/provider/types/provider.types'
+import { providerService } from '@/modules/provider/services/provider.service'
 
-interface GalleryImage {
-  id?: string
+interface DisplayGalleryImage {
+  id: string
   url: string
+  fullUrl?: string
   caption?: string
   altText?: string
 }
@@ -95,30 +103,51 @@ interface Props {
   provider: Provider
 }
 
-defineProps<Props>()
+const props = defineProps<Props>()
 
 // State
 const lightboxOpen = ref(false)
 const currentImageIndex = ref(0)
-
-// Mock gallery images (replace with real API data)
-const mockGalleryImages: GalleryImage[] = [
-  { id: '1', url: 'https://images.unsplash.com/photo-1560066984-138dadb4c035?w=800&q=80', caption: 'سالن آرایش حرفه‌ای' },
-  { id: '2', url: 'https://images.unsplash.com/photo-1540555700478-4be289fbecef?w=800&q=80', caption: 'فضای اسپا و ماساژ' },
-  { id: '3', url: 'https://images.unsplash.com/photo-1487412947147-5cebf100ffc2?w=800&q=80', caption: 'خدمات مراقبت پوست' },
-  { id: '4', url: 'https://images.unsplash.com/photo-1604902396830-aca29bb5b2e2?w=800&q=80', caption: 'مانیکور و پدیکور' },
-  { id: '5', url: 'https://images.unsplash.com/photo-1522337360788-8b13dee7a37e?w=800&q=80', caption: 'آرایش حرفه‌ای' },
-  { id: '6', url: 'https://images.unsplash.com/photo-1519415510236-718bdfcd89c8?w=800&q=80', caption: 'آرایشگاه مردانه' },
-  { id: '7', url: 'https://images.unsplash.com/photo-1562322140-8baeececf3df?w=800&q=80', caption: 'فضای داخلی سالن' },
-  { id: '8', url: 'https://images.unsplash.com/photo-1633681926022-84c23e8cb2d6?w=800&q=80', caption: 'نمونه کار رنگ مو' },
-]
+const isLoading = ref(false)
+const error = ref<string | null>(null)
+const galleryData = ref<GalleryImage[]>([])
 
 // Computed
-const galleryImages = computed((): GalleryImage[] => {
-  // TODO: Get from provider.gallery when API is ready
-  // For now, return mock images
-  return mockGalleryImages
+const galleryImages = computed((): DisplayGalleryImage[] => {
+  // Map API response to display format
+  return galleryData.value
+    .filter(img => img.isActive !== false) // Only show active images (or if isActive is undefined)
+    .sort((a, b) => a.displayOrder - b.displayOrder) // Sort by display order
+    .map(img => ({
+      id: img.id,
+      url: img.mediumUrl || img.originalUrl, // Prefer medium for gallery grid
+      fullUrl: img.originalUrl, // Full size for lightbox
+      caption: img.caption,
+      altText: img.altText,
+    }))
 })
+
+// Methods
+const loadGalleryImages = async () => {
+  if (!props.provider?.id) return
+
+  isLoading.value = true
+  error.value = null
+
+  try {
+    galleryData.value = await providerService.getProviderGallery(props.provider.id)
+  } catch (err) {
+    console.error('Error loading gallery images:', err)
+    error.value = 'خطا در بارگذاری تصاویر گالری'
+  } finally {
+    isLoading.value = false
+  }
+}
+
+// Watch for provider changes
+watch(() => props.provider?.id, () => {
+  loadGalleryImages()
+}, { immediate: true })
 
 // Methods
 const getSpanClass = (index: number): number => {
@@ -196,6 +225,37 @@ onUnmounted(() => {
 
 .section-subtitle {
   font-size: 1.05rem;
+  color: #64748b;
+  margin: 0;
+}
+
+/* Loading State */
+.loading-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 4rem 2rem;
+  gap: 1rem;
+}
+
+.loading-spinner {
+  width: 48px;
+  height: 48px;
+  border: 4px solid #e2e8f0;
+  border-top-color: #667eea;
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.loading-container p {
+  font-size: 1rem;
   color: #64748b;
   margin: 0;
 }

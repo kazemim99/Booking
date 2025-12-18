@@ -4,11 +4,11 @@
     :class="[`view-mode-${viewMode}`, { clickable: isClickable }]"
     @click="handleClick"
   >
-    <!-- Logo/Image -->
+    <!-- Profile Image / Logo -->
     <div class="provider-image">
       <img
-        v-if="provider.logoUrl"
-        :src="provider.logoUrl"
+        v-if="providerImageUrl"
+        :src="providerImageUrl"
         :alt="provider.businessName"
         @error="handleImageError"
       />
@@ -31,9 +31,47 @@
       <!-- Header -->
       <div class="provider-header">
         <h3 class="provider-name">{{ provider.businessName }}</h3>
-        <Badge :variant="getTypeVariant(provider.type)">
-          {{ provider.type }}
-        </Badge>
+        <div class="badges-group">
+          <Badge :variant="getTypeVariant(provider.type)">
+            {{ provider.type }}
+          </Badge>
+          <!-- Organization Badge -->
+          <Badge v-if="isOrganization" variant="primary" class="organization-badge">
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+              class="badge-icon"
+            >
+              <path
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                stroke-width="2"
+                d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"
+              />
+            </svg>
+            سازمان
+          </Badge>
+          <!-- Staff Count Badge -->
+          <Badge v-if="isOrganization && staffCount > 0" variant="info" class="staff-count-badge">
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+              class="badge-icon"
+            >
+              <path
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                stroke-width="2"
+                d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"
+              />
+            </svg>
+            {{ staffCount }} کارمند
+          </Badge>
+        </div>
       </div>
 
       <!-- Description -->
@@ -100,6 +138,52 @@
           </svg>
           <span>Mobile Service</span>
         </div>
+
+        <!-- Staff Count Badge for Organizations -->
+        <div v-if="provider.staffCount && provider.staffCount > 0" class="feature-badge staff-badge">
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            fill="none"
+            viewBox="0 0 24 24"
+            stroke="currentColor"
+          >
+            <path
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              stroke-width="2"
+              d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"
+            />
+          </svg>
+          <span>{{ provider.staffCount }} Staff</span>
+        </div>
+      </div>
+
+      <!-- Professionals Preview (for Organizations) -->
+      <div v-if="isOrganization && staffMembers.length > 0" class="professionals-preview">
+        <div class="professionals-header">
+          <span class="professionals-label">متخصصین این مرکز:</span>
+        </div>
+        <div class="professionals-avatars">
+          <div
+            v-for="(staff, index) in visibleStaff"
+            :key="staff.id"
+            class="professional-avatar"
+            :title="getStaffDisplayName(staff)"
+          >
+            <img
+              v-if="staff.photoUrl"
+              :src="staff.photoUrl"
+              :alt="getStaffDisplayName(staff)"
+              @error="handleImageError"
+            />
+            <span v-else class="avatar-initials" :style="{ background: getAvatarColor(index) }">
+              {{ getStaffInitials(staff) }}
+            </span>
+          </div>
+          <div v-if="hasMoreStaff" class="professional-avatar more-indicator">
+            <span>+{{ remainingStaffCount }}</span>
+          </div>
+        </div>
       </div>
 
       <!-- Tags -->
@@ -142,6 +226,7 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 import { Badge } from '../../../shared/components'
+import { buildProviderImageUrl } from '@/core/utils/url.service'
 import type { ProviderSummary } from '../types/provider.types'
 
 // Props
@@ -171,6 +256,13 @@ const emit = defineEmits<{
 }>()
 
 // Computed
+const providerImageUrl = computed(() => {
+
+  // Use centralized URL service to build image URL
+  // Automatically handles relative paths, absolute URLs, and API base URL
+  return buildProviderImageUrl(props.provider.profileImageUrl, props.provider.logoUrl)
+})
+
 const visibleTags = computed(() => {
   return props.provider.tags.slice(0, props.maxTags)
 })
@@ -181,6 +273,32 @@ const hasMoreTags = computed(() => {
 
 const remainingTagsCount = computed(() => {
   return props.provider.tags.length - props.maxTags
+})
+
+const isOrganization = computed(() => {
+  return props.provider.hierarchyType === 'Organization'
+})
+
+const staffCount = computed(() => {
+  return props.provider.staffCount || 0
+})
+
+const staffMembers = computed(() => {
+  return props.provider.staff || []
+})
+
+const maxVisibleStaff = 4
+
+const visibleStaff = computed(() => {
+  return staffMembers.value.slice(0, maxVisibleStaff)
+})
+
+const hasMoreStaff = computed(() => {
+  return staffMembers.value.length > maxVisibleStaff
+})
+
+const remainingStaffCount = computed(() => {
+  return staffMembers.value.length - maxVisibleStaff
 })
 
 // Methods
@@ -245,6 +363,28 @@ const formatDate = (dateString: string): string => {
     const years = Math.floor(diffDays / 365)
     return `${years} year${years > 1 ? 's' : ''} ago`
   }
+}
+
+const getStaffDisplayName = (staff: any): string => {
+  return `${staff.firstName || ''} ${staff.lastName || ''}`.trim() || 'Unknown'
+}
+
+const getStaffInitials = (staff: any): string => {
+  const first = staff.firstName?.charAt(0) || ''
+  const last = staff.lastName?.charAt(0) || ''
+  return `${first}${last}`.toUpperCase() || '??'
+}
+
+const avatarColors = [
+  'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+  'linear-gradient(135deg, #f093fb 0%, #f5576c 100%)',
+  'linear-gradient(135deg, #4facfe 0%, #00f2fe 100%)',
+  'linear-gradient(135deg, #43e97b 0%, #38f9d7 100%)',
+  'linear-gradient(135deg, #fa709a 0%, #fee140 100%)',
+]
+
+const getAvatarColor = (index: number): string => {
+  return avatarColors[index % avatarColors.length]
 }
 </script>
 
@@ -378,6 +518,26 @@ const formatDate = (dateString: string): string => {
   flex: 1;
 }
 
+.badges-group {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  align-items: flex-end;
+}
+
+.organization-badge,
+.staff-count-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.375rem;
+  font-size: 0.75rem;
+}
+
+.badge-icon {
+  width: 14px;
+  height: 14px;
+}
+
 .provider-description {
   font-size: 0.95rem;
   color: var(--color-text-secondary);
@@ -423,6 +583,92 @@ const formatDate = (dateString: string): string => {
 .feature-badge svg {
   width: 14px;
   height: 14px;
+}
+
+.feature-badge.staff-badge {
+  background: linear-gradient(135deg, rgba(99, 102, 241, 0.1) 0%, rgba(139, 92, 246, 0.1) 100%);
+  color: var(--color-primary);
+  border: 1px solid rgba(99, 102, 241, 0.2);
+}
+
+.feature-badge.staff-badge svg {
+  color: var(--color-primary);
+}
+
+/* Professionals Preview */
+.professionals-preview {
+  margin-bottom: 1rem;
+  padding: 0.75rem;
+  background: linear-gradient(135deg, rgba(102, 126, 234, 0.05) 0%, rgba(118, 75, 162, 0.05) 100%);
+  border-radius: 10px;
+  border: 1px solid rgba(102, 126, 234, 0.1);
+}
+
+.professionals-header {
+  margin-bottom: 0.5rem;
+}
+
+.professionals-label {
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--color-text-secondary);
+}
+
+.professionals-avatars {
+  display: flex;
+  gap: 0.25rem;
+  align-items: center;
+}
+
+.professional-avatar {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  overflow: hidden;
+  border: 2px solid white;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
+  margin-right: -8px;
+  transition: transform 0.2s;
+  cursor: pointer;
+}
+
+.professional-avatar:first-child {
+  margin-right: 0;
+}
+
+.professional-avatar:hover {
+  transform: scale(1.1);
+  z-index: 1;
+}
+
+.professional-avatar img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.professional-avatar .avatar-initials {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: white;
+}
+
+.professional-avatar.more-indicator {
+  background: linear-gradient(135deg, #e2e8f0 0%, #cbd5e1 100%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.professional-avatar.more-indicator span {
+  font-size: 0.7rem;
+  font-weight: 700;
+  color: #64748b;
 }
 
 /* Tags */

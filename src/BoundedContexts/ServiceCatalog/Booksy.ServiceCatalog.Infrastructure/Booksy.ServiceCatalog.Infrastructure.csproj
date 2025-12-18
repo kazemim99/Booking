@@ -38,11 +38,13 @@
 		<PackageReference Include="Microsoft.Extensions.Diagnostics.HealthChecks.EntityFrameworkCore" Version="9.0.4" />
 		<PackageReference Include="Scrutor" Version="6.1.0" />
 		<PackageReference Include="SixLabors.ImageSharp" Version="3.1.5" />
+		<PackageReference Include="System.IdentityModel.Tokens.Jwt" Version="8.15.0" />
 		<PackageReference Include="System.Text.Json" Version="9.0.4" />
 	</ItemGroup>
 	
   <ItemGroup>
     <ProjectReference Include="..\..\..\Core\Booksy.Core.Domain\Booksy.Core.Domain.csproj" />
+    <ProjectReference Include="..\..\..\Infrastructure\Booksy.API\Booksy.API.csproj" />
     <ProjectReference Include="..\..\..\Infrastructure\Booksy.Infrastructure.Core\Booksy.Infrastructure.Core.csproj" />
     <ProjectReference Include="..\Booksy.ServiceCatalog.Application\Booksy.ServiceCatalog.Application.csproj" />
     <ProjectReference Include="..\Booksy.ServiceCatalog.Domain\Booksy.ServiceCatalog.Domain.csproj" />

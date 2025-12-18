@@ -32,9 +32,10 @@ namespace Booksy.ServiceCatalog.Infrastructure.Persistence.Seeders
                 new ProviderSeeder(_context,
                     Microsoft.Extensions.Logging.Abstractions.NullLogger<ProviderSeeder>.Instance),
 
-                // 3. Staff (depends on Providers)
-                new StaffSeeder(_context,
-                    Microsoft.Extensions.Logging.Abstractions.NullLogger<StaffSeeder>.Instance),
+                // 3. Staff - REMOVED: Now using Provider Hierarchy system with invitations
+                // Staff members are added via SendInvitation/AcceptInvitation flow, not seeded
+                // new StaffSeeder(_context,
+                //     Microsoft.Extensions.Logging.Abstractions.NullLogger<StaffSeeder>.Instance),
 
                 // 4. BusinessHours (depends on Providers)
                 new BusinessHoursSeeder(_context,
@@ -65,13 +66,14 @@ namespace Booksy.ServiceCatalog.Infrastructure.Persistence.Seeders
                 new ReviewSeeder(_context,
                     Microsoft.Extensions.Logging.Abstractions.NullLogger<ReviewSeeder>.Instance),
 
-                // 11. Payments (depends on Bookings)
-                new PaymentSeeder(_context,
-                    Microsoft.Extensions.Logging.Abstractions.NullLogger<PaymentSeeder>.Instance),
+                // 11. Payments (depends on Bookings) - DISABLED due to EF Core owned entity tracking issues
+                // TODO: Fix PaymentSeeder to handle multiple owned Money entities with same currency
+                // new PaymentSeeder(_context,
+                //     Microsoft.Extensions.Logging.Abstractions.NullLogger<PaymentSeeder>.Instance),
 
-                // 12. Payouts (depends on Payments)
-                new PayoutSeeder(_context,
-                    Microsoft.Extensions.Logging.Abstractions.NullLogger<PayoutSeeder>.Instance),
+                // 12. Payouts (depends on Payments) - DISABLED because it depends on Payments
+                // new PayoutSeeder(_context,
+                //     Microsoft.Extensions.Logging.Abstractions.NullLogger<PayoutSeeder>.Instance),
 
                 // 13. UserNotificationPreferences (depends on Bookings for customer IDs)
                 new UserNotificationPreferencesSeeder(_context,

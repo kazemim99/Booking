@@ -9,7 +9,7 @@ public class BookingResponse
     public Guid CustomerId { get; set; }
     public Guid ProviderId { get; set; }
     public Guid ServiceId { get; set; }
-    public Guid StaffId { get; set; }
+    public Guid? StaffProviderId { get; set; }
     public string Status { get; set; } = string.Empty;
     public DateTime StartTime { get; set; }
     public DateTime EndTime { get; set; }

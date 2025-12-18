@@ -62,7 +62,7 @@ public sealed class SaveStep5StaffCommandHandler
             var firstName = nameParts.Length > 0 ? nameParts[0] : staffDto.Name;
             var lastName = nameParts.Length > 1 ? nameParts[1] : "";
 
-            var staffPhone = PhoneNumber.Create(staffDto.PhoneNumber);
+            var staffPhone = PhoneNumber.From(staffDto.PhoneNumber);
 
             // Map position string to StaffRole enum (default to ServiceProvider)
             var role = MapPositionToRole(staffDto.Position);

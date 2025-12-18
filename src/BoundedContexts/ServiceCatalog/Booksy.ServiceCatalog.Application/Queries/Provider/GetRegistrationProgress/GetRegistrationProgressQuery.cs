@@ -32,7 +32,10 @@ public sealed record BusinessInfoData(
     string BusinessDescription,
     string Category,
     string PhoneNumber,
-    string Email
+    string Email,
+    string? OwnerFirstName,
+    string? OwnerLastName,
+    string? LogoUrl
 );
 
 public sealed record LocationData(
@@ -42,7 +45,9 @@ public sealed record LocationData(
     string Province,
     string PostalCode,
     decimal Latitude,
-    decimal Longitude
+    decimal Longitude,
+    int? ProvinceId,
+    int? CityId
 );
 
 public sealed record ServiceData(

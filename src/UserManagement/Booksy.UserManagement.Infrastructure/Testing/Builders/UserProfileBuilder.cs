@@ -50,13 +50,13 @@ namespace Booksy.UserManagement.Infrastructure.Testing.Builders
 
         public UserProfileBuilder WithPhoneNumber(string phoneNumber)
         {
-            _phoneNumber = PhoneNumber.Create(phoneNumber);
+            _phoneNumber = PhoneNumber.From(phoneNumber);
             return this;
         }
 
         public UserProfileBuilder WithAlternatePhoneNumber(string phoneNumber)
         {
-            _alternatePhoneNumber = PhoneNumber.Create(phoneNumber);
+            _alternatePhoneNumber = PhoneNumber.From(phoneNumber);
             return this;
         }
 

@@ -9,7 +9,7 @@ import type {
   CustomerProfile,
   UpdateCustomerProfileRequest,
   UpcomingBooking,
-  BookingHistoryEntry,
+  // BookingHistoryEntry,
   BookingHistoryResult,
   CustomerReview,
   UpdateReviewRequest,

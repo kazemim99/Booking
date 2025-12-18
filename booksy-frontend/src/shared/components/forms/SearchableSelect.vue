@@ -7,11 +7,14 @@
 
     <div class="select-wrapper" @click="toggleDropdown">
       <input
-        autocomplete="off"
+        autocomplete="new-password"
         autocorrect="off"
         autocapitalize="off"
         spellcheck="false"
         name="searchable-select-input"
+        role="combobox"
+        aria-autocomplete="list"
+        :aria-expanded="isOpen"
         :id="`searchable-select-${Math.random()}`"
         ref="inputRef"
         v-model="searchQuery"
@@ -19,8 +22,8 @@
         class="select-input"
         :placeholder="placeholder"
         :disabled="disabled"
-        :readonly="true"
         @focus="openDropdown"
+        @input="handleInput"
         @keydown="handleKeydown"
       />
       <svg class="select-icon" :class="{ open: isOpen }" viewBox="0 0 20 20" fill="currentColor">
@@ -91,8 +94,14 @@ const searchQuery = ref('')
 const focusedIndex = ref(0)
 
 const filteredOptions = computed(() => {
-  // Always return all options (no filtering/search)
-  return props.options
+  if (!searchQuery.value.trim()) {
+    return props.options
+  }
+
+  const query = searchQuery.value.toLowerCase().trim()
+  return props.options.filter((option) =>
+    option.label.toLowerCase().includes(query)
+  )
 })
 
 const selectedOption = computed(() => props.options.find((opt) => opt.value === props.modelValue))
@@ -125,6 +134,13 @@ function toggleDropdown() {
 function openDropdown() {
   if (props.disabled) return
   isOpen.value = true
+  focusedIndex.value = 0
+}
+
+function handleInput() {
+  if (!isOpen.value) {
+    openDropdown()
+  }
   focusedIndex.value = 0
 }
 
@@ -274,7 +290,7 @@ onUnmounted(() => {
   border: 1px solid var(--color-border);
   border-radius: var(--radius-md);
   box-shadow: var(--shadow-lg);
-  z-index: 1000;
+  z-index: 2000;
   margin-top: 0;
 }
 

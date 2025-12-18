@@ -423,7 +423,7 @@ public class BookingsControllerTests : ServiceCatalogIntegrationTestBase
                 "Test Staff",
                 "staff@test.com",
                 StaffRole.Assistant,
-                PhoneNumber.Create("+1234567890"));
+                PhoneNumber.From("+1234567890"));
         }
 
         await DbContext.SaveChangesAsync();

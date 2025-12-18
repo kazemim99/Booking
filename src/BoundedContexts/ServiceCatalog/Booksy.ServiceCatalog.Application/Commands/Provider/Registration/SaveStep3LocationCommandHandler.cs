@@ -69,7 +69,7 @@ public sealed class SaveStep3LocationCommandHandler
 
             var contactInfo = ContactInfo.Create(
                 Email.Create(request.Email),
-                PhoneNumber.Create(request.PhoneNumber));
+                PhoneNumber.From(request.PhoneNumber));
 
             existingProvider.UpdateBusinessProfile(
                 request.BusinessName,
@@ -111,7 +111,7 @@ public sealed class SaveStep3LocationCommandHandler
         // Create contact info
         var newContactInfo = ContactInfo.Create(
             Email.Create(request.Email),
-            PhoneNumber.Create(request.PhoneNumber));
+            PhoneNumber.From(request.PhoneNumber));
 
         // Create address
         var newStreet = string.IsNullOrWhiteSpace(request.AddressLine2)

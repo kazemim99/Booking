@@ -2,19 +2,13 @@
   <div class="booking-card">
     <!-- Provider Info -->
     <div class="booking-header">
-      <img
-        v-if="booking.providerLogoUrl"
-        :src="booking.providerLogoUrl"
-        :alt="booking.providerName"
-        class="provider-logo"
-      />
-      <div v-else class="provider-logo-placeholder">
-        {{ booking.providerName.charAt(0) }}
+      <div class="provider-logo-placeholder">
+        {{ providerName.charAt(0) }}
       </div>
 
       <div class="provider-info">
-        <h3 class="provider-name">{{ booking.providerName }}</h3>
-        <p class="service-name">{{ booking.serviceName }}</p>
+        <h3 class="provider-name">{{ providerName }}</h3>
+        <p class="service-name">{{ serviceName }}</p>
       </div>
     </div>
 
@@ -80,11 +74,10 @@
 
 <script setup lang="ts">
 import { computed } from 'vue'
-import type { UpcomingBooking, BookingHistoryEntry } from '../../types/customer.types'
-import { getBookingStatusLabel, formatPrice } from '../../types/customer.types'
+import type { Appointment } from '@/modules/booking/types/booking.types'
 
 interface Props {
-  booking: UpcomingBooking | BookingHistoryEntry
+  booking: Appointment
   type: 'upcoming' | 'past'
 }
 
@@ -93,12 +86,11 @@ const props = defineProps<Props>()
 const emit = defineEmits<{
   cancel: [bookingId: string]
   reschedule: [bookingId: string]
-  rebook: [providerId: string, serviceName: string]
+  rebook: [providerId: string, serviceId: string]
 }>()
 
 const formattedDate = computed(() => {
-  // TODO: Implement Jalali date formatting
-  const date = new Date(props.booking.startTime)
+  const date = new Date(props.booking.scheduledStartTime)
   return date.toLocaleDateString('fa-IR', {
     year: 'numeric',
     month: 'long',
@@ -107,7 +99,7 @@ const formattedDate = computed(() => {
 })
 
 const formattedTime = computed(() => {
-  const date = new Date(props.booking.startTime)
+  const date = new Date(props.booking.scheduledStartTime)
   return date.toLocaleTimeString('fa-IR', {
     hour: '2-digit',
     minute: '2-digit'
@@ -116,11 +108,31 @@ const formattedTime = computed(() => {
 
 const formattedPrice = computed(() => {
   if (!props.booking.totalPrice) return ''
-  return formatPrice(props.booking.totalPrice)
+  return new Intl.NumberFormat('fa-IR').format(props.booking.totalPrice) + ' ' + props.booking.currency
 })
 
 const statusLabel = computed(() => {
-  return getBookingStatusLabel(props.booking.status)
+  const labels: Record<string, string> = {
+    Pending: 'در انتظار تایید',
+    Confirmed: 'تایید شده',
+    Completed: 'تکمیل شده',
+    Cancelled: 'لغو شده',
+    NoShow: 'عدم حضور',
+    InProgress: 'در حال انجام',
+    Rescheduled: 'تغییر زمان داده شده',
+  }
+  return labels[props.booking.status] || props.booking.status
+})
+
+// Provider/Service display (since we don't have names, show IDs)
+const providerName = computed(() => {
+  // Could be enhanced by fetching provider name from API
+  return `ارائه‌دهنده #${props.booking.providerId.substring(0, 8)}`
+})
+
+const serviceName = computed(() => {
+  // Could be enhanced by fetching service name from API
+  return `خدمت #${props.booking.serviceId.substring(0, 8)}`
 })
 
 function handleCancel(): void {
@@ -132,7 +144,7 @@ function handleReschedule(): void {
 }
 
 function handleRebook(): void {
-  emit('rebook', props.booking.providerId, props.booking.serviceName)
+  emit('rebook', props.booking.providerId, props.booking.serviceId)
 }
 </script>
 

@@ -16,6 +16,8 @@ using Booksy.ServiceCatalog.Application.Commands.Provider.RegisterProvider;
 using Booksy.ServiceCatalog.Application.Commands.Provider.RegisterProviderFull;
 using Booksy.ServiceCatalog.Application.Commands.Provider.Registration;
 using Booksy.ServiceCatalog.Application.Commands.Provider.UpdateBusinessProfile;
+using Booksy.ServiceCatalog.Application.Commands.ProviderHierarchy.RegisterIndependentIndividual;
+using Booksy.ServiceCatalog.Application.Commands.ProviderHierarchy.RegisterOrganizationProvider;
 using Booksy.ServiceCatalog.Application.Commands.Provider.UpdateProviderStaff;
 using Booksy.ServiceCatalog.Application.Queries.Provider.GetCurrentProviderStatus;
 using Booksy.ServiceCatalog.Application.Queries.Provider.GetDraftProvider;
@@ -23,6 +25,7 @@ using Booksy.ServiceCatalog.Application.Queries.Provider.GetProviderById;
 using Booksy.ServiceCatalog.Application.Queries.Provider.GetProviderByOwnerId;
 using Booksy.ServiceCatalog.Application.Queries.Provider.GetProvidersByStatus;
 using Booksy.ServiceCatalog.Application.Queries.Provider.GetProviderStaff;
+using Booksy.ServiceCatalog.Application.Queries.Provider.SearchProviders;
 using MediatR;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -62,6 +65,132 @@ public class ProvidersController : ControllerBase
     #region Progressive Registration Flow
 
     /// <summary>
+    /// Creates a draft organization provider (business with potential staff)
+    /// </summary>
+    /// <remarks>
+    /// Use this endpoint when registering a business that may have multiple staff members.
+    /// Organizations can invite individuals to join as staff members.
+    /// </remarks>
+    /// <param name="request">Organization provider registration data</param>
+    /// <returns>Created organization provider information</returns>
+    /// <response code="201">Organization provider created successfully</response>
+    /// <response code="200">Existing draft provider returned</response>
+    /// <response code="400">Invalid request data</response>
+    /// <response code="401">User not authenticated</response>
+    [HttpPost("organizations")]
+    [Authorize]
+    [EnableRateLimiting("provider-registration")]
+    [ProducesResponseType(typeof(RegisterOrganizationProviderResponse), StatusCodes.Status201Created)]
+    [ProducesResponseType(typeof(RegisterOrganizationProviderResponse), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    public async Task<IActionResult> RegisterOrganizationProvider(
+        [FromBody] RegisterOrganizationProviderRequest request,
+        CancellationToken cancellationToken = default)
+    {
+        var command = new RegisterOrganizationProviderCommand(
+            BusinessName: request.BusinessName,
+            BusinessDescription: request.BusinessDescription,
+            Category: request.Category,
+            PhoneNumber: request.PhoneNumber,
+            Email: request.Email,
+            AddressLine1: request.AddressLine1,
+            AddressLine2: request.AddressLine2,
+            City: request.City,
+            Province: request.Province,
+            PostalCode: request.PostalCode,
+            Latitude: request.Latitude,
+            Longitude: request.Longitude,
+            OwnerFirstName: request.OwnerFirstName,
+            OwnerLastName: request.OwnerLastName,
+            LogoUrl: request.LogoUrl
+        );
+
+        var result = await _mediator.Send(command, cancellationToken);
+
+        var response = new RegisterOrganizationProviderResponse
+        {
+            ProviderId = result.ProviderId,
+            HierarchyType = result.HierarchyType,
+            RegistrationStep = result.RegistrationStep,
+            Message = result.Message
+        };
+
+        _logger.LogInformation("Organization provider {ProviderId} created/resumed at step {Step}",
+            result.ProviderId, result.RegistrationStep);
+
+        if (result.Message.Contains("already exists"))
+            return Ok(response);
+
+        return CreatedAtAction(
+            nameof(GetProviderById),
+            new { id = response.ProviderId, version = "1.0" },
+            response);
+    }
+
+    /// <summary>
+    /// Creates a draft independent individual provider (solo professional)
+    /// </summary>
+    /// <remarks>
+    /// Use this endpoint when registering as a solo professional.
+    /// Independent individuals can later join organizations or convert to organizations.
+    /// </remarks>
+    /// <param name="request">Individual provider registration data</param>
+    /// <returns>Created individual provider information</returns>
+    /// <response code="201">Individual provider created successfully</response>
+    /// <response code="200">Existing draft provider returned</response>
+    /// <response code="400">Invalid request data</response>
+    /// <response code="401">User not authenticated</response>
+    [HttpPost("individuals")]
+    [Authorize]
+    [EnableRateLimiting("provider-registration")]
+    [ProducesResponseType(typeof(RegisterIndependentIndividualResponse), StatusCodes.Status201Created)]
+    [ProducesResponseType(typeof(RegisterIndependentIndividualResponse), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    public async Task<IActionResult> RegisterIndependentIndividual(
+        [FromBody] RegisterIndependentIndividualRequest request,
+        CancellationToken cancellationToken = default)
+    {
+        var command = new RegisterIndependentIndividualCommand(
+            BusinessName: request.BusinessName,
+            BusinessDescription: request.BusinessDescription,
+            Category: request.Category,
+            PhoneNumber: request.PhoneNumber,
+            Email: request.Email,
+            AddressLine1: request.AddressLine1,
+            AddressLine2: request.AddressLine2,
+            City: request.City,
+            Province: request.Province,
+            PostalCode: request.PostalCode,
+            Latitude: request.Latitude,
+            Longitude: request.Longitude,
+            FirstName: request.FirstName,
+            LastName: request.LastName
+        );
+
+        var result = await _mediator.Send(command, cancellationToken);
+
+        var response = new RegisterIndependentIndividualResponse
+        {
+            ProviderId = result.ProviderId,
+            HierarchyType = result.HierarchyType,
+            IsIndependent = result.IsIndependent,
+            RegistrationStep = result.RegistrationStep,
+            Message = result.Message
+        };
+
+        _logger.LogInformation("Independent individual provider {ProviderId} created/resumed at step {Step}",
+            result.ProviderId, result.RegistrationStep);
+
+        if (result.Message.Contains("already exists"))
+            return Ok(response);
+
+        return CreatedAtAction(
+            nameof(GetProviderById),
+            new { id = response.ProviderId, version = "1.0" },
+            response);
+    }
+
+    /// <summary>
     /// Creates a draft provider (Step 3 of registration flow)
     /// </summary>
     /// <remarks>
@@ -90,6 +219,9 @@ public class ProvidersController : ControllerBase
             Category: request.Category,
             PhoneNumber: request.PhoneNumber,
             Email: request.Email,
+            OwnerFirstName: request.OwnerFirstName,
+            OwnerLastName: request.OwnerLastName,
+            LogoUrl: request.LogoUrl,
             AddressLine1: request.AddressLine1,
             AddressLine2: request.AddressLine2,
             City: request.City,
@@ -456,6 +588,7 @@ public class ProvidersController : ControllerBase
             Type = searchResult.Type.ToString(),
             Status = searchResult.Status.ToString(),
             City = searchResult.City,
+            ProfileImageUrl = searchResult.ProfileImageUrl,
             State = searchResult.State,
             Country = searchResult.Country,
             LogoUrl = searchResult.LogoUrl,
@@ -466,7 +599,13 @@ public class ProvidersController : ControllerBase
             YearsInBusiness = searchResult.YearsInBusiness,
             IsVerified = searchResult.IsVerified,
             RegisteredAt = searchResult.RegisteredAt,
-            LastActiveAt = searchResult.LastActiveAt
+            LastActiveAt = searchResult.LastActiveAt,
+            // Hierarchy information
+            HierarchyType = searchResult.HierarchyType.ToString(),
+            IsIndependent = searchResult.IsIndependent,
+            ParentProviderId = searchResult.ParentProviderId,
+            ParentProviderName = searchResult.ParentProviderName,
+            StaffProviderCount = searchResult.StaffProviderCount
         });
 
         // Return with proper pagination headers
@@ -655,7 +794,7 @@ public class ProvidersController : ControllerBase
         [FromBody] AddStaffRequest request,
         CancellationToken cancellationToken = default)
     {
-  
+
 
         var command = new AddStaffToProviderCommand(
             providerId,
@@ -986,7 +1125,7 @@ public class ProvidersController : ControllerBase
     {
         return new ProviderDetailsResponse
         {
-           
+
             Id = result.Id,
             OwnerId = result.OwnerId,
             BusinessName = result.BusinessName,
@@ -1049,7 +1188,28 @@ public class ProvidersController : ControllerBase
                 Duration = s.Duration,
                 Status = s.Status.ToString(),
                 ImageUrl = s.ImageUrl,
-            }).ToList() ?? new List<ServiceSummaryResponse>()
+            }).ToList() ?? new List<ServiceSummaryResponse>(),
+            // Hierarchy information
+            HierarchyType = result.HierarchyType.ToString(),
+            IsIndependent = result.IsIndependent,
+            ParentProviderId = result.ParentProviderId,
+            ParentOrganization = result.ParentProvider != null ? new ParentOrganizationResponse
+            {
+                ProviderId = result.ParentProvider.Id,
+                BusinessName = result.ParentProvider.BusinessName,
+                ProfileImageUrl = result.ParentProvider.ProfileImageUrl,
+                Status = result.ParentProvider.Status.ToString()
+            } : null,
+            StaffProviders = result.StaffProviders?.Select(sp => new StaffProviderResponse
+            {
+                ProviderId = sp.Id,
+                BusinessName = sp.BusinessName,
+                ProfileImageUrl = sp.ProfileImageUrl,
+                Status = sp.Status.ToString(),
+                IsIndependent = sp.IsIndependent,
+                AverageRating = sp.AverageRating,
+                ServiceCount = sp.ServiceCount
+            }).ToList() ?? new List<StaffProviderResponse>()
         };
     }
 
@@ -1477,7 +1637,8 @@ public class ProvidersController : ControllerBase
         var command = new UpdateBusinessProfileCommand(
             ProviderId: providerId.Value,
             BusinessName: request.BusinessName,
-            Description: request.Description);
+            Description: request.Description, 
+            LogoUrl: request.LogoUrl);
 
         var result = await _mediator.Send(command, cancellationToken);
 
@@ -1501,6 +1662,60 @@ public class ProvidersController : ControllerBase
 
 #region Progressive Registration Request/Response Models
 
+public sealed class RegisterOrganizationProviderRequest
+{
+    public string BusinessName { get; set; } = string.Empty;
+    public string BusinessDescription { get; set; } = string.Empty;
+    public string Category { get; set; } = string.Empty;
+    public string PhoneNumber { get; set; } = string.Empty;
+    public string Email { get; set; } = string.Empty;
+    public string AddressLine1 { get; set; } = string.Empty;
+    public string? AddressLine2 { get; set; }
+    public string City { get; set; } = string.Empty;
+    public string Province { get; set; } = string.Empty;
+    public string PostalCode { get; set; } = string.Empty;
+    public decimal Latitude { get; set; }
+    public decimal Longitude { get; set; }
+    public string OwnerFirstName { get; set; } = string.Empty;
+    public string OwnerLastName { get; set; } = string.Empty;
+    public string? LogoUrl { get; set; }
+}
+
+public sealed class RegisterOrganizationProviderResponse
+{
+    public Guid ProviderId { get; set; }
+    public string HierarchyType { get; set; } = string.Empty;
+    public int RegistrationStep { get; set; }
+    public string Message { get; set; } = string.Empty;
+}
+
+public sealed class RegisterIndependentIndividualRequest
+{
+    public string BusinessName { get; set; } = string.Empty;
+    public string BusinessDescription { get; set; } = string.Empty;
+    public string Category { get; set; } = string.Empty;
+    public string PhoneNumber { get; set; } = string.Empty;
+    public string Email { get; set; } = string.Empty;
+    public string AddressLine1 { get; set; } = string.Empty;
+    public string? AddressLine2 { get; set; }
+    public string City { get; set; } = string.Empty;
+    public string Province { get; set; } = string.Empty;
+    public string PostalCode { get; set; } = string.Empty;
+    public decimal Latitude { get; set; }
+    public decimal Longitude { get; set; }
+    public string FirstName { get; set; } = string.Empty;
+    public string LastName { get; set; } = string.Empty;
+}
+
+public sealed class RegisterIndependentIndividualResponse
+{
+    public Guid ProviderId { get; set; }
+    public string HierarchyType { get; set; } = string.Empty;
+    public bool IsIndependent { get; set; }
+    public int RegistrationStep { get; set; }
+    public string Message { get; set; } = string.Empty;
+}
+
 public sealed class CreateProviderDraftRequest
 {
     public string BusinessName { get; set; } = string.Empty;
@@ -1508,6 +1723,9 @@ public sealed class CreateProviderDraftRequest
     public string Category { get; set; } = string.Empty;
     public string PhoneNumber { get; set; } = string.Empty;
     public string Email { get; set; } = string.Empty;
+    public string OwnerFirstName { get; set; } = string.Empty;
+    public string OwnerLastName { get; set; } = string.Empty;
+    public string? LogoUrl { get; set; }
     public string AddressLine1 { get; set; } = string.Empty;
     public string? AddressLine2 { get; set; }
     public string City { get; set; } = string.Empty;

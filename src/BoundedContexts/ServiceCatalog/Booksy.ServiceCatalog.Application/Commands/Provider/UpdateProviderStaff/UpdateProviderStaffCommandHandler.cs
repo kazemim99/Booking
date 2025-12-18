@@ -34,6 +34,11 @@ namespace Booksy.ServiceCatalog.Application.Commands.Provider.UpdateProviderStaf
             if (provider == null)
                 throw new KeyNotFoundException($"Provider {request.ProviderId} not found");
 
+            // ✅ Hierarchy constraint: Only Organizations can have staff members
+            if (provider.HierarchyType == ProviderHierarchyType.Individual)
+                throw new InvalidOperationException(
+                    "Individual providers cannot have staff members. Convert to Organization first.");
+
             // ✅ Update staff through Provider aggregate root (only if core fields are provided)
             if (!string.IsNullOrWhiteSpace(request.FirstName) &&
                 !string.IsNullOrWhiteSpace(request.LastName) &&
@@ -42,7 +47,7 @@ namespace Booksy.ServiceCatalog.Application.Commands.Provider.UpdateProviderStaf
             {
                 var email = Email.Create(request.Email);
                 var phone = !string.IsNullOrWhiteSpace(request.PhoneNumber)
-                    ? PhoneNumber.Create(request.PhoneNumber)
+                    ? PhoneNumber.From(request.PhoneNumber)
                     : null;
                 var role = ParseRole(request.Role);
 

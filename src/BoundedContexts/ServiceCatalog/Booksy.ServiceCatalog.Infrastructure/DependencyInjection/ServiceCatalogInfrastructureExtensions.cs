@@ -35,6 +35,7 @@ using Booksy.ServiceCatalog.Infrastructure.ExternalServices.Sms;
 using System.Threading;
 using Booksy.ServiceCatalog.Application.Abstractions;
 using Booksy.ServiceCatalog.Infrastructure.Services;
+using Booksy.Infrastructure.External.OTP;
 
 namespace Booksy.ServiceCatalog.Infrastructure.DependencyInjection
 {
@@ -108,6 +109,12 @@ namespace Booksy.ServiceCatalog.Infrastructure.DependencyInjection
             services.AddScoped<INotificationTemplateRepository, NotificationTemplateRepository>();
             services.AddScoped<IUserNotificationPreferencesRepository, UserNotificationPreferencesRepository>();
 
+            // Provider Hierarchy Repositories (Invitations & Join Requests)
+            services.AddScoped<IProviderInvitationReadRepository, ProviderInvitationReadRepository>();
+            services.AddScoped<IProviderInvitationWriteRepository, ProviderInvitationWriteRepository>();
+            services.AddScoped<IProviderJoinRequestReadRepository, ProviderJoinRequestReadRepository>();
+            services.AddScoped<IProviderJoinRequestWriteRepository, ProviderJoinRequestWriteRepository>();
+
             // Notification Services
             services.AddNotificationServices();
 
@@ -118,6 +125,10 @@ namespace Booksy.ServiceCatalog.Infrastructure.DependencyInjection
             services.AddScoped<IServiceQueryRepository, ServiceQueryRepository>();
             services.AddScoped<ITokenService, TokenService>();
             services.AddScoped<IUrlService, UrlService>();
+
+            // Invitation & Registration Services
+            services.AddScoped<IInvitationRegistrationService, InvitationRegistrationService>();
+            services.AddScoped<IDataCloningService, DataCloningService>();
 
 
             // Domain Services

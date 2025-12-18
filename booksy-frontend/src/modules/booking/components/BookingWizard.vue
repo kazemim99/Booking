@@ -28,6 +28,38 @@
         </div>
       </div>
 
+      <!-- Pre-selected Service Banner -->
+      <div v-if="servicePreSelected && bookingData.services[0]" class="preselected-service-banner">
+        <div class="banner-icon">
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor">
+            <path fill-rule="evenodd" d="M2.25 12c0-5.385 4.365-9.75 9.75-9.75s9.75 4.365 9.75 9.75-4.365 9.75-9.75 9.75S2.25 17.385 2.25 12zm13.36-1.814a.75.75 0 10-1.22-.872l-3.236 4.53L9.53 12.22a.75.75 0 00-1.06 1.06l2.25 2.25a.75.75 0 001.14-.094l3.75-5.25z" clip-rule="evenodd" />
+          </svg>
+        </div>
+        <div class="banner-content">
+          <div class="banner-title">رزرو از</div>
+          <div v-if="preSelectedProviderName" class="banner-provider-name">
+            {{ preSelectedProviderName }}
+          </div>
+          <div class="banner-service-name">{{ bookingData.services[0].name }}</div>
+          <div class="banner-details">
+            <span>{{ convertToPersianNumber(bookingData.services[0].duration) }} دقیقه</span>
+            <span class="separator">•</span>
+            <span>{{ formatPrice(bookingData.services[0].basePrice) }} تومان</span>
+          </div>
+        </div>
+        <button
+          v-if="currentStep === 2"
+          class="banner-change-btn"
+          @click="changeService"
+          title="تغییر خدمت"
+        >
+          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+          </svg>
+          تغییر
+        </button>
+      </div>
+
       <!-- Wizard Content -->
       <div class="wizard-content">
         <!-- Step 1: Service Selection -->
@@ -49,25 +81,19 @@
           @slot-selected="handleSlotSelected"
         />
 
-        <!-- Step 3: Customer Information -->
-        <CustomerInfo
-          v-if="currentStep === 3"
-          :customer-data="bookingData.customerInfo"
-          @info-updated="handleCustomerInfoUpdated"
-        />
-
-        <!-- Step 4: Confirmation -->
+        <!-- Step 3: Confirmation -->
         <BookingConfirmation
-          v-if="currentStep === 4"
+          v-if="currentStep === 3"
           :booking-data="confirmationData"
           :provider-id="providerId"
+          @notes-updated="handleNotesUpdated"
         />
       </div>
 
       <!-- Navigation Buttons -->
       <div class="wizard-footer">
         <button
-          v-if="currentStep > 1 && currentStep < 5"
+          v-if="currentStep > 1 && currentStep < 4 && !(servicePreSelected && currentStep === 2)"
           class="btn-secondary"
           @click="previousStep"
         >
@@ -80,7 +106,7 @@
         <div class="spacer"></div>
 
         <button
-          v-if="currentStep < 3"
+          v-if="currentStep < 2"
           class="btn-primary"
           :disabled="!canProceed"
           @click="nextStep"
@@ -92,7 +118,7 @@
         </button>
 
         <button
-          v-if="currentStep === 3"
+          v-if="currentStep === 2"
           class="btn-primary"
           :disabled="!canProceed"
           @click="reviewBooking"
@@ -104,7 +130,7 @@
         </button>
 
         <button
-          v-if="currentStep === 4"
+          v-if="currentStep === 3"
           class="btn-primary"
           :disabled="isSubmitting"
           @click="submitBooking"
@@ -151,7 +177,6 @@ import { ref, computed } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import ServiceSelection from './ServiceSelection.vue'
 import SlotSelection from './SlotSelection.vue'
-import CustomerInfo from './CustomerInfo.vue'
 import BookingConfirmation from './BookingConfirmation.vue'
 import { bookingService } from '@/modules/booking/api/booking.service'
 import type { CreateBookingRequest } from '@/modules/booking/api/booking.service'
@@ -163,18 +188,20 @@ const authStore = useAuthStore()
 
 // Props
 const providerId = ref(route.query.providerId as string || '')
+const preSelectedServiceId = ref(route.query.serviceId as string || '')
 
 // State
 const currentStep = ref(1)
 const isSubmitting = ref(false)
 const showSuccessModal = ref(false)
 const bookingId = ref('')
+const servicePreSelected = ref(false)
+const preSelectedProviderName = ref('')
 
 const steps = [
   { id: 1, label: 'انتخاب خدمت', description: 'خدمت مورد نظر را انتخاب کنید' },
   { id: 2, label: 'انتخاب زمان', description: 'تاریخ و ساعت مناسب را انتخاب کنید' },
-  { id: 3, label: 'اطلاعات تماس', description: 'اطلاعات خود را وارد کنید' },
-  { id: 4, label: 'تایید نهایی', description: 'بررسی و تایید رزرو' },
+  { id: 3, label: 'تایید نهایی', description: 'بررسی و تایید رزرو' },
 ]
 
 interface Service {
@@ -191,12 +218,7 @@ interface BookingData {
   endTime: string | null
   staffId: string | null
   staffName: string
-  customerInfo: {
-    fullName: string
-    phoneNumber: string
-    email: string
-    notes: string
-  }
+  customerNotes: string
 }
 
 const bookingData = ref<BookingData>({
@@ -206,13 +228,65 @@ const bookingData = ref<BookingData>({
   endTime: null,
   staffId: null,
   staffName: '',
-  customerInfo: {
-    fullName: '',
-    phoneNumber: '',
-    email: '',
-    notes: '',
-  },
+  customerNotes: '',
 })
+
+// Initialize: If serviceId is provided, skip to time selection
+import { onMounted } from 'vue'
+import { useProviderStore } from '@/modules/provider/stores/provider.store'
+
+const providerStore = useProviderStore()
+
+onMounted(async () => {
+  if (preSelectedServiceId.value && providerId.value) {
+    try {
+      // Load provider data to get service details
+      await providerStore.getProviderById(providerId.value, true, false)
+      const provider = providerStore.currentProvider
+
+      if (provider) {
+        // Store provider name
+        preSelectedProviderName.value = provider.businessName || provider.displayName || 'ارائه‌دهنده'
+
+        const service = provider.services?.find(s => s.id === preSelectedServiceId.value)
+        if (service) {
+          // Auto-select the service
+          bookingData.value.services = [{
+            id: service.id,
+            name: service.name,
+            basePrice: service.basePrice,
+            duration: service.duration
+          }]
+          servicePreSelected.value = true
+          // Skip to time selection (Step 2)
+          currentStep.value = 2
+        }
+      }
+    } catch (error) {
+      console.error('Failed to load pre-selected service:', error)
+    }
+  }
+})
+
+// Methods
+const convertToPersianNumber = (num: number | string): string => {
+  const persianDigits = ['۰', '۱', '۲', '۳', '۴', '۵', '۶', '۷', '۸', '۹']
+  return num.toString().split('').map(char => {
+    const digit = parseInt(char)
+    return !isNaN(digit) ? persianDigits[digit] : char
+  }).join('')
+}
+
+const formatPrice = (price: number): string => {
+  return convertToPersianNumber(price.toLocaleString('fa-IR'))
+}
+
+const changeService = () => {
+  // Reset service selection and go back to step 1
+  servicePreSelected.value = false
+  currentStep.value = 1
+  window.scrollTo({ top: 0, behavior: 'smooth' })
+}
 
 // Computed
 const canProceed = computed(() => {
@@ -221,11 +295,6 @@ const canProceed = computed(() => {
       return bookingData.value.services.length > 0
     case 2:
       return !!bookingData.value.date && !!bookingData.value.startTime
-    case 3:
-      return !!(
-        bookingData.value.customerInfo.fullName &&
-        bookingData.value.customerInfo.phoneNumber
-      )
     default:
       return true
   }
@@ -238,6 +307,9 @@ const confirmationData = computed(() => {
   const totalDuration = bookingData.value.services.reduce((sum, s) => sum + s.duration, 0)
   const serviceNames = bookingData.value.services.map(s => s.name).join('، ')
 
+  // Get customer info from auth store
+  const user = authStore.user
+
   return {
     serviceId: firstService?.id || null,
     serviceName: serviceNames || 'انتخاب نشده',
@@ -248,18 +320,15 @@ const confirmationData = computed(() => {
     endTime: bookingData.value.endTime,
     staffId: bookingData.value.staffId,
     staffName: bookingData.value.staffName,
-    customerInfo: bookingData.value.customerInfo
+    customerInfo: {
+      firstName: user?.firstName || '',
+      lastName: user?.lastName || '',
+      phoneNumber: user?.phoneNumber || '',
+      email: user?.email || '',
+      notes: bookingData.value.customerNotes
+    }
   }
 })
-
-// Methods
-const convertToPersianNumber = (num: number | string): string => {
-  const persianDigits = ['۰', '۱', '۲', '۳', '۴', '۵', '۶', '۷', '۸', '۹']
-  return num.toString().split('').map(char => {
-    const digit = parseInt(char)
-    return !isNaN(digit) ? persianDigits[digit] : char
-  }).join('')
-}
 
 const handleServicesSelected = (services: Service[]) => {
   bookingData.value.services = services.map(s => ({
@@ -278,12 +347,12 @@ const handleSlotSelected = (slot: any) => {
   bookingData.value.staffName = slot.staffName
 }
 
-const handleCustomerInfoUpdated = (info: any) => {
-  bookingData.value.customerInfo = { ...info }
+const handleNotesUpdated = (notes: string) => {
+  bookingData.value.customerNotes = notes
 }
 
 const nextStep = () => {
-  if (canProceed.value && currentStep.value < 4) {
+  if (canProceed.value && currentStep.value < 3) {
     currentStep.value++
     window.scrollTo({ top: 0, behavior: 'smooth' })
   }
@@ -291,6 +360,10 @@ const nextStep = () => {
 
 const previousStep = () => {
   if (currentStep.value > 1) {
+    // If service was pre-selected and we're on step 2, don't allow going back to step 1
+    if (servicePreSelected.value && currentStep.value === 2) {
+      return
+    }
     currentStep.value--
     window.scrollTo({ top: 0, behavior: 'smooth' })
   }
@@ -298,7 +371,7 @@ const previousStep = () => {
 
 const reviewBooking = () => {
   if (canProceed.value) {
-    currentStep.value = 4
+    currentStep.value = 3
     window.scrollTo({ top: 0, behavior: 'smooth' })
   }
 }
@@ -379,9 +452,9 @@ const submitBooking = async () => {
       customerId,
       providerId: providerId.value,
       serviceId: firstService.id,
-      staffId: bookingData.value.staffId || undefined,
+      staffProviderId: bookingData.value.staffId || '',
       startTime,
-      customerNotes: bookingData.value.customerInfo.notes || undefined,
+      customerNotes: bookingData.value.customerNotes || undefined,
     }
 
     console.log('[BookingWizard] Booking request:', request)
@@ -430,6 +503,120 @@ const goToMyBookings = () => {
 
 .wizard-header {
   margin-bottom: 3rem;
+}
+
+.preselected-service-banner {
+  background: linear-gradient(135deg, rgba(16, 185, 129, 0.1) 0%, rgba(5, 150, 105, 0.1) 100%);
+  border: 2px solid #10b981;
+  border-radius: 16px;
+  padding: 1.5rem 2rem;
+  margin-bottom: 2rem;
+  display: flex;
+  align-items: center;
+  gap: 1.5rem;
+  animation: slideDown 0.5s ease-out;
+}
+
+@keyframes slideDown {
+  from {
+    opacity: 0;
+    transform: translateY(-20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.banner-icon {
+  width: 56px;
+  height: 56px;
+  background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.banner-icon svg {
+  width: 32px;
+  height: 32px;
+  color: white;
+}
+
+.banner-content {
+  flex: 1;
+}
+
+.banner-title {
+  font-size: 0.875rem;
+  color: #059669;
+  font-weight: 600;
+  margin-bottom: 0.25rem;
+}
+
+.banner-provider-name {
+  font-size: 1.125rem;
+  font-weight: 700;
+  color: #475569;
+  margin-bottom: 0.375rem;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.banner-provider-name::before {
+  content: '🏢';
+  font-size: 1rem;
+}
+
+.banner-service-name {
+  font-size: 1.375rem;
+  font-weight: 800;
+  color: #1e293b;
+  margin-bottom: 0.5rem;
+}
+
+.banner-details {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  font-size: 0.95rem;
+  color: #64748b;
+  font-weight: 600;
+}
+
+.banner-details .separator {
+  color: #cbd5e1;
+}
+
+.banner-change-btn {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.75rem 1.5rem;
+  background: white;
+  color: #667eea;
+  border: 2px solid #667eea;
+  border-radius: 10px;
+  font-size: 0.95rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s;
+  flex-shrink: 0;
+}
+
+.banner-change-btn svg {
+  width: 18px;
+  height: 18px;
+}
+
+.banner-change-btn:hover {
+  background: #667eea;
+  color: white;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
 }
 
 .steps-indicator {
@@ -697,6 +884,41 @@ const goToMyBookings = () => {
 @media (max-width: 768px) {
   .wizard-container {
     padding: 0 1rem;
+  }
+
+  .preselected-service-banner {
+    flex-direction: column;
+    align-items: flex-start;
+    padding: 1.25rem;
+    gap: 1rem;
+  }
+
+  .banner-icon {
+    width: 48px;
+    height: 48px;
+  }
+
+  .banner-icon svg {
+    width: 24px;
+    height: 24px;
+  }
+
+  .banner-provider-name {
+    font-size: 1rem;
+  }
+
+  .banner-service-name {
+    font-size: 1.125rem;
+  }
+
+  .banner-details {
+    flex-wrap: wrap;
+    font-size: 0.875rem;
+  }
+
+  .banner-change-btn {
+    width: 100%;
+    justify-content: center;
   }
 
   .steps-indicator {

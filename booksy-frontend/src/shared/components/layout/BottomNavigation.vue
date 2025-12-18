@@ -31,7 +31,7 @@ interface NavItem {
 }
 
 const router = useRouter()
-const route = useRoute()
+const _route = useRoute()
 const authStore = useAuthStore()
 const customerStore = useCustomerStore()
 

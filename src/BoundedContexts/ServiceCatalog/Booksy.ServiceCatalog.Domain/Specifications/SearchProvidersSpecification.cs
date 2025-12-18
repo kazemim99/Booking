@@ -1,9 +1,5 @@
 ﻿
-using Booksy.Core.Application.Abstractions.CQRS;
-using Booksy.Core.Application.DTOs;
-using Booksy.ServiceCatalog.Domain.Repositories;
-using Booksy.ServiceCatalog.Domain.Specifications.Provider;
-using Microsoft.Extensions.Logging;
+using Microsoft.EntityFrameworkCore;
 
 
 namespace Booksy.ServiceCatalog.Domain.Specifications.Provider
@@ -25,8 +21,11 @@ namespace Booksy.ServiceCatalog.Domain.Specifications.Provider
             decimal? minRating = null,
             string? serviceCategory = null,
             string? priceRange = null,
-            bool includeInactive = false)
+            bool includeInactive = false,
+            bool excludeStaffIndividuals = true)
         {
+            AddInclude(c => c.Services);
+
             // Text search across multiple fields
             if (!string.IsNullOrWhiteSpace(searchTerm))
             {
@@ -36,6 +35,8 @@ namespace Booksy.ServiceCatalog.Domain.Specifications.Provider
                     provider.Profile.BusinessDescription.ToLower().Contains(term));
             }
 
+
+            AddCriteria(c => c.Profile.BusinessName.Contains("نهال"));
             // Provider type filter
             if (type.HasValue)
             {
@@ -87,10 +88,26 @@ namespace Booksy.ServiceCatalog.Domain.Specifications.Provider
             // Service category filter
             if (!string.IsNullOrWhiteSpace(serviceCategory))
             {
-                var categoryLower = serviceCategory.Trim().ToLower();
-                AddCriteria(provider => provider.Services.Any(s =>
-                    s.Category.Name.ToLower().Contains(categoryLower) &&
-                    s.Status == ServiceStatus.Active));
+                var categoryInput = serviceCategory.Trim();
+
+                // Try to find matching category by slug or name (in-memory)
+                //var matchingCategory = ServiceCategory.All
+                //    .FirstOrDefault(c =>
+                //        c.Slug.Equals(categoryInput, StringComparison.OrdinalIgnoreCase) ||
+                //        c.Name.Contains(categoryInput, StringComparison.OrdinalIgnoreCase));
+
+                //if (matchingCategory != null)
+                //{
+                //    // Use the actual category name for matching
+                //    var categoryName = matchingCategory.Name;
+                //    AddCriteria(provider => provider.Services.Any());
+                //}
+                //else
+                //{
+                //    // Fallback: search by input directly (for backward compatibility)
+                //    var searchPattern = $"%{categoryInput}%";
+                //    AddCriteria(provider => provider.Services.Any());
+                //}
             }
 
             // Price range filter
@@ -104,14 +121,21 @@ namespace Booksy.ServiceCatalog.Domain.Specifications.Provider
             }
 
             // Status filter (default to active providers only)
-            if (includeInactive)
+            if (!includeInactive)
             {
                 AddCriteria(provider => provider.Status != ProviderStatus.Archived);
             }
-            //else
-            //{
-            //    AddCriteria(provider => provider.Status == );
-            //}
+
+            // Hierarchy filter - exclude individual providers who are staff members of organizations
+            // This ensures search results show only:
+            // 1. Organizations (with their staff count displayed)
+            // 2. Independent individuals (not linked to any organization)
+            if (excludeStaffIndividuals)
+            {
+                AddCriteria(provider =>
+                    provider.HierarchyType == ProviderHierarchyType.Organization ||
+                    (provider.HierarchyType == ProviderHierarchyType.Individual && provider.ParentProviderId == null));
+            }
 
             // Note: Ordering is now handled dynamically in the query handler based on SortBy parameter
             // Removed default ordering to allow flexible sorting (rating, popularity, price, distance)

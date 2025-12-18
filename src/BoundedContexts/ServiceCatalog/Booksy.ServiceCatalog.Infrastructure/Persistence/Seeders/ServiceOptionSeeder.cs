@@ -118,7 +118,7 @@ namespace Booksy.ServiceCatalog.Infrastructure.Persistence.Seeders
                 service.AddOption(
                     "آروماتراپی - Aromatherapy",
                     Price.Create(500000m, "IRR"),
-                    Duration.FromMinutes(0)); // No extra time
+                    null); // No extra time
                 optionsAdded++;
 
                 service.AddOption(

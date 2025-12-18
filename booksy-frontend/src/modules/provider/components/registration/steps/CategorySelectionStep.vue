@@ -1,6 +1,5 @@
 <template>
   <div class="registration-step">
-    <ProgressIndicator :current-step="2" :total-steps="9" />
 
     <div class="step-card">
       <div class="step-header">
@@ -48,7 +47,7 @@
 
 <script setup lang="ts">
 import { ref } from 'vue'
-import ProgressIndicator from '../shared/ProgressIndicator.vue'
+
 import AppButton from '@/shared/components/ui/Button/AppButton.vue'
 
 interface Props {

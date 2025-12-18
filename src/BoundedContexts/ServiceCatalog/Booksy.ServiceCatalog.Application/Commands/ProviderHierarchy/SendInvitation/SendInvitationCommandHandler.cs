@@ -1,0 +1,101 @@
+using Booksy.Core.Application.Abstractions.CQRS;
+using Booksy.Core.Application.Abstractions.Persistence;
+using Booksy.Core.Application.Exceptions;
+using Booksy.Core.Domain.Exceptions;
+using Booksy.ServiceCatalog.Domain.Aggregates;
+using Booksy.ServiceCatalog.Domain.Enums;
+using Booksy.ServiceCatalog.Domain.Repositories;
+using Booksy.ServiceCatalog.Domain.ValueObjects;
+using Microsoft.Extensions.Logging;
+
+namespace Booksy.ServiceCatalog.Application.Commands.ProviderHierarchy.SendInvitation
+{
+    public sealed class SendInvitationCommandHandler : ICommandHandler<SendInvitationCommand, SendInvitationResult>
+    {
+        private readonly IProviderReadRepository _providerRepository;
+        private readonly IProviderInvitationReadRepository _invitationReadRepository;
+        private readonly IProviderInvitationWriteRepository _invitationWriteRepository;
+        private readonly IUnitOfWork _unitOfWork;
+        private readonly ILogger<SendInvitationCommandHandler> _logger;
+
+        public SendInvitationCommandHandler(
+            IProviderReadRepository providerRepository,
+            IProviderInvitationReadRepository invitationReadRepository,
+            IProviderInvitationWriteRepository invitationWriteRepository,
+            IUnitOfWork unitOfWork,
+            ILogger<SendInvitationCommandHandler> logger)
+        {
+            _providerRepository = providerRepository;
+            _invitationReadRepository = invitationReadRepository;
+            _invitationWriteRepository = invitationWriteRepository;
+            _unitOfWork = unitOfWork;
+            _logger = logger;
+        }
+
+        public async Task<SendInvitationResult> Handle(SendInvitationCommand request, CancellationToken cancellationToken)
+        {
+            _logger.LogInformation("Sending invitation from organization {OrganizationId} to {PhoneNumber}",
+                request.OrganizationId, request.PhoneNumber);
+
+            // Validate organization exists and is an organization type
+            var organizationId = ProviderId.From(request.OrganizationId);
+            var organization = await _providerRepository.GetByIdAsync(organizationId, cancellationToken);
+
+            if (organization == null)
+                throw new NotFoundException($"Organization with ID {request.OrganizationId} not found");
+
+            if (organization.HierarchyType != ProviderHierarchyType.Organization)
+                throw new DomainValidationException("Only organizations can send invitations");
+
+            // Check for existing pending invitation to same phone number
+            var existingInvitation = await _invitationReadRepository.GetByPhoneNumberAndOrganizationAsync(
+                request.PhoneNumber, organizationId, cancellationToken);
+
+            if (existingInvitation != null)
+                throw new DomainValidationException($"A pending invitation already exists for phone number {request.PhoneNumber}");
+
+            // TODO: Check if user with this phone number already exists
+            // This validation should be added to prevent inviting registered users
+            // var existingUser = await _userRepository.GetByPhoneNumberAsync(request.PhoneNumber, cancellationToken);
+            // if (existingUser != null)
+            // {
+            //     // If user exists, they should use the regular join request flow instead
+            //     throw new DomainValidationException(
+            //         $"A user account with phone number {request.PhoneNumber} already exists. " +
+            //         "This user can join the organization by accepting the invitation through their account.");
+            // }
+
+            // Create invitation
+            var phoneNumber = PhoneNumber.From(request.PhoneNumber);
+            var invitation = ProviderInvitation.Create(
+                organizationId,
+                phoneNumber,
+                request.InviteeName,
+                request.Message);
+
+            _logger.LogInformation("Created invitation with ID: {InvitationId}", invitation.Id);
+
+            await _invitationWriteRepository.SaveAsync(invitation, cancellationToken);
+
+            _logger.LogInformation("Saving invitation to DB with ID: {InvitationId}", invitation.Id);
+
+            // Use SaveAndPublishEventsAsync to save FIRST, then dispatch events
+            // This ensures the invitation exists in DB before SMS is sent with the invitation link
+            await _unitOfWork.SaveAndPublishEventsAsync(cancellationToken);
+
+            _logger.LogInformation("Invitation {InvitationId} sent successfully", invitation.Id);
+
+            return new SendInvitationResult(
+                InvitationId: invitation.Id,
+                OrganizationId: organization.Id.Value,
+                OrganizationName: organization.Profile.BusinessName,
+                OrganizationLogo: organization.Profile.LogoUrl,
+                PhoneNumber: request.PhoneNumber,
+                InviteeName: request.InviteeName,
+                Message: request.Message,
+                CreatedAt: invitation.CreatedAt,
+                ExpiresAt: invitation.ExpiresAt,
+                Status: invitation.Status.ToString());
+        }
+    }
+}

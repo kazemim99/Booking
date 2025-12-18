@@ -95,7 +95,7 @@ onMounted(async () => {
 })
 
 // Watch for external changes
-watch(() => props.provinceId, async (newValue, oldValue) => {
+watch(() => props.provinceId, async (newValue, _oldValue) => {
   selectedProvinceId.value = newValue || null
 
   // Load cities when province changes externally

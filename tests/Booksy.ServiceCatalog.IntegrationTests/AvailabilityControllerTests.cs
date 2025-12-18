@@ -329,7 +329,7 @@ public class AvailabilityControllerTests : ServiceCatalogIntegrationTestBase
                 "Firstname Staff",
                 "Lastname Staff",
                 StaffRole.Maintenance,
-                PhoneNumber.Create("+1234567890"));
+                PhoneNumber.From("+1234567890"));
         }
 
         await DbContext.SaveChangesAsync();

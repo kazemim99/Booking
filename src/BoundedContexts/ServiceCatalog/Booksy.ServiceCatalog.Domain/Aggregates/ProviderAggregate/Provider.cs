@@ -19,18 +19,25 @@ namespace Booksy.ServiceCatalog.Domain.Aggregates
     public sealed class Provider : AggregateRoot<ProviderId>, IAuditableEntity
     {
         private readonly List<Staff> _staff = new();
-        private readonly List<Service> _service = new();
+        private readonly List<Service> _services = new();
         private readonly List<BusinessHours> _businessHours = new();
         private readonly List<HolidaySchedule> _holidays = new();
         private readonly List<ExceptionSchedule> _exceptions = new();
 
         // Core Identity
         public UserId OwnerId { get; private set; }
+        public string OwnerFirstName { get; private set; }
+        public string OwnerLastName { get; private set; }
         public BusinessProfile Profile { get; private set; }
 
         // Status & Type
         public ProviderStatus Status { get; private set; }
         public ProviderType ProviderType { get; private set; }
+
+        // Hierarchy Properties
+        public ProviderHierarchyType HierarchyType { get; private set; }
+        public ProviderId? ParentProviderId { get; private set; }
+        public bool IsIndependent { get; private set; }
 
         // Registration Progress Tracking
         public int RegistrationStep { get; private set; }
@@ -54,7 +61,7 @@ namespace Booksy.ServiceCatalog.Domain.Aggregates
 
         // Collections
         public IReadOnlyList<Staff> Staff => _staff.AsReadOnly();
-        public IReadOnlyList<Service> Services => _service.AsReadOnly();
+        public IReadOnlyList<Service> Services => _services.AsReadOnly();
         public IReadOnlyList<BusinessHours> BusinessHours => _businessHours.AsReadOnly();
         public IReadOnlyList<HolidaySchedule> Holidays => _holidays.AsReadOnly();
         public IReadOnlyList<ExceptionSchedule> Exceptions => _exceptions.AsReadOnly();
@@ -79,17 +86,24 @@ namespace Booksy.ServiceCatalog.Domain.Aggregates
             ProviderType type,
             ContactInfo contactInfo,
             BusinessAddress address,
-            int registrationStep = 3)
+            ProviderHierarchyType hierarchyType = ProviderHierarchyType.Organization,
+            int registrationStep = 3,
+            string? logoUrl = null)
         {
-            var profile = BusinessProfile.Create(businessName, description,"profileImageUrl");
+            var profile = BusinessProfile.Create(businessName, description, logoUrl);
 
             var provider = new Provider
             {
                 Id = ProviderId.New(),
                 OwnerId = ownerId,
+                OwnerFirstName = ownerFirstName,
+                OwnerLastName = ownerLastName,
                 Profile = profile,
                 Status = ProviderStatus.Drafted,
                 ProviderType = type,
+                HierarchyType = hierarchyType,
+                ParentProviderId = null,
+                IsIndependent = hierarchyType == ProviderHierarchyType.Individual,
                 ContactInfo = contactInfo,
                 Address = address,
                 RequiresApproval = false,
@@ -120,9 +134,10 @@ namespace Booksy.ServiceCatalog.Domain.Aggregates
             string description,
             ProviderType type,
             ContactInfo contactInfo,
-            BusinessAddress address)
+            BusinessAddress address,
+            ProviderHierarchyType hierarchyType = ProviderHierarchyType.Organization)
         {
-            var profile = BusinessProfile.Create(businessName, description, "profileImageUrl");
+            var profile = BusinessProfile.Create(businessName, description, logoUrl: null, profileImageUrl: null);
 
             var provider = new Provider
             {
@@ -131,6 +146,9 @@ namespace Booksy.ServiceCatalog.Domain.Aggregates
                 Profile = profile,
                 Status = ProviderStatus.PendingVerification,
                 ProviderType = type,
+                HierarchyType = hierarchyType,
+                ParentProviderId = null,
+                IsIndependent = hierarchyType == ProviderHierarchyType.Individual,
                 ContactInfo = contactInfo,
                 Address = address,
                 RequiresApproval = false,
@@ -181,7 +199,14 @@ namespace Booksy.ServiceCatalog.Domain.Aggregates
 
         public void UpdateBusinessProfile(string businessName, string description, string? profileImageUrl)
         {
-            Profile = BusinessProfile.Create(businessName, description,profileImageUrl);
+            // Preserve existing LogoUrl and ProfileImageUrl when updating profile
+            var existingLogoUrl = Profile.LogoUrl;
+            var existingProfileImageUrl = Profile.ProfileImageUrl;
+
+            // Only update ProfileImageUrl if a new one is provided, otherwise keep existing
+            var updatedProfileImageUrl = profileImageUrl ?? existingProfileImageUrl;
+
+            Profile = BusinessProfile.Create(businessName, description, logoUrl: existingLogoUrl, profileImageUrl: updatedProfileImageUrl);
 
             RaiseDomainEvent(new BusinessProfileUpdatedEvent(Id, businessName, description, DateTime.UtcNow));
         }
@@ -193,7 +218,54 @@ namespace Booksy.ServiceCatalog.Domain.Aggregates
 
         public void UpdateAddress(BusinessAddress newAddress)
         {
+            var previousAddress = Address;
+            var previousCoordinates = previousAddress.Latitude.HasValue && previousAddress.Longitude.HasValue
+                ? Coordinates.Create(previousAddress.Latitude.Value, previousAddress.Longitude.Value)
+                : null;
+
             Address = newAddress;
+
+            var newCoordinates = Coordinates.Create(newAddress.Latitude ?? 0, newAddress.Longitude ?? 0);
+
+            RaiseDomainEvent(new ProviderLocationUpdatedEvent(
+                providerId: Id,
+                providerName: Profile.BusinessName,
+                newAddress: newAddress,
+                newCoordinates: newCoordinates,
+                changeType: LocationChangeType.Relocation,
+                updatedByUserId: OwnerId.Value.ToString(),
+                effectiveDate: DateTime.UtcNow,
+                affectedAppointmentIds: Array.Empty<string>().ToList().AsReadOnly(),
+                previousAddress: previousAddress,
+                previousCoordinates: previousCoordinates
+            ));
+        }
+
+        /// <summary>
+        /// Updates draft provider information (used when user goes back in registration flow)
+        /// </summary>
+        public void UpdateDraftInfo(
+            string ownerFirstName,
+            string ownerLastName,
+            string businessName,
+            string description,
+            ProviderType type,
+            ContactInfo contactInfo,
+            BusinessAddress address,
+            string? logoUrl = null)
+        {
+            // Only allow updating draft providers
+            if (Status != ProviderStatus.Drafted)
+                throw new InvalidOperationException("Can only update draft providers");
+
+            OwnerFirstName = ownerFirstName;
+            OwnerLastName = ownerLastName;
+            Profile = BusinessProfile.Create(businessName, description, logoUrl);
+            ProviderType = type;
+            ContactInfo = contactInfo;
+            Address = address;
+
+            RaiseDomainEvent(new BusinessProfileUpdatedEvent(Id, businessName, description, DateTime.UtcNow));
         }
 
         // Registration Progress Methods
@@ -582,6 +654,159 @@ namespace Booksy.ServiceCatalog.Domain.Aggregates
         public IReadOnlyList<Staff> GetActiveStaff()
         {
             return _staff.Where(s => s.IsActive).ToImmutableList();
+        }
+
+        // ============================================
+        // Provider Hierarchy Methods
+        // ============================================
+
+        /// <summary>
+        /// Converts an individual provider to an organization
+        /// Useful when a solo professional wants to hire staff
+        /// </summary>
+        public void ConvertToOrganization()
+        {
+            if (HierarchyType == ProviderHierarchyType.Organization)
+                throw new InvalidProviderException("Provider is already an organization");
+
+            if (ParentProviderId != null)
+                throw new InvalidProviderException("Cannot convert a staff member to organization. Must leave parent organization first.");
+
+            HierarchyType = ProviderHierarchyType.Organization;
+            IsIndependent = false;
+
+            RaiseDomainEvent(new ProviderConvertedToOrganizationEvent(Id, DateTime.UtcNow));
+        }
+
+        /// <summary>
+        /// Links an individual provider to an organization as a staff member
+        /// </summary>
+        public void LinkToOrganization(ProviderId organizationId)
+        {
+            if (HierarchyType != ProviderHierarchyType.Individual)
+                throw new InvalidProviderException("Only individual providers can be linked to organizations");
+
+            if (ParentProviderId != null)
+                throw new InvalidProviderException("Provider is already linked to an organization");
+
+            // Prevent circular relationships
+            if (organizationId == Id)
+                throw new InvalidProviderException("Provider cannot be its own parent");
+
+            ParentProviderId = organizationId;
+            IsIndependent = false;
+
+            RaiseDomainEvent(new StaffMemberAddedToOrganizationEvent(organizationId, Id, DateTime.UtcNow));
+        }
+
+        /// <summary>
+        /// Unlinks an individual provider from their parent organization
+        /// </summary>
+        public void UnlinkFromOrganization(string reason)
+        {
+            if (ParentProviderId == null)
+                throw new InvalidProviderException("Provider is not linked to any organization");
+
+            var parentId = ParentProviderId;
+            ParentProviderId = null;
+            IsIndependent = true;
+
+            RaiseDomainEvent(new StaffMemberRemovedFromOrganizationEvent(parentId, Id, reason, DateTime.UtcNow));
+        }
+
+        /// <summary>
+        /// Checks if this provider can accept direct bookings
+        /// Organizations can accept bookings if they work solo or have staff
+        /// Individuals can accept bookings if they're independent or linked to an org
+        /// </summary>
+        public bool CanAcceptDirectBookings()
+        {
+            if (!AllowOnlineBooking || Status != ProviderStatus.Active)
+                return false;
+
+            // Organizations can always accept bookings (handled by owner or staff)
+            if (HierarchyType == ProviderHierarchyType.Organization)
+                return true;
+
+            // Independent individuals can accept bookings
+            if (IsIndependent)
+                return true;
+
+            // Staff members linked to organizations can accept bookings
+            return ParentProviderId != null;
+        }
+
+        /// <summary>
+        /// Checks if this provider can have staff members
+        /// </summary>
+        public bool CanHaveStaff()
+        {
+            return HierarchyType == ProviderHierarchyType.Organization;
+        }
+
+        /// <summary>
+        /// Validates hierarchy consistency
+        /// </summary>
+        public void ValidateHierarchy()
+        {
+            // Individuals shouldn't have ParentProviderId if they're independent
+            if (HierarchyType == ProviderHierarchyType.Individual && IsIndependent && ParentProviderId != null)
+                throw new InvalidProviderException("Independent individuals cannot have a parent organization");
+
+            // Organizations should not have a parent
+            if (HierarchyType == ProviderHierarchyType.Organization && ParentProviderId != null)
+                throw new InvalidProviderException("Organizations cannot be linked to another organization");
+
+            // Non-independent individuals must have a parent
+            if (HierarchyType == ProviderHierarchyType.Individual && !IsIndependent && ParentProviderId == null)
+                throw new InvalidProviderException("Non-independent individuals must be linked to an organization");
+        }
+
+        // ============================================
+        // Gallery Management Methods
+        // ============================================
+
+        /// <summary>
+        /// Uploads a gallery image and raises domain event for cache invalidation
+        /// </summary>
+        public GalleryImage UploadGalleryImage(string imageUrl, string thumbnailUrl, string mediumUrl)
+        {
+            var galleryImage = Profile.AddGalleryImage(Id, imageUrl, thumbnailUrl, mediumUrl);
+
+            RaiseDomainEvent(new GalleryImageUploadedEvent(Id, galleryImage.Id, imageUrl, DateTime.UtcNow));
+
+            return galleryImage;
+        }
+
+        /// <summary>
+        /// Deletes a gallery image and raises domain event for cache invalidation
+        /// </summary>
+        public void DeleteGalleryImage(Guid imageId)
+        {
+            Profile.RemoveGalleryImage(imageId);
+
+            RaiseDomainEvent(new GalleryImageDeletedEvent(Id, imageId, DateTime.UtcNow));
+        }
+
+        /// <summary>
+        /// Reorders gallery images and raises domain event for cache invalidation
+        /// </summary>
+        public void ReorderGalleryImages(Dictionary<Guid, int> imageOrders)
+        {
+            Profile.ReorderGalleryImages(imageOrders);
+
+            RaiseDomainEvent(new GalleryImagesReorderedEvent(Id, imageOrders, DateTime.UtcNow));
+        }
+
+        /// <summary>
+        /// Sets a gallery image as primary and raises domain event for cache invalidation
+        /// </summary>
+        public void SetPrimaryGalleryImage(Guid imageId)
+        {
+            Profile.SetPrimaryGalleryImage(imageId);
+
+            // Reuse GalleryImageUploadedEvent since it updates the provider
+            RaiseDomainEvent(new GalleryImageUploadedEvent(Id, imageId, string.Empty, DateTime.UtcNow));
         }
     }
 }

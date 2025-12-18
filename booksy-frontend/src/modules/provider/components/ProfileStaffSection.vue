@@ -1,133 +1,65 @@
 <template>
   <div class="staff-section">
-    <!-- Staff List -->
-    <div v-if="staffMembers.length > 0" class="staff-list">
-      <div v-for="member in staffMembers" :key="member.id" class="staff-item">
-        <div class="staff-avatar">
-          <svg class="avatar-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path
-              stroke-linecap="round"
-              stroke-linejoin="round"
-              stroke-width="2"
-              d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"
-            />
+    <!-- Hierarchy Type Check: Independent Individual Cannot Add Staff -->
+    <div v-if="isIndependentIndividual" class="info-card">
+      <div class="info-icon-wrapper">ℹ️</div>
+      <div class="info-content">
+        <h4 class="info-title">حساب فردی</h4>
+        <p class="info-text">
+          شما به عنوان یک متخصص فردی ثبت‌نام کرده‌اید. برای اضافه کردن پرسنل، باید ابتدا
+          <router-link to="/provider/convert-to-organization" class="convert-link">
+            به سازمان تبدیل شوید
+          </router-link>.
+        </p>
+      </div>
+    </div>
+
+    <!-- Hierarchy Type Check: Organization Should Use Advanced Dashboard -->
+    <div v-else-if="isOrganization" class="info-card info-card-primary">
+      <div class="info-icon-wrapper">👥</div>
+      <div class="info-content">
+        <h4 class="info-title">مدیریت پیشرفته پرسنل</h4>
+        <p class="info-text">
+          برای مدیریت کامل پرسنل سازمان، از داشبورد مدیریت پرسنل استفاده کنید.
+          در آنجا می‌توانید دعوت‌نامه ارسال کنید، درخواست‌های پیوستن را بررسی کنید و پرسنل را مدیریت نمایید.
+        </p>
+        <router-link to="/provider/staff" class="dashboard-link-btn">
+          <svg class="icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 8l4 4m0 0l-4 4m4-4H3" />
           </svg>
-        </div>
-        <div class="staff-info">
-          <h4 class="staff-name">{{ member.firstName }} {{ member.lastName }}</h4>
-          <p class="staff-details">
-            {{ member.role || 'Staff' }} • {{ member.phoneNumber || 'No phone' }}
-          </p>
-        </div>
-        <div class="staff-actions">
-          <button
-            type="button"
-            class="btn-icon"
-            @click="handleEdit(member)"
-            title="Edit"
-          >
-            <svg class="icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path
-                stroke-linecap="round"
-                stroke-linejoin="round"
-                stroke-width="2"
-                d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"
-              />
-            </svg>
-          </button>
-          <button
-            type="button"
-            class="btn-icon btn-delete"
-            @click="handleDelete(member.id)"
-            title="Delete"
-          >
-            <svg class="icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path
-                stroke-linecap="round"
-                stroke-linejoin="round"
-                stroke-width="2"
-                d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
-              />
-            </svg>
-          </button>
+          رفتن به داشبورد مدیریت پرسنل
+        </router-link>
+
+        <!-- Show staff list for organizations (read-only preview) -->
+        <div v-if="staffMembers.length > 0" class="staff-preview">
+          <h5 class="preview-title">پرسنل فعلی ({{ staffMembers.length }} نفر)</h5>
+          <div class="staff-list-compact">
+            <div v-for="member in staffMembers.slice(0, 5)" :key="member.id" class="staff-item-compact">
+              <div class="staff-avatar-small">
+                <svg class="avatar-icon-small" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                </svg>
+              </div>
+              <div class="staff-info-compact">
+                <span class="staff-name-compact">{{ member.firstName }} {{ member.lastName }}</span>
+                <span class="staff-role-compact">{{ member.role || 'پرسنل' }}</span>
+              </div>
+            </div>
+            <div v-if="staffMembers.length > 5" class="more-indicator">
+              و {{ staffMembers.length - 5 }} نفر دیگر...
+            </div>
+          </div>
         </div>
       </div>
     </div>
 
-    <!-- Add/Edit Form -->
-    <div v-if="isAdding" class="staff-form">
-      <div class="form-group">
-        <label for="staffName" class="form-label">Full Name</label>
-        <input
-          id="staffName"
-          v-model="formData.name"
-          type="text"
-          class="form-input"
-          placeholder="e.g., John Doe"
-        />
-      </div>
-
-      <div class="form-group">
-        <label for="staffPosition" class="form-label">Position</label>
-        <input
-          id="staffPosition"
-          v-model="formData.position"
-          type="text"
-          class="form-input"
-          placeholder="e.g., Stylist"
-        />
-      </div>
-
-      <div class="form-group">
-        <label for="staffPhone" class="form-label">Phone Number</label>
-        <input
-          id="staffPhone"
-          v-model="formData.phone"
-          type="tel"
-          class="form-input"
-          placeholder="+1 (555) 000-0000"
-        />
-      </div>
-
-      <div class="form-actions">
-        <AppButton type="button" variant="primary" size="medium" @click="handleSaveStaff">
-          {{ editingId ? 'Update' : 'Add' }}
-        </AppButton>
-        <AppButton type="button" variant="outline" size="medium" @click="handleCancelAdd">
-          Cancel
-        </AppButton>
-      </div>
-
-      <p v-if="error" class="form-error">{{ error }}</p>
-    </div>
-
-    <!-- Add Staff Button -->
-    <AppButton
-      v-else
-      type="button"
-      variant="outline"
-      size="large"
-      class="btn-add-staff"
-      @click="handleAddClick"
-    >
-      <svg class="icon-plus" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-        <path
-          stroke-linecap="round"
-          stroke-linejoin="round"
-          stroke-width="2"
-          d="M12 4v16m8-8H4"
-        />
-      </svg>
-      Add Staff Member
-    </AppButton>
   </div>
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import { useStaffStore } from '../stores/staff.store'
 import { useProviderStore } from '../stores/provider.store'
-import AppButton from '@/shared/components/ui/Button/AppButton.vue'
 import type { Staff } from '../types/staff.types'
 
 const staffStore = useStaffStore()
@@ -143,6 +75,55 @@ const formData = ref({
   name: '',
   position: '',
   phone: '',
+})
+
+// Computed: Check provider hierarchy type
+const currentProvider = computed(() => {
+  const provider = providerStore.currentProvider
+
+  // Debug logging to check if hierarchy fields are present
+  if (provider) {
+    const hasHierarchyFields = provider.hierarchyType !== undefined || provider.isIndependent !== undefined
+
+    console.log('[ProfileStaffSection] Current provider:', {
+      id: provider.id,
+      businessName: provider.profile?.businessName,
+      hierarchyType: provider.hierarchyType,
+      isIndependent: provider.isIndependent,
+      hasStaff: provider.staff?.length || 0,
+      hasHierarchyFields
+    })
+
+    if (!hasHierarchyFields) {
+      console.warn(
+        '[ProfileStaffSection] ⚠️ Backend is not returning hierarchyType and isIndependent fields.\n' +
+        'This means the provider hierarchy system is not fully integrated with the backend.\n' +
+        'The legacy staff management interface will be shown.\n\n' +
+        'TO FIX: Update the backend Provider API (GetProviderById endpoint) to include:\n' +
+        '- hierarchyType: "Organization" | "Individual"\n' +
+        '- isIndependent: boolean\n' +
+        '- parentProviderId: string | null'
+      )
+    }
+  }
+
+  return provider
+})
+
+const isIndependentIndividual = computed(() => {
+  // Check if hierarchy type is explicitly set to Individual with isIndependent flag
+  if (currentProvider.value?.hierarchyType === 'Individual' && currentProvider.value?.isIndependent === true) {
+    return true
+  }
+  return false
+})
+
+const isOrganization = computed(() => {
+  // Check if hierarchy type is explicitly set to Organization
+  if (currentProvider.value?.hierarchyType === 'Organization') {
+    return true
+  }
+  return false
 })
 
 // Load staff on mount
@@ -427,6 +408,159 @@ function handleCancelAdd() {
   height: 1.25rem;
 }
 
+/* Info Cards for Hierarchy Type Messages */
+.info-card {
+  display: flex;
+  gap: 1rem;
+  padding: 1.5rem;
+  background: rgba(59, 130, 246, 0.05);
+  border: 1px solid rgba(59, 130, 246, 0.2);
+  border-radius: 0.75rem;
+  margin-bottom: 1rem;
+}
+
+.info-card-primary {
+  background: rgba(139, 92, 246, 0.05);
+  border-color: rgba(139, 92, 246, 0.2);
+}
+
+.info-icon-wrapper {
+  font-size: 2rem;
+  flex-shrink: 0;
+}
+
+.info-content {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.info-title {
+  font-size: 1rem;
+  font-weight: 600;
+  color: #111827;
+  margin: 0;
+}
+
+.info-text {
+  font-size: 0.875rem;
+  color: #6b7280;
+  line-height: 1.6;
+  margin: 0;
+}
+
+.convert-link {
+  color: #8b5cf6;
+  font-weight: 600;
+  text-decoration: underline;
+  transition: color 0.2s;
+}
+
+.convert-link:hover {
+  color: #7c3aed;
+}
+
+.dashboard-link-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.75rem 1.25rem;
+  background: #8b5cf6;
+  color: white;
+  border-radius: 0.5rem;
+  font-size: 0.875rem;
+  font-weight: 600;
+  text-decoration: none;
+  transition: all 0.2s;
+  width: fit-content;
+}
+
+.dashboard-link-btn:hover {
+  background: #7c3aed;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(139, 92, 246, 0.3);
+}
+
+.dashboard-link-btn .icon {
+  width: 1rem;
+  height: 1rem;
+}
+
+/* Staff Preview (for Organizations) */
+.staff-preview {
+  margin-top: 1.5rem;
+  padding-top: 1.5rem;
+  border-top: 1px solid rgba(139, 92, 246, 0.2);
+}
+
+.preview-title {
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: #374151;
+  margin: 0 0 0.75rem 0;
+}
+
+.staff-list-compact {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.staff-item-compact {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.625rem;
+  background: white;
+  border: 1px solid #e5e7eb;
+  border-radius: 0.5rem;
+}
+
+.staff-avatar-small {
+  width: 2rem;
+  height: 2rem;
+  border-radius: 50%;
+  background: rgba(139, 92, 246, 0.1);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.avatar-icon-small {
+  width: 1rem;
+  height: 1rem;
+  color: #8b5cf6;
+}
+
+.staff-info-compact {
+  display: flex;
+  flex-direction: column;
+  gap: 0.125rem;
+  flex: 1;
+}
+
+.staff-name-compact {
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: #111827;
+}
+
+.staff-role-compact {
+  font-size: 0.75rem;
+  color: #6b7280;
+}
+
+.more-indicator {
+  font-size: 0.8125rem;
+  color: #6b7280;
+  text-align: center;
+  padding: 0.5rem;
+  background: #f9fafb;
+  border-radius: 0.375rem;
+}
+
 /* Responsive */
 @media (max-width: 640px) {
   .staff-item {
@@ -445,6 +579,15 @@ function handleCancelAdd() {
 
   .form-actions > * {
     width: 100%;
+  }
+
+  .info-card {
+    padding: 1rem;
+  }
+
+  .dashboard-link-btn {
+    width: 100%;
+    justify-content: center;
   }
 }
 </style>

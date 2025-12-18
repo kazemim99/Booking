@@ -143,14 +143,14 @@ public sealed class AddProviderServiceCommandHandler : ICommandHandler<AddProvid
 
         return category.ToLowerInvariant() switch
         {
-            "beauty" or "haircare" or "nails" => ServiceCategory.Beauty,
-            "fitness" => ServiceCategory.Fitness,
-            "health" or "medical" or "dental" or "therapy" => ServiceCategory.Health,
-            "education" or "training" => ServiceCategory.Education,
-            "professional" or "consultation" => ServiceCategory.Professional,
-            "home" => ServiceCategory.Home,
-            "automotive" => ServiceCategory.Automotive,
-            "pet" => ServiceCategory.Pet,
+            "beauty" or "زیبایی" or "haircare" or "nails" => ServiceCategory.Beauty,
+            "makeup" or "آرایش" => ServiceCategory.Makeup,
+            "beauty-makeup" or "آرایش و زیبایی" => ServiceCategory.BeautyAndMakeup,
+            "hair-care" or "مراقبت مو" => ServiceCategory.HairCare,
+            "skin-care" or "مراقبت پوست" => ServiceCategory.SkinCare,
+            "massage" or "ماساژ" => ServiceCategory.Massage,
+            "therapeutic-massage" or "ماساژ درمانی" => ServiceCategory.TherapeuticMassage,
+            "fitness" or "فیتنس" => ServiceCategory.Fitness,
             _ => ServiceCategory.Beauty
         };
     }

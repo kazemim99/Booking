@@ -63,7 +63,7 @@ namespace Booksy.UserManagement.Application.CQRS.Commands.Customer.UpdateCustome
                 // Update contact information if provided
                 if (!string.IsNullOrWhiteSpace(request.PhoneNumber))
                 {
-                    var phoneNumber = PhoneNumber.Create(request.PhoneNumber);
+                    var phoneNumber = PhoneNumber.From(request.PhoneNumber);
                     Address? address = null;
 
                     if (request.Address != null)

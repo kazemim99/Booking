@@ -30,12 +30,13 @@ namespace Booksy.ServiceCatalog.Domain.Entities
             BusinessDescription = string.Empty;
         }
 
-        public static BusinessProfile Create(string businessName, string description, string? profileImageUrl)
+        public static BusinessProfile Create(string businessName, string description, string? logoUrl = null, string? profileImageUrl = null)
         {
             return new BusinessProfile
             {
                 Id = Guid.NewGuid(),
                 BusinessName = businessName,
+                LogoUrl = logoUrl,
                 ProfileImageUrl = profileImageUrl,
                 BusinessDescription = description,
                 LastUpdatedAt = DateTime.UtcNow

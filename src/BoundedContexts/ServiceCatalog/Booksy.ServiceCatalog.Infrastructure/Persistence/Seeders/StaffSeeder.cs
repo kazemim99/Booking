@@ -252,7 +252,7 @@ namespace Booksy.ServiceCatalog.Infrastructure.Persistence.Seeders
         {
             // Generate Iranian mobile number format: 09XXXXXXXXX
             var number = $"09{_random.Next(10, 99)}{_random.Next(1000000, 9999999)}";
-            return PhoneNumber.Create(number);
+            return PhoneNumber.From(number);
         }
     }
 }

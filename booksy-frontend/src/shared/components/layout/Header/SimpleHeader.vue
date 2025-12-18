@@ -46,7 +46,7 @@ interface Props {
   backButtonTitle?: string
 }
 
-const props = withDefaults(defineProps<Props>(), {
+withDefaults(defineProps<Props>(), {
   showBackButton: true,
   backButtonText: 'بازگشت',
   backButtonTitle: 'بازگشت به صفحه قبل',

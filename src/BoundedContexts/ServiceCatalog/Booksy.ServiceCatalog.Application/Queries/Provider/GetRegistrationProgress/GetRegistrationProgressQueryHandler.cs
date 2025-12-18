@@ -68,7 +68,10 @@ public sealed class GetRegistrationProgressQueryHandler
             BusinessDescription: draftProvider.Profile.BusinessDescription ?? "",
             Category: draftProvider.ProviderType.ToString(),
             PhoneNumber: draftProvider.ContactInfo.PrimaryPhone?.Value ?? "",
-            Email: draftProvider.ContactInfo.Email?.Value ?? ""
+            Email: draftProvider.ContactInfo.Email?.Value ?? "",
+            OwnerFirstName: draftProvider.OwnerFirstName,
+            OwnerLastName: draftProvider.OwnerLastName,
+            LogoUrl: draftProvider.Profile.LogoUrl
         );
 
         // Map location
@@ -79,7 +82,9 @@ public sealed class GetRegistrationProgressQueryHandler
             Province: draftProvider.Address.State,
             PostalCode: draftProvider.Address.PostalCode,
             Latitude: (decimal)(draftProvider.Address.Latitude ?? 0),
-            Longitude: (decimal)(draftProvider.Address.Longitude ?? 0)
+            Longitude: (decimal)(draftProvider.Address.Longitude ?? 0),
+            ProvinceId: draftProvider.Address.ProvinceId,
+            CityId: draftProvider.Address.CityId
         );
 
         // Map services - Load from ServiceRepository (Service is separate aggregate)
