@@ -9,24 +9,44 @@
 
     <form class="info-form" @submit.prevent="handleSubmit">
       <div class="form-grid">
-        <!-- Full Name -->
-        <div class="form-group full-width">
+        <!-- First Name -->
+        <div class="form-group">
           <label class="form-label">
             <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
             </svg>
-            نام و نام خانوادگی
+            نام
             <span class="required">*</span>
           </label>
           <input
-            v-model="formData.fullName"
+            v-model="formData.firstName"
             type="text"
             class="form-input"
-            :class="{ error: errors.fullName }"
-            placeholder="مثال: سارا احمدی"
-            @input="clearError('fullName')"
+            :class="{ error: errors.firstName }"
+            placeholder="مثال: سارا"
+            @input="clearError('firstName')"
           />
-          <span v-if="errors.fullName" class="error-message">{{ errors.fullName }}</span>
+          <span v-if="errors.firstName" class="error-message">{{ errors.firstName }}</span>
+        </div>
+
+        <!-- Last Name -->
+        <div class="form-group">
+          <label class="form-label">
+            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+            </svg>
+            نام خانوادگی
+            <span class="required">*</span>
+          </label>
+          <input
+            v-model="formData.lastName"
+            type="text"
+            class="form-input"
+            :class="{ error: errors.lastName }"
+            placeholder="مثال: احمدی"
+            @input="clearError('lastName')"
+          />
+          <span v-if="errors.lastName" class="error-message">{{ errors.lastName }}</span>
         </div>
 
         <!-- Phone Number -->
@@ -126,7 +146,8 @@ import { ref, watch } from 'vue'
 import { useAuthStore } from '@/core/stores/modules/auth.store'
 
 interface CustomerData {
-  fullName: string
+  firstName: string
+  lastName: string
   phoneNumber: string
   email: string
   notes: string
@@ -150,15 +171,12 @@ const getUserPhoneNumber = (): string => {
   return authStore.user?.phoneNumber || props.customerData.phoneNumber || ''
 }
 
-const getUserFullName = (): string => {
-  // Use stored full name or combine first name and last name if available
-  if (authStore.user?.fullName) {
-    return authStore.user.fullName
-  }
-  if (authStore.user?.firstName && authStore.user?.lastName) {
-    return `${authStore.user.firstName} ${authStore.user.lastName}`
-  }
-  return props.customerData.fullName || ''
+const getUserFirstName = (): string => {
+  return authStore.user?.firstName || props.customerData.firstName || ''
+}
+
+const getUserLastName = (): string => {
+  return authStore.user?.lastName || props.customerData.lastName || ''
 }
 
 const getUserEmail = (): string => {
@@ -167,14 +185,16 @@ const getUserEmail = (): string => {
 
 // State - Auto-populate from user profile for faster booking
 const formData = ref<CustomerData>({
-  fullName: props.customerData.fullName || getUserFullName(),
+  firstName: props.customerData.firstName || getUserFirstName(),
+  lastName: props.customerData.lastName || getUserLastName(),
   phoneNumber: getUserPhoneNumber(),
   email: props.customerData.email || getUserEmail(),
   notes: props.customerData.notes || '',
 })
 
 const errors = ref({
-  fullName: '',
+  firstName: '',
+  lastName: '',
   phoneNumber: '',
   email: '',
 })
@@ -192,12 +212,21 @@ const clearError = (field: keyof typeof errors.value) => {
 const validateForm = (): boolean => {
   let isValid = true
 
-  // Validate full name
-  if (!formData.value.fullName.trim()) {
-    errors.value.fullName = 'نام و نام خانوادگی الزامی است'
+  // Validate first name
+  if (!formData.value.firstName.trim()) {
+    errors.value.firstName = 'نام الزامی است'
     isValid = false
-  } else if (formData.value.fullName.trim().length < 3) {
-    errors.value.fullName = 'نام باید حداقل ۳ کاراکتر باشد'
+  } else if (formData.value.firstName.trim().length < 2) {
+    errors.value.firstName = 'نام باید حداقل ۲ کاراکتر باشد'
+    isValid = false
+  }
+
+  // Validate last name
+  if (!formData.value.lastName.trim()) {
+    errors.value.lastName = 'نام خانوادگی الزامی است'
+    isValid = false
+  } else if (formData.value.lastName.trim().length < 2) {
+    errors.value.lastName = 'نام خانوادگی باید حداقل ۲ کاراکتر باشد'
     isValid = false
   }
 

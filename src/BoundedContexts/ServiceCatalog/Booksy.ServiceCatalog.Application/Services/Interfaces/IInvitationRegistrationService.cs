@@ -46,4 +46,13 @@ public interface IInvitationRegistrationService
         string email,
         string displayName,
         CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Compensation: Deletes a user account if registration flow fails
+    /// Used for saga pattern rollback
+    /// </summary>
+    Task<bool> DeleteUserAsync(
+        UserId userId,
+        string reason,
+        CancellationToken cancellationToken = default);
 }

@@ -459,7 +459,7 @@ namespace Booksy.ServiceCatalog.Application.Services
                     : slotStart.ToUniversalTime();
 
                 // Only add slot if it's in the future and has no conflicts
-                if (!hasConflict && slotStartUtc > DateTime.UtcNow)
+                if (!hasConflict && slotStartUtc > DateTime.Now)
                 {
                     var staffName = $"{individualProvider.OwnerFirstName} {individualProvider.OwnerLastName}".Trim();
                     if (string.IsNullOrEmpty(staffName))
@@ -507,8 +507,7 @@ namespace Booksy.ServiceCatalog.Application.Services
 
             // Filter for active and qualified staff
             var qualifiedStaff = staffMembers
-                .Where(s => s.Status == ProviderStatus.Active &&
-                           service.IsStaffQualified(s.Id.Value))
+                .Where(s => s.Status == ProviderStatus.Active)
                 .ToList();
 
             _logger.LogInformation(

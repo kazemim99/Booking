@@ -208,12 +208,6 @@ namespace Booksy.ServiceCatalog.Infrastructure.Persistence.Repositories
                 .CountAsync(p => p.ParentProviderId == organizationId, cancellationToken);
         }
 
-        public async Task<Provider?> GetByPhoneNumber(PhoneNumber phoneNumber)
-        {
-            return await DbSet
-                       .Include(p => p.Staff)
-                       .Include(p => p.BusinessHours)
-                       .FirstOrDefaultAsync(p => p.ContactInfo.PrimaryPhone == phoneNumber);
-        }
+     
     }
 }

@@ -155,10 +155,13 @@ public sealed class CompleteProviderAuthenticationCommandHandler
             userType: UserType.Provider,
             email: user.Email,
             displayName: displayName,
+            firstName: user.Profile.FirstName,
+            lastName: user.Profile.LastName,
             status: user.Status.ToString(),
             roles: roles,
             providerId: providerId,
             providerStatus: providerStatus,
+            phoneNumber: user.PhoneNumber?.Value,
             expirationHours: 24
         );
 

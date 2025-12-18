@@ -97,11 +97,14 @@ namespace Booksy.UserManagement.Application.CQRS.Commands.RefreshToken
                 user.Type,
                 user.Email,
                 user.Profile.GetDisplayName(),
+                user.Profile.FirstName,
+                user.Profile.LastName,
                 user.Status.ToString(),
                 user.Roles.Select(r => r.Name).ToList(),
                 providerId,
                 providerStatus,
                 customerId,
+                user.PhoneNumber?.Value,
                 24); // 24 hours
 
             await _userRepository.UpdateAsync(user, cancellationToken);

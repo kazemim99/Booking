@@ -61,15 +61,27 @@ public class DataCloningService : IDataCloningService
             {
                 try
                 {
+                    // Create NEW instances of value objects to avoid EF Core tracking issues
+                    var clonedCategory = ServiceCategory.Create(
+                        sourceService.Category.Name,
+                        sourceService.Category.Description,
+                        sourceService.Category.IconUrl);
+
+                    var clonedBasePrice = Price.Create(
+                        sourceService.BasePrice.Amount,
+                        sourceService.BasePrice.Currency);
+
+                    var clonedDuration = Duration.FromMinutes(sourceService.Duration.Value);
+
                     // Create a new service for target provider with same properties
                     var clonedService = Service.Create(
                         providerId: targetProvider.Id,
                         name: sourceService.Name,
                         description: sourceService.Description,
-                        category: sourceService.Category,
+                        category: clonedCategory,
                         type: sourceService.Type,
-                        basePrice: sourceService.BasePrice,
-                        duration: sourceService.Duration);
+                        basePrice: clonedBasePrice,
+                        duration: clonedDuration);
 
                     // Copy additional properties
                     if (sourceService.PreparationTime != null || sourceService.BufferTime != null)

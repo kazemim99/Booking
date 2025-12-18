@@ -11,7 +11,7 @@ const customerRoutes: RouteRecordRaw[] = [
     component: () => import('@/modules/customer/layouts/CustomerLayout.vue'),
     meta: {
       requiresAuth: true,
-      roles: ['customer'],
+      roles: ['Customer'],
     },
     children: [
       {

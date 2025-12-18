@@ -16,11 +16,14 @@ namespace Booksy.UserManagement.Application.Services.Interfaces
             UserType userType,
             Email email,
             string displayName,
+            string firstName,
+            string lastName,
             string status,
             IEnumerable<string> roles,
             string? providerId = null,
             string? providerStatus = null,
             string? customerId = null,
+            string? phoneNumber = null,
             int expirationHours = 24);
 
         ClaimsPrincipal? ValidateToken(string token);

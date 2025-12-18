@@ -9,7 +9,7 @@ public class BookingDetailsResponse
     public Guid CustomerId { get; set; }
     public Guid ProviderId { get; set; }
     public Guid ServiceId { get; set; }
-    public Guid StaffId { get; set; }
+    public Guid StaffProviderId { get; set; }
 
     // Service information
     public string ServiceName { get; set; } = string.Empty;

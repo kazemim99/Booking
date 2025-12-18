@@ -188,6 +188,8 @@ namespace Booksy.ServiceCatalog.Infrastructure.Persistence.Repositories
             UserId customerId,
             PaginationRequest pagination,
             BookingStatus? status = null,
+            DateTime? fromDate = null,
+            DateTime? toDate = null,
             CancellationToken cancellationToken = default)
         {
             var query = DbSet.Where(b => b.CustomerId == customerId);
@@ -195,6 +197,16 @@ namespace Booksy.ServiceCatalog.Infrastructure.Persistence.Repositories
             if (status.HasValue)
             {
                 query = query.Where(b => b.Status == status.Value);
+            }
+
+            if (fromDate.HasValue)
+            {
+                query = query.Where(b => b.TimeSlot.StartTime >= fromDate.Value);
+            }
+
+            if (toDate.HasValue)
+            {
+                query = query.Where(b => b.TimeSlot.StartTime <= toDate.Value);
             }
 
             query = query.OrderByDescending(b => b.TimeSlot.StartTime);

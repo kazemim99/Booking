@@ -138,9 +138,10 @@ namespace Booksy.ServiceCatalog.Domain.Aggregates
             if (Status == ServiceStatus.Active)
                 throw new InvalidServiceException("Service is already active");
 
-            // Business rule: Service must have at least one qualified staff member
+            // Business rule: Organization services (Clinic, Salon, etc.) must have at least one qualified staff member
+            // Individual services don't need qualified staff (they perform their own services)
             if (Provider.ProviderType != ProviderType.Individual && !_qualifiedStaff.Any())
-                throw new InvalidServiceException("Service must have at least one qualified staff member to be activated");
+                throw new InvalidServiceException("Organization service must have at least one qualified staff member to be activated");
 
             Status = ServiceStatus.Active;
             ActivatedAt = DateTime.UtcNow;
@@ -283,6 +284,11 @@ namespace Booksy.ServiceCatalog.Domain.Aggregates
         // Query Methods
         public bool CanBeBooked()
         {
+            // Individual services can be booked by the provider themselves
+            // Organization services require qualified staff
+            if (Provider.ProviderType == ProviderType.Individual)
+                return Status == ServiceStatus.Active && AllowOnlineBooking;
+
             return Status == ServiceStatus.Active && AllowOnlineBooking && _qualifiedStaff.Any();
         }
 

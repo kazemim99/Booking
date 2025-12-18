@@ -291,6 +291,53 @@ public class InvitationRegistrationService : IInvitationRegistrationService
         }
     }
 
+    /// <summary>
+    /// Compensation: Deletes a user account if registration flow fails
+    /// This is part of the saga pattern for handling distributed transactions
+    /// </summary>
+    public async Task<bool> DeleteUserAsync(
+        UserId userId,
+        string reason,
+        CancellationToken cancellationToken = default)
+    {
+        try
+        {
+            _logger.LogWarning(
+                "COMPENSATION: Deleting user {UserId} due to registration failure. Reason: {Reason}",
+                userId, reason);
+
+            var client = _httpClientFactory.CreateClient("UserManagementAPI");
+
+            var response = await client.DeleteAsync(
+                $"/api/v1/users/{userId.Value}?reason={Uri.EscapeDataString(reason)}",
+                cancellationToken);
+
+            if (response.IsSuccessStatusCode)
+            {
+                _logger.LogInformation(
+                    "COMPENSATION SUCCESS: User {UserId} deleted successfully",
+                    userId);
+                return true;
+            }
+
+            // Log warning but don't throw - best effort compensation
+            var error = await response.Content.ReadAsStringAsync(cancellationToken);
+            _logger.LogWarning(
+                "COMPENSATION PARTIAL FAILURE: Failed to delete user {UserId}: {StatusCode} - {Error}. Manual cleanup may be required.",
+                userId, response.StatusCode, error);
+
+            return false;
+        }
+        catch (Exception ex)
+        {
+            // Log error but don't throw - compensation is best effort
+            _logger.LogError(ex,
+                "COMPENSATION ERROR: Exception while deleting user {UserId}. Manual cleanup may be required.",
+                userId);
+            return false;
+        }
+    }
+
     private class CreateUserResponse
     {
         public string UserId { get; set; } = string.Empty;

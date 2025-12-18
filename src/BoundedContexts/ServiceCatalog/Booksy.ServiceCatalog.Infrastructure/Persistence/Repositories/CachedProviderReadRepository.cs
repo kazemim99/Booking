@@ -7,6 +7,7 @@ using Booksy.ServiceCatalog.Domain.Repositories;
 using Booksy.ServiceCatalog.Domain.ValueObjects;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
+using System.Threading;
 
 namespace Booksy.ServiceCatalog.Infrastructure.Persistence.Repositories
 {

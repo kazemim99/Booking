@@ -29,6 +29,14 @@ const routes: RouteRecordRaw[] = [
   ...adminRoutes,
   // Error routes
   {
+    path: '/unauthorized',
+    name: 'Unauthorized',
+    component: () => import('@/shared/components/layout/Forbidden.vue'),
+    meta: {
+      title: '401 - Unauthorized',
+    },
+  },
+  {
     path: '/forbidden',
     name: 'Forbidden',
     component: () => import('@/shared/components/layout/Forbidden.vue'),

@@ -126,11 +126,14 @@ public sealed class CompleteCustomerAuthenticationCommandHandler
             userType: UserType.Customer,
             email: user.Email,
             displayName: displayName,
+            firstName: user.Profile.FirstName,
+            lastName: user.Profile.LastName,
             status: user.Status.ToString(),
             roles: roles,
             providerId: null,
             providerStatus: null,
             customerId: customer.Id.Value.ToString(),
+            phoneNumber: user.PhoneNumber?.Value,
             expirationHours: 24
         );
 

@@ -18,6 +18,7 @@ using Booksy.ServiceCatalog.Application.Commands.Service.DeleteProviderService;
 using Booksy.ServiceCatalog.Application.Commands.Service.UpdateProviderService;
 using Booksy.ServiceCatalog.Domain.Repositories;
 using Booksy.ServiceCatalog.Application.Commands.Service.AddProviderService;
+using Booksy.ServiceCatalog.Application.Queries.Service.GetQualifiedStaff;
 using Microsoft.AspNetCore.RateLimiting;
 
 namespace Booksy.ServiceCatalog.API.Controllers.V1;
@@ -438,6 +439,45 @@ public class ServicesController : ControllerBase
         var result = await _mediator.Send(query, cancellationToken);
 
         var response = result.Select(MapToServiceSummaryResponse).ToList();
+        return Ok(response);
+    }
+
+    /// <summary>
+    /// Gets qualified staff members for a specific service
+    /// </summary>
+    /// <param name="providerId">Provider (organization) ID</param>
+    /// <param name="serviceId">Service ID</param>
+    /// <param name="cancellationToken">Cancellation token</param>
+    /// <returns>List of qualified and active staff members</returns>
+    /// <response code="200">Qualified staff retrieved successfully</response>
+    /// <response code="404">Provider or service not found</response>
+    [HttpGet("provider/{providerId:guid}/{serviceId:guid}/qualified-staff")]
+    [AllowAnonymous]
+    [ProducesResponseType(typeof(QualifiedStaffResponse), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> GetQualifiedStaff(
+        [FromRoute] Guid providerId,
+        [FromRoute] Guid serviceId,
+        CancellationToken cancellationToken = default)
+    {
+        var query = new GetQualifiedStaffQuery(providerId, serviceId);
+        var result = await _mediator.Send(query, cancellationToken);
+
+        var response = new QualifiedStaffResponse
+        {
+            ProviderId = result.ProviderId,
+            ServiceId = result.ServiceId,
+            QualifiedStaff = result.QualifiedStaff.Select(s => new QualifiedStaffMemberResponse
+            {
+                Id = s.Id,
+                Name = s.Name,
+                PhotoUrl = s.PhotoUrl,
+                Rating = s.Rating,
+                ReviewCount = s.ReviewCount,
+                Specialization = s.Specialization
+            }).ToList()
+        };
+
         return Ok(response);
     }
 

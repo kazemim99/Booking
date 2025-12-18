@@ -13,6 +13,7 @@ using Booksy.ServiceCatalog.Application.Commands.Booking.RescheduleBooking;
 using Booksy.ServiceCatalog.Application.Queries.Booking.GetAvailableSlots;
 using Booksy.ServiceCatalog.Application.Queries.Booking.GetBookingDetails;
 using Booksy.ServiceCatalog.Application.Queries.Booking.GetBookingStatistics;
+using Booksy.ServiceCatalog.Application.Queries.Booking.GetCustomerBookings;
 using Booksy.ServiceCatalog.Application.Queries.Booking.SearchBookings;
 using Booksy.ServiceCatalog.Domain.Repositories;
 using MediatR;
@@ -73,7 +74,7 @@ public class BookingsController : ControllerBase
             CustomerId: Guid.Parse(customerId),
             ProviderId: request.ProviderId,
             ServiceId: request.ServiceId,
-            StaffId: request.StaffId ?? Guid.Empty,
+            StaffProviderId: request.StaffProviderId,
             StartTime: request.StartTime,
             CustomerNotes: request.CustomerNotes);
 
@@ -89,7 +90,7 @@ public class BookingsController : ControllerBase
             CustomerId = result.CustomerId,
             ProviderId = result.ProviderId,
             ServiceId = result.ServiceId,
-            StaffId = result.StaffId,
+            StaffProviderId = result.StaffProviderId,
             Status = result.Status,
             StartTime = result.StartTime,
             EndTime = result.EndTime,
@@ -143,18 +144,20 @@ public class BookingsController : ControllerBase
     /// <param name="status">Optional status filter</param>
     /// <param name="from">Optional start date filter</param>
     /// <param name="to">Optional end date filter</param>
+    /// <param name="pagination">Pagination parameters (page number and size)</param>
     /// <param name="cancellationToken">Cancellation token</param>
-    /// <returns>List of customer bookings</returns>
+    /// <returns>Paginated list of customer bookings with enriched data</returns>
     /// <response code="200">Bookings retrieved successfully</response>
     /// <response code="401">Not authenticated</response>
     [HttpGet("my-bookings")]
     [Authorize]
-    [ProducesResponseType(typeof(IReadOnlyList<BookingResponse>), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(PagedResult<CustomerBookingDto>), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
-    public async Task<IActionResult> GetMyBookings(
+    public async Task<ActionResult<PagedResult<CustomerBookingDto>>> GetMyBookings(
         [FromQuery] string? status = null,
         [FromQuery] DateTime? from = null,
         [FromQuery] DateTime? to = null,
+        [FromQuery] PaginationRequest? pagination = null,
         CancellationToken cancellationToken = default)
     {
         var customerId = GetCurrentUserId();
@@ -163,26 +166,23 @@ public class BookingsController : ControllerBase
             return Unauthorized();
         }
 
-        var bookings = await _bookingReadRepository.GetByCustomerIdAsync(
-            UserId.From(customerId),
-            cancellationToken);
+        var query = new GetCustomerBookingsQuery(
+            CustomerId: Guid.Parse(customerId),
+            Status: status,
+            FromDate: from,
+            ToDate: to)
+        {
+            Pagination = pagination ?? PaginationRequest.Default
+        };
 
-        // Apply filters
-        if (!string.IsNullOrEmpty(status))
-        {
-            bookings = bookings.Where(b => b.Status.ToString() == status).ToList();
-        }
-        if (from.HasValue)
-        {
-            bookings = bookings.Where(b => b.TimeSlot.StartTime >= from.Value).ToList();
-        }
-        if (to.HasValue)
-        {
-            bookings = bookings.Where(b => b.TimeSlot.StartTime <= to.Value).ToList();
-        }
+        var result = await _mediator.Send(query, cancellationToken);
 
-        var response = bookings.Select(MapToBookingResponse).ToList();
-        return Ok(response);
+        _logger.LogInformation(
+            "Retrieved {Count} bookings for customer {CustomerId} (Page {Page} of {TotalPages})",
+            result.TotalCount, customerId, result.PageNumber, result.TotalPages);
+
+        // Return paginated result with proper HTTP headers
+        return this.PaginatedOk(result);
     }
 
     /// <summary>
@@ -678,7 +678,7 @@ public class BookingsController : ControllerBase
             CustomerId = booking.CustomerId.Value,
             ProviderId = booking.ProviderId.Value,
             ServiceId = booking.ServiceId.Value,
-            StaffId = booking.StaffId,
+            StaffProviderId = booking.StaffId,
             Status = booking.Status.ToString(),
             StartTime = booking.TimeSlot.StartTime,
             EndTime = booking.TimeSlot.EndTime,
@@ -699,7 +699,7 @@ public class BookingsController : ControllerBase
             CustomerId = result.CustomerId,
             ProviderId = result.ProviderId,
             ServiceId = result.ServiceId,
-            StaffId = result.StaffId,
+            StaffProviderId = result.StaffId,
             ServiceName = result.ServiceName,
             // ServiceCategory = result.ServiceCategory, // Property doesn't exist
             ProviderBusinessName = result.ProviderName,

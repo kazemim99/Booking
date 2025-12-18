@@ -28,7 +28,7 @@
             @click="activeTab = 'past'"
           >
             گذشته
-            <span v-if="bookingHistory.length > 0" class="badge">{{ bookingHistory.length }}</span>
+            <span v-if="pastBookings.length > 0" class="badge">{{ pastBookings.length }}</span>
           </button>
         </div>
 
@@ -36,7 +36,7 @@
         <div class="sidebar-content">
           <!-- Upcoming Bookings Tab -->
           <div v-if="activeTab === 'upcoming'" class="tab-content">
-            <div v-if="loading.upcomingBookings" class="loading-state">
+            <div v-if="loading.upcoming" class="loading-state">
               <div class="spinner"></div>
               <p>در حال بارگذاری...</p>
             </div>
@@ -50,25 +50,57 @@
             </div>
 
             <div v-else class="bookings-list">
-              <BookingCard
+              <div
                 v-for="booking in upcomingBookings"
-                :key="booking.id"
-                :booking="booking"
-                type="upcoming"
-                @cancel="handleCancelBooking"
-                @reschedule="handleRescheduleBooking"
-              />
+                :key="booking.bookingId"
+                class="booking-card"
+              >
+                <div class="booking-header">
+                  <div class="booking-status" :class="booking.statusColor">
+                    {{ booking.statusLabel }}
+                  </div>
+                  <div class="booking-date">
+                    {{ booking.formattedDate }}
+                  </div>
+                </div>
+
+                <div class="booking-body">
+                  <h3 class="service-name">{{ booking.serviceName }}</h3>
+                  <p class="provider-name">🏢 {{ booking.providerName }}</p>
+                  <p v-if="booking.staffName" class="staff-name">👤 {{ booking.staffName }}</p>
+                  <p class="booking-time">🕐 {{ booking.formattedTime }}</p>
+                  <p class="booking-duration">⏱ {{ booking.formattedDuration }}</p>
+                  <p class="booking-price">💰 {{ booking.formattedPrice }}</p>
+                </div>
+
+                <div class="booking-actions">
+                  <button
+                    v-if="booking.canCancel"
+                    @click="handleCancelBooking(booking.bookingId)"
+                    class="btn-cancel"
+                  >
+                    لغو رزرو
+                  </button>
+                  <button
+                    v-if="booking.canReschedule"
+                    @click="handleRescheduleBooking(booking)"
+                    class="btn-reschedule"
+                  >
+                    تغییر زمان
+                  </button>
+                </div>
+              </div>
             </div>
           </div>
 
           <!-- Past Bookings Tab -->
           <div v-if="activeTab === 'past'" class="tab-content">
-            <div v-if="loading.bookingHistory" class="loading-state">
+            <div v-if="loading.past" class="loading-state">
               <div class="spinner"></div>
               <p>در حال بارگذاری...</p>
             </div>
 
-            <div v-else-if="bookingHistory.length === 0" class="empty-state">
+            <div v-else-if="pastBookings.length === 0" class="empty-state">
               <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" class="empty-icon">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
               </svg>
@@ -77,24 +109,37 @@
             </div>
 
             <div v-else class="bookings-list">
-              <BookingCard
-                v-for="booking in bookingHistory"
-                :key="booking.id"
-                :booking="booking"
-                type="past"
-                @rebook="handleRebookBooking"
-              />
-
-              <!-- Load More Button -->
-              <button
-                v-if="bookingHistoryHasMore"
-                @click="handleLoadMore"
-                class="load-more-button"
-                :disabled="loading.bookingHistory"
+              <div
+                v-for="booking in pastBookings"
+                :key="booking.bookingId"
+                class="booking-card past"
               >
-                <span v-if="loading.bookingHistory">در حال بارگذاری...</span>
-                <span v-else>بارگذاری بیشتر</span>
-              </button>
+                <div class="booking-header">
+                  <div class="booking-status" :class="booking.statusColor">
+                    {{ booking.statusLabel }}
+                  </div>
+                  <div class="booking-date">
+                    {{ booking.formattedDate }}
+                  </div>
+                </div>
+
+                <div class="booking-body">
+                  <h3 class="service-name">{{ booking.serviceName }}</h3>
+                  <p class="provider-name">🏢 {{ booking.providerName }}</p>
+                  <p v-if="booking.staffName" class="staff-name">👤 {{ booking.staffName }}</p>
+                  <p class="booking-time">🕐 {{ booking.formattedTime }}</p>
+                  <p class="booking-price">💰 {{ booking.formattedPrice }}</p>
+                </div>
+
+                <div class="booking-actions">
+                  <button
+                    @click="handleRebookBooking(booking)"
+                    class="btn-rebook"
+                  >
+                    رزرو مجدد
+                  </button>
+                </div>
+              </div>
             </div>
           </div>
         </div>
@@ -104,24 +149,39 @@
 
   <!-- Cancel Booking Confirmation Modal -->
   <CancelBookingModal
-    ref="cancelModalRef"
+    v-if="showCancelModal"
     :is-open="showCancelModal"
     :booking="bookingToCancel"
     @close="closeCancelModal"
     @confirm="confirmCancelBooking"
   />
+
+  <!-- Reschedule Booking Modal -->
+  <RescheduleBookingModal
+    v-if="showRescheduleModal"
+    :is-open="showRescheduleModal"
+    :booking="bookingToReschedule"
+    @close="closeRescheduleModal"
+    @confirm="confirmRescheduleBooking"
+  />
+
+  <!-- Rebook Modal (reuses RescheduleBookingModal) -->
+  <RescheduleBookingModal
+    v-if="showRebookModal"
+    :is-open="showRebookModal"
+    :booking="bookingToRebook"
+    @close="closeRebookModal"
+    @confirm="confirmRebookBooking"
+  />
 </template>
 
 <script setup lang="ts">
-import { ref, computed, watch } from 'vue'
-import { useRouter } from 'vue-router'
-import { useCustomerStore } from '../../stores/customer.store'
-import { useAuthStore } from '@/core/stores/modules/auth.store'
-import { useToast } from '@/core/composables/useToast'
+import { ref, watch } from 'vue'
 import { bookingService } from '@/modules/booking/api/booking.service'
-import BookingCard from './BookingCard.vue'
+import { mapToEnrichedBookingView, type EnrichedBookingView } from '@/modules/booking/mappers/booking-dto.mapper'
 import CancelBookingModal from './CancelBookingModal.vue'
-import type { UpcomingBooking } from '../../types/customer.types'
+import RescheduleBookingModal from './RescheduleBookingModal.vue'
+import type { CustomerBookingDto } from '@/modules/booking/types/booking-api.types'
 
 interface Props {
   isOpen: boolean
@@ -132,54 +192,93 @@ const emit = defineEmits<{
   close: []
 }>()
 
-const router = useRouter()
-const customerStore = useCustomerStore()
-const authStore = useAuthStore()
-const { showSuccess, showError } = useToast()
-
+// State
 const activeTab = ref<'upcoming' | 'past'>('upcoming')
+
+// Cancel modal state
 const showCancelModal = ref(false)
-const bookingToCancel = ref<UpcomingBooking | null>(null)
-const cancelModalRef = ref<InstanceType<typeof CancelBookingModal> | null>(null)
+const bookingToCancel = ref<EnrichedBookingView | null>(null)
 
-const upcomingBookings = computed(() => customerStore.upcomingBookings)
-const bookingHistory = computed(() => customerStore.bookingHistory)
-const loading = computed(() => customerStore.loading)
-const bookingHistoryHasMore = computed(() => customerStore.bookingHistoryHasMore)
+// Reschedule modal state
+const showRescheduleModal = ref(false)
+const bookingToReschedule = ref<EnrichedBookingView | null>(null)
 
-// Fetch data when sidebar opens
-watch(() => props.isOpen, async (isOpen) => {
-  if (isOpen && authStore.customerId) {
-    const customerId = authStore.customerId
+// Rebook modal state
+const showRebookModal = ref(false)
+const bookingToRebook = ref<EnrichedBookingView | null>(null)
 
-    // Fetch upcoming bookings if not loaded
-    if (upcomingBookings.value.length === 0) {
-      await customerStore.fetchUpcomingBookings(customerId, 5)
-    }
+// Bookings data
+const upcomingBookings = ref<EnrichedBookingView[]>([])
+const pastBookings = ref<EnrichedBookingView[]>([])
 
-    // Fetch booking history if not loaded
-    if (bookingHistory.value.length === 0) {
-      await customerStore.fetchBookingHistory(customerId, 1, 20)
-    }
-  }
-}, { immediate: true })
+const loading = ref({
+  upcoming: false,
+  past: false
+})
 
-async function handleLoadMore(): Promise<void> {
-  if (!authStore.customerId) return
-
+// Fetch upcoming bookings
+async function fetchUpcomingBookings(): Promise<void> {
   try {
-    await customerStore.loadMoreBookingHistory(authStore.customerId)
+    loading.value.upcoming = true
+
+    // Use the helper method that filters for upcoming bookings with correct statuses
+    const bookings = await bookingService.getUpcomingBookings(10)
+
+    // Map to enriched view models
+    upcomingBookings.value = bookings.map(mapToEnrichedBookingView)
+
+    console.log('[BookingsSidebar] Loaded upcoming bookings:', upcomingBookings.value.length)
   } catch (error) {
-    console.error('[BookingsSidebar] Error loading more bookings:', error)
-    showError('خطا در بارگذاری نوبت‌ها')
+    console.error('[BookingsSidebar] Error fetching upcoming bookings:', error)
+    showErrorMessage('خطا در بارگذاری نوبت‌های آینده')
+  } finally {
+    loading.value.upcoming = false
   }
 }
 
+// Fetch past bookings
+async function fetchPastBookings(): Promise<void> {
+  try {
+    loading.value.past = true
+
+    // Use the helper method that filters for past bookings
+    const bookings = await bookingService.getPastBookings(10)
+
+    // Map to enriched view models
+    pastBookings.value = bookings.map(mapToEnrichedBookingView)
+
+    console.log('[BookingsSidebar] Loaded past bookings:', pastBookings.value.length)
+  } catch (error) {
+    console.error('[BookingsSidebar] Error fetching past bookings:', error)
+    showErrorMessage('خطا در بارگذاری تاریخچه نوبت‌ها')
+  } finally {
+    loading.value.past = false
+  }
+}
+
+// Watch for sidebar open/close
+watch(() => props.isOpen, async (isOpen) => {
+  if (isOpen) {
+    // Fetch bookings when sidebar opens
+    await fetchUpcomingBookings()
+    await fetchPastBookings()
+  }
+}, { immediate: true })
+
+// Watch for tab changes
+watch(activeTab, async (newTab) => {
+  if (newTab === 'upcoming' && upcomingBookings.value.length === 0) {
+    await fetchUpcomingBookings()
+  } else if (newTab === 'past' && pastBookings.value.length === 0) {
+    await fetchPastBookings()
+  }
+})
+
+// Cancel booking handler
 function handleCancelBooking(bookingId: string): void {
-  // Find the booking to cancel
-  const booking = upcomingBookings.value.find(b => b.id === bookingId)
+  const booking = upcomingBookings.value.find(b => b.bookingId === bookingId)
   if (!booking) {
-    showError('نوبت یافت نشد')
+    showErrorMessage('نوبت یافت نشد')
     return
   }
 
@@ -187,59 +286,141 @@ function handleCancelBooking(bookingId: string): void {
   showCancelModal.value = true
 }
 
+// Confirm cancel booking
 async function confirmCancelBooking(reason: string, notes?: string): Promise<void> {
-  if (!bookingToCancel.value || !authStore.customerId) return
+  if (!bookingToCancel.value) return
 
   try {
-    await bookingService.cancelBooking(bookingToCancel.value.id, {
+    await bookingService.cancelBooking(bookingToCancel.value.bookingId, {
       reason,
       notes
     })
 
-    showSuccess('نوبت با موفقیت لغو شد')
+    showSuccessMessage('نوبت با موفقیت لغو شد')
 
-    // Refresh upcoming bookings
-    await customerStore.fetchUpcomingBookings(authStore.customerId, 5)
+    // Refresh bookings
+    await fetchUpcomingBookings()
+    await fetchPastBookings()
 
     // Close modal
     showCancelModal.value = false
     bookingToCancel.value = null
-    cancelModalRef.value?.resetForm()
   } catch (error) {
     console.error('[BookingsSidebar] Error cancelling booking:', error)
-    showError('خطا در لغو نوبت. لطفا دوباره تلاش کنید')
+    showErrorMessage('خطا در لغو نوبت. لطفا دوباره تلاش کنید')
   }
 }
 
+// Close cancel modal
 function closeCancelModal(): void {
   showCancelModal.value = false
   bookingToCancel.value = null
-  cancelModalRef.value?.resetForm()
 }
 
-function handleRescheduleBooking(bookingId: string): void {
-  // Find the booking
-  const booking = upcomingBookings.value.find(b => b.id === bookingId)
-  if (!booking) {
-    showError('نوبت یافت نشد')
-    return
+// Reschedule booking handler
+function handleRescheduleBooking(booking: EnrichedBookingView): void {
+  bookingToReschedule.value = booking
+  showRescheduleModal.value = true
+}
+
+// Confirm reschedule booking
+async function confirmRescheduleBooking(newStartTime: string, reason?: string): Promise<void> {
+  if (!bookingToReschedule.value) return
+
+  try {
+    await bookingService.rescheduleBooking({
+      appointmentId: bookingToReschedule.value.bookingId,
+      newStartTime,
+      reason: reason || 'درخواست تغییر زمان'
+    })
+
+    showSuccessMessage('نوبت با موفقیت تغییر زمان یافت')
+
+    // Refresh bookings
+    await fetchUpcomingBookings()
+    await fetchPastBookings()
+
+    // Close modal
+    showRescheduleModal.value = false
+    bookingToReschedule.value = null
+  } catch (error) {
+    console.error('[BookingsSidebar] Error rescheduling booking:', error)
+    showErrorMessage('خطا در تغییر زمان نوبت. لطفا دوباره تلاش کنید')
   }
-
-  // Close sidebar and redirect to booking wizard with reschedule mode
-  handleClose()
-  router.push(`/booking/${booking.providerId}?reschedule=${bookingId}`)
-  showSuccess('در حال انتقال به صفحه تغییر زمان...')
 }
 
-function handleRebookBooking(providerId: string, serviceName: string): void {
-  // Redirect to booking wizard with pre-filled provider
-  handleClose()
-  router.push(`/booking/${providerId}?service=${encodeURIComponent(serviceName)}`)
-  showSuccess('در حال انتقال به صفحه رزرو...')
+// Close reschedule modal
+function closeRescheduleModal(): void {
+  showRescheduleModal.value = false
+  bookingToReschedule.value = null
 }
 
+// Rebook handler
+function handleRebookBooking(booking: EnrichedBookingView): void {
+  bookingToRebook.value = booking
+  showRebookModal.value = true
+}
+
+// Confirm rebook (create new booking)
+async function confirmRebookBooking(newStartTime: string): Promise<void> {
+  if (!bookingToRebook.value) return
+
+  try {
+    // Create new booking with same service and provider
+    await bookingService.createBooking({
+      customerId: '', // Will be set from auth context
+      providerId: bookingToRebook.value.providerId,
+      serviceId: bookingToRebook.value.serviceId,
+      staffProviderId: bookingToRebook.value.staffId || '',
+      startTime: newStartTime,
+      customerNotes: 'رزرو مجدد'
+    })
+
+    showSuccessMessage('نوبت جدید با موفقیت رزرو شد')
+
+    // Refresh bookings
+    await fetchUpcomingBookings()
+    await fetchPastBookings()
+
+    // Close modal
+    showRebookModal.value = false
+    bookingToRebook.value = null
+  } catch (error) {
+    console.error('[BookingsSidebar] Error rebooking:', error)
+    showErrorMessage('خطا در رزرو مجدد. لطفا دوباره تلاش کنید')
+  }
+}
+
+// Close rebook modal
+function closeRebookModal(): void {
+  showRebookModal.value = false
+  bookingToRebook.value = null
+}
+
+// Close sidebar
 function handleClose(): void {
   emit('close')
+}
+
+// Toast notification helpers (fallback to alert if useToast not available)
+function showSuccessMessage(message: string): void {
+  try {
+    const { showSuccess } = require('@/core/composables/useToast')
+    showSuccess(message)
+  } catch {
+    // Fallback to console if toast not available
+    console.log('[Success]', message)
+  }
+}
+
+function showErrorMessage(message: string): void {
+  try {
+    const { showError } = require('@/core/composables/useToast')
+    showError(message)
+  } catch {
+    // Fallback to console if toast not available
+    console.error('[Error]', message)
+  }
 }
 </script>
 
@@ -365,6 +546,138 @@ function handleClose(): void {
   gap: 1rem;
 }
 
+.booking-card {
+  background: white;
+  border: 1px solid #e5e7eb;
+  border-radius: 12px;
+  padding: 1rem;
+  transition: all 0.2s;
+
+  &:hover {
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+    border-color: #667eea;
+  }
+
+  &.past {
+    opacity: 0.8;
+  }
+}
+
+.booking-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 0.75rem;
+}
+
+.booking-status {
+  padding: 0.25rem 0.75rem;
+  border-radius: 12px;
+  font-size: 0.75rem;
+  font-weight: 600;
+
+  &.success {
+    background: #d1fae5;
+    color: #047857;
+  }
+
+  &.warning {
+    background: #fef3c7;
+    color: #b45309;
+  }
+
+  &.info {
+    background: #dbeafe;
+    color: #1d4ed8;
+  }
+
+  &.error {
+    background: #fee2e2;
+    color: #b91c1c;
+  }
+
+  &.default {
+    background: #e5e7eb;
+    color: #374151;
+  }
+}
+
+.booking-date {
+  font-size: 0.875rem;
+  color: #6b7280;
+  font-weight: 500;
+}
+
+.booking-body {
+  margin-bottom: 0.75rem;
+}
+
+.service-name {
+  font-size: 1rem;
+  font-weight: 600;
+  color: #111827;
+  margin: 0 0 0.5rem;
+}
+
+.provider-name,
+.staff-name,
+.booking-time,
+.booking-duration,
+.booking-price {
+  font-size: 0.875rem;
+  color: #6b7280;
+  margin: 0.25rem 0;
+}
+
+.provider-name {
+  font-weight: 500;
+  color: #374151;
+}
+
+.booking-actions {
+  display: flex;
+  gap: 0.5rem;
+  margin-top: 0.75rem;
+}
+
+.booking-actions button {
+  flex: 1;
+  padding: 0.5rem 1rem;
+  border: none;
+  border-radius: 8px;
+  font-size: 0.875rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.btn-cancel {
+  background: #fee2e2;
+  color: #b91c1c;
+
+  &:hover {
+    background: #fecaca;
+  }
+}
+
+.btn-reschedule {
+  background: #e0e7ff;
+  color: #4338ca;
+
+  &:hover {
+    background: #c7d2fe;
+  }
+}
+
+.btn-rebook {
+  background: #f3f4f6;
+  color: #374151;
+
+  &:hover {
+    background: #e5e7eb;
+  }
+}
+
 .loading-state {
   display: flex;
   flex-direction: column;
@@ -416,29 +729,6 @@ function handleClose(): void {
 .empty-description {
   font-size: 0.875rem;
   color: #6b7280;
-}
-
-.load-more-button {
-  width: 100%;
-  padding: 0.75rem;
-  background: white;
-  border: 1px solid #d1d5db;
-  border-radius: 8px;
-  font-weight: 500;
-  color: #667eea;
-  cursor: pointer;
-  transition: all 0.2s;
-  margin-top: 0.5rem;
-
-  &:hover:not(:disabled) {
-    background: #f9fafb;
-    border-color: #667eea;
-  }
-
-  &:disabled {
-    opacity: 0.5;
-    cursor: not-allowed;
-  }
 }
 
 // Sidebar transition
