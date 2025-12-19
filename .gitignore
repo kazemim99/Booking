@@ -363,3 +363,9 @@ MigrationBackup/
 FodyWeavers.xsd
 /src/BoundedContexts/ServiceCatalog/Booksy.ServiceCatalog.Api/wwwroot/uploads/providers
 /nul
+
+# Docusaurus
+docs-site/node_modules/
+docs-site/build/
+docs-site/.docusaurus/
+docs-site/.cache-loader/

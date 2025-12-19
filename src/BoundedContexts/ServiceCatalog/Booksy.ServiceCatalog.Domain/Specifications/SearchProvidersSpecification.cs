@@ -36,7 +36,6 @@ namespace Booksy.ServiceCatalog.Domain.Specifications.Provider
             }
 
 
-            AddCriteria(c => c.Profile.BusinessName.Contains("نهال"));
             // Provider type filter
             if (type.HasValue)
             {
