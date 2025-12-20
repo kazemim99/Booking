@@ -9,7 +9,7 @@ import type { DateFormat } from '@/core/types/enums.types'
 // ==================== Types ====================
 
 export interface UseDatePickerOptions {
-  format?: DateFormat
+  format?: DateFormat | 'gregorian' | 'jalaali' | 'hijri'
   minDate?: Date | string
   maxDate?: Date | string
   disabledDates?: Array<Date | string>
@@ -28,7 +28,7 @@ export function useDatePicker(
   options: UseDatePickerOptions = {}
 ) {
   const {
-    format: initialFormat = 'jalaali',
+    format: initialFormat = 'jalaali' as const,
     minDate,
     maxDate,
     disabledDates = [],
@@ -39,7 +39,7 @@ export function useDatePicker(
   const selectedDate = ref<Date | null>(
     initialDate ? new Date(initialDate) : null
   )
-  const displayFormat = ref<DateFormat>(initialFormat)
+  const displayFormat = ref<DateFormat>(initialFormat as DateFormat)
   const currentMonth = ref(new Date())
   const isOpen = ref(false)
 

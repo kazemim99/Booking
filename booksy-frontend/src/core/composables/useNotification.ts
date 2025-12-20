@@ -1,6 +1,18 @@
 import { useNotificationStore } from '@/core/stores/modules/notification.store'
 
-export function useNotification() {
+interface NotificationComposable {
+  success: (title: string, message: string, duration?: number) => string
+  error: (title: string, message: string, duration?: number) => string
+  warning: (title: string, message: string, duration?: number) => string
+  info: (title: string, message: string, duration?: number) => string
+  remove: (id: string) => void
+  clearAll: () => void
+  showSuccess: (title: string, message: string, duration?: number) => string
+  showError: (title: string, message: string, duration?: number) => string
+  showConfirm: (title: string, message: string, duration?: number) => string
+}
+
+export function useNotification(): NotificationComposable {
   const notificationStore = useNotificationStore()
 
   function success(title: string, message: string, duration?: number): string {
@@ -33,6 +45,10 @@ export function useNotification() {
     warning,
     info,
     remove,
-    clearAll
+    clearAll,
+    // Aliases for backward compatibility
+    showSuccess: success,
+    showError: error,
+    showConfirm: warning
   }
 }

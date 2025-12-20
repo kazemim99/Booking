@@ -149,7 +149,7 @@ const emit = defineEmits<{
 
 const customerStore = useCustomerStore()
 const authStore = useAuthStore()
-const { showError } = useToast()
+const { error } = useToast()
 
 const loading = computed(() => customerStore.loading.preferences)
 const preferences = computed(() => customerStore.preferences)
@@ -173,9 +173,9 @@ watch(() => props.isOpen, async (isOpen) => {
         form.value.emailEnabled = preferences.value.emailEnabled
         form.value.reminderTiming = preferences.value.reminderTiming
       }
-    } catch (error) {
-      console.error('[SettingsModal] Error fetching preferences:', error)
-      showError('خطا در بارگذاری تنظیمات')
+    } catch (err) {
+      console.error('[SettingsModal] Error fetching preferences:', err)
+      error('خطا', 'خطا در بارگذاری تنظیمات')
     }
   }
 }, { immediate: true })
@@ -204,9 +204,9 @@ async function handleAutoSave(): Promise<void> {
       setTimeout(() => {
         showSaveMessage.value = false
       }, 2000)
-    } catch (error) {
-      console.error('[SettingsModal] Error saving preferences:', error)
-      showError('خطا در ذخیره تنظیمات')
+    } catch (err) {
+      console.error('[SettingsModal] Error saving preferences:', err)
+      error('خطا', 'خطا در ذخیره تنظیمات')
     }
   }, 500)
 }

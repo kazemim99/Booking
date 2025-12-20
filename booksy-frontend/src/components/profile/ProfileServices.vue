@@ -20,7 +20,7 @@
             v-if="service.imageUrl"
             :src="service.imageUrl"
             :alt="service.name"
-            @error="(e) => handleImageError(e, index)"
+            @error="handleImageError"
           />
           <div v-else class="image-placeholder" :style="{ background: getServiceGradient(service.category) }">
             <span class="service-icon">{{ getServiceIcon(service.category) }}</span>

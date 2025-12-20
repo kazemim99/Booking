@@ -48,7 +48,9 @@ import { ProviderHierarchyType } from '../../types/hierarchy.types'
 const { direction, initializeRTL } = useRTL()
 const router = useRouter()
 
-function handleTypeSelection(type: ProviderHierarchyType) {
+function handleTypeSelection(type?: ProviderHierarchyType) {
+  if (!type) return
+
   if (type === ProviderHierarchyType.Organization) {
     router.push({ name: 'OrganizationRegistration' })
   } else if (type === ProviderHierarchyType.Individual) {

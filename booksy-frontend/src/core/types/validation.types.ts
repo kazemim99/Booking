@@ -4,6 +4,8 @@
  */
 
 import type { FormValues } from './forms.types'
+import type { ValidationErrors } from './common.types'
+export { ValidationErrors }
 
 // ==================== Validation Result Types ====================
 
@@ -410,9 +412,6 @@ export interface ValidationErrorDetail {
 /**
  * Validation errors collection
  */
-export interface ValidationErrors {
-  [field: string]: string | string[]
-}
 
 /**
  * Validation error with details

@@ -110,7 +110,7 @@ const initializeMap = () => {
   const mapInstance = new Map({
     target: mapContainer.value,
     key: props.mapKey,
-    maptype: props.defaultType,
+    mapType: props.defaultType,
     poi: true,
     traffic: false,
     view: new View({

@@ -1,10 +1,12 @@
 // src/core/types/auth.types.ts
 
 import { User, UserType } from "@/modules/user-management/types/user.types"
+import type { ValidationErrors } from './common.types'
 
 // Re-export commonly duplicated types from api.types.ts and enums.types.ts
 export type { AuthResponse, RefreshTokenRequest } from './api.types'
 export type { UserRole } from './enums.types'
+export { ValidationErrors }
 
 export interface LoginCredentials {
   email: string
@@ -58,9 +60,6 @@ export interface AuthState {
   validationErrors: ValidationErrors
 }
 
-export interface ValidationErrors {
-  [key: string]: string[]
-}
 
 // JWT Payload
 export interface JwtPayload {

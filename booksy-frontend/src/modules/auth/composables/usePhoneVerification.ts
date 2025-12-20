@@ -55,7 +55,9 @@ export function usePhoneVerification() {
 
     try {
       // Format phone number with country code
-      const fullPhoneNumber = phoneNumber.startsWith('+') ? phoneNumber : `${countryCode}${phoneNumber}`
+      const fullPhoneNumber = phoneNumber.startsWith('+')
+        ? phoneNumber
+        : `${countryCode}${phoneNumber}`
 
       const response = await phoneVerificationApi.sendVerificationCode({
         phoneNumber: fullPhoneNumber,
@@ -89,10 +91,12 @@ export function usePhoneVerification() {
         return {
           success: true,
           maskedPhone: response.data.maskedPhoneNumber,
-          isNewUser: false // Backend doesn't tell us this yet, will be determined during verification
+          isNewUser: false, // Backend doesn't tell us this yet, will be determined during verification
         }
       } else {
-        throw new Error(typeof response.error === 'string' ? response.error : 'Failed to send verification code')
+        throw new Error(
+          typeof response.error === 'string' ? response.error : 'Failed to send verification code',
+        )
       }
     } catch (error: any) {
       const errorMessage = error.response?.data?.message || error.message || 'Failed to send code'
@@ -107,7 +111,10 @@ export function usePhoneVerification() {
    * Complete customer authentication (unified verify + login/register)
    * This replaces the old 2-step flow (verifyCode → registerFromVerifiedPhone)
    */
-  const completeCustomerAuthentication = async (code: string, userInfo?: { firstName?: string; lastName?: string; email?: string }) => {
+  const completeCustomerAuthentication = async (
+    code: string,
+    userInfo?: { firstName?: string; lastName?: string; email?: string },
+  ) => {
     state.value.isLoading = true
     state.value.error = null
 
@@ -135,7 +142,9 @@ export function usePhoneVerification() {
         sessionStorage.removeItem(VERIFICATION_ID_KEY)
         sessionStorage.removeItem(PHONE_NUMBER_KEY)
 
-        toast.success(response.data.isNewCustomer ? 'ثبت‌نام شما با موفقیت انجام شد!' : 'ورود موفقیت‌آمیز بود!')
+        toast.success(
+          response.data.isNewCustomer ? 'ثبت‌نام شما با موفقیت انجام شد!' : 'ورود موفقیت‌آمیز بود!',
+        )
 
         // Store authentication tokens
         authStore.setToken(response.data.accessToken)
@@ -201,8 +210,7 @@ export function usePhoneVerification() {
           phoneNumber: response.data.phoneNumber,
         }
       } else {
-        const errorMessage =
-          typeof response.error === 'string' ? response.error : 'خطا در تأیید کد'
+        const errorMessage = typeof response.error === 'string' ? response.error : 'خطا در تأیید کد'
         state.value.error = errorMessage
         toast.error(errorMessage)
 
@@ -225,7 +233,10 @@ export function usePhoneVerification() {
   /**
    * Complete provider authentication (unified verify + login/register)
    */
-  const completeProviderAuthentication = async (code: string, userInfo?: { firstName?: string; lastName?: string; email?: string }) => {
+  const completeProviderAuthentication = async (
+    code: string,
+    userInfo?: { firstName?: string; lastName?: string; email?: string },
+  ) => {
     state.value.isLoading = true
     state.value.error = null
 
@@ -253,7 +264,9 @@ export function usePhoneVerification() {
         sessionStorage.removeItem(VERIFICATION_ID_KEY)
         sessionStorage.removeItem(PHONE_NUMBER_KEY)
 
-        toast.success(response.data.isNewProvider ? 'ثبت‌نام شما با موفقیت انجام شد!' : 'ورود موفقیت‌آمیز بود!')
+        toast.success(
+          response.data.isNewProvider ? 'ثبت‌نام شما با موفقیت انجام شد!' : 'ورود موفقیت‌آمیز بود!',
+        )
 
         // Store authentication tokens
         authStore.setToken(response.data.accessToken)
@@ -320,8 +333,7 @@ export function usePhoneVerification() {
           requiresOnboarding: response.data.requiresOnboarding,
         }
       } else {
-        const errorMessage =
-          typeof response.error === 'string' ? response.error : 'خطا در تأیید کد'
+        const errorMessage = typeof response.error === 'string' ? response.error : 'خطا در تأیید کد'
         state.value.error = errorMessage
         toast.error(errorMessage)
 
@@ -346,7 +358,9 @@ export function usePhoneVerification() {
    * Verify OTP code (old 2-step flow)
    */
   const verifyCode = async (code: string) => {
-    console.warn('verifyCode() is deprecated. Use completeCustomerAuthentication() or completeProviderAuthentication() instead.')
+    console.warn(
+      'verifyCode() is deprecated. Use completeCustomerAuthentication() or completeProviderAuthentication() instead.',
+    )
     state.value.isLoading = true
     state.value.error = null
 
@@ -359,10 +373,7 @@ export function usePhoneVerification() {
     }
 
     try {
-      const response = await phoneVerificationApi.verifyCode({
-        verificationId: verificationId.value,
-        code,
-      })
+      const response = await this.verifyCode(code)
 
       if (response.success && response.data?.success) {
         state.value.step = 'success'
@@ -479,7 +490,7 @@ export function usePhoneVerification() {
     if (isNewUser.value) {
       // New users must complete provider registration first
       router.push({
-        name: 'ProviderRegistration'
+        name: 'ProviderRegistration',
       })
     } else {
       // Existing users: check if they have a provider profile
@@ -494,7 +505,8 @@ export function usePhoneVerification() {
           if (hasProvider) {
             // Provider profile exists, check if onboarding is complete
             const provider = providerStore.useProviderStore().currentProvider
-            const needsOnboarding = !provider?.profile?.businessName ||
+            const needsOnboarding =
+              !provider?.profile?.businessName ||
               !provider?.businessHours?.length ||
               !provider?.services?.length
 

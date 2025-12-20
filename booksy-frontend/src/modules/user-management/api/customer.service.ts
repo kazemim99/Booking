@@ -262,7 +262,7 @@ class CustomerService {
 
       // Handle wrapped response format
       const data = response.data?.data || response.data
-      const customers = data?.items || []
+      const customers = (data as any)?.items || (Array.isArray(data) ? data : [])
 
       console.log(`[CustomerService] Found ${customers.length} customers`)
 

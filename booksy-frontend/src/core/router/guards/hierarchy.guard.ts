@@ -16,7 +16,7 @@ export const organizationOnlyGuard = async (
   // Ensure hierarchy is loaded
   if (!hierarchyStore.currentHierarchy) {
     try {
-      await hierarchyStore.loadCurrentHierarchy()
+      // await hierarchyStore.loadCurrentHierarchy()
     } catch (error) {
       console.error('[organizationOnlyGuard] Failed to load hierarchy:', error)
       return next({
@@ -64,7 +64,7 @@ export const staffMemberOnlyGuard = async (
   // Ensure hierarchy is loaded
   if (!hierarchyStore.currentHierarchy) {
     try {
-      await hierarchyStore.loadCurrentHierarchy()
+      // await hierarchyStore.loadCurrentHierarchy()
     } catch (error) {
       console.error('[staffMemberOnlyGuard] Failed to load hierarchy:', error)
       return next({
@@ -116,7 +116,7 @@ export const independentIndividualOnlyGuard = async (
   // Ensure hierarchy is loaded
   if (!hierarchyStore.currentHierarchy) {
     try {
-      await hierarchyStore.loadCurrentHierarchy()
+      // await hierarchyStore.loadCurrentHierarchy()
     } catch (error) {
       console.error('[independentIndividualOnlyGuard] Failed to load hierarchy:', error)
       return next({

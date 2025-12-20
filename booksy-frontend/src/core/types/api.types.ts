@@ -48,7 +48,7 @@ export enum HttpStatus {
 export interface ApiRequestConfig extends AxiosRequestConfig {
   // Request metadata
   metadata?: {
-    startTime?: Date
+    startTime: Date
     isRetry?: boolean
     retryCount?: number
   }

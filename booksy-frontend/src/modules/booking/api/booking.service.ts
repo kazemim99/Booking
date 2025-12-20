@@ -304,10 +304,9 @@ class BookingService {
       customerId: '', // Will be set from auth context
       providerId: request.providerId,
       serviceId: request.serviceId,
+      staffProviderId: request.staffId || '',
       startTime: request.scheduledStartTime,
-      endTime: '', // Will be calculated based on service duration
-      notes: request.bookingNotes,
-      totalAmount: 0, // Will be calculated
+      customerNotes: request.bookingNotes,
     }
 
     return this.createBooking(createRequest)

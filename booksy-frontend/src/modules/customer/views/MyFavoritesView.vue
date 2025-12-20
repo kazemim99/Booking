@@ -45,7 +45,7 @@
       <div v-else-if="quickRebookSuggestions.length > 0" class="suggestions-grid">
         <QuickRebookCard
           v-for="suggestion in quickRebookSuggestions"
-          :key="suggestion.favorite.id"
+          :key="suggestion.favorite.providerId"
           :suggestion="suggestion"
           @rebook="handleRebook"
           @view-provider="handleViewProvider"

@@ -35,13 +35,7 @@
     />
 
     <!-- Step 5: Staff/Team Members (NEW Figma Design) -->
-    <StaffStep
-      v-else-if="currentStep === 5"
-      v-model="registrationData.teamMembers"
-      :owner-name="ownerFullName"
-      @next="handleNext"
-      @back="previousStep"
-    />
+<!-- <StaffStep currentStep={currentStep} onUpdate={updateFormData} /> -->
 
     <!-- Step 6: Working Hours (NEW Figma Design) -->
     <WorkingHoursStep
@@ -78,7 +72,7 @@ import BusinessInfoStep from '../../components/registration/steps/BusinessInfoSt
 import CategorySelectionStep from '../../components/registration/steps/CategorySelectionStep.vue'
 import LocationStep from '../../components/registration/steps/LocationStep.vue'
 import ServicesStep from '../../components/registration/steps/ServicesStep.vue'
-import StaffStep from '../../components/registration/steps/StaffStep.vue'
+// import StaffStep from '../../components/registration/steps/StaffStep.vue' // Staff/Team Members Step - Component not found
 import WorkingHoursStep from '../../components/registration/steps/WorkingHoursStep.vue'
 import GalleryStep from '../../components/registration/steps/GalleryStep.vue'
 import OptionalFeedbackStep from '../../components/registration/steps/OptionalFeedbackStep.vue'

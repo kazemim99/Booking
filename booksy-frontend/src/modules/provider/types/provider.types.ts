@@ -70,6 +70,10 @@ export interface Provider {
   lastActiveAt?: string
   createdAt: string
   lastModifiedAt?: string
+
+  // Convenience properties
+  businessName?: string
+  displayName?: string
 }
 
 export interface BusinessProfile {

@@ -1,0 +1,20 @@
+--- booksy-frontend/src/core/api/interceptors/request-cache.ts
++++ booksy-frontend/src/core/api/interceptors/request-cache.ts
+@@ -82,13 +82,13 @@ class RequestCache {
+ 
+     // Always ensure config exists with all required properties
+     // Use the current request config as the base to ensure method and url are always defined
+-    const cachedConfig = cachedResponse.config || {}
++    const cachedConfig = (cachedResponse.config || {}) as Partial<InternalAxiosRequestConfig>
+     cachedResponse.config = {
+       ...config, // Use the current request config as base (has method, url, etc.)
+       ...cachedConfig, // Override with cached config properties
+       // Explicitly ensure method and url are never undefined
+-      method: config.method || cachedConfig.method || 'get',
++      method: (config.method || cachedConfig.method || 'get') as string,
+       url: config.url || cachedConfig.url || '',
+       // Preserve metadata from current config for logging interceptor
+-      metadata: config.metadata || cachedConfig.metadata,
+-    }
++      metadata: config.metadata || cachedConfig.metadata,
++    } as InternalAxiosRequestConfig

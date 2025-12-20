@@ -43,7 +43,7 @@ export function usePagination(initialPageSize = 20) {
   }
 
   const params = computed<PaginationParams>(() => ({
-    page: currentPage.value,
+    pageNumber: currentPage.value,
     pageSize: pageSize.value,
   }))
 

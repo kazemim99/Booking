@@ -9,7 +9,7 @@ import type {
   CustomerProfile,
   UpdateCustomerProfileRequest,
   UpcomingBooking,
-  // BookingHistoryEntry,
+  BookingHistoryEntry,
   BookingHistoryResult,
   CustomerReview,
   UpdateReviewRequest,
@@ -104,7 +104,7 @@ class CustomerService {
         }
       )
 
-      const bookings = this.extractArray(response.data)
+      const bookings = this.extractArray<UpcomingBooking>(response.data)
 
       console.log('[CustomerService] Upcoming bookings retrieved:', bookings.length)
       return bookings
@@ -142,7 +142,7 @@ class CustomerService {
       }
 
       // If array was returned directly, wrap it
-      const items = this.extractArray(response.data)
+      const items = this.extractArray<BookingHistoryEntry>(response.data)
       const paginatedResult: BookingHistoryResult = {
         items,
         page,
@@ -175,7 +175,7 @@ class CustomerService {
         `${CUSTOMERS_BASE}/${customerId}/reviews`
       )
 
-      const reviews = this.extractArray(response.data)
+      const reviews = this.extractArray<CustomerReview>(response.data)
 
       console.log('[CustomerService] Reviews retrieved:', reviews.length)
       return reviews

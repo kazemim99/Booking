@@ -64,6 +64,7 @@ export interface Appointment {
 export interface BookingRequest {
     providerId: string
     serviceId: string
+    staffId?: string
     staffProviderId?: string
     scheduledStartTime: string
     bookingNotes?: string

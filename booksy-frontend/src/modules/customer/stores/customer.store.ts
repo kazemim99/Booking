@@ -474,7 +474,7 @@ export const useCustomerStore = defineStore('customer', () => {
     bookingHistory.value = []
     favorites.value = []
     reviews.value = []
-    preferences.value = []
+    preferences.value = null
     activeModal.value = null
     bookingHistoryPage.value = 1
     bookingHistoryTotalPages.value = 1

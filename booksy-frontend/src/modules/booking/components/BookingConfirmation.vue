@@ -298,7 +298,12 @@ const convertToPersianNumber = (num: number): string => {
 }
 
 const formatPrice = (price: number): string => {
-  return convertToPersianNumber(price.toLocaleString('fa-IR'))
+  const formatted = price.toLocaleString('fa-IR')
+  const persianDigits = ['۰', '۱', '۲', '۳', '۴', '۵', '۶', '۷', '۸', '۹']
+  return formatted.split('').map(char => {
+    const digit = parseInt(char)
+    return !isNaN(digit) ? persianDigits[digit] : char
+  }).join('')
 }
 </script>
 

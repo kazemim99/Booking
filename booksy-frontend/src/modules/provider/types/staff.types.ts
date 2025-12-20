@@ -101,15 +101,18 @@ export interface Staff {
   lastName: string
   fullName?: string
   phoneNumber?: string
+  phone?: string // Alias for backward compatibility
   email?: string
   role?: string
   isActive: boolean
   hiredAt?: string // ISO date
+  terminatedAt?: string // ISO date
   notes?: string
   biography?: string
   profilePhotoUrl?: string
   createdAt?: string
   updatedAt?: string
+  schedules?: StaffSchedule[]
 }
 
 // ============================================================================

@@ -358,3 +358,6 @@ export function getJoinRequestStatusLabel(status: JoinRequestStatus): string {
 export function canApproveJoinRequest(request: JoinRequest): boolean {
   return request.status === JoinRequestStatus.Pending
 }
+
+// Alias for backward compatibility
+export type ProviderJoinRequest = JoinRequest

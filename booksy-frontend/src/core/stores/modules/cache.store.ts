@@ -500,9 +500,8 @@ export function useCache() {
   const store = useCacheStore()
 
   // Auto-initialize if not already started
-  if (!store.cleanupInterval) {
-    store.initialize()
-  }
+  // Initialize cleanup if needed
+  store.initialize()
 
   return store
 }

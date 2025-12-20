@@ -21,6 +21,11 @@ export interface FavoriteProvider {
   addedAt: string
   lastBookedAt?: string
   totalBookings: number
+  // Convenience properties for template access
+  providerLogoUrl?: string
+  providerName?: string
+  providerCategory?: string
+  providerRating?: number
 }
 
 /**
@@ -46,13 +51,26 @@ export interface ProviderSummary {
 /**
  * Quick rebook suggestion
  */
+export interface LastService {
+  id: string
+  name: string
+  duration: number
+  price: number
+}
+
 export interface QuickRebookSuggestion {
-  providerId: string
-  providerName: string
-  serviceId: string
-  serviceName: string
-  lastBookedDate: string
+  favorite: {
+    providerId: string
+    provider: {
+      businessName: string
+      logoUrl: string
+      rating: number
+      reviewCount: number
+    }
+  }
+  lastService: LastService
   suggestedTimeSlots: TimeSlotSuggestion[]
+  suggestedSlots?: TimeSlotSuggestion[] // Alias for backward compatibility
 }
 
 /**
@@ -66,6 +84,9 @@ export interface TimeSlotSuggestion {
   staffName?: string
   available: boolean
 }
+
+// Alias for backward compatibility
+export type TimeSlot = TimeSlotSuggestion
 
 // ============================================================================
 // REQUEST/RESPONSE TYPES

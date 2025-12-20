@@ -2,6 +2,7 @@
 
 import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
+import { NotificationChannel, Language, DateFormat, TimeFormat, Currency } from '../types/settings.types'
 import type {
   ProviderSettings,
   BookingPreferences,
@@ -492,49 +493,49 @@ export const useSettingsStore = defineStore('settings', () => {
       notificationSettings: {
         newBooking: {
           enabled: true,
-          channels: ['Email', 'Push'],
+          channels: [NotificationChannel.Email, NotificationChannel.Push],
         },
         bookingCancelled: {
           enabled: true,
-          channels: ['Email', 'SMS'],
+          channels: [NotificationChannel.Email, NotificationChannel.SMS],
         },
         bookingRescheduled: {
           enabled: true,
-          channels: ['Email'],
+          channels: [NotificationChannel.Email],
         },
         bookingConfirmed: {
           enabled: true,
-          channels: ['Email'],
+          channels: [NotificationChannel.Email],
         },
         customerReminder: {
           enabled: true,
-          channels: ['Email', 'SMS'],
+          channels: [NotificationChannel.Email, NotificationChannel.SMS],
         },
         customerReminderHours: 24,
         providerReminder: {
           enabled: true,
-          channels: ['Push'],
+          channels: [NotificationChannel.Push],
         },
         providerReminderMinutes: 30,
         newReview: {
           enabled: true,
-          channels: ['Email', 'InApp'],
+          channels: [NotificationChannel.Email, NotificationChannel.InApp],
         },
         reviewResponse: {
           enabled: true,
-          channels: ['Email'],
+          channels: [NotificationChannel.Email],
         },
         paymentReceived: {
           enabled: true,
-          channels: ['Email'],
+          channels: [NotificationChannel.Email],
         },
         paymentFailed: {
           enabled: true,
-          channels: ['Email', 'SMS'],
+          channels: [NotificationChannel.Email, NotificationChannel.SMS],
         },
         payoutProcessed: {
           enabled: true,
-          channels: ['Email'],
+          channels: [NotificationChannel.Email],
         },
         recipients: [],
         quietHours: {
@@ -594,10 +595,10 @@ export const useSettingsStore = defineStore('settings', () => {
         },
         localization: {
           timezone: 'UTC',
-          language: 'en',
-          dateFormat: 'MM/DD/YYYY',
-          timeFormat: '12h',
-          currency: 'USD',
+          language: Language.English,
+          dateFormat: DateFormat.MMDDYYYY,
+          timeFormat: TimeFormat.Hour12,
+          currency: Currency.USD,
           firstDayOfWeek: 0,
         },
         displayBusinessHoursOnProfile: true,

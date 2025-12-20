@@ -353,11 +353,11 @@ onMounted(() => {
   // Populate form with provider data
   if (provider.value) {
     personalForm.value = {
-      firstName: provider.value.firstName || '',
-      lastName: provider.value.lastName || '',
-      email: provider.value.email || '',
-      phoneNumber: provider.value.phoneNumber || '',
-      bio: provider.value.bio || '',
+      firstName: (provider.value as any).firstName || '',
+      lastName: (provider.value as any).lastName || '',
+      email: (provider.value as any).email || '',
+      phoneNumber: (provider.value as any).phoneNumber || '',
+      bio: (provider.value as any).bio || '',
     }
   }
 })
