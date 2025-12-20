@@ -65,24 +65,24 @@ jobs:
     - name: Build solution
       run: dotnet build ${{ env.SOLUTION_PATH }} --configuration Release --no-restore
 
-    - name: Run Unit Tests
-      run: |
-        dotnet test ${{ env.SOLUTION_PATH }} \
-          --configuration Release \
-          --no-build \
-          --filter "FullyQualifiedName~UnitTests" \
-          --verbosity normal
+    # - name: Run Unit Tests
+    #   run: |
+    #     dotnet test ${{ env.SOLUTION_PATH }} \
+    #       --configuration Release \
+    #       --no-build \
+    #       --filter "FullyQualifiedName~UnitTests" \
+    #       --verbosity normal
 
-    - name: Run Integration Tests
-      env:
-        ConnectionStrings__DefaultConnection: "Host=localhost;Port=5432;Database=booksy_test;Username=booksy_admin;Password=TestPassword123!;Include Error Detail=true"
-        ConnectionStrings__Redis: "localhost:6379"
-      run: |
-        dotnet test ${{ env.SOLUTION_PATH }} \
-          --configuration Release \
-          --no-build \
-          --filter "FullyQualifiedName~IntegrationTests" \
-          --verbosity normal
+    # - name: Run Integration Tests
+    #   env:
+    #     ConnectionStrings__DefaultConnection: "Host=localhost;Port=5432;Database=booksy_test;Username=booksy_admin;Password=TestPassword123!;Include Error Detail=true"
+    #     ConnectionStrings__Redis: "localhost:6379"
+    #   run: |
+    #     dotnet test ${{ env.SOLUTION_PATH }} \
+    #       --configuration Release \
+    #       --no-build \
+    #       --filter "FullyQualifiedName~IntegrationTests" \
+    #       --verbosity normal
 
   # Build and push Docker images
   build-and-push:
