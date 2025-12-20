@@ -2,13 +2,9 @@
 
 import { User, UserType } from "@/modules/user-management/types/user.types"
 
-
-export interface AuthResponse {
-  token: string
-  refreshToken: string
-  user: User
-  expiresIn?: number
-}
+// Re-export commonly duplicated types from api.types.ts and enums.types.ts
+export type { AuthResponse, RefreshTokenRequest } from './api.types'
+export type { UserRole } from './enums.types'
 
 export interface LoginCredentials {
   email: string
@@ -41,10 +37,6 @@ export interface ChangePassword {
   currentPassword: string
   newPassword: string
   confirmPassword: string
-}
-
-export interface RefreshTokenRequest {
-  refreshToken: string
 }
 
 export interface VerifyEmailRequest {
@@ -80,9 +72,6 @@ export interface JwtPayload {
   nbf?: number // Not before
 }
 
-// Role & Permission types
-export type UserRole = 'Admin' | 'Provider' | 'Customer' | 'Support'
-
 export type Permission =
   | 'read:profile'
   | 'update:profile'
@@ -98,10 +87,3 @@ export type Permission =
   | 'read:services'
   | 'create:services'
   | 'update:services'
-  | 'delete:services'
-  | 'manage:settings'
-
-export interface RolePermissions {
-  role: UserRole
-  permissions: Permission[]
-}

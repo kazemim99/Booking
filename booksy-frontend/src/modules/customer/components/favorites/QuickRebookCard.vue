@@ -108,7 +108,8 @@ import { ref, computed } from 'vue'
 import { useRouter } from 'vue-router'
 import FavoriteButton from './FavoriteButton.vue'
 import type { QuickRebookSuggestion, TimeSlot } from '../../types/favorites.types'
-import { formatCurrency, formatTimeAgo } from '../../types/favorites.types'
+import { formatTimeAgo } from '../../types/favorites.types'
+import { formatCurrency } from '@/modules/provider/types/financial.types'
 
 // ============================================================================
 // Props & Emits

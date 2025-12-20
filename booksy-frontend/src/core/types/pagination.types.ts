@@ -1,16 +1,7 @@
-export interface PaginationParams {
-  page: number
-  pageSize: number
-  sortBy?: string
-  sortOrder?: 'asc' | 'desc'
-}
+/**
+ * Pagination Type Definitions
+ * Types for pagination logic and API responses
+ */
 
-export interface PaginatedResult<T> {
-  items: T[]
-  total: number
-  page: number
-  pageSize: number
-  totalPages: number
-  hasNextPage: boolean
-  hasPreviousPage: boolean
-}
+// Re-export PaginationParams from common.types.ts
+export type { PaginationParams } from './common.types'

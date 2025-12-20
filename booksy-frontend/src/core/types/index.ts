@@ -15,12 +15,6 @@ export * from './enums/user-status.enum'
 export * from './enums/user-type.enum'
 export * from './enums/appointment-status.enum'
 
-// Form types
-export * from './forms.types'
-
-// Validation types
-export * from './validation.types'
-
 // Entity types
 export * from './entities.types'
 
