@@ -183,7 +183,7 @@ jobs:
     needs: build-and-push
     environment:
       name: production
-      url: http://${{ secrets.SERVER_HOST }}
+      url: http://production-server
 
     steps:
     - name: Checkout code
