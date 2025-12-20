@@ -5,7 +5,9 @@
   "permissions": {
     "allow": [
       "Bash",
-      "SlashCommand(/openspec:archive)"
+      "SlashCommand(/openspec:archive)",
+      "Skill(openspec:archive)",
+      "Skill(openspec:archive:*)"
     ],
     "deny": [],
     "ask": []
