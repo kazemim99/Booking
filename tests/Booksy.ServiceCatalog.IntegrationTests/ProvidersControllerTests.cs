@@ -130,7 +130,7 @@ public class ProvidersControllerTests : ServiceCatalogIntegrationTestBase
         response.StatusCode.Should().Be(HttpStatusCode.BadRequest);
     }
 
-    #endregion
+    #endregion 
 
     #region RegisterProviderFull Tests
 
