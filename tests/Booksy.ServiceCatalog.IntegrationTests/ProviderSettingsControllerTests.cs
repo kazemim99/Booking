@@ -1,6 +1,14 @@
 using Booksy.ServiceCatalog.Api.Models.Requests;
+using Booksy.ServiceCatalog.Api.Models.Responses;
+using Booksy.ServiceCatalog.IntegrationTests.Infrastructure;
+using FluentAssertions;
+using System.Net;
+using Xunit;
 
 namespace Booksy.ServiceCatalog.IntegrationTests.API.ProviderSettings;
+
+// Use fully-qualified name for AddServiceRequest to avoid ambiguity with controller class
+using AddServiceRequest = Booksy.ServiceCatalog.Api.Models.Requests.AddServiceRequest;
 
 /// <summary>
 /// Integration tests for ProviderSettingsController
@@ -293,24 +301,24 @@ public class ProviderSettingsControllerTests : ServiceCatalogIntegrationTestBase
 
         var request = new UpdateWorkingHoursRequest
         {
-            BusinessHours = new Dictionary<string, DayHoursRequest?>
+            BusinessHours = new Dictionary<string, RegistrationDayScheduleRequest?>
             {
-                { "Sunday", new DayHoursRequest
+                { "Sunday", new RegistrationDayScheduleRequest
                     {
                         DayOfWeek = 1,
                         IsOpen = true,
-                        OpenTime = new TimeSlotRequest { Hours = 9, Minutes = 0 },
-                        CloseTime = new TimeSlotRequest { Hours = 17, Minutes = 0 },
-                        Breaks = new List<BreakTimeRequest>()
+                        OpenTime = new TimeComponentsRequest { Hours = 9, Minutes = 0 },
+                        CloseTime = new TimeComponentsRequest { Hours = 17, Minutes = 0 },
+                        Breaks = new List<RegistrationBreakPeriodRequest>()
                     }
                 },
-                { "Monday", new DayHoursRequest
+                { "Monday", new RegistrationDayScheduleRequest
                     {
                         DayOfWeek = 2,
                         IsOpen = true,
-                        OpenTime = new TimeSlotRequest { Hours = 9, Minutes = 0 },
-                        CloseTime = new TimeSlotRequest { Hours = 17, Minutes = 0 },
-                        Breaks = new List<BreakTimeRequest>()
+                        OpenTime = new TimeComponentsRequest { Hours = 9, Minutes = 0 },
+                        CloseTime = new TimeComponentsRequest { Hours = 17, Minutes = 0 },
+                        Breaks = new List<RegistrationBreakPeriodRequest>()
                     }
                 },
                 { "Saturday", null } // Sunday closed
@@ -334,15 +342,15 @@ public class ProviderSettingsControllerTests : ServiceCatalogIntegrationTestBase
 
         var request = new UpdateWorkingHoursRequest
         {
-            BusinessHours = new Dictionary<string, DayHoursRequest?>
+            BusinessHours = new Dictionary<string, RegistrationDayScheduleRequest?>
             {
-                { "Sunday", new DayHoursRequest
+                { "Sunday", new RegistrationDayScheduleRequest
                     {
                         DayOfWeek = 1,
                         IsOpen = true,
-                        OpenTime = new TimeSlotRequest { Hours = 25, Minutes = 0 }, // Invalid hour
-                        CloseTime = new TimeSlotRequest { Hours = 17, Minutes = 0 },
-                        Breaks = new List<BreakTimeRequest>()
+                        OpenTime = new TimeComponentsRequest { Hours = 25, Minutes = 0 }, // Invalid hour
+                        CloseTime = new TimeComponentsRequest { Hours = 17, Minutes = 0 },
+                        Breaks = new List<RegistrationBreakPeriodRequest>()
                     }
                 }
             }
@@ -366,7 +374,7 @@ public class ProviderSettingsControllerTests : ServiceCatalogIntegrationTestBase
 
         var request = new UpdateWorkingHoursRequest
         {
-            BusinessHours = new Dictionary<string, DayHoursRequest?>()
+            BusinessHours = new Dictionary<string, RegistrationDayScheduleRequest?>()
         };
 
         // Act

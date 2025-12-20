@@ -10,5 +10,14 @@
         public string? Currency { get; set; }
         public string? Category { get; set; }
         public bool IsMobileService { get; set; }
+
+        // Aliases for backward compatibility
+        public int Duration { get => DurationMinutes; set => DurationMinutes = value; }
+        public decimal BasePrice { get => Price; set => Price = value; }
+    }
+
+    // Alias for backward compatibility with tests
+    public class AddServiceRequest : CreateServiceRequest
+    {
     }
 }

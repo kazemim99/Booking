@@ -1,0 +1,10 @@
+<Project>
+  <!-- Override Reqnroll targets to prevent task execution due to .NET 9 MSBuild task host issue -->
+
+  <!-- These targets MUST be redefined here to override the ones from the NuGet packages -->
+  <Target Name="BeforeUpdateFeatureFilesInProject" />
+  <Target Name="UpdateFeatureFilesInProject" />
+  <Target Name="IncludeCodeBehindFilesInProject" />
+  <Target Name="AfterUpdateFeatureFilesInProject" />
+  <Target Name="GenerateReqnrollAssemblyHooksFileTask" />
+</Project>

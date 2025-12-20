@@ -280,17 +280,17 @@ public class ProviderSettingsTests : ServiceCatalogIntegrationTestBase
 
         var request = new UpdateWorkingHoursRequest
         {
-            BusinessHours = new Dictionary<string, DayHoursRequest>
+            BusinessHours = new Dictionary<string, RegistrationDayScheduleRequest?>
             {
-                ["Monday"] = new DayHoursRequest
+                ["Monday"] = new RegistrationDayScheduleRequest
                 {
                     IsOpen = true,
-                    OpenTime = new TimeSlotRequest
+                    OpenTime = new TimeComponentsRequest
                     {
                         Hours = 10,
                         Minutes = 0,
                     },
-                    CloseTime = new TimeSlotRequest
+                    CloseTime = new TimeComponentsRequest
                     {
                         Hours = 17,
                         Minutes = 0
@@ -299,12 +299,12 @@ public class ProviderSettingsTests : ServiceCatalogIntegrationTestBase
                 ["Tuesday"] = new DayHoursRequest
                 {
                     IsOpen = true,
-                    OpenTime = new TimeSlotRequest
+                    OpenTime = new TimeComponentsRequest
                     {
                         Hours = 10,
                         Minutes = 0,
                     },
-                    CloseTime = new TimeSlotRequest
+                    CloseTime = new TimeComponentsRequest
                     {
                         Hours = 17,
                         Minutes = 0
@@ -313,12 +313,12 @@ public class ProviderSettingsTests : ServiceCatalogIntegrationTestBase
                 ["Wednesday"] = new DayHoursRequest
                 {
                     IsOpen = true,
-                    OpenTime = new TimeSlotRequest
+                    OpenTime = new TimeComponentsRequest
                     {
                         Hours = 10,
                         Minutes = 0,
                     },
-                    CloseTime = new TimeSlotRequest
+                    CloseTime = new TimeComponentsRequest
                     {
                         Hours = 17,
                         Minutes = 0
@@ -327,12 +327,12 @@ public class ProviderSettingsTests : ServiceCatalogIntegrationTestBase
                 ["Thursday"] = new DayHoursRequest
                 {
                     IsOpen = true,
-                    OpenTime = new TimeSlotRequest
+                    OpenTime = new TimeComponentsRequest
                     {
                         Hours = 10,
                         Minutes = 0,
                     },
-                    CloseTime = new TimeSlotRequest
+                    CloseTime = new TimeComponentsRequest
                     {
                         Hours = 17,
                         Minutes = 0
@@ -340,12 +340,12 @@ public class ProviderSettingsTests : ServiceCatalogIntegrationTestBase
                 },
                 ["Friday"] = new DayHoursRequest
                 {
-                    OpenTime = new TimeSlotRequest
+                    OpenTime = new TimeComponentsRequest
                     {
                         Hours = 10,
                         Minutes = 0,
                     },
-                    CloseTime = new TimeSlotRequest
+                    CloseTime = new TimeComponentsRequest
                     {
                         Hours = 17,
                         Minutes = 0
@@ -385,7 +385,7 @@ public class ProviderSettingsTests : ServiceCatalogIntegrationTestBase
 
         var request = new UpdateWorkingHoursRequest
         {
-            BusinessHours = new Dictionary<string, DayHoursRequest>()
+            BusinessHours = new Dictionary<string, RegistrationDayScheduleRequest?>()
         };
 
         // Act
@@ -440,17 +440,17 @@ public class ProviderSettingsTests : ServiceCatalogIntegrationTestBase
         // Step 3: Update Working Hours
         var hoursRequest = new UpdateWorkingHoursRequest
         {
-            BusinessHours = new Dictionary<string, DayHoursRequest>
+            BusinessHours = new Dictionary<string, RegistrationDayScheduleRequest?>
             {
-                ["Monday"] = new DayHoursRequest
+                ["Monday"] = new RegistrationDayScheduleRequest
                 {
                     IsOpen = true,
-                    OpenTime = new TimeSlotRequest
+                    OpenTime = new TimeComponentsRequest
                     {
                         Hours = 10,
                         Minutes = 0
                     },
-                    CloseTime = new TimeSlotRequest
+                    CloseTime = new TimeComponentsRequest
                     {
 
                         Hours = 17,

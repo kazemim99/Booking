@@ -36,4 +36,10 @@ public class CreateBookingRequest
     /// </summary>
     [StringLength(1000)]
     public string? CustomerNotes { get; set; }
+
+    /// <summary>
+    /// Alias for StaffProviderId (backward compatibility)
+    /// </summary>
+    [Required]
+    public Guid StaffId { get => StaffProviderId; set => StaffProviderId = value; }
 }

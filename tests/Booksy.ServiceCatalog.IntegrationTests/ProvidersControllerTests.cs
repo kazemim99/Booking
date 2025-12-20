@@ -1,4 +1,5 @@
 using Booksy.Core.Application.DTOs;
+using Booksy.ServiceCatalog.Api.Models.Requests;
 using Booksy.ServiceCatalog.Api.Models.Responses;
 using Booksy.ServiceCatalog.Domain.Aggregates;
 using Booksy.ServiceCatalog.Domain.Enums;
@@ -165,14 +166,14 @@ public class ProvidersControllerTests : ServiceCatalogIntegrationTestBase
                 Longitude = 51.3890,
                 FormattedAddress = "123 Main St, Tehran"
             },
-            BusinessHours = new Dictionary<int, DayHoursRequest?>
+            BusinessHours = new Dictionary<int, RegistrationDayScheduleRequest?>
             {
-                { 1, new DayHoursRequest { DayOfWeek = 1, IsOpen = true, OpenTime = new TimeSlotRequest { Hours = 9, Minutes = 0 }, CloseTime = new TimeSlotRequest { Hours = 17, Minutes = 0 }, Breaks = new List<BreakTimeRequest>() } },
-                { 2, new DayHoursRequest { DayOfWeek = 2, IsOpen = true, OpenTime = new TimeSlotRequest { Hours = 9, Minutes = 0 }, CloseTime = new TimeSlotRequest { Hours = 17, Minutes = 0 }, Breaks = new List<BreakTimeRequest>() } }
+                { 1, new RegistrationDayScheduleRequest { DayOfWeek = 1, IsOpen = true, OpenTime = new TimeComponentsRequest { Hours = 9, Minutes = 0 }, CloseTime = new TimeComponentsRequest { Hours = 17, Minutes = 0 }, Breaks = new List<RegistrationBreakPeriodRequest>() } },
+                { 2, new RegistrationDayScheduleRequest { DayOfWeek = 2, IsOpen = true, OpenTime = new TimeComponentsRequest { Hours = 9, Minutes = 0 }, CloseTime = new TimeComponentsRequest { Hours = 17, Minutes = 0 }, Breaks = new List<RegistrationBreakPeriodRequest>() } }
             },
-            Services = new List<ServiceRequest>
+            Services = new List<RegistrationServiceRequest>
             {
-                new ServiceRequest { Name = "Haircut", DurationHours = 0, DurationMinutes = 30, Price = 50000, PriceType = "fixed" }
+                new RegistrationServiceRequest { Name = "Haircut", DurationHours = 0, DurationMinutes = 30, Price = 50000, PriceType = "fixed" }
             },
             AssistanceOptions = new List<string> { "Online Booking" },
             TeamMembers = new List<TeamMemberRequest>
@@ -209,8 +210,8 @@ public class ProvidersControllerTests : ServiceCatalogIntegrationTestBase
             CategoryId = "beauty-salon",
             BusinessInfo = new BusinessInfoRequest { BusinessName = "Salon", OwnerFirstName = "John", OwnerLastName = "Doe", PhoneNumber = "+989121234567" },
             Address = new AddressRequest { Street = "123 Main St", City = "Tehran", PostalCode = "12345", Country = "Iran" },
-            BusinessHours = new Dictionary<int, DayHoursRequest?>(),
-            Services = new List<ServiceRequest>(),
+            BusinessHours = new Dictionary<int, RegistrationDayScheduleRequest?>(),
+            Services = new List<RegistrationServiceRequest>(),
             AssistanceOptions = new List<string>(),
             TeamMembers = new List<TeamMemberRequest>()
         };
@@ -237,8 +238,8 @@ public class ProvidersControllerTests : ServiceCatalogIntegrationTestBase
             CategoryId = "beauty-salon",
             BusinessInfo = new BusinessInfoRequest { BusinessName = "Salon", OwnerFirstName = "John", OwnerLastName = "Doe", PhoneNumber = "+989121234567" },
             Address = new AddressRequest { Street = "123 Main St", City = "Tehran", PostalCode = "12345", Country = "Iran" },
-            BusinessHours = new Dictionary<int, DayHoursRequest?>(),
-            Services = new List<ServiceRequest>(),
+            BusinessHours = new Dictionary<int, RegistrationDayScheduleRequest?>(),
+            Services = new List<RegistrationServiceRequest>(),
             AssistanceOptions = new List<string>(),
             TeamMembers = new List<TeamMemberRequest>()
         };

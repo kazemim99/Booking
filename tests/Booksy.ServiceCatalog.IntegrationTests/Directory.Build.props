@@ -1,0 +1,20 @@
+<Project>
+  <!-- Disable Reqnroll code generation due to .NET 9 MSBuild task host issue -->
+  <!-- See: https://github.com/reqnroll/Reqnroll/issues/2043 -->
+  <PropertyGroup>
+    <!-- Disable hooks file generation -->
+    <GenerateReqnrollAssemblyHooksFile>false</GenerateReqnrollAssemblyHooksFile>
+    <!-- Disable feature file code generation -->
+    <Reqnroll_EnableDefaultCompileItems>false</Reqnroll_EnableDefaultCompileItems>
+  </PropertyGroup>
+
+  <!-- Override BuildDependsOn to skip Reqnroll targets -->
+  <PropertyGroup>
+    <GenerateReqnrollAssemblyHooksFileTask />
+  </PropertyGroup>
+
+  <!-- Empty out the ReqnrollFeatureFiles so no task gets executed -->
+  <ItemGroup>
+    <ReqnrollFeatureFiles Remove="@(ReqnrollFeatureFiles)" />
+  </ItemGroup>
+</Project>

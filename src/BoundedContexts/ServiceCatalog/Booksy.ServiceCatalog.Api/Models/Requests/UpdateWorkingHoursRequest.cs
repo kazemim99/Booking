@@ -21,7 +21,7 @@ public sealed class UpdateWorkingHoursRequest
 /// <summary>
 /// Day schedule in registration flow (uses hours/minutes components)
 /// </summary>
-public sealed class RegistrationDayScheduleRequest
+public class RegistrationDayScheduleRequest
 {
     [Range(0, 6)]
     public int DayOfWeek { get; set; }
@@ -38,7 +38,7 @@ public sealed class RegistrationDayScheduleRequest
 /// <summary>
 /// Time represented as hours and minutes (for registration forms)
 /// </summary>
-public sealed class TimeComponentsRequest
+public class TimeComponentsRequest
 {
     [Range(0, 23)]
     public int Hours { get; set; }
@@ -50,11 +50,26 @@ public sealed class TimeComponentsRequest
 /// <summary>
 /// Break period in registration flow
 /// </summary>
-public sealed class RegistrationBreakPeriodRequest
+public class RegistrationBreakPeriodRequest
 {
     [Required]
     public TimeComponentsRequest Start { get; set; } = new();
 
     [Required]
     public TimeComponentsRequest End { get; set; } = new();
+}
+
+/// <summary>
+/// Aliases for backward compatibility with tests
+/// </summary>
+public sealed class DayHoursRequest : RegistrationDayScheduleRequest
+{
+}
+
+public sealed class TimeSlotRequest : TimeComponentsRequest
+{
+}
+
+public sealed class BreakTimeRequest : RegistrationBreakPeriodRequest
+{
 }

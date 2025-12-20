@@ -287,7 +287,7 @@ public abstract class ServiceCatalogIntegrationTestBase
             provider.Id,
             serviceName,
             $"Description for {serviceName}",
-            ServiceCategory.Create("Beauty"),
+            ServiceCategory.Create("Beauty", "beauty"),
             Domain.Enums.ServiceType.Standard,
             Price.Create(price, "USD"),
             Duration.FromMinutes(durationMinutes)

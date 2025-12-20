@@ -18,4 +18,9 @@ public class BookingResponse
     public string Currency { get; set; } = string.Empty;
     public string PaymentStatus { get; set; } = string.Empty;
     public DateTime CreatedAt { get; set; }
+
+    /// <summary>
+    /// Alias for StaffProviderId (backward compatibility)
+    /// </summary>
+    public Guid? StaffId { get => StaffProviderId; set => StaffProviderId = value; }
 }
