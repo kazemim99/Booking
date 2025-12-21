@@ -85,7 +85,7 @@
         v-for="provider in providers"
         :key="provider.id"
         :provider="provider"
-        :view-mode="viewMode"
+        :view-mode="cardViewMode"
         @click="handleProviderClick(provider)"
         @book="handleBookClick(provider)"
       />
@@ -172,6 +172,10 @@ const router = useRouter()
 const selectedSort = ref('rating-desc')
 
 // Computed
+const cardViewMode = computed(() => {
+  return props.viewMode === 'map' ? 'grid' : (props.viewMode as 'grid' | 'list')
+})
+
 const visiblePages = computed(() => {
   const pages: number[] = []
   const maxVisible = 5

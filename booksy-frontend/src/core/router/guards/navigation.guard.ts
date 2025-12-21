@@ -15,8 +15,10 @@ export const navigationGuard = (
   console.log(`[Navigation] ${from.path} → ${to.path}`)
 
   // Check for unsaved changes
+  // Note: Router guards are synchronous, so we use native confirm here.
+  // For Vue component-level confirmations, use ConfirmationModal component instead.
   if (to.meta.confirmLeave && from.meta.hasUnsavedChanges) {
-    const answer = window.confirm('You have unsaved changes. Are you sure you want to leave?')
+    const answer = window.confirm('آیا مطمئن هستید که بدون ذخیره تغییرات خود را ترک کنید؟')
     if (!answer) {
       uiStore.stopLoading()
       return next(false)

@@ -41,7 +41,7 @@ import { computed, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import { useCustomerStore } from '../../stores/customer.store'
 import { useAuthStore } from '@/core/stores/modules/auth.store'
-import { useToast } from '@/core/composables/useToast'
+import { useNotification } from '@/core/composables/useNotification'
 import ResponsiveModal from '@/shared/components/ui/ResponsiveModal.vue'
 import FavoriteProviderCard from './FavoriteProviderCard.vue'
 
@@ -57,7 +57,7 @@ const emit = defineEmits<{
 const router = useRouter()
 const customerStore = useCustomerStore()
 const authStore = useAuthStore()
-const { showSuccess, showError, showConfirm } = useToast()
+const { showSuccess, showError, showConfirm } = useNotification()
 
 const favorites = computed(() => customerStore.favorites)
 const loading = computed(() => customerStore.loading.favorites)
@@ -69,7 +69,7 @@ watch(() => props.isOpen, async (isOpen) => {
       await customerStore.fetchFavorites(authStore.customerId)
     } catch (error) {
       console.error('[FavoritesModal] Error fetching favorites:', error)
-      showError('خطا در بارگذاری علاقه‌مندی‌ها')
+      showError('خطا', 'خطا در بارگذاری علاقه‌مندی‌ها')
     }
   }
 }, { immediate: true })
@@ -77,26 +77,24 @@ watch(() => props.isOpen, async (isOpen) => {
 async function handleRemoveFavorite(providerId: string, providerName: string): Promise<void> {
   if (!authStore.customerId) return
 
-  const confirmed = await showConfirm(
+  showConfirm(
     `آیا می‌خواهید "${providerName}" را از علاقه‌مندی‌ها حذف کنید؟`,
     'حذف از علاقه‌مندی‌ها'
   )
 
-  if (!confirmed) return
-
   try {
     await customerStore.removeFavorite(authStore.customerId, providerId)
-    showSuccess(`"${providerName}" از علاقه‌مندی‌ها حذف شد`)
+    showSuccess('موفقیت', `"${providerName}" از علاقه‌مندی‌ها حذف شد`)
   } catch (error) {
     console.error('[FavoritesModal] Error removing favorite:', error)
-    showError('خطا در حذف از علاقه‌مندی‌ها')
+    showError('خطا', 'خطا در حذف از علاقه‌مندی‌ها')
   }
 }
 
 function handleQuickBook(providerId: string, providerName: string): void {
   handleClose()
   router.push(`/booking/${providerId}`)
-  showSuccess(`در حال انتقال به صفحه رزرو ${providerName}...`)
+  showSuccess('موفقیت', `در حال انتقال به صفحه رزرو ${providerName}...`)
 }
 
 function handleClose(): void {

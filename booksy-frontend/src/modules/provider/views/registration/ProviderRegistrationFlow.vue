@@ -46,7 +46,7 @@
     />
 
     <!-- Step 7: Gallery (NEW) -->
-    <GalleryStep v-else-if="currentStep === 7" @next="handleNext" @back="previousStep" />
+    <GalleryStep v-else-if="currentStep === 7" @next="handleNext" @back="previousStep" @loading="isProcessing = $event" />
 
     <!-- Step 8: Optional Feedback (NEW) -->
     <OptionalFeedbackStep
@@ -61,7 +61,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed, onMounted, onBeforeUnmount } from 'vue'
+import { computed, onMounted, onBeforeUnmount, ref } from 'vue'
 import { useProviderRegistration } from '../../composables/useProviderRegistration'
 import { toastService } from '@/core/services/toast.service'
 import { useAuthStore } from '@/core/stores/modules/auth.store'
@@ -107,6 +107,7 @@ const ownerFullName = computed(() => {
 })
 
 let draftProviderId: string | undefined = undefined
+const isProcessing = ref(false)
 
 const handleNext = async () => {
   console.log('🚀 ProviderRegistrationFlow: handleNext called, current step:', currentStep.value)
@@ -269,6 +270,8 @@ const handleNext = async () => {
   } catch (error) {
     console.error('Error in handleNext:', error)
     toastService.error((error as Error).message || 'خطا در ذخیره اطلاعات')
+  } finally {
+    isProcessing.value = false
   }
 }
 

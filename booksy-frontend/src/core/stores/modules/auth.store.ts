@@ -76,7 +76,7 @@ export const useAuthStore = defineStore('auth', () => {
         userType: payload.user_type,
         roles: payload.role || payload['http://schemas.microsoft.com/ws/2008/06/identity/claims/role'] || [],
         providerId: payload.providerId || payload.provider_id,
-        providerStatus: payload.provider_status,
+        providerStatus: payload.provider_status || payload.user_status,
         customerId: payload.customerId || payload.customer_id,
       }
     } catch (error) {
@@ -358,15 +358,8 @@ export const useAuthStore = defineStore('auth', () => {
 
       setUser(user)
 
-      // Fetch provider status if user is a Provider
-      if (userData.roles && (userData.roles.includes('Provider') || userData.roles.includes('ServiceProvider'))) {
-        try {
-          await fetchProviderStatus()
-        } catch (err) {
-          console.error('[AuthStore] Failed to fetch provider status after login:', err)
-          // Don't fail login if provider status fetch fails
-        }
-      }
+      // Provider status is already extracted from token in setToken()
+      // No need to make an additional API call to fetchProviderStatus()
 
       return true
     } catch (err: unknown) {
@@ -482,7 +475,7 @@ export const useAuthStore = defineStore('auth', () => {
       return
     }
 
-    // Provider redirect - check status first
+    // Provider redirect - check status from token
     if (primaryRole === 'provider') {
       // Check if already on a registration route - if so, don't redirect
       const currentRoute = router.currentRoute.value
@@ -492,26 +485,14 @@ export const useAuthStore = defineStore('auth', () => {
         return
       }
 
-      // Fetch provider status if not already loaded
-      if (providerStatus.value === null && providerId.value === null) {
-        try {
-          console.log('[AuthStore] Fetching provider status before redirect...')
-          await fetchProviderStatus()
-        } catch (error) {
-          console.error('[AuthStore] Error fetching provider status, redirecting to registration', error)
-          await router.push({ name: 'ProviderRegistration' })
-          return
-        }
-      }
-
-      // Check if onboarding is complete
+      // Check if onboarding is complete (status already extracted from token)
       const isOnboardingComplete = providerStatus.value !== null &&
                                    providerStatus.value !== ProviderStatus.Drafted
 
       if (!isOnboardingComplete) {
-        // Provider needs to complete registration - ignore redirect path
-        console.log('[AuthStore] Provider onboarding incomplete, forcing registration')
-        await router.push({ name: 'ProviderRegistration' })
+        // Provider needs to complete registration - redirect to organization registration by default
+        console.log('[AuthStore] Provider onboarding incomplete, forcing organization registration')
+        await router.push({ name: 'OrganizationRegistration' })
         return
       }
 

@@ -143,7 +143,7 @@ class FinancialService {
         `${FINANCIAL_BASE}/provider/${providerId}/revenue`
       )
 
-      const data = response.data?.data || response.data
+      const data = (response.data?.data || response.data) as { totalRevenue: number }
 
       return data?.totalRevenue || 0
     } catch (error) {

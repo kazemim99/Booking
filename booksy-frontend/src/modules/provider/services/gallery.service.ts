@@ -37,8 +37,15 @@ class GalleryService {
       }
     )
 
-    const images = response.data || []
-    return images.map(this.mapGalleryImageDates)
+    let imageList: GalleryImage[] = []
+    if (response.data) {
+      if (Array.isArray(response.data)) {
+        imageList = response.data
+      } else if ('data' in response.data) {
+        imageList = (response.data as ApiResponse<GalleryImage[]>).data || []
+      }
+    }
+    return imageList.map(this.mapGalleryImageDates)
   }
 
   /**
@@ -46,12 +53,18 @@ class GalleryService {
    */
   async getGalleryImages(providerId: string): Promise<GalleryImage[]> {
     const response = await serviceCategoryClient.get<GalleryImage[]>(
-      `${this.baseUrl}/${providerId}/gallery`,
-      { cache: false } // Disable caching for gallery images to ensure fresh data
+      `${this.baseUrl}/${providerId}/gallery`
     )
 
-    const images = response.data || []
-    return images.map(this.mapGalleryImageDates)
+    let imageList: GalleryImage[] = []
+    if (response.data) {
+      if (Array.isArray(response.data)) {
+        imageList = response.data
+      } else if ('data' in response.data) {
+        imageList = (response.data as ApiResponse<GalleryImage[]>).data || []
+      }
+    }
+    return imageList.map(this.mapGalleryImageDates)
   }
 
   /**

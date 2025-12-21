@@ -44,7 +44,7 @@ public class ProviderRegistrationController : ControllerBase
         var query = new GetRegistrationProgressQuery();
         var result = await _sender.Send(query, cancellationToken);
 
-        return result.HasDraft ? Ok(result) : NotFound();
+        return  Ok(result);
     }
 
     /// <summary>

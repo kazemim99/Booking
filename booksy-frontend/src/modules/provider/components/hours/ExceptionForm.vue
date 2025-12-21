@@ -158,6 +158,7 @@ import { useHoursStore } from '../../stores/hours.store'
 import type { ExceptionSchedule } from '../../types/hours.types'
 import { useI18n } from 'vue-i18n'
 import PersianTimePicker from '@/shared/components/calendar/PersianTimePicker.vue'
+import { formatDate } from '@/core/utils'
 
 // Props & Emits
 interface Props {

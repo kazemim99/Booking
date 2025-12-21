@@ -144,6 +144,7 @@ import { useHoursStore } from '../../stores/hours.store'
 import type { HolidaySchedule } from '../../types/hours.types'
 import { RecurrencePattern } from '../../types/hours.types'
 import { useI18n } from 'vue-i18n'
+import { formatDate } from '@/core/utils'
 
 // Props & Emits
 interface Props {

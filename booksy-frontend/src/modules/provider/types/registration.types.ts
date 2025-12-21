@@ -32,10 +32,11 @@ export type BusinessCategoryId = (typeof BUSINESS_CATEGORIES)[keyof typeof BUSIN
 
 // Business Information
 export interface BusinessInfo {
-  businessName: string
-  ownerFirstName: string
-  ownerLastName: string
-  phoneNumber: string // From phone verification
+  businessName?: string
+  businessDescription?: string
+  ownerFirstName?: string
+  ownerLastName?: string
+  phoneNumber?: string // From phone verification
 }
 
 // Address & Location

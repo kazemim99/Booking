@@ -38,10 +38,6 @@
               <i class="icon-award"></i>
               {{ staff.specializations.join(', ') }}
             </span>
-            <span v-if="staff.servicesCount" class="meta-item">
-              <i class="icon-briefcase"></i>
-              {{ staff.servicesCount }} خدمت
-            </span>
           </div>
         </div>
 
@@ -88,7 +84,7 @@ const hierarchyStore = useHierarchyStore()
 const isLoading = ref(false)
 const selectedStaffId = ref<string | null>(props.modelValue || null)
 
-const staffMembers = computed(() => hierarchyStore.staffMembers?.items || [])
+const staffMembers = computed(() => hierarchyStore.staffMembers || [])
 const selectedStaff = computed(() =>
   staffMembers.value.find((s) => s.id === selectedStaffId.value)
 )

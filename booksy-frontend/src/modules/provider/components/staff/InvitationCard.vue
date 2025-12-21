@@ -77,7 +77,8 @@ import { computed, ref, onUnmounted } from 'vue'
 import type { ProviderInvitation } from '../../types/hierarchy.types'
 import { InvitationStatus } from '../../types/hierarchy.types'
 import { hierarchyService } from '../../services/hierarchy.service'
-import { useToast } from '@/core/composables/useToast'
+import { useNotification } from '@/core/composables/useNotification'
+import { formatPhone, formatDate } from '@/core/utils'
 
 interface Props {
   invitation: ProviderInvitation
@@ -91,7 +92,7 @@ interface Emits {
 
 const props = defineProps<Props>()
 const emit = defineEmits<Emits>()
-const toast = useToast()
+const { success, error } = useNotification()
 
 const isResending = ref(false)
 const resendCooldown = ref(0)
@@ -151,37 +152,6 @@ function getStatusLabel(status: InvitationStatus): string {
   return labels[status] || status
 }
 
-function formatPhone(phone: string): string {
-  // Format as +98 912 345 6789
-  if (phone.startsWith('+98')) {
-    return phone
-  }
-  if (phone.startsWith('0')) {
-    phone = phone.substring(1)
-  }
-  return `+۹۸ ${convertToPersian(phone)}`
-}
-
-function formatDate(dateString: string | Date | null | undefined): string {
-  if (!dateString) {
-    return 'نامشخص'
-  }
-
-  const date = new Date(dateString)
-
-  // Check if date is valid
-  if (isNaN(date.getTime())) {
-    console.warn('Invalid date value:', dateString)
-    return 'نامشخص'
-  }
-
-  return new Intl.DateTimeFormat('fa-IR', {
-    year: 'numeric',
-    month: 'long',
-    day: 'numeric',
-  }).format(date)
-}
-
 function convertToPersian(value: string | number): string {
   const persianDigits = ['۰', '۱', '۲', '۳', '۴', '۵', '۶', '۷', '۸', '۹']
   return value.toString().split('').map(char => {
@@ -206,7 +176,7 @@ async function handleResend() {
     )
 
     // Show success message
-    toast.success('موفق', 'دعوت مجدد با موفقیت ارسال شد')
+    success('موفق', 'دعوت مجدد با موفقیت ارسال شد')
 
     // Increment resend count
     resendCount.value++
@@ -239,7 +209,7 @@ async function handleResend() {
     // Show error message
     const err = error as { response?: { data?: { message?: string } }; message?: string }
     const errorMessage = err.response?.data?.message || err.message || 'خطا در ارسال مجدد دعوت'
-    toast.error('خطا', errorMessage)
+    error('خطا', errorMessage)
     console.error('Error resending invitation:', error)
   } finally {
     // Keep isResending true for a moment to show feedback

@@ -252,7 +252,7 @@
 
             <!-- Day Schedule Editor -->
             <DayScheduleEditor
-              v-model="workingHours"
+              v-model="scheduleDays"
               :week-days="weekDays.map(d => d.persian)"
               start-time-label="ساعت شروع"
               end-time-label="ساعت پایان"
@@ -516,7 +516,7 @@ import { useAuthStore } from '@/core/stores/modules/auth.store'
 import PersianCalendar from '@/shared/components/calendar/PersianCalendar.vue'
 import ProfileGallery from '../ProfileGallery.vue'
 import ProfileStaffSection from '../ProfileStaffSection.vue'
-import DayScheduleEditor from '@/shared/components/schedule/DayScheduleEditor.vue'
+import DayScheduleEditor, { type DayScheduleItem } from '@/shared/components/schedule/DayScheduleEditor.vue'
 import CustomDayModal from '../../../provider/views/hours/CustomDayModal.vue'
 import ImageUpload from '@/shared/components/ui/ImageUpload.vue'
 import NeshanMapPicker from '@/shared/components/map/NeshanMapPicker.vue'
@@ -704,6 +704,14 @@ const workingHours = ref<DayHoursString[]>([
   { isOpen: true, startTime: '10:00', endTime: '22:00', breaks: [] },
   { isOpen: false, startTime: '', endTime: '', breaks: [] },
 ])
+
+// Cast workingHours to DayScheduleItem[] for DayScheduleEditor component
+const scheduleDays = computed<DayScheduleItem[]>({
+  get: () => workingHours.value as unknown as DayScheduleItem[],
+  set: (value) => {
+    workingHours.value = value as unknown as DayHoursString[]
+  }
+})
 
 // Calendar and exceptions
 const selectedDate = ref<Date | null>(null)

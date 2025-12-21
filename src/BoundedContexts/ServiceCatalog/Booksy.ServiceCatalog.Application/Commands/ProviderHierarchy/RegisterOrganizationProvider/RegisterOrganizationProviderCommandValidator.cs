@@ -23,11 +23,6 @@ public sealed class RegisterOrganizationProviderCommandValidator : AbstractValid
             .MinimumLength(10).WithMessage("Phone number must be at least 10 digits")
             .MaximumLength(20).WithMessage("Phone number cannot exceed 20 characters");
 
-        RuleFor(x => x.Email)
-            .NotEmpty().WithMessage("Email is required")
-            .EmailAddress().WithMessage("Invalid email address format")
-            .MaximumLength(255).WithMessage("Email cannot exceed 255 characters");
-
         RuleFor(x => x.AddressLine1)
             .NotEmpty().WithMessage("Address is required")
             .MaximumLength(200).WithMessage("Address cannot exceed 200 characters");
@@ -44,9 +39,7 @@ public sealed class RegisterOrganizationProviderCommandValidator : AbstractValid
             .NotEmpty().WithMessage("Province is required")
             .MaximumLength(100).WithMessage("Province cannot exceed 100 characters");
 
-        RuleFor(x => x.PostalCode)
-            .NotEmpty().WithMessage("Postal code is required")
-            .MaximumLength(20).WithMessage("Postal code cannot exceed 20 characters");
+   
 
         RuleFor(x => x.Latitude)
             .InclusiveBetween(-90, 90).WithMessage("Latitude must be between -90 and 90");

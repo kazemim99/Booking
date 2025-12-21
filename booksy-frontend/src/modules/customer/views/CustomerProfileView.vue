@@ -33,9 +33,9 @@
 
 <script setup lang="ts">
 import { ref } from 'vue'
-import { useToast } from '@/core/composables'
+import { useNotification } from '@/core/composables'
 
-const toast = useToast()
+const notification = useNotification()
 
 const profile = ref({
   firstName: 'علی',
@@ -47,7 +47,7 @@ const profile = ref({
 
 function saveProfile() {
   // API call
-  toast.success('موفق', 'پروفایل با موفقیت بهروزرسانی شد')
+  notification.success('موفق', 'پروفایل با موفقیت بهروزرسانی شد')
 }
 </script>
 

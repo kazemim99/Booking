@@ -44,7 +44,7 @@
 import { ref, computed, watch } from 'vue'
 import { useCustomerStore } from '../../stores/customer.store'
 import { useAuthStore } from '@/core/stores/modules/auth.store'
-import { useToast } from '@/core/composables/useToast'
+import { useNotification } from '@/core/composables/useNotification'
 import ResponsiveModal from '@/shared/components/ui/ResponsiveModal.vue'
 import ReviewCard from './ReviewCard.vue'
 import EditReviewModal from './EditReviewModal.vue'
@@ -61,7 +61,7 @@ const emit = defineEmits<{
 
 const customerStore = useCustomerStore()
 const authStore = useAuthStore()
-const { showSuccess, showError } = useToast()
+const { showSuccess, showError } = useNotification()
 
 const reviews = computed(() => customerStore.reviews)
 const loading = computed(() => customerStore.loading.reviews)
@@ -75,14 +75,14 @@ watch(() => props.isOpen, async (isOpen) => {
       await customerStore.fetchReviews(authStore.user.id)
     } catch (error) {
       console.error('[ReviewsModal] Error fetching reviews:', error)
-      showError('خطا در بارگذاری نظرات')
+      showError('خطا', 'خطا در بارگذاری نظرات')
     }
   }
 }, { immediate: true })
 
 function handleEditReview(review: CustomerReview): void {
   if (!review.canEdit) {
-    showError('فقط می‌توانید نظرات خود را تا ۷ روز بعد از ثبت ویرایش کنید')
+    showError('خطا', 'فقط می‌توانید نظرات خود را تا ۷ روز بعد از ثبت ویرایش کنید')
     return
   }
 
@@ -94,11 +94,11 @@ async function handleSaveReview(reviewId: string, data: UpdateReviewRequest): Pr
 
   try {
     await customerStore.updateReview(authStore.user.id, reviewId, data)
-    showSuccess('نظر شما با موفقیت بهروزرسانی شد')
+    showSuccess('موفقیت', 'نظر شما با موفقیت بهروزرسانی شد')
     editingReview.value = null
   } catch (error) {
     console.error('[ReviewsModal] Error updating review:', error)
-    showError('خطا در بهروزرسانی نظر')
+    showError('خطا', 'خطا در بهروزرسانی نظر')
   }
 }
 

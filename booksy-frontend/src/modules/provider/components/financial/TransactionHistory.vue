@@ -195,6 +195,7 @@ import { ref, computed, onMounted, watch } from 'vue'
 import { useProviderStore } from '@/modules/provider/stores/provider.store'
 import { financialService } from '@/modules/provider/services/financial.service'
 import type { Transaction, TransactionType, GetTransactionsRequest } from '@/modules/provider/types/financial.types'
+import { formatFullDate } from '@/core/utils'
 import {
   formatCurrency,
   formatRelativeDate,
@@ -348,16 +349,6 @@ function getTransactionClass(type: TransactionType): string {
   }
 }
 
-function formatFullDate(dateString: string): string {
-  const date = new Date(dateString)
-  return date.toLocaleDateString('fa-IR', {
-    year: 'numeric',
-    month: 'long',
-    day: 'numeric',
-    hour: '2-digit',
-    minute: '2-digit',
-  })
-}
 </script>
 
 <style scoped>

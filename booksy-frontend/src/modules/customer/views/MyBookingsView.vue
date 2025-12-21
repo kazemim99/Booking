@@ -168,7 +168,7 @@ async function loadBookings() {
     error.value = null
 
     // Determine date filter based on active tab
-    let filters: any = {
+    const filters: any = {
       page: pagination.value.pageNumber,
       size: pagination.value.pageSize,
       sort: 'StartTime',

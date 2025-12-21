@@ -3,10 +3,7 @@
     <div class="card-header">
       <!-- Requester Info -->
       <div class="requester-info">
-        <div v-if="request.requesterAvatarUrl" class="requester-avatar">
-          <img :src="request.requesterAvatarUrl" :alt="request.requesterName" />
-        </div>
-        <div v-else class="requester-avatar avatar-placeholder">
+        <div class="requester-avatar avatar-placeholder">
           <span>{{ initials }}</span>
         </div>
 
@@ -14,7 +11,7 @@
           <h3 class="requester-name">{{ request.requesterName || 'درخواست‌کننده' }}</h3>
           <div class="request-date">
             <i class="icon-calendar"></i>
-            <span>{{ formatDate(request.createdAt) }}</span>
+            <span>{{ formatDateTime(request.createdAt.toString()) }}</span>
           </div>
         </div>
       </div>
@@ -39,8 +36,8 @@
     <div v-if="request.organizationName" class="organization-info">
       <div class="org-logo">
         <img
-          v-if="request.organizationLogoUrl"
-          :src="request.organizationLogoUrl"
+          v-if="request.organizationLogo"
+          :src="request.organizationLogo"
           :alt="request.organizationName"
         />
         <i v-else class="icon-building"></i>
@@ -52,14 +49,14 @@
     </div>
 
     <!-- Review Info (if reviewed) -->
-    <div v-if="request.reviewedAt" class="review-info">
+    <div v-if="request.respondedAt" class="review-info">
       <div class="review-item">
         <i class="icon-user-check"></i>
-        <span>بررسی شده توسط: {{ request.reviewedBy || 'مدیر' }}</span>
+        <span>بررسی شده توسط: {{ request.respondedByName || 'مدیر' }}</span>
       </div>
       <div class="review-item">
         <i class="icon-clock"></i>
-        <span>{{ formatDate(request.reviewedAt) }}</span>
+        <span>{{ formatDateTime(request.respondedAt.toString()) }}</span>
       </div>
       <div v-if="request.rejectionReason" class="rejection-reason">
         <i class="icon-info-circle"></i>
@@ -70,7 +67,7 @@
     <!-- Actions -->
     <div v-if="canTakeAction" class="card-actions">
       <AppButton
-        variant="danger-outline"
+        variant="danger"
         size="medium"
         @click="handleReject"
         :disabled="isProcessing"
@@ -108,6 +105,7 @@ import {
   canApproveJoinRequest,
 } from '../../types/hierarchy.types'
 import AppButton from '@/shared/components/ui/Button/AppButton.vue'
+import { getNameInitials, formatDateTime } from '@/core/utils'
 
 // ============================================
 // Props & Emits
@@ -148,13 +146,7 @@ const canTakeAction = computed(() => {
 })
 
 const initials = computed(() => {
-  if (!props.request.requesterName) return '؟'
-
-  const names = props.request.requesterName.split(' ')
-  if (names.length >= 2) {
-    return `${names[0][0]}${names[1][0]}`.toUpperCase()
-  }
-  return props.request.requesterName.substring(0, 2).toUpperCase()
+  return props.request.requesterName ? getNameInitials(props.request.requesterName) : '؟'
 })
 
 const statusClass = computed(() => {
@@ -192,17 +184,6 @@ const statusLabel = computed(() => getJoinRequestStatusLabel(props.request.statu
 // ============================================
 // Methods
 // ============================================
-
-function formatDate(dateString: string): string {
-  const date = new Date(dateString)
-  return new Intl.DateTimeFormat('fa-IR', {
-    year: 'numeric',
-    month: 'long',
-    day: 'numeric',
-    hour: '2-digit',
-    minute: '2-digit',
-  }).format(date)
-}
 
 async function handleApprove(): Promise<void> {
   isProcessing.value = true

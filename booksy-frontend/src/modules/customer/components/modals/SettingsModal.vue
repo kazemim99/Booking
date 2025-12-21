@@ -134,7 +134,7 @@
 import { ref, computed, watch } from 'vue'
 import { useCustomerStore } from '../../stores/customer.store'
 import { useAuthStore } from '@/core/stores/modules/auth.store'
-import { useToast } from '@/core/composables/useToast'
+import { useNotification } from '@/core/composables/useNotification'
 import ResponsiveModal from '@/shared/components/ui/ResponsiveModal.vue'
 import type { ReminderTiming } from '../../types/customer.types'
 
@@ -149,7 +149,7 @@ const emit = defineEmits<{
 
 const customerStore = useCustomerStore()
 const authStore = useAuthStore()
-const { error } = useToast()
+const { showError } = useNotification()
 
 const loading = computed(() => customerStore.loading.preferences)
 const preferences = computed(() => customerStore.preferences)
@@ -175,7 +175,7 @@ watch(() => props.isOpen, async (isOpen) => {
       }
     } catch (err) {
       console.error('[SettingsModal] Error fetching preferences:', err)
-      error('خطا', 'خطا در بارگذاری تنظیمات')
+      showError('خطا', 'خطا در بارگذاری تنظیمات')
     }
   }
 }, { immediate: true })
@@ -206,7 +206,7 @@ async function handleAutoSave(): Promise<void> {
       }, 2000)
     } catch (err) {
       console.error('[SettingsModal] Error saving preferences:', err)
-      error('خطا', 'خطا در ذخیره تنظیمات')
+      showError('خطا', 'خطا در ذخیره تنظیمات')
     }
   }, 500)
 }

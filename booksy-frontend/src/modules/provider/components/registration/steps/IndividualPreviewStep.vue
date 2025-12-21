@@ -16,7 +16,7 @@
               <i class="icon-user"></i>
               اطلاعات شخصی
             </h3>
-            <AppButton variant="text" size="small" @click="$emit('edit', 1)">
+            <AppButton variant="link" size="small" @click="$emit('edit', 1)">
               <i class="icon-edit"></i>
               ویرایش
             </AppButton>
@@ -62,7 +62,7 @@
               <i class="icon-map-pin"></i>
               منطقه خدمات
             </h3>
-            <AppButton variant="text" size="small" @click="$emit('edit', 3)">
+            <AppButton variant="link" size="small" @click="$emit('edit', 3)">
               <i class="icon-edit"></i>
               ویرایش
             </AppButton>
@@ -92,7 +92,7 @@
               <i class="icon-briefcase"></i>
               خدمات
             </h3>
-            <AppButton variant="text" size="small" @click="$emit('edit', 4)">
+            <AppButton variant="link" size="small" @click="$emit('edit', 4)">
               <i class="icon-edit"></i>
               ویرایش
             </AppButton>
@@ -118,7 +118,7 @@
               <i class="icon-clock"></i>
               ساعات کاری
             </h3>
-            <AppButton variant="text" size="small" @click="$emit('edit', 5)">
+            <AppButton variant="link" size="small" @click="$emit('edit', 5)">
               <i class="icon-edit"></i>
               ویرایش
             </AppButton>
@@ -144,7 +144,7 @@
               <i class="icon-image"></i>
               نمونه کارها
             </h3>
-            <AppButton variant="text" size="small" @click="$emit('edit', 6)">
+            <AppButton variant="link" size="small" @click="$emit('edit', 6)">
               <i class="icon-edit"></i>
               ویرایش
             </AppButton>

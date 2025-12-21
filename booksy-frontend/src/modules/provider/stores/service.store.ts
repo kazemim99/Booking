@@ -200,7 +200,7 @@ export const useServiceStore = defineStore('service', () => {
         services.value[originalIndex] = {
           ...services.value[originalIndex],
           ...data,
-        }
+        } as Service
         applyFilters()
       }
 

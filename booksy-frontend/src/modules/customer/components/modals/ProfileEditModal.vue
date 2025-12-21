@@ -90,7 +90,7 @@
 import { ref, computed, watch } from 'vue'
 import { useCustomerStore } from '../../stores/customer.store'
 import { useAuthStore } from '@/core/stores/modules/auth.store'
-import { useToast } from '@/core/composables/useToast'
+import { useNotification } from '@/core/composables/useNotification'
 import ResponsiveModal from '@/shared/components/ui/ResponsiveModal.vue'
 
 interface Props {
@@ -104,7 +104,7 @@ const emit = defineEmits<{
 
 const customerStore = useCustomerStore()
 const authStore = useAuthStore()
-const toast = useToast()
+const { success, error } = useNotification()
 
 const profile = computed(() => customerStore.profile)
 const loading = ref(false)
@@ -141,12 +141,12 @@ watch(() => props.isOpen, async (open) => {
     if (authStore.customerId && !profile.value) {
       try {
         await customerStore.fetchProfile(authStore.customerId)
-      } catch (error) {
-        console.error('[ProfileEditModal] Error fetching profile:', error)
-        toast.error('خطا', 'خطا در بارگذاری اطلاعات پروفایل')
+      } catch (err) {
+        console.error('[ProfileEditModal] Error fetching profile:', err)
+        error('خطا', 'خطا در بارگذاری اطلاعات پروفایل')
       }
     } else if (!authStore.customerId) {
-      toast.error('خطا', 'لطفاً دوباره وارد شوید')
+      error('خطا', 'لطفاً دوباره وارد شوید')
     }
   }
 }, { immediate: true })
@@ -154,10 +154,8 @@ watch(() => props.isOpen, async (open) => {
 // Initialize form when profile changes
 watch([() => props.isOpen, profile], ([open, profileData]) => {
   if (open && profileData) {
-    // Split fullName into firstName and lastName
-    const nameParts = (profileData.fullName || '').trim().split(' ')
-    form.value.firstName = nameParts[0] || ''
-    form.value.lastName = nameParts.slice(1).join(' ') || ''
+    form.value.firstName = profileData.firstName || ''
+    form.value.lastName = profileData.lastName || ''
     form.value.email = profileData.email || ''
     clearErrors()
     serverError.value = null
@@ -230,7 +228,7 @@ async function handleSubmit(): Promise<void> {
   }
 
   if (!authStore.customerId) {
-    toast.error('خطا', 'کاربر احراز هویت نشده است')
+    error('خطا', 'کاربر احراز هویت نشده است')
     return
   }
 
@@ -243,12 +241,12 @@ async function handleSubmit(): Promise<void> {
       email: form.value.email.trim() || undefined
     })
 
-    toast.success('موفقیت', 'پروفایل با موفقیت بهروزرسانی شد')
+    success('موفقیت', 'پروفایل با موفقیت بهروزرسانی شد')
     handleClose()
-  } catch (error) {
-    console.error('[ProfileEditModal] Error updating profile:', error)
-    serverError.value = error instanceof Error ? error.message : 'خطا در بهروزرسانی پروفایل'
-    toast.error('خطا', serverError.value)
+  } catch (err) {
+    console.error('[ProfileEditModal] Error updating profile:', err)
+    serverError.value = err instanceof Error ? err.message : 'خطا در بهروزرسانی پروفایل'
+    error('خطا', serverError.value)
   } finally {
     loading.value = false
   }

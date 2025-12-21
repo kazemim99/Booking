@@ -57,6 +57,7 @@
       v-else-if="currentStep === 6"
       @next="handleNext"
       @back="previousStep"
+      @loading="isProcessing = $event"
     />
 
     <!-- Step 7: Preview & Confirm -->
@@ -101,6 +102,7 @@ const authStore = useAuthStore()
 
 const currentStep = ref(1)
 const totalSteps = 8
+const isProcessing = ref(false)
 
 const stepLabels = [
   'اطلاعات شخصی',
@@ -129,8 +131,8 @@ const registrationData = ref({
     state: '',
     country: 'IR',
     serviceRadius: 10, // km
-    latitude: undefined as number | undefined,
-    longitude: undefined as number | undefined,
+    latitude: 0,
+    longitude: 0,
   },
   offersMobileServices: true,
   services: [] as any[],
@@ -214,25 +216,20 @@ async function handleNext() {
       // Step 3: Create individual draft
       console.log('✅ Step 3 complete - Creating individual draft...')
       const request: RegisterIndependentIndividualRequest = {
-        ownerId: authStore.userId!,
+        ownerId: authStore.user!.id,
         firstName: registrationData.value.personalInfo.firstName,
         lastName: registrationData.value.personalInfo.lastName,
         bio: registrationData.value.personalInfo.bio,
         email: registrationData.value.personalInfo.email,
         phone: registrationData.value.personalInfo.phone,
-        avatarUrl: registrationData.value.personalInfo.avatarUrl,
-        specializations: registrationData.value.personalInfo.specializations,
-        offersMobileServices: registrationData.value.offersMobileServices,
+        photoUrl: registrationData.value.personalInfo.avatarUrl,
         city: registrationData.value.serviceArea.city,
         state: registrationData.value.serviceArea.state,
         country: registrationData.value.serviceArea.country,
-        serviceRadius: registrationData.value.serviceArea.serviceRadius,
-        latitude: registrationData.value.serviceArea.latitude,
-        longitude: registrationData.value.serviceArea.longitude,
       }
 
       const response = await hierarchyService.registerIndividual(request)
-      draftProviderId = response.id
+      draftProviderId = response.data?.providerId
       console.log('✅ Individual draft created:', draftProviderId)
       toastService.success('اطلاعات شما ذخیره شد')
     } else if (currentStep.value === 4) {
@@ -265,6 +262,8 @@ async function handleNext() {
   } catch (error) {
     console.error('Error in handleNext:', error)
     toastService.error((error as Error).message || 'خطا در ذخیره اطلاعات')
+  } finally {
+    isProcessing.value = false
   }
 }
 

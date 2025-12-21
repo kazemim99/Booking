@@ -167,6 +167,10 @@ export interface ProviderSummary {
   isOrganization?: boolean // True if provider is an organization with staff
   hierarchyType?: 'Organization' | 'Individual' // Provider hierarchy type
   staff?: StaffMember[] // Staff members (for displaying in cards)
+  // Location coordinates for map display
+  address?: BusinessAddress // Full address with coordinates
+  latitude?: number // Latitude for map (fallback if address.latitude not present)
+  longitude?: number // Longitude for map (fallback if address.longitude not present)
 }
 
 export interface ServiceSummary {

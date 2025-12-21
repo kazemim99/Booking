@@ -35,7 +35,7 @@
         >
           <!-- Preview -->
           <div class="preview">
-            <img v-if="item.preview" :src="item.preview" :alt="item.file.name" />
+            <img v-if="(item as any).preview" :src="(item as any).preview" :alt="item.file.name" />
             <div v-else class="preview-placeholder">
               <i class="icon-image"></i>
             </div>

@@ -63,10 +63,10 @@
 <script setup lang="ts">
 import { ref } from 'vue'
 import { useRouter } from 'vue-router'
-import { useToast } from '@/core/composables'
+import { useNotification } from '@/core/composables'
 
 const router = useRouter()
-const toast = useToast()
+const notification = useNotification()
 
 const steps = ['انتخاب خدمت', 'انتخاب ارائه‌دهنده', 'انتخاب زمان', 'تایید و پرداخت']
 const currentStep = ref(0)
@@ -89,7 +89,7 @@ function prevStep() {
 }
 
 function confirmBooking() {
-  toast.success('موفق', 'رزرو شما با موفقیت ثبت شد')
+  notification.success('موفق', 'رزرو شما با موفقیت ثبت شد')
   router.push('/customer/my-bookings')
 }
 </script>

@@ -2,9 +2,73 @@
   <Teleport to="body">
     <div class="confirmation-overlay" @click="handleCancel">
       <div class="confirmation-modal" :class="`variant-${variant}`" @click.stop>
-        <!-- Icon -->
+        <!-- Icon or Image Preview -->
         <div class="modal-icon" :class="`icon-${variant}`">
-          <i :class="iconClass"></i>
+          <!-- Image Preview -->
+          <img v-if="imageUrl" :src="imageUrl" :alt="title" class="modal-image" />
+          <!-- Icons (when no image) -->
+          <template v-else>
+            <!-- Alert Triangle (Danger) -->
+            <svg
+              v-if="variant === 'danger'"
+              xmlns="http://www.w3.org/2000/svg"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+            >
+              <path
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                stroke-width="2"
+                d="M12 9v2m0 4v2m0 0a9 9 0 11-18 0 9 9 0 0118 0z"
+              />
+            </svg>
+            <!-- Alert Circle (Warning) -->
+            <svg
+              v-else-if="variant === 'warning'"
+              xmlns="http://www.w3.org/2000/svg"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+            >
+              <path
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                stroke-width="2"
+                d="M12 8v4m0 4v2m0 0a9 9 0 11-18 0 9 9 0 0118 0z"
+              />
+            </svg>
+            <!-- Info (Info) -->
+            <svg
+              v-else-if="variant === 'info'"
+              xmlns="http://www.w3.org/2000/svg"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+            >
+              <path
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                stroke-width="2"
+                d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+              />
+            </svg>
+            <!-- Check Circle (Success) -->
+            <svg
+              v-else-if="variant === 'success'"
+              xmlns="http://www.w3.org/2000/svg"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+            >
+              <path
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                stroke-width="2"
+                d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"
+              />
+            </svg>
+          </template>
         </div>
 
         <!-- Content -->
@@ -54,6 +118,7 @@ interface Props {
   cancelText?: string
   variant?: 'danger' | 'warning' | 'info' | 'success'
   processing?: boolean
+  imageUrl?: string
 }
 
 const props = withDefaults(defineProps<Props>(), {
@@ -77,21 +142,6 @@ const isProcessing = ref(props.processing)
 // ============================================
 // Computed
 // ============================================
-
-const iconClass = computed(() => {
-  switch (props.variant) {
-    case 'danger':
-      return 'icon-alert-triangle'
-    case 'warning':
-      return 'icon-alert-circle'
-    case 'info':
-      return 'icon-info'
-    case 'success':
-      return 'icon-check-circle'
-    default:
-      return 'icon-alert-triangle'
-  }
-})
 
 const confirmVariant = computed(() => {
   switch (props.variant) {
@@ -178,39 +228,52 @@ function handleCancel(): void {
   display: flex;
   align-items: center;
   justify-content: center;
+  overflow: hidden;
+  border: 3px solid transparent;
 
-  i {
-    font-size: 2.5rem;
+  svg {
+    width: 2.5rem;
+    height: 2.5rem;
+  }
+
+  .modal-image {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
   }
 
   &.icon-danger {
     background: #fee2e2;
+    border-color: #dc2626;
 
-    i {
+    svg {
       color: #dc2626;
     }
   }
 
   &.icon-warning {
     background: #fef3c7;
+    border-color: #f59e0b;
 
-    i {
+    svg {
       color: #f59e0b;
     }
   }
 
   &.icon-info {
     background: #dbeafe;
+    border-color: #3b82f6;
 
-    i {
+    svg {
       color: #3b82f6;
     }
   }
 
   &.icon-success {
     background: #d1fae5;
+    border-color: #10b981;
 
-    i {
+    svg {
       color: #10b981;
     }
   }
@@ -254,8 +317,9 @@ function handleCancel(): void {
     width: 60px;
     height: 60px;
 
-    i {
-      font-size: 2rem;
+    svg {
+      width: 2rem;
+      height: 2rem;
     }
   }
 

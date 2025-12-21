@@ -63,19 +63,6 @@ import { PieChart, LineChart } from '@/shared/components/charts'
 import { convertEnglishToPersianNumbers } from '@/shared/utils/date/jalali.utils'
 import { bookingService } from '@/modules/booking/api/booking.service'
 
-// Chart data types (compatible with both Chart.js and ECharts formats)
-interface ChartData<T = any> {
-  labels: string[]
-  datasets: Array<{
-    label?: string
-    data: number[]
-    backgroundColor?: string | string[]
-    borderColor?: string
-    borderWidth?: number
-    [key: string]: any
-  }>
-}
-
 interface ChartOptions {
   responsive?: boolean
   maintainAspectRatio?: boolean
@@ -143,10 +130,11 @@ const formatNumber = (num: number) => {
 }
 
 // Pie Chart Data
-const pieChartData = computed<ChartData<'pie'>>(() => ({
+const pieChartData = computed(() => ({
   labels: ['انجام‌شده', 'لغوشده', 'رزروشده'],
   datasets: [
     {
+      label: 'وضعیت رزروها',
       data: [completedCount.value, cancelledCount.value, scheduledCount.value],
       backgroundColor: ['#22c55e', '#ef4444', '#f59e0b'],
       borderWidth: 2,
@@ -155,7 +143,7 @@ const pieChartData = computed<ChartData<'pie'>>(() => ({
   ]
 }))
 
-const pieChartOptions = computed<ChartOptions<'pie'>>(() => ({
+const pieChartOptions = computed<ChartOptions>(() => ({
   responsive: true,
   maintainAspectRatio: true,
   plugins: {
@@ -172,26 +160,29 @@ const pieChartOptions = computed<ChartOptions<'pie'>>(() => ({
 }))
 
 // Line Chart Data
-const lineChartData = computed<ChartData<'line'>>(() => ({
-  labels: revenueData.value.map(d => d.month),
-  datasets: [
-    {
-      label: 'درآمد',
-      data: revenueData.value.map(d => d.revenue),
-      borderColor: '#6366f1',
-      backgroundColor: 'rgba(99, 102, 241, 0.1)',
-      borderWidth: 2,
-      tension: 0.4,
-      pointRadius: 4,
-      pointBackgroundColor: '#6366f1',
-      pointBorderColor: '#ffffff',
-      pointBorderWidth: 2,
-      fill: true
-    }
-  ]
-}))
+const lineChartData = computed(() => {
+  const data = {
+    labels: revenueData.value.map(d => d.month),
+    datasets: [
+      {
+        label: 'درآمد',
+        data: revenueData.value.map(d => d.revenue),
+        borderColor: '#6366f1',
+        backgroundColor: 'rgba(99, 102, 241, 0.1)',
+        borderWidth: 2,
+        tension: 0.4,
+        pointRadius: 4,
+        pointBackgroundColor: '#6366f1',
+        pointBorderColor: '#ffffff',
+        pointBorderWidth: 2,
+        fill: true
+      }
+    ]
+  }
+  return data
+})
 
-const lineChartOptions = computed<ChartOptions<'line'>>(() => ({
+const lineChartOptions = computed<ChartOptions>(() => ({
   responsive: true,
   maintainAspectRatio: true,
   plugins: {

@@ -156,6 +156,7 @@ import { useHoursStore } from '../../stores/hours.store'
 import type { ExceptionSchedule } from '../../types/hours.types'
 import ExceptionForm from './ExceptionForm.vue'
 import { useI18n } from 'vue-i18n'
+import { formatDate } from '@/core/utils'
 
 // Props
 interface Props {
@@ -257,16 +258,6 @@ async function executeDelete() {
 function isPast(date: string): boolean {
   const today = new Date().toISOString().split('T')[0]
   return date < today
-}
-
-function formatDate(dateString: string): string {
-  const date = new Date(dateString)
-  return date.toLocaleDateString(undefined, {
-    weekday: 'long',
-    year: 'numeric',
-    month: 'long',
-    day: 'numeric',
-  })
 }
 
 function formatTime(timeString: string): string {

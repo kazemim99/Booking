@@ -44,7 +44,7 @@
                 v-if="booking"
                 :provider-id="booking.providerId"
                 :service-id="booking.serviceId"
-                :staff-member-id="booking.staffMemberId"
+                :staff-member-id="booking.staffProviderId"
                 @slot-selected="handleSlotSelected"
                 @slot-deselected="selectedSlot = null"
               />
@@ -109,6 +109,7 @@ import { bookingService } from '@/modules/booking/api/booking.service'
 import TimeSlotPicker from '@/modules/booking/components/TimeSlotPicker.vue'
 import type { Appointment } from '@/modules/booking/types/booking.types'
 import type { TimeSlot } from '@/modules/booking/api/availability.service'
+import { formatDateTime } from '@/core/utils'
 
 // ==================== Props & Emits ====================
 
@@ -181,19 +182,6 @@ async function handleReschedule() {
 
 // ==================== Formatting Helpers ====================
 
-function formatDateTime(isoString: string): string {
-  try {
-    const date = new Date(isoString)
-    const dateStr = date.toLocaleDateString('fa-IR')
-    const timeStr = date.toLocaleTimeString('fa-IR', {
-      hour: '2-digit',
-      minute: '2-digit',
-    })
-    return `${dateStr} - ${timeStr}`
-  } catch {
-    return isoString
-  }
-}
 
 function formatDuration(startTime: string, endTime: string): string {
   try {

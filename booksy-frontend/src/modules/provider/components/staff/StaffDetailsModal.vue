@@ -80,7 +80,7 @@
       </div>
 
       <div class="modal-footer">
-        <AppButton variant="outline" @click="handleClose">
+        <AppButton variant="ghost" @click="handleClose">
           بستن
         </AppButton>
         <AppButton variant="primary" @click="viewProfile">
@@ -95,6 +95,7 @@
 import { computed } from 'vue'
 import type { StaffMember } from '../../types/hierarchy.types'
 import AppButton from '@/shared/components/ui/Button/AppButton.vue'
+import { getNameInitials, formatDate } from '@/core/utils'
 
 // ============================================
 // Props
@@ -124,13 +125,7 @@ const initials = computed(() => {
 
   const fullName = props.staff.fullName || `${props.staff.firstName || ''} ${props.staff.lastName || ''}`.trim()
 
-  if (!fullName) return '??'
-
-  const names = fullName.split(' ')
-  if (names.length >= 2) {
-    return `${names[0][0]}${names[1][0]}`.toUpperCase()
-  }
-  return fullName.substring(0, 2).toUpperCase()
+  return fullName ? getNameInitials(fullName) : '??'
 })
 
 const statusClass = computed(() => {
@@ -153,15 +148,6 @@ function viewProfile(): void {
   if (props.staff) {
     window.open(`/provider/${props.staff.providerId}`, '_blank')
   }
-}
-
-function formatDate(dateString: Date | string): string {
-  const date = new Date(dateString)
-  return new Intl.DateTimeFormat('fa-IR', {
-    year: 'numeric',
-    month: 'long',
-    day: 'numeric',
-  }).format(date)
 }
 </script>
 

@@ -139,6 +139,7 @@
 import { ref, computed, watch, nextTick } from 'vue'
 import { bookingService } from '@/modules/booking/api/booking.service'
 import type { Appointment } from '@/modules/booking/types/booking.types'
+import { formatDateTime } from '@/core/utils'
 
 // ==================== Props & Emits ====================
 
@@ -218,19 +219,6 @@ async function handleAddNotes() {
 
 // ==================== Formatting Helpers ====================
 
-function formatDateTime(isoString: string): string {
-  try {
-    const date = new Date(isoString)
-    const dateStr = date.toLocaleDateString('fa-IR')
-    const timeStr = date.toLocaleTimeString('fa-IR', {
-      hour: '2-digit',
-      minute: '2-digit',
-    })
-    return `${dateStr} - ${timeStr}`
-  } catch {
-    return isoString
-  }
-}
 
 // ==================== Lifecycle ====================
 

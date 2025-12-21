@@ -33,7 +33,7 @@
 
         <!-- Navigation -->
         <div class="step-actions">
-          <AppButton type="button" variant="outline" size="large" @click="$emit('back')">
+          <AppButton type="button" variant="ghost" size="large" @click="$emit('back')">
             قبلی
           </AppButton>
           <AppButton type="button" variant="primary" size="large" @click="handleNext">

@@ -221,7 +221,7 @@
 import { ref, computed, onMounted, watch } from 'vue'
 import { useProviderStore } from '@/modules/provider/stores/provider.store'
 import { galleryService } from '@/modules/provider/services/gallery.service'
-import type { GalleryImage, ImageMetadata } from '@/modules/provider/types/gallery.types'
+import type { GalleryImage } from '@/modules/provider/types/gallery.types'
 import GalleryUpload from './GalleryUpload.vue'
 import { toastService } from '@/core/services/toast.service'
 
@@ -262,7 +262,7 @@ const uploadProgress = ref(0)
 
 // Edit State
 const editingImage = ref<GalleryImage | null>(null)
-const editForm = ref<ImageMetadata>({
+const editForm = ref({
   caption: '',
   altText: '',
 })

@@ -184,7 +184,7 @@ const initializeMap = () => {
   const mapInstance = new Map({
     target: mapContainer.value,
     key: props.mapKey,
-    maptype: 'neshan',
+    mapType: 'neshan',
     poi: true,
     traffic: false,
     view: new View({

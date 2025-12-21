@@ -43,17 +43,17 @@ import { useRouter } from 'vue-router'
 import ProviderTypeSelection from '../../components/registration/ProviderTypeSelection.vue'
 import LanguageSwitcher from '@/shared/components/layout/Header/LanguageSwitcher.vue'
 import { useRTL } from '@/core/composables/useRTL'
-import { ProviderHierarchyType } from '../../types/hierarchy.types'
+import { HierarchyType } from '../../types/hierarchy.types'
 
 const { direction, initializeRTL } = useRTL()
 const router = useRouter()
 
-function handleTypeSelection(type?: ProviderHierarchyType) {
+function handleTypeSelection(type?: HierarchyType) {
   if (!type) return
 
-  if (type === ProviderHierarchyType.Organization) {
+  if (type === HierarchyType.Organization) {
     router.push({ name: 'OrganizationRegistration' })
-  } else if (type === ProviderHierarchyType.Individual) {
+  } else if (type === HierarchyType.Individual) {
     router.push({ name: 'IndividualRegistration' })
   }
 }

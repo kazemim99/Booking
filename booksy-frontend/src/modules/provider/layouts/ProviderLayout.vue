@@ -4,13 +4,7 @@
     <ProviderHeader :provider="currentProvider" @toggle-sidebar="toggleSidebar" />
 
     <!-- Provider Sidebar -->
-    <ProviderSidebar
-      :is-collapsed="isSidebarCollapsed"
-      :is-open="isSidebarOpen"
-      :provider="currentProvider"
-      @toggle="toggleSidebar"
-      @close="closeSidebar"
-    />
+    <!-- ProviderSidebar component not yet implemented -->
 
     <!-- Backdrop for mobile -->
     <transition name="fade">
@@ -25,23 +19,21 @@
     <main class="provider-main" :class="mainClasses" role="main">
       <!-- Onboarding Alert (if profile incomplete) -->
       <transition name="slide-down">
-        <Alert
+        <div
           v-if="!isProfileComplete && !isAlertDismissed"
-          type="warning"
           class="onboarding-alert"
-          dismissible
-          @dismiss="dismissAlert"
         >
-          <div class="alert-content">
-            <div class="alert-text">
-              <strong>Complete your profile to start receiving bookings!</strong>
-              <p>{{ completionPercentage }}% complete</p>
-            </div>
-            <Button size="sm" variant="primary" @click="goToOnboarding">
-              Complete Profile
-            </Button>
-          </div>
-        </Alert>
+          <Alert
+            type="warning"
+            title="Complete your profile to start receiving bookings!"
+            :message="`${completionPercentage}% complete`"
+            dismissible
+            @dismiss="dismissAlert"
+          />
+          <Button size="small" variant="primary" @click="goToOnboarding">
+            Complete Profile
+          </Button>
+        </div>
       </transition>
 
       <!-- Page Content -->
@@ -63,7 +55,6 @@ import { ref, computed, onMounted, onUnmounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { useProviderStore } from '../stores/provider.store'
 import ProviderHeader from '../components/navigation/ProviderHeader.vue'
-import ProviderSidebar from '../components/navigation/ProviderSidebar.vue'
 import ProviderFooter from '../components/navigation/ProviderFooter.vue'
 import { Alert, Button } from '@/shared/components'
 
@@ -86,7 +77,7 @@ const isProfileComplete = computed(() => {
     provider.profile.businessName &&
     provider.profile.description &&
     provider.contactInfo.email &&
-    provider.contactInfo.primaryPhone &&
+    provider.contactInfo.phone &&
     provider.address.addressLine1 &&
     provider.businessHours &&
     provider.businessHours.length > 0
@@ -102,7 +93,7 @@ const completionPercentage = computed(() => {
     !!provider.profile.description,
     !!provider.profile.logoUrl,
     !!provider.contactInfo.email,
-    !!provider.contactInfo.primaryPhone,
+    !!provider.contactInfo.phone,
     !!provider.address.addressLine1,
     !!provider.businessHours && provider.businessHours.length > 0,
     !!provider.services && provider.services.length > 0,

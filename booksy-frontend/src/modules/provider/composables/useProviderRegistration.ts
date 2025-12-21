@@ -436,7 +436,9 @@ export function useProviderRegistration() {
         name: member.name,
         email: member.email || '',
         phoneNumber: member.phoneNumber || '',
+        countryCode: member.countryCode || '+98',
         position: member.position || 'stylist',
+        isOwner: member.isOwner || false,
       }))
 
       // Staff is optional, allow proceeding even without staff members
@@ -747,7 +749,7 @@ export function useProviderRegistration() {
         const draft = response.draftData
 
         // Business info and category
-        registrationState.value.data.categoryId = draft.businessInfo.category
+        registrationState.value.data.categoryId = draft.businessInfo.category as BusinessCategoryId
         registrationState.value.data.businessInfo = {
           ...registrationState.value.data.businessInfo,
           businessName: draft.businessInfo.businessName,
@@ -776,7 +778,7 @@ export function useProviderRegistration() {
           durationHours: s.durationHours,
           durationMinutes: s.durationMinutes,
           price: s.price,
-          priceType: s.priceType,
+          priceType: (s.priceType as 'fixed' | 'variable') || 'fixed',
         }))
 
         // Staff
@@ -815,6 +817,7 @@ export function useProviderRegistration() {
           id: img.displayOrder.toString(),
           url: img.imageUrl,
           thumbnailUrl: img.thumbnailUrl || undefined,
+          displayOrder: img.displayOrder,
         }))
 
         // Set current step from draft

@@ -304,7 +304,7 @@ class BookingService {
       customerId: '', // Will be set from auth context
       providerId: request.providerId,
       serviceId: request.serviceId,
-      staffProviderId: request.staffId || '',
+      staffProviderId: request.staffProviderId || request.staffId || '',
       startTime: request.scheduledStartTime,
       customerNotes: request.bookingNotes,
     }

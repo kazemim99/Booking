@@ -16,7 +16,7 @@
               <i class="icon-building"></i>
               اطلاعات کسب‌و‌کار
             </h3>
-            <AppButton variant="text" size="small" @click="$emit('edit', 1)">
+            <AppButton variant="link" size="small" @click="$emit('edit', 1)">
               <i class="icon-edit"></i>
               ویرایش
             </AppButton>
@@ -61,7 +61,7 @@
               <i class="icon-map-pin"></i>
               موقعیت مکانی
             </h3>
-            <AppButton variant="text" size="small" @click="$emit('edit', 3)">
+            <AppButton variant="link" size="small" @click="$emit('edit', 3)">
               <i class="icon-edit"></i>
               ویرایش
             </AppButton>
@@ -93,7 +93,7 @@
               <i class="icon-briefcase"></i>
               خدمات
             </h3>
-            <AppButton variant="text" size="small" @click="$emit('edit', 4)">
+            <AppButton variant="link" size="small" @click="$emit('edit', 4)">
               <i class="icon-edit"></i>
               ویرایش
             </AppButton>
@@ -131,7 +131,7 @@
               <i class="icon-clock"></i>
               ساعات کاری
             </h3>
-            <AppButton variant="text" size="small" @click="$emit('edit', 5)">
+            <AppButton variant="link" size="small" @click="$emit('edit', 5)">
               <i class="icon-edit"></i>
               ویرایش
             </AppButton>
@@ -171,7 +171,7 @@
               <i class="icon-image"></i>
               گالری تصاویر
             </h3>
-            <AppButton variant="text" size="small" @click="$emit('edit', 6)">
+            <AppButton variant="link" size="small" @click="$emit('edit', 6)">
               <i class="icon-edit"></i>
               ویرایش
             </AppButton>
@@ -264,9 +264,13 @@ const galleryImages = computed(() => {
 // Get full logo URL with API base URL
 const logoUrl = computed(() => {
   // Try to get logoUrl from the data prop or registration store
-  const relativeUrl = (props.data.businessInfo as any)?.logoUrl ||
-                      registration.registrationData.value.businessInfo?.logoUrl
-  if (!relativeUrl) return null
+  const dataBusinessInfo = props.data?.businessInfo as unknown
+  const storeBusinessInfo = registration.registrationData.value.businessInfo as unknown
+
+  const relativeUrl = (dataBusinessInfo && typeof dataBusinessInfo === 'object' && 'logoUrl' in dataBusinessInfo ? (dataBusinessInfo as Record<string, unknown>).logoUrl : null) ||
+                      (storeBusinessInfo && typeof storeBusinessInfo === 'object' && 'logoUrl' in storeBusinessInfo ? (storeBusinessInfo as Record<string, unknown>).logoUrl : null)
+
+  if (!relativeUrl || typeof relativeUrl !== 'string') return null
 
   // If it's already a full URL (starts with http:// or https://), return as is
   if (relativeUrl.startsWith('http://') || relativeUrl.startsWith('https://')) {

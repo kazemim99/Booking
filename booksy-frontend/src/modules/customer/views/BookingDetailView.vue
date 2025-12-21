@@ -149,6 +149,7 @@ import { useRoute, useRouter } from 'vue-router'
 import { bookingService } from '@/modules/booking/api/booking.service'
 import type { CustomerBookingDto } from '@/modules/booking/types/booking-api.types'
 import { mapToEnrichedBookingView, type EnrichedBookingView } from '@/modules/booking/mappers/booking-dto.mapper'
+import { formatDate } from '@/core/utils'
 
 const route = useRoute()
 const router = useRouter()
@@ -194,16 +195,6 @@ function getPaymentStatusLabel(status: string) {
 }
 
 // Date and time formatting
-function formatDate(dateString: string) {
-  const date = new Date(dateString)
-  return new Intl.DateTimeFormat('fa-IR', {
-    year: 'numeric',
-    month: 'long',
-    day: 'numeric',
-    weekday: 'long'
-  }).format(date)
-}
-
 function formatTime(dateString: string) {
   const date = new Date(dateString)
   return new Intl.DateTimeFormat('fa-IR', {

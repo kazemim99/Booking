@@ -246,7 +246,7 @@ class ServiceService {
       console.log(`[ServiceService] Extracted service data:`, serviceData)
 
       // Map minimal backend response to full Service object
-      const mappedService = mapToService(serviceData, providerId, data)
+      const mappedService = mapToService(serviceData as ServiceDetailResponse, providerId, data)
       console.log(`[ServiceService] Mapped service:`, mappedService)
       return mappedService
     } catch (error) {
@@ -290,7 +290,7 @@ class ServiceService {
       console.log(`[ServiceService] Extracted service data:`, serviceData)
 
       // Map minimal backend response to full Service object
-      const mappedService = mapToService(serviceData, providerId, data)
+      const mappedService = mapToService(serviceData as ServiceDetailResponse, providerId, data)
       console.log(`[ServiceService] Mapped service:`, mappedService)
       return mappedService
     } catch (error) {

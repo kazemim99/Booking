@@ -18,8 +18,8 @@
     <div class="filter-tabs">
       <button
         v-for="status in statusOptions"
-        :key="status.value"
-        @click="filterByStatus(status.value)"
+        :key="status.value || 'all'"
+        @click="filterByStatus(status.value as PayoutStatus | undefined)"
         :class="{ active: currentStatus === status.value }"
         class="filter-tab"
       >

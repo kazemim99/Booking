@@ -8,7 +8,7 @@
 
       <form class="step-content" @submit.prevent="handleSubmit">
         <!-- City Search -->
-        <div class="form-group">
+        <div class="form-group city-search-group">
           <label class="form-label required">شهر</label>
           <SearchableSelect
             v-model="formData.cityId"
@@ -26,13 +26,19 @@
         <div class="form-group">
           <label class="form-label">موقعیت روی نقشه</label>
           <p class="form-hint">روی نقشه کلیک کنید تا موقعیت دقیق کسب‌وکار خود را انتخاب کنید</p>
-          <NeshanMapPicker
-            v-model="formData.coordinates"
-            :map-key="neshanMapKey"
-            :service-key="neshanServiceKey"
-            height="450px"
-            @location-selected="handleLocationSelected"
-          />
+          <div class="map-container">
+            <NeshanMapPicker
+              v-model="formData.coordinates"
+              :map-key="neshanMapKey"
+              :service-key="neshanServiceKey"
+              height="450px"
+              @location-selected="handleLocationSelected"
+            />
+            <div v-if="isLoadingMap" class="map-loading-overlay">
+              <div class="loading-spinner"></div>
+              <p>در حال بروزرسانی نقشه...</p>
+            </div>
+          </div>
         </div>
 
         <!-- Address -->
@@ -110,6 +116,9 @@ const neshanServiceKey =
 
 // Flag to prevent circular updates between map and form
 const isUpdatingFromMap = ref(false)
+
+// Loading state for map updates
+const isLoadingMap = ref(false)
 
 // Form data
 const formData = ref({
@@ -276,9 +285,17 @@ watch(
     // Get province name and geocode it
     const province = locationStore.getLocationById(newProvinceId)
     if (province) {
-      const coordinates = await geocodeLocationName(province.name)
-      if (coordinates) {
-        formData.value.coordinates = coordinates
+      // Show loading indicator
+      isLoadingMap.value = true
+
+      try {
+        const coordinates = await geocodeLocationName(province.name)
+        if (coordinates) {
+          formData.value.coordinates = coordinates
+        }
+      } finally {
+        // Hide loading indicator
+        isLoadingMap.value = false
       }
     }
   }
@@ -296,11 +313,19 @@ watch(
     const province = formData.value.provinceId ? locationStore.getLocationById(formData.value.provinceId) : null
 
     if (city) {
-      // Combine city and province name for more accurate results
-      const searchTerm = province ? `${city.name}, ${province.name}` : city.name
-      const coordinates = await geocodeLocationName(searchTerm)
-      if (coordinates) {
-        formData.value.coordinates = coordinates
+      // Show loading indicator
+      isLoadingMap.value = true
+
+      try {
+        // Combine city and province name for more accurate results
+        const searchTerm = province ? `${city.name}, ${province.name}` : city.name
+        const coordinates = await geocodeLocationName(searchTerm)
+        if (coordinates) {
+          formData.value.coordinates = coordinates
+        }
+      } finally {
+        // Hide loading indicator
+        isLoadingMap.value = false
       }
     }
   }
@@ -401,4 +426,62 @@ onMounted(async () => {
 
 <style scoped lang="scss">
 @import './steps-common.scss';
+
+// Fix z-index issue with city dropdown appearing under the map
+.city-search-group {
+  position: relative;
+  z-index: 10;
+
+  :deep(.searchable-select) {
+    position: relative;
+    z-index: 10;
+  }
+
+  :deep(.dropdown) {
+    z-index: 100;
+  }
+}
+
+// Map loading styles
+.map-container {
+  position: relative;
+}
+
+.map-loading-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(255, 255, 255, 0.9);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 1rem;
+  border-radius: 8px;
+  z-index: 50;
+
+  p {
+    font-size: 0.875rem;
+    color: #374151;
+    font-weight: 500;
+    margin: 0;
+  }
+}
+
+.loading-spinner {
+  width: 40px;
+  height: 40px;
+  border: 3px solid #e5e7eb;
+  border-top-color: #7c3aed;
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
 </style>

@@ -148,6 +148,7 @@ import type { HolidaySchedule } from '../../types/hours.types'
 import { RecurrencePattern } from '../../types/hours.types'
 import HolidayForm from './HolidayForm.vue'
 import { useI18n } from 'vue-i18n'
+import { formatDate } from '@/core/utils'
 
 // Props
 interface Props {
@@ -275,16 +276,6 @@ async function executeDelete() {
 function isPast(date: string): boolean {
   const today = new Date().toISOString().split('T')[0]
   return date < today
-}
-
-function formatDate(dateString: string): string {
-  const date = new Date(dateString)
-  return date.toLocaleDateString(undefined, {
-    weekday: 'long',
-    year: 'numeric',
-    month: 'long',
-    day: 'numeric',
-  })
 }
 
 function formatRecurrencePattern(pattern?: RecurrencePattern): string {

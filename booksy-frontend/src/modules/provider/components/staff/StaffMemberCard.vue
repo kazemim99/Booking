@@ -48,9 +48,9 @@
           <i class="icon-mail"></i>
           <a :href="`mailto:${staff.email}`" class="contact-link">{{ staff.email }}</a>
         </div>
-        <div v-if="staff.phone" class="contact-item">
+        <div v-if="staff.phoneNumber" class="contact-item">
           <i class="icon-phone"></i>
-          <a :href="`tel:${staff.phone}`" class="contact-link" dir="ltr">{{ staff.phone }}</a>
+          <a :href="`tel:${staff.phoneNumber}`" class="contact-link" dir="ltr">{{ staff.phoneNumber }}</a>
         </div>
       </div>
 
@@ -72,21 +72,21 @@
       </div>
 
       <!-- Services Count -->
-      <div v-if="staff.servicesCount" class="services-info">
+      <div class="services-info">
         <i class="icon-briefcase"></i>
-        <span>{{ staff.servicesCount }} خدمت</span>
+        <span>تخصص‌ها و خدمات</span>
       </div>
 
       <!-- Joined Date -->
-      <div v-if="staff.joinedAt" class="joined-info">
+      <div class="joined-info">
         <i class="icon-calendar"></i>
-        <span>پیوسته در {{ formatDate(staff.joinedAt) }}</span>
+        <span>پیوسته در {{ formatDate(String(staff.joinedAt)) }}</span>
       </div>
     </div>
 
     <!-- Card Footer -->
     <div class="card-footer">
-      <AppButton variant="outline" size="small" block @click="handleView">
+      <AppButton variant="ghost" size="small" block @click="handleView">
         مشاهده پروفایل
       </AppButton>
     </div>
@@ -98,6 +98,7 @@ import { ref, computed } from 'vue'
 import { onClickOutside } from '@vueuse/core'
 import type { StaffMember } from '../../types/hierarchy.types'
 import AppButton from '@/shared/components/ui/Button/AppButton.vue'
+import { getNameInitials, formatDate } from '@/core/utils'
 
 // ============================================
 // Props
@@ -133,15 +134,7 @@ const initials = computed(() => {
   // Fallback to firstName + lastName if fullName is not available
   const fullName = props.staff.fullName || `${props.staff.firstName || ''} ${props.staff.lastName || ''}`.trim()
 
-  if (!fullName) {
-    return '??'
-  }
-
-  const names = fullName.split(' ')
-  if (names.length >= 2) {
-    return `${names[0][0]}${names[1][0]}`.toUpperCase()
-  }
-  return fullName.substring(0, 2).toUpperCase()
+  return fullName ? getNameInitials(fullName) : '??'
 })
 
 const statusClass = computed(() => {
@@ -168,15 +161,6 @@ function handleView(): void {
 function handleRemove(): void {
   showMenu.value = false
   emit('remove', props.staff)
-}
-
-function formatDate(dateString: string): string {
-  const date = new Date(dateString)
-  return new Intl.DateTimeFormat('fa-IR', {
-    year: 'numeric',
-    month: 'long',
-    day: 'numeric',
-  }).format(date)
 }
 
 // Close menu when clicking outside

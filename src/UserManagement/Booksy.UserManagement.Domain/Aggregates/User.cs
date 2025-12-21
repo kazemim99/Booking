@@ -142,7 +142,7 @@ namespace Booksy.UserManagement.Domain.Aggregates
                 PhoneNumberVerified = true, // Already verified via OTP
                 PhoneVerifiedAt = DateTime.UtcNow,
                 Type = type,
-                Status = UserStatus.Active, // Immediately active since phone is verified
+                Status = UserStatus.Draft, // Immediately darft since phone is verified
                 RegisteredAt = DateTime.UtcNow,
                 ActivatedAt = DateTime.UtcNow,
                 FailedLoginAttempts = 0,

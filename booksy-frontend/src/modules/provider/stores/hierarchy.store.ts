@@ -339,7 +339,13 @@ export const useHierarchyStore = defineStore('hierarchy', () => {
       loading.value.invitations = true
       errors.value.invitations = undefined
 
-      const result = await hierarchyService.resendInvitation(organizationId, invitationId)
+      // Get the invitation to pass to resendInvitation
+      const invitation = sentInvitations.value.find(inv => inv.id === invitationId)
+      if (!invitation) {
+        throw new Error('Invitation not found')
+      }
+
+      const result = await hierarchyService.resendInvitation(organizationId, invitation)
 
       if (result.success && result.data) {
         // Update invitation in local state

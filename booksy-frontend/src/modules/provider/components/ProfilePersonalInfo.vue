@@ -198,6 +198,7 @@ import type {
   ValidationErrors,
 } from '@/modules/user-management/types/user-profile.types'
 import { Address } from '@/modules/user-management/types/user.types'
+import { isValidPhoneNumber } from '@/core/utils'
 
 // Props
 const props = defineProps<{
@@ -296,12 +297,6 @@ function validateForm(): boolean {
   }
 
   return Object.keys(errors.value).length === 0
-}
-
-function isValidPhoneNumber(phone: string): boolean {
-  // Basic phone validation - accepts various formats
-  const phoneRegex = /^[\+]?[(]?[0-9]{1,4}[)]?[-\s\.]?[(]?[0-9]{1,4}[)]?[-\s\.]?[0-9]{1,9}$/
-  return phoneRegex.test(phone.replace(/\s/g, ''))
 }
 
 function handleSubmit() {

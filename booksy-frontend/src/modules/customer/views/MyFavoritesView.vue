@@ -72,7 +72,6 @@ import { useRouter } from 'vue-router'
 import { useAuthStore } from '@/core/stores/modules/auth.store'
 import FavoritesList from '../components/favorites/FavoritesList.vue'
 import QuickRebookCard from '../components/favorites/QuickRebookCard.vue'
-import { favoritesService } from '../services/favorites.service'
 import type { QuickRebookSuggestion, TimeSlot } from '../types/favorites.types'
 
 // ============================================================================
@@ -110,9 +109,9 @@ async function loadQuickRebookSuggestions(): Promise<void> {
   loading.value = true
 
   try {
-    quickRebookSuggestions.value = await favoritesService.getQuickRebookSuggestions(
-      customerId.value
-    )
+    // For now, return empty suggestions since we need provider IDs
+    // In a full implementation, this would fetch from all favorite providers
+    quickRebookSuggestions.value = []
   } catch (error) {
     console.error('[MyFavoritesView] Error loading quick rebook suggestions:', error)
   } finally {

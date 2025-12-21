@@ -1,25 +1,7 @@
 <template>
   <div class="neshan-map-picker" dir="rtl">
     <div ref="mapContainer" class="map-container"></div>
-    <div v-if="showSearchBox" class="search-box">
-      <input
-        v-model="searchQuery"
-        type="text"
-        class="search-input"
-        placeholder="جستجوی آدرس..."
-        @keyup.enter="handleSearch"
-      />
-      <button type="button" class="search-btn" @click="handleSearch">
-        <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path
-            stroke-linecap="round"
-            stroke-linejoin="round"
-            stroke-width="2"
-            d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
-          />
-        </svg>
-      </button>
-    </div>
+
   </div>
 </template>
 

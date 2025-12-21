@@ -225,13 +225,14 @@ import { ref, reactive } from 'vue'
 import { useRouter } from 'vue-router'
 import { useHierarchyStore } from '../../stores/hierarchy.store'
 import { useAuthStore } from '@/core/stores/modules/auth.store'
-import { useToast } from '@/core/composables/useToast'
+import { useNotification } from '@/core/composables/useNotification'
+import { ProviderBusinessType } from '../../types/hierarchy.types'
 import AppButton from '@/shared/components/ui/Button/AppButton.vue'
 
 const router = useRouter()
 const hierarchyStore = useHierarchyStore()
 const authStore = useAuthStore()
-const toast = useToast()
+const { success, error } = useNotification()
 
 const steps = [
   { label: 'پیش‌نمایش' },
@@ -291,7 +292,7 @@ async function handleConvert() {
   resetError()
 
   try {
-    const currentProviderId = authStore.currentUser?.providerId
+    const currentProviderId = authStore.providerId
     if (!currentProviderId) {
       throw new Error('شناسه ارائه‌دهنده یافت نشد')
     }
@@ -300,11 +301,11 @@ async function handleConvert() {
       individualProviderId: currentProviderId,
       businessName: formData.businessName,
       description: formData.description,
-      businessType: formData.businessType,
+      businessType: formData.businessType as ProviderBusinessType,
       logoUrl: formData.logoUrl || undefined,
     })
 
-    toast.success('موفقیت', 'پروفایل شما با موفقیت به سازمان تبدیل شد')
+    success('موفقیت', 'پروفایل شما با موفقیت به سازمان تبدیل شد')
     currentStep.value = 3
   } catch (error: any) {
     console.error('Error converting to organization:', error)
@@ -317,7 +318,7 @@ async function handleConvert() {
     conversionError.value = errorMessage
     canRetry.value = true
 
-    toast.error('خطا', errorMessage)
+    error('خطا', errorMessage)
   } finally {
     isSubmitting.value = false
   }

@@ -68,9 +68,7 @@ namespace Booksy.UserManagement.Application.CQRS.Commands.Customer.RegisterCusto
                     .NotEmpty().WithMessage("State is required")
                     .MaximumLength(100).WithMessage("State cannot exceed 100 characters");
 
-                RuleFor(x => x.Address!.PostalCode)
-                    .NotEmpty().WithMessage("Postal code is required")
-                    .MaximumLength(20).WithMessage("Postal code cannot exceed 20 characters");
+    
 
                 RuleFor(x => x.Address!.Country)
                     .NotEmpty().WithMessage("Country is required")

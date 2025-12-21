@@ -22,10 +22,7 @@ namespace Booksy.ServiceCatalog.Application.Validators.Common
                 .MaximumLength(100)
                 .WithMessage("City is required and cannot exceed 100 characters");
 
-            RuleFor(x => x.PostalCode)
-                .NotEmpty()
-                .MaximumLength(20)
-                .WithMessage("Postal code is required and cannot exceed 20 characters");
+   
 
             RuleFor(x => x.Country)
                 .NotEmpty()

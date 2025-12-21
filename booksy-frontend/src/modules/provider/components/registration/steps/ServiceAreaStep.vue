@@ -123,8 +123,8 @@ interface ServiceArea {
   state: string
   country: string
   serviceRadius: number
-  latitude?: number
-  longitude?: number
+  latitude: number
+  longitude: number
 }
 
 interface Props {

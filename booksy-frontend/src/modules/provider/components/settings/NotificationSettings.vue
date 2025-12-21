@@ -83,12 +83,12 @@
       <div v-if="quietHours.enabled" class="form-grid">
         <div class="form-group">
           <label class="form-label">Start time</label>
-          <TextInput v-model="quietHours.start" type="time" />
+          <TextInput v-model="quietHours.start" type="text" placeholder="HH:mm" />
         </div>
 
         <div class="form-group">
           <label class="form-label">End time</label>
-          <TextInput v-model="quietHours.end" type="time" />
+          <TextInput v-model="quietHours.end" type="text" placeholder="HH:mm" />
         </div>
       </div>
     </div>

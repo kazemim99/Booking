@@ -149,6 +149,7 @@ import BaseModal from '@/shared/components/ui/BaseModal.vue'
 import VuePersianDatetimePicker from 'vue3-persian-datetime-picker'
 import { availabilityService } from '@/modules/booking/api/availability.service'
 import type { EnrichedBookingView } from '@/modules/booking/mappers/booking-dto.mapper'
+import { useNotification } from '@/core/composables/useNotification'
 
 interface TimeSlot {
   startTime: string
@@ -168,6 +169,9 @@ const emit = defineEmits<{
   close: []
   confirm: [newStartTime: string, reason?: string]
 }>()
+
+// Composables
+const { showError } = useNotification()
 
 // Refs
 const slotsSection = ref<HTMLElement | null>(null)
@@ -425,14 +429,9 @@ watch(newDateModel, async (value) => {
   await handleDateChange(value)
 })
 
-// Toast helpers
+// Notification helpers
 function showErrorMessage(message: string): void {
-  try {
-    const { showError } = require('@/core/composables/useToast')
-    showError(message)
-  } catch {
-    console.error('[Error]', message)
-  }
+  showError('خطا', message)
 }
 
 defineExpose({ resetForm })

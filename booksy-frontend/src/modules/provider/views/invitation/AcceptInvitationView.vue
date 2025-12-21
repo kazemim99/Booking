@@ -270,7 +270,7 @@ import { ref, computed, onMounted, reactive } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useHierarchyStore } from '../../stores/hierarchy.store'
 import { useAuthStore } from '@/core/stores/modules/auth.store'
-import { useToast } from '@/core/composables/useToast'
+import { useNotification } from '@/core/composables/useNotification'
 import AppButton from '@/shared/components/ui/Button/AppButton.vue'
 import OTPInput from '@/shared/components/ui/OTPInput.vue'
 import phoneVerificationApi from '@/modules/auth/api/phoneVerification.api'
@@ -279,12 +279,13 @@ import type { ProviderInvitation } from '../../types/hierarchy.types'
 import { InvitationStatus } from '../../types/hierarchy.types'
 import type { User } from '@/modules/user-management/types/user.types'
 import { UserType, UserStatus } from '@/modules/user-management/types/user.types'
+import { formatPhone, formatDateTime, formatDate } from '@/core/utils'
 
 const route = useRoute()
 const router = useRouter()
 const hierarchyStore = useHierarchyStore()
 const authStore = useAuthStore()
-const toast = useToast()
+const { success, error: notifyError } = useNotification()
 
 const invitationId = ref<string>('')
 const invitation = ref<ProviderInvitation | null>(null)
@@ -654,8 +655,8 @@ async function verifyOTPAndAccept() {
         ? `به تیم ${orgName} خوش آمدید! ${clonedItems.join(' و ')} کپی شد.`
         : `به تیم ${orgName} خوش آمدید!`
 
-      // Show success message using toast (imported from useToast composable)
-      toast.success('موفقیت', successMessage)
+      // Show success message using notification composable
+      success('موفقیت', successMessage)
 
       // Redirect to dashboard
       setTimeout(() => {
@@ -673,20 +674,6 @@ async function verifyOTPAndAccept() {
   }
 }
 
-function formatPhone(phoneNumber?: string): string {
-  if (!phoneNumber) return ''
-
-  // Remove +98 prefix if present
-  const cleaned = phoneNumber.replace(/^\+98/, '')
-
-  // Format as: 0912 XXX XXXX
-  if (cleaned.length === 10 && cleaned.startsWith('9')) {
-    return `0${cleaned.substring(0, 3)} ${cleaned.substring(3, 6)} ${cleaned.substring(6)}`
-  }
-
-  return phoneNumber
-}
-
 function handleImageError(event: Event) {
   console.error('Failed to load organization logo:', invitation.value?.organizationLogo)
   const img = event.target as HTMLImageElement
@@ -698,26 +685,6 @@ function handleImageError(event: Event) {
 
 function handleImageLoad() {
   console.log('Organization logo loaded successfully:', invitation.value?.organizationLogo)
-}
-
-function formatDate(dateString?: string | Date): string {
-  if (!dateString) return 'نامشخص'
-
-  const date = new Date(dateString)
-
-  // Check if date is valid
-  if (isNaN(date.getTime())) {
-    console.warn('Invalid date value:', dateString)
-    return 'نامشخص'
-  }
-
-  return new Intl.DateTimeFormat('fa-IR', {
-    year: 'numeric',
-    month: 'long',
-    day: 'numeric',
-    hour: '2-digit',
-    minute: '2-digit',
-  }).format(date)
 }
 </script>
 

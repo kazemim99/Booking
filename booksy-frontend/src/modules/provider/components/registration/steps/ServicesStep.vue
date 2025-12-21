@@ -1,6 +1,5 @@
 <template>
   <div class="registration-step">
-
     <div class="step-card">
       <div class="step-header">
         <h2 class="step-title">خدمات</h2>
@@ -10,166 +9,55 @@
       <div class="step-content">
         <!-- Service List -->
         <div v-if="services.length > 0" class="service-list">
-          <template v-for="service in services" :key="service.id">
-            <div class="service-item">
-              <div class="service-info">
-                <h4 class="service-name">{{ service.name }}</h4>
-                <p class="service-details">
-                  قیمت: {{ formatPrice(service.price) }} تومان • مدت: {{ service.durationHours * 60 + service.durationMinutes }} دقیقه
-                </p>
-              </div>
-              <div class="service-actions">
-                <button
-                  type="button"
-                  class="btn-icon"
-                  @click="handleEdit(service)"
-                  title="ویرایش"
-                >
-                  <svg class="icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path
-                      stroke-linecap="round"
-                      stroke-linejoin="round"
-                      stroke-width="2"
-                      d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"
-                    />
-                  </svg>
-                </button>
-                <button
-                  type="button"
-                  class="btn-icon btn-delete"
-                  @click="handleDelete(service.id)"
-                  title="حذف"
-                >
-                  <svg class="icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path
-                      stroke-linecap="round"
-                      stroke-linejoin="round"
-                      stroke-width="2"
-                      d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
-                    />
-                  </svg>
-                </button>
-              </div>
+          <div v-for="service in services" :key="service.id" class="service-item">
+            <div class="service-info">
+              <h4 class="service-name">{{ service.name }}</h4>
+              <p class="service-details">
+                قیمت: {{ formatPrice(service.price) }} تومان • مدت: {{ service.durationHours * 60 + service.durationMinutes }} دقیقه
+              </p>
             </div>
-
-            <!-- Inline Edit Form (shown right after the service being edited) -->
-            <div v-if="editingId === service.id" class="service-form">
-              <div class="form-group">
-                <label for="serviceName" class="form-label">نام خدمت</label>
-                <input
-                  id="serviceName"
-                  v-model="formData.name"
-                  type="text"
-                  class="form-input"
-                  placeholder="مثال: اصلاح مو"
-                />
-              </div>
-
-              <div class="form-row">
-                <div class="form-group">
-                  <label for="price" class="form-label">قیمت (تومان)</label>
-                  <input
-                    id="price"
-                    v-model="formData.price"
-                    type="number"
-                    dir="ltr"
-                    class="form-input"
-                    placeholder="100000"
-                  />
-                </div>
-
-                <div class="form-group">
-                  <label for="duration-edit" class="form-label">مدت زمان</label>
-                  <select
-                    id="duration-edit"
-                    v-model.number="formData.duration"
-                    class="form-input"
-                  >
-                    <option
-                      v-for="option in durationOptions"
-                      :key="option.value"
-                      :value="option.value"
-                    >
-                      {{ option.label }}
-                    </option>
-                  </select>
-                </div>
-              </div>
-
-              <div class="form-actions">
-                <AppButton type="button" variant="primary" size="medium" @click="handleAddService">
-                  ویرایش
-                </AppButton>
-                <AppButton type="button" variant="outline" size="medium" @click="handleCancelAdd">
-                  لغو
-                </AppButton>
-              </div>
-            </div>
-          </template>
-        </div>
-
-        <!-- Add New Service Form -->
-        <div v-if="isAdding && !editingId" class="service-form">
-          <div class="form-group">
-            <label for="serviceName" class="form-label">نام خدمت</label>
-            <input
-              id="serviceName"
-              v-model="formData.name"
-              type="text"
-              class="form-input"
-              placeholder="مثال: اصلاح مو"
-            />
-          </div>
-
-          <div class="form-row">
-            <div class="form-group">
-              <label for="price" class="form-label">قیمت (تومان)</label>
-              <input
-                id="price"
-                v-model="formData.price"
-                type="number"
-                dir="ltr"
-                class="form-input"
-                placeholder="100000"
-              />
-            </div>
-
-            <div class="form-group">
-              <label for="duration-add" class="form-label">مدت زمان</label>
-              <select
-                id="duration-add"
-                v-model.number="formData.duration"
-                class="form-input"
+            <div class="service-actions">
+              <button
+                type="button"
+                class="btn-icon"
+                @click="handleEdit(service)"
+                title="ویرایش"
               >
-                <option
-                  v-for="option in durationOptions"
-                  :key="option.value"
-                  :value="option.value"
-                >
-                  {{ option.label }}
-                </option>
-              </select>
+                <svg class="icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                    stroke-width="2"
+                    d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"
+                  />
+                </svg>
+              </button>
+              <button
+                type="button"
+                class="btn-icon btn-delete"
+                @click="handleDelete(service.id)"
+                title="حذف"
+              >
+                <svg class="icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                    stroke-width="2"
+                    d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
+                  />
+                </svg>
+              </button>
             </div>
-          </div>
-
-          <div class="form-actions">
-            <AppButton type="button" variant="primary" size="medium" @click="handleAddService">
-              افزودن
-            </AppButton>
-            <AppButton type="button" variant="outline" size="medium" @click="handleCancelAdd">
-              لغو
-            </AppButton>
           </div>
         </div>
 
         <!-- Add Service Button -->
         <AppButton
-          v-if="!isAdding"
           type="button"
-          variant="outline"
+          variant="ghost"
           size="large"
           class="btn-add-service"
-          @click="isAdding = true"
+          @click="handleCreateService"
         >
           <svg class="icon-plus" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path
@@ -187,7 +75,7 @@
 
         <!-- Navigation -->
         <div class="step-actions">
-          <AppButton type="button" variant="outline" size="large" @click="$emit('back')">
+          <AppButton type="button" variant="ghost" size="large" @click="$emit('back')">
             قبلی
           </AppButton>
           <AppButton type="button" variant="primary" size="large" @click="handleNext">
@@ -196,13 +84,21 @@
         </div>
       </div>
     </div>
+
+    <!-- Service Form Modal -->
+    <ServiceFormModal
+      v-model="isModalOpen"
+      :service="editingService"
+      @submit="handleModalSubmit"
+    />
   </div>
 </template>
 
 <script setup lang="ts">
-import { ref, computed, watch } from 'vue'
+import { ref, watch } from 'vue'
 
 import AppButton from '@/shared/components/ui/Button/AppButton.vue'
+import ServiceFormModal from '../ServiceFormModal.vue'
 import type { Service } from '@/modules/provider/types/registration.types'
 
 interface Props {
@@ -218,8 +114,14 @@ interface Emits {
 const props = defineProps<Props>()
 const emit = defineEmits<Emits>()
 
-// State
+// ==================== State ====================
+
 const services = ref<Service[]>(props.modelValue || [])
+const isModalOpen = ref(false)
+const editingService = ref<Service | null>(null)
+const error = ref('')
+
+// ==================== Watchers ====================
 
 // Watch for changes to props.modelValue to sync with parent
 watch(
@@ -232,88 +134,21 @@ watch(
   },
   { immediate: true }
 )
-const isAdding = ref(false)
-const editingId = ref<string | null>(null)
-const formData = ref({
-  name: '',
-  price: '',
-  duration: '30', // Default to 30 minutes
-})
-const error = ref('')
 
-// Duration options in minutes (15-minute increments up to 8 hours)
-const durationOptions = computed(() => {
-  const options = []
-  for (let i = 15; i <= 480; i += 15) {
-    const hours = Math.floor(i / 60)
-    const mins = i % 60
-    let label = ''
-    if (hours > 0 && mins > 0) {
-      label = `${hours} ساعت و ${mins} دقیقه`
-    } else if (hours > 0) {
-      label = `${hours} ساعت`
-    } else {
-      label = `${mins} دقیقه`
-    }
-    options.push({ value: i, label })
-  }
-  return options
-})
+// ==================== Methods ====================
 
-// Methods
 const formatPrice = (price: number) => {
   return new Intl.NumberFormat('fa-IR').format(price)
 }
 
-const handleAddService = () => {
-  if (!formData.value.name || !formData.value.price || !formData.value.duration) {
-    error.value = 'لطفاً تمام فیلدها را پر کنید'
-    return
-  }
-
-  const totalMinutes = parseInt(formData.value.duration)
-  const newService: Service = {
-    id: editingId.value || Date.now().toString(),
-    name: formData.value.name,
-    price: parseFloat(formData.value.price),
-    durationHours: Math.floor(totalMinutes / 60),
-    durationMinutes: totalMinutes % 60,
-    priceType: 'fixed',
-  }
-
-  if (editingId.value) {
-    // Edit existing service
-    services.value = services.value.map((s) =>
-      s.id === editingId.value ? newService : s
-    )
-  } else {
-    // Add new service
-    services.value.push(newService)
-  }
-
-  // Reset form and state
-  formData.value = { name: '', price: '', duration: '' }
-  isAdding.value = false
-  editingId.value = null
-  error.value = ''
-
-  // Emit update
-  emit('update:modelValue', services.value)
+const handleCreateService = () => {
+  editingService.value = null
+  isModalOpen.value = true
 }
 
 const handleEdit = (service: Service) => {
-  // Cancel any active add form
-  if (isAdding.value) {
-    isAdding.value = false
-  }
-
-  const totalMinutes = service.durationHours * 60 + service.durationMinutes
-  formData.value = {
-    name: service.name,
-    price: service.price.toString(),
-    duration: totalMinutes.toString(),
-  }
-  editingId.value = service.id
+  editingService.value = service
+  isModalOpen.value = true
 }
 
 const handleDelete = (id: string) => {
@@ -321,11 +156,19 @@ const handleDelete = (id: string) => {
   emit('update:modelValue', services.value)
 }
 
-const handleCancelAdd = () => {
-  isAdding.value = false
-  editingId.value = null
-  formData.value = { name: '', price: '', duration: '' }
-  error.value = ''
+const handleModalSubmit = (service: Service) => {
+  if (editingService.value) {
+    // Edit existing service
+    services.value = services.value.map((s) =>
+      s.id === editingService.value!.id ? service : s
+    )
+  } else {
+    // Add new service
+    services.value.push(service)
+  }
+
+  // Emit update
+  emit('update:modelValue', services.value)
 }
 
 const handleNext = () => {
@@ -441,60 +284,6 @@ const handleNext = () => {
   color: #ef4444;
 }
 
-/* Service Form */
-.service-form {
-  padding: 1rem;
-  background: rgba(139, 92, 246, 0.05);
-  border: 1px solid rgba(139, 92, 246, 0.2);
-  border-radius: 0.5rem;
-  display: flex;
-  flex-direction: column;
-  gap: 1rem;
-}
-
-.form-group {
-  display: flex;
-  flex-direction: column;
-  gap: 0.5rem;
-}
-
-.form-row {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 1rem;
-}
-
-.form-label {
-  font-size: 0.875rem;
-  font-weight: 500;
-  color: #374151;
-}
-
-.form-input {
-  width: 100%;
-  padding: 0.75rem 1rem;
-  font-size: 1rem;
-  border: 1px solid #d1d5db;
-  border-radius: 0.5rem;
-  background: white;
-  transition: all 0.2s ease;
-}
-
-.form-input:focus {
-  outline: none;
-  border-color: #8b5cf6;
-  box-shadow: 0 0 0 3px rgba(139, 92, 246, 0.1);
-}
-
-.form-actions {
-  display: flex;
-  gap: 0.5rem;
-}
-
-.form-actions > * {
-  flex: 1;
-}
-
 /* Add Service Button */
 .btn-add-service {
   width: 100%;
@@ -508,27 +297,6 @@ const handleNext = () => {
 .icon-plus {
   width: 1.25rem;
   height: 1.25rem;
-}
-
-/* Select Dropdown Styling */
-.form-input[type="number"],
-select.form-input {
-  cursor: pointer;
-}
-
-select.form-input {
-  background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%236b7280' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='M6 8l4 4 4-4'/%3e%3c/svg%3e");
-  background-position: left 0.5rem center;
-  background-repeat: no-repeat;
-  background-size: 1.5em 1.5em;
-  padding-left: 2.5rem;
-  -webkit-appearance: none;
-  -moz-appearance: none;
-  appearance: none;
-}
-
-select.form-input:focus {
-  background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%238b5cf6' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='M6 8l4 4 4-4'/%3e%3c/svg%3e");
 }
 
 /* Error Message */

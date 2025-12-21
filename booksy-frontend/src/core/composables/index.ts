@@ -15,7 +15,6 @@ export * from './useRTL'
 
 // New Week 1 composables
 export * from './useValidation'
-export * from './useToast'
 export * from './useLoading'
 export * from './useSearch'
 export * from './useDatePicker'

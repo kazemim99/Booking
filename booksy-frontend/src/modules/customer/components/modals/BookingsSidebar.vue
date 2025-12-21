@@ -179,9 +179,9 @@
 import { ref, watch } from 'vue'
 import { bookingService } from '@/modules/booking/api/booking.service'
 import { mapToEnrichedBookingView, type EnrichedBookingView } from '@/modules/booking/mappers/booking-dto.mapper'
+import { useNotification } from '@/core/composables/useNotification'
 import CancelBookingModal from './CancelBookingModal.vue'
 import RescheduleBookingModal from './RescheduleBookingModal.vue'
-import type { CustomerBookingDto } from '@/modules/booking/types/booking-api.types'
 
 interface Props {
   isOpen: boolean
@@ -191,6 +191,9 @@ const props = defineProps<Props>()
 const emit = defineEmits<{
   close: []
 }>()
+
+// Notification composable
+const { showSuccess, showError } = useNotification()
 
 // State
 const activeTab = ref<'upcoming' | 'past'>('upcoming')
@@ -402,25 +405,13 @@ function handleClose(): void {
   emit('close')
 }
 
-// Toast notification helpers (fallback to alert if useToast not available)
+// Notification helpers
 function showSuccessMessage(message: string): void {
-  try {
-    const { showSuccess } = require('@/core/composables/useToast')
-    showSuccess(message)
-  } catch {
-    // Fallback to console if toast not available
-    console.log('[Success]', message)
-  }
+  showSuccess('موفقیت', message)
 }
 
 function showErrorMessage(message: string): void {
-  try {
-    const { showError } = require('@/core/composables/useToast')
-    showError(message)
-  } catch {
-    // Fallback to console if toast not available
-    console.error('[Error]', message)
-  }
+  showError('خطا', message)
 }
 </script>
 

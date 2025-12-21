@@ -169,7 +169,8 @@ import { ref, computed, reactive } from 'vue'
 import { useHierarchyStore } from '../../stores/hierarchy.store'
 import type { SendInvitationRequest } from '../../types/hierarchy.types'
 import AppButton from '@/shared/components/ui/Button/AppButton.vue'
-import { useToast } from '@/core/composables/useToast'
+import { useNotification } from '@/core/composables/useNotification'
+import { isValidIranianMobile } from '@/core/utils'
 
 // ============================================
 // Props & Emits
@@ -191,7 +192,7 @@ const emit = defineEmits<{
 // ============================================
 
 const hierarchyStore = useHierarchyStore()
-const toast = useToast()
+const { success, error } = useNotification()
 
 // ============================================
 // State
@@ -248,23 +249,6 @@ function validatePhoneNumber(): void {
   }
 }
 
-/**
- * Validate Iranian mobile number
- * Iranian mobile numbers start with 9 and are 10 digits long
- * Valid operators: 901-905, 910-920, 930-939, 990-999
- */
-function validateIranianMobile(phoneNumber: string): boolean {
-  // Must be exactly 10 digits
-  if (phoneNumber.length !== 10) return false
-
-  // Must start with 9
-  if (!phoneNumber.startsWith('9')) return false
-
-  // Check if it matches Iranian operator patterns
-  const validPrefixes = /^(901|902|903|904|905|910|911|912|913|914|915|916|917|918|919|920|930|933|935|936|937|938|939|990|991|992|993|994|999)/
-  return validPrefixes.test(phoneNumber)
-}
-
 function validateField(field: keyof typeof formData): void {
   errors[field] = ''
 
@@ -275,7 +259,7 @@ function validateField(field: keyof typeof formData): void {
       errors.phoneNumber = 'شماره موبایل باید 10 رقم باشد'
     } else if (!formData.phoneNumber.startsWith('9')) {
       errors.phoneNumber = 'شماره موبایل باید با 9 شروع شود'
-    } else if (!validateIranianMobile(formData.phoneNumber)) {
+    } else if (!isValidIranianMobile(formData.phoneNumber)) {
       errors.phoneNumber = 'شماره موبایل معتبر نیست (اپراتور نامعتبر)'
     }
   } else if (field === 'firstName') {
@@ -326,7 +310,7 @@ async function handleSubmit(): Promise<void> {
 
   // Validate organization ID
   if (!props.organizationId || props.organizationId.trim() === '') {
-    toast.error('خطا', 'شناسه سازمان نامعتبر است. لطفاً دوباره وارد شوید.')
+    error('خطا', 'شناسه سازمان نامعتبر است. لطفاً دوباره وارد شوید.')
     return
   }
 
@@ -345,12 +329,12 @@ async function handleSubmit(): Promise<void> {
 
     await hierarchyStore.sendInvitation(props.organizationId, request)
 
-    toast.success('موفقیت', 'دعوت با موفقیت ارسال شد')
+    success('موفقیت', 'دعوت با موفقیت ارسال شد')
     emit('invited')
     handleClose()
-  } catch (error) {
-    console.error('Error sending invitation:', error)
-    toast.error('خطا', 'خطا در ارسال دعوت. لطفاً دوباره تلاش کنید.')
+  } catch (err) {
+    console.error('Error sending invitation:', err)
+    error('خطا', 'خطا در ارسال دعوت. لطفاً دوباره تلاش کنید.')
   } finally {
     isSubmitting.value = false
   }

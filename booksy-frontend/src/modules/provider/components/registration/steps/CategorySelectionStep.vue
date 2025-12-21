@@ -66,14 +66,14 @@ const emit = defineEmits<Emits>()
 const selectedCategory = ref(props.modelValue || null)
 
 const categories = [
-  { id: 'hair_salon', name: 'آرایشگاه', icon: '💇' },
-  { id: 'nail_salon', name: 'مانیکور و پدیکور', icon: '💅' },
-  { id: 'beauty_spa', name: 'سالن زیبایی', icon: '✨' },
-  { id: 'massage', name: 'ماساژ', icon: '💆' },
-  { id: 'barber', name: 'آرایشگاه مردانه', icon: '✂️' },
-  { id: 'gym', name: 'باشگاه ورزشی', icon: '🏋️' },
-  { id: 'dental', name: 'دندانپزشکی', icon: '🦷' },
-  { id: 'other', name: 'سایر', icon: '📋' },
+  { id: 'hair_salon', name: 'آریشگاه زنانه', icon: '💇‍♀️' },
+  // { id: 'nail_salon', name: 'مانیکور و پدیکور', icon: '💅' },
+  // { id: 'beauty_spa', name: 'سالن زیبایی', icon: '✨' },
+  // { id: 'massage', name: 'ماساژ', icon: '💆' },
+  { id: 'barber', name: 'آرایشگاه مردانه', icon: '💇‍♂️' },
+  // { id: 'gym', name: 'باشگاه ورزشی', icon: '🏋️' },
+  // { id: 'dental', name: 'دندانپزشکی', icon: '🦷' },
+  // { id: 'other', name: 'سایر', icon: '📋' },
 ]
 
 const selectCategory = (categoryId: string) => {

@@ -86,7 +86,7 @@ export function buildProviderImageUrl(
   logoUrl?: string | null
 ): string | null {
   // Prefer profile image, fallback to logo
-  const imageUrl =   logoUrl ||profileImageUrl
+  const imageUrl = profileImageUrl || logoUrl
   // Use base URL (without /api) for uploads
   return toAbsoluteUrl(imageUrl, true)
 }

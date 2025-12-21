@@ -52,51 +52,40 @@ export async function authGuard(
     // Define all registration routes that should skip status checking
     const registrationRoutes = ['ProviderRegistration', 'OrganizationRegistration', 'IndividualRegistration']
 
-    // If already going to any registration route, allow it without fetching status
-    // This prevents unnecessary API calls and redirect loops for new users
+    // If already going to any registration route, allow it
     if (registrationRoutes.includes(to.name as string)) {
       next()
       return
     }
 
-    // Fetch provider status if not already loaded
-    if (authStore.providerStatus === null && authStore.providerId === null) {
-      try {
-        await authStore.fetchProviderStatus()
-      } catch (err) {
-        console.error('[AuthGuard] Error fetching provider status:', err)
-        // On error, redirect to registration as a safe fallback
-        const allowedRoutesOnError = [...registrationRoutes, 'Forbidden', 'NotFound']
-        if (!allowedRoutesOnError.includes(to.name as string)) {
-          next({ name: 'ProviderRegistration' })
-          return
-        }
-      }
-    }
+    // Check provider status from token (already loaded in auth store during login)
+    const providerStatus = authStore.providerStatus
+    console.log('[AuthGuard] Provider status from token:', { providerStatus, providerId: authStore.providerId })
 
     // Redirect based on provider status
-    // Drafted or no provider record: redirect to registration
+    // Drafted or no provider record: redirect to organization registration
     // BUT allow access to profile, settings, and other general routes
     if (
-      (authStore.providerStatus === ProviderStatus.Drafted || authStore.providerStatus === null) &&
+      (providerStatus === ProviderStatus.Drafted || providerStatus === null) &&
       !registrationRoutes.includes(to.name as string)
     ) {
       // Allow access to profile, settings, and booking even for incomplete providers
       const allowedGeneralRoutes = ['ProviderProfile', 'ProviderSettings', 'NewBooking', 'BookingDetails', 'Bookings', 'Forbidden', 'NotFound', 'ServerError']
       if (!allowedGeneralRoutes.includes(to.name as string)) {
-        next({ name: 'ProviderRegistration' })
+        console.log('[AuthGuard] Redirecting provider with Drafted status to organization registration')
+        next({ name: 'OrganizationRegistration' })
         return
       }
     }
 
-    // Prevent completed providers from accessing registration route or home
-    // Redirect ONLY from Home or ProviderRegistration to dashboard
+    // Prevent completed providers from accessing registration routes or home
+    // Redirect ONLY from Home or registration routes to dashboard
     if (
-      authStore.providerStatus === ProviderStatus.Verified ||
-      authStore.providerStatus === ProviderStatus.Active ||
-      authStore.providerStatus === ProviderStatus.PendingVerification
+      providerStatus === ProviderStatus.Verified ||
+      providerStatus === ProviderStatus.Active ||
+      providerStatus === ProviderStatus.PendingVerification
     ) {
-      if (to.name === 'Home' || to.name === 'ProviderRegistration') {
+      if (to.name === 'Home' || registrationRoutes.includes(to.name as string)) {
         console.log('[AuthGuard] Redirecting from', to.name, 'to /provider/dashboard')
         next({ path: '/provider/dashboard' })
         return

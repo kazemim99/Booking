@@ -148,7 +148,7 @@
       v-if="props.providerId"
       v-model="showStaffSelectorModal"
       :provider-id="props.providerId"
-      :current-staff-id="selectedBooking?.staffMemberId"
+      :current-staff-id="selectedBooking?.staffProviderId"
       @staff-selected="handleStaffSelected"
     />
   </div>

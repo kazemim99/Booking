@@ -71,6 +71,7 @@
       v-else-if="currentStep === 6"
       @next="handleNext"
       @back="previousStep"
+      @loading="isProcessing = $event"
     />
 
     <!-- Step 7: Preview & Confirm -->
@@ -130,6 +131,7 @@ const validationError = ref({
 
 const currentStep = ref(1)
 const totalSteps = 8
+const isProcessing = ref(false)
 
 const stepLabels = [
   'اطلاعات کسب‌و‌کار',
@@ -263,15 +265,15 @@ async function handleNext() {
       console.log('✅ Step 3 complete - Creating organization draft...')
       const request: RegisterOrganizationRequest = {
         businessName: registrationData.value.businessInfo.businessName,
-        businessDescription: registrationData.value.businessInfo.description || '-',
+        businessDescription: registrationData.value.businessInfo.description || undefined,
         category: registrationData.value.categoryId,
         phoneNumber: registrationData.value.businessInfo.phone,
-        email: registrationData.value.businessInfo.email || '-',
+        email: registrationData.value.businessInfo.email || undefined,
         addressLine1: registrationData.value.address.addressLine1,
         addressLine2: registrationData.value.address.addressLine2 || undefined,
-        city: registrationData.value.address.city || '-',
-        province: registrationData.value.address.state || '-',
-        postalCode: registrationData.value.address.postalCode || '-',
+        city: registrationData.value.address.city || undefined,
+        province: registrationData.value.address.state || undefined,
+        postalCode: registrationData.value.address.postalCode || undefined,
         latitude: registrationData.value.location.latitude || 0,
         longitude: registrationData.value.location.longitude || 0,
         ownerFirstName: registrationData.value.businessInfo.ownerFirstName,
@@ -357,11 +359,10 @@ async function handleNext() {
       errors: parsedError.errors,
     }
 
-    // Also show a toast for quick feedback
-    toastService.error(parsedError.message || parsedError.title)
-
     // Scroll to top to show the error alert
     window.scrollTo({ top: 0, behavior: 'smooth' })
+  } finally {
+    isProcessing.value = false
   }
 }
 

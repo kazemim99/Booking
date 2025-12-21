@@ -25,6 +25,7 @@ import type {
   HierarchyApiResponse,
   PagedHierarchyResponse,
   OrganizationSearchFilters,
+  HierarchyType,
 } from '../types/hierarchy.types'
 
 const API_VERSION = 'v1'
@@ -200,12 +201,14 @@ class HierarchyService {
     // Backend returns { organizationId, staffMembers: [...] }
     // Extract the staffMembers array and wrap in PagedHierarchyResponse format
     if (response.data && response.data.staffMembers && Array.isArray(response.data.staffMembers)) {
+      const totalCount = response.data.staffMembers.length
+      const pageSize = request.pageSize || totalCount
       return {
         items: response.data.staffMembers.map(mapStaffMember),
-        totalCount: response.data.staffMembers.length,
+        totalCount,
         page: request.page || 1,
-        pageSize: request.pageSize || response.data.staffMembers.length,
-        hasNextPage: false,
+        pageSize,
+        totalPages: Math.ceil(totalCount / pageSize),
       }
     }
 
@@ -218,12 +221,13 @@ class HierarchyService {
     }
 
     // No staff members found
+    const pageSize = request.pageSize || 10
     return {
       items: [],
       totalCount: 0,
       page: request.page || 1,
-      pageSize: request.pageSize || 10,
-      hasNextPage: false,
+      pageSize,
+      totalPages: 0,
     }
   }
 

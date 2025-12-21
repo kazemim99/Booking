@@ -261,7 +261,7 @@ import JoinRequestCard from './JoinRequestCard.vue'
 import InviteStaffModal from './InviteStaffModal.vue'
 import StaffDetailsModal from './StaffDetailsModal.vue'
 import ConfirmationModal from '@/shared/components/ConfirmationModal.vue'
-import { useToast } from '@/core/composables/useToast'
+import { useNotification } from '@/core/composables/useNotification'
 
 // ============================================
 // Props
@@ -278,7 +278,7 @@ const props = defineProps<Props>()
 // ============================================
 
 const hierarchyStore = useHierarchyStore()
-const toast = useToast()
+const { success, error } = useNotification()
 
 // ============================================
 // State
@@ -378,9 +378,9 @@ async function loadData(): Promise<void> {
       hierarchyStore.loadSentInvitations(props.organizationId),
       hierarchyStore.loadReceivedJoinRequests(props.organizationId),
     ])
-  } catch (error) {
-    toast.error('خطا', 'خطا در بارگذاری اطلاعات')
-    console.error('Error loading staff data:', error)
+  } catch (err) {
+    error('خطا', 'خطا در بارگذاری اطلاعات')
+    console.error('Error loading staff data:', err)
   }
 }
 
@@ -405,62 +405,62 @@ async function handleRemoveStaff(): Promise<void> {
   try {
     await hierarchyStore.removeStaffMember(props.organizationId, staffToRemove.value.id)
 
-    toast.success('موفقیت', 'کارمند با موفقیت حذف شد')
+    success('موفقیت', 'کارمند با موفقیت حذف شد')
     showRemoveConfirm.value = false
     staffToRemove.value = null
-  } catch (error) {
-    toast.error('خطا', 'خطا در حذف کارمند')
-    console.error('Error removing staff:', error)
+  } catch (err) {
+    error('خطا', 'خطا در حذف کارمند')
+    console.error('Error removing staff:', err)
   }
 }
 
 function handleInvitationSent(): void {
   showInviteModal.value = false
-  toast.success('موفقیت', 'دعوت با موفقیت ارسال شد')
+  success('موفقیت', 'دعوت با موفقیت ارسال شد')
   loadData()
 }
 
 async function resendInvitation(invitationId: string): Promise<void> {
   try {
     await hierarchyStore.resendInvitation(props.organizationId, invitationId)
-    toast.success('موفقیت', 'دعوت مجدداً ارسال شد')
+    success('موفقیت', 'دعوت مجدداً ارسال شد')
     // Reload invitations to reflect updated status
     await hierarchyStore.loadSentInvitations(props.organizationId)
-  } catch (error) {
-    toast.error('خطا', 'خطا در ارسال مجدد دعوت')
-    console.error('Error resending invitation:', error)
+  } catch (err) {
+    error('خطا', 'خطا در ارسال مجدد دعوت')
+    console.error('Error resending invitation:', err)
   }
 }
 
 async function cancelInvitation(invitationId: string): Promise<void> {
   try {
     await hierarchyStore.cancelInvitation(props.organizationId, invitationId)
-    toast.success('موفقیت', 'دعوت لغو شد')
+    success('موفقیت', 'دعوت لغو شد')
     // Reload invitations to reflect the cancelled invitation
     await hierarchyStore.loadSentInvitations(props.organizationId)
-  } catch (error) {
-    toast.error('خطا', 'خطا در لغو دعوت')
-    console.error('Error cancelling invitation:', error)
+  } catch (err) {
+    error('خطا', 'خطا در لغو دعوت')
+    console.error('Error cancelling invitation:', err)
   }
 }
 
 async function approveRequest(request: JoinRequest): Promise<void> {
   try {
     await hierarchyStore.approveJoinRequest(props.organizationId, request.id)
-    toast.success('موفقیت', 'درخواست تأیید شد')
-  } catch (error) {
-    toast.error('خطا', 'خطا در تأیید درخواست')
-    console.error('Error approving request:', error)
+    success('موفقیت', 'درخواست تأیید شد')
+  } catch (err) {
+    error('خطا', 'خطا در تأیید درخواست')
+    console.error('Error approving request:', err)
   }
 }
 
 async function rejectRequest(request: JoinRequest): Promise<void> {
   try {
     await hierarchyStore.rejectJoinRequest(props.organizationId, request.id, 'Not suitable at this time')
-    toast.success('موفقیت', 'درخواست رد شد')
-  } catch (error) {
-    toast.error('خطا', 'خطا در رد درخواست')
-    console.error('Error rejecting request:', error)
+    success('موفقیت', 'درخواست رد شد')
+  } catch (err) {
+    error('خطا', 'خطا در رد درخواست')
+    console.error('Error rejecting request:', err)
   }
 }
 

@@ -133,6 +133,7 @@ export interface GetDraftProviderResponse {
 export interface RegistrationProgressResponse {
   hasDraft: boolean
   currentStep: number | null
+  providerId?: string
   draftData: {
     providerId: string
     registrationStep: number
@@ -308,11 +309,16 @@ class ProviderRegistrationService {
     servicesCount: number
     message: string
   }> {
-    const response = await serviceCategoryClient.post(
+    const response = await serviceCategoryClient.post<{
+      providerId: string
+      registrationStep: number
+      servicesCount: number
+      message: string
+    }>(
       'v1/registration/step-4/services',
       {
         providerId,
-        services: services.map(s => ({
+        services: services.map((s: ServiceRequest) => ({
           name: s.name,
           durationHours: s.durationHours,
           durationMinutes: s.durationMinutes,
@@ -333,7 +339,12 @@ class ProviderRegistrationService {
     staffCount: number
     message: string
   }> {
-    const response = await serviceCategoryClient.post(
+    const response = await serviceCategoryClient.post<{
+      providerId: string
+      registrationStep: number
+      staffCount: number
+      message: string
+    }>(
       'v1/registration/step-5/staff',
       {
         providerId,
@@ -357,7 +368,12 @@ class ProviderRegistrationService {
     openDaysCount: number
     message: string
   }> {
-    const response = await serviceCategoryClient.post(
+    const response = await serviceCategoryClient.post<{
+      providerId: string
+      registrationStep: number
+      openDaysCount: number
+      message: string
+    }>(
       'v1/registration/step-6/working-hours',
       {
         providerId,
@@ -389,7 +405,12 @@ class ProviderRegistrationService {
       formData.append('files', file)
     })
 
-    const response = await serviceCategoryClient.post(
+    const response = await serviceCategoryClient.post<{
+      providerId: string
+      registrationStep: number
+      imagesCount: number
+      message: string
+    }>(
       'v1/registration/step-7/gallery',
       formData,
       {
@@ -409,7 +430,11 @@ class ProviderRegistrationService {
     registrationStep: number
     message: string
   }> {
-    const response = await serviceCategoryClient.post(
+    const response = await serviceCategoryClient.post<{
+      providerId: string
+      registrationStep: number
+      message: string
+    }>(
       'v1/registration/step-8/feedback',
       {
         providerId,

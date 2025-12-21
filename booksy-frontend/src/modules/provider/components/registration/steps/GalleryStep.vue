@@ -45,6 +45,20 @@
         <button type="button" class="alert-close" @click="successMessage = null">×</button>
       </div>
 
+      <!-- Delete Image Confirmation Modal -->
+      <ConfirmationModal
+        v-if="showDeleteConfirm"
+        title="حذف تصویر"
+        message="آیا مطمئن هستید که می‌خواهید این تصویر را حذف کنید؟"
+        confirm-text="حذف"
+        cancel-text="انصراف"
+        variant="danger"
+        :processing="isDeleting"
+        :image-url="imagePreviewUrl"
+        @confirm="handleDeleteImageConfirm"
+        @cancel="showDeleteConfirm = false"
+      />
+
       <!-- Gallery Upload Area -->
       <div class="gallery-section">
         <GalleryUpload
@@ -75,7 +89,7 @@
                   type="button"
                   class="delete-btn"
                   :disabled="isDeleting"
-                  @click="handleDeleteImage(image.id)"
+                  @click="confirmDeleteImage(image.id)"
                 >
                   <svg
                     xmlns="http://www.w3.org/2000/svg"
@@ -132,10 +146,10 @@
           variant="primary"
           size="large"
           block
-          :disabled="isUploading"
+          :disabled="isUploading || isSubmitting"
           @click="handleNext"
         >
-          {{ isUploading ? 'در حال آپلود...' : 'بعدی' }}
+          {{ isSubmitting ? 'در حال پردازش...' : isUploading ? 'در حال آپلود...' : 'بعدی' }}
         </AppButton>
       </div>
     </div>
@@ -150,11 +164,13 @@ import { useProviderRegistration } from '@/modules/provider/composables/useProvi
 
 import AppButton from '@/shared/components/ui/Button/AppButton.vue'
 import GalleryUpload from '@/modules/provider/components/gallery/GalleryUpload.vue'
+import ConfirmationModal from '@/shared/components/ConfirmationModal.vue'
 import type { GalleryImageData } from '@/modules/provider/types/registration.types'
 
 interface Emits {
   (e: 'next'): void
   (e: 'back'): void
+  (e: 'loading', isLoading: boolean): void
 }
 
 const emit = defineEmits<Emits>()
@@ -170,8 +186,14 @@ const error = ref<string | null>(null)
 const successMessage = ref<string | null>(null)
 const isUploading = ref(false)
 const isDeleting = ref(false)
+const isSubmitting = ref(false)
 const uploadProgress = ref(0)
 const localGalleryImages = ref<GalleryImageData[]>([])
+
+// Confirmation modal state
+const showDeleteConfirm = ref(false)
+const imageToDelete = ref<string | null>(null)
+const imagePreviewUrl = ref<string | null>(null)
 
 // Computed
 const remainingSlots = computed(() => maxImages - localGalleryImages.value.length)
@@ -311,17 +333,20 @@ function handleLocalUpload(files: File[]) {
   }, 3000)
 }
 
-async function handleDeleteImage(imageId: string) {
+function confirmDeleteImage(imageId: string) {
   console.log('🗑️ Delete button clicked for image:', imageId)
+  imageToDelete.value = imageId
 
-  // Show confirmation dialog
-  const confirmed = window.confirm('آیا مطمئن هستید که می‌خواهید این تصویر را حذف کنید؟')
-  console.log('🗑️ User confirmation:', confirmed)
+  // Get the image preview URL for the modal
+  const image = localGalleryImages.value.find((img) => img.id === imageId)
+  imagePreviewUrl.value = image?.url || null
 
-  if (!confirmed) {
-    console.log('🗑️ Deletion cancelled by user')
-    return
-  }
+  showDeleteConfirm.value = true
+}
+
+async function handleDeleteImageConfirm() {
+  const imageId = imageToDelete.value
+  if (!imageId) return
 
   const providerId = currentProviderId.value
   console.log('🗑️ Provider ID:', providerId)
@@ -329,10 +354,10 @@ async function handleDeleteImage(imageId: string) {
   // If no provider ID exists, just remove from local state (not persisted yet)
   if (!providerId) {
     console.log('🗑️ No provider ID - deleting from local state only')
-    const imageToDelete = localGalleryImages.value.find((img) => img.id === imageId)
-    if (imageToDelete?.url && imageId.startsWith('temp-')) {
+    const imgToDelete = localGalleryImages.value.find((img) => img.id === imageId)
+    if (imgToDelete?.url && imageId.startsWith('temp-')) {
       // Only revoke object URLs for temp images (created from File objects)
-      URL.revokeObjectURL(imageToDelete.url)
+      URL.revokeObjectURL(imgToDelete.url)
     }
     localGalleryImages.value = localGalleryImages.value.filter((img) => img.id !== imageId)
     registration.setGalleryImages(localGalleryImages.value)
@@ -340,6 +365,8 @@ async function handleDeleteImage(imageId: string) {
     setTimeout(() => {
       successMessage.value = null
     }, 2000)
+    showDeleteConfirm.value = false
+    imageToDelete.value = null
     return
   }
 
@@ -362,20 +389,30 @@ async function handleDeleteImage(imageId: string) {
     error.value = err.message || 'خطا در حذف تصویر. لطفاً دوباره تلاش کنید.'
   } finally {
     isDeleting.value = false
+    showDeleteConfirm.value = false
+    imageToDelete.value = null
+    imagePreviewUrl.value = null
   }
 }
 
-function handleNext() {
+async function handleNext() {
   console.log('🎯 GalleryStep: handleNext called')
   console.log('🎯 GalleryStep: localGalleryImages count:', localGalleryImages.value.length)
   console.log('🎯 GalleryStep: isUploading:', isUploading.value)
 
-  // Save gallery images to registration state
-  registration.setGalleryImages(localGalleryImages.value)
+  isSubmitting.value = true
+  emit('loading', true)
+  try {
+    // Save gallery images to registration state
+    registration.setGalleryImages(localGalleryImages.value)
 
-  console.log('🎯 GalleryStep: Emitting next event')
-  emit('next')
-  console.log('🎯 GalleryStep: Next event emitted')
+    console.log('🎯 GalleryStep: Emitting next event')
+    emit('next')
+    console.log('🎯 GalleryStep: Next event emitted')
+  } finally {
+    // Keep loading state true - parent will emit 'loading' false when done
+    // isSubmitting.value = false
+  }
 }
 </script>
 

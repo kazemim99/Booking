@@ -63,8 +63,8 @@ async function loadJoinRequests() {
   try {
     const currentUserId = authStore.currentUser?.id
     if (currentUserId) {
-      await hierarchyStore.loadMyJoinRequests(currentUserId)
-      joinRequests.value = hierarchyStore.myJoinRequests?.items || []
+      await hierarchyStore.loadSentJoinRequests(currentUserId)
+      joinRequests.value = hierarchyStore.sentJoinRequests || []
     }
   } catch (error) {
     console.error('Error loading join requests:', error)
