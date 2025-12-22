@@ -618,17 +618,17 @@ class BookingService {
   }> {
     try {
       // Get all bookings for provider
-      const response = await this.getProviderBookings(providerId, undefined, 1, 1000)
+      const bookings = await this.getProviderBookings(providerId)
 
       const stats = {
-        total: response.totalItems,
+        total: bookings.length,
         pending: 0,
         confirmed: 0,
         completed: 0,
         cancelled: 0,
       }
 
-      response.items.forEach(booking => {
+      bookings.forEach(booking => {
         switch (booking.status) {
           case 'Pending':
             stats.pending++
