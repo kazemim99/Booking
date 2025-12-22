@@ -7,7 +7,7 @@ namespace Booksy.ServiceCatalog.Domain.Specifications
         public GetServicesByProviderSpecification(
             ProviderId providerId,
             ServiceStatus? status = null,
-            string? category = null,
+            ServiceCategory? category = null,
             bool includeOptions = false,
             bool includePriceTiers = false,
             bool includeProvider = false)
@@ -22,9 +22,9 @@ namespace Booksy.ServiceCatalog.Domain.Specifications
             }
 
             // Optional category filter
-            if (category != null)
+            if (category.HasValue)
             {
-                AddCriteria(service => service.Category.Name == category);
+                AddCriteria(service => service.Category == category.Value);
             }
 
             // Include related entities based on requirements

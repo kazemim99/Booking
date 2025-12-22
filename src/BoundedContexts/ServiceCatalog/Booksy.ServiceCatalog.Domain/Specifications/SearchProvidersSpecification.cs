@@ -11,7 +11,7 @@ namespace Booksy.ServiceCatalog.Domain.Specifications.Provider
     {
         public SearchProvidersSpecification(
             string? searchTerm = null,
-            ProviderType? type = null,
+            ServiceCategory? category = null,
             string? city = null,
             string? state = null,
             string? country = null,
@@ -36,10 +36,10 @@ namespace Booksy.ServiceCatalog.Domain.Specifications.Provider
             }
 
 
-            // Provider type filter
-            if (type.HasValue)
+            // Provider category filter
+            if (category.HasValue)
             {
-                AddCriteria(provider => provider.ProviderType == type.Value);
+                AddCriteria(provider => provider.PrimaryCategory == category.Value);
             }
 
             // Location filters

@@ -21,10 +21,10 @@ namespace Booksy.ServiceCatalog.Domain.Specifications
                              provider.AllowOnlineBooking;
         }
 
-        public static Expression<Func<Aggregates.Provider, bool>> IsActiveWithType(ProviderType type)
+        public static Expression<Func<Aggregates.Provider, bool>> IsActiveWithCategory(ServiceCategory category)
         {
             return provider => provider.Status == ProviderStatus.Active &&
-                             provider.ProviderType == type;
+                             provider.PrimaryCategory == category;
         }
     }
 }

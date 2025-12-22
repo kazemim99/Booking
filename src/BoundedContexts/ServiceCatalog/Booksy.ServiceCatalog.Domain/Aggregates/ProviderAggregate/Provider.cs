@@ -32,7 +32,7 @@ namespace Booksy.ServiceCatalog.Domain.Aggregates
 
         // Status & Type
         public ProviderStatus Status { get; private set; }
-        public ProviderType ProviderType { get; private set; }
+        public ServiceCategory PrimaryCategory { get; private set; }
 
         // Hierarchy Properties
         public ProviderHierarchyType HierarchyType { get; private set; }
@@ -83,7 +83,7 @@ namespace Booksy.ServiceCatalog.Domain.Aggregates
             string ownerLastName,
             string businessName,
             string description,
-            ProviderType type,
+            ServiceCategory primaryCategory,
             ContactInfo contactInfo,
             BusinessAddress address,
             ProviderHierarchyType hierarchyType = ProviderHierarchyType.Organization,
@@ -100,7 +100,7 @@ namespace Booksy.ServiceCatalog.Domain.Aggregates
                 OwnerLastName = ownerLastName,
                 Profile = profile,
                 Status = ProviderStatus.Drafted,
-                ProviderType = type,
+                PrimaryCategory = primaryCategory,
                 HierarchyType = hierarchyType,
                 ParentProviderId = null,
                 IsIndependent = hierarchyType == ProviderHierarchyType.Individual,
@@ -132,7 +132,7 @@ namespace Booksy.ServiceCatalog.Domain.Aggregates
             UserId ownerId,
             string businessName,
             string description,
-            ProviderType type,
+            ServiceCategory primaryCategory,
             ContactInfo contactInfo,
             BusinessAddress address,
             ProviderHierarchyType hierarchyType = ProviderHierarchyType.Organization)
@@ -145,7 +145,7 @@ namespace Booksy.ServiceCatalog.Domain.Aggregates
                 OwnerId = ownerId,
                 Profile = profile,
                 Status = ProviderStatus.PendingVerification,
-                ProviderType = type,
+                PrimaryCategory = primaryCategory,
                 HierarchyType = hierarchyType,
                 ParentProviderId = null,
                 IsIndependent = hierarchyType == ProviderHierarchyType.Individual,
@@ -165,7 +165,7 @@ namespace Booksy.ServiceCatalog.Domain.Aggregates
                 provider.Id,
                 provider.OwnerId,
                 provider.Profile.BusinessName,
-                provider.ProviderType,
+                provider.PrimaryCategory,
                 provider.RegisteredAt));
 
             return provider;
@@ -249,7 +249,7 @@ namespace Booksy.ServiceCatalog.Domain.Aggregates
             string ownerLastName,
             string businessName,
             string description,
-            ProviderType type,
+            ServiceCategory primaryCategory,
             ContactInfo contactInfo,
             BusinessAddress address,
             string? logoUrl = null)
@@ -261,7 +261,7 @@ namespace Booksy.ServiceCatalog.Domain.Aggregates
             OwnerFirstName = ownerFirstName;
             OwnerLastName = ownerLastName;
             Profile = BusinessProfile.Create(businessName, description, logoUrl);
-            ProviderType = type;
+            PrimaryCategory = primaryCategory;
             ContactInfo = contactInfo;
             Address = address;
 

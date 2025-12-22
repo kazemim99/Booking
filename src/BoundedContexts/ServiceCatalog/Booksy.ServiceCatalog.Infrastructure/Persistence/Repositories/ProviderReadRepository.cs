@@ -53,7 +53,7 @@ namespace Booksy.ServiceCatalog.Infrastructure.Persistence.Repositories
             return await DbSet
                 .Include(p => p.Staff)
                 .Include(p => p.BusinessHours)
-                .Where(p => p.Status == status)
+                //.Where(p => p.Status == status)
                 .ToListAsync(cancellationToken);
         }
 

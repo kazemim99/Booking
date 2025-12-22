@@ -287,10 +287,10 @@ namespace Booksy.ServiceCatalog.Infrastructure.Persistence.Configurations
                 .IsRequired()
                 .HasMaxLength(50);
 
-            builder.Property(p => p.ProviderType)
-                .HasConversion<string>()
+            builder.Property(p => p.PrimaryCategory)
+                .HasConversion<int>()
                 .IsRequired()
-                .HasMaxLength(50);
+                .HasColumnName("PrimaryCategory");
 
             // Hierarchy Properties
             builder.Property<Domain.Enums.ProviderHierarchyType>(p => p.HierarchyType)
@@ -402,8 +402,8 @@ namespace Booksy.ServiceCatalog.Infrastructure.Persistence.Configurations
             builder.HasIndex(p => p.Status)
                 .HasDatabaseName("IX_Providers_Status");
 
-            builder.HasIndex(p => p.ProviderType)
-                .HasDatabaseName("IX_Providers_Type");
+            builder.HasIndex(p => p.PrimaryCategory)
+                .HasDatabaseName("IX_Providers_PrimaryCategory");
 
             builder.HasIndex(p => (object)p.HierarchyType)
                 .HasDatabaseName("IX_Providers_HierarchyType");

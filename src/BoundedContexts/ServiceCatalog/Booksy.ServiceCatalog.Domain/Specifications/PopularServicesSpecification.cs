@@ -7,16 +7,15 @@ namespace Booksy.ServiceCatalog.Domain.Specifications
 {
     public sealed class PopularServicesSpecification : BaseSpecification<Service>
     {
-        public PopularServicesSpecification(string? categoryFilter = null)
+        public PopularServicesSpecification(ServiceCategory? categoryFilter = null)
         {
             // Only active services
             AddCriteria(service => service.Status == ServiceStatus.Active);
 
             // Optional category filter
-            if (!string.IsNullOrWhiteSpace(categoryFilter))
+            if (categoryFilter.HasValue)
             {
-                var categoryLower = categoryFilter.Trim().ToLower();
-                AddCriteria(service => service.Category.Name.ToLower().Contains(categoryLower));
+                AddCriteria(service => service.Category == categoryFilter.Value);
             }
 
             // Order by popularity metrics (this would typically include booking count, ratings, etc.)

@@ -6,7 +6,7 @@ namespace Booksy.ServiceCatalog.Domain.Specifications
     {
         public SearchServicesSpecification(
             string? searchTerm = null,
-            string? category = null,
+            ServiceCategory? category = null,
             ServiceType? type = null,
             decimal? minPrice = null,
             decimal? maxPrice = null,
@@ -29,9 +29,9 @@ namespace Booksy.ServiceCatalog.Domain.Specifications
             }
 
             // Category filter
-            if (category != null)
+            if (category.HasValue)
             {
-                AddCriteria(service => service.Category.Name == category);
+                AddCriteria(service => service.Category == category.Value);
             }
 
             // Service type filter

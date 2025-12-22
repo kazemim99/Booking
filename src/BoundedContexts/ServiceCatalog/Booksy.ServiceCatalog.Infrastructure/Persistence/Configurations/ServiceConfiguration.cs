@@ -66,30 +66,15 @@ namespace Booksy.ServiceCatalog.Infrastructure.Persistence.Configurations
                 .IsRequired()
                 .HasMaxLength(50);
 
+            // Service Category (now an enum instead of value object)
+            builder.Property(s => s.Category)
+                .HasConversion<int>()
+                .IsRequired()
+                .HasColumnName("Category");
+
             // ========================================
             // VALUE OBJECTS
             // ========================================
-
-            // Service Category
-            builder.OwnsOne(s => s.Category, category =>
-            {
-                category.Property(c => c.Name)
-                    .HasMaxLength(100)
-                    .IsRequired()
-                    .HasColumnName("CategoryName");
-
-                category.Property(c => c.Description)
-                    .HasMaxLength(500)
-                    .HasColumnName("CategoryDescription");
-
-                category.Property(c => c.IconUrl)
-                    .HasMaxLength(500)
-                    .HasColumnName("CategoryIconUrl");
-
-                // EF Core 9: Explicitly configure foreign key to not be part of composite key
-                category.WithOwner().HasForeignKey("ServiceId");
-                category.Property<Guid>("ServiceId").ValueGeneratedNever();
-            });
 
             // Base Price
             builder.OwnsOne(s => s.BasePrice, price =>

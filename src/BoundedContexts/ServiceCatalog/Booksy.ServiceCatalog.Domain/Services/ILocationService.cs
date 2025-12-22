@@ -305,7 +305,7 @@ public class DemandDataPoint
     public Coordinates Location { get; init; } = null!;
     public DateTime Timestamp { get; init; }
     public int DemandLevel { get; init; }
-    public ServiceCategory ServiceCategory { get; init; } = null!;
+    public ServiceCategory ServiceCategory { get; init; }
     public decimal Revenue { get; init; }
 }
 
