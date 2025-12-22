@@ -46,14 +46,15 @@ export interface GeolocationOptions {
 
 class GeolocationService {
   private readonly NESHAN_REVERSE_GEOCODE_URL = 'https://api.neshan.org/v5/reverse'
+  private readonly NESHAN_GEOCODING_URL = 'https://api.neshan.org/geocoding'
   private readonly DEFAULT_TIMEOUT = 10000 // 10 seconds
   private readonly CACHE_MAX_AGE = 300000 // 5 minutes
 
-  // IP-based geolocation APIs that work in Iran
+  // IP-based geolocation APIs (fallback only, not accurate)
   private readonly IP_GEOLOCATION_APIS = [
-    'https://ipapi.co/json/', // Free, no API key needed, works in Iran
-    'https://ip-api.com/json/', // Free, no API key needed, works in Iran
-    'https://geolocation-db.com/json/', // Free, works in Iran
+    'https://ipapi.co/json/',
+    'https://ip-api.com/json/',
+    'https://geolocation-db.com/json/',
   ]
 
   private cachedPosition: GeolocationPosition | null = null

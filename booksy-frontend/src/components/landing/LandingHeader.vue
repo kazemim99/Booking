@@ -13,7 +13,7 @@
 
         <!-- User Menu or Login Buttons -->
         <template v-if="isAuthenticated">
-          <UserMenu />
+          <RoleBasedUserMenu :showRoleBadge="false" />
         </template>
         <template v-else>
           <!-- Provider Login Button (Business Portal) -->
@@ -37,7 +37,7 @@
 <script setup lang="ts">
 import { ref, onMounted, onUnmounted, computed } from 'vue'
 import { useAuthStore } from '@/core/stores/modules/auth.store'
-import UserMenu from '@/shared/components/layout/Header/UserMenu.vue'
+import RoleBasedUserMenu from '@/shared/components/layout/Header/RoleBasedUserMenu.vue'
 import LanguageSwitcher from '@/shared/components/layout/Header/LanguageSwitcher.vue'
 
 const authStore = useAuthStore()

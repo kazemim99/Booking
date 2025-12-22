@@ -89,14 +89,14 @@ export async function authGuard(
       }
     }
 
-    // Prevent completed providers from accessing registration routes or home
-    // Redirect ONLY from Home or registration routes to dashboard
+    // Prevent completed providers from accessing registration routes
+    // Allow providers to access Home page (landing page)
     if (
       providerStatus === ProviderStatus.Verified ||
       providerStatus === ProviderStatus.Active ||
       providerStatus === ProviderStatus.PendingVerification
     ) {
-      if (to.name === 'Home' || registrationRoutes.includes(to.name as string)) {
+      if (registrationRoutes.includes(to.name as string)) {
         console.log('[AuthGuard] Redirecting from', to.name, 'to /provider/dashboard')
         next({ path: '/provider/dashboard' })
         return

@@ -107,17 +107,17 @@
             </button>
           </div>
 
-          <!-- Popular Cities -->
-          <div class="popular-cities">
-            <span class="label">شهرهای پرطرفدار:</span>
+          <!-- Popular Categories -->
+          <div class="popular-categories">
+            <span class="label">دسته‌بندی‌های پرطرفدار:</span>
             <button
-              v-for="city in popularCities"
-              :key="city"
-              @click="selectPopularCity(city)"
-              class="city-tag"
+              v-for="category in popularSearches"
+              :key="category.slug"
+              @click="selectPopularCategory(category.slug)"
+              class="category-tag"
               type="button"
             >
-              {{ city }}
+              {{ category.name }}
             </button>
           </div>
 
@@ -208,8 +208,8 @@ const detectedCity = ref<string>('')
 const geolocationError = ref<string>('')
 const userLocation = ref<{ lat: number; lng: number } | null>(null)
 
-// Popular cities for quick access
-const popularCities = ref<string[]>(['تهران', 'مشهد', 'اصفهان', 'شیراز', 'تبریز', 'کرج'])
+// Popular categories are already loaded from API in popularSearches ref
+// No need for a separate popularCities array
 
 // Computed statistics with Persian numbers
 const statsDisplay = computed(() => {
@@ -355,12 +355,16 @@ const detectUserLocationOnLoad = async () => {
   try {
     console.log('[HeroSection] Auto-detecting location on page load...')
 
-    // Get position and reverse geocode with shorter timeout for page load
-    const { position, address } = await geolocationService.getCurrentLocationAndAddress({
-      enableHighAccuracy: false, // Faster, less battery on page load
-      timeout: 5000, // Shorter timeout for page load
-      maximumAge: 300000, // Use cached position if available
-    })
+    // Get position and reverse geocode
+    // NOTE: IP fallback disabled because it's inaccurate (shows ISP location like Tehran, not actual location like Ardabil)
+    const { position, address } = await geolocationService.getCurrentLocationAndAddress(
+      {
+        enableHighAccuracy: true, // Use device GPS for accuracy
+        timeout: 15000, // Allow 15 seconds for GPS lock
+        maximumAge: 0, // Force fresh position
+      },
+      false // Disable inaccurate IP fallback
+    )
 
     console.log('[HeroSection] Location auto-detected:', { position, address })
     console.log('[HeroSection] Address details:', {
@@ -484,26 +488,17 @@ const detectUserLocation = async () => {
 }
 
 /**
- * Quick select popular city
+ * Quick select popular category and navigate to search
  */
-const selectPopularCity = async (cityName: string) => {
-  try {
-    const searchResults = await locationService.searchLocations(cityName)
-    const city = searchResults.find(loc => loc.type === 'city' && loc.name === cityName)
-
-    if (city) {
-      selectedCity.value = city.id
-      cities.value = [
-        {
-          label: city.name,
-          value: city.id,
-          description: city.provinceName,
-        },
-      ]
+const selectPopularCategory = (categorySlug: string) => {
+  router.push({
+    path: '/providers/search',
+    query: {
+      serviceCategory: categorySlug,
+      pageNumber: 1,
+      pageSize: 12,
     }
-  } catch (error) {
-    console.error('[HeroSection] Error selecting popular city:', error)
-  }
+  })
 }
 
 </script>
@@ -780,8 +775,8 @@ const selectPopularCity = async (cityName: string) => {
   }
 }
 
-/* Popular Cities */
-.popular-cities {
+/* Popular Categories */
+.popular-categories {
   display: flex;
   align-items: center;
   gap: 0.75rem;
@@ -791,13 +786,13 @@ const selectPopularCity = async (cityName: string) => {
   border-top: 1px solid #e2e8f0;
 }
 
-.popular-cities .label {
+.popular-categories .label {
   font-size: 0.875rem;
   font-weight: 600;
   color: #64748b;
 }
 
-.city-tag {
+.category-tag {
   padding: 0.5rem 1rem;
   background: #f1f5f9;
   border: 1px solid #e2e8f0;
@@ -809,7 +804,7 @@ const selectPopularCity = async (cityName: string) => {
   font-weight: 500;
 }
 
-.city-tag:hover {
+.category-tag:hover {
   background: #667eea;
   color: white;
   border-color: #667eea;
@@ -1039,13 +1034,13 @@ const selectPopularCity = async (cityName: string) => {
     justify-content: center;
   }
 
-  .popular-cities {
+  .popular-categories {
     flex-direction: column;
     align-items: flex-start;
     gap: 0.5rem;
   }
 
-  .city-tag {
+  .category-tag {
     font-size: 0.8125rem;
     padding: 0.4rem 0.875rem;
   }
