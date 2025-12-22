@@ -22,7 +22,7 @@
                 :alt="provider.profile.businessName"
               />
               <div v-else class="logo-placeholder">
-                {{ getInitials(provider.profile.businessName) }}
+                {{ getNameInitials(provider.profile.businessName) }}
               </div>
             </div>
             <div class="provider-details">
@@ -192,6 +192,7 @@
 import { ref, onMounted, watch } from 'vue'
 import { useProviderStore } from '@/modules/provider/stores/provider.store'
 import type { Provider } from '@/modules/provider/types/provider.types'
+import { getNameInitials, formatDate as formatDateUtil, formatTime, toPersianDigits, formatPersianNumber, formatPriceDisplay } from '@/core/utils'
 
 interface BookingData {
   serviceId: string | null
@@ -244,16 +245,7 @@ onMounted(async () => {
   }
 })
 
-// Methods
-const getInitials = (name: string): string => {
-  return name
-    .split(' ')
-    .map((word) => word[0])
-    .join('')
-    .toUpperCase()
-    .slice(0, 2)
-}
-
+// Methods - using centralized utilities
 const formatDate = (dateString: string | null): string => {
   if (!dateString) return 'انتخاب نشده'
 
@@ -272,38 +264,22 @@ const formatDate = (dateString: string | null): string => {
     const formatter = new Intl.DateTimeFormat('fa-IR', options)
     return formatter.format(date)
   } catch (_error) {
-    // Fallback to simple format if Intl fails
-    const weekDays = ['یکشنبه', 'دوشنبه', 'سه‌شنبه', 'چهارشنبه', 'پنج‌شنبه', 'جمعه', 'شنبه']
-    const dayName = weekDays[date.getDay()]
-    return `${dayName}، ${convertToPersianNumber(date.getDate())} ${convertToPersianNumber(date.getMonth() + 1)} ${convertToPersianNumber(date.getFullYear())}`
+    // Fallback using centralized utilities
+    return toPersianDigits(formatDateUtil(date))
   }
 }
 
 const convertToPersianTime = (time: string | null): string => {
   if (!time) return 'انتخاب نشده'
-
-  const persianDigits = ['۰', '۱', '۲', '۳', '۴', '۵', '۶', '۷', '۸', '۹']
-  return time.split('').map(char => {
-    const digit = parseInt(char)
-    return !isNaN(digit) ? persianDigits[digit] : char
-  }).join('')
+  return toPersianDigits(time)
 }
 
 const convertToPersianNumber = (num: number): string => {
-  const persianDigits = ['۰', '۱', '۲', '۳', '۴', '۵', '۶', '۷', '۸', '۹']
-  return num.toString().split('').map(char => {
-    const digit = parseInt(char)
-    return !isNaN(digit) ? persianDigits[digit] : char
-  }).join('')
+  return toPersianDigits(num)
 }
 
 const formatPrice = (price: number): string => {
-  const formatted = price.toLocaleString('fa-IR')
-  const persianDigits = ['۰', '۱', '۲', '۳', '۴', '۵', '۶', '۷', '۸', '۹']
-  return formatted.split('').map(char => {
-    const digit = parseInt(char)
-    return !isNaN(digit) ? persianDigits[digit] : char
-  }).join('')
+  return formatPersianNumber(price)
 }
 </script>
 

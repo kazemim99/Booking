@@ -103,28 +103,28 @@ const providerRoutes: RouteRecordRaw[] = [
     },
   },
 
-  // Individual Registration Flow
-  {
-    path: '/provider/registration/individual',
-    name: 'IndividualRegistration',
-    component: () => import('@/modules/provider/views/registration/IndividualRegistrationFlow.vue'),
-    meta: {
-      requiresAuth: true,
-      roles: ['Provider', 'ServiceProvider'],
-      title: 'Individual Registration',
-    },
-    beforeEnter(_to: RouteLocationNormalized, _from: RouteLocationNormalized, next: NavigationGuardNext) {
-      const authStore = useAuthStore()
-      const tokenProviderStatus = authStore.providerStatus
+  // Individual Registration Flow - DISABLED: Everyone registers as Organization
+  // {
+  //   path: '/provider/registration/individual',
+  //   name: 'IndividualRegistration',
+  //   component: () => import('@/modules/provider/views/registration/IndividualRegistrationFlow.vue'),
+  //   meta: {
+  //     requiresAuth: true,
+  //     roles: ['Provider', 'ServiceProvider'],
+  //     title: 'Individual Registration',
+  //   },
+  //   beforeEnter(_to: RouteLocationNormalized, _from: RouteLocationNormalized, next: NavigationGuardNext) {
+  //     const authStore = useAuthStore()
+  //     const tokenProviderStatus = authStore.providerStatus
 
-      // Only allow if no provider or drafted status
-      if (tokenProviderStatus === null || tokenProviderStatus === ProviderStatus.Drafted) {
-        next()
-      } else {
-        next({ name: 'ProviderDashboard' })
-      }
-    },
-  },
+  //     // Only allow if no provider or drafted status
+  //     if (tokenProviderStatus === null || tokenProviderStatus === ProviderStatus.Drafted) {
+  //       next()
+  //     } else {
+  //       next({ name: 'ProviderDashboard' })
+  //     }
+  //   },
+  // },
 
   // Provider Dashboard (main overview page)
   {

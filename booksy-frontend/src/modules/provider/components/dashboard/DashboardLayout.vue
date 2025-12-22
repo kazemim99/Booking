@@ -59,6 +59,19 @@
       <!-- Sidebar - Desktop -->
       <aside class="dashboard-sidebar">
         <nav class="sidebar-nav">
+          <!-- Loading State -->
+          <div v-if="isLoadingHierarchy" class="loading-indicator">
+            <div class="loading-spinner"></div>
+            <span class="loading-text">در حال بارگذاری...</span>
+          </div>
+
+          <!-- Error State with Retry -->
+          <div v-else-if="hierarchyLoadError" class="error-indicator">
+            <span class="error-text">{{ hierarchyLoadError }}</span>
+            <button @click="retryLoadHierarchy" class="retry-button">تلاش مجدد</button>
+          </div>
+
+          <!-- Menu Items -->
           <button
             v-for="item in menuItems"
             :key="item.id"
@@ -99,6 +112,19 @@
           </div>
 
           <nav class="mobile-nav">
+            <!-- Loading State -->
+            <div v-if="isLoadingHierarchy" class="loading-indicator">
+              <div class="loading-spinner"></div>
+              <span class="loading-text">در حال بارگذاری...</span>
+            </div>
+
+            <!-- Error State with Retry -->
+            <div v-else-if="hierarchyLoadError" class="error-indicator">
+              <span class="error-text">{{ hierarchyLoadError }}</span>
+              <button @click="retryLoadHierarchy" class="retry-button">تلاش مجدد</button>
+            </div>
+
+            <!-- Menu Items -->
             <button
               v-for="item in menuItems"
               :key="item.id"
@@ -164,22 +190,47 @@ const hierarchyStore = useHierarchyStore()
 const authStore = useAuthStore()
 const mobileMenuOpen = ref(false)
 
+// Loading states
+const isLoadingHierarchy = ref(false)
+const hierarchyLoadError = ref<string | null>(null)
+
 // Load provider data on mount
 onMounted(async () => {
-  // Load current provider if not already loaded
-  if (!providerStore.currentProvider) {
-    await providerStore.loadCurrentProvider()
-  }
-
-  // Load hierarchy information using the provider ID
-  if (!hierarchyStore.currentHierarchy && providerStore.currentProvider?.id) {
-    try {
-      await hierarchyStore.loadProviderHierarchy(providerStore.currentProvider.id)
-    } catch (error) {
-      console.error('[DashboardLayout] Failed to load hierarchy:', error)
-    }
-  }
+  await loadProviderData()
 })
+
+// Load provider data function (can be called to retry)
+async function loadProviderData() {
+  try {
+    isLoadingHierarchy.value = true
+    hierarchyLoadError.value = null
+
+    // Load current provider if not already loaded
+    if (!providerStore.currentProvider) {
+      console.log('[DashboardLayout] Loading current provider...')
+      await providerStore.loadCurrentProvider()
+    }
+
+    // Load hierarchy information using the provider ID
+    if (providerStore.currentProvider?.id) {
+      console.log('[DashboardLayout] Loading hierarchy for provider:', providerStore.currentProvider.id)
+      await hierarchyStore.loadProviderHierarchy(providerStore.currentProvider.id)
+      console.log('[DashboardLayout] Hierarchy loaded successfully:', hierarchyStore.currentHierarchy)
+    } else {
+      console.warn('[DashboardLayout] No provider ID found, cannot load hierarchy')
+    }
+  } catch (error) {
+    console.error('[DashboardLayout] Failed to load provider data:', error)
+    hierarchyLoadError.value = 'خطا در بارگذاری اطلاعات'
+  } finally {
+    isLoadingHierarchy.value = false
+  }
+}
+
+// Retry loading hierarchy
+function retryLoadHierarchy() {
+  loadProviderData()
+}
 
 const currentProvider = computed(() => providerStore.currentProvider)
 const currentHierarchy = computed(() => hierarchyStore.currentHierarchy)
@@ -200,7 +251,7 @@ const roleLabel = computed(() => {
   const hasParentOrg = !!provider?.parentOrganizationId
 
   if (hierarchyType === HierarchyType.Organization) {
-    return 'سازمان'
+    return ''
   }
 
   if (hierarchyType === HierarchyType.Individual && hasParentOrg) {
@@ -249,19 +300,45 @@ const menuItems = computed(() => {
     { id: 'dashboard', label: 'داشبورد', icon: DashboardIcon, route: '/provider/dashboard' }
   ]
 
+  // If loading, show loading state with base items
+  if (isLoadingHierarchy.value) {
+    console.log('[DashboardLayout] Menu: Loading hierarchy...')
+    return baseItems
+  }
+
+  // If error occurred, show base items with retry option
+  if (hierarchyLoadError.value) {
+    console.log('[DashboardLayout] Menu: Error loading hierarchy, showing base items')
+    return baseItems
+  }
+
+  // If no hierarchy loaded yet, show enhanced fallback menu
+  if (!currentHierarchy.value || !hierarchyType) {
+    console.log('[DashboardLayout] Menu: No hierarchy data, showing enhanced fallback')
+    // Enhanced fallback - show common items that most providers need
+    return [
+      ...baseItems,
+      { id: 'profile', label: 'پروفایل', icon: UserIcon, route: '/provider/profile' },
+      { id: 'bookings', label: 'رزروها', icon: CalendarIcon, route: '/provider/bookings' },
+      { id: 'financial', label: 'مالی', icon: CurrencyIcon, route: '/provider/financial' }
+    ]
+  }
+
   // ORGANIZATION MENU - Full management capabilities
   if (hierarchyType === HierarchyType.Organization) {
+    console.log('[DashboardLayout] Menu: Organization type')
     return [
       ...baseItems,
       { id: 'bookings', label: 'رزروها', icon: CalendarIcon, route: '/provider/bookings' },
       { id: 'financial', label: 'مالی', icon: CurrencyIcon, route: '/provider/financial' },
       { id: 'staff', label: 'پرسنل', icon: UsersIcon, route: '/provider/staff' }, // ← ORG ONLY
-      { id: 'profile', label: 'پروفایل سازمان', icon: UserIcon, route: '/provider/profile' }
+      { id: 'profile', label: 'پروفایل', icon: UserIcon, route: '/provider/profile' }
     ]
   }
 
   // STAFF MEMBER MENU - Limited to own data
   if (hierarchyType === HierarchyType.Individual && hasParentOrg) {
+    console.log('[DashboardLayout] Menu: Staff member type')
     return [
       ...baseItems,
       { id: 'my-bookings', label: 'رزروهای من', icon: CalendarIcon, route: '/provider/my-bookings' },
@@ -273,6 +350,7 @@ const menuItems = computed(() => {
 
   // INDEPENDENT INDIVIDUAL MENU - Full control, no staff management
   if (hierarchyType === HierarchyType.Individual && !hasParentOrg) {
+    console.log('[DashboardLayout] Menu: Independent individual type')
     return [
       ...baseItems,
       { id: 'bookings', label: 'رزروها', icon: CalendarIcon, route: '/provider/bookings' },
@@ -281,8 +359,14 @@ const menuItems = computed(() => {
     ]
   }
 
-  // FALLBACK - Default menu if hierarchy type is not loaded yet
-  return baseItems
+  // Final fallback
+  console.log('[DashboardLayout] Menu: Unknown hierarchy type, using enhanced fallback')
+  return [
+    ...baseItems,
+    { id: 'profile', label: 'پروفایل', icon: UserIcon, route: '/provider/profile' },
+    { id: 'bookings', label: 'رزروها', icon: CalendarIcon, route: '/provider/bookings' },
+    { id: 'financial', label: 'مالی', icon: CurrencyIcon, route: '/provider/financial' }
+  ]
 })
 
 // Determine if a menu item is active based on current route
@@ -499,6 +583,74 @@ const handleLogout = async () => {
 
   &:hover {
     background: #fee2e2;
+  }
+}
+
+/* Loading Indicator */
+.loading-indicator {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  padding: 24px 16px;
+  margin-bottom: 16px;
+}
+
+.loading-spinner {
+  width: 32px;
+  height: 32px;
+  border: 3px solid #e0e0e0;
+  border-top-color: #6366f1;
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.loading-text {
+  font-size: 12px;
+  color: #6b7280;
+}
+
+/* Error Indicator */
+.error-indicator {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  padding: 16px;
+  margin-bottom: 16px;
+  background: #fef2f2;
+  border-radius: 8px;
+  border: 1px solid #fecaca;
+}
+
+.error-text {
+  font-size: 12px;
+  color: #dc2626;
+  text-align: center;
+}
+
+.retry-button {
+  padding: 6px 16px;
+  background: #dc2626;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  font-size: 12px;
+  cursor: pointer;
+  transition: background 0.2s;
+
+  &:hover {
+    background: #b91c1c;
+  }
+
+  &:active {
+    background: #991b1b;
   }
 }
 

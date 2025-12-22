@@ -7,6 +7,32 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed - 2025-12-21
+
+#### Provider Registration Flow Simplified to Organization-Only
+- **Disabled**: Individual provider registration route
+  - Route `/provider/registration/individual` commented out in router configuration
+  - Component `IndividualRegistrationFlow.vue` remains in codebase but is inaccessible
+- **Changed**: All new providers now register as Organizations
+  - Automatic redirect from `/provider/registration` to `/provider/registration/organization`
+  - Simplified user experience with single registration path
+  - 8-step organization registration flow maintained
+- **Updated**: Authentication guards and store
+  - Removed `IndividualRegistration` from allowed registration routes
+  - Updated `registrationRoutes` arrays in `auth.guard.ts` and `auth.store.ts`
+- **Impact**:
+  - Simplified onboarding process for new providers
+  - All new providers have organization capabilities (team management, staff, etc.)
+  - Existing individual providers remain unaffected
+- **Documentation**: Added `REGISTRATION_FLOW_UPDATE.md` with detailed migration guide
+- **Files**:
+  - `booksy-frontend/src/core/router/routes/provider.routes.ts`
+  - `booksy-frontend/src/core/router/guards/auth.guard.ts`
+  - `booksy-frontend/src/core/stores/modules/auth.store.ts`
+  - `booksy-frontend/src/modules/provider/views/registration/ProviderRegistrationView.vue`
+  - `REGISTRATION_FLOW_UPDATE.md` (new)
+  - `README.md` (updated)
+
 ### Added - 2025-11-17
 
 #### Split Login Pages & Authentication Improvements
@@ -333,7 +359,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Authorization checks on all mutating endpoints
 - File type validation (whitelist: JPG, PNG, WebP)
 - File size limits (10MB per file)
-- Max image count per provider (50 images)
+- Max image count per provider (20 images)
 - Soft delete for data preservation
 
 #### Performance

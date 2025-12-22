@@ -292,7 +292,7 @@ builder.OwnsMany(bp => bp.GalleryImages, gi =>
 ## Open Questions
 
 1. **Should we limit the number of gallery images per provider?**
-   - Recommendation: Yes, set limit to 50 images initially (configurable via appsettings)
+   - Recommendation: Yes, set limit to 20 images initially (configurable via appsettings)
    - Rationale: Prevents abuse, ensures reasonable page load times
 
 2. **Should we support image captions in multiple languages (i18n)?**

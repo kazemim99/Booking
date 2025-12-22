@@ -9,7 +9,7 @@ namespace Booksy.ServiceCatalog.Domain.Entities
     public sealed class BusinessProfile : Entity<Guid>
     {
         private readonly List<GalleryImage> _galleryImages = new();
-        private const int MaxGalleryImages = 50;
+        private const int MaxGalleryImages = 20;
 
         public string BusinessName { get; private set; }
         public string BusinessDescription { get; private set; }

@@ -558,6 +558,117 @@ public class ProvidersController : ControllerBase
     }
 
     /// <summary>
+    /// Refreshes JWT token with updated provider status after registration
+    /// </summary>
+    /// <remarks>
+    /// Call this endpoint after completing provider registration to get a new JWT token
+    /// that includes the updated provider status and hierarchy information.
+    /// </remarks>
+    /// <returns>New JWT token with updated provider information</returns>
+    /// <response code="200">Token refreshed successfully</response>
+    /// <response code="401">User not authenticated</response>
+    /// <response code="404">Provider not found</response>
+    [HttpPost("current/refresh-token")]
+    [Authorize]
+    [ProducesResponseType(typeof(RefreshProviderTokenResponse), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> RefreshProviderToken(
+        CancellationToken cancellationToken = default)
+    {
+        try
+        {
+            // Get current provider status
+            var statusQuery = new GetCurrentProviderStatusQuery();
+            var providerStatus = await _mediator.Send(statusQuery, cancellationToken);
+
+            if (providerStatus == null)
+            {
+                return NotFound(new
+                {
+                    success = false,
+                    message = "Provider record not found",
+                    errorCode = "PROVIDER_NOT_FOUND"
+                });
+            }
+
+            // Get user ID from claims
+            var userIdClaim = User.FindFirst(ClaimTypes.NameIdentifier)?.Value
+                ?? User.FindFirst("sub")?.Value;
+
+            if (string.IsNullOrEmpty(userIdClaim))
+            {
+                return Unauthorized(new
+                {
+                    success = false,
+                    message = "User ID not found in token",
+                    errorCode = "INVALID_TOKEN"
+                });
+            }
+
+            _logger.LogInformation(
+                "Refreshing token for user {UserId} with provider {ProviderId}, status: {Status}",
+                userIdClaim,
+                providerStatus.ProviderId,
+                providerStatus.Status);
+
+            // Make HTTP call to UserManagement API to generate new token with provider claims
+            using var httpClient = new HttpClient();
+            var userManagementBaseUrl = HttpContext.RequestServices
+                .GetRequiredService<IConfiguration>()
+                .GetValue<string>("Services:UserManagement:BaseUrl") ?? "http://localhost:5001";
+
+            var tokenRequest = new
+            {
+                userId = userIdClaim,
+                additionalClaims = new Dictionary<string, string>
+                {
+                    { "provider_id", providerStatus.ProviderId.ToString() },
+                    { "provider_status", providerStatus.Status.ToString() }
+                }
+            };
+
+            var response = await httpClient.PostAsJsonAsync(
+                $"{userManagementBaseUrl}/api/v1/auth/generate-token",
+                tokenRequest,
+                cancellationToken);
+
+            if (!response.IsSuccessStatusCode)
+            {
+                _logger.LogError(
+                    "Failed to generate token from UserManagement API. Status: {StatusCode}",
+                    response.StatusCode);
+
+                return StatusCode(
+                    (int)response.StatusCode,
+                    new { message = "Failed to generate new token" });
+            }
+
+            var tokenResponse = await response.Content.ReadFromJsonAsync<TokenGenerationResponse>(
+                cancellationToken: cancellationToken);
+
+            _logger.LogInformation(
+                "Successfully refreshed token for provider {ProviderId}",
+                providerStatus.ProviderId);
+
+            return Ok(new RefreshProviderTokenResponse
+            {
+                AccessToken = tokenResponse?.AccessToken ?? string.Empty,
+                RefreshToken = tokenResponse?.RefreshToken,
+                ExpiresIn = tokenResponse?.ExpiresIn ?? 900,
+                TokenType = "Bearer",
+                ProviderId = providerStatus.ProviderId.ToString(),
+                ProviderStatus = providerStatus.Status.ToString()
+            });
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error refreshing provider token");
+            return StatusCode(500, new { message = "An error occurred while refreshing the token" });
+        }
+    }
+
+    /// <summary>
     /// Search providers with advanced filtering and pagination
     /// </summary>
     /// <param name="request">Search parameters including pagination</param>

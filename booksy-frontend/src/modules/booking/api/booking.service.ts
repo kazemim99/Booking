@@ -221,15 +221,43 @@ class BookingService {
 
   /**
    * Get bookings for a specific provider
-   * Used by provider dashboard to view their bookings
+   * Uses dedicated provider endpoint with proper authorization
+   * GET /api/v1/bookings/provider/{providerId}
+   *
+   * @param providerId - Provider ID
+   * @param status - Optional booking status filter
+   * @param from - Optional start date filter (ISO format)
+   * @param to - Optional end date filter (ISO format)
+   * @returns List of provider bookings
    */
   async getProviderBookings(
     providerId: string,
     status?: BookingStatus,
-    pageNumber = 1,
-    pageSize = 10
-  ): Promise<PaginatedBookingsResponse> {
-    return this.getBookings({ providerId, status, pageNumber, pageSize })
+    from?: string,
+    to?: string
+  ): Promise<Appointment[]> {
+    try {
+      console.log('[BookingService] Fetching provider bookings:', { providerId, status, from, to })
+
+      const params: Record<string, any> = {}
+      if (status) params.status = status
+      if (from) params.from = from
+      if (to) params.to = to
+
+      const response = await serviceCategoryClient.get<ApiResponse<Appointment[]>>(
+        `${API_BASE}/provider/${providerId}`,
+        { params }
+      )
+
+      console.log('[BookingService] Provider bookings retrieved:', response.data)
+
+      // Handle wrapped response format
+      const data = response.data?.data || response.data
+      return data as Appointment[]
+    } catch (error) {
+      console.error('[BookingService] Error fetching provider bookings:', error)
+      throw this.handleError(error)
+    }
   }
 
   /**

@@ -174,7 +174,7 @@ const providerStore = useProviderStore()
 const galleryStore = useGalleryStore()
 
 // Constants
-const maxImages = 50
+const maxImages = 20
 
 // State
 const successMessage = ref<string | null>(null)

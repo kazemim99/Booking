@@ -479,7 +479,8 @@ export const useAuthStore = defineStore('auth', () => {
     if (primaryRole === 'provider') {
       // Check if already on a registration route - if so, don't redirect
       const currentRoute = router.currentRoute.value
-      const registrationRoutes = ['ProviderRegistration', 'OrganizationRegistration', 'IndividualRegistration']
+      // Note: IndividualRegistration is disabled - everyone registers as Organization
+      const registrationRoutes = ['ProviderRegistration', 'OrganizationRegistration']
       if (registrationRoutes.includes(currentRoute.name as string)) {
         console.log('[AuthStore] Already on registration route, skipping redirect')
         return
@@ -625,6 +626,46 @@ export const useAuthStore = defineStore('auth', () => {
   }
 
   /**
+   * Refresh provider token with updated status after registration
+   * Call this after completing provider registration to get a new JWT token
+   * with updated provider status and hierarchy information
+   */
+  async function refreshProviderToken() {
+    try {
+      console.log('[AuthStore] Refreshing provider token after registration')
+
+      // Import provider service dynamically to avoid circular dependency
+      const { providerService } = await import('@/modules/provider/services/provider.service')
+
+      const response = await providerService.refreshProviderToken()
+
+      console.log('[AuthStore] Provider token refreshed:', {
+        providerId: response.providerId,
+        providerStatus: response.providerStatus,
+      })
+
+      // Update token in storage and state
+      setToken(response.accessToken)
+      if (response.refreshToken) {
+        setRefreshToken(response.refreshToken)
+      }
+
+      // Extract and update provider info from the new token
+      const providerInfo = decodeTokenAndExtractProviderInfo(response.accessToken)
+      if (providerInfo) {
+        console.log('[AuthStore] ✅ Provider info updated from refreshed token:', providerInfo)
+        setProviderStatus(providerInfo.providerStatus as ProviderStatus, providerInfo.providerId)
+      }
+
+      return true
+    } catch (err: unknown) {
+      console.error('[AuthStore] Provider token refresh failed:', err)
+      // Don't logout on failure - user is still authenticated, just with old token
+      return false
+    }
+  }
+
+  /**
    * Load authentication state from storage
    */
   function loadFromStorage() {
@@ -764,6 +805,7 @@ export const useAuthStore = defineStore('auth', () => {
     redirectToDashboard,
     logout,
     refresh,
+    refreshProviderToken,
     loadFromStorage,
     updateUser,
     isTokenExpired,

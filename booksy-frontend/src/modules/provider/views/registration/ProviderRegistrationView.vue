@@ -51,11 +51,8 @@ const router = useRouter()
 function handleTypeSelection(type?: HierarchyType) {
   if (!type) return
 
-  if (type === HierarchyType.Organization) {
-    router.push({ name: 'OrganizationRegistration' })
-  } else if (type === HierarchyType.Individual) {
-    router.push({ name: 'IndividualRegistration' })
-  }
+  // Everyone registers as an Organization now
+  router.push({ name: 'OrganizationRegistration' })
 }
 
 function handleBack() {
@@ -64,6 +61,8 @@ function handleBack() {
 
 onMounted(() => {
   initializeRTL()
+  // Automatically redirect to OrganizationRegistration since everyone registers as an Organization
+  router.push({ name: 'OrganizationRegistration' })
 })
 </script>
 

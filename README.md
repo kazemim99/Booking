@@ -4,9 +4,23 @@ A modern, scalable service booking platform built with Domain-Driven Design (DDD
 
 ---
 
-## Recent Updates (2025-11-16) 🎉
+## Recent Updates (2025-12-21) 🎉
 
-### Backend Architecture - Compilation Fixes & Database Migrations
+### Provider Registration Flow - Simplified to Organization-Only (2025-12-21)
+
+✅ **Registration Simplified** - All providers now register as Organizations (Individual registration disabled)
+✅ **Auto-Redirect** - Users accessing `/provider/registration` are automatically redirected to organization flow
+✅ **8-Step Flow** - Streamlined organization registration with progress tracking
+✅ **Code Cleanup** - Removed Individual registration from routing and auth guards
+
+**Impact**:
+- Simplified user experience with single registration path
+- All new providers register as Organizations with full team management capabilities
+- Existing individual providers remain unaffected
+
+See [REGISTRATION_FLOW_UPDATE.md](REGISTRATION_FLOW_UPDATE.md) for detailed migration information.
+
+### Backend Architecture - Compilation Fixes & Database Migrations (2025-11-16)
 
 ✅ **Compilation Fixes** - Resolved all compilation errors across Booking and ServiceCatalog bounded contexts
 ✅ **Domain Model Improvements** - Implemented Specification pattern, fixed namespace conflicts, separated read/write repositories
@@ -26,7 +40,7 @@ A modern, scalable service booking platform built with Domain-Driven Design (DDD
 ✅ **Registration Progress** - Fixed "not found" error after completing registration
 ✅ **Status Handling** - Proper handling of provider status transitions (Drafted → PendingVerification)
 
-**Impact**: The 9-step provider registration flow is now fully functional and production-ready.
+**Impact**: The 8-step organization registration flow is now fully functional and production-ready.
 
 See [CHANGELOG.md](CHANGELOG.md) for detailed information about all changes.
 

@@ -9,7 +9,7 @@
           :alt="suggestion.favorite.provider.businessName"
         />
         <div v-else class="placeholder">
-          {{ getInitials(suggestion.favorite.provider?.businessName) }}
+          {{ getNameInitials(suggestion.favorite.provider?.businessName) }}
         </div>
       </div>
 
@@ -110,6 +110,7 @@ import FavoriteButton from './FavoriteButton.vue'
 import type { QuickRebookSuggestion, TimeSlot } from '../../types/favorites.types'
 import { formatTimeAgo } from '../../types/favorites.types'
 import { formatCurrency } from '@/modules/provider/types/financial.types'
+import { getNameInitials, formatTime, toPersianDigits, getPersianWeekday, getPersianMonth } from '@/core/utils'
 
 // ============================================================================
 // Props & Emits
@@ -151,13 +152,8 @@ const displayedSlots = computed(() => {
 })
 
 // ============================================================================
-// Methods
+// Methods - using centralized utilities
 // ============================================================================
-
-function getInitials(name?: string): string {
-  if (!name) return '?'
-  return name.charAt(0).toUpperCase()
-}
 
 function formatSlotDate(dateStr: string): string {
   const date = new Date(dateStr)
@@ -176,38 +172,12 @@ function formatSlotDate(dateStr: string): string {
     return 'فردا'
   }
 
-  // Persian weekday names
-  const weekdays = ['یکشنبه', 'دوشنبه', 'سه‌شنبه', 'چهارشنبه', 'پنج‌شنبه', 'جمعه', 'شنبه']
-  const weekday = weekdays[date.getDay()]
-
-  // Format as: "شنبه ۱۵ دی"
+  // Use centralized Persian utilities
+  const weekday = getPersianWeekday(date)
   const day = date.getDate()
-  const monthNames = [
-    'فروردین',
-    'اردیبهشت',
-    'خرداد',
-    'تیر',
-    'مرداد',
-    'شهریور',
-    'مهر',
-    'آبان',
-    'آذر',
-    'دی',
-    'بهمن',
-    'اسفند',
-  ]
+  const month = getPersianMonth(date.getMonth())
 
-  return `${weekday} ${toPersianNumber(day)} ${monthNames[date.getMonth()]}`
-}
-
-function formatTime(timeStr: string): string {
-  const [hours, minutes] = timeStr.split(':')
-  return `${toPersianNumber(hours)}:${toPersianNumber(minutes)}`
-}
-
-function toPersianNumber(num: number | string): string {
-  const persianDigits = ['۰', '۱', '۲', '۳', '۴', '۵', '۶', '۷', '۸', '۹']
-  return String(num).replace(/\d/g, (digit) => persianDigits[parseInt(digit)])
+  return `${weekday} ${toPersianDigits(day)} ${month}`
 }
 
 function isSlotSelected(slot: TimeSlot): boolean {

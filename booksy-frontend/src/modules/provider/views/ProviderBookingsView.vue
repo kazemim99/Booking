@@ -354,6 +354,12 @@ import { ref, computed, onMounted } from 'vue'
 import { useProviderStore } from '../stores/provider.store'
 import { convertEnglishToPersianNumbers } from '@/shared/utils/date/jalali.utils'
 import { useToast, setToastInstance } from '@/shared/composables/useToast'
+import { bookingService } from '@/modules/booking/api/booking.service'
+import { customerService } from '@/modules/user-management/api/customer.service'
+import { serviceService } from '../services/service.service'
+import { formatDate, formatTime } from '@/core/utils'
+import type { Appointment } from '@/modules/booking/types/booking.types'
+import { BookingStatus as ApiBookingStatus } from '@/core/types/enums.types'
 import DashboardLayout from '../components/dashboard/DashboardLayout.vue'
 import Toast from '@/shared/components/Toast.vue'
 import Modal from '@/shared/components/Modal.vue'
@@ -371,80 +377,24 @@ const currentProvider = computed(() => providerStore.currentProvider)
 // View mode: 'list' or 'calendar'
 const viewMode = ref<'list' | 'calendar'>('list')
 
-// Sample data - replace with actual API calls
-const bookings = ref([
-  {
-    id: '1',
-    customerName: 'علی احمدی',
-    customerPhone: '۰۹۱۲۳۴۵۶۷۸۹',
-    date: '2025-11-14',
-    time: '۱۰:۰۰',
-    service: 'کوتاهی مو',
-    price: 150000,
-    status: 'pending',
-  },
-  {
-    id: '2',
-    customerName: 'سارا محمدی',
-    customerPhone: '۰۹۳۸۷۶۵۴۳۲۱',
-    date: '2025-11-14',
-    time: '۱۱:۳۰',
-    service: 'رنگ مو',
-    price: 350000,
-    status: 'confirmed',
-  },
-  {
-    id: '3',
-    customerName: 'محمد رضایی',
-    customerPhone: '۰۹۱۲۷۶۵۴۳۲۱',
-    date: '2025-11-13',
-    time: '۱۴:۰۰',
-    service: 'اصلاح صورت',
-    price: 80000,
-    status: 'completed',
-  },
-  {
-    id: '4',
-    customerName: 'فاطمه کریمی',
-    customerPhone: '۰۹۱۱۱۲۳۴۵۶۷',
-    date: '2025-11-15',
-    time: '۰۹:۰۰',
-    service: 'مانیکور',
-    price: 120000,
-    status: 'confirmed',
-  },
-  {
-    id: '5',
-    customerName: 'حسین نوری',
-    customerPhone: '۰۹۱۲۸۸۸۷۷۷۶',
-    date: '2025-11-16',
-    time: '۱۵:۰۰',
-    service: 'کوتاهی مو',
-    price: 150000,
-    status: 'pending',
-  },
-])
+// Interface for booking display
+interface BookingDisplay {
+  id: string
+  customerName: string
+  customerPhone: string
+  date: string
+  time: string
+  service: string
+  price: number
+  status: string
+  appointment?: Appointment
+}
 
-// Sample customers
-const customers = ref([
-  { id: '1', name: 'علی احمدی', phone: '۰۹۱۲۳۴۵۶۷۸۹' },
-  { id: '2', name: 'سارا محمدی', phone: '۰۹۳۸۷۶۵۴۳۲۱' },
-  { id: '3', name: 'محمد رضایی', phone: '۰۹۱۲۷۶۵۴۳۲۱' },
-  { id: '4', name: 'فاطمه کریمی', phone: '۰۹۱۱۱۲۳۴۵۶۷' },
-  { id: '5', name: 'حسین نوری', phone: '۰۹۱۲۸۸۸۷۷۷۶' },
-  { id: '6', name: 'زهرا حسینی', phone: '۰۹۱۳۱۱۱۲۲۲۳' },
-  { id: '7', name: 'رضا مرادی', phone: '۰۹۱۴۲۲۲۳۳۳۴' },
-])
-
-// Sample services
-const services = ref([
-  { id: '1', name: 'کوتاهی مو', duration: 30, price: 150000 },
-  { id: '2', name: 'رنگ مو', duration: 120, price: 350000 },
-  { id: '3', name: 'اصلاح صورت', duration: 20, price: 80000 },
-  { id: '4', name: 'مانیکور', duration: 45, price: 120000 },
-  { id: '5', name: 'پدیکور', duration: 60, price: 150000 },
-  { id: '6', name: 'ماساژ صورت', duration: 40, price: 200000 },
-])
+// Real data from API
+const bookings = ref<BookingDisplay[]>([])
+const appointments = ref<Map<string, Appointment>>(new Map())
+const customers = ref<any[]>([])
+const services = ref<any[]>([])
 
 const loading = ref(false)
 const activeTab = ref('all')
@@ -458,11 +408,87 @@ const showRescheduleModal = ref(false)
 const rescheduleBookingData = ref<any>(null)
 const newDateTime = ref('')
 
-// Computed stats
-const todayBookings = computed(() => 8)
-const upcomingBookings = computed(() => 15)
-const completedBookings = computed(() => 142)
-const monthlyRevenue = computed(() => 12500000)
+// Fetch bookings from API
+const fetchBookings = async () => {
+  if (!currentProvider.value?.id) return
+
+  loading.value = true
+  try {
+    const appointments = await bookingService.getProviderBookings(
+      currentProvider.value.id,
+      undefined,
+      undefined,
+      undefined
+    )
+
+    // Map appointments to display format with name resolution
+    const mappedBookings = await Promise.all(
+      appointments.map(async (appointment) => {
+        const customerName = await customerService.getCustomerName(appointment.clientId)
+        const serviceName = await serviceService.getServiceName(appointment.serviceId)
+
+        return {
+          id: appointment.id,
+          customerName,
+          customerPhone: '', // Phone not in appointment, would need separate API call
+          date: convertEnglishToPersianNumbers(formatDate(appointment.scheduledStartTime)),
+          time: convertEnglishToPersianNumbers(formatTime(appointment.scheduledStartTime)),
+          service: serviceName,
+          price: appointment.totalPrice || 0,
+          status: mapApiStatus(appointment.status),
+          appointment
+        }
+      })
+    )
+
+    bookings.value = mappedBookings
+  } catch (error) {
+    console.error('Error fetching bookings:', error)
+    toast.error('خطا در بارگذاری رزروها')
+  } finally {
+    loading.value = false
+  }
+}
+
+// Map API status to display status
+const mapApiStatus = (apiStatus: string): string => {
+  const statusMap: Record<string, string> = {
+    Pending: 'pending',
+    Requested: 'pending',
+    Confirmed: 'confirmed',
+    InProgress: 'confirmed',
+    Completed: 'completed',
+    Cancelled: 'cancelled',
+    NoShow: 'cancelled'
+  }
+  return statusMap[apiStatus] || 'pending'
+}
+
+// Computed stats based on real data
+const todayBookings = computed(() => {
+  const today = new Date().toISOString().split('T')[0]
+  return bookings.value.filter(b => b.date.includes(today)).length
+})
+
+const upcomingBookings = computed(() => {
+  return bookings.value.filter(b => {
+    return ['pending', 'confirmed'].includes(b.status)
+  }).length
+})
+
+const completedBookings = computed(() => {
+  const thisMonth = new Date().toISOString().slice(0, 7) // YYYY-MM
+  return bookings.value.filter(b =>
+    b.status === 'completed' && b.date.includes(thisMonth)
+  ).length
+})
+
+const monthlyRevenue = computed(() => {
+  const thisMonth = new Date().toISOString().slice(0, 7)
+  return bookings.value
+    .filter(b => b.status === 'completed' && b.date.includes(thisMonth))
+    .reduce((sum, b) => sum + (b.price || 0), 0)
+})
 
 const tabs = computed(() => [
   { id: 'all', label: 'همه', count: bookings.value.length },
@@ -529,19 +555,31 @@ const canComplete = (booking: any) => booking.status === 'confirmed'
 const canReschedule = (booking: any) => ['pending', 'confirmed'].includes(booking.status)
 const canCancel = (booking: any) => ['pending', 'confirmed'].includes(booking.status)
 
-const confirmBooking = (id: string) => {
+const confirmBooking = async (id: string) => {
   const booking = bookings.value.find(b => b.id === id)
-  if (booking) {
-    booking.status = 'confirmed'
+  if (!booking) return
+
+  try {
+    await bookingService.confirmBooking(id)
     toast.success(`رزرو ${booking.customerName} تایید شد`)
+    await fetchBookings() // Refresh list
+  } catch (error) {
+    console.error('Error confirming booking:', error)
+    toast.error('خطا در تایید رزرو')
   }
 }
 
-const completeBooking = (id: string) => {
+const completeBooking = async (id: string) => {
   const booking = bookings.value.find(b => b.id === id)
-  if (booking) {
-    booking.status = 'completed'
+  if (!booking) return
+
+  try {
+    await bookingService.completeBooking(id, {})
     toast.success(`رزرو ${booking.customerName} به عنوان انجام شده علامت گذاری شد`)
+    await fetchBookings() // Refresh list
+  } catch (error) {
+    console.error('Error completing booking:', error)
+    toast.error('خطا در تکمیل رزرو')
   }
 }
 
@@ -580,11 +618,17 @@ const cancelReschedule = () => {
   newDateTime.value = ''
 }
 
-const cancelBooking = (id: string) => {
+const cancelBooking = async (id: string) => {
   const booking = bookings.value.find(b => b.id === id)
-  if (booking) {
-    booking.status = 'cancelled'
+  if (!booking) return
+
+  try {
+    await bookingService.cancelBooking(id, { reason: 'لغو توسط ارائه‌دهنده' })
     toast.warning(`رزرو ${booking.customerName} لغو شد`)
+    await fetchBookings() // Refresh list
+  } catch (error) {
+    console.error('Error cancelling booking:', error)
+    toast.error('خطا در لغو رزرو')
   }
 }
 
@@ -604,33 +648,25 @@ const toggleCalendarView = () => {
   viewMode.value = viewMode.value === 'list' ? 'calendar' : 'list'
 }
 
-const handleNewBooking = (formData: any) => {
-  // In production, this would make an API call
-  const selectedService = services.value.find(s => s.id === formData.serviceId)
-  const selectedCustomer = customers.value.find(c => c.id === formData.customerId)
+const handleNewBooking = async (formData: any) => {
+  if (!currentProvider.value?.id) return
 
-  if (!selectedService || !selectedCustomer) return
+  try {
+    await bookingService.createBooking({
+      customerId: formData.customerId,
+      providerId: currentProvider.value.id,
+      serviceId: formData.serviceId,
+      staffProviderId: currentProvider.value.id, // Use provider as staff for now
+      startTime: formData.dateTime,
+      customerNotes: formData.notes || ''
+    })
 
-  // Extract date and time from datetime string
-  const dateTime = new Date(formData.dateTime)
-  const date = dateTime.toISOString().split('T')[0]
-  const hours = dateTime.getHours().toString().padStart(2, '0')
-  const minutes = dateTime.getMinutes().toString().padStart(2, '0')
-  const time = convertEnglishToPersianNumbers(`${hours}:${minutes}`)
-
-  const newBooking = {
-    id: (bookings.value.length + 1).toString(),
-    customerName: selectedCustomer.name,
-    customerPhone: selectedCustomer.phone,
-    date,
-    time,
-    service: selectedService.name,
-    price: selectedService.price,
-    status: 'pending',
+    toast.success('رزرو جدید با موفقیت ثبت شد')
+    await fetchBookings() // Refresh list
+  } catch (error) {
+    console.error('Error creating booking:', error)
+    toast.error('خطا در ایجاد رزرو')
   }
-
-  bookings.value.unshift(newBooking)
-  toast.success('رزرو جدید با موفقیت ثبت شد')
 }
 
 const handleBookingClick = (booking: any) => {
@@ -653,6 +689,9 @@ onMounted(async () => {
     if (!currentProvider.value) {
       await providerStore.loadCurrentProvider()
     }
+
+    // Fetch bookings data
+    await fetchBookings()
   } catch (error) {
     console.error('Failed to load provider data:', error)
     toast.error('خطا در بارگذاری اطلاعات ارائه‌دهنده')

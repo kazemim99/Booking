@@ -17,3 +17,9 @@ export * from './phone.service'
 
 // Date utilities
 export * from './date.service'
+
+// Persian utilities
+export * from './persian.service'
+
+// Geolocation utilities
+export * from './geolocation.service'

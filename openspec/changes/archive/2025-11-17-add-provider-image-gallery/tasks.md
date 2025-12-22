@@ -8,7 +8,7 @@
   - [x] Add `private readonly List<GalleryImage> _galleryImages = new()`
   - [x] Add `IReadOnlyList<GalleryImage> GalleryImages` property
   - [x] Add `AddGalleryImage()`, `RemoveGalleryImage()`, `ReorderGalleryImages()` methods
-  - [x] Add domain validation (max 50 images per provider)
+  - [x] Add domain validation (max 20 images per provider)
 - [x] 1.3 Add domain events for gallery operations
   - [x] Create `GalleryImageUploadedEvent`
   - [x] Create `GalleryImageDeletedEvent`
@@ -240,7 +240,7 @@
   - [ ] Test complete user flows in staging environment
 - [ ] 10.6 Performance testing
   - [ ] Load test upload endpoint with concurrent requests (k6 or JMeter)
-  - [ ] Test large gallery rendering (50+ images) for performance
+  - [ ] Test large gallery rendering (20+ images) for performance
   - [ ] Measure and optimize time-to-interactive (TTI) for gallery page
 - [ ] 10.7 Security review
   - [ ] Verify file upload validation prevents malicious files (executable extensions, zip bombs)

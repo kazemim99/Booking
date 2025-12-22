@@ -46,9 +46,11 @@
           size="large"
           block
           @click="goToDashboard"
+          :loading="isLoading"
+          :disabled="isLoading"
           class="dashboard-button"
         >
-          ورود به داشبورد
+          {{ isLoading ? 'در حال بارگذاری...' : 'ورود به داشبورد' }}
         </AppButton>
 
         <!-- Next Steps -->
@@ -76,13 +78,94 @@
 </template>
 
 <script setup lang="ts">
+import { ref } from 'vue'
 import { useRouter } from 'vue-router'
+import { useProviderStore } from '@/modules/provider/stores/provider.store'
+import { useHierarchyStore } from '@/modules/provider/stores/hierarchy.store'
+import { useAuthStore } from '@/core/stores/modules/auth.store'
+import { toastService } from '@/core/services/toast.service'
 import AppButton from '@/shared/components/ui/Button/AppButton.vue'
 
 const router = useRouter()
+const providerStore = useProviderStore()
+const hierarchyStore = useHierarchyStore()
+const authStore = useAuthStore()
 
-const goToDashboard = () => {
-  router.push({ name: 'ProviderDashboard' })
+const isLoading = ref(false)
+
+const goToDashboard = async () => {
+  try {
+    isLoading.value = true
+
+    // Step 0: Check current auth state
+    console.log('[CompletionStep] Step 0: Current auth state:', {
+      providerId: authStore.providerId,
+      providerStatus: authStore.providerStatus,
+      isAuthenticated: authStore.isAuthenticated
+    })
+
+    // Step 1: Refresh JWT token with updated provider status
+    // This gets a new token from the backend with fresh provider info
+    console.log('[CompletionStep] Step 1: Refreshing provider token...')
+    const tokenRefreshed = await authStore.refreshProviderToken()
+
+    if (tokenRefreshed) {
+      console.log('[CompletionStep] ✅ Token refreshed successfully')
+      console.log('[CompletionStep] Updated auth state:', {
+        providerId: authStore.providerId,
+        providerStatus: authStore.providerStatus
+      })
+    } else {
+      console.warn('[CompletionStep] ⚠️ Token refresh failed, continuing with old token')
+    }
+
+    // Step 2: Reload current provider data to get fresh provider info
+    console.log('[CompletionStep] Step 2: Loading current provider...')
+    console.log('[CompletionStep] Provider ID from auth store:', authStore.providerId)
+
+    await providerStore.loadCurrentProvider(true) // Force refresh
+
+    if (providerStore.currentProvider) {
+      console.log('[CompletionStep] ✅ Provider loaded:', {
+        id: providerStore.currentProvider.id,
+        businessName: providerStore.currentProvider.profile?.businessName
+      })
+    } else {
+      console.error('[CompletionStep] ❌ Provider not loaded - currentProvider is null')
+    }
+
+    // Step 3: Load hierarchy using the fresh provider ID
+    if (providerStore.currentProvider?.id) {
+      console.log('[CompletionStep] Step 3: Loading hierarchy for provider:', providerStore.currentProvider.id)
+      await hierarchyStore.loadProviderHierarchy(providerStore.currentProvider.id)
+      console.log('[CompletionStep] ✅ Hierarchy loaded:', hierarchyStore.currentHierarchy)
+    } else {
+      console.warn('[CompletionStep] ⚠️ Skipping hierarchy load - no provider ID available')
+    }
+
+    // Step 4: Fetch latest provider status from API (updates auth store)
+    // This is a fallback in case token refresh didn't work
+    console.log('[CompletionStep] Step 4: Fetching provider status...')
+    await authStore.fetchProviderStatus()
+    console.log('[CompletionStep] ✅ Provider status fetched:', authStore.providerStatus)
+
+    // Step 5: Now redirect to dashboard with fresh data loaded
+    console.log('[CompletionStep] Step 5: Redirecting to dashboard...')
+    console.log('[CompletionStep] Final state before redirect:', {
+      providerId: authStore.providerId,
+      providerStatus: authStore.providerStatus,
+      currentProvider: providerStore.currentProvider?.id,
+      hierarchyLoaded: !!hierarchyStore.currentHierarchy
+    })
+    router.push({ name: 'ProviderDashboard' })
+  } catch (error) {
+    console.error('[CompletionStep] Failed to load provider data:', error)
+    // Show warning but still redirect
+    toastService.warning('در حال بارگذاری اطلاعات...')
+    router.push({ name: 'ProviderDashboard' })
+  } finally {
+    isLoading.value = false
+  }
 }
 </script>
 

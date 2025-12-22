@@ -20,7 +20,7 @@
   - Added `_galleryImages` private collection
   - Added `GalleryImages` read-only property
   - Added `AddGalleryImage()`, `RemoveGalleryImage()`, `ReorderGalleryImages()`, `GetGalleryImage()` methods
-  - Enforces max 50 images limit with domain validation
+  - Enforces max 20 images limit with domain validation
 
 #### 2. Infrastructure Layer ✅
 - **File Storage Service** ([LocalFileStorageService.cs](../../../src/BoundedContexts/ServiceCatalog/Booksy.ServiceCatalog.Infrastructure/Services/Storage/LocalFileStorageService.cs))
@@ -131,7 +131,7 @@ Created [gallery.store.ts](../../../booksy-frontend/src/modules/provider/stores/
 - Upload progress bar
 - File validation (type, size, count)
 - Inline error messages
-- Supports up to 50 images, 10MB per file
+- Supports up to 20 images, 10MB per file
 - Accepted formats: JPG, PNG, WebP
 
 ##### GalleryImageCard.vue ✅
@@ -174,7 +174,7 @@ Created [GalleryViewNew.vue](../../../booksy-frontend/src/modules/provider/views
 - **Entity**: `GalleryImage` has identity and lifecycle
 - **Value Objects**: Used for `ProviderId`
 - **Domain Events**: Placeholder for future implementation (not critical for MVP)
-- **Invariants**: Max 50 images enforced at domain level
+- **Invariants**: Max 20 images enforced at domain level
 
 ### Clean Architecture ✅
 - **Domain Layer**: Business logic and entities
@@ -194,7 +194,7 @@ Created [GalleryViewNew.vue](../../../booksy-frontend/src/modules/provider/views
 - Authorization checks on all mutating endpoints
 - File type validation (whitelist: JPG, PNG, WebP)
 - File size limits (10MB per file)
-- Max image count per provider (50 images)
+- Max image count per provider (20 images)
 - Soft delete (preserves data for audit)
 
 ---

@@ -44,7 +44,6 @@
         </div>
         <div class="progress-text">
           <span>مرحله {{ currentStep }} از {{ totalSteps }}</span>
-          <span class="progress-percentage">{{ Math.round(progressPercentage) }}% تکمیل شده</span>
         </div>
       </div>
     </div>

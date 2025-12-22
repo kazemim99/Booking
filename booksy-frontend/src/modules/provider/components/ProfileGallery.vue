@@ -20,7 +20,7 @@
     <!-- Gallery Manager - New Comprehensive Component -->
     <GalleryManager
       v-if="currentProviderId"
-      :max-images="50"
+      :max-images="20"
       :max-size-m-b="5"
       @images-updated="handleImagesUpdated"
       @upload-success="handleUploadSuccess"

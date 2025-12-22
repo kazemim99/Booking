@@ -333,7 +333,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Authorization checks on all mutating endpoints
 - File type validation (whitelist: JPG, PNG, WebP)
 - File size limits (10MB per file)
-- Max image count per provider (50 images)
+- Max image count per provider (20 images)
 - Soft delete for data preservation
 
 #### Performance

@@ -378,6 +378,16 @@ async function handleFinalSubmit() {
     // Step 9: Complete the registration
     await providerRegistrationService.saveStep9Complete(draftProviderId)
 
+    // After completing registration, update provider status in auth store
+    try {
+      console.log('✅ Refreshing provider status after registration completion')
+      await authStore.fetchProviderStatus()
+      console.log('✅ Provider status updated:', authStore.providerStatus)
+    } catch (statusError) {
+      console.warn('⚠️ Failed to refresh provider status, will be loaded later:', statusError)
+      // Don't block the flow if status fetch fails
+    }
+
     nextStep()
     toastService.success('ثبت‌نام سازمان شما با موفقیت تکمیل شد!')
   } catch (error) {

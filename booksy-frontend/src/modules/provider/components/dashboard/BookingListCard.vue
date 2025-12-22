@@ -156,10 +156,12 @@
 
 <script setup lang="ts">
 import { ref, computed, onMounted, watch } from 'vue'
+import { formatDate as formatDateUtil, formatTime as formatTimeUtil } from '@/core/utils'
 import { convertEnglishToPersianNumbers } from '@/shared/utils/date/jalali.utils'
 import { bookingService } from '@/modules/booking/api/booking.service'
 import { customerService } from '@/modules/user-management/api/customer.service'
 import { serviceService } from '@/modules/provider/services/service.service'
+import { BookingStatus as ApiBookingStatus } from '@/core/types/enums.types'
 import type { Appointment } from '@/modules/booking/types/booking.types'
 import type { Staff } from '@/modules/provider/types/staff.types'
 import BookingActions from './BookingActions.vue'
@@ -217,16 +219,31 @@ const fetchBookings = async () => {
   error.value = null
 
   try {
-    const response = await bookingService.getProviderBookings(
+    // Use the corrected provider-specific endpoint
+    // Now returns Appointment[] directly instead of paginated response
+
+    // Map component status filter to API status if needed
+    let apiStatus: ApiBookingStatus | undefined
+    if (filterStatus.value !== 'all') {
+      // Convert component status to API status enum
+      const statusMap: Record<BookingStatus, ApiBookingStatus> = {
+        scheduled: ApiBookingStatus.Pending,
+        completed: ApiBookingStatus.Completed,
+        cancelled: ApiBookingStatus.Cancelled
+      }
+      apiStatus = statusMap[filterStatus.value as BookingStatus]
+    }
+
+    const appointments = await bookingService.getProviderBookings(
       props.providerId,
-      undefined, // status filter
-      1, // page
-      100 // get more bookings for local filtering
+      apiStatus,
+      undefined, // from date - could be added based on filterPeriod
+      undefined  // to date - could be added based on filterPeriod
     )
 
     // Map API response to component format (with name resolution)
     const mappedBookings = await Promise.all(
-      response.items.map(appointment => mapAppointmentToBooking(appointment))
+      appointments.map(appointment => mapAppointmentToBooking(appointment))
     )
     bookings.value = mappedBookings
   } catch (err) {
@@ -250,8 +267,8 @@ const mapAppointmentToBooking = async (appointment: Appointment): Promise<Bookin
   return {
     id: appointment.id,
     customerName, // Resolved name
-    date: formatDate(appointment.scheduledStartTime),
-    time: formatTime(appointment.scheduledStartTime),
+    date: convertEnglishToPersianNumbers(formatDateUtil(appointment.scheduledStartTime)),
+    time: convertEnglishToPersianNumbers(formatTimeUtil(appointment.scheduledStartTime)),
     service: serviceName, // Resolved name
     status: mapStatus(appointment.status),
     appointment, // Include full appointment
@@ -269,24 +286,6 @@ const mapStatus = (apiStatus: string): BookingStatus => {
     NoShow: 'cancelled',
   }
   return statusMap[apiStatus] || 'scheduled'
-}
-
-// Format date to Persian
-const formatDate = (dateString: string): string => {
-  const date = new Date(dateString)
-  // TODO: Use Jalaali date formatting
-  const year = date.getFullYear()
-  const month = String(date.getMonth() + 1).padStart(2, '0')
-  const day = String(date.getDate()).padStart(2, '0')
-  return convertEnglishToPersianNumbers(`${year}/${month}/${day}`)
-}
-
-// Format time
-const formatTime = (dateString: string): string => {
-  const date = new Date(dateString)
-  const hours = String(date.getHours()).padStart(2, '0')
-  const minutes = String(date.getMinutes()).padStart(2, '0')
-  return convertEnglishToPersianNumbers(`${hours}:${minutes}`)
 }
 
 // Watch for providerId changes

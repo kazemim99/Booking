@@ -31,47 +31,13 @@
 
       <div class="hero-search">
         <div class="search-card">
-          <div class="search-tabs">
-            <button
-              :class="['tab-btn', { active: searchType === 'service' }]"
-              @click="searchType = 'service'"
-            >
-              <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-              </svg>
-              جستجوی خدمات
-            </button>
-            <button
-              :class="['tab-btn', { active: searchType === 'location' }]"
-              @click="searchType = 'location'"
-            >
-              <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
-              </svg>
-              نزدیک من
-            </button>
-          </div>
-
           <div class="search-inputs">
-            <div class="input-group" v-if="searchType === 'service'">
+            <div class="input-group">
               <SearchableDropdown
                 v-model="selectedCategory"
                 :options="categories"
                 placeholder="به دنبال چه خدمتی هستید؟"
                 @select="handleCategorySelect"
-              />
-            </div>
-
-            <div class="input-group" v-else>
-              <svg class="input-icon" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-              </svg>
-              <input
-                v-model="locationSearchQuery"
-                type="text"
-                placeholder="موقعیت مکانی خود را وارد کنید..."
-                class="search-input"
-                @keydown.enter="handleSearch"
               />
             </div>
 
@@ -81,10 +47,56 @@
                 :options="cities"
                 :loading="isLoadingCities"
                 :min-search-length="2"
-                placeholder="شهر"
+                :placeholder="detectedCity || 'شهر'"
                 @search="searchCities"
                 @select="handleCitySelect"
               />
+
+              <!-- GPS Detection Button -->
+              <button
+                @click="detectUserLocation"
+                class="location-detect-btn"
+                :disabled="isDetectingLocation"
+                :title="isDetectingLocation ? 'در حال تشخیص موقعیت...' : 'تشخیص موقعیت من'"
+                type="button"
+              >
+                <svg
+                  v-if="!isDetectingLocation"
+                  xmlns="http://www.w3.org/2000/svg"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                >
+                  <path
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                    stroke-width="2"
+                    d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"
+                  />
+                  <circle cx="12" cy="10" r="3" stroke-width="2" />
+                </svg>
+                <svg
+                  v-else
+                  class="animate-spin"
+                  xmlns="http://www.w3.org/2000/svg"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                >
+                  <circle
+                    class="opacity-25"
+                    cx="12"
+                    cy="12"
+                    r="10"
+                    stroke="currentColor"
+                    stroke-width="4"
+                  ></circle>
+                  <path
+                    class="opacity-75"
+                    fill="currentColor"
+                    d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                  ></path>
+                </svg>
+              </button>
             </div>
 
             <button class="search-btn" @click="handleSearch">
@@ -95,16 +107,34 @@
             </button>
           </div>
 
-          <div class="popular-searches">
-            <span class="label">محبوب‌ترین:</span>
+          <!-- Popular Cities -->
+          <div class="popular-cities">
+            <span class="label">شهرهای پرطرفدار:</span>
             <button
-              v-for="tag in popularSearches"
-              :key="tag.slug"
-              class="tag-btn"
-              @click="quickSearch(tag.slug)"
+              v-for="city in popularCities"
+              :key="city"
+              @click="selectPopularCity(city)"
+              class="city-tag"
+              type="button"
             >
-              {{ tag.name }}
+              {{ city }}
             </button>
+          </div>
+
+          <!-- Geolocation Error Message -->
+          <div v-if="geolocationError" class="geo-error-message">
+            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+            </svg>
+            <span>{{ geolocationError }}</span>
+          </div>
+
+          <!-- Success Message -->
+          <div v-if="detectedCity && !geolocationError" class="geo-success-message">
+            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+            <span>موقعیت شما: {{ detectedCity }}</span>
           </div>
         </div>
       </div>
@@ -157,13 +187,13 @@ import { categoryService } from '@/core/api/services/category.service'
 import { locationService } from '@/core/api/services/location.service'
 import { platformService } from '@/core/api/services/platform.service'
 import type { PlatformStatistics } from '@/core/api/services/platform.service'
+import { geolocationService } from '@/core/utils'
+import type { GeolocationError } from '@/core/utils'
 
 const router = useRouter()
 
-const searchType = ref<'service' | 'location'>('service')
 const selectedCategory = ref<string | number>('')
 const selectedCity = ref<string | number>('')
-const locationSearchQuery = ref('')
 
 const categories = ref<DropdownOption[]>([])
 const cities = ref<DropdownOption[]>([])
@@ -171,6 +201,15 @@ const popularSearches = ref<Array<{ name: string; slug: string }>>([])
 const isLoadingCities = ref(false)
 const platformStats = ref<PlatformStatistics | null>(null)
 const isLoadingStats = ref(false)
+
+// Geolocation state
+const isDetectingLocation = ref(false)
+const detectedCity = ref<string>('')
+const geolocationError = ref<string>('')
+const userLocation = ref<{ lat: number; lng: number } | null>(null)
+
+// Popular cities for quick access
+const popularCities = ref<string[]>(['تهران', 'مشهد', 'اصفهان', 'شیراز', 'تبریز', 'کرج'])
 
 // Computed statistics with Persian numbers
 const statsDisplay = computed(() => {
@@ -223,6 +262,10 @@ onMounted(async () => {
   } catch (error) {
     console.error('Error loading data:', error)
   }
+
+  // Auto-detect location on page load (non-blocking)
+  // This runs in the background and doesn't block page rendering
+  detectUserLocationOnLoad()
 })
 
 // Search cities based on user input (minimum 2 characters)
@@ -258,10 +301,8 @@ const handleSearch = () => {
     pageSize: 12,
   }
 
-  if (searchType.value === 'service' && selectedCategory.value) {
+  if (selectedCategory.value) {
     filters.serviceCategory = selectedCategory.value
-  } else if (searchType.value === 'location' && locationSearchQuery.value) {
-    filters.searchTerm = locationSearchQuery.value
   }
 
   if (selectedCity.value) {
@@ -296,6 +337,175 @@ const handleCategorySelect = (option: DropdownOption) => {
 const handleCitySelect = (option: DropdownOption) => {
   selectedCity.value = option.value
 }
+
+// ==================== Geolocation Functions ====================
+
+/**
+ * Silently detect user location on page load (non-intrusive)
+ * Doesn't show error messages, just quietly fills the city if successful
+ */
+const detectUserLocationOnLoad = async () => {
+  // Check if geolocation is supported
+  if (!geolocationService.isSupported()) {
+    console.log('[HeroSection] Geolocation not supported, skipping auto-detection')
+    return
+  }
+
+  // Don't set loading state - this happens silently in background
+  try {
+    console.log('[HeroSection] Auto-detecting location on page load...')
+
+    // Get position and reverse geocode with shorter timeout for page load
+    const { position, address } = await geolocationService.getCurrentLocationAndAddress({
+      enableHighAccuracy: false, // Faster, less battery on page load
+      timeout: 5000, // Shorter timeout for page load
+      maximumAge: 300000, // Use cached position if available
+    })
+
+    console.log('[HeroSection] Location auto-detected:', { position, address })
+    console.log('[HeroSection] Address details:', {
+      city: address.city,
+      district: address.district,
+      province: address.province,
+      formatted_address: address.formatted_address,
+    })
+
+    // Store the position
+    userLocation.value = {
+      lat: position.latitude,
+      lng: position.longitude,
+    }
+
+    // Extract city name with better fallbacks
+    const cityName = address.city || address.district || address.province || ''
+    if (!cityName || cityName === 'نامشخص') {
+      console.warn('[HeroSection] Could not extract valid city name from address:', address)
+      return
+    }
+
+    detectedCity.value = cityName
+
+    // Try to find matching city in database
+    const searchResults = await locationService.searchLocations(cityName)
+    const matchingCity = searchResults.find(loc => loc.type === 'city' && loc.name === cityName)
+
+    if (matchingCity) {
+      // Silently auto-select the city
+      selectedCity.value = matchingCity.id
+      cities.value = [
+        {
+          label: matchingCity.name,
+          value: matchingCity.id,
+          description: matchingCity.provinceName,
+        },
+      ]
+      console.log('[HeroSection] City auto-filled on load:', matchingCity.name)
+    }
+  } catch (error) {
+    // Silently fail - don't show error messages on page load
+    // User can still manually click GPS button if they want
+    console.log('[HeroSection] Auto-detection failed (silent):', error)
+  }
+}
+
+/**
+ * Detect user's current location and auto-fill city (manual trigger)
+ * Shows loading states and error messages
+ */
+const detectUserLocation = async () => {
+  // Check if geolocation is supported
+  if (!geolocationService.isSupported()) {
+    geolocationError.value = 'مرورگر شما از موقعیت‌یابی پشتیبانی نمی‌کند'
+    return
+  }
+
+  isDetectingLocation.value = true
+  geolocationError.value = ''
+  detectedCity.value = ''
+
+  try {
+    console.log('[HeroSection] Detecting user location...')
+
+    // Get position and reverse geocode in one call
+    const { position, address } = await geolocationService.getCurrentLocationAndAddress({
+      enableHighAccuracy: true,
+      timeout: 10000,
+      maximumAge: 300000, // Cache for 5 minutes
+    })
+
+    console.log('[HeroSection] Location detected:', { position, address })
+
+    // Store the position for potential future use
+    userLocation.value = {
+      lat: position.latitude,
+      lng: position.longitude,
+    }
+
+    // Extract city name
+    const cityName = address.city || address.district || 'نامشخص'
+    detectedCity.value = cityName
+
+    // Try to find matching city in our database
+    const searchResults = await locationService.searchLocations(cityName)
+    const matchingCity = searchResults.find(loc => loc.type === 'city' && loc.name === cityName)
+
+    if (matchingCity) {
+      // Auto-select the city in dropdown
+      selectedCity.value = matchingCity.id
+      cities.value = [
+        {
+          label: matchingCity.name,
+          value: matchingCity.id,
+          description: matchingCity.provinceName,
+        },
+      ]
+      console.log('[HeroSection] City auto-selected:', matchingCity.name)
+    } else {
+      // City not in database, but still show detected name
+      console.log('[HeroSection] City detected but not in database:', cityName)
+    }
+
+    geolocationError.value = ''
+  } catch (error) {
+    console.error('[HeroSection] Geolocation error:', error)
+
+    const geoError = error as GeolocationError
+    geolocationError.value = geoError.message || 'خطا در تشخیص موقعیت مکانی'
+
+    // User-friendly error messages
+    if (geoError.code === 'PERMISSION_DENIED') {
+      geolocationError.value = 'لطفاً دسترسی به موقعیت مکانی را در تنظیمات مرورگر فعال کنید'
+    } else if (geoError.code === 'TIMEOUT') {
+      geolocationError.value = 'زمان درخواست به پایان رسید. لطفاً دوباره تلاش کنید'
+    }
+  } finally {
+    isDetectingLocation.value = false
+  }
+}
+
+/**
+ * Quick select popular city
+ */
+const selectPopularCity = async (cityName: string) => {
+  try {
+    const searchResults = await locationService.searchLocations(cityName)
+    const city = searchResults.find(loc => loc.type === 'city' && loc.name === cityName)
+
+    if (city) {
+      selectedCity.value = city.id
+      cities.value = [
+        {
+          label: city.name,
+          value: city.id,
+          description: city.provinceName,
+        },
+      ]
+    }
+  } catch (error) {
+    console.error('[HeroSection] Error selecting popular city:', error)
+  }
+}
+
 </script>
 
 <style scoped>
@@ -420,43 +630,6 @@ const handleCitySelect = (option: DropdownOption) => {
   }
 }
 
-.search-tabs {
-  display: flex;
-  gap: 1rem;
-  margin-bottom: 1.5rem;
-  padding: 0.5rem;
-  background: #f7fafc;
-  border-radius: 12px;
-}
-
-.tab-btn {
-  flex: 1;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 0.5rem;
-  padding: 0.75rem 1rem;
-  background: transparent;
-  border: none;
-  border-radius: 8px;
-  font-size: 0.95rem;
-  font-weight: 600;
-  color: #64748b;
-  cursor: pointer;
-  transition: all 0.3s;
-}
-
-.tab-btn svg {
-  width: 18px;
-  height: 18px;
-}
-
-.tab-btn.active {
-  background: white;
-  color: #667eea;
-  box-shadow: 0 2px 8px rgba(102, 126, 234, 0.15);
-}
-
 .search-inputs {
   display: grid;
   grid-template-columns: 1fr 1fr auto;
@@ -468,6 +641,10 @@ const handleCitySelect = (option: DropdownOption) => {
   position: relative;
   display: flex;
   align-items: center;
+}
+
+.location-group {
+  position: relative;
 }
 
 .input-icon {
@@ -550,6 +727,144 @@ const handleCitySelect = (option: DropdownOption) => {
   color: white;
   border-color: #667eea;
   transform: translateY(-1px);
+}
+
+/* GPS Location Detection Button */
+.location-detect-btn {
+  position: absolute;
+  left: 0.5rem;
+  top: 50%;
+  transform: translateY(-50%);
+  z-index: 10;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  padding: 0.5rem;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  border: none;
+  border-radius: 10px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  box-shadow: 0 2px 8px rgba(102, 126, 234, 0.3);
+}
+
+.location-detect-btn svg {
+  width: 20px;
+  height: 20px;
+}
+
+.location-detect-btn:hover:not(:disabled) {
+  background: linear-gradient(135deg, #5568d3 0%, #6a3f8f 100%);
+  transform: translateY(-50%) scale(1.05);
+  box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+}
+
+.location-detect-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.location-detect-btn .animate-spin {
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* Popular Cities */
+.popular-cities {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+  margin-top: 1rem;
+  padding-top: 1rem;
+  border-top: 1px solid #e2e8f0;
+}
+
+.popular-cities .label {
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: #64748b;
+}
+
+.city-tag {
+  padding: 0.5rem 1rem;
+  background: #f1f5f9;
+  border: 1px solid #e2e8f0;
+  border-radius: 20px;
+  font-size: 0.875rem;
+  color: #475569;
+  cursor: pointer;
+  transition: all 0.2s;
+  font-weight: 500;
+}
+
+.city-tag:hover {
+  background: #667eea;
+  color: white;
+  border-color: #667eea;
+  transform: translateY(-1px);
+  box-shadow: 0 2px 8px rgba(102, 126, 234, 0.2);
+}
+
+/* Geolocation Messages */
+.geo-error-message,
+.geo-success-message {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.75rem 1rem;
+  border-radius: 10px;
+  font-size: 0.875rem;
+  margin-top: 1rem;
+  animation: slideIn 0.3s ease-out;
+}
+
+@keyframes slideIn {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.geo-error-message {
+  background: #fef2f2;
+  color: #991b1b;
+  border: 1px solid #fecaca;
+}
+
+.geo-error-message svg {
+  width: 20px;
+  height: 20px;
+  color: #dc2626;
+  flex-shrink: 0;
+}
+
+.geo-success-message {
+  background: #f0fdf4;
+  color: #166534;
+  border: 1px solid #bbf7d0;
+}
+
+.geo-success-message svg {
+  width: 20px;
+  height: 20px;
+  color: #16a34a;
+  flex-shrink: 0;
 }
 
 .hero-stats {
@@ -722,6 +1037,33 @@ const handleCitySelect = (option: DropdownOption) => {
   .provider-cta-button {
     width: 100%;
     justify-content: center;
+  }
+
+  .popular-cities {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.5rem;
+  }
+
+  .city-tag {
+    font-size: 0.8125rem;
+    padding: 0.4rem 0.875rem;
+  }
+
+  .location-detect-btn {
+    width: 36px;
+    height: 36px;
+  }
+
+  .location-detect-btn svg {
+    width: 18px;
+    height: 18px;
+  }
+
+  .geo-error-message,
+  .geo-success-message {
+    font-size: 0.8125rem;
+    padding: 0.625rem 0.875rem;
   }
 }
 </style>

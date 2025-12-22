@@ -50,7 +50,8 @@ export async function authGuard(
   // Check if user is a Provider and needs status-based routing
   if (authStore.isAuthenticated && authStore.hasAnyRole(['Provider', 'ServiceProvider'])) {
     // Define all registration routes that should skip status checking
-    const registrationRoutes = ['ProviderRegistration', 'OrganizationRegistration', 'IndividualRegistration']
+    // Note: IndividualRegistration is disabled - everyone registers as Organization
+    const registrationRoutes = ['ProviderRegistration', 'OrganizationRegistration']
 
     // If already going to any registration route, allow it
     if (registrationRoutes.includes(to.name as string)) {
@@ -64,13 +65,23 @@ export async function authGuard(
 
     // Redirect based on provider status
     // Drafted or no provider record: redirect to organization registration
-    // BUT allow access to profile, settings, and other general routes
+    // BUT allow access to profile, settings, dashboard, and other general routes
     if (
       (providerStatus === ProviderStatus.Drafted || providerStatus === null) &&
       !registrationRoutes.includes(to.name as string)
     ) {
-      // Allow access to profile, settings, and booking even for incomplete providers
-      const allowedGeneralRoutes = ['ProviderProfile', 'ProviderSettings', 'NewBooking', 'BookingDetails', 'Bookings', 'Forbidden', 'NotFound', 'ServerError']
+      // Allow access to profile, settings, booking, dashboard, and other general routes even for incomplete providers
+      const allowedGeneralRoutes = [
+        'ProviderDashboard',
+        'ProviderProfile',
+        'ProviderSettings',
+        'NewBooking',
+        'BookingDetails',
+        'Bookings',
+        'Forbidden',
+        'NotFound',
+        'ServerError',
+      ]
       if (!allowedGeneralRoutes.includes(to.name as string)) {
         console.log('[AuthGuard] Redirecting provider with Drafted status to organization registration')
         next({ name: 'OrganizationRegistration' })

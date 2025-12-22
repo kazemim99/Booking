@@ -182,6 +182,40 @@ class ProviderService {
   }
 
   /**
+   * Refresh JWT token with updated provider status after registration
+   * Call this after completing provider registration to get a new JWT token
+   * that includes the updated provider status and hierarchy information.
+   * @returns New access token and provider information
+   */
+  async refreshProviderToken(): Promise<{
+    accessToken: string
+    refreshToken?: string
+    expiresIn: number
+    tokenType: string
+    providerId: string
+    providerStatus: string
+  }> {
+    try {
+      console.log(`[ProviderService] Refreshing provider token after registration`)
+      const response = await serviceCategoryClient.post<{
+        accessToken: string
+        refreshToken?: string
+        expiresIn: number
+        tokenType: string
+        providerId: string
+        providerStatus: string
+      }>(`${API_BASE}/current/refresh-token`, {})
+
+      console.log(`[ProviderService] Token refreshed successfully for provider:`, response.data!.providerId)
+
+      return response.data!
+    } catch (error) {
+      console.error(`[ProviderService] Error refreshing provider token:`, error)
+      throw this.handleError(error)
+    }
+  }
+
+  /**
    * Update provider profile
    */
   async updateProvider(id: string, data: UpdateProviderRequest): Promise<Provider> {

@@ -56,7 +56,7 @@
       <div v-if="upcomingList.length > 0" class="appointments-list">
         <div v-for="booking in upcomingList" :key="booking.id" class="appointment-item">
           <div class="appointment-date">
-            <span class="day">{{ formatDay(booking.startTime) }}</span>
+            <span class="day">{{ formatDate(booking.startTime) }}</span>
             <span class="time">{{ formatTime(booking.startTime) }}</span>
           </div>
           <div class="appointment-details">
@@ -78,6 +78,7 @@
 import { ref, computed } from 'vue'
 import { useRouter } from 'vue-router'
 import { useAuthStore } from '@/core/stores'
+import { formatDate, formatTime } from '@/core/utils'
 
 const router = useRouter()
 const authStore = useAuthStore()
@@ -103,14 +104,6 @@ const upcomingList = ref([
     startTime: new Date(Date.now() + 172800000),
   },
 ])
-
-function formatDay(date: Date) {
-  return new Intl.DateTimeFormat('fa-IR', { day: 'numeric', month: 'short' }).format(new Date(date))
-}
-
-function formatTime(date: Date) {
-  return new Intl.DateTimeFormat('fa-IR', { hour: '2-digit', minute: '2-digit' }).format(new Date(date))
-}
 
 function viewBooking(id: string) {
   router.push(`/customer/booking/${id}`)
