@@ -38,7 +38,7 @@ public class ProviderManagementTests : ServiceCatalogIntegrationTestBase
             // OwnerId will be automatically set from authenticated user
             BusinessName = "Test Salon & Spa",
             Description = "Premium beauty services",
-            Type = ServiceCategory.Barbershop,
+            PrimaryCategory = ServiceCategory.Barbershop,
             ContactInfo = new ContactInfoRequest
             {
                 Email = "testsalon@example.com",
@@ -79,7 +79,7 @@ public class ProviderManagementTests : ServiceCatalogIntegrationTestBase
         {
             BusinessName = "Test Salon",
             Description = "Beauty services",
-            ProviderType = ServiceCategory.Barbershop,
+            PrimaryCategory = ServiceCategory.Barbershop,
             ContactInfo = new ContactInfoRequest
             {
                 Email = "invalid-email", // Invalid email format
@@ -120,7 +120,7 @@ public class ProviderManagementTests : ServiceCatalogIntegrationTestBase
         {
             BusinessName = "Unauthorized Salon",
             Description = "Should fail",
-            ProviderType = ServiceCategory.Barbershop,
+            PrimaryCategory = ServiceCategory.Barbershop,
             Email = "fail@example.com",
             PhoneNumber = "+1234567890",
             Street = "123 Fail St",

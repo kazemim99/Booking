@@ -42,7 +42,7 @@ namespace Booksy.ServiceCatalog.Application.Queries.Service.GetServicesByProvide
                 var specification = new GetServicesByProviderSpecification(
                     providerId: providerId,
                     status: request.Status,
-                    category: request.Category,
+                    category: Enum.Parse<ServiceCategory>(request.Category),
                     includeOptions: false,
                     includePriceTiers: false,
                     includeProvider: false);

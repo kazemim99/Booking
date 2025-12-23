@@ -17,17 +17,10 @@ namespace Booksy.ServiceCatalog.Api.Models.Requests.Extenstions
         /// </summary>
         public static SearchProvidersQuery ToQuery(this SearchProvidersRequest request)
         {
-            // Parse enum values safely
-            ProviderType? type = null;
-            if (!string.IsNullOrEmpty(request.Type) &&
-                Enum.TryParse<ProviderType>(request.Type, true, out var parsedType))
-            {
-                type = parsedType;
-            }
+         
 
             return new SearchProvidersQuery(
                 SearchTerm: request.SearchTerm,
-                Type: type,
                 City: request.City,
                 State: request.State,
                 Country: request.Country,
@@ -58,19 +51,13 @@ namespace Booksy.ServiceCatalog.Api.Models.Requests.Extenstions
         /// </summary>
         public static GetProvidersByLocationQuery ToQuery(this GetProvidersByLocationRequest request)
         {
-            // Parse enum values safely
-            ProviderType? type = null;
-            if (!string.IsNullOrEmpty(request.Type) &&
-                Enum.TryParse<ProviderType>(request.Type, true, out var parsedType))
-            {
-                type = parsedType;
-            }
+        
 
             return new GetProvidersByLocationQuery(
                 Latitude: request.Latitude,
                 Longitude: request.Longitude,
                 RadiusKm: request.RadiusKm,
-                Type: type,
+                Category: Enum.Parse<ServiceCategory>(request.Type),
                 OffersMobileServices: request.OffersMobileServices,
                 PageNumber: request.PageNumber,
                 PageSize: request.PageSize);

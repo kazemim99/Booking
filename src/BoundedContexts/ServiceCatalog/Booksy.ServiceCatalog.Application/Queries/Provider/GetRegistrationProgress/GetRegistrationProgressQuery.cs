@@ -22,7 +22,6 @@ public sealed record ProviderDraftData(
     BusinessInfoData BusinessInfo,
     LocationData Location,
     List<ServiceData> Services,
-    List<StaffData> Staff,
     List<BusinessHoursData> BusinessHours,
     List<GalleryImageData> GalleryImages
 );

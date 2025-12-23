@@ -25,7 +25,6 @@ namespace Booksy.ServiceCatalog.Infrastructure.Persistence.Repositories
         public override async Task<Provider?> GetByIdAsync(ProviderId id, CancellationToken cancellationToken = default)
         {
             return await DbSet
-                .Include(p => p.Staff)
                 .Include(p => p.BusinessHours)
                 .Include(p => p.Services)
                 .Include(p => p.Profile)
@@ -35,7 +34,6 @@ namespace Booksy.ServiceCatalog.Infrastructure.Persistence.Repositories
         public async Task<Provider?> GetByOwnerIdAsync(UserId ownerId, CancellationToken cancellationToken = default)
         {
             return await DbSet
-                .Include(p => p.Staff)
                 .Include(p => p.BusinessHours)
                 .FirstOrDefaultAsync(p => p.OwnerId == ownerId, cancellationToken);
         }
@@ -43,7 +41,6 @@ namespace Booksy.ServiceCatalog.Infrastructure.Persistence.Repositories
         public async Task<Provider?> GetByBusinessNameAsync(string businessName, CancellationToken cancellationToken = default)
         {
             return await DbSet
-                .Include(p => p.Staff)
                 .Include(p => p.BusinessHours)
                 .FirstOrDefaultAsync(p => p.Profile.BusinessName == businessName, cancellationToken);
         }
@@ -51,25 +48,22 @@ namespace Booksy.ServiceCatalog.Infrastructure.Persistence.Repositories
         public async Task<IReadOnlyList<Provider>> GetByStatusAsync(ProviderStatus status, CancellationToken cancellationToken = default)
         {
             return await DbSet
-                .Include(p => p.Staff)
                 .Include(p => p.BusinessHours)
                 //.Where(p => p.Status == status)
                 .ToListAsync(cancellationToken);
         }
 
-        public async Task<IReadOnlyList<Provider>> GetByTypeAsync(ProviderType type, CancellationToken cancellationToken = default)
+        public async Task<IReadOnlyList<Provider>> GetByTypeAsync(ServiceCategory type, CancellationToken cancellationToken = default)
         {
             return await DbSet
-                .Include(p => p.Staff)
                 .Include(p => p.BusinessHours)
-                .Where(p => p.ProviderType == type)
+                .Where(p => p.PrimaryCategory == type)
                 .ToListAsync(cancellationToken);
         }
 
         public async Task<IReadOnlyList<Provider>> GetByCityAsync(string city, CancellationToken cancellationToken = default)
         {
             return await DbSet
-                .Include(p => p.Staff)
                 .Include(p => p.BusinessHours)
                 .Where(p => p.Address.City == city)
                 .ToListAsync(cancellationToken);
@@ -79,7 +73,6 @@ namespace Booksy.ServiceCatalog.Infrastructure.Persistence.Repositories
         {
             // Using Haversine formula for distance calculation
             return await DbSet
-                .Include(p => p.Staff)
                 .Include(p => p.BusinessHours)
                 .Where(p => p.Address.Latitude != null && p.Address.Longitude != null)
                 .Where(p =>
@@ -98,7 +91,6 @@ namespace Booksy.ServiceCatalog.Infrastructure.Persistence.Repositories
             var normalizedSearchTerm = searchTerm.ToLower().Trim();
 
             return await DbSet
-                .Include(p => p.Staff)
                 .Include(p => p.BusinessHours)
                 .Where(p =>
                     p.Profile.BusinessName.ToLower().Contains(normalizedSearchTerm) ||
@@ -111,11 +103,10 @@ namespace Booksy.ServiceCatalog.Infrastructure.Persistence.Repositories
             int pageNumber,
             int pageSize,
             ProviderStatus? status = null,
-            ProviderType? type = null,
+            ServiceCategory? type = null,
             CancellationToken cancellationToken = default)
         {
             var query = DbSet
-                .Include(p => p.Staff)
                 .Include(p => p.BusinessHours)
                 .AsQueryable();
 
@@ -123,7 +114,7 @@ namespace Booksy.ServiceCatalog.Infrastructure.Persistence.Repositories
                 query = query.Where(p => p.Status == status.Value);
 
             if (type.HasValue)
-                query = query.Where(p => p.ProviderType == type.Value);
+                query = query.Where(p => p.PrimaryCategory == type.Value);
 
             var totalCount = await query.CountAsync(cancellationToken);
             var items = await query
@@ -157,7 +148,6 @@ namespace Booksy.ServiceCatalog.Infrastructure.Persistence.Repositories
         public async Task<IReadOnlyList<Provider>> GetRecentlyActiveAsync(int count, CancellationToken cancellationToken = default)
         {
             return await DbSet
-                .Include(p => p.Staff)
                 .Include(p => p.BusinessHours)
                 .Where(p => p.LastActiveAt.HasValue)
                 .OrderByDescending(p => p.LastActiveAt)
@@ -169,7 +159,6 @@ namespace Booksy.ServiceCatalog.Infrastructure.Persistence.Repositories
         public async Task<IReadOnlyList<Provider>> GetStaffByOrganizationIdAsync(ProviderId organizationId, CancellationToken cancellationToken = default)
         {
             return await DbSet
-                .Include(p => p.Staff)
                 .Include(p => p.BusinessHours)
                 .Where(p => p.ParentProviderId == organizationId)
                 .ToListAsync(cancellationToken);
@@ -187,7 +176,6 @@ namespace Booksy.ServiceCatalog.Infrastructure.Persistence.Repositories
         public async Task<IReadOnlyList<Provider>> GetByHierarchyTypeAsync(ProviderHierarchyType hierarchyType, CancellationToken cancellationToken = default)
         {
             return await DbSet
-                .Include(p => p.Staff)
                 .Include(p => p.BusinessHours)
                 .Where(p => p.HierarchyType == hierarchyType)
                 .ToListAsync(cancellationToken);
@@ -196,7 +184,6 @@ namespace Booksy.ServiceCatalog.Infrastructure.Persistence.Repositories
         public async Task<IReadOnlyList<Provider>> GetIndependentIndividualsAsync(CancellationToken cancellationToken = default)
         {
             return await DbSet
-                .Include(p => p.Staff)
                 .Include(p => p.BusinessHours)
                 .Where(p => p.HierarchyType == ProviderHierarchyType.Individual && p.IsIndependent)
                 .ToListAsync(cancellationToken);

@@ -64,7 +64,6 @@ namespace Booksy.ServiceCatalog.Infrastructure.Persistence.Seeders
 
             foreach (var (persianName, englishName, description, price, duration, category) in baseServices)
             {
-                var serviceCategory = ServiceCategory.Create(category, $"خدمات {category}");
                 var priceValue = Price.Create(price, "IRR"); // Iranian Rial
                 var durationValue = Duration.FromMinutes(duration);
 
@@ -72,7 +71,7 @@ namespace Booksy.ServiceCatalog.Infrastructure.Persistence.Seeders
                     provider.Id,
                     $"{englishName} - {persianName}",
                     description,
-                    serviceCategory,
+                    Enum.Parse<ServiceCategory>(category),
                     ServiceType.Standard,
                     priceValue,
                     durationValue);
@@ -155,14 +154,7 @@ namespace Booksy.ServiceCatalog.Infrastructure.Persistence.Seeders
                     ("ماساژ ورزشی", "Sports Massage", "ماساژ بعد از ورزش", 1200000m, 45, "ماساژ")
                 },
 
-                ProviderType.Professional => new List<(string, string, string, decimal, int, string)>
-                {
-                    ("ماساژ فیزیوتراپی", "Physiotherapy Massage", "ماساژ درمانی توسط فیزیوتراپیست", 1500000m, 60, "فیزیوتراپی"),
-                    ("طب سوزنی", "Acupuncture", "درمان با طب سوزنی", 1200000m, 45, "طب سنتی"),
-                    ("طب سنتی ایرانی", "Persian Traditional Medicine", "مشاوره و درمان با طب سنتی", 1000000m, 30, "طب سنتی"),
-                    ("رفلکسولوژی", "Reflexology", "ماساژ کف پا درمانی", 800000m, 45, "ماساژ درمانی"),
-                    ("حجامت", "Cupping Therapy", "حجامت درمانی", 600000m, 30, "طب سنتی")
-                },
+              
 
                 _ => new List<(string, string, string, decimal, int, string)>()
             };

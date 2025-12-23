@@ -41,7 +41,7 @@ namespace Booksy.ServiceCatalog.Application.EventHandlers.DomainEventHandlers
                 domainEvent.ProviderId.Value,
                 domainEvent.OwnerId.Value,
                 domainEvent.BusinessName,
-                domainEvent.ProviderType.ToString(), // Convert enum to string for cross-context compatibility
+                domainEvent.PrimaryCategory.ToString(), // Convert enum to string for cross-context compatibility
                 domainEvent.RegisteredAt);
 
             await _eventPublisher.PublishAsync(integrationEvent, cancellationToken);

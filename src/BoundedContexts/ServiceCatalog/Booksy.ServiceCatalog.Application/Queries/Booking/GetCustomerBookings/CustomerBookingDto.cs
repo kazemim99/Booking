@@ -14,7 +14,6 @@ namespace Booksy.ServiceCatalog.Application.Queries.Booking.GetCustomerBookings
         Guid? StaffId,
         string ServiceName,
         string ProviderName,
-        string? StaffName,
         DateTime StartTime,
         DateTime EndTime,
         int DurationMinutes,

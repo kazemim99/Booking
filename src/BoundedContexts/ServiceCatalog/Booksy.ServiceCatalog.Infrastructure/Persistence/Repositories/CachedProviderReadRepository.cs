@@ -90,7 +90,7 @@ namespace Booksy.ServiceCatalog.Infrastructure.Persistence.Repositories
         public Task<IReadOnlyList<Provider>> GetByStatusAsync(ProviderStatus status, CancellationToken cancellationToken = default) =>
             _inner.GetByStatusAsync(status, cancellationToken);
 
-        public Task<IReadOnlyList<Provider>> GetByTypeAsync(ProviderType type, CancellationToken cancellationToken = default) =>
+        public Task<IReadOnlyList<Provider>> GetByTypeAsync(ServiceCategory type, CancellationToken cancellationToken = default) =>
             _inner.GetByTypeAsync(type, cancellationToken);
 
         public Task<IReadOnlyList<Provider>> GetByCityAsync(string city, CancellationToken cancellationToken = default) =>
@@ -102,7 +102,7 @@ namespace Booksy.ServiceCatalog.Infrastructure.Persistence.Repositories
         public Task<IReadOnlyList<Provider>> SearchAsync(string searchTerm, CancellationToken cancellationToken = default) =>
             _inner.SearchAsync(searchTerm, cancellationToken);
 
-        public Task<PagedResult<Provider>> GetPaginatedAsync(int pageNumber, int pageSize, ProviderStatus? status = null, ProviderType? type = null, CancellationToken cancellationToken = default) =>
+        public Task<PagedResult<Provider>> GetPaginatedAsync(int pageNumber, int pageSize, ProviderStatus? status = null, ServiceCategory? type = null, CancellationToken cancellationToken = default) =>
             _inner.GetPaginatedAsync(pageNumber, pageSize, status, type, cancellationToken);
 
         public Task<bool> ExistsByBusinessNameAsync(string businessName, ProviderId? excludeId = null, CancellationToken cancellationToken = default) =>

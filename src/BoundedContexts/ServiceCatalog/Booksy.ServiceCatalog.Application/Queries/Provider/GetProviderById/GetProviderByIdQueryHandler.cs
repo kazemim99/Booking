@@ -89,7 +89,6 @@ namespace Booksy.ServiceCatalog.Application.Queries.Provider.GetProviderById
                 AverageRating = provider.AverageRating,
                 TotalReviews = 0,
                 ServiceCount = provider.Services.Count,
-                StaffCount = provider.Staff.Count,
                 YearsInBusiness = provider.RegisteredAt.Year > 0
                     ? DateTime.UtcNow.Year - provider.RegisteredAt.Year
                     : 0,
@@ -136,21 +135,7 @@ namespace Booksy.ServiceCatalog.Application.Queries.Provider.GetProviderById
                 }).ToList();
             }
 
-            if (request.IncludeStaff)
-            {
-                viewModel.Staff = provider.Staff.Select(staff => new ProviderStaffItem
-                {
-                    Id = staff.Id,
-                    FirstName = staff.FirstName,
-                    LastName = staff.LastName,
-                    FullName = staff.FullName,
-                    Email = staff.Email?.Value,
-                    Phone = staff.Phone?.Value,
-                    Role = staff.Role,
-                    IsActive = staff.IsActive,
-                    HiredAt = staff.HiredAt
-                }).ToList();
-            }
+          
 
             if (request.IncludeServices)
             {

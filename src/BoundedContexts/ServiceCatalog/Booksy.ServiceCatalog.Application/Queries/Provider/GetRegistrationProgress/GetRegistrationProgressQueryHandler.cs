@@ -66,7 +66,7 @@ public sealed class GetRegistrationProgressQueryHandler
         var businessInfo = new BusinessInfoData(
             BusinessName: draftProvider.Profile.BusinessName,
             BusinessDescription: draftProvider.Profile.BusinessDescription ?? "",
-            Category: draftProvider.ProviderType.ToString(),
+            Category: draftProvider.PrimaryCategory.ToString(),
             PhoneNumber: draftProvider.ContactInfo.PrimaryPhone?.Value ?? "",
             Email: draftProvider.ContactInfo.Email?.Value ?? "",
             OwnerFirstName: draftProvider.OwnerFirstName,
@@ -100,16 +100,7 @@ public sealed class GetRegistrationProgressQueryHandler
             PriceType: s.Type.ToString()
         )).ToList();
 
-        // Map staff (only active staff members)
-        var staff = draftProvider.Staff
-            .Where(s => s.IsActive)
-            .Select(s => new StaffData(
-                Id: s.Id.ToString(),
-                Name: s.FullName,
-                Email: s.Email?.Value ?? "",
-                PhoneNumber: s.Phone?.Value ?? "",
-                Position: s.Role.ToString()
-            )).ToList();
+      
 
         // Map business hours
         var businessHours = draftProvider.BusinessHours.Select(bh => new BusinessHoursData(
@@ -152,7 +143,6 @@ public sealed class GetRegistrationProgressQueryHandler
             BusinessInfo: businessInfo,
             Location: location,
             Services: services,
-            Staff: staff,
             BusinessHours: businessHours,
             GalleryImages: galleryImages
         );

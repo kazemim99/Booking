@@ -37,7 +37,7 @@ public class ProviderSteps
             OwnerId = _scenarioContext.Get<Guid>("CurrentUserId"),
             BusinessName = (string)requestData["BusinessName"],
             Description = (string)requestData["Description"],
-            Type = Enum.Parse<ProviderType>((string)requestData["Type"]),
+            PrimaryCategory = Enum.Parse<ServiceCategory>((string)requestData["Type"]),
             ContactInfo = new ContactInfoRequest
             {
                 PrimaryPhone = (string)requestData["PrimaryPhone"]

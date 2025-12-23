@@ -14,11 +14,6 @@ namespace Booksy.ServiceCatalog.API.Models.Requests
         public string? SearchTerm { get; set; }
 
         /// <summary>
-        /// Filter by service category
-        /// </summary>
-        public string? Category { get; set; }
-
-        /// <summary>
         /// Filter by city
         /// </summary>
         [StringLength(100, ErrorMessage = "City cannot exceed 100 characters")]

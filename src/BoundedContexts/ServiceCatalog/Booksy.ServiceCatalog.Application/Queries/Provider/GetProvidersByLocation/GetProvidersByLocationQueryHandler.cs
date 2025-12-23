@@ -36,7 +36,7 @@ namespace Booksy.ServiceCatalog.Application.Queries.Provider.GetProvidersByLocat
                     latitude: request.Latitude,
                     longitude: request.Longitude,
                     radiusKm: request.RadiusKm,
-                    type: request.Category,
+                    category: request.Category,
                     offersMobileServices: request.OffersMobileServices);
 
 

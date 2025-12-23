@@ -74,7 +74,6 @@ namespace Booksy.ServiceCatalog.Application.Queries.Booking.GetCustomerBookings
                 // Load provider and service for additional details
                 var provider = await _providerRepository.GetByIdAsync(booking.ProviderId, cancellationToken);
                 var service = await _serviceRepository.GetByIdAsync(booking.ServiceId, cancellationToken);
-                var staff = provider?.Staff.FirstOrDefault(s => s.Id == booking.StaffId);
 
                 enrichedDtos.Add(new CustomerBookingDto(
                     BookingId: booking.Id.Value,
@@ -84,7 +83,6 @@ namespace Booksy.ServiceCatalog.Application.Queries.Booking.GetCustomerBookings
                     StaffId: booking.StaffId,
                     ServiceName: service?.Name ?? "Unknown Service",
                     ProviderName: provider?.Profile.BusinessName ?? "Unknown Provider",
-                    StaffName: staff?.FullName,
                     StartTime: booking.TimeSlot.StartTime,
                     EndTime: booking.TimeSlot.EndTime,
                     DurationMinutes: booking.Duration.Value,

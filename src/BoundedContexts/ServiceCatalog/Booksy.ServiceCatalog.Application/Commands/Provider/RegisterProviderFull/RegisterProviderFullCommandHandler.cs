@@ -211,7 +211,7 @@ namespace Booksy.ServiceCatalog.Application.Commands.Provider.RegisterProviderFu
                     // Determine role
                     var role = DetermineStaffRole(memberDto.Position);
 
-                    provider.AddStaff(firstName, lastName, role, staffPhone);
+                    //provider.AddStaff(firstName, lastName, role, staffPhone);
 
                     staffAdded++;
 

@@ -58,9 +58,6 @@ namespace Booksy.ServiceCatalog.Infrastructure.Persistence.Seeders
                 new NotificationTemplateSeeder(_context,
                     Microsoft.Extensions.Logging.Abstractions.NullLogger<NotificationTemplateSeeder>.Instance),
 
-                // 9. Bookings (depends on Providers, Staff, Services, ProviderAvailability)
-                new BookingSeeder(_context,
-                    Microsoft.Extensions.Logging.Abstractions.NullLogger<BookingSeeder>.Instance),
 
                 // 10. Reviews (depends on Bookings - only completed bookings can have reviews)
                 new ReviewSeeder(_context,

@@ -696,7 +696,7 @@ public class ProvidersController : ControllerBase
             Id = searchResult.Id,
             BusinessName = searchResult.BusinessName,
             Description = searchResult.Description,
-            Type = searchResult.Type.ToString(),
+            Type = searchResult.PrimaryCategory.ToString(),
             Status = searchResult.Status.ToString(),
             City = searchResult.City,
             ProfileImageUrl = searchResult.ProfileImageUrl,
@@ -751,7 +751,7 @@ public class ProvidersController : ControllerBase
             Id = locationResult.Id,
             BusinessName = locationResult.BusinessName,
             Description = locationResult.Description,
-            Type = locationResult.Type.ToString(),
+            Type = locationResult.PrimaryCategory.ToString(),
             Status = locationResult.Status.ToString(),
             Address = new AddressResponse
             {
@@ -1242,7 +1242,7 @@ public class ProvidersController : ControllerBase
             BusinessName = result.BusinessName,
             ProfileImageUrl = result.ProfileImageUrl,
             Description = result.Description,
-            Type = result.Type.ToString(),
+            Type = result.PrimaryCategory.ToString(),
             Status = result.Status.ToString(),
             ContactInfo = new ContactInfoResponse
             {
@@ -1271,7 +1271,6 @@ public class ProvidersController : ControllerBase
             AverageRating = result.AverageRating,
             TotalReviews = result.TotalReviews,
             ServiceCount = result.ServiceCount,
-            StaffCount = result.StaffCount,
             YearsInBusiness = result.YearsInBusiness,
             Tags = result.Tags.ToList(),
             RegisteredAt = result.RegisteredAt,

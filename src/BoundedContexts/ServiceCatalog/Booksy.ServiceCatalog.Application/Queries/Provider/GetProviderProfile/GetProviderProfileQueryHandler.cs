@@ -93,7 +93,7 @@ namespace Booksy.ServiceCatalog.Application.Queries.Provider.GetProviderProfile
                 Description = provider.Profile.BusinessDescription,
                 LogoUrl = provider.Profile.LogoUrl,
                 ProfileImageUrl = provider.Profile.ProfileImageUrl,
-                Type = provider.ProviderType,
+                PrimaryCategory = provider.PrimaryCategory,
                 Status = provider.Status,
                 PriceRange = provider.PriceRange,
 
@@ -146,17 +146,7 @@ namespace Booksy.ServiceCatalog.Application.Queries.Provider.GetProviderProfile
                     IsPopular = false // TODO: Calculate from booking frequency
                 }).ToList(),
 
-                // Staff
-                TotalStaff = provider.Staff.Count(s => s.IsActive),
-                Staff = provider.Staff
-                    .Where(s => s.IsActive)
-                    .Select(s => new StaffProfileViewModel
-                    {
-                        StaffId = s.Id,
-                        FullName = s.FullName,
-                        Role = s.Role.ToString()
-                    }).ToList(),
-
+             
                 // Gallery
                 GalleryImages = provider.Profile.GalleryImages
                     .Where(g => g.IsActive)

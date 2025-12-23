@@ -100,16 +100,7 @@ public class TestDataSteps
     {
         var provider = _scenarioContext.Get<Provider>("Provider:Current");
 
-        if (!provider.Staff.Any())
-        {
-            provider.AddStaff(
-                "Test",
-                "Staff",
-                StaffRole.ServiceProvider,
-                PhoneNumber.From("+1234567890"));
-
-            await _testBase.UpdateEntityAsync(provider);
-        }
+     
     }
 
     [Given(@"I have a booking for ""(.*)"" scheduled for tomorrow at (.*)")]
@@ -126,7 +117,7 @@ public class TestDataSteps
             UserId.From(customerId),
             provider.Id,
             service.Id,
-            provider.Staff.First().Id,
+            provider.Id,
             startTime,
             service.Duration,
             service.BasePrice,
@@ -152,7 +143,7 @@ public class TestDataSteps
             UserId.From(customerId),
             provider.Id,
             service.Id,
-            provider.Staff.First().Id,
+            provider.Id,
             startTime,
             service.Duration,
             service.BasePrice,

@@ -53,8 +53,6 @@ namespace Booksy.ServiceCatalog.Infrastructure.Persistence.Seeders
             {
                 // Get providers that don't have staff yet
                 var providers = await _context.Providers
-                    .Include(p => p.Staff)
-                    .Where(p => !p.Staff.Any())
                     .ToListAsync(cancellationToken);
 
                 if (!providers.Any())
@@ -67,11 +65,7 @@ namespace Booksy.ServiceCatalog.Infrastructure.Persistence.Seeders
 
                 var totalStaffAdded = 0;
 
-                foreach (var provider in providers)
-                {
-                    var staffCount = AddStaffToProvider(provider);
-                    totalStaffAdded += staffCount;
-                }
+              
 
                 await _context.SaveChangesAsync(cancellationToken);
 
@@ -85,158 +79,6 @@ namespace Booksy.ServiceCatalog.Infrastructure.Persistence.Seeders
             }
         }
 
-        private int AddStaffToProvider(Domain.Aggregates.Provider provider)
-        {
-            var staffCount = 0;
-
-            switch (provider.PrimaryCategory)
-            {
-                case ServiceCategory.Barbershop:
-                    // Individual barbershop/salon has owner only
-                    var (ownerFirstName, ownerLastName) = GetRandomPersianName(true);
-                    provider.AddStaff(
-                        ownerFirstName,
-                        ownerLastName,
-                        StaffRole.Owner,
-                        GenerateIranianPhone());
-                    staffCount = 1;
-                    break;
-
-                case ServiceCategory.HairSalon:
-                case ServiceCategory.BeautySalon:
-                    // Salon has owner and 3-5 female staff
-                    var (salonOwnerFirst, salonOwnerLast) = GetRandomPersianName(false);
-                    provider.AddStaff(
-                        salonOwnerFirst,
-                        salonOwnerLast,
-                        StaffRole.Owner,
-                        GenerateIranianPhone());
-
-                    for (int i = 0; i < 4; i++)
-                    {
-                        var (firstName, lastName) = GetRandomPersianName(false);
-                        var role = i == 3 ? StaffRole.Receptionist : StaffRole.ServiceProvider;
-                        provider.AddStaff(
-                            firstName,
-                            lastName,
-                            role,
-                            GenerateIranianPhone());
-                    }
-                    staffCount = 5;
-                    break;
-
-                case ProviderType.Spa:
-                    // Spa has mixed staff with therapists
-                    var (spaOwnerFirst, spaOwnerLast) = GetRandomPersianName(false);
-                    provider.AddStaff(
-                        spaOwnerFirst,
-                        spaOwnerLast,
-                        StaffRole.Owner,
-                        GenerateIranianPhone());
-
-                    // Add 3 therapists (mixed gender)
-                    for (int i = 0; i < 3; i++)
-                    {
-                        var (firstName, lastName) = GetRandomPersianName(i % 2 == 0);
-                        provider.AddStaff(
-                            firstName,
-                            lastName,
-                            StaffRole.ServiceProvider,
-                            GenerateIranianPhone());
-                    }
-
-                    // Add receptionist
-                    var (recFirst, recLast) = GetRandomPersianName(false);
-                    provider.AddStaff(
-                        recFirst,
-                        recLast,
-                        StaffRole.Receptionist,
-                        GenerateIranianPhone());
-
-                    staffCount = 5;
-                    break;
-
-                case ProviderType.Medical:
-                case ProviderType.Clinic:
-                    // Medical/Clinic has doctor, nurses
-                    var (doctorFirst, doctorLast) = GetRandomPersianName(true);
-                    provider.AddStaff(
-                        $"دکتر {doctorFirst}",
-                        doctorLast,
-                        StaffRole.Specialist,
-                        GenerateIranianPhone());
-
-                    // Add 2 nurses
-                    for (int i = 0; i < 2; i++)
-                    {
-                        var (nurseFirst, nurseLast) = GetRandomPersianName(false);
-                        provider.AddStaff(
-                            nurseFirst,
-                            nurseLast,
-                            StaffRole.ServiceProvider,
-                            GenerateIranianPhone());
-                    }
-
-                    staffCount = 3;
-                    break;
-
-                case ProviderType.GymFitness:
-                    // Gym has trainers
-                    var (gymOwnerFirst, gymOwnerLast) = GetRandomPersianName(true);
-                    provider.AddStaff(
-                        $"مربی {gymOwnerFirst}",
-                        gymOwnerLast,
-                        StaffRole.Owner,
-                        GenerateIranianPhone());
-
-                    for (int i = 0; i < 3; i++)
-                    {
-                        var (trainerFirst, trainerLast) = GetRandomPersianName(i % 2 == 0);
-                        provider.AddStaff(
-                            $"مربی {trainerFirst}",
-                            trainerLast,
-                            StaffRole.ServiceProvider,
-                            GenerateIranianPhone());
-                    }
-
-                    staffCount = 4;
-                    break;
-
-                case ProviderType.Professional:
-                    // Professional service has specialists
-                    var (profOwnerFirst, profOwnerLast) = GetRandomPersianName(false);
-                    provider.AddStaff(
-                        profOwnerFirst,
-                        profOwnerLast,
-                        StaffRole.Owner,
-                        GenerateIranianPhone());
-
-                    for (int i = 0; i < 2; i++)
-                    {
-                        var (specialistFirst, specialistLast) = GetRandomPersianName(i % 2 == 0);
-                        provider.AddStaff(
-                            specialistFirst,
-                            specialistLast,
-                            StaffRole.Specialist,
-                            GenerateIranianPhone());
-                    }
-
-                    staffCount = 3;
-                    break;
-
-                default:
-                    var (defaultFirst, defaultLast) = GetRandomPersianName(true);
-                    provider.AddStaff(
-                        defaultFirst,
-                        defaultLast,
-                        StaffRole.Owner,
-                        GenerateIranianPhone());
-                    staffCount = 1;
-                    break;
-            }
-
-            return staffCount;
-        }
 
         private (string FirstName, string LastName) GetRandomPersianName(bool isMale)
         {

@@ -97,6 +97,5 @@ public sealed class RegisterProviderRequest
     /// Business tags/categories
     /// </summary>
     public List<string> Tags { get; set; } = new();
-    public ServiceCategory PrimaryCategory { get; set; }
 }
 

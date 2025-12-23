@@ -91,7 +91,7 @@ public class AuthenticationSteps
             Core.Domain.ValueObjects.UserId.From(otherCustomerId),
             provider.Id,
             service.Id,
-            provider.Staff.First().Id,
+            provider.Id,
             DateTime.UtcNow.AddDays(2),
             service.Duration,
             service.BasePrice,

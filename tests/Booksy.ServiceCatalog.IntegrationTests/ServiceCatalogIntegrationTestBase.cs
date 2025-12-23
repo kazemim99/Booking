@@ -54,7 +54,6 @@ public abstract class ServiceCatalogIntegrationTestBase
             .Include(p => p.BusinessHours)
             .Include(p => p.Holidays)
             .Include(p => p.Exceptions)
-            .Include(p => p.Staff)
             .Include(c=>c.Profile).ThenInclude(c=>c.GalleryImages)
             .FirstOrDefaultAsync(p => p.Id == ProviderId.From(providerId));
     }
@@ -264,7 +263,6 @@ public abstract class ServiceCatalogIntegrationTestBase
                 "USA"
             )
         );
-        provider.AddStaff("John", "Doe", Domain.Enums.StaffRole.ServiceProvider, PhoneNumber.From("09123131311"));
         provider.SetSatus(Domain.Enums.ProviderStatus.Active);
         provider.SetAllowOnlineBooking(true);
 
@@ -287,7 +285,7 @@ public abstract class ServiceCatalogIntegrationTestBase
             provider.Id,
             serviceName,
             $"Description for {serviceName}",
-            ServiceCategory.Create("Beauty", "beauty"),
+            ServiceCategory.HairSalon,
             Domain.Enums.ServiceType.Standard,
             Price.Create(price, "USD"),
             Duration.FromMinutes(durationMinutes)
@@ -365,8 +363,6 @@ public abstract class ServiceCatalogIntegrationTestBase
             )
         );
 
-        // Add staff member (required for bookings/payments)
-        provider.AddStaff("John", "Doe", Domain.Enums.StaffRole.ServiceProvider, PhoneNumber.From("09123131311"));
         provider.SetSatus(Domain.Enums.ProviderStatus.Active);
         provider.SetAllowOnlineBooking(true);
         await CreateEntityAsync(provider);
@@ -552,15 +548,7 @@ public abstract class ServiceCatalogIntegrationTestBase
             { Domain.Enums.DayOfWeek.Friday, (TimeOnly.FromTimeSpan(TimeSpan.FromHours(9)), TimeOnly.FromTimeSpan(TimeSpan.FromHours(17))) }
         });
 
-        // Add a staff member if none exists
-        if (!provider.Staff.Any())
-        {
-            provider.AddStaff(
-                "Firstname Staff",
-                "Lastname Staff",
-                StaffRole.Maintenance,
-                PhoneNumber.From("+1234567890"));
-        }
+        
 
         await DbContext.SaveChangesAsync();
 

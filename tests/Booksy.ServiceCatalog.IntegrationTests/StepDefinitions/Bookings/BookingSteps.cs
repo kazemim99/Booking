@@ -45,7 +45,6 @@ public class BookingSteps
         {
             ProviderId = provider.Id.Value,
             ServiceId = requestData["ServiceId"],
-            StaffId = provider.Staff.First().Id,
             StartTime = requestData["StartTime"],
             CustomerNotes = requestData.ContainsKey("Notes") ? requestData["Notes"] : null
         };

@@ -100,7 +100,6 @@ namespace Booksy.ServiceCatalog.Infrastructure.Persistence.Seeders
 
                 var providers = await _context.Providers
                     .Include(p => p.BusinessHours)
-                    .Include(p => p.Staff)
                     .Where(p => p.Status == ProviderStatus.Active || p.Status == ProviderStatus.PendingVerification)
                     .ToListAsync(cancellationToken);
 

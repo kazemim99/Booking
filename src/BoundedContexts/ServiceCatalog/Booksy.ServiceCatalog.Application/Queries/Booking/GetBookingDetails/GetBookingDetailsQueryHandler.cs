@@ -45,7 +45,6 @@ namespace Booksy.ServiceCatalog.Application.Queries.Booking.GetBookingDetails
             var provider = await _providerRepository.GetByIdAsync(booking.ProviderId, cancellationToken);
             var service = await _serviceRepository.GetByIdAsync(booking.ServiceId, cancellationToken);
 
-            var staff = provider?.Staff.FirstOrDefault(s => s.Id == booking.StaffId);
 
             return new BookingDetailsViewModel(
                 BookingId: booking.Id.Value,
@@ -55,7 +54,6 @@ namespace Booksy.ServiceCatalog.Application.Queries.Booking.GetBookingDetails
                 ServiceId: booking.ServiceId.Value,
                 ServiceName: service?.Name ?? "Unknown Service",
                 StaffId: booking.StaffId,
-                StaffName: staff?.FullName ?? "Unknown Staff",
                 StartTime: booking.TimeSlot.StartTime,
                 EndTime: booking.TimeSlot.EndTime,
                 DurationMinutes: booking.Duration.Value,

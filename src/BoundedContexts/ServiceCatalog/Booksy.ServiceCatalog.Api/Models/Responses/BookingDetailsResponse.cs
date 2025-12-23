@@ -19,8 +19,7 @@ public class BookingDetailsResponse
     public string ProviderBusinessName { get; set; } = string.Empty;
     public string ProviderCity { get; set; } = string.Empty;
 
-    // Staff information
-    public string StaffName { get; set; } = string.Empty;
+
 
     // Time slot
     public DateTime StartTime { get; set; }

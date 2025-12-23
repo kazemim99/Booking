@@ -80,7 +80,6 @@ public class AvailabilityControllerTests : ServiceCatalogIntegrationTestBase
         // Arrange
         var provider = await CreateTestProviderWithServicesAsync();
         var service = await GetFirstServiceForProviderAsync(provider.Id.Value);
-        var staff = provider.Staff.First();
 
         var testDate = DateTime.UtcNow.AddDays(3).Date.AddHours(10); // 10 AM
 
@@ -112,7 +111,7 @@ public class AvailabilityControllerTests : ServiceCatalogIntegrationTestBase
         // Arrange
         var provider = await CreateTestProviderWithServicesAsync();
         var service = await GetFirstServiceForProviderAsync(provider.Id.Value);
-        var staff = provider.Staff.First();
+        var staff = provider;
 
         var futureDate = DateTime.UtcNow.AddDays(3).Date;
 
@@ -288,7 +287,7 @@ public class AvailabilityControllerTests : ServiceCatalogIntegrationTestBase
         Domain.Aggregates.Service service,
         DateTime startTime)
     {
-        var staff = provider.Staff.First();
+        var staff = provider;
         var bookingPolicy = service.BookingPolicy ?? BookingPolicy.Default;
 
         var booking = Booking.CreateBookingRequest(
@@ -322,15 +321,7 @@ public class AvailabilityControllerTests : ServiceCatalogIntegrationTestBase
             { Domain.Enums.DayOfWeek.Friday, (TimeOnly.FromTimeSpan(TimeSpan.FromHours(9)), TimeOnly.FromTimeSpan(TimeSpan.FromHours(17))) }
         });
 
-        // Add a staff member if none exists
-        if (!provider.Staff.Any())
-        {
-            provider.AddStaff(
-                "Firstname Staff",
-                "Lastname Staff",
-                StaffRole.Maintenance,
-                PhoneNumber.From("+1234567890"));
-        }
+        
 
         await DbContext.SaveChangesAsync();
 

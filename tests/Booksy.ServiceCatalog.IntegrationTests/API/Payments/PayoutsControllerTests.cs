@@ -41,7 +41,7 @@ public class PayoutsControllerTests : ServiceCatalogIntegrationTestBase
                 UserId.From(customerId),
                 provider.Id,
                 service.Id,
-                provider.Staff.First().Id,
+                provider.Id,
                 DateTime.UtcNow.AddDays(-(30 - i)), // Past bookings
                 service.Duration,
                 service.BasePrice,

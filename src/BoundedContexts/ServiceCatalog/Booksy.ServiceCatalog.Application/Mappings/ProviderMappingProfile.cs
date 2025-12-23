@@ -25,11 +25,6 @@ namespace Booksy.ServiceCatalog.Application.Mappings
 
             CreateMap<BusinessProfile, BusinessProfileDto>();
 
-            CreateMap<Staff, StaffDto>()
-                .ForMember(dest => dest.Id, opt => opt.MapFrom(src => src.Id))
-                .ForMember(dest => dest.Email, opt => opt.MapFrom(src => src.Email.Value))
-                .ForMember(dest => dest.Phone, opt => opt.MapFrom(src => src.Phone != null ? src.Phone.Value : null));
-
             CreateMap<BusinessHours, BusinessHoursDto>()
                 .ForMember(dest => dest.IsOpen, opt => opt.MapFrom(src => src.IsOpen))
                 .ForMember(dest => dest.OpenTime, opt => opt.MapFrom(src => src.OpenTime))

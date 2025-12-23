@@ -43,7 +43,6 @@ namespace Booksy.ServiceCatalog.Application.Queries.Provider.GetProviderStatisti
 
             // Calculate statistics (in real implementation, this would come from various contexts)
             var activeServices = services.Count(s => s.Status == Domain.Enums.ServiceStatus.Active);
-            var totalStaff = provider.Staff.Count(s => s.IsActive);
 
             // Mock data for statistics that would come from other contexts
             var totalBookings = 0; // From Booking context
@@ -56,7 +55,6 @@ namespace Booksy.ServiceCatalog.Application.Queries.Provider.GetProviderStatisti
                 BusinessName = provider.Profile.BusinessName,
                 TotalServices = services.Count,
                 ActiveServices = activeServices,
-                TotalStaff = totalStaff,
                 TotalBookings = totalBookings,
                 TotalRevenue = totalRevenue,
                 Currency = "USD", // Default currency

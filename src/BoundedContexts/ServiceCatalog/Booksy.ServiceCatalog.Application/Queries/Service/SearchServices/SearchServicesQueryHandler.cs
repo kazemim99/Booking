@@ -46,7 +46,7 @@ namespace Booksy.ServiceCatalog.Application.Queries.Service.SearchServices
                 // Create business specification (no pagination logic!)
                 var specification = new SearchServicesSpecification(
                     searchTerm: request.SearchTerm,
-                    category: request.Category,
+                    category:Enum.Parse<ServiceCategory>(request.Category),
                     type: request.Type,
                     minPrice: request.MinPrice,
                     maxPrice: request.MaxPrice,

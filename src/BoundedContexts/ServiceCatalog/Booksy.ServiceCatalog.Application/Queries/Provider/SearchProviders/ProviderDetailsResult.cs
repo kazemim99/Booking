@@ -34,7 +34,6 @@ public sealed class ProviderDetailsResult
     public decimal AverageRating { get; init; }
     public int TotalReviews { get; init; }
     public int ServiceCount { get; init; }
-    public int StaffCount { get; init; }
     public int YearsInBusiness { get; init; }
     public IReadOnlyList<string> Tags { get; init; }
     public DateTime RegisteredAt { get; init; }

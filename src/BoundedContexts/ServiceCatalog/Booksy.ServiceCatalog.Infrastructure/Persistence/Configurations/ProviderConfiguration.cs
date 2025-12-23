@@ -359,11 +359,7 @@ namespace Booksy.ServiceCatalog.Infrastructure.Persistence.Configurations
             builder.Property(p => p.LastModifiedBy)
                 .HasMaxLength(100);
 
-            // Navigation Properties
-            builder.HasMany(p => p.Staff)
-                .WithOne()
-                .HasForeignKey("ProviderId")
-                .OnDelete(DeleteBehavior.Cascade);
+  
 
             // Services navigation - using backing field
             builder.HasMany(p => p.Services)

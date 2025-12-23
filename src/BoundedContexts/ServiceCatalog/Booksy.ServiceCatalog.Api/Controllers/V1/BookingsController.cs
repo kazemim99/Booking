@@ -701,10 +701,7 @@ public class BookingsController : ControllerBase
             ServiceId = result.ServiceId,
             StaffProviderId = result.StaffId,
             ServiceName = result.ServiceName,
-            // ServiceCategory = result.ServiceCategory, // Property doesn't exist
             ProviderBusinessName = result.ProviderName,
-            // ProviderCity = result.ProviderCity, // Property doesn't exist
-            StaffName = result.StaffName,
             StartTime = result.StartTime,
             EndTime = result.EndTime,
             DurationMinutes = result.DurationMinutes,

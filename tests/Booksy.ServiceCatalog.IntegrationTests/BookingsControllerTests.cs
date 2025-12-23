@@ -43,7 +43,7 @@ public class BookingsControllerTests : ServiceCatalogIntegrationTestBase
         await UpdateEntityAsync(provider);
 
         var service = await GetFirstServiceForProviderAsync(provider.Id.Value);
-        var staff = provider.Staff.First();
+        var staff = provider;
         var customerId = Guid.NewGuid();
 
         AuthenticateAsUser(customerId, "customer@test.com");
@@ -105,7 +105,7 @@ public class BookingsControllerTests : ServiceCatalogIntegrationTestBase
         // Arrange
         var provider = await CreateTestProviderWithServicesAsync();
         var service = await GetFirstServiceForProviderAsync(provider.Id.Value);
-        var staff = provider.Staff.First();
+        var staff = provider;
         var customerId = Guid.NewGuid();
 
         AuthenticateAsUser(customerId, "customer@test.com");
@@ -132,7 +132,7 @@ public class BookingsControllerTests : ServiceCatalogIntegrationTestBase
         // Arrange
         var provider = await CreateTestProviderWithServicesAsync();
         var service = await GetFirstServiceForProviderAsync(provider.Id.Value);
-        var staff = provider.Staff.First();
+        var staff = provider;
 
         ClearAuthenticationHeader();
 
@@ -156,7 +156,7 @@ public class BookingsControllerTests : ServiceCatalogIntegrationTestBase
     {
         // Arrange
         var provider = await CreateTestProviderWithServicesAsync();
-        var staff = provider.Staff.First();
+        var staff = provider;
         var customerId = Guid.NewGuid();
 
         AuthenticateAsUser(customerId, "customer@test.com");
@@ -382,7 +382,7 @@ public class BookingsControllerTests : ServiceCatalogIntegrationTestBase
         Domain.Aggregates.Service service,
         DateTime startTime)
     {
-        var staff = provider.Staff.First();
+        var staff = provider;
         var bookingPolicy = service.BookingPolicy ?? BookingPolicy.Default;
 
         var booking = Booking.CreateBookingRequest(
@@ -416,15 +416,7 @@ public class BookingsControllerTests : ServiceCatalogIntegrationTestBase
             { Domain.Enums.DayOfWeek.Friday, (TimeOnly.FromTimeSpan(TimeSpan.FromHours(9)), TimeOnly.FromTimeSpan(TimeSpan.FromHours(17))) }
         });
 
-        // Add a staff member if none exists
-        if (!provider.Staff.Any())
-        {
-            provider.AddStaff(
-                "Test Staff",
-                "staff@test.com",
-                StaffRole.Assistant,
-                PhoneNumber.From("+1234567890"));
-        }
+     
 
         await DbContext.SaveChangesAsync();
 

@@ -9,7 +9,6 @@ namespace Booksy.ServiceCatalog.Application.Queries.Provider.GetProviderStatisti
         public string BusinessName { get; set; } = string.Empty;
         public int TotalServices { get; set; }
         public int ActiveServices { get; set; }
-        public int TotalStaff { get; set; }
         public int TotalBookings { get; set; }
         public decimal TotalRevenue { get; set; }
         public string Currency { get; set; } = "USD";

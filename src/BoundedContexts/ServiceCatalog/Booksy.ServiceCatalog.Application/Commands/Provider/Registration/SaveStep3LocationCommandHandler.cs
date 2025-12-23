@@ -103,7 +103,7 @@ public sealed class SaveStep3LocationCommandHandler
         }
 
         // Parse category to ProviderType enum
-        if (!Enum.TryParse<ProviderType>(request.Category, true, out var providerType))
+        if (!Enum.TryParse<ServiceCategory>(request.Category, true, out var providerType))
         {
             throw new InvalidOperationException($"Invalid category: {request.Category}");
         }

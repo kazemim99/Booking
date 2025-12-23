@@ -47,7 +47,7 @@ public sealed class GetDraftProviderQueryHandler
             ProviderId: draftProvider.Id.Value,
             BusinessName: draftProvider.Profile.BusinessName,
             BusinessDescription: draftProvider.Profile.BusinessDescription,
-            Category: draftProvider.ProviderType.ToString(),
+            Category: draftProvider.PrimaryCategory.ToString(),
             PhoneNumber: draftProvider.ContactInfo.PrimaryPhone?.Value ?? "",
             Email: draftProvider.ContactInfo.Email?.Value ?? "",
             AddressLine1: draftProvider.Address.Street,

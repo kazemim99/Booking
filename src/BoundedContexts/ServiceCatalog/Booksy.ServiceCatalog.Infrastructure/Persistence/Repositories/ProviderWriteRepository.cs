@@ -20,7 +20,6 @@ namespace Booksy.ServiceCatalog.Infrastructure.Persistence.Repositories
         {
             // Include all navigation properties and owned collections
             return await DbSet
-                .Include(p => p.Staff)
                 .Include(p => p.BusinessHours)
                 .Include(p => p.Holidays)
                 .Include(p => p.Exceptions)
@@ -34,7 +33,6 @@ namespace Booksy.ServiceCatalog.Infrastructure.Persistence.Repositories
         {
             // Include all navigation properties and owned collections
             return await DbSet
-                .Include(p => p.Staff)
                 .Include(p => p.BusinessHours)
                 .Include(p => p.Holidays)
                 .Include(p => p.Exceptions)
@@ -47,7 +45,6 @@ namespace Booksy.ServiceCatalog.Infrastructure.Persistence.Repositories
         public async Task<Provider?> GetDraftProviderByOwnerIdAsync(UserId ownerId, CancellationToken cancellationToken = default)
         {
             return await DbSet
-                .Include(p => p.Staff)
                 .Include(p => p.Services)
                 .Include(p => p.BusinessHours)
                 .Include(p => p.Profile)

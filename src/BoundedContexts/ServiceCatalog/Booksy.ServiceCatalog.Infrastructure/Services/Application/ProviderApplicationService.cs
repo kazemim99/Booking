@@ -81,7 +81,6 @@ namespace Booksy.ServiceCatalog.Application.Services.Implementations
                 BusinessName = provider.Profile.BusinessName,
                 TotalServices = services.Count,
                 ActiveServices = activeServices,
-                TotalStaff = provider.Staff.Count(s => s.IsActive),
                 TotalBookings = totalBookings,
                 TotalRevenue = totalRevenue,
                 AverageRating = 0.0m, // Would come from Reviews context
@@ -127,7 +126,7 @@ namespace Booksy.ServiceCatalog.Application.Services.Implementations
                     LastUpdatedAt = provider.Profile.LastUpdatedAt
                 },
                 Status = provider.Status,
-                Type = provider.ProviderType,
+                PrimaryCategory = provider.PrimaryCategory,
                 RequiresApproval = provider.RequiresApproval,
                 AllowOnlineBooking = provider.AllowOnlineBooking,
                 OffersMobileServices = provider.OffersMobileServices,

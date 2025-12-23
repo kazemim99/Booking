@@ -95,12 +95,6 @@ namespace Booksy.ServiceCatalog.Application.Commands.Provider.RegisterProvider
                     ? PhoneNumber.From(request.PrimaryPhone)
                     : null;
 
-                provider.AddStaff(
-                    request.OwnerFirstName,
-                    request.OwnerLastName,
-                    Domain.Enums.StaffRole.ServiceProvider,
-                    ownerPhone);
-
                 _logger.LogInformation(
                     "Automatically added owner {OwnerName} as staff for Individual provider {ProviderId}",
                     $"{request.OwnerFirstName} {request.OwnerLastName}",
@@ -127,7 +121,7 @@ namespace Booksy.ServiceCatalog.Application.Commands.Provider.RegisterProvider
             return new RegisterProviderResult(
                 ProviderId: provider.Id.Value,
                 BusinessName: provider.Profile.BusinessName,
-                Type: provider.ProviderType,
+                PrimaryCategory: provider.PrimaryCategory,
                 Status: provider.Status,
                 RegisteredAt: provider.RegisteredAt,
                 AccessToken: tokenResponse.AccessToken,

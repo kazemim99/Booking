@@ -22,7 +22,6 @@ namespace Booksy.ServiceCatalog.Application.Specifications.Provider
         public List<Expression<Func<Domain.Aggregates.Provider, object>>> Includes { get; } = new()
         {
             p => p.Profile,
-            p => p.Staff,
             p => p.BusinessHours
         };
 

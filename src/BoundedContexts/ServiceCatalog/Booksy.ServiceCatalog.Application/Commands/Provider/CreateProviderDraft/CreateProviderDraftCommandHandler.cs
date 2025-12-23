@@ -36,7 +36,7 @@ public sealed class CreateProviderDraftCommandHandler
             ?? throw new UnauthorizedAccessException("User not authenticated"));
 
         // 2. Map category string to ProviderType enum
-        if (!Enum.TryParse<ProviderType>(request.Category, true, out var providerType))
+        if (!Enum.TryParse<ServiceCategory>(request.Category, true, out var providerType))
         {
             throw new InvalidOperationException($"Invalid category: {request.Category}");
         }

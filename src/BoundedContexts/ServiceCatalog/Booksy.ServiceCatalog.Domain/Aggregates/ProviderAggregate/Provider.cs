@@ -18,7 +18,6 @@ namespace Booksy.ServiceCatalog.Domain.Aggregates
     /// </summary>
     public sealed class Provider : AggregateRoot<ProviderId>, IAuditableEntity
     {
-        private readonly List<Staff> _staff = new();
         private readonly List<Service> _services = new();
         private readonly List<BusinessHours> _businessHours = new();
         private readonly List<HolidaySchedule> _holidays = new();
@@ -60,7 +59,6 @@ namespace Booksy.ServiceCatalog.Domain.Aggregates
         public DateTime? LastActiveAt { get; private set; }
 
         // Collections
-        public IReadOnlyList<Staff> Staff => _staff.AsReadOnly();
         public IReadOnlyList<Service> Services => _services.AsReadOnly();
         public IReadOnlyList<BusinessHours> BusinessHours => _businessHours.AsReadOnly();
         public IReadOnlyList<HolidaySchedule> Holidays => _holidays.AsReadOnly();
@@ -285,31 +283,6 @@ namespace Booksy.ServiceCatalog.Domain.Aggregates
             IsRegistrationComplete = true;
             RegistrationStep = 9;
             Status = ProviderStatus.PendingVerification;
-        }
-
-        public Staff AddStaff(string firstName, string lastName, StaffRole role, PhoneNumber? phone = null)
-        {
-            // Business rule: Cannot add staff if provider is not active
-            if (Status == ProviderStatus.Inactive)
-                throw new InvalidProviderException("Cannot add staff to inactive provider");
-
-            // Business rule: Email must be unique among staff
-
-            var staff = Entities.Staff.Create(firstName, lastName, role, Id, phone);
-            _staff.Add(staff);
-
-            RaiseDomainEvent(new StaffAddedEvent(Id, staff.Id, staff.FullName, role, DateTime.UtcNow));
-
-            return staff;
-        }
-
-        public void RemoveStaff(Guid staffId, string reason)
-        {
-            var staff = _staff.FirstOrDefault(s => s.Id == staffId);
-            if (staff == null)
-                throw new InvalidProviderException("Staff member not found");
-
-            staff.Deactivate(reason);
         }
 
         /// <summary>
@@ -590,10 +563,7 @@ namespace Booksy.ServiceCatalog.Domain.Aggregates
             return Status == ProviderStatus.Active && AllowOnlineBooking;
         }
 
-        public bool HasActiveStaff()
-        {
-            return _staff.Any(s => s.IsActive);
-        }
+     
 
         public void SetSatus(ProviderStatus providerStatus)
         {
@@ -605,56 +575,7 @@ namespace Booksy.ServiceCatalog.Domain.Aggregates
             AllowOnlineBooking = allow;
         }
 
-        public void UpdateStaffNotes(Guid id, string? notes)
-        {
-            var staff = GetStaffById(id);
-            staff.UpdateNotes(notes);
-        }
-
-        public void UpdateStaffBiography(Guid id, string? biography)
-        {
-            var staff = GetStaffById(id);
-            staff.UpdateBiography(biography);
-        }
-
-        public void UpdateStaffProfilePhoto(Guid id, string? photoUrl)
-        {
-            var staff = GetStaffById(id);
-            staff.UpdateProfilePhoto(photoUrl);
-        }
-
-        public void UpdateStaff(Guid staffId, string firstName, string lastName, Email email, PhoneNumber? phone, StaffRole role)
-        {
-            var staff = GetStaffById(staffId);
-            staff.UpdateContactInfo(firstName,lastName, email, phone);
-            staff.UpdateRole(role);
-
-
-
-        }
-
-        public Staff GetStaffById(Guid staffId)
-        {
-            return _staff.First(s => s.Id == staffId);
-        }
-
-        public void ActivateStaff(Guid staffId)
-        {
-            _staff.First(s => s.Id == staffId).Reactivate();
-        }
-
-        public void DeactivateStaff(Guid staffId, string reason)
-        {
-
-            var staff = _staff.FirstOrDefault(s => s.Id == staffId) ?? 
-                throw new DomainValidationException("Staff member not found");
-            staff.Deactivate(reason);
-        }
-
-        public IReadOnlyList<Staff> GetActiveStaff()
-        {
-            return _staff.Where(s => s.IsActive).ToImmutableList();
-        }
+      
 
         // ============================================
         // Provider Hierarchy Methods

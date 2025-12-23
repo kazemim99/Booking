@@ -51,10 +51,6 @@ namespace Booksy.ServiceCatalog.Infrastructure.Persistence.Seeders
                 await _context.SaveChangesAsync(cancellationToken);
 
                 // Seed booking data
-                var bookingSeeder = new BookingDataSeeder(
-                    _context,
-                    Microsoft.Extensions.Logging.Abstractions.NullLogger<BookingDataSeeder>.Instance);
-                await bookingSeeder.SeedAsync(cancellationToken);
 
                 await _context.SaveChangesAsync(cancellationToken);
                 _logger.LogInformation("ServiceCatalog database seeded successfully");
@@ -80,7 +76,7 @@ namespace Booksy.ServiceCatalog.Infrastructure.Persistence.Seeders
                 CreateSampleProvider(
                     "Bella's Beauty Salon",
                     "Full-service beauty salon offering hair, nails, and skincare",
-                    ProviderType.Individual,
+                    ServiceCategory.HairSalon,
                     "New York",
                     "bella@beautysalon.com",
                     "Bella",
@@ -89,7 +85,7 @@ namespace Booksy.ServiceCatalog.Infrastructure.Persistence.Seeders
                 CreateSampleProvider(
                     "Mike's Barbershop",
                     "Traditional barbershop with modern techniques",
-                    ProviderType.Salon,
+                    ServiceCategory.Barbershop,
                     "Los Angeles",
                     "mike@barbershop.com",
                     "Mike",
@@ -98,7 +94,7 @@ namespace Booksy.ServiceCatalog.Infrastructure.Persistence.Seeders
                 CreateSampleProvider(
                     "Wellness Spa & Massage",
                     "Luxury spa offering massage therapy and wellness treatments",
-                    ProviderType.Spa,
+                    ServiceCategory.Spa,
                     "Miami",
                     "info@wellnessspa.com",
                     "Sarah",
@@ -185,7 +181,7 @@ namespace Booksy.ServiceCatalog.Infrastructure.Persistence.Seeders
         private Provider CreateSampleProvider(
             string businessName,
             string description,
-            ProviderType type,
+            ServiceCategory type,
             string city,
             string email,
             string ownerFirstName,
@@ -273,11 +269,10 @@ namespace Booksy.ServiceCatalog.Infrastructure.Persistence.Seeders
         private List<Service> CreateSampleServicesForProvider(Provider provider)
         {
             var services = new List<Service>();
-            var baseServices = GetBaseServicesByProviderType(provider.PrimaryCategory);
+            var baseServices = GetBaseServicesByServiceCategory(provider.PrimaryCategory);
 
             foreach (var (name, description, price, duration) in baseServices)
             {
-                var category = ServiceCategory.Create("Beauty", "Beauty and wellness services");
                 var priceValue = Price.Create(price, "USD");
                 var durationValue = Duration.FromMinutes(duration);
 
@@ -285,7 +280,7 @@ namespace Booksy.ServiceCatalog.Infrastructure.Persistence.Seeders
                     provider.Id,
                     name,
                     description,
-                    category,
+                    ServiceCategory.HairSalon,
                     ServiceType.Standard,
                     priceValue,
                     durationValue);
@@ -296,7 +291,7 @@ namespace Booksy.ServiceCatalog.Infrastructure.Persistence.Seeders
             return services;
         }
 
-        private List<(string Name, string Description, decimal Price, int Duration)> GetBaseServicesByProviderType(Domain.Enums.ServiceCategory category)
+        private List<(string Name, string Description, decimal Price, int Duration)> GetBaseServicesByServiceCategory(Domain.Enums.ServiceCategory category)
         {
             return category switch
             {

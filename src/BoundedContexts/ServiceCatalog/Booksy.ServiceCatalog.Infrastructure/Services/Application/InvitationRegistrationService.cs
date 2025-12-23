@@ -192,7 +192,7 @@ public class InvitationRegistrationService : IInvitationRegistrationService
                 ownerLastName: lastName,
                 businessName: $"{firstName} {lastName}", // Individual's name as business name
                 description: $"Staff member at {organization.Profile.BusinessName}",
-                type: ProviderType.Individual,
+                primaryCategory: organization.PrimaryCategory,
                 contactInfo: contactInfo,
                 address: address,
                 hierarchyType: ProviderHierarchyType.Individual,

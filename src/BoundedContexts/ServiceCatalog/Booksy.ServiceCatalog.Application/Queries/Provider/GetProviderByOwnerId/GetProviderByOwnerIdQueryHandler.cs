@@ -49,7 +49,7 @@ namespace Booksy.ServiceCatalog.Application.Queries.Provider.GetProviderByOwnerI
                 LogoUrl = provider.Profile.LogoUrl,
                 ProfileImageUrl = provider.Profile.ProfileImageUrl,
                 Status = provider.Status,
-                Type = provider.ProviderType,
+                PrimaryCategory = provider.PrimaryCategory,
                 ContactInfo = new DTOs.Provider.ContactInfo(
                     provider.ContactInfo.Email?.Value,
                     provider.ContactInfo.PrimaryPhone?.Value,
@@ -87,7 +87,6 @@ namespace Booksy.ServiceCatalog.Application.Queries.Provider.GetProviderByOwnerI
                 AverageRating = provider.AverageRating,
                 TotalReviews = 0,
                 ServiceCount = provider.Services.Count,
-                StaffCount = provider.Staff.Count,
                 YearsInBusiness = provider.RegisteredAt.Year > 0
                     ? DateTime.UtcNow.Year - provider.RegisteredAt.Year
                     : 0,

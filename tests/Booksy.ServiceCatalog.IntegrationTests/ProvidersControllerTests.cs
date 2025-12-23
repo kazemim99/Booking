@@ -31,7 +31,7 @@ public class ProvidersControllerTests : ServiceCatalogIntegrationTestBase
             OwnerId = userId,
             BusinessName = "Test Beauty Salon",
             Description = "A professional beauty salon",
-            Type = ServiceCategory.BeautySalon,
+            PrimaryCategory = ServiceCategory.BeautySalon,
             WebsiteUrl = "https://www.testbeautysalon.com",
             ContactInfo = new ContactInfoRequest
             {
@@ -59,7 +59,7 @@ public class ProvidersControllerTests : ServiceCatalogIntegrationTestBase
 
         response.Data.Should().NotBeNull();
         response.Data!.BusinessName.Should().Be(request.BusinessName);
-        response.Data.Type.Should().Be(request.Type.ToString());
+        response.Data.Type.Should().Be(request.PrimaryCategory.ToString());
         response.Data.Status.Should().Be(ProviderStatus.PendingVerification.ToString());
 
         // Verify in database
@@ -75,7 +75,7 @@ public class ProvidersControllerTests : ServiceCatalogIntegrationTestBase
             OwnerId = Guid.NewGuid(),
             BusinessName = "", // Invalid: empty
             Description = "A professional beauty salon",
-            Type = ServiceCategory.BeautySalon,
+            PrimaryCategory = ServiceCategory.BeautySalon,
             ContactInfo = new ContactInfoRequest
             {
                 PrimaryPhone = "+989121234567"
@@ -108,7 +108,7 @@ public class ProvidersControllerTests : ServiceCatalogIntegrationTestBase
             OwnerId = userId,
             BusinessName = "Test Salon",
             Description = "A professional salon",
-            Type = ServiceCategory.Barbershop,
+            PrimaryCategory = ServiceCategory.Barbershop,
             ContactInfo = new ContactInfoRequest
             {
                 PrimaryPhone = "invalid-phone" // Invalid format

@@ -51,7 +51,6 @@ namespace Booksy.ServiceCatalog.Application.Queries.Provider.SearchProviders
                 // Create business specification with new filters
                 var specification = new SearchProvidersSpecification(
                     searchTerm: request.SearchTerm,
-                    type: request.Type,
                     city: request.City,
                     state: request.State,
                     country: request.Country,
@@ -59,7 +58,7 @@ namespace Booksy.ServiceCatalog.Application.Queries.Provider.SearchProviders
                     offersMobileServices: request.OffersMobileServices,
                     verifiedOnly: request.VerifiedOnly,
                     minRating: request.MinRating,
-                    serviceCategory: request.ServiceCategory,
+                    serviceCategory:  request.ServiceCategory,
                     priceRange: request.PriceRange,
                     includeInactive: request.IncludeInactive,
                     excludeStaffIndividuals: true); // Filter out staff individuals from search results

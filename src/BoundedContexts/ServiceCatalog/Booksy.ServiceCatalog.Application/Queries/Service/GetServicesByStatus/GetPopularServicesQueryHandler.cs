@@ -28,7 +28,7 @@ namespace Booksy.ServiceCatalog.Application.Queries.Service.GetPopularServices
 
             try
             {
-                var specification = new PopularServicesSpecification(request.CategoryFilter);
+                var specification = new PopularServicesSpecification(Enum.Parse<ServiceCategory>(request.CategoryFilter));
 
                 var services = await _serviceRepository.GetAsync(specification, cancellationToken);
 
