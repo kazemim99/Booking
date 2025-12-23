@@ -1127,7 +1127,7 @@ public class ProvidersController : ControllerBase
             BusinessName: request.BusinessName,
             Description: request.Description,
             Email: request.ContactInfo.Email,
-            ProviderType: request.Type,
+            PrimaryCategory: request.PrimaryCategory,
             PrimaryPhone: request.ContactInfo.PrimaryPhone,
             SecondaryPhone: request.ContactInfo.SecondaryPhone, Website: request.WebsiteUrl, request.Address.Street, request.Address.City,
             request.Address.State, request.Address.PostalCode, request.Address.Country, request.Address.Longitude, request.Address.Latitude

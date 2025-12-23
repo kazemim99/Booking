@@ -151,14 +151,13 @@ namespace Booksy.ServiceCatalog.Infrastructure.Services.Domain
         {
             try
             {
-                // Business rules for maximum services based on provider type
-                return provider.ProviderType switch
+                // Business rules for maximum services based on provider hierarchy type
+                // Organizations can have more services than individuals
+                return provider.HierarchyType switch
                 {
-                    ProviderType.Individual => 20,
-                    ProviderType.Salon => 50,
-                    ProviderType.Spa => 200,
-                    ProviderType.Professional => 500,
-                    _ => 10
+                    ProviderHierarchyType.Individual => 20,
+                    ProviderHierarchyType.Organization => 200,
+                    _ => 50
                 };
             }
             catch (Exception ex)

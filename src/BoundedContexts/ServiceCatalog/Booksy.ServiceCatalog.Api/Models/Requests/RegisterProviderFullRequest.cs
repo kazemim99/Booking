@@ -69,7 +69,7 @@ public sealed class RegisterProviderFullRequest
     public List<TeamMemberRequest> TeamMembers { get; set; } = new();
     public string BusinessName { get; set; }
     public string Description { get; set; }
-    public ProviderType ProviderType { get; set; }
+    public ServiceCategory PrimaryCategory { get; set; }
     public string Email { get; set; }
     public string PhoneNumber { get; set; }
     public string Street { get; set; }

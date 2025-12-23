@@ -42,10 +42,10 @@ public sealed class RegisterProviderRequest
     public string? Description { get; set; }
 
     /// <summary>
-    /// Provider type
+    /// Primary service category
     /// </summary>
-    [Required(ErrorMessage = "Provider type is required")]
-    public ProviderType Type { get; set; }
+    [Required(ErrorMessage = "Primary category is required")]
+    public ServiceCategory PrimaryCategory { get; set; }
 
     /// <summary>
     /// Contact information
@@ -97,6 +97,6 @@ public sealed class RegisterProviderRequest
     /// Business tags/categories
     /// </summary>
     public List<string> Tags { get; set; } = new();
-    public ProviderType ProviderType { get; set; }
+    public ServiceCategory PrimaryCategory { get; set; }
 }
 

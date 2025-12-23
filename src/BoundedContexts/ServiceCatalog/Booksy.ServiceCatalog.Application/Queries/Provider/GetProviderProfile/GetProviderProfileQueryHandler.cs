@@ -5,6 +5,7 @@ using Booksy.Core.Application.Abstractions.CQRS;
 using Booksy.Core.Application.Exceptions;
 using Booksy.ServiceCatalog.Application.DTOs.Provider;
 using Booksy.ServiceCatalog.Domain.Enums;
+using Booksy.ServiceCatalog.Domain.Enums.Extensions;
 using Booksy.ServiceCatalog.Domain.Repositories;
 using Booksy.ServiceCatalog.Domain.ValueObjects;
 using Microsoft.Extensions.Logging;
@@ -138,7 +139,7 @@ namespace Booksy.ServiceCatalog.Application.Queries.Provider.GetProviderProfile
                     ServiceId = s.Id.Value,
                     Name = s.Name,
                     Description = s.Description,
-                    Category = s.Category.Name,
+                    Category = s.Category.ToEnglishName(),
                     Price = s.BasePrice.Amount,
                     Currency = s.BasePrice.Currency,
                     DurationMinutes = s.Duration.Value,
@@ -208,7 +209,7 @@ namespace Booksy.ServiceCatalog.Application.Queries.Provider.GetProviderProfile
                 // Tags & Categories
                 Tags = provider.Profile.Tags.ToList(),
                 ServiceCategories = services
-                    .Select(s => s.Category.Name)
+                    .Select(s => s.Category.ToEnglishName())
                     .Distinct()
                     .ToList(),
 

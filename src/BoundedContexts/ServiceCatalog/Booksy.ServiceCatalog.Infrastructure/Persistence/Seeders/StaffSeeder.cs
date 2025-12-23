@@ -89,9 +89,9 @@ namespace Booksy.ServiceCatalog.Infrastructure.Persistence.Seeders
         {
             var staffCount = 0;
 
-            switch (provider.ProviderType)
+            switch (provider.PrimaryCategory)
             {
-                case ProviderType.Individual:
+                case ServiceCategory.Barbershop:
                     // Individual barbershop/salon has owner only
                     var (ownerFirstName, ownerLastName) = GetRandomPersianName(true);
                     provider.AddStaff(
@@ -102,7 +102,8 @@ namespace Booksy.ServiceCatalog.Infrastructure.Persistence.Seeders
                     staffCount = 1;
                     break;
 
-                case ProviderType.Salon:
+                case ServiceCategory.HairSalon:
+                case ServiceCategory.BeautySalon:
                     // Salon has owner and 3-5 female staff
                     var (salonOwnerFirst, salonOwnerLast) = GetRandomPersianName(false);
                     provider.AddStaff(

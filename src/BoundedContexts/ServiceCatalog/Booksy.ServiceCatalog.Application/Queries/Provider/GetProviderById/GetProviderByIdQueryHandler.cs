@@ -1,8 +1,9 @@
-﻿using Booksy.Core.Application.Abstractions.CQRS;
+using Booksy.Core.Application.Abstractions.CQRS;
 using Booksy.ServiceCatalog.Application.DTOs.Provider;
 using Booksy.ServiceCatalog.Application.Queries.Provider.GetRegistrationProgress;
 using Booksy.ServiceCatalog.Application.Queries.Provider.SearchProviders;
 using Booksy.ServiceCatalog.Domain.Enums;
+using Booksy.ServiceCatalog.Domain.Enums.Extensions;
 using Booksy.ServiceCatalog.Domain.Repositories;
 using Booksy.ServiceCatalog.Domain.ValueObjects;
 using Microsoft.Extensions.Logging;
@@ -49,7 +50,7 @@ namespace Booksy.ServiceCatalog.Application.Queries.Provider.GetProviderById
                 LogoUrl = provider.Profile.LogoUrl,
                 ProfileImageUrl = provider.Profile.ProfileImageUrl,
                 Status = provider.Status,
-                Type = provider.ProviderType,
+                PrimaryCategory = provider.PrimaryCategory,
                 ContactInfo = new DTOs.Provider.ContactInfo(
                     provider.ContactInfo.Email?.Value,
                     provider.ContactInfo.PrimaryPhone?.Value,
@@ -163,7 +164,7 @@ namespace Booksy.ServiceCatalog.Application.Queries.Provider.GetProviderById
                     Id = service.Id.Value,
                     Name = service.Name,
                     Description = service.Description,
-                    Category = service.Category.Name,
+                    Category = service.Category.ToEnglishName(),
                     BasePrice = service.BasePrice.Amount,
                     Currency = service.BasePrice.Currency,
                     Duration = service.Duration.Value,

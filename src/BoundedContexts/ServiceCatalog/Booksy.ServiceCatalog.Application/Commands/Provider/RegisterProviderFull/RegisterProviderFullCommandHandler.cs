@@ -99,8 +99,8 @@ namespace Booksy.ServiceCatalog.Application.Commands.Provider.RegisterProviderFu
                 request.Location?.Latitude,
                 request.Location?.Longitude);
 
-            // Determine provider type from category
-            var providerType = MapCategoryToProviderType(request.CategoryId);
+            // Determine service category from category ID
+            var serviceCategory = MapCategoryToServiceCategory(request.CategoryId);
 
             // ====================================
             // STEP 3: Create Provider Aggregate
@@ -110,7 +110,7 @@ namespace Booksy.ServiceCatalog.Application.Commands.Provider.RegisterProviderFu
                 ownerId,
                 request.BusinessInfo.BusinessName,
                 $"Professional {request.CategoryId.Replace('_', ' ')} services", // Auto-generate description
-                providerType,
+                serviceCategory,
                 contactInfo,
                 address);
 
@@ -170,7 +170,7 @@ namespace Booksy.ServiceCatalog.Application.Commands.Provider.RegisterProviderFu
                     provider.Id,
                     serviceDto.Name,
                     serviceDto.Name, // Use name as description
-                    ServiceCategory.Beauty, // Default category - you can create from frontend
+                    ServiceCategory.BeautySalon, // Default category - you can create from frontend
                     ServiceType.Standard, // Default type
                     price,
                     duration);
@@ -358,22 +358,22 @@ namespace Booksy.ServiceCatalog.Application.Commands.Provider.RegisterProviderFu
             _logger.LogDebug("Business rules validation passed");
         }
 
-        private ProviderType MapCategoryToProviderType(string categoryId)
+        private ServiceCategory MapCategoryToServiceCategory(string categoryId)
         {
             return categoryId.ToLowerInvariant() switch
             {
-                "nail_salon" => ProviderType.Salon,
-                "hair_salon" => ProviderType.Salon,
-                "brows_lashes" => ProviderType.Salon,
-                "braids_locs" => ProviderType.Salon,
-                "massage" => ProviderType.Spa,
-                "barbershop" => ProviderType.Salon,
-                "aesthetic_medicine" => ProviderType.Medical,
-                "dental_orthodontics" => ProviderType.Medical,
-                "hair_removal" => ProviderType.Spa,
-                "health_fitness" => ProviderType.GymFitness,
-                "home_services" => ProviderType.HomeServices,
-                _ => ProviderType.Salon // Default
+                "nail_salon" => ServiceCategory.NailSalon,
+                "hair_salon" => ServiceCategory.HairSalon,
+                "brows_lashes" => ServiceCategory.HairSalon,
+                "braids_locs" => ServiceCategory.HairSalon,
+                "massage" => ServiceCategory.Massage,
+                "barbershop" => ServiceCategory.Barbershop,
+                "aesthetic_medicine" => ServiceCategory.MedicalClinic,
+                "dental_orthodontics" => ServiceCategory.Dental,
+                "hair_removal" => ServiceCategory.Spa,
+                "health_fitness" => ServiceCategory.Gym,
+                "home_services" => ServiceCategory.HomeServices,
+                _ => ServiceCategory.BeautySalon // Default
             };
         }
 

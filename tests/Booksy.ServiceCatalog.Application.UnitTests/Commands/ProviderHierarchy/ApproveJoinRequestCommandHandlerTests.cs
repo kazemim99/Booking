@@ -47,7 +47,7 @@ public class ApproveJoinRequestCommandHandlerTests
             UserId.From(Guid.NewGuid()),
             "Test Salon",
             "Test description",
-            ProviderType.Individual,
+            ServiceCategory.Barbershop,
             ContactInfo.Create(Email.Create("salon@test.com"), PhoneNumber.From("+989123456789")),
             BusinessAddress.Create("123 Test St", "Suite 1", "Test City", "TS", "12345", "IR"),
             ProviderHierarchyType.Organization);
@@ -59,7 +59,7 @@ public class ApproveJoinRequestCommandHandlerTests
             UserId.From(Guid.NewGuid()),
             "Solo Barber",
             "Test description",
-            ProviderType.Individual,
+            ServiceCategory.Barbershop,
             ContactInfo.Create(Email.Create("barber@test.com"), PhoneNumber.From("+989123456788")),
             BusinessAddress.Create("123 Test St", "Suite 1", "Test City", "TS", "12345", "IR"),
             ProviderHierarchyType.Individual);

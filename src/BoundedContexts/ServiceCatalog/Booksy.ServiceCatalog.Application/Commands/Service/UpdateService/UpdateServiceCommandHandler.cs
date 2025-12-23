@@ -43,7 +43,6 @@ namespace Booksy.ServiceCatalog.Application.Commands.Service.UpdateService
 
 
             var price = Price.Create(request.BasePrice, request.Currency);
-            var category = ServiceCategory.Create(request.CategoryName, request.CategoryName.ToLowerInvariant().Replace(" ", "_").Replace("&", "and"));
             var duration = Duration.FromMinutes(request.DurationMinutes);
             var preparationTime = request.PreparationMinutes.HasValue
                 ? Duration.FromMinutes(request.PreparationMinutes.Value)
@@ -54,7 +53,7 @@ namespace Booksy.ServiceCatalog.Application.Commands.Service.UpdateService
 
 
             service.UpdatePricing(price);
-            service.UpdateBasicInfo(request.Name, request.Description, category);
+            service.UpdateBasicInfo(request.Name, request.Description, ServiceCategory.BeautySalon);
             service.UpdateDuration(duration, preparationTime, bufferTime);
 
             if (!string.IsNullOrEmpty(request.ImageUrl))

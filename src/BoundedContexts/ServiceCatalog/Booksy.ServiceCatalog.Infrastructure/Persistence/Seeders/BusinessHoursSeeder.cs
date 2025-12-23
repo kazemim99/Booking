@@ -70,7 +70,7 @@ namespace Booksy.ServiceCatalog.Infrastructure.Persistence.Seeders
             var businessHours = new Dictionary<DayOfWeek, (TimeOnly? Open, TimeOnly? Close)>();
 
             // Determine business pattern based on provider type
-            var pattern = DetermineBusinessPattern(provider.ProviderType);
+            var pattern = DetermineBusinessPattern(provider.PrimaryCategory);
 
             switch (pattern)
             {
@@ -141,17 +141,25 @@ namespace Booksy.ServiceCatalog.Infrastructure.Persistence.Seeders
             provider.SetBusinessHours(businessHours);
         }
 
-        private BusinessPattern DetermineBusinessPattern(Domain.Enums.ProviderType providerType)
+        private BusinessPattern DetermineBusinessPattern(Domain.Enums.ServiceCategory category)
         {
-            return providerType switch
+            return category switch
             {
-                Domain.Enums.ProviderType.Salon => BusinessPattern.StandardSalon,
-                Domain.Enums.ProviderType.Spa => BusinessPattern.Spa,
-                Domain.Enums.ProviderType.Clinic => BusinessPattern.Clinic,
-                Domain.Enums.ProviderType.Medical => BusinessPattern.Clinic,
-                Domain.Enums.ProviderType.GymFitness => BusinessPattern.GymFitness,
-                Domain.Enums.ProviderType.Individual => BusinessPattern.FlexibleBarbershop,
-                Domain.Enums.ProviderType.Professional => BusinessPattern.Clinic,
+                Domain.Enums.ServiceCategory.HairSalon => BusinessPattern.StandardSalon,
+                Domain.Enums.ServiceCategory.Barbershop => BusinessPattern.FlexibleBarbershop,
+                Domain.Enums.ServiceCategory.BeautySalon => BusinessPattern.StandardSalon,
+                Domain.Enums.ServiceCategory.NailSalon => BusinessPattern.StandardSalon,
+                Domain.Enums.ServiceCategory.Spa => BusinessPattern.Spa,
+                Domain.Enums.ServiceCategory.Massage => BusinessPattern.Spa,
+                Domain.Enums.ServiceCategory.Gym => BusinessPattern.GymFitness,
+                Domain.Enums.ServiceCategory.Yoga => BusinessPattern.GymFitness,
+                Domain.Enums.ServiceCategory.MedicalClinic => BusinessPattern.Clinic,
+                Domain.Enums.ServiceCategory.Dental => BusinessPattern.Clinic,
+                Domain.Enums.ServiceCategory.Physiotherapy => BusinessPattern.Clinic,
+                Domain.Enums.ServiceCategory.Tutoring => BusinessPattern.Clinic,
+                Domain.Enums.ServiceCategory.Automotive => BusinessPattern.Clinic,
+                Domain.Enums.ServiceCategory.HomeServices => BusinessPattern.FlexibleBarbershop,
+                Domain.Enums.ServiceCategory.PetCare => BusinessPattern.StandardSalon,
                 _ => BusinessPattern.StandardSalon
             };
         }

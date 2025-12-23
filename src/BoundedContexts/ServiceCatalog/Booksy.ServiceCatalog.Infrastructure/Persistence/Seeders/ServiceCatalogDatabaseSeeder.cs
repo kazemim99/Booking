@@ -273,7 +273,7 @@ namespace Booksy.ServiceCatalog.Infrastructure.Persistence.Seeders
         private List<Service> CreateSampleServicesForProvider(Provider provider)
         {
             var services = new List<Service>();
-            var baseServices = GetBaseServicesByProviderType(provider.ProviderType);
+            var baseServices = GetBaseServicesByProviderType(provider.PrimaryCategory);
 
             foreach (var (name, description, price, duration) in baseServices)
             {
@@ -296,24 +296,29 @@ namespace Booksy.ServiceCatalog.Infrastructure.Persistence.Seeders
             return services;
         }
 
-        private List<(string Name, string Description, decimal Price, int Duration)> GetBaseServicesByProviderType(ProviderType type)
+        private List<(string Name, string Description, decimal Price, int Duration)> GetBaseServicesByProviderType(Domain.Enums.ServiceCategory category)
         {
-            return type switch
+            return category switch
             {
-                ProviderType.Individual => new List<(string, string, decimal, int)>
+                Domain.Enums.ServiceCategory.Barbershop => new List<(string, string, decimal, int)>
                 {
                     ("Men's Haircut", "Professional men's haircut and styling", 35m, 30),
                     ("Beard Trim", "Precision beard trimming and shaping", 20m, 15),
                     ("Hot Towel Shave", "Traditional hot towel shave experience", 45m, 45)
                 },
-                ProviderType.Salon => new List<(string, string, decimal, int)>
+                Domain.Enums.ServiceCategory.HairSalon => new List<(string, string, decimal, int)>
                 {
                     ("Women's Cut & Style", "Haircut with professional styling", 65m, 60),
                     ("Hair Color", "Professional hair coloring service", 120m, 120),
-                    ("Manicure", "Classic manicure with nail care", 30m, 45),
-                    ("Pedicure", "Relaxing pedicure treatment", 40m, 60)
+                    ("Highlights", "Professional highlights", 150m, 150)
                 },
-                ProviderType.Spa => new List<(string, string, decimal, int)>
+                Domain.Enums.ServiceCategory.BeautySalon or Domain.Enums.ServiceCategory.NailSalon => new List<(string, string, decimal, int)>
+                {
+                    ("Manicure", "Classic manicure with nail care", 30m, 45),
+                    ("Pedicure", "Relaxing pedicure treatment", 40m, 60),
+                    ("Gel Nails", "Long-lasting gel nail application", 50m, 60)
+                },
+                Domain.Enums.ServiceCategory.Spa or Domain.Enums.ServiceCategory.Massage => new List<(string, string, decimal, int)>
                 {
                     ("Swedish Massage", "Full body relaxation massage", 90m, 60),
                     ("Deep Tissue Massage", "Therapeutic deep tissue treatment", 110m, 60),

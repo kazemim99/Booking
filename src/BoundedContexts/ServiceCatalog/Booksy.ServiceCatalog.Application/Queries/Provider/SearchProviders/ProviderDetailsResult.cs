@@ -20,7 +20,7 @@ public sealed class ProviderDetailsResult
     public Guid OwnerId { get; init; }
     public string BusinessName { get; init; } = string.Empty;
     public string Description { get; init; } = string.Empty;
-    public ProviderType Type { get; init; }
+    public ServiceCategory PrimaryCategory { get; init; }
     public ProviderStatus Status { get; init; }
     public Booksy.ServiceCatalog.Application.DTOs.Provider.ContactInfo ContactInfo { get; init; }
     public AddressInfo Address { get; init; }

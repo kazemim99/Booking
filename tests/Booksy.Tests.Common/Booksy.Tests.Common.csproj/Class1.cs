@@ -149,7 +149,7 @@ public class ProviderBuilder
     private UserId? _ownerId;
     private string? _businessName;
     private string? _description;
-    private ProviderType _providerType = ProviderType.Salon;
+    private ServiceCategory _primaryCategory = ServiceCategory.BeautySalon;
     private ContactInfo? _contactInfo;
     private BusinessAddress? _address;
     private ProviderStatus _status = ProviderStatus.Active;
@@ -184,9 +184,9 @@ public class ProviderBuilder
         return this;
     }
 
-    public ProviderBuilder WithType(ProviderType providerType)
+    public ProviderBuilder WithCategory(ServiceCategory category)
     {
-        _providerType = providerType;
+        _primaryCategory = category;
         return this;
     }
 
@@ -229,7 +229,7 @@ public class ProviderBuilder
             _ownerId ?? UserId.From(Guid.NewGuid()),
             _businessName ?? _fixture.Create<string>(),
             _description ?? _fixture.Create<string>(),
-            _providerType,
+            _primaryCategory,
             _contactInfo ?? ContactInfo.Create(
                 Email.Create("test@example.com"),
                 PhoneNumber.Create("+1234567890")

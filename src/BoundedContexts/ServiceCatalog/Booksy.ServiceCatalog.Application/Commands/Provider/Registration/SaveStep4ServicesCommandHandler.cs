@@ -82,7 +82,7 @@ public sealed class SaveStep4ServicesCommandHandler
                 providerId,
                 serviceDto.Name,
                 "", // Description - could be added to DTO
-                ServiceCategory.Beauty, // Default category
+                ServiceCategory.BeautySalon, // Default category
                 serviceType,
                 price,
                 duration);

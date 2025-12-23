@@ -250,7 +250,7 @@ public abstract class ServiceCatalogIntegrationTestBase
             UserId.From(Guid.NewGuid()),
             businessName,
             $"Description for {businessName}",
-            Domain.Enums.ProviderType.Individual,
+            Domain.Enums.ServiceCategory.Barbershop,
             ContactInfo.Create(
                 Email.Create(email),
                 PhoneNumber.From("+1234567890")
@@ -307,7 +307,7 @@ public abstract class ServiceCatalogIntegrationTestBase
             UserId.From(Guid.NewGuid()),
             "Test Provider",
             "Test provider description",
-            Domain.Enums.ProviderType.Individual,
+            Domain.Enums.ServiceCategory.Barbershop,
             ContactInfo.Create(
                 Email.Create("provider@test.com"),
                 PhoneNumber.From("+1234567890")
@@ -350,7 +350,7 @@ public abstract class ServiceCatalogIntegrationTestBase
             UserId.From(Guid.NewGuid()),
             "Test Provider",
             "Test provider description",
-            Domain.Enums.ProviderType.Individual,
+            Domain.Enums.ServiceCategory.Barbershop,
             ContactInfo.Create(
                 Email.Create("provider@test.com"),
                 PhoneNumber.From("+1234567890")
@@ -514,7 +514,7 @@ public abstract class ServiceCatalogIntegrationTestBase
             UserId.From(userId),
             businessName,
             $"Description for {businessName}",
-            Domain.Enums.ProviderType.Individual,
+            Domain.Enums.ServiceCategory.Barbershop,
             ContactInfo.Create(
                 Email.Create($"{userId}@test.com"),
                 PhoneNumber.From("+1234567890")
@@ -585,7 +585,7 @@ public abstract class ServiceCatalogIntegrationTestBase
             UserId.From(userId),
             businessName,
             $"Description for {businessName}",
-            Domain.Enums.ProviderType.Individual,
+            Domain.Enums.ServiceCategory.Barbershop,
             ContactInfo.Create(
                 Email.Create(email),
                 PhoneNumber.From("+1234567890")

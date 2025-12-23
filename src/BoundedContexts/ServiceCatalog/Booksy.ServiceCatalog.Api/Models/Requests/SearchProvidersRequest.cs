@@ -14,9 +14,9 @@ namespace Booksy.ServiceCatalog.API.Models.Requests
         public string? SearchTerm { get; set; }
 
         /// <summary>
-        /// Filter by provider type
+        /// Filter by service category
         /// </summary>
-        public string? Type { get; set; }
+        public string? Category { get; set; }
 
         /// <summary>
         /// Filter by city

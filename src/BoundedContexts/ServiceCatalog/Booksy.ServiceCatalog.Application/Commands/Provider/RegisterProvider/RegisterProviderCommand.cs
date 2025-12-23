@@ -17,7 +17,7 @@ namespace Booksy.ServiceCatalog.Application.Commands.Provider.RegisterProvider
         string BusinessName,
         string Description,
         string Email,
-        ProviderType ProviderType,
+        ServiceCategory PrimaryCategory,
         string PrimaryPhone,
         string? SecondaryPhone,
         string? Website,

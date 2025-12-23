@@ -56,8 +56,8 @@ namespace Booksy.ServiceCatalog.Application.Commands.ProviderHierarchy.RegisterI
                     "Draft provider already exists. Resuming registration.");
             }
 
-            // 3. Map category string to ProviderType enum
-            if (!Enum.TryParse<ProviderType>(request.Category, true, out var providerType))
+            // 3. Map category string to ServiceCategory enum
+            if (!Enum.TryParse<ServiceCategory>(request.Category, true, out var primaryCategory))
             {
                 throw new InvalidOperationException($"Invalid category: {request.Category}");
             }
@@ -92,7 +92,7 @@ namespace Booksy.ServiceCatalog.Application.Commands.ProviderHierarchy.RegisterI
                 request.LastName,
                 request.BusinessName,
                 request.BusinessDescription,
-                providerType,
+                primaryCategory,
                 contactInfo,
                 address,
                 ProviderHierarchyType.Individual,

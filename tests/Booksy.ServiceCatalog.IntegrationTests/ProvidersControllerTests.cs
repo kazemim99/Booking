@@ -31,7 +31,7 @@ public class ProvidersControllerTests : ServiceCatalogIntegrationTestBase
             OwnerId = userId,
             BusinessName = "Test Beauty Salon",
             Description = "A professional beauty salon",
-            Type = ProviderType.Salon,
+            Type = ServiceCategory.BeautySalon,
             WebsiteUrl = "https://www.testbeautysalon.com",
             ContactInfo = new ContactInfoRequest
             {
@@ -75,7 +75,7 @@ public class ProvidersControllerTests : ServiceCatalogIntegrationTestBase
             OwnerId = Guid.NewGuid(),
             BusinessName = "", // Invalid: empty
             Description = "A professional beauty salon",
-            Type = ProviderType.Salon,
+            Type = ServiceCategory.BeautySalon,
             ContactInfo = new ContactInfoRequest
             {
                 PrimaryPhone = "+989121234567"
@@ -108,7 +108,7 @@ public class ProvidersControllerTests : ServiceCatalogIntegrationTestBase
             OwnerId = userId,
             BusinessName = "Test Salon",
             Description = "A professional salon",
-            Type = ProviderType.Individual,
+            Type = ServiceCategory.Barbershop,
             ContactInfo = new ContactInfoRequest
             {
                 PrimaryPhone = "invalid-phone" // Invalid format

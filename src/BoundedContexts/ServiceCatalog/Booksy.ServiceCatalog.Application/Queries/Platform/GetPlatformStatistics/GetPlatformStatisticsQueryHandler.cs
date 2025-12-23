@@ -3,6 +3,7 @@
 // ========================================
 using Booksy.Core.Application.Abstractions.CQRS;
 using Booksy.ServiceCatalog.Domain.Enums;
+using Booksy.ServiceCatalog.Domain.Enums.Extensions;
 using Booksy.ServiceCatalog.Domain.Repositories;
 using Microsoft.Extensions.Logging;
 
@@ -60,7 +61,7 @@ namespace Booksy.ServiceCatalog.Application.Queries.Platform.GetPlatformStatisti
 
                 // Calculate category distribution
                 var categoryDistribution = activeServices
-                    .GroupBy(s => s.Category.Name)
+                    .GroupBy(s => s.Category.ToEnglishName())
                     .OrderByDescending(g => g.Count())
                     .Take(8) // Top 8 categories
                     .ToDictionary(g => g.Key, g => g.Count());

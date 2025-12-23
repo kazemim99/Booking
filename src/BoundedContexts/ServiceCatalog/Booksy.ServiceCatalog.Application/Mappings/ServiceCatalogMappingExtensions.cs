@@ -5,6 +5,8 @@ using Booksy.ServiceCatalog.Application.DTOs.Provider;
 using Booksy.ServiceCatalog.Application.DTOs.Service;
 using Booksy.ServiceCatalog.Application.Validators.Common;
 using Booksy.ServiceCatalog.Domain.Aggregates;
+using Booksy.ServiceCatalog.Domain.Enums;
+using Booksy.ServiceCatalog.Domain.Enums.Extensions;
 using Booksy.ServiceCatalog.Domain.ValueObjects;
 
 namespace Booksy.ServiceCatalog.Application.Mappings
@@ -19,7 +21,7 @@ namespace Booksy.ServiceCatalog.Application.Mappings
                 BusinessName = provider.Profile.BusinessName,
                 Description = provider.Profile.BusinessDescription,
                 Status = provider.Status,
-                Type = provider.ProviderType,
+                PrimaryCategory = provider.PrimaryCategory,
                 LogoUrl = provider.Profile.LogoUrl,
                 City = provider.Address.City,
                 State = provider.Address.State,
@@ -40,7 +42,7 @@ namespace Booksy.ServiceCatalog.Application.Mappings
                 ProviderId = service.ProviderId.Value,
                 Name = service.Name,
                 Description = service.Description,
-                Category = service.Category.Name,
+                Category = service.Category.ToEnglishName(),
                 Type = service.Type,
                 BasePrice = service.BasePrice.Amount,
                 Currency = service.BasePrice.Currency,
@@ -92,10 +94,9 @@ namespace Booksy.ServiceCatalog.Application.Mappings
             return Duration.FromMinutes(minutes);
         }
 
-        public static ServiceCategory ToServiceCategory(this string categoryName)
+        public static bool TryParseServiceCategory(this string categorySlug, out ServiceCategory category)
         {
-            var slug = categoryName.ToLowerInvariant().Replace(" ", "_").Replace("&", "and");
-            return ServiceCategory.Create(categoryName, slug);
+            return ServiceCategoryExtensions.TryParseSlug(categorySlug, out category);
         }
     }
 

@@ -2,8 +2,9 @@
 // Booksy.ServiceCatalog.Application/Queries/Category/GetCategoriesWithCounts/GetCategoriesWithCountsQueryHandler.cs
 // ========================================
 using Booksy.Core.Application.Abstractions.CQRS;
+using Booksy.ServiceCatalog.Domain.Enums;
+using Booksy.ServiceCatalog.Domain.Enums.Extensions;
 using Booksy.ServiceCatalog.Domain.Repositories;
-using Booksy.ServiceCatalog.Domain.ValueObjects;
 using Microsoft.Extensions.Logging;
 
 namespace Booksy.ServiceCatalog.Application.Queries.Category.GetCategoriesWithCounts
@@ -50,7 +51,7 @@ namespace Booksy.ServiceCatalog.Application.Queries.Category.GetCategoriesWithCo
 
                     // Get unique categories from this provider's services
                     var providerCategories = activeServices
-                        .Select(s => s.Category.Name.ToLowerInvariant())
+                        .Select(s => s.Category.ToString().ToLowerInvariant())
                         .Distinct();
 
                     foreach (var category in providerCategories)
@@ -64,16 +65,16 @@ namespace Booksy.ServiceCatalog.Application.Queries.Category.GetCategoriesWithCo
                 }
 
                 // Build view models with actual counts from domain categories
-                var categories = ServiceCategory.All.Select(category => new CategoryWithCountViewModel
+                var categories = ServiceCategoryExtensions.GetAll().Select(category => new CategoryWithCountViewModel
                 {
-                    Name = category.Name,
-                    Slug = category.Slug,
-                    Description = category.Description,
-                    Icon = category.IconUrl ?? "📦",
-                    Color = category.Color,
-                    Gradient = category.Gradient,
-                    DisplayOrder = category.DisplayOrder,
-                    ProviderCount = categoryCountsDict.GetValueOrDefault(category.Name.ToLowerInvariant(), 0)
+                    Name = category.ToEnglishName(),
+                    Slug = category.ToSlug(),
+                    Description = category.ToDescription(),
+                    Icon = category.ToIcon(),
+                    Color = category.ToColorHex(),
+                    Gradient = category.ToGradient(),
+                    DisplayOrder = (int)category,
+                    ProviderCount = categoryCountsDict.GetValueOrDefault(category.ToString().ToLowerInvariant(), 0)
                 }).ToList();
 
                 // Filter out categories with no providers

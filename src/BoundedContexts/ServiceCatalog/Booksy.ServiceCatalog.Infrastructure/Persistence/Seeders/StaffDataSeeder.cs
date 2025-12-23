@@ -64,15 +64,17 @@ namespace Booksy.ServiceCatalog.Infrastructure.Persistence.Seeders
         {
             var staffCount = 0;
 
-            switch (provider.ProviderType)
+            switch (provider.PrimaryCategory)
             {
-                case ProviderType.Individual:
+                case ServiceCategory.Barbershop:
                     // Individual has 1-2 staff
                     provider.AddStaff("John", "Smith", StaffRole.Owner, PhoneNumber.From("5551234567"));
                     staffCount = 1;
                     break;
 
-                case ProviderType.Salon:
+                case ServiceCategory.HairSalon:
+                case ServiceCategory.BeautySalon:
+                case ServiceCategory.NailSalon:
                     // Salon has 3-5 staff
                     provider.AddStaff("Sarah", "Johnson", StaffRole.Owner, PhoneNumber.From("5551111111"));
                     provider.AddStaff("Emily", "Davis", StaffRole.ServiceProvider, PhoneNumber.From("5552222222"));
@@ -81,7 +83,8 @@ namespace Booksy.ServiceCatalog.Infrastructure.Persistence.Seeders
                     staffCount = 4;
                     break;
 
-                case ProviderType.Spa:
+                case ServiceCategory.Spa:
+                case ServiceCategory.Massage:
                     // Spa has 4-6 staff
                     provider.AddStaff("Amanda", "Martinez", StaffRole.Owner, PhoneNumber.From("5555555555"));
                     provider.AddStaff("David", "Garcia", StaffRole.ServiceProvider, PhoneNumber.From("5556666666"));

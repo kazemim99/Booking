@@ -48,7 +48,7 @@ namespace Booksy.ServiceCatalog.Infrastructure.Persistence.Seeders
                 foreach (var provider in providers)
                 {
                     // Calculate realistic rating based on provider type and quality tier
-                    var rating = GenerateRealisticRating(provider.ProviderType);
+                    var rating = GenerateRealisticRating(provider.PrimaryCategory);
 
                     // Calculate review count based on booking count (60% of completed bookings get reviews)
                     var completedBookingsCount = await _context.Bookings
@@ -89,7 +89,7 @@ namespace Booksy.ServiceCatalog.Infrastructure.Persistence.Seeders
         /// Generate realistic rating distribution
         /// Distribution: 50% excellent (4.5-5.0), 25% good (3.5-4.4), 15% average (2.5-3.4), 10% poor (1.5-2.4)
         /// </summary>
-        private Rating GenerateRealisticRating(Domain.Enums.ProviderType providerType)
+        private Rating GenerateRealisticRating(Domain.Enums.ServiceCategory category)
         {
             var distribution = _random.Next(100);
 
@@ -117,9 +117,11 @@ namespace Booksy.ServiceCatalog.Infrastructure.Persistence.Seeders
                 reviewCount = _random.Next(3, 20);
             }
 
-            // Premium provider types (Spa, Clinic) tend to have slightly higher ratings
-            if (providerType == Domain.Enums.ProviderType.Spa ||
-                providerType == Domain.Enums.ProviderType.Clinic)
+            // Premium categories (Spa, Medical) tend to have slightly higher ratings
+            if (category == Domain.Enums.ServiceCategory.Spa ||
+                category == Domain.Enums.ServiceCategory.Massage ||
+                category == Domain.Enums.ServiceCategory.MedicalClinic ||
+                category == Domain.Enums.ServiceCategory.Dental)
             {
                 ratingValue = Math.Min(5.0m, ratingValue + 0.3m);
             }

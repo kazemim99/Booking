@@ -5,7 +5,7 @@ namespace Booksy.ServiceCatalog.Application.DTOs.Provider
         Guid Id,
         string BusinessName,
         string Description,
-        ProviderType Type,
+        ServiceCategory PrimaryCategory,
         ProviderStatus Status,
         string City,
         string State,

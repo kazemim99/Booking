@@ -36,7 +36,7 @@ public class ProviderHierarchyTests
             _ownerId,
             "Test Salon",
             "A great salon",
-            ProviderType.Individual,
+            ServiceCategory.HairSalon,
             _contactInfo,
             _address);
 
@@ -54,7 +54,7 @@ public class ProviderHierarchyTests
             _ownerId,
             "Elite Salon",
             "Premium services",
-            ProviderType.Individual,
+            ServiceCategory.Barbershop,
             _contactInfo,
             _address,
             ProviderHierarchyType.Organization);
@@ -74,7 +74,7 @@ public class ProviderHierarchyTests
             _ownerId,
             "Mobile Barber",
             "Professional barber services",
-            ProviderType.Individual,
+            ServiceCategory.Barbershop,
             _contactInfo,
             _address,
             ProviderHierarchyType.Individual);
@@ -96,7 +96,7 @@ public class ProviderHierarchyTests
             "Doe",
             "Test Business",
             "Test description",
-            ProviderType.Individual,
+            ServiceCategory.Barbershop,
             _contactInfo,
             _address);
 
@@ -115,7 +115,7 @@ public class ProviderHierarchyTests
             "Smith",
             "Freelance Stylist",
             "Expert styling",
-            ProviderType.Individual,
+            ServiceCategory.Barbershop,
             _contactInfo,
             _address,
             ProviderHierarchyType.Individual);
@@ -137,7 +137,7 @@ public class ProviderHierarchyTests
             _ownerId,
             "Solo Barber",
             "Expert cuts",
-            ProviderType.Individual,
+            ServiceCategory.Barbershop,
             _contactInfo,
             _address,
             ProviderHierarchyType.Individual);
@@ -159,7 +159,7 @@ public class ProviderHierarchyTests
             _ownerId,
             "Solo Barber",
             "Expert cuts",
-            ProviderType.Individual,
+            ServiceCategory.Barbershop,
             _contactInfo,
             _address,
             ProviderHierarchyType.Individual);
@@ -180,7 +180,7 @@ public class ProviderHierarchyTests
             _ownerId,
             "Elite Salon",
             "Premium services",
-            ProviderType.Individual,
+            ServiceCategory.Barbershop,
             _contactInfo,
             _address,
             ProviderHierarchyType.Organization);
@@ -199,7 +199,7 @@ public class ProviderHierarchyTests
             _ownerId,
             "Staff Member",
             "Stylist",
-            ProviderType.Individual,
+            ServiceCategory.Barbershop,
             _contactInfo,
             _address,
             ProviderHierarchyType.Individual);
@@ -224,7 +224,7 @@ public class ProviderHierarchyTests
             _ownerId,
             "Stylist",
             "Expert stylist",
-            ProviderType.Individual,
+            ServiceCategory.Barbershop,
             _contactInfo,
             _address,
             ProviderHierarchyType.Individual);
@@ -246,7 +246,7 @@ public class ProviderHierarchyTests
             _ownerId,
             "Stylist",
             "Expert stylist",
-            ProviderType.Individual,
+            ServiceCategory.Barbershop,
             _contactInfo,
             _address,
             ProviderHierarchyType.Individual);
@@ -268,7 +268,7 @@ public class ProviderHierarchyTests
             _ownerId,
             "Salon",
             "Great salon",
-            ProviderType.Individual,
+            ServiceCategory.Barbershop,
             _contactInfo,
             _address,
             ProviderHierarchyType.Organization);
@@ -288,7 +288,7 @@ public class ProviderHierarchyTests
             _ownerId,
             "Stylist",
             "Expert stylist",
-            ProviderType.Individual,
+            ServiceCategory.Barbershop,
             _contactInfo,
             _address,
             ProviderHierarchyType.Individual);
@@ -308,7 +308,7 @@ public class ProviderHierarchyTests
             _ownerId,
             "Stylist",
             "Expert stylist",
-            ProviderType.Individual,
+            ServiceCategory.Barbershop,
             _contactInfo,
             _address,
             ProviderHierarchyType.Individual);
@@ -331,7 +331,7 @@ public class ProviderHierarchyTests
             _ownerId,
             "Stylist",
             "Expert stylist",
-            ProviderType.Individual,
+            ServiceCategory.Barbershop,
             _contactInfo,
             _address,
             ProviderHierarchyType.Individual);
@@ -355,7 +355,7 @@ public class ProviderHierarchyTests
             _ownerId,
             "Stylist",
             "Expert stylist",
-            ProviderType.Individual,
+            ServiceCategory.Barbershop,
             _contactInfo,
             _address,
             ProviderHierarchyType.Individual);
@@ -378,7 +378,7 @@ public class ProviderHierarchyTests
             _ownerId,
             "Independent Stylist",
             "Solo professional",
-            ProviderType.Individual,
+            ServiceCategory.Barbershop,
             _contactInfo,
             _address,
             ProviderHierarchyType.Individual);
@@ -400,7 +400,7 @@ public class ProviderHierarchyTests
             _ownerId,
             "Elite Salon",
             "Premium services",
-            ProviderType.Individual,
+            ServiceCategory.Barbershop,
             _contactInfo,
             _address,
             ProviderHierarchyType.Organization);
@@ -423,7 +423,7 @@ public class ProviderHierarchyTests
             _ownerId,
             "Mobile Barber",
             "Expert cuts",
-            ProviderType.Individual,
+            ServiceCategory.Barbershop,
             _contactInfo,
             _address,
             ProviderHierarchyType.Individual);
@@ -447,7 +447,7 @@ public class ProviderHierarchyTests
             _ownerId,
             "Stylist",
             "Expert stylist",
-            ProviderType.Individual,
+            ServiceCategory.Barbershop,
             _contactInfo,
             _address,
             ProviderHierarchyType.Individual);
@@ -471,7 +471,7 @@ public class ProviderHierarchyTests
             _ownerId,
             "Test Salon",
             "Great services",
-            ProviderType.Individual,
+            ServiceCategory.Barbershop,
             _contactInfo,
             _address,
             ProviderHierarchyType.Organization);
@@ -494,7 +494,7 @@ public class ProviderHierarchyTests
             _ownerId,
             "Test Salon",
             "Great services",
-            ProviderType.Individual,
+            ServiceCategory.Barbershop,
             _contactInfo,
             _address,
             ProviderHierarchyType.Organization);
@@ -521,7 +521,7 @@ public class ProviderHierarchyTests
             _ownerId,
             "Elite Salon",
             "Premium services",
-            ProviderType.Individual,
+            ServiceCategory.Barbershop,
             _contactInfo,
             _address,
             ProviderHierarchyType.Organization);
@@ -538,7 +538,7 @@ public class ProviderHierarchyTests
             _ownerId,
             "Solo Barber",
             "Expert cuts",
-            ProviderType.Individual,
+            ServiceCategory.Barbershop,
             _contactInfo,
             _address,
             ProviderHierarchyType.Individual);
@@ -559,7 +559,7 @@ public class ProviderHierarchyTests
             _ownerId,
             "Elite Salon",
             "Premium services",
-            ProviderType.Individual,
+            ServiceCategory.Barbershop,
             _contactInfo,
             _address,
             ProviderHierarchyType.Organization);
@@ -577,7 +577,7 @@ public class ProviderHierarchyTests
             _ownerId,
             "Solo Barber",
             "Expert cuts",
-            ProviderType.Individual,
+            ServiceCategory.Barbershop,
             _contactInfo,
             _address,
             ProviderHierarchyType.Individual);
@@ -596,7 +596,7 @@ public class ProviderHierarchyTests
             _ownerId,
             "Stylist",
             "Expert stylist",
-            ProviderType.Individual,
+            ServiceCategory.Barbershop,
             _contactInfo,
             _address,
             ProviderHierarchyType.Individual);

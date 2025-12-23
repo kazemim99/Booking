@@ -1,7 +1,8 @@
-﻿// ========================================
+// ========================================
 // Booksy.ServiceCatalog.Application/Queries/Provider/GetProviderStatistics/GetProviderStatisticsQueryHandler.cs
 // ========================================
 using Booksy.Core.Application.Abstractions.CQRS;
+using Booksy.ServiceCatalog.Domain.Enums.Extensions;
 using Booksy.ServiceCatalog.Domain.Repositories;
 using Booksy.ServiceCatalog.Domain.ValueObjects;
 using Microsoft.Extensions.Logging;
@@ -62,7 +63,7 @@ namespace Booksy.ServiceCatalog.Application.Queries.Provider.GetProviderStatisti
                 AverageRating = averageRating,
                 RegisteredAt = provider.RegisteredAt,
                 LastActiveAt = provider.LastActiveAt,
-                ServicesByCategory = services.GroupBy(s => s.Category.Name)
+                ServicesByCategory = services.GroupBy(s => s.Category.ToEnglishName())
                     .ToDictionary(g => g.Key, g => g.Count()),
                 BookingsByMonth = new Dictionary<string, int>(), // Would be populated from Booking context
                 RevenueByMonth = new Dictionary<string, decimal>(), // Would be populated from Payment context

@@ -92,7 +92,7 @@ public class ProgressiveRegistrationTests : ServiceCatalogIntegrationTestBase
             provider!.Status.Should().Be(ProviderStatus.Drafted);
             provider.RegistrationStep.Should().Be(3);
             provider.Profile.BusinessName.Should().Be(request.BusinessName);
-            provider.ProviderType.Should().Be(ProviderType.Salon);
+            provider.PrimaryCategory.Should().Be(ServiceCategory.BeautySalon);
         }
     }
 

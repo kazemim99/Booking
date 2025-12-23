@@ -1,7 +1,8 @@
-﻿using Booksy.Core.Application.Abstractions.CQRS;
+using Booksy.Core.Application.Abstractions.CQRS;
 using Booksy.Core.Application.DTOs;
 using Booksy.ServiceCatalog.Application.Abstractions.Queries;
 using Booksy.ServiceCatalog.Domain.Enums;
+using Booksy.ServiceCatalog.Domain.Enums.Extensions;
 using Booksy.ServiceCatalog.Domain.Repositories;
 using Booksy.ServiceCatalog.Domain.Specifications;
 using Microsoft.Extensions.Logging;
@@ -68,7 +69,7 @@ namespace Booksy.ServiceCatalog.Application.Queries.Service.SearchServices
                          service.ProviderId.Value,
                          service.Name,
                          service.Description,
-                    service.Category.Name,
+                    service.Category.ToEnglishName(),
                       service.Type.ToString(),
                    service.BasePrice.Amount,
                     service.BasePrice.Currency,

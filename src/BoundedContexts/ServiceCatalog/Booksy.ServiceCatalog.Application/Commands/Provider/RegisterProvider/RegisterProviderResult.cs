@@ -8,7 +8,7 @@ namespace Booksy.ServiceCatalog.Application.Commands.Provider.RegisterProvider
     public sealed record RegisterProviderResult(
         Guid ProviderId,
         string BusinessName,
-        ProviderType Type,
+        ServiceCategory PrimaryCategory,
         ProviderStatus Status,
         DateTime RegisteredAt,
         string AccessToken,

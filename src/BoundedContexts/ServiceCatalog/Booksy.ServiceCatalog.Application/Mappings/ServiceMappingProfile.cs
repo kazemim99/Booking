@@ -1,9 +1,10 @@
-﻿// ========================================
+// ========================================
 // Booksy.ServiceCatalog.Application/Mappings/ServiceMappingProfile.cs
 // ========================================
 using AutoMapper;
 using Booksy.ServiceCatalog.Application.DTOs.Service;
 using Booksy.ServiceCatalog.Domain.Entities;
+using Booksy.ServiceCatalog.Domain.Enums.Extensions;
 
 namespace Booksy.ServiceCatalog.Application.Mappings
 {
@@ -14,7 +15,7 @@ namespace Booksy.ServiceCatalog.Application.Mappings
             CreateMap<Domain.Aggregates.Service, ServiceDto>()
                 .ForMember(dest => dest.Id, opt => opt.MapFrom(src => src.Id.Value))
                 .ForMember(dest => dest.ProviderId, opt => opt.MapFrom(src => src.ProviderId.Value))
-                .ForMember(dest => dest.Category, opt => opt.MapFrom(src => src.Category.Name))
+                .ForMember(dest => dest.Category, opt => opt.MapFrom(src => src.Category.ToEnglishName()))
                 .ForMember(dest => dest.BasePrice, opt => opt.MapFrom(src => src.BasePrice.Amount))
                 .ForMember(dest => dest.Currency, opt => opt.MapFrom(src => src.BasePrice.Currency))
                 .ForMember(dest => dest.Duration, opt => opt.MapFrom(src => src.Duration.Value))

@@ -9,7 +9,7 @@ namespace Booksy.ServiceCatalog.Application.Queries.Provider.GetProvidersByLocat
         double Latitude,
         double Longitude,
         double RadiusKm = 10.0,
-        ProviderType? Type = null,
+        ServiceCategory? Category = null,
         bool? OffersMobileServices = null,
         int PageNumber = 1,
         int PageSize = 20) : PaginatedQueryBase<ProviderLocationItem>;

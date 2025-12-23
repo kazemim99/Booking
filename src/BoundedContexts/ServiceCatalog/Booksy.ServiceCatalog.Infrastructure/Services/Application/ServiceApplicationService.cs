@@ -1,9 +1,10 @@
-﻿// ========================================
+// ========================================
 // Booksy.ServiceCatalog.Application/Services/Implementations/ServiceApplicationService.cs
 // ========================================
 using Booksy.ServiceCatalog.Application.DTOs.Service;
 using Booksy.ServiceCatalog.Application.Services.Interfaces;
 using Booksy.ServiceCatalog.Domain.Enums;
+using Booksy.ServiceCatalog.Domain.Enums.Extensions;
 using Booksy.ServiceCatalog.Domain.Repositories;
 using Booksy.ServiceCatalog.Domain.ValueObjects;
 using Microsoft.Extensions.Logging;
@@ -34,7 +35,7 @@ namespace Booksy.ServiceCatalog.Application.Services.Implementations
                 ProviderId = service.ProviderId.Value,
                 Name = service.Name,
                 Description = service.Description,
-                Category = service.Category.Name,
+                Category = service.Category.ToEnglishName(),
                 Type = service.Type,
                 BasePrice = service.BasePrice.Amount,
                 Currency = service.BasePrice.Currency,
@@ -70,7 +71,7 @@ namespace Booksy.ServiceCatalog.Application.Services.Implementations
                 Id = service.Id.Value,
                 Name = service.Name,
                 Description = service.Description,
-                Category = service.Category.Name,
+                Category = service.Category.ToEnglishName(),
                 BasePrice = service.BasePrice.Amount,
                 Currency = service.BasePrice.Currency,
                 Duration = service.Duration.Value,
@@ -92,7 +93,7 @@ namespace Booksy.ServiceCatalog.Application.Services.Implementations
                 Id = service.Id.Value,
                 Name = service.Name,
                 Description = service.Description,
-                Category = service.Category.Name,
+                Category = service.Category.ToEnglishName(),
                 BasePrice = service.BasePrice.Amount,
                 Currency = service.BasePrice.Currency,
                 Duration = service.Duration.Value,
@@ -112,7 +113,7 @@ namespace Booksy.ServiceCatalog.Application.Services.Implementations
                 Id = service.Id.Value,
                 Name = service.Name,
                 Description = service.Description,
-                Category = service.Category.Name,
+                Category = service.Category.ToEnglishName(),
                 BasePrice = service.BasePrice.Amount,
                 Currency = service.BasePrice.Currency,
                 Duration = service.Duration.Value,

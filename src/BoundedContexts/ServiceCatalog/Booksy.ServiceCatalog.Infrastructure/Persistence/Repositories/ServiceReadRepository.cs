@@ -44,7 +44,7 @@ namespace Booksy.ServiceCatalog.Infrastructure.Persistence.Repositories
             return await DbSet
                 .Include(s => s.Options)
                 .Include(s => s.PriceTiers)
-                .Where(s => s.Category.Name == category)
+                .Where(s => s.Category.ToString() == category)
                 .ToListAsync(cancellationToken);
         }
 
@@ -125,7 +125,7 @@ namespace Booksy.ServiceCatalog.Infrastructure.Persistence.Repositories
                 query = query.Where(s => s.Status == status.Value);
 
             if (category != null)
-                query = query.Where(s => s.Category.Name == category.Name);
+                query = query.Where(s => s.Category == category);
 
             if (providerId != null)
                 query = query.Where(s => s.ProviderId == providerId.Value);
@@ -183,7 +183,7 @@ namespace Booksy.ServiceCatalog.Infrastructure.Persistence.Repositories
         public async Task<decimal> GetAveragePriceByCategoryAsync(string category, string currency, CancellationToken cancellationToken = default)
         {
             var services = await DbSet
-                .Where(s => s.Category.Name == category && s.BasePrice.Currency == currency)
+                .Where(s => s.Category.ToString() == category && s.BasePrice.Currency == currency)
                 .Select(s => s.BasePrice.Amount)
                 .ToListAsync(cancellationToken);
 

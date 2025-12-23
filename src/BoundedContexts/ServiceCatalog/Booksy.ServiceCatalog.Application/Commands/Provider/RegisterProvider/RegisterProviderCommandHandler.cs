@@ -84,12 +84,12 @@ namespace Booksy.ServiceCatalog.Application.Commands.Provider.RegisterProvider
                 ownerId,
                 request.BusinessName,
                 request.Description,
-                request.ProviderType,
+                request.PrimaryCategory,
                 contactInfo,
                 address);
 
-            // For Individual/solo providers, automatically add owner as staff member
-            if (request.ProviderType == Domain.Enums.ProviderType.Individual)
+            // For Individual hierarchy providers, automatically add owner as staff member
+            if (provider.HierarchyType == Domain.Enums.ProviderHierarchyType.Individual)
             {
                 var ownerPhone = !string.IsNullOrEmpty(request.PrimaryPhone)
                     ? PhoneNumber.From(request.PrimaryPhone)

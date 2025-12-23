@@ -26,9 +26,9 @@ namespace Booksy.ServiceCatalog.Application.Commands.Provider.RegisterProvider
                 .MaximumLength(1000)
                 .WithMessage("Description cannot exceed 1000 characters");
 
-            RuleFor(x => x.ProviderType)
+            RuleFor(x => x.PrimaryCategory)
                 .IsInEnum()
-                .WithMessage("Valid provider type is required");
+                .WithMessage("Valid service category is required");
 
 
 

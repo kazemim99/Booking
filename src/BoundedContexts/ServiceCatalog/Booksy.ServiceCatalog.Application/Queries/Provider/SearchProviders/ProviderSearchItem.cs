@@ -6,7 +6,7 @@ public sealed class ProviderSearchItem
     public string BusinessName { get; init; }
     public string? ProfileImageUrl { get; init; }
     public string Description { get; init; }
-    public ProviderType Type { get; init; }
+    public ServiceCategory PrimaryCategory { get; init; }
     public ProviderStatus Status { get; init; }
     public string City { get; init; }
     public string State { get; init; }
@@ -35,7 +35,7 @@ public sealed class ProviderSearchItem
         string businessName,
         string description,
         string? profileImageUrl,
-        ProviderType type,
+        ServiceCategory primaryCategory,
         ProviderStatus status,
         string city,
         string state,
@@ -59,7 +59,7 @@ public sealed class ProviderSearchItem
         BusinessName = businessName;
         ProfileImageUrl = profileImageUrl;
         Description = description;
-        Type = type;
+        PrimaryCategory = primaryCategory;
         Status = status;
         City = city;
         State = state;

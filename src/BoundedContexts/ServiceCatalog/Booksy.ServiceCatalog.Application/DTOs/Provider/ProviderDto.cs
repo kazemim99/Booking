@@ -12,7 +12,7 @@ namespace Booksy.ServiceCatalog.Application.DTOs.Provider
         public Guid OwnerId { get; set; }
         public BusinessProfileDto Profile { get; set; } = new();
         public ProviderStatus Status { get; set; }
-        public ProviderType Type { get; set; }
+        public ServiceCategory PrimaryCategory { get; set; }
         public ContactInfoDto ContactInfo { get; set; } = new();
         public BusinessAddressDto Address { get; set; } = new();
         public bool RequiresApproval { get; set; }

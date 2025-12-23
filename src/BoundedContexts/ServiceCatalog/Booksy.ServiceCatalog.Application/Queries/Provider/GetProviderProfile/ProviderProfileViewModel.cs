@@ -18,7 +18,7 @@ namespace Booksy.ServiceCatalog.Application.Queries.Provider.GetProviderProfile
         public string Description { get; set; } = string.Empty;
         public string? LogoUrl { get; set; }
         public string? ProfileImageUrl { get; set; }
-        public ProviderType Type { get; set; }
+        public ServiceCategory PrimaryCategory { get; set; }
         public ProviderStatus Status { get; set; }
 
         // Contact & Location

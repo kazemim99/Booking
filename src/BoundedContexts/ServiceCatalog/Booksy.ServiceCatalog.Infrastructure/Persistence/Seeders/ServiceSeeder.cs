@@ -60,7 +60,7 @@ namespace Booksy.ServiceCatalog.Infrastructure.Persistence.Seeders
         private List<Service> CreateServicesForProvider(Provider provider)
         {
             var services = new List<Service>();
-            var baseServices = GetServicesByProviderType(provider.ProviderType);
+            var baseServices = GetServicesByProviderType(provider.PrimaryCategory);
 
             foreach (var (persianName, englishName, description, price, duration, category) in baseServices)
             {
@@ -84,11 +84,11 @@ namespace Booksy.ServiceCatalog.Infrastructure.Persistence.Seeders
         }
 
         private List<(string PersianName, string EnglishName, string Description, decimal Price, int Duration, string Category)>
-            GetServicesByProviderType(ProviderType type)
+            GetServicesByProviderType(ServiceCategory category)
         {
-            return type switch
+            return category switch
             {
-                ProviderType.Individual => new List<(string, string, string, decimal, int, string)>
+                ServiceCategory.Barbershop => new List<(string, string, string, decimal, int, string)>
                 {
                     ("کوتاهی مو مردانه", "Men's Haircut", "اصلاح و آرایش موی مردانه", 500000m, 30, "آرایشگری"),
                     ("اصلاح صورت", "Face Shave", "اصلاح صورت با تیغ و حوله داغ", 300000m, 20, "آرایشگری"),
@@ -96,7 +96,7 @@ namespace Booksy.ServiceCatalog.Infrastructure.Persistence.Seeders
                     ("رنگ مو", "Hair Color", "رنگ کردن موی سر", 800000m, 60, "آرایشگری")
                 },
 
-                ProviderType.Salon => new List<(string, string, string, decimal, int, string)>
+                ServiceCategory.HairSalon => new List<(string, string, string, decimal, int, string)>
                 {
                     ("کوتاهی و فشن", "Cut & Style", "کوتاهی و مدل موی بانوان", 1200000m, 60, "آرایش و زیبایی"),
                     ("رنگ مو", "Hair Coloring", "رنگ کامل موی سر", 2500000m, 120, "آرایش و زیبایی"),
@@ -110,7 +110,7 @@ namespace Booksy.ServiceCatalog.Infrastructure.Persistence.Seeders
                     ("اپیلاسیون بدن", "Body Waxing", "وکس کامل بدن", 1500000m, 90, "زیبایی")
                 },
 
-                ProviderType.Spa => new List<(string, string, string, decimal, int, string)>
+                ServiceCategory.Spa => new List<(string, string, string, decimal, int, string)>
                 {
                     ("ماساژ سوئدی", "Swedish Massage", "ماساژ کامل بدن به سبک سوئدی", 1800000m, 60, "ماساژ"),
                     ("ماساژ بافت عمقی", "Deep Tissue Massage", "ماساژ درمانی بافت عمقی", 2200000m, 60, "ماساژ درمانی"),
@@ -123,7 +123,7 @@ namespace Booksy.ServiceCatalog.Infrastructure.Persistence.Seeders
                     ("بادی رپ", "Body Wrap", "پیچش بدن برای سم‌زدایی", 2800000m, 90, "مراقبت بدن")
                 },
 
-                ProviderType.Clinic => new List<(string, string, string, decimal, int, string)>
+                ServiceCategory.MedicalClinic => new List<(string, string, string, decimal, int, string)>
                 {
                     ("لیزر موهای زائد", "Laser Hair Removal", "لیزر حذف موهای زائد", 1500000m, 45, "لیزر"),
                     ("لیزر جوانسازی", "Laser Rejuvenation", "جوانسازی پوست با لیزر", 3000000m, 60, "لیزر"),
@@ -135,7 +135,7 @@ namespace Booksy.ServiceCatalog.Infrastructure.Persistence.Seeders
                     ("میکرونیدلینگ", "Microneedling", "میکرونیدلینگ برای بازسازی پوست", 2500000m, 60, "مراقبت پوست")
                 },
 
-                ProviderType.Medical => new List<(string, string, string, decimal, int, string)>
+                ServiceCategory.Dental => new List<(string, string, string, decimal, int, string)>
                 {
                     ("کاشت مو", "Hair Transplant", "کاشت طبیعی مو به روش FIT/FUT", 15000000m, 240, "جراحی"),
                     ("عمل زیبایی بینی", "Rhinoplasty", "جراحی زیبایی بینی", 25000000m, 180, "جراحی"),
@@ -145,7 +145,7 @@ namespace Booksy.ServiceCatalog.Infrastructure.Persistence.Seeders
                     ("درمان لک", "Pigmentation Treatment", "درمان لک و کک و مک", 2000000m, 60, "درمان پوست")
                 },
 
-                ProviderType.GymFitness => new List<(string, string, string, decimal, int, string)>
+                ServiceCategory.Gym => new List<(string, string, string, decimal, int, string)>
                 {
                     ("تمرین شخصی", "Personal Training", "جلسه تمرین با مربی شخصی", 1000000m, 60, "بدنسازی"),
                     ("تمرین گروهی", "Group Training", "کلاس تمرینی گروهی", 500000m, 60, "فیتنس"),

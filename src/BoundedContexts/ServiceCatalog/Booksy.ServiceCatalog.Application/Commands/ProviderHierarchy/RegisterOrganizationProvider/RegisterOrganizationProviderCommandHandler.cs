@@ -41,8 +41,8 @@ namespace Booksy.ServiceCatalog.Application.Commands.ProviderHierarchy.RegisterO
             var userId = UserId.From(_currentUserService.UserId
                 ?? throw new UnauthorizedAccessException("User not authenticated"));
 
-            // 2. Map category to provider type
-            var providerType = MapCategoryToProviderType(request.Category);
+            // 2. Map category to ServiceCategory
+            var primaryCategory = MapCategoryToServiceCategory(request.Category);
 
             // 3. Create value objects
             var contactInfo = ContactInfo.Create(
@@ -83,7 +83,7 @@ namespace Booksy.ServiceCatalog.Application.Commands.ProviderHierarchy.RegisterO
                     request.OwnerLastName,
                     request.BusinessName,
                     request.BusinessDescription,
-                    providerType,
+                    primaryCategory,
                     contactInfo,
                     address,
                     request.LogoUrl);
@@ -102,7 +102,7 @@ namespace Booksy.ServiceCatalog.Application.Commands.ProviderHierarchy.RegisterO
                     request.OwnerLastName,
                     request.BusinessName,
                     request.BusinessDescription,
-                    providerType,
+                    primaryCategory,
                     contactInfo,
                     address,
                     ProviderHierarchyType.Organization,
@@ -124,22 +124,22 @@ namespace Booksy.ServiceCatalog.Application.Commands.ProviderHierarchy.RegisterO
         }
 
 
-        private ProviderType MapCategoryToProviderType(string categoryId)
+        private ServiceCategory MapCategoryToServiceCategory(string categoryId)
         {
             return categoryId.ToLowerInvariant() switch
             {
-                "nail_salon" => ProviderType.Salon,
-                "hair_salon" => ProviderType.Salon,
-                "brows_lashes" => ProviderType.Salon,
-                "braids_locs" => ProviderType.Salon,
-                "massage" => ProviderType.Spa,
-                "barbershop" => ProviderType.Salon,
-                "aesthetic_medicine" => ProviderType.Medical,
-                "dental_orthodontics" => ProviderType.Medical,
-                "hair_removal" => ProviderType.Spa,
-                "health_fitness" => ProviderType.GymFitness,
-                "home_services" => ProviderType.HomeServices,
-                _ => ProviderType.Salon // Default
+                "nail_salon" => ServiceCategory.NailSalon,
+                "hair_salon" => ServiceCategory.HairSalon,
+                "brows_lashes" => ServiceCategory.BeautySalon,
+                "braids_locs" => ServiceCategory.HairSalon,
+                "massage" => ServiceCategory.Massage,
+                "barbershop" => ServiceCategory.Barbershop,
+                "aesthetic_medicine" => ServiceCategory.MedicalClinic,
+                "dental_orthodontics" => ServiceCategory.Dental,
+                "hair_removal" => ServiceCategory.Spa,
+                "health_fitness" => ServiceCategory.Gym,
+                "home_services" => ServiceCategory.HomeServices,
+                _ => ServiceCategory.BeautySalon // Default
             };
         }
     }

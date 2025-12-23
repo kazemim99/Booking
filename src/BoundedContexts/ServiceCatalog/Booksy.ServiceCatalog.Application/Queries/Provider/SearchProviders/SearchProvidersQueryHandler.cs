@@ -31,7 +31,7 @@ namespace Booksy.ServiceCatalog.Application.Queries.Provider.SearchProviders
             _logger.LogDebug("Processing provider search with filters: {@Filters}", new
             {
                 request.SearchTerm,
-                request.Type,
+                request.Category,
                 request.City,
                 request.State,
                 request.Country,
@@ -76,7 +76,7 @@ namespace Booksy.ServiceCatalog.Application.Queries.Provider.SearchProviders
                          provider.Profile.BusinessName,
                         provider.Profile.BusinessDescription,
                         provider.Profile.ProfileImageUrl,
-                         provider.ProviderType,
+                         provider.PrimaryCategory,
                         provider.Status,
                             provider.Address.City,
                         provider.Address.State,

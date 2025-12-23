@@ -1,7 +1,8 @@
-﻿// ========================================
+// ========================================
 // Booksy.ServiceCatalog.Application/Queries/Service/GetServiceById/GetServiceByIdQueryHandler.cs
 // ========================================
 using Booksy.Core.Application.Abstractions.CQRS;
+using Booksy.ServiceCatalog.Domain.Enums.Extensions;
 using Booksy.ServiceCatalog.Domain.Repositories;
 using Microsoft.Extensions.Logging;
 
@@ -44,7 +45,7 @@ namespace Booksy.ServiceCatalog.Application.Queries.Service.GetServiceById
                 ProviderId = service.ProviderId.Value,
                 Name = service.Name,
                 Description = service.Description,
-                Category = service.Category.Name,
+                Category = service.Category.ToEnglishName(),
                 Type = service.Type,
                 BasePrice = service.BasePrice.Amount,
                 Currency = service.BasePrice.Currency,

@@ -1,9 +1,10 @@
-﻿// ========================================
+// ========================================
 // Booksy.ServiceCatalog.Application/EventHandlers/DomainEventHandlers/ServiceCreatedEventHandler.cs
 // ========================================
 using Booksy.Core.Application.Abstractions.Events;
 using Booksy.Infrastructure.Core.EventBus.Abstractions;
 using Booksy.ServiceCatalog.Application.IntegrationEvents;
+using Booksy.ServiceCatalog.Domain.Enums.Extensions;
 using Booksy.ServiceCatalog.Domain.Events;
 using Microsoft.Extensions.Logging;
 
@@ -33,7 +34,7 @@ namespace Booksy.ServiceCatalog.Application.EventHandlers.DomainEventHandlers
                 domainEvent.ServiceId.Value,
                 domainEvent.ProviderId.Value,
                 domainEvent.ServiceName,
-                domainEvent.Category.Name,
+                domainEvent.Category.ToEnglishName(),
                 domainEvent.BasePrice.Amount,
                 domainEvent.BasePrice.Currency,
                 domainEvent.Duration.Value,

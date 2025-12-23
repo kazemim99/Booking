@@ -6,7 +6,7 @@ namespace Booksy.ServiceCatalog.Application.DTOs.Provider
         public Guid Id { get; init; }
         public string BusinessName { get; init; }
         public string Description { get; init; }
-        public ProviderType Type { get; init; }
+        public ServiceCategory PrimaryCategory { get; init; }
         public ProviderStatus Status { get; init; }
         public AddressInfo Address { get; init; }
         public CoordinatesInfo Coordinates { get; init; }
@@ -21,7 +21,7 @@ namespace Booksy.ServiceCatalog.Application.DTOs.Provider
             Guid id,
             string businessName,
             string description,
-            ProviderType type,
+            ServiceCategory primaryCategory,
             ProviderStatus status,
             AddressInfo address,
             CoordinatesInfo coordinates,
@@ -35,7 +35,7 @@ namespace Booksy.ServiceCatalog.Application.DTOs.Provider
             Id = id;
             BusinessName = businessName;
             Description = description;
-            Type = type;
+            PrimaryCategory = primaryCategory;
             Status = status;
             Address = address;
             Coordinates = coordinates;

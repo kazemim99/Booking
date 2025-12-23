@@ -61,11 +61,8 @@ public class DataCloningService : IDataCloningService
             {
                 try
                 {
-                    // Create NEW instances of value objects to avoid EF Core tracking issues
-                    var clonedCategory = ServiceCategory.Create(
-                        sourceService.Category.Name,
-                        sourceService.Category.Description,
-                        sourceService.Category.IconUrl);
+                    // ServiceCategory is now an enum, so we can just copy it
+                    var clonedCategory = sourceService.Category;
 
                     var clonedBasePrice = Price.Create(
                         sourceService.BasePrice.Amount,

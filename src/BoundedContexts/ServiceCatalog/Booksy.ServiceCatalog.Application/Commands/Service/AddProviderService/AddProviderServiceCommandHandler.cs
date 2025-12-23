@@ -138,20 +138,20 @@ public sealed class AddProviderServiceCommandHandler : ICommandHandler<AddProvid
     {
         if (string.IsNullOrWhiteSpace(category))
         {
-            return ServiceCategory.Beauty; // Default
+            return ServiceCategory.BeautySalon; // Default
         }
 
         return category.ToLowerInvariant() switch
         {
-            "beauty" or "زیبایی" or "haircare" or "nails" => ServiceCategory.Beauty,
-            "makeup" or "آرایش" => ServiceCategory.Makeup,
-            "beauty-makeup" or "آرایش و زیبایی" => ServiceCategory.BeautyAndMakeup,
-            "hair-care" or "مراقبت مو" => ServiceCategory.HairCare,
-            "skin-care" or "مراقبت پوست" => ServiceCategory.SkinCare,
+            "beauty" or "زیبایی" or "nails" => ServiceCategory.BeautySalon,
+            "makeup" or "آرایش" => ServiceCategory.BeautySalon,
+            "beauty-makeup" or "آرایش و زیبایی" => ServiceCategory.BeautySalon,
+            "hair-care" or "مراقبت مو" or "haircare" => ServiceCategory.HairSalon,
+            "skin-care" or "مراقبت پوست" => ServiceCategory.Spa,
             "massage" or "ماساژ" => ServiceCategory.Massage,
-            "therapeutic-massage" or "ماساژ درمانی" => ServiceCategory.TherapeuticMassage,
-            "fitness" or "فیتنس" => ServiceCategory.Fitness,
-            _ => ServiceCategory.Beauty
+            "therapeutic-massage" or "ماساژ درمانی" => ServiceCategory.Massage,
+            "fitness" or "فیتنس" => ServiceCategory.Gym,
+            _ => ServiceCategory.BeautySalon
         };
     }
 }
