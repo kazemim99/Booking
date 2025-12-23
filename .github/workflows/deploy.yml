@@ -219,9 +219,25 @@ jobs:
           # Navigate to deployment directory
           cd ${{ secrets.SERVER_DEPLOY_PATH }}
 
+          # Check if .env file exists
+          if [ ! -f .env ]; then
+            echo "ERROR: .env file not found at ${{ secrets.SERVER_DEPLOY_PATH }}/.env"
+            echo "Please create the .env file following the deployment setup guide"
+            exit 1
+          fi
+
+          # Backup existing .env file (in case deployment fails)
+          cp .env .env.backup
+
           # Extract deployment files
           tar -xzf deployment.tar.gz
-          cd deployment-package
+
+          # Copy docker-compose.prod.yml to main directory (but NOT .env)
+          cp deployment-package/docker-compose.prod.yml .
+
+          # Restore .env file (ensure it's not overwritten)
+          # The .env should always come from the server, not from deployment package
+          # cp .env.backup .env  # Only needed if deployment overwrites it
 
           # Login to GitHub Container Registry
           echo "${{ secrets.GITHUB_TOKEN }}" | docker login ${{ env.REGISTRY }} -u ${{ github.actor }} --password-stdin
@@ -232,7 +248,7 @@ jobs:
           # Stop old containers
           docker-compose -f docker-compose.prod.yml down
 
-          # Start new containers
+          # Start new containers with .env from main directory
           docker-compose -f docker-compose.prod.yml up -d
 
           # Wait for services to be healthy
@@ -243,6 +259,9 @@ jobs:
 
           # Clean up old images
           docker image prune -af --filter "until=24h"
+
+          # Clean up backup file
+          rm -f .env.backup
 
           echo "Deployment completed successfully!"
 
