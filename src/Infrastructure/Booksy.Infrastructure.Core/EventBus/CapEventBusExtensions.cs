@@ -61,14 +61,16 @@ public static class CapEventBusExtensions
             {
                 // Use InMemory queue for development/testing (optional)
                 // Uncomment to use RabbitMQ even in development
-                // options.UseInMemoryMessageQueue();
+                options.UseInMemoryMessageQueue();
 
+                // Uncomment below to use RabbitMQ in development
+                /*
                 options.UseRabbitMQ(rabbitOptions =>
                 {
                     rabbitOptions.ConnectionFactoryOptions = factory =>
                     {
                         factory.HostName = "localhost";
-                        factory.Port = 56721;
+                        factory.Port = 5672;
                         factory.UserName = "booksy_admin";
                         factory.Password = "Booksy@2024!";
 
@@ -86,9 +88,10 @@ public static class CapEventBusExtensions
                         MessageTTL = 7 * 24 * 60 * 60 * 1000,
                         QueueMode = "lazy",
                     };
-                    
-                
+
+
                 });
+                */
             }
             else
             {
