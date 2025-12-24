@@ -60,7 +60,7 @@ namespace Booksy.ServiceCatalog.Infrastructure.Persistence.Seeders
         private List<Service> CreateServicesForProvider(Provider provider)
         {
             var services = new List<Service>();
-            var baseServices = GetServicesByProviderType(provider.PrimaryCategory);
+            var baseServices = GetServicesByCategory(provider.PrimaryCategory);
 
             foreach (var (persianName, englishName, description, price, duration, category) in baseServices)
             {
@@ -83,7 +83,7 @@ namespace Booksy.ServiceCatalog.Infrastructure.Persistence.Seeders
         }
 
         private List<(string PersianName, string EnglishName, string Description, decimal Price, int Duration, string Category)>
-            GetServicesByProviderType(ServiceCategory category)
+            GetServicesByCategory(ServiceCategory category)
         {
             return category switch
             {
