@@ -1,29 +1,31 @@
 #!/bin/bash
 
 # Docker Build Optimization Script
-# This script enables BuildKit for significantly faster builds
+# This script builds Docker images with layer caching optimizations
 
-echo "Building Docker images with BuildKit optimizations..."
+echo "Building Docker images with optimized layer caching..."
 echo ""
-echo "This will:"
-echo "  - Use Docker BuildKit for parallel builds"
-echo "  - Cache NuGet packages across builds"
-echo "  - Cache npm packages across builds"
-echo "  - Reuse unchanged layers"
+echo "Optimizations enabled:"
+echo "  - Parallel builds across services"
+echo "  - Layer caching for NuGet packages"
+echo "  - Layer caching for npm packages"
+echo "  - Selective file copying to maximize cache hits"
 echo ""
 
-# Enable BuildKit
-export DOCKER_BUILDKIT=1
-export COMPOSE_DOCKER_CLI_BUILD=1
-
-# Build with docker-compose
+# Build with docker-compose in parallel
 docker compose build --parallel
 
 echo ""
 echo "Build complete!"
 echo ""
 echo "To rebuild a specific service:"
-echo "  DOCKER_BUILDKIT=1 docker compose build <service-name>"
+echo "  docker compose build <service-name>"
+echo ""
+echo "Examples:"
+echo "  docker compose build booksy-gateway"
+echo "  docker compose build booksy-user-management-api"
+echo "  docker compose build booksy-service-catalog-api"
+echo "  docker compose build booksy-frontend"
 echo ""
 echo "To force rebuild without cache:"
-echo "  DOCKER_BUILDKIT=1 docker compose build --no-cache <service-name>"
+echo "  docker compose build --no-cache <service-name>"

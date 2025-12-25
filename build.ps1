@@ -1,27 +1,29 @@
 # Docker Build Optimization Script for Windows
-# This script enables BuildKit for significantly faster builds
+# This script builds Docker images with layer caching optimizations
 
-Write-Host "Building Docker images with BuildKit optimizations..." -ForegroundColor Green
+Write-Host "Building Docker images with optimized layer caching..." -ForegroundColor Green
 Write-Host ""
-Write-Host "This will:" -ForegroundColor Cyan
-Write-Host "  - Use Docker BuildKit for parallel builds"
-Write-Host "  - Cache NuGet packages across builds"
-Write-Host "  - Cache npm packages across builds"
-Write-Host "  - Reuse unchanged layers"
+Write-Host "Optimizations enabled:" -ForegroundColor Cyan
+Write-Host "  - Parallel builds across services"
+Write-Host "  - Layer caching for NuGet packages"
+Write-Host "  - Layer caching for npm packages"
+Write-Host "  - Selective file copying to maximize cache hits"
 Write-Host ""
 
-# Enable BuildKit
-$env:DOCKER_BUILDKIT = 1
-$env:COMPOSE_DOCKER_CLI_BUILD = 1
-
-# Build with docker-compose
+# Build with docker-compose in parallel
 docker compose build --parallel
 
 Write-Host ""
 Write-Host "Build complete!" -ForegroundColor Green
 Write-Host ""
 Write-Host "To rebuild a specific service:" -ForegroundColor Yellow
-Write-Host "  `$env:DOCKER_BUILDKIT=1; docker compose build <service-name>"
+Write-Host "  docker compose build <service-name>"
+Write-Host ""
+Write-Host "Examples:" -ForegroundColor Cyan
+Write-Host "  docker compose build booksy-gateway"
+Write-Host "  docker compose build booksy-user-management-api"
+Write-Host "  docker compose build booksy-service-catalog-api"
+Write-Host "  docker compose build booksy-frontend"
 Write-Host ""
 Write-Host "To force rebuild without cache:" -ForegroundColor Yellow
-Write-Host "  `$env:DOCKER_BUILDKIT=1; docker compose build --no-cache <service-name>"
+Write-Host "  docker compose build --no-cache <service-name>"

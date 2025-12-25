@@ -7,16 +7,16 @@ This document explains the Docker build optimizations implemented to drastically
 ### 1. Dockerfile Optimizations
 
 All Dockerfiles now use:
-- **Layer Caching**: Project files are copied before source code to maximize cache hits
-- **BuildKit Cache Mounts**: NuGet and npm packages are cached between builds
+- **Smart Layer Caching**: Project files are copied before source code to maximize cache hits
+- **Separate Restore Layer**: NuGet and npm restore operations are isolated in their own cached layers
 - **Selective Copying**: Only necessary files are copied, reducing context size
-- **No-Restore Flags**: Prevents redundant restore operations
+- **No-Restore Flags**: Build and publish steps skip restore, using cached packages from restore layer
 
 ### 2. Docker Compose Configuration
 
 The [docker-compose.yml](docker-compose.yml) now includes:
-- BuildKit cache configuration for all services
-- Parallel build support
+- Build cache configuration for all services
+- Parallel build support enabled by default
 
 ### 3. .dockerignore Improvements
 
@@ -42,18 +42,7 @@ The [.dockerignore](.dockerignore) file now excludes:
 
 ### Manual Build
 
-**Enable BuildKit:**
-```bash
-# Linux/Mac
-export DOCKER_BUILDKIT=1
-export COMPOSE_DOCKER_CLI_BUILD=1
-
-# Windows PowerShell
-$env:DOCKER_BUILDKIT=1
-$env:COMPOSE_DOCKER_CLI_BUILD=1
-```
-
-**Build all services:**
+**Build all services in parallel:**
 ```bash
 docker compose build --parallel
 ```
@@ -85,27 +74,27 @@ docker compose build booksy-frontend
 ### .NET Services
 
 1. **Project Files Copied First**: All `.csproj` files are copied before source code
-2. **NuGet Restore with Cache Mount**: `dotnet restore` uses a persistent cache at `/root/.nuget/packages`
+2. **NuGet Restore in Separate Layer**: `dotnet restore` creates a cached Docker layer
 3. **Source Code Copied**: Only after restore, source code is copied
-4. **Build with --no-restore**: Build uses cached packages
-5. **Publish with --no-restore**: Final output uses cached packages
+4. **Build with --no-restore**: Build uses packages from cached restore layer
+5. **Publish with --no-restore**: Final output uses packages from cached restore layer
 
 This means:
-- If you change code but not dependencies → Only rebuild, no restore (FAST)
-- If you change dependencies → Restore is cached across builds (FASTER)
-- If nothing changed → Use cached layers (INSTANT)
+- If you change code but not `.csproj` files → Restore layer is reused (FAST)
+- If you change dependencies → Only restore layer rebuilds, then build continues (FASTER)
+- If nothing changed → All layers are reused (INSTANT)
 
 ### Frontend Service
 
 1. **package.json Copied First**: Package files copied before source
-2. **npm ci with Cache Mount**: npm packages cached at `/root/.npm`
+2. **npm ci in Separate Layer**: `npm ci` creates a cached Docker layer with node_modules
 3. **Source Code Copied**: Only after install
-4. **Build**: Uses cached node_modules
+4. **Build**: Uses node_modules from cached install layer
 
 This means:
-- If you change Vue code but not packages → Only rebuild, no install (FAST)
-- If you change packages → npm cache is reused (FASTER)
-- If nothing changed → Use cached layers (INSTANT)
+- If you change Vue code but not `package.json` → Install layer is reused (FAST)
+- If you change packages → Only install layer rebuilds, then build continues (FASTER)
+- If nothing changed → All layers are reused (INSTANT)
 
 ## Cache Management
 
@@ -126,22 +115,25 @@ docker system prune -a
 
 ## Troubleshooting
 
-### Build fails with "cache mount" error
-Make sure Docker BuildKit is enabled:
-```bash
-export DOCKER_BUILDKIT=1
-```
-
 ### Builds are still slow
-1. Check Docker BuildKit is enabled
-2. Verify you're using `--parallel` flag
-3. Clear old build cache: `docker builder prune`
-4. Make sure .dockerignore is working: `docker compose build --progress=plain`
+1. Verify you're using `--parallel` flag for building all services
+2. Clear old build cache: `docker builder prune`
+3. Make sure .dockerignore is working: `docker compose build --progress=plain`
+4. Check Docker has enough resources (CPU/RAM) in Docker Desktop settings
 
 ### Cache not being used
-1. If you modify `.csproj` or `package.json`, cache layers before that are reused
+1. When you modify `.csproj` or `package.json`, layers before that restore are still reused
 2. Check if .dockerignore is excluding files it shouldn't
-3. Try `docker compose build --progress=plain` to see which layers are cached
+3. Use `docker compose build --progress=plain <service>` to see which layers are cached
+4. Look for `CACHED` next to layer steps in the build output
+
+### First build is slow
+This is expected. Docker needs to:
+- Download base images (dotnet SDK, node, nginx)
+- Restore all NuGet and npm packages
+- Build all code from scratch
+
+Subsequent builds will be much faster as layers are reused.
 
 ## Additional Tips
 
@@ -161,17 +153,28 @@ export DOCKER_BUILDKIT=1
 To verify the optimizations are working, watch the build output:
 
 ```bash
-DOCKER_BUILDKIT=1 docker compose build --progress=plain booksy-gateway
+docker compose build --progress=plain booksy-gateway
 ```
 
 Look for:
-- `CACHED` next to layer steps (good!)
-- `RUN --mount=type=cache` in the output (cache mounts active)
-- Shorter build times on subsequent builds
+- `CACHED` next to layer steps (good! means layers are being reused)
+- `dotnet restore` step showing as CACHED when you haven't changed `.csproj` files
+- `npm ci` step showing as CACHED when you haven't changed `package.json`
+- Significantly shorter build times on subsequent builds
 
-## Reverting Changes
+### Example of Good Cache Usage
 
-If you need to revert to old behavior:
-1. Set `DOCKER_BUILDKIT=0`
-2. Remove `--mount=type=cache` from RUN commands in Dockerfiles
-3. Remove `x-bake` sections from docker-compose.yml
+On second build after only changing code:
+```
+#5 [build 2/7] COPY [...csproj files...]
+#5 CACHED
+
+#6 [build 3/7] RUN dotnet restore
+#6 CACHED   <-- This is what you want to see!
+
+#7 [build 4/7] COPY [source code...]
+#7 DONE 0.5s
+
+#8 [build 5/7] RUN dotnet build
+#8 DONE 12.3s  <-- Only this rebuilds
+```

@@ -25,9 +25,8 @@ COPY ["src/Infrastructure/Booksy.Infrastructure.External/Booksy.Infrastructure.E
 COPY ["src/Core/Booksy.Core.Application/Booksy.Core.Application.csproj", "src/Core/Booksy.Core.Application/"]
 COPY ["src/Core/Booksy.Core.Domain/Booksy.Core.Domain.csproj", "src/Core/Booksy.Core.Domain/"]
 
-# Restore with BuildKit cache mount for NuGet packages
-RUN --mount=type=cache,id=nuget,target=/root/.nuget/packages \
-    dotnet restore "./src/BoundedContexts/ServiceCatalog/Booksy.ServiceCatalog.Api/Booksy.ServiceCatalog.Api.csproj"
+# Restore packages (this layer is cached when .csproj files don't change)
+RUN dotnet restore "./src/BoundedContexts/ServiceCatalog/Booksy.ServiceCatalog.Api/Booksy.ServiceCatalog.Api.csproj"
 
 # Copy only the source files needed for this service
 COPY ["src/BoundedContexts/ServiceCatalog/", "src/BoundedContexts/ServiceCatalog/"]
@@ -36,15 +35,13 @@ COPY ["src/Core/", "src/Core/"]
 
 WORKDIR "/src/src/BoundedContexts/ServiceCatalog/Booksy.ServiceCatalog.Api"
 
-# Build with cache mount
-RUN --mount=type=cache,id=nuget,target=/root/.nuget/packages \
-    dotnet build "./Booksy.ServiceCatalog.Api.csproj" -c $BUILD_CONFIGURATION -o /app/build --no-restore
+# Build (uses cached restore from previous layer)
+RUN dotnet build "./Booksy.ServiceCatalog.Api.csproj" -c $BUILD_CONFIGURATION -o /app/build --no-restore
 
 # This stage is used to publish the service project to be copied to the final stage
 FROM build AS publish
 ARG BUILD_CONFIGURATION=Release
-RUN --mount=type=cache,id=nuget,target=/root/.nuget/packages \
-    dotnet publish "./Booksy.ServiceCatalog.Api.csproj" -c $BUILD_CONFIGURATION -o /app/publish /p:UseAppHost=false --no-restore
+RUN dotnet publish "./Booksy.ServiceCatalog.Api.csproj" -c $BUILD_CONFIGURATION -o /app/publish /p:UseAppHost=false --no-restore
 
 # This stage is used in production or when running from VS in regular mode (Default when not using the Debug configuration)
 FROM base AS final

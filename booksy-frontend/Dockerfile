@@ -6,9 +6,8 @@ WORKDIR /app
 # Copy package files first for better layer caching
 COPY package*.json ./
 
-# Install dependencies with BuildKit cache mount for npm
-RUN --mount=type=cache,id=npm,target=/root/.npm \
-    npm ci --prefer-offline --no-audit
+# Install dependencies (this layer is cached when package.json doesn't change)
+RUN npm ci --prefer-offline --no-audit
 
 # Copy source code
 COPY . .
