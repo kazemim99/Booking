@@ -37,7 +37,7 @@ services:
       - "54321:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
-      - ./deployment/scripts/database/init-db.sql:/docker-entrypoint-initdb.d/init-db.sql
+      - ./deployment/scripts/database/init.sql:/docker-entrypoint-initdb.d/init.sql
     networks:
       - booksy-network
     restart: unless-stopped
@@ -96,6 +96,97 @@ services:
       interval: 30s
       timeout: 10s
       retries: 3
+
+  # ========================================
+  # API SERVICES
+  # ========================================
+
+  booksy-gateway:
+    build:
+      context: .
+      dockerfile: src/APIGateway/Booksy.Gateway/Dockerfile
+    container_name: booksy-gateway
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Development
+      - ASPNETCORE_URLS=http://+:8080
+      - ConnectionStrings__DefaultConnection=Host=postgres;Port=5432;Database=booksy_user_management;Username=booksy_admin;Password=Booksy@2024!
+      - ConnectionStrings__Redis=redis:6379,password=Redis@2024!
+      - ConnectionStrings__RabbitMQ=amqp://booksy_admin:Booksy@2024!@rabbitmq:5672
+    ports:
+      - "8000:8080"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_started
+      rabbitmq:
+        condition: service_started
+    networks:
+      - booksy-network
+    restart: unless-stopped
+
+  booksy-user-management-api:
+    build:
+      context: .
+      dockerfile: src/UserManagement/Booksy.UserManagement.API/Dockerfile
+    container_name: booksy-user-management-api
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Development
+      - ASPNETCORE_URLS=http://+:8080
+      - ConnectionStrings__DefaultConnection=Host=postgres;Port=5432;Database=booksy_user_management;Username=booksy_admin;Password=Booksy@2024!
+      - ConnectionStrings__Redis=redis:6379,password=Redis@2024!
+      - ConnectionStrings__RabbitMQ=amqp://booksy_admin:Booksy@2024!@rabbitmq:5672
+    ports:
+      - "8001:8080"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_started
+      rabbitmq:
+        condition: service_started
+    networks:
+      - booksy-network
+    restart: unless-stopped
+
+  booksy-service-catalog-api:
+    build:
+      context: .
+      dockerfile: src/BoundedContexts/ServiceCatalog/Booksy.ServiceCatalog.Api/Dockerfile
+    container_name: booksy-service-catalog-api
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Development
+      - ASPNETCORE_URLS=http://+:8080
+      - ConnectionStrings__DefaultConnection=Host=postgres;Port=5432;Database=booksy_service_catalog_dev;Username=booksy_admin;Password=Booksy@2024!
+      - ConnectionStrings__Redis=redis:6379,password=Redis@2024!
+      - ConnectionStrings__RabbitMQ=amqp://booksy_admin:Booksy@2024!@rabbitmq:5672
+    ports:
+      - "8002:8080"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_started
+      rabbitmq:
+        condition: service_started
+    networks:
+      - booksy-network
+    restart: unless-stopped
+
+  booksy-frontend:
+    build:
+      context: ./booksy-frontend
+      dockerfile: Dockerfile
+    container_name: booksy-frontend
+    ports:
+      - "80:80"
+    depends_on:
+      - booksy-gateway
+      - booksy-user-management-api
+      - booksy-service-catalog-api
+    networks:
+      - booksy-network
+    restart: unless-stopped
 
   # ========================================
   # OBSERVABILITY & MONITORING
