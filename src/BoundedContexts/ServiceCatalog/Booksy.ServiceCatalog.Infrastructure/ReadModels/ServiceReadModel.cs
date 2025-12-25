@@ -43,7 +43,7 @@ namespace Booksy.ServiceCatalog.Infrastructure.ReadModels
         // Provider Information (for denormalized queries)
         public string ProviderBusinessName { get; set; } = string.Empty;
         public string ProviderCity { get; set; } = string.Empty;
-        public string ProviderType { get; set; } = string.Empty;
+        public string ProviderPrimaryCategory { get; set; } = string.Empty;
         public bool ProviderOffersMobileServices { get; set; }
 
         // Statistics

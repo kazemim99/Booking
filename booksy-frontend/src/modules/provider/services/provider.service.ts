@@ -364,7 +364,8 @@ class ProviderService {
       },
       profileImageUrl: response.profileImageUrl, // Map profileImageUrl at root level
       status: response.status as ProviderStatus,
-      type: response.type as ProviderType,
+      primaryCategory: response.primaryCategory || 1, // Default to HairSalon if not provided
+      type: response.type as ProviderType, // DEPRECATED - for backward compatibility
       contactInfo: response.contactInfo || {
         email: response.email, // Fallback to old structure
         phone: response.primaryPhone,

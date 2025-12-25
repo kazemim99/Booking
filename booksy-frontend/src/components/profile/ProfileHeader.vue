@@ -55,7 +55,7 @@
                 <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z" />
                 </svg>
-                <span>{{ getProviderTypeLabel(provider.type) }}</span>
+                <span>{{ getProviderCategoryLabel(provider.primaryCategory || provider.type) }}</span>
               </div>
             </div>
 
@@ -128,6 +128,8 @@
 import { computed } from 'vue'
 import { useRouter } from 'vue-router'
 import { buildProviderImageUrl, toAbsoluteUrl } from '@/core/utils/url.service'
+import { ProviderCategory } from '@/core/types/enums.types'
+import { getCategoryPersianName } from '@/core/constants/provider-categories'
 
 import type { Provider } from '@/modules/provider/types/provider.types'
 
@@ -159,16 +161,24 @@ const totalServices = computed(() => {
 
 // Methods
 
-const getProviderTypeLabel = (type: string): string => {
-  const labels: Record<string, string> = {
-    Salon: 'سالن زیبایی',
-    Spa: 'اسپا',
-    Clinic: 'کلینیک',
-    Studio: 'استودیو',
-    Individual: 'فردی',
-    Professional: 'حرفه‌ای',
+/** Get category label supporting both new ProviderCategory and legacy ProviderType */
+const getProviderCategoryLabel = (category: ProviderCategory | string | undefined): string => {
+  if (typeof category === 'number') {
+    // New ProviderCategory enum
+    return getCategoryPersianName(category as ProviderCategory)
   }
-  return labels[type] || type
+  // Legacy ProviderType fallback
+  const labels: Record<string, string> = {
+    salon: 'سالن زیبایی',
+    barbershop: 'آرایشگاه',
+    spa: 'اسپا',
+    clinic: 'کلینیک',
+    medical: 'پزشکی',
+    gym_fitness: 'باشگاه',
+    professional: 'حرفه‌ای',
+    other: 'سایر',
+  }
+  return labels[category?.toLowerCase() || ''] || category || 'نامشخص'
 }
 
 const convertToPersianNumber = (num: number): string => {

@@ -3,11 +3,12 @@ FROM node:20-alpine AS build
 
 WORKDIR /app
 
-# Copy package files
+# Copy package files first for better layer caching
 COPY package*.json ./
 
-# Install dependencies
-RUN npm ci
+# Install dependencies with BuildKit cache mount for npm
+RUN --mount=type=cache,id=npm,target=/root/.npm \
+    npm ci --prefer-offline --no-audit
 
 # Copy source code
 COPY . .

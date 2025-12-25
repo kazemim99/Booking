@@ -16,6 +16,7 @@ import type {
   UserRole,
   UserStatus,
   Gender,
+  ProviderCategory,
   ProviderType,
   ProviderStatus,
   StaffRole,
@@ -128,7 +129,9 @@ export interface Provider extends BaseEntity {
   name: string
   nameEn?: string
   slug: string
-  type: ProviderType
+  primaryCategory: ProviderCategory  // NEW: Primary business category
+  /** @deprecated Use primaryCategory instead */
+  type?: ProviderType  // DEPRECATED: Kept for backward compatibility
   status: ProviderStatus
   ownerId: ID
   description?: string
@@ -624,7 +627,9 @@ export interface SearchResult {
 export interface SearchFilters {
   query?: string
   category?: ServiceCategory
-  providerType?: ProviderType
+  providerCategory?: ProviderCategory  // NEW: Filter by provider category
+  /** @deprecated Use providerCategory instead */
+  providerType?: ProviderType  // DEPRECATED
   location?: {
     city?: string
     province?: string

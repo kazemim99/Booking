@@ -102,8 +102,8 @@ public sealed class SaveStep3LocationCommandHandler
                 tokenResponse.ExpiresIn);
         }
 
-        // Parse category to ProviderType enum
-        if (!Enum.TryParse<ServiceCategory>(request.Category, true, out var providerType))
+        // Parse category to ServiceCategory enum
+        if (!Enum.TryParse<ServiceCategory>(request.Category, true, out var category))
         {
             throw new InvalidOperationException($"Invalid category: {request.Category}");
         }
@@ -139,7 +139,7 @@ public sealed class SaveStep3LocationCommandHandler
             request.OwnerLastName,
             request.BusinessName,
             request.BusinessDescription,
-            providerType,
+            category,
             newContactInfo,
             newAddress,
             registrationStep: 3);

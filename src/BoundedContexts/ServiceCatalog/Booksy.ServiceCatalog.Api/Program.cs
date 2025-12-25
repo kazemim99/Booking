@@ -42,6 +42,13 @@ namespace Booksy.API
                 {
                     webBuilder.UseStartup<Startup>();
                     webBuilder.UseKestrel();
+
+                    // Explicitly use ASPNETCORE_URLS if set, otherwise use default
+                    var urls = Environment.GetEnvironmentVariable("ASPNETCORE_URLS");
+                    if (!string.IsNullOrEmpty(urls))
+                    {
+                        webBuilder.UseUrls(urls);
+                    }
                 });
     }
 }

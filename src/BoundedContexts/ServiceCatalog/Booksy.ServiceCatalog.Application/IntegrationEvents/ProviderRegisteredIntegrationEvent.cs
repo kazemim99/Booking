@@ -14,7 +14,7 @@ namespace Booksy.ServiceCatalog.Application.IntegrationEvents
         Guid ProviderId,
         Guid OwnerId,
         string BusinessName,
-        string ProviderType, // String instead of enum for cross-context compatibility
+        string PrimaryCategory, // String instead of enum for cross-context compatibility
         DateTime RegisteredAt) : IntegrationEvent
     {
         public ProviderRegisteredIntegrationEvent() : this(Guid.Empty, Guid.Empty, string.Empty, string.Empty, DateTime.UtcNow)

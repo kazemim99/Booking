@@ -145,7 +145,7 @@ namespace Booksy.ServiceCatalog.Infrastructure.Services.Domain
             }
         }
 
-        public async Task<int> GetMaxServicesForProviderTypeAsync(
+        public async Task<int> GetMaxServicesForProviderCategoryAsync(
             Provider provider,
             CancellationToken cancellationToken = default)
         {

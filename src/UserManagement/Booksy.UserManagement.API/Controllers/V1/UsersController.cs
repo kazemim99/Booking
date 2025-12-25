@@ -362,7 +362,7 @@ public class UsersController : ControllerBase
     [HttpPost("{id:guid}/phone/send-verification")]
     [Authorize]
     [EnableRateLimiting("otp")]
-    [ProducesResponseType(typeof(SendVerificationCodeResponse), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(SendPhoneVerificationCodeResponse), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status403Forbidden)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
@@ -382,9 +382,9 @@ public class UsersController : ControllerBase
         var command = new SendPhoneVerificationCodeCommand(id, request.PhoneNumber);
         var result = await _mediator.Send(command, cancellationToken);
 
-        return Ok(new SendVerificationCodeResponse
+        return Ok(new SendPhoneVerificationCodeResponse
         {
-            Success = result.Success,
+            Success = true,
             Message = result.Message,
             ExpiresAt = result.ExpiresAt
         });

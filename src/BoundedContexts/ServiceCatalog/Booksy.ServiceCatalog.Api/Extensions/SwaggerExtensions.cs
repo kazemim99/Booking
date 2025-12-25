@@ -16,6 +16,12 @@ public static class SwaggerExtensions
         services.AddEndpointsApiExplorer();
         services.AddSwaggerGen(options =>
         {
+            // Enable better support for nullable reference types and modern C# features
+            options.SupportNonNullableReferenceTypes();
+
+            // Use full type name for schema IDs to avoid naming conflicts
+            options.CustomSchemaIds(type => type.FullName?.Replace("+", "."));
+
             options.SwaggerDoc("v1", new OpenApiInfo
             {
                 Title = "Booksy Service Catalog API",
@@ -86,7 +92,7 @@ This API supports a provider hierarchy model:
             // Custom operation filter for API versioning
             options.OperationFilter<ApiVersionOperationFilter>();
 
-            // Custom schema filter
+            // Custom schema filters
             options.SchemaFilter<EnumSchemaFilter>();
         });
 

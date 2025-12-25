@@ -8,6 +8,11 @@ export enum ProviderStatus {
   Archived = 'Archived',
 }
 
+import { ProviderCategory } from '@/core/types/enums.types'
+
+/**
+ * @deprecated Use ProviderCategory from core types instead
+ */
 export enum ProviderType {
   Individual = 'Individual',
   Salon = 'Salon',
@@ -37,7 +42,9 @@ export interface Provider {
 
   // Status & Type
   status: ProviderStatus
-  type: ProviderType
+  primaryCategory: ProviderCategory  // NEW: Primary business category
+  /** @deprecated Use primaryCategory instead */
+  type?: ProviderType  // DEPRECATED: Kept for backward compatibility
 
   // Contact Information
   contactInfo: ContactInfo
@@ -378,7 +385,8 @@ export interface ProviderResponse {
   businessName: string
   description: string
   status: string
-  type: string
+  primaryCategory?: number  // NEW: Primary category enum value
+  type?: string  // DEPRECATED: Legacy type for backward compatibility
   logoUrl?: string
   coverImageUrl?: string
   profileImageUrl?: string // Provider profile image

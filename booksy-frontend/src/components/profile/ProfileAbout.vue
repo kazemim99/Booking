@@ -30,7 +30,7 @@
           <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
           </svg>
-          <span>{{ getProviderTypeLabel(provider.type) }}</span>
+          <span>{{ getProviderCategoryLabel(provider.primaryCategory || provider.type) }}</span>
         </div>
       </div>
 
@@ -262,6 +262,8 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 import type { Provider, DayOfWeek, BusinessHours } from '@/modules/provider/types/provider.types'
+import { ProviderCategory } from '@/core/types/enums.types'
+import { getCategoryPersianName } from '@/core/constants/provider-categories'
 
 interface Props {
   provider: Provider
@@ -363,16 +365,24 @@ const getDirections = () => {
   }
 }
 
-const getProviderTypeLabel = (type: string): string => {
-  const labels: Record<string, string> = {
-    Salon: 'سالن زیبایی',
-    Spa: 'اسپا',
-    Clinic: 'کلینیک',
-    Studio: 'استودیو',
-    Individual: 'فردی',
-    Professional: 'حرفه‌ای',
+/** Get category label supporting both new ProviderCategory and legacy ProviderType */
+const getProviderCategoryLabel = (category: ProviderCategory | string | undefined): string => {
+  if (typeof category === 'number') {
+    // New ProviderCategory enum
+    return getCategoryPersianName(category as ProviderCategory)
   }
-  return labels[type] || type
+  // Legacy ProviderType fallback
+  const labels: Record<string, string> = {
+    salon: 'سالن زیبایی',
+    barbershop: 'آرایشگاه',
+    spa: 'اسپا',
+    clinic: 'کلینیک',
+    medical: 'پزشکی',
+    gym_fitness: 'باشگاه',
+    professional: 'حرفه‌ای',
+    other: 'سایر',
+  }
+  return labels[category?.toLowerCase() || ''] || category || 'نامشخص'
 }
 </script>
 

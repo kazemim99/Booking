@@ -35,8 +35,8 @@ public sealed class CreateProviderDraftCommandHandler
         var userId = UserId.From(_currentUserService.UserId
             ?? throw new UnauthorizedAccessException("User not authenticated"));
 
-        // 2. Map category string to ProviderType enum
-        if (!Enum.TryParse<ServiceCategory>(request.Category, true, out var providerType))
+        // 2. Map category string to ServiceCategory enum
+        if (!Enum.TryParse<ServiceCategory>(request.Category, true, out var category))
         {
             throw new InvalidOperationException($"Invalid category: {request.Category}");
         }
@@ -79,7 +79,7 @@ public sealed class CreateProviderDraftCommandHandler
                 request.OwnerLastName,
                 request.BusinessName,
                 request.BusinessDescription,
-                providerType,
+                category,
                 contactInfo,
                 address,
                 request.LogoUrl);
@@ -101,7 +101,7 @@ public sealed class CreateProviderDraftCommandHandler
             request.OwnerLastName,
             request.BusinessName,
             request.BusinessDescription,
-            providerType,
+            category,
             contactInfo,
             address,
             registrationStep: 3,

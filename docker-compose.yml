@@ -105,6 +105,12 @@ services:
     build:
       context: .
       dockerfile: src/APIGateway/Booksy.Gateway/Dockerfile
+      # Enable BuildKit for faster builds and caching
+      x-bake:
+        cache-from:
+          - type=local,src=/tmp/.buildx-cache
+        cache-to:
+          - type=local,dest=/tmp/.buildx-cache
     container_name: booksy-gateway
     environment:
       - ASPNETCORE_ENVIRONMENT=Development
@@ -129,6 +135,12 @@ services:
     build:
       context: .
       dockerfile: src/UserManagement/Booksy.UserManagement.API/Dockerfile
+      # Enable BuildKit for faster builds and caching
+      x-bake:
+        cache-from:
+          - type=local,src=/tmp/.buildx-cache
+        cache-to:
+          - type=local,dest=/tmp/.buildx-cache
     container_name: booksy-user-management-api
     environment:
       - ASPNETCORE_ENVIRONMENT=Development
@@ -153,15 +165,23 @@ services:
     build:
       context: .
       dockerfile: src/BoundedContexts/ServiceCatalog/Booksy.ServiceCatalog.Api/Dockerfile
+      # Enable BuildKit for faster builds and caching
+      x-bake:
+        cache-from:
+          - type=local,src=/tmp/.buildx-cache
+        cache-to:
+          - type=local,dest=/tmp/.buildx-cache
     container_name: booksy-service-catalog-api
     environment:
       - ASPNETCORE_ENVIRONMENT=Development
       - ASPNETCORE_URLS=http://+:8080
+      - DOTNET_LAUNCH_PROFILE=
+      - ASPNETCORE_HTTP_PORTS=8080
       - ConnectionStrings__DefaultConnection=Host=postgres;Port=5432;Database=booksy_service_catalog_dev;Username=booksy_admin;Password=Booksy@2024!
       - ConnectionStrings__Redis=redis:6379,password=Redis@2024!
       - ConnectionStrings__RabbitMQ=amqp://booksy_admin:Booksy@2024!@rabbitmq:5672
     ports:
-      - "8002:8080"
+      - "8102:8080"
     depends_on:
       postgres:
         condition: service_healthy
@@ -177,9 +197,15 @@ services:
     build:
       context: ./booksy-frontend
       dockerfile: Dockerfile
+      # Enable BuildKit for faster builds and caching
+      x-bake:
+        cache-from:
+          - type=local,src=/tmp/.buildx-cache
+        cache-to:
+          - type=local,dest=/tmp/.buildx-cache
     container_name: booksy-frontend
     ports:
-      - "80:80"
+      - "8080:80"
     depends_on:
       - booksy-gateway
       - booksy-user-management-api

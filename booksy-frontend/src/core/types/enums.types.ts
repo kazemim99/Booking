@@ -51,7 +51,38 @@ export enum Gender {
 // ==================== Provider & Business ====================
 
 /**
- * Provider/Business types
+ * Provider primary business category
+ * Each provider must have exactly ONE category that defines their core business type.
+ * These values match the backend ServiceCategory enum (integer-based).
+ */
+export enum ProviderCategory {
+  // Beauty & Personal Care (1-5)
+  HairSalon = 1,        // آرایشگاه زنانه - Women's hair salon
+  Barbershop = 2,       // آرایشگاه مردانه - Men's barbershop
+  BeautySalon = 3,      // سالن زیبایی - Beauty salon
+  NailSalon = 4,        // آرایش ناخن - Nail salon
+  Spa = 5,              // اسپا - Spa & wellness
+
+  // Health & Wellness (6-8)
+  Massage = 6,          // ماساژ - Massage therapy
+  Gym = 7,              // باشگاه ورزشی - Gym & fitness
+  Yoga = 8,             // یوگا - Yoga & meditation
+
+  // Medical (9-11)
+  MedicalClinic = 9,    // کلینیک پزشکی - Medical clinic
+  Dental = 10,          // دندانپزشکی - Dental clinic
+  Physiotherapy = 11,   // فیزیوتراپی - Physiotherapy
+
+  // Professional Services (12-15)
+  Tutoring = 12,        // آموزش خصوصی - Private tutoring
+  Automotive = 13,      // تعمیرات خودرو - Auto repair
+  HomeServices = 14,    // خدمات منزل - Home services
+  PetCare = 15,         // مراقبت حیوانات - Pet care
+}
+
+/**
+ * @deprecated Use ProviderCategory instead. This enum is kept temporarily for backward compatibility.
+ * Will be removed in the next major version.
  */
 export enum ProviderType {
   Salon = 'salon',

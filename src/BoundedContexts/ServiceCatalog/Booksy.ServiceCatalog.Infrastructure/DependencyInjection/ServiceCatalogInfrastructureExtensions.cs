@@ -201,7 +201,7 @@ namespace Booksy.ServiceCatalog.Infrastructure.DependencyInjection
                 var seeder = scope.ServiceProvider.GetRequiredService<ISeeder>();
 
                 // Apply migrations
-                //await context.Database.MigrateAsync();
+                await context.Database.MigrateAsync();
 
                 await seeder.SeedAsync();
 

@@ -12,16 +12,28 @@ EXPOSE 8081
 FROM mcr.microsoft.com/dotnet/sdk:9.0 AS build
 ARG BUILD_CONFIGURATION=Release
 WORKDIR /src
+
+# Copy only project files first for better layer caching
 COPY ["src/APIGateway/Booksy.Gateway/Booksy.Gateway.csproj", "src/APIGateway/Booksy.Gateway/"]
-RUN dotnet restore "./src/APIGateway/Booksy.Gateway/Booksy.Gateway.csproj"
-COPY . .
+
+# Restore with BuildKit cache mount for NuGet packages
+RUN --mount=type=cache,id=nuget,target=/root/.nuget/packages \
+    dotnet restore "./src/APIGateway/Booksy.Gateway/Booksy.Gateway.csproj"
+
+# Copy only the source files needed for this service
+COPY ["src/APIGateway/", "src/APIGateway/"]
+
 WORKDIR "/src/src/APIGateway/Booksy.Gateway"
-RUN dotnet build "./Booksy.Gateway.csproj" -c $BUILD_CONFIGURATION -o /app/build
+
+# Build with cache mount
+RUN --mount=type=cache,id=nuget,target=/root/.nuget/packages \
+    dotnet build "./Booksy.Gateway.csproj" -c $BUILD_CONFIGURATION -o /app/build --no-restore
 
 # This stage is used to publish the service project to be copied to the final stage
 FROM build AS publish
 ARG BUILD_CONFIGURATION=Release
-RUN dotnet publish "./Booksy.Gateway.csproj" -c $BUILD_CONFIGURATION -o /app/publish /p:UseAppHost=false
+RUN --mount=type=cache,id=nuget,target=/root/.nuget/packages \
+    dotnet publish "./Booksy.Gateway.csproj" -c $BUILD_CONFIGURATION -o /app/publish /p:UseAppHost=false --no-restore
 
 # This stage is used in production or when running from VS in regular mode (Default when not using the Debug configuration)
 FROM base AS final
