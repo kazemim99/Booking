@@ -15,6 +15,12 @@ WORKDIR /src
 
 # Copy only project files first for better layer caching
 COPY ["src/APIGateway/Booksy.Gateway/Booksy.Gateway.csproj", "src/APIGateway/Booksy.Gateway/"]
+COPY ["src/Infrastructure/Booksy.API/Booksy.API.csproj", "src/Infrastructure/Booksy.API/"]
+COPY ["src/Infrastructure/Booksy.Infrastructure.Security/Booksy.Infrastructure.Security.csproj", "src/Infrastructure/Booksy.Infrastructure.Security/"]
+COPY ["src/Infrastructure/Booksy.Infrastructure.Core/Booksy.Infrastructure.Core.csproj", "src/Infrastructure/Booksy.Infrastructure.Core/"]
+COPY ["src/Infrastructure/Booksy.Infrastructure.External/Booksy.Infrastructure.External.csproj", "src/Infrastructure/Booksy.Infrastructure.External/"]
+COPY ["src/Core/Booksy.Core.Application/Booksy.Core.Application.csproj", "src/Core/Booksy.Core.Application/"]
+COPY ["src/Core/Booksy.Core.Domain/Booksy.Core.Domain.csproj", "src/Core/Booksy.Core.Domain/"]
 
 # Restore packages (this layer is cached when .csproj files don't change)
 RUN dotnet restore "./src/APIGateway/Booksy.Gateway/Booksy.Gateway.csproj"
