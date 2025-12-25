@@ -42,7 +42,6 @@ namespace Booksy.API
                 {
                     webBuilder.UseStartup<Startup>();
                     webBuilder.UseKestrel();
-                    webBuilder.UseUrls("http://localhost:5010");
                 });
     }
 }
