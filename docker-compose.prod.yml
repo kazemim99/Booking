@@ -99,9 +99,9 @@ services:
       - "5000:80"
     depends_on:
       usermanagement-api:
-        condition: service_healthy
+        condition: service_started
       servicecatalog-api:
-        condition: service_healthy
+        condition: service_started
     networks:
       - booksy-network
     restart: unless-stopped
@@ -130,7 +130,7 @@ services:
       - "443:443"
     depends_on:
       gateway:
-        condition: service_healthy
+        condition: service_started
     networks:
       - booksy-network
     restart: unless-stopped
