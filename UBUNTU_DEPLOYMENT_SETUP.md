@@ -509,6 +509,59 @@ http://napstar.ir/logs/            # Seq Logs
 
 ## Troubleshooting
 
+### Container Health Check Failures
+
+If you see 504 Gateway Timeout errors or containers stuck in unhealthy state:
+
+**Symptoms:**
+- Gateway or Frontend show as "unhealthy" in `docker ps`
+- 504 errors when accessing the application
+- Containers restart repeatedly
+
+**Root Cause:**
+Health checks fail when `curl` or `wget` are not installed in Docker images.
+
+**Solution (Already Applied):**
+The following changes have been made to fix this issue:
+
+1. **Curl installed in all images:**
+   - .NET images: `apt-get install -y curl`
+   - Frontend (nginx): `apk add --no-cache curl`
+
+2. **Health check commands updated:**
+   ```dockerfile
+   # Frontend Dockerfile
+   HEALTHCHECK CMD curl -f http://localhost:80/ || exit 1
+   ```
+
+3. **Dependencies adjusted in docker-compose.prod.yml:**
+   - Gateway depends on backend services with `service_started` (not `service_healthy`)
+   - Frontend depends on Gateway with `service_started`
+
+**To verify health checks are working:**
+```bash
+# Check container health status
+docker ps
+# Look for "(healthy)" status next to container names
+
+# Test health check manually
+docker exec booksy-gateway curl -f http://localhost:80/health
+docker exec booksy-frontend curl -f http://localhost:80/
+
+# View health check logs
+docker inspect booksy-gateway --format='{{json .State.Health}}' | jq
+```
+
+**If issues persist after deployment:**
+```bash
+# Rebuild images with curl installed
+docker compose -f docker-compose.prod.yml pull
+docker compose -f docker-compose.prod.yml up -d --force-recreate
+
+# Check logs for health check errors
+docker compose -f docker-compose.prod.yml logs gateway
+```
+
 ### SSH Authentication Errors in GitHub Actions
 
 If you see errors like:

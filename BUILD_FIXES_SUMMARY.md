@@ -4,7 +4,32 @@ This document summarizes all the changes made to fix Docker build issues and opt
 
 ## Changes Made
 
-### 1. Docker Build Optimization
+### 1. Health Check Fixes (Dec 25, 2025)
+
+Fixed 504 gateway timeout errors caused by failing health checks in Docker containers.
+
+**Problem:**
+- Health checks in `docker-compose.prod.yml` were using `wget`, but wget/curl weren't installed in container images
+- This caused health checks to fail, preventing dependent services from starting
+- Gateway and Frontend services would timeout waiting for backend services
+
+**Solution:**
+- Installed `curl` in all Docker images (both .NET and nginx)
+- Updated Frontend HEALTHCHECK to use `curl` instead of `wget`
+- Changed Gateway and Frontend dependencies from `service_healthy` to `service_started` in docker-compose.prod.yml
+
+**Files Modified:**
+- [src/UserManagement/Booksy.UserManagement.API/Dockerfile](src/UserManagement/Booksy.UserManagement.API/Dockerfile) - Added curl via apt-get
+- [src/BoundedContexts/ServiceCatalog/Booksy.ServiceCatalog.Api/Dockerfile](src/BoundedContexts/ServiceCatalog/Booksy.ServiceCatalog.Api/Dockerfile) - Added curl via apt-get
+- [src/APIGateway/Booksy.Gateway/Dockerfile](src/APIGateway/Booksy.Gateway/Dockerfile) - Added curl via apt-get
+- [booksy-frontend/Dockerfile](booksy-frontend/Dockerfile) - Added curl via apk, updated HEALTHCHECK to use curl
+- [docker-compose.prod.yml](docker-compose.prod.yml) - Changed dependency conditions
+
+**Related Commits:**
+- `ce2cc47` - Install curl in Docker images for health checks
+- `5d6c041` - Fix deployment health check dependencies
+
+### 2. Docker Build Optimization
 
 All Dockerfiles have been optimized with smart layer caching:
 
@@ -29,7 +54,7 @@ All Dockerfiles have been optimized with smart layer caching:
 - **Code-only changes**: 30 seconds - 2 minutes (was 5-10 minutes)
 - **No changes**: Near instant (cached layers)
 
-### 2. XML Documentation Warning Fix
+### 3. XML Documentation Warning Fix
 
 Fixed CS1591 (missing XML documentation) errors that were blocking builds.
 
@@ -41,7 +66,7 @@ Fixed CS1591 (missing XML documentation) errors that were blocking builds.
 - [src/UserManagement/Booksy.UserManagement.API/Booksy.UserManagement.API.csproj](src/UserManagement/Booksy.UserManagement.API/Booksy.UserManagement.API.csproj)
   - Already had `1591` in NoWarn (no changes needed)
 
-### 3. Build Scripts
+### 4. Build Scripts
 
 **New Files Created:**
 - [build.ps1](build.ps1) - Windows PowerShell build script

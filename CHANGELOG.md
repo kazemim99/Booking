@@ -7,6 +7,50 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed - 2025-12-25
+
+#### Docker Health Check Failures and 504 Gateway Timeouts
+- **Problem**: Health checks in production Docker containers were failing, causing 504 gateway timeout errors
+  - `wget` was used in health check commands but not installed in container images
+  - Failed health checks prevented dependent services from starting
+  - Gateway and Frontend services would timeout waiting for backend services
+
+- **Solution**: Installed curl in all Docker images and updated health check configuration
+  - **.NET Services** (UserManagement, ServiceCatalog, Gateway):
+    - Added `curl` installation via `apt-get update && apt-get install -y curl`
+    - Performed as root user before switching to APP_UID
+    - Cleaned up apt cache to minimize image size
+
+  - **Frontend** (nginx:alpine):
+    - Added `curl` installation via `apk add --no-cache curl`
+    - Updated HEALTHCHECK command from `wget` to `curl -f`
+
+  - **Docker Compose**:
+    - Changed Gateway dependencies from `service_healthy` to `service_started` for backend services
+    - Changed Frontend dependency from `service_healthy` to `service_started` for Gateway
+    - This prevents startup blocking while health checks are still initializing
+
+- **Impact**:
+  - All containers now have proper health check tools installed
+  - Services start up correctly without dependency timeout issues
+  - Health status properly reported in `docker ps` output
+  - Resolves 504 errors on first deployment
+
+- **Files Modified**:
+  - [src/UserManagement/Booksy.UserManagement.API/Dockerfile](src/UserManagement/Booksy.UserManagement.API/Dockerfile)
+  - [src/BoundedContexts/ServiceCatalog/Booksy.ServiceCatalog.Api/Dockerfile](src/BoundedContexts/ServiceCatalog/Booksy.ServiceCatalog.Api/Dockerfile)
+  - [src/APIGateway/Booksy.Gateway/Dockerfile](src/APIGateway/Booksy.Gateway/Dockerfile)
+  - [booksy-frontend/Dockerfile](booksy-frontend/Dockerfile)
+  - [docker-compose.prod.yml](docker-compose.prod.yml)
+
+- **Documentation**:
+  - Updated [BUILD_FIXES_SUMMARY.md](BUILD_FIXES_SUMMARY.md) with health check fix details
+  - Updated [UBUNTU_DEPLOYMENT_SETUP.md](UBUNTU_DEPLOYMENT_SETUP.md) with troubleshooting section
+
+- **Related Commits**:
+  - `ce2cc47` - Install curl in Docker images for health checks
+  - `5d6c041` - Fix deployment health check dependencies
+
 ### Changed - 2025-12-21
 
 #### Provider Registration Flow Simplified to Organization-Only
