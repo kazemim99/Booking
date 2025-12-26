@@ -246,7 +246,7 @@ jobs:
           docker-compose -f docker-compose.prod.yml pull
 
           # Stop old containers
-          docker-compose -f docker-compose.prod.yml down
+          docker-compose -f docker-compose.prod.yml down --remove-orphans
 
           # Start new containers with .env from main directory
           docker-compose -f docker-compose.prod.yml up -d
