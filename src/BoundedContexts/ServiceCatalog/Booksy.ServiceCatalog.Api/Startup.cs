@@ -28,7 +28,7 @@ namespace Booksy.API
     public class Startup
     {
         public IConfiguration Configuration { get; }
-        private IWebHostEnvironment Environment {get;}
+        private IWebHostEnvironment Environment { get; }
         public Startup(IConfiguration configuration, IWebHostEnvironment environment)
         {
             Configuration = configuration;
@@ -66,7 +66,7 @@ namespace Booksy.API
                 options.JsonSerializerOptions.ReadCommentHandling = JsonCommentHandling.Skip;
             });
 
-            services.ConfigureApiOptions(Configuration,Environment);
+            services.ConfigureApiOptions(Configuration, Environment);
 
             // API Versioning
             services.AddApiVersioning(options =>
@@ -212,12 +212,9 @@ namespace Booksy.API
                 endpoints.MapHub<Booksy.ServiceCatalog.Infrastructure.Hubs.NotificationHub>("/hubs/notifications");
             });
 
-            // Run database seeder in development
-            if (env.IsDevelopment() || env.EnvironmentName.Contains("Test"))
-            {
-                using var scope = app.ApplicationServices.CreateScope();
-                scope.ServiceProvider.InitializeDatabaseAsync().GetAwaiter().GetResult();
-            }
+
+            using var scope = app.ApplicationServices.CreateScope();
+            scope.ServiceProvider.InitializeDatabaseAsync(env.IsDevelopment() || env.EnvironmentName.Contains("Test")).GetAwaiter().GetResult();
         }
     }
 }

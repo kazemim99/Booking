@@ -172,17 +172,18 @@ namespace Booksy.UserManagement.Infrastructure.DependencyInjection
         /// <summary>
         /// Applies pending migrations and seeds the database
         /// </summary>
-        public static async Task InitializeDatabaseAsync(this IServiceProvider serviceProvider)
+        public static async Task InitializeDatabaseAsync(this IServiceProvider serviceProvider, bool isDev)
         {
             using var scope = serviceProvider.CreateScope();
             var context = scope.ServiceProvider.GetRequiredService<UserManagementDbContext>();
             var seeder = scope.ServiceProvider.GetRequiredService<ISeeder>();
 
-            // Apply migrations
             await context.Database.MigrateAsync();
+            if (isDev)
+            {
 
-            // Seed data
             await seeder.SeedAsync();
+            }
         }
     }
 }

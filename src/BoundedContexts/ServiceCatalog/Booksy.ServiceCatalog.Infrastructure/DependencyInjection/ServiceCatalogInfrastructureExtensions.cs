@@ -190,7 +190,7 @@ namespace Booksy.ServiceCatalog.Infrastructure.DependencyInjection
             return services;
         }
 
-        public static async Task InitializeDatabaseAsync(this IServiceProvider serviceProvider)
+        public static async Task InitializeDatabaseAsync(this IServiceProvider serviceProvider,bool isDev)
         {
             try
             {
@@ -202,8 +202,11 @@ namespace Booksy.ServiceCatalog.Infrastructure.DependencyInjection
 
                 // Apply migrations
                 await context.Database.MigrateAsync();
+                if (isDev)
+                {
 
-                await seeder.SeedAsync();
+                    await seeder.SeedAsync();
+                }
 
             }
             catch (Exception ex)
