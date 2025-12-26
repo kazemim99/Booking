@@ -328,6 +328,10 @@ jobs:
           # Pull latest images
           docker-compose -f docker-compose.prod.yml pull
 
+          # Force stop and remove any old booksy containers (including orphans from other deployments)
+          echo "Cleaning up old containers..."
+          docker ps -a --filter "name=booksy-" --format "{{.Names}}" | xargs -r docker rm -f || true
+
           # Stop old containers
           docker-compose -f docker-compose.prod.yml down --remove-orphans
 
