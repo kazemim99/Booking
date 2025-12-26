@@ -1,1 +1,221 @@
-{} 
+{
+  "Routes": [
+    // Development routes use localhost instead of container names
+
+    // UserManagement API Routes
+    {
+      "UpstreamPathTemplate": "/api/v1/Auth/{everything}",
+      "UpstreamHttpMethod": [ "GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS" ],
+      "DownstreamPathTemplate": "/api/v1/Auth/{everything}",
+      "DownstreamScheme": "http",
+      "DownstreamHostAndPorts": [
+        {
+          "Host": "localhost",
+          "Port": 5001
+        }
+      ],
+      "Priority": 1
+    },
+    {
+      "UpstreamPathTemplate": "/api/v1/Users/{everything}",
+      "UpstreamHttpMethod": [ "GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS" ],
+      "DownstreamPathTemplate": "/api/v1/Users/{everything}",
+      "DownstreamScheme": "http",
+      "DownstreamHostAndPorts": [
+        {
+          "Host": "localhost",
+          "Port": 5001
+        }
+      ],
+      "Priority": 1
+    },
+    {
+      "UpstreamPathTemplate": "/api/v1/Customers/{everything}",
+      "UpstreamHttpMethod": [ "GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS" ],
+      "DownstreamPathTemplate": "/api/v1/Customers/{everything}",
+      "DownstreamScheme": "http",
+      "DownstreamHostAndPorts": [
+        {
+          "Host": "localhost",
+          "Port": 5001
+        }
+      ],
+      "Priority": 1
+    },
+
+    // ServiceCatalog API Routes
+    {
+      "UpstreamPathTemplate": "/api/v1/Providers/{everything}",
+      "UpstreamHttpMethod": [ "GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS" ],
+      "DownstreamPathTemplate": "/api/v1/Providers/{everything}",
+      "DownstreamScheme": "http",
+      "DownstreamHostAndPorts": [
+        {
+          "Host": "localhost",
+          "Port": 5002
+        }
+      ],
+      "Priority": 1
+    },
+    {
+      "UpstreamPathTemplate": "/api/v1/Services/{everything}",
+      "UpstreamHttpMethod": [ "GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS" ],
+      "DownstreamPathTemplate": "/api/v1/Services/{everything}",
+      "DownstreamScheme": "http",
+      "DownstreamHostAndPorts": [
+        {
+          "Host": "localhost",
+          "Port": 5002
+        }
+      ],
+      "Priority": 1
+    },
+    {
+      "UpstreamPathTemplate": "/api/v1/Categories/{everything}",
+      "UpstreamHttpMethod": [ "GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS" ],
+      "DownstreamPathTemplate": "/api/v1/Categories/{everything}",
+      "DownstreamScheme": "http",
+      "DownstreamHostAndPorts": [
+        {
+          "Host": "localhost",
+          "Port": 5002
+        }
+      ],
+      "Priority": 1
+    },
+    {
+      "UpstreamPathTemplate": "/api/v1/Bookings/{everything}",
+      "UpstreamHttpMethod": [ "GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS" ],
+      "DownstreamPathTemplate": "/api/v1/Bookings/{everything}",
+      "DownstreamScheme": "http",
+      "DownstreamHostAndPorts": [
+        {
+          "Host": "localhost",
+          "Port": 5002
+        }
+      ],
+      "Priority": 1
+    },
+    {
+      "UpstreamPathTemplate": "/api/v1/Reviews/{everything}",
+      "UpstreamHttpMethod": [ "GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS" ],
+      "DownstreamPathTemplate": "/api/v1/Reviews/{everything}",
+      "DownstreamScheme": "http",
+      "DownstreamHostAndPorts": [
+        {
+          "Host": "localhost",
+          "Port": 5002
+        }
+      ],
+      "Priority": 1
+    },
+    {
+      "UpstreamPathTemplate": "/api/v1/Payments/{everything}",
+      "UpstreamHttpMethod": [ "GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS" ],
+      "DownstreamPathTemplate": "/api/v1/Payments/{everything}",
+      "DownstreamScheme": "http",
+      "DownstreamHostAndPorts": [
+        {
+          "Host": "localhost",
+          "Port": 5002
+        }
+      ],
+      "Priority": 1
+    },
+    {
+      "UpstreamPathTemplate": "/api/v1/Staff/{everything}",
+      "UpstreamHttpMethod": [ "GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS" ],
+      "DownstreamPathTemplate": "/api/v1/Staff/{everything}",
+      "DownstreamScheme": "http",
+      "DownstreamHostAndPorts": [
+        {
+          "Host": "localhost",
+          "Port": 5002
+        }
+      ],
+      "Priority": 1
+    },
+    {
+      "UpstreamPathTemplate": "/api/v1/Availability/{everything}",
+      "UpstreamHttpMethod": [ "GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS" ],
+      "DownstreamPathTemplate": "/api/v1/Availability/{everything}",
+      "DownstreamScheme": "http",
+      "DownstreamHostAndPorts": [
+        {
+          "Host": "localhost",
+          "Port": 5002
+        }
+      ],
+      "Priority": 1
+    },
+    {
+      "UpstreamPathTemplate": "/api/v1/Platform/{everything}",
+      "UpstreamHttpMethod": [ "GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS" ],
+      "DownstreamPathTemplate": "/api/v1/Platform/{everything}",
+      "DownstreamScheme": "http",
+      "DownstreamHostAndPorts": [
+        {
+          "Host": "localhost",
+          "Port": 5002
+        }
+      ],
+      "Priority": 1
+    },
+    {
+      "UpstreamPathTemplate": "/api/v1/Search/{everything}",
+      "UpstreamHttpMethod": [ "GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS" ],
+      "DownstreamPathTemplate": "/api/v1/Search/{everything}",
+      "DownstreamScheme": "http",
+      "DownstreamHostAndPorts": [
+        {
+          "Host": "localhost",
+          "Port": 5002
+        }
+      ],
+      "Priority": 1
+    },
+    {
+      "UpstreamPathTemplate": "/api/v1/Notifications/{everything}",
+      "UpstreamHttpMethod": [ "GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS" ],
+      "DownstreamPathTemplate": "/api/v1/Notifications/{everything}",
+      "DownstreamScheme": "http",
+      "DownstreamHostAndPorts": [
+        {
+          "Host": "localhost",
+          "Port": 5002
+        }
+      ],
+      "Priority": 1
+    },
+    {
+      "UpstreamPathTemplate": "/api/v1/Gallery/{everything}",
+      "UpstreamHttpMethod": [ "GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS" ],
+      "DownstreamPathTemplate": "/api/v1/Gallery/{everything}",
+      "DownstreamScheme": "http",
+      "DownstreamHostAndPorts": [
+        {
+          "Host": "localhost",
+          "Port": 5002
+        }
+      ],
+      "Priority": 1
+    },
+    {
+      "UpstreamPathTemplate": "/api/v1/WorkingHours/{everything}",
+      "UpstreamHttpMethod": [ "GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS" ],
+      "DownstreamPathTemplate": "/api/v1/WorkingHours/{everything}",
+      "DownstreamScheme": "http",
+      "DownstreamHostAndPorts": [
+        {
+          "Host": "localhost",
+          "Port": 5002
+        }
+      ],
+      "Priority": 1
+    }
+  ],
+  "GlobalConfiguration": {
+    "BaseUrl": "http://localhost:5000",
+    "RequestIdKey": "OcRequestId"
+  }
+}
