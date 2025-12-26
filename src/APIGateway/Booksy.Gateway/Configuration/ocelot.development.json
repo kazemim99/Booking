@@ -216,6 +216,7 @@
   ],
   "GlobalConfiguration": {
     "BaseUrl": "http://localhost:5000",
-    "RequestIdKey": "OcRequestId"
+    "RequestIdKey": "OcRequestId",
+    "RouteIsCaseSensitive": false
   }
 }

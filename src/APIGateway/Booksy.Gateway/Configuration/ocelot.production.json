@@ -250,6 +250,7 @@
   ],
   "GlobalConfiguration": {
     "BaseUrl": "http://gateway:80",
-    "RequestIdKey": "OcRequestId"
+    "RequestIdKey": "OcRequestId",
+    "RouteIsCaseSensitive": false
   }
 }
