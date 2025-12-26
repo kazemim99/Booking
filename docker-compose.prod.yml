@@ -37,7 +37,7 @@ services:
           cpus: '0.25'
           memory: 256M
     healthcheck:
-      test: ["CMD-SHELL", "wget --no-verbose --tries=1 --spider http://localhost:80/health || exit 1"]
+      test: ["CMD-SHELL", "curl -f http://localhost:80/health || exit 1"]
       interval: 30s
       timeout: 10s
       retries: 3
@@ -78,7 +78,7 @@ services:
           cpus: '0.25'
           memory: 256M
     healthcheck:
-      test: ["CMD-SHELL", "wget --no-verbose --tries=1 --spider http://localhost:80/health || exit 1"]
+      test: ["CMD-SHELL", "curl -f http://localhost:80/health || exit 1"]
       interval: 30s
       timeout: 10s
       retries: 3
@@ -113,12 +113,13 @@ services:
         reservations:
           cpus: '0.1'
           memory: 128M
-    healthcheck:
-      test: ["CMD-SHELL", "wget --no-verbose --tries=1 --spider http://localhost:80/health || exit 1"]
-      interval: 30s
-      timeout: 10s
-      retries: 3
-      start_period: 40s
+    # healthcheck disabled: gateway app doesn't implement /health endpoint
+    # healthcheck:
+    #   test: ["CMD-SHELL", "curl -f http://localhost:80/health || exit 1"]
+    #   interval: 30s
+    #   timeout: 10s
+    #   retries: 3
+    #   start_period: 40s
 
   frontend:
     image: ghcr.io/${GITHUB_REPOSITORY_OWNER}/booksy-frontend:latest
@@ -143,7 +144,7 @@ services:
           cpus: '0.1'
           memory: 64M
     healthcheck:
-      test: ["CMD-SHELL", "wget --no-verbose --tries=1 --spider http://localhost:80/health || exit 1"]
+      test: ["CMD-SHELL", "curl -f http://localhost:80/health || exit 1"]
       interval: 30s
       timeout: 10s
       retries: 3
@@ -266,12 +267,13 @@ services:
         reservations:
           cpus: '0.1'
           memory: 128M
-    healthcheck:
-      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost/api/health"]
-      interval: 30s
-      timeout: 10s
-      retries: 3
-      start_period: 20s
+    # healthcheck disabled: seq doesn't return successful /api/health responses
+    # healthcheck:
+    #   test: ["CMD-SHELL", "curl -f http://localhost/api/health || exit 1"]
+    #   interval: 30s
+    #   timeout: 10s
+    #   retries: 3
+    #   start_period: 20s
 
   # pgAdmin for database management
   pgadmin:
