@@ -39,7 +39,11 @@ cd /root/booksy && ./scripts/deploy.sh
 # Manual deployment steps
 cd /root/booksy
 docker-compose -f docker-compose.prod.yml pull
-docker-compose -f docker-compose.prod.yml down
+
+# Clean up orphaned containers (prevents network removal errors)
+docker ps -a --filter "name=booksy-" --format "{{.Names}}" | xargs -r docker rm -f || true
+
+docker-compose -f docker-compose.prod.yml down --remove-orphans
 docker-compose -f docker-compose.prod.yml up -d
 
 # View all service status
@@ -148,6 +152,9 @@ docker image prune -f
 # View disk usage by Docker
 docker system df
 
+# Clean up orphaned booksy containers (all containers with 'booksy-' prefix)
+docker ps -a --filter "name=booksy-" --format "{{.Names}}" | xargs -r docker rm -f
+
 # Clean up old backups (manual)
 cd /root/booksy/backups && ls -lt | tail -n +10 | awk '{print $9}' | xargs rm -f
 ```
@@ -166,6 +173,7 @@ cd /root/booksy/backups && ls -lt | tail -n +10 | awk '{print $9}' | xargs rm -f
 - Can also be manually triggered via workflow_dispatch
 - Uses SSH to connect to production server
 - Pulls latest Docker images from GHCR
+- **Forcibly removes orphaned containers** before docker-compose down to prevent network errors
 - Performs zero-downtime deployment by stopping old containers and starting new ones
 - Includes automatic cleanup of old Docker images
 
@@ -261,6 +269,32 @@ docker ps
 ```
 
 **Root Cause**: Health checks use `curl` to test the `/health` endpoint. If curl is not installed in the Docker images, health checks fail, marking services as unhealthy. This prevents proper request routing and causes 502/504 errors.
+
+### Network Removal Error During Deployment
+**Symptoms**: GitHub Actions deployment fails with error:
+```
+error while removing network: network booksy_booksy-network has active endpoints
+(name:"booksy-gateway" id:"xxx", name:"booksy-frontend" id:"xxx", name:"booksy-usermanagement-api-dev" id:"xxx")
+```
+
+**Cause**: Orphaned containers from previous deployments (e.g., dev/staging containers with different names like `booksy-usermanagement-api-dev`) are still running and connected to the `booksy-network`. Docker Compose cannot remove the network while these containers are attached.
+
+**Solution**:
+```bash
+# 1. List all booksy containers (including orphans)
+docker ps -a --filter "name=booksy-"
+
+# 2. Forcibly remove all booksy containers
+docker ps -a --filter "name=booksy-" --format "{{.Names}}" | xargs -r docker rm -f
+
+# 3. Now you can safely remove the network or run docker-compose down
+docker-compose -f docker-compose.prod.yml down --remove-orphans
+
+# 4. Start fresh deployment
+docker-compose -f docker-compose.prod.yml up -d
+```
+
+**Prevention**: The deployment workflow (`.github/workflows/deploy.yml`) now includes an automatic cleanup step that forcibly removes all booksy containers before running `docker-compose down`, preventing this issue.
 
 ### Other Common Issues
 
