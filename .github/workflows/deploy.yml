@@ -279,6 +279,11 @@ jobs:
         cp -r deployment/scripts deployment-package/
         tar -czf deployment.tar.gz deployment-package/
 
+    - name: Test SSH connectivity
+      run: |
+        echo "Testing connection to server..."
+        timeout 30 nc -zv ${{ secrets.SERVER_HOST }} 22 || echo "Port 22 not reachable"
+
     - name: Copy deployment files to server
       uses: appleboy/scp-action@v0.1.7
       with:
@@ -288,6 +293,8 @@ jobs:
         port: 22
         source: "deployment.tar.gz"
         target: ${{ secrets.SERVER_DEPLOY_PATH }}
+        timeout: 60s
+        command_timeout: 10m
 
     - name: Deploy application on server
       uses: appleboy/ssh-action@v1.0.3
