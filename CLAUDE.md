@@ -296,6 +296,48 @@ docker-compose -f docker-compose.prod.yml up -d
 
 **Prevention**: The deployment workflow (`.github/workflows/deploy.yml`) now includes an automatic cleanup step that forcibly removes all booksy containers before running `docker-compose down`, preventing this issue.
 
+### 404 Not Found Errors for API Endpoints
+**Symptoms**: Specific API endpoints return 404 errors (e.g., `/api/v1/platform/statistics`, `/api/v1/categories/popular`) while others work correctly (e.g., `/api/v1/Providers/search`)
+
+**Cause**: Case sensitivity mismatch between frontend API calls and Ocelot Gateway routing configuration.
+
+**Diagnosis**:
+```bash
+# Check gateway logs for literal placeholder values
+docker logs booksy-gateway --tail 50 | grep "404"
+
+# If you see URLs with literal {url} or {everything}, it's a case mismatch:
+# BAD:  http://booksy-service-catalog-api:8080/api/v1/Platform/{url}
+# GOOD: http://booksy-service-catalog-api:8080/api/v1/Platform/statistics
+```
+
+**Solution**:
+The frontend and Ocelot Gateway must use matching case. The convention is **PascalCase** for all API endpoints:
+
+```typescript
+// Frontend API service files should use PascalCase:
+const API_BASE = `/${API_VERSION}/Platform`     // ✅ Correct
+const API_BASE = `/${API_VERSION}/platform`     // ❌ Wrong - causes 404
+```
+
+**Files to check**:
+- `booksy-frontend/src/core/api/services/*.service.ts`
+- `booksy-frontend/src/modules/*/api/*.service.ts`
+- `booksy-frontend/src/modules/*/services/*.service.ts`
+
+**Testing**:
+```bash
+# Test with PascalCase (should work)
+curl http://localhost:8080/api/v1/Platform/statistics
+
+# Test with lowercase (will return 404)
+curl http://localhost:8080/api/v1/platform/statistics
+```
+
+**Note**: Ocelot's `RouteIsCaseSensitive: false` setting doesn't work reliably in version 23.4.0. Always use PascalCase.
+
+**Reference**: See `GATEWAY_CASE_SENSITIVITY_FIX.md` for detailed analysis.
+
 ### Other Common Issues
 
 1. **Service won't start**: Check logs with `docker-compose logs [service]` and verify health check status

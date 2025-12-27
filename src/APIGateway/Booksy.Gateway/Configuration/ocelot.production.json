@@ -6,9 +6,9 @@
 
     // Authentication endpoints
     {
-      "UpstreamPathTemplate": "/api/v1/Auth/{everything}",
+      "UpstreamPathTemplate": "/api/v1/Auth/{url}",
       "UpstreamHttpMethod": [ "GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS" ],
-      "DownstreamPathTemplate": "/api/v1/Auth/{everything}",
+      "DownstreamPathTemplate": "/api/v1/Auth/{url}",
       "DownstreamScheme": "http",
       "DownstreamHostAndPorts": [
         {
@@ -16,14 +16,15 @@
           "Port": 80
         }
       ],
+      "RouteIsCaseSensitive": false,
       "Priority": 1
     },
 
     // User endpoints
     {
-      "UpstreamPathTemplate": "/api/v1/Users/{everything}",
+      "UpstreamPathTemplate": "/api/v1/Users/{url}",
       "UpstreamHttpMethod": [ "GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS" ],
-      "DownstreamPathTemplate": "/api/v1/Users/{everything}",
+      "DownstreamPathTemplate": "/api/v1/Users/{url}",
       "DownstreamScheme": "http",
       "DownstreamHostAndPorts": [
         {
@@ -31,14 +32,15 @@
           "Port": 80
         }
       ],
+      "RouteIsCaseSensitive": false,
       "Priority": 1
     },
 
     // Customer endpoints
     {
-      "UpstreamPathTemplate": "/api/v1/Customers/{everything}",
+      "UpstreamPathTemplate": "/api/v1/Customers/{url}",
       "UpstreamHttpMethod": [ "GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS" ],
-      "DownstreamPathTemplate": "/api/v1/Customers/{everything}",
+      "DownstreamPathTemplate": "/api/v1/Customers/{url}",
       "DownstreamScheme": "http",
       "DownstreamHostAndPorts": [
         {
@@ -46,6 +48,7 @@
           "Port": 80
         }
       ],
+      "RouteIsCaseSensitive": false,
       "Priority": 1
     },
 
@@ -55,9 +58,9 @@
 
     // Provider endpoints
     {
-      "UpstreamPathTemplate": "/api/v1/Providers/{everything}",
+      "UpstreamPathTemplate": "/api/v1/Providers/{url}",
       "UpstreamHttpMethod": [ "GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS" ],
-      "DownstreamPathTemplate": "/api/v1/Providers/{everything}",
+      "DownstreamPathTemplate": "/api/v1/Providers/{url}",
       "DownstreamScheme": "http",
       "DownstreamHostAndPorts": [
         {
@@ -65,14 +68,15 @@
           "Port": 80
         }
       ],
+      "RouteIsCaseSensitive": false,
       "Priority": 1
     },
 
     // Service endpoints
     {
-      "UpstreamPathTemplate": "/api/v1/Services/{everything}",
+      "UpstreamPathTemplate": "/api/v1/Services/{url}",
       "UpstreamHttpMethod": [ "GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS" ],
-      "DownstreamPathTemplate": "/api/v1/Services/{everything}",
+      "DownstreamPathTemplate": "/api/v1/Services/{url}",
       "DownstreamScheme": "http",
       "DownstreamHostAndPorts": [
         {
@@ -80,14 +84,15 @@
           "Port": 80
         }
       ],
+      "RouteIsCaseSensitive": false,
       "Priority": 1
     },
 
     // Category endpoints
     {
-      "UpstreamPathTemplate": "/api/v1/Categories/{everything}",
+      "UpstreamPathTemplate": "/api/v1/Categories/{url}",
       "UpstreamHttpMethod": [ "GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS" ],
-      "DownstreamPathTemplate": "/api/v1/Categories/{everything}",
+      "DownstreamPathTemplate": "/api/v1/Categories/{url}",
       "DownstreamScheme": "http",
       "DownstreamHostAndPorts": [
         {
@@ -95,14 +100,15 @@
           "Port": 80
         }
       ],
+      "RouteIsCaseSensitive": false,
       "Priority": 1
     },
 
     // Booking endpoints
     {
-      "UpstreamPathTemplate": "/api/v1/Bookings/{everything}",
+      "UpstreamPathTemplate": "/api/v1/Bookings/{url}",
       "UpstreamHttpMethod": [ "GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS" ],
-      "DownstreamPathTemplate": "/api/v1/Bookings/{everything}",
+      "DownstreamPathTemplate": "/api/v1/Bookings/{url}",
       "DownstreamScheme": "http",
       "DownstreamHostAndPorts": [
         {
@@ -110,14 +116,15 @@
           "Port": 80
         }
       ],
+      "RouteIsCaseSensitive": false,
       "Priority": 1
     },
 
     // Review endpoints
     {
-      "UpstreamPathTemplate": "/api/v1/Reviews/{everything}",
+      "UpstreamPathTemplate": "/api/v1/Reviews/{url}",
       "UpstreamHttpMethod": [ "GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS" ],
-      "DownstreamPathTemplate": "/api/v1/Reviews/{everything}",
+      "DownstreamPathTemplate": "/api/v1/Reviews/{url}",
       "DownstreamScheme": "http",
       "DownstreamHostAndPorts": [
         {
@@ -125,14 +132,15 @@
           "Port": 80
         }
       ],
+      "RouteIsCaseSensitive": false,
       "Priority": 1
     },
 
     // Payment endpoints
     {
-      "UpstreamPathTemplate": "/api/v1/Payments/{everything}",
+      "UpstreamPathTemplate": "/api/v1/Payments/{url}",
       "UpstreamHttpMethod": [ "GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS" ],
-      "DownstreamPathTemplate": "/api/v1/Payments/{everything}",
+      "DownstreamPathTemplate": "/api/v1/Payments/{url}",
       "DownstreamScheme": "http",
       "DownstreamHostAndPorts": [
         {
@@ -140,14 +148,15 @@
           "Port": 80
         }
       ],
+      "RouteIsCaseSensitive": false,
       "Priority": 1
     },
 
     // Staff endpoints
     {
-      "UpstreamPathTemplate": "/api/v1/Staff/{everything}",
+      "UpstreamPathTemplate": "/api/v1/Staff/{url}",
       "UpstreamHttpMethod": [ "GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS" ],
-      "DownstreamPathTemplate": "/api/v1/Staff/{everything}",
+      "DownstreamPathTemplate": "/api/v1/Staff/{url}",
       "DownstreamScheme": "http",
       "DownstreamHostAndPorts": [
         {
@@ -155,14 +164,15 @@
           "Port": 80
         }
       ],
+      "RouteIsCaseSensitive": false,
       "Priority": 1
     },
 
     // Availability endpoints
     {
-      "UpstreamPathTemplate": "/api/v1/Availability/{everything}",
+      "UpstreamPathTemplate": "/api/v1/Availability/{url}",
       "UpstreamHttpMethod": [ "GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS" ],
-      "DownstreamPathTemplate": "/api/v1/Availability/{everything}",
+      "DownstreamPathTemplate": "/api/v1/Availability/{url}",
       "DownstreamScheme": "http",
       "DownstreamHostAndPorts": [
         {
@@ -170,14 +180,15 @@
           "Port": 80
         }
       ],
+      "RouteIsCaseSensitive": false,
       "Priority": 1
     },
 
     // Platform statistics endpoints
     {
-      "UpstreamPathTemplate": "/api/v1/Platform/{everything}",
+      "UpstreamPathTemplate": "/api/v1/Platform/{url}",
       "UpstreamHttpMethod": [ "GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS" ],
-      "DownstreamPathTemplate": "/api/v1/Platform/{everything}",
+      "DownstreamPathTemplate": "/api/v1/Platform/{url}",
       "DownstreamScheme": "http",
       "DownstreamHostAndPorts": [
         {
@@ -185,14 +196,15 @@
           "Port": 80
         }
       ],
+      "RouteIsCaseSensitive": false,
       "Priority": 1
     },
 
     // Search endpoints
     {
-      "UpstreamPathTemplate": "/api/v1/Search/{everything}",
+      "UpstreamPathTemplate": "/api/v1/Search/{url}",
       "UpstreamHttpMethod": [ "GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS" ],
-      "DownstreamPathTemplate": "/api/v1/Search/{everything}",
+      "DownstreamPathTemplate": "/api/v1/Search/{url}",
       "DownstreamScheme": "http",
       "DownstreamHostAndPorts": [
         {
@@ -200,14 +212,15 @@
           "Port": 80
         }
       ],
+      "RouteIsCaseSensitive": false,
       "Priority": 1
     },
 
     // Notification endpoints (if they exist)
     {
-      "UpstreamPathTemplate": "/api/v1/Notifications/{everything}",
+      "UpstreamPathTemplate": "/api/v1/Notifications/{url}",
       "UpstreamHttpMethod": [ "GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS" ],
-      "DownstreamPathTemplate": "/api/v1/Notifications/{everything}",
+      "DownstreamPathTemplate": "/api/v1/Notifications/{url}",
       "DownstreamScheme": "http",
       "DownstreamHostAndPorts": [
         {
@@ -215,14 +228,15 @@
           "Port": 80
         }
       ],
+      "RouteIsCaseSensitive": false,
       "Priority": 1
     },
 
     // Gallery endpoints
     {
-      "UpstreamPathTemplate": "/api/v1/Gallery/{everything}",
+      "UpstreamPathTemplate": "/api/v1/Gallery/{url}",
       "UpstreamHttpMethod": [ "GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS" ],
-      "DownstreamPathTemplate": "/api/v1/Gallery/{everything}",
+      "DownstreamPathTemplate": "/api/v1/Gallery/{url}",
       "DownstreamScheme": "http",
       "DownstreamHostAndPorts": [
         {
@@ -230,14 +244,15 @@
           "Port": 80
         }
       ],
+      "RouteIsCaseSensitive": false,
       "Priority": 1
     },
 
     // WorkingHours endpoints
     {
-      "UpstreamPathTemplate": "/api/v1/WorkingHours/{everything}",
+      "UpstreamPathTemplate": "/api/v1/WorkingHours/{url}",
       "UpstreamHttpMethod": [ "GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS" ],
-      "DownstreamPathTemplate": "/api/v1/WorkingHours/{everything}",
+      "DownstreamPathTemplate": "/api/v1/WorkingHours/{url}",
       "DownstreamScheme": "http",
       "DownstreamHostAndPorts": [
         {

@@ -7,7 +7,7 @@ import { httpClient } from '@/core/api/client/http-client'
 import type { ApiResponse } from '@/core/api/client/api-response'
 
 const API_VERSION = 'v1'
-const API_BASE = `/${API_VERSION}/platform`
+const API_BASE = `/${API_VERSION}/Platform`
 
 // ==================== Types ====================
 
