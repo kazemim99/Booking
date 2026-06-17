@@ -39,17 +39,17 @@ const financialView = ref<'dashboard' | 'transactions' | 'payouts'>('dashboard')
 <style scoped>
 .btn-back {
   padding: 0.5rem 1rem;
-  background: #f3f4f6;
-  border: 1px solid #e5e7eb;
+  background: var(--color-gray-100);
+  border: 1px solid var(--color-gray-300);
   border-radius: 0.375rem;
   cursor: pointer;
   font-size: 0.875rem;
-  color: #374151;
+  color: var(--color-gray-800);
   transition: all 0.2s;
 }
 
 .btn-back:hover {
-  background: #e5e7eb;
+  background: var(--color-gray-300);
 }
 
 .mb-4 {

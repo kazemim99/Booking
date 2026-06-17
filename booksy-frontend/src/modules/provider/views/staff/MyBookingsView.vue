@@ -52,13 +52,13 @@ onMounted(() => {
   h1 {
     font-size: 28px;
     font-weight: 700;
-    color: #1f2937;
+    color: var(--color-gray-900);
     margin: 0 0 8px 0;
   }
 
   .subtitle {
     font-size: 16px;
-    color: #6b7280;
+    color: var(--color-gray-600);
     margin: 0;
   }
 }
@@ -66,7 +66,7 @@ onMounted(() => {
 .info-card {
   display: flex;
   gap: 16px;
-  background: #eff6ff;
+  background: var(--color-primary-50);
   border: 1px solid #bfdbfe;
   border-radius: 12px;
   padding: 20px;
@@ -106,7 +106,7 @@ onMounted(() => {
 
 .bookings-placeholder {
   background: white;
-  border: 2px dashed #e5e7eb;
+  border: 2px dashed var(--color-gray-300);
   border-radius: 12px;
   padding: 64px 32px;
   text-align: center;
@@ -115,7 +115,7 @@ onMounted(() => {
     width: 80px;
     height: 80px;
     margin: 0 auto 24px;
-    color: #d1d5db;
+    color: var(--color-gray-400);
 
     svg {
       width: 100%;
@@ -126,13 +126,13 @@ onMounted(() => {
   h3 {
     font-size: 20px;
     font-weight: 600;
-    color: #374151;
+    color: var(--color-gray-800);
     margin: 0 0 12px 0;
   }
 
   p {
     font-size: 16px;
-    color: #6b7280;
+    color: var(--color-gray-600);
     margin: 0;
   }
 }

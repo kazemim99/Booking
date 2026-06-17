@@ -496,7 +496,7 @@ const handleNotesAdded = async (updatedBooking: Appointment) => {
   font-size: 18px;
   font-weight: 600;
   margin: 0 0 24px 0;
-  color: #1f2937;
+  color: var(--color-gray-900);
 }
 
 /* Filters */
@@ -525,20 +525,20 @@ const handleNotesAdded = async (updatedBooking: Appointment) => {
   transform: translateY(-50%);
   width: 16px;
   height: 16px;
-  color: #9ca3af;
+  color: var(--color-gray-500);
 }
 
 .search-input {
   width: 100%;
   padding: 8px 16px 8px 40px;
-  border: 1px solid #d1d5db;
+  border: 1px solid var(--color-gray-400);
   border-radius: 8px;
   font-size: 14px;
 
   &:focus {
     outline: none;
     ring: 2px;
-    ring-color: #6366f1;
+    ring-color: var(--color-primary-500);
     border-color: transparent;
   }
 }
@@ -546,7 +546,7 @@ const handleNotesAdded = async (updatedBooking: Appointment) => {
 .filter-select {
   width: 100%;
   padding: 8px 16px;
-  border: 1px solid #d1d5db;
+  border: 1px solid var(--color-gray-400);
   border-radius: 8px;
   font-size: 14px;
   background: white;
@@ -555,7 +555,7 @@ const handleNotesAdded = async (updatedBooking: Appointment) => {
   &:focus {
     outline: none;
     ring: 2px;
-    ring-color: #6366f1;
+    ring-color: var(--color-primary-500);
     border-color: transparent;
   }
 }
@@ -568,7 +568,7 @@ const handleNotesAdded = async (updatedBooking: Appointment) => {
 
 /* Table */
 .table-wrapper {
-  border: 1px solid #e5e7eb;
+  border: 1px solid var(--color-gray-300);
   border-radius: 8px;
   overflow: hidden;
 }
@@ -578,36 +578,36 @@ const handleNotesAdded = async (updatedBooking: Appointment) => {
   border-collapse: collapse;
 
   thead {
-    background: #f9fafb;
+    background: var(--color-gray-50);
 
     tr th {
       text-align: right;
       padding: 12px 16px;
       font-size: 14px;
       font-weight: 500;
-      color: #374151;
+      color: var(--color-gray-800);
     }
   }
 
   tbody {
     tr {
-      border-top: 1px solid #e5e7eb;
+      border-top: 1px solid var(--color-gray-300);
       transition: background-color 0.2s;
 
       &.data-row:hover {
-        background: #f9fafb;
+        background: var(--color-gray-50);
       }
 
       &.empty-row td {
         text-align: center;
         padding: 32px;
-        color: #6b7280;
+        color: var(--color-gray-600);
       }
 
       td {
         padding: 12px 16px;
         font-size: 14px;
-        color: #1f2937;
+        color: var(--color-gray-900);
       }
     }
   }
@@ -636,8 +636,8 @@ const handleNotesAdded = async (updatedBooking: Appointment) => {
 }
 
 .status-cancelled {
-  background: #fee2e2;
-  color: #991b1b;
+  background: var(--color-danger-50);
+  color: var(--color-danger-600);
   border-color: #fecaca;
 }
 
@@ -651,7 +651,7 @@ const handleNotesAdded = async (updatedBooking: Appointment) => {
 
 .pagination-info {
   font-size: 14px;
-  color: #4b5563;
+  color: var(--color-gray-700);
   margin: 0;
 }
 
@@ -662,14 +662,14 @@ const handleNotesAdded = async (updatedBooking: Appointment) => {
 
 .pagination-btn {
   padding: 4px 12px;
-  border: 1px solid #d1d5db;
+  border: 1px solid var(--color-gray-400);
   border-radius: 4px;
   background: white;
   cursor: pointer;
   transition: background-color 0.2s;
 
   &:hover:not(:disabled) {
-    background: #f9fafb;
+    background: var(--color-gray-50);
   }
 
   &:disabled {
@@ -692,14 +692,14 @@ const handleNotesAdded = async (updatedBooking: Appointment) => {
   justify-content: center;
   padding: 48px 24px;
   text-align: center;
-  color: #6b7280;
+  color: var(--color-gray-600);
 }
 
 .spinner {
   width: 40px;
   height: 40px;
-  border: 3px solid #e5e7eb;
-  border-top-color: #6366f1;
+  border: 3px solid var(--color-gray-300);
+  border-top-color: var(--color-primary-500);
   border-radius: 50%;
   animation: spin 0.8s linear infinite;
   margin-bottom: 16px;
@@ -712,7 +712,7 @@ const handleNotesAdded = async (updatedBooking: Appointment) => {
 .retry-btn {
   margin-top: 16px;
   padding: 8px 16px;
-  background: #6366f1;
+  background: var(--color-primary-500);
   color: white;
   border: none;
   border-radius: 6px;
@@ -721,7 +721,7 @@ const handleNotesAdded = async (updatedBooking: Appointment) => {
   transition: background-color 0.2s;
 
   &:hover {
-    background: #4f46e5;
+    background: var(--color-primary-700);
   }
 }
 </style>

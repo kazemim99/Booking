@@ -37,6 +37,8 @@ export interface BusinessInfo {
   ownerFirstName?: string
   ownerLastName?: string
   phoneNumber?: string // From phone verification
+  email?: string
+  logoUrl?: string
 }
 
 // Address & Location

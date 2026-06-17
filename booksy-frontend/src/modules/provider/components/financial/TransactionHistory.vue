@@ -473,7 +473,7 @@ function getTransactionClass(type: TransactionType): string {
   overflow-x: auto;
   background: white;
   border-radius: 0.5rem;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  box-shadow: var(--shadow-sm);
 }
 
 .transaction-table {
@@ -528,17 +528,17 @@ function getTransactionClass(type: TransactionType): string {
 
 .type-icon.income {
   background: rgba(16, 185, 129, 0.1);
-  color: #10b981;
+  color: var(--color-success-500);
 }
 
 .type-icon.expense {
   background: rgba(239, 68, 68, 0.1);
-  color: #ef4444;
+  color: var(--color-danger-500);
 }
 
 .type-icon.neutral {
   background: rgba(107, 114, 128, 0.1);
-  color: #6b7280;
+  color: var(--color-gray-600);
 }
 
 .type-icon svg {
@@ -594,11 +594,11 @@ function getTransactionClass(type: TransactionType): string {
 }
 
 .amount-cell.positive {
-  color: #10b981;
+  color: var(--color-success-500);
 }
 
 .amount-cell.negative {
-  color: #ef4444;
+  color: var(--color-danger-500);
 }
 
 .status-badge {
@@ -620,8 +620,8 @@ function getTransactionClass(type: TransactionType): string {
 }
 
 .status-badge.status-failed {
-  background: #fee2e2;
-  color: #991b1b;
+  background: var(--color-danger-50);
+  color: var(--color-danger-600);
 }
 
 /* Pagination */

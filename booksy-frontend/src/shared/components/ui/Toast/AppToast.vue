@@ -83,38 +83,38 @@ function handleDismiss(id: string): void {
 }
 
 .toast-success {
-  border-left-color: #10b981;
+  border-left-color: var(--color-success-500);
   background: #f0fdf4;
 
   .toast-icon {
-    color: #10b981;
+    color: var(--color-success-500);
   }
 }
 
 .toast-error {
-  border-left-color: #ef4444;
-  background: #fef2f2;
+  border-left-color: var(--color-danger-500);
+  background: var(--color-danger-50);
 
   .toast-icon {
-    color: #ef4444;
+    color: var(--color-danger-500);
   }
 }
 
 .toast-warning {
-  border-left-color: #f59e0b;
-  background: #fffbeb;
+  border-left-color: var(--color-warning-500);
+  background: var(--color-warning-50);
 
   .toast-icon {
-    color: #f59e0b;
+    color: var(--color-warning-500);
   }
 }
 
 .toast-info {
-  border-left-color: #3b82f6;
-  background: #eff6ff;
+  border-left-color: var(--color-primary-500);
+  background: var(--color-primary-50);
 
   .toast-icon {
-    color: #3b82f6;
+    color: var(--color-primary-500);
   }
 }
 
@@ -139,14 +139,14 @@ function handleDismiss(id: string): void {
   font-weight: 600;
   font-size: 0.875rem;
   margin: 0 0 0.25rem 0;
-  color: #111827;
+  color: var(--color-gray-900);
   line-height: 1.25;
 }
 
 .toast-message {
   font-size: 0.875rem;
   margin: 0;
-  color: #6b7280;
+  color: var(--color-gray-600);
   line-height: 1.5;
   word-wrap: break-word;
 }
@@ -156,7 +156,7 @@ function handleDismiss(id: string): void {
   border: none;
   font-size: 1.25rem;
   cursor: pointer;
-  color: #9ca3af;
+  color: var(--color-gray-500);
   padding: 0;
   width: 1.5rem;
   height: 1.5rem;
@@ -168,12 +168,12 @@ function handleDismiss(id: string): void {
   transition: all 0.2s;
 
   &:hover {
-    color: #4b5563;
+    color: var(--color-gray-700);
     background: rgba(0, 0, 0, 0.05);
   }
 
   &:focus {
-    outline: 2px solid #3b82f6;
+    outline: 2px solid var(--color-primary-500);
     outline-offset: 2px;
   }
 }
@@ -215,7 +215,7 @@ function handleDismiss(id: string): void {
 // Dark theme support
 [data-theme='dark'] {
   .toast {
-    background: #1f2937;
+    background: var(--color-gray-900);
   }
 
   .toast-success {
@@ -235,18 +235,18 @@ function handleDismiss(id: string): void {
   }
 
   .toast-title {
-    color: #f9fafb;
+    color: var(--color-gray-50);
   }
 
   .toast-message {
-    color: #d1d5db;
+    color: var(--color-gray-400);
   }
 
   .toast-close {
-    color: #9ca3af;
+    color: var(--color-gray-500);
 
     &:hover {
-      color: #f9fafb;
+      color: var(--color-gray-50);
       background: rgba(255, 255, 255, 0.1);
     }
   }

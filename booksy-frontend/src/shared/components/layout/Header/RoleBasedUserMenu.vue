@@ -152,9 +152,9 @@ const userColor = computed(() => {
     case 'provider':
       return '#1976d2'
     case 'customer':
-      return '#667eea'
+      return 'var(--color-primary-500)'
     default:
-      return '#667eea'
+      return 'var(--color-primary-500)'
   }
 })
 
@@ -389,7 +389,7 @@ async function handleLogout(): Promise<void> {
   transition: background 0.2s;
 
   &:hover {
-    background: #f3f4f6;
+    background: var(--color-gray-100);
   }
 
   &.theme-business:hover {
@@ -406,7 +406,7 @@ async function handleLogout(): Promise<void> {
   height: 36px;
   border-radius: 50%;
   object-fit: cover;
-  border: 2px solid #e5e7eb;
+  border: 2px solid var(--color-gray-300);
 }
 
 .user-avatar-placeholder {
@@ -419,12 +419,12 @@ async function handleLogout(): Promise<void> {
   justify-content: center;
   font-weight: 600;
   font-size: 0.875rem;
-  border: 2px solid #e5e7eb;
+  border: 2px solid var(--color-gray-300);
 }
 
 .user-name {
   font-weight: 500;
-  color: #374151;
+  color: var(--color-gray-800);
 
   @media (max-width: 640px) {
     display: none;
@@ -438,8 +438,8 @@ async function handleLogout(): Promise<void> {
   font-weight: 600;
 
   &.theme-customer {
-    background: #ede9fe;
-    color: #667eea;
+    background: var(--color-primary-50);
+    color: var(--color-primary-500);
   }
 
   &.theme-business {
@@ -449,14 +449,14 @@ async function handleLogout(): Promise<void> {
 
   &.theme-admin {
     background: #f1f5f9;
-    color: #334155;
+    color: var(--color-gray-800);
   }
 }
 
 .dropdown-arrow {
   width: 20px;
   height: 20px;
-  color: #9ca3af;
+  color: var(--color-gray-500);
   transition: transform 0.2s;
 
   &.rotated {
@@ -482,7 +482,7 @@ async function handleLogout(): Promise<void> {
   color: white;
 
   &:not(.theme-business):not(.theme-admin) {
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    background: linear-gradient(135deg, var(--color-primary-500) 0%, var(--color-primary-700) 100%);
   }
 
   &.theme-business {
@@ -490,7 +490,7 @@ async function handleLogout(): Promise<void> {
   }
 
   &.theme-admin {
-    background: linear-gradient(135deg, #334155 0%, #0f172a 100%);
+    background: linear-gradient(135deg, var(--color-gray-800) 0%, var(--color-gray-900) 100%);
   }
 }
 
@@ -528,7 +528,7 @@ async function handleLogout(): Promise<void> {
 
 .menu-divider {
   height: 1px;
-  background: #e5e7eb;
+  background: var(--color-gray-300);
 }
 
 .menu-list {
@@ -542,12 +542,12 @@ async function handleLogout(): Promise<void> {
   align-items: center;
   gap: 0.75rem;
   padding: 0.75rem 1rem;
-  color: #374151;
+  color: var(--color-gray-800);
   text-decoration: none;
   transition: background 0.2s;
 
   &:hover {
-    background: #f3f4f6;
+    background: var(--color-gray-100);
   }
 
   &.has-badge {
@@ -555,10 +555,10 @@ async function handleLogout(): Promise<void> {
   }
 
   &.danger {
-    color: #ef4444;
+    color: var(--color-danger-500);
 
     &:hover {
-      background: #fef2f2;
+      background: var(--color-danger-50);
     }
   }
 }
@@ -576,7 +576,7 @@ async function handleLogout(): Promise<void> {
 .menu-icon {
   display: flex;
   align-items: center;
-  color: #6b7280;
+  color: var(--color-gray-600);
 
   :deep(svg) {
     width: 20px;
@@ -595,7 +595,7 @@ async function handleLogout(): Promise<void> {
   min-width: 20px;
   height: 20px;
   padding: 0 0.375rem;
-  background: #ef4444;
+  background: var(--color-danger-500);
   color: white;
   border-radius: 10px;
   font-size: 0.75rem;
@@ -610,14 +610,14 @@ async function handleLogout(): Promise<void> {
   padding: 0.75rem 1rem;
   background: none;
   border: none;
-  color: #ef4444;
+  color: var(--color-danger-500);
   font-weight: 500;
   cursor: pointer;
   text-align: left;
   transition: background 0.2s;
 
   &:hover {
-    background: #fef2f2;
+    background: var(--color-danger-50);
   }
 }
 

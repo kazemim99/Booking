@@ -354,7 +354,7 @@ defineExpose({
 .table-wrapper {
   overflow-x: auto;
   border-radius: 8px;
-  border: 1px solid #e5e7eb;
+  border: 1px solid var(--color-gray-300);
 }
 
 .data-table {
@@ -364,32 +364,32 @@ defineExpose({
 
   &.table-bordered {
     .table-cell {
-      border: 1px solid #e5e7eb;
+      border: 1px solid var(--color-gray-300);
     }
   }
 
   &.table-striped {
     .table-body .table-row:nth-child(even) {
-      background-color: #f9fafb;
+      background-color: var(--color-gray-50);
     }
   }
 
   &.table-hoverable {
     .table-body .table-row:hover {
-      background-color: #f3f4f6;
+      background-color: var(--color-gray-100);
     }
   }
 }
 
 .table-header {
-  background-color: #f9fafb;
-  border-bottom: 2px solid #e5e7eb;
+  background-color: var(--color-gray-50);
+  border-bottom: 2px solid var(--color-gray-300);
 
   .table-cell {
     padding: 12px 16px;
     font-weight: 600;
     font-size: 14px;
-    color: #374151;
+    color: var(--color-gray-800);
     text-align: left;
     white-space: nowrap;
 
@@ -399,7 +399,7 @@ defineExpose({
       transition: background-color 0.2s;
 
       &:hover {
-        background-color: #f3f4f6;
+        background-color: var(--color-gray-100);
       }
     }
 
@@ -440,11 +440,11 @@ defineExpose({
 
 .table-body {
   .table-row {
-    border-bottom: 1px solid #e5e7eb;
+    border-bottom: 1px solid var(--color-gray-300);
     transition: background-color 0.15s;
 
     &.row-selected {
-      background-color: #eff6ff;
+      background-color: var(--color-primary-50);
     }
 
     &:last-child {
@@ -455,7 +455,7 @@ defineExpose({
   .table-cell {
     padding: 12px 16px;
     font-size: 14px;
-    color: #1f2937;
+    color: var(--color-gray-900);
     vertical-align: middle;
 
     &.table-cell-center {
@@ -522,29 +522,29 @@ defineExpose({
   }
 
   &.action-primary {
-    background: #667eea;
+    background: var(--color-primary-500);
     color: white;
 
     &:hover:not(:disabled) {
-      background: #5a67d8;
+      background: var(--color-primary-600);
     }
   }
 
   &.action-secondary {
-    background: #e5e7eb;
-    color: #374151;
+    background: var(--color-gray-300);
+    color: var(--color-gray-800);
 
     &:hover:not(:disabled) {
-      background: #d1d5db;
+      background: var(--color-gray-400);
     }
   }
 
   &.action-danger {
-    background: #f87171;
+    background: var(--color-danger-400);
     color: white;
 
     &:hover:not(:disabled) {
-      background: #ef4444;
+      background: var(--color-danger-500);
     }
   }
 
@@ -553,7 +553,7 @@ defineExpose({
     color: white;
 
     &:hover:not(:disabled) {
-      background: #10b981;
+      background: var(--color-success-500);
     }
   }
 }
@@ -568,7 +568,7 @@ defineExpose({
   flex-direction: column;
   align-items: center;
   gap: 12px;
-  color: #9ca3af;
+  color: var(--color-gray-500);
 
   .empty-icon {
     width: 48px;

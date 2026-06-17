@@ -389,7 +389,7 @@ function handleClose(): void {
   justify-content: space-between;
   align-items: center;
   padding: 1.5rem 2rem;
-  border-bottom: 1px solid #e5e7eb;
+  border-bottom: 1px solid var(--color-gray-300);
 }
 
 .modal-title {
@@ -405,14 +405,14 @@ function handleClose(): void {
   align-items: center;
   justify-content: center;
   border: none;
-  background: #f3f4f6;
+  background: var(--color-gray-100);
   border-radius: 8px;
   cursor: pointer;
-  color: #6b7280;
+  color: var(--color-gray-600);
   transition: all 0.2s;
 
   &:hover {
-    background: #e5e7eb;
+    background: var(--color-gray-300);
     color: #1a1a1a;
   }
 
@@ -433,11 +433,11 @@ function handleClose(): void {
   display: block;
   font-size: 0.95rem;
   font-weight: 600;
-  color: #374151;
+  color: var(--color-gray-800);
   margin-bottom: 0.5rem;
 
   .required {
-    color: #dc2626;
+    color: var(--color-danger-600);
   }
 }
 
@@ -445,7 +445,7 @@ function handleClose(): void {
 .phone-input-container {
   display: flex;
   align-items: center;
-  border: 1px solid #d1d5db;
+  border: 1px solid var(--color-gray-400);
   border-radius: 8px;
   background-color: #ffffff;
   transition: all 0.2s;
@@ -453,15 +453,15 @@ function handleClose(): void {
   overflow: hidden;
 
   &:focus-within {
-    border-color: #7c3aed;
+    border-color: var(--color-primary-700);
     box-shadow: 0 0 0 3px rgba(124, 58, 237, 0.1);
   }
 
   &.has-error {
-    border-color: #dc2626;
+    border-color: var(--color-danger-600);
 
     &:focus-within {
-      border-color: #dc2626;
+      border-color: var(--color-danger-600);
       box-shadow: 0 0 0 3px rgba(220, 38, 38, 0.1);
     }
   }
@@ -472,9 +472,9 @@ function handleClose(): void {
   padding: 0.75rem 1rem;
   font-size: 0.95rem;
   font-weight: 600;
-  color: #374151;
-  background-color: #f9fafb;
-  border-left: 1px solid #e5e7eb;
+  color: var(--color-gray-800);
+  background-color: var(--color-gray-50);
+  border-left: 1px solid var(--color-gray-300);
   user-select: none;
   flex-shrink: 0;
   direction: ltr;
@@ -487,13 +487,13 @@ function handleClose(): void {
   border: none;
   background: none;
   font-size: 0.95rem;
-  color: #111827;
+  color: var(--color-gray-900);
   outline: none;
   direction: ltr;
   text-align: left;
 
   &::placeholder {
-    color: #9ca3af;
+    color: var(--color-gray-500);
   }
 }
 
@@ -506,12 +506,12 @@ function handleClose(): void {
   border: none;
   background: none;
   cursor: pointer;
-  color: #9ca3af;
+  color: var(--color-gray-500);
   transition: color 0.2s ease;
   flex-shrink: 0;
 
   &:hover {
-    color: #6b7280;
+    color: var(--color-gray-600);
   }
 
   &:focus {
@@ -529,19 +529,19 @@ function handleClose(): void {
 .form-textarea {
   width: 100%;
   padding: 0.75rem 1rem;
-  border: 1px solid #d1d5db;
+  border: 1px solid var(--color-gray-400);
   border-radius: 8px;
   font-size: 0.95rem;
   transition: all 0.2s;
 
   &:focus {
     outline: none;
-    border-color: #7c3aed;
+    border-color: var(--color-primary-700);
     box-shadow: 0 0 0 3px rgba(124, 58, 237, 0.1);
   }
 
   &.form-input-error {
-    border-color: #dc2626;
+    border-color: var(--color-danger-600);
 
     &:focus {
       box-shadow: 0 0 0 3px rgba(220, 38, 38, 0.1);
@@ -565,24 +565,24 @@ function handleClose(): void {
 .form-hint {
   display: block;
   font-size: 0.875rem;
-  color: #6b7280;
+  color: var(--color-gray-600);
   margin-top: 0.25rem;
 }
 
 .form-error {
   display: block;
   font-size: 0.875rem;
-  color: #dc2626;
+  color: var(--color-danger-600);
   margin-top: 0.25rem;
 }
 
 .char-count {
   font-size: 0.875rem;
-  color: #9ca3af;
+  color: var(--color-gray-500);
 }
 
 .info-box {
-  background: linear-gradient(135deg, #eff6ff 0%, #f0f9ff 100%);
+  background: linear-gradient(135deg, var(--color-primary-50) 0%, #f0f9ff 100%);
   border: 1px solid #bfdbfe;
   border-radius: 12px;
   padding: 1.25rem;
@@ -591,7 +591,7 @@ function handleClose(): void {
   margin-top: 1.5rem;
 
   i {
-    color: #3b82f6;
+    color: var(--color-primary-500);
     font-size: 1.5rem;
     flex-shrink: 0;
   }
@@ -625,7 +625,7 @@ function handleClose(): void {
       content: '•';
       position: absolute;
       right: 0;
-      color: #3b82f6;
+      color: var(--color-primary-500);
       font-weight: bold;
       font-size: 1.25rem;
     }
@@ -637,8 +637,8 @@ function handleClose(): void {
   justify-content: flex-end;
   gap: 1rem;
   padding: 1.5rem 2rem;
-  border-top: 1px solid #e5e7eb;
-  background: #f9fafb;
+  border-top: 1px solid var(--color-gray-300);
+  background: var(--color-gray-50);
 }
 
 // Responsive

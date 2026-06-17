@@ -24,7 +24,7 @@ import LanguageSwitcher from '@/shared/components/layout/Header/LanguageSwitcher
   display: flex;
   align-items: center;
   justify-content: center;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: linear-gradient(135deg, var(--color-primary-500) 0%, var(--color-primary-700) 100%);
   padding: 2rem;
   position: relative;
 }
@@ -67,7 +67,7 @@ import LanguageSwitcher from '@/shared/components/layout/Header/LanguageSwitcher
   background: white;
   border-radius: 16px;
   padding: 3rem;
-  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+  box-shadow: var(--shadow-lg);
 
   @media (max-width: 640px) {
     padding: 2rem 1.5rem;

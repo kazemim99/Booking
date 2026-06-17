@@ -189,22 +189,22 @@ defineExpose({
   gap: 0.5rem;
   padding: 0.625rem 1rem;
   background: white;
-  border: 1px solid #d1d5db;
+  border: 1px solid var(--color-gray-400);
   border-radius: 8px;
-  color: #374151;
+  color: var(--color-gray-800);
   font-size: 0.875rem;
   font-weight: 500;
   cursor: pointer;
   transition: all 0.2s;
 
   &:hover {
-    border-color: #9ca3af;
-    background: #f9fafb;
+    border-color: var(--color-gray-500);
+    background: var(--color-gray-50);
   }
 
   &:focus {
     outline: none;
-    border-color: #667eea;
+    border-color: var(--color-primary-500);
     box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
   }
 }
@@ -212,7 +212,7 @@ defineExpose({
 .dropdown-icon {
   width: 16px;
   height: 16px;
-  color: #6b7280;
+  color: var(--color-gray-600);
   transition: transform 0.2s;
 
   &.rotated {
@@ -227,7 +227,7 @@ defineExpose({
   box-shadow:
     0 10px 15px -3px rgba(0, 0, 0, 0.1),
     0 4px 6px -2px rgba(0, 0, 0, 0.05);
-  border: 1px solid #e5e7eb;
+  border: 1px solid var(--color-gray-300);
   z-index: 100;
   min-width: 180px;
   max-width: 400px;
@@ -295,19 +295,19 @@ defineExpose({
 // Dark theme support
 [data-theme='dark'] {
   .dropdown-button {
-    background: #1f2937;
-    border-color: #374151;
-    color: #f9fafb;
+    background: var(--color-gray-900);
+    border-color: var(--color-gray-800);
+    color: var(--color-gray-50);
 
     &:hover {
-      border-color: #4b5563;
-      background: #374151;
+      border-color: var(--color-gray-700);
+      background: var(--color-gray-800);
     }
   }
 
   .dropdown-menu {
-    background: #1f2937;
-    border-color: #374151;
+    background: var(--color-gray-900);
+    border-color: var(--color-gray-800);
   }
 }
 </style>

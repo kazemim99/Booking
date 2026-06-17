@@ -95,7 +95,7 @@ defineEmits<Emits>()
   gap: 1rem;
   margin-top: 2rem;
   padding-top: 2rem;
-  border-top: 1px solid #e5e7eb;
+  border-top: 1px solid var(--color-gray-300);
 }
 
 .btn {
@@ -114,7 +114,7 @@ defineEmits<Emits>()
 }
 
 .btn-primary {
-  background-color: #111827;
+  background-color: var(--color-gray-900);
   color: #ffffff;
   flex: 1;
   max-width: 200px;
@@ -122,9 +122,9 @@ defineEmits<Emits>()
 }
 
 .btn-primary:hover:not(:disabled) {
-  background-color: #1f2937;
+  background-color: var(--color-gray-900);
   transform: translateY(-1px);
-  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.2);
+  box-shadow: var(--shadow-md);
 }
 
 .btn-primary:active:not(:disabled) {
@@ -132,21 +132,21 @@ defineEmits<Emits>()
 }
 
 .btn-primary:disabled {
-  background-color: #d1d5db;
+  background-color: var(--color-gray-400);
   cursor: not-allowed;
   transform: none;
 }
 
 .btn-secondary {
   background-color: transparent;
-  color: #6b7280;
-  border: 1px solid #d1d5db;
+  color: var(--color-gray-600);
+  border: 1px solid var(--color-gray-400);
 }
 
 .btn-secondary:hover:not(:disabled) {
-  background-color: #f9fafb;
-  border-color: #9ca3af;
-  color: #111827;
+  background-color: var(--color-gray-50);
+  border-color: var(--color-gray-500);
+  color: var(--color-gray-900);
 }
 
 .btn-secondary:disabled {
@@ -157,7 +157,7 @@ defineEmits<Emits>()
 .btn-text {
   background: none;
   border: none;
-  color: #6b7280;
+  color: var(--color-gray-600);
   font-size: 0.875rem;
   font-weight: 500;
   cursor: pointer;
@@ -165,12 +165,12 @@ defineEmits<Emits>()
 }
 
 .btn-text:hover:not(:disabled) {
-  color: #111827;
+  color: var(--color-gray-900);
   text-decoration: underline;
 }
 
 .btn-text:disabled {
-  color: #d1d5db;
+  color: var(--color-gray-400);
   cursor: not-allowed;
 }
 

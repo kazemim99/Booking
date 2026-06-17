@@ -294,18 +294,18 @@ function handleViewDetails() {
   }
 
   &.badge-rejected {
-    background: #fee2e2;
-    color: #991b1b;
+    background: var(--color-danger-50);
+    color: var(--color-danger-600);
   }
 
   &.badge-expired {
-    background: #f3f4f6;
-    color: #6b7280;
+    background: var(--color-gray-100);
+    color: var(--color-gray-600);
   }
 
   &.badge-cancelled {
-    background: #f3f4f6;
-    color: #6b7280;
+    background: var(--color-gray-100);
+    color: var(--color-gray-600);
   }
 }
 
@@ -319,7 +319,7 @@ function handleViewDetails() {
   margin-bottom: 1rem;
 
   i {
-    color: #667eea;
+    color: var(--color-primary-500);
     font-size: 1.125rem;
     margin-top: 0.125rem;
   }
@@ -345,7 +345,7 @@ function handleViewDetails() {
     display: flex;
     align-items: center;
     gap: 0.5rem;
-    color: #64748b;
+    color: var(--color-gray-600);
     font-size: 0.875rem;
 
     i {
@@ -353,10 +353,10 @@ function handleViewDetails() {
     }
 
     &.expired {
-      color: #ef4444;
+      color: var(--color-danger-500);
 
       i {
-        color: #ef4444;
+        color: var(--color-danger-500);
       }
     }
   }
@@ -396,8 +396,8 @@ function handleViewDetails() {
     }
 
     &.btn-resend {
-      border-color: #667eea;
-      color: #667eea;
+      border-color: var(--color-primary-500);
+      color: var(--color-primary-500);
 
       &:hover:not(:disabled) {
         background: #ebf4ff;
@@ -405,17 +405,17 @@ function handleViewDetails() {
     }
 
     &.btn-cancel {
-      border-color: #ef4444;
-      color: #ef4444;
+      border-color: var(--color-danger-500);
+      color: var(--color-danger-500);
 
       &:hover:not(:disabled) {
-        background: #fef2f2;
+        background: var(--color-danger-50);
       }
     }
 
     &.btn-details {
-      border-color: #10b981;
-      color: #10b981;
+      border-color: var(--color-success-500);
+      color: var(--color-success-500);
 
       &:hover:not(:disabled) {
         background: #f0fdf4;

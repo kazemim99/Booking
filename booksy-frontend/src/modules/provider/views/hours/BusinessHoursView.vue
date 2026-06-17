@@ -311,7 +311,7 @@ const formatPersianDate = (dateKey: string) => {
 
 .page-description {
   font-size: 1rem;
-  color: #6b7280;
+  color: var(--color-gray-600);
 }
 
 /* Grid Layout */
@@ -333,14 +333,14 @@ const formatPersianDate = (dateKey: string) => {
 .calendar-card,
 .custom-days-card {
   background: white;
-  border: 1px solid #e5e7eb;
+  border: 1px solid var(--color-gray-300);
   border-radius: 0.75rem;
   overflow: hidden;
 }
 
 .card-header {
   padding: 1.5rem;
-  border-bottom: 1px solid #e5e7eb;
+  border-bottom: 1px solid var(--color-gray-300);
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -378,16 +378,16 @@ const formatPersianDate = (dateKey: string) => {
   gap: 0.5rem;
   padding: 0.5rem 1rem;
   background: white;
-  border: 1px solid #e5e7eb;
+  border: 1px solid var(--color-gray-300);
   border-radius: 0.5rem;
   font-size: 0.875rem;
-  color: #374151;
+  color: var(--color-gray-800);
   cursor: pointer;
   transition: all 0.2s;
 
   &:hover {
-    background: #f9fafb;
-    border-color: #d1d5db;
+    background: var(--color-gray-50);
+    border-color: var(--color-gray-400);
   }
 }
 
@@ -416,7 +416,7 @@ const formatPersianDate = (dateKey: string) => {
 
 .day-item {
   padding: 1rem;
-  border: 1px solid #e5e7eb;
+  border: 1px solid var(--color-gray-300);
   border-radius: 0.5rem;
   background: white;
   transition: all 0.2s;
@@ -447,7 +447,7 @@ const formatPersianDate = (dateKey: string) => {
 
 .closed-label {
   font-size: 0.875rem;
-  color: #6b7280;
+  color: var(--color-gray-600);
 }
 
 /* Switch Toggle */
@@ -471,7 +471,7 @@ const formatPersianDate = (dateKey: string) => {
   left: 0;
   right: 0;
   bottom: 0;
-  background-color: #e5e7eb;
+  background-color: var(--color-gray-300);
   transition: 0.3s;
   border-radius: 1.75rem;
 }
@@ -489,7 +489,7 @@ const formatPersianDate = (dateKey: string) => {
 }
 
 .switch input:checked + .switch-slider {
-  background-color: #8b5cf6;
+  background-color: var(--color-primary-500);
 }
 
 .switch input:checked + .switch-slider:before {
@@ -517,26 +517,26 @@ const formatPersianDate = (dateKey: string) => {
 
 .input-label {
   font-size: 0.75rem;
-  color: #6b7280;
+  color: var(--color-gray-600);
   font-weight: 500;
 }
 
 .time-input {
   width: 100%;
   padding: 0.5rem 0.75rem;
-  border: 1px solid #e5e7eb;
+  border: 1px solid var(--color-gray-300);
   border-radius: 0.5rem;
   font-size: 0.875rem;
   transition: all 0.2s;
 
   &:focus {
     outline: none;
-    border-color: #8b5cf6;
+    border-color: var(--color-primary-500);
     box-shadow: 0 0 0 3px rgba(139, 92, 246, 0.1);
   }
 
   &::placeholder {
-    color: #9ca3af;
+    color: var(--color-gray-500);
   }
 }
 
@@ -545,7 +545,7 @@ const formatPersianDate = (dateKey: string) => {
   width: 100%;
   margin-top: 1.5rem;
   padding: 0.75rem 1.5rem;
-  background: #8b5cf6;
+  background: var(--color-primary-500);
   color: white;
   border: none;
   border-radius: 0.5rem;
@@ -555,7 +555,7 @@ const formatPersianDate = (dateKey: string) => {
   transition: all 0.2s;
 
   &:hover {
-    background: #7c3aed;
+    background: var(--color-primary-700);
   }
 
   &:active {
@@ -592,7 +592,7 @@ const formatPersianDate = (dateKey: string) => {
 
 .info-list li {
   font-size: 0.875rem;
-  color: #6b7280;
+  color: var(--color-gray-600);
   position: relative;
   padding-right: 1rem;
 
@@ -600,7 +600,7 @@ const formatPersianDate = (dateKey: string) => {
     content: '•';
     position: absolute;
     right: 0;
-    color: #8b5cf6;
+    color: var(--color-primary-500);
   }
 }
 
@@ -613,7 +613,7 @@ const formatPersianDate = (dateKey: string) => {
 
 .calendar-hint {
   font-size: 0.875rem;
-  color: #6b7280;
+  color: var(--color-gray-600);
   margin-bottom: 1rem;
 }
 
@@ -633,7 +633,7 @@ const formatPersianDate = (dateKey: string) => {
 
 .info-value {
   font-size: 0.75rem;
-  color: #6b7280;
+  color: var(--color-gray-600);
 }
 
 /* Custom Days List */
@@ -645,7 +645,7 @@ const formatPersianDate = (dateKey: string) => {
 
 .custom-day-item {
   padding: 0.75rem;
-  border: 1px solid #e5e7eb;
+  border: 1px solid var(--color-gray-300);
   border-radius: 0.5rem;
   font-size: 0.875rem;
 }
@@ -658,6 +658,6 @@ const formatPersianDate = (dateKey: string) => {
 
 .custom-day-info {
   font-size: 0.75rem;
-  color: #6b7280;
+  color: var(--color-gray-600);
 }
 </style>

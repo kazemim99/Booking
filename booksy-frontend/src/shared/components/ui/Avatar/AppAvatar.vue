@@ -56,7 +56,7 @@ function handleImageError() {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: linear-gradient(135deg, var(--color-primary-500) 0%, var(--color-primary-700) 100%);
   color: white;
   font-weight: 600;
   overflow: hidden;
@@ -129,19 +129,19 @@ function handleImageError() {
   border: 2px solid white;
 
   &.badge-success {
-    background: #10b981;
+    background: var(--color-success-500);
   }
 
   &.badge-warning {
-    background: #f59e0b;
+    background: var(--color-warning-500);
   }
 
   &.badge-danger {
-    background: #ef4444;
+    background: var(--color-danger-500);
   }
 
   &.badge-info {
-    background: #3b82f6;
+    background: var(--color-primary-500);
   }
 }
 </style>

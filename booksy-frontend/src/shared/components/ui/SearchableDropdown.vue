@@ -210,7 +210,7 @@ const vClickOutside = {
 }
 
 .dropdown-input-wrapper.focused .dropdown-input {
-  border-color: #667eea;
+  border-color: var(--color-primary-500);
   box-shadow: 0 0 0 4px rgba(102, 126, 234, 0.1);
 }
 
@@ -219,7 +219,7 @@ const vClickOutside = {
   right: 1rem;
   width: 20px;
   height: 20px;
-  color: #94a3b8;
+  color: var(--color-gray-500);
   pointer-events: none;
   z-index: 1;
 }
@@ -229,14 +229,14 @@ const vClickOutside = {
   left: 1rem;
   width: 20px;
   height: 20px;
-  color: #94a3b8;
+  color: var(--color-gray-500);
   cursor: pointer;
   transition: color 0.2s;
   z-index: 1;
 }
 
 .clear-icon:hover {
-  color: #64748b;
+  color: var(--color-gray-600);
 }
 
 .dropdown-input {
@@ -262,7 +262,7 @@ const vClickOutside = {
   background: white;
   border: 2px solid #e2e8f0;
   border-radius: 12px;
-  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.1);
+  box-shadow: var(--shadow-lg);
   z-index: 1000;
   max-height: 300px;
   overflow: hidden;
@@ -300,13 +300,13 @@ const vClickOutside = {
 
 .option-description {
   font-size: 0.8rem;
-  color: #64748b;
+  color: var(--color-gray-600);
 }
 
 .dropdown-empty {
   padding: 1.5rem;
   text-align: center;
-  color: #94a3b8;
+  color: var(--color-gray-500);
   font-size: 0.9rem;
 }
 
@@ -316,7 +316,7 @@ const vClickOutside = {
   flex-direction: column;
   align-items: center;
   gap: 0.75rem;
-  color: #64748b;
+  color: var(--color-gray-600);
   font-size: 0.9rem;
 }
 
@@ -324,7 +324,7 @@ const vClickOutside = {
   width: 24px;
   height: 24px;
   border: 3px solid #e2e8f0;
-  border-top-color: #667eea;
+  border-top-color: var(--color-primary-500);
   border-radius: 50%;
   animation: spin 0.8s linear infinite;
 }
@@ -357,11 +357,11 @@ const vClickOutside = {
 }
 
 .dropdown-scroll::-webkit-scrollbar-thumb {
-  background: #cbd5e1;
+  background: var(--color-gray-400);
   border-radius: 3px;
 }
 
 .dropdown-scroll::-webkit-scrollbar-thumb:hover {
-  background: #94a3b8;
+  background: var(--color-gray-500);
 }
 </style>

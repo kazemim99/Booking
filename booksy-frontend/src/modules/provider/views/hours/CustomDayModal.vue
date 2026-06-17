@@ -203,7 +203,7 @@ watch(() => props.isOpen, (isOpen) => {
   align-items: center;
   justify-content: space-between;
   padding: 1.5rem;
-  border-bottom: 1px solid #e5e7eb;
+  border-bottom: 1px solid var(--color-gray-300);
 }
 
 .modal-title {
@@ -222,7 +222,7 @@ watch(() => props.isOpen, (isOpen) => {
   background: transparent;
   border-radius: 0.375rem;
   cursor: pointer;
-  color: #6b7280;
+  color: var(--color-gray-600);
   transition: all 0.2s;
 
   svg {
@@ -232,7 +232,7 @@ watch(() => props.isOpen, (isOpen) => {
   }
 
   &:hover {
-    background: #f3f4f6;
+    background: var(--color-gray-100);
     color: #1a1a1a;
   }
 }
@@ -259,14 +259,14 @@ watch(() => props.isOpen, (isOpen) => {
 .checkbox-input {
   width: 1.25rem;
   height: 1.25rem;
-  border: 2px solid #d1d5db;
+  border: 2px solid var(--color-gray-400);
   border-radius: 0.25rem;
   cursor: pointer;
   transition: all 0.2s;
 
   &:checked {
-    background-color: #8b5cf6;
-    border-color: #8b5cf6;
+    background-color: var(--color-primary-500);
+    border-color: var(--color-primary-500);
   }
 }
 
@@ -284,26 +284,26 @@ watch(() => props.isOpen, (isOpen) => {
 .form-label {
   font-size: 0.875rem;
   font-weight: 500;
-  color: #374151;
+  color: var(--color-gray-800);
 }
 
 .form-input,
 .form-textarea {
   width: 100%;
   padding: 0.625rem 0.75rem;
-  border: 1px solid #d1d5db;
+  border: 1px solid var(--color-gray-400);
   border-radius: 0.5rem;
   font-size: 0.9375rem;
   transition: all 0.2s;
 
   &:focus {
     outline: none;
-    border-color: #8b5cf6;
+    border-color: var(--color-primary-500);
     box-shadow: 0 0 0 3px rgba(139, 92, 246, 0.1);
   }
 
   &::placeholder {
-    color: #9ca3af;
+    color: var(--color-gray-500);
   }
 }
 
@@ -315,7 +315,7 @@ watch(() => props.isOpen, (isOpen) => {
 
 .form-hint {
   font-size: 0.75rem;
-  color: #6b7280;
+  color: var(--color-gray-600);
   margin-top: -0.25rem;
 }
 
@@ -329,7 +329,7 @@ watch(() => props.isOpen, (isOpen) => {
   display: flex;
   gap: 0.75rem;
   padding: 1.5rem;
-  border-top: 1px solid #e5e7eb;
+  border-top: 1px solid var(--color-gray-300);
   justify-content: flex-end;
 }
 
@@ -349,20 +349,20 @@ watch(() => props.isOpen, (isOpen) => {
 
 .btn-secondary {
   background: white;
-  color: #374151;
-  border: 1px solid #d1d5db;
+  color: var(--color-gray-800);
+  border: 1px solid var(--color-gray-400);
 
   &:hover {
-    background: #f9fafb;
+    background: var(--color-gray-50);
   }
 }
 
 .btn-primary {
-  background: #8b5cf6;
+  background: var(--color-primary-500);
   color: white;
 
   &:hover {
-    background: #7c3aed;
+    background: var(--color-primary-700);
   }
 }
 </style>

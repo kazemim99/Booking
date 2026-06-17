@@ -444,8 +444,8 @@ function showErrorMessage(message: string): void {
   align-items: center;
   justify-content: space-between;
   padding: 1.5rem;
-  border-bottom: 1px solid #e5e7eb;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  border-bottom: 1px solid var(--color-gray-300);
+  background: linear-gradient(135deg, var(--color-primary-500) 0%, var(--color-primary-700) 100%);
   color: white;
 }
 
@@ -476,7 +476,7 @@ function showErrorMessage(message: string): void {
 
 .tabs {
   display: flex;
-  border-bottom: 1px solid #e5e7eb;
+  border-bottom: 1px solid var(--color-gray-300);
   background: white;
 }
 
@@ -488,7 +488,7 @@ function showErrorMessage(message: string): void {
   border-bottom: 2px solid transparent;
   font-size: 1rem;
   font-weight: 500;
-  color: #6b7280;
+  color: var(--color-gray-600);
   cursor: pointer;
   transition: all 0.2s;
   display: flex;
@@ -497,12 +497,12 @@ function showErrorMessage(message: string): void {
   gap: 0.5rem;
 
   &:hover {
-    background: #f9fafb;
+    background: var(--color-gray-50);
   }
 
   &.active {
-    color: #667eea;
-    border-bottom-color: #667eea;
+    color: var(--color-primary-500);
+    border-bottom-color: var(--color-primary-500);
   }
 }
 
@@ -514,7 +514,7 @@ function showErrorMessage(message: string): void {
   height: 20px;
   padding: 0 6px;
   border-radius: 10px;
-  background: #667eea;
+  background: var(--color-primary-500);
   color: white;
   font-size: 0.75rem;
   font-weight: 600;
@@ -539,14 +539,14 @@ function showErrorMessage(message: string): void {
 
 .booking-card {
   background: white;
-  border: 1px solid #e5e7eb;
+  border: 1px solid var(--color-gray-300);
   border-radius: 12px;
   padding: 1rem;
   transition: all 0.2s;
 
   &:hover {
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
-    border-color: #667eea;
+    box-shadow: var(--shadow-md);
+    border-color: var(--color-primary-500);
   }
 
   &.past {
@@ -583,19 +583,19 @@ function showErrorMessage(message: string): void {
   }
 
   &.error {
-    background: #fee2e2;
-    color: #b91c1c;
+    background: var(--color-danger-50);
+    color: var(--color-danger-600);
   }
 
   &.default {
-    background: #e5e7eb;
-    color: #374151;
+    background: var(--color-gray-300);
+    color: var(--color-gray-800);
   }
 }
 
 .booking-date {
   font-size: 0.875rem;
-  color: #6b7280;
+  color: var(--color-gray-600);
   font-weight: 500;
 }
 
@@ -606,7 +606,7 @@ function showErrorMessage(message: string): void {
 .service-name {
   font-size: 1rem;
   font-weight: 600;
-  color: #111827;
+  color: var(--color-gray-900);
   margin: 0 0 0.5rem;
 }
 
@@ -616,13 +616,13 @@ function showErrorMessage(message: string): void {
 .booking-duration,
 .booking-price {
   font-size: 0.875rem;
-  color: #6b7280;
+  color: var(--color-gray-600);
   margin: 0.25rem 0;
 }
 
 .provider-name {
   font-weight: 500;
-  color: #374151;
+  color: var(--color-gray-800);
 }
 
 .booking-actions {
@@ -643,8 +643,8 @@ function showErrorMessage(message: string): void {
 }
 
 .btn-cancel {
-  background: #fee2e2;
-  color: #b91c1c;
+  background: var(--color-danger-50);
+  color: var(--color-danger-600);
 
   &:hover {
     background: #fecaca;
@@ -653,7 +653,7 @@ function showErrorMessage(message: string): void {
 
 .btn-reschedule {
   background: #e0e7ff;
-  color: #4338ca;
+  color: var(--color-primary-700);
 
   &:hover {
     background: #c7d2fe;
@@ -661,11 +661,11 @@ function showErrorMessage(message: string): void {
 }
 
 .btn-rebook {
-  background: #f3f4f6;
-  color: #374151;
+  background: var(--color-gray-100);
+  color: var(--color-gray-800);
 
   &:hover {
-    background: #e5e7eb;
+    background: var(--color-gray-300);
   }
 }
 
@@ -675,14 +675,14 @@ function showErrorMessage(message: string): void {
   align-items: center;
   justify-content: center;
   padding: 3rem 1rem;
-  color: #6b7280;
+  color: var(--color-gray-600);
 }
 
 .spinner {
   width: 40px;
   height: 40px;
-  border: 3px solid #e5e7eb;
-  border-top-color: #667eea;
+  border: 3px solid var(--color-gray-300);
+  border-top-color: var(--color-primary-500);
   border-radius: 50%;
   animation: spin 1s linear infinite;
   margin-bottom: 1rem;
@@ -706,20 +706,20 @@ function showErrorMessage(message: string): void {
 .empty-icon {
   width: 64px;
   height: 64px;
-  color: #d1d5db;
+  color: var(--color-gray-400);
   margin-bottom: 1rem;
 }
 
 .empty-title {
   font-size: 1.125rem;
   font-weight: 600;
-  color: #374151;
+  color: var(--color-gray-800);
   margin-bottom: 0.5rem;
 }
 
 .empty-description {
   font-size: 0.875rem;
-  color: #6b7280;
+  color: var(--color-gray-600);
 }
 
 // Sidebar transition

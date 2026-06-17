@@ -421,7 +421,7 @@ const convertToPersianNumber = (num: number): string => {
 .close-button svg {
   width: 20px;
   height: 20px;
-  color: #64748b;
+  color: var(--color-gray-600);
 }
 
 .provider-header {
@@ -435,7 +435,7 @@ const convertToPersianNumber = (num: number): string => {
   height: 60px;
   border-radius: 50%;
   overflow: hidden;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: linear-gradient(135deg, var(--color-primary-500) 0%, var(--color-primary-700) 100%);
 }
 
 .provider-avatar img {
@@ -467,7 +467,7 @@ const convertToPersianNumber = (num: number): string => {
 
 .provider-header p {
   font-size: 0.95rem;
-  color: #64748b;
+  color: var(--color-gray-600);
   margin: 0;
 }
 
@@ -514,15 +514,15 @@ const convertToPersianNumber = (num: number): string => {
 }
 
 .calendar-section :deep(.vpd-header) {
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: linear-gradient(135deg, var(--color-primary-500) 0%, var(--color-primary-700) 100%);
 }
 
 .calendar-section :deep(.vpd-day-effect) {
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: linear-gradient(135deg, var(--color-primary-500) 0%, var(--color-primary-700) 100%);
 }
 
 .calendar-section :deep(.vpd-selected) {
-  background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+  background: linear-gradient(135deg, var(--color-success-500) 0%, var(--color-success-600) 100%);
 }
 
 .slots-section {
@@ -541,7 +541,7 @@ const convertToPersianNumber = (num: number): string => {
 
 .selected-date p {
   font-size: 0.9rem;
-  color: #64748b;
+  color: var(--color-gray-600);
   margin: 0.25rem 0 0 0;
 }
 
@@ -558,7 +558,7 @@ const convertToPersianNumber = (num: number): string => {
 .empty-state svg {
   width: 48px;
   height: 48px;
-  color: #cbd5e1;
+  color: var(--color-gray-400);
   margin-bottom: 1rem;
 }
 
@@ -571,7 +571,7 @@ const convertToPersianNumber = (num: number): string => {
 
 .empty-state p {
   font-size: 0.9rem;
-  color: #64748b;
+  color: var(--color-gray-600);
   margin: 0;
 }
 
@@ -588,7 +588,7 @@ const convertToPersianNumber = (num: number): string => {
   width: 36px;
   height: 36px;
   border: 3px solid #e2e8f0;
-  border-top-color: #667eea;
+  border-top-color: var(--color-primary-500);
   border-radius: 50%;
   animation: spin 0.8s linear infinite;
 }
@@ -601,7 +601,7 @@ const convertToPersianNumber = (num: number): string => {
 
 .loading-state p {
   font-size: 0.9rem;
-  color: #64748b;
+  color: var(--color-gray-600);
 }
 
 .time-slots {
@@ -632,18 +632,18 @@ const convertToPersianNumber = (num: number): string => {
 .time-slot svg {
   width: 18px;
   height: 18px;
-  color: #64748b;
+  color: var(--color-gray-600);
 }
 
 .time-slot:hover {
-  border-color: #cbd5e1;
+  border-color: var(--color-gray-400);
   transform: translateY(-2px);
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+  box-shadow: var(--shadow-md);
 }
 
 .time-slot.selected {
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-  border-color: #667eea;
+  background: linear-gradient(135deg, var(--color-primary-500) 0%, var(--color-primary-700) 100%);
+  border-color: var(--color-primary-500);
   color: white;
 }
 
@@ -656,13 +656,13 @@ const convertToPersianNumber = (num: number): string => {
 }
 
 .validation-messages p {
-  background: #fee2e2;
-  color: #dc2626;
+  background: var(--color-danger-50);
+  color: var(--color-danger-600);
   padding: 0.75rem;
   border-radius: 8px;
   margin: 0.5rem 0;
   font-size: 0.85rem;
-  border-right: 3px solid #dc2626;
+  border-right: 3px solid var(--color-danger-600);
 }
 
 .modal-footer {
@@ -686,7 +686,7 @@ const convertToPersianNumber = (num: number): string => {
 
 .cancel-button {
   background: #f1f5f9;
-  color: #64748b;
+  color: var(--color-gray-600);
 }
 
 .cancel-button:hover {
@@ -694,7 +694,7 @@ const convertToPersianNumber = (num: number): string => {
 }
 
 .confirm-button {
-  background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+  background: linear-gradient(135deg, var(--color-success-500) 0%, var(--color-success-600) 100%);
   color: white;
 }
 

@@ -76,7 +76,7 @@ function handleQuickBook(): void {
 .favorite-card {
   position: relative;
   background: white;
-  border: 1px solid #e5e7eb;
+  border: 1px solid var(--color-gray-300);
   border-radius: 12px;
   padding: 1.5rem;
   display: flex;
@@ -87,7 +87,7 @@ function handleQuickBook(): void {
   transition: all 0.2s;
 
   &:hover {
-    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.08);
+    box-shadow: var(--shadow-md);
     transform: translateY(-2px);
   }
 }
@@ -106,7 +106,7 @@ function handleQuickBook(): void {
   justify-content: center;
   cursor: pointer;
   transition: all 0.2s;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  box-shadow: var(--shadow-md);
   z-index: 10;
 
   svg {
@@ -115,10 +115,10 @@ function handleQuickBook(): void {
   }
 
   &.filled {
-    color: #ef4444;
+    color: var(--color-danger-500);
 
     &:hover {
-      background: #fef2f2;
+      background: var(--color-danger-50);
       transform: scale(1.1);
     }
   }
@@ -129,21 +129,21 @@ function handleQuickBook(): void {
   height: 80px;
   border-radius: 12px;
   object-fit: cover;
-  border: 2px solid #e5e7eb;
+  border: 2px solid var(--color-gray-300);
 }
 
 .provider-logo-placeholder {
   width: 80px;
   height: 80px;
   border-radius: 12px;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: linear-gradient(135deg, var(--color-primary-500) 0%, var(--color-primary-700) 100%);
   color: white;
   display: flex;
   align-items: center;
   justify-content: center;
   font-weight: 700;
   font-size: 2rem;
-  border: 2px solid #e5e7eb;
+  border: 2px solid var(--color-gray-300);
 }
 
 .provider-info {
@@ -157,13 +157,13 @@ function handleQuickBook(): void {
 .provider-name {
   font-size: 1.125rem;
   font-weight: 600;
-  color: #111827;
+  color: var(--color-gray-900);
   margin: 0;
 }
 
 .provider-category {
   font-size: 0.875rem;
-  color: #6b7280;
+  color: var(--color-gray-600);
   margin: 0;
 }
 
@@ -171,7 +171,7 @@ function handleQuickBook(): void {
   display: flex;
   align-items: center;
   gap: 0.25rem;
-  color: #f59e0b;
+  color: var(--color-warning-500);
 }
 
 .star-icon {
@@ -182,18 +182,18 @@ function handleQuickBook(): void {
 .rating-value {
   font-size: 0.875rem;
   font-weight: 600;
-  color: #374151;
+  color: var(--color-gray-800);
 }
 
 .notes {
   font-size: 0.875rem;
-  color: #6b7280;
+  color: var(--color-gray-600);
   line-height: 1.5;
   margin: 0;
   width: 100%;
   text-align: right;
   padding: 0.75rem;
-  background: #f9fafb;
+  background: var(--color-gray-50);
   border-radius: 8px;
 }
 
@@ -204,7 +204,7 @@ function handleQuickBook(): void {
   justify-content: center;
   gap: 0.5rem;
   padding: 0.75rem 1.5rem;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: linear-gradient(135deg, var(--color-primary-500) 0%, var(--color-primary-700) 100%);
   color: white;
   border: none;
   border-radius: 8px;

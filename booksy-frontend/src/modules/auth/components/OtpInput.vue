@@ -135,13 +135,13 @@ defineExpose({
   display: block;
   font-size: 0.875rem;
   font-weight: 500;
-  color: #374151;
+  color: var(--color-gray-800);
   margin-bottom: 0.5rem;
   text-align: center;
 }
 
 .otp-input-label .required {
-  color: #ef4444;
+  color: var(--color-danger-500);
   margin-left: 0.25rem;
 }
 
@@ -157,8 +157,8 @@ defineExpose({
   text-align: center;
   font-size: 1.5rem;
   font-weight: 600;
-  color: #111827;
-  border: 2px solid #d1d5db;
+  color: var(--color-gray-900);
+  border: 2px solid var(--color-gray-400);
   border-radius: 0.5rem;
   background-color: #ffffff;
   transition: all 0.2s ease;
@@ -166,22 +166,22 @@ defineExpose({
 }
 
 .otp-digit-input:focus {
-  border-color: #8b5cf6;
+  border-color: var(--color-primary-500);
   box-shadow: 0 0 0 3px rgba(139, 92, 246, 0.1);
 }
 
 .otp-digit-input.has-value {
-  border-color: #8b5cf6;
+  border-color: var(--color-primary-500);
   background-color: #f5f3ff;
 }
 
 .otp-digit-input.has-error {
-  border-color: #ef4444;
+  border-color: var(--color-danger-500);
   animation: shake 0.5s ease;
 }
 
 .otp-digit-input:disabled {
-  background-color: #f9fafb;
+  background-color: var(--color-gray-50);
   cursor: not-allowed;
   opacity: 0.5;
 }
@@ -194,7 +194,7 @@ defineExpose({
   gap: 0.5rem;
   margin-top: 0.75rem;
   font-size: 0.875rem;
-  color: #ef4444;
+  color: var(--color-danger-500);
 }
 
 .error-icon {
@@ -207,7 +207,7 @@ defineExpose({
 .helper-text {
   margin-top: 0.75rem;
   font-size: 0.875rem;
-  color: #6b7280;
+  color: var(--color-gray-600);
   text-align: center;
 }
 

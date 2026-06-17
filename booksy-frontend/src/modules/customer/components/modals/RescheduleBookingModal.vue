@@ -454,14 +454,14 @@ defineExpose({ resetForm })
 .section-title {
   font-size: 1rem;
   font-weight: 600;
-  color: #111827;
+  color: var(--color-gray-900);
   margin: 0;
   padding-bottom: 0.5rem;
-  border-bottom: 2px solid #e5e7eb;
+  border-bottom: 2px solid var(--color-gray-300);
 }
 
 .booking-summary {
-  background: #f9fafb;
+  background: var(--color-gray-50);
   border-radius: 8px;
   padding: 1rem;
   display: flex;
@@ -476,12 +476,12 @@ defineExpose({ resetForm })
   font-size: 0.875rem;
 
   .label {
-    color: #6b7280;
+    color: var(--color-gray-600);
     font-weight: 500;
   }
 
   .value {
-    color: #111827;
+    color: var(--color-gray-900);
     font-weight: 600;
   }
 
@@ -563,12 +563,12 @@ defineExpose({ resetForm })
 }
 
 .calendar-section :deep(.vpd-header) {
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: linear-gradient(135deg, var(--color-primary-500) 0%, var(--color-primary-700) 100%);
   border-radius: 10px 10px 0 0;
 }
 
 .calendar-section :deep(.vpd-day-effect) {
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: linear-gradient(135deg, var(--color-primary-500) 0%, var(--color-primary-700) 100%);
 }
 
 /* Slots Section - Below Calendar */
@@ -595,7 +595,7 @@ defineExpose({ resetForm })
 
 .selected-date-header p {
   font-size: 0.875rem;
-  color: #64748b;
+  color: var(--color-gray-600);
   margin: 0;
 }
 
@@ -628,18 +628,18 @@ defineExpose({ resetForm })
 .time-slot svg {
   width: 18px;
   height: 18px;
-  color: #64748b;
+  color: var(--color-gray-600);
 }
 
 .time-slot:hover {
-  border-color: #cbd5e1;
+  border-color: var(--color-gray-400);
   transform: translateY(-2px);
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+  box-shadow: var(--shadow-md);
 }
 
 .time-slot.selected {
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-  border-color: #667eea;
+  background: linear-gradient(135deg, var(--color-primary-500) 0%, var(--color-primary-700) 100%);
+  border-color: var(--color-primary-500);
   color: white;
   box-shadow: 0 4px 16px rgba(102, 126, 234, 0.3);
 }
@@ -658,12 +658,12 @@ defineExpose({ resetForm })
 .form-label {
   font-size: 0.875rem;
   font-weight: 500;
-  color: #374151;
+  color: var(--color-gray-800);
 }
 
 .form-textarea {
   padding: 0.75rem;
-  border: 1px solid #d1d5db;
+  border: 1px solid var(--color-gray-400);
   border-radius: 8px;
   font-size: 0.875rem;
   font-family: inherit;
@@ -673,7 +673,7 @@ defineExpose({ resetForm })
 
   &:focus {
     outline: none;
-    border-color: #667eea;
+    border-color: var(--color-primary-500);
     box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
   }
 }
@@ -685,14 +685,14 @@ defineExpose({ resetForm })
   justify-content: center;
   padding: 2rem;
   gap: 1rem;
-  color: #6b7280;
+  color: var(--color-gray-600);
 }
 
 .spinner {
   width: 40px;
   height: 40px;
-  border: 3px solid #e5e7eb;
-  border-top-color: #667eea;
+  border: 3px solid var(--color-gray-300);
+  border-top-color: var(--color-primary-500);
   border-radius: 50%;
   animation: spin 1s linear infinite;
 }
@@ -726,7 +726,7 @@ defineExpose({ resetForm })
 .empty-state svg {
   width: 48px;
   height: 48px;
-  color: #cbd5e1;
+  color: var(--color-gray-400);
   margin-bottom: 1rem;
 }
 
@@ -739,7 +739,7 @@ defineExpose({ resetForm })
 
 .empty-state p {
   font-size: 0.85rem;
-  color: #64748b;
+  color: var(--color-gray-600);
   margin: 0;
 }
 
@@ -762,7 +762,7 @@ defineExpose({ resetForm })
 .info-icon {
   width: 20px;
   height: 20px;
-  color: #3b82f6;
+  color: var(--color-primary-500);
 }
 
 .change-details {
@@ -779,7 +779,7 @@ defineExpose({ resetForm })
 }
 
 .old-value {
-  color: #991b1b;
+  color: var(--color-danger-600);
   font-weight: 500;
   text-decoration: line-through;
   opacity: 0.7;
@@ -793,7 +793,7 @@ defineExpose({ resetForm })
 .arrow-icon {
   width: 20px;
   height: 20px;
-  color: #6b7280;
+  color: var(--color-gray-600);
 }
 
 .modal-actions {
@@ -824,21 +824,21 @@ defineExpose({ resetForm })
 
 .btn-secondary {
   background: white;
-  color: #374151;
-  border: 1px solid #d1d5db;
+  color: var(--color-gray-800);
+  border: 1px solid var(--color-gray-400);
 
   &:hover:not(:disabled) {
-    background: #f9fafb;
-    border-color: #9ca3af;
+    background: var(--color-gray-50);
+    border-color: var(--color-gray-500);
   }
 }
 
 .btn-primary {
-  background: #667eea;
+  background: var(--color-primary-500);
   color: white;
 
   &:hover:not(:disabled) {
-    background: #5568d3;
+    background: var(--color-primary-600);
     transform: translateY(-1px);
     box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
   }

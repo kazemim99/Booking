@@ -134,19 +134,19 @@ const progressPercentage = computed(() => {
   background: #fff;
 
   .progress-step.future & {
-    border: 2px solid #d1d5db;
-    color: #9ca3af;
+    border: 2px solid var(--color-gray-400);
+    color: var(--color-gray-500);
   }
 
   .progress-step.active & {
-    border: 3px solid #7c3aed;
-    color: #7c3aed;
+    border: 3px solid var(--color-primary-700);
+    color: var(--color-primary-700);
     box-shadow: 0 0 0 4px rgba(124, 58, 237, 0.1);
     transform: scale(1.1);
   }
 
   .progress-step.completed & {
-    background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+    background: linear-gradient(135deg, var(--color-success-500) 0%, var(--color-success-600) 100%);
     border: none;
     color: #fff;
 
@@ -161,18 +161,18 @@ const progressPercentage = computed(() => {
 .step-line {
   flex: 1;
   height: 2px;
-  background: #d1d5db;
+  background: var(--color-gray-400);
   margin: 0 0.5rem;
   position: relative;
   z-index: 1;
   transition: all 0.3s ease;
 
   .progress-step.completed & {
-    background: linear-gradient(90deg, #10b981 0%, #059669 100%);
+    background: linear-gradient(90deg, var(--color-success-500) 0%, var(--color-success-600) 100%);
   }
 
   .progress-step.active & {
-    background: linear-gradient(90deg, #10b981 0%, #d1d5db 100%);
+    background: linear-gradient(90deg, var(--color-success-500) 0%, var(--color-gray-400) 100%);
   }
 }
 
@@ -181,17 +181,17 @@ const progressPercentage = computed(() => {
   font-size: 0.75rem;
   font-weight: 500;
   text-align: center;
-  color: #6b7280;
+  color: var(--color-gray-600);
   transition: all 0.3s ease;
   max-width: 100px;
 
   .progress-step.active & {
-    color: #7c3aed;
+    color: var(--color-primary-700);
     font-weight: 600;
   }
 
   .progress-step.completed & {
-    color: #10b981;
+    color: var(--color-success-500);
   }
 }
 
@@ -202,7 +202,7 @@ const progressPercentage = computed(() => {
 .progress-bar {
   width: 100%;
   height: 8px;
-  background: #e5e7eb;
+  background: var(--color-gray-300);
   border-radius: 999px;
   overflow: hidden;
   position: relative;
@@ -210,7 +210,7 @@ const progressPercentage = computed(() => {
 
 .progress-bar-fill {
   height: 100%;
-  background: linear-gradient(90deg, #10b981 0%, #059669 100%);
+  background: linear-gradient(90deg, var(--color-success-500) 0%, var(--color-success-600) 100%);
   border-radius: 999px;
   transition: width 0.4s ease;
   position: relative;
@@ -247,12 +247,12 @@ const progressPercentage = computed(() => {
   align-items: center;
   margin-top: 0.75rem;
   font-size: 0.875rem;
-  color: #6b7280;
+  color: var(--color-gray-600);
   font-weight: 500;
 }
 
 .progress-percentage {
-  color: #10b981;
+  color: var(--color-success-500);
   font-weight: 600;
 }
 

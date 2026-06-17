@@ -139,7 +139,7 @@ const handleSubmit = async () => {
 .auth-card {
   background: white;
   border-radius: 1rem;
-  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+  box-shadow: var(--shadow-md);
   padding: 2rem;
 }
 
@@ -163,7 +163,7 @@ const handleSubmit = async () => {
 .icon {
   width: 2rem;
   height: 2rem;
-  color: #8b5cf6;
+  color: var(--color-primary-500);
 }
 
 /* Header */
@@ -175,13 +175,13 @@ const handleSubmit = async () => {
 .auth-title {
   font-size: 1.5rem;
   font-weight: 700;
-  color: #111827;
+  color: var(--color-gray-900);
   margin-bottom: 0.5rem;
 }
 
 .auth-description {
   font-size: 0.875rem;
-  color: #6b7280;
+  color: var(--color-gray-600);
   line-height: 1.5;
 }
 
@@ -198,7 +198,7 @@ const handleSubmit = async () => {
   display: block;
   font-size: 0.875rem;
   font-weight: 500;
-  color: #374151;
+  color: var(--color-gray-800);
   margin-bottom: 0.5rem;
 }
 
@@ -206,56 +206,56 @@ const handleSubmit = async () => {
   width: 100%;
   padding: 0.75rem 1rem;
   font-size: 1rem;
-  border: 1px solid #d1d5db;
+  border: 1px solid var(--color-gray-400);
   border-radius: 0.5rem;
-  background: #f9fafb;
+  background: var(--color-gray-50);
   transition: all 0.2s ease;
 }
 
 .form-input:focus {
   outline: none;
-  border-color: #8b5cf6;
+  border-color: var(--color-primary-500);
   background: white;
   box-shadow: 0 0 0 3px rgba(139, 92, 246, 0.1);
 }
 
 .form-input:disabled {
-  background: #f3f4f6;
+  background: var(--color-gray-100);
   cursor: not-allowed;
   opacity: 0.6;
 }
 
 .form-input-error {
-  border-color: #ef4444;
+  border-color: var(--color-danger-500);
 }
 
 .form-input-error:focus {
-  border-color: #ef4444;
+  border-color: var(--color-danger-500);
   box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.1);
 }
 
 .form-error {
   margin-top: 0.5rem;
   font-size: 0.875rem;
-  color: #ef4444;
+  color: var(--color-danger-500);
 }
 
 /* Terms */
 .auth-terms {
   text-align: center;
   font-size: 0.875rem;
-  color: #6b7280;
+  color: var(--color-gray-600);
   margin-bottom: 1rem;
 }
 
 .auth-link {
-  color: #8b5cf6;
+  color: var(--color-primary-500);
   text-decoration: none;
   transition: color 0.2s ease;
 }
 
 .auth-link:hover {
-  color: #7c3aed;
+  color: var(--color-primary-700);
   text-decoration: underline;
 }
 
@@ -263,12 +263,12 @@ const handleSubmit = async () => {
 .auth-footer {
   text-align: center;
   padding-top: 1rem;
-  border-top: 1px solid #e5e7eb;
+  border-top: 1px solid var(--color-gray-300);
 }
 
 .auth-footer-text {
   font-size: 0.875rem;
-  color: #6b7280;
+  color: var(--color-gray-600);
 }
 
 /* Responsive */

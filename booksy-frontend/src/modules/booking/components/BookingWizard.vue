@@ -507,7 +507,7 @@ const goToMyBookings = () => {
 
 .preselected-service-banner {
   background: linear-gradient(135deg, rgba(16, 185, 129, 0.1) 0%, rgba(5, 150, 105, 0.1) 100%);
-  border: 2px solid #10b981;
+  border: 2px solid var(--color-success-500);
   border-radius: 16px;
   padding: 1.5rem 2rem;
   margin-bottom: 2rem;
@@ -531,7 +531,7 @@ const goToMyBookings = () => {
 .banner-icon {
   width: 56px;
   height: 56px;
-  background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+  background: linear-gradient(135deg, var(--color-success-500) 0%, var(--color-success-600) 100%);
   border-radius: 50%;
   display: flex;
   align-items: center;
@@ -551,7 +551,7 @@ const goToMyBookings = () => {
 
 .banner-title {
   font-size: 0.875rem;
-  color: #059669;
+  color: var(--color-success-600);
   font-weight: 600;
   margin-bottom: 0.25rem;
 }
@@ -583,12 +583,12 @@ const goToMyBookings = () => {
   align-items: center;
   gap: 0.75rem;
   font-size: 0.95rem;
-  color: #64748b;
+  color: var(--color-gray-600);
   font-weight: 600;
 }
 
 .banner-details .separator {
-  color: #cbd5e1;
+  color: var(--color-gray-400);
 }
 
 .banner-change-btn {
@@ -597,8 +597,8 @@ const goToMyBookings = () => {
   gap: 0.5rem;
   padding: 0.75rem 1.5rem;
   background: white;
-  color: #667eea;
-  border: 2px solid #667eea;
+  color: var(--color-primary-500);
+  border: 2px solid var(--color-primary-500);
   border-radius: 10px;
   font-size: 0.95rem;
   font-weight: 600;
@@ -613,7 +613,7 @@ const goToMyBookings = () => {
 }
 
 .banner-change-btn:hover {
-  background: #667eea;
+  background: var(--color-primary-500);
   color: white;
   transform: translateY(-2px);
   box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
@@ -645,22 +645,22 @@ const goToMyBookings = () => {
   justify-content: center;
   font-size: 1.25rem;
   font-weight: 700;
-  color: #94a3b8;
+  color: var(--color-gray-500);
   transition: all 0.3s;
   position: relative;
   z-index: 2;
 }
 
 .step-item.active .step-circle {
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-  border-color: #667eea;
+  background: linear-gradient(135deg, var(--color-primary-500) 0%, var(--color-primary-700) 100%);
+  border-color: var(--color-primary-500);
   color: white;
   box-shadow: 0 4px 16px rgba(102, 126, 234, 0.4);
 }
 
 .step-item.completed .step-circle {
-  background: #10b981;
-  border-color: #10b981;
+  background: var(--color-success-500);
+  border-color: var(--color-success-500);
   color: white;
 }
 
@@ -682,12 +682,12 @@ const goToMyBookings = () => {
 }
 
 .step-item.active .step-label {
-  color: #667eea;
+  color: var(--color-primary-500);
 }
 
 .step-description {
   font-size: 0.875rem;
-  color: #64748b;
+  color: var(--color-gray-600);
 }
 
 .step-connector {
@@ -701,14 +701,14 @@ const goToMyBookings = () => {
 }
 
 .step-item.completed .step-connector {
-  background: #10b981;
+  background: var(--color-success-500);
 }
 
 .wizard-content {
   background: white;
   border-radius: 24px;
   padding: 2.5rem;
-  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.06);
+  box-shadow: var(--shadow-sm);
   min-height: 500px;
   margin-bottom: 2rem;
 }
@@ -738,7 +738,7 @@ const goToMyBookings = () => {
 }
 
 .btn-primary {
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: linear-gradient(135deg, var(--color-primary-500) 0%, var(--color-primary-700) 100%);
   color: white;
   box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
 }
@@ -761,7 +761,7 @@ const goToMyBookings = () => {
 
 .btn-secondary:hover {
   background: #f8fafc;
-  border-color: #cbd5e1;
+  border-color: var(--color-gray-400);
 }
 
 .btn-primary svg,
@@ -837,7 +837,7 @@ const goToMyBookings = () => {
   width: 96px;
   height: 96px;
   margin: 0 auto 1.5rem;
-  background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+  background: linear-gradient(135deg, var(--color-success-500) 0%, var(--color-success-600) 100%);
   border-radius: 50%;
   display: flex;
   align-items: center;
@@ -859,7 +859,7 @@ const goToMyBookings = () => {
 
 .modal-content p {
   font-size: 1.05rem;
-  color: #64748b;
+  color: var(--color-gray-600);
   margin: 0.5rem 0;
 }
 

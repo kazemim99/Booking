@@ -202,7 +202,7 @@ function handleUnfavorited(providerId: string): void {
 .toggle-btn.active {
   background: white;
   color: #3182ce;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  box-shadow: var(--shadow-md);
 }
 
 /* Quick Rebook View */

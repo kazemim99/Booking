@@ -293,7 +293,7 @@ watch(
   max-width: 500px;
   display: flex;
   flex-direction: column;
-  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+  box-shadow: var(--shadow-lg);
   direction: rtl;
 }
 
@@ -304,13 +304,13 @@ watch(
   align-items: center;
   justify-content: space-between;
   padding: 24px;
-  border-bottom: 1px solid #e5e7eb;
+  border-bottom: 1px solid var(--color-gray-300);
 }
 
 .modal-header h2 {
   font-size: 20px;
   font-weight: 700;
-  color: #111827;
+  color: var(--color-gray-900);
   margin: 0;
 }
 
@@ -324,14 +324,14 @@ watch(
   justify-content: center;
   border-radius: 8px;
   cursor: pointer;
-  color: #6b7280;
+  color: var(--color-gray-600);
   transition: all 0.2s ease;
   padding: 0;
 }
 
 .close-btn:hover:not(:disabled) {
-  background: #f3f4f6;
-  color: #111827;
+  background: var(--color-gray-100);
+  color: var(--color-gray-900);
 }
 
 .close-btn svg {
@@ -360,14 +360,14 @@ watch(
 .form-label {
   font-size: 14px;
   font-weight: 600;
-  color: #374151;
+  color: var(--color-gray-800);
 }
 
 .form-input {
   width: 100%;
   padding: 10px 12px;
   font-size: 14px;
-  border: 1px solid #d1d5db;
+  border: 1px solid var(--color-gray-400);
   border-radius: 8px;
   background: white;
   transition: all 0.2s ease;
@@ -376,19 +376,19 @@ watch(
 
 .form-input:focus {
   outline: none;
-  border-color: #8b5cf6;
+  border-color: var(--color-primary-500);
   box-shadow: 0 0 0 3px rgba(139, 92, 246, 0.1);
 }
 
 .form-input:disabled {
-  background: #f3f4f6;
+  background: var(--color-gray-100);
   cursor: not-allowed;
   opacity: 0.6;
 }
 
 .error-text {
   font-size: 12px;
-  color: #ef4444;
+  color: var(--color-danger-500);
   margin-top: 2px;
 }
 
@@ -398,10 +398,10 @@ watch(
   align-items: flex-start;
   gap: 12px;
   padding: 12px 16px;
-  background: #fef2f2;
+  background: var(--color-danger-50);
   border: 1px solid #fecaca;
   border-radius: 8px;
-  color: #dc2626;
+  color: var(--color-danger-600);
   font-size: 14px;
 }
 
@@ -420,7 +420,7 @@ watch(
   justify-content: flex-end;
   gap: 12px;
   padding: 20px 24px;
-  border-top: 1px solid #e5e7eb;
+  border-top: 1px solid var(--color-gray-300);
 }
 
 .btn {
@@ -443,16 +443,16 @@ watch(
 }
 
 .btn-secondary {
-  background: #f3f4f6;
-  color: #374151;
+  background: var(--color-gray-100);
+  color: var(--color-gray-800);
 }
 
 .btn-secondary:hover:not(:disabled) {
-  background: #e5e7eb;
+  background: var(--color-gray-300);
 }
 
 .btn-primary {
-  background: linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%);
+  background: linear-gradient(135deg, var(--color-primary-500) 0%, var(--color-primary-700) 100%);
   color: white;
 }
 

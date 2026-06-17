@@ -172,7 +172,7 @@ function getInitials(name?: string): string {
 }
 
 .favorite-card:hover {
-  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+  box-shadow: var(--shadow-md);
 }
 
 .card-image {
@@ -198,7 +198,7 @@ function getInitials(name?: string): string {
   font-size: 1.5rem;
   font-weight: 600;
   color: #718096;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: linear-gradient(135deg, var(--color-primary-500) 0%, var(--color-primary-700) 100%);
   color: white;
 }
 
@@ -217,7 +217,7 @@ function getInitials(name?: string): string {
 }
 
 .stars {
-  color: #f59e0b;
+  color: var(--color-warning-500);
   font-weight: 600;
 }
 

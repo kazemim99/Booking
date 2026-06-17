@@ -375,14 +375,14 @@ const getInitials = (name: string): string => {
 .header-title {
   font-size: 1.75rem;
   font-weight: 700;
-  color: #111827;
+  color: var(--color-gray-900);
   margin: 0 0 0.5rem 0;
   font-family: 'Vazir', 'IRANSans', sans-serif;
 }
 
 .header-count {
   font-size: 1rem;
-  color: #6b7280;
+  color: var(--color-gray-600);
   margin: 0;
   font-family: 'Vazir', 'IRANSans', sans-serif;
 }
@@ -391,7 +391,7 @@ const getInitials = (name: string): string => {
 .view-toggle {
   display: flex;
   gap: 0.5rem;
-  background: #f3f4f6;
+  background: var(--color-gray-100);
   padding: 0.25rem;
   border-radius: 8px;
 }
@@ -411,7 +411,7 @@ const getInitials = (name: string): string => {
 .view-btn svg {
   width: 20px;
   height: 20px;
-  color: #6b7280;
+  color: var(--color-gray-600);
 }
 
 .view-btn:hover {
@@ -419,7 +419,7 @@ const getInitials = (name: string): string => {
 }
 
 .view-btn.active {
-  background: #8b5cf6;
+  background: var(--color-primary-500);
 }
 
 .view-btn.active svg {
@@ -478,11 +478,11 @@ const getInitials = (name: string): string => {
 .control-btn svg {
   width: 20px;
   height: 20px;
-  color: #374151;
+  color: var(--color-gray-800);
 }
 
 .control-btn:hover {
-  background: #8b5cf6;
+  background: var(--color-primary-500);
   transform: scale(1.1);
 }
 
@@ -508,8 +508,8 @@ const getInitials = (name: string): string => {
 .loading-spinner {
   width: 48px;
   height: 48px;
-  border: 4px solid #e5e7eb;
-  border-top-color: #8b5cf6;
+  border: 4px solid var(--color-gray-300);
+  border-top-color: var(--color-primary-500);
   border-radius: 50%;
   animation: spin 0.8s linear infinite;
 }
@@ -521,7 +521,7 @@ const getInitials = (name: string): string => {
 .map-loading p {
   margin-top: 1rem;
   font-family: 'Vazir', 'IRANSans', sans-serif;
-  color: #6b7280;
+  color: var(--color-gray-600);
   font-size: 0.95rem;
 }
 
@@ -558,7 +558,7 @@ const getInitials = (name: string): string => {
 }
 
 .floating-card.selected {
-  border: 2px solid #8b5cf6;
+  border: 2px solid var(--color-primary-500);
   transform: scale(1.05);
 }
 
@@ -582,7 +582,7 @@ const getInitials = (name: string): string => {
   display: flex;
   align-items: center;
   justify-content: center;
-  background: linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%);
+  background: linear-gradient(135deg, var(--color-primary-500) 0%, var(--color-primary-700) 100%);
   color: white;
   font-weight: 700;
   font-size: 1.25rem;
@@ -597,7 +597,7 @@ const getInitials = (name: string): string => {
   margin: 0 0 0.25rem 0;
   font-size: 0.95rem;
   font-weight: 700;
-  color: #111827;
+  color: var(--color-gray-900);
   font-family: 'Vazir', 'IRANSans', sans-serif;
   white-space: nowrap;
   overflow: hidden;
@@ -614,25 +614,25 @@ const getInitials = (name: string): string => {
 .card-rating svg {
   width: 14px;
   height: 14px;
-  color: #fbbf24;
+  color: var(--color-warning-500);
 }
 
 .card-rating span {
   font-size: 0.875rem;
   font-weight: 600;
-  color: #111827;
+  color: var(--color-gray-900);
 }
 
 .card-location {
   font-size: 0.8rem;
-  color: #6b7280;
+  color: var(--color-gray-600);
   margin: 0;
   font-family: 'Vazir', 'IRANSans', sans-serif;
 }
 
 .card-book-btn {
   padding: 0.5rem 1rem;
-  background: #8b5cf6;
+  background: var(--color-primary-500);
   color: white;
   border: none;
   border-radius: 8px;
@@ -645,7 +645,7 @@ const getInitials = (name: string): string => {
 }
 
 .card-book-btn:hover {
-  background: #7c3aed;
+  background: var(--color-primary-700);
   transform: scale(1.05);
 }
 

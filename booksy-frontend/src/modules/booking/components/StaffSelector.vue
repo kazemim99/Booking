@@ -147,8 +147,8 @@ function handleSelect(staff: StaffMember) {
   .spinner {
     width: 40px;
     height: 40px;
-    border: 3px solid #f3f4f6;
-    border-top-color: #667eea;
+    border: 3px solid var(--color-gray-100);
+    border-top-color: var(--color-primary-500);
     border-radius: 50%;
     animation: spin 1s linear infinite;
     margin: 0 auto 1rem;
@@ -183,12 +183,12 @@ function handleSelect(staff: StaffMember) {
   position: relative;
 
   &:hover:not(.disabled) {
-    border-color: #667eea;
+    border-color: var(--color-primary-500);
     background: #f7fafc;
   }
 
   &.selected {
-    border-color: #667eea;
+    border-color: var(--color-primary-500);
     background: #ebf4ff;
   }
 
@@ -214,7 +214,7 @@ function handleSelect(staff: StaffMember) {
       width: 100%;
       height: 100%;
       border-radius: 50%;
-      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      background: linear-gradient(135deg, var(--color-primary-500) 0%, var(--color-primary-700) 100%);
       display: flex;
       align-items: center;
       justify-content: center;
@@ -250,7 +250,7 @@ function handleSelect(staff: StaffMember) {
     }
 
     .staff-title {
-      color: #667eea;
+      color: var(--color-primary-500);
       font-size: 0.875rem;
       margin-bottom: 0.5rem;
       font-weight: 500;
@@ -276,7 +276,7 @@ function handleSelect(staff: StaffMember) {
         font-size: 0.875rem;
 
         i {
-          color: #667eea;
+          color: var(--color-primary-500);
         }
       }
     }

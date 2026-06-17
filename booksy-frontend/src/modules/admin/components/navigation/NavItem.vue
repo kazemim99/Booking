@@ -55,7 +55,7 @@
     align-items: center;
     gap: 0.75rem;
     padding: 0.75rem 1.5rem;
-    color: #94a3b8;
+    color: var(--color-gray-500);
     text-decoration: none;
     transition: all 0.2s;
     position: relative;
@@ -69,8 +69,8 @@
   
   .nav-item.active {
     background: rgba(59, 130, 246, 0.1);
-    color: #3b82f6;
-    border-right: 3px solid #3b82f6;
+    color: var(--color-primary-500);
+    border-right: 3px solid var(--color-primary-500);
   }
   
   .nav-item.collapsed {
@@ -92,7 +92,7 @@
   }
   
   .nav-badge {
-    background: #ef4444;
+    background: var(--color-danger-500);
     color: white;
     font-size: 0.7rem;
     font-weight: 600;

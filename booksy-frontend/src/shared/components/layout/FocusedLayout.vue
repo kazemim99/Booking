@@ -41,7 +41,7 @@ withDefaults(defineProps<Props>(), {
   min-height: 100vh;
   display: flex;
   flex-direction: column;
-  background: #f9fafb;
+  background: var(--color-gray-50);
 }
 
 .focused-main {
@@ -62,7 +62,7 @@ withDefaults(defineProps<Props>(), {
 /* Dark mode support (future) */
 @media (prefers-color-scheme: dark) {
   .focused-layout {
-    background: #111827;
+    background: var(--color-gray-900);
   }
 }
 </style>

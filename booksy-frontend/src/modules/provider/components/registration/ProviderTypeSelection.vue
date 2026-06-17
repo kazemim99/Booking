@@ -296,13 +296,13 @@ function handleContinue(): void {
   transition: all 0.3s ease;
 
   &:hover {
-    border-color: #7c3aed;
+    border-color: var(--color-primary-700);
     box-shadow: 0 4px 12px rgba(124, 58, 237, 0.1);
     transform: translateY(-4px);
   }
 
   &.selected {
-    border-color: #7c3aed;
+    border-color: var(--color-primary-700);
     background: linear-gradient(135deg, #f8f5ff 0%, #fff 100%);
     box-shadow: 0 8px 24px rgba(124, 58, 237, 0.15);
   }
@@ -318,7 +318,7 @@ function handleContinue(): void {
 .type-icon {
   width: 60px;
   height: 60px;
-  background: linear-gradient(135deg, #7c3aed 0%, #9333ea 100%);
+  background: linear-gradient(135deg, var(--color-primary-700) 0%, #9333ea 100%);
   border-radius: 12px;
   display: flex;
   align-items: center;
@@ -366,7 +366,7 @@ function handleContinue(): void {
   color: #555;
 
   i {
-    color: #10b981;
+    color: var(--color-success-500);
     font-size: 1rem;
   }
 }
@@ -375,7 +375,7 @@ function handleContinue(): void {
   position: absolute;
   top: 1rem;
   left: 1rem;
-  background: #10b981;
+  background: var(--color-success-500);
   color: #fff;
   padding: 0.5rem 1rem;
   border-radius: 20px;
@@ -388,7 +388,7 @@ function handleContinue(): void {
 
 .recommendation-box {
   background: linear-gradient(135deg, #fef3c7 0%, #fef9e7 100%);
-  border: 2px solid #f59e0b;
+  border: 2px solid var(--color-warning-500);
   border-radius: 12px;
   padding: 1.5rem;
   margin-bottom: 2rem;
@@ -401,7 +401,7 @@ function handleContinue(): void {
   margin-bottom: 0.75rem;
 
   i {
-    color: #f59e0b;
+    color: var(--color-warning-500);
     font-size: 1.5rem;
   }
 
@@ -437,7 +437,7 @@ function handleContinue(): void {
 }
 
 .help-link {
-  color: #7c3aed;
+  color: var(--color-primary-700);
   text-decoration: none;
   font-weight: 600;
 
@@ -468,7 +468,7 @@ function handleContinue(): void {
   width: 100%;
   max-height: 90vh;
   overflow-y: auto;
-  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+  box-shadow: var(--shadow-lg);
 }
 
 .modal-header {
@@ -530,7 +530,7 @@ function handleContinue(): void {
         content: '•';
         position: absolute;
         right: 0;
-        color: #7c3aed;
+        color: var(--color-primary-700);
         font-weight: bold;
       }
     }
@@ -538,7 +538,7 @@ function handleContinue(): void {
 }
 
 .help-note {
-  background: #f3f4f6;
+  background: var(--color-gray-100);
   border-radius: 8px;
   padding: 1rem;
   display: flex;
@@ -546,14 +546,14 @@ function handleContinue(): void {
   align-items: flex-start;
 
   i {
-    color: #3b82f6;
+    color: var(--color-primary-500);
     font-size: 1.25rem;
     flex-shrink: 0;
   }
 
   p {
     font-size: 0.9rem;
-    color: #1f2937;
+    color: var(--color-gray-900);
     margin: 0;
     line-height: 1.5;
   }

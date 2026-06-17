@@ -66,7 +66,7 @@ function handleUnfavorited(providerId: string): void {
 }
 
 .provider-card:hover {
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  box-shadow: var(--shadow-md);
 }
 
 .card-content {
@@ -102,7 +102,7 @@ function handleUnfavorited(providerId: string): void {
 }
 
 .provider-rating {
-  color: #f59e0b;
+  color: var(--color-warning-500);
   font-weight: 600;
   margin-top: 0.5rem;
 }

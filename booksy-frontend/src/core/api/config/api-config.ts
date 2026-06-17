@@ -1,19 +1,20 @@
 /**
- * Microservices Configuration
- * Each microservice has its own base URL following DDD principles
+ * Backend API Configuration
  *
- * Architecture:
- * - ServiceCategory API (port 5010): Handles providers, services, bookings, schedules
- * - UserManagement API (port 5020): Handles authentication, users, profiles, customers
+ * The backend is a single modular-monolith host (Booksy.Host) serving every
+ * bounded context under one origin. Both keys below resolve to the same host;
+ * they are kept separate only so callers can stay context-aware. In all
+ * environments the VITE_* vars are set to the relative '/api' path (proxied to
+ * the host), which is also the safe default if a var is missing.
  */
 export const microservices = {
   serviceCategory: {
-    baseURL: import.meta.env.VITE_SERVICE_CATALOG_API_URL || 'http://localhost:5010/api',
+    baseURL: import.meta.env.VITE_SERVICE_CATALOG_API_URL || '/api',
     timeout: 30000,
     withCredentials: true,
   },
   userManagement: {
-    baseURL: import.meta.env.VITE_USER_MANAGEMENT_API_URL || 'http://localhost:5020/api',
+    baseURL: import.meta.env.VITE_USER_MANAGEMENT_API_URL || '/api',
     timeout: 30000,
     withCredentials: true,
   },
@@ -27,35 +28,35 @@ export const apiConfig = microservices.serviceCategory
 export const apiEndpoints = {
   // Auth endpoints
   auth: {
-    login: 'v1/auth/login',
-    logout: 'v1/auth/logout',
-    refresh: 'v1/auth/refresh',
-    forgotPassword: 'v1/auth/forgot-password',
-    resetPassword: 'v1/auth/reset-password',
-    verifyEmail: 'v1/auth/verify-email',
-    resendVerification: 'v1/auth/resend-verification',
+    login: 'v1/Auth/login',
+    logout: 'v1/Auth/logout',
+    refresh: 'v1/Auth/refresh',
+    forgotPassword: 'v1/Auth/forgot-password',
+    resetPassword: 'v1/Auth/reset-password',
+    verifyEmail: 'v1/Auth/verify-email',
+    resendVerification: 'v1/Auth/resend-verification',
   },
 
   // User endpoints
   users: {
-    register: 'v1/users',
-    profile: 'v1/users/profile',
-    updateProfile: 'v1/users/profile',
-    changePassword: 'v1/users/change-password',
-    list: 'v1/users',
-    byId: (id: string) => `v1/users/${id}`,
-    search: 'v1/users/search',
+    register: 'v1/Users',
+    profile: 'v1/Users/profile',
+    updateProfile: 'v1/Users/profile',
+    changePassword: 'v1/Users/change-password',
+    list: 'v1/Users',
+    byId: (id: string) => `v1/Users/${id}`,
+    search: 'v1/Users/search',
   },
 
   // Booking endpoints
   bookings: {
-    list: 'v1/bookings',
-    create: 'v1/bookings',
-    byId: (id: string) => `v1/bookings/${id}`,
-    cancel: (id: string) => `v1/bookings/${id}/cancel`,
-    reschedule: (id: string) => `v1/bookings/${id}/reschedule`,
-    upcoming: 'v1/bookings/upcoming',
-    history: 'v1/bookings/history',
+    list: 'v1/Bookings',
+    create: 'v1/Bookings',
+    byId: (id: string) => `v1/Bookings/${id}`,
+    cancel: (id: string) => `v1/Bookings/${id}/cancel`,
+    reschedule: (id: string) => `v1/Bookings/${id}/reschedule`,
+    upcoming: 'v1/Bookings/upcoming',
+    history: 'v1/Bookings/history',
   },
 
   // Appointment endpoints

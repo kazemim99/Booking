@@ -11,7 +11,7 @@ import type {
   ExceptionsResponse,
 } from '../types/hours.types'
 
-const BASE_URL = '/v1/providers'
+const BASE_URL = '/v1/Providers'
 
 class HoursService {
   /**

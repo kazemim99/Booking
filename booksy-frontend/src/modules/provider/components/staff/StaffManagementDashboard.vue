@@ -595,12 +595,12 @@ watch(activeTab, () => {
   gap: 0.5rem;
 
   &:hover {
-    background: #f3f4f6;
+    background: var(--color-gray-100);
     color: #1a1a1a;
   }
 
   &.active {
-    background: linear-gradient(135deg, #7c3aed 0%, #9333ea 100%);
+    background: linear-gradient(135deg, var(--color-primary-700) 0%, #9333ea 100%);
     color: #fff;
   }
 }
@@ -631,33 +631,33 @@ watch(activeTab, () => {
     right: 1rem;
     top: 50%;
     transform: translateY(-50%);
-    color: #9ca3af;
+    color: var(--color-gray-500);
   }
 }
 
 .search-input {
   width: 100%;
   padding: 0.75rem 1rem 0.75rem 3rem;
-  border: 1px solid #d1d5db;
+  border: 1px solid var(--color-gray-400);
   border-radius: 8px;
   font-size: 0.95rem;
 
   &:focus {
     outline: none;
-    border-color: #7c3aed;
+    border-color: var(--color-primary-700);
   }
 }
 
 .filter-select {
   padding: 0.75rem 1rem;
-  border: 1px solid #d1d5db;
+  border: 1px solid var(--color-gray-400);
   border-radius: 8px;
   font-size: 0.95rem;
   background: #fff;
 
   &:focus {
     outline: none;
-    border-color: #7c3aed;
+    border-color: var(--color-primary-700);
   }
 }
 
@@ -671,14 +671,14 @@ watch(activeTab, () => {
 .empty-state {
   text-align: center;
   padding: 4rem 2rem;
-  color: #9ca3af;
+  color: var(--color-gray-500);
 }
 
 .spinner {
   width: 40px;
   height: 40px;
-  border: 4px solid #f3f4f6;
-  border-top-color: #7c3aed;
+  border: 4px solid var(--color-gray-100);
+  border-top-color: var(--color-primary-700);
   border-radius: 50%;
   animation: spin 1s linear infinite;
   margin: 0 auto 1rem;
@@ -699,13 +699,13 @@ watch(activeTab, () => {
   h3 {
     font-size: 1.5rem;
     font-weight: 600;
-    color: #6b7280;
+    color: var(--color-gray-600);
     margin-bottom: 0.5rem;
   }
 
   p {
     font-size: 1rem;
-    color: #9ca3af;
+    color: var(--color-gray-500);
   }
 }
 
@@ -720,15 +720,15 @@ watch(activeTab, () => {
 .pagination-btn,
 .pagination-page {
   padding: 0.5rem 0.75rem;
-  border: 1px solid #d1d5db;
+  border: 1px solid var(--color-gray-400);
   background: #fff;
   border-radius: 6px;
   cursor: pointer;
   transition: all 0.2s;
 
   &:hover:not(:disabled) {
-    background: #f9fafb;
-    border-color: #7c3aed;
+    background: var(--color-gray-50);
+    border-color: var(--color-primary-700);
   }
 
   &:disabled {
@@ -738,8 +738,8 @@ watch(activeTab, () => {
 }
 
 .pagination-page.active {
-  background: #7c3aed;
+  background: var(--color-primary-700);
   color: #fff;
-  border-color: #7c3aed;
+  border-color: var(--color-primary-700);
 }
 </style>

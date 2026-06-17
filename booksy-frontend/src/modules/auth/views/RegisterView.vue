@@ -46,18 +46,18 @@ import LanguageSwitcher from '@/shared/components/layout/Header/LanguageSwitcher
   :deep(.language-button) {
     background: rgba(139, 92, 246, 0.1);
     backdrop-filter: blur(10px);
-    color: #8b5cf6;
+    color: var(--color-primary-500);
     border: 1px solid rgba(139, 92, 246, 0.2);
 
     &:hover {
       background: rgba(139, 92, 246, 0.15);
-      color: #7c3aed;
+      color: var(--color-primary-700);
     }
   }
 
   :deep(.dropdown-arrow),
   :deep(.globe-icon) {
-    color: #8b5cf6;
+    color: var(--color-primary-500);
   }
 
   @media (max-width: 640px) {
@@ -78,7 +78,7 @@ import LanguageSwitcher from '@/shared/components/layout/Header/LanguageSwitcher
   background: white;
   border-radius: 16px;
   padding: 3rem;
-  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+  box-shadow: var(--shadow-md);
 
   @media (max-width: 640px) {
     padding: 2rem 1.5rem;
@@ -104,7 +104,7 @@ import LanguageSwitcher from '@/shared/components/layout/Header/LanguageSwitcher
 .decoration-circle-1 {
   width: 20rem;
   height: 20rem;
-  background: linear-gradient(135deg, #8b5cf6, #a78bfa);
+  background: linear-gradient(135deg, var(--color-primary-500), #a78bfa);
   top: -5rem;
   right: -5rem;
   animation-delay: 0s;
@@ -122,7 +122,7 @@ import LanguageSwitcher from '@/shared/components/layout/Header/LanguageSwitcher
 .decoration-circle-3 {
   width: 12rem;
   height: 12rem;
-  background: linear-gradient(135deg, #10b981, #34d399);
+  background: linear-gradient(135deg, var(--color-success-500), #34d399);
   top: 50%;
   right: 10%;
   animation-delay: -5s;

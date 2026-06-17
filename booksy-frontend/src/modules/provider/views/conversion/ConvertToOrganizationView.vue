@@ -343,7 +343,7 @@ async function retryConversion() {
   background: white;
   border-radius: 16px;
   padding: 2rem;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  box-shadow: var(--shadow-md);
 }
 
 .conversion-header {
@@ -386,12 +386,12 @@ async function retryConversion() {
 
     &.active .step-number,
     &.completed .step-number {
-      background: #667eea;
+      background: var(--color-primary-500);
       color: white;
     }
 
     &.completed::after {
-      background: #667eea;
+      background: var(--color-primary-500);
     }
 
     .step-number {
@@ -511,7 +511,7 @@ async function retryConversion() {
 
       &:focus {
         outline: none;
-        border-color: #667eea;
+        border-color: var(--color-primary-500);
         box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
       }
     }

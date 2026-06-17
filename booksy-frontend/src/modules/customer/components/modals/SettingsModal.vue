@@ -230,14 +230,14 @@ function handleClose(): void {
   align-items: center;
   justify-content: center;
   padding: 3rem 1rem;
-  color: #6b7280;
+  color: var(--color-gray-600);
 }
 
 .spinner {
   width: 40px;
   height: 40px;
-  border: 3px solid #e5e7eb;
-  border-top-color: #667eea;
+  border: 3px solid var(--color-gray-300);
+  border-top-color: var(--color-primary-500);
   border-radius: 50%;
   animation: spin 1s linear infinite;
   margin-bottom: 1rem;
@@ -258,13 +258,13 @@ function handleClose(): void {
 .section-title {
   font-size: 1.125rem;
   font-weight: 600;
-  color: #111827;
+  color: var(--color-gray-900);
   margin: 0;
 }
 
 .section-description {
   font-size: 0.875rem;
-  color: #6b7280;
+  color: var(--color-gray-600);
   margin: 0;
 }
 
@@ -274,7 +274,7 @@ function handleClose(): void {
   justify-content: space-between;
   gap: 1rem;
   padding: 1rem;
-  background: #f9fafb;
+  background: var(--color-gray-50);
   border-radius: 8px;
 }
 
@@ -290,7 +290,7 @@ function handleClose(): void {
   align-items: center;
   gap: 0.5rem;
   font-weight: 500;
-  color: #374151;
+  color: var(--color-gray-800);
   font-size: 0.875rem;
   cursor: pointer;
 }
@@ -298,13 +298,13 @@ function handleClose(): void {
 .icon {
   width: 18px;
   height: 18px;
-  color: #9ca3af;
+  color: var(--color-gray-500);
   flex-shrink: 0;
 }
 
 .setting-description {
   font-size: 0.75rem;
-  color: #9ca3af;
+  color: var(--color-gray-500);
   margin: 0;
 }
 
@@ -322,7 +322,7 @@ function handleClose(): void {
   height: 0;
 
   &:checked + .toggle-slider {
-    background-color: #667eea;
+    background-color: var(--color-primary-500);
 
     &::before {
       transform: translateX(24px);
@@ -341,7 +341,7 @@ function handleClose(): void {
   left: 0;
   right: 0;
   bottom: 0;
-  background-color: #d1d5db;
+  background-color: var(--color-gray-400);
   transition: 0.2s;
   border-radius: 24px;
 
@@ -360,7 +360,7 @@ function handleClose(): void {
 
 .select-input {
   padding: 0.5rem 0.75rem;
-  border: 1px solid #d1d5db;
+  border: 1px solid var(--color-gray-400);
   border-radius: 6px;
   font-size: 0.875rem;
   background: white;
@@ -369,7 +369,7 @@ function handleClose(): void {
 
   &:focus {
     outline: none;
-    border-color: #667eea;
+    border-color: var(--color-primary-500);
     box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
   }
 }
@@ -389,12 +389,12 @@ function handleClose(): void {
   width: 20px;
   height: 20px;
   flex-shrink: 0;
-  color: #f59e0b;
+  color: var(--color-warning-500);
 }
 
 .divider {
   height: 1px;
-  background: #e5e7eb;
+  background: var(--color-gray-300);
   margin: 0.5rem 0;
 }
 
@@ -411,7 +411,7 @@ function handleClose(): void {
   width: 20px;
   height: 20px;
   flex-shrink: 0;
-  color: #3b82f6;
+  color: var(--color-primary-500);
 }
 
 .info-title {
@@ -432,7 +432,7 @@ function handleClose(): void {
   display: inline-flex;
   align-items: center;
   gap: 0.5rem;
-  color: #3b82f6;
+  color: var(--color-primary-500);
   text-decoration: none;
   font-weight: 500;
   font-size: 0.875rem;
@@ -444,7 +444,7 @@ function handleClose(): void {
   }
 
   &:hover {
-    color: #2563eb;
+    color: var(--color-primary-600);
   }
 }
 

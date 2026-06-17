@@ -168,13 +168,13 @@ onMounted(async () => {
 .dashboard-welcome h1 {
   font-size: 2rem;
   font-weight: 700;
-  color: #1f2937;
+  color: var(--color-gray-900);
   margin: 0 0 0.5rem;
 }
 
 .dashboard-welcome p {
   font-size: 1rem;
-  color: #6b7280;
+  color: var(--color-gray-600);
   margin: 0;
 }
 
@@ -184,7 +184,7 @@ onMounted(async () => {
   border-radius: 0.5rem;
   border-right: 4px solid;
   background: white;
-  box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1);
+  box-shadow: var(--shadow-sm);
   margin-bottom: 2rem;
 }
 
@@ -212,13 +212,13 @@ onMounted(async () => {
 .status-message {
   font-size: 0.875rem;
   margin: 0;
-  color: #6b7280;
+  color: var(--color-gray-600);
   line-height: 1.5;
 }
 
 /* Status colors */
 .status-pendingverification {
-  border-right-color: #f59e0b;
+  border-right-color: var(--color-warning-500);
   background: #fffbeb;
 }
 
@@ -227,30 +227,30 @@ onMounted(async () => {
 }
 
 .status-inactive {
-  border-right-color: #ef4444;
-  background: #fef2f2;
+  border-right-color: var(--color-danger-500);
+  background: var(--color-danger-50);
 }
 
 .status-inactive .status-title {
-  color: #b91c1c;
+  color: var(--color-danger-600);
 }
 
 .status-suspended {
-  border-right-color: #dc2626;
-  background: #fef2f2;
+  border-right-color: var(--color-danger-600);
+  background: var(--color-danger-50);
 }
 
 .status-suspended .status-title {
-  color: #991b1b;
+  color: var(--color-danger-600);
 }
 
 .status-archived {
-  border-right-color: #6b7280;
-  background: #f9fafb;
+  border-right-color: var(--color-gray-600);
+  background: var(--color-gray-50);
 }
 
 .status-archived .status-title {
-  color: #374151;
+  color: var(--color-gray-800);
 }
 
 /* Quick Actions */
@@ -268,12 +268,12 @@ onMounted(async () => {
   text-align: center;
   cursor: pointer;
   transition: all 0.3s;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  box-shadow: var(--shadow-sm);
 }
 
 .action-card:hover {
   transform: translateY(-4px);
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  box-shadow: var(--shadow-md);
 }
 
 .action-icon {
@@ -293,11 +293,11 @@ onMounted(async () => {
 }
 
 .bookings-icon {
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: linear-gradient(135deg, var(--color-primary-500) 0%, var(--color-primary-700) 100%);
 }
 
 .financial-icon {
-  background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+  background: linear-gradient(135deg, #f093fb 0%, var(--color-primary-400) 100%);
 }
 
 .profile-icon {
@@ -307,13 +307,13 @@ onMounted(async () => {
 .action-card h3 {
   font-size: 1.25rem;
   font-weight: 600;
-  color: #1f2937;
+  color: var(--color-gray-900);
   margin: 0 0 0.5rem;
 }
 
 .action-card p {
   font-size: 0.875rem;
-  color: #6b7280;
+  color: var(--color-gray-600);
   margin: 0;
 }
 
@@ -331,7 +331,7 @@ onMounted(async () => {
   display: flex;
   align-items: center;
   gap: 1rem;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  box-shadow: var(--shadow-sm);
 }
 
 .stat-icon {
@@ -344,14 +344,14 @@ onMounted(async () => {
 
 .stat-info h4 {
   font-size: 0.875rem;
-  color: #6b7280;
+  color: var(--color-gray-600);
   margin: 0 0 0.25rem;
 }
 
 .stat-value {
   font-size: 1.5rem;
   font-weight: 700;
-  color: #1f2937;
+  color: var(--color-gray-900);
   margin: 0;
 }
 

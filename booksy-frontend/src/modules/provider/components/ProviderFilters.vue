@@ -725,7 +725,7 @@ defineExpose({
   gap: 0.75rem;
   width: 100%;
   padding: 1rem;
-  background: linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%);
+  background: linear-gradient(135deg, var(--color-primary-500) 0%, var(--color-primary-700) 100%);
   border: none;
   border-radius: 12px;
   font-size: 1rem;
@@ -745,13 +745,13 @@ defineExpose({
 }
 
 .voice-search-btn:hover {
-  background: linear-gradient(135deg, #7c3aed 0%, #6d28d9 100%);
+  background: linear-gradient(135deg, var(--color-primary-700) 0%, #6d28d9 100%);
   box-shadow: 0 6px 16px rgba(139, 92, 246, 0.4);
   transform: translateY(-2px);
 }
 
 .voice-search-btn.listening {
-  background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
+  background: linear-gradient(135deg, var(--color-danger-500) 0%, var(--color-danger-600) 100%);
   animation: pulse-bg 1.5s infinite;
   box-shadow: 0 4px 12px rgba(239, 68, 68, 0.4);
 }
@@ -1159,7 +1159,7 @@ defineExpose({
 .stars-display svg {
   width: 18px;
   height: 18px;
-  color: #fbbf24;
+  color: var(--color-warning-500);
 }
 
 .star-btn.active .stars-display svg {

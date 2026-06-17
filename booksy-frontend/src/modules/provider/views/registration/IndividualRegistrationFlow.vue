@@ -373,7 +373,7 @@ onBeforeUnmount(() => {
 <style scoped lang="scss">
 .individual-registration-flow {
   min-height: 100vh;
-  background: #f9fafb;
+  background: var(--color-gray-50);
   padding-bottom: 2rem;
 }
 
@@ -382,7 +382,7 @@ onBeforeUnmount(() => {
   top: 0;
   z-index: 1000;
   background: #fff;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+  box-shadow: var(--shadow-sm);
   padding: 1rem 0;
   margin-bottom: 2rem;
 }

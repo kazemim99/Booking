@@ -93,18 +93,19 @@ function handleClick(event: MouseEvent): void {
   align-items: center;
   justify-content: center;
   gap: 0.5rem;
-  font-weight: 600;
+  font-family: var(--font-family-base);
+  font-weight: var(--font-weight-bold); /* Coliride labels are bold */
   border: none;
   cursor: pointer;
-  transition: all 0.3s ease;
-  border-radius: 8px;
+  transition: background-color 0.2s ease, border-color 0.2s ease, color 0.2s ease;
+  border-radius: var(--radius-md); /* 10px - Coliride button radius */
   position: relative;
   overflow: hidden;
   white-space: nowrap;
 
-  &:focus {
+  &:focus-visible {
     outline: none;
-    box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.2);
+    box-shadow: 0 0 0 3px rgba(55, 119, 191, 0.25);
   }
 
   &:disabled,
@@ -133,70 +134,67 @@ function handleClick(event: MouseEvent): void {
     font-size: 1.125rem;
   }
 
-  // Variants
+  // Variants — Coliride: flat, no shadow, no transform on hover; hover just darkens
   &-primary {
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-    color: white;
+    background: var(--color-primary-500);
+    color: var(--color-text-inverse);
 
     &:hover:not(:disabled):not(.btn-loading) {
-      transform: translateY(-2px);
-      box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
-    }
-
-    &:active:not(:disabled):not(.btn-loading) {
-      transform: translateY(0);
+      background: var(--color-primary-600);
     }
   }
 
+  // Coliride secondary = white fill with a 2px blue outline and blue label
   &-secondary {
-    background: #e5e7eb;
-    color: #374151;
+    background: var(--color-background);
+    color: var(--color-primary-500);
+    border: 2px solid var(--color-primary-500);
 
     &:hover:not(:disabled):not(.btn-loading) {
-      background: #d1d5db;
+      background: var(--color-primary-50);
     }
   }
 
   &-success {
-    background: #10b981;
-    color: white;
+    background: var(--color-success-500);
+    color: var(--color-text-inverse);
 
     &:hover:not(:disabled):not(.btn-loading) {
-      background: #059669;
+      background: var(--color-success-600);
     }
   }
 
   &-danger {
-    background: #ef4444;
-    color: white;
+    background: var(--color-danger-400);
+    color: var(--color-text-inverse);
 
     &:hover:not(:disabled):not(.btn-loading) {
-      background: #dc2626;
+      background: var(--color-danger-500);
     }
   }
 
   &-warning {
-    background: #f59e0b;
-    color: white;
+    background: var(--color-warning-500);
+    color: var(--color-navy); /* gold needs dark ink for contrast */
 
     &:hover:not(:disabled):not(.btn-loading) {
-      background: #d97706;
+      background: var(--color-warning-400);
     }
   }
 
   &-ghost {
     background: transparent;
-    color: #667eea;
-    border: 1px solid #667eea;
+    color: var(--color-primary-500);
+    border: 1px solid var(--color-primary-500);
 
     &:hover:not(:disabled):not(.btn-loading) {
-      background: rgba(102, 126, 234, 0.1);
+      background: var(--color-primary-50);
     }
   }
 
   &-link {
     background: transparent;
-    color: #667eea;
+    color: var(--color-primary-500);
     padding: 0;
 
     &:hover:not(:disabled):not(.btn-loading) {

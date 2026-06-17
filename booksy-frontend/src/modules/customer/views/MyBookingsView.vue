@@ -409,12 +409,12 @@ onMounted(() => {
   padding: 1.5rem;
   margin-bottom: 1rem;
   position: relative;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  box-shadow: var(--shadow-md);
   transition: box-shadow 0.2s;
 }
 
 .booking-card:hover {
-  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+  box-shadow: var(--shadow-md);
 }
 
 .booking-status {

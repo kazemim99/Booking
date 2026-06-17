@@ -120,7 +120,7 @@ const userColor = computed(() => {
   if (customerStore.profile) {
     return customerStore.userColor
   }
-  return '#667eea'
+  return 'var(--color-primary-500)'
 })
 
 // Optional external menu (e.g., Provider/Admin)
@@ -233,7 +233,7 @@ async function handleLogout(): Promise<void> {
   transition: background 0.2s;
 
   &:hover {
-    background: #f3f4f6;
+    background: var(--color-gray-100);
   }
 }
 
@@ -242,26 +242,26 @@ async function handleLogout(): Promise<void> {
   height: 36px;
   border-radius: 50%;
   object-fit: cover;
-  border: 2px solid #e5e7eb;
+  border: 2px solid var(--color-gray-300);
 }
 
 .user-avatar-placeholder {
   width: 36px;
   height: 36px;
   border-radius: 50%;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: linear-gradient(135deg, var(--color-primary-500) 0%, var(--color-primary-700) 100%);
   color: white;
   display: flex;
   align-items: center;
   justify-content: center;
   font-weight: 600;
   font-size: 0.875rem;
-  border: 2px solid #e5e7eb;
+  border: 2px solid var(--color-gray-300);
 }
 
 .user-name {
   font-weight: 500;
-  color: #374151;
+  color: var(--color-gray-800);
 
   @media (max-width: 640px) {
     display: none;
@@ -271,7 +271,7 @@ async function handleLogout(): Promise<void> {
 .dropdown-arrow {
   width: 20px;
   height: 20px;
-  color: #9ca3af;
+  color: var(--color-gray-500);
   transition: transform 0.2s;
 
   &.rotated {
@@ -306,7 +306,7 @@ async function handleLogout(): Promise<void> {
 
 .menu-header {
   padding: 1rem;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: linear-gradient(135deg, var(--color-primary-500) 0%, var(--color-primary-700) 100%);
   color: white;
 }
 
@@ -328,7 +328,7 @@ async function handleLogout(): Promise<void> {
 
 .menu-divider {
   height: 1px;
-  background: #e5e7eb;
+  background: var(--color-gray-300);
 }
 
 .menu-list {
@@ -342,12 +342,12 @@ async function handleLogout(): Promise<void> {
   align-items: center;
   gap: 0.75rem;
   padding: 0.75rem 1rem;
-  color: #374151;
+  color: var(--color-gray-800);
   text-decoration: none;
   transition: background 0.2s;
 
   &:hover {
-    background: #f3f4f6;
+    background: var(--color-gray-100);
   }
 }
 
@@ -364,7 +364,7 @@ async function handleLogout(): Promise<void> {
 .menu-icon {
   display: flex;
   align-items: center;
-  color: #6b7280;
+  color: var(--color-gray-600);
 
   :deep(svg) {
     width: 20px;
@@ -380,14 +380,14 @@ async function handleLogout(): Promise<void> {
   padding: 0.75rem 1rem;
   background: none;
   border: none;
-  color: #ef4444;
+  color: var(--color-danger-500);
   font-weight: 500;
   cursor: pointer;
   text-align: left;
   transition: background 0.2s;
 
   &:hover {
-    background: #fef2f2;
+    background: var(--color-danger-50);
   }
 }
 

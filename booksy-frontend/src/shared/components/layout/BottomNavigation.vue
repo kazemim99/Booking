@@ -128,7 +128,7 @@ router.afterEach((to) => {
   border: none;
   cursor: pointer;
   transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-  color: #9ca3af;
+  color: var(--color-gray-500);
   min-width: 60px;
   max-width: 80px;
 
@@ -137,7 +137,7 @@ router.afterEach((to) => {
   }
 
   &.active {
-    color: #667eea;
+    color: var(--color-primary-500);
 
     .nav-icon {
       transform: translateY(-2px);
@@ -177,7 +177,7 @@ router.afterEach((to) => {
   min-width: 18px;
   height: 18px;
   padding: 0 4px;
-  background: #ef4444;
+  background: var(--color-danger-500);
   color: white;
   border-radius: 9px;
   font-size: 0.625rem;

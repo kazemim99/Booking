@@ -422,11 +422,11 @@ const calculateUtilization = (active: number, total: number): number => {
 }
 
 .stat-icon.services {
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: linear-gradient(135deg, var(--color-primary-500) 0%, var(--color-primary-700) 100%);
 }
 
 .stat-icon.staff {
-  background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+  background: linear-gradient(135deg, #f093fb 0%, var(--color-primary-400) 100%);
 }
 
 .stat-icon.bookings {
@@ -438,7 +438,7 @@ const calculateUtilization = (active: number, total: number): number => {
 }
 
 .stat-icon.reviews {
-  background: linear-gradient(135deg, #fa709a 0%, #fee140 100%);
+  background: linear-gradient(135deg, var(--color-primary-400) 0%, #fee140 100%);
 }
 
 .stat-icon.info {
@@ -497,8 +497,8 @@ const calculateUtilization = (active: number, total: number): number => {
 }
 
 .stat-trend.negative {
-  background: #fee2e2;
-  color: #991b1b;
+  background: var(--color-danger-50);
+  color: var(--color-danger-600);
 }
 
 .stat-trend svg {

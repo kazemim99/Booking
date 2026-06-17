@@ -125,7 +125,7 @@ function handleCardClick(): void {
 
   &:hover {
     transform: translateY(-4px);
-    box-shadow: 0 12px 24px rgba(0, 0, 0, 0.15);
+    box-shadow: var(--shadow-lg);
   }
 }
 
@@ -134,7 +134,7 @@ function handleCardClick(): void {
   width: 100%;
   height: 200px;
   overflow: hidden;
-  background: #f3f4f6;
+  background: var(--color-gray-100);
 
   img {
     width: 100%;
@@ -166,14 +166,14 @@ function handleCardClick(): void {
 .service-name {
   font-size: 1.125rem;
   font-weight: 600;
-  color: #1f2937;
+  color: var(--color-gray-900);
   margin: 0;
   flex: 1;
 }
 
 .service-description {
   font-size: 0.875rem;
-  color: #6b7280;
+  color: var(--color-gray-600);
   margin: 0 0 1rem 0;
   line-height: 1.5;
   flex-grow: 1;
@@ -190,7 +190,7 @@ function handleCardClick(): void {
     display: flex;
     align-items: center;
     gap: 0.375rem;
-    color: #6b7280;
+    color: var(--color-gray-600);
   }
 
   .meta-icon {
@@ -203,18 +203,18 @@ function handleCardClick(): void {
   flex-direction: column;
   margin-bottom: 0.75rem;
   padding: 0.75rem;
-  background: #f9fafb;
+  background: var(--color-gray-50);
   border-radius: 8px;
 
   .price-amount {
     font-size: 1.5rem;
     font-weight: 700;
-    color: #3b82f6;
+    color: var(--color-primary-500);
   }
 
   .price-label {
     font-size: 0.75rem;
-    color: #6b7280;
+    color: var(--color-gray-600);
     text-transform: uppercase;
     letter-spacing: 0.05em;
   }
@@ -229,15 +229,15 @@ function handleCardClick(): void {
   .tag {
     font-size: 0.75rem;
     padding: 0.25rem 0.625rem;
-    background: #e5e7eb;
-    color: #4b5563;
+    background: var(--color-gray-300);
+    color: var(--color-gray-700);
     border-radius: 4px;
   }
 
   .tag-more {
     font-size: 0.75rem;
     padding: 0.25rem 0.625rem;
-    color: #6b7280;
+    color: var(--color-gray-600);
   }
 }
 
@@ -260,13 +260,13 @@ function handleCardClick(): void {
 }
 
 :deep(.status-inactive) {
-  background: #fee2e2;
-  color: #991b1b;
+  background: var(--color-danger-50);
+  color: var(--color-danger-600);
 }
 
 :deep(.status-archived) {
-  background: #e5e7eb;
-  color: #374151;
+  background: var(--color-gray-300);
+  color: var(--color-gray-800);
 }
 
 @media (max-width: 768px) {

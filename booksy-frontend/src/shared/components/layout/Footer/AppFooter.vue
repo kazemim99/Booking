@@ -125,7 +125,7 @@ const socialLinks: SocialLink[] = [
 <style scoped lang="scss">
 .app-footer {
   background: white;
-  border-top: 1px solid #e5e7eb;
+  border-top: 1px solid var(--color-gray-300);
   padding: 1.5rem 2rem;
   margin-top: auto;
 
@@ -155,7 +155,7 @@ const socialLinks: SocialLink[] = [
 
 .copyright {
   margin: 0;
-  color: #6b7280;
+  color: var(--color-gray-600);
   font-size: 0.875rem;
 }
 
@@ -176,13 +176,13 @@ const socialLinks: SocialLink[] = [
 }
 
 .footer-link {
-  color: #6b7280;
+  color: var(--color-gray-600);
   text-decoration: none;
   font-size: 0.875rem;
   transition: color 0.2s;
 
   &:hover {
-    color: #667eea;
+    color: var(--color-primary-500);
   }
 }
 
@@ -203,8 +203,8 @@ const socialLinks: SocialLink[] = [
   width: 36px;
   height: 36px;
   border-radius: 50%;
-  background: #f3f4f6;
-  color: #6b7280;
+  background: var(--color-gray-100);
+  color: var(--color-gray-600);
   transition: all 0.2s;
 
   :deep(svg) {
@@ -213,7 +213,7 @@ const socialLinks: SocialLink[] = [
   }
 
   &:hover {
-    background: #667eea;
+    background: var(--color-primary-500);
     color: white;
     transform: translateY(-2px);
   }

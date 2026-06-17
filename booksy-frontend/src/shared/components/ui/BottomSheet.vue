@@ -221,7 +221,7 @@ onBeforeUnmount(() => {
   width: 100%;
   background: white;
   border-radius: 24px 24px 0 0;
-  box-shadow: 0 -4px 24px rgba(0, 0, 0, 0.15);
+  box-shadow: var(--shadow-lg);
   display: flex;
   flex-direction: column;
   max-height: 90vh;
@@ -260,12 +260,12 @@ onBeforeUnmount(() => {
 .drag-handle {
   width: 40px;
   height: 4px;
-  background: #d1d5db;
+  background: var(--color-gray-400);
   border-radius: 2px;
   transition: background 0.2s;
 
   .drag-handle-container:hover & {
-    background: #9ca3af;
+    background: var(--color-gray-500);
   }
 }
 
@@ -274,13 +274,13 @@ onBeforeUnmount(() => {
   align-items: center;
   justify-content: space-between;
   padding: 0 1.5rem 1rem 1.5rem;
-  border-bottom: 1px solid #e5e7eb;
+  border-bottom: 1px solid var(--color-gray-300);
 }
 
 .bottomsheet-title {
   font-size: 1.25rem;
   font-weight: 600;
-  color: #111827;
+  color: var(--color-gray-900);
   margin: 0;
 }
 
@@ -288,7 +288,7 @@ onBeforeUnmount(() => {
   background: none;
   border: none;
   cursor: pointer;
-  color: #6b7280;
+  color: var(--color-gray-600);
   padding: 0.5rem;
   border-radius: 8px;
   transition: all 0.2s;
@@ -302,8 +302,8 @@ onBeforeUnmount(() => {
   }
 
   &:hover {
-    background: #f3f4f6;
-    color: #111827;
+    background: var(--color-gray-100);
+    color: var(--color-gray-900);
   }
 
   &:active {
@@ -331,11 +331,11 @@ onBeforeUnmount(() => {
   }
 
   &::-webkit-scrollbar-thumb {
-    background: #d1d5db;
+    background: var(--color-gray-400);
     border-radius: 3px;
 
     &:hover {
-      background: #9ca3af;
+      background: var(--color-gray-500);
     }
   }
 }

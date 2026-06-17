@@ -207,7 +207,7 @@ async function handleReject(): Promise<void> {
 <style scoped lang="scss">
 .join-request-card {
   background: #fff;
-  border: 1px solid #e5e7eb;
+  border: 1px solid var(--color-gray-300);
   border-radius: 12px;
   padding: 1.5rem;
   margin-bottom: 1rem;
@@ -224,7 +224,7 @@ async function handleReject(): Promise<void> {
 
   &.status-rejected {
     opacity: 0.8;
-    background: #fef2f2;
+    background: var(--color-danger-50);
     border-color: #fecaca;
   }
 }
@@ -253,7 +253,7 @@ async function handleReject(): Promise<void> {
   height: 60px;
   border-radius: 50%;
   overflow: hidden;
-  border: 3px solid #f3f4f6;
+  border: 3px solid var(--color-gray-100);
   flex-shrink: 0;
 
   img {
@@ -263,7 +263,7 @@ async function handleReject(): Promise<void> {
   }
 
   &.avatar-placeholder {
-    background: linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%);
+    background: linear-gradient(135deg, var(--color-primary-500) 0%, var(--color-primary-700) 100%);
     display: flex;
     align-items: center;
     justify-content: center;
@@ -289,11 +289,11 @@ async function handleReject(): Promise<void> {
   align-items: center;
   gap: 0.5rem;
   font-size: 0.875rem;
-  color: #6b7280;
+  color: var(--color-gray-600);
 
   i {
     font-size: 0.875rem;
-    color: #9ca3af;
+    color: var(--color-gray-500);
   }
 }
 
@@ -312,7 +312,7 @@ async function handleReject(): Promise<void> {
     color: #92400e;
 
     i {
-      color: #f59e0b;
+      color: var(--color-warning-500);
     }
   }
 
@@ -321,23 +321,23 @@ async function handleReject(): Promise<void> {
     color: #065f46;
 
     i {
-      color: #10b981;
+      color: var(--color-success-500);
     }
   }
 
   &.badge-rejected {
-    background: #fee2e2;
-    color: #991b1b;
+    background: var(--color-danger-50);
+    color: var(--color-danger-600);
 
     i {
-      color: #dc2626;
+      color: var(--color-danger-600);
     }
   }
 }
 
 .request-message {
   padding: 1rem;
-  background: #f9fafb;
+  background: var(--color-gray-50);
   border-radius: 8px;
   margin-bottom: 1rem;
 }
@@ -348,18 +348,18 @@ async function handleReject(): Promise<void> {
   gap: 0.5rem;
   font-size: 0.875rem;
   font-weight: 600;
-  color: #4b5563;
+  color: var(--color-gray-700);
   margin-bottom: 0.5rem;
 
   i {
-    color: #7c3aed;
+    color: var(--color-primary-700);
     font-size: 1rem;
   }
 }
 
 .message-text {
   font-size: 0.95rem;
-  color: #1f2937;
+  color: var(--color-gray-900);
   line-height: 1.6;
   margin: 0;
 }
@@ -395,7 +395,7 @@ async function handleReject(): Promise<void> {
 
   i {
     font-size: 1.5rem;
-    color: #7c3aed;
+    color: var(--color-primary-700);
   }
 }
 
@@ -405,7 +405,7 @@ async function handleReject(): Promise<void> {
 
 .org-label {
   font-size: 0.875rem;
-  color: #6b7280;
+  color: var(--color-gray-600);
   margin-bottom: 0.25rem;
 }
 
@@ -417,7 +417,7 @@ async function handleReject(): Promise<void> {
 
 .review-info {
   padding: 1rem;
-  background: #f3f4f6;
+  background: var(--color-gray-100);
   border-radius: 8px;
   margin-bottom: 1rem;
 }
@@ -427,7 +427,7 @@ async function handleReject(): Promise<void> {
   align-items: center;
   gap: 0.5rem;
   font-size: 0.875rem;
-  color: #4b5563;
+  color: var(--color-gray-700);
   margin-bottom: 0.5rem;
 
   &:last-child {
@@ -435,7 +435,7 @@ async function handleReject(): Promise<void> {
   }
 
   i {
-    color: #6b7280;
+    color: var(--color-gray-600);
     font-size: 0.875rem;
   }
 }
@@ -443,14 +443,14 @@ async function handleReject(): Promise<void> {
 .rejection-reason {
   margin-top: 0.75rem;
   padding: 0.75rem;
-  background: #fee2e2;
+  background: var(--color-danger-50);
   border-radius: 6px;
   display: flex;
   align-items: flex-start;
   gap: 0.5rem;
 
   i {
-    color: #dc2626;
+    color: var(--color-danger-600);
     font-size: 1rem;
     flex-shrink: 0;
     margin-top: 0.125rem;
@@ -458,7 +458,7 @@ async function handleReject(): Promise<void> {
 
   span {
     font-size: 0.875rem;
-    color: #991b1b;
+    color: var(--color-danger-600);
     line-height: 1.5;
   }
 }
@@ -486,7 +486,7 @@ async function handleReject(): Promise<void> {
   margin-top: 1rem;
 
   i {
-    color: #f59e0b;
+    color: var(--color-warning-500);
     font-size: 1.125rem;
   }
 }

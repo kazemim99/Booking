@@ -71,7 +71,7 @@ const goBack = () => {
   top: 0;
   z-index: 1000;
   background: white;
-  border-bottom: 1px solid #e5e7eb;
+  border-bottom: 1px solid var(--color-gray-300);
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
 }
 
@@ -91,9 +91,9 @@ const goBack = () => {
   gap: 0.5rem;
   padding: 0.5rem 1rem;
   background: transparent;
-  border: 1px solid #e5e7eb;
+  border: 1px solid var(--color-gray-300);
   border-radius: 8px;
-  color: #374151;
+  color: var(--color-gray-800);
   font-size: 0.875rem;
   font-weight: 500;
   font-family: 'Vazir', 'IRANSans', sans-serif;
@@ -108,9 +108,9 @@ const goBack = () => {
 }
 
 .back-btn:hover {
-  background: #f9fafb;
-  border-color: #8b5cf6;
-  color: #8b5cf6;
+  background: var(--color-gray-50);
+  border-color: var(--color-primary-500);
+  color: var(--color-primary-500);
 }
 
 .back-btn:active {
@@ -138,7 +138,7 @@ const goBack = () => {
 .logo-text {
   font-size: 1.5rem;
   font-weight: 700;
-  background: linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%);
+  background: linear-gradient(135deg, var(--color-primary-500) 0%, var(--color-primary-700) 100%);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;

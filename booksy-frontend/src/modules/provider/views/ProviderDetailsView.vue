@@ -128,7 +128,7 @@ onMounted(async () => {
   width: 64px;
   height: 64px;
   border: 5px solid #e2e8f0;
-  border-top-color: #667eea;
+  border-top-color: var(--color-primary-500);
   border-radius: 50%;
   animation: spin 0.8s linear infinite;
 }
@@ -141,7 +141,7 @@ onMounted(async () => {
 
 .loading-container p {
   font-size: 1.125rem;
-  color: #64748b;
+  color: var(--color-gray-600);
   font-weight: 500;
 }
 
@@ -157,7 +157,7 @@ onMounted(async () => {
   background: white;
   border-radius: 24px;
   padding: 3rem 2rem;
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.1);
+  box-shadow: var(--shadow-lg);
   text-align: center;
   max-width: 400px;
 }
@@ -165,7 +165,7 @@ onMounted(async () => {
 .error-card svg {
   width: 64px;
   height: 64px;
-  color: #ef4444;
+  color: var(--color-danger-500);
   margin-bottom: 1rem;
 }
 
@@ -178,13 +178,13 @@ onMounted(async () => {
 
 .error-card p {
   font-size: 1rem;
-  color: #64748b;
+  color: var(--color-gray-600);
   margin: 0 0 2rem 0;
 }
 
 .btn-back-home {
   padding: 0.875rem 2rem;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: linear-gradient(135deg, var(--color-primary-500) 0%, var(--color-primary-700) 100%);
   color: white;
   border: none;
   border-radius: 12px;
@@ -215,7 +215,7 @@ onMounted(async () => {
   background: white;
   padding: 0.75rem;
   border-radius: 16px;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.06);
+  box-shadow: var(--shadow-sm);
   margin-bottom: 2rem;
   overflow-x: auto;
 }
@@ -232,7 +232,7 @@ onMounted(async () => {
   border-radius: 12px;
   font-size: 1rem;
   font-weight: 600;
-  color: #64748b;
+  color: var(--color-gray-600);
   cursor: pointer;
   transition: all 0.3s;
   white-space: nowrap;
@@ -248,7 +248,7 @@ onMounted(async () => {
 }
 
 .tab-btn.active {
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: linear-gradient(135deg, var(--color-primary-500) 0%, var(--color-primary-700) 100%);
   color: white;
 }
 

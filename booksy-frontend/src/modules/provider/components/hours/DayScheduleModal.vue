@@ -450,14 +450,14 @@ async function save() {
   justify-content: space-between;
   align-items: center;
   padding: 1.5rem;
-  border-bottom: 1px solid #e5e7eb;
+  border-bottom: 1px solid var(--color-gray-300);
 }
 
 .modal-title {
   font-size: 1.5rem;
   font-weight: 700;
   margin: 0;
-  color: #111827;
+  color: var(--color-gray-900);
 }
 
 .close-btn {
@@ -466,7 +466,7 @@ async function save() {
   border: none;
   background: transparent;
   font-size: 2rem;
-  color: #6b7280;
+  color: var(--color-gray-600);
   cursor: pointer;
   border-radius: 0.375rem;
   transition: all 0.2s;
@@ -477,8 +477,8 @@ async function save() {
 }
 
 .close-btn:hover {
-  background: #f3f4f6;
-  color: #111827;
+  background: var(--color-gray-100);
+  color: var(--color-gray-900);
 }
 
 .modal-body {
@@ -496,7 +496,7 @@ async function save() {
   grid-template-columns: repeat(3, 1fr);
   gap: 0.5rem;
   padding: 0.5rem;
-  background: #f9fafb;
+  background: var(--color-gray-50);
   border-radius: 0.5rem;
 }
 
@@ -513,7 +513,7 @@ async function save() {
   transition: all 0.2s;
   font-size: 0.875rem;
   font-weight: 500;
-  color: #6b7280;
+  color: var(--color-gray-600);
 }
 
 .mode-tab i {
@@ -521,14 +521,14 @@ async function save() {
 }
 
 .mode-tab:hover {
-  border-color: #d1d5db;
-  color: #111827;
+  border-color: var(--color-gray-400);
+  color: var(--color-gray-900);
 }
 
 .mode-tab.active {
-  border-color: #3b82f6;
-  background: #eff6ff;
-  color: #3b82f6;
+  border-color: var(--color-primary-500);
+  background: var(--color-primary-50);
+  color: var(--color-primary-500);
 }
 
 .mode-content {
@@ -547,18 +547,18 @@ async function save() {
 .form-label {
   font-size: 0.875rem;
   font-weight: 600;
-  color: #374151;
+  color: var(--color-gray-800);
 }
 
 .form-label.required::after {
   content: ' *';
-  color: #ef4444;
+  color: var(--color-danger-500);
 }
 
 .form-control,
 .form-select {
   padding: 0.625rem;
-  border: 1px solid #d1d5db;
+  border: 1px solid var(--color-gray-400);
   border-radius: 0.375rem;
   font-size: 0.875rem;
 }
@@ -566,13 +566,13 @@ async function save() {
 .form-control:focus,
 .form-select:focus {
   outline: none;
-  border-color: #3b82f6;
+  border-color: var(--color-primary-500);
   box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
 }
 
 .form-text {
   font-size: 0.75rem;
-  color: #6b7280;
+  color: var(--color-gray-600);
 }
 
 .form-check {
@@ -609,9 +609,9 @@ async function save() {
 }
 
 .holiday-info {
-  background: #fef2f2;
+  background: var(--color-danger-50);
   border: 1px solid #fecaca;
-  color: #991b1b;
+  color: var(--color-danger-600);
 }
 
 .exception-info {
@@ -623,9 +623,9 @@ async function save() {
 /* Status Toggle */
 .status-toggle {
   padding: 1rem;
-  background: #f9fafb;
+  background: var(--color-gray-50);
   border-radius: 0.5rem;
-  border: 1px solid #e5e7eb;
+  border: 1px solid var(--color-gray-300);
 }
 
 .toggle-label {
@@ -638,7 +638,7 @@ async function save() {
 .toggle-text {
   font-size: 1rem;
   font-weight: 600;
-  color: #111827;
+  color: var(--color-gray-900);
 }
 
 .toggle-input {
@@ -650,7 +650,7 @@ async function save() {
   display: inline-block;
   width: 3.5rem;
   height: 2rem;
-  background-color: #e5e7eb;
+  background-color: var(--color-gray-300);
   border-radius: 2rem;
   transition: all 0.2s;
 }
@@ -668,7 +668,7 @@ async function save() {
 }
 
 .toggle-input:checked + .toggle-slider {
-  background-color: #10b981;
+  background-color: var(--color-success-500);
 }
 
 .toggle-input:checked + .toggle-slider:before {
@@ -686,7 +686,7 @@ async function save() {
   font-size: 1.125rem;
   font-weight: 600;
   margin: 0;
-  color: #111827;
+  color: var(--color-gray-900);
 }
 
 .time-input-group {
@@ -705,15 +705,15 @@ async function save() {
 .time-field label {
   font-size: 0.875rem;
   font-weight: 500;
-  color: #6b7280;
+  color: var(--color-gray-600);
 }
 
 .time-select {
   padding: 0.625rem;
-  border: 1px solid #d1d5db;
+  border: 1px solid var(--color-gray-400);
   border-radius: 0.375rem;
   font-size: 0.875rem;
-  color: #111827;
+  color: var(--color-gray-900);
   background-color: white;
   cursor: pointer;
   transition: all 0.2s;
@@ -721,13 +721,13 @@ async function save() {
 
 .time-select:focus {
   outline: none;
-  border-color: #3b82f6;
+  border-color: var(--color-primary-500);
   box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
 }
 
 .time-separator {
   padding-bottom: 0.625rem;
-  color: #9ca3af;
+  color: var(--color-gray-500);
   font-weight: 500;
   font-size: 1.125rem;
 }
@@ -740,20 +740,20 @@ async function save() {
 
 .add-break-btn {
   padding: 0.5rem 1rem;
-  border: 1px solid #d1d5db;
+  border: 1px solid var(--color-gray-400);
   background: white;
   border-radius: 0.375rem;
   font-size: 0.875rem;
   font-weight: 500;
-  color: #111827;
+  color: var(--color-gray-900);
   cursor: pointer;
   transition: all 0.2s;
 }
 
 .add-break-btn:hover:not(:disabled) {
-  border-color: #3b82f6;
-  background: #eff6ff;
-  color: #3b82f6;
+  border-color: var(--color-primary-500);
+  background: var(--color-primary-50);
+  color: var(--color-primary-500);
 }
 
 .add-break-btn:disabled {
@@ -764,12 +764,12 @@ async function save() {
 .no-breaks {
   text-align: center;
   padding: 1.5rem;
-  color: #9ca3af;
+  color: var(--color-gray-500);
   font-style: italic;
-  background-color: #f9fafb;
+  background-color: var(--color-gray-50);
   border-radius: 0.375rem;
   font-size: 0.875rem;
-  border: 1px dashed #e5e7eb;
+  border: 1px dashed var(--color-gray-300);
 }
 
 .breaks-list {
@@ -780,9 +780,9 @@ async function save() {
 
 .break-item {
   padding: 1rem;
-  background-color: #f9fafb;
+  background-color: var(--color-gray-50);
   border-radius: 0.5rem;
-  border: 1px solid #e5e7eb;
+  border: 1px solid var(--color-gray-300);
 }
 
 .remove-btn {
@@ -792,10 +792,10 @@ async function save() {
   align-items: center;
   justify-content: center;
   border: 1px solid #fca5a5;
-  background: #fef2f2;
+  background: var(--color-danger-50);
   border-radius: 0.375rem;
   font-size: 1.75rem;
-  color: #ef4444;
+  color: var(--color-danger-500);
   cursor: pointer;
   transition: all 0.2s;
   flex-shrink: 0;
@@ -805,7 +805,7 @@ async function save() {
 }
 
 .remove-btn:hover {
-  background: #ef4444;
+  background: var(--color-danger-500);
   color: white;
 }
 
@@ -819,9 +819,9 @@ async function save() {
 }
 
 .alert-danger {
-  background: #fef2f2;
+  background: var(--color-danger-50);
   border: 1px solid #fecaca;
-  color: #991b1b;
+  color: var(--color-danger-600);
 }
 
 .modal-footer {
@@ -829,8 +829,8 @@ async function save() {
   align-items: center;
   gap: 0.75rem;
   padding: 1.5rem;
-  border-top: 1px solid #e5e7eb;
-  background: #f9fafb;
+  border-top: 1px solid var(--color-gray-300);
+  background: var(--color-gray-50);
 }
 
 .flex-spacer {
@@ -849,35 +849,35 @@ async function save() {
 
 .btn-secondary {
   background: white;
-  color: #374151;
-  border-color: #d1d5db;
+  color: var(--color-gray-800);
+  border-color: var(--color-gray-400);
 }
 
 .btn-secondary:hover {
-  background: #f9fafb;
-  border-color: #9ca3af;
+  background: var(--color-gray-50);
+  border-color: var(--color-gray-500);
 }
 
 .btn-primary {
-  background: #3b82f6;
+  background: var(--color-primary-500);
   color: white;
-  border-color: #3b82f6;
+  border-color: var(--color-primary-500);
 }
 
 .btn-primary:hover {
-  background: #2563eb;
-  border-color: #2563eb;
+  background: var(--color-primary-600);
+  border-color: var(--color-primary-600);
 }
 
 .btn-danger {
-  background: #ef4444;
+  background: var(--color-danger-500);
   color: white;
-  border-color: #ef4444;
+  border-color: var(--color-danger-500);
 }
 
 .btn-danger:hover {
-  background: #dc2626;
-  border-color: #dc2626;
+  background: var(--color-danger-600);
+  border-color: var(--color-danger-600);
 }
 
 .btn:disabled {

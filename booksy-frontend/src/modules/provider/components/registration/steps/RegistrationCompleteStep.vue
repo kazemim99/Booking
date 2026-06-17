@@ -102,7 +102,7 @@ const handleContinue = () => {
 .success-title {
   font-size: 2.5rem;
   font-weight: 800;
-  color: #111827;
+  color: var(--color-gray-900);
   margin-bottom: 0.75rem;
   animation: fadeInUp 0.6s cubic-bezier(0.4, 0, 0.2, 1) 0.2s both;
 }
@@ -110,13 +110,13 @@ const handleContinue = () => {
 .success-subtitle {
   font-size: 1.5rem;
   font-weight: 600;
-  color: #374151;
+  color: var(--color-gray-800);
   margin-bottom: 2rem;
   animation: fadeInUp 0.6s cubic-bezier(0.4, 0, 0.2, 1) 0.3s both;
 }
 
 .description-box {
-  background: #f9fafb;
+  background: var(--color-gray-50);
   padding: 1.5rem;
   border-radius: 0.75rem;
   margin-bottom: 2rem;
@@ -125,7 +125,7 @@ const handleContinue = () => {
 
 .description-text {
   font-size: 1rem;
-  color: #6b7280;
+  color: var(--color-gray-600);
   line-height: 1.6;
 }
 
@@ -136,7 +136,7 @@ const handleContinue = () => {
   gap: 0.75rem;
   padding: 1rem 1.5rem;
   background: #fffbeb;
-  border: 2px solid #fbbf24;
+  border: 2px solid var(--color-warning-500);
   border-radius: 0.5rem;
   margin-bottom: 2rem;
   animation: fadeInUp 0.6s cubic-bezier(0.4, 0, 0.2, 1) 0.5s both;
@@ -145,7 +145,7 @@ const handleContinue = () => {
 .alert-icon {
   width: 1.5rem;
   height: 1.5rem;
-  color: #f59e0b;
+  color: var(--color-warning-500);
   flex-shrink: 0;
 }
 
@@ -162,7 +162,7 @@ const handleContinue = () => {
   font-size: 1rem;
   font-weight: 700;
   color: #ffffff;
-  background: #111827;
+  background: var(--color-gray-900);
   border: none;
   border-radius: 0.5rem;
   cursor: pointer;
@@ -171,9 +171,9 @@ const handleContinue = () => {
 }
 
 .btn-continue:hover {
-  background: #1f2937;
+  background: var(--color-gray-900);
   transform: translateY(-2px);
-  box-shadow: 0 10px 20px rgba(0, 0, 0, 0.2);
+  box-shadow: var(--shadow-md);
 }
 
 @keyframes fadeInUp {
@@ -199,7 +199,7 @@ const handleContinue = () => {
   position: absolute;
   font-size: 10rem;
   font-weight: 700;
-  color: #111827;
+  color: var(--color-gray-900);
   animation: float 20s ease-in-out infinite;
 }
 

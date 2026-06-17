@@ -167,13 +167,13 @@ defineExpose({
 .input-label {
   display: block;
   font-size: 0.875rem;
-  font-weight: 500;
-  color: #374151;
+  font-weight: var(--font-weight-bold); /* Coliride form labels are bold navy */
+  color: var(--color-navy);
   margin-bottom: 0.5rem;
 }
 
 .input-required {
-  color: #ef4444;
+  color: var(--color-danger-400);
   margin-left: 0.25rem;
 }
 
@@ -185,34 +185,35 @@ defineExpose({
 
 .input {
   width: 100%;
-  border: 1px solid #d1d5db;
-  border-radius: 8px;
-  background: white;
-  color: #1f2937;
-  transition: all 0.2s;
+  font-family: var(--font-family-base);
+  border: 1.5px solid var(--color-border-light); /* #ebeef3 */
+  border-radius: var(--radius-lg); /* 12px - Coliride field radius */
+  background: var(--color-background);
+  color: var(--color-text-primary);
+  transition: border-color 0.2s, box-shadow 0.2s;
   outline: none;
 
   &::placeholder {
-    color: #9ca3af;
+    color: var(--color-text-tertiary);
   }
 
   &:hover:not(:disabled) {
-    border-color: #9ca3af;
+    border-color: var(--color-border-dark); /* #c3cad9 */
   }
 
   &:focus {
-    border-color: #667eea;
-    box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+    border-color: var(--color-primary-500);
+    box-shadow: 0 0 0 3px rgba(55, 119, 191, 0.12);
   }
 
   &:disabled {
-    background-color: #f3f4f6;
+    background-color: var(--color-background-secondary);
     cursor: not-allowed;
     opacity: 0.6;
   }
 
-  &:readonly {
-    background-color: #f9fafb;
+  &:read-only {
+    background-color: var(--color-background-tertiary);
   }
 
   // Sizes
@@ -233,11 +234,11 @@ defineExpose({
 
   // States
   &-error {
-    border-color: #ef4444;
+    border-color: var(--color-danger-600); /* #e74a3b - Coliride input error border */
 
     &:focus {
-      border-color: #ef4444;
-      box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.1);
+      border-color: var(--color-danger-600);
+      box-shadow: 0 0 0 3px rgba(231, 74, 59, 0.12);
     }
   }
 
@@ -255,7 +256,7 @@ defineExpose({
   position: absolute;
   display: flex;
   align-items: center;
-  color: #6b7280;
+  color: var(--color-gray-400); /* #d2dbeb - Coliride field icon */
   font-size: 1.25rem;
   pointer-events: none;
 }
@@ -272,7 +273,7 @@ defineExpose({
 .input-clear {
   background: none;
   border: none;
-  color: #9ca3af;
+  color: var(--color-text-tertiary);
   cursor: pointer;
   padding: 0.25rem;
   font-size: 1rem;
@@ -281,7 +282,7 @@ defineExpose({
   transition: color 0.2s;
 
   &:hover {
-    color: #6b7280;
+    color: var(--color-text-secondary);
   }
 }
 
@@ -289,14 +290,14 @@ defineExpose({
   display: block;
   margin-top: 0.25rem;
   font-size: 0.75rem;
-  color: #ef4444;
+  color: var(--color-danger-500);
 }
 
 .input-hint {
   display: block;
   margin-top: 0.25rem;
   font-size: 0.75rem;
-  color: #6b7280;
+  color: var(--color-text-secondary);
 }
 
 .input-wrapper-disabled {

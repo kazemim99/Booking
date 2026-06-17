@@ -287,14 +287,14 @@ watch(isOpen, (newValue) => {
 
 .step-description {
   font-size: 0.9375rem;
-  color: #4b5563;
+  color: var(--color-gray-700);
   text-align: center;
   line-height: 1.6;
   margin: 0;
 }
 
 .step-description strong {
-  color: #111827;
+  color: var(--color-gray-900);
   font-weight: 600;
   direction: ltr;
   display: inline-block;
@@ -324,35 +324,35 @@ watch(isOpen, (newValue) => {
 }
 
 .btn-primary {
-  background-color: #8b5cf6;
+  background-color: var(--color-primary-500);
   color: #ffffff;
 }
 
 .btn-primary:hover:not(:disabled) {
-  background-color: #7c3aed;
+  background-color: var(--color-primary-700);
   transform: translateY(-1px);
   box-shadow: 0 4px 6px -1px rgba(139, 92, 246, 0.3);
 }
 
 .btn-primary:disabled {
-  background-color: #d1d5db;
+  background-color: var(--color-gray-400);
   cursor: not-allowed;
   transform: none;
 }
 
 .btn-secondary {
-  background-color: #e5e7eb;
-  color: #374151;
+  background-color: var(--color-gray-300);
+  color: var(--color-gray-800);
 }
 
 .btn-secondary:hover:not(:disabled) {
-  background-color: #d1d5db;
+  background-color: var(--color-gray-400);
 }
 
 .btn-link {
   background: none;
   border: none;
-  color: #8b5cf6;
+  color: var(--color-primary-500);
   font-size: 0.875rem;
   font-weight: 600;
   cursor: pointer;
@@ -361,18 +361,18 @@ watch(isOpen, (newValue) => {
 }
 
 .btn-link:hover:not(:disabled) {
-  color: #7c3aed;
+  color: var(--color-primary-700);
 }
 
 .btn-link:disabled {
-  color: #9ca3af;
+  color: var(--color-gray-500);
   cursor: not-allowed;
 }
 
 .btn-text {
   background: none;
   border: none;
-  color: #6b7280;
+  color: var(--color-gray-600);
   font-size: 0.875rem;
   font-weight: 500;
   cursor: pointer;
@@ -382,12 +382,12 @@ watch(isOpen, (newValue) => {
 }
 
 .btn-text:hover:not(:disabled) {
-  color: #111827;
+  color: var(--color-gray-900);
   text-decoration: underline;
 }
 
 .btn-text:disabled {
-  color: #9ca3af;
+  color: var(--color-gray-500);
   cursor: not-allowed;
 }
 
@@ -415,7 +415,7 @@ watch(isOpen, (newValue) => {
 
 .resend-countdown {
   font-size: 0.875rem;
-  color: #6b7280;
+  color: var(--color-gray-600);
   margin: 0;
 }
 
@@ -429,7 +429,7 @@ watch(isOpen, (newValue) => {
   width: 4rem;
   height: 4rem;
   margin: 0 auto 1rem;
-  color: #10b981;
+  color: var(--color-success-500);
   animation: scaleIn 0.5s ease;
 }
 
@@ -447,13 +447,13 @@ watch(isOpen, (newValue) => {
 .success-title {
   font-size: 1.25rem;
   font-weight: 700;
-  color: #111827;
+  color: var(--color-gray-900);
   margin: 0 0 0.5rem 0;
 }
 
 .success-description {
   font-size: 0.875rem;
-  color: #6b7280;
+  color: var(--color-gray-600);
   margin: 0;
   line-height: 1.5;
 }

@@ -225,7 +225,7 @@ const gregorianToJalali = (gy: number, gm: number, gd: number): [number, number,
   width: 80px;
   height: 80px;
   margin: 0 auto 1.5rem;
-  background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+  background: linear-gradient(135deg, var(--color-success-500) 0%, var(--color-success-600) 100%);
   border-radius: 50%;
   display: flex;
   align-items: center;
@@ -248,7 +248,7 @@ const gregorianToJalali = (gy: number, gm: number, gd: number): [number, number,
 
 .confirmation-description {
   font-size: 1.05rem;
-  color: #64748b;
+  color: var(--color-gray-600);
   margin: 0;
 }
 
@@ -271,7 +271,7 @@ const gregorianToJalali = (gy: number, gm: number, gd: number): [number, number,
     svg {
       width: 24px;
       height: 24px;
-      color: #667eea;
+      color: var(--color-primary-500);
     }
   }
 
@@ -279,7 +279,7 @@ const gregorianToJalali = (gy: number, gm: number, gd: number): [number, number,
     background: white;
     border-radius: 16px;
     padding: 1.5rem;
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+    box-shadow: var(--shadow-sm);
     border: 1px solid #e2e8f0;
   }
 }
@@ -302,7 +302,7 @@ const gregorianToJalali = (gy: number, gm: number, gd: number): [number, number,
 
   .info-label {
     font-size: 0.95rem;
-    color: #64748b;
+    color: var(--color-gray-600);
     font-weight: 500;
   }
 
@@ -312,7 +312,7 @@ const gregorianToJalali = (gy: number, gm: number, gd: number): [number, number,
     font-weight: 600;
 
     &.price {
-      color: #10b981;
+      color: var(--color-success-500);
       font-size: 1.125rem;
     }
 
@@ -333,7 +333,7 @@ const gregorianToJalali = (gy: number, gm: number, gd: number): [number, number,
     width: 56px;
     height: 56px;
     border-radius: 50%;
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    background: linear-gradient(135deg, var(--color-primary-500) 0%, var(--color-primary-700) 100%);
     display: flex;
     align-items: center;
     justify-content: center;
@@ -358,7 +358,7 @@ const gregorianToJalali = (gy: number, gm: number, gd: number): [number, number,
 
     .staff-label {
       font-size: 0.875rem;
-      color: #64748b;
+      color: var(--color-gray-600);
     }
   }
 }
@@ -369,7 +369,7 @@ const gregorianToJalali = (gy: number, gm: number, gd: number): [number, number,
   gap: 1rem;
   padding: 1.25rem;
   background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%);
-  border: 2px solid #fbbf24;
+  border: 2px solid var(--color-warning-500);
   border-radius: 12px;
   margin-top: 1rem;
 

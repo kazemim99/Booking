@@ -134,12 +134,12 @@ defineExpose({
   display: block;
   font-size: 0.875rem;
   font-weight: 500;
-  color: #374151;
+  color: var(--color-gray-800);
   margin-bottom: 0.5rem;
 }
 
 .select-required {
-  color: #ef4444;
+  color: var(--color-danger-500);
   margin-left: 0.25rem;
 }
 
@@ -150,10 +150,10 @@ defineExpose({
 .select {
   width: 100%;
   padding: 0.75rem 2.5rem 0.75rem 1rem;
-  border: 1px solid #d1d5db;
+  border: 1px solid var(--color-gray-400);
   border-radius: 8px;
   background: white;
-  color: #1f2937;
+  color: var(--color-gray-900);
   font-size: 1rem;
   transition: all 0.2s;
   outline: none;
@@ -161,31 +161,31 @@ defineExpose({
   cursor: pointer;
 
   &:hover:not(:disabled) {
-    border-color: #9ca3af;
+    border-color: var(--color-gray-500);
   }
 
   &:focus {
-    border-color: #667eea;
+    border-color: var(--color-primary-500);
     box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
   }
 
   &:disabled {
-    background-color: #f3f4f6;
+    background-color: var(--color-gray-100);
     cursor: not-allowed;
     opacity: 0.6;
   }
 
   &-error {
-    border-color: #ef4444;
+    border-color: var(--color-danger-500);
 
     &:focus {
-      border-color: #ef4444;
+      border-color: var(--color-danger-500);
       box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.1);
     }
   }
 
   &-placeholder {
-    color: #9ca3af;
+    color: var(--color-gray-500);
   }
 
   // Remove default arrow in IE
@@ -201,7 +201,7 @@ defineExpose({
   transform: translateY(-50%);
   pointer-events: none;
   font-size: 0.75rem;
-  color: #6b7280;
+  color: var(--color-gray-600);
   transition: transform 0.2s;
 }
 
@@ -213,14 +213,14 @@ defineExpose({
   display: block;
   margin-top: 0.25rem;
   font-size: 0.75rem;
-  color: #ef4444;
+  color: var(--color-danger-500);
 }
 
 .select-hint {
   display: block;
   margin-top: 0.25rem;
   font-size: 0.75rem;
-  color: #6b7280;
+  color: var(--color-gray-600);
 }
 
 .select-wrapper-disabled {

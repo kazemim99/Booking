@@ -420,7 +420,7 @@ async function handleNext() {
 .registration-step {
   min-height: 100vh;
   padding: 2rem 1rem;
-  background: #f9fafb;
+  background: var(--color-gray-50);
   direction: rtl;
 }
 
@@ -429,7 +429,7 @@ async function handleNext() {
   margin: 0 auto;
   background: white;
   border-radius: 1rem;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  box-shadow: var(--shadow-sm);
   padding: 2rem;
 }
 
@@ -440,13 +440,13 @@ async function handleNext() {
 .step-title {
   font-size: 1.5rem;
   font-weight: 700;
-  color: #111827;
+  color: var(--color-gray-900);
   margin-bottom: 0.5rem;
 }
 
 .step-description {
   font-size: 0.875rem;
-  color: #6b7280;
+  color: var(--color-gray-600);
   line-height: 1.6;
 }
 
@@ -462,15 +462,15 @@ async function handleNext() {
 }
 
 .alert-error {
-  background-color: #fef2f2;
+  background-color: var(--color-danger-50);
   border: 1px solid #fecaca;
-  color: #dc2626;
+  color: var(--color-danger-600);
 }
 
 .alert-success {
   background-color: #f0fdf4;
   border: 1px solid #bbf7d0;
-  color: #16a34a;
+  color: var(--color-success-600);
 }
 
 .alert-icon {
@@ -513,13 +513,13 @@ async function handleNext() {
 .gallery-title {
   font-size: 1.125rem;
   font-weight: 600;
-  color: #111827;
+  color: var(--color-gray-900);
   margin: 0;
 }
 
 .gallery-count {
   font-size: 0.875rem;
-  color: #6b7280;
+  color: var(--color-gray-600);
   margin: 0;
 }
 
@@ -540,7 +540,7 @@ async function handleNext() {
   aspect-ratio: 1;
   border-radius: 0.5rem;
   overflow: hidden;
-  background-color: #f3f4f6;
+  background-color: var(--color-gray-100);
 }
 
 .image {
@@ -582,7 +582,7 @@ async function handleNext() {
 
 .image-caption {
   font-size: 0.75rem;
-  color: #6b7280;
+  color: var(--color-gray-600);
   text-align: center;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -596,8 +596,8 @@ async function handleNext() {
   align-items: center;
   justify-content: center;
   padding: 3rem 2rem;
-  background-color: #f9fafb;
-  border: 2px dashed #d1d5db;
+  background-color: var(--color-gray-50);
+  border: 2px dashed var(--color-gray-400);
   border-radius: 0.75rem;
   margin-top: 2rem;
 }
@@ -605,20 +605,20 @@ async function handleNext() {
 .empty-icon {
   width: 3rem;
   height: 3rem;
-  color: #9ca3af;
+  color: var(--color-gray-500);
   margin-bottom: 1rem;
 }
 
 .empty-text {
   font-size: 1rem;
   font-weight: 600;
-  color: #111827;
+  color: var(--color-gray-900);
   margin: 0 0 0.5rem 0;
 }
 
 .empty-hint {
   font-size: 0.875rem;
-  color: #6b7280;
+  color: var(--color-gray-600);
   margin: 0;
   text-align: center;
   max-width: 400px;
@@ -630,7 +630,7 @@ async function handleNext() {
   grid-template-columns: 1fr 1fr;
   gap: 1rem;
   padding-top: 1.5rem;
-  border-top: 1px solid #e5e7eb;
+  border-top: 1px solid var(--color-gray-300);
 }
 
 @media (max-width: 640px) {

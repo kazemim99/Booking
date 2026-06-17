@@ -43,7 +43,7 @@ defineEmits<{
   bottom: 0;
   width: 260px;
   background: white;
-  border-right: 1px solid #e5e7eb;
+  border-right: 1px solid var(--color-gray-300);
   transition: all 0.3s ease;
   z-index: 900;
   overflow-x: hidden;
@@ -78,7 +78,7 @@ defineEmits<{
   width: 24px;
   height: 24px;
   background: white;
-  border: 1px solid #e5e7eb;
+  border: 1px solid var(--color-gray-300);
   border-radius: 50%;
   display: flex;
   align-items: center;
@@ -90,7 +90,7 @@ defineEmits<{
   svg {
     width: 16px;
     height: 16px;
-    color: #6b7280;
+    color: var(--color-gray-600);
     transition: transform 0.3s ease;
 
     &.rotated {
@@ -99,7 +99,7 @@ defineEmits<{
   }
 
   &:hover {
-    background: #f3f4f6;
+    background: var(--color-gray-100);
     transform: scale(1.1);
   }
 
@@ -118,11 +118,11 @@ defineEmits<{
 }
 
 .app-sidebar::-webkit-scrollbar-thumb {
-  background: #d1d5db;
+  background: var(--color-gray-400);
   border-radius: 3px;
 
   &:hover {
-    background: #9ca3af;
+    background: var(--color-gray-500);
   }
 }
 </style>

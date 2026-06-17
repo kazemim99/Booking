@@ -155,7 +155,7 @@ const handleRemove = () => {
   height: 100%;
   border-radius: 0.5rem;
   overflow: hidden;
-  border: 2px solid #e5e7eb;
+  border: 2px solid var(--color-gray-300);
 
   img {
     width: 100%;
@@ -199,8 +199,8 @@ const handleRemove = () => {
   align-items: center;
   justify-content: center;
   gap: 0.5rem;
-  background: #f9fafb;
-  border: 2px dashed #d1d5db;
+  background: var(--color-gray-50);
+  border: 2px dashed var(--color-gray-400);
   border-radius: 0.5rem;
   padding: 1rem;
 }
@@ -208,13 +208,13 @@ const handleRemove = () => {
 .placeholder-icon {
   width: 3rem;
   height: 3rem;
-  stroke: #9ca3af;
+  stroke: var(--color-gray-500);
   stroke-width: 1.5;
 }
 
 .placeholder-text {
   font-size: 0.75rem;
-  color: #6b7280;
+  color: var(--color-gray-600);
   text-align: center;
 }
 
@@ -230,7 +230,7 @@ const handleRemove = () => {
   justify-content: center;
   gap: 0.5rem;
   padding: 0.625rem 1.25rem;
-  background: #8b5cf6;
+  background: var(--color-primary-500);
   color: white;
   border: none;
   border-radius: 0.5rem;
@@ -241,7 +241,7 @@ const handleRemove = () => {
   align-self: flex-start;
 
   &:hover {
-    background: #7c3aed;
+    background: var(--color-primary-700);
   }
 
   &:active {
@@ -267,7 +267,7 @@ const handleRemove = () => {
 
 .upload-hint {
   font-size: 0.75rem;
-  color: #6b7280;
+  color: var(--color-gray-600);
   margin: 0;
 }
 

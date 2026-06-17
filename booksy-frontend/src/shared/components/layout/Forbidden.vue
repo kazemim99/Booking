@@ -68,7 +68,7 @@ function goBack(): void {
   align-items: center;
   justify-content: center;
   min-height: 100vh;
-  background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+  background: linear-gradient(135deg, #f093fb 0%, var(--color-primary-400) 100%);
   padding: 2rem;
 }
 
@@ -84,7 +84,7 @@ function goBack(): void {
 .error-code {
   font-size: 8rem;
   font-weight: 900;
-  background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+  background: linear-gradient(135deg, #f093fb 0%, var(--color-primary-400) 100%);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
@@ -95,13 +95,13 @@ function goBack(): void {
 .error-title {
   font-size: 2rem;
   font-weight: 700;
-  color: #1f2937;
+  color: var(--color-gray-900);
   margin-bottom: 1rem;
 }
 
 .error-message {
   font-size: 1.125rem;
-  color: #6b7280;
+  color: var(--color-gray-600);
   margin-bottom: 2rem;
   line-height: 1.6;
 }
@@ -110,7 +110,7 @@ function goBack(): void {
   width: 80px;
   height: 80px;
   margin: 0 auto 2rem;
-  color: #f5576c;
+  color: var(--color-primary-400);
 
   svg {
     width: 100%;
@@ -145,29 +145,29 @@ function goBack(): void {
 }
 
 .btn-primary {
-  background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+  background: linear-gradient(135deg, #f093fb 0%, var(--color-primary-400) 100%);
   color: white;
 }
 
 .btn-secondary {
-  background: #e5e7eb;
-  color: #374151;
+  background: var(--color-gray-300);
+  color: var(--color-gray-800);
 
   &:hover {
-    background: #d1d5db;
+    background: var(--color-gray-400);
   }
 }
 
 .info-box {
   margin-top: 2rem;
   padding: 1.5rem;
-  background: #fef2f2;
+  background: var(--color-danger-50);
   border-radius: 8px;
-  border-left: 4px solid #f5576c;
+  border-left: 4px solid var(--color-primary-400);
 
   p {
     margin: 0;
-    color: #991b1b;
+    color: var(--color-danger-600);
     font-size: 0.875rem;
     line-height: 1.5;
 

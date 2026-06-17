@@ -128,14 +128,14 @@ onMounted(() => {
 .brand-name {
   font-size: 2rem;
   font-weight: 800;
-  color: #111827;
+  color: var(--color-gray-900);
   margin-bottom: 0.5rem;
   animation: fadeInDown 0.5s ease 0.1s both;
 }
 
 .brand-tagline {
   font-size: 1rem;
-  color: #6b7280;
+  color: var(--color-gray-600);
   animation: fadeInDown 0.5s ease 0.2s both;
 }
 
@@ -172,7 +172,7 @@ onMounted(() => {
 .decoration-circle-1 {
   width: 20rem;
   height: 20rem;
-  background: linear-gradient(135deg, #10b981, #34d399);
+  background: linear-gradient(135deg, var(--color-success-500), #34d399);
   top: -5rem;
   right: -5rem;
   animation-delay: 0s;
@@ -181,7 +181,7 @@ onMounted(() => {
 .decoration-circle-2 {
   width: 15rem;
   height: 15rem;
-  background: linear-gradient(135deg, #10b981, #6ee7b7);
+  background: linear-gradient(135deg, var(--color-success-500), #6ee7b7);
   bottom: -3rem;
   left: -3rem;
   animation-delay: -10s;

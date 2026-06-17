@@ -327,11 +327,11 @@ onMounted(async () => {
 .form-label {
   font-size: 14px;
   font-weight: 600;
-  color: #374151;
+  color: var(--color-gray-800);
 
   &.required::after {
     content: ' *';
-    color: #ef4444;
+    color: var(--color-danger-500);
   }
 }
 
@@ -340,7 +340,7 @@ onMounted(async () => {
 .form-textarea {
   width: 100%;
   padding: 12px 16px;
-  border: 1px solid #d1d5db;
+  border: 1px solid var(--color-gray-400);
   border-radius: 8px;
   font-size: 14px;
   font-family: 'B Nazanin', sans-serif;
@@ -353,7 +353,7 @@ onMounted(async () => {
   }
 
   &::placeholder {
-    color: #9ca3af;
+    color: var(--color-gray-500);
   }
 }
 
@@ -374,10 +374,10 @@ onMounted(async () => {
   max-height: 200px;
   overflow-y: auto;
   background: white;
-  border: 1px solid #d1d5db;
+  border: 1px solid var(--color-gray-400);
   border-radius: 8px;
   margin-top: 4px;
-  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+  box-shadow: var(--shadow-sm);
   z-index: 10;
 }
 
@@ -387,24 +387,24 @@ onMounted(async () => {
   transition: background 0.2s;
 
   &:hover {
-    background: #f3f4f6;
+    background: var(--color-gray-100);
   }
 
   &:not(:last-child) {
-    border-bottom: 1px solid #e5e7eb;
+    border-bottom: 1px solid var(--color-gray-300);
   }
 }
 
 .customer-name {
   font-size: 14px;
   font-weight: 600;
-  color: #1f2937;
+  color: var(--color-gray-900);
   margin-bottom: 4px;
 }
 
 .customer-phone {
   font-size: 12px;
-  color: #6b7280;
+  color: var(--color-gray-600);
 }
 
 .selected-customer {
@@ -423,13 +423,13 @@ onMounted(async () => {
 }
 
 .selected-value {
-  color: #1f2937;
+  color: var(--color-gray-900);
   font-weight: 500;
 }
 
 .booking-summary {
   padding: 16px;
-  background: #f9fafb;
+  background: var(--color-gray-50);
   border-radius: 8px;
   border-right: 4px solid #1976d2;
 }
@@ -437,7 +437,7 @@ onMounted(async () => {
 .summary-title {
   font-size: 16px;
   font-weight: 700;
-  color: #1f2937;
+  color: var(--color-gray-900);
   margin: 0 0 12px 0;
 }
 
@@ -448,19 +448,19 @@ onMounted(async () => {
   padding: 8px 0;
 
   &:not(:last-child) {
-    border-bottom: 1px solid #e5e7eb;
+    border-bottom: 1px solid var(--color-gray-300);
   }
 }
 
 .summary-label {
   font-size: 14px;
-  color: #6b7280;
+  color: var(--color-gray-600);
 }
 
 .summary-value {
   font-size: 14px;
   font-weight: 600;
-  color: #1f2937;
+  color: var(--color-gray-900);
 }
 
 .btn-secondary,
@@ -480,11 +480,11 @@ onMounted(async () => {
 }
 
 .btn-secondary {
-  background: #f3f4f6;
-  color: #374151;
+  background: var(--color-gray-100);
+  color: var(--color-gray-800);
 
   &:hover {
-    background: #e5e7eb;
+    background: var(--color-gray-300);
   }
 }
 
@@ -506,7 +506,7 @@ onMounted(async () => {
 :deep(.persian-datepicker-input) {
   width: 100%;
   padding: 12px 16px;
-  border: 1px solid #d1d5db;
+  border: 1px solid var(--color-gray-400);
   border-radius: 8px;
   font-size: 14px;
   font-family: 'B Nazanin', sans-serif;

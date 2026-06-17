@@ -294,7 +294,7 @@ class ProviderRegistrationService {
     }
 
     const response = await serviceCategoryClient.post<CreateProviderDraftResponse>(
-      'v1/registration/step-3/location',
+      'v1/Registration/step-3/location',
       mappedRequest,
     )
     return response.data!
@@ -315,7 +315,7 @@ class ProviderRegistrationService {
       servicesCount: number
       message: string
     }>(
-      'v1/registration/step-4/services',
+      'v1/Registration/step-4/services',
       {
         providerId,
         services: services.map((s: ServiceRequest) => ({
@@ -345,7 +345,7 @@ class ProviderRegistrationService {
       staffCount: number
       message: string
     }>(
-      'v1/registration/step-5/staff',
+      'v1/Registration/step-5/staff',
       {
         providerId,
         staffMembers: staffMembers.map(m => ({
@@ -374,7 +374,7 @@ class ProviderRegistrationService {
       openDaysCount: number
       message: string
     }>(
-      'v1/registration/step-6/working-hours',
+      'v1/Registration/step-6/working-hours',
       {
         providerId,
         businessHours: businessHours.map(bh => ({
@@ -411,7 +411,7 @@ class ProviderRegistrationService {
       imagesCount: number
       message: string
     }>(
-      'v1/registration/step-7/gallery',
+      'v1/Registration/step-7/gallery',
       formData,
       {
         headers: {
@@ -435,7 +435,7 @@ class ProviderRegistrationService {
       registrationStep: number
       message: string
     }>(
-      'v1/registration/step-8/feedback',
+      'v1/Registration/step-8/feedback',
       {
         providerId,
         feedbackText: feedbackText || null,
@@ -449,7 +449,7 @@ class ProviderRegistrationService {
    */
   async saveStep9Complete(providerId: string): Promise<CompleteRegistrationResponse> {
     const response = await serviceCategoryClient.post<CompleteRegistrationResponse>(
-      'v1/registration/step-9/complete',
+      'v1/Registration/step-9/complete',
       { providerId },
     )
     return response.data!
@@ -460,7 +460,7 @@ class ProviderRegistrationService {
    */
   async getRegistrationProgress(): Promise<RegistrationProgressResponse> {
     const response = await serviceCategoryClient.get<RegistrationProgressResponse>(
-      'v1/registration/progress',
+      'v1/Registration/progress',
     )
 
     // Map ProviderType back to frontend category ID
@@ -482,7 +482,7 @@ class ProviderRegistrationService {
     formData.append('image', file)
 
     const response = await serviceCategoryClient.post<{ imageUrl: string }>(
-      'v1/registration/upload-logo',
+      'v1/Registration/upload-logo',
       formData,
       {
         headers: {

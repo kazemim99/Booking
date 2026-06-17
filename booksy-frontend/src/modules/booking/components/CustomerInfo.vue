@@ -283,7 +283,7 @@ defineExpose({
 
 .step-description {
   font-size: 1.05rem;
-  color: #64748b;
+  color: var(--color-gray-600);
   margin: 0;
 }
 
@@ -316,17 +316,17 @@ defineExpose({
 .form-label svg {
   width: 20px;
   height: 20px;
-  color: #667eea;
+  color: var(--color-primary-500);
 }
 
 .required {
-  color: #ef4444;
+  color: var(--color-danger-500);
 }
 
 .optional {
   font-size: 0.875rem;
   font-weight: 400;
-  color: #94a3b8;
+  color: var(--color-gray-500);
 }
 
 .form-input,
@@ -344,13 +344,13 @@ defineExpose({
 .form-input:focus,
 .form-textarea:focus {
   outline: none;
-  border-color: #667eea;
+  border-color: var(--color-primary-500);
   box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
 }
 
 .form-input.error,
 .form-textarea.error {
-  border-color: #ef4444;
+  border-color: var(--color-danger-500);
 }
 
 .form-textarea {
@@ -360,13 +360,13 @@ defineExpose({
 
 .error-message {
   font-size: 0.875rem;
-  color: #ef4444;
+  color: var(--color-danger-500);
   margin-top: 0.375rem;
 }
 
 .char-count {
   font-size: 0.875rem;
-  color: #94a3b8;
+  color: var(--color-gray-500);
   text-align: left;
   margin-top: 0.375rem;
 }
@@ -393,7 +393,7 @@ defineExpose({
   width: 48px;
   height: 48px;
   flex-shrink: 0;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: linear-gradient(135deg, var(--color-primary-500) 0%, var(--color-primary-700) 100%);
   border-radius: 12px;
   display: flex;
   align-items: center;
@@ -415,7 +415,7 @@ defineExpose({
 
 .card-content p {
   font-size: 0.875rem;
-  color: #64748b;
+  color: var(--color-gray-600);
   margin: 0;
   line-height: 1.5;
 }

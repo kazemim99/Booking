@@ -60,32 +60,32 @@ const badgeClasses = computed(() => [
 
   // Variants
   &-primary {
-    background: #667eea;
+    background: var(--color-primary-500);
     color: white;
   }
 
   &-success {
-    background: #10b981;
+    background: var(--color-success-500);
     color: white;
   }
 
   &-danger {
-    background: #ef4444;
+    background: var(--color-danger-500);
     color: white;
   }
 
   &-warning {
-    background: #f59e0b;
+    background: var(--color-warning-500);
     color: white;
   }
 
   &-info {
-    background: #3b82f6;
+    background: var(--color-primary-500);
     color: white;
   }
 
   &-secondary {
-    background: #6b7280;
+    background: var(--color-gray-600);
     color: white;
   }
 

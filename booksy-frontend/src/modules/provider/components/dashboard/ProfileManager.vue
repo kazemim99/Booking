@@ -1637,13 +1637,13 @@ const handleCancelServiceEdit = () => {
 .page-title {
   font-size: 1.5rem;
   font-weight: 700;
-  color: #111827;
+  color: var(--color-gray-900);
   margin: 0 0 2rem 0;
 }
 
 /* Tabs Navigation */
 .tabs-card {
-  background: #f3f4f6;
+  background: var(--color-gray-100);
   border-radius: 0.75rem;
   padding: 0.25rem;
   margin-bottom: 1rem;
@@ -1678,19 +1678,19 @@ const handleCancelServiceEdit = () => {
   background: transparent;
   cursor: pointer;
   transition: all 0.2s ease;
-  color: #6b7280;
+  color: var(--color-gray-600);
   white-space: nowrap;
   min-height: 2.25rem;
 
   &:hover:not(.tab-active) {
-    color: #111827;
+    color: var(--color-gray-900);
   }
 
   &.tab-active {
     background: white;
-    color: #8b5cf6;
-    border-color: #e5e7eb;
-    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+    color: var(--color-primary-500);
+    border-color: var(--color-gray-300);
+    box-shadow: var(--shadow-sm);
   }
 
   .tab-icon {
@@ -1714,7 +1714,7 @@ const handleCancelServiceEdit = () => {
 .content-card {
   background: white;
   border-radius: 1rem;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  box-shadow: var(--shadow-sm);
   padding: 2rem;
   overflow: hidden;
 }
@@ -1735,7 +1735,7 @@ const handleCancelServiceEdit = () => {
   font-size: 1.125rem;
   font-weight: 600;
   margin: 0 0 0.5rem 0;
-  color: #111827;
+  color: var(--color-gray-900);
 }
 
 .section-header {
@@ -1749,7 +1749,7 @@ const handleCancelServiceEdit = () => {
 
 .action-btn {
   padding: 0.5rem 1rem;
-  background: #8b5cf6;
+  background: var(--color-primary-500);
   color: white;
   border: none;
   border-radius: 0.5rem;
@@ -1763,7 +1763,7 @@ const handleCancelServiceEdit = () => {
   gap: 0.375rem;
 
   &:hover {
-    background: #7c3aed;
+    background: var(--color-primary-700);
   }
 
   &:active {
@@ -1772,7 +1772,7 @@ const handleCancelServiceEdit = () => {
 }
 
 .info-text {
-  color: #6b7280;
+  color: var(--color-gray-600);
   font-size: 0.875rem;
   line-height: 1.6;
 }
@@ -1780,11 +1780,11 @@ const handleCancelServiceEdit = () => {
 /* Empty State */
 .empty-state {
   text-align: center;
-  color: #9ca3af;
+  color: var(--color-gray-500);
   padding: 3rem 1.5rem;
-  background: #fafafa;
+  background: var(--color-gray-50);
   border-radius: 0.5rem;
-  border: 1px dashed #e5e7eb;
+  border: 1px dashed var(--color-gray-300);
   font-size: 0.875rem;
 }
 
@@ -1816,21 +1816,21 @@ const handleCancelServiceEdit = () => {
 .form-label {
   font-size: 0.875rem;
   font-weight: 500;
-  color: #374151;
+  color: var(--color-gray-800);
   display: block;
   margin: 0;
 }
 
 .form-hint {
   font-size: 0.8125rem;
-  color: #6b7280;
+  color: var(--color-gray-600);
   margin-top: 0.25rem;
   margin-bottom: 0.75rem;
 }
 
 .form-error {
   font-size: 0.8125rem;
-  color: #ef4444;
+  color: var(--color-danger-500);
   margin-top: 0.25rem;
   display: block;
 }
@@ -1866,24 +1866,24 @@ const handleCancelServiceEdit = () => {
   width: 100%;
   padding: 0.75rem 1rem;
   font-size: 1rem;
-  border: 1px solid #d1d5db;
+  border: 1px solid var(--color-gray-400);
   border-radius: 0.5rem;
   background: white;
   transition: all 0.2s ease;
 
   &::placeholder {
-    color: #9ca3af;
+    color: var(--color-gray-500);
   }
 
   &:focus {
     outline: none;
-    border-color: #8b5cf6;
+    border-color: var(--color-primary-500);
     box-shadow: 0 0 0 3px rgba(139, 92, 246, 0.1);
   }
 
   &:disabled {
-    background: #f3f4f6;
-    color: #6b7280;
+    background: var(--color-gray-100);
+    color: var(--color-gray-600);
     cursor: not-allowed;
     opacity: 0.6;
   }
@@ -1893,7 +1893,7 @@ const handleCancelServiceEdit = () => {
   width: 100%;
   padding: 0.75rem 1rem;
   font-size: 1rem;
-  border: 1px solid #d1d5db;
+  border: 1px solid var(--color-gray-400);
   border-radius: 0.5rem;
   background: white;
   transition: all 0.2s ease;
@@ -1901,12 +1901,12 @@ const handleCancelServiceEdit = () => {
   min-height: 6rem;
 
   &::placeholder {
-    color: #9ca3af;
+    color: var(--color-gray-500);
   }
 
   &:focus {
     outline: none;
-    border-color: #8b5cf6;
+    border-color: var(--color-primary-500);
     box-shadow: 0 0 0 3px rgba(139, 92, 246, 0.1);
   }
 }
@@ -1914,7 +1914,7 @@ const handleCancelServiceEdit = () => {
 .submit-btn {
   width: fit-content;
   padding: 0.75rem 1.5rem;
-  background: #8b5cf6;
+  background: var(--color-primary-500);
   color: white;
   border: none;
   border-radius: 0.5rem;
@@ -1925,7 +1925,7 @@ const handleCancelServiceEdit = () => {
   align-self: flex-start;
 
   &:hover {
-    background: #7c3aed;
+    background: var(--color-primary-700);
   }
 
   &:active {
@@ -1941,10 +1941,10 @@ const handleCancelServiceEdit = () => {
 .map-placeholder {
   position: relative;
   height: 16rem;
-  background: #f3f4f6;
+  background: var(--color-gray-100);
   border-radius: 0.75rem;
   overflow: hidden;
-  border: 1px solid #e5e7eb;
+  border: 1px solid var(--color-gray-300);
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -1962,21 +1962,21 @@ const handleCancelServiceEdit = () => {
 .map-icon {
   width: 3rem;
   height: 3rem;
-  color: #8b5cf6;
+  color: var(--color-primary-500);
 }
 
 .map-text {
   margin: 0;
   font-size: 0.875rem;
-  color: #6b7280;
+  color: var(--color-gray-600);
   text-align: center;
 }
 
 .map-change-btn {
   padding: 0.5rem 1rem;
   background: white;
-  color: #8b5cf6;
-  border: 1px solid #8b5cf6;
+  color: var(--color-primary-500);
+  border: 1px solid var(--color-primary-500);
   border-radius: 0.375rem;
   font-size: 0.875rem;
   font-weight: 500;
@@ -1984,7 +1984,7 @@ const handleCancelServiceEdit = () => {
   transition: all 0.2s ease;
 
   &:hover {
-    background: #8b5cf6;
+    background: var(--color-primary-500);
     color: white;
   }
 }
@@ -2034,17 +2034,17 @@ const handleCancelServiceEdit = () => {
   gap: 0.5rem;
   padding: 0.5rem 1rem;
   background: white;
-  border: 1px solid #e5e7eb;
+  border: 1px solid var(--color-gray-300);
   border-radius: 0.5rem;
   font-size: 0.875rem;
-  color: #374151;
+  color: var(--color-gray-800);
   cursor: pointer;
   transition: all 0.2s;
 
   &:hover {
-    background: #f9fafb;
-    border-color: #8b5cf6;
-    color: #8b5cf6;
+    background: var(--color-gray-50);
+    border-color: var(--color-primary-500);
+    color: var(--color-primary-500);
   }
 }
 
@@ -2052,7 +2052,7 @@ const handleCancelServiceEdit = () => {
 .save-hours-btn {
   width: 100%;
   padding: 0.875rem 1.5rem;
-  background: #8b5cf6;
+  background: var(--color-primary-500);
   color: white;
   border: none;
   border-radius: 0.75rem;
@@ -2062,7 +2062,7 @@ const handleCancelServiceEdit = () => {
   transition: all 0.2s;
 
   &:hover {
-    background: #7c3aed;
+    background: var(--color-primary-700);
     transform: translateY(-1px);
     box-shadow: 0 4px 12px rgba(139, 92, 246, 0.3);
   }
@@ -2109,7 +2109,7 @@ const handleCancelServiceEdit = () => {
 
 .info-list li {
   font-size: 0.8125rem;
-  color: #6b7280;
+  color: var(--color-gray-600);
   position: relative;
   padding-right: 1rem;
 
@@ -2117,7 +2117,7 @@ const handleCancelServiceEdit = () => {
     content: '•';
     position: absolute;
     right: 0;
-    color: #8b5cf6;
+    color: var(--color-primary-500);
     font-weight: bold;
   }
 }
@@ -2125,7 +2125,7 @@ const handleCancelServiceEdit = () => {
 /* Right Side - Calendar Widget */
 .calendar-widget {
   background: white;
-  border: 1px solid #e5e7eb;
+  border: 1px solid var(--color-gray-300);
   border-radius: 0.75rem;
   overflow: hidden;
   position: sticky;
@@ -2137,15 +2137,15 @@ const handleCancelServiceEdit = () => {
   align-items: center;
   gap: 0.5rem;
   padding: 1rem 1.25rem;
-  border-bottom: 1px solid #e5e7eb;
-  background: #f9fafb;
+  border-bottom: 1px solid var(--color-gray-300);
+  background: var(--color-gray-50);
 }
 
 .header-icon {
   width: 1.25rem;
   height: 1.25rem;
   stroke-width: 2;
-  color: #8b5cf6;
+  color: var(--color-primary-500);
 }
 
 .widget-header h4 {
@@ -2160,7 +2160,7 @@ const handleCancelServiceEdit = () => {
 
 .widget-hint {
   font-size: 0.8125rem;
-  color: #6b7280;
+  color: var(--color-gray-600);
   margin-bottom: 1rem;
   line-height: 1.5;
 }
@@ -2169,7 +2169,7 @@ const handleCancelServiceEdit = () => {
 .exceptions-list {
   margin-top: 1rem;
   padding-top: 1rem;
-  border-top: 1px solid #e5e7eb;
+  border-top: 1px solid var(--color-gray-300);
 }
 
 .exceptions-title {
@@ -2184,7 +2184,7 @@ const handleCancelServiceEdit = () => {
   justify-content: space-between;
   align-items: center;
   padding: 0.625rem;
-  background: #f9fafb;
+  background: var(--color-gray-50);
   border-radius: 0.5rem;
   margin-bottom: 0.5rem;
 }
@@ -2192,16 +2192,16 @@ const handleCancelServiceEdit = () => {
 .exception-date {
   font-size: 0.8125rem;
   font-weight: 500;
-  color: #374151;
+  color: var(--color-gray-800);
 }
 
 .exception-type {
   font-size: 0.75rem;
-  color: #6b7280;
+  color: var(--color-gray-600);
   background: white;
   padding: 0.25rem 0.625rem;
   border-radius: 999px;
-  border: 1px solid #e5e7eb;
+  border: 1px solid var(--color-gray-300);
 }
 
 .view-all-btn {
@@ -2209,16 +2209,16 @@ const handleCancelServiceEdit = () => {
   padding: 0.5rem;
   margin-top: 0.5rem;
   background: white;
-  border: 1px solid #e5e7eb;
+  border: 1px solid var(--color-gray-300);
   border-radius: 0.5rem;
   font-size: 0.8125rem;
-  color: #8b5cf6;
+  color: var(--color-primary-500);
   cursor: pointer;
   transition: all 0.2s;
 
   &:hover {
-    background: #f9fafb;
-    border-color: #8b5cf6;
+    background: var(--color-gray-50);
+    border-color: var(--color-primary-500);
   }
 }
 
@@ -2227,7 +2227,7 @@ const handleCancelServiceEdit = () => {
   align-items: flex-start;
   gap: 0.75rem;
   padding: 1rem;
-  background: #eff6ff;
+  background: var(--color-primary-50);
   border: 1px solid #bfdbfe;
   border-radius: 0.5rem;
   font-size: 0.875rem;
@@ -2239,13 +2239,13 @@ const handleCancelServiceEdit = () => {
   width: 1.25rem;
   height: 1.25rem;
   flex-shrink: 0;
-  color: #3b82f6;
+  color: var(--color-primary-500);
   margin-top: 0.125rem;
 }
 
 /* Required field indicator */
 .required {
-  color: #ef4444;
+  color: var(--color-danger-500);
   margin-right: 0.25rem;
 }
 
@@ -2258,7 +2258,7 @@ const handleCancelServiceEdit = () => {
   position: relative;
   border-radius: 0.75rem;
   overflow: hidden;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  box-shadow: var(--shadow-sm);
 }
 
 .address-search-overlay {
@@ -2276,7 +2276,7 @@ const handleCancelServiceEdit = () => {
   align-items: center;
   background: white;
   border-radius: 0.5rem;
-  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+  box-shadow: var(--shadow-md);
 }
 
 .search-icon {
@@ -2284,7 +2284,7 @@ const handleCancelServiceEdit = () => {
   right: 1rem;
   width: 1.25rem;
   height: 1.25rem;
-  color: #9ca3af;
+  color: var(--color-gray-500);
   pointer-events: none;
 }
 
@@ -2294,20 +2294,20 @@ const handleCancelServiceEdit = () => {
   border: none;
   border-radius: 0.5rem;
   font-size: 0.875rem;
-  color: #1f2937;
+  color: var(--color-gray-900);
   background: transparent;
   outline: none;
 }
 
 .address-search-input::placeholder {
-  color: #9ca3af;
+  color: var(--color-gray-500);
 }
 
 .search-results-dropdown {
   margin-top: 0.5rem;
   background: white;
   border-radius: 0.5rem;
-  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+  box-shadow: var(--shadow-lg);
   max-height: 300px;
   overflow-y: auto;
 }
@@ -2315,7 +2315,7 @@ const handleCancelServiceEdit = () => {
 .search-result-item {
   padding: 0.75rem 1rem;
   cursor: pointer;
-  border-bottom: 1px solid #f3f4f6;
+  border-bottom: 1px solid var(--color-gray-100);
   transition: background-color 0.15s;
 }
 
@@ -2324,19 +2324,19 @@ const handleCancelServiceEdit = () => {
 }
 
 .search-result-item:hover {
-  background-color: #f9fafb;
+  background-color: var(--color-gray-50);
 }
 
 .result-title {
   font-size: 0.875rem;
   font-weight: 500;
-  color: #1f2937;
+  color: var(--color-gray-900);
   margin-bottom: 0.25rem;
 }
 
 .result-address {
   font-size: 0.75rem;
-  color: #6b7280;
+  color: var(--color-gray-600);
 }
 
 /* Form labels matching BusinessLocationStep */
@@ -2344,7 +2344,7 @@ const handleCancelServiceEdit = () => {
   display: block;
   font-size: 0.875rem;
   font-weight: 500;
-  color: #374151;
+  color: var(--color-gray-800);
   margin-bottom: 0.5rem;
 }
 
@@ -2368,7 +2368,7 @@ const handleCancelServiceEdit = () => {
   gap: 0.75rem;
   padding: 1rem;
   background: rgba(139, 92, 246, 0.05);
-  border: 1px solid #e5e7eb;
+  border: 1px solid var(--color-gray-300);
   border-radius: 0.5rem;
 }
 
@@ -2379,13 +2379,13 @@ const handleCancelServiceEdit = () => {
 .service-name {
   font-size: 1rem;
   font-weight: 600;
-  color: #111827;
+  color: var(--color-gray-900);
   margin-bottom: 0.25rem;
 }
 
 .service-details {
   font-size: 0.875rem;
-  color: #6b7280;
+  color: var(--color-gray-600);
 }
 
 .service-actions {
@@ -2412,11 +2412,11 @@ const handleCancelServiceEdit = () => {
 .btn-icon .icon {
   width: 1.25rem;
   height: 1.25rem;
-  color: #6b7280;
+  color: var(--color-gray-600);
 }
 
 .btn-delete .icon {
-  color: #ef4444;
+  color: var(--color-danger-500);
 }
 
 /* Service Form */
@@ -2441,7 +2441,7 @@ const handleCancelServiceEdit = () => {
 
 .btn-action-primary {
   padding: 0.75rem 1.5rem;
-  background: #8b5cf6;
+  background: var(--color-primary-500);
   color: white;
   border: none;
   border-radius: 0.5rem;
@@ -2452,7 +2452,7 @@ const handleCancelServiceEdit = () => {
 }
 
 .btn-action-primary:hover:not(:disabled) {
-  background: #7c3aed;
+  background: var(--color-primary-700);
 }
 
 .btn-action-primary:active:not(:disabled) {
@@ -2460,7 +2460,7 @@ const handleCancelServiceEdit = () => {
 }
 
 .btn-action-primary:disabled {
-  background: #d1d5db;
+  background: var(--color-gray-400);
   cursor: not-allowed;
   opacity: 0.6;
 }
@@ -2468,8 +2468,8 @@ const handleCancelServiceEdit = () => {
 .btn-action-outline {
   padding: 0.75rem 1.5rem;
   background: white;
-  color: #6b7280;
-  border: 1px solid #d1d5db;
+  color: var(--color-gray-600);
+  border: 1px solid var(--color-gray-400);
   border-radius: 0.5rem;
   font-size: 1rem;
   font-weight: 500;
@@ -2478,13 +2478,13 @@ const handleCancelServiceEdit = () => {
 }
 
 .btn-action-outline:hover:not(:disabled) {
-  background: #f9fafb;
-  border-color: #8b5cf6;
-  color: #8b5cf6;
+  background: var(--color-gray-50);
+  border-color: var(--color-primary-500);
+  color: var(--color-primary-500);
 }
 
 .btn-action-outline:disabled {
-  background: #f3f4f6;
+  background: var(--color-gray-100);
   cursor: not-allowed;
   opacity: 0.6;
 }
@@ -2493,10 +2493,10 @@ const handleCancelServiceEdit = () => {
 .btn-add-service {
   width: 100%;
   padding: 0.875rem 1.5rem;
-  border: 2px dashed #d1d5db;
+  border: 2px dashed var(--color-gray-400);
   background: white;
   border-radius: 0.5rem;
-  color: #8b5cf6;
+  color: var(--color-primary-500);
   font-size: 1rem;
   font-weight: 500;
   cursor: pointer;
@@ -2509,7 +2509,7 @@ const handleCancelServiceEdit = () => {
 
 .btn-add-service:hover {
   background: rgba(139, 92, 246, 0.05);
-  border-color: #8b5cf6;
+  border-color: var(--color-primary-500);
 }
 
 .icon-plus {
@@ -2523,7 +2523,7 @@ const handleCancelServiceEdit = () => {
   align-items: flex-start;
   gap: 0.75rem;
   padding: 1rem;
-  background: #fef2f2;
+  background: var(--color-danger-50);
   border: 1px solid #fecaca;
   border-radius: 0.5rem;
   margin-top: 0.5rem;
@@ -2532,7 +2532,7 @@ const handleCancelServiceEdit = () => {
 .error-icon {
   width: 1.25rem;
   height: 1.25rem;
-  color: #ef4444;
+  color: var(--color-danger-500);
   flex-shrink: 0;
   margin-top: 0.125rem;
 }
@@ -2540,7 +2540,7 @@ const handleCancelServiceEdit = () => {
 .error-text {
   flex: 1;
   font-size: 0.875rem;
-  color: #991b1b;
+  color: var(--color-danger-600);
   line-height: 1.5;
   white-space: pre-line;
 }
@@ -2556,15 +2556,15 @@ const handleCancelServiceEdit = () => {
 }
 
 .loading-state p {
-  color: #6b7280;
+  color: var(--color-gray-600);
   font-size: 0.875rem;
 }
 
 .spinner {
   width: 2.5rem;
   height: 2.5rem;
-  border: 3px solid #e5e7eb;
-  border-top-color: #8b5cf6;
+  border: 3px solid var(--color-gray-300);
+  border-top-color: var(--color-primary-500);
   border-radius: 50%;
   animation: spin 0.8s linear infinite;
 }
@@ -2598,19 +2598,19 @@ select.form-input:focus {
 
 /* Field Error Styling */
 .form-input-error {
-  border-color: #ef4444 !important;
-  background-color: #fef2f2;
+  border-color: var(--color-danger-500) !important;
+  background-color: var(--color-danger-50);
 }
 
 .form-input-error:focus {
-  border-color: #dc2626 !important;
+  border-color: var(--color-danger-600) !important;
   box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.1) !important;
 }
 
 .field-error {
   display: block;
   font-size: 0.8125rem;
-  color: #dc2626;
+  color: var(--color-danger-600);
   margin-top: 0.375rem;
   font-weight: 500;
 }
@@ -2627,7 +2627,7 @@ select.form-input:focus {
   align-items: flex-start;
   gap: 0.75rem;
   padding: 1rem;
-  background: #fef2f2;
+  background: var(--color-danger-50);
   border: 1px solid #fecaca;
   border-radius: 0.5rem;
   margin-top: 0.5rem;
@@ -2635,7 +2635,7 @@ select.form-input:focus {
 
 .btn-modal-primary {
   padding: 0.625rem 1.5rem;
-  background: #8b5cf6;
+  background: var(--color-primary-500);
   color: white;
   border: none;
   border-radius: 0.5rem;
@@ -2646,7 +2646,7 @@ select.form-input:focus {
 }
 
 .btn-modal-primary:hover:not(:disabled) {
-  background: #7c3aed;
+  background: var(--color-primary-700);
 }
 
 .btn-modal-primary:disabled {
@@ -2657,8 +2657,8 @@ select.form-input:focus {
 .btn-modal-outline {
   padding: 0.625rem 1.5rem;
   background: white;
-  color: #6b7280;
-  border: 1px solid #d1d5db;
+  color: var(--color-gray-600);
+  border: 1px solid var(--color-gray-400);
   border-radius: 0.5rem;
   font-size: 0.875rem;
   font-weight: 500;
@@ -2667,8 +2667,8 @@ select.form-input:focus {
 }
 
 .btn-modal-outline:hover:not(:disabled) {
-  background: #f9fafb;
-  border-color: #9ca3af;
+  background: var(--color-gray-50);
+  border-color: var(--color-gray-500);
 }
 
 .btn-modal-outline:disabled {

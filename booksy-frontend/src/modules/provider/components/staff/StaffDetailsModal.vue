@@ -180,7 +180,7 @@ function viewProfile(): void {
 
 .modal-header {
   padding: 1.5rem;
-  border-bottom: 1px solid #e5e7eb;
+  border-bottom: 1px solid var(--color-gray-300);
   display: flex;
   justify-content: space-between;
   align-items: center;
@@ -202,14 +202,14 @@ function viewProfile(): void {
   cursor: pointer;
   font-size: 2rem;
   line-height: 1;
-  color: #6b7280;
+  color: var(--color-gray-600);
   display: flex;
   align-items: center;
   justify-content: center;
   transition: all 0.2s;
 
   &:hover {
-    background: #f3f4f6;
+    background: var(--color-gray-100);
     color: #1a1a1a;
   }
 }
@@ -226,7 +226,7 @@ function viewProfile(): void {
   align-items: center;
   margin-bottom: 2rem;
   padding-bottom: 2rem;
-  border-bottom: 1px solid #e5e7eb;
+  border-bottom: 1px solid var(--color-gray-300);
 }
 
 .staff-avatar {
@@ -234,7 +234,7 @@ function viewProfile(): void {
   height: 100px;
   border-radius: 50%;
   overflow: hidden;
-  border: 4px solid #f3f4f6;
+  border: 4px solid var(--color-gray-100);
   margin-bottom: 1rem;
 
   img {
@@ -244,7 +244,7 @@ function viewProfile(): void {
   }
 
   &.avatar-placeholder {
-    background: linear-gradient(135deg, #7c3aed 0%, #9333ea 100%);
+    background: linear-gradient(135deg, var(--color-primary-700) 0%, #9333ea 100%);
     display: flex;
     align-items: center;
     justify-content: center;
@@ -275,16 +275,16 @@ function viewProfile(): void {
     color: #065f46;
 
     .status-dot {
-      background: #10b981;
+      background: var(--color-success-500);
     }
   }
 
   &.status-inactive {
-    background: #fee2e2;
-    color: #991b1b;
+    background: var(--color-danger-50);
+    color: var(--color-danger-600);
 
     .status-dot {
-      background: #ef4444;
+      background: var(--color-danger-500);
     }
   }
 }
@@ -310,7 +310,7 @@ function viewProfile(): void {
 .section-title {
   font-size: 1rem;
   font-weight: 600;
-  color: #374151;
+  color: var(--color-gray-800);
   margin: 0 0 1rem 0;
 }
 
@@ -328,7 +328,7 @@ function viewProfile(): void {
 
 .detail-label {
   font-size: 0.875rem;
-  color: #6b7280;
+  color: var(--color-gray-600);
   font-weight: 500;
 }
 
@@ -340,7 +340,7 @@ function viewProfile(): void {
 
 .bio-text {
   font-size: 0.95rem;
-  color: #4b5563;
+  color: var(--color-gray-700);
   line-height: 1.6;
   margin: 0;
 }
@@ -353,16 +353,16 @@ function viewProfile(): void {
 
 .tag {
   padding: 0.5rem 1rem;
-  background: #f3f4f6;
+  background: var(--color-gray-100);
   border-radius: 8px;
   font-size: 0.875rem;
-  color: #4b5563;
+  color: var(--color-gray-700);
   font-weight: 500;
 }
 
 .modal-footer {
   padding: 1.5rem;
-  border-top: 1px solid #e5e7eb;
+  border-top: 1px solid var(--color-gray-300);
   display: flex;
   justify-content: flex-end;
   gap: 1rem;

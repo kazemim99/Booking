@@ -159,19 +159,19 @@ function confirm() {
   gap: 0.5rem;
   padding: 0.625rem 0.75rem;
   background: white;
-  border: 1px solid #d1d5db;
+  border: 1px solid var(--color-gray-400);
   border-radius: 0.375rem;
   cursor: pointer;
   transition: all 0.2s;
 }
 
 .time-picker-display:hover {
-  border-color: #3b82f6;
+  border-color: var(--color-primary-500);
   box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
 }
 
 .time-picker-display:focus-within {
-  border-color: #3b82f6;
+  border-color: var(--color-primary-500);
   outline: none;
   box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
 }
@@ -180,15 +180,15 @@ function confirm() {
   flex: 1;
   font-size: 0.875rem;
   font-weight: 500;
-  color: #111827;
+  color: var(--color-gray-900);
 }
 
 .time-picker-display i:first-child {
-  color: #6b7280;
+  color: var(--color-gray-600);
 }
 
 .time-picker-display i:last-child {
-  color: #9ca3af;
+  color: var(--color-gray-500);
   font-size: 0.75rem;
 }
 
@@ -242,14 +242,14 @@ function confirm() {
   align-items: center;
   justify-content: space-between;
   padding: 1.25rem 1.5rem;
-  border-bottom: 1px solid #e5e7eb;
+  border-bottom: 1px solid var(--color-gray-300);
 }
 
 .time-picker-header h3 {
   margin: 0;
   font-size: 1.125rem;
   font-weight: 600;
-  color: #111827;
+  color: var(--color-gray-900);
 }
 
 .close-btn {
@@ -257,7 +257,7 @@ function confirm() {
   border: none;
   font-size: 2rem;
   line-height: 1;
-  color: #9ca3af;
+  color: var(--color-gray-500);
   cursor: pointer;
   padding: 0;
   width: 2rem;
@@ -269,7 +269,7 @@ function confirm() {
 }
 
 .close-btn:hover {
-  color: #111827;
+  color: var(--color-gray-900);
 }
 
 .time-picker-body {
@@ -280,7 +280,7 @@ function confirm() {
   text-align: center;
   font-size: 3rem;
   font-weight: 700;
-  color: #3b82f6;
+  color: var(--color-primary-500);
   margin-bottom: 1.5rem;
   font-variant-numeric: tabular-nums;
 }
@@ -299,7 +299,7 @@ function confirm() {
 .time-label {
   font-size: 0.875rem;
   font-weight: 600;
-  color: #6b7280;
+  color: var(--color-gray-600);
   text-align: center;
   margin-bottom: 0.5rem;
   text-transform: uppercase;
@@ -309,10 +309,10 @@ function confirm() {
 .time-scroll-container {
   height: 200px;
   overflow-y: auto;
-  border: 1px solid #e5e7eb;
+  border: 1px solid var(--color-gray-300);
   border-radius: 0.5rem;
   padding: 0.25rem;
-  background: #f9fafb;
+  background: var(--color-gray-50);
 }
 
 .time-scroll-container::-webkit-scrollbar {
@@ -325,12 +325,12 @@ function confirm() {
 }
 
 .time-scroll-container::-webkit-scrollbar-thumb {
-  background: #cbd5e1;
+  background: var(--color-gray-400);
   border-radius: 4px;
 }
 
 .time-scroll-container::-webkit-scrollbar-thumb:hover {
-  background: #94a3b8;
+  background: var(--color-gray-500);
 }
 
 .time-option {
@@ -338,7 +338,7 @@ function confirm() {
   text-align: center;
   font-size: 1.125rem;
   font-weight: 500;
-  color: #374151;
+  color: var(--color-gray-800);
   cursor: pointer;
   border-radius: 0.375rem;
   transition: all 0.2s;
@@ -352,7 +352,7 @@ function confirm() {
 }
 
 .time-option.active {
-  background: #3b82f6;
+  background: var(--color-primary-500);
   color: white;
   font-weight: 700;
   box-shadow: 0 2px 4px rgba(59, 130, 246, 0.3);
@@ -362,8 +362,8 @@ function confirm() {
   display: flex;
   gap: 0.75rem;
   padding: 1.25rem 1.5rem;
-  border-top: 1px solid #e5e7eb;
-  background: #f9fafb;
+  border-top: 1px solid var(--color-gray-300);
+  background: var(--color-gray-50);
   border-radius: 0 0 0.75rem 0.75rem;
 }
 
@@ -380,22 +380,22 @@ function confirm() {
 
 .btn-secondary {
   background: white;
-  color: #374151;
-  border: 1px solid #d1d5db;
+  color: var(--color-gray-800);
+  border: 1px solid var(--color-gray-400);
 }
 
 .btn-secondary:hover {
-  background: #f9fafb;
-  border-color: #9ca3af;
+  background: var(--color-gray-50);
+  border-color: var(--color-gray-500);
 }
 
 .btn-primary {
-  background: #3b82f6;
+  background: var(--color-primary-500);
   color: white;
 }
 
 .btn-primary:hover {
-  background: #2563eb;
+  background: var(--color-primary-600);
   box-shadow: 0 2px 4px rgba(59, 130, 246, 0.3);
 }
 

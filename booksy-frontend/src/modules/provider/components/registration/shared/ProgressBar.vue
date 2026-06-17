@@ -39,7 +39,7 @@ const percentage = computed(() => {
   position: relative;
   width: 100%;
   height: 0.5rem;
-  background-color: #e5e7eb;
+  background-color: var(--color-gray-300);
   border-radius: 9999px;
   overflow: hidden;
 }
@@ -49,7 +49,7 @@ const percentage = computed(() => {
   left: 0;
   top: 0;
   height: 100%;
-  background: linear-gradient(90deg, #10b981 0%, #34d399 100%);
+  background: linear-gradient(90deg, var(--color-success-500) 0%, #34d399 100%);
   border-radius: 9999px;
   transition: width 0.4s cubic-bezier(0.4, 0, 0.2, 1);
   display: flex;
@@ -60,7 +60,7 @@ const percentage = computed(() => {
 .progress-indicator {
   width: 1rem;
   height: 1rem;
-  background-color: #10b981;
+  background-color: var(--color-success-500);
   border: 3px solid #ffffff;
   border-radius: 50%;
   box-shadow: 0 2px 8px rgba(16, 185, 129, 0.4);
@@ -83,7 +83,7 @@ const percentage = computed(() => {
   text-align: center;
   font-size: 0.875rem;
   font-weight: 500;
-  color: #6b7280;
+  color: var(--color-gray-600);
 }
 
 /* Responsive */

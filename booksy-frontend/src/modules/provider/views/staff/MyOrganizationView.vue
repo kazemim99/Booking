@@ -177,13 +177,13 @@ onMounted(async () => {
   h1 {
     font-size: 28px;
     font-weight: 700;
-    color: #1f2937;
+    color: var(--color-gray-900);
     margin: 0 0 8px 0;
   }
 
   .subtitle {
     font-size: 16px;
-    color: #6b7280;
+    color: var(--color-gray-600);
     margin: 0;
   }
 }
@@ -195,15 +195,15 @@ onMounted(async () => {
   .spinner {
     width: 48px;
     height: 48px;
-    border: 4px solid #e5e7eb;
-    border-top-color: #6366f1;
+    border: 4px solid var(--color-gray-300);
+    border-top-color: var(--color-primary-500);
     border-radius: 50%;
     margin: 0 auto 16px;
     animation: spin 0.8s linear infinite;
   }
 
   p {
-    color: #6b7280;
+    color: var(--color-gray-600);
   }
 }
 
@@ -214,8 +214,8 @@ onMounted(async () => {
   .spinner-small {
     width: 32px;
     height: 32px;
-    border: 3px solid #e5e7eb;
-    border-top-color: #6366f1;
+    border: 3px solid var(--color-gray-300);
+    border-top-color: var(--color-primary-500);
     border-radius: 50%;
     margin: 0 auto 12px;
     animation: spin 0.8s linear infinite;
@@ -223,7 +223,7 @@ onMounted(async () => {
 
   p {
     font-size: 14px;
-    color: #6b7280;
+    color: var(--color-gray-600);
     margin: 0;
   }
 }
@@ -242,7 +242,7 @@ onMounted(async () => {
 
 .organization-card {
   background: white;
-  border: 1px solid #e5e7eb;
+  border: 1px solid var(--color-gray-300);
   border-radius: 12px;
   padding: 32px;
 }
@@ -266,7 +266,7 @@ onMounted(async () => {
       width: 100px;
       height: 100px;
       border-radius: 12px;
-      background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
+      background: linear-gradient(135deg, var(--color-primary-500) 0%, var(--color-primary-600) 100%);
       color: white;
       display: flex;
       align-items: center;
@@ -282,7 +282,7 @@ onMounted(async () => {
     h2 {
       font-size: 24px;
       font-weight: 700;
-      color: #1f2937;
+      color: var(--color-gray-900);
       margin: 0 0 12px 0;
     }
 
@@ -290,7 +290,7 @@ onMounted(async () => {
       display: flex;
       align-items: center;
       gap: 8px;
-      color: #6b7280;
+      color: var(--color-gray-600);
       font-size: 15px;
       margin: 0;
 
@@ -310,7 +310,7 @@ onMounted(async () => {
 
 .stat-card {
   background: white;
-  border: 1px solid #e5e7eb;
+  border: 1px solid var(--color-gray-300);
   border-radius: 12px;
   padding: 20px;
   display: flex;
@@ -327,14 +327,14 @@ onMounted(async () => {
 
     .stat-label {
       font-size: 14px;
-      color: #6b7280;
+      color: var(--color-gray-600);
       margin: 0 0 8px 0;
     }
 
     .stat-value {
       font-size: 24px;
       font-weight: 700;
-      color: #1f2937;
+      color: var(--color-gray-900);
       margin: 0;
     }
   }
@@ -342,7 +342,7 @@ onMounted(async () => {
 
 .section-card {
   background: white;
-  border: 1px solid #e5e7eb;
+  border: 1px solid var(--color-gray-300);
   border-radius: 12px;
   padding: 24px;
 
@@ -352,19 +352,19 @@ onMounted(async () => {
     justify-content: space-between;
     margin-bottom: 20px;
     padding-bottom: 12px;
-    border-bottom: 1px solid #e5e7eb;
+    border-bottom: 1px solid var(--color-gray-300);
 
     h3 {
       font-size: 18px;
       font-weight: 600;
-      color: #1f2937;
+      color: var(--color-gray-900);
       margin: 0;
     }
 
     .count-badge {
       padding: 4px 12px;
       background: #e0e7ff;
-      color: #4338ca;
+      color: var(--color-primary-700);
       border-radius: 12px;
       font-size: 13px;
       font-weight: 600;
@@ -383,12 +383,12 @@ onMounted(async () => {
   align-items: center;
   gap: 16px;
   padding: 16px;
-  background: #f9fafb;
+  background: var(--color-gray-50);
   border-radius: 8px;
   transition: background-color 0.2s;
 
   &:hover {
-    background: #f3f4f6;
+    background: var(--color-gray-100);
   }
 
   .staff-avatar {
@@ -406,7 +406,7 @@ onMounted(async () => {
       height: 48px;
       border-radius: 50%;
       background: #e0e7ff;
-      color: #4338ca;
+      color: var(--color-primary-700);
       display: flex;
       align-items: center;
       justify-content: center;
@@ -421,14 +421,14 @@ onMounted(async () => {
     h4 {
       font-size: 16px;
       font-weight: 600;
-      color: #1f2937;
+      color: var(--color-gray-900);
       margin: 0 0 4px 0;
     }
 
     .staff-title,
     .staff-role {
       font-size: 14px;
-      color: #6b7280;
+      color: var(--color-gray-600);
       margin: 0;
     }
   }
@@ -451,8 +451,8 @@ onMounted(async () => {
   }
 
   &.status-inactive {
-    background: #fee2e2;
-    color: #991b1b;
+    background: var(--color-danger-50);
+    color: var(--color-danger-600);
   }
 }
 
@@ -461,7 +461,7 @@ onMounted(async () => {
   padding: 32px;
 
   p {
-    color: #6b7280;
+    color: var(--color-gray-600);
     font-size: 15px;
     margin: 0;
   }
@@ -470,7 +470,7 @@ onMounted(async () => {
 .info-notice {
   display: flex;
   gap: 12px;
-  background: #eff6ff;
+  background: var(--color-primary-50);
   border: 1px solid #bfdbfe;
   border-radius: 12px;
   padding: 16px;
@@ -494,11 +494,11 @@ onMounted(async () => {
   text-align: center;
   padding: 64px 32px;
   background: white;
-  border: 1px solid #e5e7eb;
+  border: 1px solid var(--color-gray-300);
   border-radius: 12px;
 
   p {
-    color: #6b7280;
+    color: var(--color-gray-600);
     font-size: 16px;
   }
 }

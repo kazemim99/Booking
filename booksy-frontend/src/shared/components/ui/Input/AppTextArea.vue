@@ -127,22 +127,22 @@ defineExpose({
   display: block;
   font-size: 0.875rem;
   font-weight: 500;
-  color: #374151;
+  color: var(--color-gray-800);
   margin-bottom: 0.5rem;
 }
 
 .textarea-required {
-  color: #ef4444;
+  color: var(--color-danger-500);
   margin-left: 0.25rem;
 }
 
 .textarea {
   width: 100%;
   padding: 0.75rem 1rem;
-  border: 1px solid #d1d5db;
+  border: 1px solid var(--color-gray-400);
   border-radius: 8px;
   background: white;
-  color: #1f2937;
+  color: var(--color-gray-900);
   font-family: inherit;
   font-size: 1rem;
   line-height: 1.5;
@@ -150,33 +150,33 @@ defineExpose({
   outline: none;
 
   &::placeholder {
-    color: #9ca3af;
+    color: var(--color-gray-500);
   }
 
   &:hover:not(:disabled) {
-    border-color: #9ca3af;
+    border-color: var(--color-gray-500);
   }
 
   &:focus {
-    border-color: #667eea;
+    border-color: var(--color-primary-500);
     box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
   }
 
   &:disabled {
-    background-color: #f3f4f6;
+    background-color: var(--color-gray-100);
     cursor: not-allowed;
     opacity: 0.6;
   }
 
   &:readonly {
-    background-color: #f9fafb;
+    background-color: var(--color-gray-50);
   }
 
   &-error {
-    border-color: #ef4444;
+    border-color: var(--color-danger-500);
 
     &:focus {
-      border-color: #ef4444;
+      border-color: var(--color-danger-500);
       box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.1);
     }
   }
@@ -200,7 +200,7 @@ defineExpose({
 .textarea-count {
   text-align: right;
   font-size: 0.75rem;
-  color: #6b7280;
+  color: var(--color-gray-600);
   margin-top: 0.25rem;
 }
 
@@ -208,14 +208,14 @@ defineExpose({
   display: block;
   margin-top: 0.25rem;
   font-size: 0.75rem;
-  color: #ef4444;
+  color: var(--color-danger-500);
 }
 
 .textarea-hint {
   display: block;
   margin-top: 0.25rem;
   font-size: 0.75rem;
-  color: #6b7280;
+  color: var(--color-gray-600);
 }
 
 .textarea-wrapper-disabled {

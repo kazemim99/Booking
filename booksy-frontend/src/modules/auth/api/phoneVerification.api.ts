@@ -29,7 +29,7 @@ export const phoneVerificationApi = {
     request: SendVerificationCodeRequest
   ): Promise<ApiResponse<SendVerificationCodeResponse>> {
     return userManagementClient.post<SendVerificationCodeResponse>(
-      '/v1/auth/send-verification-code',
+      '/v1/Auth/send-verification-code',
       {
         phoneNumber: request.phoneNumber,
         countryCode: request.countryCode || '+98',
@@ -51,7 +51,7 @@ export const phoneVerificationApi = {
     request: CompleteCustomerAuthenticationRequest
   ): Promise<ApiResponse<CompleteCustomerAuthenticationResponse>> {
     return userManagementClient.post<CompleteCustomerAuthenticationResponse>(
-      '/v1/auth/customer/complete-authentication',
+      '/v1/Auth/customer/complete-authentication',
       request
     )
   },
@@ -70,7 +70,7 @@ export const phoneVerificationApi = {
     request: CompleteProviderAuthenticationRequest
   ): Promise<ApiResponse<CompleteProviderAuthenticationResponse>> {
     return userManagementClient.post<CompleteProviderAuthenticationResponse>(
-      '/v1/auth/provider/complete-authentication',
+      '/v1/Auth/provider/complete-authentication',
       request
     )
   },
@@ -82,7 +82,7 @@ export const phoneVerificationApi = {
    * Note: This still uses the old endpoint as it's still available
    */
   async resendOtp(request: ResendOtpRequest): Promise<ApiResponse<ResendOtpResponse>> {
-    return userManagementClient.post<ResendOtpResponse>('/v1/phoneverification/resend', request)
+    return userManagementClient.post<ResendOtpResponse>('/v1/PhoneVerification/resend', request)
   },
 
   // ==================== DEPRECATED METHODS ====================

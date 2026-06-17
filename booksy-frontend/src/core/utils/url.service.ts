@@ -11,14 +11,14 @@
  * Get the Service Catalog API base URL from environment (for API calls)
  */
 export function getServiceCatalogApiUrl(): string {
-  return import.meta.env.VITE_SERVICE_CATALOG_API_URL || 'http://localhost:5010/api'
+  return import.meta.env.VITE_SERVICE_CATALOG_API_URL || '/api'
 }
 
 /**
  * Get the Service Catalog base URL without /api (for static files like uploads)
  */
 export function getServiceCatalogBaseUrl(): string {
-  const apiUrl = import.meta.env.VITE_SERVICE_CATALOG_API_URL || 'http://localhost:5010/api'
+  const apiUrl = import.meta.env.VITE_SERVICE_CATALOG_API_URL || '/api'
   // Remove '/api' suffix if present to get the base server URL
   return apiUrl.replace(/\/api\/?$/, '')
 }
@@ -28,7 +28,7 @@ export function getServiceCatalogBaseUrl(): string {
  * Get the User Management API base URL from environment
  */
 export function getUserManagementApiUrl(): string {
-  return import.meta.env.VITE_USER_MANAGEMENT_API_URL || 'https://localhost:5021/api'
+  return import.meta.env.VITE_USER_MANAGEMENT_API_URL || '/api'
 }
 
 /**

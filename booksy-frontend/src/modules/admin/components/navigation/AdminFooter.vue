@@ -23,7 +23,7 @@ const currentYear = computed(() => new Date().getFullYear())
   bottom: 0;
   margin-top: auto;
   background: #ffffff;
-  border-top: 1px solid #e5e7eb;
+  border-top: 1px solid var(--color-gray-300);
 }
 
 .content {
@@ -36,7 +36,7 @@ const currentYear = computed(() => new Date().getFullYear())
 }
 
 .muted {
-  color: #6b7280;
+  color: var(--color-gray-600);
   font-size: 0.875rem;
 }
 
@@ -45,11 +45,11 @@ const currentYear = computed(() => new Date().getFullYear())
   gap: 1rem;
 }
 .links a {
-  color: #6b7280;
+  color: var(--color-gray-600);
   text-decoration: none;
   font-size: 0.875rem;
 }
 .links a:hover {
-  color: #111827;
+  color: var(--color-gray-900);
 }
 </style>

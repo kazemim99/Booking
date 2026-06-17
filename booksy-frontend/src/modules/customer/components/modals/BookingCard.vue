@@ -151,7 +151,7 @@ function handleRebook(): void {
 <style scoped lang="scss">
 .booking-card {
   background: white;
-  border: 1px solid #e5e7eb;
+  border: 1px solid var(--color-gray-300);
   border-radius: 12px;
   padding: 1rem;
   display: flex;
@@ -160,7 +160,7 @@ function handleRebook(): void {
   transition: box-shadow 0.2s;
 
   &:hover {
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+    box-shadow: var(--shadow-md);
   }
 }
 
@@ -181,7 +181,7 @@ function handleRebook(): void {
   width: 48px;
   height: 48px;
   border-radius: 8px;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: linear-gradient(135deg, var(--color-primary-500) 0%, var(--color-primary-700) 100%);
   color: white;
   display: flex;
   align-items: center;
@@ -198,13 +198,13 @@ function handleRebook(): void {
 .provider-name {
   font-size: 1rem;
   font-weight: 600;
-  color: #111827;
+  color: var(--color-gray-900);
   margin: 0 0 0.25rem 0;
 }
 
 .service-name {
   font-size: 0.875rem;
-  color: #6b7280;
+  color: var(--color-gray-600);
   margin: 0;
   white-space: nowrap;
   overflow: hidden;
@@ -222,13 +222,13 @@ function handleRebook(): void {
   align-items: center;
   gap: 0.5rem;
   font-size: 0.875rem;
-  color: #374151;
+  color: var(--color-gray-800);
 }
 
 .icon {
   width: 16px;
   height: 16px;
-  color: #9ca3af;
+  color: var(--color-gray-500);
   flex-shrink: 0;
 }
 
@@ -259,13 +259,13 @@ function handleRebook(): void {
 }
 
 .status-cancelled {
-  background: #fee2e2;
-  color: #991b1b;
+  background: var(--color-danger-50);
+  color: var(--color-danger-600);
 }
 
 .status-noshow {
-  background: #f3f4f6;
-  color: #374151;
+  background: var(--color-gray-100);
+  color: var(--color-gray-800);
 }
 
 .booking-actions {
@@ -295,7 +295,7 @@ function handleRebook(): void {
 }
 
 .btn-primary {
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: linear-gradient(135deg, var(--color-primary-500) 0%, var(--color-primary-700) 100%);
   color: white;
 
   &:hover {
@@ -306,23 +306,23 @@ function handleRebook(): void {
 
 .btn-secondary {
   background: white;
-  color: #374151;
-  border: 1px solid #d1d5db;
+  color: var(--color-gray-800);
+  border: 1px solid var(--color-gray-400);
 
   &:hover {
-    background: #f9fafb;
-    border-color: #9ca3af;
+    background: var(--color-gray-50);
+    border-color: var(--color-gray-500);
   }
 }
 
 .btn-danger {
   background: white;
-  color: #ef4444;
+  color: var(--color-danger-500);
   border: 1px solid #fecaca;
 
   &:hover {
-    background: #fef2f2;
-    border-color: #ef4444;
+    background: var(--color-danger-50);
+    border-color: var(--color-danger-500);
   }
 }
 </style>

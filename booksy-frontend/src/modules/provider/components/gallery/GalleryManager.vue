@@ -507,13 +507,13 @@ async function handleSetPrimary(image: GalleryImage): Promise<void> {
 .gallery-title {
   font-size: 1.5rem;
   font-weight: 700;
-  color: #111827;
+  color: var(--color-gray-900);
   margin: 0 0 0.5rem 0;
 }
 
 .gallery-subtitle {
   font-size: 0.875rem;
-  color: #6b7280;
+  color: var(--color-gray-600);
   margin: 0;
 }
 
@@ -539,13 +539,13 @@ async function handleSetPrimary(image: GalleryImage): Promise<void> {
 .preview-title {
   font-size: 1.125rem;
   font-weight: 600;
-  color: #111827;
+  color: var(--color-gray-900);
   margin: 0;
 }
 
 .preview-count {
   font-size: 0.875rem;
-  color: #6b7280;
+  color: var(--color-gray-600);
   margin: 0;
 }
 
@@ -560,12 +560,12 @@ async function handleSetPrimary(image: GalleryImage): Promise<void> {
   background: white;
   border-radius: 0.5rem;
   overflow: hidden;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  box-shadow: var(--shadow-sm);
   transition: all 0.2s;
 }
 
 .image-card:hover {
-  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+  box-shadow: var(--shadow-md);
   transform: translateY(-2px);
 }
 
@@ -575,7 +575,7 @@ async function handleSetPrimary(image: GalleryImage): Promise<void> {
   width: 100%;
   aspect-ratio: 4 / 3;
   overflow: hidden;
-  background-color: #f3f4f6;
+  background-color: var(--color-gray-100);
 }
 
 .image {
@@ -597,7 +597,7 @@ async function handleSetPrimary(image: GalleryImage): Promise<void> {
   right: 0.5rem;
   width: 2rem;
   height: 2rem;
-  background: linear-gradient(135deg, #fbbf24 0%, #f59e0b 100%);
+  background: linear-gradient(135deg, var(--color-warning-500) 0%, var(--color-warning-500) 100%);
   border-radius: 50%;
   display: flex;
   align-items: center;
@@ -652,11 +652,11 @@ async function handleSetPrimary(image: GalleryImage): Promise<void> {
 .overlay-btn svg {
   width: 1.125rem;
   height: 1.125rem;
-  color: #374151;
+  color: var(--color-gray-800);
 }
 
 .overlay-btn.btn-primary {
-  background: linear-gradient(135deg, #fbbf24 0%, #f59e0b 100%);
+  background: linear-gradient(135deg, var(--color-warning-500) 0%, var(--color-warning-500) 100%);
 }
 
 .overlay-btn.btn-primary svg {
@@ -664,7 +664,7 @@ async function handleSetPrimary(image: GalleryImage): Promise<void> {
 }
 
 .overlay-btn.btn-danger:hover {
-  background: #ef4444;
+  background: var(--color-danger-500);
 }
 
 .overlay-btn.btn-danger:hover svg {
@@ -675,14 +675,14 @@ async function handleSetPrimary(image: GalleryImage): Promise<void> {
 .image-caption {
   padding: 0.75rem;
   font-size: 0.875rem;
-  color: #374151;
+  color: var(--color-gray-800);
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
 
 .image-caption.placeholder {
-  color: #9ca3af;
+  color: var(--color-gray-500);
   font-style: italic;
 }
 
@@ -695,20 +695,20 @@ async function handleSetPrimary(image: GalleryImage): Promise<void> {
 .empty-icon {
   width: 4rem;
   height: 4rem;
-  color: #d1d5db;
+  color: var(--color-gray-400);
   margin: 0 auto 1rem;
 }
 
 .empty-text {
   font-size: 1rem;
   font-weight: 500;
-  color: #374151;
+  color: var(--color-gray-800);
   margin: 0 0 0.5rem 0;
 }
 
 .empty-hint {
   font-size: 0.875rem;
-  color: #9ca3af;
+  color: var(--color-gray-500);
   margin: 0;
 }
 
@@ -734,7 +734,7 @@ async function handleSetPrimary(image: GalleryImage): Promise<void> {
   width: 100%;
   max-height: 90vh;
   overflow-y: auto;
-  box-shadow: 0 20px 25px rgba(0, 0, 0, 0.15);
+  box-shadow: var(--shadow-lg);
 }
 
 .modal-content.modal-sm {
@@ -746,13 +746,13 @@ async function handleSetPrimary(image: GalleryImage): Promise<void> {
   justify-content: space-between;
   align-items: center;
   padding: 1.5rem;
-  border-bottom: 1px solid #e5e7eb;
+  border-bottom: 1px solid var(--color-gray-300);
 }
 
 .modal-header h3 {
   font-size: 1.125rem;
   font-weight: 600;
-  color: #111827;
+  color: var(--color-gray-900);
   margin: 0;
 }
 
@@ -762,7 +762,7 @@ async function handleSetPrimary(image: GalleryImage): Promise<void> {
   border: none;
   background: transparent;
   font-size: 1.5rem;
-  color: #6b7280;
+  color: var(--color-gray-600);
   cursor: pointer;
   transition: color 0.2s;
   padding: 0;
@@ -772,7 +772,7 @@ async function handleSetPrimary(image: GalleryImage): Promise<void> {
 }
 
 .modal-close:hover {
-  color: #111827;
+  color: var(--color-gray-900);
 }
 
 .modal-body {
@@ -784,7 +784,7 @@ async function handleSetPrimary(image: GalleryImage): Promise<void> {
   justify-content: flex-end;
   gap: 0.75rem;
   padding: 1.5rem;
-  border-top: 1px solid #e5e7eb;
+  border-top: 1px solid var(--color-gray-300);
 }
 
 /* Edit Preview */
@@ -793,7 +793,7 @@ async function handleSetPrimary(image: GalleryImage): Promise<void> {
   aspect-ratio: 16 / 9;
   border-radius: 0.5rem;
   overflow: hidden;
-  background: #f3f4f6;
+  background: var(--color-gray-100);
   margin-bottom: 1.5rem;
 }
 
@@ -827,7 +827,7 @@ async function handleSetPrimary(image: GalleryImage): Promise<void> {
   display: block;
   font-size: 0.875rem;
   font-weight: 500;
-  color: #374151;
+  color: var(--color-gray-800);
   margin-bottom: 0.5rem;
 }
 
@@ -835,21 +835,21 @@ async function handleSetPrimary(image: GalleryImage): Promise<void> {
   width: 100%;
   padding: 0.625rem 0.875rem;
   font-size: 0.875rem;
-  border: 1px solid #d1d5db;
+  border: 1px solid var(--color-gray-400);
   border-radius: 0.5rem;
   transition: all 0.2s;
 }
 
 .form-control:focus {
   outline: none;
-  border-color: #8b5cf6;
+  border-color: var(--color-primary-500);
   box-shadow: 0 0 0 3px rgba(139, 92, 246, 0.1);
 }
 
 .form-text {
   display: block;
   font-size: 0.75rem;
-  color: #9ca3af;
+  color: var(--color-gray-500);
   margin-top: 0.25rem;
 }
 
@@ -873,30 +873,30 @@ async function handleSetPrimary(image: GalleryImage): Promise<void> {
 }
 
 .btn-primary {
-  background: #8b5cf6;
+  background: var(--color-primary-500);
   color: white;
 }
 
 .btn-primary:hover:not(:disabled) {
-  background: #7c3aed;
+  background: var(--color-primary-700);
 }
 
 .btn-secondary {
-  background: #e5e7eb;
-  color: #374151;
+  background: var(--color-gray-300);
+  color: var(--color-gray-800);
 }
 
 .btn-secondary:hover:not(:disabled) {
-  background: #d1d5db;
+  background: var(--color-gray-400);
 }
 
 .btn-danger {
-  background: #ef4444;
+  background: var(--color-danger-500);
   color: white;
 }
 
 .btn-danger:hover:not(:disabled) {
-  background: #dc2626;
+  background: var(--color-danger-600);
 }
 
 /* Image Viewer */
@@ -954,7 +954,7 @@ async function handleSetPrimary(image: GalleryImage): Promise<void> {
 }
 
 .text-muted {
-  color: #9ca3af;
+  color: var(--color-gray-500);
   font-size: 0.875rem;
 }
 </style>

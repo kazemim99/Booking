@@ -8,6 +8,15 @@ import type { InternalAxiosRequestConfig } from 'axios'
 import axios from 'axios'
 import { microservices } from '../config/api-config'
 
+// Diagnostic logging is dev-only and never includes tokens or response bodies —
+// access/refresh tokens are secrets and must not be written to the console.
+const isDev = Boolean(import.meta.env?.DEV)
+
+// Concurrent-refresh guard: a single in-flight refresh shared by all callers. Without
+// this, parallel 401s each POST /refresh; because the refresh token rotates on every
+// call, the second refresh would use an already-consumed token and log the user out.
+let refreshPromise: Promise<string> | null = null
+
 /**
  * Adds JWT token to request headers
  */
@@ -22,6 +31,62 @@ export function authInterceptor(config: InternalAxiosRequestConfig): InternalAxi
 }
 
 /**
+ * Performs a single token refresh and stores the rotated tokens.
+ * Returns the new access token. Throws on any failure.
+ */
+async function performTokenRefresh(): Promise<string> {
+  const refreshToken = localStorage.getItem('refresh_token')
+
+  if (!refreshToken) {
+    throw new Error('No refresh token available')
+  }
+
+  // Refresh token endpoint - use User Management API
+  const userManagementBaseUrl = microservices.userManagement.baseURL
+
+  const response = await fetch(`${userManagementBaseUrl}/v1/Auth/refresh`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'Accept': 'application/json'
+    },
+    body: JSON.stringify({ refreshToken })
+  })
+
+  if (!response.ok) {
+    throw new Error(`Token refresh failed (HTTP ${response.status})`)
+  }
+
+  const data = await response.json()
+
+  // Extract tokens - handle both nested data.data and flat data structure
+  // Also handle PascalCase from .NET API (since we're using fetch, not axios)
+  const accessToken =
+    data.data?.accessToken ||
+    data.data?.AccessToken ||
+    data.accessToken ||
+    data.AccessToken
+
+  const newRefreshToken =
+    data.data?.refreshToken ||
+    data.data?.RefreshToken ||
+    data.refreshToken ||
+    data.RefreshToken
+
+  if (!accessToken) {
+    throw new Error('No access token in refresh response')
+  }
+
+  // Update tokens
+  localStorage.setItem('access_token', accessToken)
+  if (newRefreshToken) {
+    localStorage.setItem('refresh_token', newRefreshToken)
+  }
+
+  return accessToken
+}
+
+/**
  * Handles token refresh on 401 errors
  */
 export async function authErrorInterceptor(error: unknown) {
@@ -33,70 +98,20 @@ export async function authErrorInterceptor(error: unknown) {
     originalRequest._retry = true
 
     try {
-      const refreshToken = localStorage.getItem('refresh_token')
-
-      if (!refreshToken) {
-        console.error('[Auth] No refresh token available')
-        throw new Error('No refresh token available')
+      // Coalesce concurrent 401s into one refresh; clear the slot when it settles.
+      if (!refreshPromise) {
+        refreshPromise = performTokenRefresh().finally(() => { refreshPromise = null })
       }
 
-      // Refresh token endpoint - use User Management API
-      const userManagementBaseUrl = microservices.userManagement.baseURL
-      console.log('[Auth] Refreshing token using:', `${userManagementBaseUrl}/v1/auth/refresh`)
-
-      const response = await fetch(`${userManagementBaseUrl}/v1/auth/refresh`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Accept': 'application/json'
-        },
-        body: JSON.stringify({ refreshToken })
-      })
-
-      console.log('[Auth] Refresh response status:', response.status)
-
-      if (!response.ok) {
-        const errorData = await response.json().catch(() => ({}))
-        console.error('[Auth] Token refresh failed:', errorData)
-        throw new Error('Token refresh failed')
-      }
-
-      const data = await response.json()
-      console.log('[Auth] Refresh response data:', data)
-
-      // Extract tokens - handle both nested data.data and flat data structure
-      // Also handle PascalCase from .NET API (since we're using fetch, not axios)
-      const accessToken =
-        data.data?.accessToken ||
-        data.data?.AccessToken ||
-        data.accessToken ||
-        data.AccessToken
-
-      const newRefreshToken =
-        data.data?.refreshToken ||
-        data.data?.RefreshToken ||
-        data.refreshToken ||
-        data.RefreshToken
-
-      if (!accessToken) {
-        console.error('[Auth] No access token in refresh response:', data)
-        throw new Error('No access token in refresh response')
-      }
-
-      console.log('[Auth] Token refreshed successfully')
-
-      // Update tokens
-      localStorage.setItem('access_token', accessToken)
-      if (newRefreshToken) {
-        localStorage.setItem('refresh_token', newRefreshToken)
-      }
+      const accessToken = await refreshPromise
 
       // Retry original request with new token
       originalRequest.headers.Authorization = `Bearer ${accessToken}`
-      console.log('[Auth] Retrying original request with new token')
+      if (isDev) console.log('[Auth] Token refreshed; retrying original request')
       return axios(originalRequest)
 
     } catch (refreshError) {
+      if (isDev) console.error('[Auth] Token refresh failed; signing out')
       // Determine user role before clearing tokens
       let userRole: 'provider' | 'customer' = 'customer'
       try {
@@ -112,7 +127,7 @@ export async function authErrorInterceptor(error: unknown) {
           }
         }
       } catch (err) {
-        console.error('[Auth] Error detecting user role:', err)
+        if (isDev) console.error('[Auth] Error detecting user role:', err)
       }
 
       // Clear tokens and redirect to appropriate login page

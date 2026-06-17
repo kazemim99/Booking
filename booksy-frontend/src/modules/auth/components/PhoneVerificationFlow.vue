@@ -230,13 +230,13 @@ watch(
 .step-title {
   font-size: 1.875rem;
   font-weight: 700;
-  color: #111827;
+  color: var(--color-gray-900);
   margin-bottom: 0.5rem;
 }
 
 .step-description {
   font-size: 0.875rem;
-  color: #6b7280;
+  color: var(--color-gray-600);
   line-height: 1.5;
 }
 
@@ -264,12 +264,12 @@ watch(
 }
 
 .btn-primary {
-  background-color: #8b5cf6;
+  background-color: var(--color-primary-500);
   color: #ffffff;
 }
 
 .btn-primary:hover:not(:disabled) {
-  background-color: #7c3aed;
+  background-color: var(--color-primary-700);
   transform: translateY(-1px);
   box-shadow: 0 4px 6px -1px rgba(139, 92, 246, 0.3);
 }
@@ -279,7 +279,7 @@ watch(
 }
 
 .btn-primary:disabled {
-  background-color: #d1d5db;
+  background-color: var(--color-gray-400);
   cursor: not-allowed;
   transform: none;
 }
@@ -287,7 +287,7 @@ watch(
 .btn-link {
   background: none;
   border: none;
-  color: #8b5cf6;
+  color: var(--color-primary-500);
   font-size: 0.875rem;
   font-weight: 600;
   cursor: pointer;
@@ -296,18 +296,18 @@ watch(
 }
 
 .btn-link:hover:not(:disabled) {
-  color: #7c3aed;
+  color: var(--color-primary-700);
 }
 
 .btn-link:disabled {
-  color: #9ca3af;
+  color: var(--color-gray-500);
   cursor: not-allowed;
 }
 
 .btn-text {
   background: none;
   border: none;
-  color: #6b7280;
+  color: var(--color-gray-600);
   font-size: 0.875rem;
   font-weight: 500;
   cursor: pointer;
@@ -316,12 +316,12 @@ watch(
 }
 
 .btn-text:hover:not(:disabled) {
-  color: #111827;
+  color: var(--color-gray-900);
   text-decoration: underline;
 }
 
 .btn-text:disabled {
-  color: #9ca3af;
+  color: var(--color-gray-500);
   cursor: not-allowed;
 }
 
@@ -348,7 +348,7 @@ watch(
 
 .resend-countdown {
   font-size: 0.875rem;
-  color: #6b7280;
+  color: var(--color-gray-600);
   margin: 0;
 }
 
@@ -362,7 +362,7 @@ watch(
   width: 4rem;
   height: 4rem;
   margin: 0 auto 1.5rem;
-  color: #10b981;
+  color: var(--color-success-500);
   animation: scaleIn 0.5s ease;
 }
 
@@ -380,13 +380,13 @@ watch(
 .success-title {
   font-size: 1.5rem;
   font-weight: 700;
-  color: #111827;
+  color: var(--color-gray-900);
   margin-bottom: 0.5rem;
 }
 
 .success-description {
   font-size: 0.875rem;
-  color: #6b7280;
+  color: var(--color-gray-600);
   margin-bottom: 2rem;
   line-height: 1.5;
 }

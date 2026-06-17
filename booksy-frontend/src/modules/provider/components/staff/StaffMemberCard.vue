@@ -172,7 +172,7 @@ onClickOutside(menuRef, () => {
 <style scoped lang="scss">
 .staff-member-card {
   background: #fff;
-  border: 1px solid #e5e7eb;
+  border: 1px solid var(--color-gray-300);
   border-radius: 12px;
   overflow: hidden;
   transition: all 0.3s ease;
@@ -184,7 +184,7 @@ onClickOutside(menuRef, () => {
 
   &.inactive {
     opacity: 0.7;
-    background: #f9fafb;
+    background: var(--color-gray-50);
   }
 }
 
@@ -193,7 +193,7 @@ onClickOutside(menuRef, () => {
   display: flex;
   justify-content: space-between;
   align-items: flex-start;
-  border-bottom: 1px solid #f3f4f6;
+  border-bottom: 1px solid var(--color-gray-100);
 }
 
 .avatar-section {
@@ -208,7 +208,7 @@ onClickOutside(menuRef, () => {
   height: 80px;
   border-radius: 50%;
   overflow: hidden;
-  border: 3px solid #f3f4f6;
+  border: 3px solid var(--color-gray-100);
 
   img {
     width: 100%;
@@ -217,7 +217,7 @@ onClickOutside(menuRef, () => {
   }
 
   &.avatar-placeholder {
-    background: linear-gradient(135deg, #7c3aed 0%, #9333ea 100%);
+    background: linear-gradient(135deg, var(--color-primary-700) 0%, #9333ea 100%);
     display: flex;
     align-items: center;
     justify-content: center;
@@ -241,16 +241,16 @@ onClickOutside(menuRef, () => {
     color: #065f46;
 
     .status-dot {
-      background: #10b981;
+      background: var(--color-success-500);
     }
   }
 
   &.status-inactive {
-    background: #fee2e2;
-    color: #991b1b;
+    background: var(--color-danger-50);
+    color: var(--color-danger-600);
 
     .status-dot {
-      background: #ef4444;
+      background: var(--color-danger-500);
     }
   }
 }
@@ -271,19 +271,19 @@ onClickOutside(menuRef, () => {
   display: flex;
   align-items: center;
   justify-content: center;
-  border: 1px solid #e5e7eb;
+  border: 1px solid var(--color-gray-300);
   background: #fff;
   border-radius: 6px;
   cursor: pointer;
-  color: #6b7280;
+  color: var(--color-gray-600);
   transition: all 0.2s;
   font-size: 1.25rem;
   font-weight: bold;
 
   &:hover {
-    background: #f3f4f6;
+    background: var(--color-gray-100);
     color: #1a1a1a;
-    border-color: #d1d5db;
+    border-color: var(--color-gray-400);
   }
 
   i {
@@ -297,7 +297,7 @@ onClickOutside(menuRef, () => {
   left: 0;
   margin-top: 0.5rem;
   background: #fff;
-  border: 1px solid #e5e7eb;
+  border: 1px solid var(--color-gray-300);
   border-radius: 8px;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
   min-width: 180px;
@@ -316,18 +316,18 @@ onClickOutside(menuRef, () => {
   align-items: center;
   gap: 0.75rem;
   font-size: 0.9rem;
-  color: #374151;
+  color: var(--color-gray-800);
   transition: background 0.2s;
 
   &:hover {
-    background: #f9fafb;
+    background: var(--color-gray-50);
   }
 
   &.danger {
-    color: #dc2626;
+    color: var(--color-danger-600);
 
     &:hover {
-      background: #fee2e2;
+      background: var(--color-danger-50);
     }
   }
 
@@ -338,7 +338,7 @@ onClickOutside(menuRef, () => {
 
 .menu-divider {
   height: 1px;
-  background: #e5e7eb;
+  background: var(--color-gray-300);
   margin: 0.25rem 0;
 }
 
@@ -355,7 +355,7 @@ onClickOutside(menuRef, () => {
 
 .staff-title {
   font-size: 0.95rem;
-  color: #6b7280;
+  color: var(--color-gray-600);
   margin-bottom: 1rem;
 }
 
@@ -371,16 +371,16 @@ onClickOutside(menuRef, () => {
   align-items: center;
   gap: 0.5rem;
   font-size: 0.875rem;
-  color: #6b7280;
+  color: var(--color-gray-600);
 
   i {
     font-size: 0.875rem;
-    color: #9ca3af;
+    color: var(--color-gray-500);
   }
 }
 
 .contact-link {
-  color: #7c3aed;
+  color: var(--color-primary-700);
   text-decoration: none;
 
   &:hover {
@@ -395,7 +395,7 @@ onClickOutside(menuRef, () => {
 .section-label {
   font-size: 0.875rem;
   font-weight: 600;
-  color: #6b7280;
+  color: var(--color-gray-600);
   margin-bottom: 0.5rem;
 }
 
@@ -407,13 +407,13 @@ onClickOutside(menuRef, () => {
 
 .tag {
   padding: 0.375rem 0.75rem;
-  background: #f3f4f6;
+  background: var(--color-gray-100);
   border-radius: 6px;
   font-size: 0.8rem;
-  color: #4b5563;
+  color: var(--color-gray-700);
 
   &.tag-more {
-    background: #e5e7eb;
+    background: var(--color-gray-300);
     font-weight: 600;
   }
 }
@@ -424,18 +424,18 @@ onClickOutside(menuRef, () => {
   align-items: center;
   gap: 0.5rem;
   font-size: 0.875rem;
-  color: #6b7280;
+  color: var(--color-gray-600);
   margin-top: 0.75rem;
 
   i {
     font-size: 0.875rem;
-    color: #9ca3af;
+    color: var(--color-gray-500);
   }
 }
 
 .card-footer {
   padding: 1rem 1.5rem;
-  background: #f9fafb;
-  border-top: 1px solid #e5e7eb;
+  background: var(--color-gray-50);
+  border-top: 1px solid var(--color-gray-300);
 }
 </style>

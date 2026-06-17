@@ -340,7 +340,7 @@ const getStatusLabel = (status: string) => {
   background: white;
   border-radius: 8px;
   padding: 24px;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  box-shadow: var(--shadow-sm);
 }
 
 .debug-info {
@@ -364,7 +364,7 @@ const getStatusLabel = (status: string) => {
 .calendar-title {
   font-size: 20px;
   font-weight: 600;
-  color: #1f2937;
+  color: var(--color-gray-900);
   margin: 0;
 }
 
@@ -375,13 +375,13 @@ const getStatusLabel = (status: string) => {
   width: 40px;
   height: 40px;
   border: none;
-  background: #f3f4f6;
+  background: var(--color-gray-100);
   border-radius: 50%;
   cursor: pointer;
   transition: all 0.2s;
 
   &:hover {
-    background: #e5e7eb;
+    background: var(--color-gray-300);
   }
 
   &:active {
@@ -392,7 +392,7 @@ const getStatusLabel = (status: string) => {
 .nav-icon {
   width: 20px;
   height: 20px;
-  color: #6b7280;
+  color: var(--color-gray-600);
 }
 
 .calendar-grid {
@@ -406,8 +406,8 @@ const getStatusLabel = (status: string) => {
   text-align: center;
   font-size: 14px;
   font-weight: 600;
-  color: #6b7280;
-  background: #f9fafb;
+  color: var(--color-gray-600);
+  background: var(--color-gray-50);
   border-radius: 4px;
 }
 
@@ -415,7 +415,7 @@ const getStatusLabel = (status: string) => {
   position: relative;
   min-height: 120px;
   padding: 6px;
-  border: 2px solid #e5e7eb;
+  border: 2px solid var(--color-gray-300);
   border-radius: 8px;
   cursor: pointer;
   transition: all 0.2s;
@@ -426,7 +426,7 @@ const getStatusLabel = (status: string) => {
 
   &:hover {
     border-color: #1976d2;
-    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    box-shadow: var(--shadow-md);
   }
 
   &.other-month {
@@ -454,7 +454,7 @@ const getStatusLabel = (status: string) => {
 .day-number {
   font-size: 16px;
   font-weight: 600;
-  color: #1f2937;
+  color: var(--color-gray-900);
 }
 
 .bookings-count {
@@ -492,7 +492,7 @@ const getStatusLabel = (status: string) => {
 
   &:hover {
     transform: translateX(-2px);
-    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    box-shadow: var(--shadow-sm);
   }
 
   &.mini-pending {
@@ -512,18 +512,18 @@ const getStatusLabel = (status: string) => {
 
   &.mini-cancelled {
     background: #f8d7da;
-    border-left-color: #ef4444;
+    border-left-color: var(--color-danger-500);
   }
 }
 
 .mini-time {
   font-weight: 600;
-  color: #1f2937;
+  color: var(--color-gray-900);
   flex-shrink: 0;
 }
 
 .mini-customer {
-  color: #6b7280;
+  color: var(--color-gray-600);
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -534,8 +534,8 @@ const getStatusLabel = (status: string) => {
   text-align: center;
   font-size: 10px;
   font-weight: 600;
-  color: #6b7280;
-  background: #f3f4f6;
+  color: var(--color-gray-600);
+  background: var(--color-gray-100);
   border-radius: 4px;
   margin-top: 2px;
 }
@@ -551,13 +551,13 @@ const getStatusLabel = (status: string) => {
   align-items: center;
   justify-content: center;
   padding: 48px 24px;
-  color: #6b7280;
+  color: var(--color-gray-600);
 }
 
 .no-bookings-icon {
   width: 64px;
   height: 64px;
-  color: #d1d5db;
+  color: var(--color-gray-400);
   margin-bottom: 16px;
 }
 
@@ -572,9 +572,9 @@ const getStatusLabel = (status: string) => {
   align-items: center;
   gap: 16px;
   padding: 16px;
-  background: #f9fafb;
+  background: var(--color-gray-50);
   border-radius: 8px;
-  border: 1px solid #e5e7eb;
+  border: 1px solid var(--color-gray-300);
   cursor: pointer;
   transition: all 0.2s;
 
@@ -612,19 +612,19 @@ const getStatusLabel = (status: string) => {
   gap: 8px;
   font-size: 16px;
   font-weight: 600;
-  color: #1f2937;
+  color: var(--color-gray-900);
   margin-bottom: 6px;
 
   .customer-icon {
     width: 16px;
     height: 16px;
-    color: #6b7280;
+    color: var(--color-gray-600);
   }
 }
 
 .modal-booking-service {
   font-size: 14px;
-  color: #6b7280;
+  color: var(--color-gray-600);
 }
 
 .modal-booking-status {

@@ -152,7 +152,7 @@ function loadMoreStaff() {
     display: inline-flex;
     align-items: center;
     gap: 0.5rem;
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    background: linear-gradient(135deg, var(--color-primary-500) 0%, var(--color-primary-700) 100%);
     color: white;
     padding: 0.5rem 1rem;
     border-radius: 20px;
@@ -194,17 +194,17 @@ function loadMoreStaff() {
     font-size: 0.95rem;
 
     i {
-      color: #667eea;
+      color: var(--color-primary-500);
     }
 
     .parent-name {
-      color: #667eea;
+      color: var(--color-primary-500);
       font-weight: 600;
       text-decoration: none;
       transition: color 0.2s;
 
       &:hover {
-        color: #5a67d8;
+        color: var(--color-primary-600);
         text-decoration: underline;
       }
     }
@@ -227,7 +227,7 @@ function loadMoreStaff() {
       margin: 0;
 
       i {
-        color: #667eea;
+        color: var(--color-primary-500);
       }
     }
 
@@ -280,7 +280,7 @@ function loadMoreStaff() {
       .avatar-placeholder {
         width: 100%;
         height: 100%;
-        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        background: linear-gradient(135deg, var(--color-primary-500) 0%, var(--color-primary-700) 100%);
         display: flex;
         align-items: center;
         justify-content: center;
@@ -300,7 +300,7 @@ function loadMoreStaff() {
       }
 
       .staff-title {
-        color: #667eea;
+        color: var(--color-primary-500);
         font-size: 0.875rem;
         margin-bottom: 0.75rem;
         font-weight: 500;
@@ -321,7 +321,7 @@ function loadMoreStaff() {
         }
 
         .tag-more {
-          background: #667eea;
+          background: var(--color-primary-500);
           color: white;
           padding: 0.25rem 0.625rem;
           border-radius: 12px;

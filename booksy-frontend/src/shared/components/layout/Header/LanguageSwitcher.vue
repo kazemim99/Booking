@@ -156,12 +156,12 @@ function switchLanguage(langCode: Language): void {
   cursor: pointer;
   padding: 0.5rem;
   border-radius: 8px;
-  color: #6b7280;
+  color: var(--color-gray-600);
   transition: all 0.2s;
 
   &:hover {
-    background: #f3f4f6;
-    color: #667eea;
+    background: var(--color-gray-100);
+    color: var(--color-primary-500);
   }
 }
 
@@ -229,7 +229,7 @@ function switchLanguage(langCode: Language): void {
   transition: background 0.2s;
 
   &:hover {
-    background: #f3f4f6;
+    background: var(--color-gray-100);
   }
 
   .language-item.active & {
@@ -253,19 +253,19 @@ function switchLanguage(langCode: Language): void {
 
 .language-name {
   font-weight: 500;
-  color: #374151;
+  color: var(--color-gray-800);
   font-size: 0.875rem;
 }
 
 .language-native {
   font-size: 0.75rem;
-  color: #6b7280;
+  color: var(--color-gray-600);
 }
 
 .check-icon {
   width: 20px;
   height: 20px;
-  color: #667eea;
+  color: var(--color-primary-500);
   flex-shrink: 0;
 }
 

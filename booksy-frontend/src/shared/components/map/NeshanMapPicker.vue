@@ -2,12 +2,18 @@
   <div class="neshan-map-picker" dir="rtl">
     <div ref="mapContainer" class="map-container"></div>
 
+    <!-- Coliride-style pulsing location target (positioned by OpenLayers Overlay) -->
+    <div ref="pulseEl" class="map-pulse">
+      <span class="map-pulse__ring"></span>
+      <span class="map-pulse__ring map-pulse__ring--delay"></span>
+      <span class="map-pulse__core"></span>
+    </div>
   </div>
 </template>
 
 <script setup lang="ts">
 import { ref, onMounted, watch, computed } from 'vue'
-import { Map, View, Feature } from '@neshan-maps-platform/ol'
+import { Map, View, Feature, Overlay } from '@neshan-maps-platform/ol'
 import { fromLonLat, toLonLat } from '@neshan-maps-platform/ol/proj'
 import { Point } from '@neshan-maps-platform/ol/geom'
 import { Vector as VectorSource } from '@neshan-maps-platform/ol/source'
@@ -60,6 +66,8 @@ const searchQuery = ref('')
 const currentPosition = ref<{ lat: number; lng: number } | null>(props.modelValue)
 const map = ref<any>(null)
 const marker = ref<any>(null)
+const pulseEl = ref<HTMLElement | null>(null)
+const pulseOverlay = ref<any>(null)
 
 const displayCoordinates = computed(() => {
   if (!currentPosition.value) return 'انتخاب نشده'
@@ -102,6 +110,16 @@ const initializeMap = () => {
   })
 
   map.value = mapInstance
+
+  // Pulsing location target overlay (Coliride signature)
+  if (pulseEl.value) {
+    pulseOverlay.value = new Overlay({
+      element: pulseEl.value,
+      positioning: 'center-center',
+      stopEvent: false,
+    })
+    mapInstance.addOverlay(pulseOverlay.value)
+  }
 
   // Add click handler to set location
   mapInstance.on('click', async (event: any) => {
@@ -151,7 +169,8 @@ const updateMarker = (lat: number, lng: number) => {
     style: new Style({
       image: new Icon({
         anchor: [0.5, 1],
-        src: 'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="32" height="42" viewBox="0 0 32 42"><path fill="%23FF0000" d="M16 0C7.2 0 0 7.2 0 16c0 8.8 16 26 16 26s16-17.2 16-26c0-8.8-7.2-16-16-16zm0 22c-3.3 0-6-2.7-6-6s2.7-6 6-6 6 2.7 6 6-2.7 6-6 6z"/></svg>',
+        // Coliride map-pin green (#1FA96E) with white center
+        src: 'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="32" height="42" viewBox="0 0 32 42"><path fill="%231FA96E" d="M16 0C7.2 0 0 7.2 0 16c0 8.8 16 26 16 26s16-17.2 16-26c0-8.8-7.2-16-16-16zm0 22c-3.3 0-6-2.7-6-6s2.7-6 6-6 6 2.7 6 6-2.7 6-6 6z"/></svg>',
         scale: 1,
       }),
     }),
@@ -159,6 +178,11 @@ const updateMarker = (lat: number, lng: number) => {
 
   marker.value = markerLayer
   map.value.addLayer(markerLayer)
+
+  // Position the pulsing target at the selected point
+  if (pulseOverlay.value) {
+    pulseOverlay.value.setPosition(fromLonLat([lng, lat]))
+  }
 }
 
 const reverseGeocode = async (lat: number, lng: number) => {
@@ -250,6 +274,47 @@ const handleSearch = async () => {
   width: 100%;
 }
 
+/* Coliride pulsing location target (#1FA96E concentric rings + solid core) */
+.map-pulse {
+  position: relative;
+  width: 0;
+  height: 0;
+  pointer-events: none;
+}
+.map-pulse__ring,
+.map-pulse__core {
+  position: absolute;
+  top: 0;
+  left: 0;
+  transform: translate(-50%, -50%);
+  border-radius: 50%;
+}
+.map-pulse__ring {
+  width: 64px;
+  height: 64px;
+  background: rgba(31, 169, 110, 0.25); /* #1FA96E @ ~25% */
+  animation: map-pulse-ring 1.8s ease-out infinite;
+}
+.map-pulse__ring--delay {
+  animation-delay: 0.9s;
+}
+.map-pulse__core {
+  width: 14px;
+  height: 14px;
+  background: #1fa96e;
+  box-shadow: 0 0 0 4px rgba(31, 169, 110, 0.4);
+}
+@keyframes map-pulse-ring {
+  0% {
+    transform: translate(-50%, -50%) scale(0.3);
+    opacity: 0.9;
+  }
+  100% {
+    transform: translate(-50%, -50%) scale(1);
+    opacity: 0;
+  }
+}
+
 .map-container {
   width: 100%;
   height: v-bind(height);
@@ -280,8 +345,8 @@ const handleSearch = async () => {
 
   &:focus {
     outline: none;
-    border-color: #8b5cf6;
-    box-shadow: 0 0 0 3px rgba(139, 92, 246, 0.1);
+    border-color: var(--color-primary-500);
+    box-shadow: 0 0 0 3px rgba(55, 119, 191, 0.12);
   }
 }
 
@@ -291,12 +356,12 @@ const handleSearch = async () => {
   display: flex;
   align-items: center;
   justify-content: center;
-  background: #8b5cf6;
+  background: var(--color-primary-500);
   border: none;
-  border-radius: 0.5rem;
+  border-radius: var(--radius-md);
   cursor: pointer;
   transition: background 0.2s;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  box-shadow: var(--shadow-sm);
 
   svg {
     width: 1.25rem;
@@ -306,7 +371,7 @@ const handleSearch = async () => {
   }
 
   &:hover {
-    background: #7c3aed;
+    background: var(--color-primary-600);
   }
 
   &:active {

@@ -283,32 +283,32 @@ function handleClose(): void {
 
 .form-label {
   font-weight: 500;
-  color: #374151;
+  color: var(--color-gray-800);
   font-size: 0.875rem;
 }
 
 .form-input {
   width: 100%;
   padding: 0.75rem;
-  border: 1px solid #d1d5db;
+  border: 1px solid var(--color-gray-400);
   border-radius: 8px;
   font-size: 1rem;
   transition: border-color 0.2s, box-shadow 0.2s;
 
   &:focus {
     outline: none;
-    border-color: #667eea;
+    border-color: var(--color-primary-500);
     box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
   }
 
   &:disabled {
-    background-color: #f3f4f6;
-    color: #6b7280;
+    background-color: var(--color-gray-100);
+    color: var(--color-gray-600);
     cursor: not-allowed;
   }
 
   &.error {
-    border-color: #ef4444;
+    border-color: var(--color-danger-500);
 
     &:focus {
       box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.1);
@@ -318,20 +318,20 @@ function handleClose(): void {
 
 .help-text {
   font-size: 0.75rem;
-  color: #6b7280;
+  color: var(--color-gray-600);
 }
 
 .error-message {
   font-size: 0.75rem;
-  color: #ef4444;
+  color: var(--color-danger-500);
 }
 
 .server-error {
   padding: 0.75rem;
-  background-color: #fef2f2;
+  background-color: var(--color-danger-50);
   border: 1px solid #fecaca;
   border-radius: 8px;
-  color: #ef4444;
+  color: var(--color-danger-500);
   font-size: 0.875rem;
 }
 
@@ -359,16 +359,16 @@ function handleClose(): void {
 
 .btn-secondary {
   background-color: white;
-  color: #374151;
-  border: 1px solid #d1d5db;
+  color: var(--color-gray-800);
+  border: 1px solid var(--color-gray-400);
 
   &:hover:not(:disabled) {
-    background-color: #f9fafb;
+    background-color: var(--color-gray-50);
   }
 }
 
 .btn-primary {
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: linear-gradient(135deg, var(--color-primary-500) 0%, var(--color-primary-700) 100%);
   color: white;
 
   &:hover:not(:disabled) {

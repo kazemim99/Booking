@@ -755,6 +755,10 @@ export function useProviderRegistration() {
           businessName: draft.businessInfo.businessName,
           businessDescription: draft.businessInfo.businessDescription,
           phoneNumber: draft.businessInfo.phoneNumber,
+          email: draft.businessInfo.email,
+          ownerFirstName: draft.businessInfo.ownerFirstName,
+          ownerLastName: draft.businessInfo.ownerLastName,
+          logoUrl: draft.businessInfo.logoUrl,
         }
 
         // Address and location

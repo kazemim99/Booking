@@ -1,5 +1,5 @@
 @import './variables.scss';
-@import '../../shared/styles/design-tokens.scss';
+// Design tokens now live in the shared @booksy/tokens package (imported in main.ts).
 @import './reset.scss';
 @import './utilities.scss';
 @import './rtl';

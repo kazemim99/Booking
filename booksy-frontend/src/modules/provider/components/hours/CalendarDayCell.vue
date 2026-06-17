@@ -151,7 +151,7 @@ function handleClick() {
   display: flex;
   flex-direction: column;
   background: white;
-  border: 1px solid #e5e7eb;
+  border: 1px solid var(--color-gray-300);
   border-radius: 0.375rem;
   cursor: pointer;
   transition: all 0.2s;
@@ -160,54 +160,54 @@ function handleClick() {
 }
 
 .calendar-day-cell:hover {
-  border-color: #3b82f6;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  border-color: var(--color-primary-500);
+  box-shadow: var(--shadow-sm);
   transform: translateY(-1px);
 }
 
 .calendar-day-cell:focus {
-  outline: 2px solid #3b82f6;
+  outline: 2px solid var(--color-primary-500);
   outline-offset: 2px;
 }
 
 /* Day Status Colors */
 .calendar-day-cell.status-open {
-  border-left: 3px solid #10b981;
+  border-left: 3px solid var(--color-success-500);
 }
 
 .calendar-day-cell.status-closed {
-  background-color: #f9fafb;
-  border-left: 3px solid #9ca3af;
+  background-color: var(--color-gray-50);
+  border-left: 3px solid var(--color-gray-500);
 }
 
 .calendar-day-cell.status-holiday {
-  background-color: #fef2f2;
-  border-left: 3px solid #dc2626; /* Red for custom holidays */
+  background-color: var(--color-danger-50);
+  border-left: 3px solid var(--color-danger-600); /* Red for custom holidays */
 }
 
 .calendar-day-cell.status-exception {
   background-color: #fffbeb;
-  border-left: 3px solid #f59e0b;
+  border-left: 3px solid var(--color-warning-500);
 }
 
 /* Iranian Public Holiday - Green left border */
 .calendar-day-cell.iranian-holiday {
   background-color: #f0fdf4;
-  border-left: 3px solid #16a34a; /* Green for Iranian public holidays */
+  border-left: 3px solid var(--color-success-600); /* Green for Iranian public holidays */
 }
 
 /* Friday in Persian locale - Red left border (weekend in Iran) */
 .calendar-day-cell.friday-persian {
-  border-left: 3px solid #dc2626; /* Red for Friday (Iranian weekend) */
+  border-left: 3px solid var(--color-danger-600); /* Red for Friday (Iranian weekend) */
 }
 
 /* Friday with open status in Persian locale - keep red border but with open background */
 .calendar-day-cell.friday-persian.status-open {
-  border-left: 3px solid #dc2626; /* Red overrides green for Friday */
+  border-left: 3px solid var(--color-danger-600); /* Red overrides green for Friday */
 }
 
 .calendar-day-cell.today {
-  box-shadow: 0 0 0 2px #3b82f6;
+  box-shadow: 0 0 0 2px var(--color-primary-500);
 }
 
 .calendar-day-cell.past {
@@ -230,13 +230,13 @@ function handleClick() {
 .day-number {
   font-size: 1.125rem;
   font-weight: 700;
-  color: #111827;
+  color: var(--color-gray-900);
 }
 
 .day-name {
   font-size: 0.75rem;
   font-weight: 600;
-  color: #6b7280;
+  color: var(--color-gray-600);
   text-transform: uppercase;
 }
 
@@ -266,8 +266,8 @@ function handleClick() {
 }
 
 .holiday-indicator {
-  background-color: #fee2e2;
-  color: #991b1b;
+  background-color: var(--color-danger-50);
+  color: var(--color-danger-600);
 }
 
 .iranian-holiday-indicator {
@@ -329,7 +329,7 @@ function handleClick() {
 .hours-text {
   font-size: 0.875rem;
   font-weight: 600;
-  color: #111827;
+  color: var(--color-gray-900);
 }
 
 .breaks-indicator {
@@ -337,7 +337,7 @@ function handleClick() {
   align-items: center;
   gap: 0.25rem;
   font-size: 0.75rem;
-  color: #6b7280;
+  color: var(--color-gray-600);
 }
 
 .breaks-count {
@@ -354,16 +354,16 @@ function handleClick() {
 .closed-text {
   font-size: 0.875rem;
   font-weight: 500;
-  color: #9ca3af;
+  color: var(--color-gray-500);
   font-style: italic;
 }
 
 .booking-count {
   margin-top: auto;
   padding-top: 0.5rem;
-  border-top: 1px solid #e5e7eb;
+  border-top: 1px solid var(--color-gray-300);
   font-size: 0.75rem;
-  color: #6b7280;
+  color: var(--color-gray-600);
   text-align: center;
 }
 
@@ -372,7 +372,7 @@ function handleClick() {
   top: 0.5rem;
   right: 0.5rem;
   padding: 0.125rem 0.5rem;
-  background: #3b82f6;
+  background: var(--color-primary-500);
   color: white;
   font-size: 0.625rem;
   font-weight: 700;

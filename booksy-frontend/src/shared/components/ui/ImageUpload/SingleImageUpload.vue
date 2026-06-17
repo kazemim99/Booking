@@ -210,9 +210,9 @@ function validateFile(file: File): string[] {
 }
 
 .upload-area {
-  border: 2px dashed #d1d5db;
+  border: 2px dashed var(--color-gray-400);
   border-radius: 0.75rem;
-  background-color: #f9fafb;
+  background-color: var(--color-gray-50);
   padding: 2rem;
   text-align: center;
   cursor: pointer;
@@ -225,13 +225,13 @@ function validateFile(file: File): string[] {
 }
 
 .upload-area:hover:not(.is-uploading) {
-  border-color: #8b5cf6;
+  border-color: var(--color-primary-500);
   background-color: #f5f3ff;
 }
 
 .upload-area.is-dragging {
-  border-color: #8b5cf6;
-  background-color: #ede9fe;
+  border-color: var(--color-primary-500);
+  background-color: var(--color-primary-50);
   transform: scale(1.02);
 }
 
@@ -243,7 +243,7 @@ function validateFile(file: File): string[] {
 .upload-area.has-image {
   padding: 0;
   border-style: solid;
-  border-color: #e5e7eb;
+  border-color: var(--color-gray-300);
 }
 
 .file-input {
@@ -261,31 +261,31 @@ function validateFile(file: File): string[] {
 .upload-icon {
   width: 3rem;
   height: 3rem;
-  color: #8b5cf6;
+  color: var(--color-primary-500);
 }
 
 .upload-title {
   font-size: 1rem;
   font-weight: 600;
-  color: #111827;
+  color: var(--color-gray-900);
   margin: 0;
 }
 
 .upload-subtitle {
   font-size: 0.875rem;
-  color: #6b7280;
+  color: var(--color-gray-600);
   margin: 0;
 }
 
 .upload-hint {
   font-size: 0.75rem;
-  color: #9ca3af;
+  color: var(--color-gray-500);
   margin: 0;
 }
 
 .upload-format {
   font-size: 0.75rem;
-  color: #9ca3af;
+  color: var(--color-gray-500);
   margin: 0.5rem 0 0 0;
 }
 
@@ -390,10 +390,10 @@ function validateFile(file: File): string[] {
   align-items: center;
   gap: 0.5rem;
   padding: 0.75rem;
-  background-color: #fef2f2;
-  border: 1px solid #fecaca;
+  background-color: var(--color-danger-50);
+  border: 1px solid var(--color-danger-50);
   border-radius: 0.375rem;
-  color: #dc2626;
+  color: var(--color-danger-600);
   font-size: 0.875rem;
 }
 

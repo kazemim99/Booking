@@ -117,7 +117,7 @@ const pendingProvidersCount = computed(() => {
   flex-direction: column;
   transition: width 0.3s ease;
   z-index: 100;
-  box-shadow: 2px 0 8px rgba(0, 0, 0, 0.1);
+  box-shadow: var(--shadow-md);
 }
 
 .admin-sidebar.collapsed {
@@ -184,7 +184,7 @@ const pendingProvidersCount = computed(() => {
   font-size: 0.75rem;
   font-weight: 600;
   text-transform: uppercase;
-  color: #94a3b8;
+  color: var(--color-gray-500);
   letter-spacing: 0.5px;
 }
 

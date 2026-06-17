@@ -272,7 +272,7 @@ function handleCancelAdd() {
   gap: 0.75rem;
   padding: 1rem;
   background: rgba(139, 92, 246, 0.05);
-  border: 1px solid #e5e7eb;
+  border: 1px solid var(--color-gray-300);
   border-radius: 0.5rem;
 }
 
@@ -290,7 +290,7 @@ function handleCancelAdd() {
 .avatar-icon {
   width: 1.5rem;
   height: 1.5rem;
-  color: #8b5cf6;
+  color: var(--color-primary-500);
 }
 
 .staff-info {
@@ -300,13 +300,13 @@ function handleCancelAdd() {
 .staff-name {
   font-size: 1rem;
   font-weight: 600;
-  color: #111827;
+  color: var(--color-gray-900);
   margin-bottom: 0.25rem;
 }
 
 .staff-details {
   font-size: 0.875rem;
-  color: #6b7280;
+  color: var(--color-gray-600);
 }
 
 .staff-actions {
@@ -333,11 +333,11 @@ function handleCancelAdd() {
 .btn-icon .icon {
   width: 1.25rem;
   height: 1.25rem;
-  color: #6b7280;
+  color: var(--color-gray-600);
 }
 
 .btn-delete .icon {
-  color: #ef4444;
+  color: var(--color-danger-500);
 }
 
 /* Staff Form */
@@ -360,14 +360,14 @@ function handleCancelAdd() {
 .form-label {
   font-size: 0.875rem;
   font-weight: 500;
-  color: #374151;
+  color: var(--color-gray-800);
 }
 
 .form-input {
   width: 100%;
   padding: 0.75rem 1rem;
   font-size: 1rem;
-  border: 1px solid #d1d5db;
+  border: 1px solid var(--color-gray-400);
   border-radius: 0.5rem;
   background: white;
   transition: all 0.2s ease;
@@ -375,7 +375,7 @@ function handleCancelAdd() {
 
 .form-input:focus {
   outline: none;
-  border-color: #8b5cf6;
+  border-color: var(--color-primary-500);
   box-shadow: 0 0 0 3px rgba(139, 92, 246, 0.1);
 }
 
@@ -390,7 +390,7 @@ function handleCancelAdd() {
 
 .form-error {
   font-size: 0.875rem;
-  color: #ef4444;
+  color: var(--color-danger-500);
 }
 
 /* Add Staff Button */
@@ -439,26 +439,26 @@ function handleCancelAdd() {
 .info-title {
   font-size: 1rem;
   font-weight: 600;
-  color: #111827;
+  color: var(--color-gray-900);
   margin: 0;
 }
 
 .info-text {
   font-size: 0.875rem;
-  color: #6b7280;
+  color: var(--color-gray-600);
   line-height: 1.6;
   margin: 0;
 }
 
 .convert-link {
-  color: #8b5cf6;
+  color: var(--color-primary-500);
   font-weight: 600;
   text-decoration: underline;
   transition: color 0.2s;
 }
 
 .convert-link:hover {
-  color: #7c3aed;
+  color: var(--color-primary-700);
 }
 
 .dashboard-link-btn {
@@ -466,7 +466,7 @@ function handleCancelAdd() {
   align-items: center;
   gap: 0.5rem;
   padding: 0.75rem 1.25rem;
-  background: #8b5cf6;
+  background: var(--color-primary-500);
   color: white;
   border-radius: 0.5rem;
   font-size: 0.875rem;
@@ -477,7 +477,7 @@ function handleCancelAdd() {
 }
 
 .dashboard-link-btn:hover {
-  background: #7c3aed;
+  background: var(--color-primary-700);
   transform: translateY(-1px);
   box-shadow: 0 4px 12px rgba(139, 92, 246, 0.3);
 }
@@ -497,7 +497,7 @@ function handleCancelAdd() {
 .preview-title {
   font-size: 0.875rem;
   font-weight: 600;
-  color: #374151;
+  color: var(--color-gray-800);
   margin: 0 0 0.75rem 0;
 }
 
@@ -513,7 +513,7 @@ function handleCancelAdd() {
   gap: 0.75rem;
   padding: 0.625rem;
   background: white;
-  border: 1px solid #e5e7eb;
+  border: 1px solid var(--color-gray-300);
   border-radius: 0.5rem;
 }
 
@@ -531,7 +531,7 @@ function handleCancelAdd() {
 .avatar-icon-small {
   width: 1rem;
   height: 1rem;
-  color: #8b5cf6;
+  color: var(--color-primary-500);
 }
 
 .staff-info-compact {
@@ -544,20 +544,20 @@ function handleCancelAdd() {
 .staff-name-compact {
   font-size: 0.875rem;
   font-weight: 600;
-  color: #111827;
+  color: var(--color-gray-900);
 }
 
 .staff-role-compact {
   font-size: 0.75rem;
-  color: #6b7280;
+  color: var(--color-gray-600);
 }
 
 .more-indicator {
   font-size: 0.8125rem;
-  color: #6b7280;
+  color: var(--color-gray-600);
   text-align: center;
   padding: 0.5rem;
-  background: #f9fafb;
+  background: var(--color-gray-50);
   border-radius: 0.375rem;
 }
 

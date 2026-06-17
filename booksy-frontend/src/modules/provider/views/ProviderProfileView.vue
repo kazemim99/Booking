@@ -471,7 +471,7 @@ onMounted(async () => {
     display: flex;
     align-items: center;
     justify-content: center;
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    background: linear-gradient(135deg, var(--color-primary-500) 0%, var(--color-primary-700) 100%);
     color: white;
     font-size: 3rem;
     font-weight: 600;

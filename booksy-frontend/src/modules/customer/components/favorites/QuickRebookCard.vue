@@ -249,7 +249,7 @@ function handleUnfavorited(): void {
 }
 
 .quick-rebook-card:hover {
-  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+  box-shadow: var(--shadow-md);
 }
 
 /* Provider Header */
@@ -283,7 +283,7 @@ function handleUnfavorited(): void {
   font-size: 1.25rem;
   font-weight: 600;
   color: white;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: linear-gradient(135deg, var(--color-primary-500) 0%, var(--color-primary-700) 100%);
 }
 
 .provider-info {
@@ -308,7 +308,7 @@ function handleUnfavorited(): void {
 }
 
 .stars {
-  color: #f59e0b;
+  color: var(--color-warning-500);
   font-weight: 600;
   font-size: 0.875rem;
 }

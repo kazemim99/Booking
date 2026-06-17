@@ -157,7 +157,7 @@ function handleClose(): void {
 
 .form-label {
   font-weight: 500;
-  color: #374151;
+  color: var(--color-gray-800);
   font-size: 0.875rem;
   display: flex;
   align-items: center;
@@ -166,7 +166,7 @@ function handleClose(): void {
 
 .char-count {
   font-size: 0.75rem;
-  color: #9ca3af;
+  color: var(--color-gray-500);
   font-weight: 400;
 }
 
@@ -190,18 +190,18 @@ function handleClose(): void {
 .star {
   width: 32px;
   height: 32px;
-  color: #d1d5db;
+  color: var(--color-gray-400);
   transition: color 0.2s;
 
   &.filled {
-    color: #f59e0b;
+    color: var(--color-warning-500);
   }
 }
 
 .form-textarea {
   width: 100%;
   padding: 0.75rem;
-  border: 1px solid #d1d5db;
+  border: 1px solid var(--color-gray-400);
   border-radius: 8px;
   font-size: 1rem;
   font-family: inherit;
@@ -210,12 +210,12 @@ function handleClose(): void {
 
   &:focus {
     outline: none;
-    border-color: #667eea;
+    border-color: var(--color-primary-500);
     box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
   }
 
   &.error {
-    border-color: #ef4444;
+    border-color: var(--color-danger-500);
 
     &:focus {
       box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.1);
@@ -225,7 +225,7 @@ function handleClose(): void {
 
 .error-message {
   font-size: 0.75rem;
-  color: #ef4444;
+  color: var(--color-danger-500);
 }
 
 .form-actions {
@@ -252,16 +252,16 @@ function handleClose(): void {
 
 .btn-secondary {
   background-color: white;
-  color: #374151;
-  border: 1px solid #d1d5db;
+  color: var(--color-gray-800);
+  border: 1px solid var(--color-gray-400);
 
   &:hover:not(:disabled) {
-    background-color: #f9fafb;
+    background-color: var(--color-gray-50);
   }
 }
 
 .btn-primary {
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: linear-gradient(135deg, var(--color-primary-500) 0%, var(--color-primary-700) 100%);
   color: white;
 
   &:hover:not(:disabled) {

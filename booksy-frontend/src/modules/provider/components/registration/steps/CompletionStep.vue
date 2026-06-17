@@ -213,12 +213,12 @@ const goToDashboard = async () => {
 .check-icon {
   width: 4rem;
   height: 4rem;
-  color: #8b5cf6;
+  color: var(--color-primary-500);
 }
 
 .sparkle-icon {
   position: absolute;
-  color: #8b5cf6;
+  color: var(--color-primary-500);
   animation: sparkle-pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
 }
 
@@ -251,11 +251,11 @@ const goToDashboard = async () => {
   margin-bottom: 0.75rem;
   font-size: 1.875rem;
   font-weight: 700;
-  color: #111827;
+  color: var(--color-gray-900);
 }
 
 .completion-message {
-  color: #6b7280;
+  color: var(--color-gray-600);
   margin-bottom: 2rem;
   line-height: 1.5;
 }
@@ -281,7 +281,7 @@ const goToDashboard = async () => {
 
 .stat-label {
   font-size: 0.75rem;
-  color: #6b7280;
+  color: var(--color-gray-600);
   margin: 0;
 }
 
@@ -303,7 +303,7 @@ const goToDashboard = async () => {
   font-size: 0.875rem;
   font-weight: 500;
   margin-bottom: 0.5rem;
-  color: #111827;
+  color: var(--color-gray-900);
 }
 
 .next-steps-list {
@@ -314,7 +314,7 @@ const goToDashboard = async () => {
 
 .next-steps-list li {
   font-size: 0.875rem;
-  color: #6b7280;
+  color: var(--color-gray-600);
   margin-bottom: 0.25rem;
 }
 
@@ -330,12 +330,12 @@ const goToDashboard = async () => {
 
 .help-text {
   font-size: 0.875rem;
-  color: #6b7280;
+  color: var(--color-gray-600);
   margin: 0;
 }
 
 .help-link {
-  color: #8b5cf6;
+  color: var(--color-primary-500);
   text-decoration: none;
   transition: text-decoration 0.2s;
 }

@@ -118,7 +118,7 @@ function toggleNotifications(): void {
   right: 0;
   height: 64px;
   background: white;
-  border-bottom: 1px solid #e5e7eb;
+  border-bottom: 1px solid var(--color-gray-300);
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -138,7 +138,7 @@ function toggleNotifications(): void {
   background: none;
   border: none;
   cursor: pointer;
-  color: #6b7280;
+  color: var(--color-gray-600);
   padding: 0.5rem;
   display: flex;
   align-items: center;
@@ -150,7 +150,7 @@ function toggleNotifications(): void {
   }
 
   &:hover {
-    color: #667eea;
+    color: var(--color-primary-500);
   }
 }
 
@@ -160,7 +160,7 @@ function toggleNotifications(): void {
   text-decoration: none;
   font-size: 1.5rem;
   font-weight: 700;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: linear-gradient(135deg, var(--color-primary-500) 0%, var(--color-primary-700) 100%);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
@@ -190,14 +190,14 @@ function toggleNotifications(): void {
 
   input {
     padding: 0.5rem 2.5rem 0.5rem 1rem;
-    border: 1px solid #d1d5db;
+    border: 1px solid var(--color-gray-400);
     border-radius: 8px;
     outline: none;
     width: 250px;
     transition: all 0.2s;
 
     &:focus {
-      border-color: #667eea;
+      border-color: var(--color-primary-500);
       box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
     }
   }
@@ -207,7 +207,7 @@ function toggleNotifications(): void {
     right: 0.75rem;
     width: 20px;
     height: 20px;
-    color: #9ca3af;
+    color: var(--color-gray-500);
     pointer-events: none;
   }
 
@@ -221,7 +221,7 @@ function toggleNotifications(): void {
   background: none;
   border: none;
   cursor: pointer;
-  color: #6b7280;
+  color: var(--color-gray-600);
   padding: 0.5rem;
   display: flex;
   align-items: center;
@@ -233,7 +233,7 @@ function toggleNotifications(): void {
   }
 
   &:hover {
-    color: #667eea;
+    color: var(--color-primary-500);
   }
 }
 
@@ -241,7 +241,7 @@ function toggleNotifications(): void {
   position: absolute;
   top: 0;
   right: 0;
-  background: #ef4444;
+  background: var(--color-danger-500);
   color: white;
   border-radius: 9999px;
   font-size: 0.625rem;

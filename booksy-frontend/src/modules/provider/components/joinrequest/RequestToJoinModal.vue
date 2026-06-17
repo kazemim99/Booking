@@ -303,7 +303,7 @@ async function handleSubmit() {
   }
 
   .organization-logo-placeholder {
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    background: linear-gradient(135deg, var(--color-primary-500) 0%, var(--color-primary-700) 100%);
     display: flex;
     align-items: center;
     justify-content: center;
@@ -344,7 +344,7 @@ async function handleSubmit() {
         color: #4a5568;
 
         i {
-          color: #667eea;
+          color: var(--color-primary-500);
         }
       }
     }
@@ -374,7 +374,7 @@ async function handleSubmit() {
 
     &:focus {
       outline: none;
-      border-color: #667eea;
+      border-color: var(--color-primary-500);
       box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
     }
 

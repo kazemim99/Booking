@@ -239,7 +239,7 @@ watch(localOffersMobileServices, (newValue) => {
 .checkbox-description {
   display: block;
   font-size: 0.875rem;
-  color: #6b7280;
+  color: var(--color-gray-600);
   font-weight: normal;
   margin-top: 0.25rem;
 }
@@ -254,7 +254,7 @@ watch(localOffersMobileServices, (newValue) => {
   flex: 1;
   height: 6px;
   border-radius: 3px;
-  background: #d1d5db;
+  background: var(--color-gray-400);
   outline: none;
   cursor: pointer;
 
@@ -263,7 +263,7 @@ watch(localOffersMobileServices, (newValue) => {
     width: 20px;
     height: 20px;
     border-radius: 50%;
-    background: #7c3aed;
+    background: var(--color-primary-700);
     cursor: pointer;
     box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
 
@@ -277,7 +277,7 @@ watch(localOffersMobileServices, (newValue) => {
     width: 20px;
     height: 20px;
     border-radius: 50%;
-    background: #7c3aed;
+    background: var(--color-primary-700);
     cursor: pointer;
     border: none;
     box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
@@ -292,26 +292,26 @@ watch(localOffersMobileServices, (newValue) => {
 .radius-value {
   min-width: 120px;
   font-weight: 600;
-  color: #7c3aed;
+  color: var(--color-primary-700);
   text-align: center;
 }
 
 .map-placeholder {
   width: 100%;
   aspect-ratio: 16 / 9;
-  background: #f3f4f6;
-  border: 2px dashed #d1d5db;
+  background: var(--color-gray-100);
+  border: 2px dashed var(--color-gray-400);
   border-radius: 12px;
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
   gap: 1rem;
-  color: #6b7280;
+  color: var(--color-gray-600);
 
   i {
     font-size: 3rem;
-    color: #9ca3af;
+    color: var(--color-gray-500);
   }
 
   p {
@@ -322,7 +322,7 @@ watch(localOffersMobileServices, (newValue) => {
 }
 
 .form-hint.success {
-  color: #10b981;
+  color: var(--color-success-500);
   display: flex;
   align-items: center;
   gap: 0.5rem;

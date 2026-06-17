@@ -162,13 +162,13 @@ onUnmounted(() => {
   align-items: center;
   justify-content: space-between;
   padding: 1.5rem;
-  border-bottom: 1px solid #e5e7eb;
+  border-bottom: 1px solid var(--color-gray-300);
 }
 
 .modal-title {
   font-size: 1.25rem;
   font-weight: 600;
-  color: #111827;
+  color: var(--color-gray-900);
   margin: 0;
 }
 
@@ -176,7 +176,7 @@ onUnmounted(() => {
   background: none;
   border: none;
   cursor: pointer;
-  color: #6b7280;
+  color: var(--color-gray-600);
   padding: 0.5rem;
   border-radius: 6px;
   transition: all 0.2s;
@@ -190,8 +190,8 @@ onUnmounted(() => {
   }
 
   &:hover {
-    background: #f3f4f6;
-    color: #374151;
+    background: var(--color-gray-100);
+    color: var(--color-gray-800);
   }
 
   &:focus {
@@ -227,7 +227,7 @@ onUnmounted(() => {
 
 .modal-footer {
   padding: 1rem 1.5rem;
-  border-top: 1px solid #e5e7eb;
+  border-top: 1px solid var(--color-gray-300);
   display: flex;
   align-items: center;
   justify-content: flex-end;

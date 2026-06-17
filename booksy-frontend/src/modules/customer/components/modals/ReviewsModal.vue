@@ -118,14 +118,14 @@ function handleClose(): void {
   align-items: center;
   justify-content: center;
   padding: 3rem 1rem;
-  color: #6b7280;
+  color: var(--color-gray-600);
 }
 
 .spinner {
   width: 40px;
   height: 40px;
-  border: 3px solid #e5e7eb;
-  border-top-color: #667eea;
+  border: 3px solid var(--color-gray-300);
+  border-top-color: var(--color-primary-500);
   border-radius: 50%;
   animation: spin 1s linear infinite;
   margin-bottom: 1rem;
@@ -149,20 +149,20 @@ function handleClose(): void {
 .empty-icon {
   width: 64px;
   height: 64px;
-  color: #d1d5db;
+  color: var(--color-gray-400);
   margin-bottom: 1rem;
 }
 
 .empty-title {
   font-size: 1.125rem;
   font-weight: 600;
-  color: #374151;
+  color: var(--color-gray-800);
   margin-bottom: 0.5rem;
 }
 
 .empty-description {
   font-size: 0.875rem;
-  color: #6b7280;
+  color: var(--color-gray-600);
   max-width: 400px;
 }
 

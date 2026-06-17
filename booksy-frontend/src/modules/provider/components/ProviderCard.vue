@@ -659,7 +659,7 @@ const getAvatarColor = (index: number): string => {
 }
 
 .professional-avatar.more-indicator {
-  background: linear-gradient(135deg, #e2e8f0 0%, #cbd5e1 100%);
+  background: linear-gradient(135deg, #e2e8f0 0%, var(--color-gray-400) 100%);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -668,7 +668,7 @@ const getAvatarColor = (index: number): string => {
 .professional-avatar.more-indicator span {
   font-size: 0.7rem;
   font-weight: 700;
-  color: #64748b;
+  color: var(--color-gray-600);
 }
 
 /* Tags */

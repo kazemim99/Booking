@@ -147,7 +147,7 @@ function handleDragStart(event: DragEvent) {
   position: relative;
   aspect-ratio: 1 / 1;
   overflow: hidden;
-  background-color: #f3f4f6;
+  background-color: var(--color-gray-100);
 }
 
 .gallery-image {
@@ -244,7 +244,7 @@ function handleDragStart(event: DragEvent) {
 .image-caption {
   padding: 0.75rem;
   font-size: 0.875rem;
-  color: #4b5563;
+  color: var(--color-gray-700);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;

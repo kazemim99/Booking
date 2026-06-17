@@ -13,7 +13,7 @@ import type {
 import type { PagedResult } from '@/core/types/common.types'
 
 const API_VERSION = 'v1'
-const API_BASE = `/${API_VERSION}/services`
+const API_BASE = `/${API_VERSION}/Services`
 
 // Backend response type (ServiceDetailResponse from C#)
 interface ServiceDetailResponse {

@@ -71,19 +71,19 @@ function dismiss() {
 }
 
 .alert-error {
-  background-color: #fef2f2;
-  border-color: #fecaca;
-  color: #991b1b;
+  background-color: var(--color-danger-50);
+  border-color: var(--color-danger-50);
+  color: var(--color-danger-600);
 }
 
 .alert-warning {
-  background-color: #fffbeb;
+  background-color: var(--color-warning-50);
   border-color: #fde68a;
   color: #92400e;
 }
 
 .alert-info {
-  background-color: #eff6ff;
+  background-color: var(--color-primary-50);
   border-color: #bfdbfe;
   color: #1e40af;
 }

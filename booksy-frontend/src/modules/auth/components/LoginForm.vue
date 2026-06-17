@@ -200,7 +200,7 @@ async function onFormSubmit() {
 .form-title {
   font-size: 1.875rem;
   font-weight: 700;
-  color: #1f2937;
+  color: var(--color-gray-900);
   margin-bottom: 0.5rem;
   text-align: center;
 
@@ -211,7 +211,7 @@ async function onFormSubmit() {
 
 .form-subtitle {
   font-size: 0.875rem;
-  color: #6b7280;
+  color: var(--color-gray-600);
   margin-bottom: 2rem;
   text-align: center;
 }
@@ -231,7 +231,7 @@ async function onFormSubmit() {
   align-items: center;
   gap: 0.5rem;
   font-size: 0.875rem;
-  color: #374151;
+  color: var(--color-gray-800);
   cursor: pointer;
 }
 
@@ -239,7 +239,7 @@ async function onFormSubmit() {
   width: 1rem;
   height: 1rem;
   cursor: pointer;
-  accent-color: #667eea;
+  accent-color: var(--color-primary-500);
 
   &:disabled {
     cursor: not-allowed;
@@ -248,13 +248,13 @@ async function onFormSubmit() {
 
 .link-primary {
   font-size: 0.875rem;
-  color: #667eea;
+  color: var(--color-primary-500);
   text-decoration: none;
   font-weight: 500;
   white-space: nowrap;
 
   &:hover {
-    color: #764ba2;
+    color: var(--color-primary-700);
     text-decoration: underline;
   }
 }
@@ -263,7 +263,7 @@ async function onFormSubmit() {
   margin-top: 1.5rem;
   text-align: center;
   font-size: 0.875rem;
-  color: #6b7280;
+  color: var(--color-gray-600);
 
   p {
     margin: 0;

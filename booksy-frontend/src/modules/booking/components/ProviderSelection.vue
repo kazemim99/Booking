@@ -245,7 +245,7 @@ const formatNextAvailable = (dateTime: string): string => {
 
 .step-description {
   font-size: 1.05rem;
-  color: #64748b;
+  color: var(--color-gray-600);
   margin: 0;
 }
 
@@ -262,7 +262,7 @@ const formatNextAvailable = (dateTime: string): string => {
   width: 48px;
   height: 48px;
   border: 4px solid #e2e8f0;
-  border-top-color: #667eea;
+  border-top-color: var(--color-primary-500);
   border-radius: 50%;
   animation: spin 0.8s linear infinite;
 }
@@ -275,7 +275,7 @@ const formatNextAvailable = (dateTime: string): string => {
 
 .loading-container p {
   font-size: 1rem;
-  color: #64748b;
+  color: var(--color-gray-600);
 }
 
 .providers-grid {
@@ -288,7 +288,7 @@ const formatNextAvailable = (dateTime: string): string => {
   background: white;
   border-radius: 20px;
   padding: 1.5rem;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+  box-shadow: var(--shadow-sm);
   cursor: pointer;
   transition: all 0.3s ease;
   border: 2px solid transparent;
@@ -296,8 +296,8 @@ const formatNextAvailable = (dateTime: string): string => {
 
 .provider-card:hover {
   transform: translateY(-4px);
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
-  border-color: #667eea;
+  box-shadow: var(--shadow-lg);
+  border-color: var(--color-primary-500);
 }
 
 .provider-photo {
@@ -306,7 +306,7 @@ const formatNextAvailable = (dateTime: string): string => {
   border-radius: 50%;
   overflow: hidden;
   margin: 0 auto 1rem;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: linear-gradient(135deg, var(--color-primary-500) 0%, var(--color-primary-700) 100%);
 }
 
 .provider-photo img {
@@ -345,7 +345,7 @@ const formatNextAvailable = (dateTime: string): string => {
   align-items: center;
   justify-content: center;
   gap: 0.25rem;
-  color: #f59e0b;
+  color: var(--color-warning-500);
   font-size: 0.95rem;
   margin-bottom: 0.5rem;
 }
@@ -356,13 +356,13 @@ const formatNextAvailable = (dateTime: string): string => {
 }
 
 .rating-count {
-  color: #94a3b8;
+  color: var(--color-gray-500);
   font-size: 0.85rem;
 }
 
 .provider-specialization {
   font-size: 0.9rem;
-  color: #64748b;
+  color: var(--color-gray-600);
   margin: 0 0 1rem 0;
   min-height: 40px;
 }
@@ -373,7 +373,7 @@ const formatNextAvailable = (dateTime: string): string => {
   justify-content: center;
   gap: 0.5rem;
   font-size: 0.85rem;
-  color: #10b981;
+  color: var(--color-success-500);
   background: #ecfdf5;
   padding: 0.5rem 0.75rem;
   border-radius: 8px;
@@ -395,7 +395,7 @@ const formatNextAvailable = (dateTime: string): string => {
 
 .price-label {
   font-size: 0.9rem;
-  color: #64748b;
+  color: var(--color-gray-600);
 }
 
 .price-value {
@@ -406,7 +406,7 @@ const formatNextAvailable = (dateTime: string): string => {
 
 .select-button {
   width: 100%;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: linear-gradient(135deg, var(--color-primary-500) 0%, var(--color-primary-700) 100%);
   color: white;
   border: none;
   border-radius: 12px;
@@ -443,7 +443,7 @@ const formatNextAvailable = (dateTime: string): string => {
 .no-providers svg {
   width: 80px;
   height: 80px;
-  color: #cbd5e1;
+  color: var(--color-gray-400);
   margin-bottom: 1.5rem;
 }
 
@@ -456,7 +456,7 @@ const formatNextAvailable = (dateTime: string): string => {
 
 .no-providers p {
   font-size: 1rem;
-  color: #64748b;
+  color: var(--color-gray-600);
   margin: 0;
 }
 

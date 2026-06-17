@@ -392,12 +392,12 @@ function goBack() {
   font-size: 2rem;
   font-weight: 700;
   margin: 0 0 0.5rem 0;
-  color: #111827;
+  color: var(--color-gray-900);
 }
 
 .page-subtitle {
   font-size: 1rem;
-  color: #6b7280;
+  color: var(--color-gray-600);
   margin: 0;
 }
 
@@ -432,12 +432,12 @@ function goBack() {
   font-size: 1.25rem;
   font-weight: 600;
   margin: 0 0 0.5rem 0;
-  color: #111827;
+  color: var(--color-gray-900);
 }
 
 .section-description {
   font-size: 0.875rem;
-  color: #6b7280;
+  color: var(--color-gray-600);
   margin: 0;
 }
 
@@ -449,10 +449,10 @@ function goBack() {
 .upload-status {
   margin-top: 1rem;
   padding: 1rem;
-  background-color: #f3f4f6;
+  background-color: var(--color-gray-100);
   border-radius: 0.5rem;
   text-align: center;
-  color: #6b7280;
+  color: var(--color-gray-600);
   font-size: 0.875rem;
 }
 
@@ -471,31 +471,31 @@ function goBack() {
 .form-group label {
   font-size: 0.875rem;
   font-weight: 600;
-  color: #111827;
+  color: var(--color-gray-900);
 }
 
 .form-input {
   padding: 0.625rem;
-  border: 1px solid #d1d5db;
+  border: 1px solid var(--color-gray-400);
   border-radius: 0.375rem;
   font-size: 0.875rem;
-  color: #111827;
+  color: var(--color-gray-900);
 }
 
 .form-input:focus {
   outline: none;
-  border-color: #8b5cf6;
+  border-color: var(--color-primary-500);
   ring: 2px;
   ring-color: rgba(139, 92, 246, 0.2);
 }
 
 .form-group small {
   font-size: 0.75rem;
-  color: #6b7280;
+  color: var(--color-gray-600);
 }
 
 .delete-message {
-  color: #6b7280;
+  color: var(--color-gray-600);
   margin: 0 0 1.5rem 0;
 }
 

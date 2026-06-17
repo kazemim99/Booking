@@ -104,29 +104,29 @@ async function onFormSubmit() {
 
 .help-text {
   font-size: 0.875rem;
-  color: #6b7280;
+  color: var(--color-gray-600);
   margin: 1.5rem 0;
 }
 
 .link-button {
   background: none;
   border: none;
-  color: #667eea;
+  color: var(--color-primary-500);
   font-weight: 600;
   cursor: pointer;
   text-decoration: underline;
 
   &:hover {
-    color: #764ba2;
+    color: var(--color-primary-700);
   }
 }
 
 .btn-secondary {
-  background: #e5e7eb;
-  color: #374151;
+  background: var(--color-gray-300);
+  color: var(--color-gray-800);
 
   &:hover:not(:disabled) {
-    background: #d1d5db;
+    background: var(--color-gray-400);
   }
 }
 </style>

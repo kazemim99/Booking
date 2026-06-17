@@ -6,6 +6,7 @@ import router from './core/router'
 import { useRTLInstance } from './core/composables/useRTL'
 import { vClickOutside } from './shared/directives/v-click-outside'
 // Import global styles
+import '../../packages/design-tokens/tokens.css' // shared @booksy/tokens — brand source of truth
 import './assets/styles/main.scss'
 
 // Import translations

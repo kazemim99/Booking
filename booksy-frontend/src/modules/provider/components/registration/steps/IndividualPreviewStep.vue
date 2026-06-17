@@ -234,15 +234,15 @@ function handleSubmit() {
 
 .preview-section {
   background: #fff;
-  border: 2px solid #e5e7eb;
+  border: 2px solid var(--color-gray-300);
   border-radius: 12px;
   padding: 1.5rem;
   margin-bottom: 1.5rem;
   transition: all 0.2s ease;
 
   &:hover {
-    border-color: #d1d5db;
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+    border-color: var(--color-gray-400);
+    box-shadow: var(--shadow-sm);
   }
 }
 
@@ -252,7 +252,7 @@ function handleSubmit() {
   align-items: center;
   margin-bottom: 1rem;
   padding-bottom: 1rem;
-  border-bottom: 1px solid #e5e7eb;
+  border-bottom: 1px solid var(--color-gray-300);
 }
 
 .preview-section-title {
@@ -261,11 +261,11 @@ function handleSubmit() {
   gap: 0.75rem;
   font-size: 1.125rem;
   font-weight: 600;
-  color: #111827;
+  color: var(--color-gray-900);
   margin: 0;
 
   i {
-    color: #7c3aed;
+    color: var(--color-primary-700);
     font-size: 1.25rem;
   }
 }
@@ -282,7 +282,7 @@ function handleSubmit() {
   align-items: flex-start;
   gap: 1rem;
   padding: 0.75rem;
-  background: #f9fafb;
+  background: var(--color-gray-50);
   border-radius: 8px;
 
   @media (max-width: 640px) {
@@ -292,13 +292,13 @@ function handleSubmit() {
 
 .preview-label {
   font-weight: 600;
-  color: #6b7280;
+  color: var(--color-gray-600);
   font-size: 0.875rem;
   min-width: 150px;
 }
 
 .preview-value {
-  color: #111827;
+  color: var(--color-gray-900);
   font-size: 0.9375rem;
   text-align: right;
   word-break: break-word;
@@ -313,7 +313,7 @@ function handleSubmit() {
 .preview-tag {
   display: inline-block;
   padding: 0.375rem 0.75rem;
-  background: #ede9fe;
+  background: var(--color-primary-50);
   color: #6b21a8;
   border-radius: 12px;
   font-size: 0.875rem;
@@ -331,13 +331,13 @@ function handleSubmit() {
   align-items: center;
   gap: 0.75rem;
   padding: 0.75rem;
-  background: #f9fafb;
+  background: var(--color-gray-50);
   border-radius: 8px;
   font-size: 0.9375rem;
-  color: #111827;
+  color: var(--color-gray-900);
 
   i {
-    color: #10b981;
+    color: var(--color-success-500);
     font-size: 1.125rem;
     flex-shrink: 0;
   }
@@ -354,7 +354,7 @@ function handleSubmit() {
   font-size: 0.9375rem;
 
   i {
-    color: #f59e0b;
+    color: var(--color-warning-500);
     font-size: 1.25rem;
     flex-shrink: 0;
   }
@@ -382,7 +382,7 @@ function handleSubmit() {
   margin-top: 2rem;
   padding: 1.5rem;
   background: linear-gradient(135deg, #f8f5ff 0%, #fff 100%);
-  border: 2px solid #7c3aed;
+  border: 2px solid var(--color-primary-700);
   border-radius: 12px;
 }
 </style>

@@ -283,7 +283,7 @@ onMounted(() => {
 .auth-card {
   background: white;
   border-radius: 1rem;
-  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+  box-shadow: var(--shadow-md);
   padding: 2rem;
 }
 
@@ -307,7 +307,7 @@ onMounted(() => {
 .icon {
   width: 2rem;
   height: 2rem;
-  color: #8b5cf6;
+  color: var(--color-primary-500);
 }
 
 /* Header */
@@ -319,19 +319,19 @@ onMounted(() => {
 .auth-title {
   font-size: 1.5rem;
   font-weight: 700;
-  color: #111827;
+  color: var(--color-gray-900);
   margin-bottom: 0.5rem;
 }
 
 .auth-description {
   font-size: 0.875rem;
-  color: #6b7280;
+  color: var(--color-gray-600);
   line-height: 1.5;
 }
 
 .phone-number {
   font-weight: 600;
-  color: #111827;
+  color: var(--color-gray-900);
 }
 
 /* Form */
@@ -352,7 +352,7 @@ onMounted(() => {
 .action-link {
   background: none;
   border: none;
-  color: #8b5cf6;
+  color: var(--color-primary-500);
   font-size: 0.875rem;
   font-weight: 500;
   cursor: pointer;
@@ -361,7 +361,7 @@ onMounted(() => {
 }
 
 .action-link:hover:not(:disabled) {
-  color: #7c3aed;
+  color: var(--color-primary-700);
   text-decoration: underline;
 }
 
@@ -371,16 +371,16 @@ onMounted(() => {
 }
 
 .action-link.secondary {
-  color: #6b7280;
+  color: var(--color-gray-600);
 }
 
 .action-link.secondary:hover:not(:disabled) {
-  color: #111827;
+  color: var(--color-gray-900);
 }
 
 .resend-countdown {
   font-size: 0.875rem;
-  color: #6b7280;
+  color: var(--color-gray-600);
 }
 
 /* Responsive */

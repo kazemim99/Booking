@@ -244,13 +244,13 @@ watch(
   align-items: center;
   justify-content: space-between;
   padding: 24px;
-  border-bottom: 1px solid #e5e7eb;
+  border-bottom: 1px solid var(--color-gray-300);
 }
 
 .modal-header h2 {
   font-size: 20px;
   font-weight: 700;
-  color: #111827;
+  color: var(--color-gray-900);
   margin: 0;
 }
 
@@ -264,13 +264,13 @@ watch(
   justify-content: center;
   border-radius: 8px;
   cursor: pointer;
-  color: #6b7280;
+  color: var(--color-gray-600);
   transition: all 0.2s ease;
 }
 
 .close-btn:hover:not(:disabled) {
-  background: #f3f4f6;
-  color: #111827;
+  background: var(--color-gray-100);
+  color: var(--color-gray-900);
 }
 
 .close-btn:disabled {
@@ -288,7 +288,7 @@ watch(
 
 /* Current Booking Info */
 .current-booking-info {
-  background: #f9fafb;
+  background: var(--color-gray-50);
   border-radius: 12px;
   padding: 16px;
   margin-bottom: 24px;
@@ -297,7 +297,7 @@ watch(
 .current-booking-info h3 {
   font-size: 16px;
   font-weight: 600;
-  color: #374151;
+  color: var(--color-gray-800);
   margin: 0 0 12px 0;
 }
 
@@ -315,13 +315,13 @@ watch(
 
 .info-item .label {
   font-size: 13px;
-  color: #6b7280;
+  color: var(--color-gray-600);
   font-weight: 500;
 }
 
 .info-item .value {
   font-size: 14px;
-  color: #111827;
+  color: var(--color-gray-900);
   font-weight: 600;
 }
 
@@ -333,13 +333,13 @@ watch(
 .time-picker-section h3 {
   font-size: 16px;
   font-weight: 600;
-  color: #111827;
+  color: var(--color-gray-900);
   margin: 0 0 16px 0;
 }
 
 /* Selected Slot Summary */
 .selected-slot-summary {
-  background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+  background: linear-gradient(135deg, var(--color-success-500) 0%, var(--color-success-600) 100%);
   border-radius: 12px;
   padding: 16px;
   margin-bottom: 20px;
@@ -385,14 +385,14 @@ watch(
   display: block;
   font-size: 14px;
   font-weight: 600;
-  color: #374151;
+  color: var(--color-gray-800);
   margin-bottom: 8px;
 }
 
 .form-group textarea {
   width: 100%;
   padding: 12px;
-  border: 1px solid #d1d5db;
+  border: 1px solid var(--color-gray-400);
   border-radius: 8px;
   font-size: 14px;
   font-family: inherit;
@@ -402,12 +402,12 @@ watch(
 
 .form-group textarea:focus {
   outline: none;
-  border-color: #3b82f6;
+  border-color: var(--color-primary-500);
   box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
 }
 
 .form-group textarea:disabled {
-  background: #f3f4f6;
+  background: var(--color-gray-100);
   cursor: not-allowed;
 }
 
@@ -417,10 +417,10 @@ watch(
   align-items: center;
   gap: 8px;
   padding: 12px 16px;
-  background: #fef2f2;
+  background: var(--color-danger-50);
   border: 1px solid #fecaca;
   border-radius: 8px;
-  color: #dc2626;
+  color: var(--color-danger-600);
   font-size: 14px;
   margin-top: 16px;
 }
@@ -437,7 +437,7 @@ watch(
   justify-content: flex-end;
   gap: 12px;
   padding: 20px 24px;
-  border-top: 1px solid #e5e7eb;
+  border-top: 1px solid var(--color-gray-300);
 }
 
 .btn {
@@ -460,16 +460,16 @@ watch(
 }
 
 .btn-secondary {
-  background: #f3f4f6;
-  color: #374151;
+  background: var(--color-gray-100);
+  color: var(--color-gray-800);
 }
 
 .btn-secondary:hover:not(:disabled) {
-  background: #e5e7eb;
+  background: var(--color-gray-300);
 }
 
 .btn-primary {
-  background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
+  background: linear-gradient(135deg, var(--color-primary-500) 0%, var(--color-primary-600) 100%);
   color: white;
 }
 

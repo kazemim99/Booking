@@ -322,7 +322,7 @@ async function handleLogout() {
 }
 
 .user-avatar-placeholder {
-  background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%);
+  background: linear-gradient(135deg, var(--color-primary-500) 0%, var(--color-primary-500) 100%);
   color: white;
   display: flex;
   align-items: center;
@@ -338,7 +338,7 @@ async function handleLogout() {
   right: 0;
   width: 10px;
   height: 10px;
-  background: #10b981;
+  background: var(--color-success-500);
   border: 2px solid white;
   border-radius: 50%;
 }
@@ -391,7 +391,7 @@ async function handleLogout() {
   background: white;
   border: 1px solid var(--color-border);
   border-radius: 12px;
-  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.12);
+  box-shadow: var(--shadow-lg);
   padding: 0.5rem;
   z-index: 1000;
   max-height: 600px;
@@ -443,7 +443,7 @@ async function handleLogout() {
   .avatar-placeholder {
     width: 100%;
     height: 100%;
-    background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%);
+    background: linear-gradient(135deg, var(--color-primary-500) 0%, var(--color-primary-500) 100%);
     color: white;
     display: flex;
     align-items: center;
@@ -580,7 +580,7 @@ async function handleLogout() {
 .toggle-track {
   width: 42px;
   height: 24px;
-  background: #e5e7eb;
+  background: var(--color-gray-300);
   border-radius: 12px;
   position: relative;
   transition: background 0.3s ease;
@@ -604,7 +604,7 @@ async function handleLogout() {
   background: white;
   border-radius: 50%;
   transition: transform 0.3s ease;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+  box-shadow: var(--shadow-lg);
 }
 
 // Divider

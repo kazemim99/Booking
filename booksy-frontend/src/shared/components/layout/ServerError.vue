@@ -74,7 +74,7 @@ function toggleDetails(): void {
   align-items: center;
   justify-content: center;
   min-height: 100vh;
-  background: linear-gradient(135deg, #fa709a 0%, #fee140 100%);
+  background: linear-gradient(135deg, var(--color-primary-400) 0%, #fee140 100%);
   padding: 2rem;
 }
 
@@ -90,7 +90,7 @@ function toggleDetails(): void {
 .error-code {
   font-size: 8rem;
   font-weight: 900;
-  background: linear-gradient(135deg, #fa709a 0%, #fee140 100%);
+  background: linear-gradient(135deg, var(--color-primary-400) 0%, #fee140 100%);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
@@ -101,13 +101,13 @@ function toggleDetails(): void {
 .error-title {
   font-size: 2rem;
   font-weight: 700;
-  color: #1f2937;
+  color: var(--color-gray-900);
   margin-bottom: 1rem;
 }
 
 .error-message {
   font-size: 1.125rem;
-  color: #6b7280;
+  color: var(--color-gray-600);
   margin-bottom: 2rem;
   line-height: 1.6;
 }
@@ -116,7 +116,7 @@ function toggleDetails(): void {
   width: 80px;
   height: 80px;
   margin: 0 auto 2rem;
-  color: #fa709a;
+  color: var(--color-primary-400);
 
   svg {
     width: 100%;
@@ -151,43 +151,43 @@ function toggleDetails(): void {
 }
 
 .btn-primary {
-  background: linear-gradient(135deg, #fa709a 0%, #fee140 100%);
+  background: linear-gradient(135deg, var(--color-primary-400) 0%, #fee140 100%);
   color: white;
 }
 
 .btn-secondary {
-  background: #e5e7eb;
-  color: #374151;
+  background: var(--color-gray-300);
+  color: var(--color-gray-800);
 
   &:hover {
-    background: #d1d5db;
+    background: var(--color-gray-400);
   }
 }
 
 .error-details {
   margin-top: 2rem;
   padding-top: 2rem;
-  border-top: 1px solid #e5e7eb;
+  border-top: 1px solid var(--color-gray-300);
 }
 
 .details-toggle {
   background: none;
   border: none;
-  color: #667eea;
+  color: var(--color-primary-500);
   cursor: pointer;
   font-size: 0.875rem;
   font-weight: 600;
   text-decoration: underline;
 
   &:hover {
-    color: #764ba2;
+    color: var(--color-primary-700);
   }
 }
 
 .details-content {
   margin-top: 1rem;
   padding: 1rem;
-  background: #f9fafb;
+  background: var(--color-gray-50);
   border-radius: 8px;
   text-align: left;
   font-size: 0.75rem;

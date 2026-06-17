@@ -89,7 +89,7 @@ function handleEdit(): void {
 <style scoped lang="scss">
 .review-card {
   background: white;
-  border: 1px solid #e5e7eb;
+  border: 1px solid var(--color-gray-300);
   border-radius: 12px;
   padding: 1.5rem;
   display: flex;
@@ -114,7 +114,7 @@ function handleEdit(): void {
   width: 48px;
   height: 48px;
   border-radius: 8px;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: linear-gradient(135deg, var(--color-primary-500) 0%, var(--color-primary-700) 100%);
   color: white;
   display: flex;
   align-items: center;
@@ -131,13 +131,13 @@ function handleEdit(): void {
 .provider-name {
   font-size: 1rem;
   font-weight: 600;
-  color: #111827;
+  color: var(--color-gray-900);
   margin: 0 0 0.25rem 0;
 }
 
 .service-name {
   font-size: 0.875rem;
-  color: #6b7280;
+  color: var(--color-gray-600);
   margin: 0;
 }
 
@@ -145,7 +145,7 @@ function handleEdit(): void {
   background: none;
   border: none;
   cursor: pointer;
-  color: #667eea;
+  color: var(--color-primary-500);
   padding: 0.5rem;
   border-radius: 6px;
   transition: all 0.2s;
@@ -156,7 +156,7 @@ function handleEdit(): void {
   }
 
   &:hover {
-    background: #f3f4f6;
+    background: var(--color-gray-100);
   }
 }
 
@@ -168,18 +168,18 @@ function handleEdit(): void {
 .star {
   width: 20px;
   height: 20px;
-  color: #d1d5db;
+  color: var(--color-gray-400);
   transition: color 0.2s;
 
   &.filled {
-    color: #f59e0b;
+    color: var(--color-warning-500);
   }
 }
 
 .review-text {
   font-size: 0.875rem;
   line-height: 1.6;
-  color: #374151;
+  color: var(--color-gray-800);
   margin: 0;
 }
 
@@ -188,7 +188,7 @@ function handleEdit(): void {
   align-items: center;
   gap: 0.5rem;
   font-size: 0.75rem;
-  color: #9ca3af;
+  color: var(--color-gray-500);
 }
 
 .edited-badge {

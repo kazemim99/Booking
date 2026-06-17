@@ -260,7 +260,7 @@ const handleBookClick = (provider: ProviderSummary) => {
 .sort-label {
   font-size: 0.875rem;
   font-weight: 500;
-  color: #374151;
+  color: var(--color-gray-800);
   font-family: 'Vazir', 'IRANSans', sans-serif;
   white-space: nowrap;
 }
@@ -268,11 +268,11 @@ const handleBookClick = (provider: ProviderSummary) => {
 .sort-select {
   padding: 0.5rem 2.5rem 0.5rem 1rem;
   background: white;
-  border: 1px solid #d1d5db;
+  border: 1px solid var(--color-gray-400);
   border-radius: 8px;
   font-size: 0.875rem;
   font-family: 'Vazir', 'IRANSans', sans-serif;
-  color: #111827;
+  color: var(--color-gray-900);
   cursor: pointer;
   transition: all 0.2s;
   appearance: none;
@@ -284,13 +284,13 @@ const handleBookClick = (provider: ProviderSummary) => {
 }
 
 .sort-select:hover {
-  border-color: #8b5cf6;
+  border-color: var(--color-primary-500);
   box-shadow: 0 0 0 3px rgba(139, 92, 246, 0.1);
 }
 
 .sort-select:focus {
   outline: none;
-  border-color: #8b5cf6;
+  border-color: var(--color-primary-500);
   box-shadow: 0 0 0 3px rgba(139, 92, 246, 0.2);
 }
 

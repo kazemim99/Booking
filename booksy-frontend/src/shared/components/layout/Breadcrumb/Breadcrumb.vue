@@ -145,7 +145,7 @@ function formatLabel(segment: string): string {
 }
 
 .breadcrumb-link {
-  color: #6b7280;
+  color: var(--color-gray-600);
   text-decoration: none;
   font-size: 0.875rem;
   transition: color 0.2s;
@@ -154,7 +154,7 @@ function formatLabel(segment: string): string {
   gap: 0.375rem;
 
   &:hover {
-    color: #667eea;
+    color: var(--color-primary-500);
   }
 
   &.home-link {
@@ -174,7 +174,7 @@ function formatLabel(segment: string): string {
 }
 
 .breadcrumb-current {
-  color: #374151;
+  color: var(--color-gray-800);
   font-size: 0.875rem;
   font-weight: 600;
 }
@@ -182,7 +182,7 @@ function formatLabel(segment: string): string {
 .breadcrumb-separator {
   display: flex;
   align-items: center;
-  color: #d1d5db;
+  color: var(--color-gray-400);
 
   svg {
     width: 16px;

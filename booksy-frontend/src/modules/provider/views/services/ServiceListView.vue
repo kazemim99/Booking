@@ -693,13 +693,13 @@ async function handleSubmitForm() {
 <style scoped lang="scss">
 .modern-service-catalog {
   min-height: 100vh;
-  background: linear-gradient(to bottom, #f9fafb 0%, #ffffff 100%);
+  background: linear-gradient(to bottom, var(--color-gray-50) 0%, #ffffff 100%);
   padding: 2rem;
 }
 
 // Header with gradient
 .catalog-header {
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: linear-gradient(135deg, var(--color-primary-500) 0%, var(--color-primary-700) 100%);
   border-radius: 24px;
   padding: 3rem;
   margin-bottom: 2rem;
@@ -737,7 +737,7 @@ async function handleSubmitForm() {
   gap: 0.5rem;
   padding: 1rem 2rem;
   background: white;
-  color: #667eea;
+  color: var(--color-primary-500);
   border: none;
   border-radius: 12px;
   font-size: 1rem;
@@ -773,14 +773,14 @@ async function handleSubmitForm() {
   left: 1.25rem;
   top: 50%;
   transform: translateY(-50%);
-  color: #9ca3af;
+  color: var(--color-gray-500);
   pointer-events: none;
 }
 
 .search-input {
   width: 100%;
   padding: 1.25rem 3.5rem 1.25rem 3.5rem;
-  border: 2px solid #e5e7eb;
+  border: 2px solid var(--color-gray-300);
   border-radius: 16px;
   font-size: 1rem;
   transition: all 0.2s;
@@ -788,12 +788,12 @@ async function handleSubmitForm() {
 
   &:focus {
     outline: none;
-    border-color: #667eea;
+    border-color: var(--color-primary-500);
     box-shadow: 0 0 0 4px rgba(102, 126, 234, 0.1);
   }
 
   &::placeholder {
-    color: #9ca3af;
+    color: var(--color-gray-500);
   }
 }
 
@@ -803,15 +803,15 @@ async function handleSubmitForm() {
   top: 50%;
   transform: translateY(-50%);
   padding: 0.5rem;
-  background: #f3f4f6;
+  background: var(--color-gray-100);
   border: none;
   border-radius: 8px;
-  color: #6b7280;
+  color: var(--color-gray-600);
   cursor: pointer;
   transition: all 0.2s;
 
   &:hover {
-    background: #e5e7eb;
+    background: var(--color-gray-300);
   }
 }
 
@@ -839,14 +839,14 @@ async function handleSubmitForm() {
 .stat-value {
   font-size: 2.5rem;
   font-weight: 700;
-  color: #111827;
+  color: var(--color-gray-900);
   line-height: 1;
   margin-bottom: 0.5rem;
 }
 
 .stat-label {
   font-size: 0.875rem;
-  color: #6b7280;
+  color: var(--color-gray-600);
   text-transform: uppercase;
   letter-spacing: 0.05em;
   font-weight: 600;
@@ -865,8 +865,8 @@ async function handleSubmitForm() {
 .spinner {
   width: 48px;
   height: 48px;
-  border: 4px solid #e5e7eb;
-  border-top-color: #667eea;
+  border: 4px solid var(--color-gray-300);
+  border-top-color: var(--color-primary-500);
   border-radius: 50%;
   animation: spin 1s linear infinite;
 }
@@ -895,20 +895,20 @@ async function handleSubmitForm() {
 .empty-title {
   font-size: 1.5rem;
   font-weight: 600;
-  color: #111827;
+  color: var(--color-gray-900);
   margin: 0 0 0.5rem 0;
 }
 
 .empty-text {
   font-size: 1rem;
-  color: #6b7280;
+  color: var(--color-gray-600);
   margin: 0 0 2rem 0;
   max-width: 400px;
 }
 
 .empty-action-btn {
   padding: 0.875rem 2rem;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: linear-gradient(135deg, var(--color-primary-500) 0%, var(--color-primary-700) 100%);
   color: white;
   border: none;
   border-radius: 12px;
@@ -955,7 +955,7 @@ async function handleSubmitForm() {
 .service-name {
   font-size: 1.25rem;
   font-weight: 600;
-  color: #111827;
+  color: var(--color-gray-900);
   margin: 0;
   flex: 1;
   line-height: 1.4;
@@ -965,14 +965,14 @@ async function handleSubmitForm() {
   padding: 0.5rem;
   background: transparent;
   border: none;
-  color: #9ca3af;
+  color: var(--color-gray-500);
   cursor: pointer;
   border-radius: 8px;
   transition: all 0.2s;
 
   &:hover {
-    background: #f3f4f6;
-    color: #111827;
+    background: var(--color-gray-100);
+    color: var(--color-gray-900);
   }
 }
 
@@ -985,17 +985,17 @@ async function handleSubmitForm() {
   display: flex;
   align-items: center;
   gap: 0.5rem;
-  color: #6b7280;
+  color: var(--color-gray-600);
   font-size: 0.938rem;
 }
 
 .detail-icon {
-  color: #9ca3af;
+  color: var(--color-gray-500);
 }
 
 .price {
   font-weight: 600;
-  color: #10b981;
+  color: var(--color-success-500);
   font-size: 1.125rem;
 }
 
@@ -1027,20 +1027,20 @@ async function handleSubmitForm() {
   border: none;
   border-radius: 8px;
   font-size: 0.938rem;
-  color: #374151;
+  color: var(--color-gray-800);
   cursor: pointer;
   transition: all 0.2s;
   text-align: left;
 
   &:hover {
-    background: #f3f4f6;
+    background: var(--color-gray-100);
   }
 
   &.danger {
-    color: #ef4444;
+    color: var(--color-danger-500);
 
     &:hover {
-      background: #fee2e2;
+      background: var(--color-danger-50);
     }
   }
 }
@@ -1084,27 +1084,27 @@ async function handleSubmitForm() {
   padding: 0.5rem;
   background: transparent;
   border: none;
-  color: #9ca3af;
+  color: var(--color-gray-500);
   cursor: pointer;
   border-radius: 8px;
   transition: all 0.2s;
 
   &:hover {
-    background: #f3f4f6;
-    color: #111827;
+    background: var(--color-gray-100);
+    color: var(--color-gray-900);
   }
 }
 
 .modal-title {
   font-size: 1.5rem;
   font-weight: 600;
-  color: #111827;
+  color: var(--color-gray-900);
   margin: 0;
 }
 
 .modal-text {
   font-size: 1rem;
-  color: #6b7280;
+  color: var(--color-gray-600);
   margin: 0 0 2rem 0;
   line-height: 1.6;
 }
@@ -1146,20 +1146,20 @@ async function handleSubmitForm() {
   }
 
   &-error {
-    background: #fee2e2;
-    color: #991b1b;
+    background: var(--color-danger-50);
+    color: var(--color-danger-600);
   }
 
   &-warning {
     background: #fef3c7;
     color: #92400e;
-    border: 1px solid #fbbf24;
+    border: 1px solid var(--color-warning-500);
   }
 }
 
 .alert-btn {
   padding: 0.5rem 1rem;
-  background: #f59e0b;
+  background: var(--color-warning-500);
   color: white;
   border: none;
   border-radius: 8px;
@@ -1190,17 +1190,17 @@ async function handleSubmitForm() {
 .form-label {
   font-size: 0.938rem;
   font-weight: 600;
-  color: #374151;
+  color: var(--color-gray-800);
 
   .required {
-    color: #ef4444;
+    color: var(--color-danger-500);
     margin-left: 0.25rem;
   }
 }
 
 .form-input {
   padding: 0.875rem 1rem;
-  border: 2px solid #e5e7eb;
+  border: 2px solid var(--color-gray-300);
   border-radius: 12px;
   font-size: 1rem;
   transition: all 0.2s;
@@ -1208,12 +1208,12 @@ async function handleSubmitForm() {
 
   &:focus {
     outline: none;
-    border-color: #667eea;
+    border-color: var(--color-primary-500);
     box-shadow: 0 0 0 4px rgba(102, 126, 234, 0.1);
   }
 
   &.error {
-    border-color: #ef4444;
+    border-color: var(--color-danger-500);
   }
 
   &.with-icon {
@@ -1234,7 +1234,7 @@ async function handleSubmitForm() {
   left: 1rem;
   top: 50%;
   transform: translateY(-50%);
-  color: #9ca3af;
+  color: var(--color-gray-500);
   pointer-events: none;
 }
 
@@ -1243,14 +1243,14 @@ async function handleSubmitForm() {
   left: 1rem;
   top: 50%;
   transform: translateY(-50%);
-  color: #6b7280;
+  color: var(--color-gray-600);
   font-weight: 600;
   pointer-events: none;
 }
 
 .error-message {
   font-size: 0.813rem;
-  color: #ef4444;
+  color: var(--color-danger-500);
 }
 
 .modal-actions {
@@ -1275,16 +1275,16 @@ async function handleSubmitForm() {
   }
 
   &.secondary {
-    background: #f3f4f6;
-    color: #374151;
+    background: var(--color-gray-100);
+    color: var(--color-gray-800);
 
     &:hover:not(:disabled) {
-      background: #e5e7eb;
+      background: var(--color-gray-300);
     }
   }
 
   &.primary {
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    background: linear-gradient(135deg, var(--color-primary-500) 0%, var(--color-primary-700) 100%);
     color: white;
     box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
 
@@ -1295,11 +1295,11 @@ async function handleSubmitForm() {
   }
 
   &.danger {
-    background: #ef4444;
+    background: var(--color-danger-500);
     color: white;
 
     &:hover:not(:disabled) {
-      background: #dc2626;
+      background: var(--color-danger-600);
     }
   }
 }

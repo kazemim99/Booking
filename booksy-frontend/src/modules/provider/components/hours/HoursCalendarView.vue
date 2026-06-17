@@ -226,7 +226,7 @@ function handleDayClick(day: CalendarDay) {
 .hours-calendar-view {
   width: 100%;
   background: white;
-  border: 1px solid #e5e7eb;
+  border: 1px solid var(--color-gray-300);
   border-radius: 0.5rem;
   overflow: hidden;
 }
@@ -236,15 +236,15 @@ function handleDayClick(day: CalendarDay) {
   justify-content: space-between;
   align-items: center;
   padding: 1rem;
-  border-bottom: 1px solid #e5e7eb;
-  background-color: #f9fafb;
+  border-bottom: 1px solid var(--color-gray-300);
+  background-color: var(--color-gray-50);
   gap: 1rem;
 }
 
 .view-toggle {
   display: flex;
   gap: 0.25rem;
-  background: #e5e7eb;
+  background: var(--color-gray-300);
   border-radius: 0.375rem;
   padding: 0.25rem;
 }
@@ -256,15 +256,15 @@ function handleDayClick(day: CalendarDay) {
   border-radius: 0.25rem;
   font-size: 0.875rem;
   font-weight: 500;
-  color: #6b7280;
+  color: var(--color-gray-600);
   cursor: pointer;
   transition: all 0.2s;
 }
 
 .toggle-btn.active {
   background: white;
-  color: #111827;
-  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+  color: var(--color-gray-900);
+  box-shadow: var(--shadow-sm);
 }
 
 .calendar-navigation {
@@ -276,7 +276,7 @@ function handleDayClick(day: CalendarDay) {
 .current-period {
   font-size: 1rem;
   font-weight: 600;
-  color: #111827;
+  color: var(--color-gray-900);
   margin: 0;
   min-width: 200px;
   text-align: center;
@@ -288,36 +288,36 @@ function handleDayClick(day: CalendarDay) {
   display: flex;
   align-items: center;
   justify-content: center;
-  border: 1px solid #d1d5db;
+  border: 1px solid var(--color-gray-400);
   background: white;
   border-radius: 0.375rem;
   font-size: 1.5rem;
-  color: #6b7280;
+  color: var(--color-gray-600);
   cursor: pointer;
   transition: all 0.2s;
 }
 
 .nav-btn:hover {
-  border-color: #3b82f6;
-  color: #3b82f6;
+  border-color: var(--color-primary-500);
+  color: var(--color-primary-500);
 }
 
 .today-btn {
   padding: 0.5rem 1rem;
-  border: 1px solid #d1d5db;
+  border: 1px solid var(--color-gray-400);
   background: white;
   border-radius: 0.375rem;
   font-size: 0.875rem;
   font-weight: 500;
-  color: #111827;
+  color: var(--color-gray-900);
   cursor: pointer;
   transition: all 0.2s;
 }
 
 .today-btn:hover {
-  border-color: #3b82f6;
-  background: #eff6ff;
-  color: #3b82f6;
+  border-color: var(--color-primary-500);
+  background: var(--color-primary-50);
+  color: var(--color-primary-500);
 }
 
 /* Week View */
@@ -351,7 +351,7 @@ function handleDayClick(day: CalendarDay) {
   text-align: center;
   font-size: 0.75rem;
   font-weight: 600;
-  color: #6b7280;
+  color: var(--color-gray-600);
   text-transform: uppercase;
   padding: 0.5rem 0;
 }

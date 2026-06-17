@@ -168,13 +168,13 @@ const handleClose = () => {
 
 /* Variants */
 .alert-error {
-  background: #fef2f2;
-  border-color: #fecaca;
-  color: #991b1b;
+  background: var(--color-danger-50);
+  border-color: var(--color-danger-50);
+  color: var(--color-danger-600);
 }
 
 .alert-warning {
-  background: #fffbeb;
+  background: var(--color-warning-50);
   border-color: #fde68a;
   color: #92400e;
 }
@@ -186,7 +186,7 @@ const handleClose = () => {
 }
 
 .alert-info {
-  background: #eff6ff;
+  background: var(--color-primary-50);
   border-color: #bfdbfe;
   color: #1e40af;
 }
@@ -198,19 +198,19 @@ const handleClose = () => {
 }
 
 .alert-error .icon {
-  color: #ef4444;
+  color: var(--color-danger-500);
 }
 
 .alert-warning .icon {
-  color: #f59e0b;
+  color: var(--color-warning-500);
 }
 
 .alert-success .icon {
-  color: #10b981;
+  color: var(--color-success-500);
 }
 
 .alert-info .icon {
-  color: #3b82f6;
+  color: var(--color-primary-500);
 }
 
 .icon {

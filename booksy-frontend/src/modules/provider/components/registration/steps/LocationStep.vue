@@ -409,6 +409,43 @@ const handleSubmit = () => {
   }
 }
 
+// Watch for prop changes (when navigating back and draft is loaded)
+watch(
+  () =>
+    [props.address, props.location] as [
+      Partial<BusinessAddress> | undefined,
+      Partial<BusinessLocation> | undefined,
+    ],
+  ([newAddress, newLocation]) => {
+    if (newAddress) {
+      if (newAddress.provinceId && newAddress.provinceId !== formData.value.provinceId) {
+        formData.value.provinceId = newAddress.provinceId
+      }
+      if (newAddress.cityId && newAddress.cityId !== formData.value.cityId) {
+        formData.value.cityId = newAddress.cityId
+      }
+      if (newAddress.addressLine1 && newAddress.addressLine1 !== formData.value.address) {
+        formData.value.address = newAddress.addressLine1
+      }
+      if (newAddress.zipCode && newAddress.zipCode !== formData.value.postalCode) {
+        formData.value.postalCode = newAddress.zipCode
+      }
+      if (newAddress.formattedAddress && newAddress.formattedAddress !== formData.value.formattedAddress) {
+        formData.value.formattedAddress = newAddress.formattedAddress
+      }
+    }
+    if (newLocation && newLocation.latitude && newLocation.longitude) {
+      const coords = { lat: newLocation.latitude, lng: newLocation.longitude }
+      if (!formData.value.coordinates ||
+          formData.value.coordinates.lat !== coords.lat ||
+          formData.value.coordinates.lng !== coords.lng) {
+        formData.value.coordinates = coords
+      }
+    }
+  },
+  { deep: true, immediate: true }
+)
+
 // Initialize from props on mount
 onMounted(async () => {
   // ✅ OPTIMIZED: Load all provinces with their cities in ONE API call
@@ -464,7 +501,7 @@ onMounted(async () => {
 
   p {
     font-size: 0.875rem;
-    color: #374151;
+    color: var(--color-gray-800);
     font-weight: 500;
     margin: 0;
   }
@@ -473,8 +510,8 @@ onMounted(async () => {
 .loading-spinner {
   width: 40px;
   height: 40px;
-  border: 3px solid #e5e7eb;
-  border-top-color: #7c3aed;
+  border: 3px solid var(--color-gray-300);
+  border-top-color: var(--color-primary-700);
   border-radius: 50%;
   animation: spin 0.8s linear infinite;
 }

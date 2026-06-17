@@ -257,7 +257,7 @@ const lineChartOptions = computed<ChartOptions>(() => ({
 .card-title {
   font-size: 14px;
   font-weight: 500;
-  color: #6b7280;
+  color: var(--color-gray-600);
   margin: 0;
 }
 
@@ -268,24 +268,24 @@ const lineChartOptions = computed<ChartOptions>(() => ({
 .header-icon {
   width: 16px;
   height: 16px;
-  color: #9ca3af;
+  color: var(--color-gray-500);
 }
 
 .stat-value {
   font-size: 30px;
   font-weight: 700;
   margin-bottom: 4px;
-  color: #1f2937;
+  color: var(--color-gray-900);
 }
 
 .stat-caption {
   font-size: 12px;
-  color: #6b7280;
+  color: var(--color-gray-600);
   margin: 0;
 }
 
 .stat-increase {
-  color: #16a34a;
+  color: var(--color-success-600);
 }
 
 .chart-container {
@@ -314,14 +314,14 @@ const lineChartOptions = computed<ChartOptions>(() => ({
 }
 
 .legend-completed {
-  background: #22c55e;
+  background: var(--color-success-500);
 }
 
 .legend-cancelled {
-  background: #ef4444;
+  background: var(--color-danger-500);
 }
 
 .legend-scheduled {
-  background: #f59e0b;
+  background: var(--color-warning-500);
 }
 </style>

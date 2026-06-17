@@ -554,12 +554,12 @@ function goBack() {
   font-size: 2rem;
   font-weight: 700;
   margin: 0 0 0.5rem 0;
-  color: #111827;
+  color: var(--color-gray-900);
 }
 
 .page-subtitle {
   font-size: 1rem;
-  color: #6b7280;
+  color: var(--color-gray-600);
   margin: 0;
 }
 
@@ -586,12 +586,12 @@ function goBack() {
   font-size: 1.25rem;
   font-weight: 600;
   margin: 0 0 0.5rem 0;
-  color: #111827;
+  color: var(--color-gray-900);
 }
 
 .section-description {
   font-size: 0.875rem;
-  color: #6b7280;
+  color: var(--color-gray-600);
   margin: 0 0 1.5rem 0;
 }
 
@@ -628,14 +628,14 @@ function goBack() {
   gap: 0.75rem;
   cursor: pointer;
   padding: 1rem;
-  border: 1px solid #e5e7eb;
+  border: 1px solid var(--color-gray-300);
   border-radius: 8px;
   transition: all 0.2s;
 }
 
 .checkbox-label:hover {
-  border-color: #3b82f6;
-  background: #eff6ff;
+  border-color: var(--color-primary-500);
+  background: var(--color-primary-50);
 }
 
 .checkbox {
@@ -654,12 +654,12 @@ function goBack() {
 
 .checkbox-text strong {
   font-weight: 600;
-  color: #111827;
+  color: var(--color-gray-900);
 }
 
 .checkbox-text small {
   font-size: 0.875rem;
-  color: #6b7280;
+  color: var(--color-gray-600);
 }
 
 .form-actions {
@@ -667,7 +667,7 @@ function goBack() {
   justify-content: flex-end;
   gap: 1rem;
   padding-top: 1rem;
-  border-top: 1px solid #e5e7eb;
+  border-top: 1px solid var(--color-gray-300);
 }
 
 @media (max-width: 768px) {

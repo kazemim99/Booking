@@ -691,7 +691,7 @@ function handleImageLoad() {
 <style scoped lang="scss">
 .accept-invitation-view {
   min-height: 100vh;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: linear-gradient(135deg, var(--color-primary-500) 0%, var(--color-primary-700) 100%);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -736,8 +736,8 @@ function handleImageLoad() {
   .spinner {
     width: 50px;
     height: 50px;
-    border: 4px solid #f3f4f6;
-    border-top-color: #667eea;
+    border: 4px solid var(--color-gray-100);
+    border-top-color: var(--color-primary-500);
     border-radius: 50%;
     animation: spin 1s linear infinite;
     margin: 0 auto 1rem;
@@ -790,7 +790,7 @@ function handleImageLoad() {
       }
 
       &.organization-logo-fallback {
-        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        background: linear-gradient(135deg, var(--color-primary-500) 0%, var(--color-primary-700) 100%);
         display: flex;
         align-items: center;
         justify-content: center;
@@ -817,7 +817,7 @@ function handleImageLoad() {
 
   .invitation-message {
     background: #f7fafc;
-    border-right: 4px solid #667eea;
+    border-right: 4px solid var(--color-primary-500);
     border-radius: 8px;
     padding: 1.5rem;
     margin-bottom: 2rem;
@@ -826,7 +826,7 @@ function handleImageLoad() {
     gap: 1rem;
 
     i {
-      color: #667eea;
+      color: var(--color-primary-500);
       font-size: 1.5rem;
       margin-top: 0.25rem;
     }
@@ -850,7 +850,7 @@ function handleImageLoad() {
       color: #4a5568;
 
       i {
-        color: #667eea;
+        color: var(--color-primary-500);
         font-size: 1.25rem;
       }
 
@@ -953,7 +953,7 @@ function handleImageLoad() {
 
           &:focus {
             outline: none;
-            border-color: #667eea;
+            border-color: var(--color-primary-500);
             box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
           }
 
@@ -1027,8 +1027,8 @@ function handleImageLoad() {
               cursor: pointer;
 
               &:checked {
-                background-color: #667eea;
-                border-color: #667eea;
+                background-color: var(--color-primary-500);
+                border-color: var(--color-primary-500);
               }
 
               &:disabled {
@@ -1047,7 +1047,7 @@ function handleImageLoad() {
         .resend-button {
           background: none;
           border: none;
-          color: #667eea;
+          color: var(--color-primary-500);
           font-weight: 500;
           cursor: pointer;
           padding: 0.5rem 1rem;

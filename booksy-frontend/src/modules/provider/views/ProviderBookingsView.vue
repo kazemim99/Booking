@@ -702,7 +702,7 @@ onMounted(async () => {
 <style scoped>
 .bookings-page {
   padding: 0;
-  background: #fafafa;
+  background: var(--color-gray-50);
   min-height: 100vh;
 }
 
@@ -712,7 +712,7 @@ onMounted(async () => {
   border-radius: 4px;
   padding: 24px;
   margin-bottom: 24px;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  box-shadow: var(--shadow-sm);
 }
 
 .header-content {
@@ -760,7 +760,7 @@ onMounted(async () => {
   border: none;
   text-transform: uppercase;
   letter-spacing: 0.5px;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+  box-shadow: var(--shadow-sm);
 }
 
 .btn-primary {
@@ -770,11 +770,11 @@ onMounted(async () => {
 
 .btn-primary:hover {
   background: #1565c0;
-  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
+  box-shadow: var(--shadow-md);
 }
 
 .btn-primary:active {
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+  box-shadow: var(--shadow-sm);
 }
 
 .btn-secondary {
@@ -820,12 +820,12 @@ onMounted(async () => {
   display: flex;
   align-items: center;
   gap: 16px;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  box-shadow: var(--shadow-sm);
   transition: box-shadow 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 .stat-card:hover {
-  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
+  box-shadow: var(--shadow-md);
 }
 
 .stat-icon {
@@ -882,7 +882,7 @@ onMounted(async () => {
 .bookings-container {
   background: white;
   border-radius: 4px;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  box-shadow: var(--shadow-sm);
   overflow: hidden;
 }
 
@@ -964,7 +964,7 @@ onMounted(async () => {
   transform: translateY(-50%);
   width: 18px;
   height: 18px;
-  color: #9ca3af;
+  color: var(--color-gray-500);
   pointer-events: none;
 }
 
@@ -1068,11 +1068,11 @@ onMounted(async () => {
   padding: 16px;
   cursor: pointer;
   transition: box-shadow 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.12);
+  box-shadow: var(--shadow-sm);
 }
 
 .booking-card:hover {
-  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
+  box-shadow: var(--shadow-md);
 }
 
 .booking-header {

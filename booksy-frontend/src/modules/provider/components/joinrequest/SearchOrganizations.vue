@@ -295,7 +295,7 @@ function handleJoinRequestSubmitted() {
 
       &:focus {
         outline: none;
-        border-color: #667eea;
+        border-color: var(--color-primary-500);
         box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
       }
 
@@ -340,7 +340,7 @@ function handleJoinRequestSubmitted() {
 
       &:focus {
         outline: none;
-        border-color: #667eea;
+        border-color: var(--color-primary-500);
       }
     }
   }
@@ -355,8 +355,8 @@ function handleJoinRequestSubmitted() {
   .spinner {
     width: 50px;
     height: 50px;
-    border: 4px solid #f3f4f6;
-    border-top-color: #667eea;
+    border: 4px solid var(--color-gray-100);
+    border-top-color: var(--color-primary-500);
     border-radius: 50%;
     animation: spin 1s linear infinite;
     margin: 0 auto 1rem;
@@ -397,7 +397,7 @@ function handleJoinRequestSubmitted() {
 
   &:hover {
     border-color: #cbd5e0;
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+    box-shadow: var(--shadow-sm);
   }
 
   .organization-logo,
@@ -418,7 +418,7 @@ function handleJoinRequestSubmitted() {
   }
 
   .organization-logo-placeholder {
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    background: linear-gradient(135deg, var(--color-primary-500) 0%, var(--color-primary-700) 100%);
     display: flex;
     align-items: center;
     justify-content: center;
@@ -456,7 +456,7 @@ function handleJoinRequestSubmitted() {
         font-size: 0.875rem;
 
         i {
-          color: #667eea;
+          color: var(--color-primary-500);
         }
       }
     }

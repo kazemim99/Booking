@@ -206,7 +206,7 @@ function toggleExpand(itemName: string): void {
   align-items: center;
   gap: 0.75rem;
   padding: 0.875rem 1.25rem;
-  color: #6b7280;
+  color: var(--color-gray-600);
   text-decoration: none;
   transition: all 0.2s;
   cursor: pointer;
@@ -218,13 +218,13 @@ function toggleExpand(itemName: string): void {
   position: relative;
 
   &:hover {
-    background: #f3f4f6;
-    color: #667eea;
+    background: var(--color-gray-100);
+    color: var(--color-primary-500);
   }
 
   &.active {
-    background: #ede9fe;
-    color: #667eea;
+    background: var(--color-primary-50);
+    color: var(--color-primary-500);
     font-weight: 600;
 
     &::before {
@@ -234,7 +234,7 @@ function toggleExpand(itemName: string): void {
       top: 0;
       bottom: 0;
       width: 3px;
-      background: #667eea;
+      background: var(--color-primary-500);
     }
   }
 
@@ -262,7 +262,7 @@ function toggleExpand(itemName: string): void {
 }
 
 .menu-badge {
-  background: #ef4444;
+  background: var(--color-danger-500);
   color: white;
   border-radius: 9999px;
   font-size: 0.625rem;
@@ -288,7 +288,7 @@ function toggleExpand(itemName: string): void {
   list-style: none;
   margin: 0;
   padding: 0;
-  background: #f9fafb;
+  background: var(--color-gray-50);
 }
 
 .submenu-item {
@@ -300,19 +300,19 @@ function toggleExpand(itemName: string): void {
   align-items: center;
   justify-content: space-between;
   padding: 0.75rem 1.25rem 0.75rem 3.5rem;
-  color: #6b7280;
+  color: var(--color-gray-600);
   text-decoration: none;
   font-size: 0.875rem;
   transition: all 0.2s;
 
   &:hover {
-    background: #f3f4f6;
-    color: #667eea;
+    background: var(--color-gray-100);
+    color: var(--color-primary-500);
   }
 
   &.active {
-    background: #ede9fe;
-    color: #667eea;
+    background: var(--color-primary-50);
+    color: var(--color-primary-500);
     font-weight: 600;
   }
 }
@@ -338,7 +338,7 @@ function toggleExpand(itemName: string): void {
 // Sidebar Footer
 .sidebar-footer {
   padding: 1rem 1.25rem;
-  border-top: 1px solid #e5e7eb;
+  border-top: 1px solid var(--color-gray-300);
   margin-top: auto;
 }
 
@@ -350,7 +350,7 @@ function toggleExpand(itemName: string): void {
 .footer-copyright {
   margin: 0;
   font-size: 0.75rem;
-  color: #9ca3af;
+  color: var(--color-gray-500);
   line-height: 1.5;
 }
 </style>

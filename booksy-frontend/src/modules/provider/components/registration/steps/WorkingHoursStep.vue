@@ -259,7 +259,7 @@ const handleNext = () => {
 .registration-step {
   min-height: 100vh;
   padding: 2rem 1rem;
-  background: #f9fafb;
+  background: var(--color-gray-50);
   direction: rtl;
 }
 
@@ -268,7 +268,7 @@ const handleNext = () => {
   margin: 0 auto;
   background: white;
   border-radius: 1rem;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  box-shadow: var(--shadow-sm);
   padding: 2rem;
 }
 
@@ -279,13 +279,13 @@ const handleNext = () => {
 .step-title {
   font-size: 1.5rem;
   font-weight: 700;
-  color: #111827;
+  color: var(--color-gray-900);
   margin-bottom: 0.5rem;
 }
 
 .step-description {
   font-size: 0.875rem;
-  color: #6b7280;
+  color: var(--color-gray-600);
 }
 
 .step-content {
@@ -297,11 +297,11 @@ const handleNext = () => {
 /* Error Message */
 .error-message {
   font-size: 0.875rem;
-  color: #ef4444;
+  color: var(--color-danger-500);
   text-align: right;
   white-space: pre-line;
   line-height: 1.6;
-  background: #fef2f2;
+  background: var(--color-danger-50);
   border: 1px solid #fecaca;
   border-radius: 0.5rem;
   padding: 1rem;
@@ -314,7 +314,7 @@ const handleNext = () => {
   gap: 0.75rem;
   margin-top: 1rem;
   padding-top: 1.5rem;
-  border-top: 1px solid #e5e7eb;
+  border-top: 1px solid var(--color-gray-300);
 }
 
 .step-actions > * {

@@ -310,13 +310,13 @@ onMounted(() => {
   .page-title {
     font-size: 28px;
     font-weight: 700;
-    color: #1f2937;
+    color: var(--color-gray-900);
     margin: 0 0 8px 0;
   }
 
   .page-subtitle {
     font-size: 14px;
-    color: #6b7280;
+    color: var(--color-gray-600);
     margin: 0;
   }
 }
@@ -356,7 +356,7 @@ onMounted(() => {
   .input-icon {
     width: 20px;
     height: 20px;
-    color: #9ca3af;
+    color: var(--color-gray-500);
   }
 }
 

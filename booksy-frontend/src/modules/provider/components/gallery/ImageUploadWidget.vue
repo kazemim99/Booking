@@ -328,23 +328,23 @@ defineExpose({
 /* ==================== Upload Zone ==================== */
 
 .upload-zone {
-  border: 2px dashed #d1d5db;
+  border: 2px dashed var(--color-gray-400);
   border-radius: 12px;
   padding: 40px 20px;
   text-align: center;
   cursor: pointer;
   transition: all 0.3s ease;
-  background: #f9fafb;
+  background: var(--color-gray-50);
 }
 
 .upload-zone:hover {
-  border-color: #9ca3af;
-  background: #f3f4f6;
+  border-color: var(--color-gray-500);
+  background: var(--color-gray-100);
 }
 
 .upload-zone.drag-over {
-  border-color: #3b82f6;
-  background: #eff6ff;
+  border-color: var(--color-primary-500);
+  background: var(--color-primary-50);
   transform: scale(1.02);
 }
 
@@ -354,8 +354,8 @@ defineExpose({
 }
 
 .upload-zone.has-files:hover {
-  border-color: #d1d5db;
-  background: #f9fafb;
+  border-color: var(--color-gray-400);
+  background: var(--color-gray-50);
 }
 
 /* Upload Prompt */
@@ -368,25 +368,25 @@ defineExpose({
 
 .upload-prompt i {
   font-size: 64px;
-  color: #9ca3af;
+  color: var(--color-gray-500);
 }
 
 .upload-prompt h3 {
   font-size: 18px;
   font-weight: 600;
-  color: #374151;
+  color: var(--color-gray-800);
   margin: 0;
 }
 
 .upload-prompt p {
   font-size: 14px;
-  color: #6b7280;
+  color: var(--color-gray-600);
   margin: 0;
 }
 
 .supported-formats {
   font-size: 12px;
-  color: #9ca3af;
+  color: var(--color-gray-500);
 }
 
 /* ==================== Upload Queue ==================== */
@@ -403,19 +403,19 @@ defineExpose({
   gap: 16px;
   padding: 12px;
   background: white;
-  border: 1px solid #e5e7eb;
+  border: 1px solid var(--color-gray-300);
   border-radius: 8px;
   transition: all 0.2s ease;
 }
 
 .upload-item.status-success {
-  border-color: #10b981;
+  border-color: var(--color-success-500);
   background: #f0fdf4;
 }
 
 .upload-item.status-error {
-  border-color: #ef4444;
-  background: #fef2f2;
+  border-color: var(--color-danger-500);
+  background: var(--color-danger-50);
 }
 
 /* Preview */
@@ -425,7 +425,7 @@ defineExpose({
   height: 60px;
   border-radius: 6px;
   overflow: hidden;
-  background: #f3f4f6;
+  background: var(--color-gray-100);
 }
 
 .preview img {
@@ -440,7 +440,7 @@ defineExpose({
   display: flex;
   align-items: center;
   justify-content: center;
-  color: #9ca3af;
+  color: var(--color-gray-500);
   font-size: 24px;
 }
 
@@ -453,7 +453,7 @@ defineExpose({
 .file-name {
   font-size: 14px;
   font-weight: 600;
-  color: #111827;
+  color: var(--color-gray-900);
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -461,7 +461,7 @@ defineExpose({
 
 .file-size {
   font-size: 12px;
-  color: #6b7280;
+  color: var(--color-gray-600);
   margin-top: 4px;
 }
 
@@ -469,7 +469,7 @@ defineExpose({
 .progress-bar {
   width: 100%;
   height: 4px;
-  background: #e5e7eb;
+  background: var(--color-gray-300);
   border-radius: 2px;
   margin-top: 8px;
   overflow: hidden;
@@ -477,7 +477,7 @@ defineExpose({
 
 .progress-fill {
   height: 100%;
-  background: linear-gradient(90deg, #3b82f6, #2563eb);
+  background: linear-gradient(90deg, var(--color-primary-500), var(--color-primary-600));
   transition: width 0.3s ease;
 }
 
@@ -492,11 +492,11 @@ defineExpose({
 }
 
 .status-message.success {
-  color: #059669;
+  color: var(--color-success-600);
 }
 
 .status-message.error {
-  color: #dc2626;
+  color: var(--color-danger-600);
 }
 
 .status-message i {
@@ -513,8 +513,8 @@ defineExpose({
   height: 32px;
   border: none;
   border-radius: 50%;
-  background: #f3f4f6;
-  color: #6b7280;
+  background: var(--color-gray-100);
+  color: var(--color-gray-600);
   cursor: pointer;
   display: flex;
   align-items: center;
@@ -523,7 +523,7 @@ defineExpose({
 }
 
 .action-btn:hover {
-  background: #dc2626;
+  background: var(--color-danger-600);
   color: white;
 }
 
@@ -533,12 +533,12 @@ defineExpose({
 }
 
 .uploading-spinner i {
-  color: #3b82f6;
+  color: var(--color-primary-500);
   animation: spin 1s linear infinite;
 }
 
 .success-icon i {
-  color: #10b981;
+  color: var(--color-success-500);
 }
 
 @keyframes spin {
@@ -555,10 +555,10 @@ defineExpose({
   gap: 8px;
   width: 100%;
   padding: 12px;
-  border: 2px dashed #d1d5db;
+  border: 2px dashed var(--color-gray-400);
   border-radius: 8px;
   background: white;
-  color: #6b7280;
+  color: var(--color-gray-600);
   font-size: 14px;
   font-weight: 500;
   cursor: pointer;
@@ -566,9 +566,9 @@ defineExpose({
 }
 
 .add-more-btn:hover {
-  border-color: #3b82f6;
-  color: #3b82f6;
-  background: #eff6ff;
+  border-color: var(--color-primary-500);
+  color: var(--color-primary-500);
+  background: var(--color-primary-50);
 }
 
 .add-more-btn i {
@@ -604,16 +604,16 @@ defineExpose({
 }
 
 .btn-secondary {
-  background: #f3f4f6;
-  color: #374151;
+  background: var(--color-gray-100);
+  color: var(--color-gray-800);
 }
 
 .btn-secondary:hover:not(:disabled) {
-  background: #e5e7eb;
+  background: var(--color-gray-300);
 }
 
 .btn-primary {
-  background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
+  background: linear-gradient(135deg, var(--color-primary-500) 0%, var(--color-primary-600) 100%);
   color: white;
 }
 

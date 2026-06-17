@@ -275,7 +275,7 @@ watch(currentDate, async () => {
   background: white;
   border-radius: 20px;
   padding: 2rem;
-  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.06);
+  box-shadow: var(--shadow-sm);
 }
 
 .calendar-header {
@@ -301,12 +301,12 @@ watch(currentDate, async () => {
 .nav-btn svg {
   width: 20px;
   height: 20px;
-  color: #64748b;
+  color: var(--color-gray-600);
 }
 
 .nav-btn:hover {
   background: #f8fafc;
-  border-color: #cbd5e1;
+  border-color: var(--color-gray-400);
 }
 
 .month-year h3 {
@@ -327,7 +327,7 @@ watch(currentDate, async () => {
   text-align: center;
   font-size: 0.875rem;
   font-weight: 700;
-  color: #64748b;
+  color: var(--color-gray-600);
   padding: 0.5rem;
 }
 
@@ -360,12 +360,12 @@ watch(currentDate, async () => {
 }
 
 .calendar-day.today {
-  border-color: #667eea;
+  border-color: var(--color-primary-500);
 }
 
 .calendar-day.selected {
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-  border-color: #667eea;
+  background: linear-gradient(135deg, var(--color-primary-500) 0%, var(--color-primary-700) 100%);
+  border-color: var(--color-primary-500);
   color: white;
 }
 
@@ -410,7 +410,7 @@ watch(currentDate, async () => {
   width: 4px;
   height: 4px;
   border-radius: 50%;
-  background: #10b981;
+  background: var(--color-success-500);
 }
 
 .calendar-day.selected .dot {
@@ -420,7 +420,7 @@ watch(currentDate, async () => {
 .slots-count {
   font-size: 0.625rem;
   font-weight: 600;
-  color: #10b981;
+  color: var(--color-success-500);
 }
 
 .calendar-day.selected .slots-count {
@@ -430,7 +430,7 @@ watch(currentDate, async () => {
 .no-availability {
   font-size: 0.625rem;
   font-weight: 600;
-  color: #ef4444;
+  color: var(--color-danger-500);
 }
 
 .calendar-legend {
@@ -446,7 +446,7 @@ watch(currentDate, async () => {
   align-items: center;
   gap: 0.5rem;
   font-size: 0.875rem;
-  color: #64748b;
+  color: var(--color-gray-600);
 }
 
 .legend-dot {
@@ -456,15 +456,15 @@ watch(currentDate, async () => {
 }
 
 .legend-dot.available {
-  background: #10b981;
+  background: var(--color-success-500);
 }
 
 .legend-dot.booked {
-  background: #ef4444;
+  background: var(--color-danger-500);
 }
 
 .legend-dot.selected {
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: linear-gradient(135deg, var(--color-primary-500) 0%, var(--color-primary-700) 100%);
 }
 
 /* Responsive */

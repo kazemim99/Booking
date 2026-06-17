@@ -280,13 +280,13 @@ watch(
   align-items: center;
   justify-content: space-between;
   padding: 24px;
-  border-bottom: 1px solid #e5e7eb;
+  border-bottom: 1px solid var(--color-gray-300);
 }
 
 .modal-header h2 {
   font-size: 20px;
   font-weight: 700;
-  color: #111827;
+  color: var(--color-gray-900);
   margin: 0;
 }
 
@@ -300,13 +300,13 @@ watch(
   justify-content: center;
   border-radius: 8px;
   cursor: pointer;
-  color: #6b7280;
+  color: var(--color-gray-600);
   transition: all 0.2s ease;
 }
 
 .close-btn:hover:not(:disabled) {
-  background: #f3f4f6;
-  color: #111827;
+  background: var(--color-gray-100);
+  color: var(--color-gray-900);
 }
 
 /* ==================== Modal Content ==================== */
@@ -329,14 +329,14 @@ watch(
   right: 12px;
   top: 50%;
   transform: translateY(-50%);
-  color: #9ca3af;
+  color: var(--color-gray-500);
   font-size: 18px;
 }
 
 .search-box input {
   width: 100%;
   padding: 12px 12px 12px 45px;
-  border: 1px solid #d1d5db;
+  border: 1px solid var(--color-gray-400);
   border-radius: 8px;
   font-size: 14px;
   transition: all 0.2s ease;
@@ -344,7 +344,7 @@ watch(
 
 .search-box input:focus {
   outline: none;
-  border-color: #3b82f6;
+  border-color: var(--color-primary-500);
   box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
 }
 
@@ -360,7 +360,7 @@ watch(
   align-items: flex-start;
   gap: 16px;
   padding: 16px;
-  border: 2px solid #e5e7eb;
+  border: 2px solid var(--color-gray-300);
   border-radius: 12px;
   cursor: pointer;
   transition: all 0.2s ease;
@@ -368,13 +368,13 @@ watch(
 }
 
 .staff-item:hover {
-  border-color: #d1d5db;
-  background: #f9fafb;
+  border-color: var(--color-gray-400);
+  background: var(--color-gray-50);
 }
 
 .staff-item.selected {
-  border-color: #3b82f6;
-  background: #eff6ff;
+  border-color: var(--color-primary-500);
+  background: var(--color-primary-50);
 }
 
 /* Avatar */
@@ -392,7 +392,7 @@ watch(
 }
 
 .avatar-placeholder {
-  background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%);
+  background: linear-gradient(135deg, var(--color-primary-500) 0%, var(--color-primary-500) 100%);
   color: white;
   display: flex;
   align-items: center;
@@ -405,7 +405,7 @@ watch(
   position: absolute;
   bottom: -4px;
   right: -4px;
-  background: #dc2626;
+  background: var(--color-danger-600);
   color: white;
   font-size: 10px;
   padding: 2px 6px;
@@ -430,7 +430,7 @@ watch(
 .staff-name {
   font-size: 16px;
   font-weight: 600;
-  color: #111827;
+  color: var(--color-gray-900);
   margin: 0;
 }
 
@@ -438,7 +438,7 @@ watch(
   display: inline-flex;
   padding: 4px 8px;
   background: #e0e7ff;
-  color: #4338ca;
+  color: var(--color-primary-700);
   font-size: 12px;
   font-weight: 500;
   border-radius: 4px;
@@ -456,7 +456,7 @@ watch(
   align-items: center;
   gap: 6px;
   font-size: 13px;
-  color: #6b7280;
+  color: var(--color-gray-600);
 }
 
 .detail-item i {
@@ -465,7 +465,7 @@ watch(
 
 .staff-bio {
   font-size: 13px;
-  color: #6b7280;
+  color: var(--color-gray-600);
   margin: 0;
   line-height: 1.5;
   overflow: hidden;
@@ -479,7 +479,7 @@ watch(
   display: none;
   width: 32px;
   height: 32px;
-  background: #3b82f6;
+  background: var(--color-primary-500);
   color: white;
   border-radius: 50%;
   align-items: center;
@@ -505,14 +505,14 @@ watch(
   justify-content: center;
   padding: 48px 24px;
   text-align: center;
-  color: #6b7280;
+  color: var(--color-gray-600);
 }
 
 .spinner {
   width: 40px;
   height: 40px;
-  border: 3px solid #e5e7eb;
-  border-top-color: #3b82f6;
+  border: 3px solid var(--color-gray-300);
+  border-top-color: var(--color-primary-500);
   border-radius: 50%;
   animation: spin 0.8s linear infinite;
   margin-bottom: 16px;
@@ -528,13 +528,13 @@ watch(
 .empty-container i {
   font-size: 48px;
   margin-bottom: 16px;
-  color: #9ca3af;
+  color: var(--color-gray-500);
 }
 
 .retry-btn {
   margin-top: 16px;
   padding: 8px 16px;
-  background: #3b82f6;
+  background: var(--color-primary-500);
   color: white;
   border: none;
   border-radius: 6px;
@@ -544,7 +544,7 @@ watch(
 }
 
 .retry-btn:hover {
-  background: #2563eb;
+  background: var(--color-primary-600);
 }
 
 /* ==================== Modal Footer ==================== */
@@ -555,7 +555,7 @@ watch(
   justify-content: flex-end;
   gap: 12px;
   padding: 20px 24px;
-  border-top: 1px solid #e5e7eb;
+  border-top: 1px solid var(--color-gray-300);
 }
 
 .btn {
@@ -579,16 +579,16 @@ watch(
 }
 
 .btn-secondary {
-  background: #f3f4f6;
-  color: #374151;
+  background: var(--color-gray-100);
+  color: var(--color-gray-800);
 }
 
 .btn-secondary:hover:not(:disabled) {
-  background: #e5e7eb;
+  background: var(--color-gray-300);
 }
 
 .btn-primary {
-  background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
+  background: linear-gradient(135deg, var(--color-primary-500) 0%, var(--color-primary-600) 100%);
   color: white;
 }
 

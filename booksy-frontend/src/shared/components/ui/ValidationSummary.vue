@@ -47,8 +47,8 @@ const errorList = computed(() => {
 <style scoped lang="scss">
 .validation-summary {
   padding: 1rem;
-  background-color: #fef2f2;
-  border: 1px solid #fecaca;
+  background-color: var(--color-danger-50);
+  border: 1px solid var(--color-danger-50);
   border-radius: 8px;
   margin-bottom: 1.5rem;
 }
@@ -67,7 +67,7 @@ const errorList = computed(() => {
 .summary-title {
   font-size: 0.875rem;
   font-weight: 600;
-  color: #991b1b;
+  color: var(--color-danger-600);
   margin: 0;
 }
 
@@ -79,7 +79,7 @@ const errorList = computed(() => {
 
 .error-item {
   font-size: 0.875rem;
-  color: #991b1b;
+  color: var(--color-danger-600);
   padding: 0.25rem 0;
   padding-left: 1.75rem;
   position: relative;

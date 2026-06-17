@@ -129,7 +129,7 @@ const emptyStateClasses = computed(() => [
   align-items: center;
   justify-content: center;
   margin-bottom: 1.5rem;
-  color: #9ca3af;
+  color: var(--color-gray-500);
 
   .default-icon {
     width: 100%;
@@ -147,12 +147,12 @@ const emptyStateClasses = computed(() => [
 
 .empty-state-title {
   font-weight: 600;
-  color: #1f2937;
+  color: var(--color-gray-900);
   margin: 0 0 0.5rem 0;
 }
 
 .empty-state-description {
-  color: #6b7280;
+  color: var(--color-gray-600);
   margin: 0 0 1.5rem 0;
   line-height: 1.6;
 }

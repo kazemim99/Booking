@@ -93,7 +93,7 @@ function isActive(path: string): boolean {
   align-items: center;
   gap: 0.5rem;
   padding: 0.5rem 1rem;
-  color: #6b7280;
+  color: var(--color-gray-600);
   text-decoration: none;
   border-radius: 8px;
   font-weight: 500;
@@ -102,13 +102,13 @@ function isActive(path: string): boolean {
   white-space: nowrap;
 
   &:hover {
-    background: #f3f4f6;
-    color: #667eea;
+    background: var(--color-gray-100);
+    color: var(--color-primary-500);
   }
 
   &.active {
-    color: #667eea;
-    background: #ede9fe;
+    color: var(--color-primary-500);
+    background: var(--color-primary-50);
     font-weight: 600;
   }
 }

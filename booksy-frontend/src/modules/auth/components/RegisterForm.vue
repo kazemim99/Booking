@@ -345,7 +345,7 @@ async function onFormSubmit() {
 .form-title {
   font-size: 1.875rem;
   font-weight: 700;
-  color: #1f2937;
+  color: var(--color-gray-900);
   margin-bottom: 0.5rem;
   text-align: center;
 
@@ -356,7 +356,7 @@ async function onFormSubmit() {
 
 .form-subtitle {
   font-size: 0.875rem;
-  color: #6b7280;
+  color: var(--color-gray-600);
   margin-bottom: 2rem;
   text-align: center;
 }
@@ -380,7 +380,7 @@ async function onFormSubmit() {
   display: block;
   font-size: 0.875rem;
   font-weight: 500;
-  color: #374151;
+  color: var(--color-gray-800);
   margin-bottom: 0.5rem;
 
   @include text-align-start;
@@ -398,12 +398,12 @@ async function onFormSubmit() {
   cursor: pointer;
 
   &.active .radio-content {
-    border-color: #667eea;
+    border-color: var(--color-primary-500);
     background: rgba(102, 126, 234, 0.05);
   }
 
   &:hover .radio-content {
-    border-color: #667eea;
+    border-color: var(--color-primary-500);
   }
 }
 
@@ -419,7 +419,7 @@ async function onFormSubmit() {
   flex-direction: column;
   align-items: center;
   padding: 1.5rem 1rem;
-  border: 2px solid #d1d5db;
+  border: 2px solid var(--color-gray-400);
   border-radius: 8px;
   transition: all 0.2s;
 }
@@ -432,7 +432,7 @@ async function onFormSubmit() {
 .radio-label {
   font-size: 0.875rem;
   font-weight: 500;
-  color: #374151;
+  color: var(--color-gray-800);
 }
 
 .checkbox-wrapper {
@@ -440,7 +440,7 @@ async function onFormSubmit() {
   align-items: flex-start;
   gap: 0.5rem;
   font-size: 0.875rem;
-  color: #374151;
+  color: var(--color-gray-800);
   cursor: pointer;
 
   &.terms-wrapper {
@@ -453,7 +453,7 @@ async function onFormSubmit() {
   height: 1rem;
   margin-top: 0.125rem;
   cursor: pointer;
-  accent-color: #667eea;
+  accent-color: var(--color-primary-500);
   flex-shrink: 0;
 
   &:disabled {
@@ -462,12 +462,12 @@ async function onFormSubmit() {
 }
 
 .link-primary {
-  color: #667eea;
+  color: var(--color-primary-500);
   text-decoration: none;
   font-weight: 500;
 
   &:hover {
-    color: #764ba2;
+    color: var(--color-primary-700);
     text-decoration: underline;
   }
 }
@@ -476,7 +476,7 @@ async function onFormSubmit() {
   margin-top: 1.5rem;
   text-align: center;
   font-size: 0.875rem;
-  color: #6b7280;
+  color: var(--color-gray-600);
 
   p {
     margin: 0;

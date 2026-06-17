@@ -139,7 +139,7 @@ const handleSubmit = () => {
 .registration-step {
   min-height: 100vh;
   padding: 2rem 1rem;
-  background: #f9fafb;
+  background: var(--color-gray-50);
   direction: rtl;
 }
 
@@ -148,7 +148,7 @@ const handleSubmit = () => {
   margin: 0 auto;
   background: white;
   border-radius: 1rem;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  box-shadow: var(--shadow-sm);
   padding: 2rem;
 }
 
@@ -171,19 +171,19 @@ const handleSubmit = () => {
 .icon {
   width: 2rem;
   height: 2rem;
-  color: #8b5cf6;
+  color: var(--color-primary-500);
 }
 
 .step-title {
   font-size: 1.5rem;
   font-weight: 700;
-  color: #111827;
+  color: var(--color-gray-900);
   margin: 0 0 0.5rem 0;
 }
 
 .step-description {
   font-size: 0.875rem;
-  color: #6b7280;
+  color: var(--color-gray-600);
   margin: 0;
 }
 
@@ -202,7 +202,7 @@ const handleSubmit = () => {
 .section-label {
   font-size: 0.875rem;
   font-weight: 500;
-  color: #111827;
+  color: var(--color-gray-900);
 }
 
 .options-grid {
@@ -213,7 +213,7 @@ const handleSubmit = () => {
 
 .option-button {
   padding: 0.75rem;
-  border: 2px solid #d1d5db;
+  border: 2px solid var(--color-gray-400);
   border-radius: 0.5rem;
   background: white;
   cursor: pointer;
@@ -226,7 +226,7 @@ const handleSubmit = () => {
 }
 
 .option-button.selected {
-  border-color: #8b5cf6;
+  border-color: var(--color-primary-500);
   background: rgba(139, 92, 246, 0.05);
 }
 
@@ -249,8 +249,8 @@ const handleSubmit = () => {
 }
 
 .checkbox.checked {
-  border-color: #8b5cf6;
-  background: #8b5cf6;
+  border-color: var(--color-primary-500);
+  background: var(--color-primary-500);
 }
 
 .check-icon {
@@ -263,14 +263,14 @@ const handleSubmit = () => {
 .option-text {
   flex: 1;
   font-size: 0.875rem;
-  color: #111827;
+  color: var(--color-gray-900);
 }
 
 .feedback-textarea {
   width: 100%;
   min-height: 120px;
   padding: 0.75rem;
-  border: 1px solid #d1d5db;
+  border: 1px solid var(--color-gray-400);
   border-radius: 0.5rem;
   font-size: 0.875rem;
   line-height: 1.5;
@@ -281,17 +281,17 @@ const handleSubmit = () => {
 
 .feedback-textarea:focus {
   outline: none;
-  border-color: #8b5cf6;
+  border-color: var(--color-primary-500);
   box-shadow: 0 0 0 3px rgba(139, 92, 246, 0.1);
 }
 
 .feedback-textarea::placeholder {
-  color: #9ca3af;
+  color: var(--color-gray-500);
 }
 
 .helper-text {
   font-size: 0.75rem;
-  color: #6b7280;
+  color: var(--color-gray-600);
   margin: 0;
 }
 
@@ -303,7 +303,7 @@ const handleSubmit = () => {
 
 .info-text {
   font-size: 0.875rem;
-  color: #111827;
+  color: var(--color-gray-900);
   margin: 0;
 }
 
@@ -316,7 +316,7 @@ const handleSubmit = () => {
   grid-template-columns: 1fr 1fr;
   gap: 1rem;
   padding-top: 1.5rem;
-  border-top: 1px solid #e5e7eb;
+  border-top: 1px solid var(--color-gray-300);
 }
 
 @media (max-width: 640px) {

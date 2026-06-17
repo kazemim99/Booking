@@ -222,12 +222,12 @@ defineExpose({
   outline: none;
 
   &:focus {
-    border-color: #667eea;
+    border-color: var(--color-primary-500);
     box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
   }
 
   &.is-filled {
-    border-color: #667eea;
+    border-color: var(--color-primary-500);
     background-color: #f7fafc;
   }
 

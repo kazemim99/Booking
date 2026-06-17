@@ -7,6 +7,10 @@ import { authApi } from '@/modules/auth/api/auth.api'
 import { providerService } from '@/modules/provider/services/provider.service'
 import { ProviderStatus } from '@/modules/provider/types/provider.types'
 
+// Diagnostic logging is dev-only; decoded JWT claims/derived identity must never be
+// written to the console in production.
+const isDev = Boolean(import.meta.env?.DEV)
+
 interface ValidationErrors {
   [key: string]: string[]
 }
@@ -67,8 +71,6 @@ export const useAuthStore = defineStore('auth', () => {
 
       // Decode payload (base64url)
       const payload = JSON.parse(atob(parts[1].replace(/-/g, '+').replace(/_/g, '/')))
-
-      console.log('[AuthStore] Decoded token payload:', payload)
 
       return {
         userId: payload.sub || payload.nameid || payload['http://schemas.xmlsoap.org/ws/2005/05/identity/claims/nameidentifier'],
@@ -154,7 +156,7 @@ export const useAuthStore = defineStore('auth', () => {
                           roles.includes('Client') ||
                           tokenData.userType === 'Customer'
 
-        console.log('[AuthStore] Token user type:', {
+        if (isDev) console.log('[AuthStore] Token user type:', {
           userType: tokenData.userType,
           roles: roles,
           isProvider,
@@ -165,15 +167,15 @@ export const useAuthStore = defineStore('auth', () => {
         if (isProvider) {
           const providerInfo = decodeTokenAndExtractProviderInfo(newToken)
           if (providerInfo) {
-            console.log('[AuthStore] ✅ Provider info extracted from token:', providerInfo)
+            if (isDev) console.log('[AuthStore] ✅ Provider info extracted from token:', providerInfo)
             setProviderStatus(providerInfo.providerStatus as ProviderStatus, providerInfo.providerId)
           } else {
-            console.log('[AuthStore] ℹ️ Provider user but no provider profile yet')
+            if (isDev) console.log('[AuthStore] ℹ️ Provider user but no provider profile yet')
             setProviderStatus(null, null)
           }
         } else if (isCustomer) {
           const customerInfo = decodeTokenAndExtractCustomerInfo(newToken)
-          console.log('[AuthStore] ✅ Customer info extracted from token:', customerInfo)
+          if (isDev) console.log('[AuthStore] ✅ Customer info extracted from token:', customerInfo)
           // For customers, explicitly set provider status to null (they don't have providers)
           setProviderStatus(null, null)
           // Store customerId
@@ -639,7 +641,7 @@ export const useAuthStore = defineStore('auth', () => {
 
       const response = await providerService.refreshProviderToken()
 
-      console.log('[AuthStore] Provider token refreshed:', {
+      if (isDev) console.log('[AuthStore] Provider token refreshed:', {
         providerId: response.providerId,
         providerStatus: response.providerStatus,
       })
@@ -653,7 +655,7 @@ export const useAuthStore = defineStore('auth', () => {
       // Extract and update provider info from the new token
       const providerInfo = decodeTokenAndExtractProviderInfo(response.accessToken)
       if (providerInfo) {
-        console.log('[AuthStore] ✅ Provider info updated from refreshed token:', providerInfo)
+        if (isDev) console.log('[AuthStore] ✅ Provider info updated from refreshed token:', providerInfo)
         setProviderStatus(providerInfo.providerStatus as ProviderStatus, providerInfo.providerId)
       }
 
@@ -689,7 +691,7 @@ export const useAuthStore = defineStore('auth', () => {
                             roles.includes('Client') ||
                             tokenData.userType === 'Customer'
 
-          console.log('[AuthStore] Loading from storage - user type:', {
+          if (isDev) console.log('[AuthStore] Loading from storage - user type:', {
             userType: tokenData.userType,
             roles: roles,
             isProvider,
@@ -700,21 +702,21 @@ export const useAuthStore = defineStore('auth', () => {
           if (isProvider) {
             const providerInfo = decodeTokenAndExtractProviderInfo(storedToken)
             if (providerInfo) {
-              console.log('[AuthStore] ✅ Provider info loaded from stored token:', providerInfo)
+              if (isDev) console.log('[AuthStore] ✅ Provider info loaded from stored token:', providerInfo)
               setProviderStatus(providerInfo.providerStatus as ProviderStatus, providerInfo.providerId)
             } else {
-              console.log('[AuthStore] ℹ️ Provider user but no provider profile in token')
+              if (isDev) console.log('[AuthStore] ℹ️ Provider user but no provider profile in token')
               setProviderStatus(null, null)
             }
           } else if (isCustomer) {
             const customerInfo = decodeTokenAndExtractCustomerInfo(storedToken)
-            console.log('[AuthStore] ✅ Customer info loaded from stored token:', customerInfo)
+            if (isDev) console.log('[AuthStore] ✅ Customer info loaded from stored token:', customerInfo)
             // For customers, explicitly set provider status to null
             setProviderStatus(null, null)
             // Store customerId
             if (customerInfo?.customerId) {
               customerId.value = customerInfo.customerId
-              console.log('[AuthStore] ✅ CustomerId loaded:', customerInfo.customerId)
+              if (isDev) console.log('[AuthStore] ✅ CustomerId loaded:', customerInfo.customerId)
             }
           }
         }

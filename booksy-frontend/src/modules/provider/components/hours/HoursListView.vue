@@ -241,7 +241,7 @@ function handleBreakChange(dayIndex: number, breakIndex: number, field: 'startTi
 <style scoped>
 .hours-list-view {
   background: white;
-  border: 1px solid #e5e7eb;
+  border: 1px solid var(--color-gray-300);
   border-radius: 0.5rem;
   overflow: hidden;
 }
@@ -251,15 +251,15 @@ function handleBreakChange(dayIndex: number, breakIndex: number, field: 'startTi
   justify-content: space-between;
   align-items: center;
   padding: 1rem;
-  border-bottom: 1px solid #e5e7eb;
-  background-color: #f9fafb;
+  border-bottom: 1px solid var(--color-gray-300);
+  background-color: var(--color-gray-50);
 }
 
 .list-title {
   font-size: 1.125rem;
   font-weight: 600;
   margin: 0;
-  color: #111827;
+  color: var(--color-gray-900);
 }
 
 .quick-actions {
@@ -269,26 +269,26 @@ function handleBreakChange(dayIndex: number, breakIndex: number, field: 'startTi
 
 .action-btn {
   padding: 0.5rem 0.75rem;
-  border: 1px solid #d1d5db;
+  border: 1px solid var(--color-gray-400);
   background: white;
   border-radius: 0.375rem;
   font-size: 0.875rem;
   font-weight: 500;
-  color: #111827;
+  color: var(--color-gray-900);
   cursor: pointer;
   transition: all 0.2s;
 }
 
 .action-btn:hover {
-  border-color: #3b82f6;
-  background: #eff6ff;
-  color: #3b82f6;
+  border-color: var(--color-primary-500);
+  background: var(--color-primary-50);
+  color: var(--color-primary-500);
 }
 
 .action-btn.danger:hover {
-  border-color: #ef4444;
-  background: #fef2f2;
-  color: #ef4444;
+  border-color: var(--color-danger-500);
+  background: var(--color-danger-50);
+  color: var(--color-danger-500);
 }
 
 .days-list {
@@ -299,19 +299,19 @@ function handleBreakChange(dayIndex: number, breakIndex: number, field: 'startTi
 }
 
 .day-item {
-  border: 1px solid #e5e7eb;
+  border: 1px solid var(--color-gray-300);
   border-radius: 0.5rem;
   overflow: hidden;
   transition: all 0.2s;
 }
 
 .day-item:hover {
-  border-color: #d1d5db;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+  border-color: var(--color-gray-400);
+  box-shadow: var(--shadow-sm);
 }
 
 .day-item.day-closed {
-  background-color: #f9fafb;
+  background-color: var(--color-gray-50);
 }
 
 .day-item-header {
@@ -319,8 +319,8 @@ function handleBreakChange(dayIndex: number, breakIndex: number, field: 'startTi
   justify-content: space-between;
   align-items: center;
   padding: 1rem;
-  background-color: #f3f4f6;
-  border-bottom: 1px solid #e5e7eb;
+  background-color: var(--color-gray-100);
+  border-bottom: 1px solid var(--color-gray-300);
 }
 
 .day-closed .day-item-header {
@@ -337,16 +337,16 @@ function handleBreakChange(dayIndex: number, breakIndex: number, field: 'startTi
   font-size: 1rem;
   font-weight: 600;
   margin: 0;
-  color: #111827;
+  color: var(--color-gray-900);
 }
 
 .day-status {
   padding: 0.25rem 0.5rem;
-  background-color: #e5e7eb;
+  background-color: var(--color-gray-300);
   border-radius: 0.25rem;
   font-size: 0.75rem;
   font-weight: 500;
-  color: #6b7280;
+  color: var(--color-gray-600);
 }
 
 .day-item:not(.day-closed) .day-status {
@@ -374,7 +374,7 @@ function handleBreakChange(dayIndex: number, breakIndex: number, field: 'startTi
   left: 0;
   right: 0;
   bottom: 0;
-  background-color: #e5e7eb;
+  background-color: var(--color-gray-300);
   border-radius: 1.5rem;
   transition: all 0.2s;
 }
@@ -392,7 +392,7 @@ function handleBreakChange(dayIndex: number, breakIndex: number, field: 'startTi
 }
 
 .toggle input:checked + .toggle-slider {
-  background-color: #10b981;
+  background-color: var(--color-success-500);
 }
 
 .toggle input:checked + .toggle-slider:before {
@@ -408,7 +408,7 @@ function handleBreakChange(dayIndex: number, breakIndex: number, field: 'startTi
 
 .hours-section {
   padding-bottom: 1rem;
-  border-bottom: 1px dashed #e5e7eb;
+  border-bottom: 1px dashed var(--color-gray-300);
 }
 
 .time-input-group {
@@ -427,22 +427,22 @@ function handleBreakChange(dayIndex: number, breakIndex: number, field: 'startTi
 .time-field label {
   font-size: 0.875rem;
   font-weight: 500;
-  color: #6b7280;
+  color: var(--color-gray-600);
 }
 
 .time-field select {
   padding: 0.5rem;
-  border: 1px solid #d1d5db;
+  border: 1px solid var(--color-gray-400);
   border-radius: 0.375rem;
   font-size: 0.875rem;
-  color: #111827;
+  color: var(--color-gray-900);
   background-color: white;
   cursor: pointer;
 }
 
 .time-separator {
   padding-bottom: 0.5rem;
-  color: #9ca3af;
+  color: var(--color-gray-500);
   font-weight: 500;
 }
 
@@ -462,25 +462,25 @@ function handleBreakChange(dayIndex: number, breakIndex: number, field: 'startTi
   font-size: 0.875rem;
   font-weight: 600;
   margin: 0;
-  color: #4b5563;
+  color: var(--color-gray-700);
 }
 
 .add-break-btn {
   padding: 0.375rem 0.75rem;
-  border: 1px solid #d1d5db;
+  border: 1px solid var(--color-gray-400);
   background: white;
   border-radius: 0.375rem;
   font-size: 0.75rem;
   font-weight: 500;
-  color: #111827;
+  color: var(--color-gray-900);
   cursor: pointer;
   transition: all 0.2s;
 }
 
 .add-break-btn:hover:not(:disabled) {
-  border-color: #3b82f6;
-  background: #eff6ff;
-  color: #3b82f6;
+  border-color: var(--color-primary-500);
+  background: var(--color-primary-50);
+  color: var(--color-primary-500);
 }
 
 .add-break-btn:disabled {
@@ -491,9 +491,9 @@ function handleBreakChange(dayIndex: number, breakIndex: number, field: 'startTi
 .no-breaks {
   text-align: center;
   padding: 0.75rem;
-  color: #9ca3af;
+  color: var(--color-gray-500);
   font-style: italic;
-  background-color: #f9fafb;
+  background-color: var(--color-gray-50);
   border-radius: 0.375rem;
   font-size: 0.875rem;
 }
@@ -506,9 +506,9 @@ function handleBreakChange(dayIndex: number, breakIndex: number, field: 'startTi
 
 .break-item {
   padding: 0.75rem;
-  background-color: #f9fafb;
+  background-color: var(--color-gray-50);
   border-radius: 0.375rem;
-  border: 1px solid #e5e7eb;
+  border: 1px solid var(--color-gray-300);
 }
 
 .remove-btn {
@@ -518,10 +518,10 @@ function handleBreakChange(dayIndex: number, breakIndex: number, field: 'startTi
   align-items: center;
   justify-content: center;
   border: 1px solid #fca5a5;
-  background: #fef2f2;
+  background: var(--color-danger-50);
   border-radius: 0.375rem;
   font-size: 1.5rem;
-  color: #ef4444;
+  color: var(--color-danger-500);
   cursor: pointer;
   transition: all 0.2s;
   flex-shrink: 0;
@@ -530,7 +530,7 @@ function handleBreakChange(dayIndex: number, breakIndex: number, field: 'startTi
 }
 
 .remove-btn:hover {
-  background: #ef4444;
+  background: var(--color-danger-500);
   color: white;
 }
 

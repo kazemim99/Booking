@@ -46,7 +46,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref } from 'vue'
+import { ref, watch } from 'vue'
 
 import AppButton from '@/shared/components/ui/Button/AppButton.vue'
 
@@ -64,6 +64,13 @@ const props = defineProps<Props>()
 const emit = defineEmits<Emits>()
 
 const selectedCategory = ref(props.modelValue || null)
+
+// Watch for changes in modelValue (when draft is loaded)
+watch(() => props.modelValue, (newValue) => {
+  if (newValue) {
+    selectedCategory.value = newValue
+  }
+}, { immediate: true })
 
 const categories = [
   { id: 'hair_salon', name: 'آریشگاه زنانه', icon: '💇‍♀️' },
@@ -92,7 +99,7 @@ const handleNext = () => {
 .registration-step {
   min-height: 100vh;
   padding: 2rem 1rem;
-  background: #f9fafb;
+  background: var(--color-gray-50);
   direction: rtl;
 }
 
@@ -101,7 +108,7 @@ const handleNext = () => {
   margin: 0 auto;
   background: white;
   border-radius: 1rem;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  box-shadow: var(--shadow-sm);
   padding: 2rem;
 }
 
@@ -112,13 +119,13 @@ const handleNext = () => {
 .step-title {
   font-size: 1.5rem;
   font-weight: 700;
-  color: #111827;
+  color: var(--color-gray-900);
   margin-bottom: 0.5rem;
 }
 
 .step-description {
   font-size: 0.875rem;
-  color: #6b7280;
+  color: var(--color-gray-600);
 }
 
 .categories-grid {
@@ -130,7 +137,7 @@ const handleNext = () => {
 
 .category-card {
   padding: 1.5rem 1rem;
-  border: 2px solid #e5e7eb;
+  border: 2px solid var(--color-gray-300);
   border-radius: 0.75rem;
   cursor: pointer;
   transition: all 0.2s ease;
@@ -138,12 +145,12 @@ const handleNext = () => {
 }
 
 .category-card:hover {
-  border-color: #8b5cf6;
+  border-color: var(--color-primary-500);
   background: rgba(139, 92, 246, 0.05);
 }
 
 .category-card.selected {
-  border-color: #8b5cf6;
+  border-color: var(--color-primary-500);
   background: rgba(139, 92, 246, 0.1);
 }
 
@@ -155,7 +162,7 @@ const handleNext = () => {
 .category-name {
   font-size: 0.875rem;
   font-weight: 500;
-  color: #374151;
+  color: var(--color-gray-800);
 }
 
 .step-actions {
@@ -164,7 +171,7 @@ const handleNext = () => {
   gap: 1rem;
   margin-top: 1.5rem;
   padding-top: 1.5rem;
-  border-top: 1px solid #e5e7eb;
+  border-top: 1px solid var(--color-gray-300);
 }
 
 @media (max-width: 640px) {

@@ -113,7 +113,7 @@ onUnmounted(() => {
 .modal {
   background: white;
   border-radius: 12px;
-  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+  box-shadow: var(--shadow-lg);
   max-height: 90vh;
   display: flex;
   flex-direction: column;
@@ -145,13 +145,13 @@ onUnmounted(() => {
   justify-content: space-between;
   align-items: center;
   padding: 1.5rem;
-  border-bottom: 1px solid #e5e7eb;
+  border-bottom: 1px solid var(--color-gray-300);
 }
 
 .modal-title {
   font-size: 1.5rem;
   font-weight: 600;
-  color: #1f2937;
+  color: var(--color-gray-900);
   margin: 0;
 }
 
@@ -159,14 +159,14 @@ onUnmounted(() => {
   background: none;
   border: none;
   font-size: 1.5rem;
-  color: #6b7280;
+  color: var(--color-gray-600);
   cursor: pointer;
   padding: 0.25rem;
   line-height: 1;
   transition: color 0.2s;
 
   &:hover {
-    color: #1f2937;
+    color: var(--color-gray-900);
   }
 }
 
@@ -178,7 +178,7 @@ onUnmounted(() => {
 
 .modal-footer {
   padding: 1rem 1.5rem;
-  border-top: 1px solid #e5e7eb;
+  border-top: 1px solid var(--color-gray-300);
   display: flex;
   justify-content: flex-end;
   gap: 0.75rem;

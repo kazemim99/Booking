@@ -179,8 +179,8 @@ import { computed } from 'vue'
   align-items: center;
   justify-content: center;
   padding: 4rem 2rem;
-  background-color: #f9fafb;
-  border: 2px dashed #d1d5db;
+  background-color: var(--color-gray-50);
+  border: 2px dashed var(--color-gray-400);
   border-radius: 0.75rem;
   text-align: center;
 }
@@ -188,20 +188,20 @@ import { computed } from 'vue'
 .empty-icon {
   width: 4rem;
   height: 4rem;
-  color: #9ca3af;
+  color: var(--color-gray-500);
   margin-bottom: 1rem;
 }
 
 .empty-title {
   font-size: 1.25rem;
   font-weight: 600;
-  color: #111827;
+  color: var(--color-gray-900);
   margin: 0 0 0.5rem 0;
 }
 
 .empty-description {
   font-size: 0.875rem;
-  color: #6b7280;
+  color: var(--color-gray-600);
   margin: 0;
   max-width: 400px;
 }
@@ -231,7 +231,7 @@ import { computed } from 'vue'
 
 .skeleton-image {
   aspect-ratio: 1 / 1;
-  background: linear-gradient(90deg, #f3f4f6 25%, #e5e7eb 50%, #f3f4f6 75%);
+  background: linear-gradient(90deg, var(--color-gray-100) 25%, var(--color-gray-300) 50%, var(--color-gray-100) 75%);
   background-size: 200% 100%;
   animation: shimmer 1.5s infinite;
   border-radius: 0.5rem;
@@ -239,7 +239,7 @@ import { computed } from 'vue'
 
 .skeleton-caption {
   height: 1.25rem;
-  background: linear-gradient(90deg, #f3f4f6 25%, #e5e7eb 50%, #f3f4f6 75%);
+  background: linear-gradient(90deg, var(--color-gray-100) 25%, var(--color-gray-300) 50%, var(--color-gray-100) 75%);
   background-size: 200% 100%;
   animation: shimmer 1.5s infinite;
   border-radius: 0.25rem;

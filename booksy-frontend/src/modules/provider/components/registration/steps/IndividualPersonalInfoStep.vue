@@ -389,7 +389,7 @@ watch(
     transition: all 0.2s ease;
 
     &:hover {
-      background: #dc2626;
+      background: var(--color-danger-600);
       transform: scale(1.1);
     }
   }
@@ -398,15 +398,15 @@ watch(
 .avatar-placeholder {
   width: 150px;
   height: 150px;
-  background: #f3f4f6;
-  border: 2px dashed #d1d5db;
+  background: var(--color-gray-100);
+  border: 2px dashed var(--color-gray-400);
   border-radius: 50%;
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
   gap: 0.5rem;
-  color: #6b7280;
+  color: var(--color-gray-600);
   cursor: pointer;
   transition: all 0.2s ease;
 
@@ -415,15 +415,15 @@ watch(
   }
 
   &:hover {
-    border-color: #7c3aed;
-    color: #7c3aed;
+    border-color: var(--color-primary-700);
+    color: var(--color-primary-700);
     background: #f8f5ff;
   }
 }
 
 .upload-hint {
   font-size: 0.75rem;
-  color: #9ca3af;
+  color: var(--color-gray-500);
   margin-top: 0.25rem;
 }
 
@@ -444,7 +444,7 @@ watch(
   align-items: center;
   gap: 0.5rem;
   padding: 0.5rem 1rem;
-  background: #ede9fe;
+  background: var(--color-primary-50);
   color: #6b21a8;
   border-radius: 20px;
   font-size: 0.875rem;

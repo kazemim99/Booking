@@ -632,19 +632,19 @@ function resetPasswordForm() {
   border-radius: 3px;
 
   &.weak {
-    background: #ef4444;
+    background: var(--color-danger-500);
   }
 
   &.fair {
-    background: #f59e0b;
+    background: var(--color-warning-500);
   }
 
   &.good {
-    background: #3b82f6;
+    background: var(--color-primary-500);
   }
 
   &.strong {
-    background: #10b981;
+    background: var(--color-success-500);
   }
 }
 
@@ -653,19 +653,19 @@ function resetPasswordForm() {
   font-weight: 500;
 
   &.weak {
-    color: #ef4444;
+    color: var(--color-danger-500);
   }
 
   &.fair {
-    color: #f59e0b;
+    color: var(--color-warning-500);
   }
 
   &.good {
-    color: #3b82f6;
+    color: var(--color-primary-500);
   }
 
   &.strong {
-    color: #10b981;
+    color: var(--color-success-500);
   }
 }
 
@@ -688,15 +688,15 @@ function resetPasswordForm() {
   font-size: 0.875rem;
 
   svg {
-    color: #cbd5e1;
+    color: var(--color-gray-400);
     flex-shrink: 0;
   }
 
   &.met {
-    color: #10b981;
+    color: var(--color-success-500);
 
     svg {
-      color: #10b981;
+      color: var(--color-success-500);
     }
   }
 }
@@ -715,11 +715,11 @@ function resetPasswordForm() {
   align-items: center;
   gap: 0.5rem;
   font-weight: 600;
-  color: #059669;
+  color: var(--color-success-600);
   margin-bottom: 1rem;
 
   svg {
-    color: #059669;
+    color: var(--color-success-600);
   }
 }
 

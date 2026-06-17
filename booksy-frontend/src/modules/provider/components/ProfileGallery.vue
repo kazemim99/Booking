@@ -79,15 +79,15 @@ function handleUploadError(err: Error): void {
 }
 
 .alert-error {
-  background-color: #fef2f2;
+  background-color: var(--color-danger-50);
   border: 1px solid #fecaca;
-  color: #dc2626;
+  color: var(--color-danger-600);
 }
 
 .alert-success {
   background-color: #f0fdf4;
   border: 1px solid #bbf7d0;
-  color: #16a34a;
+  color: var(--color-success-600);
 }
 
 .alert-icon {

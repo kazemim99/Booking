@@ -68,13 +68,14 @@ function handleClick(event: MouseEvent) {
 
 <style scoped lang="scss">
 .card {
-  background: white;
-  border-radius: 12px;
+  background: var(--color-background);
+  border-radius: var(--radius-2xl); /* 16px - Coliride content card */
   overflow: hidden;
-  transition: all 0.3s ease;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
 
+  /* Coliride defines depth with borders, not shadows */
   &-bordered {
-    border: 1px solid #e5e7eb;
+    border: 1px solid var(--color-border); /* #e5e9f2 */
   }
 
   &-shadow {
@@ -83,21 +84,21 @@ function handleClick(event: MouseEvent) {
     }
 
     &-small {
-      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+      box-shadow: var(--shadow-sm);
     }
 
     &-medium {
-      box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+      box-shadow: var(--shadow-md);
     }
 
     &-large {
-      box-shadow: 0 10px 25px rgba(0, 0, 0, 0.15);
+      box-shadow: var(--shadow-lg);
     }
   }
 
   &-hoverable:hover {
-    transform: translateY(-4px);
-    box-shadow: 0 12px 30px rgba(0, 0, 0, 0.2);
+    border-color: var(--color-border-dark);
+    box-shadow: var(--shadow-lg);
   }
 
   &-clickable {
@@ -110,13 +111,13 @@ function handleClick(event: MouseEvent) {
   justify-content: space-between;
   align-items: center;
   padding: 1.25rem 1.5rem;
-  border-bottom: 1px solid #e5e7eb;
+  border-bottom: 1px solid var(--color-border);
 }
 
 .card-title {
   font-size: 1.25rem;
-  font-weight: 600;
-  color: #1f2937;
+  font-weight: var(--font-weight-bold);
+  color: var(--color-text-primary);
   margin: 0;
 }
 
@@ -144,7 +145,7 @@ function handleClick(event: MouseEvent) {
 
 .card-footer {
   padding: 1rem 1.5rem;
-  background: #f9fafb;
-  border-top: 1px solid #e5e7eb;
+  background: var(--color-background-secondary);
+  border-top: 1px solid var(--color-border);
 }
 </style>

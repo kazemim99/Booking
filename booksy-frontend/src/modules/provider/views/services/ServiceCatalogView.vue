@@ -726,12 +726,12 @@ function finishAndGoBack() {
   font-size: 2rem;
   font-weight: 700;
   margin: 0 0 0.5rem 0;
-  color: #111827;
+  color: var(--color-gray-900);
 }
 
 .page-subtitle {
   font-size: 1rem;
-  color: #6b7280;
+  color: var(--color-gray-600);
   margin: 0;
 }
 
@@ -771,14 +771,14 @@ function finishAndGoBack() {
   flex: 1;
   min-width: 200px;
   padding: 0.625rem 1rem;
-  border: 1px solid #d1d5db;
+  border: 1px solid var(--color-gray-400);
   border-radius: 0.375rem;
   font-size: 0.875rem;
 }
 
 .filter-select {
   padding: 0.625rem;
-  border: 1px solid #d1d5db;
+  border: 1px solid var(--color-gray-400);
   border-radius: 0.375rem;
   font-size: 0.875rem;
   min-width: 150px;
@@ -808,7 +808,7 @@ function finishAndGoBack() {
   height: 100px;
   border-radius: 0.375rem;
   overflow: hidden;
-  background-color: #f3f4f6;
+  background-color: var(--color-gray-100);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -838,7 +838,7 @@ function finishAndGoBack() {
   font-size: 1.125rem;
   font-weight: 600;
   margin: 0;
-  color: #111827;
+  color: var(--color-gray-900);
 }
 
 .service-status {
@@ -855,8 +855,8 @@ function finishAndGoBack() {
 }
 
 .service-status.inactive {
-  background-color: #f3f4f6;
-  color: #6b7280;
+  background-color: var(--color-gray-100);
+  color: var(--color-gray-600);
 }
 
 .service-status.seasonal {
@@ -873,25 +873,25 @@ function finishAndGoBack() {
 
 .service-category {
   font-size: 0.875rem;
-  color: #6b7280;
+  color: var(--color-gray-600);
   padding: 0.125rem 0.5rem;
-  background-color: #f3f4f6;
+  background-color: var(--color-gray-100);
   border-radius: 0.25rem;
 }
 
 .service-price {
   font-size: 0.875rem;
-  color: #111827;
+  color: var(--color-gray-900);
 }
 
 .service-duration {
   font-size: 0.875rem;
-  color: #6b7280;
+  color: var(--color-gray-600);
 }
 
 .service-description {
   font-size: 0.875rem;
-  color: #4b5563;
+  color: var(--color-gray-700);
   margin: 0;
   line-height: 1.5;
 }
@@ -905,8 +905,8 @@ function finishAndGoBack() {
 
 .tag {
   font-size: 0.75rem;
-  color: #4b5563;
-  background-color: #f3f4f6;
+  color: var(--color-gray-700);
+  background-color: var(--color-gray-100);
   padding: 0.125rem 0.5rem;
   border-radius: 9999px;
 }
@@ -916,15 +916,15 @@ function finishAndGoBack() {
   justify-content: flex-end;
   gap: 1rem;
   padding-top: 1rem;
-  border-top: 1px solid #e5e7eb;
+  border-top: 1px solid var(--color-gray-300);
 }
 
 .empty-state {
   text-align: center;
   padding: 4rem 2rem;
-  background-color: #f9fafb;
+  background-color: var(--color-gray-50);
   border-radius: 0.5rem;
-  border: 1px dashed #d1d5db;
+  border: 1px dashed var(--color-gray-400);
 }
 
 .empty-icon {
@@ -936,12 +936,12 @@ function finishAndGoBack() {
   font-size: 1.25rem;
   font-weight: 600;
   margin: 0 0 0.5rem 0;
-  color: #111827;
+  color: var(--color-gray-900);
 }
 
 .empty-state p {
   font-size: 0.875rem;
-  color: #6b7280;
+  color: var(--color-gray-600);
   margin: 0 0 1.5rem 0;
 }
 
@@ -969,28 +969,28 @@ function finishAndGoBack() {
 .form-group label {
   font-size: 0.875rem;
   font-weight: 600;
-  color: #111827;
+  color: var(--color-gray-900);
 }
 
 .form-group small {
   font-size: 0.75rem;
-  color: #6b7280;
+  color: var(--color-gray-600);
 }
 
 .form-input,
 .form-select,
 .form-textarea {
   padding: 0.625rem;
-  border: 1px solid #d1d5db;
+  border: 1px solid var(--color-gray-400);
   border-radius: 0.375rem;
   font-size: 0.875rem;
-  color: #111827;
+  color: var(--color-gray-900);
 }
 
 .form-input:focus,
 .form-select:focus,
 .form-textarea:focus {
-  border-color: #8b5cf6;
+  border-color: var(--color-primary-500);
   outline: none;
   box-shadow: 0 0 0 3px rgba(139, 92, 246, 0.1);
 }
@@ -998,7 +998,7 @@ function finishAndGoBack() {
 .form-input.has-error,
 .form-select.has-error,
 .form-textarea.has-error {
-  border-color: #ef4444;
+  border-color: var(--color-danger-500);
 }
 
 .input-with-prefix {
@@ -1010,12 +1010,12 @@ function finishAndGoBack() {
   display: flex;
   align-items: center;
   padding: 0 0.75rem;
-  background-color: #f3f4f6;
-  border: 1px solid #d1d5db;
+  background-color: var(--color-gray-100);
+  border: 1px solid var(--color-gray-400);
   border-right: none;
   border-radius: 0.375rem 0 0 0.375rem;
   font-size: 0.875rem;
-  color: #6b7280;
+  color: var(--color-gray-600);
 }
 
 .price-input {
@@ -1025,7 +1025,7 @@ function finishAndGoBack() {
 
 .error-message {
   font-size: 0.75rem;
-  color: #ef4444;
+  color: var(--color-danger-500);
 }
 
 .modal-actions {
@@ -1041,7 +1041,7 @@ function finishAndGoBack() {
   justify-content: flex-end;
   gap: 1rem;
   padding-top: 2rem;
-  border-top: 1px solid #e5e7eb;
+  border-top: 1px solid var(--color-gray-300);
   margin-top: 2rem;
 }
 

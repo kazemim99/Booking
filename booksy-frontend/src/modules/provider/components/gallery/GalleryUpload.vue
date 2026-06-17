@@ -203,9 +203,9 @@ function validateFile(file: File): string[] {
 }
 
 .upload-area {
-  border: 2px dashed #d1d5db;
+  border: 2px dashed var(--color-gray-400);
   border-radius: 0.75rem;
-  background-color: #f9fafb;
+  background-color: var(--color-gray-50);
   padding: 3rem 2rem;
   text-align: center;
   cursor: pointer;
@@ -214,13 +214,13 @@ function validateFile(file: File): string[] {
 }
 
 .upload-area:hover:not(.is-uploading) {
-  border-color: #8b5cf6;
+  border-color: var(--color-primary-500);
   background-color: #f5f3ff;
 }
 
 .upload-area.is-dragging {
-  border-color: #8b5cf6;
-  background-color: #ede9fe;
+  border-color: var(--color-primary-500);
+  background-color: var(--color-primary-50);
   transform: scale(1.02);
 }
 
@@ -249,41 +249,41 @@ function validateFile(file: File): string[] {
 .upload-icon {
   width: 4rem;
   height: 4rem;
-  color: #8b5cf6;
+  color: var(--color-primary-500);
 }
 
 .upload-title {
   font-size: 1.125rem;
   font-weight: 600;
-  color: #111827;
+  color: var(--color-gray-900);
   margin: 0;
 }
 
 .upload-subtitle {
   font-size: 0.875rem;
-  color: #6b7280;
+  color: var(--color-gray-600);
   margin: 0;
 }
 
 .upload-hint {
   font-size: 0.75rem;
-  color: #9ca3af;
+  color: var(--color-gray-500);
   margin: 0;
 }
 
 .upload-count {
   font-size: 0.875rem;
-  color: #6b7280;
+  color: var(--color-gray-600);
   margin: 0.5rem 0 0 0;
   font-weight: 500;
 }
 
 .upload-count .remaining {
-  color: #10b981;
+  color: var(--color-success-500);
 }
 
 .upload-count .limit-reached {
-  color: #ef4444;
+  color: var(--color-danger-500);
   font-weight: 600;
 }
 
@@ -298,20 +298,20 @@ function validateFile(file: File): string[] {
   width: 100%;
   max-width: 400px;
   height: 8px;
-  background-color: #e5e7eb;
+  background-color: var(--color-gray-300);
   border-radius: 9999px;
   overflow: hidden;
 }
 
 .progress-bar {
   height: 100%;
-  background-color: #8b5cf6;
+  background-color: var(--color-primary-500);
   transition: width 0.3s ease;
 }
 
 .progress-text {
   font-size: 0.875rem;
-  color: #6b7280;
+  color: var(--color-gray-600);
   margin: 0;
 }
 
@@ -327,10 +327,10 @@ function validateFile(file: File): string[] {
   align-items: center;
   gap: 0.5rem;
   padding: 0.75rem;
-  background-color: #fef2f2;
+  background-color: var(--color-danger-50);
   border: 1px solid #fecaca;
   border-radius: 0.375rem;
-  color: #dc2626;
+  color: var(--color-danger-600);
   font-size: 0.875rem;
 }
 

@@ -236,7 +236,7 @@ const truncate = (text: string, length: number): string => {
 
 .step-description {
   font-size: 1.05rem;
-  color: #64748b;
+  color: var(--color-gray-600);
   margin: 0 0 1rem 0;
 }
 
@@ -254,13 +254,13 @@ const truncate = (text: string, length: number): string => {
 .selected-count {
   font-size: 1rem;
   font-weight: 600;
-  color: #059669;
+  color: var(--color-success-600);
 }
 
 .total-price {
   font-size: 1.125rem;
   font-weight: 700;
-  color: #10b981;
+  color: var(--color-success-500);
 }
 
 .loading-state {
@@ -276,7 +276,7 @@ const truncate = (text: string, length: number): string => {
   width: 48px;
   height: 48px;
   border: 4px solid #e2e8f0;
-  border-top-color: #667eea;
+  border-top-color: var(--color-primary-500);
   border-radius: 50%;
   animation: spin 0.8s linear infinite;
 }
@@ -289,7 +289,7 @@ const truncate = (text: string, length: number): string => {
 
 .loading-state p {
   font-size: 1.05rem;
-  color: #64748b;
+  color: var(--color-gray-600);
 }
 
 .services-grid {
@@ -308,13 +308,13 @@ const truncate = (text: string, length: number): string => {
 }
 
 .service-card:hover {
-  border-color: #cbd5e1;
+  border-color: var(--color-gray-400);
   transform: translateY(-4px);
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.1);
+  box-shadow: var(--shadow-md);
 }
 
 .service-card.selected {
-  border-color: #667eea;
+  border-color: var(--color-primary-500);
   box-shadow: 0 8px 32px rgba(102, 126, 234, 0.3);
 }
 
@@ -348,7 +348,7 @@ const truncate = (text: string, length: number): string => {
   left: 1rem;
   width: 48px;
   height: 48px;
-  background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+  background: linear-gradient(135deg, var(--color-success-500) 0%, var(--color-success-600) 100%);
   border-radius: 50%;
   display: flex;
   align-items: center;
@@ -391,7 +391,7 @@ const truncate = (text: string, length: number): string => {
 .service-description {
   font-size: 0.95rem;
   line-height: 1.6;
-  color: #64748b;
+  color: var(--color-gray-600);
   margin: 0 0 1.25rem 0;
 }
 
@@ -417,22 +417,22 @@ const truncate = (text: string, length: number): string => {
 .detail-item svg {
   width: 18px;
   height: 18px;
-  color: #94a3b8;
+  color: var(--color-gray-500);
 }
 
 .detail-item.price {
-  color: #10b981;
+  color: var(--color-success-500);
 }
 
 .detail-item.price svg {
-  color: #10b981;
+  color: var(--color-success-500);
 }
 
 .service-category {
   display: inline-block;
   padding: 0.5rem 1rem;
   background: linear-gradient(135deg, rgba(102, 126, 234, 0.1) 0%, rgba(118, 75, 162, 0.1) 100%);
-  color: #667eea;
+  color: var(--color-primary-500);
   border-radius: 10px;
   font-size: 0.875rem;
   font-weight: 600;
@@ -450,7 +450,7 @@ const truncate = (text: string, length: number): string => {
 .empty-state svg {
   width: 80px;
   height: 80px;
-  color: #cbd5e1;
+  color: var(--color-gray-400);
   margin-bottom: 1.5rem;
 }
 
@@ -463,7 +463,7 @@ const truncate = (text: string, length: number): string => {
 
 .empty-state p {
   font-size: 1rem;
-  color: #64748b;
+  color: var(--color-gray-600);
   margin: 0;
 }
 

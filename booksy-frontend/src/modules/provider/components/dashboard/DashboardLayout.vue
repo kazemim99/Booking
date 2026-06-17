@@ -397,7 +397,7 @@ const handleLogout = async () => {
 /* Main Container */
 .dashboard-container {
   min-height: 100vh;
-  background: #f5f5f5;
+  background: var(--color-gray-100);
   display: flex;
   flex-direction: column;
 }
@@ -437,7 +437,7 @@ const handleLogout = async () => {
   transition: background-color 0.2s;
 
   &:hover {
-    background: #f5f5f5;
+    background: var(--color-gray-100);
   }
 
   .icon {
@@ -455,14 +455,14 @@ const handleLogout = async () => {
 .logo-icon {
   width: 24px;
   height: 24px;
-  color: #6366f1;
+  color: var(--color-primary-500);
 }
 
 .dashboard-title {
   font-size: 18px;
   font-weight: 600;
   margin: 0;
-  color: #1f2937;
+  color: var(--color-gray-900);
 }
 
 .user-section {
@@ -490,7 +490,7 @@ const handleLogout = async () => {
 
   &.badge-individual {
     background: #e0e7ff;
-    color: #4338ca;
+    color: var(--color-primary-700);
   }
 }
 
@@ -500,7 +500,7 @@ const handleLogout = async () => {
   p {
     margin: 0;
     font-size: 14px;
-    color: #4b5563;
+    color: var(--color-gray-700);
   }
 }
 
@@ -509,7 +509,7 @@ const handleLogout = async () => {
   height: 36px;
   border-radius: 50%;
   background: #e0e7ff;
-  color: #4338ca;
+  color: var(--color-primary-700);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -554,14 +554,14 @@ const handleLogout = async () => {
   transition: all 0.2s;
   text-align: right;
   font-size: 14px;
-  color: #4b5563;
+  color: var(--color-gray-700);
 
   &:hover {
-    background: #f5f5f5;
+    background: var(--color-gray-100);
   }
 
   &.active {
-    background: #6366f1;
+    background: var(--color-primary-500);
     color: white;
   }
 
@@ -579,10 +579,10 @@ const handleLogout = async () => {
 }
 
 .logout-item {
-  color: #dc2626;
+  color: var(--color-danger-600);
 
   &:hover {
-    background: #fee2e2;
+    background: var(--color-danger-50);
   }
 }
 
@@ -600,7 +600,7 @@ const handleLogout = async () => {
   width: 32px;
   height: 32px;
   border: 3px solid #e0e0e0;
-  border-top-color: #6366f1;
+  border-top-color: var(--color-primary-500);
   border-radius: 50%;
   animation: spin 0.8s linear infinite;
 }
@@ -613,7 +613,7 @@ const handleLogout = async () => {
 
 .loading-text {
   font-size: 12px;
-  color: #6b7280;
+  color: var(--color-gray-600);
 }
 
 /* Error Indicator */
@@ -624,20 +624,20 @@ const handleLogout = async () => {
   gap: 12px;
   padding: 16px;
   margin-bottom: 16px;
-  background: #fef2f2;
+  background: var(--color-danger-50);
   border-radius: 8px;
   border: 1px solid #fecaca;
 }
 
 .error-text {
   font-size: 12px;
-  color: #dc2626;
+  color: var(--color-danger-600);
   text-align: center;
 }
 
 .retry-button {
   padding: 6px 16px;
-  background: #dc2626;
+  background: var(--color-danger-600);
   color: white;
   border: none;
   border-radius: 6px;
@@ -646,11 +646,11 @@ const handleLogout = async () => {
   transition: background 0.2s;
 
   &:hover {
-    background: #b91c1c;
+    background: var(--color-danger-600);
   }
 
   &:active {
-    background: #991b1b;
+    background: var(--color-danger-600);
   }
 }
 
@@ -713,7 +713,7 @@ const handleLogout = async () => {
   transition: background-color 0.2s;
 
   &:hover {
-    background: #f5f5f5;
+    background: var(--color-gray-100);
   }
 
   .icon {

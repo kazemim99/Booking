@@ -44,14 +44,14 @@ defineProps<Props>()
 .step-title {
   font-size: 1.875rem;
   font-weight: 700;
-  color: #111827;
+  color: var(--color-gray-900);
   margin-bottom: 0.5rem;
   line-height: 1.2;
 }
 
 .step-subtitle {
   font-size: 0.875rem;
-  color: #6b7280;
+  color: var(--color-gray-600);
   line-height: 1.5;
   max-width: 32rem;
   margin: 0 auto;

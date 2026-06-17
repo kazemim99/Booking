@@ -166,7 +166,7 @@ defineExpose({ resetForm })
   display: flex;
   gap: 1rem;
   padding: 1rem;
-  background: #fef2f2;
+  background: var(--color-danger-50);
   border: 1px solid #fecaca;
   border-radius: 8px;
 }
@@ -174,7 +174,7 @@ defineExpose({ resetForm })
 .warning-icon {
   width: 24px;
   height: 24px;
-  color: #ef4444;
+  color: var(--color-danger-500);
   flex-shrink: 0;
 }
 
@@ -185,7 +185,7 @@ defineExpose({ resetForm })
     margin: 0 0 0.25rem 0;
     font-size: 1rem;
     font-weight: 600;
-    color: #991b1b;
+    color: var(--color-danger-600);
   }
 
   p {
@@ -196,7 +196,7 @@ defineExpose({ resetForm })
 }
 
 .booking-summary {
-  background: #f9fafb;
+  background: var(--color-gray-50);
   border-radius: 8px;
   padding: 1rem;
   display: flex;
@@ -211,12 +211,12 @@ defineExpose({ resetForm })
   font-size: 0.875rem;
 
   .label {
-    color: #6b7280;
+    color: var(--color-gray-600);
     font-weight: 500;
   }
 
   .value {
-    color: #111827;
+    color: var(--color-gray-900);
     font-weight: 600;
   }
 }
@@ -230,13 +230,13 @@ defineExpose({ resetForm })
 .form-label {
   font-size: 0.875rem;
   font-weight: 500;
-  color: #374151;
+  color: var(--color-gray-800);
 }
 
 .form-select,
 .form-textarea {
   padding: 0.75rem;
-  border: 1px solid #d1d5db;
+  border: 1px solid var(--color-gray-400);
   border-radius: 8px;
   font-size: 0.875rem;
   font-family: inherit;
@@ -244,12 +244,12 @@ defineExpose({ resetForm })
 
   &:focus {
     outline: none;
-    border-color: #667eea;
+    border-color: var(--color-primary-500);
     box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
   }
 
   &:disabled {
-    background: #f3f4f6;
+    background: var(--color-gray-100);
     cursor: not-allowed;
   }
 }
@@ -287,21 +287,21 @@ defineExpose({ resetForm })
 
 .btn-secondary {
   background: white;
-  color: #374151;
-  border: 1px solid #d1d5db;
+  color: var(--color-gray-800);
+  border: 1px solid var(--color-gray-400);
 
   &:hover:not(:disabled) {
-    background: #f9fafb;
-    border-color: #9ca3af;
+    background: var(--color-gray-50);
+    border-color: var(--color-gray-500);
   }
 }
 
 .btn-danger {
-  background: #ef4444;
+  background: var(--color-danger-500);
   color: white;
 
   &:hover:not(:disabled) {
-    background: #dc2626;
+    background: var(--color-danger-600);
     transform: translateY(-1px);
     box-shadow: 0 4px 12px rgba(239, 68, 68, 0.3);
   }

@@ -525,7 +525,7 @@ onMounted(() => {
   position: absolute;
   cursor: pointer;
   inset: 0;
-  background-color: #cbd5e1;
+  background-color: var(--color-gray-400);
   transition: 0.3s;
   border-radius: 28px;
 

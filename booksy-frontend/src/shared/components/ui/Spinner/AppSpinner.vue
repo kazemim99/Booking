@@ -68,7 +68,7 @@ const spinnerStyle = computed(() => ({
   width: 100%;
   height: 100%;
   border: var(--spinner-thickness, 3px) solid rgba(102, 126, 234, 0.2);
-  border-top-color: var(--spinner-color, #667eea);
+  border-top-color: var(--spinner-color, var(--color-primary-500));
   border-radius: 50%;
   animation: spin 0.8s linear infinite;
 }

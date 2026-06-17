@@ -218,19 +218,19 @@ const handleFocus = () => {
   display: block;
   font-size: 0.875rem;
   font-weight: 500;
-  color: #374151;
+  color: var(--color-gray-800);
   margin-bottom: 0.5rem;
 }
 
 .phone-input-label .required {
-  color: #ef4444;
+  color: var(--color-danger-500);
   margin-left: 0.25rem;
 }
 
 .phone-input-container {
   display: flex;
   align-items: center;
-  border: 1px solid #d1d5db;
+  border: 1px solid var(--color-gray-400);
   border-radius: 0.5rem;
   background-color: #ffffff;
   transition: all 0.2s ease;
@@ -238,21 +238,21 @@ const handleFocus = () => {
 }
 
 .phone-input-container:focus-within {
-  border-color: #8b5cf6;
+  border-color: var(--color-primary-500);
   box-shadow: 0 0 0 3px rgba(139, 92, 246, 0.1);
 }
 
 .phone-input-container.has-error {
-  border-color: #ef4444;
+  border-color: var(--color-danger-500);
 }
 
 .phone-input-container.has-error:focus-within {
-  border-color: #ef4444;
+  border-color: var(--color-danger-500);
   box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.1);
 }
 
 .phone-input-container.is-disabled {
-  background-color: #f9fafb;
+  background-color: var(--color-gray-50);
   cursor: not-allowed;
 }
 
@@ -261,9 +261,9 @@ const handleFocus = () => {
   padding: 0.75rem 1rem;
   font-size: 0.875rem;
   font-weight: 500;
-  color: #374151;
-  background-color: #f9fafb;
-  border-left: 1px solid #e5e7eb;
+  color: var(--color-gray-800);
+  background-color: var(--color-gray-50);
+  border-left: 1px solid var(--color-gray-300);
   border-radius: 0 0.5rem 0.5rem 0;
   user-select: none;
   flex-shrink: 0;
@@ -278,13 +278,13 @@ const handleFocus = () => {
   border: none;
   background: none;
   cursor: pointer;
-  color: #9ca3af;
+  color: var(--color-gray-500);
   transition: color 0.2s ease;
   flex-shrink: 0;
 }
 
 .clear-button:hover:not(:disabled) {
-  color: #6b7280;
+  color: var(--color-gray-600);
 }
 
 .clear-button:disabled {
@@ -325,11 +325,9 @@ const handleFocus = () => {
   z-index: 50;
   width: 280px;
   background-color: #ffffff;
-  border: 1px solid #e5e7eb;
+  border: 1px solid var(--color-gray-300);
   border-radius: 0.5rem;
-  box-shadow:
-    0 10px 15px -3px rgba(0, 0, 0, 0.1),
-    0 4px 6px -2px rgba(0, 0, 0, 0.05);
+  box-shadow: var(--shadow-lg);
 }
 
 .country-dropdown-inner {
@@ -353,12 +351,12 @@ const handleFocus = () => {
 }
 
 .country-option:hover {
-  background-color: #f3f4f6;
+  background-color: var(--color-gray-100);
 }
 
 .country-option.is-selected {
-  background-color: #ede9fe;
-  color: #8b5cf6;
+  background-color: var(--color-primary-50);
+  color: var(--color-primary-500);
 }
 
 .country-option .country-flag {
@@ -373,7 +371,7 @@ const handleFocus = () => {
 
 .country-option .country-dial-code {
   font-size: 0.875rem;
-  color: #6b7280;
+  color: var(--color-gray-600);
 }
 
 /* Phone Input */
@@ -383,17 +381,17 @@ const handleFocus = () => {
   border: none;
   background: none;
   font-size: 0.875rem;
-  color: #111827;
+  color: var(--color-gray-900);
   outline: none;
 }
 
 .phone-input::placeholder {
-  color: #9ca3af;
+  color: var(--color-gray-500);
 }
 
 .phone-input:disabled {
   cursor: not-allowed;
-  color: #6b7280;
+  color: var(--color-gray-600);
 }
 
 /* Error Message */
@@ -403,7 +401,7 @@ const handleFocus = () => {
   gap: 0.5rem;
   margin-top: 0.5rem;
   font-size: 0.875rem;
-  color: #ef4444;
+  color: var(--color-danger-500);
 }
 
 .error-icon {
@@ -416,7 +414,7 @@ const handleFocus = () => {
 .helper-text {
   margin-top: 0.5rem;
   font-size: 0.875rem;
-  color: #6b7280;
+  color: var(--color-gray-600);
 }
 
 /* Transitions */

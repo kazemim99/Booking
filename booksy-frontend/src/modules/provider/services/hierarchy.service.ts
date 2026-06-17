@@ -29,7 +29,7 @@ import type {
 } from '../types/hierarchy.types'
 
 const API_VERSION = 'v1'
-const API_BASE = `/${API_VERSION}/providers`
+const API_BASE = `/${API_VERSION}/Providers`
 
 /**
  * Convert relative URL to absolute URL using the API base URL
@@ -40,7 +40,7 @@ function toAbsoluteUrl(url: string | undefined): string | undefined {
   if (url.startsWith('http://') || url.startsWith('https://')) return url
   if (url.startsWith('/')) {
     // Get the API base URL from environment or use default
-    const apiBaseUrl = import.meta.env.VITE_SERVICE_CATALOG_API_URL || 'http://localhost:5010/api'
+    const apiBaseUrl = import.meta.env.VITE_SERVICE_CATALOG_API_URL || '/api'
     // Remove /api suffix to get just the domain
     const baseUrl = apiBaseUrl.replace(/\/api\/?$/, '')
     return `${baseUrl}${url}`
@@ -83,7 +83,7 @@ class HierarchyService {
    */
   async getDraftProvider(): Promise<any> {
     try {
-      const response = await serviceCategoryClient.get<any>('v1/registration/progress')
+      const response = await serviceCategoryClient.get<any>('v1/Registration/progress')
 
       // Extract draft data from progress response
       if (response.data?.hasDraft && response.data?.draftData) {

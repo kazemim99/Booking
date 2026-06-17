@@ -272,13 +272,13 @@ watch(
   align-items: center;
   justify-content: space-between;
   padding: 24px;
-  border-bottom: 1px solid #e5e7eb;
+  border-bottom: 1px solid var(--color-gray-300);
 }
 
 .modal-header h2 {
   font-size: 20px;
   font-weight: 700;
-  color: #111827;
+  color: var(--color-gray-900);
   margin: 0;
 }
 
@@ -292,13 +292,13 @@ watch(
   justify-content: center;
   border-radius: 8px;
   cursor: pointer;
-  color: #6b7280;
+  color: var(--color-gray-600);
   transition: all 0.2s ease;
 }
 
 .close-btn:hover:not(:disabled) {
-  background: #f3f4f6;
-  color: #111827;
+  background: var(--color-gray-100);
+  color: var(--color-gray-900);
 }
 
 /* ==================== Modal Content ==================== */
@@ -311,7 +311,7 @@ watch(
 
 /* Booking Info */
 .booking-info {
-  background: #f9fafb;
+  background: var(--color-gray-50);
   border-radius: 12px;
   padding: 16px;
   margin-bottom: 24px;
@@ -330,14 +330,14 @@ watch(
 
 .info-row .label {
   font-size: 13px;
-  color: #6b7280;
+  color: var(--color-gray-600);
   font-weight: 500;
   min-width: 80px;
 }
 
 .info-row .value {
   font-size: 14px;
-  color: #111827;
+  color: var(--color-gray-900);
   font-weight: 600;
 }
 
@@ -352,20 +352,20 @@ watch(
 .radio-option {
   position: relative;
   cursor: pointer;
-  border: 2px solid #e5e7eb;
+  border: 2px solid var(--color-gray-300);
   border-radius: 12px;
   padding: 16px;
   transition: all 0.2s ease;
 }
 
 .radio-option:hover {
-  border-color: #d1d5db;
-  background: #f9fafb;
+  border-color: var(--color-gray-400);
+  background: var(--color-gray-50);
 }
 
 .radio-option.active {
-  border-color: #3b82f6;
-  background: #eff6ff;
+  border-color: var(--color-primary-500);
+  background: var(--color-primary-50);
 }
 
 .radio-option input[type='radio'] {
@@ -388,22 +388,22 @@ watch(
 
 .option-header i {
   font-size: 18px;
-  color: #6b7280;
+  color: var(--color-gray-600);
 }
 
 .radio-option.active .option-header i {
-  color: #3b82f6;
+  color: var(--color-primary-500);
 }
 
 .option-title {
   font-size: 14px;
   font-weight: 600;
-  color: #111827;
+  color: var(--color-gray-900);
 }
 
 .option-description {
   font-size: 12px;
-  color: #6b7280;
+  color: var(--color-gray-600);
   line-height: 1.4;
 }
 
@@ -416,14 +416,14 @@ watch(
   display: block;
   font-size: 14px;
   font-weight: 600;
-  color: #374151;
+  color: var(--color-gray-800);
   margin-bottom: 8px;
 }
 
 .form-group textarea {
   width: 100%;
   padding: 12px;
-  border: 1px solid #d1d5db;
+  border: 1px solid var(--color-gray-400);
   border-radius: 8px;
   font-size: 14px;
   font-family: inherit;
@@ -433,24 +433,24 @@ watch(
 
 .form-group textarea:focus {
   outline: none;
-  border-color: #3b82f6;
+  border-color: var(--color-primary-500);
   box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
 }
 
 .form-group textarea:disabled {
-  background: #f3f4f6;
+  background: var(--color-gray-100);
   cursor: not-allowed;
 }
 
 .char-counter {
   text-align: left;
   font-size: 12px;
-  color: #6b7280;
+  color: var(--color-gray-600);
   margin-top: 6px;
 }
 
 .char-counter.warning {
-  color: #dc2626;
+  color: var(--color-danger-600);
   font-weight: 600;
 }
 
@@ -458,13 +458,13 @@ watch(
 .existing-notes {
   margin-top: 24px;
   padding-top: 24px;
-  border-top: 1px solid #e5e7eb;
+  border-top: 1px solid var(--color-gray-300);
 }
 
 .existing-notes h3 {
   font-size: 14px;
   font-weight: 600;
-  color: #374151;
+  color: var(--color-gray-800);
   margin: 0 0 12px 0;
 }
 
@@ -497,7 +497,7 @@ watch(
   margin-bottom: 6px;
   font-size: 12px;
   font-weight: 600;
-  color: #374151;
+  color: var(--color-gray-800);
 }
 
 .note-header i {
@@ -506,7 +506,7 @@ watch(
 
 .note-item p {
   margin: 0;
-  color: #4b5563;
+  color: var(--color-gray-700);
   line-height: 1.5;
 }
 
@@ -516,10 +516,10 @@ watch(
   align-items: center;
   gap: 8px;
   padding: 12px 16px;
-  background: #fef2f2;
+  background: var(--color-danger-50);
   border: 1px solid #fecaca;
   border-radius: 8px;
-  color: #dc2626;
+  color: var(--color-danger-600);
   font-size: 14px;
   margin-top: 16px;
 }
@@ -532,7 +532,7 @@ watch(
   justify-content: flex-end;
   gap: 12px;
   padding: 20px 24px;
-  border-top: 1px solid #e5e7eb;
+  border-top: 1px solid var(--color-gray-300);
 }
 
 .btn {
@@ -555,16 +555,16 @@ watch(
 }
 
 .btn-secondary {
-  background: #f3f4f6;
-  color: #374151;
+  background: var(--color-gray-100);
+  color: var(--color-gray-800);
 }
 
 .btn-secondary:hover:not(:disabled) {
-  background: #e5e7eb;
+  background: var(--color-gray-300);
 }
 
 .btn-primary {
-  background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
+  background: linear-gradient(135deg, var(--color-primary-500) 0%, var(--color-primary-600) 100%);
   color: white;
 }
 

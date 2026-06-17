@@ -175,7 +175,7 @@ function bookService(service: any) {
   background: white;
   border-radius: 0.75rem;
   overflow: hidden;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  box-shadow: var(--shadow-md);
 }
 
 .service-image {

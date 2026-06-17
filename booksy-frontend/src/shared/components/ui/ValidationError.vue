@@ -20,7 +20,7 @@ defineProps<Props>()
   gap: 0.375rem;
   margin-top: 0.25rem;
   font-size: 0.75rem;
-  color: #ef4444;
+  color: var(--color-danger-500);
   line-height: 1.4;
 }
 

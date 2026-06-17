@@ -45,7 +45,7 @@ export function useLocations() {
 
     try {
       // ✅ Single API call to get all provinces with nested cities
-      const response = await serviceCategoryClient.get<ProvinceHierarchy[]>('/v1/locations/hierarchy')
+      const response = await serviceCategoryClient.get<ProvinceHierarchy[]>('/v1/Locations/hierarchy')
       const hierarchy = response.data
 
       // Transform hierarchy into flat array of locations

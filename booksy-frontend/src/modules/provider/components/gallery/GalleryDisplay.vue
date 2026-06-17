@@ -436,7 +436,7 @@ defineExpose({
 .view-btn.active {
   background: white;
   color: #3182ce;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  box-shadow: var(--shadow-sm);
 }
 
 .view-btn svg {
@@ -539,12 +539,12 @@ defineExpose({
   border-radius: 0.5rem;
   overflow: hidden;
   background: #f7fafc;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  box-shadow: var(--shadow-sm);
   transition: box-shadow 0.2s;
 }
 
 .image-wrapper:hover {
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  box-shadow: var(--shadow-md);
 }
 
 .gallery-image {
@@ -603,12 +603,12 @@ defineExpose({
   border-radius: 0.5rem;
   overflow: hidden;
   background: #f7fafc;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  box-shadow: var(--shadow-sm);
   transition: all 0.2s;
 }
 
 .masonry-item:hover {
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  box-shadow: var(--shadow-md);
   transform: translateY(-2px);
 }
 
@@ -754,7 +754,7 @@ defineExpose({
   max-height: 75vh;
   object-fit: contain;
   border-radius: 0.5rem;
-  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.5);
+  box-shadow: var(--shadow-lg);
 }
 
 /* Lightbox Caption */
