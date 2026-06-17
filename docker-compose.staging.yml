@@ -4,10 +4,10 @@ version: '3.8'
 # Similar to production but with different ports and resource limits
 
 services:
-  # Backend Services
-  usermanagement-api-staging:
-    image: ghcr.io/${GITHUB_REPOSITORY_OWNER}/booksy-usermanagement:${STAGING_TAG:-develop}
-    container_name: booksy-usermanagement-api-staging
+  # Backend — modular monolith (replaces usermanagement + servicecatalog + gateway)
+  booksy-api-staging:
+    image: ghcr.io/${GITHUB_REPOSITORY_OWNER}/booksy-api:${STAGING_TAG:-develop}
+    container_name: booksy-api-staging
     env_file:
       - .env.staging
     environment:
@@ -15,76 +15,24 @@ services:
       - ASPNETCORE_URLS=http://+:80
       - ConnectionStrings__DefaultConnection=${DB_CONNECTION_STRING_STAGING}
       - ConnectionStrings__Redis=${REDIS_CONNECTION_STRING_STAGING}
-      - ConnectionStrings__RabbitMQ=${RABBITMQ_CONNECTION_STRING_STAGING}
-      - Seq__ServerUrl=${SEQ_SERVER_URL_STAGING}
-    ports:
-      - "6001:80"
-    depends_on:
-      postgres-staging:
-        condition: service_healthy
-      redis-staging:
-        condition: service_healthy
-    networks:
-      - booksy-staging-network
-    restart: unless-stopped
-    deploy:
-      resources:
-        limits:
-          cpus: '0.5'
-          memory: 512M
-
-  servicecatalog-api-staging:
-    image: ghcr.io/${GITHUB_REPOSITORY_OWNER}/booksy-servicecatalog:${STAGING_TAG:-develop}
-    container_name: booksy-servicecatalog-api-staging
-    env_file:
-      - .env.staging
-    environment:
-      - ASPNETCORE_ENVIRONMENT=Staging
-      - ASPNETCORE_URLS=http://+:80
-      - ConnectionStrings__DefaultConnection=${DB_CONNECTION_STRING_STAGING}
-      - ConnectionStrings__Redis=${REDIS_CONNECTION_STRING_STAGING}
-      - ConnectionStrings__RabbitMQ=${RABBITMQ_CONNECTION_STRING_STAGING}
-      - Seq__ServerUrl=${SEQ_SERVER_URL_STAGING}
-    ports:
-      - "6002:80"
-    depends_on:
-      postgres-staging:
-        condition: service_healthy
-      redis-staging:
-        condition: service_healthy
-    networks:
-      - booksy-staging-network
-    restart: unless-stopped
-    deploy:
-      resources:
-        limits:
-          cpus: '0.5'
-          memory: 512M
-
-  gateway-staging:
-    image: ghcr.io/${GITHUB_REPOSITORY_OWNER}/booksy-gateway:${STAGING_TAG:-develop}
-    container_name: booksy-gateway-staging
-    env_file:
-      - .env.staging
-    environment:
-      - ASPNETCORE_ENVIRONMENT=Staging
-      - ASPNETCORE_URLS=http://+:80
-      - Services__UserManagement=http://usermanagement-api-staging:80
-      - Services__ServiceCatalog=http://servicecatalog-api-staging:80
+      # CAP runs in-process; no RabbitMQ broker required.
+      - EventBus__Provider=InMemory
       - Seq__ServerUrl=${SEQ_SERVER_URL_STAGING}
     ports:
       - "6000:80"
     depends_on:
-      - usermanagement-api-staging
-      - servicecatalog-api-staging
+      postgres-staging:
+        condition: service_healthy
+      redis-staging:
+        condition: service_healthy
     networks:
       - booksy-staging-network
     restart: unless-stopped
     deploy:
       resources:
         limits:
-          cpus: '0.25'
-          memory: 256M
+          cpus: '1.0'
+          memory: 1G
 
   frontend-staging:
     image: ghcr.io/${GITHUB_REPOSITORY_OWNER}/booksy-frontend:${STAGING_TAG:-develop}
@@ -94,7 +42,7 @@ services:
     ports:
       - "8080:80"
     depends_on:
-      - gateway-staging
+      - booksy-api-staging
     networks:
       - booksy-staging-network
     restart: unless-stopped

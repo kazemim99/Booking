@@ -1,0 +1,97 @@
+version: '3.8'
+
+services:
+  # PostgreSQL Database
+  postgres:
+    image: postgres:16-alpine
+    container_name: booksy-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: booksy_admin
+      POSTGRES_PASSWORD: Booksy@2024!
+      POSTGRES_DB: booksy_user_management
+    ports:
+      - "54321:5432"  # Exposed to host for Visual Studio
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - booksy-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U booksy_admin"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # Redis Cache
+  redis:
+    image: redis:7-alpine
+    container_name: booksy-redis
+    restart: unless-stopped
+    command: redis-server --requirepass Redis@2024! --maxmemory 512mb --maxmemory-policy allkeys-lru
+    ports:
+      - "16379:6379"  # Exposed to host for Visual Studio (mapped to 16379 to avoid Windows port reservation)
+    volumes:
+      - redis_data:/data
+    networks:
+      - booksy-network
+    healthcheck:
+      test: ["CMD", "redis-cli", "--raw", "incr", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+
+  # RabbitMQ removed: the monolith host runs CAP in-process (no broker required).
+
+  # Seq Logging
+  seq:
+    image: datalust/seq:latest
+    container_name: booksy-seq
+    restart: unless-stopped
+    environment:
+      ACCEPT_EULA: Y
+      SEQ_FIRSTRUN_ADMINUSERNAME: admin
+      SEQ_FIRSTRUN_ADMINPASSWORD: Booksy@2024!
+    ports:
+      - "5341:80"     # Seq UI
+      - "5342:5341"   # Seq ingestion - Exposed to host for Visual Studio
+    volumes:
+      - seq_data:/data
+    networks:
+      - booksy-network
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost/api/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # pgAdmin (Database Management)
+  pgadmin:
+    image: dpage/pgadmin4:latest
+    container_name: booksy-pgadmin
+    restart: unless-stopped
+    environment:
+      PGADMIN_DEFAULT_EMAIL: admin@booksy.local
+      PGADMIN_DEFAULT_PASSWORD: Booksy@2024!
+      PGADMIN_CONFIG_SERVER_MODE: 'False'
+      PGADMIN_CONFIG_MASTER_PASSWORD_REQUIRED: 'False'
+    ports:
+      - "5050:80"
+    volumes:
+      - pgadmin_data:/var/lib/pgadmin
+    networks:
+      - booksy-network
+    depends_on:
+      - postgres
+
+networks:
+  booksy-network:
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 172.25.0.0/16
+
+volumes:
+  postgres_data:
+  redis_data:
+  seq_data:
+  pgadmin_data:

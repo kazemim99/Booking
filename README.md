@@ -6,6 +6,15 @@ A modern, scalable service booking platform built with Domain-Driven Design (DDD
 
 ## Recent Updates (2025-12-21) 🎉
 
+### Backend Architecture - Migrated to Modular Monolith
+
+✅ **Single Host** - The backend is now a single ASP.NET Core host (`Booksy.Host`, image/container `booksy-api`, port 5000) that composes the UserManagement and ServiceCatalog bounded contexts in-process
+✅ **Ocelot Gateway Retired** - No separate per-service hosts or API gateway; everything is one origin on `:5000` under `/api/v1/...`
+✅ **RabbitMQ Removed** - Cross-context integration events now run in-process via CAP (DotNetCore.CAP) on the in-memory transport
+✅ **Single Database** - One PostgreSQL database (`booksy`) with schema-per-context; migrations run at host startup
+
+See [MONOLITH_MIGRATION_PLAN.md](MONOLITH_MIGRATION_PLAN.md) for migration details.
+
 ### Provider Registration Flow - Simplified to Organization-Only (2025-12-21)
 
 ✅ **Registration Simplified** - All providers now register as Organizations (Individual registration disabled)
@@ -50,6 +59,7 @@ See [CHANGELOG.md](CHANGELOG.md) for detailed information about all changes.
 
 - [Business Overview](#business-overview)
 - [Architecture](#architecture)
+- [Developer Documentation](#developer-documentation)
 - [Technology Stack](#technology-stack)
 - [Project Structure](#project-structure)
 - [Getting Started](#getting-started)
@@ -175,13 +185,12 @@ Handles payment processing and transactions.
 ### Cross-Context Integration
 
 **Current Implementation:**
-- UserManagement queries ServiceCatalog for provider info
+- Both bounded contexts run in-process within a single host (`Booksy.Host`)
 - JWT tokens include provider claims (providerId, provider_status)
-- REST API integration between contexts
-- Eventual consistency through domain events
+- Cross-context integration events are dispatched **in-process** via CAP (DotNetCore.CAP) on its in-memory transport (no external message broker)
+- Eventual consistency through domain/integration events
 
 **Planned:**
-- Message-based integration (RabbitMQ/Azure Service Bus)
 - Saga pattern for distributed transactions
 - Event sourcing for audit trails
 
@@ -199,7 +208,7 @@ Handles payment processing and transactions.
 - **MediatR**: CQRS pattern implementation
 - **FluentValidation**: Request validation
 - **AutoMapper**: Object-object mapping
-- **CAP (Planned)**: Distributed transaction and event bus
+- **CAP (DotNetCore.CAP)**: In-process integration event bus (in-memory transport)
 
 #### Data & Persistence
 - **Entity Framework Core 9**: ORM and data access with latest features
@@ -281,8 +290,8 @@ Handles payment processing and transactions.
 ```
 Booksy/
 ├── src/
-│   ├── APIGateway/
-│   │   └── Booksy.Gateway/              # API Gateway (YARP)
+│   ├── Host/
+│   │   └── Booksy.Host/                 # Single ASP.NET Core host (composes all contexts)
 │   │
 │   ├── BoundedContexts/
 │   │   ├── ServiceCatalog/

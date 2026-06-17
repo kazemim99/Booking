@@ -55,9 +55,7 @@ ufw --force enable
 ufw allow 22/tcp        # SSH
 ufw allow 80/tcp        # HTTP
 ufw allow 443/tcp       # HTTPS
-ufw allow 5000/tcp      # API Gateway
-ufw allow 5001/tcp      # UserManagement API
-ufw allow 5002/tcp      # ServiceCatalog API
+ufw allow 5000/tcp      # Booksy API (modular monolith)
 ufw allow 5341/tcp      # Seq
 echo "Firewall configured"
 
@@ -85,19 +83,19 @@ DB_CONNECTION_STRING=Host=postgres;Port=5432;Database=booksy_production;Username
 REDIS_PASSWORD=CHANGE_ME
 REDIS_CONNECTION_STRING=redis:6379,password=CHANGE_ME
 
-# RabbitMQ Configuration
-RABBITMQ_USER=booksy_admin
-RABBITMQ_PASSWORD=CHANGE_ME
-RABBITMQ_CONNECTION_STRING=amqp://booksy_admin:CHANGE_ME@rabbitmq:5672
+# RabbitMQ — not required (CAP runs in-process via EventBus__Provider=InMemory)
+# RABBITMQ_USER=booksy_admin
+# RABBITMQ_PASSWORD=CHANGE_ME
+# RABBITMQ_CONNECTION_STRING=amqp://booksy_admin:CHANGE_ME@rabbitmq:5672
 
 # Seq Configuration
 SEQ_ADMIN_USER=admin
 SEQ_ADMIN_PASSWORD=CHANGE_ME
 SEQ_SERVER_URL=http://seq:5341
 
-# Service URLs
-USER_MANAGEMENT_URL=http://usermanagement-api:80
-SERVICE_CATALOG_URL=http://servicecatalog-api:80
+# Service URLs — obsolete (single host on :5000, no gateway)
+# USER_MANAGEMENT_URL=http://booksy-api:80
+# SERVICE_CATALOG_URL=http://booksy-api:80
 
 # Frontend Configuration
 API_BASE_URL=http://YOUR_SERVER_IP:5000

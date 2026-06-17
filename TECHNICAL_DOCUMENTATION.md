@@ -2,6 +2,8 @@
 
 > **Living Document**: This documentation consolidates all technical documentation from the project. Last updated: 2025-11-13
 >
+> **Architecture note**: The backend is now a **modular monolith** — a single host (`Booksy.Host` / `booksy-api`, port 5000) composing the UserManagement and ServiceCatalog bounded contexts in-process. The Ocelot gateway and RabbitMQ have been retired; integration events run in-process via CAP. Older dated session entries below predate this migration and are retained as historical record. See [MONOLITH_MIGRATION_PLAN.md](MONOLITH_MIGRATION_PLAN.md).
+>
 > **Recent Updates (2025-11-13)**: Added 4 critical bug fixes and optimizations (Issues #11-14): Route conflict resolution, status API optimization, HTTP interceptor error handling, and cache validation. Redesigned provider bookings management page with modern UI/UX.
 
 ---
@@ -25,11 +27,11 @@
 ## Overview
 
 Booksy is a service booking platform built with:
-- **Backend**: .NET Core 8 (Clean Architecture, CQRS, DDD)
+- **Backend**: .NET Core 8 modular monolith — a single host (`Booksy.Host`) composing the UserManagement and ServiceCatalog bounded contexts in-process (Clean Architecture, CQRS, DDD)
 - **Frontend**: Vue 3 + TypeScript (Composition API, Pinia)
-- **Database**: PostgreSQL with EF Core
+- **Database**: single PostgreSQL database with schema-per-context, accessed via EF Core
 - **Authentication**: JWT with phone verification (OTP)
-- **Messaging**: RabbitMQ for event-driven architecture
+- **Messaging**: CAP (DotNetCore.CAP) in-process integration events on the in-memory transport (no external broker)
 - **SMS**: Rahyab SMS gateway integration
 
 ---
@@ -418,7 +420,7 @@ VITE_NESHAN_SERVICE_KEY=service.qBDJpu7hKVBEAzERghfm9JM7vqGKXoNNNTdtrGy7
 ### Domain Events vs Integration Events
 
 **Domain Events**: Internal to a bounded context
-**Integration Events**: Cross-context communication via message bus
+**Integration Events**: Cross-context communication via CAP, dispatched in-process (in-memory transport — no external broker)
 
 ```csharp
 // Domain Event (internal)
@@ -456,7 +458,7 @@ Raise: ProviderDraftCreatedEvent           |
       ↓                                     |
 ProviderDraftCreatedEventHandler           |
       ↓                                     |
-Publish: Integration Event → CAP → RabbitMQ
+Publish: Integration Event → CAP (in-process, in-memory transport)
       |                                     ↓
       |                    ProviderDraftCreatedEventSubscriber
       |                                     ↓
@@ -541,10 +543,10 @@ public async Task HandleAsync(ProviderDraftCreatedIntegrationEvent @event)
 ```
 
 **Key Benefits:**
-- ✅ Bounded contexts remain decoupled
-- ✅ Each context maintains its own database
-- ✅ Cross-context updates happen asynchronously
-- ✅ Failure in one context doesn't affect the other
+- ✅ Bounded contexts remain decoupled (separate schemas in one database)
+- ✅ Each context owns its own schema (`user_management`, `ServiceCatalog`) within the single `booksy` database
+- ✅ Cross-context updates flow through CAP integration events
+- ✅ Failure handling isolated per subscriber via CAP retry/outbox
 
 **Key Files:**
 - `ProviderDraftCreatedEvent.cs` - Domain event
@@ -559,10 +561,13 @@ public async Task HandleAsync(ProviderDraftCreatedIntegrationEvent @event)
 ### PostgreSQL Setup
 
 **Connection String Format:**
+
+The host uses a single `DefaultConnection` to the `booksy` database; each bounded context maps its tables into its own schema (`user_management`, `ServiceCatalog`), and CAP uses the `cap` schema.
+
 ```json
 {
   "ConnectionStrings": {
-    "DefaultConnection": "Host=localhost;Port=5432;Database=booksy_service_catalog;Username=postgres;Password=postgres;Include Error Detail=true"
+    "DefaultConnection": "Host=localhost;Port=5432;Database=booksy;Username=postgres;Password=postgres;Include Error Detail=true"
   }
 }
 ```

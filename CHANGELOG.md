@@ -7,6 +7,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed - Backend Migrated from Microservices to Modular Monolith
+
+- **Single Host**: Consolidated the per-service hosts into one ASP.NET Core host, `Booksy.Host` (image/container `booksy-api`), listening on `:5000` (internal port 80, mapped `5000:80`). It composes the UserManagement and ServiceCatalog bounded contexts in-process and serves all of their controllers under `/api/v1/...` (PascalCase paths unchanged).
+- **Ocelot API Gateway Retired**: The Ocelot gateway project was deleted. The old ports — Gateway `:5000`, UserManagement API `:5001`, ServiceCatalog API `:5002` — are gone; everything is one origin on `:5000`. The previous Ocelot case-sensitivity 404 caveat no longer applies.
+- **RabbitMQ Removed**: Cross-context integration events now run in-process via CAP (DotNetCore.CAP) on the in-memory transport (`EventBus:Provider=InMemory`). No broker container remains.
+- **Single Database**: One PostgreSQL database (`booksy`) with schema-per-context (`user_management`, `ServiceCatalog`, `cap`) and a single connection string (`DefaultConnection`). Migrations run at host startup.
+- **Frontend Routing**: The frontend talks to the backend via relative `/api` — dev uses the Vite proxy to `:5000`, prod uses nginx (`booksy-frontend/nginx.conf`) proxying `/api` → `booksy-api:80`.
+- **Test Entry Points**: The two `*.Api` projects remain only as integration-test entry points and are no longer deployed.
+- **Reference**: See `MONOLITH_MIGRATION_PLAN.md` for full details.
+
 ### Fixed - 2025-12-25
 
 #### Docker Health Check Failures and 504 Gateway Timeouts

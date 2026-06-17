@@ -1,30 +1,4 @@
 services:
-  # booksy.usermanagement.api:
-  #   image: booksy-usermanagement-api:latest
-  #   build:
-  #     context: .
-  #     dockerfile: src/BoundedContexts/UserManagement/Booksy.UserManagement.API/Dockerfile
-  #   environment:
-  #     - ASPNETCORE_ENVIRONMENT=Development
-  #     - ASPNETCORE_URLS=https://+:443;http://+:80
-  #     # Updated connection string with correct credentials
-  #     - ConnectionStrings__DefaultConnection=Host=postgres;Port=5432;Database=booksy_user_management;Username=booksy_admin;Password=Booksy@2024!;Include Error Detail=true
-  #     - ConnectionStrings__Redis=redis:6379
-  #     - ConnectionStrings__RabbitMQ=amqp://guest:guest@rabbitmq:5672
-  #   ports:
-  #     - "5001:80"
-  #     - "7001:443"
-  #   depends_on:
-  #     postgres:
-  #       condition: service_healthy
-  #     redis:
-  #       condition: service_started
-  #     rabbitmq:
-  #       condition: service_started
-  #   networks:
-  #     - booksy-network
-  #   restart: unless-stopped
-
   postgres:
     image: postgres:16-alpine
     environment:
@@ -78,116 +52,37 @@ services:
       timeout: 5s
       retries: 3
 
-  rabbitmq:
-    image: rabbitmq:3.13.7-management
-    environment:
-      - RABBITMQ_DEFAULT_USER=booksy_admin
-      - RABBITMQ_DEFAULT_PASS=Booksy@2024!
-    ports:
-      - "56721:5672"
-      - "15672:15672"
-    volumes:
-      - rabbitmq_data:/var/lib/rabbitmq
-    networks:
-      - booksy-network
-    restart: unless-stopped
-    healthcheck:
-      test: ["CMD", "rabbitmqctl", "status"]
-      interval: 30s
-      timeout: 10s
-      retries: 3
+  # RabbitMQ removed: CAP runs in-process inside the monolith host.
 
   # ========================================
   # API SERVICES
   # ========================================
 
-  booksy-gateway:
+  # Modular-monolith host (replaces gateway + usermanagement-api + servicecatalog-api).
+  # CAP runs in-process (EventBus__Provider=InMemory); no RabbitMQ dependency.
+  booksy-api:
     build:
       context: .
-      dockerfile: src/APIGateway/Booksy.Gateway/Dockerfile
+      dockerfile: src/Host/Booksy.Host/Dockerfile
       # Enable BuildKit for faster builds and caching
       x-bake:
         cache-from:
           - type=local,src=/tmp/.buildx-cache
         cache-to:
           - type=local,dest=/tmp/.buildx-cache
-    container_name: booksy-gateway
+    container_name: booksy-api
     environment:
       - ASPNETCORE_ENVIRONMENT=Development
       - ASPNETCORE_URLS=http://+:8080
       - ConnectionStrings__DefaultConnection=Host=postgres;Port=5432;Database=booksy_user_management;Username=booksy_admin;Password=Booksy@2024!
       - ConnectionStrings__Redis=redis:6379,password=Redis@2024!
-      - ConnectionStrings__RabbitMQ=amqp://booksy_admin:Booksy@2024!@rabbitmq:5672
+      - EventBus__Provider=InMemory
     ports:
-      - "8000:8080"
+      - "5000:8080"
     depends_on:
       postgres:
         condition: service_healthy
       redis:
-        condition: service_started
-      rabbitmq:
-        condition: service_started
-    networks:
-      - booksy-network
-    restart: unless-stopped
-
-  booksy-user-management-api:
-    build:
-      context: .
-      dockerfile: src/UserManagement/Booksy.UserManagement.API/Dockerfile
-      # Enable BuildKit for faster builds and caching
-      x-bake:
-        cache-from:
-          - type=local,src=/tmp/.buildx-cache
-        cache-to:
-          - type=local,dest=/tmp/.buildx-cache
-    container_name: booksy-user-management-api
-    environment:
-      - ASPNETCORE_ENVIRONMENT=Development
-      - ASPNETCORE_URLS=http://+:8080
-      - ConnectionStrings__DefaultConnection=Host=postgres;Port=5432;Database=booksy_user_management;Username=booksy_admin;Password=Booksy@2024!
-      - ConnectionStrings__Redis=redis:6379,password=Redis@2024!
-      - ConnectionStrings__RabbitMQ=amqp://booksy_admin:Booksy@2024!@rabbitmq:5672
-    ports:
-      - "8001:8080"
-    depends_on:
-      postgres:
-        condition: service_healthy
-      redis:
-        condition: service_started
-      rabbitmq:
-        condition: service_started
-    networks:
-      - booksy-network
-    restart: unless-stopped
-
-  booksy-service-catalog-api:
-    build:
-      context: .
-      dockerfile: src/BoundedContexts/ServiceCatalog/Booksy.ServiceCatalog.Api/Dockerfile
-      # Enable BuildKit for faster builds and caching
-      x-bake:
-        cache-from:
-          - type=local,src=/tmp/.buildx-cache
-        cache-to:
-          - type=local,dest=/tmp/.buildx-cache
-    container_name: booksy-service-catalog-api
-    environment:
-      - ASPNETCORE_ENVIRONMENT=Development
-      - ASPNETCORE_URLS=http://+:8080
-      - DOTNET_LAUNCH_PROFILE=
-      - ASPNETCORE_HTTP_PORTS=8080
-      - ConnectionStrings__DefaultConnection=Host=postgres;Port=5432;Database=booksy_service_catalog_dev;Username=booksy_admin;Password=Booksy@2024!
-      - ConnectionStrings__Redis=redis:6379,password=Redis@2024!
-      - ConnectionStrings__RabbitMQ=amqp://booksy_admin:Booksy@2024!@rabbitmq:5672
-    ports:
-      - "8102:8080"
-    depends_on:
-      postgres:
-        condition: service_healthy
-      redis:
-        condition: service_started
-      rabbitmq:
         condition: service_started
     networks:
       - booksy-network
@@ -207,9 +102,7 @@ services:
     ports:
       - "8080:80"
     depends_on:
-      - booksy-gateway
-      - booksy-user-management-api
-      - booksy-service-catalog-api
+      - booksy-api
     networks:
       - booksy-network
     restart: unless-stopped
@@ -242,7 +135,6 @@ services:
 volumes:
   postgres_data:
   redis_data:
-  rabbitmq_data:
   seq_data:
 
 networks:

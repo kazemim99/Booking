@@ -1,10 +1,11 @@
 version: '3.8'
 
 services:
-  # Backend Services
-  usermanagement-api:
-    image: ghcr.io/${GITHUB_REPOSITORY_OWNER}/booksy-usermanagement:latest
-    container_name: booksy-usermanagement-api
+  # Backend — modular monolith (UserManagement + ServiceCatalog in one host).
+  # Replaces the former usermanagement-api + servicecatalog-api + gateway services.
+  booksy-api:
+    image: ghcr.io/${GITHUB_REPOSITORY_OWNER}/booksy-api:latest
+    container_name: booksy-api
     env_file:
       - .env
     environment:
@@ -12,95 +13,17 @@ services:
       - ASPNETCORE_URLS=http://+:80
       - ConnectionStrings__DefaultConnection=${DB_CONNECTION_STRING}
       - ConnectionStrings__Redis=${REDIS_CONNECTION_STRING}
-      - ConnectionStrings__RabbitMQ=${RABBITMQ_CONNECTION_STRING}
-      - Seq__ServerUrl=${SEQ_SERVER_URL}
-    ports:
-      - "5001:80"
-    depends_on:
-      postgres:
-        condition: service_healthy
-      redis:
-        condition: service_healthy
-      rabbitmq:
-        condition: service_healthy
-      seq:
-        condition: service_started
-    networks:
-      - booksy-network
-    restart: unless-stopped
-    deploy:
-      resources:
-        limits:
-          cpus: '1.0'
-          memory: 1G
-        reservations:
-          cpus: '0.25'
-          memory: 256M
-    healthcheck:
-      test: ["CMD-SHELL", "curl -f http://localhost:80/health || exit 1"]
-      interval: 30s
-      timeout: 10s
-      retries: 3
-      start_period: 40s
-
-  servicecatalog-api:
-    image: ghcr.io/${GITHUB_REPOSITORY_OWNER}/booksy-servicecatalog:latest
-    container_name: booksy-servicecatalog-api
-    env_file:
-      - .env
-    environment:
-      - ASPNETCORE_ENVIRONMENT=Production
-      - ASPNETCORE_URLS=http://+:80
-      - ConnectionStrings__DefaultConnection=${DB_CONNECTION_STRING}
-      - ConnectionStrings__Redis=${REDIS_CONNECTION_STRING}
-      - ConnectionStrings__RabbitMQ=${RABBITMQ_CONNECTION_STRING}
-      - Seq__ServerUrl=${SEQ_SERVER_URL}
-    ports:
-      - "5002:80"
-    depends_on:
-      postgres:
-        condition: service_healthy
-      redis:
-        condition: service_healthy
-      rabbitmq:
-        condition: service_healthy
-      seq:
-        condition: service_started
-    networks:
-      - booksy-network
-    restart: unless-stopped
-    deploy:
-      resources:
-        limits:
-          cpus: '1.0'
-          memory: 1G
-        reservations:
-          cpus: '0.25'
-          memory: 256M
-    healthcheck:
-      test: ["CMD-SHELL", "curl -f http://localhost:80/health || exit 1"]
-      interval: 30s
-      timeout: 10s
-      retries: 3
-      start_period: 40s
-
-  gateway:
-    image: ghcr.io/${GITHUB_REPOSITORY_OWNER}/booksy-gateway:latest
-    container_name: booksy-gateway
-    env_file:
-      - .env
-    environment:
-      - ASPNETCORE_ENVIRONMENT=Production
-      - ASPNETCORE_URLS=http://+:80
-      - Services__UserManagement=${USER_MANAGEMENT_URL}
-      - Services__ServiceCatalog=${SERVICE_CATALOG_URL}
+      # CAP runs in-process; no RabbitMQ broker required.
+      - EventBus__Provider=InMemory
       - Seq__ServerUrl=${SEQ_SERVER_URL}
     ports:
       - "5000:80"
     depends_on:
-      usermanagement-api:
-        condition: service_started
-      servicecatalog-api:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      seq:
         condition: service_started
     networks:
       - booksy-network
@@ -108,18 +31,17 @@ services:
     deploy:
       resources:
         limits:
+          cpus: '2.0'
+          memory: 2G
+        reservations:
           cpus: '0.5'
           memory: 512M
-        reservations:
-          cpus: '0.1'
-          memory: 128M
-    # healthcheck disabled: gateway app doesn't implement /health endpoint
-    # healthcheck:
-    #   test: ["CMD-SHELL", "curl -f http://localhost:80/health || exit 1"]
-    #   interval: 30s
-    #   timeout: 10s
-    #   retries: 3
-    #   start_period: 40s
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:80/health || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
 
   frontend:
     image: ghcr.io/${GITHUB_REPOSITORY_OWNER}/booksy-frontend:latest
@@ -130,7 +52,7 @@ services:
       - "80:80"
       - "443:443"
     depends_on:
-      gateway:
+      booksy-api:
         condition: service_started
     networks:
       - booksy-network
@@ -211,36 +133,7 @@ services:
       retries: 3
       start_period: 5s
 
-  rabbitmq:
-    image: rabbitmq:3.13.7-management
-    container_name: booksy-rabbitmq
-    env_file:
-      - .env
-    environment:
-      - RABBITMQ_DEFAULT_USER=${RABBITMQ_USER}
-      - RABBITMQ_DEFAULT_PASS=${RABBITMQ_PASSWORD}
-    ports:
-      - "127.0.0.1:5672:5672"  # Only bind to localhost for security
-      - "15672:15672"  # Management UI - can be exposed
-    volumes:
-      - rabbitmq_data:/var/lib/rabbitmq
-    networks:
-      - booksy-network
-    restart: unless-stopped
-    deploy:
-      resources:
-        limits:
-          cpus: '1.0'
-          memory: 1G
-        reservations:
-          cpus: '0.25'
-          memory: 256M
-    healthcheck:
-      test: ["CMD", "rabbitmq-diagnostics", "-q", "ping"]
-      interval: 30s
-      timeout: 10s
-      retries: 3
-      start_period: 30s
+  # RabbitMQ removed: CAP runs on its in-memory transport inside the monolith host.
 
   seq:
     image: datalust/seq:latest
@@ -309,8 +202,6 @@ volumes:
   postgres_data:
     driver: local
   redis_data:
-    driver: local
-  rabbitmq_data:
     driver: local
   seq_data:
     driver: local

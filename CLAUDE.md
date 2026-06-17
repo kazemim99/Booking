@@ -4,29 +4,59 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Repository Overview
 
-This is a **deployment configuration repository** for Booksy, a microservices-based booking platform. The repository contains Docker Compose configurations, deployment scripts, and GitHub Actions workflows for deploying the application to production servers. The actual source code for the services is maintained in a separate repository.
+This repository contains both the **source code** and the **deployment configuration** for Booksy, a **modular-monolith** booking platform. The backend is a single ASP.NET Core host (`Booksy.Host`) that composes multiple bounded contexts (UserManagement, ServiceCatalog) in-process. The repository also contains the Vue frontend, Docker Compose configurations, deployment scripts, and GitHub Actions workflows for deploying the application to production servers.
+
+> **Migration note**: The backend was migrated from a microservices architecture to a modular monolith. The Ocelot API Gateway and per-service hosts have been retired, and RabbitMQ has been removed in favor of in-process CAP events. See [MONOLITH_MIGRATION_PLAN.md](MONOLITH_MIGRATION_PLAN.md) for details.
+
+## 📚 Developer Documentation
+
+### API & Integration Reference
+
+- **[API_ENDPOINTS.md](API_ENDPOINTS.md)** - Complete API endpoint reference (single host on :5000)
+  - UserManagement endpoints: Authentication, Customer Management
+  - ServiceCatalog endpoints: Categories, Providers, Bookings, Services
+  - All endpoints served from one host (`booksy-api`) under `/api/v1/...`
+  - All request/response schemas, authentication requirements, and examples
+
+- **[DTO_MAPPING.md](DTO_MAPPING.md)** - DTO mapping across all application layers
+  - Backend C# DTOs ↔ Flutter Dart Models ↔ Vue TypeScript Interfaces
+  - Type conversion guidelines (Guid → String, decimal → double, etc.)
+  - JSON serialization best practices
+  - Naming conventions and file locations
+
+### Application-Specific Documentation
+
+- **Flutter Customer App**: [booksy-customer-app/](booksy-customer-app/)
+  - [PROJECT_SUMMARY.md](booksy-customer-app/PROJECT_SUMMARY.md) - Architecture & features
+  - [FLUTTER_BACKEND_CONNECTION.md](booksy-customer-app/FLUTTER_BACKEND_CONNECTION.md) - Backend integration guide
+  - [CUSTOMER_APP_UX_FLOW.md](booksy-customer-app/CUSTOMER_APP_UX_FLOW.md) - User experience flow
+
+- **Vue Admin Panel**: [booksy-admin/](booksy-admin/) *(if applicable)*
+  - Admin dashboard for managing providers, services, and bookings
+
+- **Backend Source**: `src/Host/Booksy.Host` (single ASP.NET Core host) plus bounded contexts under `src/`
+  - Domain-Driven Design with CQRS pattern
+  - In-process integration events via CAP (DotNetCore.CAP) on the in-memory transport
+  - Clean Architecture principles
 
 ## Architecture
 
-Booksy follows a microservices architecture with the following components:
+Booksy is a **modular monolith**: a single backend host composes multiple bounded contexts in-process.
 
 ### Application Services
-- **UserManagement API** (Port 5001): Handles user authentication, registration, and profile management
-- **ServiceCatalog API** (Port 5002): Manages service listings, categories, and availability
-- **Gateway** (Port 5000): API Gateway that routes requests to backend services
-- **Frontend** (Ports 80/443): Web application frontend served via Nginx
+- **Booksy.Host** (`booksy-api`, Port 5000 → internal 80): Single ASP.NET Core host that composes both bounded contexts (UserManagement and ServiceCatalog) in-process and serves all of their controllers under `/api/v1/...`. (A Booking context exists only as empty scaffolding and is not built.) Database migrations run at host startup.
+- **Frontend** (Ports 80/443): Web application frontend served via Nginx; its nginx config proxies `/api` to `booksy-api:80`.
 
 ### Infrastructure Services
-- **PostgreSQL** (Port 5432): Primary database for all microservices
+- **PostgreSQL** (Port 5432): Single primary database (`booksy`) with schema-per-context (schemas: `user_management`, `ServiceCatalog`, `cap`). One connection string (`DefaultConnection`).
 - **Redis** (Port 6379): Caching layer with LRU eviction policy (512MB limit)
-- **RabbitMQ** (Ports 5672, 15672): Message broker for async communication between services
 - **Seq** (Ports 5341, 5342): Centralized structured logging platform
 - **pgAdmin** (Port 5050): Database management interface
 
 ### Service Communication
-- All services connect via a Docker bridge network (`booksy-network`, subnet 172.25.0.0/16)
-- Services communicate using container names as DNS hostnames
-- RabbitMQ is used for event-driven communication between microservices
+- All containers connect via a Docker bridge network (`booksy-network`, subnet 172.25.0.0/16)
+- Containers communicate using container names as DNS hostnames
+- Cross-context integration events run **in-process** via CAP (DotNetCore.CAP) on its in-memory transport (`EventBus:Provider=InMemory`) — there is no message broker container
 - Redis provides distributed caching and session management
 
 ## Common Commands
@@ -51,7 +81,7 @@ docker-compose -f docker-compose.prod.yml ps
 
 # View logs for specific service
 docker-compose -f docker-compose.prod.yml logs -f [service-name]
-# Example: docker-compose -f docker-compose.prod.yml logs -f usermanagement-api
+# Example: docker-compose -f docker-compose.prod.yml logs -f booksy-api
 
 # View logs for all services
 docker-compose -f docker-compose.prod.yml logs -f
@@ -69,7 +99,7 @@ docker-compose -f docker-compose.prod.yml down
 docker-compose -f docker-compose.prod.yml restart [service-name]
 
 # Scale a service (if supported)
-docker-compose -f docker-compose.prod.yml up -d --scale usermanagement-api=3
+docker-compose -f docker-compose.prod.yml up -d --scale booksy-api=3
 ```
 
 ### Database Operations
@@ -99,21 +129,9 @@ docker exec -it booksy-redis redis-cli -a YourRedisPassword123! MONITOR
 docker exec -it booksy-redis redis-cli -a YourRedisPassword123! INFO memory
 ```
 
-### RabbitMQ Operations
-```bash
-# Access RabbitMQ Management UI
-# Open browser to: http://server-ip:15672
-# Default credentials from .env: booksy_admin / YourRabbitMQPassword123!
+### Integration Events (CAP)
 
-# List queues via CLI
-docker exec booksy-rabbitmq rabbitmqctl list_queues
-
-# List exchanges
-docker exec booksy-rabbitmq rabbitmqctl list_exchanges
-
-# View connection status
-docker exec booksy-rabbitmq rabbitmqctl list_connections
-```
+Cross-context integration events run in-process via CAP on its in-memory transport — there is no RabbitMQ broker. CAP persists outbox/inbox state in the `cap` schema of the PostgreSQL database. To inspect published/received messages, query the CAP tables in Postgres or use the Seq logs.
 
 ### Monitoring and Logging
 ```bash
@@ -132,12 +150,10 @@ docker inspect --format='{{.State.Health.Status}}' booksy-[service-name]
 
 ### API Documentation (Swagger)
 ```bash
-# Access Swagger UI for each API service:
-# UserManagement API: http://server-ip:5001/swagger
-# ServiceCatalog API: http://server-ip:5002/swagger
-# Gateway API: http://server-ip:5000/swagger
+# Access Swagger UI on the single host:
+# Booksy API: http://server-ip:5000/swagger
 
-# Note: Services must be healthy for Swagger to be accessible
+# Note: The service must be healthy for Swagger to be accessible
 # Check service health: docker ps
 ```
 
@@ -163,7 +179,7 @@ cd /root/booksy/backups && ls -lt | tail -n +10 | awk '{print $9}' | xargs rm -f
 
 ### Build and Push (`build-and-push.yml`)
 - Triggers on: Push to main/develop, PRs, or manual dispatch
-- Builds Docker images for all four services (UserManagement, ServiceCatalog, Gateway, Frontend)
+- Builds Docker images for the backend host (`booksy-api`) and the Frontend
 - Pushes images to GitHub Container Registry (ghcr.io)
 - Uses Docker layer caching for faster builds
 - Tags images with branch name, PR number, commit SHA, and 'latest' for main branch
@@ -183,7 +199,6 @@ All environment variables are stored in `/root/booksy/.env`. Key variables inclu
 
 - **Database**: `POSTGRES_USER`, `POSTGRES_PASSWORD`, `POSTGRES_DB`
 - **Redis**: `REDIS_PASSWORD`
-- **RabbitMQ**: `RABBITMQ_DEFAULT_USER`, `RABBITMQ_DEFAULT_PASS`
 - **Seq**: `SEQ_FIRSTRUN_ADMINUSERNAME`, `SEQ_FIRSTRUN_ADMINPASSWORD`
 - **Container Registry**: `GITHUB_REPOSITORY_OWNER` (currently: kazemim99)
 
@@ -193,27 +208,24 @@ Never commit the `.env` file to version control. The `.env.backup` file should a
 
 All services have health checks configured using **curl**:
 
-- **APIs**: HTTP check on `/health` endpoint using `curl -f` (30s interval, 10s timeout, 3 retries, 40s start period)
+- **Backend API** (`booksy-api`): HTTP check on `/health` endpoint using `curl -f` (30s interval, 10s timeout, 3 retries, 40s start period)
 - **PostgreSQL**: `pg_isready` command (10s interval, 5s timeout, 5 retries, 10s start period)
 - **Redis**: `redis-cli ping` (10s interval, 5s timeout, 3 retries, 5s start period)
-- **RabbitMQ**: `rabbitmq-diagnostics ping` (30s interval, 10s timeout, 3 retries, 30s start period)
 - **Seq**: HTTP check on `/api/health` using `curl -f` (30s interval, 10s timeout, 3 retries, 20s start period)
 - **Frontend**: HTTP check on `/health` using `curl -f` (30s interval, 10s timeout, 3 retries, 20s start period)
 
 **Important**: All Docker images must have `curl` installed for health checks to work. The Dockerfiles in the source repository include curl installation:
-- .NET services: `apt-get install -y curl`
+- .NET host: `apt-get install -y curl`
 - Frontend (nginx:alpine): `apk add --no-cache curl`
 
 ## Resource Limits
 
 Services have CPU and memory constraints:
 
-- **APIs** (UserManagement, ServiceCatalog): 1 CPU / 1GB RAM (reserved: 0.25 CPU / 256MB)
-- **Gateway**: 0.5 CPU / 512MB RAM (reserved: 0.1 CPU / 128MB)
+- **Backend API** (`booksy-api`): 1 CPU / 1GB RAM (reserved: 0.25 CPU / 256MB)
 - **Frontend**: 0.5 CPU / 256MB RAM (reserved: 0.1 CPU / 64MB)
 - **PostgreSQL**: 2 CPU / 2GB RAM (reserved: 0.5 CPU / 512MB)
 - **Redis**: 0.5 CPU / 512MB RAM (reserved: 0.1 CPU / 128MB)
-- **RabbitMQ**: 1 CPU / 1GB RAM (reserved: 0.25 CPU / 256MB)
 - **Seq**: 0.5 CPU / 512MB RAM (reserved: 0.1 CPU / 128MB)
 - **pgAdmin**: 0.5 CPU / 512MB RAM (reserved: 0.1 CPU / 128MB)
 
@@ -221,14 +233,13 @@ Services have CPU and memory constraints:
 
 The startup order is enforced through Docker Compose dependencies:
 
-1. **Infrastructure** (PostgreSQL, Redis, RabbitMQ, Seq) starts first
-2. **Backend APIs** (UserManagement, ServiceCatalog) wait for infrastructure health checks
-3. **Gateway** waits for both backend APIs to be healthy
-4. **Frontend** waits for Gateway to be healthy
+1. **Infrastructure** (PostgreSQL, Redis, Seq) starts first
+2. **Backend host** (`booksy-api`) waits for infrastructure health checks, then runs migrations at startup
+3. **Frontend** waits for `booksy-api` to be healthy
 
 ## Security Considerations
 
-- Database and message broker ports (5432, 6379, 5672) are bound to localhost only (`127.0.0.1`)
+- Database and cache ports (5432, 6379) are bound to localhost only (`127.0.0.1`)
 - Passwords should be changed from defaults in `.env` before production use
 - GitHub Container Registry authentication is required for pulling images
 - SSH key-based authentication is used for deployment automation
@@ -238,111 +249,11 @@ The startup order is enforced through Docker Compose dependencies:
 
 Common issues and solutions:
 
-### 502 Bad Gateway / 504 Gateway Timeout Errors
-**Symptoms**: Frontend shows nginx 502/504 errors when accessing APIs (e.g., http://napstar.ir/api/v1/)
-
-**Cause**: Backend services are marked as unhealthy, preventing the gateway from routing requests properly.
-
-**Solution**:
-```bash
-# 1. Check service health status
-docker ps
-# Look for services showing "unhealthy" status
-
-# 2. Check health check logs
-docker inspect booksy-usermanagement-api | grep -A 20 "Health"
-docker inspect booksy-servicecatalog-api | grep -A 20 "Health"
-docker inspect booksy-gateway | grep -A 20 "Health"
-
-# 3. Verify curl is installed in containers (required for health checks)
-docker exec booksy-usermanagement-api which curl
-# Should return: /usr/bin/curl
-
-# 4. If curl is missing, rebuild and deploy latest images:
-cd /root/booksy
-docker-compose -f docker-compose.prod.yml pull
-docker-compose -f docker-compose.prod.yml up -d
-
-# 5. Wait 30-60 seconds and verify health
-docker ps
-# All services should show "healthy" status
-```
-
-**Root Cause**: Health checks use `curl` to test the `/health` endpoint. If curl is not installed in the Docker images, health checks fail, marking services as unhealthy. This prevents proper request routing and causes 502/504 errors.
-
-### Network Removal Error During Deployment
-**Symptoms**: GitHub Actions deployment fails with error:
-```
-error while removing network: network booksy_booksy-network has active endpoints
-(name:"booksy-gateway" id:"xxx", name:"booksy-frontend" id:"xxx", name:"booksy-usermanagement-api-dev" id:"xxx")
-```
-
-**Cause**: Orphaned containers from previous deployments (e.g., dev/staging containers with different names like `booksy-usermanagement-api-dev`) are still running and connected to the `booksy-network`. Docker Compose cannot remove the network while these containers are attached.
-
-**Solution**:
-```bash
-# 1. List all booksy containers (including orphans)
-docker ps -a --filter "name=booksy-"
-
-# 2. Forcibly remove all booksy containers
-docker ps -a --filter "name=booksy-" --format "{{.Names}}" | xargs -r docker rm -f
-
-# 3. Now you can safely remove the network or run docker-compose down
-docker-compose -f docker-compose.prod.yml down --remove-orphans
-
-# 4. Start fresh deployment
-docker-compose -f docker-compose.prod.yml up -d
-```
-
-**Prevention**: The deployment workflow (`.github/workflows/deploy.yml`) now includes an automatic cleanup step that forcibly removes all booksy containers before running `docker-compose down`, preventing this issue.
-
-### 404 Not Found Errors for API Endpoints
-**Symptoms**: Specific API endpoints return 404 errors (e.g., `/api/v1/platform/statistics`, `/api/v1/categories/popular`) while others work correctly (e.g., `/api/v1/Providers/search`)
-
-**Cause**: Case sensitivity mismatch between frontend API calls and Ocelot Gateway routing configuration.
-
-**Diagnosis**:
-```bash
-# Check gateway logs for literal placeholder values
-docker logs booksy-gateway --tail 50 | grep "404"
-
-# If you see URLs with literal {url} or {everything}, it's a case mismatch:
-# BAD:  http://booksy-service-catalog-api:8080/api/v1/Platform/{url}
-# GOOD: http://booksy-service-catalog-api:8080/api/v1/Platform/statistics
-```
-
-**Solution**:
-The frontend and Ocelot Gateway must use matching case. The convention is **PascalCase** for all API endpoints:
-
-```typescript
-// Frontend API service files should use PascalCase:
-const API_BASE = `/${API_VERSION}/Platform`     // ✅ Correct
-const API_BASE = `/${API_VERSION}/platform`     // ❌ Wrong - causes 404
-```
-
-**Files to check**:
-- `booksy-frontend/src/core/api/services/*.service.ts`
-- `booksy-frontend/src/modules/*/api/*.service.ts`
-- `booksy-frontend/src/modules/*/services/*.service.ts`
-
-**Testing**:
-```bash
-# Test with PascalCase (should work)
-curl http://localhost:8080/api/v1/Platform/statistics
-
-# Test with lowercase (will return 404)
-curl http://localhost:8080/api/v1/platform/statistics
-```
-
-**Note**: Ocelot's `RouteIsCaseSensitive: false` setting doesn't work reliably in version 23.4.0. Always use PascalCase.
-
-**Reference**: See `GATEWAY_CASE_SENSITIVITY_FIX.md` for detailed analysis.
-
 ### Other Common Issues
 
-1. **Service won't start**: Check logs with `docker-compose logs [service]` and verify health check status
+1. **Service won't start**: Check logs with `docker-compose logs [service]` (e.g., `booksy-api`) and verify health check status
 2. **Database connection errors**: Ensure PostgreSQL is healthy and connection string in `.env` is correct
 3. **Out of memory**: Check `docker stats` and adjust resource limits in docker-compose.prod.yml
 4. **Image pull failures**: Verify GHCR authentication with `docker login ghcr.io`
-5. **Port conflicts**: Ensure no other services are using the required ports (5000-5002, 80, 443, 5341, 15672, 5050)
-6. **Swagger not accessible**: Verify the service is healthy with `docker ps`. Unhealthy services cannot serve Swagger UI.
+5. **Port conflicts**: Ensure no other services are using the required ports (5000, 80, 443, 5341, 5050)
+6. **Swagger not accessible**: Verify `booksy-api` is healthy with `docker ps`. An unhealthy host cannot serve Swagger UI.
