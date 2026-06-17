@@ -86,11 +86,95 @@ jobs:
           --filter "FullyQualifiedName~IntegrationTests" \
           --verbosity normal
 
+  # Keystone end-to-end smoke test: boot the real monolith host against ephemeral
+  # Postgres+Redis and exercise the core flow (provider onboard → staff → customer
+  # books). This is the flow that must never regress; it gates the build/deploy.
+  e2e-keystone:
+    name: Keystone E2E Smoke
+    runs-on: ubuntu-latest
+    needs: test
+
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: booksy_admin
+          POSTGRES_PASSWORD: TestPassword123!
+          POSTGRES_DB: booksy_e2e
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U booksy_admin -d booksy_e2e"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+      redis:
+        image: redis:7-alpine
+        ports:
+          - 6379:6379
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Setup .NET
+      uses: actions/setup-dotnet@v4
+      with:
+        dotnet-version: ${{ env.DOTNET_VERSION }}
+
+    - name: Cache NuGet packages
+      uses: actions/cache@v4
+      with:
+        path: ~/.nuget/packages
+        key: ${{ runner.os }}-nuget-${{ hashFiles('**/*.csproj') }}
+        restore-keys: |
+          ${{ runner.os }}-nuget-
+
+    - name: Restore dependencies
+      run: dotnet restore ${{ env.SOLUTION_PATH }}
+
+    - name: Start Booksy host (sandbox auth, no real SMS)
+      env:
+        ASPNETCORE_ENVIRONMENT: Development
+        ASPNETCORE_URLS: http://localhost:5050
+        ConnectionStrings__DefaultConnection: "Host=localhost;Port=5432;Database=booksy_e2e;Username=booksy_admin;Password=TestPassword123!;Include Error Detail=true"
+        ConnectionStrings__Redis: "localhost:6379"
+        EventBus__Provider: "InMemory"
+        OTP_SANDBOX_CODE: "123456"
+        # Single global SMS sandbox switch: forces every provider (Rahyab + Kavenegar)
+        # into sandbox/disabled mode, so no real SMS is sent and no API key is required.
+        Sms__SandboxMode: "true"
+      run: |
+        dotnet run --project src/Host/Booksy.Host/Booksy.Host.csproj --configuration Release > host.log 2>&1 &
+        echo $! > host.pid
+
+    - name: Wait for host to become healthy
+      run: |
+        for i in $(seq 1 80); do
+          code=$(curl -s -o /dev/null -w '%{http_code}' http://localhost:5050/health || echo 000)
+          if [ "$code" = "200" ]; then echo "Host healthy after ~$((i*3))s"; exit 0; fi
+          sleep 3
+        done
+        echo "Host did not become healthy in time"; tail -n 200 host.log; exit 1
+
+    - name: Run keystone booking flow
+      run: BASE=http://localhost:5050 bash tests/e2e/keystone-booking-flow.sh
+
+    - name: Dump host log on failure
+      if: failure()
+      run: tail -n 300 host.log || true
+
   # Build and push Docker images
   build-and-push:
     name: Build & Push Docker Images
     runs-on: ubuntu-latest
-    needs: test
+    needs: [test, e2e-keystone]
     if: github.event_name == 'push'
     permissions:
       contents: read
@@ -116,39 +200,15 @@ jobs:
         echo "date=$(date +'%Y%m%d%H%M%S')" >> $GITHUB_OUTPUT
         echo "sha_short=$(git rev-parse --short HEAD)" >> $GITHUB_OUTPUT
 
-    - name: Build and push UserManagement API
+    - name: Build and push Booksy API (monolith)
       uses: docker/build-push-action@v5
       with:
         context: .
-        file: ./src/UserManagement/Booksy.UserManagement.API/Dockerfile
+        file: ./src/Host/Booksy.Host/Dockerfile
         push: true
         tags: |
-          ${{ env.REGISTRY }}/${{ env.IMAGE_PREFIX }}-usermanagement:develop
-          ${{ env.REGISTRY }}/${{ env.IMAGE_PREFIX }}-usermanagement:develop-${{ steps.meta.outputs.sha_short }}
-        cache-from: type=gha
-        cache-to: type=gha,mode=max
-
-    - name: Build and push ServiceCatalog API
-      uses: docker/build-push-action@v5
-      with:
-        context: .
-        file: ./src/BoundedContexts/ServiceCatalog/Booksy.ServiceCatalog.Api/Dockerfile
-        push: true
-        tags: |
-          ${{ env.REGISTRY }}/${{ env.IMAGE_PREFIX }}-servicecatalog:develop
-          ${{ env.REGISTRY }}/${{ env.IMAGE_PREFIX }}-servicecatalog:develop-${{ steps.meta.outputs.sha_short }}
-        cache-from: type=gha
-        cache-to: type=gha,mode=max
-
-    - name: Build and push API Gateway
-      uses: docker/build-push-action@v5
-      with:
-        context: .
-        file: ./src/APIGateway/Booksy.Gateway/Dockerfile
-        push: true
-        tags: |
-          ${{ env.REGISTRY }}/${{ env.IMAGE_PREFIX }}-gateway:develop
-          ${{ env.REGISTRY }}/${{ env.IMAGE_PREFIX }}-gateway:develop-${{ steps.meta.outputs.sha_short }}
+          ${{ env.REGISTRY }}/${{ env.IMAGE_PREFIX }}-api:develop
+          ${{ env.REGISTRY }}/${{ env.IMAGE_PREFIX }}-api:develop-${{ steps.meta.outputs.sha_short }}
         cache-from: type=gha
         cache-to: type=gha,mode=max
 

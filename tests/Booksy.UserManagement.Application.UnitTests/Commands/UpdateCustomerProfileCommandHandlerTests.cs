@@ -1,8 +1,11 @@
 using Booksy.Core.Domain.ValueObjects;
 using Booksy.UserManagement.Application.CQRS.Commands.Customer.UpdateCustomerProfile;
+using Booksy.UserManagement.Domain.Aggregates;
 using Booksy.UserManagement.Domain.Aggregates.CustomerAggregate;
 using Booksy.UserManagement.Domain.Entities;
+using Booksy.UserManagement.Domain.Enums;
 using Booksy.UserManagement.Domain.Repositories;
+using Booksy.UserManagement.Domain.ValueObjects;
 using FluentAssertions;
 using Microsoft.Extensions.Logging;
 using NSubstitute;
@@ -12,24 +15,32 @@ namespace Booksy.UserManagement.Application.UnitTests.Commands;
 public class UpdateCustomerProfileCommandHandlerTests
 {
     private readonly ICustomerRepository _customerRepository;
+    private readonly IUserRepository _userRepository;
     private readonly ILogger<UpdateCustomerProfileCommandHandler> _logger;
     private readonly UpdateCustomerProfileCommandHandler _handler;
 
     public UpdateCustomerProfileCommandHandlerTests()
     {
         _customerRepository = Substitute.For<ICustomerRepository>();
+        _userRepository = Substitute.For<IUserRepository>();
         _logger = Substitute.For<ILogger<UpdateCustomerProfileCommandHandler>>();
-        //_handler = new UpdateCustomerProfileCommandHandler(_customerRepository, _logger);
+        _handler = new UpdateCustomerProfileCommandHandler(_customerRepository, _userRepository, _logger);
     }
+
+    private static User CreateUser(string firstName, string lastName)
+        => User.Register(
+            Email.Create("john.doe@example.com"),
+            HashedPassword.FromHash("hash"),
+            UserProfile.Create(firstName, lastName),
+            UserType.Customer);
 
     [Fact]
     public async Task Handle_Should_Update_Customer_Profile_Successfully()
     {
         // Arrange
         var customerId = Guid.NewGuid();
-        var userId = UserId.From(Guid.NewGuid());
-        var existingProfile = UserProfile.Create("John", "Doe");
-        var customer = Customer.Create(userId, existingProfile);
+        var user = CreateUser("John", "Doe");
+        var customer = Customer.Create(user.Id, user.Profile);
 
         var command = new UpdateCustomerProfileCommand
         {
@@ -41,6 +52,8 @@ public class UpdateCustomerProfileCommandHandlerTests
 
         _customerRepository.GetByIdAsync(Arg.Any<CustomerId>(), Arg.Any<CancellationToken>())
             .Returns(customer);
+        _userRepository.GetByIdAsync(Arg.Any<UserId>(), Arg.Any<CancellationToken>())
+            .Returns(user);
 
         // Act
         var result = await _handler.Handle(command, CancellationToken.None);
@@ -50,8 +63,8 @@ public class UpdateCustomerProfileCommandHandlerTests
         result.FullName.Should().Contain("Jane");
         result.FullName.Should().Contain("Smith");
 
-        await _customerRepository.Received(1).UpdateAsync(
-            Arg.Any<Customer>(),
+        await _userRepository.Received(1).UpdateAsync(
+            Arg.Any<User>(),
             Arg.Any<CancellationToken>());
     }
 

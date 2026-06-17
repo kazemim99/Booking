@@ -1,3 +1,4 @@
+using Booksy.ServiceCatalog.Application.Abstractions.Persistence;
 using Booksy.Core.Application.Abstractions.Persistence;
 using Booksy.Core.Application.Exceptions;
 using Booksy.Core.Domain.Exceptions;
@@ -19,7 +20,7 @@ public class ApproveJoinRequestCommandHandlerTests
     private readonly IProviderWriteRepository _providerWriteRepository;
     private readonly IProviderJoinRequestReadRepository _joinRequestReadRepository;
     private readonly IProviderJoinRequestWriteRepository _joinRequestWriteRepository;
-    private readonly IUnitOfWork _unitOfWork;
+    private readonly IServiceCatalogUnitOfWork _unitOfWork;
     private readonly ILogger<ApproveJoinRequestCommandHandler> _logger;
     private readonly ApproveJoinRequestCommandHandler _handler;
 
@@ -29,7 +30,7 @@ public class ApproveJoinRequestCommandHandlerTests
         _providerWriteRepository = Substitute.For<IProviderWriteRepository>();
         _joinRequestReadRepository = Substitute.For<IProviderJoinRequestReadRepository>();
         _joinRequestWriteRepository = Substitute.For<IProviderJoinRequestWriteRepository>();
-        _unitOfWork = Substitute.For<IUnitOfWork>();
+        _unitOfWork = Substitute.For<IServiceCatalogUnitOfWork>();
         _logger = Substitute.For<ILogger<ApproveJoinRequestCommandHandler>>();
 
         _handler = new ApproveJoinRequestCommandHandler(
@@ -104,7 +105,7 @@ public class ApproveJoinRequestCommandHandlerTests
 
         await _joinRequestWriteRepository.Received(1).UpdateAsync(joinRequest, Arg.Any<CancellationToken>());
         await _providerWriteRepository.Received(1).UpdateAsync(requester, Arg.Any<CancellationToken>());
-        await _unitOfWork.Received(1).CommitAndPublishEventsAsync(Arg.Any<CancellationToken>());
+        await _unitOfWork.Received(1).SaveAndPublishEventsAsync(Arg.Any<CancellationToken>());
     }
 
     [Fact]

@@ -51,17 +51,17 @@ public class BusinessProfileGalleryTests
         // Arrange
         var profile = BusinessProfile.Create("Test Business", "Test Description", "\"profileImageUrl\"");
 
-        // Add 50 images (max limit)
-        for (int i = 0; i < 50; i++)
+        // Add images up to the max limit (20)
+        for (int i = 0; i < 20; i++)
         {
             profile.AddGalleryImage(_providerId, $"url{i}", $"thumb{i}", $"medium{i}");
         }
 
-        // Act & Assert
+        // Act & Assert — the next one exceeds the limit
         var exception = Assert.Throws<DomainValidationException>(() =>
-            profile.AddGalleryImage(_providerId, "url51", "thumb51", "medium51"));
+            profile.AddGalleryImage(_providerId, "url21", "thumb21", "medium21"));
 
-        Assert.Contains("Cannot add more than 50 gallery images", exception.Message);
+        Assert.Contains("Cannot add more than 20 gallery images", exception.Message);
     }
 
     [Fact]

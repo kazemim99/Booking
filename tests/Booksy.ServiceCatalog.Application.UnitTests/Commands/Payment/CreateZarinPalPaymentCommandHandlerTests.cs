@@ -1,3 +1,4 @@
+using Booksy.ServiceCatalog.Application.Abstractions.Persistence;
 using Booksy.Core.Application.Abstractions.Persistence;
 using Booksy.Infrastructure.External.Payment.ZarinPal;
 using Booksy.Infrastructure.External.Payment.ZarinPal.Models;
@@ -14,7 +15,7 @@ public class CreateZarinPalPaymentCommandHandlerTests
 {
     private readonly IPaymentWriteRepository _paymentRepository;
     private readonly IZarinPalService _zarinPalService;
-    private readonly IUnitOfWork _unitOfWork;
+    private readonly IServiceCatalogUnitOfWork _unitOfWork;
     private readonly ILogger<CreateZarinPalPaymentCommandHandler> _logger;
     private readonly CreateZarinPalPaymentCommandHandler _handler;
 
@@ -22,7 +23,7 @@ public class CreateZarinPalPaymentCommandHandlerTests
     {
         _paymentRepository = Substitute.For<IPaymentWriteRepository>();
         _zarinPalService = Substitute.For<IZarinPalService>();
-        _unitOfWork = Substitute.For<IUnitOfWork>();
+        _unitOfWork = Substitute.For<IServiceCatalogUnitOfWork>();
         _logger = Substitute.For<ILogger<CreateZarinPalPaymentCommandHandler>>();
         _handler = new CreateZarinPalPaymentCommandHandler(
             _paymentRepository,

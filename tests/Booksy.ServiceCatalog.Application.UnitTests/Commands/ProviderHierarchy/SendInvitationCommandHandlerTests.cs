@@ -1,3 +1,4 @@
+using Booksy.ServiceCatalog.Application.Abstractions.Persistence;
 using Booksy.Core.Application.Abstractions.Persistence;
 using Booksy.Core.Application.Exceptions;
 using Booksy.Core.Domain.Exceptions;
@@ -18,7 +19,7 @@ public class SendInvitationCommandHandlerTests
     private readonly IProviderReadRepository _providerRepository;
     private readonly IProviderInvitationReadRepository _invitationReadRepository;
     private readonly IProviderInvitationWriteRepository _invitationWriteRepository;
-    private readonly IUnitOfWork _unitOfWork;
+    private readonly IServiceCatalogUnitOfWork _unitOfWork;
     private readonly ILogger<SendInvitationCommandHandler> _logger;
     private readonly SendInvitationCommandHandler _handler;
 
@@ -27,7 +28,7 @@ public class SendInvitationCommandHandlerTests
         _providerRepository = Substitute.For<IProviderReadRepository>();
         _invitationReadRepository = Substitute.For<IProviderInvitationReadRepository>();
         _invitationWriteRepository = Substitute.For<IProviderInvitationWriteRepository>();
-        _unitOfWork = Substitute.For<IUnitOfWork>();
+        _unitOfWork = Substitute.For<IServiceCatalogUnitOfWork>();
         _logger = Substitute.For<ILogger<SendInvitationCommandHandler>>();
 
         _handler = new SendInvitationCommandHandler(
@@ -97,7 +98,7 @@ public class SendInvitationCommandHandlerTests
                 i.InviteeName == "John Doe"),
             Arg.Any<CancellationToken>());
 
-        await _unitOfWork.Received(1).CommitAndPublishEventsAsync(Arg.Any<CancellationToken>());
+        await _unitOfWork.Received(1).SaveAndPublishEventsAsync(Arg.Any<CancellationToken>());
     }
 
     [Fact]

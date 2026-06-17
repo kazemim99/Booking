@@ -1,3 +1,4 @@
+using Booksy.ServiceCatalog.Application.Abstractions.Persistence;
 using Booksy.Core.Application.Abstractions.Persistence;
 using Booksy.Core.Application.Exceptions;
 using Booksy.Core.Domain.Exceptions;
@@ -17,7 +18,7 @@ public class ConvertToOrganizationCommandHandlerTests
 {
     private readonly IProviderReadRepository _providerReadRepository;
     private readonly IProviderWriteRepository _providerWriteRepository;
-    private readonly IUnitOfWork _unitOfWork;
+    private readonly IServiceCatalogUnitOfWork _unitOfWork;
     private readonly ILogger<ConvertToOrganizationCommandHandler> _logger;
     private readonly ConvertToOrganizationCommandHandler _handler;
 
@@ -25,7 +26,7 @@ public class ConvertToOrganizationCommandHandlerTests
     {
         _providerReadRepository = Substitute.For<IProviderReadRepository>();
         _providerWriteRepository = Substitute.For<IProviderWriteRepository>();
-        _unitOfWork = Substitute.For<IUnitOfWork>();
+        _unitOfWork = Substitute.For<IServiceCatalogUnitOfWork>();
         _logger = Substitute.For<ILogger<ConvertToOrganizationCommandHandler>>();
 
         _handler = new ConvertToOrganizationCommandHandler(
@@ -83,7 +84,7 @@ public class ConvertToOrganizationCommandHandlerTests
         individual.CanHaveStaff().Should().BeTrue();
 
         await _providerWriteRepository.Received(1).UpdateAsync(individual, Arg.Any<CancellationToken>());
-        await _unitOfWork.Received(1).CommitAndPublishEventsAsync(Arg.Any<CancellationToken>());
+        await _unitOfWork.Received(1).SaveAndPublishEventsAsync(Arg.Any<CancellationToken>());
     }
 
     [Fact]
