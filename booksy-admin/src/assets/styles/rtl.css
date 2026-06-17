@@ -1,0 +1,199 @@
+/**
+ * RTL CSS Utilities
+ * Provides directional styling utilities for RTL/LTR layouts
+ */
+
+/* Base direction rules */
+html[dir='rtl'] {
+  direction: rtl;
+}
+
+html[dir='ltr'] {
+  direction: ltr;
+}
+
+/* Text alignment utilities */
+.text-start {
+  text-align: start;
+}
+
+.text-end {
+  text-align: end;
+}
+
+html[dir='rtl'] .text-start {
+  text-align: right;
+}
+
+html[dir='rtl'] .text-end {
+  text-align: left;
+}
+
+html[dir='ltr'] .text-start {
+  text-align: left;
+}
+
+html[dir='ltr'] .text-end {
+  text-align: right;
+}
+
+/* Float utilities */
+.float-start {
+  float: inline-start;
+}
+
+.float-end {
+  float: inline-end;
+}
+
+html[dir='rtl'] .float-start {
+  float: right;
+}
+
+html[dir='rtl'] .float-end {
+  float: left;
+}
+
+html[dir='ltr'] .float-start {
+  float: left;
+}
+
+html[dir='ltr'] .float-end {
+  float: right;
+}
+
+/* RTL transform utilities */
+html[dir='rtl'] .rtl-flip {
+  transform: scaleX(-1);
+}
+
+html[dir='rtl'] .rtl-rotate-180 {
+  transform: rotate(180deg);
+}
+
+/* Margin utilities using logical properties */
+.m-inline-start-xs {
+  margin-inline-start: 0.25rem;
+}
+
+.m-inline-start-sm {
+  margin-inline-start: 0.5rem;
+}
+
+.m-inline-start-md {
+  margin-inline-start: 1rem;
+}
+
+.m-inline-start-lg {
+  margin-inline-start: 1.5rem;
+}
+
+.m-inline-start-xl {
+  margin-inline-start: 2rem;
+}
+
+.m-inline-end-xs {
+  margin-inline-end: 0.25rem;
+}
+
+.m-inline-end-sm {
+  margin-inline-end: 0.5rem;
+}
+
+.m-inline-end-md {
+  margin-inline-end: 1rem;
+}
+
+.m-inline-end-lg {
+  margin-inline-end: 1.5rem;
+}
+
+.m-inline-end-xl {
+  margin-inline-end: 2rem;
+}
+
+/* Padding utilities using logical properties */
+.p-inline-start-xs {
+  padding-inline-start: 0.25rem;
+}
+
+.p-inline-start-sm {
+  padding-inline-start: 0.5rem;
+}
+
+.p-inline-start-md {
+  padding-inline-start: 1rem;
+}
+
+.p-inline-start-lg {
+  padding-inline-start: 1.5rem;
+}
+
+.p-inline-start-xl {
+  padding-inline-start: 2rem;
+}
+
+.p-inline-end-xs {
+  padding-inline-end: 0.25rem;
+}
+
+.p-inline-end-sm {
+  padding-inline-end: 0.5rem;
+}
+
+.p-inline-end-md {
+  padding-inline-end: 1rem;
+}
+
+.p-inline-end-lg {
+  padding-inline-end: 1.5rem;
+}
+
+.p-inline-end-xl {
+  padding-inline-end: 2rem;
+}
+
+/* Border utilities using logical properties */
+.border-inline-start {
+  border-inline-start: 1px solid #d9d9d9;
+}
+
+.border-inline-end {
+  border-inline-end: 1px solid #d9d9d9;
+}
+
+/* Force LTR direction for numbers in RTL mode */
+html[dir='rtl'] .ant-badge-count,
+html[dir='rtl'] .ant-statistic-content-value,
+html[dir='rtl'] .ant-input-number,
+html[dir='rtl'] .ant-pagination-item,
+html[dir='rtl'] .ant-table-pagination .ant-pagination-total-text,
+html[dir='rtl'] .ant-tag {
+  direction: ltr;
+  unicode-bidi: embed;
+}
+
+/* Keep badge count centered even with LTR direction */
+html[dir='rtl'] .ant-badge-count {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* Position badge on the left side in RTL mode (above the text start) */
+html[dir='rtl'] .ant-badge {
+  direction: rtl;
+}
+
+html[dir='rtl'] .ant-badge-count {
+  right: auto;
+  left: 0;
+  transform: translate(-50%, -50%);
+}
+
+/* Utility class for forcing LTR on numbers */
+.ltr-numbers {
+  direction: ltr;
+  unicode-bidi: embed;
+  display: inline-block;
+}

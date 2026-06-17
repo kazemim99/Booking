@@ -1,0 +1,4 @@
+./lib/core/di/injection.dart
+./lib/core/errors/failures.dart
+./lib/core/storage/secure_storage_service.dart
+./lib/main.dart

@@ -1,0 +1,80 @@
+/**
+ * Coliride per-component polish for Ant Design Vue.
+ *
+ * Ant's global theme tokens (src/config/antd-theme.ts) handle palette/radius/font, but a few
+ * signature Coliride touches (flat bold buttons, border-over-shadow cards, brand chrome) live
+ * below Ant's token surface. Ant v4 injects component CSS at runtime, so these overrides use
+ * !important to win. Uses the shared @booksy/tokens custom properties.
+ */
+
+/* Flat, bold, rounded buttons — Coliride's signature button */
+.ant-btn {
+  font-weight: 700 !important;
+  border-radius: var(--radius-md) !important;
+  box-shadow: none !important;
+}
+.ant-btn-lg {
+  border-radius: var(--radius-md) !important;
+}
+.ant-btn-primary:not(:disabled):hover {
+  background: var(--color-primary-600) !important;
+}
+
+/* Inputs — soft 12px corners */
+.ant-input,
+.ant-input-affix-wrapper,
+.ant-input-number,
+.ant-picker,
+.ant-select-selector {
+  border-radius: var(--radius-lg) !important;
+}
+
+/* Cards — border over shadow, generous radius */
+.ant-card {
+  border-radius: var(--radius-2xl) !important;
+  border: 1px solid var(--color-border) !important;
+  box-shadow: var(--shadow-sm) !important;
+}
+.ant-card-bordered {
+  border: 1px solid var(--color-border) !important;
+}
+
+/* Tables — rounded container, light grey header */
+.ant-table {
+  border-radius: var(--radius-lg) !important;
+}
+.ant-table-thead > tr > th {
+  background: var(--color-gray-100) !important;
+  color: var(--color-text-primary) !important;
+  font-weight: 700 !important;
+}
+
+/* Brand chrome: white header/sider, navy ink */
+.ant-layout-header {
+  background: var(--color-background) !important;
+  border-bottom: 1px solid var(--color-border) !important;
+}
+.ant-layout-sider {
+  background: var(--color-background) !important;
+  border-inline-end: 1px solid var(--color-border) !important;
+}
+
+/* Menu: brand selection (blue text on light-blue fill) */
+.ant-menu-light .ant-menu-item-selected {
+  color: var(--color-primary-500) !important;
+  background: var(--color-primary-50) !important;
+  border-radius: var(--radius-md) !important;
+}
+
+/* Modals & dropdowns — soft corners, flat-ish */
+.ant-modal-content,
+.ant-dropdown-menu,
+.ant-select-dropdown {
+  border-radius: var(--radius-xl) !important;
+  box-shadow: var(--shadow-lg) !important;
+}
+
+/* Tags / badges — green accent pill feel */
+.ant-tag {
+  border-radius: var(--radius-sm) !important;
+}

@@ -1,0 +1,65 @@
+/**
+ * Persian Fonts - Vazir
+ * Using local font files from public/fonts/vazir
+ */
+
+/* Vazir Font Family */
+@font-face {
+  font-family: 'Vazir';
+  src: url('/fonts/vazir/Vazir-Thin.woff2') format('woff2'),
+       url('/fonts/vazir/Vazir-Thin.woff') format('woff'),
+       url('/fonts/vazir/Vazir-Thin.ttf') format('truetype');
+  font-weight: 100;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Vazir';
+  src: url('/fonts/vazir/Vazir-Light.woff2') format('woff2'),
+       url('/fonts/vazir/Vazir-Light.woff') format('woff'),
+       url('/fonts/vazir/Vazir-Light.ttf') format('truetype');
+  font-weight: 300;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Vazir';
+  src: url('/fonts/vazir/Vazir.woff2') format('woff2'),
+       url('/fonts/vazir/Vazir.woff') format('woff'),
+       url('/fonts/vazir/Vazir.ttf') format('truetype');
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Vazir';
+  src: url('/fonts/vazir/Vazir-Medium.woff2') format('woff2'),
+       url('/fonts/vazir/Vazir-Medium.woff') format('woff'),
+       url('/fonts/vazir/Vazir-Medium.ttf') format('truetype');
+  font-weight: 500;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Vazir';
+  src: url('/fonts/vazir/Vazir-Bold.woff2') format('woff2'),
+       url('/fonts/vazir/Vazir-Bold.woff') format('woff'),
+       url('/fonts/vazir/Vazir-Bold.ttf') format('truetype');
+  font-weight: 700;
+  font-style: normal;
+  font-display: swap;
+}
+
+/* Apply Vazir font to Persian locale */
+html[lang="fa"] * {
+  font-family: 'Vazir', Tahoma, 'Iranian Sans', sans-serif !important;
+}
+
+/* Ensure proper line height for Persian text */
+html[lang="fa"] {
+  line-height: 1.8;
+}
