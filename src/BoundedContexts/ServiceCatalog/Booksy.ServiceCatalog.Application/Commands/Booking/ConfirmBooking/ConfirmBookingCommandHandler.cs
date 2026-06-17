@@ -13,12 +13,12 @@ namespace Booksy.ServiceCatalog.Application.Commands.Booking.ConfirmBooking
     public sealed class ConfirmBookingCommandHandler : ICommandHandler<ConfirmBookingCommand, ConfirmBookingResult>
     {
         private readonly IBookingWriteRepository _bookingRepository;
-        private readonly IUnitOfWork _unitOfWork;
+        private readonly IServiceCatalogUnitOfWork _unitOfWork;
         private readonly ILogger<ConfirmBookingCommandHandler> _logger;
 
         public ConfirmBookingCommandHandler(
             IBookingWriteRepository bookingRepository,
-            IUnitOfWork unitOfWork,
+            IServiceCatalogUnitOfWork unitOfWork,
             ILogger<ConfirmBookingCommandHandler> logger)
         {
             _bookingRepository = bookingRepository;
@@ -52,6 +52,7 @@ namespace Booksy.ServiceCatalog.Application.Commands.Booking.ConfirmBooking
 
 
             _logger.LogInformation("Booking {BookingId} confirmed successfully", booking.Id);
+            Telemetry.BookingMetrics.BookingConfirmed();
 
             return new ConfirmBookingResult(
                 BookingId: booking.Id.Value,

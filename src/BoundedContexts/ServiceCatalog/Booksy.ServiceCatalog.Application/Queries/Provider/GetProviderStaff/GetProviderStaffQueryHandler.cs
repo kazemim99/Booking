@@ -1,57 +1,61 @@
-//// ========================================
-//// Application/Queries/Provider/GetProviderStaff/GetProviderStaffQueryHandler.cs
-//// ========================================
-//using Booksy.Core.Application.Abstractions.CQRS;
-//using Booksy.ServiceCatalog.Domain.Repositories;
-//using Booksy.ServiceCatalog.Domain.ValueObjects;
+// ========================================
+// Application/Queries/Provider/GetProviderStaff/GetProviderStaffQueryHandler.cs
+// Returns an organization's staff. Staff are modelled as Active Individual sub-providers
+// (ParentProviderId == organization), so we read them via GetStaffByOrganizationIdAsync.
+// ========================================
+using Booksy.Core.Application.Abstractions.CQRS;
+using Booksy.ServiceCatalog.Domain.Enums;
+using Booksy.ServiceCatalog.Domain.Repositories;
+using Booksy.ServiceCatalog.Domain.ValueObjects;
 
-//namespace Booksy.ServiceCatalog.Application.Queries.Provider.GetProviderStaff
-//{
-//    /// <summary>
-//    /// Handler for GetProviderStaffQuery - retrieves staff through Provider aggregate
-//    /// ✅ DDD-Compliant: Uses IProviderReadRepository only and accesses staff through Provider
-//    /// </summary>
-//    internal sealed class GetProviderStaffQueryHandler
-//        : IQueryHandler<GetProviderStaffQuery, GetProviderStaffResult>
-//    {
-//        private readonly IProviderReadRepository _providerRepository;
+namespace Booksy.ServiceCatalog.Application.Queries.Provider.GetProviderStaff
+{
+    public sealed class GetProviderStaffQueryHandler
+        : IQueryHandler<GetProviderStaffQuery, GetProviderStaffResult>
+    {
+        private readonly IProviderReadRepository _providerRepository;
 
-//        public GetProviderStaffQueryHandler(IProviderReadRepository providerRepository)
-//        {
-//            _providerRepository = providerRepository;
-//        }
+        public GetProviderStaffQueryHandler(IProviderReadRepository providerRepository)
+        {
+            _providerRepository = providerRepository ?? throw new ArgumentNullException(nameof(providerRepository));
+        }
 
-//        public async Task<GetProviderStaffResult> Handle(
-//            GetProviderStaffQuery request,
-//            CancellationToken cancellationToken)
-//        {
-//            var providerId = ProviderId.From(request.ProviderId);
-//            var provider = await _providerRepository.GetByIdAsync(providerId, cancellationToken);
+        public async Task<GetProviderStaffResult> Handle(
+            GetProviderStaffQuery request,
+            CancellationToken cancellationToken)
+        {
+            var organizationId = ProviderId.From(request.ProviderId);
 
-//            if (provider == null)
-//                throw new KeyNotFoundException($"Provider {request.ProviderId} not found");
+            var organization = await _providerRepository.GetByIdAsync(organizationId, cancellationToken);
+            if (organization is null)
+                throw new KeyNotFoundException($"Provider {request.ProviderId} not found");
 
-//            var staffList = request.IncludeInactive == true
-//                ? provider.Staff 
-//                : provider.GetActiveStaff(); 
+            var staff = await _providerRepository.GetStaffByOrganizationIdAsync(organizationId, cancellationToken);
 
-//            var staffDtos = staffList.Select(staff => new StaffDto(
-//                staff.Id,
-//                staff.FirstName,
-//                staff.LastName,
-//                staff.FullName,
-//                staff.Phone?.Value?.ToString(),
-//                staff.Role!.ToString(),
-//                staff.IsActive,
-//                staff.HiredAt,
-//                staff.TerminatedAt,
-//                staff.Notes
-//            )).ToList();
+            var includeInactive = request.IncludeInactive ?? false;
+            var staffDtos = staff
+                .Where(s => includeInactive || s.Status == ProviderStatus.Active)
+                .Select(s => new StaffDto(
+                    s.Id.Value,
+                    s.OwnerFirstName,
+                    s.OwnerLastName,
+                    $"{s.OwnerFirstName} {s.OwnerLastName}".Trim(),
+                    s.ContactInfo?.PrimaryPhone?.Value,
+                    "Staff",
+                    s.Status == ProviderStatus.Active,
+                    s.RegisteredAt,
+                    null,
+                    null)
+                {
+                    Biography = string.Empty,
+                    ProfilePhotoUrl = s.Profile?.ProfileImageUrl ?? string.Empty
+                })
+                .ToList();
 
-//            return new GetProviderStaffResult(
-//                provider.Id.Value,
-//                provider.Profile.BusinessName,
-//                staffDtos);
-//        }
-//    }
-//}
+            return new GetProviderStaffResult(
+                organization.Id.Value,
+                organization.Profile.BusinessName,
+                staffDtos);
+        }
+    }
+}

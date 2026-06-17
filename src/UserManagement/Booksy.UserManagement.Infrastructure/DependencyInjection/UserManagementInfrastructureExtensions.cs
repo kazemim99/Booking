@@ -50,6 +50,10 @@ namespace Booksy.UserManagement.Infrastructure.DependencyInjection
                         errorCodesToAdd: null);
                 });
 
+                // Suppress pending model changes warning (false positive during development)
+                options.ConfigureWarnings(warnings =>
+                    warnings.Ignore(Microsoft.EntityFrameworkCore.Diagnostics.RelationalEventId.PendingModelChangesWarning));
+
                 // Enable logging in development
                 if (configuration.GetValue<bool>("DatabaseSettings:EnableSensitiveDataLogging"))
                 {
@@ -76,10 +80,15 @@ namespace Booksy.UserManagement.Infrastructure.DependencyInjection
 
             services.AddScoped<IUnitOfWork, EfCoreUnitOfWork<UserManagementDbContext>>();
 
+            // Context-scoped Unit of Work (monolith): handlers inject this marker so they
+            // always commit against the UserManagement DbContext, never another context's.
+            services.AddScoped<Booksy.UserManagement.Application.Abstractions.Persistence.IUserManagementUnitOfWork, UserManagementUnitOfWork>();
+
 
             // Register Repositories
 
-            services.AddScoped<ISeeder, UserManagementDatabaseSeederOrchestrator>();
+            services.AddScoped<UserManagementDatabaseSeeder>();
+            services.AddScoped<ISeeder>(sp => sp.GetRequiredService<UserManagementDatabaseSeeder>());
             
 
             services.AddScoped<IUserRepository, UserRepository>();
@@ -91,7 +100,10 @@ namespace Booksy.UserManagement.Infrastructure.DependencyInjection
             services.AddExternalServices(configuration);
 
             // Register SMS Notification Service (UserManagement bounded context)
-            services.AddHttpClient<RahyabSmsNotificationService>();
+            // Unique client name: in the modular monolith the ServiceCatalog context also has a
+            // RahyabSmsNotificationService, and the HttpClient factory keys typed clients by type
+            // name without namespace — so both need explicit unique names to avoid a collision.
+            services.AddHttpClient<RahyabSmsNotificationService>("UserManagement.RahyabSmsNotificationService");
             services.AddScoped<ISmsNotificationService, RahyabSmsNotificationService>();
 
             // Register context-specific infrastructure
@@ -167,23 +179,6 @@ namespace Booksy.UserManagement.Infrastructure.DependencyInjection
             services.AddCapEventBus<UserManagementDbContext>(configuration, "UserManagement");
 
             return services;
-        }
-
-        /// <summary>
-        /// Applies pending migrations and seeds the database
-        /// </summary>
-        public static async Task InitializeDatabaseAsync(this IServiceProvider serviceProvider, bool isDev)
-        {
-            using var scope = serviceProvider.CreateScope();
-            var context = scope.ServiceProvider.GetRequiredService<UserManagementDbContext>();
-            var seeder = scope.ServiceProvider.GetRequiredService<ISeeder>();
-
-            await context.Database.MigrateAsync();
-            if (isDev)
-            {
-
-            await seeder.SeedAsync();
-            }
         }
     }
 }

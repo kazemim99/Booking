@@ -30,13 +30,7 @@ namespace Booksy.UserManagement.Infrastructure.Persistence.Seeders
             {
                 _logger.LogInformation("Starting database seeding...");
 
-                // Apply pending migrations
-                if ((await _context.Database.GetPendingMigrationsAsync()).Any())
-                {
-                    _logger.LogInformation("Applying pending migrations...");
-                    await _context.Database.MigrateAsync();
-                }
-
+            
                 // Seed data
                 await SeedUsersAsync();
                 await SeedRolesAsync();
@@ -52,8 +46,11 @@ namespace Booksy.UserManagement.Infrastructure.Persistence.Seeders
             }
         }
 
+    
+
         private async Task SeedUsersAsync()
         {
+
             if (await _context.Users.AnyAsync())
             {
                 _logger.LogInformation("Users already exist, skipping user seeding");

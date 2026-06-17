@@ -15,13 +15,13 @@ namespace Booksy.ServiceCatalog.Application.Commands.ProviderHierarchy.RegisterI
         : ICommandHandler<RegisterIndependentIndividualCommand, RegisterIndependentIndividualResult>
     {
         private readonly IProviderWriteRepository _providerRepository;
-        private readonly IUnitOfWork _unitOfWork;
+        private readonly IServiceCatalogUnitOfWork _unitOfWork;
         private readonly ICurrentUserService _currentUserService;
         private readonly ILogger<RegisterIndependentIndividualCommandHandler> _logger;
 
         public RegisterIndependentIndividualCommandHandler(
             IProviderWriteRepository providerRepository,
-            IUnitOfWork unitOfWork,
+            IServiceCatalogUnitOfWork unitOfWork,
             ICurrentUserService currentUserService,
             ILogger<RegisterIndependentIndividualCommandHandler> logger)
         {

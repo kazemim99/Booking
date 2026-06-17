@@ -15,7 +15,7 @@ namespace Booksy.ServiceCatalog.Application.Commands.ProviderHierarchy.AcceptInv
         private readonly IProviderWriteRepository _providerWriteRepository;
         private readonly IProviderInvitationReadRepository _invitationReadRepository;
         private readonly IProviderInvitationWriteRepository _invitationWriteRepository;
-        private readonly IUnitOfWork _unitOfWork;
+        private readonly IServiceCatalogUnitOfWork _unitOfWork;
         private readonly ILogger<AcceptInvitationCommandHandler> _logger;
 
         public AcceptInvitationCommandHandler(
@@ -23,7 +23,7 @@ namespace Booksy.ServiceCatalog.Application.Commands.ProviderHierarchy.AcceptInv
             IProviderWriteRepository providerWriteRepository,
             IProviderInvitationReadRepository invitationReadRepository,
             IProviderInvitationWriteRepository invitationWriteRepository,
-            IUnitOfWork unitOfWork,
+            IServiceCatalogUnitOfWork unitOfWork,
             ILogger<AcceptInvitationCommandHandler> logger)
         {
             _providerReadRepository = providerReadRepository;

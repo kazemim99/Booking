@@ -25,8 +25,8 @@ namespace Booksy.ServiceCatalog.Domain.Aggregates
 
         // Core Identity
         public UserId OwnerId { get; private set; }
-        public string OwnerFirstName { get; private set; }
-        public string OwnerLastName { get; private set; }
+        public string OwnerFirstName { get; private set; } = string.Empty;
+        public string OwnerLastName { get; private set; } = string.Empty;
         public BusinessProfile Profile { get; private set; }
 
         // Status & Type
@@ -133,7 +133,9 @@ namespace Booksy.ServiceCatalog.Domain.Aggregates
             ServiceCategory primaryCategory,
             ContactInfo contactInfo,
             BusinessAddress address,
-            ProviderHierarchyType hierarchyType = ProviderHierarchyType.Organization)
+            ProviderHierarchyType hierarchyType = ProviderHierarchyType.Organization,
+            string ownerFirstName = "",
+            string ownerLastName = "")
         {
             var profile = BusinessProfile.Create(businessName, description, logoUrl: null, profileImageUrl: null);
 
@@ -141,6 +143,8 @@ namespace Booksy.ServiceCatalog.Domain.Aggregates
             {
                 Id = ProviderId.New(),
                 OwnerId = ownerId,
+                OwnerFirstName = ownerFirstName ?? string.Empty,
+                OwnerLastName = ownerLastName ?? string.Empty,
                 Profile = profile,
                 Status = ProviderStatus.PendingVerification,
                 PrimaryCategory = primaryCategory,
@@ -167,6 +171,75 @@ namespace Booksy.ServiceCatalog.Domain.Aggregates
                 provider.RegisteredAt));
 
             return provider;
+        }
+
+        /// <summary>
+        /// Registers a staff member as an Active Individual sub-provider under an organization.
+        /// Booking resolves staff via the provider hierarchy (ParentProviderId == organization),
+        /// so staff are modelled as their own (sub-)provider with independent identity/availability.
+        /// No <see cref="ProviderRegisteredEvent"/> is raised (that would provision a login user);
+        /// a staff sub-provider is an internal resource of the organization.
+        /// </summary>
+        public static Provider RegisterStaffMember(
+            Provider organization,
+            UserId staffOwnerId,
+            string firstName,
+            string lastName)
+        {
+            if (organization is null) throw new ArgumentNullException(nameof(organization));
+            if (!organization.CanHaveStaff())
+                throw new InvalidOperationException("Only organization providers can have staff members.");
+
+            var fullName = $"{firstName} {lastName}".Trim();
+            var profile = BusinessProfile.Create(
+                string.IsNullOrWhiteSpace(fullName) ? "Staff Member" : fullName,
+                $"Staff member of {organization.Profile.BusinessName}",
+                logoUrl: null,
+                profileImageUrl: null);
+
+            // ContactInfo and Address are OWNED entities (keyed by ProviderId via table-splitting),
+            // so the org's tracked instances cannot be reused — build fresh copies for the staff.
+            var orgAddr = organization.Address;
+            var address = BusinessAddress.Create(
+                orgAddr.FormattedAddress, orgAddr.Street, orgAddr.City, orgAddr.State,
+                orgAddr.PostalCode, orgAddr.Country, provinceId: null, cityId: orgAddr.CityId,
+                latitude: orgAddr.Latitude, longitude: orgAddr.Longitude);
+            // Build brand-new Email/PhoneNumber too (they are nested owned entities keyed by the
+            // owner's id), copying string values from the org so nothing tracked is shared.
+            var orgContact = organization.ContactInfo;
+            var email = orgContact.Email is not null
+                ? Email.Create(orgContact.Email.Value)
+                : Email.Create($"staff-{Guid.NewGuid():N}@booksy.local");
+            var phone = orgContact.PrimaryPhone is not null
+                ? PhoneNumber.From(orgContact.PrimaryPhone.Value)
+                : PhoneNumber.FromNational("9120000000");
+            var contactInfo = ContactInfo.Create(email, phone);
+
+            var staff = new Provider
+            {
+                Id = ProviderId.New(),
+                OwnerId = staffOwnerId,
+                OwnerFirstName = firstName ?? string.Empty,
+                OwnerLastName = lastName ?? string.Empty,
+                Profile = profile,
+                // Staff added to an (already active) organization are immediately bookable.
+                Status = ProviderStatus.Active,
+                PrimaryCategory = organization.PrimaryCategory,
+                HierarchyType = ProviderHierarchyType.Individual,
+                ParentProviderId = organization.Id,
+                IsIndependent = false,
+                ContactInfo = contactInfo,
+                Address = address,
+                RequiresApproval = false,
+                AllowOnlineBooking = true,
+                OffersMobileServices = false,
+                PriceRange = organization.PriceRange,
+                RegisteredAt = DateTime.UtcNow,
+                RegistrationStep = 9,
+                IsRegistrationComplete = true
+            };
+
+            return staff;
         }
 
         // Business Methods

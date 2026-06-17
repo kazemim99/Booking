@@ -58,7 +58,7 @@ namespace Booksy.ServiceCatalog.Application.Queries.Provider.SearchProviders
                     offersMobileServices: request.OffersMobileServices,
                     verifiedOnly: request.VerifiedOnly,
                     minRating: request.MinRating,
-                    serviceCategory:  request.ServiceCategory,
+                    serviceCategory: request.ServiceCategory,
                     priceRange: request.PriceRange,
                     includeInactive: request.IncludeInactive,
                     excludeStaffIndividuals: true); // Filter out staff individuals from search results
@@ -154,9 +154,13 @@ namespace Booksy.ServiceCatalog.Application.Queries.Provider.SearchProviders
                     break;
 
                 default:
-                    // Default: sort by rating descending
-                    specification.AddOrderByDescending(p => p.AverageRating);
-                    specification.AddThenBy(p => p.Profile.BusinessName);
+                    if (sortDescending)
+                        specification.AddOrderByDescending(p => p.CreatedAt);
+                    else
+                        specification.AddOrderBy(p => p.CreatedAt);
+
+                    specification.AddThenBy(p => p.Status);
+
                     break;
             }
         }

@@ -13,13 +13,13 @@ namespace Booksy.ServiceCatalog.Application.Commands.ProviderHierarchy.RemoveSta
     {
         private readonly IProviderReadRepository _providerReadRepository;
         private readonly IProviderWriteRepository _providerWriteRepository;
-        private readonly IUnitOfWork _unitOfWork;
+        private readonly IServiceCatalogUnitOfWork _unitOfWork;
         private readonly ILogger<RemoveStaffMemberCommandHandler> _logger;
 
         public RemoveStaffMemberCommandHandler(
             IProviderReadRepository providerReadRepository,
             IProviderWriteRepository providerWriteRepository,
-            IUnitOfWork unitOfWork,
+            IServiceCatalogUnitOfWork unitOfWork,
             ILogger<RemoveStaffMemberCommandHandler> logger)
         {
             _providerReadRepository = providerReadRepository;

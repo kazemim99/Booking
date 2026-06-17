@@ -14,12 +14,12 @@ public sealed class MarkReviewHelpfulCommandHandler
     : ICommandHandler<MarkReviewHelpfulCommand, MarkReviewHelpfulResult>
 {
     private readonly IReviewWriteRepository _reviewWriteRepository;
-    private readonly IUnitOfWork _unitOfWork;
+    private readonly IServiceCatalogUnitOfWork _unitOfWork;
     private readonly ILogger<MarkReviewHelpfulCommandHandler> _logger;
 
     public MarkReviewHelpfulCommandHandler(
         IReviewWriteRepository reviewWriteRepository,
-        IUnitOfWork unitOfWork,
+        IServiceCatalogUnitOfWork unitOfWork,
         ILogger<MarkReviewHelpfulCommandHandler> logger)
     {
         _reviewWriteRepository = reviewWriteRepository;

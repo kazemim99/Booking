@@ -13,13 +13,13 @@ namespace Booksy.ServiceCatalog.Application.Commands.ProviderHierarchy.ConvertTo
     {
         private readonly IProviderReadRepository _providerReadRepository;
         private readonly IProviderWriteRepository _providerWriteRepository;
-        private readonly IUnitOfWork _unitOfWork;
+        private readonly IServiceCatalogUnitOfWork _unitOfWork;
         private readonly ILogger<ConvertToOrganizationCommandHandler> _logger;
 
         public ConvertToOrganizationCommandHandler(
             IProviderReadRepository providerReadRepository,
             IProviderWriteRepository providerWriteRepository,
-            IUnitOfWork unitOfWork,
+            IServiceCatalogUnitOfWork unitOfWork,
             ILogger<ConvertToOrganizationCommandHandler> logger)
         {
             _providerReadRepository = providerReadRepository;
@@ -48,6 +48,9 @@ namespace Booksy.ServiceCatalog.Application.Commands.ProviderHierarchy.ConvertTo
             provider.ConvertToOrganization();
 
             await _providerWriteRepository.UpdateAsync(provider, cancellationToken);
+
+            // Persist (save first, then dispatch domain events).
+            await _unitOfWork.SaveAndPublishEventsAsync(cancellationToken);
 
             _logger.LogInformation("Provider {ProviderId} converted to organization", provider.Id);
 

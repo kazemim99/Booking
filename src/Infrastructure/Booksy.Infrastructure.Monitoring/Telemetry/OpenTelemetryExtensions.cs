@@ -55,7 +55,6 @@ public static class OpenTelemetryExtensions
                         options.RecordException = true;
                         options.SetDbStatementForText = true;
                     })
-                    .AddSource("MassTransit")
                     .AddSource("Booksy.*");
 
                 // Add exporters based on configuration

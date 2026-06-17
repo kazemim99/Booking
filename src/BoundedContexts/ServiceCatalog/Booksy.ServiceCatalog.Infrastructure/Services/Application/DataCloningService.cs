@@ -1,4 +1,5 @@
 using Booksy.Core.Application.Abstractions.Persistence;
+using Booksy.ServiceCatalog.Application.Abstractions.Persistence;
 using Booksy.ServiceCatalog.Application.Services.Interfaces;
 using Booksy.ServiceCatalog.Domain.Aggregates;
 using Booksy.ServiceCatalog.Domain.Enums;
@@ -16,14 +17,14 @@ public class DataCloningService : IDataCloningService
     private readonly IServiceReadRepository _serviceReadRepository;
     private readonly IServiceWriteRepository _serviceWriteRepository;
     private readonly IProviderReadRepository _providerReadRepository;
-    private readonly IUnitOfWork _unitOfWork;
+    private readonly IServiceCatalogUnitOfWork _unitOfWork;
     private readonly ILogger<DataCloningService> _logger;
 
     public DataCloningService(
         IServiceReadRepository serviceReadRepository,
         IServiceWriteRepository serviceWriteRepository,
         IProviderReadRepository providerReadRepository,
-        IUnitOfWork unitOfWork,
+        IServiceCatalogUnitOfWork unitOfWork,
         ILogger<DataCloningService> logger)
     {
         _serviceReadRepository = serviceReadRepository;

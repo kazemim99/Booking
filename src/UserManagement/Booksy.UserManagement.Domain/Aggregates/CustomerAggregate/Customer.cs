@@ -16,6 +16,10 @@ namespace Booksy.UserManagement.Domain.Aggregates.CustomerAggregate
     public sealed class Customer : AggregateRoot<CustomerId>, IAuditableEntity
     {
         private readonly List<CustomerFavoriteProvider> _favoriteProviders = new();
+        private readonly List<CustomerRecentlyVisitedProvider> _recentlyVisited = new();
+
+        // Constants
+        private const int MaxRecentlyVisitedEntries = 50;
 
         // Core Identity
         public UserId UserId { get; private set; }
@@ -35,6 +39,7 @@ namespace Booksy.UserManagement.Domain.Aggregates.CustomerAggregate
 
         // Collections
         public IReadOnlyList<CustomerFavoriteProvider> FavoriteProviders => _favoriteProviders.AsReadOnly();
+        public IReadOnlyList<CustomerRecentlyVisitedProvider> RecentlyVisited => _recentlyVisited.AsReadOnly();
 
         // Private constructor for EF Core
         private Customer() : base() { }
@@ -142,6 +147,74 @@ namespace Booksy.UserManagement.Domain.Aggregates.CustomerAggregate
         public bool IsFavorite(Guid providerId)
         {
             return _favoriteProviders.Any(fp => fp.ProviderId == providerId);
+        }
+
+        /// <summary>
+        /// Records a provider visit/view by the customer
+        /// Maintains a limited history (most recent 50 visits)
+        /// </summary>
+        public void RecordProviderVisit(Guid providerId, string? viewSource = null)
+        {
+            if (providerId == Guid.Empty)
+                throw new ArgumentException("ProviderId cannot be empty", nameof(providerId));
+
+            if (!IsActive)
+                throw new InvalidOperationException("Cannot record visits for inactive customer");
+
+            var visitedAt = DateTime.UtcNow;
+
+            // Check if provider was already visited recently
+            var existingVisit = _recentlyVisited.FirstOrDefault(rv => rv.ProviderId == providerId);
+
+            if (existingVisit != null)
+            {
+                // Update existing visit timestamp and move to front
+                _recentlyVisited.Remove(existingVisit);
+                existingVisit.UpdateVisitTime(visitedAt);
+                if (!string.IsNullOrWhiteSpace(viewSource))
+                {
+                    existingVisit.UpdateViewSource(viewSource);
+                }
+                _recentlyVisited.Insert(0, existingVisit);
+            }
+            else
+            {
+                // Add new visit
+                var visit = CustomerRecentlyVisitedProvider.Create(providerId, visitedAt, viewSource);
+                _recentlyVisited.Insert(0, visit);
+
+                // Keep only the most recent N entries
+                while (_recentlyVisited.Count > MaxRecentlyVisitedEntries)
+                {
+                    _recentlyVisited.RemoveAt(_recentlyVisited.Count - 1);
+                }
+            }
+
+            RaiseDomainEvent(new ProviderVisitedEvent(
+                Id,
+                providerId,
+                visitedAt,
+                viewSource));
+        }
+
+        /// <summary>
+        /// Gets the most recently visited providers
+        /// </summary>
+        public IReadOnlyList<CustomerRecentlyVisitedProvider> GetRecentlyVisitedProviders(int limit = 20)
+        {
+            return _recentlyVisited
+                .OrderByDescending(rv => rv.VisitedAt)
+                .Take(Math.Min(limit, MaxRecentlyVisitedEntries))
+                .ToList()
+                .AsReadOnly();
+        }
+
+        /// <summary>
+        /// Clears all recently visited providers
+        /// </summary>
+        public void ClearRecentlyVisited()
+        {
+            _recentlyVisited.Clear();
         }
 
         /// <summary>

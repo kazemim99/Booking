@@ -15,13 +15,13 @@ namespace Booksy.ServiceCatalog.Application.Commands.ProviderHierarchy.RegisterO
         : ICommandHandler<RegisterOrganizationProviderCommand, RegisterOrganizationProviderResult>
     {
         private readonly IProviderWriteRepository _providerRepository;
-        private readonly IUnitOfWork _unitOfWork;
+        private readonly IServiceCatalogUnitOfWork _unitOfWork;
         private readonly ICurrentUserService _currentUserService;
         private readonly ILogger<RegisterOrganizationProviderCommandHandler> _logger;
 
         public RegisterOrganizationProviderCommandHandler(
             IProviderWriteRepository providerRepository,
-            IUnitOfWork unitOfWork,
+            IServiceCatalogUnitOfWork unitOfWork,
             ICurrentUserService currentUserService,
             ILogger<RegisterOrganizationProviderCommandHandler> logger)
         {

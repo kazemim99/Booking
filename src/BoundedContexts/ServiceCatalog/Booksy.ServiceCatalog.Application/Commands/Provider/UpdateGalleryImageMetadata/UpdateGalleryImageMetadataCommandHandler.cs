@@ -9,11 +9,11 @@ public sealed class UpdateGalleryImageMetadataCommandHandler
     : ICommandHandler<UpdateGalleryImageMetadataCommand>
 {
     private readonly IProviderWriteRepository _providerRepository;
-    private readonly IUnitOfWork _unitOfWork;
+    private readonly IServiceCatalogUnitOfWork _unitOfWork;
 
     public UpdateGalleryImageMetadataCommandHandler(
         IProviderWriteRepository providerRepository,
-        IUnitOfWork unitOfWork)
+        IServiceCatalogUnitOfWork unitOfWork)
     {
         _providerRepository = providerRepository;
         _unitOfWork = unitOfWork;

@@ -14,6 +14,8 @@ using Booksy.UserManagement.Application.CQRS.Queries.Customer.GetCustomerFavorit
 using Booksy.UserManagement.Application.CQRS.Queries.Customer.GetCustomerProfile;
 using Booksy.UserManagement.Application.CQRS.Queries.Customer.GetUpcomingBookings;
 using Booksy.UserManagement.Application.CQRS.Queries.Customer.GetBookingHistory;
+using Booksy.UserManagement.Application.CQRS.Commands.Customer.RecordProviderVisit;
+using Booksy.UserManagement.Application.CQRS.Queries.Customer.GetRecentlyVisitedProviders;
 
 namespace Booksy.UserManagement.API.Controllers.V1;
 
@@ -528,6 +530,114 @@ public class CustomersController : ControllerBase
         }
     }
 
+    /// <summary>
+    /// Gets customer's recently visited providers
+    /// </summary>
+    /// <param name="id">Customer ID</param>
+    /// <param name="limit">Number of recently visited providers to retrieve (default 20, max 50)</param>
+    /// <param name="cancellationToken">Cancellation token</param>
+    /// <returns>List of recently visited providers</returns>
+    /// <response code="200">Recently visited providers retrieved successfully</response>
+    /// <response code="404">Customer not found</response>
+    /// <response code="401">Not authenticated</response>
+    /// <response code="403">Not authorized</response>
+    [HttpGet("{id:guid}/recently-visited")]
+    [Authorize(Roles = "Customer,Admin")]
+    [ProducesResponseType(typeof(List<RecentlyVisitedProviderViewModel>), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
+    public async Task<IActionResult> GetRecentlyVisitedProviders(
+        [FromRoute] Guid id,
+        [FromQuery] int limit = 20,
+        CancellationToken cancellationToken = default)
+    {
+        try
+        {
+            // Check if user can access this customer's recently visited
+            if (!await CanAccessCustomerProfile(id))
+            {
+                _logger.LogWarning("User {RequestingUser} attempted to access customer {CustomerId} recently visited without permission",
+                    GetCurrentUserId(), id);
+                return Forbid();
+            }
+
+            // Validate limit
+            if (limit <= 0 || limit > 50)
+            {
+                return BadRequest(new { error = "Limit must be between 1 and 50" });
+            }
+
+            var query = new GetRecentlyVisitedProvidersQuery(id, limit);
+            var result = await _mediator.Send(query, cancellationToken);
+
+            return Ok(result);
+        }
+        catch (InvalidOperationException ex)
+        {
+            _logger.LogWarning(ex, "Customer not found: {CustomerId}", id);
+            return NotFound(new { error = ex.Message });
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error retrieving recently visited providers for customer {CustomerId}", id);
+            return StatusCode(StatusCodes.Status500InternalServerError,
+                new { error = "An error occurred while retrieving recently visited providers" });
+        }
+    }
+
+    /// <summary>
+    /// Records a provider visit/view by the customer
+    /// </summary>
+    /// <param name="id">Customer ID</param>
+    /// <param name="request">Provider visit details</param>
+    /// <param name="cancellationToken">Cancellation token</param>
+    /// <returns>Result of recording the visit</returns>
+    /// <response code="200">Provider visit recorded successfully</response>
+    /// <response code="400">Invalid request</response>
+    /// <response code="404">Customer or provider not found</response>
+    /// <response code="401">Not authenticated</response>
+    /// <response code="403">Not authorized</response>
+    [HttpPost("{id:guid}/recently-visited")]
+    [Authorize(Roles = "Customer")]
+    [ProducesResponseType(typeof(RecordProviderVisitResult), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
+    public async Task<IActionResult> RecordProviderVisit(
+        [FromRoute] Guid id,
+        [FromBody][Required] RecordProviderVisitRequest request,
+        CancellationToken cancellationToken = default)
+    {
+        try
+        {
+            // Check if user can update this customer's recently visited
+            if (!await CanAccessCustomerProfile(id))
+            {
+                _logger.LogWarning("User {RequestingUser} attempted to record visit for customer {CustomerId} without permission",
+                    GetCurrentUserId(), id);
+                return Forbid();
+            }
+
+            var command = new RecordProviderVisitCommand(id, request.ProviderId, request.ViewSource);
+            var result = await _mediator.Send(command, cancellationToken);
+
+            return Ok(result);
+        }
+        catch (InvalidOperationException ex)
+        {
+            _logger.LogWarning(ex, "Customer not found: {CustomerId}", id);
+            return NotFound(new { error = ex.Message });
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error recording provider visit for customer {CustomerId}", id);
+            return StatusCode(StatusCodes.Status500InternalServerError,
+                new { error = "An error occurred while recording the provider visit" });
+        }
+    }
+
     #region Helper Methods
 
     private string? GetCurrentUserId()
@@ -560,3 +670,10 @@ public sealed record UpdatePreferencesRequest(
     bool SmsEnabled,
     bool EmailEnabled,
     string ReminderTiming);
+
+/// <summary>
+/// Request model for recording a provider visit
+/// </summary>
+public sealed record RecordProviderVisitRequest(
+    Guid ProviderId,
+    string? ViewSource = null);

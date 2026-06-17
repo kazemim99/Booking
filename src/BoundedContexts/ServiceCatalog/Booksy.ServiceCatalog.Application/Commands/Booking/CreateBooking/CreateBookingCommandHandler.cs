@@ -26,7 +26,7 @@ namespace Booksy.ServiceCatalog.Application.Commands.Booking.CreateBooking
         private readonly IServiceReadRepository _serviceRepository;
         private readonly IProviderAvailabilityWriteRepository _availabilityWriteRepository;
         private readonly IAvailabilityService _availabilityService;
-        private readonly IUnitOfWork _unitOfWork;
+        private readonly IServiceCatalogUnitOfWork _unitOfWork;
         private readonly ILogger<CreateBookingCommandHandler> _logger;
 
         public CreateBookingCommandHandler(
@@ -36,7 +36,7 @@ namespace Booksy.ServiceCatalog.Application.Commands.Booking.CreateBooking
             IServiceReadRepository serviceRepository,
             IProviderAvailabilityWriteRepository availabilityWriteRepository,
             IAvailabilityService availabilityService,
-            IUnitOfWork unitOfWork,
+            IServiceCatalogUnitOfWork unitOfWork,
             ILogger<CreateBookingCommandHandler> logger)
         {
             _bookingWriteRepository = bookingWriteRepository;
@@ -146,6 +146,7 @@ namespace Booksy.ServiceCatalog.Application.Commands.Booking.CreateBooking
 
 
             _logger.LogInformation("Booking {BookingId} created successfully and availability slot marked as booked", booking.Id);
+            Telemetry.BookingMetrics.BookingCreated();
 
             // Return result
             return new CreateBookingResult(

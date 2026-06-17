@@ -10,11 +10,11 @@ public sealed class SetPrimaryGalleryImageCommandHandler
     : ICommandHandler<SetPrimaryGalleryImageCommand>
 {
     private readonly IProviderWriteRepository _providerRepository;
-    private readonly IUnitOfWork _unitOfWork;
+    private readonly IServiceCatalogUnitOfWork _unitOfWork;
 
     public SetPrimaryGalleryImageCommandHandler(
         IProviderWriteRepository providerRepository,
-        IUnitOfWork unitOfWork)
+        IServiceCatalogUnitOfWork unitOfWork)
     {
         _providerRepository = providerRepository;
         _unitOfWork = unitOfWork;

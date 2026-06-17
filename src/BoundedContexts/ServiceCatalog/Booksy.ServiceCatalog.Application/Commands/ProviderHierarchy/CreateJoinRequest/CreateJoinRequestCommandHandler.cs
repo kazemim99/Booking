@@ -15,14 +15,14 @@ namespace Booksy.ServiceCatalog.Application.Commands.ProviderHierarchy.CreateJoi
         private readonly IProviderReadRepository _providerRepository;
         private readonly IProviderJoinRequestReadRepository _joinRequestReadRepository;
         private readonly IProviderJoinRequestWriteRepository _joinRequestWriteRepository;
-        private readonly IUnitOfWork _unitOfWork;
+        private readonly IServiceCatalogUnitOfWork _unitOfWork;
         private readonly ILogger<CreateJoinRequestCommandHandler> _logger;
 
         public CreateJoinRequestCommandHandler(
             IProviderReadRepository providerRepository,
             IProviderJoinRequestReadRepository joinRequestReadRepository,
             IProviderJoinRequestWriteRepository joinRequestWriteRepository,
-            IUnitOfWork unitOfWork,
+            IServiceCatalogUnitOfWork unitOfWork,
             ILogger<CreateJoinRequestCommandHandler> logger)
         {
             _providerRepository = providerRepository;

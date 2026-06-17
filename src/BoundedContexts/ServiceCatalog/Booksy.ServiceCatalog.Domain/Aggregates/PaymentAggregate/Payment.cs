@@ -395,7 +395,7 @@ namespace Booksy.ServiceCatalog.Domain.Aggregates.PaymentAggregate
         /// <summary>
         /// Records payment request from ZarinPal (stores authority and payment URL)
         /// </summary>
-        public void RecordPaymentRequest(string authority, string paymentUrl)
+        public void RecordPaymentRequest(string authority, string paymentUrl, decimal? fee = null)
         {
             if (Status != PaymentStatus.Pending)
                 throw new InvalidOperationException($"Cannot record payment request in {Status} status");
@@ -408,6 +408,9 @@ namespace Booksy.ServiceCatalog.Domain.Aggregates.PaymentAggregate
 
             Authority = authority;
             PaymentUrl = paymentUrl;
+
+            if (fee.HasValue)
+                Fee = Money.Create(fee.Value, Amount.Currency);
 
             var transaction = Transaction.CreatePaymentRequest(
                 Amount,

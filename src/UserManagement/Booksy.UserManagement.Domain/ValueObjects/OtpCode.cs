@@ -45,6 +45,13 @@ namespace Booksy.UserManagement.Domain.ValueObjects
             if (length < 4 || length > 8)
                 throw new ArgumentException("Length must be between 4 and 8 digits", nameof(length));
 
+            // Dev/test override: when OTP_SANDBOX_CODE is set, always use that fixed code so the
+            // OTP login flow can be exercised in a browser without reading the server log. The env
+            // var is never set in production, so real random codes are used there.
+            var sandboxCode = Environment.GetEnvironmentVariable("OTP_SANDBOX_CODE");
+            if (!string.IsNullOrWhiteSpace(sandboxCode))
+                return new OtpCode(sandboxCode.Trim(), validityMinutes);
+
             var random = new Random();
             var code = string.Join("", Enumerable.Range(0, length).Select(_ => random.Next(0, 10)));
 

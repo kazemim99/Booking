@@ -12,13 +12,13 @@ namespace Booksy.ServiceCatalog.Application.Commands.ProviderHierarchy.RejectJoi
     {
         private readonly IProviderJoinRequestReadRepository _joinRequestReadRepository;
         private readonly IProviderJoinRequestWriteRepository _joinRequestWriteRepository;
-        private readonly IUnitOfWork _unitOfWork;
+        private readonly IServiceCatalogUnitOfWork _unitOfWork;
         private readonly ILogger<RejectJoinRequestCommandHandler> _logger;
 
         public RejectJoinRequestCommandHandler(
             IProviderJoinRequestReadRepository joinRequestReadRepository,
             IProviderJoinRequestWriteRepository joinRequestWriteRepository,
-            IUnitOfWork unitOfWork,
+            IServiceCatalogUnitOfWork unitOfWork,
             ILogger<RejectJoinRequestCommandHandler> logger)
         {
             _joinRequestReadRepository = joinRequestReadRepository;

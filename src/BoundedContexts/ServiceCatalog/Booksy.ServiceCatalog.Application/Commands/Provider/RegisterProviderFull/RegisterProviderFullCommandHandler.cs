@@ -13,6 +13,7 @@ using Booksy.ServiceCatalog.Domain.Entities;
 using Booksy.ServiceCatalog.Domain.Enums;
 using Booksy.ServiceCatalog.Domain.Repositories;
 using Booksy.ServiceCatalog.Domain.ValueObjects;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 
 namespace Booksy.ServiceCatalog.Application.Commands.Provider.RegisterProviderFull
@@ -21,21 +22,27 @@ namespace Booksy.ServiceCatalog.Application.Commands.Provider.RegisterProviderFu
     {
         private readonly IProviderWriteRepository _providerWriteRepository;
         private readonly IProviderReadRepository _providerReadRepository;
+        private readonly IServiceWriteRepository _serviceWriteRepository;
         private readonly IProviderRegistrationService _registrationService;
-        private readonly IUnitOfWork _unitOfWork;
+        private readonly IServiceCatalogUnitOfWork _unitOfWork;
+        private readonly IConfiguration _configuration;
         private readonly ILogger<RegisterProviderFullCommandHandler> _logger;
 
         public RegisterProviderFullCommandHandler(
             IProviderWriteRepository providerWriteRepository,
             IProviderReadRepository providerReadRepository,
+            IServiceWriteRepository serviceWriteRepository,
             IProviderRegistrationService registrationService,
-            IUnitOfWork unitOfWork,
+            IServiceCatalogUnitOfWork unitOfWork,
+            IConfiguration configuration,
             ILogger<RegisterProviderFullCommandHandler> logger)
         {
             _providerWriteRepository = providerWriteRepository;
             _providerReadRepository = providerReadRepository;
+            _serviceWriteRepository = serviceWriteRepository;
             _registrationService = registrationService;
             _unitOfWork = unitOfWork;
+            _configuration = configuration;
             _logger = logger;
         }
 
@@ -112,7 +119,9 @@ namespace Booksy.ServiceCatalog.Application.Commands.Provider.RegisterProviderFu
                 $"Professional {request.CategoryId.Replace('_', ' ')} services", // Auto-generate description
                 serviceCategory,
                 contactInfo,
-                address);
+                address,
+                ownerFirstName: request.BusinessInfo.OwnerFirstName ?? string.Empty,
+                ownerLastName: request.BusinessInfo.OwnerLastName ?? string.Empty);
 
             // ====================================
             // STEP 4: Add Business Hours
@@ -145,6 +154,12 @@ namespace Booksy.ServiceCatalog.Application.Commands.Provider.RegisterProviderFu
 
             provider.SetBusinessHours(hours);
 
+            // Auto-approve on registration (MVP). When ServiceCatalog:AutoApproveProviders is false,
+            // providers stay PendingVerification / services stay Draft for manual admin approval.
+            var autoApprove = _configuration.GetValue("ServiceCatalog:AutoApproveProviders", true);
+            if (autoApprove)
+                provider.Activate();
+
             // ====================================
             // STEP 5: Save Provider First
             // ====================================
@@ -175,9 +190,11 @@ namespace Booksy.ServiceCatalog.Application.Commands.Provider.RegisterProviderFu
                     price,
                     duration);
 
-                // Save service separately (it's an aggregate root)
-                // Note: You'll need a service repository for this
-                // For now, services will be added via a separate endpoint or service
+                // Services stay Draft here — an Organization service can only be activated once it
+                // has a qualified staff member, which happens via AddStaffToProvider.
+
+                // Persist the service (separate aggregate root) via its write repository.
+                await _serviceWriteRepository.SaveServiceAsync(service, cancellationToken);
 
                 servicesCreated++;
 

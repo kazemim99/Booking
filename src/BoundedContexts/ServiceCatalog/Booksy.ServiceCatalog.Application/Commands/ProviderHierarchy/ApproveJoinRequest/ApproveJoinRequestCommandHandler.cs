@@ -15,7 +15,7 @@ namespace Booksy.ServiceCatalog.Application.Commands.ProviderHierarchy.ApproveJo
         private readonly IProviderWriteRepository _providerWriteRepository;
         private readonly IProviderJoinRequestReadRepository _joinRequestReadRepository;
         private readonly IProviderJoinRequestWriteRepository _joinRequestWriteRepository;
-        private readonly IUnitOfWork _unitOfWork;
+        private readonly IServiceCatalogUnitOfWork _unitOfWork;
         private readonly ILogger<ApproveJoinRequestCommandHandler> _logger;
 
         public ApproveJoinRequestCommandHandler(
@@ -23,7 +23,7 @@ namespace Booksy.ServiceCatalog.Application.Commands.ProviderHierarchy.ApproveJo
             IProviderWriteRepository providerWriteRepository,
             IProviderJoinRequestReadRepository joinRequestReadRepository,
             IProviderJoinRequestWriteRepository joinRequestWriteRepository,
-            IUnitOfWork unitOfWork,
+            IServiceCatalogUnitOfWork unitOfWork,
             ILogger<ApproveJoinRequestCommandHandler> logger)
         {
             _providerReadRepository = providerReadRepository;
@@ -60,6 +60,9 @@ namespace Booksy.ServiceCatalog.Application.Commands.ProviderHierarchy.ApproveJo
 
             await _joinRequestWriteRepository.UpdateAsync(joinRequest, cancellationToken);
             await _providerWriteRepository.UpdateAsync(requester, cancellationToken);
+
+            // Persist (save first, then dispatch domain events).
+            await _unitOfWork.SaveAndPublishEventsAsync(cancellationToken);
 
             _logger.LogInformation("Join request {RequestId} approved. Provider {RequesterId} linked to organization {OrganizationId}",
                 joinRequest.Id, joinRequest.RequesterId, joinRequest.OrganizationId);

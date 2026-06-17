@@ -17,7 +17,7 @@ public sealed class SaveStep9CompleteCommandHandler
 {
     private readonly IProviderWriteRepository _providerRepository;
     private readonly IServiceWriteRepository _serviceRepository;
-    private readonly IUnitOfWork _unitOfWork;
+    private readonly IServiceCatalogUnitOfWork _unitOfWork;
     private readonly ICurrentUserService _currentUserService;
     private readonly ITokenService _tokenService;
     private readonly ILogger<SaveStep9CompleteCommandHandler> _logger;
@@ -25,7 +25,7 @@ public sealed class SaveStep9CompleteCommandHandler
     public SaveStep9CompleteCommandHandler(
         IProviderWriteRepository providerRepository,
         IServiceWriteRepository serviceRepository,
-        IUnitOfWork unitOfWork,
+        IServiceCatalogUnitOfWork unitOfWork,
         ICurrentUserService currentUserService,
         ITokenService tokenService,
         ILogger<SaveStep9CompleteCommandHandler> logger)

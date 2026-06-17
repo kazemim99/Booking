@@ -11,14 +11,14 @@ namespace Booksy.ServiceCatalog.Application.Commands.Booking.CancelBooking
         private readonly IBookingWriteRepository _bookingRepository;
         private readonly IProviderAvailabilityWriteRepository _availabilityWriteRepository;
         private readonly IPaymentGateway _paymentGateway;
-        private readonly IUnitOfWork _unitOfWork;
+        private readonly IServiceCatalogUnitOfWork _unitOfWork;
         private readonly ILogger<CancelBookingCommandHandler> _logger;
 
         public CancelBookingCommandHandler(
             IBookingWriteRepository bookingRepository,
             IProviderAvailabilityWriteRepository availabilityWriteRepository,
             IPaymentGateway paymentGateway,
-            IUnitOfWork unitOfWork,
+            IServiceCatalogUnitOfWork unitOfWork,
             ILogger<CancelBookingCommandHandler> logger)
         {
             _bookingRepository = bookingRepository;
@@ -98,6 +98,7 @@ namespace Booksy.ServiceCatalog.Application.Commands.Booking.CancelBooking
             _logger.LogInformation(
                 "Booking {BookingId} cancelled successfully. Refund issued: {RefundIssued}",
                 booking.Id, refundIssued);
+            Telemetry.BookingMetrics.BookingCancelled();
 
             return new CancelBookingResult(
                 BookingId: booking.Id.Value,

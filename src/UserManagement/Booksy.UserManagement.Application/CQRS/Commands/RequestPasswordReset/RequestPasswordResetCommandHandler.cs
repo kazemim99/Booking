@@ -12,7 +12,7 @@ namespace Booksy.UserManagement.Application.CQRS.Commands.RequestPasswordReset
     {
         private readonly IUserRepository _userRepository;
         
-        private readonly IUnitOfWork _unitOfWork;
+        private readonly IUserManagementUnitOfWork _unitOfWork;
         private readonly IEmailTemplateService _emailService;
         private readonly IAuditUserService _auditService;
         private readonly ILogger<RequestPasswordResetCommandHandler> _logger;
@@ -20,7 +20,7 @@ namespace Booksy.UserManagement.Application.CQRS.Commands.RequestPasswordReset
         public RequestPasswordResetCommandHandler(
             IUserRepository userWriteRepository,
             
-            IUnitOfWork unitOfWork,
+            IUserManagementUnitOfWork unitOfWork,
             IEmailTemplateService emailService,
             IAuditUserService auditService,
             ILogger<RequestPasswordResetCommandHandler> logger)

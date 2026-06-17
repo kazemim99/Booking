@@ -11,6 +11,6 @@ namespace Booksy.ServiceCatalog.Domain.Exceptions
         public ServiceNotAvailableException(ServiceId serviceId)
             : base($"Service {serviceId} is not available for booking") { }
 
-        public override string ErrorCode => throw new NotImplementedException();
+        public override string ErrorCode => "SERVICE_NOT_AVAILABLE";
     }
 }

@@ -2,6 +2,7 @@
 // Booksy.UserManagement.Infrastructure/EventHandlers/BookingEventSubscribers.cs
 // ========================================
 using Booksy.Core.Application.Abstractions.Persistence;
+using Booksy.UserManagement.Application.Abstractions.Persistence;
 using Booksy.UserManagement.Domain.ReadModels;
 using Booksy.UserManagement.Infrastructure.Persistence.Context;
 using DotNetCore.CAP;
@@ -16,12 +17,12 @@ namespace Booksy.UserManagement.Infrastructure.EventHandlers;
 public sealed class BookingEventSubscribers : ICapSubscribe
 {
     private readonly UserManagementDbContext _dbContext;
-    private readonly IUnitOfWork _unitOfWork;
+    private readonly IUserManagementUnitOfWork _unitOfWork;
     private readonly ILogger<BookingEventSubscribers> _logger;
 
     public BookingEventSubscribers(
         UserManagementDbContext dbContext,
-        IUnitOfWork unitOfWork,
+        IUserManagementUnitOfWork unitOfWork,
         ILogger<BookingEventSubscribers> logger)
     {
         _dbContext = dbContext ?? throw new ArgumentNullException(nameof(dbContext));

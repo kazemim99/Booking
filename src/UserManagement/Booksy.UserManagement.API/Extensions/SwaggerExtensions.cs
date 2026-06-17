@@ -16,6 +16,11 @@ public static class SwaggerExtensions
         services.AddEndpointsApiExplorer();
         services.AddSwaggerGen(options =>
         {
+            // Modular monolith: the composed contexts contain several identically-named DTOs
+            // (e.g. UpdatePreferencesRequest exists in both UserManagement and ServiceCatalog).
+            // Use the full namespace-qualified type name for schemaIds to avoid collisions.
+            options.CustomSchemaIds(type => (type.FullName ?? type.Name).Replace("+", "."));
+
             options.SwaggerDoc("v1", new OpenApiInfo
             {
                 Title = "Booksy User Management API",

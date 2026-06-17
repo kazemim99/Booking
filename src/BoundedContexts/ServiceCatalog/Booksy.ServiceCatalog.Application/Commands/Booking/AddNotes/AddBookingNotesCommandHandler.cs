@@ -13,12 +13,12 @@ namespace Booksy.ServiceCatalog.Application.Commands.Booking.AddNotes
     public sealed class AddBookingNotesCommandHandler : ICommandHandler<AddBookingNotesCommand, AddBookingNotesResult>
     {
         private readonly IBookingWriteRepository _bookingRepository;
-        private readonly IUnitOfWork _unitOfWork;
+        private readonly IServiceCatalogUnitOfWork _unitOfWork;
         private readonly ILogger<AddBookingNotesCommandHandler> _logger;
 
         public AddBookingNotesCommandHandler(
             IBookingWriteRepository bookingRepository,
-            IUnitOfWork unitOfWork,
+            IServiceCatalogUnitOfWork unitOfWork,
             ILogger<AddBookingNotesCommandHandler> logger)
         {
             _bookingRepository = bookingRepository;

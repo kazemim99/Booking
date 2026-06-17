@@ -13,14 +13,14 @@ namespace Booksy.ServiceCatalog.Application.Commands.ProviderHierarchy.CancelJoi
         private readonly IProviderJoinRequestReadRepository _joinRequestReadRepository;
         private readonly IProviderJoinRequestWriteRepository _joinRequestWriteRepository;
         private readonly IProviderReadRepository _providerRepository;
-        private readonly IUnitOfWork _unitOfWork;
+        private readonly IServiceCatalogUnitOfWork _unitOfWork;
         private readonly ILogger<CancelJoinRequestCommandHandler> _logger;
 
         public CancelJoinRequestCommandHandler(
             IProviderJoinRequestReadRepository joinRequestReadRepository,
             IProviderJoinRequestWriteRepository joinRequestWriteRepository,
             IProviderReadRepository providerRepository,
-            IUnitOfWork unitOfWork,
+            IServiceCatalogUnitOfWork unitOfWork,
             ILogger<CancelJoinRequestCommandHandler> logger)
         {
             _joinRequestReadRepository = joinRequestReadRepository;

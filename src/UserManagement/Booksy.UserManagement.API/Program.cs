@@ -1,8 +1,16 @@
 // ========================================
 // Program.cs
 // ========================================
+using Booksy.API.Extensions;
+using Booksy.API.Middleware;
+using Booksy.Core.Domain.Infrastructure.Middleware;
+using Booksy.Infrastructure.Core.DependencyInjection;
+using Booksy.Infrastructure.Core.Persistence.Base;
+using Booksy.Infrastructure.Security;
+using Booksy.Infrastructure.Security.Authorization;
 using Booksy.UserManagement.API.Extensions;
 using Booksy.UserManagement.Application.DependencyInjection;
+using Booksy.UserManagement.Application.EventHandlers.IntegrationEventHandlers;
 using Booksy.UserManagement.Infrastructure.DependencyInjection;
 using Booksy.UserManagement.Infrastructure.Persistence.Context;
 using Booksy.UserManagement.Infrastructure.Persistence.Seeders;
@@ -11,15 +19,8 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.ApiExplorer;
 using Microsoft.AspNetCore.Mvc.Versioning;
 using Serilog;
-using Booksy.Infrastructure.Security.Authorization;
-using Booksy.Infrastructure.Security;
-using System.Text.Json.Serialization;
 using System.Text.Json;
-using Booksy.Infrastructure.Core.DependencyInjection;
-using Booksy.API.Middleware;
-using Booksy.API.Extensions;
-using Booksy.Core.Domain.Infrastructure.Middleware;
-using Booksy.UserManagement.Application.EventHandlers.IntegrationEventHandlers;
+using System.Text.Json.Serialization;
 var builder = WebApplication.CreateBuilder(args);
 
 // Configure Serilog
@@ -194,11 +195,9 @@ app.MapHealthChecks("/health/live", new HealthCheckOptions
 // Map Controllers
 app.MapControllers();
 
-// Seed Database (Development only)
-
-    using var scope = app.Services.CreateScope();
-    var seeder = scope.ServiceProvider.InitializeDatabaseAsync(app.Environment.IsDevelopment() || app.Environment.EnvironmentName.Contains("Test"));
-
+// Initialize Database (migrations + seeding for dev/test)
+await app.MigrateAndSeedDatabaseAsync<UserManagementDbContext, UserManagementDatabaseSeeder>(
+    seedData: app.Environment.IsDevelopment() || app.Environment.EnvironmentName.Contains("Test"));
 
 app.Run();
 

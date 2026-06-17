@@ -42,7 +42,10 @@ namespace Booksy.ServiceCatalog.Application.Queries.Service.GetServicesByProvide
                 var specification = new GetServicesByProviderSpecification(
                     providerId: providerId,
                     status: request.Status,
-                    category: Enum.Parse<ServiceCategory>(request.Category),
+                    // Category is an optional filter — only parse it when provided.
+                    category: string.IsNullOrWhiteSpace(request.Category)
+                        ? (ServiceCategory?)null
+                        : Enum.Parse<ServiceCategory>(request.Category, ignoreCase: true),
                     includeOptions: false,
                     includePriceTiers: false,
                     includeProvider: false);

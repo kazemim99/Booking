@@ -16,14 +16,14 @@ public sealed class SaveStep4ServicesCommandHandler
     private readonly IProviderWriteRepository _providerRepository;
     private readonly IServiceWriteRepository _serviceRepository;
     private readonly IServiceReadRepository _serviceReadRepository;
-    private readonly IUnitOfWork _unitOfWork;
+    private readonly IServiceCatalogUnitOfWork _unitOfWork;
     private readonly ICurrentUserService _currentUserService;
 
     public SaveStep4ServicesCommandHandler(
         IProviderWriteRepository providerRepository,
         IServiceWriteRepository serviceRepository,
         IServiceReadRepository serviceReadRepository,
-        IUnitOfWork unitOfWork,
+        IServiceCatalogUnitOfWork unitOfWork,
         ICurrentUserService currentUserService)
     {
         _providerRepository = providerRepository;

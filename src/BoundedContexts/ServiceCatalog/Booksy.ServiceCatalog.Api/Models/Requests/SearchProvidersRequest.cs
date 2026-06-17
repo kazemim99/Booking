@@ -73,7 +73,7 @@ namespace Booksy.ServiceCatalog.API.Models.Requests
         /// Sort by: "rating", "popularity", "price", "distance" (default: "rating")
         /// </summary>
         [StringLength(20, ErrorMessage = "Invalid sort option")]
-        public string SortBy { get; set; } = "rating";
+        public string SortBy { get; set; } = "CreatedAt";
 
         /// <summary>
         /// Sort direction: "asc" or "desc" (default: "desc" for rating/popularity)

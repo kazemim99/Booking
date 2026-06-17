@@ -17,12 +17,12 @@ namespace Booksy.UserManagement.Application.EventHandlers.IntegrationEventHandle
 public sealed class ProviderDraftCreatedEventSubscriber : ICapSubscribe
 {
     private readonly IUserRepository _userRepository;
-    private readonly IUnitOfWork _unitOfWork;
+    private readonly IUserManagementUnitOfWork _unitOfWork;
     private readonly ILogger<ProviderDraftCreatedEventSubscriber> _logger;
 
     public ProviderDraftCreatedEventSubscriber(
         IUserRepository userRepository,
-        IUnitOfWork unitOfWork,
+        IUserManagementUnitOfWork unitOfWork,
         ILogger<ProviderDraftCreatedEventSubscriber> logger)
     {
         _userRepository = userRepository ?? throw new ArgumentNullException(nameof(userRepository));

@@ -24,7 +24,7 @@ namespace Booksy.ServiceCatalog.Application.Commands.Booking.RescheduleBooking
         private readonly IServiceReadRepository _serviceRepository;
         private readonly IProviderAvailabilityWriteRepository _availabilityWriteRepository;
         private readonly IAvailabilityService _availabilityService;
-        private readonly IUnitOfWork _unitOfWork;
+        private readonly IServiceCatalogUnitOfWork _unitOfWork;
         private readonly ILogger<RescheduleBookingCommandHandler> _logger;
 
         public RescheduleBookingCommandHandler(
@@ -33,7 +33,7 @@ namespace Booksy.ServiceCatalog.Application.Commands.Booking.RescheduleBooking
             IServiceReadRepository serviceRepository,
             IProviderAvailabilityWriteRepository availabilityWriteRepository,
             IAvailabilityService availabilityService,
-            IUnitOfWork unitOfWork,
+            IServiceCatalogUnitOfWork unitOfWork,
             ILogger<RescheduleBookingCommandHandler> logger)
         {
             _bookingWriteRepository = bookingWriteRepository;

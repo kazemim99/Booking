@@ -1353,7 +1353,9 @@ public class ProvidersController : ControllerBase
 
     private Guid? GetCurrentUserProviderId()
     {
-        return Guid.Parse(User.FindFirst("providerId")?.Value);
+        // The providerId claim is only present after the provider refreshes their token
+        // post-registration; parse defensively so its absence doesn't crash the request.
+        return Guid.TryParse(User.FindFirst("providerId")?.Value, out var id) ? id : (Guid?)null;
     }
 
     private async Task<bool> CanManageProvider(Guid providerId)
@@ -1363,15 +1365,28 @@ public class ProvidersController : ControllerBase
             return false;
 
         // Admins can manage any provider
-        if (User.IsInRole("Admin") || User.IsInRole("SysAdmin"))
+        if (User.IsInRole("Admin") || User.IsInRole("SysAdmin") || User.IsInRole("Administrator"))
             return true;
 
-        // Provider owners can manage their own provider
-        var currentProviderId = GetCurrentUserProviderId().ToString();
-        if (!string.IsNullOrEmpty(currentProviderId) && currentProviderId == providerId.ToString())
+        // Provider owners can manage their own provider — via the providerId claim (present after
+        // a post-registration token refresh)...
+        var claimProviderId = GetCurrentUserProviderId();
+        if (claimProviderId.HasValue && claimProviderId.Value == providerId)
             return true;
 
-        // Business logic: Staff with management permissions could go here
+        // ...or, when the claim isn't on the token yet, resolve the caller's provider in-process
+        // and check ownership. (Avoids depending on the token-refresh round-trip.)
+        try
+        {
+            var status = await _mediator.Send(new GetCurrentProviderStatusQuery());
+            if (status is not null && status.ProviderId.ToString() == providerId.ToString())
+                return true;
+        }
+        catch
+        {
+            // no provider associated with the current user
+        }
+
         return false;
     }
 

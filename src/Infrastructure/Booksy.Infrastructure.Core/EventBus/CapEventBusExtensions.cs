@@ -6,7 +6,7 @@ using DotNetCore.CAP;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
-using RabbitMQ.Client;
+using Microsoft.Extensions.DependencyInjection.Extensions;
 using Savorboard.CAP.InMemoryMessageQueue;
 
 namespace Booksy.Infrastructure.Core.EventBus;
@@ -17,7 +17,8 @@ namespace Booksy.Infrastructure.Core.EventBus;
 public static class CapEventBusExtensions
 {
     /// <summary>
-    /// Adds CAP event bus with RabbitMQ and PostgreSQL outbox
+    /// Adds CAP event bus with a PostgreSQL outbox and the in-process in-memory transport.
+    /// The modular monolith runs CAP in-process — there is no message broker.
     /// </summary>
     /// <typeparam name="TDbContext">The DbContext type for outbox pattern</typeparam>
     /// <param name="services">Service collection</param>
@@ -34,12 +35,16 @@ public static class CapEventBusExtensions
         var connectionString = configuration.GetConnectionString("DefaultConnection")
             ?? throw new InvalidOperationException("DefaultConnection string is required for CAP");
 
-        var rabbitMqConnection = configuration.GetConnectionString("RabbitMQ")
-            ?? configuration["EventBus:RabbitMQ:ConnectionString"]
-            ?? "amqp://booksy_admin:Booksy@2024!@localhost:56721";
-
-        var environment = configuration["ASPNETCORE_ENVIRONMENT"] ?? "Development";
-        var isDevelopment = environment.Equals("Development", StringComparison.OrdinalIgnoreCase);
+        // CAP can only be registered ONCE per process. In the modular monolith every
+        // bounded context's AddXInfrastructure() calls this method, so guard against a
+        // second registration: the first caller configures the bus, later callers only
+        // ensure the publisher is present. [CapSubscribe] handlers from every referenced
+        // assembly are discovered regardless of which context registered the bus.
+        if (services.Any(d => d.ServiceType == typeof(ICapPublisher)))
+        {
+            services.TryAddScoped<IIntegrationEventPublisher, CapIntegrationEventPublisher>();
+            return services;
+        }
 
         services.AddCap(options =>
         {
@@ -55,72 +60,20 @@ public static class CapEventBusExtensions
             });
 
             // ========================================
-            // RabbitMQ Transport Configuration
+            // Transport: in-process in-memory queue (no external broker)
             // ========================================
-            if (isDevelopment)
-            {
-                // Use InMemory queue for development/testing (optional)
-                // Uncomment to use RabbitMQ even in development
-                options.UseInMemoryMessageQueue();
-
-                // Uncomment below to use RabbitMQ in development
-                /*
-                options.UseRabbitMQ(rabbitOptions =>
-                {
-                    rabbitOptions.ConnectionFactoryOptions = factory =>
-                    {
-                        factory.HostName = "localhost";
-                        factory.Port = 5672;
-                        factory.UserName = "booksy_admin";
-                        factory.Password = "Booksy@2024!";
-
-                        factory.AutomaticRecoveryEnabled = true;
-                        factory.NetworkRecoveryInterval = TimeSpan.FromSeconds(10);
-                        factory.RequestedHeartbeat = TimeSpan.FromSeconds(60);
-                    };
-
-                    // Exchange name: booksy.events
-                    rabbitOptions.ExchangeName = "booksy.events";
-
-                    // Queue name per context: booksy.servicecatalog.queue
-                    rabbitOptions.QueueArguments = new RabbitMQOptions.QueueArgumentsOptions
-                    {
-                        MessageTTL = 7 * 24 * 60 * 60 * 1000,
-                        QueueMode = "lazy",
-                    };
-
-
-                });
-                */
-            }
-            else
-            {
-                options.UseRabbitMQ(rabbitOptions =>
-                {
-                    rabbitOptions.ConnectionFactoryOptions = factory =>
-                    {
-                        factory.Uri = new Uri(rabbitMqConnection);
-                        factory.AutomaticRecoveryEnabled = true;
-                        factory.NetworkRecoveryInterval = TimeSpan.FromSeconds(10);
-                        factory.RequestedHeartbeat = TimeSpan.FromSeconds(60);
-                    };
-
-                    rabbitOptions.ExchangeName = "booksy.events";
-                    rabbitOptions.QueueArguments = new RabbitMQOptions.QueueArgumentsOptions
-                    {
-                        MessageTTL = 7 * 24 * 60 * 60 * 1000,
-                        QueueMode = "lazy",
-                    };
-                });
-            }
+            options.UseInMemoryMessageQueue();
 
             // ========================================
             // CAP General Configuration
             // ========================================
 
-            // Consumer group (one per bounded context)
+            // Consumer group: a single shared group for the monolith process. All
+            // [CapSubscribe] handlers run in-process; each integration-event topic has a
+            // single subscriber, so one consumer group is correct and avoids the
+            // order-dependent group naming that a per-context group would introduce.
             options.ConsumerThreadCount = 1; // Single thread per consumer for ordering
-            options.DefaultGroupName = $"booksy.{contextName.ToLower()}";
+            options.DefaultGroupName = "booksy";
 
             // Versioning and serialization
             options.Version = "v1";

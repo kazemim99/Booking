@@ -14,13 +14,13 @@ namespace Booksy.ServiceCatalog.Application.Commands.Payment.VerifyZarinPalPayme
     {
         private readonly IPaymentWriteRepository _paymentRepository;
         private readonly IZarinPalService _zarinPalService;
-        private readonly IUnitOfWork _unitOfWork;
+        private readonly IServiceCatalogUnitOfWork _unitOfWork;
         private readonly ILogger<VerifyZarinPalPaymentCommandHandler> _logger;
 
         public VerifyZarinPalPaymentCommandHandler(
             IPaymentWriteRepository paymentRepository,
             IZarinPalService zarinPalService,
-            IUnitOfWork unitOfWork,
+            IServiceCatalogUnitOfWork unitOfWork,
             ILogger<VerifyZarinPalPaymentCommandHandler> logger)
         {
             _paymentRepository = paymentRepository ?? throw new ArgumentNullException(nameof(paymentRepository));
@@ -43,7 +43,27 @@ namespace Booksy.ServiceCatalog.Application.Commands.Payment.VerifyZarinPalPayme
                 if (payment == null)
                 {
                     _logger.LogWarning("Payment not found for authority: {Authority}", request.Authority);
-                    throw new InvalidOperationException($"Payment not found for authority: {request.Authority}");
+                    return new VerifyZarinPalPaymentResult(
+                        Guid.Empty,
+                        null,
+                        false,
+                        PaymentStatus: "Failed",
+                        FailureReason: "Payment not found",
+                        ErrorMessage: $"Payment not found for authority: {request.Authority}");
+                }
+
+                // Idempotency: a verified payment (e.g. duplicate callback) must not be re-verified.
+                if (payment.Status == Domain.Enums.PaymentStatus.Paid)
+                {
+                    _logger.LogInformation(
+                        "Payment {PaymentId} already verified; returning idempotent success", payment.Id.Value);
+                    return new VerifyZarinPalPaymentResult(
+                        payment.Id.Value,
+                        payment.BookingId?.Value,
+                        true,
+                        PaymentStatus: "Paid",
+                        RefNumber: long.TryParse(payment.RefNumber, out var existingRef) ? existingRef : null,
+                        CardPan: payment.CardPan);
                 }
 
                 // If status is NOK (user cancelled), mark as failed

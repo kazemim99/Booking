@@ -17,14 +17,14 @@ public sealed class CreateReviewCommandHandler : ICommandHandler<CreateReviewCom
     private readonly IReviewWriteRepository _reviewWriteRepository;
     private readonly IReviewReadRepository _reviewReadRepository;
     private readonly IBookingReadRepository _bookingRepository;
-    private readonly IUnitOfWork _unitOfWork;
+    private readonly IServiceCatalogUnitOfWork _unitOfWork;
     private readonly ILogger<CreateReviewCommandHandler> _logger;
 
     public CreateReviewCommandHandler(
         IReviewWriteRepository reviewWriteRepository,
         IReviewReadRepository reviewReadRepository,
         IBookingReadRepository bookingRepository,
-        IUnitOfWork unitOfWork,
+        IServiceCatalogUnitOfWork unitOfWork,
         ILogger<CreateReviewCommandHandler> logger)
     {
         _reviewWriteRepository = reviewWriteRepository;

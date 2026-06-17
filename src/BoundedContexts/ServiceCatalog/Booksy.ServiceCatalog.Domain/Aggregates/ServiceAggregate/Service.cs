@@ -138,9 +138,11 @@ namespace Booksy.ServiceCatalog.Domain.Aggregates
             if (Status == ServiceStatus.Active)
                 throw new InvalidServiceException("Service is already active");
 
-            // Business rule: Organization services must have at least one qualified staff member
-            // Individual hierarchy types don't need qualified staff (they perform their own services)
-            if (Provider.HierarchyType != ProviderHierarchyType.Individual && !_qualifiedStaff.Any())
+            // Business rule: Organization services must have at least one qualified staff member.
+            // Individual hierarchy types don't need qualified staff (they perform their own services).
+            // Null-safe on the Provider navigation (not always loaded): a null/unknown hierarchy is
+            // treated as non-Individual, i.e. it still requires a qualified staff member.
+            if (Provider?.HierarchyType != ProviderHierarchyType.Individual && !_qualifiedStaff.Any())
                 throw new InvalidServiceException("Organization service must have at least one qualified staff member to be activated");
 
             Status = ServiceStatus.Active;

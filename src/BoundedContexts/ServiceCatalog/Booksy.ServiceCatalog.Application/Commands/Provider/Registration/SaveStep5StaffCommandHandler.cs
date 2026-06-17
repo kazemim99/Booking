@@ -14,12 +14,12 @@
 //    : ICommandHandler<SaveStep5StaffCommand, SaveStep5StaffResult>
 //{
 //    private readonly IProviderWriteRepository _providerRepository;
-//    private readonly IUnitOfWork _unitOfWork;
+//    private readonly IServiceCatalogUnitOfWork _unitOfWork;
 //    private readonly ICurrentUserService _currentUserService;
 
 //    public SaveStep5StaffCommandHandler(
 //        IProviderWriteRepository providerRepository,
-//        IUnitOfWork unitOfWork,
+//        IServiceCatalogUnitOfWork unitOfWork,
 //        ICurrentUserService currentUserService)
 //    {
 //        _providerRepository = providerRepository;

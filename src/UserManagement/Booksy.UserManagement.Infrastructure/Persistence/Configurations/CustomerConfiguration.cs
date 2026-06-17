@@ -116,6 +116,39 @@ namespace Booksy.UserManagement.Infrastructure.Persistence.Configurations
                     .HasDatabaseName("ix_customer_favorite_providers_provider_id");
             });
 
+            // Recently Visited Providers collection
+            builder.OwnsMany(c => c.RecentlyVisited, rv =>
+            {
+                rv.ToTable("customer_recently_visited_providers", "user_management");
+
+                rv.WithOwner().HasForeignKey("CustomerId");
+
+                rv.HasKey(r => r.Id);
+
+                rv.Property(r => r.Id)
+                    .HasColumnName("id");
+
+                rv.Property(r => r.ProviderId)
+                    .HasColumnName("provider_id")
+                    .IsRequired();
+
+                rv.Property(r => r.VisitedAt)
+                    .HasColumnName("visited_at")
+                    .IsRequired();
+
+                rv.Property(r => r.ViewSource)
+                    .HasColumnName("view_source")
+                    .HasMaxLength(50);
+
+                // Index for efficient querying by customer and visit date
+                rv.HasIndex("CustomerId", "VisitedAt")
+                    .HasDatabaseName("ix_customer_recently_visited_providers_customer_visited_at")
+                    .IsDescending(false, true); // CustomerId ASC, VisitedAt DESC
+
+                rv.HasIndex(r => r.ProviderId)
+                    .HasDatabaseName("ix_customer_recently_visited_providers_provider_id");
+            });
+
             // Indexes
             builder.HasIndex(c => c.CreatedAt)
                 .HasDatabaseName("ix_customers_created_at");

@@ -25,7 +25,7 @@ public sealed class AcceptInvitationWithRegistrationCommandHandler
     private readonly IProviderInvitationWriteRepository _invitationWriteRepository;
     private readonly IInvitationRegistrationService _registrationService;
     private readonly IDataCloningService _dataCloningService;
-    private readonly IUnitOfWork _unitOfWork;
+    private readonly IServiceCatalogUnitOfWork _unitOfWork;
     private readonly ILogger<AcceptInvitationWithRegistrationCommandHandler> _logger;
 
     public AcceptInvitationWithRegistrationCommandHandler(
@@ -35,7 +35,7 @@ public sealed class AcceptInvitationWithRegistrationCommandHandler
         IProviderInvitationWriteRepository invitationWriteRepository,
         IInvitationRegistrationService registrationService,
         IDataCloningService dataCloningService,
-        IUnitOfWork unitOfWork,
+        IServiceCatalogUnitOfWork unitOfWork,
         ILogger<AcceptInvitationWithRegistrationCommandHandler> logger)
     {
         _providerReadRepository = providerReadRepository;

@@ -19,13 +19,13 @@ namespace Booksy.ServiceCatalog.Application.Commands.Payment.CreateZarinPalPayme
     {
         private readonly IPaymentWriteRepository _paymentRepository;
         private readonly IZarinPalService _zarinPalService;
-        private readonly IUnitOfWork _unitOfWork;
+        private readonly IServiceCatalogUnitOfWork _unitOfWork;
         private readonly ILogger<CreateZarinPalPaymentCommandHandler> _logger;
 
         public CreateZarinPalPaymentCommandHandler(
             IPaymentWriteRepository paymentRepository,
             IZarinPalService zarinPalService,
-            IUnitOfWork unitOfWork,
+            IServiceCatalogUnitOfWork unitOfWork,
             ILogger<CreateZarinPalPaymentCommandHandler> logger)
         {
             _paymentRepository = paymentRepository ?? throw new ArgumentNullException(nameof(paymentRepository));
@@ -77,8 +77,8 @@ namespace Booksy.ServiceCatalog.Application.Commands.Payment.CreateZarinPalPayme
 
                 if (zarinPalResult.IsSuccessful)
                 {
-                    // Record payment request in aggregate
-                    payment.RecordPaymentRequest(zarinPalResult.Authority, zarinPalResult.PaymentUrl);
+                    // Record payment request in aggregate (capture the gateway fee if returned)
+                    payment.RecordPaymentRequest(zarinPalResult.Authority, zarinPalResult.PaymentUrl, zarinPalResult.Fee);
 
                     // Save payment
                     await _paymentRepository.AddAsync(payment, cancellationToken);
@@ -98,21 +98,14 @@ namespace Booksy.ServiceCatalog.Application.Commands.Payment.CreateZarinPalPayme
                 }
                 else
                 {
-                    // Mark payment as failed
-                    payment.MarkPaymentRequestAsFailed(
-                        zarinPalResult.ErrorCode.ToString(),
-                        zarinPalResult.ErrorMessage ?? "Unknown error");
-
-                    // Save failed payment
-                    await _paymentRepository.AddAsync(payment, cancellationToken);
-                    await _unitOfWork.CommitAsync(cancellationToken);
-
+                    // ZarinPal never issued an authority — nothing to track. Do not persist a
+                    // half-formed payment; surface the gateway error to the caller instead.
                     _logger.LogWarning(
                         "ZarinPal payment request failed. Error: {ErrorCode} - {ErrorMessage}",
                         zarinPalResult.ErrorCode, zarinPalResult.ErrorMessage);
 
                     return new CreateZarinPalPaymentResult(
-                        payment.Id.Value,
+                        Guid.Empty,
                         string.Empty,
                         string.Empty,
                         request.Amount,

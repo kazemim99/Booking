@@ -41,33 +41,15 @@ namespace Booksy.ServiceCatalog.Application.Queries.Category.GetCategoriesWithCo
                 // Get all active providers
                 var activeProviders = await _providerRepository.GetByStatusAsync(ProviderStatus.Active, cancellationToken);
 
-                // Count providers by category
-                var categoryCountsDict = new Dictionary<string, int>();
-
-                foreach (var provider in activeProviders)
-                {
-                    var services = await _serviceRepository.GetByProviderIdAsync(provider.Id, cancellationToken);
-                    var activeServices = services.ToList();
-
-                    // Get unique categories from this provider's services
-                    var providerCategories = activeServices
-                        .Select(s => s.Category.ToString().ToLowerInvariant())
-                        .Distinct();
-
-                    foreach (var category in providerCategories)
-                    {
-                        if (!categoryCountsDict.ContainsKey(category))
-                        {
-                            categoryCountsDict[category] = 0;
-                        }
-                        categoryCountsDict[category]++;
-                    }
-                }
+                // Count providers by their primary category
+                var categoryCountsDict = activeProviders
+                    .GroupBy(p => p.PrimaryCategory.ToString().ToLowerInvariant())
+                    .ToDictionary(g => g.Key, g => g.Count());
 
                 // Build view models with actual counts from domain categories
                 var categories = ServiceCategoryExtensions.GetAll().Select(category => new CategoryWithCountViewModel
                 {
-                    Name = category.ToEnglishName(),
+                    Name = category.ToPersianName(),
                     Slug = category.ToSlug(),
                     Description = category.ToDescription(),
                     Icon = category.ToIcon(),

@@ -21,6 +21,7 @@ public sealed record SaveStep3LocationCommand(
     string PostalCode,
     decimal Latitude,
     decimal Longitude,
+    string? LogoUrl = null,
     Guid? IdempotencyKey = null
 ) : ICommand<SaveStep3LocationResult>;
 

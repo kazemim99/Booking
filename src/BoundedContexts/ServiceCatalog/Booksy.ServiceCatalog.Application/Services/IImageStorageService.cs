@@ -8,4 +8,5 @@ public interface IImageStorageService
     Task<string> SaveBusinessLogoAsync(Guid providerId, IFormFile image);
     Task DeleteImageAsync(string imageUrl);
     bool IsValidImageType(IFormFile file);
+    Task<string?> MoveImageToProviderAsync(string currentImageUrl, Guid newProviderId);
 }

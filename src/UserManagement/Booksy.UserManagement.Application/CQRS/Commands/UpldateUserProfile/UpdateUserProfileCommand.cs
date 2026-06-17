@@ -19,7 +19,8 @@ namespace Booksy.UserManagement.Application.CQRS.Commands.UpldateUserProfile
             ProfilePictureUrl = profilePictureUrl;
         }
 
-        public Guid? IdempotencyKey => throw new NotImplementedException();
+        // Not an idempotent command; null makes IdempotencyBehavior skip caching (was throwing).
+        public Guid? IdempotencyKey => null;
 
         public Guid Id { get; }
         public string? FirstName { get; }

@@ -15,14 +15,14 @@ namespace Booksy.ServiceCatalog.Application.Commands.ProviderHierarchy.SendInvit
         private readonly IProviderReadRepository _providerRepository;
         private readonly IProviderInvitationReadRepository _invitationReadRepository;
         private readonly IProviderInvitationWriteRepository _invitationWriteRepository;
-        private readonly IUnitOfWork _unitOfWork;
+        private readonly IServiceCatalogUnitOfWork _unitOfWork;
         private readonly ILogger<SendInvitationCommandHandler> _logger;
 
         public SendInvitationCommandHandler(
             IProviderReadRepository providerRepository,
             IProviderInvitationReadRepository invitationReadRepository,
             IProviderInvitationWriteRepository invitationWriteRepository,
-            IUnitOfWork unitOfWork,
+            IServiceCatalogUnitOfWork unitOfWork,
             ILogger<SendInvitationCommandHandler> logger)
         {
             _providerRepository = providerRepository;

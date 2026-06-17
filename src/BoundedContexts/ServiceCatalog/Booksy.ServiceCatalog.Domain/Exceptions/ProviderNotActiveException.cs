@@ -10,6 +10,6 @@ namespace Booksy.ServiceCatalog.Domain.Exceptions
         public ProviderNotActiveException(ProviderId providerId)
             : base($"Provider {providerId} is not active") { }
 
-        public override string ErrorCode => throw new NotImplementedException();
+        public override string ErrorCode => "PROVIDER_NOT_ACTIVE";
     }
 }

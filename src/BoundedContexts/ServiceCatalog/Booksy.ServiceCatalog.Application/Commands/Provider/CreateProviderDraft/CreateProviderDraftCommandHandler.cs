@@ -14,12 +14,12 @@ public sealed class CreateProviderDraftCommandHandler
     : ICommandHandler<CreateProviderDraftCommand, CreateProviderDraftResult>
 {
     private readonly IProviderWriteRepository _providerRepository;
-    private readonly IUnitOfWork _unitOfWork;
+    private readonly IServiceCatalogUnitOfWork _unitOfWork;
     private readonly ICurrentUserService _currentUserService;
 
     public CreateProviderDraftCommandHandler(
         IProviderWriteRepository providerRepository,
-        IUnitOfWork unitOfWork,
+        IServiceCatalogUnitOfWork unitOfWork,
         ICurrentUserService currentUserService)
     {
         _providerRepository = providerRepository;

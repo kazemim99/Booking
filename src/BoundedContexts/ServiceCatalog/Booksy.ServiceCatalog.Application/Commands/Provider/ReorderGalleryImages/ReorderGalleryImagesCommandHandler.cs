@@ -12,7 +12,7 @@ public sealed class ReorderGalleryImagesCommandHandler
 
     public ReorderGalleryImagesCommandHandler(
         IProviderWriteRepository providerRepository,
-        IUnitOfWork unitOfWork)
+        IServiceCatalogUnitOfWork unitOfWork)
     {
         _providerRepository = providerRepository;
     }

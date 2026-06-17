@@ -13,12 +13,12 @@ namespace Booksy.ServiceCatalog.Application.Commands.Booking.AssignStaff
     public sealed class AssignStaffToBookingCommandHandler : ICommandHandler<AssignStaffToBookingCommand, AssignStaffToBookingResult>
     {
         private readonly IBookingWriteRepository _bookingRepository;
-        private readonly IUnitOfWork _unitOfWork;
+        private readonly IServiceCatalogUnitOfWork _unitOfWork;
         private readonly ILogger<AssignStaffToBookingCommandHandler> _logger;
 
         public AssignStaffToBookingCommandHandler(
             IBookingWriteRepository bookingRepository,
-            IUnitOfWork unitOfWork,
+            IServiceCatalogUnitOfWork unitOfWork,
             ILogger<AssignStaffToBookingCommandHandler> logger)
         {
             _bookingRepository = bookingRepository;
@@ -47,6 +47,8 @@ namespace Booksy.ServiceCatalog.Application.Commands.Booking.AssignStaff
             // Update booking
             await _bookingRepository.UpdateBookingAsync(booking, cancellationToken);
 
+            // Commit and publish the StaffAssignedToBookingEvent (matches Cancel/MarkNoShow).
+            await _unitOfWork.CommitAndPublishEventsAsync(cancellationToken);
 
             _logger.LogInformation("Staff {StaffId} assigned to booking {BookingId} successfully",
                 request.StaffId, booking.Id);

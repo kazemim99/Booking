@@ -85,6 +85,10 @@ namespace Booksy.ServiceCatalog.Infrastructure.DependencyInjection
                     provider.GetRequiredService<ILogger<EfCoreUnitOfWork<ServiceCatalogDbContext>>>(),
                     provider.GetRequiredService<IDomainEventDispatcher>()));
 
+            // Context-scoped Unit of Work (monolith): handlers inject this marker so they
+            // always commit against the ServiceCatalog DbContext, never another context's.
+            services.AddScoped<Booksy.ServiceCatalog.Application.Abstractions.Persistence.IServiceCatalogUnitOfWork, ServiceCatalogUnitOfWork>();
+
             // Repositories
             services.AddScoped<IProviderReadRepository, ProviderReadRepository>();
             services.AddScoped<IProviderWriteRepository, ProviderWriteRepository>();
@@ -238,8 +242,11 @@ namespace Booksy.ServiceCatalog.Infrastructure.DependencyInjection
             services.AddScoped<Application.Services.ISmsNotificationService, ExternalServices.Sms.KavenegarSmsService>();
 
             // HTTP Clients for notification services
+            // Unique client name: UserManagement also registers a RahyabSmsNotificationService, and
+            // the HttpClient factory keys typed clients by type name without namespace — give each a
+            // unique name so the two contexts don't collide in the monolith host.
             services.AddHttpClient<SendGridEmailNotificationService>();
-            services.AddHttpClient<RahyabSmsNotificationService>();
+            services.AddHttpClient<RahyabSmsNotificationService>("ServiceCatalog.RahyabSmsNotificationService");
 
             return services;
         }

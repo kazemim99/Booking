@@ -15,12 +15,12 @@ public sealed class SaveStep6WorkingHoursCommandHandler
     : ICommandHandler<SaveStep6WorkingHoursCommand, SaveStep6WorkingHoursResult>
 {
     private readonly IProviderWriteRepository _providerRepository;
-    private readonly IUnitOfWork _unitOfWork;
+    private readonly IServiceCatalogUnitOfWork _unitOfWork;
     private readonly ICurrentUserService _currentUserService;
 
     public SaveStep6WorkingHoursCommandHandler(
         IProviderWriteRepository providerRepository,
-        IUnitOfWork unitOfWork,
+        IServiceCatalogUnitOfWork unitOfWork,
         ICurrentUserService currentUserService)
     {
         _providerRepository = providerRepository;

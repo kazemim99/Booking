@@ -181,10 +181,10 @@ public abstract class EfRepositoryBase<TEntity, TId, TContext> : IReadRepository
         PaginationRequest pagination)
     {
         // If specification is orderable and has ordering, don't override
-        if (specification is IOrderableSpecification<TEntity> orderableSpec && orderableSpec.OrderBy.Any())
-        {
-            return query; // Specification handles ordering
-        }
+        //if (specification is IOrderableSpecification<TEntity> orderableSpec && orderableSpec.OrderBy.Any())
+        //{
+        //    return query; // Specification handles ordering
+        //}
 
         // Apply pagination sorting
         return ApplySortingDescriptors(query, pagination.SortBy);

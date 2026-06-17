@@ -12,7 +12,11 @@ namespace Booksy.Infrastructure.Core.Persistence.Base
        where TId : notnull
     {
         private readonly DbContext _context;
-        public QueryRepositoryBase(DbContext context) 
+
+        // Query repositories are always concrete subclasses that pass their own bounded-context
+        // DbContext to this base ctor, so the context is unambiguous even in the monolith where
+        // multiple DbContexts are registered.
+        public QueryRepositoryBase(DbContext context)
         {
             _context = context;
         }

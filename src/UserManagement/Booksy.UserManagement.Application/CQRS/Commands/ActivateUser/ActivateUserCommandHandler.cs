@@ -17,7 +17,7 @@ namespace Booksy.UserManagement.Application.CQRS.Commands.ActivateUser
 
         public ActivateUserCommandHandler(
             IUserRepository userWriteRepository,
-            IUnitOfWork unitOfWork,
+            IUserManagementUnitOfWork unitOfWork,
             IAuditUserService auditService,
             ILogger<ActivateUserCommandHandler> logger)
         {

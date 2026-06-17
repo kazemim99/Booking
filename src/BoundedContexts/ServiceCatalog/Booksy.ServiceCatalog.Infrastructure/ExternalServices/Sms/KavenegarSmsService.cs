@@ -29,9 +29,19 @@ namespace Booksy.ServiceCatalog.Infrastructure.ExternalServices.Sms
             _httpClient = httpClient ?? throw new ArgumentNullException(nameof(httpClient));
             _logger = logger ?? throw new ArgumentNullException(nameof(logger));
 
-            _apiKey = configuration["Kavenegar:ApiKey"] ?? throw new InvalidOperationException("Kavenegar API key not configured");
+            // Single global sandbox switch (Sms:SandboxMode) overrides every provider: when on,
+            // no real SMS is sent regardless of the per-provider flag. See also Rahyab services.
+            var globalSandbox = configuration.GetValue<bool>("Sms:SandboxMode");
+            _isEnabled = configuration.GetValue<bool>("Kavenegar:Enabled", true) && !globalSandbox;
             _sender = configuration["Kavenegar:Sender"] ?? "10004346";
-            _isEnabled = configuration.GetValue<bool>("Kavenegar:Enabled", true);
+
+            // Only require an API key when the gateway is actually enabled. A missing key while
+            // disabled must NOT throw — otherwise resolving this service (e.g. during a booking
+            // notification) would fail DI construction and could break the booking flow.
+            var apiKey = configuration["Kavenegar:ApiKey"];
+            if (_isEnabled && string.IsNullOrWhiteSpace(apiKey))
+                throw new InvalidOperationException("Kavenegar API key not configured");
+            _apiKey = apiKey ?? string.Empty;
 
             _httpClient.BaseAddress = new Uri("https://api.kavenegar.com/v1/");
         }

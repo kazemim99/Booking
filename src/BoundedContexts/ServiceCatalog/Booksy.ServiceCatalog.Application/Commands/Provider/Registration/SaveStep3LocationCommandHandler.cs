@@ -3,6 +3,7 @@ using Booksy.Core.Application.Abstractions.Persistence;
 using Booksy.Core.Application.Abstractions.Services;
 using Booksy.Core.Domain.Abstractions;
 using Booksy.Core.Domain.ValueObjects;
+using Booksy.ServiceCatalog.Application.Services;
 using Booksy.ServiceCatalog.Application.Services.Interfaces;
 using Booksy.ServiceCatalog.Domain.Aggregates;
 using Booksy.ServiceCatalog.Domain.Enums;
@@ -16,22 +17,25 @@ public sealed class SaveStep3LocationCommandHandler
     : ICommandHandler<SaveStep3LocationCommand, SaveStep3LocationResult>
 {
     private readonly IProviderWriteRepository _providerRepository;
-    private readonly IUnitOfWork _unitOfWork;
+    private readonly IServiceCatalogUnitOfWork _unitOfWork;
     private readonly ICurrentUserService _currentUserService;
     private readonly ITokenService _tokenService;
+    private readonly IImageStorageService _imageStorageService;
     private readonly ILogger<SaveStep3LocationCommandHandler> _logger;
 
     public SaveStep3LocationCommandHandler(
         IProviderWriteRepository providerRepository,
-        IUnitOfWork unitOfWork,
+        IServiceCatalogUnitOfWork unitOfWork,
         ICurrentUserService currentUserService,
         ITokenService tokenService,
+        IImageStorageService imageStorageService,
         ILogger<SaveStep3LocationCommandHandler> logger)
     {
         _providerRepository = providerRepository;
         _unitOfWork = unitOfWork;
         _currentUserService = currentUserService;
         _tokenService = tokenService;
+        _imageStorageService = imageStorageService;
         _logger = logger;
     }
 
@@ -73,7 +77,21 @@ public sealed class SaveStep3LocationCommandHandler
 
             existingProvider.UpdateBusinessProfile(
                 request.BusinessName,
-                request.BusinessDescription, "\"profileImageUrl\"");
+                request.BusinessDescription,
+                profileImageUrl: null);
+
+            // Move logo to correct provider folder and update if provided
+            if (!string.IsNullOrWhiteSpace(request.LogoUrl))
+            {
+                var movedLogoUrl = await _imageStorageService.MoveImageToProviderAsync(
+                    request.LogoUrl,
+                    existingProvider.Id.Value);
+
+                if (movedLogoUrl != null)
+                {
+                    existingProvider.Profile.UpdateLogo(movedLogoUrl);
+                }
+            }
 
             existingProvider.UpdateContactInfo(contactInfo);
             existingProvider.UpdateAddress(address);
@@ -142,9 +160,24 @@ public sealed class SaveStep3LocationCommandHandler
             category,
             newContactInfo,
             newAddress,
-            registrationStep: 3);
+            registrationStep: 3,
+            logoUrl: request.LogoUrl);
 
         await _providerRepository.SaveProviderAsync(provider, cancellationToken);
+
+        // Move logo to correct provider folder if provided
+        if (!string.IsNullOrWhiteSpace(request.LogoUrl))
+        {
+            var movedLogoUrl = await _imageStorageService.MoveImageToProviderAsync(
+                request.LogoUrl,
+                provider.Id.Value);
+
+            if (movedLogoUrl != null && movedLogoUrl != request.LogoUrl)
+            {
+                provider.Profile.UpdateLogo(movedLogoUrl);
+                await _providerRepository.SaveProviderAsync(provider, cancellationToken);
+            }
+        }
 
         // Generate new token with provider claims
         var newTokenResponse = await _tokenService.GenerateTokenWithProviderClaimsAsync(

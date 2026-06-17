@@ -7,6 +7,6 @@ namespace Booksy.ServiceCatalog.Domain.Exceptions
     {
         public ServiceNotFoundException(Guid serviceId) : base($"Service with id={serviceId} not found") { }
 
-        public override string ErrorCode => throw new NotImplementedException();
+        public override string ErrorCode => "SERVICE_NOT_FOUND";
     }
 }

@@ -53,6 +53,8 @@ public class CategoriesController : ControllerBase
 
         var query = new GetCategoriesWithCountsQuery(limit, onlyPopular);
         var result = await _mediator.Send(query, cancellationToken);
+   
+
 
         _logger.LogInformation("Categories retrieved: {Count} categories", result.Count);
 

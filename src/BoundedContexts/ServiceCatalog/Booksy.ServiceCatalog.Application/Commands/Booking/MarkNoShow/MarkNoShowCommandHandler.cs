@@ -16,12 +16,12 @@ namespace Booksy.ServiceCatalog.Application.Commands.Booking.MarkNoShow
     public sealed class MarkNoShowCommandHandler : ICommandHandler<MarkNoShowCommand, MarkNoShowResult>
     {
         private readonly IBookingWriteRepository _bookingRepository;
-        private readonly IUnitOfWork _unitOfWork;
+        private readonly IServiceCatalogUnitOfWork _unitOfWork;
         private readonly ILogger<MarkNoShowCommandHandler> _logger;
 
         public MarkNoShowCommandHandler(
             IBookingWriteRepository bookingRepository,
-            IUnitOfWork unitOfWork,
+            IServiceCatalogUnitOfWork unitOfWork,
             ILogger<MarkNoShowCommandHandler> logger)
         {
             _bookingRepository = bookingRepository;
@@ -51,6 +51,7 @@ namespace Booksy.ServiceCatalog.Application.Commands.Booking.MarkNoShow
             await _unitOfWork.CommitAndPublishEventsAsync(cancellationToken);
 
             _logger.LogInformation("Booking {BookingId} marked as no-show successfully", booking.Id);
+            Telemetry.BookingMetrics.BookingNoShow();
 
             return new MarkNoShowResult(
                 BookingId: booking.Id.Value,

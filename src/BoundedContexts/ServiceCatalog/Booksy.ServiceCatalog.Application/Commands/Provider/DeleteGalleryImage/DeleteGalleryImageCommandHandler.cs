@@ -12,12 +12,12 @@ public sealed class DeleteGalleryImageCommandHandler
 {
     private readonly IProviderWriteRepository _providerRepository;
     private readonly IFileStorageService _fileStorageService;
-    private readonly IUnitOfWork _unitOfWork;
+    private readonly IServiceCatalogUnitOfWork _unitOfWork;
 
     public DeleteGalleryImageCommandHandler(
         IProviderWriteRepository providerRepository,
         IFileStorageService fileStorageService,
-        IUnitOfWork unitOfWork)
+        IServiceCatalogUnitOfWork unitOfWork)
     {
         _providerRepository = providerRepository;
         _fileStorageService = fileStorageService;

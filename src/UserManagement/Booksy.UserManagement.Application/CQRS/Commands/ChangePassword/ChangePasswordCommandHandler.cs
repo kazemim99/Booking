@@ -16,7 +16,7 @@ namespace Booksy.UserManagement.Application.CQRS.Commands.ChangePassword
 
         public ChangePasswordCommandHandler(
             IUserRepository userWriteRepository,
-            IUnitOfWork unitOfWork,
+            IUserManagementUnitOfWork unitOfWork,
             IEmailTemplateService emailService,
             IAuditUserService auditService,
             ILogger<ChangePasswordCommandHandler> logger)

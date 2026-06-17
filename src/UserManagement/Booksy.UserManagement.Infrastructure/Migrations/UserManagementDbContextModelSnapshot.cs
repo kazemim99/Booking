@@ -642,6 +642,59 @@ namespace Booksy.UserManagement.Infrastructure.Migrations
                                 .HasForeignKey("CustomerId");
                         });
 
+                    b.OwnsMany("Booksy.UserManagement.Domain.Entities.CustomerRecentlyVisitedProvider", "RecentlyVisited", b1 =>
+                        {
+                            b1.Property<Guid>("Id")
+                                .ValueGeneratedOnAdd()
+                                .HasColumnType("uuid")
+                                .HasColumnName("id");
+
+                            b1.Property<DateTime>("CreatedAt")
+                                .HasColumnType("timestamp with time zone");
+
+                            b1.Property<string>("CreatedBy")
+                                .HasColumnType("text");
+
+                            b1.Property<Guid>("CustomerId")
+                                .HasColumnType("uuid");
+
+                            b1.Property<bool>("IsDeleted")
+                                .HasColumnType("boolean");
+
+                            b1.Property<DateTime?>("LastModifiedAt")
+                                .HasColumnType("timestamp with time zone");
+
+                            b1.Property<string>("LastModifiedBy")
+                                .HasColumnType("text");
+
+                            b1.Property<Guid>("ProviderId")
+                                .HasColumnType("uuid")
+                                .HasColumnName("provider_id");
+
+                            b1.Property<string>("ViewSource")
+                                .HasMaxLength(50)
+                                .HasColumnType("character varying(50)")
+                                .HasColumnName("view_source");
+
+                            b1.Property<DateTime>("VisitedAt")
+                                .HasColumnType("timestamp with time zone")
+                                .HasColumnName("visited_at");
+
+                            b1.HasKey("Id");
+
+                            b1.HasIndex("ProviderId")
+                                .HasDatabaseName("ix_customer_recently_visited_providers_provider_id");
+
+                            b1.HasIndex("CustomerId", "VisitedAt")
+                                .IsDescending(false, true)
+                                .HasDatabaseName("ix_customer_recently_visited_providers_customer_visited_at");
+
+                            b1.ToTable("customer_recently_visited_providers", "user_management");
+
+                            b1.WithOwner()
+                                .HasForeignKey("CustomerId");
+                        });
+
                     b.OwnsOne("Booksy.UserManagement.Domain.ValueObjects.NotificationPreferences", "NotificationPreferences", b1 =>
                         {
                             b1.Property<Guid>("CustomerId")
@@ -679,6 +732,8 @@ namespace Booksy.UserManagement.Infrastructure.Migrations
 
                     b.Navigation("NotificationPreferences")
                         .IsRequired();
+
+                    b.Navigation("RecentlyVisited");
                 });
 
             modelBuilder.Entity("Booksy.UserManagement.Domain.Aggregates.PhoneVerificationAggregate.PhoneVerification", b =>
