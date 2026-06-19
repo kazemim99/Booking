@@ -16,7 +16,12 @@ const API_BASE = process.env.E2E_API_URL ?? 'http://localhost:5050'
 export interface SeededProvider {
   providerId: string
   staffId: string
-  serviceId?: string
+  serviceId: string
+}
+
+/** National phone (strip a leading 0): the UI uses 0913…, the API wants 913…. */
+function national(phone: string): string {
+  return phone.replace(/^0/, '')
 }
 
 async function authenticate(
@@ -33,13 +38,21 @@ async function authenticate(
     data: { phoneNumber: `+98${nationalPhone}`, code: OTP_CODE, firstName, lastName },
   })
   if (!res.ok()) throw new Error(`${kind} auth failed: ${res.status()} ${await res.text()}`)
-  const body = await res.json()
-  return { token: body.accessToken, userId: body.userId }
+  // Responses are wrapped in an ApiResponse envelope: { success, data: {...} }.
+  const data = unwrap(await res.json())
+  return { token: data.accessToken, userId: data.userId }
+}
+
+/** Unwraps the { success, data } ApiResponse envelope (tolerates already-flat bodies). */
+function unwrap(json: any): any {
+  return json && typeof json === 'object' && 'data' in json ? json.data : json
 }
 
 /** Seeds an active, bookable provider with one staff member and one service. */
 export async function seedBookableProvider(): Promise<SeededProvider> {
-  const api = await playwrightRequest.newContext({ baseURL: API_BASE })
+  // Generous timeout: a cold-start register-full (first request after host boot)
+  // JITs a lot of EF/validation and can exceed the default action timeout.
+  const api = await playwrightRequest.newContext({ baseURL: API_BASE, timeout: 90_000 })
   try {
     const p = newProviderIdentity()
     const businessName = newBusinessName()
@@ -85,17 +98,65 @@ export async function seedBookableProvider(): Promise<SeededProvider> {
     const headers = { Authorization: `Bearer ${token}` }
     const reg = await api.post('/api/v1/Providers/register-full', { data: regBody, headers })
     if (!reg.ok()) throw new Error(`register-full failed: ${reg.status()} ${await reg.text()}`)
-    const providerId: string = (await reg.json()).providerId
+    const regData = unwrap(await reg.json())
+    const providerId: string = regData.providerId
 
     const staffRes = await api.post(`/api/v1/Providers/${providerId}/staff`, {
       data: { firstName: 'Sara', lastName: 'Stylist', role: 'Stylist' },
       headers,
     })
     if (!staffRes.ok()) throw new Error(`add-staff failed: ${staffRes.status()} ${await staffRes.text()}`)
-    const staffId: string = (await staffRes.json()).id
+    const staffId: string = unwrap(await staffRes.json()).id
 
-    return { providerId, staffId }
+    // Capture the service id created by register-full (needed to seed a booking).
+    // Prefer the register response; fall back to GET /Services/provider (paginated).
+    let serviceId: string =
+      regData.serviceId ?? (Array.isArray(regData.services) ? regData.services[0]?.id : '') ?? ''
+    if (!serviceId) {
+      const svcRes = await api.get(`/api/v1/Services/provider/${providerId}`, { headers })
+      if (svcRes.ok()) {
+        const data = unwrap(await svcRes.json())
+        const list = Array.isArray(data) ? data : (data?.items ?? [])
+        serviceId = list.length ? list[0].id : ''
+      }
+    }
+    if (!serviceId) throw new Error('could not resolve a serviceId for the seeded provider')
+
+    return { providerId, staffId, serviceId }
   } finally {
     await api.dispose()
   }
 }
+
+/**
+ * Seeds a booking for `customer` against the seeded provider, so the customer's
+ * My Bookings has a real (backend) row to display and cancel through the UI.
+ * `customerNationalPhone` is the API form (913…, no leading 0).
+ */
+export async function seedCustomerBooking(
+  customerNationalPhone: string,
+  firstName: string,
+  lastName: string,
+  seeded: SeededProvider,
+): Promise<string> {
+  const api = await playwrightRequest.newContext({ baseURL: API_BASE, timeout: 90_000 })
+  try {
+    const { token } = await authenticate(api, 'customer', customerNationalPhone, firstName, lastName)
+    const res = await api.post('/api/v1/Bookings', {
+      headers: { Authorization: `Bearer ${token}` },
+      data: {
+        providerId: seeded.providerId,
+        serviceId: seeded.serviceId,
+        staffProviderId: seeded.staffId,
+        startTime: '2026-09-01T10:00:00Z',
+        customerNotes: 'e2e ui keystone',
+      },
+    })
+    if (!res.ok()) throw new Error(`create-booking failed: ${res.status()} ${await res.text()}`)
+    return unwrap(await res.json()).id
+  } finally {
+    await api.dispose()
+  }
+}
+
+export { national }

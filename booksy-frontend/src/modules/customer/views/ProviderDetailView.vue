@@ -26,7 +26,7 @@
               @favorited="handleFavorited"
               @unfavorited="handleUnfavorited"
             />
-            <button @click="bookNow" class="btn-book-now">رزرو نوبت</button>
+            <button @click="bookNow" class="btn-book-now" data-testid="book-service-button">رزرو نوبت</button>
           </div>
         </div>
       </div>

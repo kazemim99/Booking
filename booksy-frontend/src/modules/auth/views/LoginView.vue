@@ -34,6 +34,7 @@
               type="tel"
               dir="ltr"
               class="form-input"
+              data-testid="phone-input"
               :class="{ 'form-input-error': error }"
               placeholder="09123456789"
               :disabled="isLoading"
@@ -41,7 +42,14 @@
             <p v-if="error" class="form-error">{{ error }}</p>
           </div>
 
-          <AppButton type="submit" variant="primary" size="large" block :loading="isLoading">
+          <AppButton
+            type="submit"
+            variant="primary"
+            size="large"
+            block
+            data-testid="send-code-button"
+            :loading="isLoading"
+          >
             دریافت کد
           </AppButton>
         </form>

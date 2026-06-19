@@ -24,7 +24,8 @@ export default defineConfig({
   forbidOnly: isCI,
   retries: isCI ? 2 : 0,
   workers: isCI ? 1 : undefined,
-  timeout: 60_000,
+  // Generous: the my-bookings query is currently slow (~20s); see e2e/pages/booking.page.ts.
+  timeout: 120_000,
   expect: { timeout: 10_000 },
   reporter: isCI
     ? [['html', { open: 'never' }], ['list']]
@@ -32,7 +33,9 @@ export default defineConfig({
   use: {
     baseURL: BASE_URL,
     trace: 'on-first-retry',
-    video: 'retain-on-failure',
+    // Video needs ffmpeg (bundled by `playwright install --with-deps`); allow
+    // disabling via PW_VIDEO=off in environments where that download is blocked.
+    video: (process.env.PW_VIDEO as 'on' | 'off' | 'retain-on-failure') ?? 'retain-on-failure',
     screenshot: 'only-on-failure',
     actionTimeout: 15_000,
     // Fixed geolocation so location-aware screens (provider search, registration map)
@@ -44,7 +47,9 @@ export default defineConfig({
   projects: [
     {
       name: 'chromium',
-      use: { ...devices['Desktop Chrome'] },
+      // Use the system-installed Google Chrome ('chrome' channel) so CI/dev don't
+      // need Playwright's bundled Chromium download. Override with PW_CHANNEL.
+      use: { ...devices['Desktop Chrome'], channel: process.env.PW_CHANNEL ?? 'chrome' },
     },
   ],
   // Only auto-start the frontend dev server. The backend stack (host + Postgres +

@@ -41,7 +41,8 @@ export class LoginPage {
     const verify = this.page.getByTestId('verify-button')
     if (await verify.isVisible().catch(() => false)) await verify.click()
 
-    // Authenticated landing differs by audience; assert we left the login route.
-    await expect(this.page).not.toHaveURL(/\/login/)
+    // Login is a two-page flow (/login → /phone-verification). After a successful
+    // OTP we land on an authenticated page — assert we left both auth routes.
+    await expect(this.page).not.toHaveURL(/login|phone-verification/)
   }
 }

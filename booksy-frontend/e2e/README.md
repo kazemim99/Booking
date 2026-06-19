@@ -3,6 +3,20 @@
 The browser-level twin of `tests/e2e/keystone-booking-flow.sh`. Drives the real
 Vue app in Chromium against a running monolith stack.
 
+## Status (verified by running against the live stack)
+
+- ✅ **Customer OTP sign-in is green end-to-end** (real backend: Vue login →
+  `/api` → host → send-verification-code + complete-authentication → landing).
+- ⛔ **Booking journey is skipped — blocked on frontend gaps the run surfaced:**
+  - `ProviderDetailView` renders **hardcoded mock data** (not the real provider).
+  - `GET /Bookings/my-bookings` is **slow (~20s)** and the seeded booking did not
+    appear in the customer's My Bookings (customer read path not reliably wired).
+  - the booking wizard runs on the mock provider-detail data.
+  The harness, Page Objects, `data-testid`s and `api-seed.ts` are all in place, so
+  these light up once those screens are backend-wired.
+- Browser: uses the **system Chrome** (`channel: 'chrome'`) so no Chromium download
+  is needed; `PW_VIDEO=off` skips video where ffmpeg can't be installed.
+
 > Coexists with the existing Cypress setup (`cypress/`, `npm run test:e2e`).
 > Playwright uses **`npm run e2e:pw`** and lives under `e2e/`.
 

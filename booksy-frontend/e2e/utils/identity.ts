@@ -26,8 +26,12 @@ export function newProviderIdentity(): TestIdentity {
   return { phone: `912${suffix()}`, firstName: 'E2E', lastName: 'Provider' }
 }
 
+/**
+ * Customer logs in through the UI, whose LoginView validates /^09\d{9}$/ (11 digits,
+ * leading 0). The composable normalizes it to national +98 before calling the API.
+ */
 export function newCustomerIdentity(): TestIdentity {
-  return { phone: `913${suffix()}`, firstName: 'E2E', lastName: 'Customer' }
+  return { phone: `0913${suffix()}`, firstName: 'E2E', lastName: 'Customer' }
 }
 
 /** A unique business name per run. */

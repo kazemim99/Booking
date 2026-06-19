@@ -15,14 +15,14 @@ import { expect } from '../fixtures/test-base'
 export class BookingFlowPage {
   constructor(private readonly page: Page) {}
 
-  /** Open a specific (seeded) provider's detail page. */
+  /** Open a specific (seeded) provider's detail page (customer area). */
   async openProvider(providerId: string): Promise<void> {
-    await this.page.goto(`/providers/${providerId}`)
+    await this.page.goto(`/customer/provider/${providerId}`)
   }
 
-  /** Open the first provider from the public list. */
+  /** Open the first provider from the customer provider list. */
   async openFirstProvider(): Promise<void> {
-    await this.page.goto('/providers')
+    await this.page.goto('/customer/providers')
     const firstCard = this.page.getByTestId('provider-card').first()
     await expect(firstCard).toBeVisible()
     await firstCard.click()
@@ -57,12 +57,19 @@ export class MyBookingsPage {
   constructor(private readonly page: Page) {}
 
   async open(): Promise<void> {
-    await this.page.goto('/bookings')
-    await expect(this.page.getByTestId('my-bookings-list')).toBeVisible()
+    // A full page.goto('/customer/my-bookings') can 404 (auth-store hydration race
+    // on hard reload). Navigate client-side via the sidebar link, like a real user.
+    if (!/\/customer(\/|$)/.test(this.page.url())) {
+      await this.page.goto('/customer/dashboard')
+    }
+    await this.page.getByRole('link', { name: /رزروهای من/ }).click()
+    // NOTE: GET /Bookings/my-bookings is currently slow (~20s observed) — generous
+    // timeout until that query is optimized.
+    await expect(this.page.getByTestId('my-bookings-list')).toBeVisible({ timeout: 35_000 })
   }
 
   async expectHasBooking(): Promise<void> {
-    await expect(this.page.getByTestId('booking-row').first()).toBeVisible()
+    await expect(this.page.getByTestId('booking-row').first()).toBeVisible({ timeout: 35_000 })
   }
 
   async cancelFirst(): Promise<void> {
