@@ -52,7 +52,7 @@ namespace Booksy.ServiceCatalog.Application.Commands.Booking.CancelBooking
                 booking.Id.Value,
                 cancellationToken);
 
-            // Process refund if applicable
+            // Process refund per the booking policy.
             bool refundIssued = false;
             decimal refundAmount = 0;
 
@@ -60,32 +60,51 @@ namespace Booksy.ServiceCatalog.Application.Commands.Booking.CancelBooking
                 booking.TimeSlot.StartTime,
                 DateTime.UtcNow);
 
-            if ((canCancelWithoutFee || request.ByProvider) && booking.PaymentInfo.IsDepositPaid())
+            if (booking.PaymentInfo.IsDepositPaid())
             {
-                // Issue full refund
-                var refundMoney = Money.Create(
-                    booking.PaymentInfo.PaidAmount.Amount,
-                    booking.PaymentInfo.PaidAmount.Currency);
-
-                try
+                Money refundMoney;
+                if (canCancelWithoutFee || request.ByProvider)
                 {
-                    var refundResult = await _paymentGateway.RefundPaymentAsync(
-                        booking.PaymentInfo.PaymentIntentId!,
-                        refundMoney.Amount,
-                        request.Reason,
-                        cancellationToken);
-
-                    if (refundResult.IsSuccessful)
-                    {
-                        booking.ProcessRefund(refundMoney, refundResult.RefundId, request.Reason);
-                        refundIssued = true;
-                        refundAmount = refundMoney.Amount;
-                    }
+                    // Inside the free window (or provider-initiated): refund everything paid.
+                    refundMoney = Money.Create(
+                        booking.PaymentInfo.PaidAmount.Amount,
+                        booking.PaymentInfo.PaidAmount.Currency);
                 }
-                catch (Exception ex)
+                else
                 {
-                    _logger.LogError(ex, "Failed to process refund for booking {BookingId}", booking.Id);
-                    // Continue with cancellation even if refund fails
+                    // Past the free window: charge the cancellation fee and refund the remainder.
+                    // A CancellationFeePercentage means the customer pays that fee, not that they
+                    // forfeit the whole deposit. Refund = paid − fee, floored at zero.
+                    var fee = booking.Policy.CalculateCancellationFee(
+                        Money.Create(booking.TotalPrice.Amount, booking.TotalPrice.Currency));
+                    var net = booking.PaymentInfo.PaidAmount.Amount - fee.Amount;
+                    refundMoney = Money.Create(
+                        net > 0 ? net : 0m,
+                        booking.PaymentInfo.PaidAmount.Currency);
+                }
+
+                if (refundMoney.Amount > 0)
+                {
+                    try
+                    {
+                        var refundResult = await _paymentGateway.RefundPaymentAsync(
+                            booking.PaymentInfo.PaymentIntentId!,
+                            refundMoney.Amount,
+                            request.Reason,
+                            cancellationToken);
+
+                        if (refundResult.IsSuccessful)
+                        {
+                            booking.ProcessRefund(refundMoney, refundResult.RefundId, request.Reason);
+                            refundIssued = true;
+                            refundAmount = refundMoney.Amount;
+                        }
+                    }
+                    catch (Exception ex)
+                    {
+                        _logger.LogError(ex, "Failed to process refund for booking {BookingId}", booking.Id);
+                        // Continue with cancellation even if refund fails
+                    }
                 }
             }
 

@@ -7,6 +7,33 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added - MVP Supply-Side & Observability
+
+- **Provider self-onboarding keystone**: a provider can register (auto-approved), add a staff member (an Active individual sub-provider, qualified for the org's services, with availability auto-generated), and be booked end-to-end with **no DB seeding**. Covered by `tests/e2e/keystone-booking-flow.sh` (6 assertions) which now runs in CI and gates both the staging and production deploys.
+- **Booking-funnel metrics**: counters `booksy.bookings.{created,confirmed,completed,cancelled,noshow}` emitted on the `Booksy.ServiceCatalog.Bookings` meter and collected by OpenTelemetry (`AddMeter("Booksy.*")`).
+- **Single global SMS sandbox switch** (`Sms:SandboxMode`): forces every SMS provider (Rahyab + Kavenegar) into sandbox/disabled mode; additive (no effect when unset).
+
+### Fixed - MVP Hardening (correctness)
+
+- **Booking cancellation refund**: cancelling *past* the free window now issues a **partial refund** (`paid − cancellation fee`, floored at 0) instead of refunding nothing; full refund retained in-window / for provider-initiated cancels.
+- **Persistence bugs** in three command handlers that mutated aggregates but never committed: `AssignStaffToBooking`, `ApproveJoinRequest`, `ConvertToOrganization` now commit + publish their domain events.
+- **ZarinPal payments**: don't persist a payment with no gateway authority; capture the gateway fee at request time; return a graceful failure (not a 500) when a callback references an unknown authority; idempotent no-op when verifying an already-Paid payment.
+- **Exception handling**: four ServiceCatalog domain exceptions (`ServiceNotFound`, `ProviderNotActive`, `ServiceNotAvailable`, `InvalidService`) returned `ErrorCode` by throwing `NotImplementedException`, which crashed the error-handling middleware that reads it — now return stable codes.
+- **`UpdateUserProfileCommand`** threw `NotImplementedException` from `IdempotencyKey` (read by the idempotency pipeline on every command), breaking the command entirely — now returns null.
+- **`CurrentUserService`** `Name`/`IpAddress`/`UserAgent`/`GetClaimValue` implemented (were throwing).
+- **`DeleteProviderService`** now blocks deletion while a service has active (Requested/Confirmed) bookings, preventing orphaned appointments.
+- **`/Services/provider/{id}`** no longer 400s on a null optional category filter.
+- **Booking notifications are non-blocking**: removed a duplicate booking-SMS handler set that sent to a hardcoded phone number and double-fired; hardened `KavenegarSmsService` so a missing API key while disabled no longer throws during DI construction (the original cause of a booking-time 500).
+
+### Removed - Dead Code
+
+- Deleted the empty `Booking` bounded context (no source) and stray build artifacts.
+- Fully retired RabbitMQ/MassTransit: CAP is now in-memory-only, dropped the `DotNetCore.CAP.RabbitMQ` and `AspNetCore.HealthChecks.Rabbitmq` packages, the dead MassTransit OTel source, and the unused RabbitMQ connection string.
+
+### CI/CD
+
+- Both `deploy-staging.yml` (develop) and `deploy.yml` (master → production) now run the unit suite (333 tests) **and** the keystone E2E smoke against a real host before building images and deploying. `deploy.yml`'s tests had previously been commented out (it deployed on a successful compile alone).
+
 ### Changed - Backend Migrated from Microservices to Modular Monolith
 
 - **Single Host**: Consolidated the per-service hosts into one ASP.NET Core host, `Booksy.Host` (image/container `booksy-api`), listening on `:5000` (internal port 80, mapped `5000:80`). It composes the UserManagement and ServiceCatalog bounded contexts in-process and serves all of their controllers under `/api/v1/...` (PascalCase paths unchanged).

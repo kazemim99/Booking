@@ -57,12 +57,12 @@ Booking requires an **active, qualified staff sub-provider**, but the handlers w
 
 ### Epic 2.1 — Booking lifecycle gaps
 - [x] `MarkNoShow` + `AssignStaffToBooking` handlers **already exist and are real** (the "missing" note was stale). **Fixed a real bug in `AssignStaffToBookingCommandHandler`**: it called `UpdateBookingAsync` but never committed/published — so the `StaffAssignedToBookingEvent` never fired (and persistence relied implicitly on the pipeline). Now calls `CommitAndPublishEventsAsync`, matching `Cancel`/`MarkNoShow`.
-- [ ] Verify reschedule/cancel against booking policies (deposit/refund, cancellation windows).
+- [x] **Reschedule/cancel policy enforcement verified + a refund gap fixed.** The domain already enforces the rules: `Booking.Reschedule` blocks outside the reschedule window (`Policy.CanReschedule`) and the handler atomically releases the old slot + books the new one; `Booking.Cancel` honors `CanBeCancelled`, computes the cancellation fee, and the handler releases the slot. **Fixed:** `CancelBookingCommandHandler` previously refunded **nothing** when a cancellation occurred past the free window — but a `CancellationFeePercentage` means the customer *pays the fee*, not forfeits the whole deposit. It now issues a **partial refund** (`paid − fee`, floored at 0) past the window, and a full refund in-window / for provider-initiated cancels.
 
 ### Epic 2.2 — Payments E2E (revenue-critical, currently unverified)
 - [x] **Payment command handlers corrected + unit-tested** (Create/Verify ZarinPal): don't persist a payment with no authority; capture the gateway fee at request time; return a graceful failure when a callback references an unknown authority; idempotent no-op on an already-Paid verify. (5 tests green.)
 - [ ] Verify deposit-on-booking → ZarinPal sandbox → callback → confirm, end-to-end **through the running host/UI** (needs a sandbox merchant + browser; not reproducible in CI here).
-- [ ] Confirm refund path on cancellation.
+- [x] Refund path on cancellation implemented (full in-window / provider; partial = paid − fee past window) — see Epic 2.1. Still needs an end-to-end sandbox-gateway run to confirm the gateway refund call itself.
 
 ### Epic 2.3 — Notifications resilience (correctness fix)
 - [x] **Booking notifications are non-blocking**: all 5 `Booking*NotificationHandler`s already catch and swallow send failures (log, never rethrow), so an SMS/email failure can't roll back the booking. **Hardened `KavenegarSmsService`**: its ctor no longer throws on a missing API key when `Kavenegar:Enabled=false` (that DI-construction throw was the real cause of the booking 500 during review) — only requires a key when the gateway is actually enabled.
