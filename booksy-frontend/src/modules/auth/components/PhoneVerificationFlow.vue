@@ -19,7 +19,12 @@
           required
         />
 
-        <button type="submit" class="btn btn-primary" :disabled="!isPhoneValid || state.isLoading">
+        <button
+          type="submit"
+          class="btn btn-primary"
+          data-testid="send-code-button"
+          :disabled="!isPhoneValid || state.isLoading"
+        >
           <span v-if="state.isLoading" class="loading-spinner"></span>
           <span>{{ $t('auth.phoneVerification.sendCode') }}</span>
         </button>

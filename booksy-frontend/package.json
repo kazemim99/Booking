@@ -16,6 +16,9 @@
     "test:integration:coverage": "vitest run --config vitest.integration.config.ts --coverage",
     "test:e2e": "cypress open",
     "test:e2e:ci": "cypress run",
+    "e2e:pw": "playwright test",
+    "e2e:pw:ui": "playwright test --ui",
+    "e2e:pw:report": "playwright show-report",
     "lint": "eslint . --ext .vue,.js,.jsx,.cjs,.mjs,.ts,.tsx,.cts,.mts --fix",
     "lint:check": "eslint . --ext .vue,.js,.jsx,.cjs,.mjs,.ts,.tsx,.cts,.mts",
     "format": "prettier --write src/",
@@ -38,6 +41,7 @@
   },
   "devDependencies": {
     "@faker-js/faker": "^10.0.0",
+    "@playwright/test": "^1.49.0",
     "@tsconfig/node22": "^22.0.2",
     "@types/jsdom": "^21.1.7",
     "@types/node": "^22.18.6",

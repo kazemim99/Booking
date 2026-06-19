@@ -29,6 +29,7 @@
         ref="phoneInput"
         type="tel"
         class="phone-input"
+        data-testid="phone-input"
         :value="modelValue.phoneNumber"
         :placeholder="placeholder"
         :disabled="disabled"

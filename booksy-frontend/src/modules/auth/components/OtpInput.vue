@@ -5,7 +5,7 @@
       <span v-if="required" class="required">*</span>
     </label>
 
-    <div class="otp-input-container" :class="{ 'has-error': error }">
+    <div class="otp-input-container" data-testid="otp-input" :class="{ 'has-error': error }">
       <input
         v-for="(digit, index) in digits"
         :key="index"
