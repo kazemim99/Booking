@@ -23,6 +23,7 @@
         v-for="service in services"
         :key="service.id"
         class="service-card"
+        data-testid="service-option"
         :class="{ selected: isSelected(service.id) }"
         @click="toggleService(service)"
       >

@@ -1,0 +1,101 @@
+import { request as playwrightRequest, type APIRequestContext } from '@playwright/test'
+import { OTP_CODE, newProviderIdentity, newBusinessName } from './identity'
+
+/**
+ * API seeding — creates a bookable provider + active staff directly through the
+ * backend, mirroring tests/e2e/keystone-booking-flow.sh. This is the reliable way
+ * to set up supply-side state for UI tests: the provider registration *wizard* and
+ * the staff *invitation* flow are slow/awkward to drive through the browser, and the
+ * UI invite flow produces a pending invitation rather than an active staff member.
+ *
+ * Requires the host running with OTP_SANDBOX_CODE + Sms:SandboxMode. The API base
+ * defaults to the host's direct address; override with E2E_API_URL.
+ */
+const API_BASE = process.env.E2E_API_URL ?? 'http://localhost:5050'
+
+export interface SeededProvider {
+  providerId: string
+  staffId: string
+  serviceId?: string
+}
+
+async function authenticate(
+  api: APIRequestContext,
+  kind: 'provider' | 'customer',
+  nationalPhone: string,
+  firstName: string,
+  lastName: string,
+): Promise<{ token: string; userId: string }> {
+  await api.post('/api/v1/Auth/send-verification-code', {
+    data: { phoneNumber: nationalPhone, countryCode: '+98' },
+  })
+  const res = await api.post(`/api/v1/Auth/${kind}/complete-authentication`, {
+    data: { phoneNumber: `+98${nationalPhone}`, code: OTP_CODE, firstName, lastName },
+  })
+  if (!res.ok()) throw new Error(`${kind} auth failed: ${res.status()} ${await res.text()}`)
+  const body = await res.json()
+  return { token: body.accessToken, userId: body.userId }
+}
+
+/** Seeds an active, bookable provider with one staff member and one service. */
+export async function seedBookableProvider(): Promise<SeededProvider> {
+  const api = await playwrightRequest.newContext({ baseURL: API_BASE })
+  try {
+    const p = newProviderIdentity()
+    const businessName = newBusinessName()
+    const { token, userId } = await authenticate(api, 'provider', p.phone, p.firstName, p.lastName)
+
+    const hours: Record<string, unknown> = {}
+    for (let d = 0; d < 7; d++) {
+      hours[d] = {
+        dayOfWeek: d,
+        isOpen: true,
+        openTime: { hours: 9, minutes: 0 },
+        closeTime: { hours: 18, minutes: 0 },
+        breaks: [],
+      }
+    }
+
+    const regBody = {
+      ownerId: userId,
+      categoryId: 'HairSalon',
+      businessInfo: {
+        businessName,
+        ownerFirstName: 'E2E',
+        ownerLastName: 'Owner',
+        phoneNumber: p.phone,
+      },
+      address: {
+        street: 'St', city: 'Tehran', state: 'Tehran', postalCode: '1234567890',
+        country: 'Iran', latitude: 35.7, longitude: 51.4,
+      },
+      location: { latitude: 35.7, longitude: 51.4, formattedAddress: 'Tehran' },
+      businessHours: hours,
+      services: [
+        { name: 'Haircut', durationHours: 0, durationMinutes: 45, price: 250000, priceType: 'fixed' },
+      ],
+      assistanceOptions: [],
+      teamMembers: [],
+      ownerFirstName: 'E2E', ownerLastName: 'Owner', businessName,
+      description: 't', primaryCategory: 'HairSalon', email: `e2e${p.phone}@s.com`,
+      phoneNumber: p.phone, street: 'St', city: 'Tehran', state: 'Tehran',
+      postalCode: '1234567890', country: 'Iran',
+    }
+
+    const headers = { Authorization: `Bearer ${token}` }
+    const reg = await api.post('/api/v1/Providers/register-full', { data: regBody, headers })
+    if (!reg.ok()) throw new Error(`register-full failed: ${reg.status()} ${await reg.text()}`)
+    const providerId: string = (await reg.json()).providerId
+
+    const staffRes = await api.post(`/api/v1/Providers/${providerId}/staff`, {
+      data: { firstName: 'Sara', lastName: 'Stylist', role: 'Stylist' },
+      headers,
+    })
+    if (!staffRes.ok()) throw new Error(`add-staff failed: ${staffRes.status()} ${await staffRes.text()}`)
+    const staffId: string = (await staffRes.json()).id
+
+    return { providerId, staffId }
+  } finally {
+    await api.dispose()
+  }
+}

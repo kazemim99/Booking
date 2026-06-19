@@ -1,6 +1,7 @@
 <template>
   <div
     class="provider-card"
+    data-testid="provider-card"
     :class="[`view-mode-${viewMode}`, { clickable: isClickable }]"
     @click="handleClick"
   >

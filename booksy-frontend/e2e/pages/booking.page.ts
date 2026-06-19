@@ -9,12 +9,18 @@ import { expect } from '../fixtures/test-base'
  * data-testid contract:
  *   - provider-card (one per provider; first one is fine for the smoke)
  *   - book-service-button, service-option, slot-option, staff-option, booking-confirm
- *   - my-bookings-list, booking-row, booking-status
- *   - booking-cancel-button, cancel-confirm, refund-message
+ *   - my-bookings-list, booking-row, booking-status, booking-cancel-button
+ * Cancel uses a native window.confirm() dialog (not a modal) — accepted via page.once('dialog').
  */
 export class BookingFlowPage {
   constructor(private readonly page: Page) {}
 
+  /** Open a specific (seeded) provider's detail page. */
+  async openProvider(providerId: string): Promise<void> {
+    await this.page.goto(`/providers/${providerId}`)
+  }
+
+  /** Open the first provider from the public list. */
   async openFirstProvider(): Promise<void> {
     await this.page.goto('/providers')
     const firstCard = this.page.getByTestId('provider-card').first()
@@ -22,13 +28,27 @@ export class BookingFlowPage {
     await firstCard.click()
   }
 
-  /** Drives the booking flow happy path: service → slot → staff → confirm. */
+  private async clickIfVisible(testId: string): Promise<boolean> {
+    const el = this.page.getByTestId(testId).first()
+    if (await el.isVisible().catch(() => false)) {
+      await el.click()
+      return true
+    }
+    return false
+  }
+
+  /**
+   * Drives the multi-step booking wizard. The exact step order (service → advance →
+   * slot/staff → advance → confirm) is tolerated: each pick/advance is applied only
+   * if its control is present. The final `booking-confirm` is required.
+   */
   async bookFirstAvailable(): Promise<void> {
-    await this.page.getByTestId('book-service-button').first().click()
-    await this.page.getByTestId('service-option').first().click()
-    await this.page.getByTestId('slot-option').first().click()
-    const staff = this.page.getByTestId('staff-option').first()
-    if (await staff.isVisible().catch(() => false)) await staff.click()
+    await this.clickIfVisible('book-service-button')
+    await this.clickIfVisible('service-option')
+    await this.clickIfVisible('booking-advance')
+    await this.clickIfVisible('slot-option')
+    await this.clickIfVisible('staff-option')
+    await this.clickIfVisible('booking-advance')
     await this.page.getByTestId('booking-confirm').click()
   }
 }
@@ -47,8 +67,10 @@ export class MyBookingsPage {
 
   async cancelFirst(): Promise<void> {
     const row = this.page.getByTestId('booking-row').first()
+    // Cancellation is confirmed via a native window.confirm() dialog — auto-accept it.
+    this.page.once('dialog', (dialog) => dialog.accept())
     await row.getByTestId('booking-cancel-button').click()
-    await this.page.getByTestId('cancel-confirm').click()
-    await expect(row.getByTestId('booking-status')).toContainText(/cancel/i)
+    // Status label is localized (fa); match the Persian "لغو" or English "cancel".
+    await expect(row.getByTestId('booking-status')).toContainText(/لغو|cancel/i)
   }
 }

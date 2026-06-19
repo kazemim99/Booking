@@ -46,20 +46,30 @@ e2e/
   specs/keystone.spec.ts  # provider onboard → staff → customer book → cancel
 ```
 
+## Supply-side: seeded via API, not the UI
+
+The keystone spec seeds the provider + active staff + service through the backend
+(`e2e/utils/api-seed.ts`, mirroring the bash keystone) and drives only the
+**customer journey** (browse → book → cancel) through the browser. Reason: the
+provider registration wizard has many required per-step fields and the staff flow
+is *invitation*-based (a pending invite, not a bookable staff member). A separate,
+skipped "provider registration (UI)" spec is the placeholder for wizard coverage.
+
 ## Selector contract (`data-testid`)
 
-The Page Objects select by `data-testid` only (never CSS/label). Add these
-attributes to the corresponding components. **Until they exist, the suite will
-fail at the missing selector** — that is expected; wiring them is the remaining
-implementation task (see `openspec/changes/add-playwright-e2e/tasks.md` §3).
+The Page Objects select by `data-testid` only (never CSS/label). These are wired in
+the components:
 
-| Screen | `data-testid`s |
-| --- | --- |
-| Login / OTP | `phone-input`, `send-code-button`, `otp-input`, `verify-button`, `first-name-input`, `last-name-input` |
-| Provider registration | `reg-business-name`, `reg-next`, `reg-submit` (one `reg-next` per wizard step) |
-| Staff | `staff-add-button`, `staff-first-name`, `staff-last-name`, `staff-role`, `staff-save`, `staff-list` |
-| Browse / book | `provider-card`, `book-service-button`, `service-option`, `slot-option`, `staff-option`, `booking-confirm` |
-| My Bookings | `my-bookings-list`, `booking-row`, `booking-status`, `booking-cancel-button`, `cancel-confirm`, `refund-message` |
+| Screen | `data-testid`s | Status |
+| --- | --- | --- |
+| Login / OTP | `phone-input`, `send-code-button`, `otp-input` (multi-cell; auto-submits on completion — no verify button) | wired |
+| Browse / book | `provider-card`, `service-option`, `slot-option`, `staff-option`, `booking-advance` (next/review), `booking-confirm` | wired |
+| My Bookings | `my-bookings-list`, `booking-row`, `booking-status`, `booking-cancel-button` (cancel uses a native `confirm()` dialog) | wired |
+| Provider registration (optional UI spec) | `reg-business-name`, `reg-next` | wired (spec skipped pending tuning) |
+
+`book-service-button` and `first-name-input`/`last-name-input` are referenced
+defensively (clicked only if present) since the booking entry point and first-time
+signup prompt vary; add them if your first run shows they're needed.
 
 ## CI
 

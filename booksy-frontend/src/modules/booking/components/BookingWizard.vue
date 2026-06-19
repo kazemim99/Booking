@@ -108,6 +108,7 @@
         <button
           v-if="currentStep < 2"
           class="btn-primary"
+          data-testid="booking-advance"
           :disabled="!canProceed"
           @click="nextStep"
         >
@@ -120,6 +121,7 @@
         <button
           v-if="currentStep === 2"
           class="btn-primary"
+          data-testid="booking-advance"
           :disabled="!canProceed"
           @click="reviewBooking"
         >
@@ -132,6 +134,7 @@
         <button
           v-if="currentStep === 3"
           class="btn-primary"
+          data-testid="booking-confirm"
           :disabled="isSubmitting"
           @click="submitBooking"
         >

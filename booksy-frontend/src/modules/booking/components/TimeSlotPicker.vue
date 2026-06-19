@@ -44,6 +44,7 @@
             v-for="slot in groupedSlots.morning"
             :key="slot.startTime"
             class="slot-btn"
+            data-testid="slot-option"
             :class="{
               selected: selectedSlot?.startTime === slot.startTime,
               unavailable: !slot.available
@@ -69,6 +70,7 @@
             v-for="slot in groupedSlots.afternoon"
             :key="slot.startTime"
             class="slot-btn"
+            data-testid="slot-option"
             :class="{
               selected: selectedSlot?.startTime === slot.startTime,
               unavailable: !slot.available
@@ -94,6 +96,7 @@
             v-for="slot in groupedSlots.evening"
             :key="slot.startTime"
             class="slot-btn"
+            data-testid="slot-option"
             :class="{
               selected: selectedSlot?.startTime === slot.startTime,
               unavailable: !slot.available

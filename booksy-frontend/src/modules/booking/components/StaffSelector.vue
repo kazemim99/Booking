@@ -15,6 +15,7 @@
         v-for="staff in staffMembers"
         :key="staff.id"
         class="staff-item"
+        data-testid="staff-option"
         :class="{ selected: selectedStaffId === staff.id, disabled: !staff.isActive }"
         @click="handleSelect(staff)"
       >

@@ -13,8 +13,8 @@
 ## 3. data-testid attributes
 
 - [x] 3.1 Add `data-testid` to login/OTP components: `phone-input` (PhoneNumberInput), `send-code-button` (PhoneVerificationFlow), `otp-input` (OtpInput container). Note: this flow auto-submits on OTP completion (no verify button).
-- [ ] 3.2 Add `data-testid` to the registration wizard steps and submit (`reg-business-name`, `reg-next`, `reg-submit`)
-- [ ] 3.3 Add `data-testid` to staff add/list, provider list/cards, booking flow (service/time/staff/confirm), my-bookings list + cancel dialog
+- [x] 3.2 Added `reg-business-name` (BusinessInfoStep) + `reg-next` (shared NavigationButtons). Full wizard UI coverage is a skipped optional spec; the keystone seeds the provider via API instead (`e2e/utils/api-seed.ts`).
+- [x] 3.3 Added customer-journey testids: `provider-card`; booking flow `service-option`/`slot-option`/`staff-option`/`booking-advance`/`booking-confirm`; my-bookings `my-bookings-list`/`booking-row`/`booking-status`/`booking-cancel-button`. (Cancel uses a native `confirm()` dialog; staff is API-seeded since the UI flow is invitation-based.)
 
 ## 4. Keystone spec
 

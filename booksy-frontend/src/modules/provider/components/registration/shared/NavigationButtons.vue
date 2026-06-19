@@ -35,6 +35,7 @@
     <button
       type="button"
       class="btn btn-primary"
+      data-testid="reg-next"
       :disabled="disabled || loading || !canContinue"
       @click="$emit('next')"
     >

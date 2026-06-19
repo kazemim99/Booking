@@ -18,6 +18,7 @@
             v-model="formData.businessName"
             type="text"
             class="form-input"
+            data-testid="reg-business-name"
             :class="{ 'form-input-error': errors.businessName }"
             placeholder="مثال: آرایشگاه زیبا"
             @blur="validateField('businessName')"

@@ -45,9 +45,14 @@
     </div>
 
     <!-- Bookings List -->
-    <div v-else class="bookings-list">
-      <div v-for="booking in filteredBookings" :key="booking.bookingId" class="booking-card">
-        <div class="booking-status" :class="booking.statusColor">
+    <div v-else class="bookings-list" data-testid="my-bookings-list">
+      <div
+        v-for="booking in filteredBookings"
+        :key="booking.bookingId"
+        class="booking-card"
+        data-testid="booking-row"
+      >
+        <div class="booking-status" :class="booking.statusColor" data-testid="booking-status">
           {{ booking.statusLabel }}
         </div>
         <div class="booking-content">
@@ -68,6 +73,7 @@
               v-if="booking.canCancel"
               @click="cancelBooking(booking.bookingId)"
               class="btn-cancel"
+              data-testid="booking-cancel-button"
               :disabled="cancellingBookingId === booking.bookingId"
             >
               {{ cancellingBookingId === booking.bookingId ? 'در حال لغو...' : 'لغو رزرو' }}
