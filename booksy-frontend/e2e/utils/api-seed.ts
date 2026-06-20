@@ -159,4 +159,29 @@ export async function seedCustomerBooking(
   }
 }
 
+/**
+ * Seeds a booking for the user identified by `token` (captured from the browser
+ * after UI login) — guarantees the booking belongs to exactly the logged-in
+ * customer, sidestepping any phone-normalization identity mismatch.
+ */
+export async function seedBookingWithToken(token: string, seeded: SeededProvider): Promise<string> {
+  const api = await playwrightRequest.newContext({ baseURL: API_BASE, timeout: 90_000 })
+  try {
+    const res = await api.post('/api/v1/Bookings', {
+      headers: { Authorization: `Bearer ${token}` },
+      data: {
+        providerId: seeded.providerId,
+        serviceId: seeded.serviceId,
+        staffProviderId: seeded.staffId,
+        startTime: '2026-09-01T10:00:00Z',
+        customerNotes: 'e2e ui keystone',
+      },
+    })
+    if (!res.ok()) throw new Error(`create-booking failed: ${res.status()} ${await res.text()}`)
+    return unwrap(await res.json()).id
+  } finally {
+    await api.dispose()
+  }
+}
+
 export { national }

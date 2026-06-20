@@ -7,13 +7,16 @@ Vue app in Chromium against a running monolith stack.
 
 - ✅ **Customer OTP sign-in is green end-to-end** (real backend: Vue login →
   `/api` → host → send-verification-code + complete-authentication → landing).
-- ⛔ **Booking journey is skipped — blocked on frontend gaps the run surfaced:**
-  - `ProviderDetailView` renders **hardcoded mock data** (not the real provider).
-  - `GET /Bookings/my-bookings` is **slow (~20s)** and the seeded booking did not
-    appear in the customer's My Bookings (customer read path not reliably wired).
-  - the booking wizard runs on the mock provider-detail data.
-  The harness, Page Objects, `data-testid`s and `api-seed.ts` are all in place, so
-  these light up once those screens are backend-wired.
+- ✅ **Customer provider-detail renders REAL backend data** — `ProviderDetailView`
+  was rewired from hardcoded mock data to
+  `providerService.getProviderById` + `serviceService.getServicesByProvider`; the
+  test asserts the seeded business name + service show and the old mock is gone.
+- ⛔ **My Bookings list + cancel are skipped.** With a booking seeded for the
+  logged-in customer's own token, `GET /Bookings/my-bookings` still renders empty
+  in the UI even though the backend filter (`StartTime >= from`) should include it
+  — needs a focused param-binding / query investigation. Page Objects +
+  `seedBookingWithToken` are in place for when that's fixed. (The booking *wizard*
+  remains a separate effort.)
 - Browser: uses the **system Chrome** (`channel: 'chrome'`) so no Chromium download
   is needed; `PW_VIDEO=off` skips video where ffmpeg can't be installed.
 

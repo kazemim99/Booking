@@ -94,35 +94,94 @@
 </template>
 
 <script setup lang="ts">
-import { ref } from 'vue'
+import { ref, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import FavoriteButton from '../components/favorites/FavoriteButton.vue'
+import { providerService } from '@/modules/provider/services/provider.service'
+import { serviceService } from '@/modules/provider/services/service.service'
 
 const route = useRoute()
 const router = useRouter()
 
 const activeTab = ref('services')
+const loading = ref(true)
+const error = ref<string | null>(null)
 
-// Mock provider data
-const provider = ref({
-  id: route.params.id,
-  name: 'آرایشگاه زیبای پارسی',
-  type: 'آرایشگاه زنانه',
-  rating: 4.8,
-  reviewCount: 124,
-  address: 'تهران، ونک، خیابان ولیعصر',
-  description: 'آرایشگاه زیبای پارسی با بیش از 10 سال سابقه در خدمت شماست.',
+interface DetailService {
+  id: string
+  name: string
+  description: string
+  duration: number
+  price: number
+}
+interface ProviderDetail {
+  id: string
+  name: string
+  type: string
+  rating: number
+  reviewCount: number
+  address: string
+  description: string
+  logo: string | null
+  coverImage: string | null
+  services: DetailService[]
+  gallery: string[]
+  reviews: Array<{ id: string; customerName: string; rating: number; comment: string }>
+}
+
+const provider = ref<ProviderDetail>({
+  id: String(route.params.id),
+  name: '',
+  type: '',
+  rating: 0,
+  reviewCount: 0,
+  address: '',
+  description: '',
   logo: null,
   coverImage: null,
-  services: [
-    { id: '1', name: 'کوتاهی مو', description: 'کوتاهی و اصلاح مو', duration: 45, price: 150000 },
-    { id: '2', name: 'رنگ مو', description: 'رنگ و هایلایت مو', duration: 120, price: 500000 },
-  ],
-  gallery: ['/placeholder.jpg', '/placeholder.jpg'],
-  reviews: [
-    { id: '1', customerName: 'مریم احمدی', rating: 5, comment: 'عالی بود!' },
-  ],
+  services: [],
+  gallery: [],
+  reviews: [],
 })
+
+async function loadProvider() {
+  loading.value = true
+  error.value = null
+  try {
+    const id = String(route.params.id)
+    const [p, services] = await Promise.all([
+      providerService.getProviderById(id, true, false, true),
+      serviceService.getServicesByProvider(id).catch(() => []),
+    ])
+    provider.value = {
+      id: p.id,
+      name: p.profile?.businessName ?? '',
+      type: '',
+      rating: 0,
+      reviewCount: 0,
+      address: p.address?.formattedAddress || p.address?.addressLine1 || '',
+      description: p.profile?.description ?? '',
+      logo: p.profile?.logoUrl ?? null,
+      coverImage: p.profile?.coverImageUrl ?? null,
+      services: (services ?? []).map((s) => ({
+        id: s.id,
+        name: s.name,
+        description: s.description ?? '',
+        duration: s.duration,
+        price: s.basePrice,
+      })),
+      gallery: [],
+      reviews: [],
+    }
+  } catch (e) {
+    console.error('[ProviderDetailView] failed to load provider', e)
+    error.value = 'بارگذاری اطلاعات ارائه‌دهنده با خطا مواجه شد'
+  } finally {
+    loading.value = false
+  }
+}
+
+onMounted(loadProvider)
 
 function formatPrice(price: number) {
   return new Intl.NumberFormat('fa-IR').format(price)
