@@ -176,11 +176,15 @@ const handleLocationSelected = async (data: {
   console.log('Location selected:', data)
   formData.value.coordinates = { lat: data.lat, lng: data.lng }
 
-  // Auto-fill address if available
+  // Auto-fill address if available. Only overwrite when reverse-geocoding actually
+  // returned something — otherwise an empty/failed geocode would wipe the address
+  // the user typed (e.g. when the Neshan key is missing or returns no result).
   if (data.addressDetails) {
-    // Always update address from formatted_address when clicking map
-    formData.value.formattedAddress = data.addressDetails.formattedAddress || data.address || ''
-    formData.value.address = data.addressDetails.formattedAddress || data.addressDetails.address || ''
+    const geocoded = data.addressDetails.formattedAddress || data.addressDetails.address || data.address || ''
+    if (geocoded.trim()) {
+      formData.value.formattedAddress = geocoded
+      formData.value.address = geocoded
+    }
 
     if (data.addressDetails.postalCode) {
       formData.value.postalCode = data.addressDetails.postalCode
