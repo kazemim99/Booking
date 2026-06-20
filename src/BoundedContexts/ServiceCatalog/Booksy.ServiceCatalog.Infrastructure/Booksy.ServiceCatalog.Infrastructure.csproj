@@ -16,6 +16,14 @@
     <Folder Include="Services\External\" />
   </ItemGroup>
 
+  <!-- Iranian provinces/cities reference data for ProvinceCitiesSeeder. Copied next
+       to the running host so the seeder finds it regardless of working directory. -->
+  <ItemGroup>
+    <Content Include="..\Booksy.ServiceCatalog.Api\ProvinceCity-ParentChild.json" Link="ProvinceCity-ParentChild.json">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+  </ItemGroup>
+
 	<ItemGroup>
 		<PackageReference Include="Microsoft.EntityFrameworkCore" Version="9.0.4" />
 		<PackageReference Include="Microsoft.EntityFrameworkCore.Tools" Version="9.0.4">

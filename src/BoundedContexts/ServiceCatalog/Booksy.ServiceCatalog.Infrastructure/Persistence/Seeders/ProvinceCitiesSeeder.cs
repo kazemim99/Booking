@@ -22,7 +22,24 @@ namespace Booksy.ServiceCatalog.Infrastructure.Persistence.Seeders
         {
             _context = context;
             _logger = logger;
-            _jsonFilePath = "ProvinceCity-ParentChild.json";
+            _jsonFilePath = ResolveJsonPath();
+        }
+
+        /// <summary>
+        /// Resolves the locations JSON across hosts: the file is copied next to the
+        /// running assembly (CopyToOutputDirectory), but fall back to a few common
+        /// source/content locations so it works under any working directory.
+        /// </summary>
+        private static string ResolveJsonPath()
+        {
+            const string fileName = "ProvinceCity-ParentChild.json";
+            var candidates = new[]
+            {
+                Path.Combine(AppContext.BaseDirectory, fileName),
+                Path.Combine(Directory.GetCurrentDirectory(), fileName),
+                fileName,
+            };
+            return candidates.FirstOrDefault(File.Exists) ?? candidates[0];
         }
 
         public async Task SeedAsync(CancellationToken cancellationToken = default)
