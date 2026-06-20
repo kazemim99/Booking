@@ -16,6 +16,7 @@
             v-model="localData.businessName"
             type="text"
             class="form-input"
+            data-testid="reg-business-name"
             placeholder="مثال: سالن زیبایی الیت"
             @blur="validateBusinessName"
           />

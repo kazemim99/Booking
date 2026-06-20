@@ -49,7 +49,12 @@ export default defineConfig({
       name: 'chromium',
       // Use the system-installed Google Chrome ('chrome' channel) so CI/dev don't
       // need Playwright's bundled Chromium download. Override with PW_CHANNEL.
-      use: { ...devices['Desktop Chrome'], channel: process.env.PW_CHANNEL ?? 'chrome' },
+      // PW_SLOWMO (ms) slows each action so a headed run is watchable.
+      use: {
+        ...devices['Desktop Chrome'],
+        channel: process.env.PW_CHANNEL ?? 'chrome',
+        launchOptions: { slowMo: Number(process.env.PW_SLOWMO ?? 0) },
+      },
     },
   ],
   // Only auto-start the frontend dev server. The backend stack (host + Postgres +

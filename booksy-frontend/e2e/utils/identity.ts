@@ -26,6 +26,11 @@ export function newProviderIdentity(): TestIdentity {
   return { phone: `912${suffix()}`, firstName: 'E2E', lastName: 'Provider' }
 }
 
+/** Provider logging in through the UI (ProviderLoginView validates /^09\d{9}$/). */
+export function newProviderUiIdentity(): TestIdentity {
+  return { phone: `0912${suffix()}`, firstName: 'E2E', lastName: 'Provider' }
+}
+
 /**
  * Customer logs in through the UI, whose LoginView validates /^09\d{9}$/ (11 digits,
  * leading 0). The composable normalizes it to national +98 before calling the API.
