@@ -103,6 +103,73 @@ export class ProviderRegistrationPage {
     await this.page.getByRole('button', { name: /تکمیل ثبت|ثبت نهایی|تکمیل ثبت‌نام/ }).first().click()
   }
 
+  // ---- Realistic variants (map pin, custom hours, gallery, back-edit, dashboard) ----
+
+  /** Step 3 — city + drop a pin on the Neshan map (sets real coordinates). */
+  async fillLocationWithMapPin(): Promise<void> {
+    const city = this.page.getByPlaceholder('جستجوی شهر...')
+    await expect(city).toBeVisible({ timeout: 15_000 })
+    await city.click()
+    await city.fill('تهران')
+    const option = this.page.locator('.dropdown-item').first()
+    await expect(option).toBeVisible({ timeout: 10_000 })
+    await option.click()
+    // Click the map to drop a pin (emits coordinates; may reverse-geocode the address).
+    const map = this.page.locator('.map-container').first()
+    await expect(map).toBeVisible({ timeout: 15_000 })
+    await this.page.waitForTimeout(2500) // let the Neshan tiles initialise
+    const box = await map.boundingBox()
+    if (box) await this.page.mouse.click(box.x + box.width / 2, box.y + box.height / 2)
+    const addr = this.page.getByRole('textbox', { name: /آدرس دقیق/ })
+    if (!(await addr.inputValue())) await addr.fill('خیابان ولیعصر، پلاک ۱')
+    await this.nextAndWait(/^خدمات$/)
+  }
+
+  /** Step 5 — close one working day (real change), then continue. */
+  async closeOneWorkingDayAndContinue(): Promise<void> {
+    await expect(this.page.getByRole('heading', { name: /ساعات کاری/ })).toBeVisible({ timeout: 15_000 })
+    // The toggle is a CSS switch with a visually-hidden <input> — click the slider.
+    await this.page.locator('.day-card').last().locator('.toggle-switch').click()
+    await expect(this.page.locator('.closed-badge').first()).toBeVisible({ timeout: 5_000 })
+    await this.nextAndWait(/گالری تصاویر/)
+  }
+
+  /** Step 6 — upload several gallery images, then continue. */
+  async uploadGalleryImagesAndContinue(paths: string[]): Promise<void> {
+    await this.page.locator('input[type="file"]').first().setInputFiles(paths)
+    // Wait for all uploads to finish before advancing (clicking Next mid-upload
+    // aborts the in-flight gallery request → 499).
+    await expect(this.page.locator('.image-card')).toHaveCount(paths.length, { timeout: 45_000 })
+    await this.page.waitForLoadState('networkidle', { timeout: 20_000 }).catch(() => {})
+    await this.nextAndWait(/بررسی نهایی/)
+  }
+
+  /** From Working Hours, step BACK to Services (verify), then go forward again. */
+  async goBackToServicesAndReturn(): Promise<void> {
+    await expect(this.page.getByRole('heading', { name: /ساعات کاری/ })).toBeVisible({ timeout: 15_000 })
+    await this.page.getByRole('button', { name: /قبلی|بازگشت/ }).first().click()
+    await expect(this.page.getByRole('heading', { name: /^خدمات$/ })).toBeVisible({ timeout: 10_000 })
+    await expect(this.page.getByText('کوتاهی مو').first()).toBeVisible() // the service we added is still there
+    await this.nextAndWait(/ساعات کاری/) // forward again (re-saves services)
+  }
+
+  /** From the review step, edit working hours (re-open the closed day), then return. */
+  async editWorkingHoursFromReviewAndReturn(): Promise<void> {
+    // Sections in order: business(1), location(3), services(4), hours(5) → 4th edit link.
+    await this.page.getByRole('button', { name: 'ویرایش' }).nth(3).click()
+    await expect(this.page.getByRole('heading', { name: /ساعات کاری/ })).toBeVisible({ timeout: 10_000 })
+    await this.page.locator('.day-card').last().locator('.toggle-switch').click() // re-open the day
+    await this.nextAndWait(/گالری تصاویر/)
+    await this.nextAndWait(/بررسی نهایی/)
+  }
+
+  /** Completion screen → enter the provider dashboard. */
+  async goToDashboard(): Promise<void> {
+    const btn = this.page.getByRole('button', { name: /ورود به داشبورد/ })
+    await expect(btn).toBeVisible({ timeout: 30_000 })
+    await btn.click()
+  }
+
   /** Run all steps to completion. Returns when the completion screen shows. */
   async completeOrganizationRegistration(businessName: string): Promise<void> {
     await this.selectOrganizationIfPrompted()
