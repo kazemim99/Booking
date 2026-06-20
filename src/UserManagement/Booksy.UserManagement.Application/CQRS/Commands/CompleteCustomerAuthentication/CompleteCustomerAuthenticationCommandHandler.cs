@@ -23,6 +23,7 @@ public sealed class CompleteCustomerAuthenticationCommandHandler
     private readonly IUserRepository _userRepository;
     private readonly ICustomerRepository _customerRepository;
     private readonly IJwtTokenService _jwtTokenService;
+    private readonly Abstractions.Persistence.IUserManagementUnitOfWork _unitOfWork;
     private readonly ILogger<CompleteCustomerAuthenticationCommandHandler> _logger;
 
     public CompleteCustomerAuthenticationCommandHandler(
@@ -31,6 +32,7 @@ public sealed class CompleteCustomerAuthenticationCommandHandler
         IUserRepository userRepository,
         ICustomerRepository customerRepository,
         IJwtTokenService jwtTokenService,
+        Abstractions.Persistence.IUserManagementUnitOfWork unitOfWork,
         ILogger<CompleteCustomerAuthenticationCommandHandler> logger)
     {
         _mediator = mediator;
@@ -38,6 +40,7 @@ public sealed class CompleteCustomerAuthenticationCommandHandler
         _userRepository = userRepository;
         _customerRepository = customerRepository;
         _jwtTokenService = jwtTokenService;
+        _unitOfWork = unitOfWork;
         _logger = logger;
     }
 
@@ -144,6 +147,10 @@ public sealed class CompleteCustomerAuthenticationCommandHandler
 
         user.AddRefreshToken(refreshToken);
         await _userRepository.SaveAsync(user, cancellationToken);
+        // Persist explicitly (SaveAsync only tracks; the generic TransactionBehavior
+        // commits the ServiceCatalog UoW, not UserManagement) so the new customer + their
+        // Customer aggregate are actually saved.
+        await _unitOfWork.SaveAndPublishEventsAsync(cancellationToken);
 
         _logger.LogInformation(
             "Customer authentication completed successfully. UserId: {UserId}, CustomerId: {CustomerId}, IsNew: {IsNew}",

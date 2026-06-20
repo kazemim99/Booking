@@ -28,6 +28,7 @@ public sealed class CompleteProviderAuthenticationCommandHandler
     private readonly IUserRepository _userRepository;
     private readonly IJwtTokenService _jwtTokenService;
     private readonly IProviderInfoService _providerInfoService;
+    private readonly Abstractions.Persistence.IUserManagementUnitOfWork _unitOfWork;
     private readonly ILogger<CompleteProviderAuthenticationCommandHandler> _logger;
 
     public CompleteProviderAuthenticationCommandHandler(
@@ -36,6 +37,7 @@ public sealed class CompleteProviderAuthenticationCommandHandler
         IUserRepository userRepository,
         IJwtTokenService jwtTokenService,
         IProviderInfoService providerInfoService,
+        Abstractions.Persistence.IUserManagementUnitOfWork unitOfWork,
         ILogger<CompleteProviderAuthenticationCommandHandler> logger)
     {
         _mediator = mediator;
@@ -43,6 +45,7 @@ public sealed class CompleteProviderAuthenticationCommandHandler
         _userRepository = userRepository;
         _jwtTokenService = jwtTokenService;
         _providerInfoService = providerInfoService;
+        _unitOfWork = unitOfWork;
         _logger = logger;
     }
 
@@ -172,6 +175,11 @@ public sealed class CompleteProviderAuthenticationCommandHandler
 
         user.AddRefreshToken(refreshToken);
         await _userRepository.SaveAsync(user, cancellationToken);
+        // Persist explicitly: SaveAsync only tracks, and the generic TransactionBehavior
+        // commits the ServiceCatalog unit of work (DI last-wins), not UserManagement —
+        // so without this the new provider user is never saved (its token then points at
+        // a non-existent user and later lookups, e.g. registration step-9, 500).
+        await _unitOfWork.SaveAndPublishEventsAsync(cancellationToken);
 
         _logger.LogInformation(
             "Provider authentication completed successfully. UserId: {UserId}, ProviderId: {ProviderId}, IsNew: {IsNew}",
