@@ -193,11 +193,13 @@ const canProceed = computed(() => {
     case 2:
       return !!registrationData.value.categoryId
     case 3:
-      return (
+      // City + address are required; map coordinates are optional (the Neshan map
+      // may be unavailable / not interacted with, and the backend defaults lat/lng
+      // to 0). Requiring coordinates here silently blocked registration — the
+      // LocationStep itself only validates city + address.
+      return !!(
         registrationData.value.address.addressLine1 &&
-        registrationData.value.address.city &&
-        registrationData.value.location.latitude &&
-        registrationData.value.location.longitude
+        registrationData.value.address.city
       )
     case 4:
       return registrationData.value.services.length > 0

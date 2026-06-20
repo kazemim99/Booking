@@ -32,15 +32,18 @@ test('new provider signs in and reaches the registration wizard (step 1)', async
 //    churn, so "ادامه" stays disabled and the step never submits;
 //  - locations weren't seeded at all (fixed separately — see below).
 // Un-skip once LocationStep's address binding is stabilized.
-test.skip('provider completes the full registration wizard (blocked on LocationStep)', async ({ page }) => {
+test('provider completes the full registration wizard', async ({ page }) => {
   test.setTimeout(180_000)
   await new LoginPage(page).loginAs('provider', newProviderUiIdentity())
   await expect(page).toHaveURL(/\/provider\/registration/, { timeout: 15_000 })
 
   const reg = new ProviderRegistrationPage(page)
-  await reg.selectOrganizationIfPrompted()
-  await reg.fillBusinessInfo(newBusinessName())
-  await reg.selectFirstCategory()
-  await reg.fillLocation()
-  await expect(page.getByRole('heading', { name: /^خدمات$/ })).toBeVisible({ timeout: 15_000 })
+  await reg.completeOrganizationRegistration(newBusinessName())
+
+  // Step 8 — completion: registration finished.
+  await expect(
+    page.getByText(/تکمیل شد|ثبت‌نام شما|با موفقیت|تبریک|ثبت نام با موفقیت/).first(),
+  ).toBeVisible({ timeout: 30_000 })
+
+  await page.screenshot({ path: 'test-results/provider-registration-complete.png', fullPage: true })
 })
