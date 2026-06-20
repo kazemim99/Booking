@@ -44,3 +44,13 @@ test('realistic: provider onboards with map pin, custom hours, gallery, back-edi
   await expect(page).toHaveURL(/\/provider\/dashboard/, { timeout: 45_000 })
   await page.screenshot({ path: 'test-results/provider-registration-realistic-dashboard.png', fullPage: true })
 })
+
+/**
+ * Gallery: upload many images + choose a MAIN one. Skipped — the gallery upload is
+ * not reachable for a freshly-registered (PendingVerification) provider: the
+ * dashboard limits features until admin approval, and the in-wizard gallery step
+ * double-uploads (the second request 499s). Both are real findings; un-skip once
+ * the gallery upload works for a pending provider (or after an approval step is
+ * added to the test). The set-main flow lives in GalleryManager (/provider/gallery).
+ */
+test.skip('gallery: upload several images and pick a main one', async () => {})
