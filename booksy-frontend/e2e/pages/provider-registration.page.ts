@@ -24,10 +24,10 @@ export class ProviderRegistrationPage {
    * draft via a (slow, ~10s) backend save; without waiting, a second next() would
    * double-submit and the save hits a DB concurrency conflict.
    */
-  private async nextAndWait(heading: RegExp): Promise<void> {
+  private async nextAndWait(heading: RegExp, timeout = 30_000): Promise<void> {
     await this.next()
     await expect(this.page.getByRole('heading', { name: heading }).first())
-      .toBeVisible({ timeout: 30_000 })
+      .toBeVisible({ timeout })
   }
 
   async selectOrganizationIfPrompted(): Promise<void> {
@@ -137,11 +137,10 @@ export class ProviderRegistrationPage {
   /** Step 6 — upload several gallery images, then continue. */
   async uploadGalleryImagesAndContinue(paths: string[]): Promise<void> {
     await this.page.locator('input[type="file"]').first().setInputFiles(paths)
-    // Wait for all uploads to finish before advancing (clicking Next mid-upload
-    // aborts the in-flight gallery request → 499).
     await expect(this.page.locator('.image-card')).toHaveCount(paths.length, { timeout: 45_000 })
-    await this.page.waitForLoadState('networkidle', { timeout: 20_000 }).catch(() => {})
-    await this.nextAndWait(/بررسی نهایی/)
+    // The Next-button re-uploads to the backend (image processing is slow, ~30s+),
+    // so give the transition generous time — closing the page early aborts it (499).
+    await this.nextAndWait(/بررسی نهایی/, 120_000)
   }
 
   /** From Working Hours, step BACK to Services (verify), then go forward again. */

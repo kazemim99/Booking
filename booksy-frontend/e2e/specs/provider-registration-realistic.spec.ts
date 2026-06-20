@@ -30,10 +30,9 @@ test('realistic: provider onboards with map pin, custom hours, gallery, back-edi
   // Real users navigate back: from Working Hours, step back to Services then return.
   await reg.goBackToServicesAndReturn()
   await reg.closeOneWorkingDayAndContinue()
-  // NOTE: the registration gallery step double-uploads and the second request 499s
-  // (real bug). Image upload + set-main is done on the dashboard below, the proper
-  // place for it. Skipping the buggy in-wizard upload here.
-  await reg.skipGallery()
+  // Upload several gallery images during onboarding (the multipart Content-Type bug
+  // that 499'd this is now fixed centrally in the http-client).
+  await reg.uploadGalleryImagesAndContinue([IMG(1), IMG(2), IMG(3)])
 
   await expect(page.getByRole('heading', { name: /بررسی نهایی/ })).toBeVisible({ timeout: 15_000 })
   await reg.confirmAndSubmit()
@@ -46,11 +45,17 @@ test('realistic: provider onboards with map pin, custom hours, gallery, back-edi
 })
 
 /**
- * Gallery: upload many images + choose a MAIN one. Skipped — the gallery upload is
- * not reachable for a freshly-registered (PendingVerification) provider: the
- * dashboard limits features until admin approval, and the in-wizard gallery step
- * double-uploads (the second request 499s). Both are real findings; un-skip once
- * the gallery upload works for a pending provider (or after an approval step is
- * added to the test). The set-main flow lives in GalleryManager (/provider/gallery).
+ * Pick a MAIN gallery image. Skipped — the 3 images uploaded during onboarding DO
+ * persist (provider_gallery_images has 3 rows, step-7/gallery → 200 after the
+ * multipart fix), but the dashboard gallery (/provider/gallery) renders empty for a
+ * freshly-registered provider, so there's nothing to set as primary. That's a real
+ * frontend loading bug (data present, not displayed). Un-skip once the dashboard
+ * gallery loads the provider's images; the set-main flow itself is wired below.
  */
-test.skip('gallery: upload several images and pick a main one', async () => {})
+test.skip('gallery: set a main image (blocked: dashboard gallery renders empty)', async ({ page }) => {
+  await page.goto('/provider/gallery')
+  const firstCard = page.locator('.image-card').first()
+  await firstCard.hover()
+  await firstCard.getByTitle('تنظیم به عنوان تصویر اصلی').click()
+  await expect(firstCard.locator('.primary-badge')).toBeVisible({ timeout: 15_000 })
+})
