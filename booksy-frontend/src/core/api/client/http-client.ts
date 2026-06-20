@@ -99,6 +99,20 @@ class HttpClient {
       (error: AxiosError) => Promise.reject(error),
     )
 
+    // 5. FormData uploads - remove the JSON default Content-Type so axios/the browser
+    //    set "multipart/form-data; boundary=…" themselves. A boundary-less Content-Type
+    //    (or application/json) leaves the server unable to parse the body, so the
+    //    request hangs to the client timeout and aborts (499). Fixes all file uploads.
+    this.axiosInstance.interceptors.request.use(
+      (config) => {
+        if (config.data instanceof FormData && config.headers) {
+          delete (config.headers as Record<string, unknown>)['Content-Type']
+        }
+        return config
+      },
+      (error: AxiosError) => Promise.reject(error),
+    )
+
     // ============================================
     // Response Interceptors (applied in reverse order)
     // ============================================

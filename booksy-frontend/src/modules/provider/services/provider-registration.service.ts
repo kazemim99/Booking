@@ -413,11 +413,9 @@ class ProviderRegistrationService {
     }>(
       'v1/Registration/step-7/gallery',
       formData,
-      {
-        headers: {
-          'Content-Type': 'multipart/form-data'
-        }
-      }
+      // Content-Type (with boundary) is set by the http-client's FormData interceptor.
+      // Image processing/storage can be slow, so allow well beyond the 30s default.
+      { timeout: 120_000 }
     )
     return response.data!
   }
