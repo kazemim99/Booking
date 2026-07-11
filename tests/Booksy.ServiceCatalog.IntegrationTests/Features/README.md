@@ -149,4 +149,5 @@ When adding new scenarios:
 - [Reqnroll Documentation](https://docs.reqnroll.net/)
 - [Gherkin Reference](https://cucumber.io/docs/gherkin/reference/)
 - [BDD Best Practices](https://cucumber.io/docs/bdd/)
-- [Migration Plan](../../../REQNROLL_MIGRATION_PLAN.md)
+- [Reqnroll Testing Guide](../../../docs/REQNROLL_TESTING.md)
+- [Migration Plan (archived, historical)](../../../docs/archive/REQNROLL_MIGRATION_PLAN.md)

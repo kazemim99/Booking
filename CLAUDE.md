@@ -10,7 +10,9 @@ This repository contains both the **source code** and the **deployment configura
 
 ## 📚 Developer Documentation
 
-### API & Integration Reference
+Docs are organized in three tiers: **root** (living — current architecture, API surface, active plans), **`docs/`** (living but secondary — deployment/testing how-tos), and **`docs/archive/`** (historical — point-in-time implementation write-ups for features that have since shipped; kept for context, not guaranteed current).
+
+### Root (living)
 
 - **[API_ENDPOINTS.md](API_ENDPOINTS.md)** - Complete API endpoint reference (single host on :5000)
   - UserManagement endpoints: Authentication, Customer Management
@@ -23,6 +25,22 @@ This repository contains both the **source code** and the **deployment configura
   - Type conversion guidelines (Guid → String, decimal → double, etc.)
   - JSON serialization best practices
   - Naming conventions and file locations
+
+- **[TECHNICAL_DOCUMENTATION.md](TECHNICAL_DOCUMENTATION.md)** - Architecture patterns, auth/OTP flow, event-driven design, EF Core owned-entity config, known issues & fixes, session history
+- **[COMPLETION_ROADMAP.md](COMPLETION_ROADMAP.md)** - Current tracked plan to MVP launch (phases, epics, status)
+- **[MONOLITH_MIGRATION_PLAN.md](MONOLITH_MIGRATION_PLAN.md)** - The microservices → modular-monolith migration
+- **[GALLERY_BACKEND_REQUIREMENTS.md](GALLERY_BACKEND_REQUIREMENTS.md)** - Open requirements for provider-gallery admin moderation
+- **[GEOLOCATION_GUIDE.md](GEOLOCATION_GUIDE.md)** - How homepage location auto-detection works, testing, and debugging
+- **[VISUAL_STUDIO_DEBUGGING.md](VISUAL_STUDIO_DEBUGGING.md)** - Running/debugging `Booksy.Host` in Visual Studio against Docker infra
+
+### `docs/` (secondary reference)
+
+- **[docs/REQNROLL_TESTING.md](docs/REQNROLL_TESTING.md)** - Writing/running the Gherkin BDD integration tests
+- **[docs/DOCS_SITE_DEPLOYMENT.md](docs/DOCS_SITE_DEPLOYMENT.md)** - Deploying the Docusaurus docs site (`docs-site/`) to GitHub Pages — unrelated to deploying the Booksy app itself
+
+### `docs/archive/`
+
+Point-in-time implementation guides, build-verification snapshots, and planning docs for features that have since shipped (auth flow, booking cancellation/reschedule, provider profile/search, real-time availability, the Reqnroll migration, the original business proposal/SRD, etc.). Useful for historical context on *why* something was built a certain way; not a source of truth for current behavior.
 
 ### Application-Specific Documentation
 
@@ -38,6 +56,14 @@ This repository contains both the **source code** and the **deployment configura
   - Domain-Driven Design with CQRS pattern
   - In-process integration events via CAP (DotNetCore.CAP) on the in-memory transport
   - Clean Architecture principles
+
+## Test Suites
+
+- **Playwright E2E** (`booksy-frontend/e2e/`): browser-level tests driving the real Vue app against a running stack (sandbox OTP auth, Page Object Model, `data-testid` selectors). Run with `cd booksy-frontend && npm run e2e:pw`; see `booksy-frontend/e2e/README.md`. CI: `.github/workflows/frontend-e2e.yml` (advisory, not a deploy gate).
+- **Reqnroll BDD** (`tests/Booksy.ServiceCatalog.IntegrationTests/`): Gherkin feature files + C# step definitions covering ServiceCatalog business logic end-to-end at the API layer. Run with `dotnet test --filter "FullyQualifiedName~Feature"`; see [docs/REQNROLL_TESTING.md](docs/REQNROLL_TESTING.md).
+- **API keystone smoke test** (`tests/e2e/keystone-booking-flow.sh`): dependency-free curl script exercising the full provider→staff→customer→booking flow against a running host; used as a CI deploy gate (`e2e-keystone` job in `deploy.yml`/`deploy-staging.yml`).
+- **Cypress** (`booksy-frontend/cypress/`): coexists with the Playwright suite (`npm run test:e2e`).
+- **Backend unit tests**: `dotnet test --filter UnitTests` (solution-wide; run in CI on every deploy).
 
 ## Architecture
 
@@ -257,3 +283,38 @@ Common issues and solutions:
 4. **Image pull failures**: Verify GHCR authentication with `docker login ghcr.io`
 5. **Port conflicts**: Ensure no other services are using the required ports (5000, 80, 443, 5341, 5050)
 6. **Swagger not accessible**: Verify `booksy-api` is healthy with `docker ps`. An unhealthy host cannot serve Swagger UI.
+
+## Testing Policy
+
+### Existing Tests First
+
+Whenever modifying existing code:
+
+- First search for all existing tests related to the affected functionality.
+- Prefer updating and extending existing tests instead of creating duplicate test files.
+- Follow the project's existing testing architecture, naming conventions, folder structure, fixtures, helper utilities, and testing frameworks.
+- Keep the test suite clean, maintainable, and consistent with the rest of the project.
+- Avoid duplicate or redundant tests unless they provide additional coverage or protect against a different regression.
+- If existing test coverage is insufficient, extend it before creating entirely new test suites.
+- Explain which existing tests were reviewed, which were modified, and why new tests were necessary.
+- Never introduce code changes without verifying that the relevant existing tests still pass.
+- If a change affects business logic, APIs, data access, events, caching, background jobs, or concurrency, ensure the existing test suite is updated accordingly.
+- At the end of every implementation, include a Testing Summary that lists: Existing tests reviewed, Tests modified, New tests added, Test types covered, Regression risks addressed.
+
+### Mandatory Engineering & Testing Policy
+
+Every code change must prioritize correctness, reliability, maintainability, and regression prevention over implementation speed.
+
+**1. Analyze before coding.** Before making any change: understand the existing business logic, identify all affected components, determine the risk of the change, and identify which tests must be added, updated, or verified. Never modify code until you understand the existing behavior.
+
+**2. Mandatory testing.** Every change must be validated with the appropriate level of testing. Choose the correct test types based on the change, including when applicable: Unit, Integration, API, End-to-End (E2E), Functional, Regression, Contract, Database/Repository, Performance, Concurrency/Race Condition. Do not generate unnecessary tests — select the minimal set that provides high confidence while keeping the suite maintainable.
+
+**3. Regression prevention.** Every bug fix MUST include a regression test that reproduces the bug, fails before the fix, and passes after the fix. Never fix a bug without ensuring it cannot easily reappear.
+
+**4. Business logic coverage.** Every new or modified business rule must be covered by automated tests, including: happy paths, edge cases, boundary values, invalid inputs, error handling, exception paths, authorization/permission rules, null and empty values, time-based behavior, and concurrent execution (when applicable).
+
+**5. Verify side effects.** After every implementation, verify the change does not unintentionally affect: backward compatibility, API compatibility, database behavior, event publishing/consumption, background jobs, caching, authentication & authorization, logging, error handling, performance.
+
+**6. Testing-first mindset.** Before implementing, explain which tests already exist, which should be added, and why each is necessary. After implementing, write/update the required tests and ensure existing tests still pass. Do not consider a task complete until the appropriate automated tests are included.
+
+**7. Completion checklist.** Every completed task must end with a report containing: Files Changed, Tests Added, Tests Updated, Test Types Covered, Scenarios Verified, Potential Risks, Recommended Future Tests (if any). Never state a task is complete unless the required tests have been implemented, or you explicitly explain why a particular test is unnecessary.
