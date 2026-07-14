@@ -94,7 +94,9 @@ class AppStrings {
   static const String ownerLastName = 'نام خانوادگی مالک';
   static const String emailOptional = 'ایمیل (اختیاری)';
   static const String businessPhone = 'شماره تماس';
-  static const String descriptionOptional = 'توضیحات (اختیاری)';
+  // Required by the backend validator (BusinessDescription .NotEmpty) — must
+  // NOT be labelled optional.
+  static const String businessDescription = 'توضیحات کسب‌و‌کار';
 
   // Step 2 — category
   static const String categoryTitle = 'دسته‌بندی کسب‌و‌کار';
@@ -106,7 +108,7 @@ class AppStrings {
   static const String addressLine1 = 'آدرس';
   static const String addressLine2 = 'آدرس تکمیلی (اختیاری)';
   static const String city = 'شهر';
-  static const String province = 'استان';
+  static const String province = 'استان';  // required by the backend validator
   static const String postalCode = 'کد پستی (اختیاری)';
 
   // Step 4 — services

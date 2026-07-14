@@ -199,4 +199,96 @@ void main() {
     await authBloc.close();
     await cubit.close();
   }, timeout: const Timeout(Duration(minutes: 2)));
+
+  test('resume: a fresh cubit rehydrates every saved field from the server',
+      () async {
+    // Authenticate a brand-new provider.
+    final resumePhone =
+        '0912${(DateTime.now().millisecondsSinceEpoch + 7) % 10000000}'
+            .padRight(11, '0')
+            .substring(0, 11);
+
+    final authBloc = AuthBloc(
+      SendVerificationCodeUseCase(authRepo),
+      CompleteProviderAuthenticationUseCase(authRepo),
+      authRepo,
+    );
+    authBloc.add(SendVerificationCodeRequested(resumePhone));
+    await expectLater(
+      authBloc.stream,
+      emitsInOrder([isA<AuthLoading>(), isA<OtpSent>()]),
+    );
+    authBloc.add(
+      VerifyCodeRequested(phoneNumber: resumePhone, code: _sandboxOtp),
+    );
+    await expectLater(
+      authBloc.stream,
+      emitsInOrder([isA<AuthLoading>(), isA<NeedsOnboarding>()]),
+    );
+    dio.options.headers['Authorization'] =
+        'Bearer ${await storage.getAccessToken()}';
+
+    // Fill the wizard partway: through services (backend registrationStep 4).
+    final first = OnboardingCubit(onboardingRepo);
+    await first.init(phoneNumber: resumePhone);
+    first.updateBusinessInfo(BusinessInfo(
+      businessName: 'سالن بازیابی',
+      ownerFirstName: 'علی',
+      ownerLastName: 'رضایی',
+      phone: resumePhone,
+      email: 'resume@booksy.test',
+      description: 'توضیح تست',
+    ));
+    await first.next(); // → 2
+    first.selectCategory('barbershop');
+    await first.next(); // → 3
+    first.updateAddress(const OnboardingAddress(
+      addressLine1: 'خیابان آزادی',
+      city: 'تهران',
+      province: 'تهران',
+      postalCode: '1112223334',
+    ));
+    await first.next(); // creates the draft → 4
+    expect(first.state.draftProviderId, isNotNull);
+
+    first.setServices(const [
+      ServiceDraft(
+        name: 'اصلاح',
+        durationHours: 0,
+        durationMinutes: 45,
+        price: 180000,
+      ),
+    ]);
+    await first.next(); // saves services → 5
+    expect(first.state.step, 5);
+    final draftId = first.state.draftProviderId;
+    await first.close();
+
+    // ---- Simulate the provider abandoning and coming back ----
+    final resumed = OnboardingCubit(onboardingRepo);
+    await resumed.init(phoneNumber: resumePhone);
+
+    expect(resumed.state.draftProviderId, draftId);
+    // services saved (backend step 4) → resume on working hours
+    expect(resumed.state.step, 5);
+
+    final data = resumed.state.data;
+    expect(data.businessInfo.businessName, 'سالن بازیابی');
+    expect(data.businessInfo.ownerFirstName, 'علی');
+    expect(data.businessInfo.ownerLastName, 'رضایی');
+    expect(data.businessInfo.email, 'resume@booksy.test');
+    expect(data.businessInfo.description, 'توضیح تست');
+    expect(data.categoryId, 'barbershop'); // survives the enum round-trip
+    expect(data.address.addressLine1, contains('خیابان آزادی'));
+    expect(data.address.city, 'تهران');
+    expect(data.address.postalCode, '1112223334');
+    expect(data.services.single.name, 'اصلاح');
+    expect(data.services.single.durationMinutes, 45);
+    expect(data.services.single.price, 180000);
+    // Hours weren't saved yet → the 7 defaults are kept.
+    expect(data.businessHours, hasLength(7));
+
+    await resumed.close();
+    await authBloc.close();
+  }, timeout: const Timeout(Duration(minutes: 2)));
 }

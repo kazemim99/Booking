@@ -1,5 +1,7 @@
 import 'package:dio/dio.dart';
 import '../../../../core/api/config/api_constants.dart';
+import '../../domain/entities/onboarding_draft.dart';
+import '../models/draft_snapshot.dart';
 import '../models/onboarding_models.dart';
 
 /// Onboarding remote data source (authenticated Dio; manual — no codegen).
@@ -35,15 +37,14 @@ class OnboardingApiService {
     );
   }
 
-  /// Returns the draft providerId if a registration is in progress, else null.
-  Future<String?> getDraftProviderId() async {
+  /// Returns the resumable draft (all saved fields), or null if none.
+  Future<OnboardingDraft?> getDraft() async {
     try {
       final res = await _dio.get(ApiConstants.registrationProgress);
       final body = res.data;
       final data = (body is Map && body['data'] is Map) ? body['data'] : body;
-      if (data is Map && data['hasDraft'] == true) {
-        final draft = data['draftData'];
-        if (draft is Map) return draft['providerId']?.toString();
+      if (data is Map) {
+        return DraftSnapshot.fromProgressJson(Map<String, dynamic>.from(data));
       }
       return null;
     } on DioException catch (e) {

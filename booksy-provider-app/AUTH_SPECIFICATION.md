@@ -602,6 +602,57 @@ Store→Storage: persist; re-derive provider claims → guard now allows dashboa
 
 ---
 
+## 16A. Verified Against a Live Backend + Real UI (2026-07-15)
+
+The auth + onboarding journey was executed end-to-end against a running
+`Booksy.Host` (`OTP_SANDBOX_CODE=123456`), first through the logic stack and
+then **through the real UI on an Android emulator** (`flutter test
+integration_test/app_ui_flow_test.dart -d emulator-5554`) — every screen,
+validation, interaction, navigation and state transition:
+
+`login (+2 validations) → OTP → onboarding 1..8 (+4 validations, service
+dialog, hours toggle, gallery skip, preview) → dashboard`. **PASSED.**
+
+### Confirmed live
+- **E-1 phone invariant is real.** `countryCode:"IR"` works; `"+98"` returns 200
+  on send but then 401 *"No verification found for this phone number"* on
+  complete-auth. (⚠️ `booksy-customer-app` defaults to `"+98"` and therefore
+  carries this latent bug.)
+- Sandbox OTP comes from the **`OTP_SANDBOX_CODE` env var**, not `Sms:SandboxMode`
+  alone (that only suppresses the SMS send).
+- The response envelope **omits null fields** (`WhenWritingNull`) — e.g.
+  `providerId` is *absent*, not null, for a new provider.
+- After `step-9/complete` the status becomes **`PendingVerification`**, which
+  resolves to `Authenticated` → dashboard (and confirms the post-completion
+  status refresh; the 24h JWT still carries the stale status).
+
+### Bugs found in the Vue flow (fixed here, still present in Vue)
+- **B-1 Category:** Vue's category step emits `"barber"`, which is **not** in the
+  backend's `MapCategoryToServiceCategory` table and silently falls through to
+  `_ => BeautySalon`. Picking the men's barbershop in Vue stores the **wrong
+  category**. We send `"barbershop"` (the id the backend understands).
+- **B-2 Required fields presented as optional:** the backend validator requires
+  `BusinessDescription` **and** `Province` (`.NotEmpty`), but Vue labels the
+  description optional and gates step 1/3 only on name/owner/phone/address/city.
+  An empty description passes Vue's client validation and then dies with a
+  server 400 at draft creation. We require both up front.
+
+### Lossy round-trips on `GET /Registration/progress` (handled in `DraftSnapshot`)
+- `category` echoes the **ServiceCategory enum name** (`"Barbershop"`), not the id sent.
+- `addressLine1` comes back with line2 **folded in** (the backend stores one Street).
+- `services[].priceType` echoes a backend enum (`"Standard"`), not `"fixed"`.
+- `businessHours[]` are **flattened, unordered**, and closed days omit time fields.
+
+### Deferred (do NOT block onboarding — both are optional in the flow)
+| Item | Why it's safe to defer | Status |
+|---|---|---|
+| **Gallery image upload** (`POST step-7/gallery`, multipart) | The gallery step is explicitly skippable; registration completes without it. Providers can add images later from the panel. | **Deferred** — needs `image_picker` + multipart. |
+| **Map pin / geo-coordinates** | Coordinates are optional; the backend defaults lat/lng to 0 and the validator only range-checks them. Address + city + province are what's required. | **Deferred** — needs a map SDK. |
+| **`flutter_secure_storage` on web** | Throws `OperationError` on read, breaking every authenticated call in Chrome. The app targets Android/iOS. | **Deferred** — do not ship a web build until fixed. |
+| **Offline banner** | Dio-level offline handling (NetworkFailure + Persian message) is in place; the banner widget is not. | **Deferred.** |
+
+---
+
 ## 17. Traceability Matrix (Flutter feature → Vue/backend source of truth)
 
 Every row is traceable to a concrete file/function verified during reverse engineering.

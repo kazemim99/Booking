@@ -2,6 +2,7 @@ import 'package:dartz/dartz.dart';
 import 'package:dio/dio.dart';
 import '../../../../core/errors/failures.dart';
 import '../../domain/entities/onboarding_data.dart';
+import '../../domain/entities/onboarding_draft.dart';
 import '../../domain/repositories/onboarding_repository.dart';
 import '../datasources/onboarding_api_service.dart';
 import '../models/onboarding_models.dart';
@@ -40,8 +41,8 @@ class OnboardingRepositoryImpl implements OnboardingRepository {
   }
 
   @override
-  Future<Either<Failure, String?>> getDraftProviderId() {
-    return _guard(() => _api.getDraftProviderId());
+  Future<Either<Failure, OnboardingDraft?>> getDraft() {
+    return _guard(() => _api.getDraft());
   }
 
   Future<Either<Failure, T>> _guard<T>(Future<T> Function() op) async {

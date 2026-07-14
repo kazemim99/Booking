@@ -1,6 +1,7 @@
 import 'package:dartz/dartz.dart';
 import '../../../../core/errors/failures.dart';
 import '../entities/onboarding_data.dart';
+import '../entities/onboarding_draft.dart';
 
 /// Provider onboarding repository contract.
 abstract class OnboardingRepository {
@@ -22,6 +23,6 @@ abstract class OnboardingRepository {
   /// Completes registration for [providerId] (step 9).
   Future<Either<Failure, void>> complete(String providerId);
 
-  /// Returns an in-progress draft's providerId, or null.
-  Future<Either<Failure, String?>> getDraftProviderId();
+  /// Returns the in-progress draft (with every saved field rehydrated), or null.
+  Future<Either<Failure, OnboardingDraft?>> getDraft();
 }

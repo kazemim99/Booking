@@ -15,8 +15,9 @@ class OnboardingCubit extends Cubit<OnboardingState> {
 
   OnboardingCubit(this._repository) : super(const OnboardingState());
 
-  /// Seeds default working hours and pre-fills the owner phone. Attempts to
-  /// resume any existing server-side draft.
+  /// Seeds default working hours and pre-fills the owner phone, then resumes
+  /// any server-side draft — rehydrating every saved field and jumping to the
+  /// step after the last one the backend recorded.
   Future<void> init({String? phoneNumber}) async {
     emit(OnboardingState(
       data: OnboardingData(
@@ -25,15 +26,28 @@ class OnboardingCubit extends Cubit<OnboardingState> {
       ),
     ));
 
-    final draft = await _repository.getDraftProviderId();
-    draft.fold(
+    final result = await _repository.getDraft();
+    result.fold(
+      // A failed progress lookup must not block a fresh registration.
       (_) {},
-      (providerId) {
-        if (providerId != null) {
-          // A draft exists server-side; keep its id so saves target it. Field
-          // rehydration from /progress can be layered in later.
-          emit(state.copyWith(draftProviderId: providerId));
-        }
+      (draft) {
+        if (draft == null) return;
+
+        final restored = draft.data;
+        emit(state.copyWith(
+          draftProviderId: draft.providerId,
+          step: draft.resumeStep,
+          data: restored.copyWith(
+            // Keep the authenticated phone if the draft has none.
+            businessInfo: restored.businessInfo.phone.isEmpty
+                ? restored.businessInfo.copyWith(phone: phoneNumber ?? '')
+                : restored.businessInfo,
+            // A draft saved before the hours step has none — keep the defaults.
+            businessHours: restored.businessHours.isEmpty
+                ? state.data.businessHours
+                : restored.businessHours,
+          ),
+        ));
       },
     );
   }

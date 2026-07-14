@@ -113,7 +113,7 @@ class _BusinessInfoStepState extends State<BusinessInfoStep> {
           const SizedBox(height: AppSpacing.md),
           AppTextField(
             controller: _description,
-            label: AppStrings.descriptionOptional,
+            label: AppStrings.businessDescription,
             key: const Key('onboarding-description'),
           ),
         ],

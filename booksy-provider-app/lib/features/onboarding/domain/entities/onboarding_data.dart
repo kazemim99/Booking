@@ -107,11 +107,17 @@ class BusinessInfo extends Equatable {
     this.logoUrl,
   });
 
+  /// NOTE: `description` is REQUIRED by the backend
+  /// (RegisterOrganizationProviderCommandValidator: BusinessDescription
+  /// .NotEmpty). Vue presents it as optional and only gates on name/owner/phone,
+  /// so an empty description passes its client validation and then fails the
+  /// draft creation with a server 400. We require it up front instead.
   bool get isComplete =>
       businessName.trim().isNotEmpty &&
       ownerFirstName.trim().isNotEmpty &&
       ownerLastName.trim().isNotEmpty &&
-      phone.trim().isNotEmpty;
+      phone.trim().isNotEmpty &&
+      description.trim().isNotEmpty;
 
   BusinessInfo copyWith({
     String? businessName,
@@ -158,9 +164,14 @@ class OnboardingAddress extends Equatable {
     this.longitude,
   });
 
-  /// City + address required; coordinates optional (backend defaults to 0).
+  /// Address, city AND province are required by the backend validator
+  /// (AddressLine1/City/Province .NotEmpty). Postal code has no rule, and
+  /// coordinates are optional (they default to 0). Vue only gates on
+  /// address+city, so a missing province fails server-side instead.
   bool get isComplete =>
-      addressLine1.trim().isNotEmpty && city.trim().isNotEmpty;
+      addressLine1.trim().isNotEmpty &&
+      city.trim().isNotEmpty &&
+      province.trim().isNotEmpty;
 
   OnboardingAddress copyWith({
     String? addressLine1,
@@ -224,15 +235,37 @@ class OnboardingData extends Equatable {
       [businessInfo, categoryId, address, services, businessHours];
 }
 
-/// Business categories (matches the active Vue CategorySelectionStep set).
+/// Business categories.
+///
+/// The `id` is the exact string the backend's `MapCategoryToServiceCategory`
+/// understands. NOTE: Vue sends `"barber"`, which is NOT in the backend map and
+/// silently falls through to the `_ => BeautySalon` default — so picking the
+/// men's barbershop in Vue stores the WRONG category. We send `"barbershop"`,
+/// which maps correctly to ServiceCategory.Barbershop. (Verified against the
+/// live backend; see RegisterOrganizationProviderCommandHandler.)
 class BusinessCategory {
   final String id;
+
+  /// The ServiceCategory enum name the backend echoes back on /progress.
+  final String wireName;
   final String label;
   final String emoji;
-  const BusinessCategory(this.id, this.label, this.emoji);
+
+  const BusinessCategory(this.id, this.wireName, this.label, this.emoji);
 
   static const all = <BusinessCategory>[
-    BusinessCategory('hair_salon', 'آرایشگاه زنانه', '💇‍♀️'),
-    BusinessCategory('barber', 'آرایشگاه مردانه', '💇‍♂️'),
+    BusinessCategory('hair_salon', 'HairSalon', 'آرایشگاه زنانه', '💇‍♀️'),
+    BusinessCategory('barbershop', 'Barbershop', 'آرایشگاه مردانه', '💇‍♂️'),
   ];
+
+  /// Reverse-maps the enum name returned by /Registration/progress back to our
+  /// category id. Returns null for values we can't attribute (e.g. the legacy
+  /// `BeautySalon` default), so the user simply re-picks.
+  static String? idFromWireName(String? wireName) {
+    if (wireName == null) return null;
+    for (final c in all) {
+      if (c.wireName == wireName) return c.id;
+    }
+    return null;
+  }
 }

@@ -55,7 +55,9 @@ dependencies:
   intl: ^0.20.2
 
   # Utilities
-  connectivity_plus: ^5.0.2
+  # 6.x is required on Android: 5.x compiles against android-33, but its
+  # AndroidX deps (fragment 1.7.x, window 1.2.x) demand compileSdk 34+.
+  connectivity_plus: ^6.1.0
 
   # Dependency Injection (manual registration — no injectable codegen)
   get_it: ^7.6.7
@@ -65,6 +67,8 @@ dependencies:
 
 dev_dependencies:
   flutter_test:
+    sdk: flutter
+  integration_test:
     sdk: flutter
 
   flutter_lints: ^6.0.0

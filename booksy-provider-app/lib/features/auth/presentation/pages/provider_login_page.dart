@@ -90,6 +90,7 @@ class _ProviderLoginPageState extends State<ProviderLoginPage> {
                       textAlign: TextAlign.center),
                   const SizedBox(height: AppSpacing.xl),
                   AppTextField(
+                    key: const Key('login-phone'),
                     controller: _phoneController,
                     focusNode: _phoneFocus,
                     label: AppStrings.phoneLabel,

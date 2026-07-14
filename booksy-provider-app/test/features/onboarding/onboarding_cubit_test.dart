@@ -1,6 +1,7 @@
 import 'package:bloc_test/bloc_test.dart';
 import 'package:booksy_provider_app/core/errors/failures.dart';
 import 'package:booksy_provider_app/features/onboarding/domain/entities/onboarding_data.dart';
+import 'package:booksy_provider_app/features/onboarding/domain/entities/onboarding_draft.dart';
 import 'package:booksy_provider_app/features/onboarding/domain/repositories/onboarding_repository.dart';
 import 'package:booksy_provider_app/features/onboarding/presentation/cubit/onboarding_cubit.dart';
 import 'package:booksy_provider_app/features/onboarding/presentation/cubit/onboarding_state.dart';
@@ -15,11 +16,14 @@ const _businessInfo = BusinessInfo(
   ownerFirstName: 'رضا',
   ownerLastName: 'محمدی',
   phone: '09121234567',
+  // Required by the backend validator.
+  description: 'توضیح کسب‌و‌کار',
 );
 
 const _address = OnboardingAddress(
   addressLine1: 'خیابان ولیعصر',
   city: 'تهران',
+  province: 'تهران', // required by the backend validator
 );
 
 const _service = ServiceDraft(
@@ -40,8 +44,7 @@ void main() {
 
   setUp(() {
     repo = _MockRepo();
-    when(() => repo.getDraftProviderId())
-        .thenAnswer((_) async => const Right(null));
+    when(() => repo.getDraft()).thenAnswer((_) async => const Right(null));
   });
 
   OnboardingCubit build() => OnboardingCubit(repo);
@@ -57,12 +60,101 @@ void main() {
       expect(cubit.state.data.businessHours.every((d) => d.isOpen), isTrue);
     });
 
-    test('adopts an existing server-side draft id', () async {
-      when(() => repo.getDraftProviderId())
-          .thenAnswer((_) async => const Right('draft-1'));
+    test('rehydrates every saved field and resumes at the right step', () async {
+      when(() => repo.getDraft()).thenAnswer(
+        (_) async => Right(
+          OnboardingDraft(
+            providerId: 'draft-1',
+            registrationStep: 6, // hours saved → resume on gallery (step 6)
+            data: const OnboardingData(
+              businessInfo: BusinessInfo(
+                businessName: 'سالن بازیابی',
+                ownerFirstName: 'علی',
+                ownerLastName: 'رضایی',
+                email: 'draft@b.com',
+                phone: '09125550011',
+                description: 'توضیح تست',
+              ),
+              categoryId: 'barbershop',
+              address: OnboardingAddress(
+                addressLine1: 'خیابان آزادی, پلاک ۵',
+                city: 'تهران',
+                province: 'تهران',
+                postalCode: '1112223334',
+                latitude: 35.7,
+                longitude: 51.4,
+              ),
+              services: [
+                ServiceDraft(
+                  name: 'اصلاح',
+                  durationHours: 0,
+                  durationMinutes: 45,
+                  price: 180000,
+                ),
+              ],
+              businessHours: [
+                DayHours(
+                  dayOfWeek: 0,
+                  isOpen: true,
+                  openTime: ClockTime(10, 30),
+                  closeTime: ClockTime(19, 0),
+                ),
+              ],
+            ),
+          ),
+        ),
+      );
+
       final cubit = build();
-      await cubit.init();
+      await cubit.init(phoneNumber: '09125550011');
+
       expect(cubit.state.draftProviderId, 'draft-1');
+      expect(cubit.state.step, 6);
+
+      final data = cubit.state.data;
+      expect(data.businessInfo.businessName, 'سالن بازیابی');
+      expect(data.businessInfo.ownerFirstName, 'علی');
+      expect(data.businessInfo.email, 'draft@b.com');
+      expect(data.categoryId, 'barbershop');
+      expect(data.address.city, 'تهران');
+      expect(data.address.latitude, 35.7);
+      expect(data.services.single.name, 'اصلاح');
+      expect(data.businessHours.single.openTime, const ClockTime(10, 30));
+    });
+
+    test('keeps default hours when the draft was saved before the hours step',
+        () async {
+      when(() => repo.getDraft()).thenAnswer(
+        (_) async => const Right(
+          OnboardingDraft(
+            providerId: 'draft-2',
+            registrationStep: 3, // only location saved
+            data: OnboardingData(
+              businessInfo: BusinessInfo(businessName: 'س'),
+            ),
+          ),
+        ),
+      );
+
+      final cubit = build();
+      await cubit.init(phoneNumber: '09121234567');
+
+      expect(cubit.state.step, 4); // location saved → resume on services
+      expect(cubit.state.data.businessHours, hasLength(7));
+      // Phone falls back to the authenticated number when the draft has none.
+      expect(cubit.state.data.businessInfo.phone, '09121234567');
+    });
+
+    test('a failed progress lookup does not block a fresh registration',
+        () async {
+      when(() => repo.getDraft())
+          .thenAnswer((_) async => const Left(ServerFailure('boom')));
+      final cubit = build();
+      await cubit.init(phoneNumber: '09121234567');
+
+      expect(cubit.state.step, 1);
+      expect(cubit.state.draftProviderId, isNull);
+      expect(cubit.state.data.businessHours, hasLength(7));
     });
   });
 
@@ -85,6 +177,47 @@ void main() {
         await c.next();
       },
       verify: (c) => expect(c.state.step, 2),
+    );
+
+    // The backend validator requires BusinessDescription and Province
+    // (.NotEmpty). Gate on them client-side rather than letting the draft
+    // creation fail with a server 400 three steps later.
+    blocTest<OnboardingCubit, OnboardingState>(
+      'step 1 without a description → error (backend requires it)',
+      build: build,
+      act: (c) async {
+        c.updateBusinessInfo(const BusinessInfo(
+          businessName: 'س',
+          ownerFirstName: 'ر',
+          ownerLastName: 'م',
+          phone: '09121234567',
+          description: '',
+        ));
+        await c.next();
+      },
+      verify: (c) {
+        expect(c.state.phase, OnboardingPhase.error);
+        expect(c.state.step, 1);
+      },
+    );
+
+    blocTest<OnboardingCubit, OnboardingState>(
+      'step 3 without a province → error (backend requires it)',
+      build: build,
+      seed: () => const OnboardingState(step: 3),
+      act: (c) async {
+        c.updateAddress(const OnboardingAddress(
+          addressLine1: 'خیابان ولیعصر',
+          city: 'تهران',
+          province: '',
+        ));
+        await c.next();
+      },
+      verify: (c) {
+        expect(c.state.phase, OnboardingPhase.error);
+        expect(c.state.step, 3);
+        verifyNever(() => repo.createDraft(any()));
+      },
     );
 
     blocTest<OnboardingCubit, OnboardingState>(
