@@ -8,8 +8,8 @@ import '../../features/auth/domain/entities/provider_status.dart';
 import '../../features/auth/presentation/bloc/auth_bloc.dart';
 import '../../features/auth/presentation/bloc/auth_state.dart';
 import '../../features/auth/presentation/pages/account_blocked_page.dart';
-import '../../features/auth/presentation/pages/onboarding_required_page.dart';
 import '../../features/auth/presentation/pages/otp_verification_page.dart';
+import '../../features/onboarding/presentation/pages/onboarding_wizard_page.dart';
 import '../../features/auth/presentation/pages/provider_login_page.dart';
 import '../../features/auth/presentation/pages/provider_dashboard_page.dart';
 import '../../features/auth/presentation/pages/splash_page.dart';
@@ -32,10 +32,14 @@ enum AuthFlowStatus { unresolved, unauthenticated, needsOnboarding, blocked, aut
 class AuthNotifier extends ChangeNotifier {
   AuthFlowStatus _status = AuthFlowStatus.unresolved;
   ProviderStatus? _blockedStatus;
+  String? _phoneNumber;
   StreamSubscription<AuthState>? _sub;
 
   AuthFlowStatus get status => _status;
   ProviderStatus? get blockedStatus => _blockedStatus;
+
+  /// Owner phone from the resolved session (pre-fills onboarding step 1).
+  String? get phoneNumber => _phoneNumber;
   bool get sessionResolved => _status != AuthFlowStatus.unresolved;
 
   AuthNotifier(AuthBloc bloc) {
@@ -54,15 +58,19 @@ class AuthNotifier extends ChangeNotifier {
     if (state is Authenticated) {
       _status = AuthFlowStatus.authenticated;
       _blockedStatus = null;
+      _phoneNumber = state.session.user.phoneNumber;
     } else if (state is NeedsOnboarding) {
       _status = AuthFlowStatus.needsOnboarding;
       _blockedStatus = null;
+      _phoneNumber = state.session.user.phoneNumber;
     } else if (state is AccountBlocked) {
       _status = AuthFlowStatus.blocked;
       _blockedStatus = state.status;
+      _phoneNumber = state.session.user.phoneNumber;
     } else if (state is Unauthenticated || state is LoggedOut) {
       _status = AuthFlowStatus.unauthenticated;
       _blockedStatus = null;
+      _phoneNumber = null;
     } else {
       // AuthInitial / AuthLoading / OtpSent / OtpResent / AuthError are
       // transient and must NOT change the resolved status.
@@ -166,7 +174,8 @@ class AppRouter {
         ),
         GoRoute(
           path: Routes.onboarding,
-          builder: (_, _) => const OnboardingRequiredPage(),
+          builder: (_, _) =>
+              OnboardingWizardPage(phoneNumber: auth.phoneNumber),
         ),
         GoRoute(
           path: Routes.blocked,

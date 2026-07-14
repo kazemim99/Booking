@@ -31,4 +31,9 @@ abstract class AuthRepository {
 
   /// Restores the session from secure storage (no network); null if none.
   Future<Either<Failure, ProviderSession?>> getCurrentSession();
+
+  /// Re-fetches the provider status from the server and persists it, returning
+  /// the updated session. Call after onboarding completes — the cached JWT
+  /// still carries the stale "Drafted" status.
+  Future<Either<Failure, ProviderSession>> refreshProviderStatus();
 }

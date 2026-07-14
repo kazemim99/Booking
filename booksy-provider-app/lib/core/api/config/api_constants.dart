@@ -51,4 +51,29 @@ class ApiConstants {
   /// POST — mint a provider-claimed token after onboarding. §5.7
   static const String providerRefreshToken =
       '/$apiVersion/Providers/current/refresh-token';
+
+  // ==================== Onboarding (ServiceCatalog) ====================
+
+  /// POST — create the organization draft (onboarding step 3).
+  static const String registerOrganization =
+      '/$apiVersion/Providers/organizations';
+
+  /// GET — current registration progress (draft restore).
+  static const String registrationProgress = '/$apiVersion/Registration/progress';
+
+  /// POST — save services (onboarding step 4).
+  static const String registrationServices =
+      '/$apiVersion/Registration/step-4/services';
+
+  /// POST — save working hours (onboarding step 6).
+  static const String registrationWorkingHours =
+      '/$apiVersion/Registration/step-6/working-hours';
+
+  /// POST — upload gallery images (onboarding step 7, optional, multipart).
+  static const String registrationGallery =
+      '/$apiVersion/Registration/step-7/gallery';
+
+  /// POST — complete registration (onboarding step 9).
+  static const String registrationComplete =
+      '/$apiVersion/Registration/step-9/complete';
 }

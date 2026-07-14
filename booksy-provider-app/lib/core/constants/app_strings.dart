@@ -66,6 +66,92 @@ class AppStrings {
 
   static const String accountBlockedLogout = 'خروج از حساب';
 
+  // ==================== Onboarding wizard ====================
+  static const List<String> onboardingStepLabels = [
+    'اطلاعات کسب‌و‌کار',
+    'دسته‌بندی',
+    'موقعیت مکانی',
+    'خدمات',
+    'ساعات کاری',
+    'گالری تصاویر',
+    'بررسی نهایی',
+    'تکمیل',
+  ];
+
+  static String stepOf(int current, int total) => 'مرحله $current از $total';
+
+  static const String next = 'بعدی';
+  static const String previous = 'قبلی';
+  static const String skip = 'رد کردن';
+  static const String confirmAndSubmit = 'ثبت نهایی';
+  static const String edit = 'ویرایش';
+
+  // Step 1 — business info
+  static const String businessInfoTitle = 'اطلاعات کسب‌و‌کار';
+  static const String businessInfoSubtitle = 'اطلاعات کسب‌و‌کار خود را وارد کنید';
+  static const String businessName = 'نام کسب‌و‌کار';
+  static const String ownerFirstName = 'نام مالک';
+  static const String ownerLastName = 'نام خانوادگی مالک';
+  static const String emailOptional = 'ایمیل (اختیاری)';
+  static const String businessPhone = 'شماره تماس';
+  static const String descriptionOptional = 'توضیحات (اختیاری)';
+
+  // Step 2 — category
+  static const String categoryTitle = 'دسته‌بندی کسب‌و‌کار';
+  static const String categorySubtitle = 'نوع کسب‌و‌کار خود را انتخاب کنید';
+
+  // Step 3 — location
+  static const String locationTitle = 'موقعیت مکانی';
+  static const String locationSubtitle = 'آدرس کسب‌و‌کار خود را وارد کنید';
+  static const String addressLine1 = 'آدرس';
+  static const String addressLine2 = 'آدرس تکمیلی (اختیاری)';
+  static const String city = 'شهر';
+  static const String province = 'استان';
+  static const String postalCode = 'کد پستی (اختیاری)';
+
+  // Step 4 — services
+  static const String servicesTitle = 'خدمات';
+  static const String servicesSubtitle = 'خدماتی که ارائه می‌دهید را اضافه کنید';
+  static const String addService = 'افزودن خدمت';
+  static const String serviceName = 'نام خدمت';
+  static const String serviceDuration = 'مدت زمان (دقیقه)';
+  static const String servicePrice = 'قیمت (تومان)';
+  static const String noServicesYet = 'هنوز خدمتی اضافه نشده است';
+  static const String save = 'ذخیره';
+  static const String cancel = 'انصراف';
+
+  // Step 5 — working hours
+  static const String hoursTitle = 'ساعات کاری';
+  static const String hoursSubtitle = 'روزها و ساعات کاری خود را مشخص کنید';
+  static const String openLabel = 'باز';
+  static const String closedLabel = 'تعطیل';
+  static const List<String> weekDays = [
+    'یکشنبه',
+    'دوشنبه',
+    'سه‌شنبه',
+    'چهارشنبه',
+    'پنجشنبه',
+    'جمعه',
+    'شنبه',
+  ];
+
+  // Step 6 — gallery
+  static const String galleryTitle = 'گالری تصاویر';
+  static const String gallerySubtitle =
+      'افزودن تصاویر اختیاری است و می‌توانید بعداً از پنل آن را تکمیل کنید';
+
+  // Step 7 — preview
+  static const String previewTitle = 'بررسی نهایی';
+  static const String previewSubtitle = 'اطلاعات خود را بررسی و تأیید کنید';
+
+  // Step 8 — completion
+  static const String completionTitle = 'ثبت‌نام تکمیل شد!';
+  static const String completionBody =
+      'ثبت‌نام کسب‌و‌کار شما با موفقیت انجام شد.';
+  static const String goToDashboard = 'ورود به داشبورد';
+
+  static const String onboardingSaved = 'اطلاعات شما ذخیره شد';
+
   // Dashboard (placeholder until the dashboard epic lands)
   static const String dashboardTitle = 'داشبورد';
   static const String dashboardWelcome = 'به پنل کسب‌وکار خوش آمدید';

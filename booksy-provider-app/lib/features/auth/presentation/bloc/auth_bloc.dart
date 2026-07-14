@@ -27,6 +27,22 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
     on<AuthStatusChecked>(_onCheckStatus);
     on<LogoutRequested>(_onLogout);
     on<SessionExpiredSignalled>(_onSessionExpired);
+    on<ProviderStatusRefreshRequested>(_onRefreshProviderStatus);
+  }
+
+  /// After onboarding completes the server-side provider status has advanced,
+  /// but the cached JWT still says "Drafted". Re-fetch and re-resolve so the
+  /// router moves the provider onto the dashboard.
+  Future<void> _onRefreshProviderStatus(
+    ProviderStatusRefreshRequested event,
+    Emitter<AuthState> emit,
+  ) async {
+    emit(const AuthLoading());
+    final result = await _authRepository.refreshProviderStatus();
+    result.fold(
+      (failure) => emit(AuthError(failure.message)),
+      (session) => emit(_resolve(session)),
+    );
   }
 
   Future<void> _onSend(

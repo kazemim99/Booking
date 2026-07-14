@@ -13,6 +13,10 @@ import '../../features/auth/domain/repositories/auth_repository.dart';
 import '../../features/auth/domain/usecases/complete_provider_authentication_usecase.dart';
 import '../../features/auth/domain/usecases/send_verification_code_usecase.dart';
 import '../../features/auth/presentation/bloc/auth_bloc.dart';
+import '../../features/onboarding/data/datasources/onboarding_api_service.dart';
+import '../../features/onboarding/data/repositories/onboarding_repository_impl.dart';
+import '../../features/onboarding/domain/repositories/onboarding_repository.dart';
+import '../../features/onboarding/presentation/cubit/onboarding_cubit.dart';
 
 final getIt = GetIt.instance;
 
@@ -67,5 +71,17 @@ Future<void> configureDependencies() async {
       getIt<CompleteProviderAuthenticationUseCase>(),
       getIt<AuthRepository>(),
     ),
+  );
+
+  // ---- Onboarding feature ----
+  getIt.registerLazySingleton<OnboardingApiService>(
+    () => OnboardingApiService(authedDio),
+  );
+  getIt.registerLazySingleton<OnboardingRepository>(
+    () => OnboardingRepositoryImpl(getIt<OnboardingApiService>()),
+  );
+  // Factory: the wizard owns a fresh cubit per entry.
+  getIt.registerFactory<OnboardingCubit>(
+    () => OnboardingCubit(getIt<OnboardingRepository>()),
   );
 }

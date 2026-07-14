@@ -135,15 +135,18 @@ class AuthRepositoryImpl implements AuthRepository {
         return const Right(null);
       }
 
-      // Prefer claims from the JWT; fall back to persisted status.
+      // Prefer the PERSISTED status over the JWT claim: the access token is
+      // long-lived (24h) and its provider_status goes stale the moment
+      // onboarding completes. Storage is written at login and refreshed by
+      // refreshProviderStatus(), so it is always at least as fresh as the JWT.
       final claims = JwtDecoder.decode(accessToken);
       final storedStatus = await _storage.getProviderStatus();
       final storedProviderId = await _storage.getProviderId();
 
       final status = ProviderStatus.tryParse(
-        claims?.providerStatus ?? storedStatus,
+        storedStatus ?? claims?.providerStatus,
       );
-      final providerId = claims?.providerId ?? storedProviderId;
+      final providerId = storedProviderId ?? claims?.providerId;
 
       final session = ProviderSession(
         accessToken: accessToken,
@@ -163,6 +166,44 @@ class AuthRepositoryImpl implements AuthRepository {
       return Right(session);
     } catch (e) {
       return const Left(CacheFailure('خطا در بازیابی نشست'));
+    }
+  }
+
+  @override
+  Future<Either<Failure, ProviderSession>> refreshProviderStatus() async {
+    try {
+      final result = await _api.getCurrentProviderStatus();
+
+      // Persist the server-authoritative status so it survives restarts and
+      // wins over the stale value cached in the JWT.
+      await _storage.saveProviderState(
+        providerId: result?.providerId,
+        providerStatus: result?.status,
+      );
+
+      final restored = await getCurrentSession();
+      return restored.fold(
+        Left.new,
+        (session) {
+          if (session == null) {
+            return const Left(AuthFailure('نشست کاربری یافت نشد'));
+          }
+          return Right(ProviderSession(
+            accessToken: session.accessToken,
+            refreshToken: session.refreshToken,
+            expiresIn: session.expiresIn,
+            user: session.user,
+            providerId: result?.providerId,
+            providerStatus: ProviderStatus.tryParse(result?.status),
+            isNewProvider: false,
+            requiresOnboarding: false,
+          ));
+        },
+      );
+    } on DioException catch (e) {
+      return Left(_mapDioError(e));
+    } catch (e) {
+      return Left(ServerFailure('خطای نامشخص: $e'));
     }
   }
 

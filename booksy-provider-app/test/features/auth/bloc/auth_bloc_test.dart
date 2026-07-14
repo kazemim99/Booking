@@ -183,6 +183,26 @@ void main() {
     );
   });
 
+  group('ProviderStatusRefreshRequested (post-onboarding)', () {
+    blocTest<AuthBloc, AuthState>(
+      'drafted → active after onboarding completes → Authenticated',
+      setUp: () => when(() => repo.refreshProviderStatus()).thenAnswer((_) async =>
+          Right(_session(providerId: 'p', status: ProviderStatus.active))),
+      build: build,
+      act: (b) => b.add(const ProviderStatusRefreshRequested()),
+      expect: () => [const AuthLoading(), isA<Authenticated>()],
+    );
+
+    blocTest<AuthBloc, AuthState>(
+      'still drafted → stays in onboarding',
+      setUp: () => when(() => repo.refreshProviderStatus()).thenAnswer((_) async =>
+          Right(_session(providerId: 'p', status: ProviderStatus.drafted))),
+      build: build,
+      act: (b) => b.add(const ProviderStatusRefreshRequested()),
+      expect: () => [const AuthLoading(), isA<NeedsOnboarding>()],
+    );
+  });
+
   group('LogoutRequested', () {
     blocTest<AuthBloc, AuthState>(
       'emits [Loading, LoggedOut]',

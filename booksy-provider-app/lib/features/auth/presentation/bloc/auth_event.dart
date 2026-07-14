@@ -56,3 +56,9 @@ class LogoutRequested extends AuthEvent {
 class SessionExpiredSignalled extends AuthEvent {
   const SessionExpiredSignalled();
 }
+
+/// Re-fetch provider status from the server and re-resolve routing.
+/// Dispatched after onboarding completes (the cached JWT status is stale).
+class ProviderStatusRefreshRequested extends AuthEvent {
+  const ProviderStatusRefreshRequested();
+}
