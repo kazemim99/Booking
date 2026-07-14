@@ -11,6 +11,7 @@ class HomeBloc extends Bloc<HomeEvent, HomeState> {
   HomeBloc(this.getHomeData) : super(const HomeInitial()) {
     on<LoadHomeData>(_onLoadHomeData);
     on<RefreshHomeData>(_onRefreshHomeData);
+    on<RetryHomeSection>(_onRetryHomeSection);
   }
 
   Future<void> _onLoadHomeData(
@@ -29,20 +30,32 @@ class HomeBloc extends Bloc<HomeEvent, HomeState> {
     await _fetchData(emit);
   }
 
+  Future<void> _onRetryHomeSection(
+    RetryHomeSection event,
+    Emitter<HomeState> emit,
+  ) async {
+    final current = state;
+    if (current is! HomeLoaded) return;
+
+    final result = await getHomeData.retrySection(
+      event.section,
+      current.toData(),
+    );
+    result.fold(
+      // Section retry failure keeps the section marked failed — the rest
+      // of the screen is untouched.
+      (_) => emit(current),
+      (merged) => emit(HomeLoaded.fromData(merged)),
+    );
+  }
+
   Future<void> _fetchData(Emitter<HomeState> emit) async {
     try {
       final result = await getHomeData();
 
       result.fold(
         (failure) => emit(HomeError(failure.message)),
-        (homeData) => emit(HomeLoaded(
-          categories: homeData.categories,
-          upcomingBookings: homeData.upcomingBookings,
-          topProviders: homeData.topProviders,
-          promotions: homeData.promotions,
-          recentlyVisitedProviders: homeData.recentlyVisitedProviders,
-          favoriteProviders: homeData.favoriteProviders,
-        )),
+        (homeData) => emit(HomeLoaded.fromData(homeData)),
       );
     } catch (e) {
       // Ensure we never get stuck in loading state

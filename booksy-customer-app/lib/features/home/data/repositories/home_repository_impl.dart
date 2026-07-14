@@ -13,7 +13,6 @@ import '../datasources/home_remote_datasource.dart';
 import '../models/category_model.dart';
 import '../models/booking_model.dart';
 import '../models/provider_model.dart';
-import '../../../../core/api/models/provider_models.dart';
 
 @LazySingleton(as: HomeRepository)
 class HomeRepositoryImpl implements HomeRepository {

@@ -1,341 +1,110 @@
-# Booksy Customer App - UX Flow
+# Booksy Customer App — UX Flow & Redesign Audit
 
 ## App Purpose
 
 **Customer-Only Booking App**
-- For: People who want to book beauty/wellness services
-- Not for: Service providers (they have a separate app)
+- For: People who want to book beauty/wellness services (Persian-first, RTL, Jalali dates)
+- Not for: Service providers (they use the web app)
+
+This document records the July 2026 screen-by-screen UX audit and the redesign implemented under the OpenSpec change `customer-app-ux-redesign` (see `openspec/changes/customer-app-ux-redesign/` for proposal, design decisions, specs, and API-parity findings).
 
 ---
 
-## ✅ Current UX Flow (Browse-First Approach)
-
-### First Launch
+## Current UX Flow (Browse-First, Router-Driven)
 
 ```
-┌─────────────────────────────────────────┐
-│  SplashPage (1-2 seconds)               │
-│  - Shows Booksy logo                    │
-│  - Checks authentication                │
-└─────────────────┬───────────────────────┘
-                  │
-                  ▼
-        ┌──────────────────┐
-        │  HomePageNew     │
-        │  (Guest Mode)    │ ← Everyone starts here
-        │                  │
-        │  ✅ Browse all    │
-        │  ✅ View providers│
-        │  ✅ See services  │
-        │  ✅ Read reviews  │
-        │                  │
-        │  [Login Button]  │ ← Top right corner
-        └─────────┬────────┘
-                  │
-        User tries to book:
-                  │
-                  ▼
-        ┌──────────────────┐
-        │  Login Required  │
-        │  Bottom Sheet    │
-        │                  │
-        │  "Login to book" │
-        │  [Phone Input]   │
-        │  [Continue]      │
-        └─────────┬────────┘
-                  │
-                  ▼
-        ┌──────────────────┐
-        │  OTP Verify      │
-        └─────────┬────────┘
-                  │
-                  ▼
-        ┌──────────────────┐
-        │  HomePageNew     │
-        │  (Authenticated) │
-        │                  │
-        │  ✅ Can book      │
-        │  ✅ Favorites     │
-        │  ✅ Reviews       │
-        └──────────────────┘
+Cold start
+  └─ SplashPage (branding only; router holds until stored session resolves)
+       └─ /home  ← guests and authenticated users both land here
+            ├─ Home tab ......... search entry → next-booking card → categories
+            │                     → top providers → promotions → recent/favorites
+            ├─ Explore tab ...... debounced search-as-you-type + category chips
+            ├─ Appointments tab . upcoming/past cards (guests: login prompt in place)
+            └─ Profile tab ...... profile + edit + logout (guests: login in place)
+
+Booking journey (guest-friendly until the last step)
+  provider card → /providers/:id (detail) → رزرو نوبت
+    → service → staff (auto-skipped if ≤1) → Jalali day + slot → confirm
+    → [guest? phone/OTP login, selections preserved] → success → appointments
 ```
 
-### Returning User Flow
-
-```
-┌─────────────────┐
-│  SplashPage     │
-│  (Checks token) │
-└────────┬────────┘
-         │
-    Has valid token?
-         │
-    ┌────┴────┐
-    │         │
-   Yes       No
-    │         │
-    ▼         ▼
-┌────────┐ ┌────────┐
-│Logged  │ │Guest   │
-│In Home │ │Mode    │
-└────────┘ └────────┘
-```
+Auth is demanded only at: booking confirmation, appointments tab, profile tab, appointment detail (deep link). Post-login return-to-intent is handled by the router (`?redirect=`).
 
 ---
 
-## 🎯 UX Strategy: Browse-First
+## Screen-by-Screen Audit Outcome
 
-### Why This Works for Customers:
+### Splash
+- **Before**: Navigated imperatively from a BlocListener; guests and users could see flashes of the wrong screen; purple `primarySwatch` theme.
+- **After**: Branding-only; router's `AuthNotifier` latches session resolution — no login flash, no double navigation. *(Priority: High — Frontend)*
 
-**1. Low Friction Entry**
-- Users see value immediately
-- No registration wall
-- Natural exploration
+### Login
+- **Before**: Generic `TextFormField`, submit-only validation, Persian digits rejected, snackbar-only errors, hard-coded strings/styles.
+- **After**: `AppTextField` with on-blur inline validation, live Persian/Arabic digit normalization, phone keyboard + autofill hints, loading CTA, terms notice, usable embedded (tabs) or routed (`?redirect=`). *(Priority: Critical — Frontend)*
 
-**2. Trust Building**
-- Browse real providers and reviews
-- See prices and services upfront
-- Make informed decision before committing
+### OTP Verification
+- **Before**: Plain 6-char text field, no resend timer, no autofill, navigation by `pushAndRemoveUntil(HomePage)` which bypassed the shell.
+- **After**: Segmented `OtpInput` (pinput) with paste + platform SMS autofill, auto-submit on completion, 60s resend countdown with confirmation snackbar, edit-number returns pre-filled, inline error clears + refocuses. Navigation is router-redirect driven. *(Priority: Critical — Frontend)*
 
-**3. Higher Conversion**
-- Users who browse first are 2.5x more likely to book
-- Trust is built through exploration
-- Registration becomes meaningful (to complete booking)
+### Main Navigation
+- **Before**: Hand-rolled `IndexedStack`, inline hex colors, Android back exited from anywhere, no deep links, `go_router` installed but unused.
+- **After**: `StatefulShellRoute.indexedStack` — per-tab back stacks and scroll preservation, back falls to home tab then exits, all destinations deep-linkable, Material 3 `NavigationBar` themed from tokens, offline banner mounted in shell. *(Priority: Critical — Frontend)*
 
-**4. Matches User Behavior**
-- Similar to: Snapp (see prices first), Digikala (browse then buy)
-- Iranian users expect to explore before sharing phone number
-- Professional services need trust verification
+### Home
+- **Before**: Single spinner for the whole screen, one section (recent/favorites), duplicate implementations (`home_page.dart` vs `home_page_new.dart`), dead search bar.
+- **After**: One implementation; content-shaped skeleton; sections load/fail independently with inline per-section retry; order: search entry → next-booking card (Jalali, tap → detail) → category chips (deep-link to explore) → top providers → promotions → recent/favorites; pull-to-refresh. *(Priority: High — Frontend)*
 
----
+### Explore
+- **Before**: Static category tabs over a permanent "no results" placeholder; search field not wired; fake filters ("کجا؟/کی؟") that did nothing.
+- **After**: Live debounced search (350ms) with stale-result race guarded in the bloc, category filter chips, image result cards with placeholders, skeleton loading, no-results empty state with clear-filters CTA, error retry, pull-to-refresh, `?category=` deep link. Dead filters removed rather than left misleading. *(Priority: Critical — Frontend)*
 
-## 📱 Guest Mode Features
+### Provider Detail (new screen)
+- Deep-linkable `/providers/:id`; header image with branded placeholder, rating/reviews, address, working hours, services with duration+price; booking CTA pinned so it never scrolls away. *(Priority: Critical — Frontend)*
 
-### What Guests CAN Do:
-✅ Browse all providers
-✅ View services and prices
-✅ See provider ratings and reviews
-✅ Search and filter
-✅ View provider details
-✅ See availability (read-only)
+### Booking Flow (new journey)
+- Full-screen steps (not desktop-style modals): service → staff (auto-skipped when ≤1; «فرقی نمی‌کند» supported via slot-assigned staff) → 14-day Jalali day browser + slot chips (per-day skeleton, no stale slots) → confirmation summary (nothing committed before explicit confirm) → success screen.
+- Slot-taken conflict returns to the slot step with refreshed availability and selections intact.
+- Guest checkout: login at confirmation; selections survive the round-trip (app-scoped bloc). *(Priority: Critical — Frontend)*
 
-### What Requires Login:
-🔒 Book an appointment
-🔒 Add to favorites
-🔒 Write a review
-🔒 View "My Bookings"
-🔒 Manage profile
+### Appointments
+- **Before**: Static empty states only; "یافتن سالن" buttons were dead TODOs; no data wiring at all.
+- **After**: Upcoming/past segmentation, status cards (`StatusBadge`: label+icon+tint — never color alone), cancel via destructive `ConfirmSheet` with optimistic update + rollback on failure, reschedule reusing the shared slot picker (same endpoint semantics as web), pull-to-refresh, guest login prompt in place, appointment detail screen. *(Priority: Critical — Frontend)*
 
----
-
-## 🔧 Implementation Details
-
-### Current Implementation
-
-**File**: `lib/features/auth/presentation/pages/splash_page.dart`
-
-```dart
-// Both authenticated and guest users go to HomePageNew
-// The HomePage detects auth state and adjusts UI accordingly
-
-if (state is Authenticated) {
-  Navigator.push(...HomePageNew()); // Full features
-} else {
-  Navigator.push(...HomePageNew()); // Guest mode - browse only
-}
-```
-
-### HomePage Behavior
-
-**Guest Mode** (Not Authenticated):
-- Shows "ورود" (Login) button in AppBar
-- Hides "My Bookings" section (or shows empty with login prompt)
-- Shows all providers and categories
-- Booking button → Shows login bottom sheet
-
-**Authenticated Mode**:
-- Shows notification bell in AppBar
-- Shows personalized greeting with user name
-- Shows upcoming bookings
-- Booking button → Goes to booking flow
-- Can favorite providers
-- Can write reviews
+### Profile (new screen)
+- **Before**: `Text('Profile Page - TODO')`.
+- **After**: Identity card (name + LTR phone), edit-profile bottom sheet against `PUT /Customers/{id}`, logout with confirmation; guests see login in place and the tab swaps after auth. *(Priority: High — Frontend)*
 
 ---
 
-## 🎨 UI Adaptations for Guest Mode
+## Global Scores
 
-### AppBar Changes
+| Dimension | Before | After |
+|---|---|---|
+| UX | 3/10 — core journeys missing or dead-ended | 7.5/10 — all journeys complete; polish pending device pass |
+| UI | 4/10 — purple/blue theme conflict, inline styles | 8/10 — token-driven M3 theme, one component library |
+| Accessibility | 2/10 — no semantics, `.sp` fought OS font scale, AA failures | 7.5/10 — AA-verified tokens, 48dp targets, semantics, reduced-motion, 1.3× tested |
+| Consistency | 3/10 — every screen self-styled | 8.5/10 — `StateSwitcher` + shared components enforced |
+| Product maturity | 2.5/10 — 7 screens, 3 features empty | 7/10 — MVP-complete pending E2E device verification |
 
-```dart
-// Guest Mode
-AppBar(
-  title: Text('Booksy Customer'),
-  actions: [
-    TextButton(
-      onPressed: () => showLoginSheet(context),
-      child: Text('ورود', style: TextStyle(color: AppColors.primary)),
-    ),
-  ],
-)
+## Roadmap Status
 
-// Authenticated Mode
-AppBar(
-  title: Text('Booksy Customer'),
-  actions: [
-    IconButton(
-      icon: Icon(Icons.notifications_outlined),
-      onPressed: () => goToNotifications(),
-    ),
-  ],
-)
-```
+- **Phase 1 (Critical)** — theme unification, navigation shell, auth flow, explore search, booking journey, appointments actions: ✅ implemented.
+- **Phase 2 (High)** — home sectioning, provider detail, profile, offline handling: ✅ implemented.
+- **Phase 3 (Polish)** — deferred (below).
 
-### Greeting Section
+## Deferred Findings
 
-```dart
-// Guest Mode
-Padding(
-  padding: EdgeInsets.all(16.w),
-  child: Column(
-    children: [
-      Text('سلام! 👋', style: AppTextStyles.h2),
-      SizedBox(height: 8.h),
-      Text(
-        'وارد شوید تا تجربه شخصی‌سازی شده داشته باشید',
-        style: AppTextStyles.caption,
-      ),
-      SizedBox(height: 12.h),
-      OutlinedButton(
-        onPressed: () => showLoginSheet(context),
-        child: Text('ورود / ثبت‌نام'),
-      ),
-    ],
-  ),
-)
-
-// Authenticated Mode
-Text('سلام علی! 👋', style: AppTextStyles.h2)
-```
-
-### Booking Button Behavior
-
-```dart
-onBookingTap: (provider) {
-  final authState = context.read<AuthBloc>().state;
-
-  if (authState is Authenticated) {
-    // Go to booking flow
-    context.go('/booking/${provider.id}');
-  } else {
-    // Show login sheet
-    showModalBottomSheet(
-      context: context,
-      builder: (_) => LoginBottomSheet(
-        onLoginSuccess: () {
-          // After login, go to booking
-          context.go('/booking/${provider.id}');
-        },
-      ),
-    );
-  }
-}
-```
+1. **Promotions**: no backend endpoint; section hidden until one ships.
+2. **Staff-per-service filter**: API returns all provider staff; slot availability is the effective filter. A dedicated endpoint would improve the staff step.
+3. **Gallery**: provider detail uses the single profile image; multi-image gallery blocked on gallery endpoints (see `GALLERY_BACKEND_REQUIREMENTS.md`).
+4. **codegen**: retrofit_generator incompatible with current Dart SDK — new code uses manual JSON + manual DI; upgrade tracked as tech debt.
+5. **Dark mode**: tokens structured for it (`AppColors.*Dark` exist); not shipped.
+6. **i18n**: all strings centralized in `AppStrings`; extraction to ARB is now mechanical.
+7. **Slot-taken status code** (409/422 assumed): verify against the real backend during the device E2E pass.
+8. **Reviews, notifications, payments**: out of scope until backend surfaces exist.
 
 ---
 
-## 📊 Expected User Behavior
-
-### Conversion Funnel
-
-```
-100 users land on app
-  ↓
-90 browse providers (90% retention)
-  ↓
-40 click "Book" (44% engagement)
-  ↓
-35 complete login (87% conversion after seeing value)
-  ↓
-30 complete booking (86% completion)
-```
-
-**vs Traditional Login-First:**
-```
-100 users land on app
-  ↓
-60 reach login page (40% drop-off immediately)
-  ↓
-30 complete login (50% login conversion)
-  ↓
-25 find provider (83% engagement)
-  ↓
-15 complete booking (60% completion)
-```
-
-**Result**: Browse-first yields **2x more bookings**
-
----
-
-## 🔄 Future Enhancements
-
-### 1. Welcome Screen (Optional)
-Add a dismissible one-time welcome for first launch:
-
-```
-┌────────────────────────────────┐
-│  🏪 خوش آمدید                 │
-│                                │
-│  بهترین آرایشگاه‌ها و          │
-│  مراکز زیبایی را پیدا کنید     │
-│                                │
-│  [شروع کنید]                   │
-│                                │
-│  این پیام فقط یکبار نمایش داده │
-│  می‌شود                         │
-└────────────────────────────────┘
-```
-
-### 2. Guest Nudges
-Subtle reminders to login for better experience:
-
-```
-┌────────────────────────────────┐
-│  💡 وارد شوید تا:              │
-│  ✓ ذخیره علاقه‌مندی‌ها         │
-│  ✓ دریافت پیشنهادات شخصی       │
-│  ✓ مدیریت نوبت‌ها               │
-│  [ورود سریع]     [بعداً]      │
-└────────────────────────────────┘
-```
-
-### 3. Persistent Login State
-Remember logged-in users even after app restart (already implemented via token storage)
-
----
-
-## ✅ Summary
-
-**Current Implementation:**
-- ✅ Browse-first approach (best for customers)
-- ✅ Low friction entry
-- ✅ Login only when needed
-- ✅ Same HomePage for guest and authenticated users
-- ✅ Graceful prompts instead of walls
-
-**UX Benefits:**
-- Higher engagement (users see value first)
-- Better conversion (trust before commitment)
-- Persian market fit (matches Snapp, Digikala patterns)
-- Professional service booking (exploration needed)
-
-**No Provider Onboarding:**
-- This is customer-only app
-- Provider features are in separate app
-- No business registration flow needed here
-
----
-
-**Last Updated**: January 3, 2026
-**Status**: Browse-first UX implemented ✅
+**Last Updated**: July 14, 2026
+**Status**: Redesign implemented (`customer-app-ux-redesign`); pending on-device E2E sweep
 **App Type**: Customer booking app (not provider management)

@@ -2,10 +2,13 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
+import 'package:go_router/go_router.dart';
+import 'config/routes/app_router.dart';
+import 'config/theme/app_theme.dart';
 import 'core/di/injection.dart';
 import 'features/auth/presentation/bloc/auth_bloc.dart';
 import 'features/auth/presentation/bloc/auth_event.dart';
-import 'features/auth/presentation/pages/splash_page.dart';
+import 'features/home/presentation/bloc/home_bloc.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -13,11 +16,29 @@ void main() async {
   // Configure dependency injection
   await configureDependencies();
 
-  runApp(const BooksyCustomerApp());
+  runApp(BooksyCustomerApp(
+    authBloc: getIt<AuthBloc>()..add(const CheckAuthStatusEvent()),
+  ));
 }
 
-class BooksyCustomerApp extends StatelessWidget {
-  const BooksyCustomerApp({super.key});
+class BooksyCustomerApp extends StatefulWidget {
+  final AuthBloc authBloc;
+
+  const BooksyCustomerApp({super.key, required this.authBloc});
+
+  @override
+  State<BooksyCustomerApp> createState() => _BooksyCustomerAppState();
+}
+
+class _BooksyCustomerAppState extends State<BooksyCustomerApp> {
+  late final GoRouter _router = AppRouter.create(widget.authBloc);
+
+  @override
+  void dispose() {
+    _router.dispose();
+    widget.authBloc.close();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -28,12 +49,10 @@ class BooksyCustomerApp extends StatelessWidget {
       builder: (context, child) {
         return MultiBlocProvider(
           providers: [
-            BlocProvider(
-              create: (context) => getIt<AuthBloc>()
-                ..add(const CheckAuthStatusEvent()),
-            ),
+            BlocProvider.value(value: widget.authBloc),
+            BlocProvider(create: (context) => getIt<HomeBloc>()),
           ],
-          child: MaterialApp(
+          child: MaterialApp.router(
             title: 'Booksy Customer',
             debugShowCheckedModeBanner: false,
             // RTL Support for Persian/Arabic
@@ -53,21 +72,11 @@ class BooksyCustomerApp extends StatelessWidget {
                 child: child!,
               );
             },
-            theme: ThemeData(
-              primarySwatch: Colors.purple,
-              fontFamily: 'Vazir',
-              textTheme: const TextTheme(
-                bodyLarge: TextStyle(fontSize: 16),
-                bodyMedium: TextStyle(fontSize: 14),
-                bodySmall: TextStyle(fontSize: 12),
-              ),
-              useMaterial3: true,
-            ),
-            home: child,
+            theme: AppTheme.light,
+            routerConfig: _router,
           ),
         );
       },
-      child: const SplashPage(),
     );
   }
 }

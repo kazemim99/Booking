@@ -10,7 +10,17 @@ import '../entities/recently_visited_provider.dart';
 import '../entities/favorite_provider.dart';
 import '../repositories/home_repository.dart';
 
-/// Response model for home screen data
+/// Independently loadable home sections. Each can fail and be retried
+/// without blanking the rest of the screen.
+enum HomeSection {
+  categories,
+  upcomingBookings,
+  topProviders,
+  promotions,
+  recentAndFavorites,
+}
+
+/// Response model for home screen data.
 class HomeData {
   final List<Category> categories;
   final List<UpcomingBooking> upcomingBookings;
@@ -19,6 +29,9 @@ class HomeData {
   final List<RecentlyVisitedProvider> recentlyVisitedProviders;
   final List<FavoriteProvider> favoriteProviders;
 
+  /// Sections whose request failed (as opposed to legitimately empty).
+  final Set<HomeSection> failedSections;
+
   const HomeData({
     required this.categories,
     required this.upcomingBookings,
@@ -26,10 +39,12 @@ class HomeData {
     required this.promotions,
     required this.recentlyVisitedProviders,
     required this.favoriteProviders,
+    this.failedSections = const {},
   });
 }
 
-/// Use case to fetch all home screen data
+/// Fetches all home sections in parallel. One failed section never fails
+/// the whole screen; only a total failure returns Left.
 @lazySingleton
 class GetHomeData {
   final HomeRepository repository;
@@ -39,86 +54,115 @@ class GetHomeData {
 
   Future<Either<Failure, HomeData>> call() async {
     try {
-      print('🔄 GetHomeData: Starting data fetch...');
-
-      // Get customer ID for authenticated users
       final customerId = await storageService.getCustomerId();
-      print('👤 GetHomeData: Customer ID: ${customerId ?? "Guest"}');
+      final isAuthenticated = customerId != null;
 
-      // Build futures list based on auth status
-      final futures = <Future<Either<Failure, dynamic>>>[
+      final results = await Future.wait([
         repository.getPopularCategories(),
         repository.getUpcomingBookings(limit: 2),
         repository.getTopProviders(limit: 10),
         repository.getPromotions(),
-      ];
+        if (isAuthenticated)
+          repository.getRecentlyVisitedProviders(customerId, limit: 10),
+        if (isAuthenticated) repository.getFavoriteProviders(customerId),
+      ]).timeout(const Duration(seconds: 15));
 
-      // Add authenticated-only requests if user is logged in
-      if (customerId != null) {
-        futures.add(repository.getRecentlyVisitedProviders(customerId, limit: 10));
-        futures.add(repository.getFavoriteProviders(customerId));
+      final failed = <HomeSection>{
+        if (results[0].isLeft()) HomeSection.categories,
+        if (results[1].isLeft()) HomeSection.upcomingBookings,
+        if (results[2].isLeft()) HomeSection.topProviders,
+        if (results[3].isLeft()) HomeSection.promotions,
+        if (isAuthenticated && (results[4].isLeft() || results[5].isLeft()))
+          HomeSection.recentAndFavorites,
+      };
+
+      if (failed.length == HomeSection.values.length ||
+          (!isAuthenticated && failed.length >= 4)) {
+        return const Left(
+          ServerFailure('خطا در بارگذاری داده‌ها. لطفاً دوباره تلاش کنید.'),
+        );
       }
 
-      // Fetch all data in parallel for better performance
-      // Use timeout to prevent infinite loading
-      final results = await Future.wait(futures).timeout(
-        const Duration(seconds: 15),
-        onTimeout: () {
-          print('⏱️ GetHomeData: Request timed out after 15 seconds');
-          final baseFailures = [
-            const Left(ServerFailure('خطا در بارگذاری دسته‌بندی‌ها')),
-            const Left(ServerFailure('خطا در بارگذاری رزروها')),
-            const Left(ServerFailure('خطا در بارگذاری ارائه‌دهندگان')),
-            const Left(ServerFailure('خطا در بارگذاری تبلیغات')),
-          ];
-          if (customerId != null) {
-            baseFailures.add(const Left(ServerFailure('خطا در بارگذاری بازدیدها')));
-            baseFailures.add(const Left(ServerFailure('خطا در بارگذاری علاقه‌مندی‌ها')));
-          }
-          return baseFailures;
-        },
-      );
-
-      print('✅ GetHomeData: Got ${results.length} results');
-
-      // Extract successful results, use empty lists for failures
-      // This allows partial data to be shown instead of complete failure
-      final categories = results[0].getOrElse(() => <Category>[]);
-      final upcomingBookings = results[1].getOrElse(() => <UpcomingBooking>[]);
-      final topProviders = results[2].getOrElse(() => <ProviderSummary>[]);
-      final promotions = results[3].getOrElse(() => <Promotion>[]);
-
-      // Get recently visited and favorites if user is authenticated
-      final recentlyVisitedProviders = customerId != null && results.length > 4
-          ? results[4].getOrElse(() => <RecentlyVisitedProvider>[])
-          : <RecentlyVisitedProvider>[];
-      final favoriteProviders = customerId != null && results.length > 5
-          ? results[5].getOrElse(() => <FavoriteProvider>[])
-          : <FavoriteProvider>[];
-
-      print('📊 GetHomeData: categories=${categories.length}, bookings=${upcomingBookings.length}, providers=${topProviders.length}, promos=${promotions.length}, recent=${recentlyVisitedProviders.length}, favorites=${favoriteProviders.length}');
-
-      // Check if ALL requests actually failed (not just empty)
-      final allFailed = results.every((result) => result.isLeft());
-
-      if (allFailed) {
-        print('❌ GetHomeData: All API requests failed');
-        return const Left(ServerFailure('خطا در بارگذاری داده‌ها. لطفاً دوباره تلاش کنید.'));
-      }
-
-      // At least one request succeeded, return the data (even if some are empty)
-      print('✅ GetHomeData: Returning HomeData (some requests succeeded)');
       return Right(HomeData(
-        categories: categories as List<Category>,
-        upcomingBookings: upcomingBookings as List<UpcomingBooking>,
-        topProviders: topProviders as List<ProviderSummary>,
-        promotions: promotions as List<Promotion>,
-        recentlyVisitedProviders: recentlyVisitedProviders as List<RecentlyVisitedProvider>,
-        favoriteProviders: favoriteProviders as List<FavoriteProvider>,
+        categories: results[0].getOrElse(() => <Category>[]) as List<Category>,
+        upcomingBookings: results[1].getOrElse(() => <UpcomingBooking>[])
+            as List<UpcomingBooking>,
+        topProviders: results[2].getOrElse(() => <ProviderSummary>[])
+            as List<ProviderSummary>,
+        promotions:
+            results[3].getOrElse(() => <Promotion>[]) as List<Promotion>,
+        recentlyVisitedProviders: isAuthenticated
+            ? results[4].getOrElse(() => <RecentlyVisitedProvider>[])
+                as List<RecentlyVisitedProvider>
+            : const [],
+        favoriteProviders: isAuthenticated
+            ? results[5].getOrElse(() => <FavoriteProvider>[])
+                as List<FavoriteProvider>
+            : const [],
+        failedSections: failed,
       ));
     } catch (e) {
-      print('💥 GetHomeData: Exception caught: $e');
       return Left(ServerFailure('خطا در بارگذاری داده‌ها: ${e.toString()}'));
     }
+  }
+
+  /// Re-fetches a single failed section. Returns the fresh data merged into
+  /// [current].
+  Future<Either<Failure, HomeData>> retrySection(
+    HomeSection section,
+    HomeData current,
+  ) async {
+    switch (section) {
+      case HomeSection.categories:
+        final r = await repository.getPopularCategories();
+        return r.map((v) => _merge(current, section, categories: v));
+      case HomeSection.upcomingBookings:
+        final r = await repository.getUpcomingBookings(limit: 2);
+        return r.map((v) => _merge(current, section, upcomingBookings: v));
+      case HomeSection.topProviders:
+        final r = await repository.getTopProviders(limit: 10);
+        return r.map((v) => _merge(current, section, topProviders: v));
+      case HomeSection.promotions:
+        final r = await repository.getPromotions();
+        return r.map((v) => _merge(current, section, promotions: v));
+      case HomeSection.recentAndFavorites:
+        final customerId = await storageService.getCustomerId();
+        if (customerId == null) {
+          return Right(_merge(current, section));
+        }
+        final recent =
+            await repository.getRecentlyVisitedProviders(customerId, limit: 10);
+        final favorites = await repository.getFavoriteProviders(customerId);
+        if (recent.isLeft()) return recent.map((_) => current);
+        if (favorites.isLeft()) return favorites.map((_) => current);
+        return Right(_merge(
+          current,
+          section,
+          recentlyVisited: recent.getOrElse(() => []),
+          favorites: favorites.getOrElse(() => []),
+        ));
+    }
+  }
+
+  HomeData _merge(
+    HomeData current,
+    HomeSection recovered, {
+    List<Category>? categories,
+    List<UpcomingBooking>? upcomingBookings,
+    List<ProviderSummary>? topProviders,
+    List<Promotion>? promotions,
+    List<RecentlyVisitedProvider>? recentlyVisited,
+    List<FavoriteProvider>? favorites,
+  }) {
+    return HomeData(
+      categories: categories ?? current.categories,
+      upcomingBookings: upcomingBookings ?? current.upcomingBookings,
+      topProviders: topProviders ?? current.topProviders,
+      promotions: promotions ?? current.promotions,
+      recentlyVisitedProviders:
+          recentlyVisited ?? current.recentlyVisitedProviders,
+      favoriteProviders: favorites ?? current.favoriteProviders,
+      failedSections: {...current.failedSections}..remove(recovered),
+    );
   }
 }

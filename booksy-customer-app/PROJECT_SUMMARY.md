@@ -5,14 +5,26 @@
 A complete **Flutter mobile application** for Booksy platform customers with:
 
 ✅ **Clean Architecture** implementation
-✅ **OTP-based Authentication** flow
+✅ **OTP-based Authentication** flow (pinput OTP input, SMS autofill, resend timer)
 ✅ **Secure token storage** with auto-refresh
 ✅ **BLoC state management**
 ✅ **Retrofit API integration**
 ✅ **Dependency injection** with Injectable
 ✅ **Error handling** with Either pattern
-✅ **Responsive UI** with ScreenUtil
+✅ **Responsive UI** with ScreenUtil (layout only — text follows OS font scale)
 ✅ **Production-ready structure**
+
+## Architecture Updates (July 2026 — `customer-app-ux-redesign`)
+
+The UX redesign (OpenSpec change `customer-app-ux-redesign`) reshaped the presentation layer:
+
+- **Routing**: `go_router` with `StatefulShellRoute.indexedStack` (`lib/config/routes/app_router.dart`). Four tabs with independent back stacks; deep-linkable routes for `/providers/:id`, `/providers/:id/book`, `/appointments/:id`; auth-gated routes redirect to `/login?redirect=…` with return-to-intent. `AuthNotifier` latches the AuthBloc stream for redirects (transient states never bounce navigation).
+- **Theme**: single Material 3 `ThemeData` built from design tokens (`lib/config/theme/` — `app_colors.dart`, `app_text_styles.dart`, `app_tokens.dart`, `app_theme.dart`). WCAG-AA-verified palette (semantic `*Text`/`*Tint` variants). No inline hex or ad-hoc `TextStyle`s in feature code.
+- **Component library**: `lib/core/widgets/` — `AppButton`, `AppTextField`, `OtpInput`, `AppCard`, `StatusBadge`, `SkeletonLoader`, `EmptyState`, `ErrorState`, `OfflineBanner`, `AppBottomSheet`/`ConfirmSheet`, `AppSnackbar`, and `StateSwitcher` (the mandatory skeleton/content/empty/error mapping for every data-backed screen).
+- **Features implemented**: home (independent sections with per-section retry), explore (debounced provider search), provider detail, stepped booking flow (service → staff → Jalali slot picker → confirm), appointments (cancel with optimistic rollback, reschedule via shared `SlotPicker`), profile (edit + logout).
+- **Strings**: all user-facing Persian text lives in `core/constants/app_strings.dart`.
+- **Known constraint**: `build_runner` codegen is broken (retrofit_generator/SDK incompatibility), so newer services use manual JSON parsing and are registered manually in `core/di/injection.dart`.
+- **Docs**: audit outcome and deferred findings in `CUSTOMER_APP_UX_FLOW.md`.
 
 ## Project Structure
 

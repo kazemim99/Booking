@@ -1,13 +1,29 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:flutter_screenutil/flutter_screenutil.dart';
+import 'package:go_router/go_router.dart';
+
+import '../../../../config/routes/app_router.dart';
+import '../../../../config/theme/app_tokens.dart';
+import '../../../../core/constants/app_strings.dart';
+import '../../../../core/utils/persian_digits.dart';
+import '../../../../core/widgets/widgets.dart';
 import '../bloc/auth_bloc.dart';
 import '../bloc/auth_event.dart';
 import '../bloc/auth_state.dart';
-import 'otp_verification_page.dart';
 
+/// Phone-number login.
+///
+/// Used both as a routed screen (/login, optionally with ?redirect=) and
+/// embedded inside the profile/appointments tabs for guests ([embedded]).
 class LoginPage extends StatefulWidget {
-  const LoginPage({super.key});
+  /// Where to land after successful authentication (return-to-intent).
+  final String? redirect;
+
+  /// True when rendered in place inside a tab (no back affordance; the tab
+  /// itself swaps to the authenticated content after login).
+  final bool embedded;
+
+  const LoginPage({super.key, this.redirect, this.embedded = false});
 
   @override
   State<LoginPage> createState() => _LoginPageState();
@@ -15,158 +31,122 @@ class LoginPage extends StatefulWidget {
 
 class _LoginPageState extends State<LoginPage> {
   final _phoneController = TextEditingController();
-  final _formKey = GlobalKey<FormState>();
+  final _phoneFocus = FocusNode();
+  String? _inlineError;
+
+  @override
+  void initState() {
+    super.initState();
+    // On-blur inline validation.
+    _phoneFocus.addListener(() {
+      if (!_phoneFocus.hasFocus && _phoneController.text.isNotEmpty) {
+        setState(() => _inlineError = _validate(_phoneController.text));
+      }
+    });
+  }
 
   @override
   void dispose() {
     _phoneController.dispose();
+    _phoneFocus.dispose();
     super.dispose();
   }
 
-  void _sendOtp() {
-    if (_formKey.currentState!.validate()) {
-      final phoneNumber = _phoneController.text.trim();
-      context.read<AuthBloc>().add(
-            SendVerificationCodeEvent(phoneNumber: phoneNumber),
-          );
+  String? _validate(String value) {
+    if (value.trim().isEmpty) return AppStrings.phoneRequired;
+    if (!PersianDigits.isValidIranianMobile(value)) {
+      return AppStrings.phoneInvalid;
     }
+    return null;
+  }
+
+  String get _redirectTarget =>
+      widget.redirect ?? (widget.embedded ? Routes.profile : Routes.home);
+
+  void _sendOtp() {
+    final error = _validate(_phoneController.text);
+    setState(() => _inlineError = error);
+    if (error != null) return;
+
+    final phone = PersianDigits.canonicalMobile(_phoneController.text);
+    context.read<AuthBloc>().add(SendVerificationCodeEvent(phoneNumber: phone));
   }
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
     return Scaffold(
-      appBar: AppBar(
-        backgroundColor: Colors.transparent,
-        elevation: 0,
-        automaticallyImplyLeading: false, // Remove back button when used in bottom nav tab
-      ),
+      appBar: widget.embedded ? null : AppBar(),
       body: SafeArea(
         child: BlocListener<AuthBloc, AuthState>(
           listener: (context, state) {
             if (state is OtpSentSuccess) {
-              // Navigate to OTP verification page
-              Navigator.of(context).push(
-                MaterialPageRoute(
-                  builder: (_) => OtpVerificationPage(
-                    phoneNumber: state.phoneNumber,
-                  ),
-                ),
-              );
-
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(content: Text(state.message)),
-              );
+              final phone = Uri.encodeComponent(state.phoneNumber);
+              final target = Uri.encodeComponent(_redirectTarget);
+              context.push('${Routes.otp}?phone=$phone&redirect=$target');
             } else if (state is AuthError) {
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(
-                  content: Text(state.message),
-                  backgroundColor: Colors.red,
-                ),
-              );
+              // Entered number stays in the controller — nothing is lost.
+              AppSnackbar.error(context, state.message);
             }
           },
-          child: Padding(
-            padding: EdgeInsets.all(24.w),
-            child: Form(
-              key: _formKey,
+          child: Center(
+            child: SingleChildScrollView(
+              padding: const EdgeInsets.all(AppSpacing.lg),
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
-                  // Logo
                   Icon(
                     Icons.calendar_today_rounded,
-                    size: 80.sp,
-                    color: Theme.of(context).primaryColor,
+                    size: 72,
+                    color: theme.colorScheme.primary,
                   ),
-                  SizedBox(height: 24.h),
-
-                  // Title
+                  const SizedBox(height: AppSpacing.lg),
                   Text(
-                    'ورود / ثبت‌نام',
-                    style: TextStyle(
-                      fontSize: 28.sp,
-                      fontWeight: FontWeight.bold,
-                    ),
+                    AppStrings.loginTitle,
+                    style: theme.textTheme.displaySmall,
                     textAlign: TextAlign.center,
                   ),
-                  SizedBox(height: 8.h),
-
-                  // Subtitle
+                  const SizedBox(height: AppSpacing.xs),
                   Text(
-                    'برای ادامه شماره موبایل خود را وارد کنید',
-                    style: TextStyle(
-                      fontSize: 14.sp,
-                      color: Colors.grey,
-                    ),
+                    AppStrings.loginSubtitle,
+                    style: theme.textTheme.bodyMedium,
                     textAlign: TextAlign.center,
                   ),
-                  SizedBox(height: 48.h),
-
-                  // Phone number input
-                  TextFormField(
+                  const SizedBox(height: AppSpacing.xl),
+                  AppTextField(
                     controller: _phoneController,
+                    focusNode: _phoneFocus,
+                    label: AppStrings.phoneLabel,
+                    hint: AppStrings.phoneHint,
+                    errorText: _inlineError,
+                    prefixIcon: Icons.phone_outlined,
                     keyboardType: TextInputType.phone,
-                    textDirection: TextDirection.ltr,
-                    decoration: InputDecoration(
-                      labelText: 'شماره موبایل',
-                      hintText: '09123456789',
-                      prefixIcon: const Icon(Icons.phone),
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(12.r),
-                      ),
-                    ),
-                    validator: (value) {
-                      if (value == null || value.isEmpty) {
-                        return 'لطفا شماره موبایل را وارد کنید';
+                    contentDirection: TextDirection.ltr,
+                    autofillHints: const [AutofillHints.telephoneNumber],
+                    inputFormatters: [PersianDigitsInputFormatter()],
+                    maxLength: 11,
+                    onChanged: (_) {
+                      if (_inlineError != null) {
+                        setState(() => _inlineError = null);
                       }
-                      final cleaned = value.replaceAll(RegExp(r'[^\d]'), '');
-                      if (cleaned.length != 10 && cleaned.length != 11) {
-                        return 'شماره موبایل باید 10 یا 11 رقم باشد';
-                      }
-                      return null;
                     },
+                    onSubmitted: (_) => _sendOtp(),
                   ),
-                  SizedBox(height: 24.h),
-
-                  // Submit button
+                  const SizedBox(height: AppSpacing.lg),
                   BlocBuilder<AuthBloc, AuthState>(
                     builder: (context, state) {
-                      final isLoading = state is AuthLoading;
-
-                      return ElevatedButton(
-                        onPressed: isLoading ? null : _sendOtp,
-                        style: ElevatedButton.styleFrom(
-                          padding: EdgeInsets.symmetric(vertical: 16.h),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(12.r),
-                          ),
-                        ),
-                        child: isLoading
-                            ? SizedBox(
-                                height: 20.h,
-                                width: 20.w,
-                                child: const CircularProgressIndicator(
-                                  strokeWidth: 2,
-                                  color: Colors.white,
-                                ),
-                              )
-                            : Text(
-                                'ارسال کد تایید',
-                                style: TextStyle(fontSize: 16.sp),
-                              ),
+                      return AppButton(
+                        label: AppStrings.sendOtp,
+                        loading: state is AuthLoading,
+                        onPressed: _sendOtp,
                       );
                     },
                   ),
-                  SizedBox(height: 24.h),
-
-                  // Terms and conditions
+                  const SizedBox(height: AppSpacing.lg),
                   Text(
-                    'با ورود به اپلیکیشن، شرایط و قوانین استفاده از خدمات را می‌پذیرید',
-                    style: TextStyle(
-                      fontSize: 12.sp,
-                      color: Colors.grey,
-                    ),
+                    AppStrings.termsNotice,
+                    style: theme.textTheme.bodySmall,
                     textAlign: TextAlign.center,
                   ),
                 ],

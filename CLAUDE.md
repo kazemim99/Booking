@@ -286,6 +286,8 @@ Common issues and solutions:
 
 ## Testing Policy
 
+Testing is mandatory, not optional. Quality is a non-negotiable requirement: every change must maintain or improve the project's reliability, and every feature is incomplete until all relevant automated tests pass. Every code change must include appropriate automated tests unless there is a documented technical reason why a specific test type is not applicable.
+
 ### Existing Tests First
 
 Whenever modifying existing code:
@@ -301,20 +303,90 @@ Whenever modifying existing code:
 - If a change affects business logic, APIs, data access, events, caching, background jobs, or concurrency, ensure the existing test suite is updated accordingly.
 - At the end of every implementation, include a Testing Summary that lists: Existing tests reviewed, Tests modified, New tests added, Test types covered, Regression risks addressed.
 
+### Test Integrity — Never Weaken the Suite
+
+- Existing tests must NEVER be removed, weakened, skipped, or disabled simply to make CI pass. No ignored failures, no commented-out assertions.
+- A test may be removed only when it is demonstrably obsolete (the behavior it protected no longer exists). Explain why, and replace it with equivalent or stronger protection when the behavior has a successor.
+- When business logic changes: first identify every existing test affected by the change, update those tests to the new behavior, then add new tests for the new behavior. Do this before declaring the change done.
+
+### Test Pyramid & Test Selection
+
+Follow the Test Pyramid. Priority order:
+
+1. **Unit Tests** — domain logic, use cases, blocs/handlers, validators
+2. **Integration Tests** — interaction between layers (API + DB + events); prefer realistic integration tests over excessive mocking
+3. **Component/Widget Tests** — reusable UI components and screen state rendering
+4. **End-to-End Tests** — only for critical user journeys, cross-screen workflows, and regression protection; avoid E2E where a lower-level test provides equivalent confidence
+
+Choose the correct test types per change from: Unit, Integration, API, Widget, Golden (UI consistency), E2E, Regression, Contract, Database/Repository, State Management, Smoke, Performance, Accessibility, Concurrency/Race Condition. If a normally-expected test type is not applicable, state why. Do not generate unnecessary tests — select the minimal set that provides high confidence while keeping the suite maintainable.
+
 ### Mandatory Engineering & Testing Policy
 
 Every code change must prioritize correctness, reliability, maintainability, and regression prevention over implementation speed.
 
 **1. Analyze before coding.** Before making any change: understand the existing business logic, identify all affected components, determine the risk of the change, and identify which tests must be added, updated, or verified. Never modify code until you understand the existing behavior.
 
-**2. Mandatory testing.** Every change must be validated with the appropriate level of testing. Choose the correct test types based on the change, including when applicable: Unit, Integration, API, End-to-End (E2E), Functional, Regression, Contract, Database/Repository, Performance, Concurrency/Race Condition. Do not generate unnecessary tests — select the minimal set that provides high confidence while keeping the suite maintainable.
+**2. Mandatory testing.** Every change must be validated with the appropriate level of testing, selected per the Test Pyramid above.
 
-**3. Regression prevention.** Every bug fix MUST include a regression test that reproduces the bug, fails before the fix, and passes after the fix. Never fix a bug without ensuring it cannot easily reappear.
+**3. Regression prevention.** Every bug fix MUST follow this order: (a) reproduce the bug with a failing test, (b) implement the fix, (c) verify the new test passes, (d) verify no existing tests broke. Never fix a bug without adding regression protection.
 
-**4. Business logic coverage.** Every new or modified business rule must be covered by automated tests, including: happy paths, edge cases, boundary values, invalid inputs, error handling, exception paths, authorization/permission rules, null and empty values, time-based behavior, and concurrent execution (when applicable).
+**4. Business logic coverage.** Every new or modified business rule must be covered by automated tests, including: happy paths, failure scenarios, edge cases, boundary values, invalid inputs, error handling, exception paths, authorization/permission rules, null and empty values, time-based behavior, state transitions, and concurrent execution / race conditions (when applicable).
 
 **5. Verify side effects.** After every implementation, verify the change does not unintentionally affect: backward compatibility, API compatibility, database behavior, event publishing/consumption, background jobs, caching, authentication & authorization, logging, error handling, performance.
 
 **6. Testing-first mindset.** Before implementing, explain which tests already exist, which should be added, and why each is necessary. After implementing, write/update the required tests and ensure existing tests still pass. Do not consider a task complete until the appropriate automated tests are included.
 
 **7. Completion checklist.** Every completed task must end with a report containing: Files Changed, Tests Added, Tests Updated, Test Types Covered, Scenarios Verified, Potential Risks, Recommended Future Tests (if any). Never state a task is complete unless the required tests have been implemented, or you explicitly explain why a particular test is unnecessary.
+
+### Test Execution & Completion Workflow
+
+At the end of every implementation, in order:
+
+1. Determine which test types the change requires (per the Test Pyramid).
+2. Implement or update those tests.
+3. Execute all affected tests — Unit, Integration, Widget, and any impacted E2E — plus static analysis (`flutter analyze` for the mobile app, analyzers/linters for .NET and the frontend).
+4. Investigate and fix the root cause of any failure — never work around it.
+5. Verify no regressions were introduced elsewhere in the suite.
+6. Only then consider the task complete.
+
+### Test Quality Standards
+
+Tests must be readable, deterministic, isolated/independent, fast, maintainable, and self-documenting (descriptive names; one behavior per test). Use Arrange-Act-Assert. Prefer factories/builders over large inline objects. Mock only external dependencies — never business logic; prefer real implementations in integration tests.
+
+Avoid: flaky tests, arbitrary sleeps/delays (await deterministic conditions instead), fragile/unstable selectors (use `data-testid` on web, `Key`/finder-by-type in Flutter), shared mutable state between tests, duplicated setup, and magic numbers.
+
+### Coverage Expectations
+
+Target meaningful coverage that protects business behavior — never write tests just to raise a percentage. Expected minimums: business logic and core services 90%+, state management (blocs/cubits) 90%+, repositories 80%+, critical user flows 100% via integration and/or E2E tests. Coverage numbers alone never indicate quality.
+
+### Mobile App Testing (`booksy-customer-app`)
+
+Run with `flutter analyze` (must be error-free) and `flutter test`. In addition to the general policy, validate whenever the change touches them:
+
+- **Navigation & deep links**: router redirects, per-tab back stacks, Android back behavior, return-to-intent (`test/config/routes/app_router_test.dart` is the pattern)
+- **Authentication**: OTP flow, session restore, guest gating, auth-state transitions
+- **Booking flows**: step transitions, selection preservation, slot-taken recovery, cancel/reschedule optimistic updates + rollback (see `test/features/booking/`, `test/features/bookings/`)
+- **Payments**: when payment flows land, they are critical-path — integration + E2E required
+- **State management**: every Bloc/Cubit gets dedicated tests — initial state, transitions, failure paths, retry behavior, race conditions (stale-result guards), unexpected user actions
+- **Widget rendering**: every reusable `core/widgets` component — rendering, interactions, disabled/loading/error states, accessibility labels, theming (see `test/core/widgets/widgets_test.dart`)
+- **Screen states**: loading skeleton / content / empty / error via `StateSwitcher`; pull-to-refresh
+- **Offline & network failures**: offline banner, fail-fast `NetworkFailure` mapping, retry logic
+- **Localization & RTL**: Persian strings from `AppStrings` only; RTL rendering; layouts must not break under LTR
+- **Accessibility**: semantics labels, ≥48dp touch targets, 1.3× font scale without overflow, reduced-motion (`disableAnimations`)
+- **Screen sizes & dark mode**: no overflow at small widths; when dark theme ships, both themes are tested
+- **App lifecycle**: state restoration and background/foreground transitions for flows holding in-progress state (e.g. the booking flow)
+- **Push notifications**: if/when added, cover receipt-driven navigation and permission states
+- **Performance-critical flows**: list scrolling with images, search debouncing — verify no jank-inducing rebuilds in hot paths
+
+Known constraint: `build_runner` codegen is currently broken (retrofit_generator/SDK incompatibility) — new services use manual JSON parsing and manual `get_it` registration in `core/di/injection.dart`; do not add `@JsonSerializable`/`@injectable` code that requires regeneration until the toolchain is fixed.
+
+### CI & Release Quality Gates
+
+Every Pull Request must leave the project in a releasable state:
+
+- No failing tests; no skipped critical tests; no ignored failures; no known-flaky tests merged.
+- Static analysis clean: `flutter analyze` (mobile), Roslyn analyzers/StyleCop (backend), ESLint (frontend). Fix warnings you introduce; never suppress diagnostics to silence them.
+- Security: no secrets in code or config committed to the repo; authorization rules covered by tests when auth-adjacent code changes; validate all external input at API boundaries.
+- Architecture: respect the existing layering (Clean Architecture / DDD boundaries; presentation → domain → data in Flutter). New code follows the established patterns of its module — deviations require an explicit, documented reason.
+- Performance: for changes on hot paths (queries, list rendering, event handlers), state the expected impact and verify it — no unbounded queries, no N+1s, no per-frame allocations in scroll paths.
+- Migrations remain idempotent; deploy gates (keystone E2E) must stay green.

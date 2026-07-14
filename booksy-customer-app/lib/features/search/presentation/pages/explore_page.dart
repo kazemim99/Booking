@@ -1,8 +1,21 @@
-import 'package:flutter/material.dart';
-import 'package:flutter_screenutil/flutter_screenutil.dart';
-import '../../../../config/theme/app_colors.dart';
-import '../../../../config/theme/app_text_styles.dart';
+import 'dart:async';
 
+import 'package:cached_network_image/cached_network_image.dart';
+import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:go_router/go_router.dart';
+
+import '../../../../config/routes/app_router.dart';
+import '../../../../config/theme/app_tokens.dart';
+import '../../../../core/constants/app_strings.dart';
+import '../../../../core/di/injection.dart';
+import '../../../../core/widgets/widgets.dart';
+import '../../../home/domain/entities/provider_summary.dart';
+import '../bloc/search_bloc.dart';
+
+/// Explore: debounced search-as-you-type over providers with category
+/// filter chips. Stale in-flight results never overwrite newer ones
+/// (guarded in SearchBloc).
 class ExplorePage extends StatefulWidget {
   const ExplorePage({super.key});
 
@@ -10,13 +23,11 @@ class ExplorePage extends StatefulWidget {
   State<ExplorePage> createState() => _ExplorePageState();
 }
 
-class _ExplorePageState extends State<ExplorePage> with SingleTickerProviderStateMixin {
-  late TabController _tabController;
-  final TextEditingController _searchController = TextEditingController();
+class _ExplorePageState extends State<ExplorePage> {
+  static const _debounce = Duration(milliseconds: 350);
 
-  // Categories matching the reference images
-  final List<String> _categories = [
-    'همه',
+  // Static category list until a categories-for-search endpoint exists.
+  static const List<String> _categories = [
     'آرایشگاه مردانه',
     'سالن زیبایی',
     'ماساژ',
@@ -25,184 +36,242 @@ class _ExplorePageState extends State<ExplorePage> with SingleTickerProviderStat
     'مراقبت از پوست',
   ];
 
+  late final SearchBloc _bloc;
+  final _searchController = TextEditingController();
+  Timer? _debounceTimer;
+  bool _initializedFromRoute = false;
+
   @override
   void initState() {
     super.initState();
-    _tabController = TabController(length: _categories.length, vsync: this);
+    _bloc = getIt<SearchBloc>();
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    if (_initializedFromRoute) return;
+    _initializedFromRoute = true;
+    // Deep link support: /explore?category=<name> (from home chips).
+    final category =
+        GoRouterState.of(context).uri.queryParameters['category'];
+    _bloc.add(SearchCategoryChanged(
+      category != null && _categories.contains(category) ? category : null,
+    ));
   }
 
   @override
   void dispose() {
-    _tabController.dispose();
+    _debounceTimer?.cancel();
     _searchController.dispose();
+    _bloc.close();
     super.dispose();
+  }
+
+  void _onQueryChanged(String value) {
+    _debounceTimer?.cancel();
+    _debounceTimer = Timer(_debounce, () {
+      _bloc.add(SearchQueryChanged(value));
+    });
+  }
+
+  Future<void> _onRefresh() {
+    _bloc.add(const SearchRetried());
+    return _bloc.stream
+        .firstWhere((s) => s.status != SearchStatus.loading)
+        .then((_) {});
   }
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: AppColors.background,
-      appBar: AppBar(
-        backgroundColor: AppColors.background,
-        elevation: 0,
-        toolbarHeight: 0,
-      ),
-      body: Column(
-        children: [
-          // Search Bar
-          Padding(
-            padding: EdgeInsets.fromLTRB(16.w, 16.h, 16.w, 12.h),
-            child: Container(
-              padding: EdgeInsets.symmetric(horizontal: 16.w, vertical: 2.h),
-              decoration: BoxDecoration(
-                color: AppColors.surface,
-                borderRadius: BorderRadius.circular(12.r),
-                border: Border.all(color: AppColors.border),
+    return BlocProvider.value(
+      value: _bloc,
+      child: Scaffold(
+        body: SafeArea(
+          child: Column(
+            children: [
+              Padding(
+                padding: const EdgeInsets.fromLTRB(
+                  AppSpacing.md,
+                  AppSpacing.md,
+                  AppSpacing.md,
+                  AppSpacing.sm,
+                ),
+                child: AppTextField(
+                  controller: _searchController,
+                  hint: AppStrings.searchPlaceholder,
+                  prefixIcon: Icons.search,
+                  keyboardType: TextInputType.text,
+                  onChanged: _onQueryChanged,
+                ),
               ),
-              child: Row(
-                children: [
-                  Icon(
-                    Icons.search,
-                    color: AppColors.textSecondary,
-                    size: 20.w,
-                  ),
-                  SizedBox(width: 12.w),
-                  Expanded(
-                    child: TextField(
-                      controller: _searchController,
-                      decoration: InputDecoration(
-                        hintText: 'جستجوی سالن، آرایشگاه، خدمات زیبایی...',
-                        hintStyle: AppTextStyles.body.copyWith(
-                          color: AppColors.textTertiary,
-                        ),
-                        border: InputBorder.none,
-                        contentPadding: EdgeInsets.symmetric(vertical: 12.h),
+              SizedBox(
+                height: 44,
+                child: BlocBuilder<SearchBloc, SearchState>(
+                  buildWhen: (prev, next) => prev.category != next.category,
+                  builder: (context, state) {
+                    return ListView.separated(
+                      scrollDirection: Axis.horizontal,
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: AppSpacing.md,
                       ),
-                      style: AppTextStyles.body,
+                      itemCount: _categories.length + 1,
+                      separatorBuilder: (_, __) =>
+                          const SizedBox(width: AppSpacing.xs),
+                      itemBuilder: (context, index) {
+                        if (index == 0) {
+                          return ChoiceChip(
+                            label: const Text(AppStrings.allCategories),
+                            selected: state.category == null,
+                            onSelected: (_) => _bloc
+                                .add(const SearchCategoryChanged(null)),
+                          );
+                        }
+                        final category = _categories[index - 1];
+                        return ChoiceChip(
+                          label: Text(category),
+                          selected: state.category == category,
+                          onSelected: (_) =>
+                              _bloc.add(SearchCategoryChanged(category)),
+                        );
+                      },
+                    );
+                  },
+                ),
+              ),
+              const SizedBox(height: AppSpacing.xs),
+              Expanded(
+                child: BlocBuilder<SearchBloc, SearchState>(
+                  builder: (context, state) {
+                    return StateSwitcher(
+                      status: switch (state.status) {
+                        SearchStatus.loading => ViewStatus.loading,
+                        SearchStatus.loaded => ViewStatus.content,
+                        SearchStatus.empty => ViewStatus.empty,
+                        SearchStatus.error => ViewStatus.error,
+                      },
+                      skeleton: Padding(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: AppSpacing.md,
+                        ),
+                        child: SkeletonLoader.list(items: 4, itemHeight: 104),
+                      ),
+                      errorMessage: state.errorMessage,
+                      onRetry: () => _bloc.add(const SearchRetried()),
+                      empty: EmptyState(
+                        icon: Icons.search_off,
+                        title: AppStrings.noResultsTitle,
+                        subtitle: AppStrings.noResultsSubtitle,
+                        ctaLabel: AppStrings.clearFilters,
+                        onCta: () {
+                          _searchController.clear();
+                          _bloc.add(const SearchCleared());
+                        },
+                      ),
+                      contentBuilder: (context) => RefreshIndicator(
+                        onRefresh: _onRefresh,
+                        child: ListView.separated(
+                          physics: const AlwaysScrollableScrollPhysics(),
+                          padding: const EdgeInsets.fromLTRB(
+                            AppSpacing.md,
+                            AppSpacing.xs,
+                            AppSpacing.md,
+                            AppSpacing.md,
+                          ),
+                          itemCount: state.results.length,
+                          separatorBuilder: (_, __) =>
+                              const SizedBox(height: AppSpacing.sm),
+                          itemBuilder: (context, index) =>
+                              _ResultCard(provider: state.results[index]),
+                        ),
+                      ),
+                    );
+                  },
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _ResultCard extends StatelessWidget {
+  final ProviderSummary provider;
+
+  const _ResultCard({required this.provider});
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return AppCard(
+      padding: EdgeInsets.zero,
+      semanticLabel: provider.name,
+      onTap: () => context.push(Routes.providerDetail(provider.id)),
+      child: Row(
+        children: [
+          SizedBox(
+            width: 96,
+            height: 96,
+            child: provider.imageUrl != null
+                ? CachedNetworkImage(
+                    imageUrl: provider.imageUrl!,
+                    fit: BoxFit.cover,
+                    placeholder: (_, __) => SkeletonLoader(
+                      child: SkeletonLoader.box(height: 96, radius: 0),
                     ),
+                    errorWidget: (_, __, ___) => _placeholder(theme),
+                  )
+                : _placeholder(theme),
+          ),
+          Expanded(
+            child: Padding(
+              padding: const EdgeInsets.all(AppSpacing.sm),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    provider.name,
+                    style: theme.textTheme.titleSmall,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
                   ),
+                  const SizedBox(height: AppSpacing.xxs),
+                  Row(
+                    children: [
+                      const Icon(Icons.star, size: 14, color: Colors.amber),
+                      const SizedBox(width: AppSpacing.xxs),
+                      Text(
+                        provider.rating.toStringAsFixed(1),
+                        style: theme.textTheme.bodySmall,
+                      ),
+                      const SizedBox(width: AppSpacing.xxs),
+                      Text(
+                        '(${provider.reviewCount})',
+                        style: theme.textTheme.bodySmall,
+                      ),
+                    ],
+                  ),
+                  if (provider.distance != null) ...[
+                    const SizedBox(height: AppSpacing.xxs),
+                    Row(
+                      children: [
+                        Icon(
+                          Icons.location_on_outlined,
+                          size: 14,
+                          color: theme.colorScheme.onSurfaceVariant,
+                        ),
+                        const SizedBox(width: AppSpacing.xxs),
+                        Text(
+                          '${provider.distance!.toStringAsFixed(1)} کیلومتر',
+                          style: theme.textTheme.bodySmall,
+                        ),
+                      ],
+                    ),
+                  ],
                 ],
               ),
-            ),
-          ),
-          // Location and Date Filters (Side by Side)
-          Padding(
-            padding: EdgeInsets.symmetric(horizontal: 16.w),
-            child: Row(
-              children: [
-                // Location Filter
-                Expanded(
-                  child: GestureDetector(
-                    onTap: () {
-                      // TODO: Show location picker
-                    },
-                    child: Container(
-                      padding: EdgeInsets.symmetric(horizontal: 12.w, vertical: 12.h),
-                      decoration: BoxDecoration(
-                        color: AppColors.surface,
-                        borderRadius: BorderRadius.circular(12.r),
-                        border: Border.all(color: AppColors.border),
-                      ),
-                      child: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Icon(
-                            Icons.location_on_outlined,
-                            color: AppColors.textSecondary,
-                            size: 18.w,
-                          ),
-                          SizedBox(width: 6.w),
-                          Expanded(
-                            child: Text(
-                              'کجا؟',
-                              style: AppTextStyles.body.copyWith(
-                                color: AppColors.textSecondary,
-                              ),
-                              overflow: TextOverflow.ellipsis,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
-                ),
-                SizedBox(width: 12.w),
-                // Date Filter (Persian Calendar)
-                Expanded(
-                  child: GestureDetector(
-                    onTap: () {
-                      // TODO: Show Persian date picker
-                    },
-                    child: Container(
-                      padding: EdgeInsets.symmetric(horizontal: 12.w, vertical: 12.h),
-                      decoration: BoxDecoration(
-                        color: AppColors.surface,
-                        borderRadius: BorderRadius.circular(12.r),
-                        border: Border.all(color: AppColors.border),
-                      ),
-                      child: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Icon(
-                            Icons.calendar_today_outlined,
-                            color: AppColors.textSecondary,
-                            size: 18.w,
-                          ),
-                          SizedBox(width: 6.w),
-                          Expanded(
-                            child: Text(
-                              'کی؟',
-                              style: AppTextStyles.body.copyWith(
-                                color: AppColors.textSecondary,
-                              ),
-                              overflow: TextOverflow.ellipsis,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ),
-          SizedBox(height: 16.h),
-          // Category Tabs (No Icons)
-          Container(
-            decoration: BoxDecoration(
-              color: AppColors.background,
-              border: Border(
-                bottom: BorderSide(
-                  color: AppColors.border,
-                  width: 1,
-                ),
-              ),
-            ),
-            child: TabBar(
-              controller: _tabController,
-              isScrollable: true,
-              labelColor: AppColors.primary,
-              unselectedLabelColor: AppColors.textSecondary,
-              labelStyle: AppTextStyles.body.copyWith(
-                fontWeight: FontWeight.w600,
-              ),
-              unselectedLabelStyle: AppTextStyles.body,
-              indicatorColor: AppColors.primary,
-              indicatorWeight: 2.5,
-              tabs: _categories.map((category) {
-                return Tab(
-                  text: category,
-                );
-              }).toList(),
-            ),
-          ),
-          // Content Area
-          Expanded(
-            child: TabBarView(
-              controller: _tabController,
-              children: _categories.map((category) {
-                return _buildCategoryContent(category);
-              }).toList(),
             ),
           ),
         ],
@@ -210,37 +279,12 @@ class _ExplorePageState extends State<ExplorePage> with SingleTickerProviderStat
     );
   }
 
-  Widget _buildCategoryContent(String category) {
-    // Empty state for now
-    return Center(
-      child: Padding(
-        padding: EdgeInsets.all(24.w),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(
-              Icons.search_off,
-              size: 64.w,
-              color: AppColors.textTertiary,
-            ),
-            SizedBox(height: 16.h),
-            Text(
-              'نتیجه‌ای یافت نشد',
-              style: AppTextStyles.h3.copyWith(
-                color: AppColors.textSecondary,
-              ),
-            ),
-            SizedBox(height: 8.h),
-            Text(
-              'فیلترها یا کلمات جستجو را تغییر دهید',
-              style: AppTextStyles.body.copyWith(
-                color: AppColors.textTertiary,
-              ),
-              textAlign: TextAlign.center,
-            ),
-          ],
+  Widget _placeholder(ThemeData theme) => Container(
+        color: theme.colorScheme.surfaceContainerHighest,
+        child: Icon(
+          Icons.storefront_outlined,
+          size: 28,
+          color: theme.colorScheme.onSurfaceVariant,
         ),
-      ),
-    );
-  }
+      );
 }

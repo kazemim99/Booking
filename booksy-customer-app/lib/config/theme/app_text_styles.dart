@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'app_colors.dart';
 
-/// Typography system using Vazir Persian font
-/// Responsive sizing with ScreenUtil
+/// Typography system using Vazir Persian font.
+///
+/// Sizes are fixed logical pixels (no ScreenUtil `.sp`) so text respects the
+/// OS font-scale setting via MediaQuery.textScaler. Use `.w/.h/.r` for layout
+/// only, never for text.
 class AppTextStyles {
   AppTextStyles._();
 
@@ -17,91 +19,91 @@ class AppTextStyles {
   static const FontWeight bold = FontWeight.w700;
 
   // Heading styles
-  static TextStyle h1 = TextStyle(
+  static const TextStyle h1 = TextStyle(
     fontFamily: fontFamily,
-    fontSize: 28.sp,
+    fontSize: 28,
     fontWeight: bold,
     color: AppColors.textPrimary,
     height: 1.2,
   );
 
-  static TextStyle h2 = TextStyle(
+  static const TextStyle h2 = TextStyle(
     fontFamily: fontFamily,
-    fontSize: 22.sp,
+    fontSize: 22,
     fontWeight: semibold,
     color: AppColors.textPrimary,
     height: 1.3,
   );
 
-  static TextStyle h3 = TextStyle(
+  static const TextStyle h3 = TextStyle(
     fontFamily: fontFamily,
-    fontSize: 18.sp,
-    fontWeight: bold, // Increased from semibold for stronger hierarchy
+    fontSize: 18,
+    fontWeight: bold,
     color: AppColors.textPrimary,
     height: 1.4,
   );
 
   // Body styles
-  static TextStyle body = TextStyle(
+  static const TextStyle body = TextStyle(
     fontFamily: fontFamily,
-    fontSize: 16.sp,
+    fontSize: 16,
     fontWeight: regular,
     color: AppColors.textPrimary,
     height: 1.5,
   );
 
-  static TextStyle bodyMedium = TextStyle(
+  static const TextStyle bodyMedium = TextStyle(
     fontFamily: fontFamily,
-    fontSize: 16.sp,
+    fontSize: 16,
     fontWeight: medium,
     color: AppColors.textPrimary,
     height: 1.5,
   );
 
-  static TextStyle bodySemibold = TextStyle(
+  static const TextStyle bodySemibold = TextStyle(
     fontFamily: fontFamily,
-    fontSize: 16.sp,
+    fontSize: 16,
     fontWeight: semibold,
     color: AppColors.textPrimary,
     height: 1.5,
   );
 
   // Caption and helper text
-  static TextStyle caption = TextStyle(
+  static const TextStyle caption = TextStyle(
     fontFamily: fontFamily,
-    fontSize: 14.sp,
+    fontSize: 14,
     fontWeight: regular,
     color: AppColors.textSecondary,
     height: 1.4,
   );
 
-  static TextStyle captionMedium = TextStyle(
+  static const TextStyle captionMedium = TextStyle(
     fontFamily: fontFamily,
-    fontSize: 14.sp,
+    fontSize: 14,
     fontWeight: medium,
     color: AppColors.textSecondary,
     height: 1.4,
   );
 
-  static TextStyle small = TextStyle(
+  static const TextStyle small = TextStyle(
     fontFamily: fontFamily,
-    fontSize: 12.sp,
+    fontSize: 12,
     fontWeight: regular,
     color: AppColors.textTertiary,
     height: 1.3,
   );
 
   // Button text
-  static TextStyle button = TextStyle(
+  static const TextStyle button = TextStyle(
     fontFamily: fontFamily,
-    fontSize: 16.sp,
+    fontSize: 16,
     fontWeight: semibold,
     height: 1.2,
   );
 
-  static TextStyle buttonSmall = TextStyle(
+  static const TextStyle buttonSmall = TextStyle(
     fontFamily: fontFamily,
-    fontSize: 14.sp,
+    fontSize: 14,
     fontWeight: medium,
     height: 1.2,
   );

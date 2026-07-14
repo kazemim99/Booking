@@ -22,13 +22,26 @@ class AppColors {
   static const Color textPrimary = Color(0xFF1A202C); // rgba(0,0,0,0.87) equivalent
   static const Color textPrimaryDark = Color(0xFFF7FAFC);
   static const Color textSecondary = Color(0xFF4A5568); // Darker for better contrast (was #718096)
-  static const Color textTertiary = Color(0xFF718096); // Adjusted for placeholders/disabled
+  static const Color textTertiary = Color(0xFF667085); // 4.77:1 on background — WCAG AA for normal text
 
-  // Semantic Colors (minimal, functional only)
+  // Semantic Colors — base tones for icons and large UI elements (≥3:1)
   static const Color success = Color(0xFF059669); // Green - booking confirmed
   static const Color warning = Color(0xFFD97706); // Amber - reminders
   static const Color error = Color(0xFFDC2626); // Red - errors, cancellations
   static const Color info = Color(0xFF0284C7); // Blue - informational
+
+  // Semantic text variants — ≥4.5:1 on white and on their tint backgrounds.
+  // Use these (not the base tones) whenever semantic color carries text.
+  static const Color successText = Color(0xFF047857);
+  static const Color warningText = Color(0xFFB45309);
+  static const Color errorText = Color(0xFFB91C1C);
+  static const Color infoText = Color(0xFF0369A1);
+
+  // Semantic tint backgrounds (badges, banners)
+  static const Color successTint = Color(0xFFECFDF5);
+  static const Color warningTint = Color(0xFFFFFBEB);
+  static const Color errorTint = Color(0xFFFEF2F2);
+  static const Color infoTint = Color(0xFFF0F9FF);
 
   // Transparent overlays
   static const Color overlay = Color(0x33000000); // 20% black
