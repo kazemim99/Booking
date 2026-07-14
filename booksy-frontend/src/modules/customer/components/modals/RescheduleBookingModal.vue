@@ -70,6 +70,7 @@
               :key="slot.startTime"
               class="time-slot"
               :class="{ selected: selectedSlot?.startTime === slot.startTime }"
+              data-testid="reschedule-slot-option"
               @click="selectSlot(slot)"
             >
               <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
@@ -134,6 +135,7 @@
           @click="handleConfirm"
           class="btn btn-primary"
           :disabled="loading || !selectedSlot"
+          data-testid="reschedule-confirm"
         >
           <span v-if="loading" class="spinner-small"></span>
           <span v-else>تأیید تغییر زمان</span>

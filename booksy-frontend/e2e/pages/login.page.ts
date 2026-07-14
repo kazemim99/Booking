@@ -45,4 +45,16 @@ export class LoginPage {
     // OTP we land on an authenticated page — assert we left both auth routes.
     await expect(this.page).not.toHaveURL(/login|phone-verification/)
   }
+
+  /**
+   * The logged-in user's access token (auth.store.ts persists it to localStorage as
+   * "access_token"). Used to seed API-side state that must belong to exactly this
+   * browser session's identity, sidestepping any phone-normalization mismatch between
+   * the UI login and a separately-seeded API identity.
+   */
+  async accessToken(): Promise<string> {
+    const token = await this.page.evaluate(() => localStorage.getItem('access_token'))
+    if (!token) throw new Error('No access_token in localStorage — is the user logged in?')
+    return token
+  }
 }

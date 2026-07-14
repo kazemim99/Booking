@@ -49,11 +49,12 @@
               <p class="empty-description">هنوز هیچ نوبت آینده‌ای رزرو نکرده‌اید</p>
             </div>
 
-            <div v-else class="bookings-list">
+            <div v-else class="bookings-list" data-testid="sidebar-bookings-list">
               <div
                 v-for="booking in upcomingBookings"
                 :key="booking.bookingId"
                 class="booking-card"
+                data-testid="sidebar-booking-row"
               >
                 <div class="booking-header">
                   <div class="booking-status" :class="booking.statusColor">
@@ -85,6 +86,7 @@
                     v-if="booking.canReschedule"
                     @click="handleRescheduleBooking(booking)"
                     class="btn-reschedule"
+                    data-testid="booking-reschedule-button"
                   >
                     تغییر زمان
                   </button>

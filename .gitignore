@@ -361,7 +361,11 @@ MigrationBackup/
 
 # Fody - auto-generated XML schema
 FodyWeavers.xsd
-/src/BoundedContexts/ServiceCatalog/Booksy.ServiceCatalog.Api/wwwroot/uploads/providers
+
+# User-uploaded files (provider gallery/logo/profile images) — runtime-generated,
+# not source; committing them bloats the repo with redundant local-dev test uploads.
+src/**/wwwroot/uploads/
+
 /nul
 
 # Docusaurus

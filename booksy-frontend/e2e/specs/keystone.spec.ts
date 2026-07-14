@@ -1,24 +1,28 @@
 import { test, expect } from '../fixtures/test-base'
 import { LoginPage } from '../pages/login.page'
-import { BookingFlowPage } from '../pages/booking.page'
-import { seedBookableProvider, type SeededProvider } from '../utils/api-seed'
+import { BookingFlowPage, MyBookingsPage } from '../pages/booking.page'
+import { seedBookingWithToken } from '../utils/api-seed'
+import { readSharedSeed } from '../utils/seed-fixture'
 import { newCustomerIdentity } from '../utils/identity'
 
 /**
  * Keystone UI E2E against the REAL backend, with sandbox auth
  * (OTP_SANDBOX_CODE + Sms:SandboxMode). See e2e/README.md to run.
  *
+ * Uses the provider seeded once for the whole run by global-setup.ts (see
+ * utils/seed-fixture.ts) rather than seeding its own.
+ *
  * GREEN:
  *  - Customer OTP sign-in through the real Vue login flow.
  *  - The customer provider-detail screen rendering REAL backend data (this screen
  *    used to be hardcoded mock data; ProviderDetailView is now wired to
  *    providerService.getProviderById + serviceService.getServicesByProvider).
- *
- * SKIPPED (documented): My Bookings list + cancel. With a booking seeded for the
- * logged-in customer's own token, GET /Bookings/my-bookings still renders empty in
- * the UI even though the backend filter (StartTime >= from) should include it —
- * needs a focused param-binding / query investigation. The Page Objects + the
- * seedBookingWithToken helper are in place for when that's fixed.
+ *  - My Bookings list + cancel: was previously skipped ("renders empty despite a
+ *    seeded booking") — root-caused to the `GET /Bookings/my-bookings` `from`/`to`
+ *    query params binding as `DateTime` (silently reinterpreted as local server
+ *    time instead of UTC) and its pagination binding to the wrong query-string
+ *    names (`page`/`size` instead of the `pageNumber`/`pageSize` the frontend
+ *    sends). Fixed in BookingsController.GetMyBookings.
  */
 test.describe.configure({ mode: 'serial' })
 
@@ -30,13 +34,8 @@ test('customer can sign in with OTP (real backend)', async ({ page }) => {
 })
 
 test.describe('Customer provider detail (real backend data)', () => {
-  let seeded: SeededProvider
+  const seeded = readSharedSeed()
   const suffixName = 'E2E Salon'
-
-  test.beforeAll(async () => {
-    test.setTimeout(180_000)
-    seeded = await seedBookableProvider()
-  })
 
   test('shows the seeded provider and its services (not mock data)', async ({ page }) => {
     test.setTimeout(90_000)
@@ -53,7 +52,22 @@ test.describe('Customer provider detail (real backend data)', () => {
   })
 })
 
-test.describe('Customer My Bookings (UI) — skipped: list renders empty despite seeded booking', () => {
-  test.skip('customer sees a seeded booking in My Bookings', async () => {})
-  test.skip('customer cancels a booking from My Bookings', async () => {})
+test.describe('Customer My Bookings (UI)', () => {
+  const seeded = readSharedSeed()
+
+  test('customer sees a seeded booking in My Bookings and cancels it', async ({ page }) => {
+    test.setTimeout(120_000)
+    const login = new LoginPage(page)
+    await login.loginAs('customer', newCustomerIdentity())
+
+    // Seed the booking against this exact browser session's token/identity, not a
+    // separately-generated one — sidesteps any phone-normalization mismatch.
+    const token = await login.accessToken()
+    await seedBookingWithToken(token, seeded)
+
+    const myBookings = new MyBookingsPage(page)
+    await myBookings.open()
+    await myBookings.expectHasBooking()
+    await myBookings.cancelFirst()
+  })
 })

@@ -142,9 +142,12 @@ public class BookingsController : ControllerBase
     /// Gets bookings for the current customer
     /// </summary>
     /// <param name="status">Optional status filter</param>
-    /// <param name="from">Optional start date filter</param>
-    /// <param name="to">Optional end date filter</param>
-    /// <param name="pagination">Pagination parameters (page number and size)</param>
+    /// <param name="from">Optional start date filter (ISO 8601, e.g. with a "Z"/offset suffix)</param>
+    /// <param name="to">Optional end date filter (ISO 8601, e.g. with a "Z"/offset suffix)</param>
+    /// <param name="pageNumber">Page number (starts from 1)</param>
+    /// <param name="pageSize">Items per page</param>
+    /// <param name="sort">Sort field (currently only "StartTime" is honored; reserved for future use)</param>
+    /// <param name="sortDesc">Sort descending</param>
     /// <param name="cancellationToken">Cancellation token</param>
     /// <returns>Paginated list of customer bookings with enriched data</returns>
     /// <response code="200">Bookings retrieved successfully</response>
@@ -155,9 +158,12 @@ public class BookingsController : ControllerBase
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     public async Task<ActionResult<PagedResult<CustomerBookingDto>>> GetMyBookings(
         [FromQuery] string? status = null,
-        [FromQuery] DateTime? from = null,
-        [FromQuery] DateTime? to = null,
-        [FromQuery] PaginationRequest? pagination = null,
+        [FromQuery] DateTimeOffset? from = null,
+        [FromQuery] DateTimeOffset? to = null,
+        [FromQuery] int pageNumber = 1,
+        [FromQuery] int pageSize = 20,
+        [FromQuery] string? sort = null,
+        [FromQuery] bool sortDesc = false,
         CancellationToken cancellationToken = default)
     {
         var customerId = GetCurrentUserId();
@@ -166,13 +172,26 @@ public class BookingsController : ControllerBase
             return Unauthorized();
         }
 
+        // Bind from/to as DateTimeOffset (unambiguous UTC parsing of a "Z"/offset-suffixed ISO 8601
+        // string) and convert to UTC before filtering — binding these directly as DateTime silently
+        // reinterpreted a UTC "Z" query value as local server time (Kind=Local), which is wrong
+        // wherever the process's local time zone isn't UTC.
+        // The frontend sends pageNumber/pageSize (matching every other paginated endpoint in this
+        // app) — PaginationRequest's page/size FromQuery names don't match that convention, so it's
+        // constructed explicitly here instead of bound as a complex [FromQuery] object.
         var query = new GetCustomerBookingsQuery(
             CustomerId: Guid.Parse(customerId),
             Status: status,
-            FromDate: from,
-            ToDate: to)
+            FromDate: from?.UtcDateTime,
+            ToDate: to?.UtcDateTime)
         {
-            Pagination = pagination ?? PaginationRequest.Default
+            Pagination = new PaginationRequest
+            {
+                PageNumber = pageNumber,
+                PageSize = pageSize,
+                Sort = sort ?? "StartTime",
+                SortDescending = sortDesc,
+            }
         };
 
         var result = await _mediator.Send(query, cancellationToken);

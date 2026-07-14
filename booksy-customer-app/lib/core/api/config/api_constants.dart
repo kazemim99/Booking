@@ -1,22 +1,29 @@
+import 'package:flutter/foundation.dart' show kIsWeb, defaultTargetPlatform, TargetPlatform;
+
 /// API Constants
 /// Centralized configuration for API endpoints and settings
 class ApiConstants {
   // Prevent instantiation
   ApiConstants._();
 
-  // Base URLs
-  // Using Android Emulator IP (10.0.2.2) for VPN compatibility
-  // 10.0.2.2 is a special alias to host machine's localhost
-  // This works regardless of VPN status on the host machine
+  // Base URL, resolved per-platform:
+  // - Web (Chrome, etc.): 'localhost' resolves directly to the host machine.
+  // - Android Emulator: 10.0.2.2 is a special alias to the host machine's localhost
+  //   (works regardless of VPN status on the host).
+  // - iOS Simulator / desktop: 'localhost' resolves directly to the host machine.
   //
   // Alternatives:
   // - Physical Device: Use 'http://192.168.1.x:5000' (replace with your PC's IP)
   // - Production: Use 'http://napstar.ir'
-  static const String baseUrl = 'http://10.0.2.2:5000'; // Android Emulator - works with VPN
+  static String get baseUrl {
+    if (kIsWeb) return 'http://localhost:5000';
+    if (defaultTargetPlatform == TargetPlatform.android) return 'http://10.0.2.2:5000';
+    return 'http://localhost:5000';
+  }
 
   // Microservice URLs
-  static const String userManagementBaseUrl = '$baseUrl/api';
-  static const String serviceCatalogBaseUrl = '$baseUrl/api';
+  static String get userManagementBaseUrl => '$baseUrl/api';
+  static String get serviceCatalogBaseUrl => '$baseUrl/api';
 
   // API Version
   static const String apiVersion = 'v1';

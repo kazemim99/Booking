@@ -19,6 +19,7 @@ const isCI = !!process.env.CI
 
 export default defineConfig({
   testDir: './e2e/specs',
+  globalSetup: './e2e/global-setup.ts',
   outputDir: './test-results',
   fullyParallel: true,
   forbidOnly: isCI,

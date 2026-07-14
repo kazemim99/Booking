@@ -1,7 +1,7 @@
 <template>
   <div class="user-menu" v-click-outside="closeMenu">
     <!-- User Button -->
-    <button class="user-button" :class="roleThemeClass" @click="toggleMenu" aria-label="User Menu">
+    <button class="user-button" :class="roleThemeClass" @click="toggleMenu" aria-label="User Menu" data-testid="user-menu-toggle">
       <img v-if="user?.avatarUrl" :src="user.avatarUrl" :alt="user.fullName" class="user-avatar" />
       <div v-else class="user-avatar-placeholder" :style="{ background: userColor }">
         {{ userInitials }}
@@ -50,6 +50,7 @@
               :to="item.path"
               class="menu-link"
               :class="{ 'has-badge': item.badge }"
+              :data-testid="`user-menu-item-${item.id}`"
               @click="closeMenu"
             >
               <span class="menu-icon" v-html="item.icon"></span>
@@ -62,6 +63,7 @@
               v-else-if="item.action"
               class="menu-link menu-button"
               :class="[{ 'has-badge': item.badge }, item.variant === 'danger' ? 'danger' : '']"
+              :data-testid="`user-menu-item-${item.id}`"
               @click="handleMenuItemClick(item)"
             >
               <span class="menu-icon" v-html="item.icon"></span>

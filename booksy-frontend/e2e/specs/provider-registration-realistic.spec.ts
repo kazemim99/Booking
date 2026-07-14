@@ -48,11 +48,25 @@ test('realistic: provider onboards with map pin, custom hours, gallery, back-edi
  * Pick a MAIN gallery image. Skipped — the 3 images uploaded during onboarding DO
  * persist (provider_gallery_images has 3 rows, step-7/gallery → 200 after the
  * multipart fix), but the dashboard gallery (/provider/gallery) renders empty for a
- * freshly-registered provider, so there's nothing to set as primary. That's a real
- * frontend loading bug (data present, not displayed). Un-skip once the dashboard
- * gallery loads the provider's images; the set-main flow itself is wired below.
+ * freshly-registered provider, so there's nothing to set as primary.
+ *
+ * Root-caused (not a gallery bug specifically): GalleryView loads via
+ * providerStore.loadCurrentProvider(), which reads providerId from the JWT. A
+ * freshly-registered provider's ORIGINAL token (minted before registration) has no
+ * providerId claim, so the frontend calls POST /Providers/current/refresh-token to
+ * get a reissued one — but that endpoint makes an HTTP self-call to the retired
+ * standalone UserManagement service (`Services:UserManagement:BaseUrl`, default
+ * http://localhost:5001), which no longer exists in the modular monolith. This is
+ * the same issue COMPLETION_ROADMAP.md Epic 1.1 already tracks as a TODO ("the
+ * refresh-token endpoint is broken in the monolith"). Fixing it means replacing
+ * that HTTP call with an in-process call into UserManagement's token issuance
+ * (IJwtTokenService) — ServiceCatalog.Api doesn't currently reference
+ * UserManagement.Application, so this needs a proper cross-context abstraction
+ * (e.g. a shared interface both contexts wire up in Booksy.Host), not a quick
+ * patch, and is out of scope for this e2e-hardening change. Un-skip once Epic 1.1
+ * lands; the set-main flow itself is wired below.
  */
-test.skip('gallery: set a main image (blocked: dashboard gallery renders empty)', async ({ page }) => {
+test.skip('gallery: set a main image (blocked: COMPLETION_ROADMAP Epic 1.1 refresh-token bug)', async ({ page }) => {
   await page.goto('/provider/gallery')
   const firstCard = page.locator('.image-card').first()
   await firstCard.hover()

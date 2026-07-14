@@ -19,6 +19,11 @@
 #
 # USAGE:  BASE=http://localhost:5050 bash tests/e2e/keystone-booking-flow.sh
 # Exit 0 = all assertions passed; non-zero = first failure.
+#
+# PREFLIGHT_ONLY=1 runs a fast subset only (health check + one provider OTP login
+# round-trip) and exits before the full flow — used by the Playwright suite's
+# global-setup to fail fast (seconds, not minutes) when the environment is down or
+# misconfigured, instead of letting individual browser tests time out against it.
 # =============================================================================
 set -euo pipefail
 
@@ -53,6 +58,19 @@ auth() {
   TOKEN=$(jget /tmp/k_auth.json accessToken); USERID=$(jget /tmp/k_auth.json userId)
   [ -n "$TOKEN" ] || fail "$kind token empty"
 }
+
+if [ "${PREFLIGHT_ONLY:-0}" = "1" ]; then
+  say "Preflight: host health check"
+  code=$(curl -s -o /dev/null -w '%{http_code}' "$BASE/health" || echo 000)
+  [ "$code" = "200" ] && ok "GET /health -> 200" || fail "GET /health -> HTTP $code (is the host running on $BASE?)"
+
+  say "Preflight: sandbox OTP login round-trip"
+  auth provider "$PPHONE"
+  ok "provider OTP login -> token issued"
+
+  printf '\n\033[1;32mPREFLIGHT PASSED — environment is up and sandbox auth works.\033[0m\n'
+  exit 0
+fi
 
 say "1) Provider signs up + registers (auto-approved Active)"
 auth provider "$PPHONE"; PTOK=$TOKEN; POWNER=$USERID
