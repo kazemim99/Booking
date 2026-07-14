@@ -1,0 +1,11 @@
+# Test configuration.
+#
+# The `live` tag marks tests that require a RUNNING backend on
+# http://localhost:5000 started with OTP_SANDBOX_CODE=123456.
+# They are skipped by default so `flutter test` (and CI) stays hermetic.
+#
+#   flutter test                                  # unit/widget only (hermetic)
+#   flutter test --tags live --run-skipped        # include the live E2E
+tags:
+  live:
+    skip: "Requires a running backend. Run: flutter test --tags live --run-skipped"
