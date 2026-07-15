@@ -33,7 +33,34 @@ namespace Booksy.ServiceCatalog.Infrastructure.Persistence.Repositories
 
         public async Task UpdateBookingAsync(Booking booking, CancellationToken cancellationToken = default)
         {
-            Context.Update(booking);
+            // The aggregate is normally loaded tracked (GetByIdAsync): change
+            // tracking already detects modifications and marks newly added
+            // children as Added. Calling Context.Update() on a tracked graph
+            // forces EVERY reachable entity to Modified — including brand-new
+            // BookingHistoryEntry rows (client-generated Guid keys), which then
+            // execute as UPDATEs affecting 0 rows and throw
+            // DbUpdateConcurrencyException on every booking mutation.
+            if (Context.Entry(booking).State == EntityState.Detached)
+            {
+                Context.Update(booking);
+            }
+
+            // History is an append-only, immutable child collection. New
+            // entries carry client-generated Guid keys, so EF's navigation
+            // discovery assumes they are EXISTING rows and marks them
+            // Modified — the resulting UPDATE matches 0 rows and every
+            // booking mutation throws DbUpdateConcurrencyException. Existing
+            // entries are only ever tracked Unchanged (never edited), so any
+            // Modified history entry is necessarily a new one.
+            Context.ChangeTracker.DetectChanges();
+            foreach (var entry in Context.ChangeTracker.Entries<BookingHistoryEntry>())
+            {
+                if (entry.State == EntityState.Modified)
+                {
+                    entry.State = EntityState.Added;
+                }
+            }
+
             await Task.CompletedTask;
         }
 

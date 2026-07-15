@@ -75,8 +75,11 @@ public class BookingPolicyTests
         Assert.Equal(24, policy.CancellationWindowHours);
         Assert.Equal(50, policy.CancellationFeePercentage);
         Assert.True(policy.AllowRescheduling);
-        Assert.True(policy.RequireDeposit);
-        Assert.Equal(20, policy.DepositPercentage);
+        // The default policy must not demand a deposit while the product has
+        // no payment flow — otherwise default-policy bookings can never be
+        // confirmed (regression: BOOKING_DEPOSIT_NOT_PAID on every confirm).
+        Assert.False(policy.RequireDeposit);
+        Assert.Equal(0, policy.DepositPercentage);
     }
 
     [Fact]

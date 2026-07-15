@@ -695,7 +695,7 @@ POST /api/v1/Bookings/{id}/cancel
 ```json
 {
   "reason": "string",
-  "cancelledBy": "string"
+  "cancelledBy": "string (guid — the cancelling USER id; non-guid values fail body binding)"
 }
 ```
 

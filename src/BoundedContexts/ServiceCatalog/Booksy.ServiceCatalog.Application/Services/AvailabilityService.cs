@@ -420,8 +420,6 @@ namespace Booksy.ServiceCatalog.Application.Services
         {
             var availableSlots = new List<AvailableTimeSlot>();
 
-            // Start from the open time
-            var currentTime = openTime;
             var serviceDurationMinutes = serviceDuration.Value;
 
             // Get existing bookings for this individual provider on this date
@@ -438,9 +436,10 @@ namespace Booksy.ServiceCatalog.Application.Services
                 .Where(b => b.Status == BookingStatus.Confirmed || b.Status == BookingStatus.Requested)
                 .ToList();
 
-            while (currentTime.AddMinutes(serviceDurationMinutes) <= closeTime)
+            foreach (var minuteOfDay in EnumerateSlotStartMinutes(
+                openTime, closeTime, (int)serviceDurationMinutes, DefaultSlotIntervalMinutes))
             {
-                var slotStart = date.Date.Add(currentTime.ToTimeSpan());
+                var slotStart = date.Date.AddMinutes(minuteOfDay);
                 var slotEnd = slotStart.AddMinutes(serviceDurationMinutes);
 
                 // Check if this slot conflicts with any existing booking
@@ -472,12 +471,34 @@ namespace Booksy.ServiceCatalog.Application.Services
                         individualProvider.Id.Value,
                         staffName));
                 }
-
-                // Move to next slot (every 30 minutes by default)
-                currentTime = currentTime.AddMinutes(DefaultSlotIntervalMinutes);
             }
 
             return availableSlots;
+        }
+
+        /// <summary>
+        /// Slot start times as minutes-of-day within [openTime, closeTime].
+        /// Iterates plain integers rather than marching a <see cref="TimeOnly"/>:
+        /// TimeOnly.AddMinutes wraps past midnight, so with a closing time near
+        /// 24:00 (e.g. a 00:00–23:59 schedule) the old while-loop condition
+        /// stayed true forever and hung the request thread.
+        /// </summary>
+        public static IEnumerable<int> EnumerateSlotStartMinutes(
+            TimeOnly openTime,
+            TimeOnly closeTime,
+            int serviceDurationMinutes,
+            int intervalMinutes)
+        {
+            if (serviceDurationMinutes <= 0 || intervalMinutes <= 0)
+                yield break;
+
+            var closeMinutes = (int)closeTime.ToTimeSpan().TotalMinutes;
+            for (var m = (int)openTime.ToTimeSpan().TotalMinutes;
+                 m + serviceDurationMinutes <= closeMinutes;
+                 m += intervalMinutes)
+            {
+                yield return m;
+            }
         }
 
         /// <summary>

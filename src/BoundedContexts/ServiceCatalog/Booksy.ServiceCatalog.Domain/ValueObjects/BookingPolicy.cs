@@ -122,8 +122,12 @@ namespace Booksy.ServiceCatalog.Domain.ValueObjects
             cancellationFeePercentage: 50,
             allowRescheduling: true,
             rescheduleWindowHours: 24,
-            requireDeposit: true,
-            depositPercentage: 20);
+            // No payment flow exists in the product yet: a deposit-requiring
+            // default made every default-policy booking permanently
+            // unconfirmable (BOOKING_DEPOSIT_NOT_PAID). Services that
+            // explicitly configure a deposit policy still enforce it.
+            requireDeposit: false,
+            depositPercentage: 0);
 
         /// <summary>
         /// Flexible policy: 1 hour minimum, 60 days max, 12 hours cancellation, 25% fee, no deposit

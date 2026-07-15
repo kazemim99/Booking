@@ -17,6 +17,19 @@ public class BookingAggregateTests
     private readonly Price _price = Price.Create(100, "USD");
     private readonly BookingPolicy _policy = BookingPolicy.Default;
 
+    // Deposit-behavior tests must pin an explicit deposit-requiring policy:
+    // BookingPolicy.Default no longer requires a deposit (no payment flow
+    // exists in the product, so default-policy bookings must be confirmable).
+    private static readonly BookingPolicy DepositPolicy = BookingPolicy.Create(
+        minAdvanceBookingHours: 2,
+        maxAdvanceBookingDays: 90,
+        cancellationWindowHours: 24,
+        cancellationFeePercentage: 50,
+        allowRescheduling: true,
+        rescheduleWindowHours: 24,
+        requireDeposit: true,
+        depositPercentage: 20);
+
     [Fact]
     public void CreateBookingRequest_Should_Create_Booking_With_Requested_Status()
     {
@@ -151,7 +164,7 @@ public class BookingAggregateTests
             _startTime,
             _duration,
             _price,
-            BookingPolicy.Default); // Requires deposit
+            DepositPolicy); // Requires deposit
 
         // Act & Assert
         var exception = Assert.Throws<BusinessRuleViolationException>(() => booking.Confirm());
@@ -170,7 +183,7 @@ public class BookingAggregateTests
             _startTime,
             _duration,
             _price,
-            BookingPolicy.Default);
+            DepositPolicy);
         var paymentIntentId = "pi_test123";
 
         // Act
@@ -194,7 +207,7 @@ public class BookingAggregateTests
             _startTime,
             _duration,
             _price,
-            BookingPolicy.Default);
+            DepositPolicy);
 
         // Act
         booking.ProcessDepositPayment("pi_test123");
@@ -330,7 +343,7 @@ public class BookingAggregateTests
             _startTime,
             _duration,
             _price,
-            BookingPolicy.Default);
+            DepositPolicy);
         booking.ProcessDepositPayment("pi_deposit");
         booking.Confirm();
         var newStartTime = _startTime.AddDays(1);
@@ -390,7 +403,7 @@ public class BookingAggregateTests
             _startTime,
             _duration,
             _price,
-            BookingPolicy.Default);
+            DepositPolicy);
         booking.ProcessDepositPayment("pi_deposit");
         booking.Confirm();
         booking.Cancel("Customer changed mind");
@@ -461,7 +474,7 @@ public class BookingAggregateTests
             _startTime,
             _duration,
             _price,
-            BookingPolicy.Default);
+            DepositPolicy);
         booking.ProcessDepositPayment("pi_deposit"); // Pays 20% = $20
 
         // Act
