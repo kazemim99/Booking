@@ -15,6 +15,7 @@ using Booksy.ServiceCatalog.Application.Queries.Booking.GetBookingDetails;
 using Booksy.ServiceCatalog.Application.Queries.Booking.GetBookingStatistics;
 using Booksy.ServiceCatalog.Application.Queries.Booking.GetCustomerBookings;
 using Booksy.ServiceCatalog.Application.Queries.Booking.SearchBookings;
+using Booksy.ServiceCatalog.Application.Queries.Provider.GetCurrentProviderStatus;
 using Booksy.ServiceCatalog.Domain.Repositories;
 using MediatR;
 using Microsoft.AspNetCore.Authorization;
@@ -660,10 +661,25 @@ public class BookingsController : ControllerBase
         if (User.IsInRole("Admin") || User.IsInRole("SysAdmin"))
             return true;
 
-        // Provider owners can manage their own provider
+        // Provider owners can manage their own provider — via the providerId claim
+        // (present after a post-registration token refresh)...
         var currentProviderId = GetCurrentUserProviderId();
         if (!string.IsNullOrEmpty(currentProviderId) && currentProviderId == providerId.ToString())
             return true;
+
+        // ...or, when the claim isn't on the token yet (first session after
+        // onboarding), resolve the caller's provider in-process and check
+        // ownership — same fallback ProvidersController.CanManageProvider uses.
+        try
+        {
+            var status = await _mediator.Send(new GetCurrentProviderStatusQuery());
+            if (status is not null && status.ProviderId.ToString() == providerId.ToString())
+                return true;
+        }
+        catch
+        {
+            // no provider associated with the current user
+        }
 
         return false;
     }
