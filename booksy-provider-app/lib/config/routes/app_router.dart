@@ -12,6 +12,8 @@ import '../../features/auth/presentation/pages/otp_verification_page.dart';
 import '../../features/onboarding/presentation/pages/onboarding_wizard_page.dart';
 import '../../features/auth/presentation/pages/provider_login_page.dart';
 import '../../features/auth/presentation/pages/splash_page.dart';
+import '../../features/home/presentation/pages/booking_composer_page.dart';
+import '../../features/home/presentation/pages/calendar_page.dart';
 import '../../features/home/presentation/pages/home_page.dart';
 
 /// Route paths.
@@ -21,6 +23,12 @@ class Routes {
   static const String login = '/login';
   static const String otp = '/otp';
   static const String dashboard = '/dashboard';
+  static const String calendar = '/calendar';
+  static const String newBooking = '/booking/new';
+
+  /// Composer route pre-set to [date] (spec: calendar-initiated creation).
+  static String newBookingOn(DateTime date) =>
+      '$newBooking?date=${date.year}-${date.month.toString().padLeft(2, '0')}-${date.day.toString().padLeft(2, '0')}';
   static const String onboarding = '/onboarding';
   static const String blocked = '/blocked';
 }
@@ -173,6 +181,17 @@ class AppRouter {
           // The adaptive Home ("Today" workspace). The retired placeholder
           // (ProviderDashboardPage) is kept one release for trivial rollback.
           builder: (_, _) => const HomePage(),
+        ),
+        GoRoute(
+          path: Routes.calendar,
+          builder: (_, _) => const CalendarPage(),
+        ),
+        GoRoute(
+          path: Routes.newBooking,
+          builder: (_, state) => BookingComposerPage(
+            initialDate:
+                DateTime.tryParse(state.uri.queryParameters['date'] ?? ''),
+          ),
         ),
         GoRoute(
           path: Routes.onboarding,

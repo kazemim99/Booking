@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:go_router/go_router.dart';
 
+import '../../../../config/routes/app_router.dart';
 import '../../../../config/theme/app_tokens.dart';
 import '../../../../core/api/config/api_constants.dart';
 import '../../../../core/constants/app_strings.dart';
@@ -22,6 +24,7 @@ import '../widgets/activation_checklist.dart';
 import '../widgets/get_discovered.dart';
 import '../widgets/home_minor_zones.dart';
 import '../widgets/now_next.dart';
+import '../widgets/provider_nav_bar.dart';
 import '../widgets/status_banner_rail.dart';
 import '../widgets/today_agenda.dart';
 
@@ -89,7 +92,7 @@ class HomeView extends StatelessWidget {
                 ),
           floatingActionButtonLocation:
               FloatingActionButtonLocation.centerDocked,
-          bottomNavigationBar: _bottomBar(context),
+          bottomNavigationBar: const ProviderNavBar(active: NavTab.home),
         );
       },
     );
@@ -159,52 +162,6 @@ class HomeView extends StatelessWidget {
     );
   }
 
-  Widget _bottomBar(BuildContext context) {
-    Widget item(IconData icon, String label, {bool active = false}) {
-      return Expanded(
-        child: InkWell(
-          onTap: active
-              ? null
-              : () => AppSnackbar.info(context, AppStrings.comingSoon),
-          child: Padding(
-            padding: const EdgeInsets.symmetric(vertical: AppSpacing.xs),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Icon(icon,
-                    size: AppIconSize.md,
-                    color: active ? AppColors.primary : AppColors.muted),
-                Text(
-                  label,
-                  style: TextStyle(
-                    fontSize: 11,
-                    color: active ? AppColors.primary : AppColors.muted,
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ),
-      );
-    }
-
-    return BottomAppBar(
-      color: Colors.white,
-      shape: const CircularNotchedRectangle(),
-      notchMargin: 6,
-      padding: EdgeInsets.zero,
-      child: Row(
-        children: [
-          item(Icons.home_outlined, AppStrings.navHome, active: true),
-          item(Icons.calendar_month_outlined, AppStrings.navCalendar),
-          const Expanded(child: SizedBox()), // notch space for the ⊕
-          item(Icons.people_outline, AppStrings.navClients),
-          item(Icons.more_horiz, AppStrings.navMore),
-        ],
-      ),
-    );
-  }
-
   // ==================== zone mapping ====================
 
   Widget _zone(BuildContext context, HomeContext ctx, HomeWidgetId id) {
@@ -225,7 +182,7 @@ class HomeView extends StatelessWidget {
         return GetDiscovered(
           completenessPct: ctx.completenessPct,
           onShare: () => _shareLink(context),
-          onAddWalkIn: () => _showCreateSheet(context),
+          onAddWalkIn: () => _openComposer(context),
         );
       case HomeWidgetId.nowNext:
         final next = _nextBooking(ctx);
@@ -259,7 +216,7 @@ class HomeView extends StatelessWidget {
         return TodayAgenda(
           bookings: ctx.todayBookings,
           tomorrowApptCount: ctx.tomorrowApptCount,
-          onAddAppointment: () => _showCreateSheet(context),
+          onAddAppointment: () => _openComposer(context),
           onComplete: (id) => _run(context, cubit.completeBooking(id),
               AppStrings.homeCompleted),
           onNoShow: (id) =>
@@ -312,6 +269,17 @@ class HomeView extends StatelessWidget {
         AppStrings.linkCopied);
   }
 
+  /// Opens the booking composer; a `true` result means a booking was created,
+  /// so the Home refreshes and confirms.
+  Future<void> _openComposer(BuildContext context) async {
+    final cubit = context.read<HomeCubit>();
+    final created = await context.push<bool>(Routes.newBooking);
+    if (created == true && context.mounted) {
+      cubit.refresh();
+      AppSnackbar.success(context, AppStrings.composerCreated);
+    }
+  }
+
   void _copy(BuildContext context, String text, String message) {
     Clipboard.setData(ClipboardData(text: text));
     AppSnackbar.info(context, message);
@@ -348,7 +316,7 @@ class HomeView extends StatelessWidget {
               title: const Text(AppStrings.homeCreateAppointment),
               onTap: () {
                 Navigator.pop(sheetContext);
-                AppSnackbar.info(context, AppStrings.comingSoon);
+                _openComposer(context);
               },
             ),
             ListTile(

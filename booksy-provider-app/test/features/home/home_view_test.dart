@@ -64,12 +64,14 @@ HomeContext ctx({
 HomeBooking booking(
   String id, {
   HomeBookingStatus status = HomeBookingStatus.confirmed,
-  int hour = 23,
+  // Offset from NOW, not a wall-clock hour: a fixed hour flips from future
+  // to past as the real day advances, making NowNext's اکنون/بعدی label
+  // time-of-day dependent (flaked at 23:00+).
+  Duration fromNow = const Duration(hours: 2),
 }) {
-  final now = DateTime.now();
   return HomeBooking(
     id: id,
-    start: DateTime(now.year, now.month, now.day, hour),
+    start: DateTime.now().add(fromNow),
     clientName: 'سارا محمدی',
     clientPhone: '09121112233',
     serviceName: 'اصلاح مو',
@@ -204,9 +206,9 @@ void main() {
 
   group('Operational active day', () {
     final bookings = [
-      booking('b1', status: HomeBookingStatus.completed, hour: 9),
-      booking('b2', status: HomeBookingStatus.pending, hour: 23),
-      booking('b3', hour: 23),
+      booking('b1', status: HomeBookingStatus.completed, fromNow: const Duration(hours: -2)),
+      booking('b2', status: HomeBookingStatus.pending, fromNow: const Duration(hours: 2)),
+      booking('b3', fromNow: const Duration(hours: 2)),
     ];
 
     testWidgets(
@@ -255,7 +257,7 @@ void main() {
         tester,
         ctx(
           bookings: [
-            booking('b1', status: HomeBookingStatus.completed, hour: 9),
+            booking('b1', status: HomeBookingStatus.completed, fromNow: const Duration(hours: -2)),
           ],
           allCompleted: true,
           hasUpcoming: false,
@@ -275,7 +277,7 @@ void main() {
           system: SystemState.offline,
           banners: const [HomeBannerKind.offline],
           isStale: true,
-          bookings: [booking('b1', hour: 23)],
+          bookings: [booking('b1', fromNow: const Duration(hours: 2))],
         ),
       );
       expect(find.byKey(const Key('home-banner-offline')), findsOneWidget);
@@ -291,8 +293,8 @@ void main() {
       await pump(
         tester,
         ctx(bookings: [
-          booking('b1', status: HomeBookingStatus.pending, hour: 23),
-          booking('b2', hour: 23),
+          booking('b1', status: HomeBookingStatus.pending, fromNow: const Duration(hours: 2)),
+          booking('b2', fromNow: const Duration(hours: 2)),
         ]),
       );
       expect(tester.takeException(), isNull);
