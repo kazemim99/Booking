@@ -11,8 +11,8 @@ import '../../features/auth/presentation/pages/account_blocked_page.dart';
 import '../../features/auth/presentation/pages/otp_verification_page.dart';
 import '../../features/onboarding/presentation/pages/onboarding_wizard_page.dart';
 import '../../features/auth/presentation/pages/provider_login_page.dart';
-import '../../features/auth/presentation/pages/provider_dashboard_page.dart';
 import '../../features/auth/presentation/pages/splash_page.dart';
+import '../../features/home/presentation/pages/home_page.dart';
 
 /// Route paths.
 class Routes {
@@ -170,7 +170,9 @@ class AppRouter {
         ),
         GoRoute(
           path: Routes.dashboard,
-          builder: (_, _) => const ProviderDashboardPage(),
+          // The adaptive Home ("Today" workspace). The retired placeholder
+          // (ProviderDashboardPage) is kept one release for trivial rollback.
+          builder: (_, _) => const HomePage(),
         ),
         GoRoute(
           path: Routes.onboarding,

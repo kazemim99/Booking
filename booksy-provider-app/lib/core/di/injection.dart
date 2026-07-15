@@ -13,6 +13,12 @@ import '../../features/auth/domain/repositories/auth_repository.dart';
 import '../../features/auth/domain/usecases/complete_provider_authentication_usecase.dart';
 import '../../features/auth/domain/usecases/send_verification_code_usecase.dart';
 import '../../features/auth/presentation/bloc/auth_bloc.dart';
+import '../../features/home/data/datasources/home_api_service.dart';
+import '../../features/home/data/repositories/home_repository_impl.dart';
+import '../../features/home/domain/repositories/home_repository.dart';
+import '../../features/home/presentation/cubit/home_cubit.dart';
+import '../../features/onboarding/data/datasources/geocoding_service.dart';
+import '../../features/onboarding/data/datasources/location_api_service.dart';
 import '../../features/onboarding/data/datasources/onboarding_api_service.dart';
 import '../../features/onboarding/data/repositories/onboarding_repository_impl.dart';
 import '../../features/onboarding/domain/repositories/onboarding_repository.dart';
@@ -83,5 +89,33 @@ Future<void> configureDependencies() async {
   // Factory: the wizard owns a fresh cubit per entry.
   getIt.registerFactory<OnboardingCubit>(
     () => OnboardingCubit(getIt<OnboardingRepository>()),
+  );
+
+  // ---- Home (Today workspace) ----
+  getIt.registerLazySingleton<HomeApiService>(
+    () => HomeApiService(authedDio),
+  );
+  getIt.registerLazySingleton<HomeRepository>(
+    () => HomeRepositoryImpl(getIt<HomeApiService>(), getIt<AuthRepository>()),
+  );
+  // Factory: the Home page owns a fresh cubit per entry. Polling (MVP refresh
+  // strategy — resolved decision #2) while the Home is foregrounded.
+  getIt.registerFactory<HomeCubit>(
+    () => HomeCubit(
+      getIt<HomeRepository>(),
+      getIt<ConnectivityService>(),
+      pollInterval: const Duration(seconds: 60),
+    ),
+  );
+
+  // ---- Location (onboarding step 3) ----
+  // City hierarchy comes from the (anonymous) ServiceCatalog endpoint; reuse the
+  // authenticated Dio so we share timeouts/logging.
+  getIt.registerLazySingleton<LocationApiService>(
+    () => LocationApiService(authedDio),
+  );
+  // Geocoding (OSM/Nominatim) uses a plain Dio — no auth header, no app baseUrl.
+  getIt.registerLazySingleton<GeocodingService>(
+    () => GeocodingService(Dio()),
   );
 }
