@@ -1,5 +1,6 @@
 import 'package:dio/dio.dart';
 import '../../../../core/api/config/api_constants.dart';
+import '../../domain/entities/onboarding_data.dart';
 import '../../domain/entities/onboarding_draft.dart';
 import '../models/draft_snapshot.dart';
 import '../models/onboarding_models.dart';
@@ -28,6 +29,20 @@ class OnboardingApiService {
       ApiConstants.registrationWorkingHours,
       data: request.toJson(),
     );
+  }
+
+  /// Uploads gallery images (step 7). Multipart under the `files` field — the
+  /// backend resolves the draft from the authenticated user, so no providerId
+  /// is sent in the body.
+  Future<void> uploadGallery(List<GalleryImageUpload> images) async {
+    final form = FormData();
+    for (final img in images) {
+      form.files.add(MapEntry(
+        'files',
+        MultipartFile.fromBytes(img.bytes, filename: img.name),
+      ));
+    }
+    await _dio.post(ApiConstants.registrationGallery, data: form);
   }
 
   Future<void> complete(String providerId) async {

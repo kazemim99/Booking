@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../../../../config/theme/app_tokens.dart';
 import '../../../../core/constants/app_strings.dart';
+import '../../../../core/widgets/app_loading.dart';
 
 /// Shown while the persisted session is restored (auto-login). The router's
 /// redirect moves off splash once [AuthNotifier] resolves.
@@ -18,7 +19,7 @@ class SplashPage extends StatelessWidget {
             SizedBox(height: AppSpacing.lg),
             Text(AppStrings.appName),
             SizedBox(height: AppSpacing.lg),
-            CircularProgressIndicator(),
+            AppLoading(),
           ],
         ),
       ),

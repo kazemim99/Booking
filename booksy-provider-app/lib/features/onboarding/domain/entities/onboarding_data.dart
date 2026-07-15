@@ -66,6 +66,18 @@ enum ServicePriceType {
   final String wireName;
 }
 
+/// An image the user picked for the gallery step, held in memory until it is
+/// uploaded (multipart) to the draft. Cross-platform: bytes + filename work on
+/// web, Android and iOS alike.
+class GalleryImageUpload extends Equatable {
+  final String name;
+  final List<int> bytes;
+  const GalleryImageUpload({required this.name, required this.bytes});
+
+  @override
+  List<Object?> get props => [name, bytes.length];
+}
+
 /// A service offered by the provider (onboarding draft).
 class ServiceDraft extends Equatable {
   final String name;

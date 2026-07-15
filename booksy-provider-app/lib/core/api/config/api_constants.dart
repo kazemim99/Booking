@@ -20,6 +20,11 @@ class ApiConstants {
 
   static const String apiVersion = 'v1';
 
+  /// Public customer-facing profile URL for a provider (the shareable booking
+  /// link). Host mirrors the deployed Vue frontend.
+  static String publicProviderUrl(String providerId) =>
+      'https://napstar.ir/providers/$providerId';
+
   static const Duration connectTimeout = Duration(seconds: 30);
   static const Duration receiveTimeout = Duration(seconds: 30);
   static const Duration sendTimeout = Duration(seconds: 30);
@@ -51,6 +56,32 @@ class ApiConstants {
   /// POST — mint a provider-claimed token after onboarding. §5.7
   static const String providerRefreshToken =
       '/$apiVersion/Providers/current/refresh-token';
+
+  // ==================== Bookings (ServiceCatalog) ====================
+
+  /// GET — provider's bookings (query: status/from/to). Policy ProviderOrAdmin.
+  static String providerBookings(String providerId) =>
+      '/$apiVersion/Bookings/provider/$providerId';
+
+  /// GET — booking statistics (query: providerId/startDate/endDate).
+  static const String bookingStatistics = '/$apiVersion/Bookings/statistics';
+
+  /// GET — the provider's services (paged; used to resolve service names).
+  static String providerServices(String providerId) =>
+      '/$apiVersion/Services/provider/$providerId';
+
+  /// POST — provider confirms a pending booking request.
+  static String bookingConfirm(String id) => '/$apiVersion/Bookings/$id/confirm';
+
+  /// POST — cancel/decline a booking (body: reason/cancelledBy).
+  static String bookingCancel(String id) => '/$apiVersion/Bookings/$id/cancel';
+
+  /// POST — mark a booking completed.
+  static String bookingComplete(String id) =>
+      '/$apiVersion/Bookings/$id/complete';
+
+  /// POST — mark a booking as a client no-show.
+  static String bookingNoShow(String id) => '/$apiVersion/Bookings/$id/no-show';
 
   // ==================== Onboarding (ServiceCatalog) ====================
 

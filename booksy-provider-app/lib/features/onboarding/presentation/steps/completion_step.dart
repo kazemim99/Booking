@@ -21,7 +21,7 @@ class CompletionStep extends StatelessWidget {
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             const Icon(Icons.check_circle_outline,
-                size: 88, color: AppColors.primary),
+                size: 88, color: AppColors.success),
             const SizedBox(height: AppSpacing.lg),
             Text(
               AppStrings.completionTitle,

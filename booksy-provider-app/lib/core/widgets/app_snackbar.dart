@@ -14,11 +14,11 @@ class AppSnackbar {
   }
 
   static void success(BuildContext context, String message) =>
-      _show(context, message, AppColors.primaryDark);
+      _show(context, message, AppColors.success);
 
   static void error(BuildContext context, String message) =>
       _show(context, message, AppColors.danger);
 
   static void info(BuildContext context, String message) =>
-      _show(context, message, Colors.black87);
+      _show(context, message, AppColors.ink);
 }

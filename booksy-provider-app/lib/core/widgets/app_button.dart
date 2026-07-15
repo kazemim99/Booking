@@ -23,11 +23,18 @@ class AppButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // Spinner must contrast with the button surface: white on the filled
+    // (primary) background, brand blue on the transparent text variant.
     final child = loading
-        ? const SizedBox(
+        ? SizedBox(
             height: 20,
             width: 20,
-            child: CircularProgressIndicator(strokeWidth: 2),
+            child: CircularProgressIndicator(
+              strokeWidth: 2,
+              color: _isText
+                  ? Theme.of(context).colorScheme.primary
+                  : Theme.of(context).colorScheme.onPrimary,
+            ),
           )
         : Text(label);
     final effectiveOnPressed = loading ? null : onPressed;

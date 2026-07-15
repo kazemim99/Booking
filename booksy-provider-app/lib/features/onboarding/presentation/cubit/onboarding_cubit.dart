@@ -1,5 +1,6 @@
 import 'package:dartz/dartz.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import '../../../../core/constants/app_strings.dart';
 import '../../../../core/errors/failures.dart';
 import '../../domain/entities/onboarding_data.dart';
 import '../../domain/repositories/onboarding_repository.dart';
@@ -116,6 +117,19 @@ class OnboardingCubit extends Cubit<OnboardingState> {
     }
   }
 
+  /// Step 6 (gallery, optional): upload the picked [images] if any, then
+  /// advance. An empty list simply skips. Requires the draft created at step 3.
+  Future<void> uploadGalleryAndAdvance(List<GalleryImageUpload> images) async {
+    if (images.isEmpty) {
+      _advance();
+      return;
+    }
+    await _requireDraft((id) => _run(
+          () => _repository.uploadGallery(id, images),
+          onOk: (_) => _advance(),
+        ));
+  }
+
   /// Final submit from the preview step (step 7) → complete → step 8.
   Future<void> complete() async {
     await _requireDraft((id) => _run(
@@ -181,12 +195,46 @@ class OnboardingCubit extends Cubit<OnboardingState> {
             ? null
             : 'لطفاً حداقل یک خدمت اضافه کنید';
       case 5:
-        return state.data.businessHours.any((d) => d.isOpen)
-            ? null
-            : 'لطفاً حداقل یک روز کاری را باز بگذارید';
+        return _validateWorkingHours();
       default:
         return null;
     }
+  }
+
+  /// Step-5 rules (parity with the Vue WorkingHoursStep): at least one open day;
+  /// every open day has a valid close-after-open range; and every break sits
+  /// within business hours with end after start.
+  String? _validateWorkingHours() {
+    final openDays = state.data.businessHours.where((d) => d.isOpen).toList();
+    if (openDays.isEmpty) {
+      return 'لطفاً حداقل یک روز کاری را باز بگذارید';
+    }
+    int mins(ClockTime t) => t.hours * 60 + t.minutes;
+
+    for (final day in openDays) {
+      final name = AppStrings.weekDays[day.dayOfWeek];
+      final open = day.openTime;
+      final close = day.closeTime;
+      if (open == null || close == null) {
+        return AppStrings.closeAfterOpenError(name);
+      }
+      final openMin = mins(open);
+      final closeMin = mins(close);
+      if (closeMin <= openMin) {
+        return AppStrings.closeAfterOpenError(name);
+      }
+      for (final br in day.breaks) {
+        final startMin = mins(br.start);
+        final endMin = mins(br.end);
+        if (endMin <= startMin) {
+          return AppStrings.breakEndAfterStartError(name);
+        }
+        if (startMin < openMin || endMin > closeMin) {
+          return AppStrings.breakWithinHoursError(name);
+        }
+      }
+    }
+    return null;
   }
 
   static List<DayHours> _defaultHours() {

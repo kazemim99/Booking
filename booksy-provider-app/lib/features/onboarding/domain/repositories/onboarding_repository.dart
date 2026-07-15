@@ -20,6 +20,14 @@ abstract class OnboardingRepository {
     List<DayHours> hours,
   );
 
+  /// Uploads gallery images (step 7, optional). The backend resolves the draft
+  /// from the authenticated user; [providerId] is required only to guard that a
+  /// draft exists client-side.
+  Future<Either<Failure, void>> uploadGallery(
+    String providerId,
+    List<GalleryImageUpload> images,
+  );
+
   /// Completes registration for [providerId] (step 9).
   Future<Either<Failure, void>> complete(String providerId);
 

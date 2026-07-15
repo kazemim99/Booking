@@ -106,10 +106,15 @@ class AppStrings {
   static const String locationTitle = 'موقعیت مکانی';
   static const String locationSubtitle = 'آدرس کسب‌و‌کار خود را وارد کنید';
   static const String addressLine1 = 'آدرس';
-  static const String addressLine2 = 'آدرس تکمیلی (اختیاری)';
   static const String city = 'شهر';
-  static const String province = 'استان';  // required by the backend validator
-  static const String postalCode = 'کد پستی (اختیاری)';
+  static const String cityHint = 'برای یافتن شهر جستجو کنید';
+  // No province INPUT field: the province is derived from the selected city
+  // (the backend validator still requires it). Kept only as a preview label.
+  static const String province = 'استان';
+  static const String mapLabel = 'موقعیت روی نقشه';
+  static const String mapHint = 'روی نقشه بزنید تا موقعیت دقیق کسب‌وکار مشخص شود';
+  static const String cityLoadError = 'بارگذاری فهرست شهرها ناموفق بود';
+  static const String citiesLoading = 'در حال بارگذاری شهرها...';
 
   // Step 4 — services
   static const String servicesTitle = 'خدمات';
@@ -127,6 +132,20 @@ class AppStrings {
   static const String hoursSubtitle = 'روزها و ساعات کاری خود را مشخص کنید';
   static const String openLabel = 'باز';
   static const String closedLabel = 'تعطیل';
+  // Breaks (mirrors the Vue DayScheduleEditor)
+  static const String breaksLabel = 'استراحت‌ها';
+  static const String addBreak = 'افزودن استراحت';
+  static const String noBreaks = 'بدون استراحت';
+  static const String removeBreak = 'حذف استراحت';
+  static const String copyToAllDays = 'کپی به همه روزها';
+  static const String hoursCopied = 'ساعات کاری به همه روزها کپی شد';
+  // Validation
+  static String closeAfterOpenError(String day) =>
+      'ساعت پایان باید بعد از ساعت شروع باشد ($day)';
+  static String breakWithinHoursError(String day) =>
+      'زمان استراحت باید در محدوده ساعات کاری باشد ($day)';
+  static String breakEndAfterStartError(String day) =>
+      'پایان استراحت باید بعد از شروع آن باشد ($day)';
   static const List<String> weekDays = [
     'یکشنبه',
     'دوشنبه',
@@ -141,6 +160,21 @@ class AppStrings {
   static const String galleryTitle = 'گالری تصاویر';
   static const String gallerySubtitle =
       'افزودن تصاویر اختیاری است و می‌توانید بعداً از پنل آن را تکمیل کنید';
+  static const String galleryEmptyCaption = 'هنوز تصویری اضافه نشده است';
+  static const String addPhotos = 'افزودن تصاویر';
+  static const String galleryUploading = 'در حال آپلود تصاویر...';
+  static String galleryCount(int n) => '$n تصویر';
+  static String galleryLimit(int max) =>
+      'حداکثر $max تصویر می‌توانید اضافه کنید';
+  static const String galleryUploadError =
+      'آپلود تصاویر ناموفق بود. لطفاً دوباره تلاش کنید';
+  static const String mainImage = 'عکس اصلی';
+  static const String setAsMainImage = 'انتخاب به عنوان عکس اصلی';
+  static const String mainImageHint =
+      'عکس اصلی به عنوان تصویر شاخص کسب‌وکار نمایش داده می‌شود';
+
+  // Shared feedback states
+  static const String retry = 'تلاش مجدد';
 
   // Step 7 — preview
   static const String previewTitle = 'بررسی نهایی';
@@ -157,6 +191,110 @@ class AppStrings {
   // Dashboard (placeholder until the dashboard epic lands)
   static const String dashboardTitle = 'داشبورد';
   static const String dashboardWelcome = 'به پنل کسب‌وکار خوش آمدید';
+
+  // ==================== Home (Today workspace) ====================
+  // Microcopy per PROVIDER_HOME_SCREEN_DESIGNS.md.
+
+  // App bar / greeting
+  static const String homeGreetingMorning = 'صبح بخیر';
+  static const String homeGreetingAfternoon = 'ظهر بخیر';
+  static const String homeGreetingEvening = 'عصر بخیر';
+
+  // Banners
+  static const String homePendingBannerTitle =
+      'کسب‌وکار شما در حال بررسی است';
+  static const String homePendingBannerBody =
+      'تا زمان تأیید، برای مشتریان قابل‌رزرو نیست؛ می‌توانید همچنان پروفایل خود را کامل کنید.';
+  static const String homeOfflineBanner = 'اتصال اینترنت برقرار نیست';
+  static const String homeStaleBanner = 'نمایش آخرین اطلاعات ذخیره‌شده';
+  static const String homeVerifiedBannerTitle = 'کسب‌وکار شما فعال شد!';
+  static const String contactSupport = 'تماس با پشتیبانی';
+
+  // Activation checklist (Setup)
+  static const String homeChecklistTitle = 'راه‌اندازی کسب‌وکار';
+  static String homeChecklistProgress(int done, int total) =>
+      '$done از $total انجام شد';
+  static const String homeChecklistServices = 'خدمات و قیمت‌ها';
+  static const String homeChecklistStaff = 'افزودن اعضای تیم';
+  static const String homeChecklistGallery = 'افزودن تصاویر گالری';
+  static const String homeChecklistShare = 'اشتراک‌گذاری لینک رزرو';
+  static const String homeChecklistDone = 'انجام شد';
+
+  // Get discovered (Growth)
+  static const String homeDiscoverTitle = 'کسب‌وکار شما آماده است';
+  static const String homeDiscoverBody =
+      'برای دریافت اولین نوبت، لینک رزرو را به‌اشتراک بگذارید';
+  static const String homeShareLink = 'اشتراک‌گذاری لینک رزرو';
+  static String homeProfileCompleteness(String pct) => 'تکمیل پروفایل $pct٪';
+  static const String homeAddWalkIn = 'افزودن نوبت دستی';
+
+  // Agenda
+  static const String homeAgendaTitle = 'برنامهٔ امروز';
+  static String homeAgendaCount(int n) => '$n نوبت';
+  static const String homeAgendaEmptyTitle = 'امروز نوبتی ندارید';
+  static const String homeAgendaEmptyBodySetup =
+      'اولین نوبت را به‌صورت دستی ثبت کنید';
+  static String homeNextAppt(String when) => 'نوبت بعدی: $when';
+  static const String homeAddAppointment = 'افزودن نوبت';
+  static const String homeStatusDone = 'انجام شد';
+  static const String homeStatusNoShow = 'عدم حضور';
+  static const String homeStatusPending = 'در انتظار تأیید';
+  static const String homeStatusNow = 'اکنون';
+
+  // Now / next
+  static const String homeNowLabel = 'اکنون';
+  static const String homeNextLabel = 'بعدی';
+  static const String homeActionComplete = 'تکمیل';
+  static const String homeActionNoShow = 'عدم حضور';
+  static const String homeActionCall = 'تماس';
+
+  // Action queue (requests)
+  static const String homeRequestsTitle = 'درخواست‌های در انتظار';
+  static const String homeConfirm = 'تأیید';
+  static const String homeDecline = 'رد';
+  static const String homeDeclineReason = 'توسط کسب‌وکار رد شد';
+  static const String homeAllCaughtUp = 'همه رسیدگی شد';
+  static const String homeConfirmed = 'نوبت تأیید شد';
+  static const String homeDeclined = 'نوبت رد شد';
+  static const String homeCompleted = 'نوبت تکمیل شد';
+  static const String homeNoShowMarked = 'عدم حضور ثبت شد';
+
+  // End of day
+  static String homeEndOfDay(int n) => 'کارِ امروز تمام شد — $n نوبت انجام شد';
+
+  // Coming up
+  static String homeTomorrowCount(int n) => 'فردا $n نوبت';
+  static const String homeTomorrowEmpty = 'فردا نوبتی ثبت نشده';
+
+  // Create action (⊕)
+  static const String homeCreateTitle = 'افزودن';
+  static const String homeCreateAppointment = 'نوبت جدید';
+  static const String homeCreateBlockTime = 'مسدود کردن زمان';
+  static const String comingSoon = 'به‌زودی در دسترس قرار می‌گیرد';
+
+  // Account sheet
+  static const String homeAccountTitle = 'حساب کسب‌وکار';
+  static String providerStatusLabel(String status) {
+    switch (status) {
+      case 'PendingVerification':
+        return 'در انتظار تأیید';
+      case 'Verified':
+      case 'Active':
+        return 'فعال';
+      default:
+        return status;
+    }
+  }
+
+  // Bottom nav
+  static const String navHome = 'خانه';
+  static const String navCalendar = 'تقویم';
+  static const String navClients = 'مشتریان';
+  static const String navMore = 'بیشتر';
+
+  // Errors
+  static const String homeLoadError = 'بارگذاری ناموفق بود';
+  static const String linkCopied = 'لینک رزرو کپی شد';
 
   // Errors (mirrors error.interceptor.ts / customer app)
   static const String networkError =

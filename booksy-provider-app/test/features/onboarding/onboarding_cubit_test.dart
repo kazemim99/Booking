@@ -40,6 +40,7 @@ void main() {
     registerFallbackValue(const OnboardingData());
     registerFallbackValue(<ServiceDraft>[]);
     registerFallbackValue(<DayHours>[]);
+    registerFallbackValue(<GalleryImageUpload>[]);
   });
 
   setUp(() {
@@ -241,6 +242,104 @@ void main() {
         expect(c.state.step, 4);
       },
     );
+
+    blocTest<OnboardingCubit, OnboardingState>(
+      'step 5 with all days closed → error',
+      build: build,
+      seed: () => OnboardingState(
+        step: 5,
+        draftProviderId: 'p1',
+        data: OnboardingData(
+          businessHours:
+              List.generate(7, (i) => DayHours(dayOfWeek: i, isOpen: false)),
+        ),
+      ),
+      act: (c) => c.next(),
+      verify: (c) {
+        expect(c.state.phase, OnboardingPhase.error);
+        expect(c.state.step, 5);
+        verifyNever(() => repo.saveWorkingHours(any(), any()));
+      },
+    );
+
+    blocTest<OnboardingCubit, OnboardingState>(
+      'step 5 with close before open → error',
+      build: build,
+      seed: () => const OnboardingState(
+        step: 5,
+        draftProviderId: 'p1',
+        data: OnboardingData(
+          businessHours: [
+            DayHours(
+              dayOfWeek: 0,
+              isOpen: true,
+              openTime: ClockTime(18, 0),
+              closeTime: ClockTime(9, 0),
+            ),
+          ],
+        ),
+      ),
+      act: (c) => c.next(),
+      verify: (c) {
+        expect(c.state.phase, OnboardingPhase.error);
+        expect(c.state.step, 5);
+        verifyNever(() => repo.saveWorkingHours(any(), any()));
+      },
+    );
+
+    blocTest<OnboardingCubit, OnboardingState>(
+      'step 5 with a break outside business hours → error',
+      build: build,
+      seed: () => const OnboardingState(
+        step: 5,
+        draftProviderId: 'p1',
+        data: OnboardingData(
+          businessHours: [
+            DayHours(
+              dayOfWeek: 0,
+              isOpen: true,
+              openTime: ClockTime(9, 0),
+              closeTime: ClockTime(18, 0),
+              // 19:00–20:00 is entirely after closing.
+              breaks: [BreakTime(ClockTime(19, 0), ClockTime(20, 0))],
+            ),
+          ],
+        ),
+      ),
+      act: (c) => c.next(),
+      verify: (c) {
+        expect(c.state.phase, OnboardingPhase.error);
+        expect(c.state.step, 5);
+        verifyNever(() => repo.saveWorkingHours(any(), any()));
+      },
+    );
+
+    blocTest<OnboardingCubit, OnboardingState>(
+      'step 5 with a valid in-hours break → saves and advances',
+      setUp: () => when(() => repo.saveWorkingHours(any(), any()))
+          .thenAnswer((_) async => const Right(null)),
+      build: build,
+      seed: () => const OnboardingState(
+        step: 5,
+        draftProviderId: 'p1',
+        data: OnboardingData(
+          businessHours: [
+            DayHours(
+              dayOfWeek: 0,
+              isOpen: true,
+              openTime: ClockTime(9, 0),
+              closeTime: ClockTime(18, 0),
+              breaks: [BreakTime(ClockTime(13, 0), ClockTime(14, 0))],
+            ),
+          ],
+        ),
+      ),
+      act: (c) => c.next(),
+      verify: (c) {
+        expect(c.state.step, 6);
+        verify(() => repo.saveWorkingHours('p1', any())).called(1);
+      },
+    );
   });
 
   group('step 3 → creates the draft', () {
@@ -314,7 +413,14 @@ void main() {
         step: 5,
         draftProviderId: 'p1',
         data: OnboardingData(
-          businessHours: [DayHours(dayOfWeek: 0, isOpen: true)],
+          businessHours: [
+            DayHours(
+              dayOfWeek: 0,
+              isOpen: true,
+              openTime: ClockTime(9, 0),
+              closeTime: ClockTime(18, 0),
+            ),
+          ],
         ),
       ),
       act: (c) => c.next(),
@@ -332,6 +438,47 @@ void main() {
       verify: (c) {
         expect(c.state.step, 7);
         verifyNever(() => repo.saveServices(any(), any()));
+      },
+    );
+
+    blocTest<OnboardingCubit, OnboardingState>(
+      'step 6 gallery: no images → advances without uploading',
+      build: build,
+      seed: () => const OnboardingState(step: 6, draftProviderId: 'p1'),
+      act: (c) => c.uploadGalleryAndAdvance(const []),
+      verify: (c) {
+        expect(c.state.step, 7);
+        verifyNever(() => repo.uploadGallery(any(), any()));
+      },
+    );
+
+    blocTest<OnboardingCubit, OnboardingState>(
+      'step 6 gallery: with images → uploads then advances',
+      setUp: () => when(() => repo.uploadGallery(any(), any()))
+          .thenAnswer((_) async => const Right(null)),
+      build: build,
+      seed: () => const OnboardingState(step: 6, draftProviderId: 'p1'),
+      act: (c) => c.uploadGalleryAndAdvance(
+        const [GalleryImageUpload(name: 'a.jpg', bytes: [1, 2, 3])],
+      ),
+      verify: (c) {
+        expect(c.state.step, 7);
+        verify(() => repo.uploadGallery('p1', any())).called(1);
+      },
+    );
+
+    blocTest<OnboardingCubit, OnboardingState>(
+      'step 6 gallery: upload failure → error, stays on step 6',
+      setUp: () => when(() => repo.uploadGallery(any(), any())).thenAnswer(
+          (_) async => const Left(ServerFailure('boom'))),
+      build: build,
+      seed: () => const OnboardingState(step: 6, draftProviderId: 'p1'),
+      act: (c) => c.uploadGalleryAndAdvance(
+        const [GalleryImageUpload(name: 'a.jpg', bytes: [1])],
+      ),
+      verify: (c) {
+        expect(c.state.phase, OnboardingPhase.error);
+        expect(c.state.step, 6);
       },
     );
 

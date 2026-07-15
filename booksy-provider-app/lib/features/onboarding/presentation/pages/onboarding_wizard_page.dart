@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
+import '../../../../config/theme/app_tokens.dart';
 import '../../../../core/constants/app_strings.dart';
 import '../../../../core/di/injection.dart';
 import '../../../../core/widgets/app_snackbar.dart';
@@ -60,6 +61,9 @@ class _OnboardingWizardView extends StatelessWidget {
               preferredSize: const Size.fromHeight(4),
               child: LinearProgressIndicator(
                 value: state.step / OnboardingState.totalSteps,
+                // Green accent on the blue app-bar chrome (Coliride).
+                color: AppColors.success,
+                backgroundColor: Colors.white24,
               ),
             ),
             actions: [
