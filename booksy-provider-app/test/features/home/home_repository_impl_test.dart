@@ -314,6 +314,126 @@ void main() {
     });
   });
 
+  group('calendar range fetch', () {
+    test('fetchBookings returns enriched rows for the range', () async {
+      when(() => api.getProviderBookings(any(),
+          from: any(named: 'from'), to: any(named: 'to'))).thenAnswer(
+        (_) async => [
+          {
+            'id': 'b1',
+            'serviceId': 'svc-1',
+            'status': 'Confirmed',
+            'startTime': '2026-07-16T10:00:00+03:30',
+          },
+        ],
+      );
+      when(() => api.getProviderServices(any())).thenAnswer(
+        (_) async => [
+          {'id': 'svc-1', 'name': 'اصلاح'},
+        ],
+      );
+
+      final rows = (await build().fetchBookings(
+        from: DateTime(2026, 7, 11),
+        to: DateTime(2026, 7, 18),
+      ))
+          .getOrElse(() => throw StateError('expected Right'));
+
+      expect(rows.single.serviceName, 'اصلاح');
+      verify(() => api.getProviderBookings(any(),
+          from: DateTime(2026, 7, 11), to: DateTime(2026, 7, 18))).called(1);
+    });
+
+    test('fetchBookings maps endpoint failure to ServerFailure', () async {
+      when(() => api.getProviderBookings(any(),
+              from: any(named: 'from'), to: any(named: 'to')))
+          .thenThrow(DioException(requestOptions: RequestOptions(path: '/x')));
+
+      final result = await build().fetchBookings(
+        from: DateTime(2026, 7, 11),
+        to: DateTime(2026, 7, 18),
+      );
+
+      expect(result.isLeft(), isTrue);
+    });
+  });
+
+  group('booking composer', () {
+    test('walkInNotes follows the MVP convention', () {
+      expect(
+        HomeRepositoryImpl.walkInNotes(
+            clientName: 'رضا کریمی', clientPhone: '0912', notes: 'رنگ قبلی'),
+        'مشتری حضوری: رضا کریمی — 0912\nرنگ قبلی',
+      );
+      expect(HomeRepositoryImpl.walkInNotes(clientName: 'رضا'),
+          'مشتری حضوری: رضا');
+      expect(HomeRepositoryImpl.walkInNotes(notes: 'فقط یادداشت'),
+          'فقط یادداشت');
+      expect(HomeRepositoryImpl.walkInNotes(), '');
+    });
+
+    test('fetchComposerCatalog maps services and staff', () async {
+      when(() => api.getProviderServices(any())).thenAnswer(
+        (_) async => [
+          {'id': 's1', 'name': 'اصلاح', 'duration': 45, 'basePrice': 250000.0},
+        ],
+      );
+      when(() => api.getProviderStaff(any())).thenAnswer(
+        (_) async => [
+          {'id': 'st1', 'fullName': 'سارا استایلیست'},
+        ],
+      );
+
+      final catalog = (await build().fetchComposerCatalog())
+          .getOrElse(() => throw StateError('expected Right'));
+
+      expect(catalog.services.single.name, 'اصلاح');
+      expect(catalog.services.single.durationMinutes, 45);
+      expect(catalog.staff.single.name, 'سارا استایلیست');
+    });
+
+    test('declineBooking sends the USER id as cancelledBy (backend Guid)',
+        () async {
+      when(() => api.cancelBooking(any(),
+          reason: any(named: 'reason'),
+          cancelledBy: any(named: 'cancelledBy'))).thenAnswer((_) async {});
+
+      final result = await build().declineBooking('b1', reason: 'رد شد');
+
+      expect(result.isRight(), isTrue);
+      // cancelledBy must be the session USER id — a non-Guid label fails
+      // backend body binding (verified live 2026-07-15).
+      verify(() => api.cancelBooking('b1',
+          reason: 'رد شد', cancelledBy: 'u-1')).called(1);
+    });
+
+    test('createBooking sends the walk-in notes', () async {
+      when(() => api.createBooking(
+            providerId: any(named: 'providerId'),
+            serviceId: any(named: 'serviceId'),
+            staffProviderId: any(named: 'staffProviderId'),
+            startTime: any(named: 'startTime'),
+            customerNotes: any(named: 'customerNotes'),
+          )).thenAnswer((_) async {});
+
+      final result = await build().createBooking(
+        serviceId: 's1',
+        staffId: 'st1',
+        startTime: DateTime(2026, 7, 15, 10),
+        clientName: 'رضا',
+      );
+
+      expect(result.isRight(), isTrue);
+      verify(() => api.createBooking(
+            providerId: any(named: 'providerId'),
+            serviceId: 's1',
+            staffProviderId: 'st1',
+            startTime: DateTime(2026, 7, 15, 10),
+            customerNotes: 'مشتری حضوری: رضا',
+          )).called(1);
+    });
+  });
+
   test('degraded defaults hold until backend concepts ship', () async {
     when(() => api.getProviderBookings(any(),
             from: any(named: 'from'), to: any(named: 'to')))

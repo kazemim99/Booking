@@ -1,6 +1,8 @@
 import 'package:dartz/dartz.dart';
 
 import '../../../../core/errors/failures.dart';
+import '../entities/composer_models.dart';
+import '../entities/home_booking.dart';
 import '../entities/home_snapshot.dart';
 
 /// Supplies the backend-derived Home inputs (resolver spec §2).
@@ -27,4 +29,36 @@ abstract class HomeRepository {
 
   /// Marks a booking as a client no-show.
   Future<Either<Failure, void>> markNoShow(String id);
+
+  // ---- Calendar (spec: provider-calendar) ----
+
+  /// The provider's bookings within [from, to), enriched with service names
+  /// (same row model the Home consumes).
+  Future<Either<Failure, List<HomeBooking>>> fetchBookings({
+    required DateTime from,
+    required DateTime to,
+  });
+
+  // ---- Booking composer (spec: provider-booking-composer) ----
+
+  /// The composer's pickable catalog: the provider's services and staff.
+  Future<Either<Failure, ComposerCatalog>> fetchComposerCatalog();
+
+  /// Available start times (local) for the selection on [date].
+  Future<Either<Failure, List<DateTime>>> fetchAvailableSlots({
+    required String serviceId,
+    required DateTime date,
+    String? staffId,
+  });
+
+  /// Creates a walk-in booking. Client name/phone (when given) are carried in
+  /// the notes per the MVP walk-in convention.
+  Future<Either<Failure, void>> createBooking({
+    required String serviceId,
+    required String staffId,
+    required DateTime startTime,
+    String? clientName,
+    String? clientPhone,
+    String? notes,
+  });
 }

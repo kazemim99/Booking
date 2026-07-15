@@ -296,6 +296,37 @@ class AppStrings {
   static const String homeLoadError = 'بارگذاری ناموفق بود';
   static const String linkCopied = 'لینک رزرو کپی شد';
 
+  // ==================== Booking composer ====================
+  static const String composerTitle = 'نوبت جدید';
+  static const String composerServiceLabel = 'خدمت';
+  static const String composerStaffLabel = 'کارمند';
+  static const String composerDateLabel = 'تاریخ';
+  static const String composerSlotsLabel = 'زمان‌های خالی';
+  static const String composerPickService = 'انتخاب خدمت';
+  static const String composerPickStaff = 'انتخاب کارمند';
+  static const String composerToday = 'امروز';
+  static const String composerTomorrow = 'فردا';
+  static const String composerNoSlots =
+      'در این روز زمان خالی وجود ندارد؛ روز دیگری را امتحان کنید';
+  static const String composerSlotsError = 'دریافت زمان‌های خالی ناموفق بود';
+  static const String composerClientName = 'نام مشتری (اختیاری)';
+  static const String composerClientPhone = 'شماره مشتری (اختیاری)';
+  static const String composerNotes = 'یادداشت (اختیاری)';
+  static const String composerSubmit = 'ثبت نوبت';
+  static const String composerCreated = 'نوبت با موفقیت ثبت شد';
+  static String composerServiceMeta(String name, int minutes) =>
+      '$name · $minutes دقیقه';
+
+  // ==================== Calendar ====================
+  static const String calendarTitle = 'تقویم';
+  static const String calendarToday = 'امروز';
+  static String calendarWeekOf(String from, String to) => 'از $from تا $to';
+  static const String calendarEmptyDay = 'در این روز نوبتی ندارید';
+  static const String calendarPrevWeek = 'هفتهٔ قبل';
+  static const String calendarNextWeek = 'هفتهٔ بعد';
+  static const String bookingSheetTitle = 'جزئیات نوبت';
+  static const String bookingSheetNotes = 'یادداشت';
+
   // Errors (mirrors error.interceptor.ts / customer app)
   static const String networkError =
       'خطا در برقراری ارتباط با سرور. لطفاً اتصال اینترنت خود را بررسی کنید';

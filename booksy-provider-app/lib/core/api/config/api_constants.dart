@@ -70,6 +70,16 @@ class ApiConstants {
   static String providerServices(String providerId) =>
       '/$apiVersion/Services/provider/$providerId';
 
+  /// GET — the provider's staff members.
+  static String providerStaff(String providerId) =>
+      '/$apiVersion/Providers/$providerId/staff';
+
+  /// GET — available time slots (query: providerId/serviceId/date[/staffId]).
+  static const String availableSlots = '/$apiVersion/Bookings/available-slots';
+
+  /// POST — create a booking (customer = the JWT caller).
+  static const String bookings = '/$apiVersion/Bookings';
+
   /// POST — provider confirms a pending booking request.
   static String bookingConfirm(String id) => '/$apiVersion/Bookings/$id/confirm';
 

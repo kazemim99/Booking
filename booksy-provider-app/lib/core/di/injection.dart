@@ -16,6 +16,8 @@ import '../../features/auth/presentation/bloc/auth_bloc.dart';
 import '../../features/home/data/datasources/home_api_service.dart';
 import '../../features/home/data/repositories/home_repository_impl.dart';
 import '../../features/home/domain/repositories/home_repository.dart';
+import '../../features/home/presentation/cubit/calendar_cubit.dart';
+import '../../features/home/presentation/cubit/composer_cubit.dart';
 import '../../features/home/presentation/cubit/home_cubit.dart';
 import '../../features/onboarding/data/datasources/geocoding_service.dart';
 import '../../features/onboarding/data/datasources/location_api_service.dart';
@@ -106,6 +108,16 @@ Future<void> configureDependencies() async {
       getIt<ConnectivityService>(),
       pollInterval: const Duration(seconds: 60),
     ),
+  );
+  // Factory: the booking composer owns a fresh cubit per entry; param1 is the
+  // optional pre-set date (calendar-initiated creation).
+  getIt.registerFactoryParam<ComposerCubit, DateTime?, void>(
+    (initialDate, _) =>
+        ComposerCubit(getIt<HomeRepository>(), initialDate: initialDate),
+  );
+  // Factory: the calendar owns a fresh cubit per entry.
+  getIt.registerFactory<CalendarCubit>(
+    () => CalendarCubit(getIt<HomeRepository>(), getIt<ConnectivityService>()),
   );
 
   // ---- Location (onboarding step 3) ----

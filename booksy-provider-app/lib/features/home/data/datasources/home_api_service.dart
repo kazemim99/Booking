@@ -55,6 +55,62 @@ class HomeApiService {
     return unwrapList(res.data);
   }
 
+  // ==================== booking composer ====================
+
+  /// GET /v1/Providers/{id}/staff — the provider's staff as raw maps.
+  Future<List<Map<String, dynamic>>> getProviderStaff(
+    String providerId,
+  ) async {
+    final res = await _dio.get(ApiConstants.providerStaff(providerId));
+    return unwrapList(res.data);
+  }
+
+  /// GET /v1/Bookings/available-slots — available start times for the
+  /// selection, normalized to local wall-clock time.
+  Future<List<DateTime>> getAvailableSlots({
+    required String providerId,
+    required String serviceId,
+    required DateTime date,
+    String? staffId,
+  }) async {
+    final res = await _dio.get(
+      ApiConstants.availableSlots,
+      queryParameters: {
+        'providerId': providerId,
+        'serviceId': serviceId,
+        'date': date.toIso8601String(),
+        'staffId': ?staffId,
+      },
+    );
+    final slots = unwrapMap(res.data)['availableSlots'];
+    if (slots is! List) return const [];
+    return slots
+        .whereType<Map<String, dynamic>>()
+        .map(bookingStart)
+        .whereType<DateTime>()
+        .toList();
+  }
+
+  /// POST /v1/Bookings — creates a booking (customer = the JWT caller).
+  Future<void> createBooking({
+    required String providerId,
+    required String serviceId,
+    required String staffProviderId,
+    required DateTime startTime,
+    String? customerNotes,
+  }) =>
+      _dio.post(
+        ApiConstants.bookings,
+        data: {
+          'providerId': providerId,
+          'serviceId': serviceId,
+          'staffProviderId': staffProviderId,
+          'startTime': startTime.toUtc().toIso8601String(),
+          if (customerNotes != null && customerNotes.isNotEmpty)
+            'customerNotes': customerNotes,
+        },
+      );
+
   // ==================== booking quick actions ====================
 
   /// POST /v1/Bookings/{id}/confirm — provider approves a pending request.
@@ -62,10 +118,17 @@ class HomeApiService {
       _dio.post(ApiConstants.bookingConfirm(id), data: const {});
 
   /// POST /v1/Bookings/{id}/cancel — provider declines/cancels.
-  Future<void> cancelBooking(String id, {required String reason}) =>
+  /// [cancelledBy] is the current USER id: the backend binds it as a Guid
+  /// (the docs' `"cancelledBy": "string"` is wrong — a non-Guid value fails
+  /// body binding and 500s; verified live 2026-07-15).
+  Future<void> cancelBooking(
+    String id, {
+    required String reason,
+    required String cancelledBy,
+  }) =>
       _dio.post(
         ApiConstants.bookingCancel(id),
-        data: {'reason': reason, 'cancelledBy': 'Provider'},
+        data: {'reason': reason, 'cancelledBy': cancelledBy},
       );
 
   /// POST /v1/Bookings/{id}/complete.

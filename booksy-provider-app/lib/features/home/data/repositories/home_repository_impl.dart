@@ -4,6 +4,7 @@ import 'package:dio/dio.dart';
 import '../../../../core/errors/failures.dart';
 import '../../../auth/domain/entities/provider_status.dart';
 import '../../../auth/domain/repositories/auth_repository.dart';
+import '../../domain/entities/composer_models.dart';
 import '../../domain/entities/home_booking.dart';
 import '../../domain/entities/home_enums.dart';
 import '../../domain/entities/home_inputs.dart';
@@ -45,9 +46,9 @@ class HomeRepositoryImpl implements HomeRepository {
 
       // Today + tomorrow in one call: today feeds the agenda, tomorrow feeds
       // the coming-up peek. This is the snapshot's one hard dependency.
-      final List<Map<String, dynamic>> raw;
+      final List<HomeBooking> bookings;
       try {
-        raw = await _api.getProviderBookings(
+        bookings = await _fetchEnrichedBookings(
           providerId,
           from: dayStart,
           to: dayStart.add(const Duration(days: 2)),
@@ -56,26 +57,6 @@ class HomeRepositoryImpl implements HomeRepository {
         return const Left(ServerFailure('دریافت نوبت‌های امروز ناموفق بود'));
       }
 
-      // Booking rows carry only ids for service/customer (verified live) —
-      // resolve service names from the provider's own catalog (best-effort;
-      // customer names need a backend cross-context enrichment, tracked).
-      final serviceNames = await _fetchServiceNames(providerId);
-      final bookings = raw.map((m) {
-        final b = HomeApiService.toHomeBooking(m);
-        if (b.serviceName.isNotEmpty) return b;
-        final sid = HomeApiService.readString(m, const ['serviceId']);
-        final name = serviceNames[sid];
-        return name == null
-            ? b
-            : HomeBooking(
-                id: b.id,
-                start: b.start,
-                clientName: b.clientName,
-                clientPhone: b.clientPhone,
-                serviceName: name,
-                status: b.status,
-              );
-      }).toList();
       // A booking without a parsable start is assumed to be today's.
       final today = bookings
           .where((b) => b.start == null || b.start!.isBefore(dayEnd))
@@ -93,9 +74,20 @@ class HomeRepositoryImpl implements HomeRepository {
 
   @override
   Future<Either<Failure, void>> declineBooking(String id,
-          {required String reason}) =>
-      _action(() => _api.cancelBooking(id, reason: reason),
-          'رد نوبت ناموفق بود');
+      {required String reason}) async {
+    final sessionOr = await _auth.getCurrentSession();
+    return sessionOr.fold(Left.new, (session) {
+      final userId = session?.user.id;
+      if (userId == null) {
+        return Future.value(
+            const Left<Failure, void>(AuthFailure('نشست معتبر یافت نشد')));
+      }
+      return _action(
+        () => _api.cancelBooking(id, reason: reason, cancelledBy: userId),
+        'رد نوبت ناموفق بود',
+      );
+    });
+  }
 
   @override
   Future<Either<Failure, void>> completeBooking(String id) =>
@@ -104,6 +96,172 @@ class HomeRepositoryImpl implements HomeRepository {
   @override
   Future<Either<Failure, void>> markNoShow(String id) =>
       _action(() => _api.markNoShow(id), 'ثبت عدم حضور ناموفق بود');
+
+  // ==================== calendar ====================
+
+  @override
+  Future<Either<Failure, List<HomeBooking>>> fetchBookings({
+    required DateTime from,
+    required DateTime to,
+  }) {
+    return _withProviderId((providerId) async {
+      try {
+        return Right(
+            await _fetchEnrichedBookings(providerId, from: from, to: to));
+      } on DioException {
+        return const Left(ServerFailure('دریافت نوبت‌ها ناموفق بود'));
+      }
+    });
+  }
+
+  /// Raw range fetch + service-name enrichment (booking rows carry only ids
+  /// for service/customer, verified live; customer names need a backend
+  /// cross-context enrichment, tracked).
+  Future<List<HomeBooking>> _fetchEnrichedBookings(
+    String providerId, {
+    required DateTime from,
+    required DateTime to,
+  }) async {
+    final raw = await _api.getProviderBookings(providerId, from: from, to: to);
+    final serviceNames = await _fetchServiceNames(providerId);
+    return raw.map((m) {
+      final b = HomeApiService.toHomeBooking(m);
+      if (b.serviceName.isNotEmpty) return b;
+      final sid = HomeApiService.readString(m, const ['serviceId']);
+      final name = serviceNames[sid];
+      return name == null
+          ? b
+          : HomeBooking(
+              id: b.id,
+              start: b.start,
+              clientName: b.clientName,
+              clientPhone: b.clientPhone,
+              serviceName: name,
+              status: b.status,
+            );
+    }).toList();
+  }
+
+  // ==================== booking composer ====================
+
+  @override
+  Future<Either<Failure, ComposerCatalog>> fetchComposerCatalog() async {
+    return _withProviderId((providerId) async {
+      try {
+        final results = await Future.wait([
+          _api.getProviderServices(providerId),
+          _api.getProviderStaff(providerId),
+        ]);
+        final services = results[0]
+            .map((s) => ComposerService(
+                  id: HomeApiService.readString(s, const ['id']),
+                  name: HomeApiService.readString(s, const ['name']),
+                  durationMinutes: HomeApiService.readInt(
+                      s, const ['duration', 'durationMinutes']),
+                  price: switch (s['basePrice'] ?? s['price']) {
+                    final num n => n.toDouble(),
+                    _ => 0.0,
+                  },
+                ))
+            .where((s) => s.id.isNotEmpty)
+            .toList();
+        final staff = results[1]
+            .map((s) => ComposerStaff(
+                  id: HomeApiService.readString(s, const ['id']),
+                  name: HomeApiService.readString(
+                      s, const ['fullName', 'name', 'firstName']),
+                ))
+            .where((s) => s.id.isNotEmpty)
+            .toList();
+        return Right(ComposerCatalog(services: services, staff: staff));
+      } on DioException {
+        return const Left(ServerFailure('دریافت اطلاعات خدمات و تیم ناموفق بود'));
+      }
+    });
+  }
+
+  @override
+  Future<Either<Failure, List<DateTime>>> fetchAvailableSlots({
+    required String serviceId,
+    required DateTime date,
+    String? staffId,
+  }) async {
+    return _withProviderId((providerId) async {
+      try {
+        final slots = await _api.getAvailableSlots(
+          providerId: providerId,
+          serviceId: serviceId,
+          date: date,
+          staffId: staffId,
+        );
+        return Right(slots);
+      } on DioException {
+        return const Left(ServerFailure('دریافت زمان‌های خالی ناموفق بود'));
+      }
+    });
+  }
+
+  @override
+  Future<Either<Failure, void>> createBooking({
+    required String serviceId,
+    required String staffId,
+    required DateTime startTime,
+    String? clientName,
+    String? clientPhone,
+    String? notes,
+  }) async {
+    return _withProviderId((providerId) async {
+      try {
+        await _api.createBooking(
+          providerId: providerId,
+          serviceId: serviceId,
+          staffProviderId: staffId,
+          startTime: startTime,
+          customerNotes: walkInNotes(
+            clientName: clientName,
+            clientPhone: clientPhone,
+            notes: notes,
+          ),
+        );
+        return const Right(null);
+      } on DioException catch (e) {
+        final code = HomeApiService.errorCode(e.response?.data);
+        final mapped = code == null ? null : _errorCodeMessages[code];
+        return Left(ServerFailure(mapped ?? 'ثبت نوبت ناموفق بود'));
+      }
+    });
+  }
+
+  /// MVP walk-in identity convention (spec: provider-booking-composer):
+  /// `مشتری حضوری: <name>[ — <phone>]` prepended to the free-form notes.
+  static String walkInNotes({
+    String? clientName,
+    String? clientPhone,
+    String? notes,
+  }) {
+    final name = clientName?.trim() ?? '';
+    final phone = clientPhone?.trim() ?? '';
+    final free = notes?.trim() ?? '';
+    final walkIn = name.isEmpty && phone.isEmpty
+        ? ''
+        : 'مشتری حضوری: ${[name, phone].where((s) => s.isNotEmpty).join(' — ')}';
+    return [walkIn, free].where((s) => s.isNotEmpty).join('\n');
+  }
+
+  /// Resolves the current providerId or fails with an auth failure.
+  Future<Either<Failure, T>> _withProviderId<T>(
+    Future<Either<Failure, T>> Function(String providerId) body,
+  ) async {
+    final sessionOr = await _auth.getCurrentSession();
+    return sessionOr.fold(Left.new, (session) {
+      final providerId = session?.providerId;
+      if (providerId == null) {
+        return Future.value(
+            const Left<Failure, Never>(AuthFailure('نشست معتبر یافت نشد')));
+      }
+      return body(providerId);
+    });
+  }
 
   /// serviceId → name for the provider's catalog; empty on failure
   /// (best-effort enrichment only — rows fall back to time-only labels).
