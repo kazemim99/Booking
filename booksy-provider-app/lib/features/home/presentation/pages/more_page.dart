@@ -92,12 +92,13 @@ class MorePage extends StatelessWidget {
             label: AppStrings.moreHolidays,
             onTap: () => context.push(Routes.moreHolidays),
           ),
-          // Edit flows not shipped yet — visibly disabled (design D1).
-          _row(context,
-              key: 'more-gallery',
-              icon: Icons.photo_library_outlined,
-              label: AppStrings.moreGallery,
-              enabled: false),
+          _row(
+            context,
+            key: 'more-gallery',
+            icon: Icons.photo_library_outlined,
+            label: AppStrings.moreGallery,
+            onTap: () => context.push(Routes.moreGallery),
+          ),
           const SizedBox(height: AppSpacing.lg),
           _sectionHeader(AppStrings.moreAccountSection),
           if (session != null)

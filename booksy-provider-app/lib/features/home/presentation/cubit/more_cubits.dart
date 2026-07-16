@@ -4,7 +4,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 
 import '../../../../core/errors/failures.dart';
 import '../../../onboarding/domain/entities/onboarding_data.dart'
-    show ClockTime, DayHours;
+    show ClockTime, DayHours, GalleryImageUpload;
 import '../../domain/entities/composer_models.dart';
 import '../../domain/entities/more_models.dart';
 import '../../domain/repositories/home_repository.dart';
@@ -131,6 +131,37 @@ class BusinessHoursCubit extends _MoreLoadCubit<List<DayHours>> {
         for (final d in days) d.dayOfWeek == dayOfWeek ? edit(d) : d,
       ],
     ));
+  }
+}
+
+/// More → گالری — photo grid + mutations
+/// (spec: provider-gallery-management).
+class GalleryCubit extends _MoreLoadCubit<List<GalleryImage>> {
+  final HomeRepository _repository;
+  GalleryCubit(this._repository);
+
+  @override
+  Future<Either<Failure, List<GalleryImage>>> fetch() =>
+      _repository.fetchGallery();
+
+  Future<Failure?> uploadImages(List<GalleryImageUpload> images) =>
+      _reloadAfter(() => _repository.uploadGalleryImages(images));
+
+  Future<Failure?> setPrimary(String imageId) =>
+      _reloadAfter(() => _repository.setPrimaryGalleryImage(imageId));
+
+  Future<Failure?> removeImage(String imageId) =>
+      _reloadAfter(() => _repository.removeGalleryImage(imageId));
+
+  Future<Failure?> _reloadAfter(
+    Future<Either<Failure, void>> Function() call,
+  ) async {
+    final result = await call();
+    if (isClosed) return null;
+    return result.fold((f) => f, (_) {
+      load();
+      return null;
+    });
   }
 }
 

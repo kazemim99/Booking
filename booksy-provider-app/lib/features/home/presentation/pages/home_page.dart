@@ -182,6 +182,8 @@ class HomeView extends StatelessWidget {
                 context.push(Routes.moreStaff);
               case 'services':
                 context.push(Routes.moreServices);
+              case 'gallery':
+                context.push(Routes.moreGallery);
               default:
                 AppSnackbar.info(context, AppStrings.comingSoon);
             }

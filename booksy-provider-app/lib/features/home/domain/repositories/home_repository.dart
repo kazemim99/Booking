@@ -2,7 +2,7 @@ import 'package:dartz/dartz.dart';
 
 import '../../../../core/errors/failures.dart';
 import '../../../onboarding/domain/entities/onboarding_data.dart'
-    show DayHours;
+    show DayHours, GalleryImageUpload;
 import '../entities/composer_models.dart';
 import '../entities/home_booking.dart';
 import '../entities/home_snapshot.dart';
@@ -103,6 +103,21 @@ abstract class HomeRepository {
 
   /// Removes a day off.
   Future<Either<Failure, void>> removeHoliday(String holidayId);
+
+  // ---- Gallery (spec: provider-gallery-management) ----
+
+  /// The gallery, display-order first with the primary image marked.
+  Future<Either<Failure, List<GalleryImage>>> fetchGallery();
+
+  /// Uploads picked images (multipart).
+  Future<Either<Failure, void>> uploadGalleryImages(
+      List<GalleryImageUpload> images);
+
+  /// Marks an image as the primary/public one.
+  Future<Either<Failure, void>> setPrimaryGalleryImage(String imageId);
+
+  /// Deletes an image.
+  Future<Either<Failure, void>> removeGalleryImage(String imageId);
 
   // ---- Clients (spec: provider-clients) ----
 

@@ -5,7 +5,7 @@ import '../../../../core/errors/failures.dart';
 import '../../../auth/domain/entities/provider_status.dart';
 import '../../../auth/domain/repositories/auth_repository.dart';
 import '../../../onboarding/domain/entities/onboarding_data.dart'
-    show DayHours;
+    show DayHours, GalleryImageUpload;
 import '../../domain/entities/composer_models.dart';
 import '../../domain/entities/home_booking.dart';
 import '../../domain/entities/home_enums.dart';
@@ -297,6 +297,59 @@ class HomeRepositoryImpl implements HomeRepository {
           businessName: businessName, description: description),
       'ذخیرهٔ مشخصات کسب‌وکار ناموفق بود',
     );
+  }
+
+  // ==================== gallery ====================
+
+  @override
+  Future<Either<Failure, List<GalleryImage>>> fetchGallery() {
+    return _withProviderId((providerId) async {
+      try {
+        final raw = await _api.getGallery(providerId);
+        final images = raw
+            .map((g) => GalleryImage(
+                  id: HomeApiService.readString(g, const ['id']),
+                  thumbnailUrl: HomeApiService.readString(
+                      g, const ['thumbnailUrl', 'mediumUrl', 'originalUrl']),
+                  originalUrl: HomeApiService.readString(
+                      g, const ['originalUrl', 'mediumUrl']),
+                  isPrimary: g['isPrimary'] == true,
+                  displayOrder:
+                      HomeApiService.readInt(g, const ['displayOrder']),
+                ))
+            .where((g) => g.id.isNotEmpty)
+            .toList()
+          ..sort((a, b) => a.displayOrder.compareTo(b.displayOrder));
+        return Right(images);
+      } on DioException {
+        return const Left(ServerFailure('دریافت گالری ناموفق بود'));
+      }
+    });
+  }
+
+  @override
+  Future<Either<Failure, void>> uploadGalleryImages(
+      List<GalleryImageUpload> images) {
+    return _withProviderId((providerId) => _action(
+          () => _api.uploadGalleryImages(providerId, images),
+          'بارگذاری تصاویر ناموفق بود',
+        ));
+  }
+
+  @override
+  Future<Either<Failure, void>> setPrimaryGalleryImage(String imageId) {
+    return _withProviderId((providerId) => _action(
+          () => _api.setPrimaryGalleryImage(providerId, imageId),
+          'تغییر تصویر اصلی ناموفق بود',
+        ));
+  }
+
+  @override
+  Future<Either<Failure, void>> removeGalleryImage(String imageId) {
+    return _withProviderId((providerId) => _action(
+          () => _api.deleteGalleryImage(providerId, imageId),
+          'حذف تصویر ناموفق بود',
+        ));
   }
 
   // ==================== holidays ====================

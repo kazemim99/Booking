@@ -85,6 +85,10 @@ class ApiConstants {
   static String providerHolidays(String providerId) =>
       '/$apiVersion/providers/$providerId/holidays';
 
+  /// GET/POST — provider gallery; per-image ops at /{imageId}[/set-primary].
+  static String providerGallery(String providerId) =>
+      '/$apiVersion/Providers/$providerId/gallery';
+
   /// GET — the provider's client book (derived from bookings).
   static String providerClients(String providerId) =>
       '/$apiVersion/Providers/$providerId/clients';

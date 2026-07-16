@@ -1,4 +1,4 @@
-﻿using Booksy.API.Extensions;
+using Booksy.API.Extensions;
 using Booksy.Core.Application.DTOs;
 using Booksy.Core.Application.Exceptions;
 using Booksy.Core.Domain.Exceptions;
@@ -1440,6 +1440,11 @@ public class ProvidersController : ControllerBase
         [FromForm] IFormFileCollection files,
         CancellationToken cancellationToken = default)
     {
+        if (!await CanManageProvider(providerId))
+        {
+            return Forbid();
+        }
+
         var command = new Application.Commands.Provider.UploadGalleryImages.UploadGalleryImagesCommand(
             providerId,
             files);
@@ -1515,6 +1520,11 @@ public class ProvidersController : ControllerBase
         [FromBody] UpdateGalleryImageMetadataRequest request,
         CancellationToken cancellationToken = default)
     {
+        if (!await CanManageProvider(providerId))
+        {
+            return Forbid();
+        }
+
         var command = new Application.Commands.Provider.UpdateGalleryImageMetadata.UpdateGalleryImageMetadataCommand(
             providerId,
             imageId,
@@ -1543,6 +1553,11 @@ public class ProvidersController : ControllerBase
         [FromBody] ReorderGalleryImagesRequest request,
         CancellationToken cancellationToken = default)
     {
+        if (!await CanManageProvider(providerId))
+        {
+            return Forbid();
+        }
+
         var command = new Application.Commands.Provider.ReorderGalleryImages.ReorderGalleryImagesCommand(
             providerId,
             request.ImageOrders,
@@ -1570,6 +1585,11 @@ public class ProvidersController : ControllerBase
         [FromRoute] Guid imageId,
         CancellationToken cancellationToken = default)
     {
+        if (!await CanManageProvider(providerId))
+        {
+            return Forbid();
+        }
+
         var command = new Application.Commands.Provider.SetPrimaryGalleryImage.SetPrimaryGalleryImageCommand(
             providerId,
             imageId);
@@ -1596,6 +1616,11 @@ public class ProvidersController : ControllerBase
         [FromRoute] Guid imageId,
         CancellationToken cancellationToken = default)
     {
+        if (!await CanManageProvider(providerId))
+        {
+            return Forbid();
+        }
+
         var command = new Application.Commands.Provider.DeleteGalleryImage.DeleteGalleryImageCommand(
             providerId,
             imageId);

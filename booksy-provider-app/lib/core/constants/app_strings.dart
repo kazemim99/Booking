@@ -409,6 +409,21 @@ class AppStrings {
   static String holidayRemoveConfirmBody(String date) =>
       'تعطیلی $date حذف شود؟';
 
+  // ==================== Gallery management ====================
+  static const String galleryEmpty = 'هنوز تصویری بارگذاری نشده';
+  static const String galleryEmptyBody =
+      'با افزودن تصاویر، پروفایل شما برای مشتریان جذاب‌تر می‌شود';
+  static const String galleryUpload = 'افزودن تصویر';
+  static const String galleryUploaded = 'تصاویر بارگذاری شد';
+  static const String galleryPrimaryBadge = 'اصلی';
+  static const String gallerySetPrimary = 'انتخاب به‌عنوان تصویر اصلی';
+  static const String galleryPrimarySet = 'تصویر اصلی تغییر کرد';
+  static const String galleryRemove = 'حذف تصویر';
+  static const String galleryRemoved = 'تصویر حذف شد';
+  static const String galleryRemoveConfirmTitle = 'حذف تصویر';
+  static const String galleryRemoveConfirmBody =
+      'این تصویر از گالری حذف شود؟';
+
   // Banner copy for availability states (now reachable).
   static const String homeClosedTodayBanner = 'امروز تعطیل هستید';
   static const String homeClosedTodayBody =

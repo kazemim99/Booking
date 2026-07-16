@@ -15,6 +15,7 @@ import '../../features/auth/presentation/pages/splash_page.dart';
 import '../../features/home/presentation/pages/booking_composer_page.dart';
 import '../../features/home/presentation/pages/calendar_page.dart';
 import '../../features/home/presentation/pages/clients_page.dart';
+import '../../features/home/presentation/pages/gallery_page.dart';
 import '../../features/home/presentation/pages/more_page.dart';
 import '../../features/home/presentation/pages/more_sub_pages.dart';
 import '../../features/home/presentation/pages/home_page.dart';
@@ -32,6 +33,7 @@ class Routes {
   static const String moreBusiness = '/more/business';
   static const String moreHours = '/more/hours';
   static const String moreHolidays = '/more/holidays';
+  static const String moreGallery = '/more/gallery';
   static const String moreInsights = '/more/insights';
   static const String moreServices = '/more/services';
   static const String moreStaff = '/more/staff';
@@ -223,6 +225,10 @@ class AppRouter {
         GoRoute(
           path: Routes.moreHolidays,
           builder: (_, _) => const HolidaysPage(),
+        ),
+        GoRoute(
+          path: Routes.moreGallery,
+          builder: (_, _) => const GalleryPage(),
         ),
         GoRoute(
           path: Routes.moreInsights,

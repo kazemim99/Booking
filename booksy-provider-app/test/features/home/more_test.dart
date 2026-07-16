@@ -10,10 +10,11 @@ import 'package:booksy_provider_app/features/auth/presentation/bloc/auth_state.d
 import 'package:booksy_provider_app/features/home/data/datasources/home_api_service.dart';
 import 'package:booksy_provider_app/features/home/domain/entities/composer_models.dart';
 import 'package:booksy_provider_app/features/onboarding/domain/entities/onboarding_data.dart'
-    show BreakTime, ClockTime, DayHours;
+    show BreakTime, ClockTime, DayHours, GalleryImageUpload;
 import 'package:booksy_provider_app/features/home/domain/entities/more_models.dart';
 import 'package:booksy_provider_app/features/home/domain/repositories/home_repository.dart';
 import 'package:booksy_provider_app/features/home/presentation/cubit/more_cubits.dart';
+import 'package:booksy_provider_app/features/home/presentation/pages/gallery_page.dart';
 import 'package:booksy_provider_app/features/home/presentation/pages/more_page.dart';
 import 'package:booksy_provider_app/features/home/presentation/pages/more_sub_pages.dart';
 import 'package:dartz/dartz.dart';
@@ -134,13 +135,14 @@ void main() {
       ]) {
         expect(find.byKey(Key(k)), findsOneWidget);
       }
-      // The last coming-soon row (gallery) is visible but disabled.
-      expect(find.text(AppStrings.comingSoon), findsOneWidget);
-      final galleryRow =
-          tester.widget<InkWell>(find.byKey(const Key('more-gallery')));
-      expect(galleryRow.onTap, isNull);
-      // Business-profile and hours rows are live.
-      for (final k in ['more-profile', 'more-hours']) {
+      // No coming-soon rows remain — every hub destination is live.
+      expect(find.text(AppStrings.comingSoon), findsNothing);
+      for (final k in [
+        'more-profile',
+        'more-hours',
+        'more-holidays',
+        'more-gallery',
+      ]) {
         expect(tester.widget<InkWell>(find.byKey(Key(k))).onTap, isNotNull);
       }
 
@@ -255,6 +257,134 @@ void main() {
 
       expect(find.text('خطا'), findsOneWidget); // snackbar
       expect(find.text('سالن نو'), findsOneWidget); // edit preserved
+    });
+  });
+
+  group('Gallery management (spec: provider-gallery-management)', () {
+    const primary = GalleryImage(
+        id: 'g1', thumbnailUrl: 'http://x/1.jpg', isPrimary: true);
+    const secondary =
+        GalleryImage(id: 'g2', thumbnailUrl: 'http://x/2.jpg');
+
+    setUp(() {
+      when(() => repository.fetchGallery())
+          .thenAnswer((_) async => const Right([primary, secondary]));
+      when(() => repository.uploadGalleryImages(any()))
+          .thenAnswer((_) async => const Right(null));
+      when(() => repository.setPrimaryGalleryImage(any()))
+          .thenAnswer((_) async => const Right(null));
+      when(() => repository.removeGalleryImage(any()))
+          .thenAnswer((_) async => const Right(null));
+    });
+
+    test('cubit mutations reload on success', () async {
+      final cubit = GalleryCubit(repository);
+      await cubit.load();
+      clearInteractions(repository);
+      when(() => repository.fetchGallery())
+          .thenAnswer((_) async => const Right([primary]));
+
+      expect(await cubit.setPrimary('g2'), isNull);
+      await Future<void>.delayed(Duration.zero);
+      verify(() => repository.fetchGallery()).called(1);
+      await cubit.close();
+    });
+
+    Future<GalleryCubit> pumpGallery(
+      WidgetTester tester, {
+      PickGalleryImages? picker,
+    }) async {
+      final cubit = GalleryCubit(repository);
+      addTearDown(cubit.close);
+      await tester.pumpWidget(
+        MaterialApp(
+          theme: AppTheme.light,
+          builder: (context, child) => Directionality(
+            textDirection: TextDirection.rtl,
+            child: child ?? const SizedBox.shrink(),
+          ),
+          home: BlocProvider<GalleryCubit>.value(
+            value: cubit..load(),
+            child: GalleryView(
+              pickImages: picker ??
+                  () async => const [
+                        GalleryImageUpload(name: 'a.jpg', bytes: [1, 2]),
+                      ],
+            ),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+      return cubit;
+    }
+
+    testWidgets('grid renders with the primary badge', (tester) async {
+      await pumpGallery(tester);
+
+      expect(find.byKey(const Key('gallery-grid')), findsOneWidget);
+      expect(find.byKey(const Key('gallery-image-g1')), findsOneWidget);
+      expect(find.byKey(const Key('gallery-primary-g1')), findsOneWidget);
+      expect(find.byKey(const Key('gallery-primary-g2')), findsNothing);
+    });
+
+    testWidgets('image sheet sets primary (only offered on non-primary)',
+        (tester) async {
+      await pumpGallery(tester);
+
+      await tester.tap(find.byKey(const Key('gallery-image-g2')));
+      await tester.pumpAndSettle();
+      expect(find.byKey(const Key('gallery-set-primary')), findsOneWidget);
+
+      await tester.tap(find.byKey(const Key('gallery-set-primary')));
+      await tester.pumpAndSettle();
+      verify(() => repository.setPrimaryGalleryImage('g2')).called(1);
+    });
+
+    testWidgets('delete requires confirmation', (tester) async {
+      await pumpGallery(tester);
+
+      await tester.tap(find.byKey(const Key('gallery-image-g1')));
+      await tester.pumpAndSettle();
+      // The primary image's sheet offers delete only.
+      expect(find.byKey(const Key('gallery-set-primary')), findsNothing);
+      await tester.tap(find.byKey(const Key('gallery-delete')));
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.byKey(const Key('gallery-remove-cancel')));
+      await tester.pumpAndSettle();
+      verifyNever(() => repository.removeGalleryImage(any()));
+
+      await tester.tap(find.byKey(const Key('gallery-image-g1')));
+      await tester.pumpAndSettle();
+      await tester.tap(find.byKey(const Key('gallery-delete')));
+      await tester.pumpAndSettle();
+      await tester.tap(find.byKey(const Key('gallery-remove-confirm')));
+      await tester.pumpAndSettle();
+      verify(() => repository.removeGalleryImage('g1')).called(1);
+    });
+
+    testWidgets('upload flows picked images to the repository',
+        (tester) async {
+      await pumpGallery(tester);
+
+      await tester.tap(find.byKey(const Key('gallery-upload')));
+      await tester.pumpAndSettle();
+
+      final sent =
+          verify(() => repository.uploadGalleryImages(captureAny()))
+              .captured
+              .single as List<GalleryImageUpload>;
+      expect(sent.single.name, 'a.jpg');
+      expect(find.text(AppStrings.galleryUploaded), findsOneWidget);
+    });
+
+    testWidgets('empty gallery invites upload', (tester) async {
+      when(() => repository.fetchGallery())
+          .thenAnswer((_) async => const Right([]));
+      await pumpGallery(tester);
+
+      expect(find.text(AppStrings.galleryEmpty), findsOneWidget);
+      expect(find.text('+ ${AppStrings.galleryUpload}'), findsOneWidget);
     });
   });
 

@@ -69,6 +69,27 @@ class ProviderHoliday extends Equatable {
   List<Object?> get props => [id, date, reason, isRecurring];
 }
 
+/// A gallery photo (More → گالری).
+class GalleryImage extends Equatable {
+  final String id;
+  final String thumbnailUrl;
+  final String originalUrl;
+  final bool isPrimary;
+  final int displayOrder;
+
+  const GalleryImage({
+    required this.id,
+    required this.thumbnailUrl,
+    this.originalUrl = '',
+    this.isPrimary = false,
+    this.displayOrder = 0,
+  });
+
+  @override
+  List<Object?> get props =>
+      [id, thumbnailUrl, originalUrl, isPrimary, displayOrder];
+}
+
 /// Booking statistics for the Insights screen (all-time + trailing 30 days).
 class InsightsSummary extends Equatable {
   final int totalBookings;

@@ -2,7 +2,7 @@ import 'package:dio/dio.dart';
 
 import '../../../../core/api/config/api_constants.dart';
 import '../../../onboarding/domain/entities/onboarding_data.dart'
-    show BreakTime, ClockTime, DayHours;
+    show BreakTime, ClockTime, DayHours, GalleryImageUpload;
 import '../../domain/entities/home_booking.dart';
 
 /// Raw API access for the Home snapshot (manual JSON — no codegen, see
@@ -255,6 +255,39 @@ class HomeApiService {
   /// DELETE /v1/providers/{id}/holidays/{holidayId}.
   Future<void> deleteHoliday(String providerId, String holidayId) =>
       _dio.delete('${ApiConstants.providerHolidays(providerId)}/$holidayId');
+
+  // ==================== gallery ====================
+
+  /// GET /v1/Providers/{id}/gallery — raw image maps.
+  Future<List<Map<String, dynamic>>> getGallery(String providerId) async {
+    final res = await _dio.get(ApiConstants.providerGallery(providerId));
+    return unwrapList(res.data);
+  }
+
+  /// POST /v1/Providers/{id}/gallery — multipart upload under `files`
+  /// (same idiom as the onboarding step-7 upload).
+  Future<void> uploadGalleryImages(
+    String providerId,
+    List<GalleryImageUpload> images,
+  ) async {
+    final form = FormData();
+    for (final img in images) {
+      form.files.add(MapEntry(
+        'files',
+        MultipartFile.fromBytes(img.bytes, filename: img.name),
+      ));
+    }
+    await _dio.post(ApiConstants.providerGallery(providerId), data: form);
+  }
+
+  /// PUT /v1/Providers/{id}/gallery/{imageId}/set-primary.
+  Future<void> setPrimaryGalleryImage(String providerId, String imageId) =>
+      _dio.put(
+          '${ApiConstants.providerGallery(providerId)}/$imageId/set-primary');
+
+  /// DELETE /v1/Providers/{id}/gallery/{imageId}.
+  Future<void> deleteGalleryImage(String providerId, String imageId) =>
+      _dio.delete('${ApiConstants.providerGallery(providerId)}/$imageId');
 
   // ==================== staff management ====================
 
