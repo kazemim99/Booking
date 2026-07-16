@@ -64,8 +64,19 @@ class _Banner extends StatelessWidget {
           AppStrings.homeOfflineBanner,
           AppStrings.homeStaleBanner,
         ),
-      // Not yet reachable (availability is backend-managed and always OPEN
-      // for now; nudges have no source) — copy kept minimal until they ship.
+      HomeBannerKind.closedToday => (
+          AppColors.surfaceSoft,
+          Icons.nightlight_outlined,
+          AppStrings.homeClosedTodayBanner,
+          AppStrings.homeClosedTodayBody,
+        ),
+      HomeBannerKind.vacation => (
+          AppColors.surfaceSoft,
+          Icons.beach_access_outlined,
+          AppStrings.homeVacationBanner,
+          null,
+        ),
+      // Nudges have no source yet — copy kept minimal until they ship.
       _ => (
           AppColors.surfaceSoft,
           Icons.info_outline,

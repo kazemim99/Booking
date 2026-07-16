@@ -393,6 +393,27 @@ class AppStrings {
   static const String hoursSaved = 'ساعات کاری ذخیره شد';
   static const String hoursClosedDay = 'تعطیل';
   static const String hoursBreak = 'استراحت';
+
+  // ==================== Holidays ====================
+  static const String moreHolidays = 'تعطیلات و مرخصی';
+  static const String holidaysEmpty = 'تعطیلی‌ای ثبت نشده است';
+  static const String holidayAdd = 'ثبت تعطیلی';
+  static const String holidayReason = 'دلیل (مثلاً مرخصی)';
+  static const String holidayRecurring = 'هر سال تکرار شود';
+  static const String holidayRecurringBadge = 'سالانه';
+  static const String holidayPickDate = 'انتخاب تاریخ';
+  static const String holidaySave = 'ثبت';
+  static const String holidayAdded = 'تعطیلی ثبت شد';
+  static const String holidayRemoved = 'تعطیلی حذف شد';
+  static const String holidayRemoveConfirmTitle = 'حذف تعطیلی';
+  static String holidayRemoveConfirmBody(String date) =>
+      'تعطیلی $date حذف شود؟';
+
+  // Banner copy for availability states (now reachable).
+  static const String homeClosedTodayBanner = 'امروز تعطیل هستید';
+  static const String homeClosedTodayBody =
+      'امروز در تقویم شما تعطیل ثبت شده و نوبت جدیدی پذیرفته نمی‌شود.';
+  static const String homeVacationBanner = 'در حالت مرخصی هستید';
   static const String staffUpdated = 'عضو تیم ویرایش شد';
   static const String staffRemoved = 'عضو تیم حذف شد';
 

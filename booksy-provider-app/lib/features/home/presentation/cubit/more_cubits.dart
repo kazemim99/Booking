@@ -134,6 +134,39 @@ class BusinessHoursCubit extends _MoreLoadCubit<List<DayHours>> {
   }
 }
 
+/// More → تعطیلات و مرخصی — days off list + mutations
+/// (spec: provider-holidays-management).
+class HolidaysCubit extends _MoreLoadCubit<List<ProviderHoliday>> {
+  final HomeRepository _repository;
+  HolidaysCubit(this._repository);
+
+  @override
+  Future<Either<Failure, List<ProviderHoliday>>> fetch() =>
+      _repository.fetchHolidays();
+
+  Future<Failure?> addHoliday({
+    required DateTime date,
+    required String reason,
+    bool isRecurring = false,
+  }) =>
+      _mutateAndReload(() => _repository.addHoliday(
+          date: date, reason: reason, isRecurring: isRecurring));
+
+  Future<Failure?> removeHoliday(String holidayId) =>
+      _mutateAndReload(() => _repository.removeHoliday(holidayId));
+
+  Future<Failure?> _mutateAndReload(
+    Future<Either<Failure, void>> Function() call,
+  ) async {
+    final result = await call();
+    if (isClosed) return null;
+    return result.fold((f) => f, (_) {
+      load();
+      return null;
+    });
+  }
+}
+
 /// More → تیم (Staff) — list + CRUD mutations
 /// (spec: provider-staff-management).
 class StaffCubit extends _MoreLoadCubit<List<ProviderStaffMember>> {

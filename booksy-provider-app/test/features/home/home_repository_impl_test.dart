@@ -53,6 +53,7 @@ void main() {
     when(() => api.getBookingStatistics(any()))
         .thenAnswer((_) async => {'totalBookings': 50});
     when(() => api.getProviderServices(any())).thenAnswer((_) async => []);
+    when(() => api.getHolidays(any())).thenAnswer((_) async => []);
   });
 
   HomeRepositoryImpl build() => HomeRepositoryImpl(api, auth, now: () => now);
@@ -356,6 +357,78 @@ void main() {
       expect(staff[0].role, 'Stylist');
       expect(staff[0].isActive, isTrue);
       expect(staff[1].isActive, isFalse);
+    });
+  });
+
+  group('holidays → availability (spec: provider-holidays-management)', () {
+    setUp(() {
+      when(() => api.getProviderBookings(any(),
+              from: any(named: 'from'), to: any(named: 'to')))
+          .thenAnswer((_) async => []);
+    });
+
+    test('today matching a holiday resolves closedToday', () async {
+      when(() => api.getHolidays(any())).thenAnswer(
+        (_) async => [
+          {'id': 'h1', 'date': '2026-07-15', 'reason': 'مرخصی'},
+        ],
+      );
+
+      final snap = (await build().fetchSnapshot())
+          .getOrElse(() => throw StateError('expected Right'));
+
+      expect(snap.availability, HomeAvailability.closedToday);
+    });
+
+    test('recurring holiday matches by month/day across years', () async {
+      when(() => api.getHolidays(any())).thenAnswer(
+        (_) async => [
+          {
+            'id': 'h1',
+            'date': '2020-07-15', // years ago, recurring
+            'reason': 'سالگرد',
+            'isRecurring': true,
+          },
+        ],
+      );
+
+      final snap = (await build().fetchSnapshot())
+          .getOrElse(() => throw StateError('expected Right'));
+
+      expect(snap.availability, HomeAvailability.closedToday);
+    });
+
+    test('non-matching and failing holiday lookups stay open', () async {
+      when(() => api.getHolidays(any())).thenAnswer(
+        (_) async => [
+          {'id': 'h1', 'date': '2026-08-01', 'reason': 'بعداً'},
+        ],
+      );
+      var snap = (await build().fetchSnapshot())
+          .getOrElse(() => throw StateError('expected Right'));
+      expect(snap.availability, HomeAvailability.open);
+
+      when(() => api.getHolidays(any()))
+          .thenThrow(DioException(requestOptions: RequestOptions(path: '/x')));
+      snap = (await build().fetchSnapshot())
+          .getOrElse(() => throw StateError('expected Right'));
+      expect(snap.availability, HomeAvailability.open);
+    });
+
+    test('fetchHolidays maps and sorts soonest-first', () async {
+      when(() => api.getHolidays(any())).thenAnswer(
+        (_) async => [
+          {'id': 'h2', 'date': '2026-09-01', 'reason': 'دوم'},
+          {'id': 'h1', 'date': '2026-08-01', 'reason': 'اول',
+            'isRecurring': true},
+        ],
+      );
+
+      final holidays = (await build().fetchHolidays())
+          .getOrElse(() => throw StateError('expected Right'));
+
+      expect(holidays.map((h) => h.id), ['h1', 'h2']);
+      expect(holidays.first.isRecurring, isTrue);
     });
   });
 

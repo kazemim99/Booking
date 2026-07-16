@@ -224,6 +224,38 @@ class HomeApiService {
     };
   }
 
+  // ==================== holidays ====================
+
+  /// GET /v1/providers/{id}/holidays — raw holiday maps
+  /// (shape: {holidays:[{id, date:"yyyy-MM-dd", reason, isRecurring}]}).
+  Future<List<Map<String, dynamic>>> getHolidays(String providerId) async {
+    final res = await _dio.get(ApiConstants.providerHolidays(providerId));
+    final holidays = unwrapMap(res.data)['holidays'];
+    if (holidays is! List) return const [];
+    return holidays.whereType<Map<String, dynamic>>().toList();
+  }
+
+  /// POST /v1/providers/{id}/holidays — adds a day off.
+  Future<void> addHoliday(
+    String providerId, {
+    required DateTime date,
+    required String reason,
+    bool isRecurring = false,
+  }) =>
+      _dio.post(
+        ApiConstants.providerHolidays(providerId),
+        data: {
+          'date':
+              '${date.year.toString().padLeft(4, '0')}-${date.month.toString().padLeft(2, '0')}-${date.day.toString().padLeft(2, '0')}',
+          'reason': reason,
+          'isRecurring': isRecurring,
+        },
+      );
+
+  /// DELETE /v1/providers/{id}/holidays/{holidayId}.
+  Future<void> deleteHoliday(String providerId, String holidayId) =>
+      _dio.delete('${ApiConstants.providerHolidays(providerId)}/$holidayId');
+
   // ==================== staff management ====================
 
   /// POST /v1/Providers/{id}/staff — adds a team member.

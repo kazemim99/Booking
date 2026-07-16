@@ -537,6 +537,246 @@ class _BusinessHoursViewState extends State<BusinessHoursView> {
   }
 }
 
+/// More → تعطیلات و مرخصی (spec: provider-holidays-management).
+class HolidaysPage extends StatelessWidget {
+  const HolidaysPage({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return BlocProvider<HolidaysCubit>(
+      create: (_) => getIt<HolidaysCubit>()..load(),
+      child: const HolidaysView(),
+    );
+  }
+}
+
+/// Separated from [HolidaysPage] so tests can pump it with a fake cubit.
+class HolidaysView extends StatelessWidget {
+  const HolidaysView({super.key});
+
+  static String _dm(DateTime d) => '${d.day}/${d.month}/${d.year}';
+
+  @override
+  Widget build(BuildContext context) {
+    return BlocBuilder<HolidaysCubit, MoreState<List<ProviderHoliday>>>(
+      builder: (context, state) =>
+          _MoreSubScaffold<List<ProviderHoliday>>(
+        title: AppStrings.moreHolidays,
+        state: state,
+        onRetry: context.read<HolidaysCubit>().load,
+        actions: [
+          IconButton(
+            key: const Key('holiday-add'),
+            tooltip: AppStrings.holidayAdd,
+            icon: const Icon(Icons.add_circle_outline,
+                color: AppColors.primary),
+            onPressed: () =>
+                _HolidayFormSheet.show(context, context.read<HolidaysCubit>()),
+          ),
+        ],
+        bodyBuilder: (context, holidays) => holidays.isEmpty
+            ? AppEmptyState(
+                icon: Icons.beach_access_outlined,
+                message: AppStrings.holidaysEmpty,
+                actionLabel: '+ ${AppStrings.holidayAdd}',
+                onAction: () => _HolidayFormSheet.show(
+                    context, context.read<HolidaysCubit>()),
+              )
+            : ListView.separated(
+                padding: const EdgeInsets.all(AppSpacing.md),
+                itemCount: holidays.length,
+                separatorBuilder: (_, _) =>
+                    const Divider(color: AppColors.divider, height: 1),
+                itemBuilder: (context, i) {
+                  final h = holidays[i];
+                  return ListTile(
+                    key: Key('holiday-row-${h.id}'),
+                    contentPadding: EdgeInsets.zero,
+                    leading: const Icon(Icons.event_busy_outlined,
+                        color: AppColors.primary),
+                    title: Text(
+                      h.reason,
+                      style: const TextStyle(
+                          fontSize: 15, color: AppColors.ink),
+                    ),
+                    subtitle: Text(
+                      [
+                        _dm(h.date),
+                        if (h.isRecurring) AppStrings.holidayRecurringBadge,
+                      ].join(' · '),
+                      style: const TextStyle(
+                          fontSize: 12, color: AppColors.muted),
+                    ),
+                    trailing: IconButton(
+                      key: Key('holiday-remove-${h.id}'),
+                      icon: const Icon(Icons.delete_outline,
+                          size: AppIconSize.action, color: AppColors.danger),
+                      onPressed: () => _confirmRemove(context, h),
+                    ),
+                  );
+                },
+              ),
+      ),
+    );
+  }
+
+  Future<void> _confirmRemove(
+      BuildContext context, ProviderHoliday holiday) async {
+    final cubit = context.read<HolidaysCubit>();
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: const Text(AppStrings.holidayRemoveConfirmTitle),
+        content: Text(AppStrings.holidayRemoveConfirmBody(_dm(holiday.date))),
+        actions: [
+          TextButton(
+            key: const Key('holiday-remove-cancel'),
+            onPressed: () => Navigator.pop(dialogContext, false),
+            child: const Text(AppStrings.cancel),
+          ),
+          TextButton(
+            key: const Key('holiday-remove-confirm'),
+            onPressed: () => Navigator.pop(dialogContext, true),
+            style: TextButton.styleFrom(foregroundColor: AppColors.danger),
+            child: const Text(AppStrings.staffRemoveConfirm),
+          ),
+        ],
+      ),
+    );
+    if (confirmed != true || !context.mounted) return;
+    final failure = await cubit.removeHoliday(holiday.id);
+    if (!context.mounted) return;
+    if (failure == null) {
+      AppSnackbar.success(context, AppStrings.holidayRemoved);
+    } else {
+      AppSnackbar.error(context, failure.message);
+    }
+  }
+}
+
+/// Add-holiday form sheet (date picker + reason + yearly recurrence).
+class _HolidayFormSheet extends StatefulWidget {
+  final HolidaysCubit cubit;
+
+  const _HolidayFormSheet({required this.cubit});
+
+  static Future<void> show(BuildContext context, HolidaysCubit cubit) {
+    return showModalBottomSheet<void>(
+      context: context,
+      isScrollControlled: true,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(
+          top: Radius.circular(AppRadius.bottomSheet),
+        ),
+      ),
+      builder: (_) => Padding(
+        padding:
+            EdgeInsets.only(bottom: MediaQuery.of(context).viewInsets.bottom),
+        child: _HolidayFormSheet(cubit: cubit),
+      ),
+    );
+  }
+
+  @override
+  State<_HolidayFormSheet> createState() => _HolidayFormSheetState();
+}
+
+class _HolidayFormSheetState extends State<_HolidayFormSheet> {
+  final _reason = TextEditingController();
+  DateTime _date = DateTime.now().add(const Duration(days: 1));
+  bool _recurring = false;
+  bool _submitting = false;
+
+  @override
+  void dispose() {
+    _reason.dispose();
+    super.dispose();
+  }
+
+  Future<void> _pickDate() async {
+    final now = DateTime.now();
+    final picked = await showDatePicker(
+      context: context,
+      initialDate: _date,
+      firstDate: DateTime(now.year, now.month, now.day),
+      lastDate: now.add(const Duration(days: 365)),
+    );
+    if (picked != null) setState(() => _date = picked);
+  }
+
+  Future<void> _submit() async {
+    setState(() => _submitting = true);
+    final failure = await widget.cubit.addHoliday(
+      date: _date,
+      reason: _reason.text.trim(),
+      isRecurring: _recurring,
+    );
+    if (!mounted) return;
+    if (failure == null) {
+      Navigator.pop(context);
+      AppSnackbar.success(context, AppStrings.holidayAdded);
+    } else {
+      setState(() => _submitting = false);
+      AppSnackbar.error(context, failure.message);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return SafeArea(
+      child: Padding(
+        padding: const EdgeInsets.all(AppSpacing.md),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text(
+              AppStrings.holidayAdd,
+              style: TextStyle(
+                fontSize: 16,
+                fontWeight: FontWeight.w700,
+                color: AppColors.ink,
+              ),
+            ),
+            const SizedBox(height: AppSpacing.md),
+            OutlinedButton.icon(
+              key: const Key('holiday-date'),
+              onPressed: _pickDate,
+              icon: const Icon(Icons.event_outlined,
+                  size: AppIconSize.action),
+              label: Text(HolidaysView._dm(_date)),
+            ),
+            const SizedBox(height: AppSpacing.sm),
+            AppTextField(
+              key: const Key('holiday-reason'),
+              controller: _reason,
+              label: AppStrings.holidayReason,
+              onChanged: (_) => setState(() {}),
+            ),
+            SwitchListTile(
+              key: const Key('holiday-recurring'),
+              contentPadding: EdgeInsets.zero,
+              value: _recurring,
+              onChanged: (v) => setState(() => _recurring = v),
+              title: const Text(
+                AppStrings.holidayRecurring,
+                style: TextStyle(fontSize: 14, color: AppColors.ink),
+              ),
+            ),
+            AppButton(
+              key: const Key('holiday-save'),
+              label: AppStrings.holidaySave,
+              loading: _submitting,
+              onPressed: _reason.text.trim().isEmpty ? null : _submit,
+            ),
+            const SizedBox(height: AppSpacing.sm),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
 /// More → مشخصات کسب‌وکار (spec: provider-business-profile-editing).
 class BusinessProfilePage extends StatelessWidget {
   const BusinessProfilePage({super.key});

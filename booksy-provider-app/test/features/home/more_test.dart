@@ -258,6 +258,110 @@ void main() {
     });
   });
 
+  group('Holidays management (spec: provider-holidays-management)', () {
+    final holiday = ProviderHoliday(
+      id: 'h1',
+      date: DateTime(2026, 8, 1),
+      reason: 'مرخصی تابستانی',
+      isRecurring: true,
+    );
+
+    setUp(() {
+      when(() => repository.fetchHolidays())
+          .thenAnswer((_) async => Right([holiday]));
+      when(() => repository.addHoliday(
+            date: any(named: 'date'),
+            reason: any(named: 'reason'),
+            isRecurring: any(named: 'isRecurring'),
+          )).thenAnswer((_) async => const Right(null));
+      when(() => repository.removeHoliday(any()))
+          .thenAnswer((_) async => const Right(null));
+    });
+
+    test('cubit mutations reload on success', () async {
+      final cubit = HolidaysCubit(repository);
+      await cubit.load();
+      clearInteractions(repository);
+      when(() => repository.fetchHolidays())
+          .thenAnswer((_) async => Right([holiday]));
+
+      expect(
+        await cubit.addHoliday(date: DateTime(2026, 9, 1), reason: 'عید'),
+        isNull,
+      );
+      await Future<void>.delayed(Duration.zero);
+      verify(() => repository.fetchHolidays()).called(1);
+      await cubit.close();
+    });
+
+    Future<HolidaysCubit> pumpHolidays(WidgetTester tester) async {
+      final cubit = HolidaysCubit(repository);
+      addTearDown(cubit.close);
+      await tester.pumpWidget(
+        MaterialApp(
+          theme: AppTheme.light,
+          builder: (context, child) => Directionality(
+            textDirection: TextDirection.rtl,
+            child: child ?? const SizedBox.shrink(),
+          ),
+          home: BlocProvider<HolidaysCubit>.value(
+            value: cubit..load(),
+            child: const HolidaysView(),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+      return cubit;
+    }
+
+    testWidgets('lists holidays with recurring badge; remove is confirmed',
+        (tester) async {
+      await pumpHolidays(tester);
+
+      expect(find.byKey(const Key('holiday-row-h1')), findsOneWidget);
+      expect(find.textContaining(AppStrings.holidayRecurringBadge),
+          findsOneWidget);
+
+      await tester.tap(find.byKey(const Key('holiday-remove-h1')));
+      await tester.pumpAndSettle();
+      await tester.tap(find.byKey(const Key('holiday-remove-cancel')));
+      await tester.pumpAndSettle();
+      verifyNever(() => repository.removeHoliday(any()));
+
+      await tester.tap(find.byKey(const Key('holiday-remove-h1')));
+      await tester.pumpAndSettle();
+      await tester.tap(find.byKey(const Key('holiday-remove-confirm')));
+      await tester.pumpAndSettle();
+      verify(() => repository.removeHoliday('h1')).called(1);
+    });
+
+    testWidgets('add sheet gates on reason and submits', (tester) async {
+      await pumpHolidays(tester);
+
+      await tester.tap(find.byKey(const Key('holiday-add')));
+      await tester.pumpAndSettle();
+
+      final saveButton = tester.widget<FilledButton>(find.descendant(
+        of: find.byKey(const Key('holiday-save')),
+        matching: find.byType(FilledButton),
+      ));
+      expect(saveButton.onPressed, isNull); // gated on empty reason
+
+      await tester.enterText(
+          find.byKey(const Key('holiday-reason')), 'مرخصی');
+      await tester.pumpAndSettle();
+      await tester.tap(find.byKey(const Key('holiday-save')));
+      await tester.pumpAndSettle();
+
+      verify(() => repository.addHoliday(
+            date: any(named: 'date'),
+            reason: 'مرخصی',
+            isRecurring: false,
+          )).called(1);
+      expect(find.text(AppStrings.holidayAdded), findsOneWidget);
+    });
+  });
+
   group('Working hours editing (spec: provider-working-hours-editing)', () {
     const monday = DayHours(
       dayOfWeek: 1,

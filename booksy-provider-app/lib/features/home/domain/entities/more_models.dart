@@ -41,6 +41,34 @@ class BusinessProfile extends Equatable {
   List<Object?> get props => [businessName, description];
 }
 
+/// A provider day off (More → تعطیلات و مرخصی).
+class ProviderHoliday extends Equatable {
+  final String id;
+
+  /// Date-only (local).
+  final DateTime date;
+  final String reason;
+  final bool isRecurring;
+
+  const ProviderHoliday({
+    required this.id,
+    required this.date,
+    required this.reason,
+    this.isRecurring = false,
+  });
+
+  /// Whether this holiday applies to [day] (exact date, or month/day match
+  /// for yearly recurring ones).
+  bool appliesTo(DateTime day) => isRecurring
+      ? date.month == day.month && date.day == day.day
+      : date.year == day.year &&
+          date.month == day.month &&
+          date.day == day.day;
+
+  @override
+  List<Object?> get props => [id, date, reason, isRecurring];
+}
+
 /// Booking statistics for the Insights screen (all-time + trailing 30 days).
 class InsightsSummary extends Equatable {
   final int totalBookings;

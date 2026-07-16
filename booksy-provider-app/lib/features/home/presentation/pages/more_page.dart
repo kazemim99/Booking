@@ -85,6 +85,13 @@ class MorePage extends StatelessWidget {
             label: AppStrings.moreWorkingHours,
             onTap: () => context.push(Routes.moreHours),
           ),
+          _row(
+            context,
+            key: 'more-holidays',
+            icon: Icons.beach_access_outlined,
+            label: AppStrings.moreHolidays,
+            onTap: () => context.push(Routes.moreHolidays),
+          ),
           // Edit flows not shipped yet — visibly disabled (design D1).
           _row(context,
               key: 'more-gallery',

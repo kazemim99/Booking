@@ -81,6 +81,10 @@ class ApiConstants {
   static String providerBusinessHours(String providerId) =>
       '/$apiVersion/providers/$providerId/business-hours';
 
+  /// GET/POST — provider days off; DELETE at /{holidayId}.
+  static String providerHolidays(String providerId) =>
+      '/$apiVersion/providers/$providerId/holidays';
+
   /// GET — the provider's client book (derived from bookings).
   static String providerClients(String providerId) =>
       '/$apiVersion/Providers/$providerId/clients';

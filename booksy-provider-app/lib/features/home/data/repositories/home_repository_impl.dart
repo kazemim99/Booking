@@ -21,8 +21,9 @@ import '../datasources/home_api_service.dart';
 /// Interim defaults for backend concepts that do not exist yet (documented in
 /// PROVIDER_HOME_RESOLVER_SPEC.md / resolved decisions):
 /// - `bookingMode`: REQUEST until the provider-config field ships.
-/// - `availability`: OPEN — vacation/closed are backend-managed and consumed
-///   once the payload exists; never computed locally.
+/// - `availability`: consumed from the backend Holidays API (today matching a
+///   holiday → closedToday; lookup failure degrades to OPEN). The VACATION
+///   state stays dormant until a date-range concept exists.
 /// - `openCapacity`: 1 (never fully-booked) until available-slots is wired.
 /// - `exceptions`/`alerts`/`nudges`: none until their sources exist.
 /// - `thresholds`: [MaturityThresholds.fallback] until remote config ships.
@@ -68,7 +69,9 @@ class HomeRepositoryImpl implements HomeRepository {
       final tomorrow = bookings.length - today.length;
 
       final signals = await _fetchSignals(providerId, today, now);
-      return Right(_compose(status, today, tomorrow, signals, now));
+      final availability = await _todayAvailability(providerId, now);
+      return Right(
+          _compose(status, today, tomorrow, signals, now, availability));
     });
   }
 
@@ -294,6 +297,77 @@ class HomeRepositoryImpl implements HomeRepository {
           businessName: businessName, description: description),
       'ذخیرهٔ مشخصات کسب‌وکار ناموفق بود',
     );
+  }
+
+  // ==================== holidays ====================
+
+  @override
+  Future<Either<Failure, List<ProviderHoliday>>> fetchHolidays() {
+    return _withProviderId((providerId) async {
+      try {
+        final raw = await _api.getHolidays(providerId);
+        final holidays = raw
+            .map(_mapHoliday)
+            .whereType<ProviderHoliday>()
+            .toList()
+          ..sort((a, b) => a.date.compareTo(b.date));
+        return Right(holidays);
+      } on DioException {
+        return const Left(ServerFailure('دریافت تعطیلات ناموفق بود'));
+      }
+    });
+  }
+
+  @override
+  Future<Either<Failure, void>> addHoliday({
+    required DateTime date,
+    required String reason,
+    bool isRecurring = false,
+  }) {
+    return _withProviderId((providerId) => _action(
+          () => _api.addHoliday(providerId,
+              date: date, reason: reason, isRecurring: isRecurring),
+          'ثبت تعطیلی ناموفق بود',
+        ));
+  }
+
+  @override
+  Future<Either<Failure, void>> removeHoliday(String holidayId) {
+    return _withProviderId((providerId) => _action(
+          () => _api.deleteHoliday(providerId, holidayId),
+          'حذف تعطیلی ناموفق بود',
+        ));
+  }
+
+  static ProviderHoliday? _mapHoliday(Map<String, dynamic> h) {
+    final date =
+        DateTime.tryParse(HomeApiService.readString(h, const ['date']));
+    final id = HomeApiService.readString(h, const ['id']);
+    if (date == null || id.isEmpty) return null;
+    return ProviderHoliday(
+      id: id,
+      date: DateTime(date.year, date.month, date.day),
+      reason: HomeApiService.readString(h, const ['reason']),
+      isRecurring: h['isRecurring'] == true,
+    );
+  }
+
+  /// Best-effort: today's availability from the holidays list. Failures (or
+  /// no provider) degrade to OPEN — a side-signal never blocks the Home
+  /// (spec: holiday lookup failure degrades open).
+  Future<HomeAvailability> _todayAvailability(
+      String providerId, DateTime now) async {
+    try {
+      final raw = await _api.getHolidays(providerId);
+      final today = DateTime(now.year, now.month, now.day);
+      final closed = raw
+          .map(_mapHoliday)
+          .whereType<ProviderHoliday>()
+          .any((h) => h.appliesTo(today));
+      return closed ? HomeAvailability.closedToday : HomeAvailability.open;
+    } on DioException {
+      return HomeAvailability.open;
+    }
   }
 
   @override
@@ -546,6 +620,7 @@ class HomeRepositoryImpl implements HomeRepository {
     int tomorrowCount,
     MaturitySignals signals,
     DateTime now,
+    HomeAvailability availability,
   ) {
     final active =
         today.where((b) => b.status != HomeBookingStatus.cancelled).toList()
@@ -564,7 +639,7 @@ class HomeRepositoryImpl implements HomeRepository {
     return HomeSnapshot(
       providerStatus: status,
       bookingMode: HomeBookingMode.request,
-      availability: HomeAvailability.open,
+      availability: availability,
       signals: signals,
       todayApptCount: active.length,
       allCompleted: allDone,

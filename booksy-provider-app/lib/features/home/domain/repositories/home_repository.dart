@@ -89,6 +89,21 @@ abstract class HomeRepository {
   /// Replaces the weekly hours (breaks included — never silently erased).
   Future<Either<Failure, void>> updateBusinessHours(List<DayHours> days);
 
+  // ---- Holidays (spec: provider-holidays-management) ----
+
+  /// The provider's days off, soonest-first.
+  Future<Either<Failure, List<ProviderHoliday>>> fetchHolidays();
+
+  /// Adds a day off.
+  Future<Either<Failure, void>> addHoliday({
+    required DateTime date,
+    required String reason,
+    bool isRecurring,
+  });
+
+  /// Removes a day off.
+  Future<Either<Failure, void>> removeHoliday(String holidayId);
+
   // ---- Clients (spec: provider-clients) ----
 
   /// The provider's client book, most-recent activity first.
