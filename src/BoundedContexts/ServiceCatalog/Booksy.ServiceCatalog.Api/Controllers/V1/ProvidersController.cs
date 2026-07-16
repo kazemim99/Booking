@@ -20,6 +20,7 @@ using Booksy.ServiceCatalog.Application.Commands.ProviderHierarchy.RegisterIndep
 using Booksy.ServiceCatalog.Application.Commands.ProviderHierarchy.RegisterOrganizationProvider;
 using Booksy.ServiceCatalog.Application.Commands.Provider.UpdateProviderStaff;
 using Booksy.ServiceCatalog.Application.Queries.Provider.GetCurrentProviderStatus;
+using Booksy.ServiceCatalog.Application.Queries.Provider.GetProviderClients;
 using Booksy.ServiceCatalog.Application.Queries.Provider.GetDraftProvider;
 using Booksy.ServiceCatalog.Application.Queries.Provider.GetProviderById;
 using Booksy.ServiceCatalog.Application.Queries.Provider.GetProviderByOwnerId;
@@ -837,6 +838,33 @@ public class ProvidersController : ControllerBase
     }
 
     #region Staff Management
+
+    /// <summary>
+    /// Gets the provider's client book — distinct customers derived from
+    /// bookings, with identity resolved read-only from UserManagement.
+    /// </summary>
+    /// <param name="id">Provider ID</param>
+    /// <param name="cancellationToken">Cancellation token</param>
+    /// <returns>Clients ordered by most-recent activity</returns>
+    /// <response code="200">Clients retrieved successfully</response>
+    /// <response code="403">Not authorized to view this provider's clients</response>
+    [HttpGet("{id:guid}/clients")]
+    [Authorize(Policy = "ProviderOrAdmin")]
+    [ProducesResponseType(typeof(GetProviderClientsResult), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
+    public async Task<IActionResult> GetProviderClients(
+        [FromRoute] Guid id,
+        CancellationToken cancellationToken = default)
+    {
+        if (!await CanManageProvider(id))
+        {
+            return Forbid();
+        }
+
+        var result = await _mediator.Send(
+            new GetProviderClientsQuery(id), cancellationToken);
+        return Ok(result);
+    }
 
     /// <summary>
     /// Gets all staff members for a provider
