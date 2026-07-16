@@ -124,6 +124,28 @@ class HomeApiService {
         },
       );
 
+  // ==================== business profile ====================
+
+  /// GET /v1/Providers/{id} — provider details as a raw map (enveloped).
+  Future<Map<String, dynamic>> getProviderDetails(String providerId) async {
+    final res = await _dio.get(ApiConstants.providerDetails(providerId));
+    return unwrapMap(res.data);
+  }
+
+  /// PUT /v1/Providers/business — updates the business's public info
+  /// (provider resolved server-side from the caller).
+  Future<void> updateBusinessInfo({
+    required String businessName,
+    String? description,
+  }) =>
+      _dio.put(
+        ApiConstants.providerBusiness,
+        data: {
+          'businessName': businessName,
+          'description': description ?? '',
+        },
+      );
+
   // ==================== staff management ====================
 
   /// POST /v1/Providers/{id}/staff — adds a team member.

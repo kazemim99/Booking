@@ -60,6 +60,28 @@ class ServicesCubit extends _MoreLoadCubit<List<ComposerService>> {
       _repository.fetchServices();
 }
 
+/// More → مشخصات کسب‌وکار — load + save
+/// (spec: provider-business-profile-editing).
+class BusinessProfileCubit extends _MoreLoadCubit<BusinessProfile> {
+  final HomeRepository _repository;
+  BusinessProfileCubit(this._repository);
+
+  @override
+  Future<Either<Failure, BusinessProfile>> fetch() =>
+      _repository.fetchBusinessProfile();
+
+  /// Null on success; the Failure for the caller to surface otherwise.
+  Future<Failure?> save({
+    required String businessName,
+    String? description,
+  }) async {
+    final result = await _repository.updateBusinessProfile(
+        businessName: businessName, description: description);
+    if (isClosed) return null;
+    return result.fold((f) => f, (_) => null);
+  }
+}
+
 /// More → تیم (Staff) — list + CRUD mutations
 /// (spec: provider-staff-management).
 class StaffCubit extends _MoreLoadCubit<List<ProviderStaffMember>> {

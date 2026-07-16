@@ -72,6 +72,15 @@ abstract class HomeRepository {
   /// Booking statistics: all-time + trailing 30 days.
   Future<Either<Failure, InsightsSummary>> fetchInsights();
 
+  /// The editable business profile (spec: provider-business-profile-editing).
+  Future<Either<Failure, BusinessProfile>> fetchBusinessProfile();
+
+  /// Persists the business's public name/description.
+  Future<Either<Failure, void>> updateBusinessProfile({
+    required String businessName,
+    String? description,
+  });
+
   // ---- Clients (spec: provider-clients) ----
 
   /// The provider's client book, most-recent activity first.

@@ -27,6 +27,20 @@ class ProviderStaffMember extends Equatable {
       [id, name, firstName, lastName, phone, role, isActive];
 }
 
+/// The editable public business profile (More → مشخصات کسب‌وکار).
+class BusinessProfile extends Equatable {
+  final String businessName;
+  final String description;
+
+  const BusinessProfile({
+    required this.businessName,
+    this.description = '',
+  });
+
+  @override
+  List<Object?> get props => [businessName, description];
+}
+
 /// Booking statistics for the Insights screen (all-time + trailing 30 days).
 class InsightsSummary extends Equatable {
   final int totalBookings;

@@ -135,6 +135,9 @@ Future<void> configureDependencies() async {
   getIt.registerFactory<StaffCubit>(
     () => StaffCubit(getIt<HomeRepository>()),
   );
+  getIt.registerFactory<BusinessProfileCubit>(
+    () => BusinessProfileCubit(getIt<HomeRepository>()),
+  );
 
   // ---- Location (onboarding step 3) ----
   // City hierarchy comes from the (anonymous) ServiceCatalog endpoint; reuse the

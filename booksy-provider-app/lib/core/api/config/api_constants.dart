@@ -70,6 +70,13 @@ class ApiConstants {
   static String providerServices(String providerId) =>
       '/$apiVersion/Services/provider/$providerId';
 
+  /// GET — provider details (business name, description, hours, …).
+  static String providerDetails(String providerId) =>
+      '/$apiVersion/Providers/$providerId';
+
+  /// PUT — update the business's public info (name/description/logo).
+  static const String providerBusiness = '/$apiVersion/Providers/business';
+
   /// GET — the provider's client book (derived from bookings).
   static String providerClients(String providerId) =>
       '/$apiVersion/Providers/$providerId/clients';

@@ -356,6 +356,112 @@ class StaffView extends StatelessWidget {
   }
 }
 
+/// More → مشخصات کسب‌وکار (spec: provider-business-profile-editing).
+class BusinessProfilePage extends StatelessWidget {
+  const BusinessProfilePage({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return BlocProvider<BusinessProfileCubit>(
+      create: (_) => getIt<BusinessProfileCubit>()..load(),
+      child: const BusinessProfileView(),
+    );
+  }
+}
+
+/// Separated from [BusinessProfilePage] so tests can pump it with a fake
+/// cubit.
+class BusinessProfileView extends StatelessWidget {
+  const BusinessProfileView({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return BlocBuilder<BusinessProfileCubit, MoreState<BusinessProfile>>(
+      builder: (context, state) => _MoreSubScaffold<BusinessProfile>(
+        title: AppStrings.moreBusinessProfile,
+        state: state,
+        onRetry: context.read<BusinessProfileCubit>().load,
+        bodyBuilder: (context, profile) => _BusinessProfileForm(
+          profile: profile,
+          cubit: context.read<BusinessProfileCubit>(),
+        ),
+      ),
+    );
+  }
+}
+
+class _BusinessProfileForm extends StatefulWidget {
+  final BusinessProfile profile;
+  final BusinessProfileCubit cubit;
+
+  const _BusinessProfileForm({required this.profile, required this.cubit});
+
+  @override
+  State<_BusinessProfileForm> createState() => _BusinessProfileFormState();
+}
+
+class _BusinessProfileFormState extends State<_BusinessProfileForm> {
+  late final _name =
+      TextEditingController(text: widget.profile.businessName);
+  late final _description =
+      TextEditingController(text: widget.profile.description);
+  bool _saving = false;
+
+  @override
+  void dispose() {
+    _name.dispose();
+    _description.dispose();
+    super.dispose();
+  }
+
+  Future<void> _save() async {
+    setState(() => _saving = true);
+    final failure = await widget.cubit.save(
+      businessName: _name.text.trim(),
+      description: _description.text.trim(),
+    );
+    if (!mounted) return;
+    if (failure == null) {
+      Navigator.of(context).pop();
+      AppSnackbar.success(context, AppStrings.businessProfileSaved);
+    } else {
+      // Failure preserves the edited values (spec).
+      setState(() => _saving = false);
+      AppSnackbar.error(context, failure.message);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return ListView(
+      padding: const EdgeInsets.all(AppSpacing.md),
+      children: [
+        AppTextField(
+          key: const Key('business-name'),
+          controller: _name,
+          label: AppStrings.businessProfileName,
+          onChanged: (_) => setState(() {}),
+        ),
+        const SizedBox(height: AppSpacing.md),
+        AppTextField(
+          key: const Key('business-description'),
+          controller: _description,
+          label: AppStrings.businessProfileDescription,
+          maxLines: 5,
+          minLines: 3,
+        ),
+        const SizedBox(height: AppSpacing.lg),
+        AppButton(
+          key: const Key('business-save'),
+          label: AppStrings.businessProfileSave,
+          loading: _saving,
+          onPressed: _name.text.trim().isEmpty ? null : _save,
+        ),
+      ],
+    );
+  }
+}
+
 /// Add/edit form for a team member (spec: provider-staff-management).
 /// Pre-filled = edit (offers a confirm-guarded remove); empty = add.
 class StaffFormSheet extends StatefulWidget {

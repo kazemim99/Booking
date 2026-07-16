@@ -131,11 +131,15 @@ void main() {
       ]) {
         expect(find.byKey(Key(k)), findsOneWidget);
       }
-      // Coming-soon rows are visible but disabled.
-      expect(find.text(AppStrings.comingSoon), findsNWidgets(3));
+      // Remaining coming-soon rows (hours, gallery) are visible but disabled.
+      expect(find.text(AppStrings.comingSoon), findsNWidgets(2));
+      final hoursRow =
+          tester.widget<InkWell>(find.byKey(const Key('more-hours')));
+      expect(hoursRow.onTap, isNull);
+      // The business-profile row is now live.
       final profileRow =
           tester.widget<InkWell>(find.byKey(const Key('more-profile')));
-      expect(profileRow.onTap, isNull);
+      expect(profileRow.onTap, isNotNull);
 
       // The account section sits below the fold in the test viewport.
       await tester.scrollUntilVisible(
@@ -152,6 +156,102 @@ void main() {
       await tester.tap(find.byKey(const Key('more-logout')));
 
       verify(() => authBloc.add(const LogoutRequested())).called(1);
+    });
+  });
+
+  group('Business profile editing (spec: provider-business-profile-editing)',
+      () {
+    const profile =
+        BusinessProfile(businessName: 'سالن رُز', description: 'توضیح');
+
+    setUp(() {
+      when(() => repository.fetchBusinessProfile())
+          .thenAnswer((_) async => const Right(profile));
+      when(() => repository.updateBusinessProfile(
+            businessName: any(named: 'businessName'),
+            description: any(named: 'description'),
+          )).thenAnswer((_) async => const Right(null));
+    });
+
+    test('cubit loads the profile and save maps failures', () async {
+      final cubit = BusinessProfileCubit(repository);
+      await cubit.load();
+      expect(cubit.state.data, profile);
+
+      expect(await cubit.save(businessName: 'سالن نو'), isNull);
+
+      when(() => repository.updateBusinessProfile(
+            businessName: any(named: 'businessName'),
+            description: any(named: 'description'),
+          )).thenAnswer((_) async => const Left(ServerFailure('خطا')));
+      final failure = await cubit.save(businessName: 'سالن نو');
+      expect(failure!.message, 'خطا');
+      await cubit.close();
+    });
+
+    Future<void> pumpForm(WidgetTester tester) async {
+      final cubit = BusinessProfileCubit(repository);
+      addTearDown(cubit.close);
+      await tester.pumpWidget(
+        MaterialApp(
+          theme: AppTheme.light,
+          builder: (context, child) => Directionality(
+            textDirection: TextDirection.rtl,
+            child: child ?? const SizedBox.shrink(),
+          ),
+          home: BlocProvider<BusinessProfileCubit>.value(
+            value: cubit..load(),
+            child: const BusinessProfileView(),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+    }
+
+    testWidgets('form is pre-filled and gated on the business name',
+        (tester) async {
+      await pumpForm(tester);
+
+      expect(find.text('سالن رُز'), findsOneWidget);
+      expect(find.text('توضیح'), findsOneWidget);
+
+      await tester.enterText(find.byKey(const Key('business-name')), '');
+      await tester.pumpAndSettle();
+      final saveButton = tester.widget<FilledButton>(find.descendant(
+        of: find.byKey(const Key('business-save')),
+        matching: find.byType(FilledButton),
+      ));
+      expect(saveButton.onPressed, isNull);
+    });
+
+    testWidgets('save persists the edited values', (tester) async {
+      await pumpForm(tester);
+
+      await tester.enterText(
+          find.byKey(const Key('business-description')), 'توضیح تازه');
+      await tester.tap(find.byKey(const Key('business-save')));
+      await tester.pumpAndSettle();
+
+      verify(() => repository.updateBusinessProfile(
+            businessName: 'سالن رُز',
+            description: 'توضیح تازه',
+          )).called(1);
+    });
+
+    testWidgets('failure keeps the edits in the form', (tester) async {
+      when(() => repository.updateBusinessProfile(
+            businessName: any(named: 'businessName'),
+            description: any(named: 'description'),
+          )).thenAnswer((_) async => const Left(ServerFailure('خطا')));
+      await pumpForm(tester);
+
+      await tester.enterText(
+          find.byKey(const Key('business-name')), 'سالن نو');
+      await tester.tap(find.byKey(const Key('business-save')));
+      await tester.pumpAndSettle();
+
+      expect(find.text('خطا'), findsOneWidget); // snackbar
+      expect(find.text('سالن نو'), findsOneWidget); // edit preserved
     });
   });
 

@@ -264,6 +264,36 @@ class HomeRepositoryImpl implements HomeRepository {
     });
   }
 
+  @override
+  Future<Either<Failure, BusinessProfile>> fetchBusinessProfile() {
+    return _withProviderId((providerId) async {
+      try {
+        final details = await _api.getProviderDetails(providerId);
+        return Right(BusinessProfile(
+          businessName: HomeApiService.readString(
+              details, const ['businessName', 'name']),
+          description:
+              HomeApiService.readString(details, const ['description']),
+        ));
+      } on DioException {
+        return const Left(
+            ServerFailure('دریافت مشخصات کسب‌وکار ناموفق بود'));
+      }
+    });
+  }
+
+  @override
+  Future<Either<Failure, void>> updateBusinessProfile({
+    required String businessName,
+    String? description,
+  }) {
+    return _action(
+      () => _api.updateBusinessInfo(
+          businessName: businessName, description: description),
+      'ذخیرهٔ مشخصات کسب‌وکار ناموفق بود',
+    );
+  }
+
   /// Shared raw→[ComposerService] mapping (composer catalog + services list).
   static ComposerService _mapService(Map<String, dynamic> s) => ComposerService(
         id: HomeApiService.readString(s, const ['id']),

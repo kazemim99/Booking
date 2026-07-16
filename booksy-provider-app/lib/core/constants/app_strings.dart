@@ -381,6 +381,12 @@ class AppStrings {
       '«$name» از تیم حذف شود؟';
   static const String staffRemoveConfirm = 'حذف';
   static const String staffAdded = 'عضو تیم اضافه شد';
+
+  // ==================== Business profile editing ====================
+  static const String businessProfileName = 'نام کسب‌وکار';
+  static const String businessProfileDescription = 'توضیحات (اختیاری)';
+  static const String businessProfileSave = 'ذخیره';
+  static const String businessProfileSaved = 'مشخصات کسب‌وکار ذخیره شد';
   static const String staffUpdated = 'عضو تیم ویرایش شد';
   static const String staffRemoved = 'عضو تیم حذف شد';
 

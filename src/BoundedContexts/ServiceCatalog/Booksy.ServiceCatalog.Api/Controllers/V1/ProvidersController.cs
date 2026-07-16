@@ -1785,7 +1785,21 @@ public class ProvidersController : ControllerBase
             return Unauthorized();
         }
 
+        // The providerId claim is only present after a post-registration token
+        // refresh; fall back to ownership like UpdateProfile does so the
+        // first session after onboarding can update business info.
         var providerId = GetCurrentUserProviderId();
+        if (!providerId.HasValue)
+        {
+            var providerByOwner = await _mediator.Send(
+                new GetProviderByOwnerIdQuery(userId), cancellationToken);
+            if (providerByOwner == null)
+            {
+                throw new NotFoundException("Provider not found for current user");
+            }
+
+            providerId = providerByOwner.Id;
+        }
 
         var command = new UpdateBusinessProfileCommand(
             ProviderId: providerId.Value,
