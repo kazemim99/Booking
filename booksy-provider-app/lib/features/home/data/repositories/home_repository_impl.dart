@@ -9,6 +9,7 @@ import '../../domain/entities/home_booking.dart';
 import '../../domain/entities/home_enums.dart';
 import '../../domain/entities/home_inputs.dart';
 import '../../domain/entities/home_snapshot.dart';
+import '../../domain/entities/more_models.dart';
 import '../../domain/entities/provider_client.dart';
 import '../../domain/repositories/home_repository.dart';
 import '../datasources/home_api_service.dart';
@@ -143,6 +144,90 @@ class HomeRepositoryImpl implements HomeRepository {
     }).toList();
   }
 
+  // ==================== more hub ====================
+
+  @override
+  Future<Either<Failure, List<ComposerService>>> fetchServices() {
+    return _withProviderId((providerId) async {
+      try {
+        final raw = await _api.getProviderServices(providerId);
+        return Right(raw
+            .map(_mapService)
+            .where((s) => s.id.isNotEmpty)
+            .toList());
+      } on DioException {
+        return const Left(ServerFailure('دریافت فهرست خدمات ناموفق بود'));
+      }
+    });
+  }
+
+  @override
+  Future<Either<Failure, List<ProviderStaffMember>>> fetchStaff() {
+    return _withProviderId((providerId) async {
+      try {
+        final raw = await _api.getProviderStaff(providerId);
+        return Right(raw
+            .map((s) => ProviderStaffMember(
+                  id: HomeApiService.readString(s, const ['id']),
+                  name: HomeApiService.readString(
+                      s, const ['fullName', 'name', 'firstName']),
+                  role: HomeApiService.readString(s, const ['role']),
+                  isActive: s['isActive'] != false,
+                ))
+            .where((s) => s.id.isNotEmpty)
+            .toList());
+      } on DioException {
+        return const Left(ServerFailure('دریافت فهرست تیم ناموفق بود'));
+      }
+    });
+  }
+
+  @override
+  Future<Either<Failure, InsightsSummary>> fetchInsights() {
+    return _withProviderId((providerId) async {
+      try {
+        final now = _now();
+        final allTime = await _api.getBookingStatistics(providerId);
+        final trailing = await _api.getBookingStatistics(
+          providerId,
+          startDate: now.subtract(const Duration(days: 30)),
+          endDate: now,
+        );
+        double money(Map<String, dynamic> m, String key) =>
+            switch (m[key]) { final num n => n.toDouble(), _ => 0.0 };
+        return Right(InsightsSummary(
+          totalBookings:
+              HomeApiService.readInt(allTime, const ['totalBookings']),
+          completedBookings:
+              HomeApiService.readInt(allTime, const ['completedBookings']),
+          cancelledBookings:
+              HomeApiService.readInt(allTime, const ['cancelledBookings']),
+          noShowBookings:
+              HomeApiService.readInt(allTime, const ['noShowBookings']),
+          totalRevenue: money(allTime, 'totalRevenue'),
+          completedRevenue: money(allTime, 'completedRevenue'),
+          currency: HomeApiService.readString(allTime, const ['currency']),
+          bookingsTrailing30d:
+              HomeApiService.readInt(trailing, const ['totalBookings']),
+        ));
+      } on DioException {
+        return const Left(ServerFailure('دریافت گزارش‌ها ناموفق بود'));
+      }
+    });
+  }
+
+  /// Shared raw→[ComposerService] mapping (composer catalog + services list).
+  static ComposerService _mapService(Map<String, dynamic> s) => ComposerService(
+        id: HomeApiService.readString(s, const ['id']),
+        name: HomeApiService.readString(s, const ['name']),
+        durationMinutes:
+            HomeApiService.readInt(s, const ['duration', 'durationMinutes']),
+        price: switch (s['basePrice'] ?? s['price']) {
+          final num n => n.toDouble(),
+          _ => 0.0,
+        },
+      );
+
   // ==================== clients ====================
 
   @override
@@ -183,19 +268,8 @@ class HomeRepositoryImpl implements HomeRepository {
           _api.getProviderServices(providerId),
           _api.getProviderStaff(providerId),
         ]);
-        final services = results[0]
-            .map((s) => ComposerService(
-                  id: HomeApiService.readString(s, const ['id']),
-                  name: HomeApiService.readString(s, const ['name']),
-                  durationMinutes: HomeApiService.readInt(
-                      s, const ['duration', 'durationMinutes']),
-                  price: switch (s['basePrice'] ?? s['price']) {
-                    final num n => n.toDouble(),
-                    _ => 0.0,
-                  },
-                ))
-            .where((s) => s.id.isNotEmpty)
-            .toList();
+        final services =
+            results[0].map(_mapService).where((s) => s.id.isNotEmpty).toList();
         final staff = results[1]
             .map((s) => ComposerStaff(
                   id: HomeApiService.readString(s, const ['id']),

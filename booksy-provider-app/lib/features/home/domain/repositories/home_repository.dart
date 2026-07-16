@@ -4,6 +4,7 @@ import '../../../../core/errors/failures.dart';
 import '../entities/composer_models.dart';
 import '../entities/home_booking.dart';
 import '../entities/home_snapshot.dart';
+import '../entities/more_models.dart';
 import '../entities/provider_client.dart';
 
 /// Supplies the backend-derived Home inputs (resolver spec §2).
@@ -39,6 +40,17 @@ abstract class HomeRepository {
     required DateTime from,
     required DateTime to,
   });
+
+  // ---- More hub (spec: provider-more-hub) ----
+
+  /// The provider's services (read surface; reuses the composer model).
+  Future<Either<Failure, List<ComposerService>>> fetchServices();
+
+  /// The provider's team members.
+  Future<Either<Failure, List<ProviderStaffMember>>> fetchStaff();
+
+  /// Booking statistics: all-time + trailing 30 days.
+  Future<Either<Failure, InsightsSummary>> fetchInsights();
 
   // ---- Clients (spec: provider-clients) ----
 

@@ -342,6 +342,31 @@ class AppStrings {
   static const String clientBookAgain = 'ثبت نوبت';
   static const String phoneCopied = 'شماره کپی شد';
 
+  // ==================== More hub ====================
+  static const String moreTitle = 'بیشتر';
+  static const String moreBusinessSection = 'کسب‌وکار';
+  static const String moreAccountSection = 'حساب کاربری';
+  static const String moreServices = 'خدمات';
+  static const String moreStaff = 'تیم';
+  static const String moreInsights = 'گزارش‌ها';
+  static const String moreBusinessProfile = 'مشخصات کسب‌وکار';
+  static const String moreWorkingHours = 'ساعات کاری';
+  static const String moreGallery = 'گالری';
+  static const String moreShareLink = 'اشتراک‌گذاری لینک رزرو';
+  static const String servicesEmpty = 'خدمتی ثبت نشده است';
+  static const String staffEmpty = 'عضوی برای تیم ثبت نشده است';
+  static const String staffInactive = 'غیرفعال';
+  static String serviceMeta(int minutes, String price) =>
+      '$minutes دقیقه · $price';
+  static const String insightsAllTime = 'از ابتدا';
+  static const String insightsLast30 = '۳۰ روز اخیر';
+  static const String insightsTotal = 'کل نوبت‌ها';
+  static const String insightsCompleted = 'انجام‌شده';
+  static const String insightsCancelled = 'لغوشده';
+  static const String insightsNoShow = 'عدم حضور';
+  static const String insightsTurnover = 'گردش مالی';
+  static const String insightsCompletedRevenue = 'درآمد تکمیل‌شده';
+
   // Errors (mirrors error.interceptor.ts / customer app)
   static const String networkError =
       'خطا در برقراری ارتباط با سرور. لطفاً اتصال اینترنت خود را بررسی کنید';

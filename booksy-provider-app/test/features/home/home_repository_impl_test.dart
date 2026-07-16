@@ -314,6 +314,51 @@ void main() {
     });
   });
 
+  group('more hub reads', () {
+    test('fetchInsights composes all-time and trailing-30d statistics',
+        () async {
+      when(() => api.getBookingStatistics(any(),
+              startDate: any(named: 'startDate'),
+              endDate: any(named: 'endDate')))
+          .thenAnswer((inv) async => inv.namedArguments[#startDate] == null
+              ? {
+                  'totalBookings': 12,
+                  'completedBookings': 7,
+                  'cancelledBookings': 2,
+                  'noShowBookings': 1,
+                  'totalRevenue': 500000.0,
+                  'completedRevenue': 250000.0,
+                  'currency': 'IRR',
+                }
+              : {'totalBookings': 5});
+
+      final insights = (await build().fetchInsights())
+          .getOrElse(() => throw StateError('expected Right'));
+
+      expect(insights.totalBookings, 12);
+      expect(insights.completedBookings, 7);
+      expect(insights.totalRevenue, 500000.0);
+      expect(insights.currency, 'IRR');
+      expect(insights.bookingsTrailing30d, 5);
+    });
+
+    test('fetchStaff maps roles and inactive members', () async {
+      when(() => api.getProviderStaff(any())).thenAnswer(
+        (_) async => [
+          {'id': 'm1', 'fullName': 'سارا', 'role': 'Stylist'},
+          {'id': 'm2', 'fullName': 'رضا', 'isActive': false},
+        ],
+      );
+
+      final staff = (await build().fetchStaff())
+          .getOrElse(() => throw StateError('expected Right'));
+
+      expect(staff[0].role, 'Stylist');
+      expect(staff[0].isActive, isTrue);
+      expect(staff[1].isActive, isFalse);
+    });
+  });
+
   group('calendar range fetch', () {
     test('fetchBookings returns enriched rows for the range', () async {
       when(() => api.getProviderBookings(any(),

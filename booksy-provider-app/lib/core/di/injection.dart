@@ -19,6 +19,7 @@ import '../../features/home/domain/repositories/home_repository.dart';
 import '../../features/home/presentation/cubit/calendar_cubit.dart';
 import '../../features/home/presentation/cubit/clients_cubit.dart';
 import '../../features/home/presentation/cubit/composer_cubit.dart';
+import '../../features/home/presentation/cubit/more_cubits.dart';
 import '../../features/home/presentation/cubit/home_cubit.dart';
 import '../../features/onboarding/data/datasources/geocoding_service.dart';
 import '../../features/onboarding/data/datasources/location_api_service.dart';
@@ -123,6 +124,16 @@ Future<void> configureDependencies() async {
   // Factory: the clients tab owns a fresh cubit per entry.
   getIt.registerFactory<ClientsCubit>(
     () => ClientsCubit(getIt<HomeRepository>()),
+  );
+  // Factories: the More tab's read surfaces (insights/services/staff).
+  getIt.registerFactory<InsightsCubit>(
+    () => InsightsCubit(getIt<HomeRepository>()),
+  );
+  getIt.registerFactory<ServicesCubit>(
+    () => ServicesCubit(getIt<HomeRepository>()),
+  );
+  getIt.registerFactory<StaffCubit>(
+    () => StaffCubit(getIt<HomeRepository>()),
   );
 
   // ---- Location (onboarding step 3) ----

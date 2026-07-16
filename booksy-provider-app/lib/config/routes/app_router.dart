@@ -15,6 +15,8 @@ import '../../features/auth/presentation/pages/splash_page.dart';
 import '../../features/home/presentation/pages/booking_composer_page.dart';
 import '../../features/home/presentation/pages/calendar_page.dart';
 import '../../features/home/presentation/pages/clients_page.dart';
+import '../../features/home/presentation/pages/more_page.dart';
+import '../../features/home/presentation/pages/more_sub_pages.dart';
 import '../../features/home/presentation/pages/home_page.dart';
 
 /// Route paths.
@@ -26,6 +28,10 @@ class Routes {
   static const String dashboard = '/dashboard';
   static const String calendar = '/calendar';
   static const String clients = '/clients';
+  static const String more = '/more';
+  static const String moreInsights = '/more/insights';
+  static const String moreServices = '/more/services';
+  static const String moreStaff = '/more/staff';
   static const String newBooking = '/booking/new';
 
   /// Composer route pre-filled with a client's identity (book-again).
@@ -198,6 +204,22 @@ class AppRouter {
         GoRoute(
           path: Routes.clients,
           builder: (_, _) => const ClientsPage(),
+        ),
+        GoRoute(
+          path: Routes.more,
+          builder: (_, _) => const MorePage(),
+        ),
+        GoRoute(
+          path: Routes.moreInsights,
+          builder: (_, _) => const InsightsPage(),
+        ),
+        GoRoute(
+          path: Routes.moreServices,
+          builder: (_, _) => const ServicesPage(),
+        ),
+        GoRoute(
+          path: Routes.moreStaff,
+          builder: (_, _) => const StaffPage(),
         ),
         GoRoute(
           path: Routes.newBooking,
