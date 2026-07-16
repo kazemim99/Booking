@@ -14,6 +14,7 @@ import '../../features/auth/presentation/pages/provider_login_page.dart';
 import '../../features/auth/presentation/pages/splash_page.dart';
 import '../../features/home/presentation/pages/booking_composer_page.dart';
 import '../../features/home/presentation/pages/calendar_page.dart';
+import '../../features/home/presentation/pages/clients_page.dart';
 import '../../features/home/presentation/pages/home_page.dart';
 
 /// Route paths.
@@ -24,7 +25,15 @@ class Routes {
   static const String otp = '/otp';
   static const String dashboard = '/dashboard';
   static const String calendar = '/calendar';
+  static const String clients = '/clients';
   static const String newBooking = '/booking/new';
+
+  /// Composer route pre-filled with a client's identity (book-again).
+  static String newBookingFor({required String client, required String phone}) =>
+      Uri(path: newBooking, queryParameters: {
+        if (client.isNotEmpty) 'client': client,
+        if (phone.isNotEmpty) 'phone': phone,
+      }).toString();
 
   /// Composer route pre-set to [date] (spec: calendar-initiated creation).
   static String newBookingOn(DateTime date) =>
@@ -187,10 +196,16 @@ class AppRouter {
           builder: (_, _) => const CalendarPage(),
         ),
         GoRoute(
+          path: Routes.clients,
+          builder: (_, _) => const ClientsPage(),
+        ),
+        GoRoute(
           path: Routes.newBooking,
           builder: (_, state) => BookingComposerPage(
             initialDate:
                 DateTime.tryParse(state.uri.queryParameters['date'] ?? ''),
+            initialClientName: state.uri.queryParameters['client'],
+            initialClientPhone: state.uri.queryParameters['phone'],
           ),
         ),
         GoRoute(

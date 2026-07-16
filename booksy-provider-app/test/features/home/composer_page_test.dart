@@ -124,6 +124,30 @@ void main() {
     expect(result(), isTrue); // popped with true → Home refreshes
   });
 
+  testWidgets('book-again prefill seeds the walk-in fields', (tester) async {
+    final cubit = ComposerCubit(repository, now: () => day);
+    addTearDown(cubit.close);
+    await tester.pumpWidget(
+      MaterialApp(
+        theme: AppTheme.light,
+        home: Directionality(
+          textDirection: TextDirection.rtl,
+          child: BlocProvider.value(
+            value: cubit..load(),
+            child: const ComposerView(
+              initialClientName: 'مینا رستمی',
+              initialClientPhone: '+989157330950',
+            ),
+          ),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    expect(find.text('مینا رستمی'), findsOneWidget);
+    expect(find.text('+989157330950'), findsOneWidget);
+  });
+
   testWidgets('no slots for the day shows the plain empty message',
       (tester) async {
     when(() => repository.fetchAvailableSlots(

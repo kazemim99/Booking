@@ -55,6 +55,19 @@ class HomeApiService {
     return unwrapList(res.data);
   }
 
+  // ==================== clients ====================
+
+  /// GET /v1/Providers/{id}/clients — the client book as raw maps
+  /// (envelope: {data: {clients: [...]}}, verified live 2026-07-16).
+  Future<List<Map<String, dynamic>>> getProviderClients(
+    String providerId,
+  ) async {
+    final res = await _dio.get(ApiConstants.providerClients(providerId));
+    final clients = unwrapMap(res.data)['clients'];
+    if (clients is! List) return const [];
+    return clients.whereType<Map<String, dynamic>>().toList();
+  }
+
   // ==================== booking composer ====================
 
   /// GET /v1/Providers/{id}/staff — the provider's staff as raw maps.

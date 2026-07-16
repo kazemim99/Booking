@@ -7,7 +7,7 @@ import '../../../../core/constants/app_strings.dart';
 import '../../../../core/widgets/app_snackbar.dart';
 
 /// Live bottom-nav destinations.
-enum NavTab { home, calendar }
+enum NavTab { home, calendar, clients }
 
 /// The provider app's shared bottom navigation (spec: provider-calendar,
 /// shared bottom navigation). Center notch hosts the ⊕ create action.
@@ -32,6 +32,7 @@ class ProviderNavBar extends StatelessWidget {
               : () => switch (tab) {
                     NavTab.home => context.go(Routes.dashboard),
                     NavTab.calendar => context.go(Routes.calendar),
+                    NavTab.clients => context.go(Routes.clients),
                     null =>
                       AppSnackbar.info(context, AppStrings.comingSoon),
                   },
@@ -68,7 +69,8 @@ class ProviderNavBar extends StatelessWidget {
           item(Icons.calendar_month_outlined, AppStrings.navCalendar,
               tab: NavTab.calendar),
           const Expanded(child: SizedBox()), // notch space for the ⊕
-          item(Icons.people_outline, AppStrings.navClients),
+          item(Icons.people_outline, AppStrings.navClients,
+              tab: NavTab.clients),
           item(Icons.more_horiz, AppStrings.navMore),
         ],
       ),

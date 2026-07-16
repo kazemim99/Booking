@@ -4,6 +4,7 @@ import '../../../../core/errors/failures.dart';
 import '../entities/composer_models.dart';
 import '../entities/home_booking.dart';
 import '../entities/home_snapshot.dart';
+import '../entities/provider_client.dart';
 
 /// Supplies the backend-derived Home inputs (resolver spec §2).
 ///
@@ -38,6 +39,11 @@ abstract class HomeRepository {
     required DateTime from,
     required DateTime to,
   });
+
+  // ---- Clients (spec: provider-clients) ----
+
+  /// The provider's client book, most-recent activity first.
+  Future<Either<Failure, List<ProviderClient>>> fetchClients();
 
   // ---- Booking composer (spec: provider-booking-composer) ----
 

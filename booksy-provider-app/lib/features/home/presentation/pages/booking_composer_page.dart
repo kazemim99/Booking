@@ -18,28 +18,49 @@ class BookingComposerPage extends StatelessWidget {
   /// Pre-sets the composed day (calendar-initiated creation); null = today.
   final DateTime? initialDate;
 
-  const BookingComposerPage({super.key, this.initialDate});
+  /// Pre-fill the walk-in client fields (book-again from the Clients tab).
+  final String? initialClientName;
+  final String? initialClientPhone;
+
+  const BookingComposerPage({
+    super.key,
+    this.initialDate,
+    this.initialClientName,
+    this.initialClientPhone,
+  });
 
   @override
   Widget build(BuildContext context) {
     return BlocProvider<ComposerCubit>(
       create: (_) => getIt<ComposerCubit>(param1: initialDate)..load(),
-      child: const ComposerView(),
+      child: ComposerView(
+        initialClientName: initialClientName,
+        initialClientPhone: initialClientPhone,
+      ),
     );
   }
 }
 
 /// Separated from [BookingComposerPage] so tests can pump it with a fake cubit.
 class ComposerView extends StatefulWidget {
-  const ComposerView({super.key});
+  final String? initialClientName;
+  final String? initialClientPhone;
+
+  const ComposerView({
+    super.key,
+    this.initialClientName,
+    this.initialClientPhone,
+  });
 
   @override
   State<ComposerView> createState() => _ComposerViewState();
 }
 
 class _ComposerViewState extends State<ComposerView> {
-  final _clientName = TextEditingController();
-  final _clientPhone = TextEditingController();
+  late final _clientName =
+      TextEditingController(text: widget.initialClientName ?? '');
+  late final _clientPhone =
+      TextEditingController(text: widget.initialClientPhone ?? '');
   final _notes = TextEditingController();
 
   @override

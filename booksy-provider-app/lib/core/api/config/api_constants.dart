@@ -70,6 +70,10 @@ class ApiConstants {
   static String providerServices(String providerId) =>
       '/$apiVersion/Services/provider/$providerId';
 
+  /// GET — the provider's client book (derived from bookings).
+  static String providerClients(String providerId) =>
+      '/$apiVersion/Providers/$providerId/clients';
+
   /// GET — the provider's staff members.
   static String providerStaff(String providerId) =>
       '/$apiVersion/Providers/$providerId/staff';

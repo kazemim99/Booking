@@ -327,6 +327,21 @@ class AppStrings {
   static const String bookingSheetTitle = 'جزئیات نوبت';
   static const String bookingSheetNotes = 'یادداشت';
 
+  // ==================== Clients ====================
+  static const String clientsTitle = 'مشتریان';
+  static String clientsCount(int n) => '$n مشتری';
+  static const String clientsSearchHint = 'جستجوی نام یا شماره';
+  static const String clientsEmptyTitle = 'هنوز مشتری‌ای ثبت نشده';
+  static const String clientsEmptyBody =
+      'با ثبت و دریافت نوبت، فهرست مشتریان شما ساخته می‌شود';
+  static const String clientsSearchEmpty = 'مشتری‌ای مطابق جستجو یافت نشد';
+  static const String clientUnknownName = 'مشتری';
+  static String clientBookings(int total, int upcoming) =>
+      '$total نوبت · $upcoming پیش رو';
+  static String clientLastVisit(String date) => 'آخرین مراجعه: $date';
+  static const String clientBookAgain = 'ثبت نوبت';
+  static const String phoneCopied = 'شماره کپی شد';
+
   // Errors (mirrors error.interceptor.ts / customer app)
   static const String networkError =
       'خطا در برقراری ارتباط با سرور. لطفاً اتصال اینترنت خود را بررسی کنید';

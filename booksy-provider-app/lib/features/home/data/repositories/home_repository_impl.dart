@@ -9,6 +9,7 @@ import '../../domain/entities/home_booking.dart';
 import '../../domain/entities/home_enums.dart';
 import '../../domain/entities/home_inputs.dart';
 import '../../domain/entities/home_snapshot.dart';
+import '../../domain/entities/provider_client.dart';
 import '../../domain/repositories/home_repository.dart';
 import '../datasources/home_api_service.dart';
 
@@ -140,6 +141,36 @@ class HomeRepositoryImpl implements HomeRepository {
               status: b.status,
             );
     }).toList();
+  }
+
+  // ==================== clients ====================
+
+  @override
+  Future<Either<Failure, List<ProviderClient>>> fetchClients() {
+    return _withProviderId((providerId) async {
+      try {
+        final raw = await _api.getProviderClients(providerId);
+        return Right(raw
+            .map((c) => ProviderClient(
+                  customerId: HomeApiService.readString(
+                      c, const ['customerId', 'id']),
+                  name: HomeApiService.readString(c, const ['name']),
+                  phone: HomeApiService.readString(c, const ['phone']),
+                  totalBookings: HomeApiService.readInt(
+                      c, const ['totalBookings', 'total']),
+                  completedBookings: HomeApiService.readInt(
+                      c, const ['completedBookings', 'completed']),
+                  upcomingBookings: HomeApiService.readInt(
+                      c, const ['upcomingBookings', 'upcoming']),
+                  lastVisitAt: HomeApiService.bookingStart(
+                      {'startTime': c['lastVisitAt']}),
+                ))
+            .where((c) => c.customerId.isNotEmpty)
+            .toList());
+      } on DioException {
+        return const Left(ServerFailure('دریافت فهرست مشتریان ناموفق بود'));
+      }
+    });
   }
 
   // ==================== booking composer ====================
