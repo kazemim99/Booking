@@ -3,19 +3,28 @@ import 'package:equatable/equatable.dart';
 /// A team member row on the More → Staff screen.
 class ProviderStaffMember extends Equatable {
   final String id;
+
+  /// Display name (backend fullName, falling back to first+last).
   final String name;
+  final String firstName;
+  final String lastName;
+  final String phone;
   final String role;
   final bool isActive;
 
   const ProviderStaffMember({
     required this.id,
     required this.name,
+    this.firstName = '',
+    this.lastName = '',
+    this.phone = '',
     this.role = '',
     this.isActive = true,
   });
 
   @override
-  List<Object?> get props => [id, name, role, isActive];
+  List<Object?> get props =>
+      [id, name, firstName, lastName, phone, role, isActive];
 }
 
 /// Booking statistics for the Insights screen (all-time + trailing 30 days).

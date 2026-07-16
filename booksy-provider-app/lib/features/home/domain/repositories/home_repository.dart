@@ -49,6 +49,26 @@ abstract class HomeRepository {
   /// The provider's team members.
   Future<Either<Failure, List<ProviderStaffMember>>> fetchStaff();
 
+  /// Adds a team member (spec: provider-staff-management).
+  Future<Either<Failure, void>> addStaff({
+    required String firstName,
+    String? lastName,
+    String? phoneNumber,
+    String? role,
+  });
+
+  /// Updates a team member.
+  Future<Either<Failure, void>> updateStaff(
+    String staffId, {
+    required String firstName,
+    String? lastName,
+    String? phoneNumber,
+    String? role,
+  });
+
+  /// Removes a team member.
+  Future<Either<Failure, void>> removeStaff(String staffId);
+
   /// Booking statistics: all-time + trailing 30 days.
   Future<Either<Failure, InsightsSummary>> fetchInsights();
 

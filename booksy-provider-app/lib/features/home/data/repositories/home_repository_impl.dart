@@ -171,6 +171,11 @@ class HomeRepositoryImpl implements HomeRepository {
                   id: HomeApiService.readString(s, const ['id']),
                   name: HomeApiService.readString(
                       s, const ['fullName', 'name', 'firstName']),
+                  firstName:
+                      HomeApiService.readString(s, const ['firstName']),
+                  lastName: HomeApiService.readString(s, const ['lastName']),
+                  phone: HomeApiService.readString(
+                      s, const ['phoneNumber', 'phone']),
                   role: HomeApiService.readString(s, const ['role']),
                   isActive: s['isActive'] != false,
                 ))
@@ -180,6 +185,49 @@ class HomeRepositoryImpl implements HomeRepository {
         return const Left(ServerFailure('دریافت فهرست تیم ناموفق بود'));
       }
     });
+  }
+
+  @override
+  Future<Either<Failure, void>> addStaff({
+    required String firstName,
+    String? lastName,
+    String? phoneNumber,
+    String? role,
+  }) {
+    return _withProviderId((providerId) => _action(
+          () => _api.addStaff(providerId,
+              firstName: firstName,
+              lastName: lastName,
+              phoneNumber: phoneNumber,
+              role: role),
+          'افزودن عضو تیم ناموفق بود',
+        ));
+  }
+
+  @override
+  Future<Either<Failure, void>> updateStaff(
+    String staffId, {
+    required String firstName,
+    String? lastName,
+    String? phoneNumber,
+    String? role,
+  }) {
+    return _withProviderId((providerId) => _action(
+          () => _api.updateStaff(providerId, staffId,
+              firstName: firstName,
+              lastName: lastName,
+              phoneNumber: phoneNumber,
+              role: role),
+          'ویرایش عضو تیم ناموفق بود',
+        ));
+  }
+
+  @override
+  Future<Either<Failure, void>> removeStaff(String staffId) {
+    return _withProviderId((providerId) => _action(
+          () => _api.removeStaff(providerId, staffId),
+          'حذف عضو تیم ناموفق بود',
+        ));
   }
 
   @override

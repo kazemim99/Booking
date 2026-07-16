@@ -174,9 +174,18 @@ class HomeView extends StatelessWidget {
         );
       case HomeWidgetId.activationChecklist:
         return ActivationChecklist(
-          onItemTap: (key) => key == 'share'
-              ? _shareLink(context)
-              : AppSnackbar.info(context, AppStrings.comingSoon),
+          onItemTap: (key) {
+            switch (key) {
+              case 'share':
+                _shareLink(context);
+              case 'staff':
+                context.push(Routes.moreStaff);
+              case 'services':
+                context.push(Routes.moreServices);
+              default:
+                AppSnackbar.info(context, AppStrings.comingSoon);
+            }
+          },
         );
       case HomeWidgetId.getDiscovered:
         return GetDiscovered(

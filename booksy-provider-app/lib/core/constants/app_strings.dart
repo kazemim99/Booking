@@ -367,6 +367,23 @@ class AppStrings {
   static const String insightsTurnover = 'گردش مالی';
   static const String insightsCompletedRevenue = 'درآمد تکمیل‌شده';
 
+  // ==================== Staff management ====================
+  static const String staffAdd = 'افزودن عضو تیم';
+  static const String staffEdit = 'ویرایش عضو تیم';
+  static const String staffFirstName = 'نام';
+  static const String staffLastName = 'نام خانوادگی (اختیاری)';
+  static const String staffPhone = 'شماره تماس (اختیاری)';
+  static const String staffRole = 'نقش (اختیاری)';
+  static const String staffSave = 'ذخیره';
+  static const String staffRemove = 'حذف عضو';
+  static const String staffRemoveConfirmTitle = 'حذف عضو تیم';
+  static String staffRemoveConfirmBody(String name) =>
+      '«$name» از تیم حذف شود؟';
+  static const String staffRemoveConfirm = 'حذف';
+  static const String staffAdded = 'عضو تیم اضافه شد';
+  static const String staffUpdated = 'عضو تیم ویرایش شد';
+  static const String staffRemoved = 'عضو تیم حذف شد';
+
   // Errors (mirrors error.interceptor.ts / customer app)
   static const String networkError =
       'خطا در برقراری ارتباط با سرور. لطفاً اتصال اینترنت خود را بررسی کنید';

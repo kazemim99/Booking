@@ -60,7 +60,8 @@ class ServicesCubit extends _MoreLoadCubit<List<ComposerService>> {
       _repository.fetchServices();
 }
 
-/// More → تیم (Staff, read-only).
+/// More → تیم (Staff) — list + CRUD mutations
+/// (spec: provider-staff-management).
 class StaffCubit extends _MoreLoadCubit<List<ProviderStaffMember>> {
   final HomeRepository _repository;
   StaffCubit(this._repository);
@@ -68,4 +69,45 @@ class StaffCubit extends _MoreLoadCubit<List<ProviderStaffMember>> {
   @override
   Future<Either<Failure, List<ProviderStaffMember>>> fetch() =>
       _repository.fetchStaff();
+
+  Future<Failure?> addStaff({
+    required String firstName,
+    String? lastName,
+    String? phoneNumber,
+    String? role,
+  }) =>
+      _mutate(() => _repository.addStaff(
+          firstName: firstName,
+          lastName: lastName,
+          phoneNumber: phoneNumber,
+          role: role));
+
+  Future<Failure?> updateStaff(
+    String staffId, {
+    required String firstName,
+    String? lastName,
+    String? phoneNumber,
+    String? role,
+  }) =>
+      _mutate(() => _repository.updateStaff(staffId,
+          firstName: firstName,
+          lastName: lastName,
+          phoneNumber: phoneNumber,
+          role: role));
+
+  Future<Failure?> removeStaff(String staffId) =>
+      _mutate(() => _repository.removeStaff(staffId));
+
+  /// Home-style mutation: null on success (and the list reloads), or the
+  /// Failure for the caller to surface.
+  Future<Failure?> _mutate(
+    Future<Either<Failure, void>> Function() call,
+  ) async {
+    final result = await call();
+    if (isClosed) return null;
+    return result.fold((f) => f, (_) {
+      load();
+      return null;
+    });
+  }
 }

@@ -124,6 +124,52 @@ class HomeApiService {
         },
       );
 
+  // ==================== staff management ====================
+
+  /// POST /v1/Providers/{id}/staff — adds a team member.
+  Future<void> addStaff(
+    String providerId, {
+    required String firstName,
+    String? lastName,
+    String? phoneNumber,
+    String? role,
+  }) =>
+      _dio.post(
+        ApiConstants.providerStaff(providerId),
+        data: {
+          'firstName': firstName,
+          'lastName': lastName ?? '',
+          if (phoneNumber != null && phoneNumber.isNotEmpty)
+            'phoneNumber': phoneNumber,
+          // Backend defaults the role to "ServiceProvider" when omitted.
+          if (role != null && role.isNotEmpty) 'role': role,
+        },
+      );
+
+  /// PUT /v1/Providers/{id}/staff/{staffId} — updates a team member.
+  Future<void> updateStaff(
+    String providerId,
+    String staffId, {
+    required String firstName,
+    String? lastName,
+    String? phoneNumber,
+    String? role,
+  }) =>
+      _dio.put(
+        '${ApiConstants.providerStaff(providerId)}/$staffId',
+        data: {
+          'firstName': firstName,
+          'lastName': lastName ?? '',
+          if (phoneNumber != null && phoneNumber.isNotEmpty)
+            'phoneNumber': phoneNumber,
+          if (role != null && role.isNotEmpty) 'role': role,
+        },
+      );
+
+  /// DELETE /v1/Providers/{id}/staff/{staffId} — removes a team member.
+  Future<void> removeStaff(String providerId, String staffId) =>
+      _dio.delete('${ApiConstants.providerStaff(providerId)}/$staffId');
+
   // ==================== booking quick actions ====================
 
   /// POST /v1/Bookings/{id}/confirm — provider approves a pending request.

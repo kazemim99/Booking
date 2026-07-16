@@ -4,9 +4,12 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../../../config/theme/app_tokens.dart';
 import '../../../../core/constants/app_strings.dart';
 import '../../../../core/di/injection.dart';
+import '../../../../core/widgets/app_button.dart';
 import '../../../../core/widgets/app_card.dart';
 import '../../../../core/widgets/app_empty_state.dart';
 import '../../../../core/widgets/app_error_state.dart';
+import '../../../../core/widgets/app_snackbar.dart';
+import '../../../../core/widgets/app_text_field.dart';
 import '../../domain/entities/composer_models.dart';
 import '../../domain/entities/more_models.dart';
 import '../cubit/more_cubits.dart';
@@ -24,6 +27,7 @@ class _MoreSubScaffold<T> extends StatelessWidget {
   final MoreState<T> state;
   final VoidCallback onRetry;
   final Widget Function(BuildContext, T) bodyBuilder;
+  final List<Widget> actions;
 
   const _MoreSubScaffold({
     super.key,
@@ -31,6 +35,7 @@ class _MoreSubScaffold<T> extends StatelessWidget {
     required this.state,
     required this.onRetry,
     required this.bodyBuilder,
+    this.actions = const [],
   });
 
   @override
@@ -49,6 +54,7 @@ class _MoreSubScaffold<T> extends StatelessWidget {
             color: AppColors.ink,
           ),
         ),
+        actions: actions,
       ),
       body: switch (state.status) {
         MoreStatus.loading =>
@@ -285,10 +291,22 @@ class StaffView extends StatelessWidget {
         title: AppStrings.moreStaff,
         state: state,
         onRetry: context.read<StaffCubit>().load,
+        actions: [
+          IconButton(
+            key: const Key('staff-add'),
+            tooltip: AppStrings.staffAdd,
+            icon: const Icon(Icons.person_add_alt, color: AppColors.primary),
+            onPressed: () =>
+                StaffFormSheet.show(context, context.read<StaffCubit>()),
+          ),
+        ],
         bodyBuilder: (context, staff) => staff.isEmpty
-            ? const AppEmptyState(
+            ? AppEmptyState(
                 icon: Icons.people_outline,
                 message: AppStrings.staffEmpty,
+                actionLabel: '+ ${AppStrings.staffAdd}',
+                onAction: () =>
+                    StaffFormSheet.show(context, context.read<StaffCubit>()),
               )
             : ListView.separated(
                 padding: const EdgeInsets.all(AppSpacing.md),
@@ -300,6 +318,9 @@ class StaffView extends StatelessWidget {
                   return ListTile(
                     key: Key('staff-row-${m.id}'),
                     contentPadding: EdgeInsets.zero,
+                    onTap: () => StaffFormSheet.show(
+                        context, context.read<StaffCubit>(),
+                        member: m),
                     leading: CircleAvatar(
                       backgroundColor: AppColors.primarySoft,
                       child: Text(
@@ -325,9 +346,198 @@ class StaffView extends StatelessWidget {
                       style: const TextStyle(
                           fontSize: 12, color: AppColors.muted),
                     ),
+                    trailing: const Icon(Icons.chevron_left,
+                        size: AppIconSize.action, color: AppColors.muted),
                   );
                 },
               ),
+      ),
+    );
+  }
+}
+
+/// Add/edit form for a team member (spec: provider-staff-management).
+/// Pre-filled = edit (offers a confirm-guarded remove); empty = add.
+class StaffFormSheet extends StatefulWidget {
+  final StaffCubit cubit;
+  final ProviderStaffMember? member;
+
+  const StaffFormSheet({super.key, required this.cubit, this.member});
+
+  static Future<void> show(
+    BuildContext context,
+    StaffCubit cubit, {
+    ProviderStaffMember? member,
+  }) {
+    return showModalBottomSheet<void>(
+      context: context,
+      isScrollControlled: true,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(
+          top: Radius.circular(AppRadius.bottomSheet),
+        ),
+      ),
+      builder: (_) => Padding(
+        padding:
+            EdgeInsets.only(bottom: MediaQuery.of(context).viewInsets.bottom),
+        child: StaffFormSheet(cubit: cubit, member: member),
+      ),
+    );
+  }
+
+  @override
+  State<StaffFormSheet> createState() => _StaffFormSheetState();
+}
+
+class _StaffFormSheetState extends State<StaffFormSheet> {
+  late final _firstName =
+      TextEditingController(text: widget.member?.firstName ?? '');
+  late final _lastName =
+      TextEditingController(text: widget.member?.lastName ?? '');
+  late final _phone = TextEditingController(text: widget.member?.phone ?? '');
+  late final _role = TextEditingController(text: widget.member?.role ?? '');
+  bool _submitting = false;
+
+  bool get _isEdit => widget.member != null;
+
+  @override
+  void dispose() {
+    _firstName.dispose();
+    _lastName.dispose();
+    _phone.dispose();
+    _role.dispose();
+    super.dispose();
+  }
+
+  Future<void> _submit() async {
+    setState(() => _submitting = true);
+    final failure = _isEdit
+        ? await widget.cubit.updateStaff(
+            widget.member!.id,
+            firstName: _firstName.text.trim(),
+            lastName: _lastName.text.trim(),
+            phoneNumber: _phone.text.trim(),
+            role: _role.text.trim(),
+          )
+        : await widget.cubit.addStaff(
+            firstName: _firstName.text.trim(),
+            lastName: _lastName.text.trim(),
+            phoneNumber: _phone.text.trim(),
+            role: _role.text.trim(),
+          );
+    if (!mounted) return;
+    if (failure == null) {
+      Navigator.pop(context);
+      AppSnackbar.success(
+          context, _isEdit ? AppStrings.staffUpdated : AppStrings.staffAdded);
+    } else {
+      // Failure preserves the entered values for retry (spec).
+      setState(() => _submitting = false);
+      AppSnackbar.error(context, failure.message);
+    }
+  }
+
+  Future<void> _remove() async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: const Text(AppStrings.staffRemoveConfirmTitle),
+        content:
+            Text(AppStrings.staffRemoveConfirmBody(widget.member!.name)),
+        actions: [
+          TextButton(
+            key: const Key('staff-remove-cancel'),
+            onPressed: () => Navigator.pop(dialogContext, false),
+            child: const Text(AppStrings.cancel),
+          ),
+          TextButton(
+            key: const Key('staff-remove-confirm'),
+            onPressed: () => Navigator.pop(dialogContext, true),
+            style: TextButton.styleFrom(foregroundColor: AppColors.danger),
+            child: const Text(AppStrings.staffRemoveConfirm),
+          ),
+        ],
+      ),
+    );
+    if (confirmed != true || !mounted) return;
+
+    setState(() => _submitting = true);
+    final failure = await widget.cubit.removeStaff(widget.member!.id);
+    if (!mounted) return;
+    if (failure == null) {
+      Navigator.pop(context);
+      AppSnackbar.success(context, AppStrings.staffRemoved);
+    } else {
+      setState(() => _submitting = false);
+      AppSnackbar.error(context, failure.message);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return SafeArea(
+      child: Padding(
+        padding: const EdgeInsets.all(AppSpacing.md),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              _isEdit ? AppStrings.staffEdit : AppStrings.staffAdd,
+              style: const TextStyle(
+                fontSize: 16,
+                fontWeight: FontWeight.w700,
+                color: AppColors.ink,
+              ),
+            ),
+            const SizedBox(height: AppSpacing.md),
+            AppTextField(
+              key: const Key('staff-first-name'),
+              controller: _firstName,
+              label: AppStrings.staffFirstName,
+              onChanged: (_) => setState(() {}),
+            ),
+            const SizedBox(height: AppSpacing.sm),
+            AppTextField(
+              key: const Key('staff-last-name'),
+              controller: _lastName,
+              label: AppStrings.staffLastName,
+            ),
+            const SizedBox(height: AppSpacing.sm),
+            AppTextField(
+              key: const Key('staff-phone'),
+              controller: _phone,
+              label: AppStrings.staffPhone,
+              keyboardType: TextInputType.phone,
+            ),
+            const SizedBox(height: AppSpacing.sm),
+            AppTextField(
+              key: const Key('staff-role'),
+              controller: _role,
+              label: AppStrings.staffRole,
+            ),
+            const SizedBox(height: AppSpacing.md),
+            AppButton(
+              key: const Key('staff-save'),
+              label: AppStrings.staffSave,
+              loading: _submitting,
+              onPressed:
+                  _firstName.text.trim().isEmpty ? null : _submit,
+            ),
+            if (_isEdit)
+              Align(
+                alignment: AlignmentDirectional.center,
+                child: TextButton(
+                  key: const Key('staff-remove'),
+                  onPressed: _submitting ? null : _remove,
+                  style:
+                      TextButton.styleFrom(foregroundColor: AppColors.danger),
+                  child: const Text(AppStrings.staffRemove),
+                ),
+              ),
+            const SizedBox(height: AppSpacing.sm),
+          ],
+        ),
       ),
     );
   }

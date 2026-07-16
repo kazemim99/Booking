@@ -155,6 +155,148 @@ void main() {
     });
   });
 
+  group('Staff management (spec: provider-staff-management)', () {
+    const member = ProviderStaffMember(
+      id: 'm1',
+      name: 'سارا احمدی',
+      firstName: 'سارا',
+      lastName: 'احمدی',
+      phone: '0912',
+      role: 'Stylist',
+    );
+
+    setUp(() {
+      when(() => repository.fetchStaff())
+          .thenAnswer((_) async => const Right([member]));
+      when(() => repository.addStaff(
+            firstName: any(named: 'firstName'),
+            lastName: any(named: 'lastName'),
+            phoneNumber: any(named: 'phoneNumber'),
+            role: any(named: 'role'),
+          )).thenAnswer((_) async => const Right(null));
+      when(() => repository.updateStaff(
+            any(),
+            firstName: any(named: 'firstName'),
+            lastName: any(named: 'lastName'),
+            phoneNumber: any(named: 'phoneNumber'),
+            role: any(named: 'role'),
+          )).thenAnswer((_) async => const Right(null));
+      when(() => repository.removeStaff(any()))
+          .thenAnswer((_) async => const Right(null));
+    });
+
+    test('mutations reload on success and surface failures', () async {
+      final cubit = StaffCubit(repository);
+      await cubit.load();
+      clearInteractions(repository);
+      when(() => repository.fetchStaff())
+          .thenAnswer((_) async => const Right([member]));
+
+      expect(await cubit.addStaff(firstName: 'رضا'), isNull);
+      await Future<void>.delayed(Duration.zero);
+      verify(() => repository.fetchStaff()).called(1);
+
+      when(() => repository.removeStaff(any()))
+          .thenAnswer((_) async => const Left(ServerFailure('خطا')));
+      final failure = await cubit.removeStaff('m1');
+      expect(failure!.message, 'خطا');
+      await cubit.close();
+    });
+
+    Future<StaffCubit> pumpStaff(WidgetTester tester) async {
+      final cubit = StaffCubit(repository);
+      addTearDown(cubit.close);
+      await tester.pumpWidget(
+        MaterialApp(
+          theme: AppTheme.light,
+          builder: (context, child) => Directionality(
+            textDirection: TextDirection.rtl,
+            child: child ?? const SizedBox.shrink(),
+          ),
+          home: BlocProvider<StaffCubit>.value(
+            value: cubit..load(),
+            child: const StaffView(),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+      return cubit;
+    }
+
+    testWidgets('add flow: gated on first name, submits and refreshes',
+        (tester) async {
+      await pumpStaff(tester);
+
+      await tester.tap(find.byKey(const Key('staff-add')));
+      await tester.pumpAndSettle();
+
+      // Gated while the required name is empty.
+      final saveButton =
+          tester.widget<FilledButton>(find.descendant(
+        of: find.byKey(const Key('staff-save')),
+        matching: find.byType(FilledButton),
+      ));
+      expect(saveButton.onPressed, isNull);
+
+      await tester.enterText(
+          find.byKey(const Key('staff-first-name')), 'رضا');
+      await tester.pumpAndSettle();
+      await tester.tap(find.byKey(const Key('staff-save')));
+      await tester.pumpAndSettle();
+
+      verify(() => repository.addStaff(
+            firstName: 'رضا',
+            lastName: any(named: 'lastName'),
+            phoneNumber: any(named: 'phoneNumber'),
+            role: any(named: 'role'),
+          )).called(1);
+      expect(find.text(AppStrings.staffAdded), findsOneWidget);
+    });
+
+    testWidgets('edit flow: pre-filled form updates the member',
+        (tester) async {
+      await pumpStaff(tester);
+
+      await tester.tap(find.byKey(const Key('staff-row-m1')));
+      await tester.pumpAndSettle();
+
+      expect(find.text('سارا'), findsOneWidget); // pre-filled
+      await tester.enterText(find.byKey(const Key('staff-role')), 'Barber');
+      await tester.tap(find.byKey(const Key('staff-save')));
+      await tester.pumpAndSettle();
+
+      verify(() => repository.updateStaff(
+            'm1',
+            firstName: 'سارا',
+            lastName: any(named: 'lastName'),
+            phoneNumber: any(named: 'phoneNumber'),
+            role: 'Barber',
+          )).called(1);
+    });
+
+    testWidgets('remove requires confirmation; cancel deletes nothing',
+        (tester) async {
+      await pumpStaff(tester);
+
+      await tester.tap(find.byKey(const Key('staff-row-m1')));
+      await tester.pumpAndSettle();
+      await tester.tap(find.byKey(const Key('staff-remove')));
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.byKey(const Key('staff-remove-cancel')));
+      await tester.pumpAndSettle();
+      verifyNever(() => repository.removeStaff(any()));
+
+      await tester.tap(find.byKey(const Key('staff-remove')));
+      await tester.pumpAndSettle();
+      await tester.tap(find.byKey(const Key('staff-remove-confirm')));
+      await tester.pumpAndSettle();
+
+      verify(() => repository.removeStaff('m1')).called(1);
+      expect(find.text(AppStrings.staffRemoved), findsOneWidget);
+    });
+  });
+
   group('More sub-pages', () {
     Future<void> pumpView(WidgetTester tester, Widget view) async {
       await tester.pumpWidget(
