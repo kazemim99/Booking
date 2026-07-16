@@ -1,6 +1,8 @@
 import 'package:dio/dio.dart';
 
 import '../../../../core/api/config/api_constants.dart';
+import '../../../onboarding/domain/entities/onboarding_data.dart'
+    show BreakTime, ClockTime, DayHours;
 import '../../domain/entities/home_booking.dart';
 
 /// Raw API access for the Home snapshot (manual JSON — no codegen, see
@@ -145,6 +147,82 @@ class HomeApiService {
           'description': description ?? '',
         },
       );
+
+  // ==================== working hours ====================
+
+  /// GET /v1/providers/{id}/business-hours — the weekly hours with breaks.
+  Future<List<DayHours>> getBusinessHours(String providerId) async {
+    final res =
+        await _dio.get(ApiConstants.providerBusinessHours(providerId));
+    return parseBusinessHours(unwrapMap(res.data));
+  }
+
+  /// PUT /v1/providers/{id}/business-hours — replaces the weekly hours
+  /// (step-6 wire shape; breaks included so they are never silently erased).
+  Future<void> updateBusinessHours(
+    String providerId,
+    List<DayHours> days,
+  ) =>
+      _dio.put(
+        ApiConstants.providerBusinessHours(providerId),
+        data: {
+          'businessHours': days.map(dayHoursToJson).toList(),
+        },
+      );
+
+  /// Parses the GET shape (times as "HH:mm" strings, verified live
+  /// 2026-07-16) into the shared [DayHours] model.
+  static List<DayHours> parseBusinessHours(Map<String, dynamic> data) {
+    final list = data['businessHours'];
+    if (list is! List) return const [];
+    return list.whereType<Map<String, dynamic>>().map((d) {
+      return DayHours(
+        dayOfWeek: readInt(d, const ['dayOfWeek']),
+        isOpen: d['isOpen'] == true,
+        openTime: clockFromText(d['openTime']),
+        closeTime: clockFromText(d['closeTime']),
+        breaks: switch (d['breaks']) {
+          final List breaks => breaks
+              .whereType<Map<String, dynamic>>()
+              .map((b) {
+                final start = clockFromText(b['startTime'] ?? b['start']);
+                final end = clockFromText(b['endTime'] ?? b['end']);
+                return (start == null || end == null)
+                    ? null
+                    : BreakTime(start, end);
+              })
+              .whereType<BreakTime>()
+              .toList(),
+          _ => const <BreakTime>[],
+        },
+      );
+    }).toList();
+  }
+
+  /// "HH:mm" → [ClockTime]; null when absent/unparsable.
+  static ClockTime? clockFromText(dynamic value) {
+    if (value is! String || !value.contains(':')) return null;
+    final parts = value.split(':');
+    final h = int.tryParse(parts[0]);
+    final m = int.tryParse(parts[1]);
+    if (h == null || m == null) return null;
+    return ClockTime(h, m);
+  }
+
+  /// The PUT wire shape (identical to onboarding step-6 serialization).
+  static Map<String, dynamic> dayHoursToJson(DayHours d) {
+    Map<String, dynamic>? time(ClockTime? t) =>
+        t == null ? null : {'hours': t.hours, 'minutes': t.minutes};
+    return {
+      'dayOfWeek': d.dayOfWeek,
+      'isOpen': d.isOpen,
+      'openTime': time(d.openTime),
+      'closeTime': time(d.closeTime),
+      'breaks': d.breaks
+          .map((b) => {'start': time(b.start), 'end': time(b.end)})
+          .toList(),
+    };
+  }
 
   // ==================== staff management ====================
 

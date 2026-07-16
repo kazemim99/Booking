@@ -100,6 +100,11 @@ public class ProviderSettingsController : ControllerBase
         [FromBody] UpdateBusinessInfoRequest request,
         CancellationToken cancellationToken = default)
     {
+        if (!await CanManageProvider(id))
+        {
+            return Forbid();
+        }
+
        
         var command = new UpdateBusinessProfileCommand(
             id,
@@ -172,6 +177,11 @@ public class ProviderSettingsController : ControllerBase
         [FromBody] UpdateLocationRequest request,
         CancellationToken cancellationToken = default)
     {
+        if (!await CanManageProvider(id))
+        {
+            return Forbid();
+        }
+
 
 
         var command = new UpdateLocationCommand(
@@ -258,6 +268,11 @@ public class ProviderSettingsController : ControllerBase
         [FromBody] UpdateWorkingHoursRequest request,
         CancellationToken cancellationToken = default)
     {
+        if (!await CanManageProvider(id))
+        {
+            return Forbid();
+        }
+
  
         // Map request to command DTOs
         var businessHours = new Dictionary<string, DayHoursDto?>();
@@ -327,6 +342,11 @@ public class ProviderSettingsController : ControllerBase
         [FromBody] UpdateBusinessHoursRequestDto request,
         CancellationToken cancellationToken = default)
     {
+        if (!await CanManageProvider(id))
+        {
+            return Forbid();
+        }
+
        
 
         var command = new UpdateBusinessHoursCommand(id, request.BusinessHours);
@@ -374,6 +394,11 @@ public class ProviderSettingsController : ControllerBase
         [FromBody] AddHolidayRequestDto request,
         CancellationToken cancellationToken = default)
     {
+        if (!await CanManageProvider(id))
+        {
+            return Forbid();
+        }
+
      
 
         var command = new AddHolidayCommand(
@@ -403,6 +428,11 @@ public class ProviderSettingsController : ControllerBase
         [FromRoute] Guid holidayId,
         CancellationToken cancellationToken = default)
     {
+        if (!await CanManageProvider(id))
+        {
+            return Forbid();
+        }
+
        
 
         var command = new DeleteHolidayCommand(id, holidayId);
@@ -450,6 +480,11 @@ public class ProviderSettingsController : ControllerBase
         [FromBody] AddExceptionRequestDto request,
         CancellationToken cancellationToken = default)
     {
+        if (!await CanManageProvider(id))
+        {
+            return Forbid();
+        }
+
      
 
         var command = new AddExceptionCommand(
@@ -480,6 +515,11 @@ public class ProviderSettingsController : ControllerBase
         [FromRoute] Guid exceptionId,
         CancellationToken cancellationToken = default)
     {
+        if (!await CanManageProvider(id))
+        {
+            return Forbid();
+        }
+
        
 
         var command = new DeleteExceptionCommand(id, exceptionId);
@@ -567,6 +607,11 @@ public class ProviderSettingsController : ControllerBase
         [FromBody] AddServiceRequest request,
         CancellationToken cancellationToken = default)
     {
+        if (!await CanManageProvider(id))
+        {
+            return Forbid();
+        }
+
      
 
         var command = new AddProviderServiceCommand(
@@ -609,6 +654,11 @@ public class ProviderSettingsController : ControllerBase
         [FromBody] UpdateProviderServiceRequest request,
         CancellationToken cancellationToken = default)
     {
+        if (!await CanManageProvider(id))
+        {
+            return Forbid();
+        }
+
        
 
         var command = new UpdateProviderServiceCommand(
@@ -650,6 +700,11 @@ public class ProviderSettingsController : ControllerBase
         [FromRoute] Guid serviceId,
         CancellationToken cancellationToken = default)
     {
+        if (!await CanManageProvider(id))
+        {
+            return Forbid();
+        }
+
        
         var command = new DeleteProviderServiceCommand(serviceId, id);
         await _mediator.Send(command, cancellationToken);
@@ -662,6 +717,40 @@ public class ProviderSettingsController : ControllerBase
     #endregion
 
     #region Private Helper Methods
+
+    private async Task<bool> CanManageProvider(Guid providerId)
+    {
+        // NOTE: no early user-id short-circuit — this controller reads raw
+        // sub/userId claims which inbound claim mapping may rename; the
+        // claim check and ownership fallback below are authoritative.
+
+        // Admins can manage any provider
+        if (User.IsInRole("Admin") || User.IsInRole("SysAdmin") || User.IsInRole("Administrator"))
+            return true;
+
+        // Provider owners can manage their own provider — via the providerId
+        // claim (present after a post-registration token refresh)...
+        var claimProviderId = GetCurrentUserProviderId();
+        if (!string.IsNullOrEmpty(claimProviderId) && claimProviderId == providerId.ToString())
+            return true;
+
+        // ...or, when the claim isn't on the token yet, resolve the caller's
+        // provider in-process and check ownership (same fallback as
+        // ProvidersController.CanManageProvider).
+        try
+        {
+            var status = await _mediator.Send(
+                new Booksy.ServiceCatalog.Application.Queries.Provider.GetCurrentProviderStatus.GetCurrentProviderStatusQuery());
+            if (status is not null && status.ProviderId.ToString() == providerId.ToString())
+                return true;
+        }
+        catch
+        {
+            // no provider associated with the current user
+        }
+
+        return false;
+    }
 
     private string? GetCurrentUserId()
     {

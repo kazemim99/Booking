@@ -1,6 +1,8 @@
 import 'package:dartz/dartz.dart';
 
 import '../../../../core/errors/failures.dart';
+import '../../../onboarding/domain/entities/onboarding_data.dart'
+    show DayHours;
 import '../entities/composer_models.dart';
 import '../entities/home_booking.dart';
 import '../entities/home_snapshot.dart';
@@ -80,6 +82,12 @@ abstract class HomeRepository {
     required String businessName,
     String? description,
   });
+
+  /// The weekly hours with breaks (spec: provider-working-hours-editing).
+  Future<Either<Failure, List<DayHours>>> fetchBusinessHours();
+
+  /// Replaces the weekly hours (breaks included — never silently erased).
+  Future<Either<Failure, void>> updateBusinessHours(List<DayHours> days);
 
   // ---- Clients (spec: provider-clients) ----
 

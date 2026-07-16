@@ -7,7 +7,10 @@ import 'package:booksy_provider_app/features/auth/domain/entities/provider_statu
 import 'package:booksy_provider_app/features/auth/presentation/bloc/auth_bloc.dart';
 import 'package:booksy_provider_app/features/auth/presentation/bloc/auth_event.dart';
 import 'package:booksy_provider_app/features/auth/presentation/bloc/auth_state.dart';
+import 'package:booksy_provider_app/features/home/data/datasources/home_api_service.dart';
 import 'package:booksy_provider_app/features/home/domain/entities/composer_models.dart';
+import 'package:booksy_provider_app/features/onboarding/domain/entities/onboarding_data.dart'
+    show BreakTime, ClockTime, DayHours;
 import 'package:booksy_provider_app/features/home/domain/entities/more_models.dart';
 import 'package:booksy_provider_app/features/home/domain/repositories/home_repository.dart';
 import 'package:booksy_provider_app/features/home/presentation/cubit/more_cubits.dart';
@@ -131,15 +134,15 @@ void main() {
       ]) {
         expect(find.byKey(Key(k)), findsOneWidget);
       }
-      // Remaining coming-soon rows (hours, gallery) are visible but disabled.
-      expect(find.text(AppStrings.comingSoon), findsNWidgets(2));
-      final hoursRow =
-          tester.widget<InkWell>(find.byKey(const Key('more-hours')));
-      expect(hoursRow.onTap, isNull);
-      // The business-profile row is now live.
-      final profileRow =
-          tester.widget<InkWell>(find.byKey(const Key('more-profile')));
-      expect(profileRow.onTap, isNotNull);
+      // The last coming-soon row (gallery) is visible but disabled.
+      expect(find.text(AppStrings.comingSoon), findsOneWidget);
+      final galleryRow =
+          tester.widget<InkWell>(find.byKey(const Key('more-gallery')));
+      expect(galleryRow.onTap, isNull);
+      // Business-profile and hours rows are live.
+      for (final k in ['more-profile', 'more-hours']) {
+        expect(tester.widget<InkWell>(find.byKey(Key(k))).onTap, isNotNull);
+      }
 
       // The account section sits below the fold in the test viewport.
       await tester.scrollUntilVisible(
@@ -252,6 +255,156 @@ void main() {
 
       expect(find.text('خطا'), findsOneWidget); // snackbar
       expect(find.text('سالن نو'), findsOneWidget); // edit preserved
+    });
+  });
+
+  group('Working hours editing (spec: provider-working-hours-editing)', () {
+    const monday = DayHours(
+      dayOfWeek: 1,
+      isOpen: true,
+      openTime: ClockTime(10, 0),
+      closeTime: ClockTime(19, 0),
+      breaks: [BreakTime(ClockTime(13, 0), ClockTime(14, 0))],
+    );
+    const tuesday = DayHours(dayOfWeek: 2, isOpen: false);
+
+    test('GET shape parses and PUT shape serializes (round-trip)', () {
+      final parsed = HomeApiService.parseBusinessHours({
+        'businessHours': [
+          {
+            'dayOfWeek': 1,
+            'dayName': 'Monday',
+            'isOpen': true,
+            'openTime': '10:00',
+            'closeTime': '19:00',
+            'breaks': [
+              {'startTime': '13:00', 'endTime': '14:00'},
+            ],
+          },
+          {'dayOfWeek': 2, 'isOpen': false, 'openTime': null},
+        ],
+      });
+
+      expect(parsed, [monday, tuesday]);
+
+      // Breaks survive serialization untouched (spec: break preservation).
+      expect(HomeApiService.dayHoursToJson(monday), {
+        'dayOfWeek': 1,
+        'isOpen': true,
+        'openTime': {'hours': 10, 'minutes': 0},
+        'closeTime': {'hours': 19, 'minutes': 0},
+        'breaks': [
+          {
+            'start': {'hours': 13, 'minutes': 0},
+            'end': {'hours': 14, 'minutes': 0},
+          },
+        ],
+      });
+    });
+
+    test('cubit edits days purely and save sends the whole week', () async {
+      when(() => repository.fetchBusinessHours())
+          .thenAnswer((_) async => const Right([monday, tuesday]));
+      when(() => repository.updateBusinessHours(any()))
+          .thenAnswer((_) async => const Right(null));
+
+      final cubit = BusinessHoursCubit(repository);
+      await cubit.load();
+
+      cubit.toggleDay(2, true); // opening gets default 9–18
+      expect(cubit.state.data![1].isOpen, isTrue);
+      expect(cubit.state.data![1].openTime, const ClockTime(9, 0));
+
+      cubit.setOpenTime(1, const ClockTime(11, 30));
+      expect(cubit.state.data![0].openTime, const ClockTime(11, 30));
+      expect(cubit.state.data![0].breaks, monday.breaks); // preserved
+
+      expect(await cubit.save(), isNull);
+      final sent = verify(() => repository.updateBusinessHours(captureAny()))
+          .captured
+          .single as List<DayHours>;
+      expect(sent, hasLength(2));
+      expect(sent[0].breaks, monday.breaks);
+      await cubit.close();
+    });
+
+    testWidgets('editor renders Saturday-first, toggles, and saves',
+        (tester) async {
+      when(() => repository.fetchBusinessHours())
+          .thenAnswer((_) async => const Right([monday, tuesday]));
+      when(() => repository.updateBusinessHours(any()))
+          .thenAnswer((_) async => const Right(null));
+
+      final cubit = BusinessHoursCubit(repository);
+      addTearDown(cubit.close);
+      await tester.pumpWidget(
+        MaterialApp(
+          theme: AppTheme.light,
+          builder: (context, child) => Directionality(
+            textDirection: TextDirection.rtl,
+            child: child ?? const SizedBox.shrink(),
+          ),
+          home: BlocProvider<BusinessHoursCubit>.value(
+            value: cubit..load(),
+            child: const BusinessHoursView(),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      // Monday shows its times + preserved break chip; Tuesday reads closed.
+      expect(find.text('10:00'), findsOneWidget);
+      expect(
+          find.byKey(const Key('hours-break-1-13:00')), findsOneWidget);
+      expect(find.text(AppStrings.hoursClosedDay), findsOneWidget);
+
+      await tester.tap(find.byKey(const Key('hours-switch-2')));
+      await tester.pumpAndSettle();
+      expect(find.text(AppStrings.hoursClosedDay), findsNothing);
+
+      await tester.ensureVisible(find.byKey(const Key('hours-save')));
+      await tester.tap(find.byKey(const Key('hours-save')));
+      await tester.pumpAndSettle();
+
+      final sent = verify(() => repository.updateBusinessHours(captureAny()))
+          .captured
+          .single as List<DayHours>;
+      expect(sent.firstWhere((d) => d.dayOfWeek == 2).isOpen, isTrue);
+    });
+
+    testWidgets('save failure keeps the edited week on screen',
+        (tester) async {
+      when(() => repository.fetchBusinessHours())
+          .thenAnswer((_) async => const Right([monday, tuesday]));
+      when(() => repository.updateBusinessHours(any()))
+          .thenAnswer((_) async => const Left(ServerFailure('خطا')));
+
+      final cubit = BusinessHoursCubit(repository);
+      addTearDown(cubit.close);
+      await tester.pumpWidget(
+        MaterialApp(
+          theme: AppTheme.light,
+          builder: (context, child) => Directionality(
+            textDirection: TextDirection.rtl,
+            child: child ?? const SizedBox.shrink(),
+          ),
+          home: BlocProvider<BusinessHoursCubit>.value(
+            value: cubit..load(),
+            child: const BusinessHoursView(),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.byKey(const Key('hours-switch-2')));
+      await tester.pumpAndSettle();
+      await tester.ensureVisible(find.byKey(const Key('hours-save')));
+      await tester.tap(find.byKey(const Key('hours-save')));
+      await tester.pumpAndSettle();
+
+      expect(find.text('خطا'), findsOneWidget); // snackbar
+      // Edited week still on screen (Tuesday remains open).
+      expect(find.text(AppStrings.hoursClosedDay), findsNothing);
     });
   });
 

@@ -77,6 +77,10 @@ class ApiConstants {
   /// PUT — update the business's public info (name/description/logo).
   static const String providerBusiness = '/$apiVersion/Providers/business';
 
+  /// GET/PUT — weekly business hours with breaks (ProviderSettings API).
+  static String providerBusinessHours(String providerId) =>
+      '/$apiVersion/providers/$providerId/business-hours';
+
   /// GET — the provider's client book (derived from bookings).
   static String providerClients(String providerId) =>
       '/$apiVersion/Providers/$providerId/clients';

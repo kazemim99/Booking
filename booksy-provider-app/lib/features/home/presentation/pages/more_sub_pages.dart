@@ -10,6 +10,8 @@ import '../../../../core/widgets/app_empty_state.dart';
 import '../../../../core/widgets/app_error_state.dart';
 import '../../../../core/widgets/app_snackbar.dart';
 import '../../../../core/widgets/app_text_field.dart';
+import '../../../onboarding/domain/entities/onboarding_data.dart'
+    show ClockTime, DayHours;
 import '../../domain/entities/composer_models.dart';
 import '../../domain/entities/more_models.dart';
 import '../cubit/more_cubits.dart';
@@ -351,6 +353,185 @@ class StaffView extends StatelessWidget {
                   );
                 },
               ),
+      ),
+    );
+  }
+}
+
+/// More → ساعات کاری (spec: provider-working-hours-editing).
+class BusinessHoursPage extends StatelessWidget {
+  const BusinessHoursPage({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return BlocProvider<BusinessHoursCubit>(
+      create: (_) => getIt<BusinessHoursCubit>()..load(),
+      child: const BusinessHoursView(),
+    );
+  }
+}
+
+/// Separated from [BusinessHoursPage] so tests can pump it with a fake cubit.
+class BusinessHoursView extends StatefulWidget {
+  const BusinessHoursView({super.key});
+
+  @override
+  State<BusinessHoursView> createState() => _BusinessHoursViewState();
+}
+
+class _BusinessHoursViewState extends State<BusinessHoursView> {
+  bool _saving = false;
+
+  /// Saturday-first display order (Iranian week; backend 0=Sunday…6=Saturday).
+  static const List<int> _dayOrder = [6, 0, 1, 2, 3, 4, 5];
+
+  Future<void> _save(BusinessHoursCubit cubit) async {
+    setState(() => _saving = true);
+    final failure = await cubit.save();
+    if (!mounted) return;
+    if (failure == null) {
+      Navigator.of(context).pop();
+      AppSnackbar.success(context, AppStrings.hoursSaved);
+    } else {
+      // Failure preserves the edited week (spec).
+      setState(() => _saving = false);
+      AppSnackbar.error(context, failure.message);
+    }
+  }
+
+  Future<void> _pickTime(
+    BuildContext context, {
+    required ClockTime? current,
+    required void Function(ClockTime) onPicked,
+  }) async {
+    final picked = await showTimePicker(
+      context: context,
+      initialTime: TimeOfDay(
+          hour: current?.hours ?? 9, minute: current?.minutes ?? 0),
+    );
+    if (picked != null) onPicked(ClockTime(picked.hour, picked.minute));
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return BlocBuilder<BusinessHoursCubit, MoreState<List<DayHours>>>(
+      builder: (context, state) {
+        final cubit = context.read<BusinessHoursCubit>();
+        return _MoreSubScaffold<List<DayHours>>(
+          title: AppStrings.moreWorkingHours,
+          state: state,
+          onRetry: cubit.load,
+          bodyBuilder: (context, days) {
+            final byDay = {for (final d in days) d.dayOfWeek: d};
+            return ListView(
+              padding: const EdgeInsets.all(AppSpacing.md),
+              children: [
+                for (final dayOfWeek in _dayOrder)
+                  if (byDay[dayOfWeek] != null)
+                    _dayRow(context, cubit, byDay[dayOfWeek]!),
+                const SizedBox(height: AppSpacing.lg),
+                AppButton(
+                  key: const Key('hours-save'),
+                  label: AppStrings.hoursSave,
+                  loading: _saving,
+                  onPressed: () => _save(cubit),
+                ),
+              ],
+            );
+          },
+        );
+      },
+    );
+  }
+
+  Widget _dayRow(
+      BuildContext context, BusinessHoursCubit cubit, DayHours day) {
+    return Container(
+      margin: const EdgeInsets.only(bottom: AppSpacing.sm),
+      padding: const EdgeInsets.symmetric(
+        horizontal: AppSpacing.card,
+        vertical: AppSpacing.xs,
+      ),
+      decoration: BoxDecoration(
+        color: day.isOpen ? Colors.white : AppColors.surfaceSoft,
+        borderRadius: BorderRadius.circular(AppRadius.card),
+        border: Border.all(color: AppColors.border),
+      ),
+      child: Column(
+        children: [
+          Row(
+            children: [
+              Switch(
+                key: Key('hours-switch-${day.dayOfWeek}'),
+                value: day.isOpen,
+                activeThumbColor: AppColors.primary,
+                onChanged: (v) => cubit.toggleDay(day.dayOfWeek, v),
+              ),
+              const SizedBox(width: AppSpacing.xs),
+              Expanded(
+                child: Text(
+                  AppStrings.weekDays[day.dayOfWeek % 7],
+                  style: TextStyle(
+                    fontSize: 15,
+                    fontWeight: FontWeight.w600,
+                    color: day.isOpen ? AppColors.ink : AppColors.muted,
+                  ),
+                ),
+              ),
+              if (!day.isOpen)
+                const Text(
+                  AppStrings.hoursClosedDay,
+                  style: TextStyle(fontSize: 13, color: AppColors.muted),
+                )
+              else ...[
+                TextButton(
+                  key: Key('hours-open-${day.dayOfWeek}'),
+                  onPressed: () => _pickTime(
+                    context,
+                    current: day.openTime,
+                    onPicked: (t) => cubit.setOpenTime(day.dayOfWeek, t),
+                  ),
+                  child: Text(day.openTime?.label ?? '—'),
+                ),
+                const Text('–',
+                    style: TextStyle(color: AppColors.muted)),
+                TextButton(
+                  key: Key('hours-close-${day.dayOfWeek}'),
+                  onPressed: () => _pickTime(
+                    context,
+                    current: day.closeTime,
+                    onPicked: (t) => cubit.setCloseTime(day.dayOfWeek, t),
+                  ),
+                  child: Text(day.closeTime?.label ?? '—'),
+                ),
+              ],
+            ],
+          ),
+          if (day.isOpen && day.breaks.isNotEmpty)
+            Align(
+              alignment: AlignmentDirectional.centerStart,
+              child: Padding(
+                padding: const EdgeInsets.only(bottom: AppSpacing.xs),
+                child: Wrap(
+                  spacing: AppSpacing.xs,
+                  children: [
+                    for (final b in day.breaks)
+                      Chip(
+                        key: Key(
+                            'hours-break-${day.dayOfWeek}-${b.start.label}'),
+                        label: Text(
+                          '${AppStrings.hoursBreak} ${b.start.label}–${b.end.label}',
+                          style: const TextStyle(fontSize: 11),
+                        ),
+                        backgroundColor: AppColors.surfaceSoft,
+                        side: const BorderSide(color: AppColors.border),
+                        visualDensity: VisualDensity.compact,
+                      ),
+                  ],
+                ),
+              ),
+            ),
+        ],
       ),
     );
   }

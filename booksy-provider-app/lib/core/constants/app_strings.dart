@@ -387,6 +387,12 @@ class AppStrings {
   static const String businessProfileDescription = 'توضیحات (اختیاری)';
   static const String businessProfileSave = 'ذخیره';
   static const String businessProfileSaved = 'مشخصات کسب‌وکار ذخیره شد';
+
+  // ==================== Working hours editing ====================
+  static const String hoursSave = 'ذخیرهٔ ساعات کاری';
+  static const String hoursSaved = 'ساعات کاری ذخیره شد';
+  static const String hoursClosedDay = 'تعطیل';
+  static const String hoursBreak = 'استراحت';
   static const String staffUpdated = 'عضو تیم ویرایش شد';
   static const String staffRemoved = 'عضو تیم حذف شد';
 

@@ -30,6 +30,7 @@ class Routes {
   static const String clients = '/clients';
   static const String more = '/more';
   static const String moreBusiness = '/more/business';
+  static const String moreHours = '/more/hours';
   static const String moreInsights = '/more/insights';
   static const String moreServices = '/more/services';
   static const String moreStaff = '/more/staff';
@@ -213,6 +214,10 @@ class AppRouter {
         GoRoute(
           path: Routes.moreBusiness,
           builder: (_, _) => const BusinessProfilePage(),
+        ),
+        GoRoute(
+          path: Routes.moreHours,
+          builder: (_, _) => const BusinessHoursPage(),
         ),
         GoRoute(
           path: Routes.moreInsights,

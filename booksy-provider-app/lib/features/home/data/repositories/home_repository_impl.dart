@@ -4,6 +4,8 @@ import 'package:dio/dio.dart';
 import '../../../../core/errors/failures.dart';
 import '../../../auth/domain/entities/provider_status.dart';
 import '../../../auth/domain/repositories/auth_repository.dart';
+import '../../../onboarding/domain/entities/onboarding_data.dart'
+    show DayHours;
 import '../../domain/entities/composer_models.dart';
 import '../../domain/entities/home_booking.dart';
 import '../../domain/entities/home_enums.dart';
@@ -292,6 +294,25 @@ class HomeRepositoryImpl implements HomeRepository {
           businessName: businessName, description: description),
       'ذخیرهٔ مشخصات کسب‌وکار ناموفق بود',
     );
+  }
+
+  @override
+  Future<Either<Failure, List<DayHours>>> fetchBusinessHours() {
+    return _withProviderId((providerId) async {
+      try {
+        return Right(await _api.getBusinessHours(providerId));
+      } on DioException {
+        return const Left(ServerFailure('دریافت ساعات کاری ناموفق بود'));
+      }
+    });
+  }
+
+  @override
+  Future<Either<Failure, void>> updateBusinessHours(List<DayHours> days) {
+    return _withProviderId((providerId) => _action(
+          () => _api.updateBusinessHours(providerId, days),
+          'ذخیرهٔ ساعات کاری ناموفق بود',
+        ));
   }
 
   /// Shared raw→[ComposerService] mapping (composer catalog + services list).

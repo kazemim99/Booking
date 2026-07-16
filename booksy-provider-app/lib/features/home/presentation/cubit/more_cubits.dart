@@ -3,6 +3,8 @@ import 'package:equatable/equatable.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
 import '../../../../core/errors/failures.dart';
+import '../../../onboarding/domain/entities/onboarding_data.dart'
+    show ClockTime, DayHours;
 import '../../domain/entities/composer_models.dart';
 import '../../domain/entities/more_models.dart';
 import '../../domain/repositories/home_repository.dart';
@@ -79,6 +81,56 @@ class BusinessProfileCubit extends _MoreLoadCubit<BusinessProfile> {
         businessName: businessName, description: description);
     if (isClosed) return null;
     return result.fold((f) => f, (_) => null);
+  }
+}
+
+/// More → ساعات کاری — weekly hours editor state
+/// (spec: provider-working-hours-editing). Day/time edits are pure state;
+/// save replaces the whole week (breaks round-trip untouched).
+class BusinessHoursCubit extends _MoreLoadCubit<List<DayHours>> {
+  final HomeRepository _repository;
+  BusinessHoursCubit(this._repository);
+
+  @override
+  Future<Either<Failure, List<DayHours>>> fetch() =>
+      _repository.fetchBusinessHours();
+
+  void toggleDay(int dayOfWeek, bool isOpen) {
+    _editDay(
+      dayOfWeek,
+      (d) => d.copyWith(
+        isOpen: isOpen,
+        // A day opened without times gets a sensible default range.
+        openTime: isOpen ? (d.openTime ?? const ClockTime(9, 0)) : d.openTime,
+        closeTime:
+            isOpen ? (d.closeTime ?? const ClockTime(18, 0)) : d.closeTime,
+      ),
+    );
+  }
+
+  void setOpenTime(int dayOfWeek, ClockTime time) =>
+      _editDay(dayOfWeek, (d) => d.copyWith(openTime: time));
+
+  void setCloseTime(int dayOfWeek, ClockTime time) =>
+      _editDay(dayOfWeek, (d) => d.copyWith(closeTime: time));
+
+  Future<Failure?> save() async {
+    final days = state.data;
+    if (days == null) return null;
+    final result = await _repository.updateBusinessHours(days);
+    if (isClosed) return null;
+    return result.fold((f) => f, (_) => null);
+  }
+
+  void _editDay(int dayOfWeek, DayHours Function(DayHours) edit) {
+    final days = state.data;
+    if (days == null) return;
+    emit(MoreState(
+      status: MoreStatus.ready,
+      data: [
+        for (final d in days) d.dayOfWeek == dayOfWeek ? edit(d) : d,
+      ],
+    ));
   }
 }
 
