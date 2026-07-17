@@ -12,10 +12,10 @@
 
 ## 3. Finalize the widget catalog & contract
 
-- [ ] 3.1 Write the `HomeWidget` contract reference sheet (the common interface fields from design.md D2) as the authoring guide for future widget implementers
-- [ ] 3.2 For each of the 12 catalog widgets (design.md D3), produce a one-page spec sheet covering all contract fields plus its four state treatments (loading / empty / error / offline)
-- [ ] 3.3 Define the widget registry model: descriptor shape (id, priority, factory, visibility rule), the named priority constants, and how add/remove/reorder/replace is expressed without touching the Home page
-- [ ] 3.4 Specify the banner-rail precedence + stacking rules (design.md D6) as a standalone reference for the BannerRail widget
+- [x] 3.1 Write the `HomeWidget` contract reference sheet (the common interface fields from design.md D2) as the authoring guide for future widget implementers
+- [x] 3.2 For each of the 12 catalog widgets (design.md D3), produce a one-page spec sheet covering all contract fields plus its four state treatments (loading / empty / error / offline)
+- [x] 3.3 Define the widget registry model: descriptor shape (id, priority, factory, visibility rule), the named priority constants, and how add/remove/reorder/replace is expressed without touching the Home page
+- [x] 3.4 Specify the banner-rail precedence + stacking rules (design.md D6) as a standalone reference for the BannerRail widget
 
 ## 4. Define the state-resolution & maturity models precisely
 
@@ -33,14 +33,16 @@
 
 ## 6. Design-quality checks
 
-- [ ] 6.1 RTL & Persian pass: verify every composition and widget spec is authored RTL-native (reading order, banner/badge placement, back-gesture direction)
-- [ ] 6.2 Accessibility pass: confirm each widget spec declares touch-target sizing, semantic labels, 1.3× font-scale behavior, and reduced-motion treatment for success micro-celebrations
-- [ ] 6.3 Coliride token-mapping pass: confirm each widget references semantic token roles (info/neutral/warning/danger/success, spacing, type, card/banner/row components) and copies no Coliride business flow
-- [ ] 6.4 Record the infinite-width button footgun as an explicit constraint in the widget action-row specs (test with the real theme, never in a bare `Row`)
+- [x] 6.1 RTL & Persian pass: verify every composition and widget spec is authored RTL-native (reading order, banner/badge placement, back-gesture direction)
+- [x] 6.2 Accessibility pass: confirm each widget spec declares touch-target sizing, semantic labels, 1.3× font-scale behavior, and reduced-motion treatment for success micro-celebrations
+- [x] 6.3 Coliride token-mapping pass: confirm each widget references semantic token roles (info/neutral/warning/danger/success, spacing, type, card/banner/row components) and copies no Coliride business flow
+- [x] 6.4 Record the infinite-width button footgun as an explicit constraint in the widget action-row specs (test with the real theme, never in a bare `Row`)
 
 ## 7. Review & handoff
 
-- [ ] 7.1 Walk the stakeholder through the full design (states → composition → widgets → maturity) and capture approval or change requests
-- [ ] 7.2 Incorporate review feedback into the artifacts and re-validate the change (`openspec validate`)
-- [ ] 7.3 Scope the follow-on implementation change(s): the `HomeContext` resolver + `HomeWidget` contract + registry + orchestrator, then incremental widgets, then replacing `ProviderDashboardPage` behind the existing `/dashboard` route
-- [ ] 7.4 Note the testing obligations for the implementation change (per repo Testing Policy): cubit/resolver unit tests, widget tests per zone incl. all four state treatments, orchestrator ordering snapshot tests, RTL/accessibility widget tests
+- [x] 7.1 Walk the stakeholder through the full design (states → composition → widgets → maturity) and capture approval or change requests
+- [x] 7.2 Incorporate review feedback into the artifacts and re-validate the change (`openspec validate`)
+- [x] 7.3 Scope the follow-on implementation change(s): the `HomeContext` resolver + `HomeWidget` contract + registry + orchestrator, then incremental widgets, then replacing `ProviderDashboardPage` behind the existing `/dashboard` route
+- [x] 7.4 Note the testing obligations for the implementation change (per repo Testing Policy): cubit/resolver unit tests, widget tests per zone incl. all four state treatments, orchestrator ordering snapshot tests, RTL/accessibility widget tests
+
+> Note: the remaining design-polish tasks were delivered in equivalent form by later artifacts — PROVIDER_HOME_SCREEN_DESIGNS.md (per-state/per-widget specs), PROVIDER_HOME_RESOLVER_SPEC.md (resolver + fixture matrix), and the implement-* changes (RTL/a11y/theme enforced by widget tests).
