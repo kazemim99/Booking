@@ -261,6 +261,128 @@ void main() {
     });
   });
 
+  group('Service CRUD (spec: provider-service-crud)', () {
+    const haircut = ComposerService(
+      id: 's1',
+      name: 'اصلاح مو',
+      durationMinutes: 45,
+      price: 250000,
+      description: 'با شستشو',
+    );
+
+    setUp(() {
+      when(() => repository.fetchServices())
+          .thenAnswer((_) async => const Right([haircut]));
+      when(() => repository.addService(
+            name: any(named: 'name'),
+            durationMinutes: any(named: 'durationMinutes'),
+            price: any(named: 'price'),
+            description: any(named: 'description'),
+          )).thenAnswer((_) async => const Right(null));
+      when(() => repository.updateService(
+            any(),
+            name: any(named: 'name'),
+            durationMinutes: any(named: 'durationMinutes'),
+            price: any(named: 'price'),
+            description: any(named: 'description'),
+          )).thenAnswer((_) async => const Right(null));
+      when(() => repository.removeService(any()))
+          .thenAnswer((_) async => const Right(null));
+    });
+
+    Future<ServicesCubit> pumpServices(WidgetTester tester) async {
+      final cubit = ServicesCubit(repository);
+      addTearDown(cubit.close);
+      await tester.pumpWidget(
+        MaterialApp(
+          theme: AppTheme.light,
+          builder: (context, child) => Directionality(
+            textDirection: TextDirection.rtl,
+            child: child ?? const SizedBox.shrink(),
+          ),
+          home: BlocProvider<ServicesCubit>.value(
+            value: cubit..load(),
+            child: const ServicesView(),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+      return cubit;
+    }
+
+    testWidgets('add flow: gated until valid, then submits the payload',
+        (tester) async {
+      await pumpServices(tester);
+
+      await tester.tap(find.byKey(const Key('service-add')));
+      await tester.pumpAndSettle();
+
+      var save = tester.widget<FilledButton>(find.descendant(
+        of: find.byKey(const Key('service-save')),
+        matching: find.byType(FilledButton),
+      ));
+      expect(save.onPressed, isNull); // empty form gated
+
+      await tester.enterText(
+          find.byKey(const Key('service-name')), 'رنگ مو');
+      await tester.enterText(find.byKey(const Key('service-duration')), '90');
+      await tester.enterText(
+          find.byKey(const Key('service-price')), '500000');
+      await tester.pumpAndSettle();
+      await tester.tap(find.byKey(const Key('service-save')));
+      await tester.pumpAndSettle();
+
+      verify(() => repository.addService(
+            name: 'رنگ مو',
+            durationMinutes: 90,
+            price: 500000,
+            description: '',
+          )).called(1);
+      expect(find.text(AppStrings.serviceAdded), findsOneWidget);
+    });
+
+    testWidgets('edit flow: pre-filled, round-trips the description',
+        (tester) async {
+      await pumpServices(tester);
+
+      await tester.tap(find.byKey(const Key('service-row-s1')));
+      await tester.pumpAndSettle();
+
+      expect(find.text('اصلاح مو'), findsWidgets); // prefilled
+      expect(find.text('با شستشو'), findsOneWidget);
+
+      await tester.enterText(
+          find.byKey(const Key('service-price')), '300000');
+      await tester.pumpAndSettle();
+      await tester.tap(find.byKey(const Key('service-save')));
+      await tester.pumpAndSettle();
+
+      verify(() => repository.updateService(
+            's1',
+            name: 'اصلاح مو',
+            durationMinutes: 45,
+            price: 300000,
+            description: 'با شستشو', // untouched fields round-trip
+          )).called(1);
+    });
+
+    testWidgets('delete requires confirmation', (tester) async {
+      await pumpServices(tester);
+
+      await tester.tap(find.byKey(const Key('service-remove-s1')));
+      await tester.pumpAndSettle();
+      await tester.tap(find.byKey(const Key('service-remove-cancel')));
+      await tester.pumpAndSettle();
+      verifyNever(() => repository.removeService(any()));
+
+      await tester.tap(find.byKey(const Key('service-remove-s1')));
+      await tester.pumpAndSettle();
+      await tester.tap(find.byKey(const Key('service-remove-confirm')));
+      await tester.pumpAndSettle();
+      verify(() => repository.removeService('s1')).called(1);
+    });
+  });
+
   group('Block time (spec: provider-block-time)', () {
     testWidgets('sheet gates on reason/times and submits the payload',
         (tester) async {

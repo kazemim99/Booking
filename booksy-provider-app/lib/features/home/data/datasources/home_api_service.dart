@@ -256,6 +256,51 @@ class HomeApiService {
   Future<void> deleteHoliday(String providerId, String holidayId) =>
       _dio.delete('${ApiConstants.providerHolidays(providerId)}/$holidayId');
 
+  // ==================== service CRUD ====================
+
+  /// POST /v1/providers/{id}/services — adds a service (currency defaults
+  /// server-side; duration split hours/minutes on the wire).
+  Future<void> addService(
+    String providerId, {
+    required String name,
+    required int durationMinutes,
+    required double price,
+    String? description,
+  }) =>
+      _dio.post(
+        ApiConstants.providerServicesManage(providerId),
+        data: _serviceBody(name, durationMinutes, price, description),
+      );
+
+  /// PUT /v1/providers/{id}/services/{serviceId} — full-field update.
+  Future<void> updateService(
+    String providerId,
+    String serviceId, {
+    required String name,
+    required int durationMinutes,
+    required double price,
+    String? description,
+  }) =>
+      _dio.put(
+        '${ApiConstants.providerServicesManage(providerId)}/$serviceId',
+        data: _serviceBody(name, durationMinutes, price, description),
+      );
+
+  /// DELETE /v1/providers/{id}/services/{serviceId}.
+  Future<void> deleteService(String providerId, String serviceId) => _dio
+      .delete('${ApiConstants.providerServicesManage(providerId)}/$serviceId');
+
+  static Map<String, dynamic> _serviceBody(
+          String name, int durationMinutes, double price, String? description) =>
+      {
+        'serviceName': name,
+        'description': description ?? '',
+        'durationHours': durationMinutes ~/ 60,
+        'durationMinutes': durationMinutes % 60,
+        'price': price,
+        'isMobileService': false,
+      };
+
   // ==================== availability exceptions (block time) ====================
 
   /// GET /v1/providers/{id}/exceptions — raw exception maps

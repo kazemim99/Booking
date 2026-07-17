@@ -525,6 +525,51 @@ class HomeRepositoryImpl implements HomeRepository {
         ));
   }
 
+  // ---- Service CRUD (spec: provider-service-crud) ----
+
+  @override
+  Future<Either<Failure, void>> addService({
+    required String name,
+    required int durationMinutes,
+    required double price,
+    String? description,
+  }) {
+    return _withProviderId((providerId) => _action(
+          () => _api.addService(providerId,
+              name: name,
+              durationMinutes: durationMinutes,
+              price: price,
+              description: description),
+          'ثبت خدمت ناموفق بود',
+        ));
+  }
+
+  @override
+  Future<Either<Failure, void>> updateService(
+    String serviceId, {
+    required String name,
+    required int durationMinutes,
+    required double price,
+    String? description,
+  }) {
+    return _withProviderId((providerId) => _action(
+          () => _api.updateService(providerId, serviceId,
+              name: name,
+              durationMinutes: durationMinutes,
+              price: price,
+              description: description),
+          'ویرایش خدمت ناموفق بود',
+        ));
+  }
+
+  @override
+  Future<Either<Failure, void>> removeService(String serviceId) {
+    return _withProviderId((providerId) => _action(
+          () => _api.deleteService(providerId, serviceId),
+          'حذف خدمت ناموفق بود',
+        ));
+  }
+
   /// Shared raw→[ComposerService] mapping (composer catalog + services list).
   static ComposerService _mapService(Map<String, dynamic> s) => ComposerService(
         id: HomeApiService.readString(s, const ['id']),
@@ -535,6 +580,7 @@ class HomeRepositoryImpl implements HomeRepository {
           final num n => n.toDouble(),
           _ => 0.0,
         },
+        description: HomeApiService.readString(s, const ['description']),
       );
 
   // ==================== clients ====================

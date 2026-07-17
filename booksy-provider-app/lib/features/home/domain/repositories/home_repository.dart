@@ -48,6 +48,28 @@ abstract class HomeRepository {
   /// The provider's services (read surface; reuses the composer model).
   Future<Either<Failure, List<ComposerService>>> fetchServices();
 
+  // ---- Service CRUD (spec: provider-service-crud) ----
+
+  /// Adds a service.
+  Future<Either<Failure, void>> addService({
+    required String name,
+    required int durationMinutes,
+    required double price,
+    String? description,
+  });
+
+  /// Full-field update of a service (description round-tripped).
+  Future<Either<Failure, void>> updateService(
+    String serviceId, {
+    required String name,
+    required int durationMinutes,
+    required double price,
+    String? description,
+  });
+
+  /// Deletes a service.
+  Future<Either<Failure, void>> removeService(String serviceId);
+
   /// The provider's team members.
   Future<Either<Failure, List<ProviderStaffMember>>> fetchStaff();
 

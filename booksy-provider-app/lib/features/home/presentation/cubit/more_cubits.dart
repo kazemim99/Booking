@@ -52,7 +52,8 @@ class InsightsCubit extends _MoreLoadCubit<InsightsSummary> {
       _repository.fetchInsights();
 }
 
-/// More → خدمات (Services, read-only).
+/// More → خدمات — catalog list + CRUD mutations
+/// (spec: provider-service-crud).
 class ServicesCubit extends _MoreLoadCubit<List<ComposerService>> {
   final HomeRepository _repository;
   ServicesCubit(this._repository);
@@ -60,6 +61,45 @@ class ServicesCubit extends _MoreLoadCubit<List<ComposerService>> {
   @override
   Future<Either<Failure, List<ComposerService>>> fetch() =>
       _repository.fetchServices();
+
+  Future<Failure?> addService({
+    required String name,
+    required int durationMinutes,
+    required double price,
+    String? description,
+  }) =>
+      _reloadAfter(() => _repository.addService(
+          name: name,
+          durationMinutes: durationMinutes,
+          price: price,
+          description: description));
+
+  Future<Failure?> updateService(
+    String serviceId, {
+    required String name,
+    required int durationMinutes,
+    required double price,
+    String? description,
+  }) =>
+      _reloadAfter(() => _repository.updateService(serviceId,
+          name: name,
+          durationMinutes: durationMinutes,
+          price: price,
+          description: description));
+
+  Future<Failure?> removeService(String serviceId) =>
+      _reloadAfter(() => _repository.removeService(serviceId));
+
+  Future<Failure?> _reloadAfter(
+    Future<Either<Failure, void>> Function() call,
+  ) async {
+    final result = await call();
+    if (isClosed) return null;
+    return result.fold((f) => f, (_) {
+      load();
+      return null;
+    });
+  }
 }
 
 /// More → مشخصات کسب‌وکار — load + save

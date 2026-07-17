@@ -234,10 +234,23 @@ class ServicesView extends StatelessWidget {
         title: AppStrings.moreServices,
         state: state,
         onRetry: context.read<ServicesCubit>().load,
+        actions: [
+          IconButton(
+            key: const Key('service-add'),
+            tooltip: AppStrings.serviceAdd,
+            icon: const Icon(Icons.add_circle_outline,
+                color: AppColors.primary),
+            onPressed: () => _ServiceFormSheet.show(
+                context, context.read<ServicesCubit>()),
+          ),
+        ],
         bodyBuilder: (context, services) => services.isEmpty
-            ? const AppEmptyState(
+            ? AppEmptyState(
                 icon: Icons.design_services_outlined,
                 message: AppStrings.servicesEmpty,
+                actionLabel: '+ ${AppStrings.serviceAdd}',
+                onAction: () => _ServiceFormSheet.show(
+                    context, context.read<ServicesCubit>()),
               )
             : ListView.separated(
                 padding: const EdgeInsets.all(AppSpacing.md),
@@ -249,6 +262,9 @@ class ServicesView extends StatelessWidget {
                   return ListTile(
                     key: Key('service-row-${s.id}'),
                     contentPadding: EdgeInsets.zero,
+                    onTap: () => _ServiceFormSheet.show(
+                        context, context.read<ServicesCubit>(),
+                        initial: s),
                     title: Text(
                       s.name,
                       style:
@@ -260,9 +276,213 @@ class ServicesView extends StatelessWidget {
                       style: const TextStyle(
                           fontSize: 12, color: AppColors.muted),
                     ),
+                    trailing: IconButton(
+                      key: Key('service-remove-${s.id}'),
+                      icon: const Icon(Icons.delete_outline,
+                          size: AppIconSize.action, color: AppColors.danger),
+                      onPressed: () => _confirmRemoveService(
+                          context, context.read<ServicesCubit>(), s),
+                    ),
                   );
                 },
               ),
+      ),
+    );
+  }
+
+  Future<void> _confirmRemoveService(
+    BuildContext context,
+    ServicesCubit cubit,
+    ComposerService service,
+  ) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: const Text(AppStrings.serviceRemoveConfirmTitle),
+        content: Text(AppStrings.serviceRemoveConfirmBody(service.name)),
+        actions: [
+          TextButton(
+            key: const Key('service-remove-cancel'),
+            onPressed: () => Navigator.pop(dialogContext, false),
+            child: const Text(AppStrings.cancel),
+          ),
+          TextButton(
+            key: const Key('service-remove-confirm'),
+            onPressed: () => Navigator.pop(dialogContext, true),
+            style: TextButton.styleFrom(foregroundColor: AppColors.danger),
+            child: const Text(AppStrings.staffRemoveConfirm),
+          ),
+        ],
+      ),
+    );
+    if (confirmed != true || !context.mounted) return;
+    final failure = await cubit.removeService(service.id);
+    if (!context.mounted) return;
+    if (failure == null) {
+      AppSnackbar.success(context, AppStrings.serviceRemoved);
+    } else {
+      AppSnackbar.error(context, failure.message);
+    }
+  }
+}
+
+/// Add/edit form for a service (spec: provider-service-crud).
+class _ServiceFormSheet extends StatefulWidget {
+  final ServicesCubit cubit;
+  final ComposerService? initial;
+
+  const _ServiceFormSheet({required this.cubit, this.initial});
+
+  static Future<void> show(BuildContext context, ServicesCubit cubit,
+      {ComposerService? initial}) {
+    return showModalBottomSheet<void>(
+      context: context,
+      isScrollControlled: true,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(
+          top: Radius.circular(AppRadius.bottomSheet),
+        ),
+      ),
+      builder: (_) => Padding(
+        padding:
+            EdgeInsets.only(bottom: MediaQuery.of(context).viewInsets.bottom),
+        child: _ServiceFormSheet(cubit: cubit, initial: initial),
+      ),
+    );
+  }
+
+  @override
+  State<_ServiceFormSheet> createState() => _ServiceFormSheetState();
+}
+
+class _ServiceFormSheetState extends State<_ServiceFormSheet> {
+  late final _name = TextEditingController(text: widget.initial?.name ?? '');
+  late final _duration = TextEditingController(
+      text: widget.initial == null ? '' : '${widget.initial!.durationMinutes}');
+  late final _price = TextEditingController(
+      text: widget.initial == null
+          ? ''
+          : widget.initial!.price.toStringAsFixed(0));
+  late final _description =
+      TextEditingController(text: widget.initial?.description ?? '');
+  bool _submitting = false;
+
+  @override
+  void dispose() {
+    _name.dispose();
+    _duration.dispose();
+    _price.dispose();
+    _description.dispose();
+    super.dispose();
+  }
+
+  int get _minutes => int.tryParse(_duration.text.trim()) ?? 0;
+  double get _priceValue => double.tryParse(_price.text.trim()) ?? 0;
+
+  bool get _canSubmit =>
+      _name.text.trim().isNotEmpty &&
+      _minutes > 0 &&
+      _priceValue > 0 &&
+      !_submitting;
+
+  Future<void> _submit() async {
+    setState(() => _submitting = true);
+    final cubit = widget.cubit;
+    final failure = widget.initial == null
+        ? await cubit.addService(
+            name: _name.text.trim(),
+            durationMinutes: _minutes,
+            price: _priceValue,
+            description: _description.text.trim(),
+          )
+        : await cubit.updateService(
+            widget.initial!.id,
+            name: _name.text.trim(),
+            durationMinutes: _minutes,
+            price: _priceValue,
+            description: _description.text.trim(),
+          );
+    if (!mounted) return;
+    if (failure == null) {
+      Navigator.pop(context);
+      AppSnackbar.success(
+          context,
+          widget.initial == null
+              ? AppStrings.serviceAdded
+              : AppStrings.serviceUpdated);
+    } else {
+      // Failure preserves the form's input (spec).
+      setState(() => _submitting = false);
+      AppSnackbar.error(context, failure.message);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return SafeArea(
+      child: Padding(
+        padding: const EdgeInsets.all(AppSpacing.md),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              widget.initial == null
+                  ? AppStrings.serviceAdd
+                  : AppStrings.serviceEdit,
+              style: const TextStyle(
+                fontSize: 16,
+                fontWeight: FontWeight.w700,
+                color: AppColors.ink,
+              ),
+            ),
+            const SizedBox(height: AppSpacing.md),
+            AppTextField(
+              key: const Key('service-name'),
+              controller: _name,
+              label: AppStrings.serviceName,
+              onChanged: (_) => setState(() {}),
+            ),
+            const SizedBox(height: AppSpacing.sm),
+            Row(
+              children: [
+                Expanded(
+                  child: AppTextField(
+                    key: const Key('service-duration'),
+                    controller: _duration,
+                    label: AppStrings.serviceDuration,
+                    keyboardType: TextInputType.number,
+                    onChanged: (_) => setState(() {}),
+                  ),
+                ),
+                const SizedBox(width: AppSpacing.sm),
+                Expanded(
+                  child: AppTextField(
+                    key: const Key('service-price'),
+                    controller: _price,
+                    label: AppStrings.servicePrice,
+                    keyboardType: TextInputType.number,
+                    onChanged: (_) => setState(() {}),
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: AppSpacing.sm),
+            AppTextField(
+              key: const Key('service-description'),
+              controller: _description,
+              label: AppStrings.serviceDescription,
+            ),
+            const SizedBox(height: AppSpacing.md),
+            AppButton(
+              key: const Key('service-save'),
+              label: AppStrings.serviceSave,
+              loading: _submitting,
+              onPressed: _canSubmit ? _submit : null,
+            ),
+            const SizedBox(height: AppSpacing.sm),
+          ],
+        ),
       ),
     );
   }

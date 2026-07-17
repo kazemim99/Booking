@@ -1,21 +1,25 @@
 import 'package:equatable/equatable.dart';
 
-/// A bookable service option in the composer.
+/// A bookable service (composer option + Services management row).
 class ComposerService extends Equatable {
   final String id;
   final String name;
   final int durationMinutes;
   final double price;
 
+  /// Round-tripped on edits so a full-field PUT never erases it.
+  final String description;
+
   const ComposerService({
     required this.id,
     required this.name,
     this.durationMinutes = 0,
     this.price = 0,
+    this.description = '',
   });
 
   @override
-  List<Object?> get props => [id, name, durationMinutes, price];
+  List<Object?> get props => [id, name, durationMinutes, price, description];
 }
 
 /// A staff member option in the composer.

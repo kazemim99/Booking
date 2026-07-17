@@ -354,6 +354,17 @@ class AppStrings {
   static const String moreGallery = 'گالری';
   static const String moreShareLink = 'اشتراک‌گذاری لینک رزرو';
   static const String servicesEmpty = 'خدمتی ثبت نشده است';
+  static const String serviceAdd = 'افزودن خدمت';
+  static const String serviceEdit = 'ویرایش خدمت';
+  // (serviceName/serviceDuration/servicePrice reuse the onboarding strings.)
+  static const String serviceDescription = 'توضیحات (اختیاری)';
+  static const String serviceSave = 'ذخیره';
+  static const String serviceAdded = 'خدمت ثبت شد';
+  static const String serviceUpdated = 'خدمت ویرایش شد';
+  static const String serviceRemoved = 'خدمت حذف شد';
+  static const String serviceRemoveConfirmTitle = 'حذف خدمت';
+  static String serviceRemoveConfirmBody(String name) =>
+      'خدمت «$name» حذف شود؟';
   static const String staffEmpty = 'عضوی برای تیم ثبت نشده است';
   static const String staffInactive = 'غیرفعال';
   static String serviceMeta(int minutes, String price) =>

@@ -85,6 +85,10 @@ class ApiConstants {
   static String providerHolidays(String providerId) =>
       '/$apiVersion/providers/$providerId/holidays';
 
+  /// POST — add a service; PUT/DELETE at /{serviceId} (ProviderSettings API).
+  static String providerServicesManage(String providerId) =>
+      '/$apiVersion/providers/$providerId/services';
+
   /// GET/POST — per-date availability exceptions; DELETE at /{exceptionId}.
   static String providerExceptions(String providerId) =>
       '/$apiVersion/providers/$providerId/exceptions';
