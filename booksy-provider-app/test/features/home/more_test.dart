@@ -686,6 +686,73 @@ void main() {
       await cubit.close();
     });
 
+    test('breaks: add on open days, remove by index, closed-day no-op '
+        '(spec: provider-break-editing)', () async {
+      when(() => repository.fetchBusinessHours())
+          .thenAnswer((_) async => const Right([monday, tuesday]));
+      when(() => repository.updateBusinessHours(any()))
+          .thenAnswer((_) async => const Right(null));
+      final cubit = BusinessHoursCubit(repository);
+      await cubit.load();
+
+      const evening = BreakTime(ClockTime(16, 0), ClockTime(16, 30));
+      cubit.addBreak(1, evening);
+      expect(cubit.state.data![0].breaks, [...monday.breaks, evening]);
+
+      cubit.addBreak(2, evening); // Tuesday is closed → no-op
+      expect(cubit.state.data![1].breaks, isEmpty);
+
+      cubit.removeBreak(1, 0); // drop the original lunch break
+      expect(cubit.state.data![0].breaks, [evening]);
+
+      await cubit.save();
+      final sent = verify(() => repository.updateBusinessHours(captureAny()))
+          .captured
+          .single as List<DayHours>;
+      expect(sent[0].breaks, [evening]); // save carries the edits exactly
+      await cubit.close();
+    });
+
+    testWidgets('break chips are deletable and open days offer add-break',
+        (tester) async {
+      when(() => repository.fetchBusinessHours())
+          .thenAnswer((_) async => const Right([monday, tuesday]));
+      when(() => repository.updateBusinessHours(any()))
+          .thenAnswer((_) async => const Right(null));
+
+      final cubit = BusinessHoursCubit(repository);
+      addTearDown(cubit.close);
+      await tester.pumpWidget(
+        MaterialApp(
+          theme: AppTheme.light,
+          builder: (context, child) => Directionality(
+            textDirection: TextDirection.rtl,
+            child: child ?? const SizedBox.shrink(),
+          ),
+          home: BlocProvider<BusinessHoursCubit>.value(
+            value: cubit..load(),
+            child: const BusinessHoursView(),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      // Open Monday: break chip + add affordance; closed Tuesday: neither.
+      expect(find.byKey(const Key('hours-break-1-13:00')), findsOneWidget);
+      expect(find.byKey(const Key('hours-add-break-1')), findsOneWidget);
+      expect(find.byKey(const Key('hours-add-break-2')), findsNothing);
+
+      // Chip delete removes the break from state (invoke the wired handler —
+      // the delete glyph isn't hit-testable as a plain Icon descendant).
+      final chip =
+          tester.widget<Chip>(find.byKey(const Key('hours-break-1-13:00')));
+      expect(chip.onDeleted, isNotNull);
+      chip.onDeleted!();
+      await tester.pumpAndSettle();
+      expect(find.byKey(const Key('hours-break-1-13:00')), findsNothing);
+      expect(cubit.state.data![0].breaks, isEmpty);
+    });
+
     testWidgets('editor renders Saturday-first, toggles, and saves',
         (tester) async {
       when(() => repository.fetchBusinessHours())

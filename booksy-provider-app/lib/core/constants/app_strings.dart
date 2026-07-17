@@ -393,6 +393,9 @@ class AppStrings {
   static const String hoursSaved = 'ساعات کاری ذخیره شد';
   static const String hoursClosedDay = 'تعطیل';
   static const String hoursBreak = 'استراحت';
+  static const String hoursAddBreak = 'استراحت';
+  static const String hoursBreakInvalid =
+      'پایان استراحت باید بعد از شروع آن باشد';
 
   // ==================== Holidays ====================
   static const String moreHolidays = 'تعطیلات و مرخصی';

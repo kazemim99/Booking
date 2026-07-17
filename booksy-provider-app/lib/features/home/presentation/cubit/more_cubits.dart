@@ -4,7 +4,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 
 import '../../../../core/errors/failures.dart';
 import '../../../onboarding/domain/entities/onboarding_data.dart'
-    show ClockTime, DayHours, GalleryImageUpload;
+    show BreakTime, ClockTime, DayHours, GalleryImageUpload;
 import '../../domain/entities/composer_models.dart';
 import '../../domain/entities/more_models.dart';
 import '../../domain/repositories/home_repository.dart';
@@ -110,6 +110,25 @@ class BusinessHoursCubit extends _MoreLoadCubit<List<DayHours>> {
 
   void setOpenTime(int dayOfWeek, ClockTime time) =>
       _editDay(dayOfWeek, (d) => d.copyWith(openTime: time));
+
+  /// Appends a break to an open day (spec: provider-break-editing).
+  void addBreak(int dayOfWeek, BreakTime breakTime) => _editDay(
+        dayOfWeek,
+        (d) => d.isOpen
+            ? d.copyWith(breaks: [...d.breaks, breakTime])
+            : d, // closed days offer no break editing
+      );
+
+  /// Removes the break at [index] (chips are positional).
+  void removeBreak(int dayOfWeek, int index) => _editDay(
+        dayOfWeek,
+        (d) => index < 0 || index >= d.breaks.length
+            ? d
+            : d.copyWith(breaks: [
+                for (var i = 0; i < d.breaks.length; i++)
+                  if (i != index) d.breaks[i],
+              ]),
+      );
 
   void setCloseTime(int dayOfWeek, ClockTime time) =>
       _editDay(dayOfWeek, (d) => d.copyWith(closeTime: time));

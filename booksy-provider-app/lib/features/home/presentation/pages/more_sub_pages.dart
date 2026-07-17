@@ -11,7 +11,7 @@ import '../../../../core/widgets/app_error_state.dart';
 import '../../../../core/widgets/app_snackbar.dart';
 import '../../../../core/widgets/app_text_field.dart';
 import '../../../onboarding/domain/entities/onboarding_data.dart'
-    show ClockTime, DayHours;
+    show BreakTime, ClockTime, DayHours;
 import '../../domain/entities/composer_models.dart';
 import '../../domain/entities/more_models.dart';
 import '../cubit/more_cubits.dart';
@@ -412,6 +412,35 @@ class _BusinessHoursViewState extends State<BusinessHoursView> {
     if (picked != null) onPicked(ClockTime(picked.hour, picked.minute));
   }
 
+  /// Two sequential pickers (start, then end) append a break to [day]
+  /// (spec: provider-break-editing); end must follow start.
+  Future<void> _addBreak(
+      BuildContext context, BusinessHoursCubit cubit, DayHours day) async {
+    final start = await showTimePicker(
+      context: context,
+      initialTime: const TimeOfDay(hour: 13, minute: 0),
+    );
+    if (start == null || !context.mounted) return;
+    final end = await showTimePicker(
+      context: context,
+      initialTime: TimeOfDay(hour: (start.hour + 1) % 24, minute: start.minute),
+    );
+    if (end == null || !context.mounted) return;
+    final startMinutes = start.hour * 60 + start.minute;
+    final endMinutes = end.hour * 60 + end.minute;
+    if (endMinutes <= startMinutes) {
+      AppSnackbar.error(context, AppStrings.hoursBreakInvalid);
+      return;
+    }
+    cubit.addBreak(
+      day.dayOfWeek,
+      BreakTime(
+        ClockTime(start.hour, start.minute),
+        ClockTime(end.hour, end.minute),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return BlocBuilder<BusinessHoursCubit, MoreState<List<DayHours>>>(
@@ -507,26 +536,45 @@ class _BusinessHoursViewState extends State<BusinessHoursView> {
               ],
             ],
           ),
-          if (day.isOpen && day.breaks.isNotEmpty)
+          if (day.isOpen)
             Align(
               alignment: AlignmentDirectional.centerStart,
               child: Padding(
                 padding: const EdgeInsets.only(bottom: AppSpacing.xs),
                 child: Wrap(
                   spacing: AppSpacing.xs,
+                  crossAxisAlignment: WrapCrossAlignment.center,
                   children: [
-                    for (final b in day.breaks)
+                    for (var i = 0; i < day.breaks.length; i++)
                       Chip(
                         key: Key(
-                            'hours-break-${day.dayOfWeek}-${b.start.label}'),
+                            'hours-break-${day.dayOfWeek}-${day.breaks[i].start.label}'),
                         label: Text(
-                          '${AppStrings.hoursBreak} ${b.start.label}–${b.end.label}',
+                          '${AppStrings.hoursBreak} ${day.breaks[i].start.label}–${day.breaks[i].end.label}',
                           style: const TextStyle(fontSize: 11),
                         ),
+                        onDeleted: () =>
+                            cubit.removeBreak(day.dayOfWeek, i),
+                        deleteIconColor: AppColors.muted,
+                        deleteButtonTooltipMessage: AppStrings.cancel,
                         backgroundColor: AppColors.surfaceSoft,
                         side: const BorderSide(color: AppColors.border),
                         visualDensity: VisualDensity.compact,
                       ),
+                    ActionChip(
+                      key: Key('hours-add-break-${day.dayOfWeek}'),
+                      avatar: const Icon(Icons.add,
+                          size: AppIconSize.sm, color: AppColors.primary),
+                      label: Text(
+                        AppStrings.hoursAddBreak,
+                        style: const TextStyle(
+                            fontSize: 11, color: AppColors.primary),
+                      ),
+                      onPressed: () => _addBreak(context, cubit, day),
+                      backgroundColor: Colors.white,
+                      side: const BorderSide(color: AppColors.border),
+                      visualDensity: VisualDensity.compact,
+                    ),
                   ],
                 ),
               ),
