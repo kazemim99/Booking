@@ -256,6 +256,42 @@ class HomeApiService {
   Future<void> deleteHoliday(String providerId, String holidayId) =>
       _dio.delete('${ApiConstants.providerHolidays(providerId)}/$holidayId');
 
+  // ==================== availability exceptions (block time) ====================
+
+  /// GET /v1/providers/{id}/exceptions — raw exception maps
+  /// (shape: {exceptions:[{id, date, openTime "HH:mm"?, closeTime?, reason,
+  /// isClosed}]}).
+  Future<List<Map<String, dynamic>>> getExceptions(String providerId) async {
+    final res = await _dio.get(ApiConstants.providerExceptions(providerId));
+    final exceptions = unwrapMap(res.data)['exceptions'];
+    if (exceptions is! List) return const [];
+    return exceptions.whereType<Map<String, dynamic>>().toList();
+  }
+
+  /// POST /v1/providers/{id}/exceptions — blocks a date (null times = closed
+  /// all day; "HH:mm" times = modified hours for that date).
+  Future<void> addException(
+    String providerId, {
+    required DateTime date,
+    String? openTime,
+    String? closeTime,
+    required String reason,
+  }) =>
+      _dio.post(
+        ApiConstants.providerExceptions(providerId),
+        data: {
+          'date':
+              '${date.year.toString().padLeft(4, '0')}-${date.month.toString().padLeft(2, '0')}-${date.day.toString().padLeft(2, '0')}',
+          'openTime': ?openTime,
+          'closeTime': ?closeTime,
+          'reason': reason,
+        },
+      );
+
+  /// DELETE /v1/providers/{id}/exceptions/{exceptionId}.
+  Future<void> deleteException(String providerId, String exceptionId) => _dio
+      .delete('${ApiConstants.providerExceptions(providerId)}/$exceptionId');
+
   // ==================== gallery ====================
 
   /// GET /v1/Providers/{id}/gallery — raw image maps.

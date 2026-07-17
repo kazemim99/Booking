@@ -115,6 +115,21 @@ class HomeCubit extends Cubit<HomeContext> {
   Future<Failure?> markNoShow(String id) =>
       _mutate(() => _repository.markNoShow(id));
 
+  /// Blocks a date via an availability exception (spec: provider-block-time);
+  /// success refreshes so availability/agenda reflect it.
+  Future<Failure?> blockTime({
+    required DateTime date,
+    String? openTime,
+    String? closeTime,
+    required String reason,
+  }) =>
+      _mutate(() => _repository.addException(
+            date: date,
+            openTime: openTime,
+            closeTime: closeTime,
+            reason: reason,
+          ));
+
   Future<Failure?> _mutate(
     Future<Either<Failure, void>> Function() call,
   ) async {

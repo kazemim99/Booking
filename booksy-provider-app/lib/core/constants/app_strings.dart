@@ -424,6 +424,21 @@ class AppStrings {
   static const String galleryRemoveConfirmBody =
       'این تصویر از گالری حذف شود؟';
 
+  // ==================== Block time (availability exceptions) ====================
+  static const String blockTimeTitle = 'مسدود کردن زمان';
+  static const String blockTimeAllDay = 'تمام روز تعطیل';
+  static const String blockTimeFrom = 'باز از';
+  static const String blockTimeTo = 'تا';
+  static const String blockTimeReason = 'دلیل';
+  static const String blockTimeSubmit = 'مسدود کردن';
+  static const String blockTimeCreated = 'زمان مسدود شد';
+  static const String exceptionsSection = 'ساعات استثنائی';
+  static const String exceptionClosedAllDay = 'تمام روز تعطیل';
+  static const String exceptionRemoveConfirmTitle = 'حذف ساعت استثنائی';
+  static String exceptionRemoveConfirmBody(String date) =>
+      'ساعت استثنائی $date حذف شود؟';
+  static const String exceptionRemoved = 'ساعت استثنائی حذف شد';
+
   // Banner copy for availability states (now reachable).
   static const String homeClosedTodayBanner = 'امروز تعطیل هستید';
   static const String homeClosedTodayBody =

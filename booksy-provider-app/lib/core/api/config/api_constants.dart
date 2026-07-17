@@ -85,6 +85,10 @@ class ApiConstants {
   static String providerHolidays(String providerId) =>
       '/$apiVersion/providers/$providerId/holidays';
 
+  /// GET/POST — per-date availability exceptions; DELETE at /{exceptionId}.
+  static String providerExceptions(String providerId) =>
+      '/$apiVersion/providers/$providerId/exceptions';
+
   /// GET/POST — provider gallery; per-image ops at /{imageId}[/set-primary].
   static String providerGallery(String providerId) =>
       '/$apiVersion/Providers/$providerId/gallery';

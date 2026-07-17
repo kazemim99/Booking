@@ -405,22 +405,105 @@ class HomeRepositoryImpl implements HomeRepository {
     );
   }
 
-  /// Best-effort: today's availability from the holidays list. Failures (or
-  /// no provider) degrade to OPEN — a side-signal never blocks the Home
-  /// (spec: holiday lookup failure degrades open).
+  /// Best-effort: today's availability from holidays and closed-all-day
+  /// exceptions. Failures degrade to OPEN — a side-signal never blocks the
+  /// Home (spec: lookup failure degrades open).
   Future<HomeAvailability> _todayAvailability(
       String providerId, DateTime now) async {
+    final today = DateTime(now.year, now.month, now.day);
+    final results = await Future.wait([
+      _holidayClosesToday(providerId, today),
+      _exceptionClosesToday(providerId, today),
+    ]);
+    return results.contains(true)
+        ? HomeAvailability.closedToday
+        : HomeAvailability.open;
+  }
+
+  Future<bool> _holidayClosesToday(String providerId, DateTime today) async {
     try {
       final raw = await _api.getHolidays(providerId);
-      final today = DateTime(now.year, now.month, now.day);
-      final closed = raw
+      return raw
           .map(_mapHoliday)
           .whereType<ProviderHoliday>()
           .any((h) => h.appliesTo(today));
-      return closed ? HomeAvailability.closedToday : HomeAvailability.open;
     } on DioException {
-      return HomeAvailability.open;
+      return false;
     }
+  }
+
+  Future<bool> _exceptionClosesToday(String providerId, DateTime today) async {
+    try {
+      final raw = await _api.getExceptions(providerId);
+      return raw
+          .map(_mapException)
+          .whereType<AvailabilityException>()
+          .any((e) => e.isClosed && e.appliesTo(today));
+    } on DioException {
+      return false;
+    }
+  }
+
+  // ==================== block time (availability exceptions) ====================
+
+  @override
+  Future<Either<Failure, List<AvailabilityException>>> fetchExceptions() {
+    return _withProviderId((providerId) async {
+      try {
+        final raw = await _api.getExceptions(providerId);
+        final exceptions = raw
+            .map(_mapException)
+            .whereType<AvailabilityException>()
+            .toList()
+          ..sort((a, b) => a.date.compareTo(b.date));
+        return Right(exceptions);
+      } on DioException {
+        return const Left(
+            ServerFailure('دریافت ساعات استثنائی ناموفق بود'));
+      }
+    });
+  }
+
+  @override
+  Future<Either<Failure, void>> addException({
+    required DateTime date,
+    String? openTime,
+    String? closeTime,
+    required String reason,
+  }) {
+    return _withProviderId((providerId) => _action(
+          () => _api.addException(providerId,
+              date: date,
+              openTime: openTime,
+              closeTime: closeTime,
+              reason: reason),
+          'مسدود کردن زمان ناموفق بود',
+        ));
+  }
+
+  @override
+  Future<Either<Failure, void>> removeException(String exceptionId) {
+    return _withProviderId((providerId) => _action(
+          () => _api.deleteException(providerId, exceptionId),
+          'حذف ساعت استثنائی ناموفق بود',
+        ));
+  }
+
+  static AvailabilityException? _mapException(Map<String, dynamic> e) {
+    final date =
+        DateTime.tryParse(HomeApiService.readString(e, const ['date']));
+    final id = HomeApiService.readString(e, const ['id']);
+    if (date == null || id.isEmpty) return null;
+    final open = HomeApiService.readString(e, const ['openTime']);
+    final close = HomeApiService.readString(e, const ['closeTime']);
+    return AvailabilityException(
+      id: id,
+      date: DateTime(date.year, date.month, date.day),
+      openTime: open.isEmpty ? null : open,
+      closeTime: close.isEmpty ? null : close,
+      reason: HomeApiService.readString(e, const ['reason']),
+      isClosed: e['isClosed'] == true || (open.isEmpty && close.isEmpty),
+    );
   }
 
   @override

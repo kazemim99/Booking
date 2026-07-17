@@ -21,6 +21,7 @@ import '../../domain/entities/home_enums.dart';
 import '../cubit/home_cubit.dart';
 import '../widgets/action_queue.dart';
 import '../widgets/activation_checklist.dart';
+import '../widgets/block_time_sheet.dart';
 import '../widgets/get_discovered.dart';
 import '../widgets/home_minor_zones.dart';
 import '../widgets/now_next.dart';
@@ -337,7 +338,11 @@ class HomeView extends StatelessWidget {
               title: const Text(AppStrings.homeCreateBlockTime),
               onTap: () {
                 Navigator.pop(sheetContext);
-                AppSnackbar.info(context, AppStrings.comingSoon);
+                BlockTimeSheet.show(
+                  context,
+                  initialDate: DateTime.now(),
+                  onSubmit: context.read<HomeCubit>().blockTime,
+                );
               },
             ),
             const SizedBox(height: AppSpacing.sm),

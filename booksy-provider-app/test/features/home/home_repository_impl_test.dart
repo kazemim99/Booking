@@ -54,6 +54,7 @@ void main() {
         .thenAnswer((_) async => {'totalBookings': 50});
     when(() => api.getProviderServices(any())).thenAnswer((_) async => []);
     when(() => api.getHolidays(any())).thenAnswer((_) async => []);
+    when(() => api.getExceptions(any())).thenAnswer((_) async => []);
   });
 
   HomeRepositoryImpl build() => HomeRepositoryImpl(api, auth, now: () => now);
@@ -429,6 +430,74 @@ void main() {
 
       expect(holidays.map((h) => h.id), ['h1', 'h2']);
       expect(holidays.first.isRecurring, isTrue);
+    });
+  });
+
+  group('block time → availability (spec: provider-block-time)', () {
+    setUp(() {
+      when(() => api.getProviderBookings(any(),
+              from: any(named: 'from'), to: any(named: 'to')))
+          .thenAnswer((_) async => []);
+    });
+
+    test('a closed-all-day exception for today resolves closedToday',
+        () async {
+      when(() => api.getExceptions(any())).thenAnswer(
+        (_) async => [
+          {'id': 'e1', 'date': '2026-07-15', 'reason': 'تعمیرات',
+            'isClosed': true},
+        ],
+      );
+
+      final snap = (await build().fetchSnapshot())
+          .getOrElse(() => throw StateError('expected Right'));
+
+      expect(snap.availability, HomeAvailability.closedToday);
+    });
+
+    test('a modified-hours exception today stays open', () async {
+      when(() => api.getExceptions(any())).thenAnswer(
+        (_) async => [
+          {
+            'id': 'e1',
+            'date': '2026-07-15',
+            'openTime': '10:00',
+            'closeTime': '14:00',
+            'reason': 'نیمه‌وقت',
+            'isClosed': false,
+          },
+        ],
+      );
+
+      final snap = (await build().fetchSnapshot())
+          .getOrElse(() => throw StateError('expected Right'));
+
+      expect(snap.availability, HomeAvailability.open);
+    });
+
+    test('fetchExceptions maps hours/closed and sorts soonest-first',
+        () async {
+      when(() => api.getExceptions(any())).thenAnswer(
+        (_) async => [
+          {'id': 'e2', 'date': '2026-09-01', 'reason': 'دوم',
+            'isClosed': true},
+          {
+            'id': 'e1',
+            'date': '2026-08-01',
+            'openTime': '10:00',
+            'closeTime': '14:00',
+            'reason': 'اول',
+          },
+        ],
+      );
+
+      final exceptions = (await build().fetchExceptions())
+          .getOrElse(() => throw StateError('expected Right'));
+
+      expect(exceptions.map((e) => e.id), ['e1', 'e2']);
+      expect(exceptions[0].isClosed, isFalse);
+      expect(exceptions[0].openTime, '10:00');
+      expect(exceptions[1].isClosed, isTrue);
     });
   });
 

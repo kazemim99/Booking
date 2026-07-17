@@ -171,6 +171,42 @@ void main() {
     await fresh.close();
   });
 
+  test('blockTime: success refreshes the week; offline refused', () async {
+    when(() => repository.addException(
+          date: any(named: 'date'),
+          openTime: any(named: 'openTime'),
+          closeTime: any(named: 'closeTime'),
+          reason: any(named: 'reason'),
+        )).thenAnswer((_) async => const Right(null));
+    final cubit = build();
+    await cubit.load();
+    clearInteractions(repository);
+    when(() => repository.fetchBookings(
+          from: any(named: 'from'),
+          to: any(named: 'to'),
+        )).thenAnswer((_) async => const Right([]));
+
+    final ok = await cubit.blockTime(
+        date: DateTime(2026, 7, 16), reason: 'تعمیرات');
+    await Future<void>.delayed(Duration.zero);
+
+    expect(ok, isNull);
+    verify(() => repository.addException(
+          date: DateTime(2026, 7, 16),
+          openTime: null,
+          closeTime: null,
+          reason: 'تعمیرات',
+        )).called(1);
+    verify(() => repository.fetchBookings(
+        from: any(named: 'from'), to: any(named: 'to'))).called(1);
+
+    when(() => connectivity.isOnline).thenAnswer((_) async => false);
+    final offline =
+        await cubit.blockTime(date: DateTime(2026, 7, 17), reason: 'x');
+    expect(offline, isA<NetworkFailure>());
+    await cubit.close();
+  });
+
   test('mutations: offline refused; success refreshes the week', () async {
     final cubit = build();
     await cubit.load();

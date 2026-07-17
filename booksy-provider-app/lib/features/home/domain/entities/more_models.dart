@@ -90,6 +90,36 @@ class GalleryImage extends Equatable {
       [id, thumbnailUrl, originalUrl, isPrimary, displayOrder];
 }
 
+/// A per-date availability exception (block-time: all-day closed, or
+/// modified hours for that date).
+class AvailabilityException extends Equatable {
+  final String id;
+
+  /// Date-only (local).
+  final DateTime date;
+
+  /// "HH:mm" when the date has modified hours; null when closed all day.
+  final String? openTime;
+  final String? closeTime;
+  final String reason;
+  final bool isClosed;
+
+  const AvailabilityException({
+    required this.id,
+    required this.date,
+    this.openTime,
+    this.closeTime,
+    required this.reason,
+    this.isClosed = false,
+  });
+
+  bool appliesTo(DateTime day) =>
+      date.year == day.year && date.month == day.month && date.day == day.day;
+
+  @override
+  List<Object?> get props => [id, date, openTime, closeTime, reason, isClosed];
+}
+
 /// Booking statistics for the Insights screen (all-time + trailing 30 days).
 class InsightsSummary extends Equatable {
   final int totalBookings;

@@ -543,8 +543,15 @@ class HolidaysPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return BlocProvider<HolidaysCubit>(
-      create: (_) => getIt<HolidaysCubit>()..load(),
+    return MultiBlocProvider(
+      providers: [
+        BlocProvider<HolidaysCubit>(
+          create: (_) => getIt<HolidaysCubit>()..load(),
+        ),
+        BlocProvider<ExceptionsCubit>(
+          create: (_) => getIt<ExceptionsCubit>()..load(),
+        ),
+      ],
       child: const HolidaysView(),
     );
   }
@@ -574,22 +581,34 @@ class HolidaysView extends StatelessWidget {
                 _HolidayFormSheet.show(context, context.read<HolidaysCubit>()),
           ),
         ],
-        bodyBuilder: (context, holidays) => holidays.isEmpty
-            ? AppEmptyState(
-                icon: Icons.beach_access_outlined,
-                message: AppStrings.holidaysEmpty,
-                actionLabel: '+ ${AppStrings.holidayAdd}',
-                onAction: () => _HolidayFormSheet.show(
-                    context, context.read<HolidaysCubit>()),
+        bodyBuilder: (context, holidays) => ListView(
+          padding: const EdgeInsets.all(AppSpacing.md),
+          children: [
+            if (holidays.isEmpty)
+              SizedBox(
+                height: 220,
+                child: AppEmptyState(
+                  icon: Icons.beach_access_outlined,
+                  message: AppStrings.holidaysEmpty,
+                  actionLabel: '+ ${AppStrings.holidayAdd}',
+                  onAction: () => _HolidayFormSheet.show(
+                      context, context.read<HolidaysCubit>()),
+                ),
               )
-            : ListView.separated(
-                padding: const EdgeInsets.all(AppSpacing.md),
-                itemCount: holidays.length,
-                separatorBuilder: (_, _) =>
-                    const Divider(color: AppColors.divider, height: 1),
-                itemBuilder: (context, i) {
-                  final h = holidays[i];
-                  return ListTile(
+            else
+              for (final h in holidays) ...[
+                _holidayTile(context, h),
+                const Divider(color: AppColors.divider, height: 1),
+              ],
+            const SizedBox(height: AppSpacing.lg),
+            const _ExceptionsSection(),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _holidayTile(BuildContext context, ProviderHoliday h) => ListTile(
                     key: Key('holiday-row-${h.id}'),
                     contentPadding: EdgeInsets.zero,
                     leading: const Icon(Icons.event_busy_outlined,
@@ -614,11 +633,6 @@ class HolidaysView extends StatelessWidget {
                       onPressed: () => _confirmRemove(context, h),
                     ),
                   );
-                },
-              ),
-      ),
-    );
-  }
 
   Future<void> _confirmRemove(
       BuildContext context, ProviderHoliday holiday) async {
@@ -648,6 +662,133 @@ class HolidaysView extends StatelessWidget {
     if (!context.mounted) return;
     if (failure == null) {
       AppSnackbar.success(context, AppStrings.holidayRemoved);
+    } else {
+      AppSnackbar.error(context, failure.message);
+    }
+  }
+}
+
+/// «ساعات استثنائی» — per-date availability exceptions beneath the days-off
+/// list (spec: provider-block-time).
+class _ExceptionsSection extends StatelessWidget {
+  const _ExceptionsSection();
+
+  @override
+  Widget build(BuildContext context) {
+    return BlocBuilder<ExceptionsCubit,
+        MoreState<List<AvailabilityException>>>(
+      builder: (context, state) {
+        final cubit = context.read<ExceptionsCubit>();
+        final exceptions = state.data ?? const [];
+        if (state.status == MoreStatus.ready && exceptions.isEmpty) {
+          return const SizedBox.shrink();
+        }
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text(
+              AppStrings.exceptionsSection,
+              style: TextStyle(
+                fontSize: 13,
+                fontWeight: FontWeight.w700,
+                color: AppColors.muted,
+              ),
+            ),
+            const SizedBox(height: AppSpacing.xs),
+            switch (state.status) {
+              MoreStatus.loading => const Padding(
+                  padding: EdgeInsets.all(AppSpacing.sm),
+                  child: Center(
+                      child: CircularProgressIndicator(strokeWidth: 2)),
+                ),
+              MoreStatus.failed => Row(
+                  children: [
+                    Expanded(
+                      child: Text(
+                        state.error ?? AppStrings.homeLoadError,
+                        style: const TextStyle(
+                            fontSize: 13, color: AppColors.muted),
+                      ),
+                    ),
+                    TextButton(
+                      key: const Key('exceptions-retry'),
+                      onPressed: cubit.load,
+                      child: const Text(AppStrings.retry),
+                    ),
+                  ],
+                ),
+              MoreStatus.ready => Column(
+                  children: [
+                    for (final e in exceptions)
+                      ListTile(
+                        key: Key('exception-row-${e.id}'),
+                        contentPadding: EdgeInsets.zero,
+                        leading: const Icon(Icons.block_outlined,
+                            color: AppColors.primary),
+                        title: Text(
+                          e.reason,
+                          style: const TextStyle(
+                              fontSize: 15, color: AppColors.ink),
+                        ),
+                        subtitle: Text(
+                          [
+                            '${e.date.day}/${e.date.month}/${e.date.year}',
+                            if (e.isClosed)
+                              AppStrings.exceptionClosedAllDay
+                            else
+                              '${e.openTime ?? ''}–${e.closeTime ?? ''}',
+                          ].join(' · '),
+                          style: const TextStyle(
+                              fontSize: 12, color: AppColors.muted),
+                        ),
+                        trailing: IconButton(
+                          key: Key('exception-remove-${e.id}'),
+                          icon: const Icon(Icons.delete_outline,
+                              size: AppIconSize.action,
+                              color: AppColors.danger),
+                          onPressed: () => _confirmRemove(context, cubit, e),
+                        ),
+                      ),
+                  ],
+                ),
+            },
+          ],
+        );
+      },
+    );
+  }
+
+  Future<void> _confirmRemove(
+    BuildContext context,
+    ExceptionsCubit cubit,
+    AvailabilityException exception,
+  ) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: const Text(AppStrings.exceptionRemoveConfirmTitle),
+        content: Text(AppStrings.exceptionRemoveConfirmBody(
+            '${exception.date.day}/${exception.date.month}')),
+        actions: [
+          TextButton(
+            key: const Key('exception-remove-cancel'),
+            onPressed: () => Navigator.pop(dialogContext, false),
+            child: const Text(AppStrings.cancel),
+          ),
+          TextButton(
+            key: const Key('exception-remove-confirm'),
+            onPressed: () => Navigator.pop(dialogContext, true),
+            style: TextButton.styleFrom(foregroundColor: AppColors.danger),
+            child: const Text(AppStrings.staffRemoveConfirm),
+          ),
+        ],
+      ),
+    );
+    if (confirmed != true || !context.mounted) return;
+    final failure = await cubit.removeException(exception.id);
+    if (!context.mounted) return;
+    if (failure == null) {
+      AppSnackbar.success(context, AppStrings.exceptionRemoved);
     } else {
       AppSnackbar.error(context, failure.message);
     }

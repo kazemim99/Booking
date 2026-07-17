@@ -12,6 +12,7 @@ import '../../../../core/widgets/app_error_state.dart';
 import '../../../../core/widgets/app_snackbar.dart';
 import '../../domain/entities/home_booking.dart';
 import '../cubit/calendar_cubit.dart';
+import '../widgets/block_time_sheet.dart';
 import '../widgets/provider_nav_bar.dart';
 
 /// The Calendar tab (spec: provider-calendar): RTL week strip + selected-day
@@ -91,7 +92,7 @@ class CalendarView extends StatelessWidget {
           floatingActionButton: FloatingActionButton(
             key: const Key('calendar-create-action'),
             tooltip: AppStrings.homeCreateTitle,
-            onPressed: () => _openComposer(context, state.selectedDay),
+            onPressed: () => _showCreateSheet(context, state.selectedDay),
             child: const Icon(Icons.add),
           ),
           floatingActionButtonLocation:
@@ -99,6 +100,52 @@ class CalendarView extends StatelessWidget {
           bottomNavigationBar: const ProviderNavBar(active: NavTab.calendar),
         );
       },
+    );
+  }
+
+  /// The ⊕ menu, pre-dated to the calendar's selected [day]
+  /// (spec: provider-block-time — calendar-initiated creation).
+  static void _showCreateSheet(BuildContext context, DateTime day) {
+    final cubit = context.read<CalendarCubit>();
+    showModalBottomSheet<void>(
+      context: context,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(
+          top: Radius.circular(AppRadius.bottomSheet),
+        ),
+      ),
+      builder: (sheetContext) => SafeArea(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            ListTile(
+              key: const Key('create-appointment'),
+              leading:
+                  const Icon(Icons.event_outlined, color: AppColors.primary),
+              title: const Text(AppStrings.homeCreateAppointment),
+              onTap: () {
+                Navigator.pop(sheetContext);
+                _openComposer(context, day);
+              },
+            ),
+            ListTile(
+              key: const Key('create-block-time'),
+              leading:
+                  const Icon(Icons.block_outlined, color: AppColors.primary),
+              title: const Text(AppStrings.homeCreateBlockTime),
+              onTap: () {
+                Navigator.pop(sheetContext);
+                BlockTimeSheet.show(
+                  context,
+                  initialDate: day,
+                  onSubmit: cubit.blockTime,
+                );
+              },
+            ),
+            const SizedBox(height: AppSpacing.sm),
+          ],
+        ),
+      ),
     );
   }
 

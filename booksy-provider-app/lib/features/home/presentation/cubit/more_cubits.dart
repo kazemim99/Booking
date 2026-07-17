@@ -134,6 +134,26 @@ class BusinessHoursCubit extends _MoreLoadCubit<List<DayHours>> {
   }
 }
 
+/// Holidays page → «ساعات استثنائی» — per-date availability exceptions
+/// (spec: provider-block-time).
+class ExceptionsCubit extends _MoreLoadCubit<List<AvailabilityException>> {
+  final HomeRepository _repository;
+  ExceptionsCubit(this._repository);
+
+  @override
+  Future<Either<Failure, List<AvailabilityException>>> fetch() =>
+      _repository.fetchExceptions();
+
+  Future<Failure?> removeException(String exceptionId) async {
+    final result = await _repository.removeException(exceptionId);
+    if (isClosed) return null;
+    return result.fold((f) => f, (_) {
+      load();
+      return null;
+    });
+  }
+}
+
 /// More → گالری — photo grid + mutations
 /// (spec: provider-gallery-management).
 class GalleryCubit extends _MoreLoadCubit<List<GalleryImage>> {

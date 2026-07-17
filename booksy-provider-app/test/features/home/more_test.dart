@@ -15,6 +15,7 @@ import 'package:booksy_provider_app/features/home/domain/entities/more_models.da
 import 'package:booksy_provider_app/features/home/domain/repositories/home_repository.dart';
 import 'package:booksy_provider_app/features/home/presentation/cubit/more_cubits.dart';
 import 'package:booksy_provider_app/features/home/presentation/pages/gallery_page.dart';
+import 'package:booksy_provider_app/features/home/presentation/widgets/block_time_sheet.dart';
 import 'package:booksy_provider_app/features/home/presentation/pages/more_page.dart';
 import 'package:booksy_provider_app/features/home/presentation/pages/more_sub_pages.dart';
 import 'package:dartz/dartz.dart';
@@ -260,6 +261,121 @@ void main() {
     });
   });
 
+  group('Block time (spec: provider-block-time)', () {
+    testWidgets('sheet gates on reason/times and submits the payload',
+        (tester) async {
+      DateTime? sentDate;
+      String? sentOpen;
+      String? sentReason;
+      await tester.pumpWidget(
+        MaterialApp(
+          theme: AppTheme.light,
+          builder: (context, child) => Directionality(
+            textDirection: TextDirection.rtl,
+            child: child ?? const SizedBox.shrink(),
+          ),
+          home: Scaffold(
+            body: BlockTimeSheet(
+              initialDate: DateTime(2026, 7, 20),
+              onSubmit: ({
+                required DateTime date,
+                String? openTime,
+                String? closeTime,
+                required String reason,
+              }) async {
+                sentDate = date;
+                sentOpen = openTime;
+                sentReason = reason;
+                return null;
+              },
+            ),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      // Gated: no reason yet.
+      var submit = tester.widget<FilledButton>(find.descendant(
+        of: find.byKey(const Key('block-submit')),
+        matching: find.byType(FilledButton),
+      ));
+      expect(submit.onPressed, isNull);
+
+      // Modified-hours mode without times stays gated even with a reason.
+      await tester.enterText(
+          find.byKey(const Key('block-reason')), 'تعمیرات');
+      await tester.tap(find.byKey(const Key('block-all-day')));
+      await tester.pumpAndSettle();
+      submit = tester.widget<FilledButton>(find.descendant(
+        of: find.byKey(const Key('block-submit')),
+        matching: find.byType(FilledButton),
+      ));
+      expect(submit.onPressed, isNull);
+
+      // Back to all-day → submittable; payload carries null times.
+      await tester.tap(find.byKey(const Key('block-all-day')));
+      await tester.pumpAndSettle();
+      await tester.tap(find.byKey(const Key('block-submit')));
+      await tester.pumpAndSettle();
+
+      // Payload proves the submit ran (the success snackbar is asserted via
+      // the host pages' flows; a directly-pumped sheet has no route to pop).
+      expect(sentDate, DateTime(2026, 7, 20));
+      expect(sentOpen, isNull);
+      expect(sentReason, 'تعمیرات');
+    });
+
+    testWidgets('exceptions section lists and removes behind confirmation',
+        (tester) async {
+      final exception = AvailabilityException(
+        id: 'e1',
+        date: DateTime(2026, 8, 1),
+        reason: 'تعمیرات',
+        isClosed: true,
+      );
+      when(() => repository.fetchExceptions())
+          .thenAnswer((_) async => Right([exception]));
+      when(() => repository.removeException(any()))
+          .thenAnswer((_) async => const Right(null));
+      when(() => repository.fetchHolidays())
+          .thenAnswer((_) async => const Right([]));
+
+      final holidays = HolidaysCubit(repository);
+      final exceptions = ExceptionsCubit(repository);
+      addTearDown(holidays.close);
+      addTearDown(exceptions.close);
+      await tester.pumpWidget(
+        MaterialApp(
+          theme: AppTheme.light,
+          builder: (context, child) => Directionality(
+            textDirection: TextDirection.rtl,
+            child: child ?? const SizedBox.shrink(),
+          ),
+          home: MultiBlocProvider(
+            providers: [
+              BlocProvider<HolidaysCubit>.value(value: holidays..load()),
+              BlocProvider<ExceptionsCubit>.value(
+                  value: exceptions..load()),
+            ],
+            child: const HolidaysView(),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      expect(find.text(AppStrings.exceptionsSection), findsOneWidget);
+      expect(find.byKey(const Key('exception-row-e1')), findsOneWidget);
+      expect(find.textContaining(AppStrings.exceptionClosedAllDay),
+          findsOneWidget);
+
+      await tester.tap(find.byKey(const Key('exception-remove-e1')));
+      await tester.pumpAndSettle();
+      await tester.tap(find.byKey(const Key('exception-remove-confirm')));
+      await tester.pumpAndSettle();
+      verify(() => repository.removeException('e1')).called(1);
+    });
+  });
+
   group('Gallery management (spec: provider-gallery-management)', () {
     const primary = GalleryImage(
         id: 'g1', thumbnailUrl: 'http://x/1.jpg', isPrimary: true);
@@ -425,8 +541,12 @@ void main() {
     });
 
     Future<HolidaysCubit> pumpHolidays(WidgetTester tester) async {
+      when(() => repository.fetchExceptions())
+          .thenAnswer((_) async => const Right([]));
       final cubit = HolidaysCubit(repository);
+      final exceptionsCubit = ExceptionsCubit(repository);
       addTearDown(cubit.close);
+      addTearDown(exceptionsCubit.close);
       await tester.pumpWidget(
         MaterialApp(
           theme: AppTheme.light,
@@ -434,8 +554,12 @@ void main() {
             textDirection: TextDirection.rtl,
             child: child ?? const SizedBox.shrink(),
           ),
-          home: BlocProvider<HolidaysCubit>.value(
-            value: cubit..load(),
+          home: MultiBlocProvider(
+            providers: [
+              BlocProvider<HolidaysCubit>.value(value: cubit..load()),
+              BlocProvider<ExceptionsCubit>.value(
+                  value: exceptionsCubit..load()),
+            ],
             child: const HolidaysView(),
           ),
         ),

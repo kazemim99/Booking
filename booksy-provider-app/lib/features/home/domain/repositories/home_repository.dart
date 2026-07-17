@@ -104,6 +104,23 @@ abstract class HomeRepository {
   /// Removes a day off.
   Future<Either<Failure, void>> removeHoliday(String holidayId);
 
+  // ---- Block time (spec: provider-block-time) ----
+
+  /// The provider's per-date availability exceptions, soonest-first.
+  Future<Either<Failure, List<AvailabilityException>>> fetchExceptions();
+
+  /// Blocks [date]: null times = closed all day; "HH:mm" times = modified
+  /// hours for that date.
+  Future<Either<Failure, void>> addException({
+    required DateTime date,
+    String? openTime,
+    String? closeTime,
+    required String reason,
+  });
+
+  /// Removes an exception, restoring the date's weekly hours.
+  Future<Either<Failure, void>> removeException(String exceptionId);
+
   // ---- Gallery (spec: provider-gallery-management) ----
 
   /// The gallery, display-order first with the primary image marked.
