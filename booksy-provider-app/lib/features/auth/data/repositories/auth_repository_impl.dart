@@ -13,6 +13,13 @@ class AuthRepositoryImpl implements AuthRepository {
   final AuthApiService _api;
   final SecureStorageService _storage;
 
+  /// In-memory session from the last successful auth/refresh. Preferred over
+  /// re-reading secure storage so consumers (e.g. the Home) get a consistent
+  /// session within a running session regardless of the platform's storage
+  /// round-trip behaviour (flutter_secure_storage is unreliable on web).
+  /// Storage remains the source of truth for cold-start restore.
+  ProviderSession? _cachedSession;
+
   AuthRepositoryImpl(this._api, this._storage);
 
   @override
@@ -56,6 +63,7 @@ class AuthRepositoryImpl implements AuthRepository {
       if (response.success && response.data != null) {
         final session = response.data!.toSession();
         await _persist(session, phoneNumber);
+        _cachedSession = session;
         return Right(session);
       }
       return Left(AuthFailure(response.message ?? 'خطا در تأیید کد'));
@@ -85,13 +93,18 @@ class AuthRepositoryImpl implements AuthRepository {
         final restored = await getCurrentSession();
         return restored.fold(
           Left.new,
-          (session) => session == null
-              ? const Left(AuthFailure('نشست کاربری یافت نشد'))
-              : Right(session.copyWith(
-                  accessToken: data.accessToken,
-                  refreshToken: data.refreshToken,
-                  expiresIn: data.expiresIn,
-                )),
+          (session) {
+            if (session == null) {
+              return const Left(AuthFailure('نشست کاربری یافت نشد'));
+            }
+            final refreshed = session.copyWith(
+              accessToken: data.accessToken,
+              refreshToken: data.refreshToken,
+              expiresIn: data.expiresIn,
+            );
+            _cachedSession = refreshed;
+            return Right(refreshed);
+          },
         );
       }
       return Left(AuthFailure(response.message ?? 'خطا در بروزرسانی توکن'));
@@ -111,6 +124,7 @@ class AuthRepositoryImpl implements AuthRepository {
         // best-effort: ignore server errors, always clear locally
       }
       await _storage.clearSession();
+      _cachedSession = null;
       return const Right(null);
     } catch (e) {
       return const Left(CacheFailure('خطا در خروج از حساب'));
@@ -122,6 +136,9 @@ class AuthRepositoryImpl implements AuthRepository {
 
   @override
   Future<Either<Failure, ProviderSession?>> getCurrentSession() async {
+    // Prefer the live in-memory session from the last auth/refresh; storage
+    // is only the cold-start restore path.
+    if (_cachedSession != null) return Right(_cachedSession);
     try {
       final accessToken = await _storage.getAccessToken();
       final refreshToken = await _storage.getRefreshToken();
@@ -163,6 +180,7 @@ class AuthRepositoryImpl implements AuthRepository {
         isNewProvider: false,
         requiresOnboarding: status?.needsOnboarding ?? (providerId == null),
       );
+      _cachedSession = session;
       return Right(session);
     } catch (e) {
       return const Left(CacheFailure('خطا در بازیابی نشست'));
@@ -188,16 +206,20 @@ class AuthRepositoryImpl implements AuthRepository {
           if (session == null) {
             return const Left(AuthFailure('نشست کاربری یافت نشد'));
           }
-          return Right(ProviderSession(
+          final updated = ProviderSession(
             accessToken: session.accessToken,
             refreshToken: session.refreshToken,
             expiresIn: session.expiresIn,
             user: session.user,
-            providerId: result?.providerId,
-            providerStatus: ProviderStatus.tryParse(result?.status),
+            // Keep the known providerId if the status endpoint omitted one.
+            providerId: result?.providerId ?? session.providerId,
+            providerStatus: ProviderStatus.tryParse(result?.status) ??
+                session.providerStatus,
             isNewProvider: false,
             requiresOnboarding: false,
-          ));
+          );
+          _cachedSession = updated;
+          return Right(updated);
         },
       );
     } on DioException catch (e) {
