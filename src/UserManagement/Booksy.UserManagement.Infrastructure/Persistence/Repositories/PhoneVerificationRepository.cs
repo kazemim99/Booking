@@ -46,8 +46,15 @@ public class PhoneVerificationRepository
         PhoneNumber phoneNumber,
         CancellationToken cancellationToken = default)
     {
+        // Return the newest still-actionable verification. Terminal records
+        // (already Verified, or Cancelled) must be excluded: otherwise a
+        // just-verified record shadows the fresh OTP from a new send and
+        // re-login fails with "already verified".
         return await DbSet
-            .Where(v => v.PhoneNumber.Value == phoneNumber.Value && v.ExpiresAt > DateTime.UtcNow)
+            .Where(v => v.PhoneNumber.Value == phoneNumber.Value
+                        && v.Status != VerificationStatus.Verified
+                        && v.Status != VerificationStatus.Cancelled
+                        && v.ExpiresAt > DateTime.UtcNow)
             .OrderByDescending(v => v.CreatedAt)
             .FirstOrDefaultAsync(cancellationToken);
     }
