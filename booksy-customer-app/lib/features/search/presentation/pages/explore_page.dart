@@ -1,6 +1,5 @@
 import 'dart:async';
 
-import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
@@ -10,8 +9,8 @@ import '../../../../config/theme/app_tokens.dart';
 import '../../../../core/constants/app_strings.dart';
 import '../../../../core/di/injection.dart';
 import '../../../../core/widgets/widgets.dart';
-import '../../../home/domain/entities/provider_summary.dart';
 import '../bloc/search_bloc.dart';
+import '../widgets/provider_result_card.dart';
 
 /// Explore: debounced search-as-you-type over providers with category
 /// filter chips. Stale in-flight results never overwrite newer ones
@@ -105,6 +104,28 @@ class _ExplorePageState extends State<ExplorePage> {
                   onChanged: _onQueryChanged,
                 ),
               ),
+              // Location-based discovery entry points (own routes within the
+              // explore branch). Scrollable so labels never overflow.
+              SingleChildScrollView(
+                scrollDirection: Axis.horizontal,
+                padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md),
+                child: Row(
+                  children: [
+                    ActionChip(
+                      avatar: const Icon(Icons.near_me_outlined, size: 18),
+                      label: const Text(AppStrings.nearMe),
+                      onPressed: () => context.push(Routes.exploreNearby),
+                    ),
+                    const SizedBox(width: AppSpacing.sm),
+                    ActionChip(
+                      avatar: const Icon(Icons.map_outlined, size: 18),
+                      label: const Text(AppStrings.searchByArea),
+                      onPressed: () => context.push(Routes.exploreArea),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: AppSpacing.sm),
               SizedBox(
                 height: 44,
                 child: BlocBuilder<SearchBloc, SearchState>(
@@ -181,8 +202,9 @@ class _ExplorePageState extends State<ExplorePage> {
                           itemCount: state.results.length,
                           separatorBuilder: (_, __) =>
                               const SizedBox(height: AppSpacing.sm),
-                          itemBuilder: (context, index) =>
-                              _ResultCard(provider: state.results[index]),
+                          itemBuilder: (context, index) => ProviderResultCard(
+                            provider: state.results[index],
+                          ),
                         ),
                       ),
                     );
@@ -197,94 +219,3 @@ class _ExplorePageState extends State<ExplorePage> {
   }
 }
 
-class _ResultCard extends StatelessWidget {
-  final ProviderSummary provider;
-
-  const _ResultCard({required this.provider});
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    return AppCard(
-      padding: EdgeInsets.zero,
-      semanticLabel: provider.name,
-      onTap: () => context.push(Routes.providerDetail(provider.id)),
-      child: Row(
-        children: [
-          SizedBox(
-            width: 96,
-            height: 96,
-            child: provider.imageUrl != null
-                ? CachedNetworkImage(
-                    imageUrl: provider.imageUrl!,
-                    fit: BoxFit.cover,
-                    placeholder: (_, __) => SkeletonLoader(
-                      child: SkeletonLoader.box(height: 96, radius: 0),
-                    ),
-                    errorWidget: (_, __, ___) => _placeholder(theme),
-                  )
-                : _placeholder(theme),
-          ),
-          Expanded(
-            child: Padding(
-              padding: const EdgeInsets.all(AppSpacing.sm),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    provider.name,
-                    style: theme.textTheme.titleSmall,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                  const SizedBox(height: AppSpacing.xxs),
-                  Row(
-                    children: [
-                      const Icon(Icons.star, size: 14, color: Colors.amber),
-                      const SizedBox(width: AppSpacing.xxs),
-                      Text(
-                        provider.rating.toStringAsFixed(1),
-                        style: theme.textTheme.bodySmall,
-                      ),
-                      const SizedBox(width: AppSpacing.xxs),
-                      Text(
-                        '(${provider.reviewCount})',
-                        style: theme.textTheme.bodySmall,
-                      ),
-                    ],
-                  ),
-                  if (provider.distance != null) ...[
-                    const SizedBox(height: AppSpacing.xxs),
-                    Row(
-                      children: [
-                        Icon(
-                          Icons.location_on_outlined,
-                          size: 14,
-                          color: theme.colorScheme.onSurfaceVariant,
-                        ),
-                        const SizedBox(width: AppSpacing.xxs),
-                        Text(
-                          '${provider.distance!.toStringAsFixed(1)} کیلومتر',
-                          style: theme.textTheme.bodySmall,
-                        ),
-                      ],
-                    ),
-                  ],
-                ],
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _placeholder(ThemeData theme) => Container(
-        color: theme.colorScheme.surfaceContainerHighest,
-        child: Icon(
-          Icons.storefront_outlined,
-          size: 28,
-          color: theme.colorScheme.onSurfaceVariant,
-        ),
-      );
-}

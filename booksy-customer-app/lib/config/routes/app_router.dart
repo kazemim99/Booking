@@ -11,13 +11,17 @@ import '../../features/auth/presentation/bloc/auth_bloc.dart';
 import '../../features/auth/presentation/bloc/auth_state.dart';
 import '../../features/auth/presentation/pages/login_page.dart';
 import '../../features/auth/presentation/pages/otp_verification_page.dart';
+import '../../features/checkout/presentation/bloc/checkout_bloc.dart';
+import '../../features/checkout/presentation/pages/checkout_page.dart';
 import '../../features/auth/presentation/pages/splash_page.dart';
 import '../../features/booking/presentation/pages/booking_flow_page.dart';
 import '../../features/bookings/presentation/pages/appointment_detail_page.dart';
 import '../../features/bookings/presentation/pages/appointments_page.dart';
 import '../../features/home/presentation/pages/home_page.dart';
 import '../../features/profile/presentation/pages/profile_tab_page.dart';
+import '../../features/search/presentation/pages/area_page.dart';
 import '../../features/search/presentation/pages/explore_page.dart';
+import '../../features/search/presentation/pages/nearby_page.dart';
 import '../../features/search/presentation/pages/provider_detail_page.dart';
 
 /// Route paths. All primary destinations are addressable (deep-linkable).
@@ -30,8 +34,17 @@ class Routes {
 
   static const String home = '/home';
   static const String explore = '/explore';
+  static const String exploreNearby = '/explore/nearby';
+  static const String exploreArea = '/explore/area';
   static const String appointments = '/appointments';
   static const String profile = '/profile';
+
+  /// Deposit checkout for a booking. Focused (outside the tab shell) and auth-required.
+  static const String checkout = '/checkout';
+
+  /// Location for the checkout of a specific booking.
+  static String checkoutFor(String bookingId, String providerId) =>
+      '$checkout/$bookingId?providerId=$providerId';
 
   static String providerDetail(String id) => '/providers/$id';
   static String bookingFlow(String providerId) => '/providers/$providerId/book';
@@ -90,6 +103,8 @@ class AppRouter {
   static bool _requiresAuth(String location) {
     if (location.startsWith('${Routes.appointments}/')) return true;
     if (location.contains('/book/confirm')) return true;
+    // Paying for a booking is inherently a signed-in action; return-to-intent brings the customer back here.
+    if (location.startsWith('${Routes.checkout}/')) return true;
     return false;
   }
 
@@ -153,6 +168,17 @@ class AppRouter {
             redirect: state.uri.queryParameters['redirect'],
           ),
         ),
+        // Focused checkout, outside the tab shell: paying is a single-purpose task, and the customer leaves for the
+        // bank's browser page mid-way. The page itself asks the server what (if anything) is due.
+        GoRoute(
+          path: '${Routes.checkout}/:bookingId',
+          builder: (context, state) => CheckoutPage(
+            bookingId: state.pathParameters['bookingId']!,
+            providerId: state.uri.queryParameters['providerId'] ?? '',
+            // Resolved here (a fresh factory instance per navigation) so the page itself stays DI-free.
+            bloc: getIt<CheckoutBloc>(),
+          ),
+        ),
         StatefulShellRoute.indexedStack(
           builder: (context, state, navigationShell) =>
               AppShell(navigationShell: navigationShell),
@@ -181,6 +207,16 @@ class AppRouter {
               GoRoute(
                 path: Routes.explore,
                 builder: (context, state) => const ExplorePage(),
+                routes: [
+                  GoRoute(
+                    path: 'nearby',
+                    builder: (context, state) => const NearbyPage(),
+                  ),
+                  GoRoute(
+                    path: 'area',
+                    builder: (context, state) => const AreaPage(),
+                  ),
+                ],
               ),
             ]),
             StatefulShellBranch(routes: [
@@ -232,32 +268,32 @@ class AppShell extends StatelessWidget {
           connectivity: getIt<ConnectivityService>(),
           child: navigationShell,
         ),
-        bottomNavigationBar: NavigationBar(
-          selectedIndex: navigationShell.currentIndex,
-          onDestinationSelected: (index) => navigationShell.goBranch(
+        bottomNavigationBar: AppBottomBar(
+          activeIndex: navigationShell.currentIndex,
+          onTap: (index) => navigationShell.goBranch(
             index,
             initialLocation: index == navigationShell.currentIndex,
           ),
-          destinations: const [
-            NavigationDestination(
-              icon: Icon(Icons.home_outlined),
-              selectedIcon: Icon(Icons.home),
-              label: AppStrings.tabHome,
+          items: const [
+            AppBottomBarItem(
+              icon: Icons.home_outlined,
+              selectedIcon: Icons.home,
+              semanticLabel: AppStrings.tabHome,
             ),
-            NavigationDestination(
-              icon: Icon(Icons.search_outlined),
-              selectedIcon: Icon(Icons.search),
-              label: AppStrings.tabExplore,
+            AppBottomBarItem(
+              icon: Icons.search_outlined,
+              selectedIcon: Icons.search,
+              semanticLabel: AppStrings.tabExplore,
             ),
-            NavigationDestination(
-              icon: Icon(Icons.calendar_today_outlined),
-              selectedIcon: Icon(Icons.calendar_today),
-              label: AppStrings.tabAppointments,
+            AppBottomBarItem(
+              icon: Icons.calendar_today_outlined,
+              selectedIcon: Icons.calendar_today,
+              semanticLabel: AppStrings.tabAppointments,
             ),
-            NavigationDestination(
-              icon: Icon(Icons.person_outline),
-              selectedIcon: Icon(Icons.person),
-              label: AppStrings.tabProfile,
+            AppBottomBarItem(
+              icon: Icons.person_outline,
+              selectedIcon: Icons.person,
+              semanticLabel: AppStrings.tabProfile,
             ),
           ],
         ),

@@ -14,8 +14,16 @@ class SearchRemoteDataSource {
     String? serviceCategory,
     int pageNumber = 1,
     int pageSize = 20,
+    double? latitude,
+    double? longitude,
+    double? radiusKm,
+    String sortBy = 'rating',
     CancelToken? cancelToken,
   }) async {
+    // Geo params ride the existing search contract (ProviderSearchRequest
+    // already exposes latitude/longitude/radiusKm/sortBy) — no new endpoint.
+    // Distance sort is descending-off so nearest comes first.
+    final sortByDistance = sortBy == 'distance';
     final response = await serviceCatalogDio.get(
       ApiConstants.searchProviders,
       cancelToken: cancelToken,
@@ -23,10 +31,13 @@ class SearchRemoteDataSource {
         if (searchTerm != null && searchTerm.length >= 2)
           'SearchTerm': searchTerm,
         if (serviceCategory != null) 'ServiceCategory': serviceCategory,
+        if (latitude != null) 'Latitude': latitude,
+        if (longitude != null) 'Longitude': longitude,
+        if (radiusKm != null) 'RadiusKm': radiusKm,
         'PageNumber': pageNumber,
         'PageSize': pageSize,
-        'SortBy': 'rating',
-        'SortDescending': true,
+        'SortBy': sortBy,
+        'SortDescending': !sortByDistance,
       },
     );
 

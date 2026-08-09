@@ -22,7 +22,7 @@ class ErrorState extends StatelessWidget {
           children: [
             const Icon(
               Icons.error_outline,
-              size: 56,
+              size: AppIconSize.hero,
               color: AppColors.error,
             ),
             const SizedBox(height: AppSpacing.md),

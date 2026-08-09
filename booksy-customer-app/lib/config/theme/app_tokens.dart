@@ -25,6 +25,14 @@ class AppRadius {
 
   /// Fully rounded (chips, pills, badges).
   static const double full = 999;
+
+  // Component radii aligned to the Provider (Coliride) dimension scale.
+  static const double button = 10;
+  static const double field = 12;
+  static const double snackbar = 12;
+  static const double bottomSheet = 14;
+  static const double card = 15;
+  static const double panel = 16; // dialogs, floating nav pill
 }
 
 /// Elevation levels (Material 3 dp values).
@@ -42,12 +50,23 @@ class AppElevation {
 class AppMotion {
   AppMotion._();
 
-  static const Duration fast = Duration(milliseconds: 150);
+  static const Duration fast = Duration(milliseconds: 180);
   static const Duration normal = Duration(milliseconds: 250);
   static const Duration slow = Duration(milliseconds: 400);
 
   static const Curve standard = Curves.easeInOutCubic;
   static const Curve emphasized = Curves.easeOutCubic;
+}
+
+/// Icon-size ramp aligned to the Provider app: [sm] inline, [md] functional,
+/// [action] inside a tap container, [hero] for empty/feedback illustrations.
+class AppIconSize {
+  AppIconSize._();
+
+  static const double sm = 16;
+  static const double action = 20;
+  static const double md = 24;
+  static const double hero = 72;
 }
 
 /// Minimum touch target size (accessibility baseline).

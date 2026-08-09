@@ -6,10 +6,10 @@ import 'package:booksy_customer_app/config/theme/app_theme.dart';
 
 void main() {
   group('AppTheme', () {
-    test('uses the dark-blue brand palette, not purple', () {
+    test('uses the Provider-aligned Coliride blue palette, not purple', () {
       final theme = AppTheme.light;
       expect(theme.colorScheme.primary, AppColors.primary);
-      expect(theme.colorScheme.primary, const Color(0xFF1A365D));
+      expect(theme.colorScheme.primary, const Color(0xFF3777BF));
       expect(theme.useMaterial3, isTrue);
     });
 

@@ -2,6 +2,7 @@
 /// Feature screens should import this instead of styling Material directly.
 library;
 
+export 'app_bottom_bar.dart';
 export 'app_bottom_sheet.dart';
 export 'app_button.dart';
 export 'app_card.dart';

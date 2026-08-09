@@ -8,5 +8,9 @@ abstract class SearchRepository {
     String? serviceCategory,
     int pageNumber,
     int pageSize,
+    double? latitude,
+    double? longitude,
+    double? radiusKm,
+    String sortBy,
   });
 }

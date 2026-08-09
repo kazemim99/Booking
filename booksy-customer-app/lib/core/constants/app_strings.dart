@@ -77,6 +77,18 @@ class AppStrings {
   static const String noResultsTitle = 'نتیجه‌ای یافت نشد';
   static const String noResultsSubtitle = 'فیلترها یا کلمات جستجو را تغییر دهید';
 
+  // Discovery — nearby & area
+  static const String nearMe = 'اطراف من';
+  static const String nearbyTitle = 'سالن‌های اطراف';
+  static const String nearbyEmpty = 'سالنی در این محدوده پیدا نشد';
+  static const String searchByArea = 'جستجو در محله';
+  static const String areaSearchHint = 'نام محله یا منطقه…';
+  static const String areaNotFound = 'محله‌ای با این نام پیدا نشد';
+  static const String locationPermissionNeeded =
+      'برای نمایش سالن‌های نزدیک، اجازه دسترسی به موقعیت لازم است';
+  static const String locationServiceDisabled =
+      'موقعیت‌مکانی دستگاه خاموش است. آن را روشن کنید یا در محله جستجو کنید';
+
   // Provider detail
   static const String servicesTitle = 'خدمات';
   static const String workingHoursTitle = 'ساعات کاری';
@@ -142,4 +154,35 @@ class AppStrings {
   static const String profileUpdated = 'پروفایل به‌روزرسانی شد';
   static const String logoutConfirmTitle = 'خروج از حساب';
   static const String logoutConfirmBody = 'آیا می‌خواهید از حساب خود خارج شوید؟';
+
+  // Checkout / payment
+  static const String checkoutTitle = 'پرداخت بیعانه';
+  static const String checkoutDepositLabel = 'مبلغ بیعانه';
+  static const String checkoutTotalLabel = 'مبلغ کل';
+  static const String checkoutRemainingLabel = 'پرداخت در محل';
+  static const String checkoutPayCta = 'پرداخت آنلاین';
+  static const String checkoutGatewayNotice =
+      'برای پرداخت به درگاه بانکی منتقل می‌شوید. پس از پرداخت به برنامه بازگردید.';
+
+  static const String checkoutAwaitingTitle = 'در انتظار پرداخت';
+  static const String checkoutAwaitingBody =
+      'پرداخت را در مرورگر کامل کنید. پس از پرداخت، وضعیت را بررسی کنید.';
+  static const String checkoutCheckStatusCta = 'بررسی وضعیت پرداخت';
+  static const String checkoutCancelPaymentCta = 'لغو پرداخت';
+
+  static const String checkoutPaidTitle = 'پرداخت انجام شد';
+  static const String checkoutPaidBody = 'بیعانه پرداخت شد و نوبت شما تایید است.';
+  static const String checkoutRefNumberLabel = 'شماره پیگیری';
+
+  static const String checkoutFailedTitle = 'پرداخت انجام نشد';
+  static const String checkoutFailedBody = 'مبلغی از حساب شما کسر نشده است. می‌توانید دوباره تلاش کنید.';
+
+  static const String checkoutUnknownTitle = 'وضعیت پرداخت مشخص نیست';
+  static const String checkoutUnknownBody =
+      'اگر مبلغی کسر شده باشد، پرداخت شما ثبت می‌شود؛ لطفاً دوباره پرداخت نکنید و کمی بعد وضعیت را بررسی کنید.';
+
+  static const String checkoutNothingDueTitle = 'پرداخت آنلاین لازم نیست';
+  static const String checkoutNothingDueBody = 'برای این نوبت بیعانه‌ای لازم نیست. هزینه در محل پرداخت می‌شود.';
+
+  static const String checkoutPayLaterCta = 'پرداخت بعداً';
 }

@@ -8,6 +8,8 @@
 
 This document records the July 2026 screen-by-screen UX audit and the redesign implemented under the OpenSpec change `customer-app-ux-redesign` (see `openspec/changes/customer-app-ux-redesign/` for proposal, design decisions, specs, and API-parity findings).
 
+> **Update — `unify-customer-app-with-provider-design` (July 2026):** the app was visually converged onto the Provider app's Coliride language (blue app-bar chrome + white content, flat borders-over-shadows surfaces, non-filled bordered inputs, green selection accents, aligned radii/motion/icons, and a floating blue-pill bottom nav) — tokens/theme rewritten in place; widget names/APIs and navigation architecture unchanged. Discovery gained **nearby-me** (`/explore/nearby`, device location → distance-sorted `/Providers/search`) and **area/district** (`/explore/area`, area name geocoded via keyless OSM Nominatim → distance search) entry points from Explore. A **map results view is deferred**: `/Providers/search` returns no per-provider coordinates, so pins can't be plotted until the backend adds them (map SDK settled: `flutter_map` + OSM, keyless). See `openspec/changes/unify-customer-app-with-provider-design/findings.md`.
+
 ---
 
 ## Current UX Flow (Browse-First, Router-Driven)

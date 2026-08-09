@@ -65,7 +65,7 @@ class OtpInput extends StatelessWidget {
               ),
               errorPinTheme: defaultPin.copyWith(
                 decoration: defaultPin.decoration!.copyWith(
-                  border: Border.all(color: AppColors.error),
+                  border: Border.all(color: AppColors.inputErrorBorder),
                 ),
               ),
               forceErrorState: errorText != null,

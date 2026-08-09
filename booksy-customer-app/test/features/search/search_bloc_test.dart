@@ -32,6 +32,10 @@ class FakeSearchRepository implements SearchRepository {
     String? serviceCategory,
     int pageNumber = 1,
     int pageSize = 20,
+    double? latitude,
+    double? longitude,
+    double? radiusKm,
+    String sortBy = 'rating',
   }) {
     calls.add(searchTerm);
     return _pending[searchTerm]!.future;

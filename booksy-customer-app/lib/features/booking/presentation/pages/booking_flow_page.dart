@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../../../config/feature_flags.dart';
 import '../../../../config/routes/app_router.dart';
 import '../../../../config/theme/app_tokens.dart';
 import '../../../../core/constants/app_strings.dart';
@@ -359,6 +360,20 @@ class _SuccessView extends StatelessWidget {
 
   const _SuccessView({required this.bloc});
 
+  /// The checkout location for the just-created booking, or null when checkout must not be offered.
+  ///
+  /// Gated by [FeatureFlags.checkoutEnabled] so the journey stays dark until it clears its release gates. The flag
+  /// only controls whether payment is *offered*: with it off the booking is still created and the backend still
+  /// enforces its deposit gate, so this can never bypass payment — it just doesn't collect it in-app yet.
+  String? get _checkoutTarget {
+    if (!FeatureFlags.checkoutEnabled) return null;
+    final bookingId = bloc.state.bookingId;
+    final providerId = bloc.state.providerId;
+    if (bookingId == null || bookingId.isEmpty) return null;
+    if (providerId == null || providerId.isEmpty) return null;
+    return Routes.checkoutFor(bookingId, providerId);
+  }
+
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
@@ -388,8 +403,27 @@ class _SuccessView extends StatelessWidget {
                 textAlign: TextAlign.center,
               ),
               const SizedBox(height: AppSpacing.xl),
+              // Deposit coupling (create-then-pay). The booking already exists and holds the slot; the server
+              // decides whether a deposit is owed, so we simply offer to continue into checkout and let it ask.
+              // Nothing here can confirm a booking — the backend gate does that only on a verified deposit.
+              if (_checkoutTarget != null)
+                Padding(
+                  padding: const EdgeInsets.only(bottom: AppSpacing.xs),
+                  child: AppButton(
+                    key: const Key('booking-pay-deposit-button'),
+                    label: AppStrings.checkoutPayCta,
+                    onPressed: () {
+                      bloc.add(const BookingReset());
+                      context.push(_checkoutTarget!);
+                    },
+                  ),
+                ),
               AppButton(
+                key: const Key('booking-view-appointments-button'),
                 label: AppStrings.bookingViewAppointments,
+                variant: _checkoutTarget == null
+                    ? AppButtonVariant.primary
+                    : AppButtonVariant.secondary,
                 onPressed: () {
                   bloc.add(const BookingReset());
                   context.go(Routes.appointments);

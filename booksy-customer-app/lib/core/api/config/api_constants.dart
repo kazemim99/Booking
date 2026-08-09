@@ -125,6 +125,33 @@ class ApiConstants {
   /// POST /api/v1/Bookings/{id}/reschedule
   static String rescheduleBooking(String id) => '/$apiVersion/Bookings/$id/reschedule';
 
+  // ==================== Payment / Checkout Endpoints ====================
+  //
+  // Checkout is a redirect flow owned by the server: we create a payment to obtain a gateway URL, the customer pays
+  // in an external browser, ZarinPal redirects to the backend callback which verifies the payment server-side, and
+  // the backend then redirects to the web return pages. The client never treats a return as proof of payment — it
+  // re-reads the authoritative state through these endpoints.
+
+  /// Create a ZarinPal payment request; returns an authority + gateway payment URL.
+  /// Accepts an `Idempotency-Key` header so a retried create never charges twice.
+  /// POST /api/v1/Payments/zarinpal/create
+  static const String createZarinPalPayment = '/$apiVersion/Payments/zarinpal/create';
+
+  /// Verify a payment by authority. Idempotent on the server: an already-verified
+  /// payment returns its stored result instead of being re-verified or re-charged.
+  /// POST /api/v1/Payments/zarinpal/verify
+  static const String verifyZarinPalPayment = '/$apiVersion/Payments/zarinpal/verify';
+
+  /// Read a payment record (used to confirm server-owned state on return/resume).
+  /// GET /api/v1/Payments/{id}
+  static String paymentById(String id) => '/$apiVersion/Payments/$id';
+
+  // NOTE: there is deliberately no "payments by booking" constant here. The backend exposes no such route
+  // (verified: PaymentsController has GET {id}, customer/{customerId}, customer/history, provider/{id}/revenue,
+  // reconciliation, callback — but no booking/{id}). Resume therefore relies on the locally persisted attempt
+  // (authority + idempotency key) plus the booking's own PaymentInfo from `bookingById`, which is authoritative
+  // for whether the deposit is already paid.
+
   // ==================== Availability Endpoints ====================
 
   /// Check provider availability

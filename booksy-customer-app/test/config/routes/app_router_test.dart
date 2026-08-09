@@ -1,5 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
 
+import 'package:booksy_customer_app/config/feature_flags.dart';
 import 'package:booksy_customer_app/config/routes/app_router.dart';
 import 'package:booksy_customer_app/features/auth/domain/entities/user.dart';
 import 'package:booksy_customer_app/features/auth/presentation/bloc/auth_state.dart';
@@ -93,6 +94,34 @@ void main() {
       );
     });
 
+    test('guest hitting checkout is gated and returns there after login', () {
+      // Paying is a signed-in action, and the customer must land back on checkout — not home — after logging in,
+      // otherwise an unpaid booking is silently abandoned.
+      final result = AppRouter.redirectFor(
+        location: '/checkout/b1',
+        uri: Uri.parse('/checkout/b1?providerId=p1'),
+        sessionResolved: true,
+        isAuthenticated: false,
+      );
+      expect(result, startsWith('${Routes.login}?redirect='));
+      expect(
+        Uri.decodeComponent(result!.split('redirect=').last),
+        '/checkout/b1?providerId=p1',
+      );
+    });
+
+    test('authenticated user reaches checkout without redirection', () {
+      expect(
+        AppRouter.redirectFor(
+          location: '/checkout/b1',
+          uri: Uri.parse('/checkout/b1?providerId=p1'),
+          sessionResolved: true,
+          isAuthenticated: true,
+        ),
+        isNull,
+      );
+    });
+
     test('authenticated user on login/otp continues to intended route', () {
       final target = Uri.encodeComponent('/appointments/42');
       expect(
@@ -150,6 +179,40 @@ void main() {
       notifier.apply(const LoggedOut());
       expect(notifier.isAuthenticated, isFalse);
       expect(notifier.sessionResolved, isTrue);
+    });
+  });
+
+  group('booking → checkout coupling', () {
+    test('checkoutFor builds the location the booking flow navigates to', () {
+      expect(Routes.checkoutFor('b1', 'p1'), '/checkout/b1?providerId=p1');
+    });
+
+    test('checkout is OFF by default so the journey stays dark until its gates pass', () {
+      // Release gate: the flag must default to false. Turning it on is a deliberate, explicit act
+      // (`--dart-define=CHECKOUT_ENABLED=true`) after web E2E and the remaining reviews.
+      expect(FeatureFlags.checkoutEnabled, isFalse);
+    });
+
+    test('existing gated and public routes are unaffected by the checkout route', () {
+      // Regression guard: adding checkout must not change any pre-existing navigation decision.
+      expect(
+        AppRouter.redirectFor(
+          location: Routes.home,
+          uri: Uri.parse(Routes.home),
+          sessionResolved: true,
+          isAuthenticated: false,
+        ),
+        isNull,
+      );
+      expect(
+        AppRouter.redirectFor(
+          location: '/appointments/42',
+          uri: Uri.parse('/appointments/42'),
+          sessionResolved: true,
+          isAuthenticated: false,
+        ),
+        startsWith('${Routes.login}?redirect='),
+      );
     });
   });
 }

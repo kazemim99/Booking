@@ -168,4 +168,52 @@ void main() {
       expect(tapped, isTrue);
     });
   });
+
+  group('AppBottomBar', () {
+    const items = [
+      AppBottomBarItem(
+        icon: Icons.home_outlined,
+        selectedIcon: Icons.home,
+        semanticLabel: AppStrings.tabHome,
+      ),
+      AppBottomBarItem(
+        icon: Icons.search_outlined,
+        selectedIcon: Icons.search,
+        semanticLabel: AppStrings.tabExplore,
+      ),
+      AppBottomBarItem(
+        icon: Icons.calendar_today_outlined,
+        selectedIcon: Icons.calendar_today,
+        semanticLabel: AppStrings.tabAppointments,
+      ),
+      AppBottomBarItem(
+        icon: Icons.person_outline,
+        selectedIcon: Icons.person,
+        semanticLabel: AppStrings.tabProfile,
+      ),
+    ];
+
+    testWidgets('renders the active tab with its selected icon', (tester) async {
+      await tester.pumpWidget(
+        _wrap(const AppBottomBar(items: items, activeIndex: 0)),
+      );
+      // Active tab (home) shows the filled icon; others show their outline.
+      expect(find.byIcon(Icons.home), findsOneWidget);
+      expect(find.byIcon(Icons.search_outlined), findsOneWidget);
+    });
+
+    testWidgets('tapping a destination fires onTap with its index',
+        (tester) async {
+      int? tapped;
+      await tester.pumpWidget(
+        _wrap(AppBottomBar(
+          items: items,
+          activeIndex: 0,
+          onTap: (i) => tapped = i,
+        )),
+      );
+      await tester.tap(find.byIcon(Icons.calendar_today_outlined));
+      expect(tapped, 2);
+    });
+  });
 }

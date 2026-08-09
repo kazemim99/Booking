@@ -18,6 +18,10 @@ class SearchRepositoryImpl implements SearchRepository {
     String? serviceCategory,
     int pageNumber = 1,
     int pageSize = 20,
+    double? latitude,
+    double? longitude,
+    double? radiusKm,
+    String sortBy = 'rating',
   }) async {
     try {
       final dtos = await remoteDataSource.searchProviders(
@@ -25,6 +29,10 @@ class SearchRepositoryImpl implements SearchRepository {
         serviceCategory: serviceCategory,
         pageNumber: pageNumber,
         pageSize: pageSize,
+        latitude: latitude,
+        longitude: longitude,
+        radiusKm: radiusKm,
+        sortBy: sortBy,
       );
       return Right(dtos.map((dto) => dto.toEntity()).toList());
     } on DioException catch (e) {

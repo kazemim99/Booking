@@ -93,11 +93,11 @@ class AppTextStyles {
     height: 1.3,
   );
 
-  // Button text
+  // Button text — aligned to the Provider (17, bold)
   static const TextStyle button = TextStyle(
     fontFamily: fontFamily,
-    fontSize: 16,
-    fontWeight: semibold,
+    fontSize: 17,
+    fontWeight: bold,
     height: 1.2,
   );
 
