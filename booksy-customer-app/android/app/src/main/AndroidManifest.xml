@@ -41,5 +41,21 @@
             <action android:name="android.intent.action.PROCESS_TEXT"/>
             <data android:mimeType="text/plain"/>
         </intent>
+
+        <!-- Required so the app can open an external HTTPS page — specifically the payment gateway.
+
+             Android 11 (API 30) introduced package visibility filtering: unless a matching <intent> is declared
+             here, other apps are invisible to this one, so url_launcher cannot resolve a browser and
+             launchUrl(..., LaunchMode.externalApplication) fails. This app targets SDK 36, so the filtering
+             applies. Without this entry checkout cannot even start: the launch returns false and the bloc
+             reports an unknown outcome rather than sending the customer to the gateway.
+
+             Scoped deliberately to VIEW + https — the gateway URL is always https. This declares only the
+             ability to *open* an outbound page; it is not a deep link and grants no inbound routing. Return
+             from the gateway is handled server-side (callback → verification) plus foreground resume/verify. -->
+        <intent>
+            <action android:name="android.intent.action.VIEW"/>
+            <data android:scheme="https"/>
+        </intent>
     </queries>
 </manifest>
