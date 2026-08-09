@@ -2,6 +2,10 @@ allprojects {
     repositories {
         google()
         mavenCentral()
+
+        // Fallback mirror of Google's Maven repository — see the matching note in settings.gradle.kts.
+        // Declared last so the canonical repository is always preferred where it is reachable.
+        maven { url = uri("https://maven.aliyun.com/repository/google") }
     }
 }
 
