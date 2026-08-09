@@ -648,6 +648,60 @@ namespace Booksy.ServiceCatalog.Domain.Aggregates
             AllowOnlineBooking = allow;
         }
 
+        /// <summary>
+        /// The provider's default booking policy — including whether a deposit is required and how it is calculated.
+        /// Null means "no policy configured", in which case bookings fall back to <see cref="BookingPolicy.Default"/>.
+        /// A service may later override this; booking creation resolves service → provider → default.
+        /// </summary>
+        public BookingPolicy? BookingPolicy { get; private set; }
+
+        /// <summary>
+        /// Sets the provider's default booking policy. This is financially material — it determines whether customers
+        /// must pay a deposit before a booking can be confirmed — so the change raises a domain event for audit.
+        ///
+        /// <para><b>Applies to future bookings only.</b> Every booking snapshots the policy that applied when it was
+        /// created (<c>Bookings.Policy*</c>), so existing bookings — paid or not — keep the terms the customer agreed
+        /// to. Nothing here rewrites history.</para>
+        /// </summary>
+        public void SetBookingPolicy(BookingPolicy policy, UserId? changedBy = null)
+        {
+            ArgumentNullException.ThrowIfNull(policy);
+
+            // Capture the prior terms for the audit event before anything changes.
+            var previous = BookingPolicy is null
+                ? null
+                : BookingPolicy.Create(
+                    BookingPolicy.MinAdvanceBookingHours, BookingPolicy.MaxAdvanceBookingDays,
+                    BookingPolicy.CancellationWindowHours, BookingPolicy.CancellationFeePercentage,
+                    BookingPolicy.AllowRescheduling, BookingPolicy.RescheduleWindowHours,
+                    BookingPolicy.RequireDeposit, BookingPolicy.DepositPercentage,
+                    BookingPolicy.DepositType, BookingPolicy.DepositFixedAmount);
+
+            if (BookingPolicy is null)
+            {
+                BookingPolicy = policy;
+            }
+            else
+            {
+                // Update the tracked instance rather than swapping the reference: EF tracks an owned reference by the
+                // parent's key, so a replacement object is ignored and the change would be silently dropped on save.
+                BookingPolicy.CopyFrom(policy);
+            }
+
+            RaiseDomainEvent(new ProviderBookingPolicyChangedEvent(
+                Id,
+                changedBy,
+                PreviousRequireDeposit: previous?.RequireDeposit,
+                PreviousDepositType: previous?.DepositType.ToString(),
+                PreviousDepositPercentage: previous?.DepositPercentage,
+                PreviousDepositFixedAmount: previous?.DepositFixedAmount,
+                RequireDeposit: policy.RequireDeposit,
+                DepositType: policy.DepositType.ToString(),
+                DepositPercentage: policy.DepositPercentage,
+                DepositFixedAmount: policy.DepositFixedAmount,
+                ChangedAt: DateTime.UtcNow));
+        }
+
       
 
         // ============================================

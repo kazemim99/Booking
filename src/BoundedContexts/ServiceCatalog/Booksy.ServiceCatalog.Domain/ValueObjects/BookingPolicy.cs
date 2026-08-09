@@ -16,42 +16,56 @@ namespace Booksy.ServiceCatalog.Domain.ValueObjects
         /// <summary>
         /// Minimum hours in advance a booking can be made
         /// </summary>
-        public int MinAdvanceBookingHours { get; }
+        public int MinAdvanceBookingHours { get; private set; }
 
         /// <summary>
         /// Maximum days in advance a booking can be made
         /// </summary>
-        public int MaxAdvanceBookingDays { get; }
+        public int MaxAdvanceBookingDays { get; private set; }
 
         /// <summary>
         /// Minimum hours before appointment when cancellation is allowed without penalty
         /// </summary>
-        public int CancellationWindowHours { get; }
+        public int CancellationWindowHours { get; private set; }
 
         /// <summary>
         /// Percentage of deposit to forfeit if cancelled outside window (0-100)
         /// </summary>
-        public decimal CancellationFeePercentage { get; }
+        public decimal CancellationFeePercentage { get; private set; }
 
         /// <summary>
         /// Whether rescheduling is allowed
         /// </summary>
-        public bool AllowRescheduling { get; }
+        public bool AllowRescheduling { get; private set; }
 
         /// <summary>
         /// Minimum hours before appointment when rescheduling is allowed
         /// </summary>
-        public int RescheduleWindowHours { get; }
+        public int RescheduleWindowHours { get; private set; }
 
         /// <summary>
         /// Whether deposit is required at booking time
         /// </summary>
-        public bool RequireDeposit { get; }
+        public bool RequireDeposit { get; private set; }
 
         /// <summary>
-        /// Deposit percentage required at booking (0-100)
+        /// Deposit percentage required at booking (0-100). Meaningful when <see cref="DepositType"/> is
+        /// <see cref="Enums.DepositType.Percentage"/>.
         /// </summary>
-        public decimal DepositPercentage { get; }
+        public decimal DepositPercentage { get; private set; }
+
+        /// <summary>
+        /// How the deposit is calculated — a percentage of the total, or a flat amount.
+        /// Defaults to <see cref="Enums.DepositType.Percentage"/> so policies persisted before fixed-amount
+        /// deposits existed keep their original meaning.
+        /// </summary>
+        public DepositType DepositType { get; private set; }
+
+        /// <summary>
+        /// Flat deposit amount required at booking. Meaningful when <see cref="DepositType"/> is
+        /// <see cref="Enums.DepositType.FixedAmount"/>.
+        /// </summary>
+        public decimal DepositFixedAmount { get; private set; }
 
         private BookingPolicy(
             int minAdvanceBookingHours,
@@ -61,7 +75,9 @@ namespace Booksy.ServiceCatalog.Domain.ValueObjects
             bool allowRescheduling,
             int rescheduleWindowHours,
             bool requireDeposit,
-            decimal depositPercentage)
+            decimal depositPercentage,
+            DepositType depositType,
+            decimal depositFixedAmount)
         {
             if (minAdvanceBookingHours < 0)
                 throw new ArgumentException("Minimum advance booking hours cannot be negative", nameof(minAdvanceBookingHours));
@@ -81,6 +97,23 @@ namespace Booksy.ServiceCatalog.Domain.ValueObjects
             if (depositPercentage < 0 || depositPercentage > 100)
                 throw new ArgumentException("Deposit percentage must be between 0 and 100", nameof(depositPercentage));
 
+            if (depositFixedAmount < 0)
+                throw new ArgumentException("Deposit fixed amount cannot be negative", nameof(depositFixedAmount));
+
+            // A required deposit must actually be collectable: the selected mode has to carry a usable value.
+            // Rejecting the invalid combination here prevents a provider from "requiring" a deposit of zero, which
+            // would leave bookings permanently unconfirmable while appearing to be configured.
+            if (requireDeposit)
+            {
+                if (depositType == DepositType.Percentage && depositPercentage <= 0)
+                    throw new ArgumentException(
+                        "A percentage deposit requires a deposit percentage greater than 0", nameof(depositPercentage));
+
+                if (depositType == DepositType.FixedAmount && depositFixedAmount <= 0)
+                    throw new ArgumentException(
+                        "A fixed-amount deposit requires a deposit amount greater than 0", nameof(depositFixedAmount));
+            }
+
             MinAdvanceBookingHours = minAdvanceBookingHours;
             MaxAdvanceBookingDays = maxAdvanceBookingDays;
             CancellationWindowHours = cancellationWindowHours;
@@ -89,6 +122,39 @@ namespace Booksy.ServiceCatalog.Domain.ValueObjects
             RescheduleWindowHours = rescheduleWindowHours;
             RequireDeposit = requireDeposit;
             DepositPercentage = depositPercentage;
+            DepositType = depositType;
+            DepositFixedAmount = depositFixedAmount;
+        }
+
+        /// <summary>
+        /// Copies <paramref name="source"/>'s values into this instance.
+        ///
+        /// <para><b>Why this exists (EF Core owned-entity semantics).</b> This value object is persisted with
+        /// <c>OwnsOne</c>, and EF tracks an owned reference by its <i>parent's</i> key. Assigning a brand-new
+        /// instance to the navigation therefore does not update the already-tracked owned entry: EF keeps the entry
+        /// it is tracking (with the old column values) and the replacement object is ignored, so the change is
+        /// silently dropped on save. Mutating the tracked instance instead produces ordinary property
+        /// modifications, which EF detects reliably.</para>
+        ///
+        /// <para>The value object stays immutable to callers — setters are private and this method is
+        /// <c>internal</c>, reserved for the owning aggregate. <c>ComplexProperty</c> would be the cleaner mapping
+        /// (true value semantics, replacement just works) but EF Core 9 does not support <b>nullable</b> complex
+        /// properties, and an unconfigured policy must be null.</para>
+        /// </summary>
+        internal void CopyFrom(BookingPolicy source)
+        {
+            ArgumentNullException.ThrowIfNull(source);
+
+            MinAdvanceBookingHours = source.MinAdvanceBookingHours;
+            MaxAdvanceBookingDays = source.MaxAdvanceBookingDays;
+            CancellationWindowHours = source.CancellationWindowHours;
+            CancellationFeePercentage = source.CancellationFeePercentage;
+            AllowRescheduling = source.AllowRescheduling;
+            RescheduleWindowHours = source.RescheduleWindowHours;
+            RequireDeposit = source.RequireDeposit;
+            DepositPercentage = source.DepositPercentage;
+            DepositType = source.DepositType;
+            DepositFixedAmount = source.DepositFixedAmount;
         }
 
         public static BookingPolicy Create(
@@ -99,7 +165,9 @@ namespace Booksy.ServiceCatalog.Domain.ValueObjects
             bool allowRescheduling,
             int rescheduleWindowHours,
             bool requireDeposit,
-            decimal depositPercentage)
+            decimal depositPercentage,
+            DepositType depositType = DepositType.Percentage,
+            decimal depositFixedAmount = 0)
         {
             return new BookingPolicy(
                 minAdvanceBookingHours,
@@ -109,7 +177,9 @@ namespace Booksy.ServiceCatalog.Domain.ValueObjects
                 allowRescheduling,
                 rescheduleWindowHours,
                 requireDeposit,
-                depositPercentage);
+                depositPercentage,
+                depositType,
+                depositFixedAmount);
         }
 
         /// <summary>
@@ -156,14 +226,25 @@ namespace Booksy.ServiceCatalog.Domain.ValueObjects
             depositPercentage: 50);
 
         /// <summary>
-        /// Calculates the deposit amount based on the policy and total price
+        /// Calculates the deposit due for a booking of <paramref name="totalPrice"/>.
+        ///
+        /// <para>Percentage mode takes the configured share of the total; fixed mode takes the flat amount. In both
+        /// cases the result is <b>capped at the booking total</b> — a deposit can never exceed what is being booked,
+        /// which matters most for a flat amount configured against a cheaper service.</para>
         /// </summary>
         public Money CalculateDepositAmount(Money totalPrice)
         {
             if (!RequireDeposit)
                 return Money.Create(0, totalPrice.Currency);
 
-            var depositAmount = totalPrice.Amount * (DepositPercentage / 100m);
+            var depositAmount = DepositType == DepositType.FixedAmount
+                ? DepositFixedAmount
+                : totalPrice.Amount * (DepositPercentage / 100m);
+
+            // Never ask for more than the booking is worth.
+            if (depositAmount > totalPrice.Amount)
+                depositAmount = totalPrice.Amount;
+
             return Money.Create(depositAmount, totalPrice.Currency);
         }
 
@@ -218,6 +299,8 @@ namespace Booksy.ServiceCatalog.Domain.ValueObjects
             yield return RescheduleWindowHours;
             yield return RequireDeposit;
             yield return DepositPercentage;
+            yield return DepositType;
+            yield return DepositFixedAmount;
         }
     }
 }

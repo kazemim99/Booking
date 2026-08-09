@@ -30,6 +30,26 @@ namespace Booksy.ServiceCatalog.Infrastructure.Persistence.Configurations
                     value => ProviderId.From(value))
                 .IsRequired();
 
+            // The provider's default booking policy (P0-0). Nullable: an unconfigured provider falls back to
+            // BookingPolicy.Default, so existing providers are unaffected until they opt in.
+            builder.OwnsOne(p => p.BookingPolicy, policy =>
+            {
+                policy.Property(x => x.MinAdvanceBookingHours).HasColumnName("BookingPolicyMinAdvanceBookingHours");
+                policy.Property(x => x.MaxAdvanceBookingDays).HasColumnName("BookingPolicyMaxAdvanceBookingDays");
+                policy.Property(x => x.CancellationWindowHours).HasColumnName("BookingPolicyCancellationWindowHours");
+                policy.Property(x => x.CancellationFeePercentage)
+                    .HasColumnName("BookingPolicyCancellationFeePercentage").HasColumnType("decimal(5,2)");
+                policy.Property(x => x.AllowRescheduling).HasColumnName("BookingPolicyAllowRescheduling");
+                policy.Property(x => x.RescheduleWindowHours).HasColumnName("BookingPolicyRescheduleWindowHours");
+                policy.Property(x => x.RequireDeposit).HasColumnName("BookingPolicyRequireDeposit");
+                policy.Property(x => x.DepositPercentage)
+                    .HasColumnName("BookingPolicyDepositPercentage").HasColumnType("decimal(5,2)");
+                policy.Property(x => x.DepositType)
+                    .HasColumnName("BookingPolicyDepositType").HasConversion<string>().HasMaxLength(20);
+                policy.Property(x => x.DepositFixedAmount)
+                    .HasColumnName("BookingPolicyDepositFixedAmount").HasColumnType("decimal(18,2)");
+            });
+
             // Owner ID
             builder.Property(p => p.OwnerId)
                 .HasConversion(

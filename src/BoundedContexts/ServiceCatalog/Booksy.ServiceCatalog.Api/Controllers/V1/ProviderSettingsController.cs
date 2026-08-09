@@ -1,6 +1,8 @@
+using Booksy.API.Extensions;
 using Booksy.Core.Domain.Exceptions;
 using Booksy.ServiceCatalog.Api.Models.Requests;
 using Booksy.ServiceCatalog.Application.Commands.Provider.AddException;
+using Booksy.ServiceCatalog.Application.Commands.Provider.UpdateBookingPreferences;
 using Booksy.ServiceCatalog.Application.Commands.Provider.AddHoliday;
 using Booksy.ServiceCatalog.Application.Commands.Provider.DeleteException;
 using Booksy.ServiceCatalog.Application.Commands.Provider.DeleteHoliday;
@@ -751,6 +753,61 @@ public class ProviderSettingsController : ControllerBase
 
         return false;
     }
+
+    #region Booking preferences (deposit policy)
+
+    /// <summary>
+    /// Sets the provider's default booking policy, including whether a deposit is required before a booking can be
+    /// confirmed and how that deposit is calculated (percentage of the total, or a flat amount).
+    /// </summary>
+    /// <remarks>
+    /// This is the write path that makes the deposit capability real: booking creation resolves the effective policy
+    /// as service override → provider default → platform default, and each booking snapshots it. Changing the policy
+    /// therefore affects <b>future bookings only</b> — existing bookings keep the terms their customer agreed to.
+    ///
+    /// Exposed on two paths: the canonical <c>providers</c> prefix used by this controller, and the
+    /// <c>provider-settings</c> prefix the existing provider settings UI already calls.
+    /// </remarks>
+    /// <response code="200">Policy updated; the stored policy is returned.</response>
+    /// <response code="400">Invalid policy (e.g. a required deposit with a zero amount).</response>
+    /// <response code="403">Caller does not own this provider.</response>
+    [HttpPut("{id:guid}/booking-preferences")]
+    [HttpPut("~/api/v{version:apiVersion}/provider-settings/{id:guid}/booking-preferences")]
+    [ProducesResponseType(typeof(UpdateBookingPreferencesResult), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
+    public async Task<IActionResult> UpdateBookingPreferences(
+        Guid id,
+        [FromBody] UpdateBookingPreferencesRequest request,
+        CancellationToken cancellationToken = default)
+    {
+        // Use the shared claims extension rather than this controller's local GetCurrentUserId(): the JWT does not
+        // carry a "sub"/"userId" claim, so the local helper returns null for a perfectly valid provider token.
+        var actingUserId = User.GetUserId();
+        if (actingUserId == Guid.Empty)
+            return Unauthorized();
+
+        // ActingUserId is server-derived from the JWT; ownership is enforced by the authorization pipeline so a
+        // provider can never change another business's deposit terms.
+        var command = new UpdateBookingPreferencesCommand(
+            ProviderId: id,
+            RequireDeposit: request.RequiresDeposit,
+            DepositType: request.ResolveDepositType(),
+            DepositPercentage: request.DepositPercentage,
+            DepositFixedAmount: request.DepositFixedAmount,
+            MinAdvanceBookingHours: request.MinAdvanceBookingHours,
+            MaxAdvanceBookingDays: request.MaxAdvanceBookingDays,
+            CancellationWindowHours: request.CancellationWindowHours,
+            CancellationFeePercentage: request.CancellationFeePercentage,
+            AllowRescheduling: request.AllowRescheduling,
+            RescheduleWindowHours: request.RescheduleWindowHours,
+            ActingUserId: actingUserId);
+
+        var result = await _mediator.Send(command, cancellationToken);
+        return Ok(result);
+    }
+
+    #endregion
 
     private string? GetCurrentUserId()
     {

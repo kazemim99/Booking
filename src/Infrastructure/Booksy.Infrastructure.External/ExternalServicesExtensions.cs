@@ -24,9 +24,15 @@ public static class ExternalServicesExtensions
     /// <summary>
     /// Adds external services
     /// </summary>
+    /// <param name="environmentName">
+    /// The host environment name, used only to fail-close the test-only fake payment gateway. Callers that cannot
+    /// supply it may omit it: the guard then falls back to configuration and treats an undeterminable environment as
+    /// Production (i.e. the fake is refused).
+    /// </param>
     public static IServiceCollection AddExternalServices(
         this IServiceCollection services,
-        IConfiguration configuration)
+        IConfiguration configuration,
+        string? environmentName = null)
     {
         services.Configure<OtpSettings>(configuration.GetSection("Otp"));
 
@@ -95,6 +101,14 @@ public static class ExternalServicesExtensions
         services.AddHttpClient<IZarinPalService, ZarinPalService>();
         services.AddScoped<IZarinPalService, ZarinPalService>();
         services.AddScoped<ZarinPalPaymentGateway>();
+
+        // Test-only seam: a deterministic fake gateway for automated end-to-end verification. Off unless explicitly
+        // requested, and the guard throws rather than allowing it in Production (see FakeZarinPalGuard). Registered
+        // after the real service so it wins default resolution when — and only when — permitted.
+        if (FakeZarinPalGuard.ShouldUseFake(configuration, environmentName))
+        {
+            FakeZarinPalGuard.RegisterFake(services, environmentName);
+        }
 
         // IDPay
         services.Configure<IDPaySettings>(configuration.GetSection("Payment:IDPay"));
