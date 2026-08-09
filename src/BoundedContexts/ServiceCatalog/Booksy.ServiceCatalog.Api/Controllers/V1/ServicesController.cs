@@ -19,7 +19,9 @@ using Booksy.ServiceCatalog.Application.Commands.Service.UpdateProviderService;
 using Booksy.ServiceCatalog.Domain.Repositories;
 using Booksy.ServiceCatalog.Application.Commands.Service.AddProviderService;
 using Booksy.ServiceCatalog.Application.Queries.Service.GetQualifiedStaff;
+using Booksy.ServiceCatalog.Application.Queries.Provider.GetCurrentProviderStatus;
 using Microsoft.AspNetCore.RateLimiting;
+using System.Security.Claims;
 
 namespace Booksy.ServiceCatalog.API.Controllers.V1;
 
@@ -49,6 +51,7 @@ public class ServicesController : ControllerBase
     /// Update an existing service
     /// </summary>
     [HttpPut("{providerId:guid}/{serviceId:guid}")]
+    [Authorize(Policy = "ProviderOrAdmin")] // SECURITY FIX (C1 authz audit): was unauthenticated — provider service management must be gated
     [ProducesResponseType(typeof(ServiceDetailResponse), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     [ProducesResponseType(StatusCodes.Status403Forbidden)]
@@ -91,6 +94,7 @@ public class ServicesController : ControllerBase
     /// Delete a service
     /// </summary>
     [HttpDelete("{providerId:guid}/{serviceId:guid}")]
+    [Authorize(Policy = "ProviderOrAdmin")] // SECURITY FIX (C1 authz audit): was unauthenticated
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     [ProducesResponseType(StatusCodes.Status403Forbidden)]
@@ -580,14 +584,27 @@ public class ServicesController : ControllerBase
         };
     }
 
+    /// <summary>
+    /// The caller's user id, read from the one claim the platform actually issues.
+    ///
+    /// <para>This previously looked for <c>sub</c>/<c>userId</c>, neither of which
+    /// <see cref="Booksy.UserManagement.Infrastructure"/>'s token service emits — it writes
+    /// <see cref="ClaimTypes.NameIdentifier"/>. The lookup therefore returned null for every valid token, and because
+    /// both authorization helpers below fail closed on a null user id, service activate/deactivate/archive answered
+    /// 403 to every caller including admins. Matches <c>BookingsController</c> and <c>ProvidersController</c>.</para>
+    /// </summary>
     private string? GetCurrentUserId()
     {
-        return User.FindFirst("sub")?.Value ?? User.FindFirst("userId")?.Value;
+        return User.FindFirstValue(ClaimTypes.NameIdentifier);
     }
 
-    private string? GetCurrentUserProviderId()
+    /// <summary>
+    /// The provider the caller owns, if the token carries it. The claim only appears after the token refresh that
+    /// follows provider registration, so parse defensively and treat its absence as "unknown", not "denied".
+    /// </summary>
+    private Guid? GetCurrentUserProviderId()
     {
-        return User.FindFirst("providerId")?.Value;
+        return Guid.TryParse(User.FindFirst("providerId")?.Value, out var id) ? id : (Guid?)null;
     }
 
     private async Task<bool> CanManageProvider(Guid providerId)
@@ -597,18 +614,39 @@ public class ServicesController : ControllerBase
             return false;
 
         // Admins can manage any provider
-        if (User.IsInRole("Admin") || User.IsInRole("SysAdmin"))
+        if (User.IsInRole("Admin") || User.IsInRole("SysAdmin") || User.IsInRole("Administrator"))
             return true;
 
-        // Provider owners can manage their own provider
-        var currentProviderId = GetCurrentUserProviderId();
-        if (!string.IsNullOrEmpty(currentProviderId) && currentProviderId == providerId.ToString())
+        // Provider owners can manage their own provider — via the providerId claim when the token carries it...
+        var claimProviderId = GetCurrentUserProviderId();
+        if (claimProviderId.HasValue && claimProviderId.Value == providerId)
             return true;
 
-        // Additional business logic could go here (e.g., staff with management permissions)
+        // ...or, when the claim isn't on the token yet, resolve the caller's provider in-process and check ownership.
+        // (Avoids depending on the post-registration token-refresh round-trip.)
+        try
+        {
+            var status = await _mediator.Send(new GetCurrentProviderStatusQuery());
+            if (status is not null && status.ProviderId == providerId)
+                return true;
+        }
+        catch
+        {
+            // No provider associated with the current user — fall through to deny.
+        }
+
         return false;
     }
 
+    /// <summary>
+    /// Whether the caller may manage a specific service.
+    ///
+    /// <para>Ownership is resolved from the service itself rather than assumed from the caller's role. The previous
+    /// implementation returned <c>User.IsInRole("Provider")</c>, which would have let any provider deactivate or
+    /// archive another business's service; it was only ever unreachable because <see cref="GetCurrentUserId"/> was
+    /// broken. Resolving the owning provider and delegating to <see cref="CanManageProvider"/> keeps the two paths
+    /// consistent and scopes the endpoints to their owner.</para>
+    /// </summary>
     private async Task<bool> CanManageService(Guid serviceId)
     {
         var currentUserId = GetCurrentUserId();
@@ -616,17 +654,26 @@ public class ServicesController : ControllerBase
             return false;
 
         // Admins can manage any service
-        if (User.IsInRole("Admin") || User.IsInRole("SysAdmin"))
+        if (User.IsInRole("Admin") || User.IsInRole("SysAdmin") || User.IsInRole("Administrator"))
             return true;
 
-        // For now, we'd need to query the service to get its provider
-        // This would typically involve a lightweight query to get just the provider ID
-        // For demonstration, we'll assume this is implemented
-        // var service = await GetServiceProviderInfo(serviceId);
-        // return await CanManageProvider(service.ProviderId);
+        // Everyone else must own the provider the service belongs to. An unresolvable service denies rather than
+        // throwing: the action methods answer 403, and a genuinely missing service is reported by the command.
+        Guid owningProviderId;
+        try
+        {
+            var service = await _mediator.Send(new GetServiceByIdQuery(ServiceId: serviceId));
+            if (service is null)
+                return false;
 
-        // Simplified check - providers can manage services in their context
-        return User.IsInRole("Provider");
+            owningProviderId = service.ProviderId;
+        }
+        catch
+        {
+            return false;
+        }
+
+        return await CanManageProvider(owningProviderId);
     }
 
     #endregion
