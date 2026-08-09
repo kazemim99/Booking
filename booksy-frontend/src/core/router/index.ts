@@ -10,6 +10,7 @@ import profileRoutes from './routes/profile.routes'
 import adminRoutes from './routes/admin.routes'
 import providerRoutes from '@/core/router/routes/provider.routes'
 import customerRoutes from './routes/customer.routes'
+import paymentRoutes from './routes/payment.routes'
 
 const routes: RouteRecordRaw[] = [
   {
@@ -23,6 +24,8 @@ const routes: RouteRecordRaw[] = [
   },
   ...authRoutes,
   ...bookingRoutes,
+  // Payment return landing pages for the gateway → backend → browser redirect chain (must be public).
+  ...paymentRoutes,
   ...profileRoutes,
   ...customerRoutes,
   ...providerRoutes,
