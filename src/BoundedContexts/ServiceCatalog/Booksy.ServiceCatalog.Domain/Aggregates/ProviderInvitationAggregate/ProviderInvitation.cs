@@ -118,6 +118,26 @@ namespace Booksy.ServiceCatalog.Domain.Aggregates
         }
 
         /// <summary>
+        /// Accept the invitation in the membership model (the accepter is a person, not a
+        /// provider). Flips the invitation to Accepted; the resulting membership carries its
+        /// own accepted event, so no provider link is recorded here.
+        /// </summary>
+        public void AcceptByMember()
+        {
+            if (Status != InvitationStatus.Pending)
+                throw new DomainValidationException($"Cannot accept invitation with status {Status}");
+
+            if (DateTime.UtcNow > ExpiresAt)
+            {
+                Status = InvitationStatus.Expired;
+                throw new DomainValidationException("Invitation has expired");
+            }
+
+            Status = InvitationStatus.Accepted;
+            RespondedAt = DateTime.UtcNow;
+        }
+
+        /// <summary>
         /// Reject the invitation
         /// </summary>
         public void Reject()

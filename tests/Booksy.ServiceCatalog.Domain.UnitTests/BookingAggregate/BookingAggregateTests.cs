@@ -1,6 +1,7 @@
 using Booksy.Core.Domain.Exceptions;
 using Booksy.Core.Domain.ValueObjects;
 using Booksy.ServiceCatalog.Domain.Aggregates.BookingAggregate;
+using Booksy.ServiceCatalog.Domain.Aggregates.BookingAggregate.Entities;
 using Booksy.ServiceCatalog.Domain.Enums;
 using Booksy.ServiceCatalog.Domain.ValueObjects;
 
@@ -57,6 +58,123 @@ public class BookingAggregateTests
         Assert.Equal("Test booking", booking.CustomerNotes);
         Assert.True((DateTime.UtcNow - booking.RequestedAt).TotalSeconds < 5);
         Assert.NotEmpty(booking.History);
+    }
+
+    [Fact]
+    public void CreateBookingRequest_Should_Carry_Service_Line_Items()
+    {
+        // Multi-service visit (cut + color): the booking stores each line and
+        // the caller-provided sums drive the slot and the bill.
+        var items = new List<BookingServiceItem>
+        {
+            new(Guid.NewGuid(), "Haircut", 100, "USD", 45),
+            new(Guid.NewGuid(), "Hair color", 250, "USD", 90),
+        };
+
+        var booking = Booking.CreateBookingRequest(
+            _customerId,
+            _providerId,
+            _serviceId,
+            _staffId,
+            _startTime,
+            Duration.FromMinutes(135),
+            Price.Create(350, "USD"),
+            _policy,
+            services: items);
+
+        Assert.Equal(2, booking.Services.Count);
+        Assert.Equal("Haircut", booking.Services[0].Name);
+        Assert.Equal("Hair color", booking.Services[1].Name);
+        Assert.Equal(135, booking.Duration.Value);
+        Assert.Equal(350, booking.TotalPrice.Amount);
+    }
+
+    [Fact]
+    public void CreateBookingRequest_Without_Items_Leaves_Services_Empty()
+    {
+        // Single-service callers (legacy path) keep working unchanged.
+        var booking = Booking.CreateBookingRequest(
+            _customerId, _providerId, _serviceId, _staffId,
+            _startTime, _duration, _price, _policy);
+
+        Assert.Empty(booking.Services);
+    }
+
+    [Fact]
+    public void BookingServiceItem_Rejects_Invalid_Lines()
+    {
+        Assert.Throws<ArgumentException>(
+            () => new BookingServiceItem(Guid.Empty, "x", 10, "USD", 30));
+        Assert.Throws<ArgumentException>(
+            () => new BookingServiceItem(Guid.NewGuid(), "x", 10, "USD", 0));
+        Assert.Throws<ArgumentException>(
+            () => new BookingServiceItem(Guid.NewGuid(), "x", -1, "USD", 30));
+    }
+
+    [Fact]
+    public void CreateConfirmedByProvider_Should_Be_Born_Confirmed()
+    {
+        // Provider walk-ins skip the request->confirm handshake: the provider
+        // is the approver, so the booking must never appear as a pending
+        // request on their own action queue.
+        var booking = Booking.CreateConfirmedByProvider(
+            _customerId,
+            _providerId,
+            _serviceId,
+            _staffId,
+            _startTime,
+            _duration,
+            _price,
+            _policy,
+            "Walk-in");
+
+        Assert.Equal(BookingStatus.Confirmed, booking.Status);
+        Assert.NotNull(booking.ConfirmedAt);
+        Assert.True((DateTime.UtcNow - booking.ConfirmedAt!.Value).TotalSeconds < 5);
+    }
+
+    [Fact]
+    public void CreateConfirmedByProvider_Should_Bypass_Deposit_And_AdvanceNotice_Rules()
+    {
+        // Deposit + min-advance rules protect the provider FROM customers;
+        // they must not block the provider recording their own appointment —
+        // e.g. a walk-in starting in 10 minutes under a 2h-advance policy.
+        var imminentStart = DateTime.UtcNow.AddMinutes(10);
+
+        var booking = Booking.CreateConfirmedByProvider(
+            _customerId,
+            _providerId,
+            _serviceId,
+            _staffId,
+            imminentStart,
+            _duration,
+            _price,
+            DepositPolicy,
+            null);
+
+        Assert.Equal(BookingStatus.Confirmed, booking.Status);
+    }
+
+    [Fact]
+    public void CreateConfirmedByProvider_Should_Raise_Confirmed_Event()
+    {
+        var booking = Booking.CreateConfirmedByProvider(
+            _customerId,
+            _providerId,
+            _serviceId,
+            _staffId,
+            _startTime,
+            _duration,
+            _price,
+            _policy,
+            null);
+
+        Assert.Contains(booking.DomainEvents,
+            e => e.GetType().Name == "BookingConfirmedEvent");
+        // A walk-in must NOT also raise BookingRequestedEvent, or the provider
+        // gets a spurious "new request" notification for their own booking.
+        Assert.DoesNotContain(booking.DomainEvents,
+            e => e.GetType().Name == "BookingRequestedEvent");
     }
 
     [Fact]

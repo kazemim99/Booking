@@ -2,6 +2,7 @@
 // Booksy.ServiceCatalog.Application/Commands/Payment/CapturePayment/CapturePaymentCommandHandler.cs
 // ========================================
 using Booksy.Core.Application.Abstractions;
+using Booksy.ServiceCatalog.Application.Abstractions.Persistence;
 using Booksy.ServiceCatalog.Domain.Repositories;
 using Booksy.ServiceCatalog.Domain.ValueObjects;
 using Microsoft.Extensions.Logging;
@@ -14,13 +15,16 @@ namespace Booksy.ServiceCatalog.Application.Commands.Payment.CapturePayment
     public sealed class CapturePaymentCommandHandler : ICommandHandler<CapturePaymentCommand, CapturePaymentResult>
     {
         private readonly IPaymentWriteRepository _paymentRepository;
+        private readonly IServiceCatalogUnitOfWork _unitOfWork;
         private readonly ILogger<CapturePaymentCommandHandler> _logger;
 
         public CapturePaymentCommandHandler(
             IPaymentWriteRepository paymentRepository,
+            IServiceCatalogUnitOfWork unitOfWork,
             ILogger<CapturePaymentCommandHandler> logger)
         {
             _paymentRepository = paymentRepository ?? throw new ArgumentNullException(nameof(paymentRepository));
+            _unitOfWork = unitOfWork ?? throw new ArgumentNullException(nameof(unitOfWork));
             _logger = logger ?? throw new ArgumentNullException(nameof(logger));
         }
 
@@ -54,8 +58,10 @@ namespace Booksy.ServiceCatalog.Application.Commands.Payment.CapturePayment
             // This handler is for manual capture scenarios or when authorization was done separately
             payment.Capture(payment.PaymentIntentId);
 
-            // Update in repository (TransactionBehaviour will save)
+            // Persist. This command is INonTransactionalCommand (money-moving): commit our own single, retry-safe
+            // unit so the capture is never re-executed by a transient-fault retry.
             await _paymentRepository.UpdateAsync(payment, cancellationToken);
+            await _unitOfWork.CommitAsync(cancellationToken);
 
             _logger.LogInformation("Payment {PaymentId} captured successfully, status: {Status}",
                 payment.Id.Value, payment.Status);

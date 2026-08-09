@@ -199,15 +199,17 @@ app.UseClientRateLimiting();
 app.UseAuthentication();
 app.UseAuthorization();
 
-app.MapHealthChecks("/health");
+// Health probes must stay anonymous — the global fallback policy (C1) would otherwise
+// 401 Docker/K8s/curl liveness+readiness probes and mark the container unhealthy.
+app.MapHealthChecks("/health").AllowAnonymous();
 app.MapHealthChecks("/health/ready", new HealthCheckOptions
 {
     Predicate = check => check.Tags.Contains("ready")
-});
+}).AllowAnonymous();
 app.MapHealthChecks("/health/live", new HealthCheckOptions
 {
     Predicate = _ => false
-});
+}).AllowAnonymous();
 
 app.MapControllers();
 app.MapHub<Booksy.ServiceCatalog.Infrastructure.Hubs.NotificationHub>("/hubs/notifications");

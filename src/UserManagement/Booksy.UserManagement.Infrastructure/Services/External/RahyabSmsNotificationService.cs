@@ -21,7 +21,6 @@ namespace Booksy.UserManagement.Infrastructure.Services.External
         private readonly string _number;
         private readonly string _company;
         private readonly bool _sandboxMode;
-        private readonly string _sandboxOtpCode;
 
         public RahyabSmsNotificationService(
             HttpClient httpClient,
@@ -38,7 +37,6 @@ namespace Booksy.UserManagement.Infrastructure.Services.External
             // Honor the single global sandbox switch (Sms:SandboxMode) as well as the per-provider one.
             _sandboxMode = configuration.GetValue<bool>("Rahyab:SandboxMode")
                 || configuration.GetValue<bool>("Sms:SandboxMode");
-            _sandboxOtpCode = configuration["Rahyab:SandboxOtpCode"] ?? "123456";
         }
 
         public async Task<(bool Success, string? MessageId, string? ErrorMessage)>
@@ -60,11 +58,15 @@ namespace Booksy.UserManagement.Infrastructure.Services.External
                 {
                     var sandboxMessageId = $"sandbox-{Guid.NewGuid()}";
 
+                    // The real, validatable code is inside {Message}. Never print a
+                    // separate "use this code" hint: the OTP is random unless
+                    // OTP_SANDBOX_CODE pins it, and advertising a fixed code that
+                    // verification rejects sends developers and E2E scripts chasing
+                    // a phantom "invalid verification code".
                     _logger.LogWarning(
-                        "🔧 SANDBOX MODE: Skipping real SMS to {PhoneNumber}. Message: {Message}. Use OTP code: {OtpCode}",
+                        "🔧 SANDBOX MODE: Skipping real SMS to {PhoneNumber}. Message: {Message}",
                         phoneNumber,
-                        message,
-                        _sandboxOtpCode);
+                        message);
 
                     // Simulate a small delay like a real API call
                     await Task.Delay(100, cancellationToken);

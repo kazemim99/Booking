@@ -24,11 +24,13 @@ namespace Booksy.ServiceCatalog.Infrastructure.Persistence.Configurations
                 .HasColumnName("Version")
                 .HasDefaultValue(0);
 
-            // Booking ID (Value Object)
+            // Booking ID (Value Object) — client-generated (BookingId.New()); ValueGeneratedNever so EF treats the
+            // key (and the owned value objects that share it) as stable and never marks it modified on update.
             builder.Property(b => b.Id)
                 .HasConversion(
                     id => id.Value,
                     value => BookingId.From(value))
+                .ValueGeneratedNever()
                 .IsRequired()
                 .HasColumnName("BookingId");
 
@@ -97,9 +99,15 @@ namespace Booksy.ServiceCatalog.Infrastructure.Persistence.Configurations
                 .HasConversion<string>()
                 .HasMaxLength(50);
 
-            // Price (Owned Value Object)
+            // Price (Owned Value Object). Explicitly pin the shared FK to the owner key and mark it ValueGeneratedNever
+            // so EF never treats it as a modifiable key on update — the fix for the
+            // "Booking.TotalPrice#Price.BookingId is part of a key and so cannot be modified" defect that broke every
+            // booking update (cancel / reschedule / confirm). Mirrors ServiceConfiguration's owned-Price mapping.
             builder.OwnsOne(b => b.TotalPrice, price =>
             {
+                price.WithOwner().HasForeignKey("BookingId");
+                price.Property<Guid>("BookingId").ValueGeneratedNever();
+
                 price.Property(p => p.Amount)
                     .HasColumnName("TotalPriceAmount")
                     .HasColumnType("decimal(18,2)")
@@ -227,6 +235,21 @@ namespace Booksy.ServiceCatalog.Infrastructure.Persistence.Configurations
                     .HasColumnName("PolicyDepositPercentage")
                     .HasColumnType("decimal(5,2)")
                     .IsRequired();
+
+                // Snapshotted with the rest of the policy so the booking always retains the exact deposit terms the
+                // customer agreed to, even if the provider later changes them.
+                policy.Property(p => p.DepositType)
+                    .HasColumnName("PolicyDepositType")
+                    .HasConversion<string>()
+                    .HasMaxLength(20)
+                    .HasDefaultValue(Domain.Enums.DepositType.Percentage)
+                    .IsRequired();
+
+                policy.Property(p => p.DepositFixedAmount)
+                    .HasColumnName("PolicyDepositFixedAmount")
+                    .HasColumnType("decimal(18,2)")
+                    .HasDefaultValue(0m)
+                    .IsRequired();
             });
 
             //// String Properties
@@ -282,6 +305,17 @@ namespace Booksy.ServiceCatalog.Infrastructure.Persistence.Configurations
             //    .HasColumnName("CreatedAt")
             //    .HasColumnType("timestamp with time zone")
             //    .IsRequired();
+
+            // Service line items (multi-service visits): a jsonb document on
+            // the booking row. Lines are only ever read through the aggregate
+            // (display + pricing), never queried relationally, so a document
+            // beats a join table here.
+            builder.OwnsMany(b => b.Services, item =>
+            {
+                item.ToJson("Services");
+            });
+            builder.Navigation(b => b.Services)
+                .UsePropertyAccessMode(PropertyAccessMode.Field);
 
             //builder.Property(b => b.CreatedBy)
             //    .HasColumnName("CreatedBy")

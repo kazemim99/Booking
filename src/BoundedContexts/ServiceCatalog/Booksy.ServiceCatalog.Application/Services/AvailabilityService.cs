@@ -1,6 +1,7 @@
 // ========================================
 // Booksy.ServiceCatalog.Application/Services/AvailabilityService.cs
 // ========================================
+using Booksy.ServiceCatalog.Application.Abstractions.Identity;
 using Booksy.ServiceCatalog.Domain.Aggregates;
 using Booksy.ServiceCatalog.Domain.DomainServices;
 using Booksy.ServiceCatalog.Domain.Entities;
@@ -18,6 +19,8 @@ namespace Booksy.ServiceCatalog.Application.Services
     {
         private readonly IBookingReadRepository _bookingRepository;
         private readonly IProviderReadRepository _providerRepository;
+        private readonly IOrganizationMembershipRepository _membershipRepository;
+        private readonly IPersonDirectory _personDirectory;
         private readonly ILogger<AvailabilityService> _logger;
 
         // Configuration constants
@@ -27,10 +30,14 @@ namespace Booksy.ServiceCatalog.Application.Services
         public AvailabilityService(
             IBookingReadRepository bookingRepository,
             IProviderReadRepository providerRepository,
+            IOrganizationMembershipRepository membershipRepository,
+            IPersonDirectory personDirectory,
             ILogger<AvailabilityService> logger)
         {
             _bookingRepository = bookingRepository;
             _providerRepository = providerRepository;
+            _membershipRepository = membershipRepository;
+            _personDirectory = personDirectory;
             _logger = logger;
         }
 
@@ -38,9 +45,13 @@ namespace Booksy.ServiceCatalog.Application.Services
             Provider provider,
             Service service,
             DateTime date,
-            Provider? individualProvider = null,
+            Guid? staffId = null,
+            Duration? durationOverride = null,
             CancellationToken cancellationToken = default)
         {
+            // Multi-service visits occupy their combined duration.
+            var effectiveDuration = durationOverride ?? service.Duration;
+
             _logger.LogInformation(
                 "Getting available time slots for Provider {ProviderId}, Service {ServiceId} on {Date}",
                 provider.Id, service.Id, date);
@@ -104,25 +115,26 @@ namespace Booksy.ServiceCatalog.Application.Services
                 closeTime = businessHours.CloseTime!.Value;
             }
 
-            // Get qualified individual providers (staff) - NOW USING HIERARCHY
-            var qualifiedIndividuals = await GetQualifiedIndividualProvidersAsync(provider, service, individualProvider, cancellationToken);
-            if (!qualifiedIndividuals.Any())
+            // Resolve the bookable resources: the organization's members, or the
+            // business itself when it is a solo operation.
+            var resources = await ResolveBookableResourcesAsync(provider, service, staffId, cancellationToken);
+            if (resources.Count == 0)
             {
-                _logger.LogWarning("No qualified individual providers found for service {ServiceId}", service.Id);
+                _logger.LogWarning("No bookable resource found for service {ServiceId}", service.Id);
                 return Array.Empty<AvailableTimeSlot>();
             }
 
             // Generate time slots
             var availableSlots = new List<AvailableTimeSlot>();
 
-            foreach (var individual in qualifiedIndividuals)
+            foreach (var resource in resources)
             {
-                var staffSlots = await GenerateTimeSlotsForIndividualAsync(
+                var staffSlots = await GenerateTimeSlotsForResourceAsync(
                     date,
                     openTime,
                     closeTime,
-                    service.Duration,
-                    individual,
+                    effectiveDuration,
+                    resource,
                     cancellationToken);
 
                 availableSlots.AddRange(staffSlots);
@@ -194,7 +206,13 @@ namespace Booksy.ServiceCatalog.Application.Services
                 "Getting available individual providers for Service {ServiceId} at {StartTime}",
                 service.Id, startTime);
 
-            var qualifiedIndividuals = await GetQualifiedIndividualProvidersAsync(provider, service, null, cancellationToken);
+            // Legacy provider-typed API (still consumed by older queries): only the
+            // sub-provider staff are Provider records. Member-based availability is
+            // served by GetAvailableTimeSlotsAsync, which is resource-based.
+            var qualifiedIndividuals = (await _providerRepository
+                    .GetStaffByOrganizationIdAsync(provider.Id, cancellationToken))
+                .Where(s => s.Status == ProviderStatus.Active)
+                .ToList();
             var availableIndividuals = new List<Provider>();
 
             foreach (var individual in qualifiedIndividuals)
@@ -239,39 +257,39 @@ namespace Booksy.ServiceCatalog.Application.Services
             // Check if provider is active
             if (provider.Status != ProviderStatus.Active)
             {
-                errors.Add("Provider is not active");
+                errors.Add("این کسب‌وکار فعال نیست.");
             }
 
             // Check if provider allows online booking
             if (!provider.AllowOnlineBooking)
             {
-                errors.Add("Provider does not allow online booking");
+                errors.Add("رزرو آنلاین برای این کسب‌وکار غیرفعال است.");
             }
 
             // Check if service is active
             if (service.Status != ServiceStatus.Active)
             {
-                errors.Add("Service is not active");
+                errors.Add("این خدمت فعال نیست؛ آن را از بخش خدمات فعال کنید.");
             }
 
             // Check minimum advance booking time
             var hoursUntilBooking = (startTime - DateTime.UtcNow).TotalHours;
             if (service.MinAdvanceBookingHours.HasValue && hoursUntilBooking < service.MinAdvanceBookingHours.Value)
             {
-                errors.Add($"Booking must be made at least {service.MinAdvanceBookingHours.Value} hours in advance");
+                errors.Add($"رزرو باید حداقل {service.MinAdvanceBookingHours.Value} ساعت زودتر انجام شود.");
             }
 
             // Check maximum advance booking time
             var daysUntilBooking = (startTime - DateTime.UtcNow).TotalDays;
             if (service.MaxAdvanceBookingDays.HasValue && daysUntilBooking > service.MaxAdvanceBookingDays.Value)
             {
-                errors.Add($"Booking cannot be made more than {service.MaxAdvanceBookingDays.Value} days in advance");
+                errors.Add($"رزرو بیش از {service.MaxAdvanceBookingDays.Value} روز آینده امکان‌پذیر نیست.");
             }
 
             // Check if booking is in the past
             if (startTime < DateTime.UtcNow)
             {
-                errors.Add("Cannot book appointments in the past");
+                errors.Add("امکان رزرو در گذشته وجود ندارد.");
             }
 
             // Check if provider is open on this day
@@ -280,20 +298,20 @@ namespace Booksy.ServiceCatalog.Application.Services
 
             if (businessHours == null || !businessHours.IsOpen)
             {
-                errors.Add($"Provider is closed on {dayOfWeek}");
+                errors.Add("در این روز هفته تعطیل هستید؛ ساعات کاری را بررسی کنید.");
             }
 
             // Check for holidays
             if (IsHoliday(provider, startTime.Date))
             {
-                errors.Add("Provider is closed on this date (holiday)");
+                errors.Add("این تاریخ به‌عنوان تعطیلی ثبت شده است.");
             }
 
             // Check exceptions
             var exception = GetExceptionSchedule(provider, startTime.Date);
             if (exception != null && exception.IsClosed)
             {
-                errors.Add("Provider is closed on this date (exception)");
+                errors.Add("برای این تاریخ استثنای تعطیلی ثبت کرده‌اید.");
             }
 
             // Validate time is within business hours
@@ -316,7 +334,7 @@ namespace Booksy.ServiceCatalog.Application.Services
 
                 if (bookingTime < openTime || endTime > closeTime)
                 {
-                    errors.Add($"Booking time must be between {openTime} and {closeTime}");
+                    errors.Add($"زمان رزرو باید بین {openTime} و {closeTime} باشد.");
                 }
             }
 
@@ -348,32 +366,32 @@ namespace Booksy.ServiceCatalog.Application.Services
             // Check if provider is active
             if (provider.Status != ProviderStatus.Active)
             {
-                errors.Add("Provider is not active");
+                errors.Add("این کسب‌وکار فعال نیست.");
             }
 
             // Check if provider allows online booking
             if (!provider.AllowOnlineBooking)
             {
-                errors.Add("Provider does not allow online booking");
+                errors.Add("رزرو آنلاین برای این کسب‌وکار غیرفعال است.");
             }
 
             // Check if service is active
             if (service.Status != ServiceStatus.Active)
             {
-                errors.Add("Service is not active");
+                errors.Add("این خدمت فعال نیست؛ آن را از بخش خدمات فعال کنید.");
             }
 
             // Check maximum advance booking time (DATE-LEVEL only, not time-level)
             var daysUntilBooking = (date.Date - DateTime.UtcNow.Date).TotalDays;
             if (service.MaxAdvanceBookingDays.HasValue && daysUntilBooking > service.MaxAdvanceBookingDays.Value)
             {
-                errors.Add($"Booking cannot be made more than {service.MaxAdvanceBookingDays.Value} days in advance");
+                errors.Add($"رزرو بیش از {service.MaxAdvanceBookingDays.Value} روز آینده امکان‌پذیر نیست.");
             }
 
             // Check if date is in the past
             if (date.Date < DateTime.UtcNow.Date)
             {
-                errors.Add("Cannot book appointments in the past");
+                errors.Add("امکان رزرو در گذشته وجود ندارد.");
             }
 
             // Check if provider is open on this day of week
@@ -382,20 +400,20 @@ namespace Booksy.ServiceCatalog.Application.Services
 
             if (businessHours == null || !businessHours.IsOpen)
             {
-                errors.Add($"Provider is closed on {dayOfWeek}");
+                errors.Add("در این روز هفته تعطیل هستید؛ ساعات کاری را بررسی کنید.");
             }
 
             // Check for holidays
             if (IsHoliday(provider, date.Date))
             {
-                errors.Add("Provider is closed on this date (holiday)");
+                errors.Add("این تاریخ به‌عنوان تعطیلی ثبت شده است.");
             }
 
             // Check exceptions
             var exception = GetExceptionSchedule(provider, date.Date);
             if (exception != null && exception.IsClosed)
             {
-                errors.Add("Provider is closed on this date (exception)");
+                errors.Add("برای این تاریخ استثنای تعطیلی ثبت کرده‌اید.");
             }
 
             return Task.FromResult(errors.Any()
@@ -410,23 +428,23 @@ namespace Booksy.ServiceCatalog.Application.Services
         /// <summary>
         /// Generate time slots for a specific individual provider (staff member)
         /// </summary>
-        private async Task<List<AvailableTimeSlot>> GenerateTimeSlotsForIndividualAsync(
+        private async Task<List<AvailableTimeSlot>> GenerateTimeSlotsForResourceAsync(
             DateTime date,
             TimeOnly openTime,
             TimeOnly closeTime,
             Duration serviceDuration,
-            Provider individualProvider,
+            BookableResource resource,
             CancellationToken cancellationToken)
         {
             var availableSlots = new List<AvailableTimeSlot>();
 
             var serviceDurationMinutes = serviceDuration.Value;
 
-            // Get existing bookings for this individual provider on this date
+            // Get existing bookings for this resource on this date
             var dayStart = date.Date;
             var dayEnd = date.Date.AddDays(1);
             var existingBookings = await _bookingRepository.GetStaffBookingsInDateRangeAsync(
-                individualProvider.Id.Value,
+                resource.Id,
                 dayStart,
                 dayEnd,
                 cancellationToken);
@@ -460,16 +478,12 @@ namespace Booksy.ServiceCatalog.Application.Services
                 // Only add slot if it's in the future and has no conflicts
                 if (!hasConflict && slotStartUtc > DateTime.Now)
                 {
-                    var staffName = $"{individualProvider.OwnerFirstName} {individualProvider.OwnerLastName}".Trim();
-                    if (string.IsNullOrEmpty(staffName))
-                        staffName = individualProvider.Profile.BusinessName;
-
                     availableSlots.Add(new AvailableTimeSlot(
                         slotStart,
                         slotEnd,
                         Duration.FromMinutes(serviceDurationMinutes),
-                        individualProvider.Id.Value,
-                        staffName));
+                        resource.Id,
+                        resource.Name));
                 }
             }
 
@@ -502,41 +516,104 @@ namespace Booksy.ServiceCatalog.Application.Services
         }
 
         /// <summary>
-        /// Get qualified individual providers (staff) for a service using hierarchy model
+        /// A bookable resource: the thing a customer's booking is assigned to.
+        /// Either a MEMBER of the organization (id = MembershipId) or, for a solo
+        /// business with no members, the ORGANIZATION itself (id = ProviderId).
+        /// Deliberately not a provider record — members are people, not businesses.
         /// </summary>
-        private async Task<List<Provider>> GetQualifiedIndividualProvidersAsync(
+        private sealed record BookableResource(Guid Id, string Name);
+
+        /// <summary>
+        /// Resolves who can perform this service. Members of the organization are the
+        /// primary source; a solo business falls back to being bookable as itself.
+        /// Legacy individual sub-providers are still honoured until they are migrated.
+        /// </summary>
+        private async Task<List<BookableResource>> ResolveBookableResourcesAsync(
             Provider provider,
             Service service,
-            Provider? specificIndividual,
+            Guid? staffId,
             CancellationToken cancellationToken)
         {
-            if (specificIndividual != null)
-            {
-                // Check if the specific individual is qualified and active
-                if (service.IsStaffQualified(specificIndividual.Id.Value) &&
-                    specificIndividual.Status == ProviderStatus.Active)
-                {
-                    return new List<Provider> { specificIndividual };
-                }
-                return new List<Provider>();
-            }
+            var resources = new List<BookableResource>();
 
-            // Get all staff members (individual providers) for this organization
-            var staffMembers = await _providerRepository.GetStaffByOrganizationIdAsync(
-                provider.Id,
-                cancellationToken);
-
-            // Filter for active and qualified staff
-            var qualifiedStaff = staffMembers
-                .Where(s => s.Status == ProviderStatus.Active)
+            // 1. Members of the organization who provide services.
+            var members = await _membershipRepository.GetByOrganizationAsync(provider.Id, cancellationToken);
+            var serviceProviders = members
+                .Where(m => m.Status == MembershipStatus.Active && m.ProvidesServices)
                 .ToList();
 
-            _logger.LogInformation(
-                "Found {TotalStaff} staff members, {QualifiedCount} are qualified for service {ServiceId}",
-                staffMembers.Count, qualifiedStaff.Count, service.Id);
+            if (serviceProviders.Count > 0)
+            {
+                var personIds = serviceProviders
+                    .Where(m => m.PersonId is not null)
+                    .Select(m => m.PersonId!.Value)
+                    .Distinct()
+                    .ToList();
 
-            return qualifiedStaff;
+                var people = personIds.Count > 0
+                    ? await _personDirectory.FindByIdsAsync(personIds, cancellationToken)
+                    : new Dictionary<Guid, PersonInfo>();
+
+                foreach (var member in serviceProviders)
+                {
+                    // Prefer the person's real name; fall back to the salon-provided
+                    // display name for an unclaimed member; then the business name.
+                    var name = member.StaffProfile?.DisplayName ?? provider.Profile.BusinessName;
+                    if (member.PersonId is not null && people.TryGetValue(member.PersonId.Value, out var person))
+                    {
+                        var full = $"{person.FirstName} {person.LastName}".Trim();
+                        if (!string.IsNullOrEmpty(full))
+                            name = full;
+                    }
+
+                    resources.Add(new BookableResource(member.Id, name));
+                }
+            }
+
+            // 2. Legacy individual sub-providers (pre-membership staff), until migrated.
+            var legacyStaff = await _providerRepository.GetStaffByOrganizationIdAsync(provider.Id, cancellationToken);
+            foreach (var staff in legacyStaff.Where(s => s.Status == ProviderStatus.Active))
+            {
+                if (resources.Any(r => r.Id == staff.Id.Value))
+                    continue;
+
+                var name = $"{staff.OwnerFirstName} {staff.OwnerLastName}".Trim();
+                if (string.IsNullOrEmpty(name))
+                    name = staff.Profile.BusinessName;
+
+                resources.Add(new BookableResource(staff.Id.Value, name));
+            }
+
+            // 3. Solo business: bookable as itself when nobody else can serve.
+            if (resources.Count == 0 &&
+                provider.HierarchyType == ProviderHierarchyType.Organization &&
+                provider.CanAcceptDirectBookings())
+            {
+                _logger.LogInformation(
+                    "No members for organization {ProviderId}; offering direct booking with the business",
+                    provider.Id);
+                resources.Add(new BookableResource(provider.Id.Value, provider.Profile.BusinessName));
+            }
+
+            // Restrict to a specific resource when the customer chose one.
+            if (staffId.HasValue)
+            {
+                resources = resources.Where(r => r.Id == staffId.Value).ToList();
+                if (resources.Count == 0)
+                {
+                    _logger.LogWarning(
+                        "Requested resource {StaffId} is not bookable for organization {ProviderId}",
+                        staffId.Value, provider.Id);
+                }
+            }
+
+            _logger.LogInformation(
+                "Resolved {Count} bookable resource(s) for service {ServiceId}",
+                resources.Count, service.Id);
+
+            return resources;
         }
+
 
         private bool IsHoliday(Provider provider, DateTime date)
         {

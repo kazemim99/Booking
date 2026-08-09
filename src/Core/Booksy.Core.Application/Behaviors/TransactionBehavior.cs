@@ -43,6 +43,15 @@ namespace Booksy.Core.Application.Behaviors
                 return await next();
             }
 
+            // Money-moving commands opt out of the ambient (retrying) transaction so their external gateway call
+            // is never re-executed by a transient-fault retry (which would double-charge / double-refund). These
+            // handlers persist their own work via a single retry-safe CommitAsync. See INonTransactionalCommand.
+            if (request is Abstractions.CQRS.INonTransactionalCommand)
+            {
+                _logger.LogDebug("Skipping ambient transaction for non-transactional command: {RequestName}", requestName);
+                return await next();
+            }
+
             // If transaction is already active, don't create a new one
             if (_unitOfWork.HasActiveTransaction)
             {

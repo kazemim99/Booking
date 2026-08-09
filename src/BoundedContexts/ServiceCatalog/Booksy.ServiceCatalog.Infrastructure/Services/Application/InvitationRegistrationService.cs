@@ -123,16 +123,18 @@ public class InvitationRegistrationService : IInvitationRegistrationService
         }
         catch (HttpRequestException ex)
         {
-            _logger.LogError(ex, "HTTP error creating user for phone {PhoneNumber}", phoneNumber);
-            // Fallback: Generate temporary user ID if UserManagement service is unavailable
-            _logger.LogWarning("UserManagement service unavailable, using temporary user ID");
-            return UserId.CreateNew();
+            // Do NOT fabricate a UserId here: returning UserId.CreateNew() would let the
+            // caller build a membership around a person that has no users row (an orphan
+            // that can never authenticate, and the caller's compensation never runs since
+            // no exception propagated). Fail hard so the transaction rolls back instead.
+            _logger.LogError(ex, "Failed to reach UserManagement to create user for phone {PhoneNumber}", phoneNumber);
+            throw new InvalidOperationException(
+                "Could not create the user account (UserManagement unavailable).", ex);
         }
         catch (Exception ex) when (ex is not DomainValidationException)
         {
             _logger.LogError(ex, "Error creating user for phone {PhoneNumber}", phoneNumber);
-            // Fallback: Generate temporary user ID
-            return UserId.CreateNew();
+            throw;
         }
     }
 

@@ -45,38 +45,37 @@ namespace Booksy.ServiceCatalog.Application.Queries.Booking.GetAvailableSlots
             if (provider == null)
                 throw new NotFoundException($"Provider with ID {request.ProviderId} not found");
 
-            // Load service
-            var service = await _serviceRepository.GetByIdAsync(
-                ServiceId.From(request.ServiceId),
-                cancellationToken);
+            // Load every service in the visit (ServiceIds supersedes the
+            // single ServiceId); slots must span their combined duration.
+            var requestedServiceIds =
+                (request.ServiceIds is { Count: > 0 }
+                    ? request.ServiceIds
+                    : new[] { request.ServiceId })
+                .Distinct()
+                .ToList();
 
-            if (service == null)
-                throw new NotFoundException($"Service with ID {request.ServiceId} not found");
-
-            // Get specific individual provider (staff) if requested - USING HIERARCHY
-            ProviderAggregate? individualProvider = null;
-            if (request.StaffId.HasValue)
+            var services = new List<Domain.Aggregates.Service>();
+            foreach (var id in requestedServiceIds)
             {
-                var staffProviderId = ProviderId.From(request.StaffId.Value);
-
-                // Load the individual provider
-                individualProvider = await _providerRepository.GetByIdAsync(
-                    staffProviderId,
+                var loaded = await _serviceRepository.GetByIdAsync(
+                    ServiceId.From(id),
                     cancellationToken);
 
-                if (individualProvider == null)
-                    throw new NotFoundException($"Individual provider with ID {request.StaffId.Value} not found");
+                if (loaded == null)
+                    throw new NotFoundException($"Service with ID {id} not found");
 
-                // Verify they belong to this organization
-                if (individualProvider.ParentProviderId != provider.Id)
-                    throw new NotFoundException(
-                        $"Individual provider {request.StaffId.Value} does not belong to organization {request.ProviderId}");
-
-                // Verify they are actually an individual (not an organization)
-                if (individualProvider.HierarchyType != ProviderHierarchyType.Individual)
-                    throw new NotFoundException(
-                        $"Provider {request.StaffId.Value} is not an individual provider");
+                services.Add(loaded);
             }
+
+            var service = services[0];
+            var totalDuration = Duration.FromMinutes(
+                services.Sum(x => x.Duration.Value));
+
+            // The requested staff id is a BOOKABLE RESOURCE id — a MembershipId, or the
+            // organization's own id for a solo direct booking. The availability engine
+            // validates it against the organization's resources, so no provider lookup
+            // (and no sub-provider assumption) is needed here.
+            var requestedResourceId = request.StaffId;
 
             // Validate date-level constraints (not time-level since we're just selecting a date)
             var validationResult = await _availabilityService.ValidateDateConstraintsAsync(
@@ -90,8 +89,9 @@ namespace Booksy.ServiceCatalog.Application.Queries.Booking.GetAvailableSlots
                 provider,
                 service,
                 request.Date,
-                individualProvider,
-                cancellationToken);
+                requestedResourceId,
+                durationOverride: totalDuration,
+                cancellationToken: cancellationToken);
 
             // Map to DTOs
             var slotDtos = availableSlots

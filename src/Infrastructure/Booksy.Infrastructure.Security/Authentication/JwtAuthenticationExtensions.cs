@@ -64,15 +64,13 @@ public static class JwtAuthenticationExtensions
                 },
                 OnMessageReceived = context =>
                 {
-                    // Allow token from query string for SignalR
-                    var accessToken = context.Request.Headers["access_token"];
-                    var path = context.HttpContext.Request.Path;
-
-                    if (!string.IsNullOrEmpty(accessToken) &&
-                        (path.StartsWithSegments("/hubs")))
-                    {
-                        context.Token = accessToken;
-                    }
+                    // SignalR supplies the JWT via the `access_token` query string on /hubs connections (browsers
+                    // cannot set headers on a WebSocket handshake). Read it from the query (header fallback) for hub
+                    // paths only. See SignalRAccessTokenExtractor.
+                    var token = SignalRAccessTokenExtractor.Extract(
+                        context.Request.Query, context.Request.Headers, context.HttpContext.Request.Path);
+                    if (!string.IsNullOrEmpty(token))
+                        context.Token = token;
 
                     return Task.CompletedTask;
                 }

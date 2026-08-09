@@ -114,7 +114,14 @@ public abstract class EfRepositoryBase<TEntity, TId, TContext> : IReadRepository
 
     public async Task UpdateAsync(TEntity entity, CancellationToken cancellationToken)
     {
-        DbSet.Update(entity);
+        // If the entity is already tracked (the normal load-then-mutate flow), EF change tracking has already
+        // captured the modifications — including newly-added owned children as Added. Calling DbSet.Update here
+        // would re-stamp the entire graph as Modified, turning new children into phantom UPDATEs that affect
+        // 0 rows and throw DbUpdateConcurrencyException. Only attach-and-mark when the entity is genuinely detached.
+        if (Context.Entry(entity).State == EntityState.Detached)
+            DbSet.Update(entity);
+
+        await Task.CompletedTask;
     }
 
     /// <summary>

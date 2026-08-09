@@ -96,9 +96,17 @@ namespace Booksy.ServiceCatalog.Infrastructure.DependencyInjection
             services.AddScoped<IServiceWriteRepository, ServiceWriteRepository>();
             services.AddScoped<IBookingReadRepository, BookingReadRepository>();
             services.AddScoped<IBookingWriteRepository, BookingWriteRepository>();
+
+            // C2 payment reconciliation (invariants I1/I3): converge stuck Pending payments.
+            services.AddScoped<Payments.IPaymentReconciler, Payments.PaymentReconciler>();
+            services.AddHostedService<Payments.PaymentReconciliationBackgroundService>();
+            services.AddHostedService<Payments.LedgerMaintenanceBackgroundService>();
             services.AddScoped<
                 Application.Queries.Provider.GetProviderClients.IProviderClientsReadService,
                 ProviderClientsReadService>();
+            services.AddScoped<
+                Application.Abstractions.Identity.IPersonDirectory,
+                PersonDirectoryReadService>();
             services.AddScoped<IProviderAvailabilityReadRepository, ProviderAvailabilityReadRepository>();
             services.AddScoped<IProviderAvailabilityWriteRepository, ProviderAvailabilityWriteRepository>();
             services.AddScoped<IReviewReadRepository, ReviewReadRepository>();
@@ -109,6 +117,14 @@ namespace Booksy.ServiceCatalog.Infrastructure.DependencyInjection
             services.AddScoped<IPaymentWriteRepository, PaymentWriteRepository>();
             services.AddScoped<IPayoutReadRepository, PayoutReadRepository>();
             services.AddScoped<IPayoutWriteRepository, PayoutWriteRepository>();
+
+            // C5 financial-ledger: append-only double-entry ledger + reconciliation
+            services.AddScoped<Domain.Repositories.ILedgerRepository, Persistence.Repositories.LedgerRepository>();
+            services.AddScoped<Payments.ILedgerReconciler, Payments.LedgerReconciler>();
+
+            // C2 §2 atomic idempotency reservation (money commands are processed at-most-once per key)
+            services.AddScoped<Booksy.Core.Application.Abstractions.Idempotency.IIdempotencyStore,
+                Persistence.Idempotency.IdempotencyStore>();
 
             // Notification Repositories
             services.AddScoped<INotificationReadRepository, NotificationReadRepository>();
@@ -121,6 +137,11 @@ namespace Booksy.ServiceCatalog.Infrastructure.DependencyInjection
             services.AddScoped<IProviderInvitationWriteRepository, ProviderInvitationWriteRepository>();
             services.AddScoped<IProviderJoinRequestReadRepository, ProviderJoinRequestReadRepository>();
             services.AddScoped<IProviderJoinRequestWriteRepository, ProviderJoinRequestWriteRepository>();
+
+            // Organization Membership (Person ↔ Organization link; supersedes ParentProviderId staff)
+            services.AddScoped<IOrganizationMembershipRepository, OrganizationMembershipRepository>();
+            // Append-only audit trail for membership lifecycle events.
+            services.AddScoped<IMembershipAuditRepository, MembershipAuditRepository>();
 
             // Notification Services
             services.AddNotificationServices();
@@ -144,6 +165,9 @@ namespace Booksy.ServiceCatalog.Infrastructure.DependencyInjection
             services.AddScoped<IImageOptimizationService, ImageSharpOptimizationService>();
             services.AddScoped<Application.Services.IImageStorageService, Infrastructure.Services.ImageStorageService>();
             services.AddScoped<Domain.DomainServices.IAvailabilityService, Application.Services.AvailabilityService>();
+            // Members are bookable resources keyed by MembershipId (no shadow staff provider).
+            services.AddScoped<Application.Services.Interfaces.IMemberBookabilityService,
+                Application.Services.MemberBookabilityService>();
 
             // Application Services
             services.AddScoped<IProviderApplicationService, ProviderApplicationService>();

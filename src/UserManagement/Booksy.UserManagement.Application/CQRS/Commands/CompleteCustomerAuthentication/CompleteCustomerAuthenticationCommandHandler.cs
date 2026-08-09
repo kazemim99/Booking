@@ -21,6 +21,7 @@ public sealed class CompleteCustomerAuthenticationCommandHandler
     private readonly ISender _mediator;
     private readonly IPhoneVerificationRepository _verificationRepo;
     private readonly IUserRepository _userRepository;
+    private readonly IPersonProvisioningService _personProvisioningService;
     private readonly ICustomerRepository _customerRepository;
     private readonly IJwtTokenService _jwtTokenService;
     private readonly Abstractions.Persistence.IUserManagementUnitOfWork _unitOfWork;
@@ -30,6 +31,7 @@ public sealed class CompleteCustomerAuthenticationCommandHandler
         ISender mediator,
         IPhoneVerificationRepository verificationRepo,
         IUserRepository userRepository,
+        IPersonProvisioningService personProvisioningService,
         ICustomerRepository customerRepository,
         IJwtTokenService jwtTokenService,
         Abstractions.Persistence.IUserManagementUnitOfWork unitOfWork,
@@ -38,6 +40,7 @@ public sealed class CompleteCustomerAuthenticationCommandHandler
         _mediator = mediator;
         _verificationRepo = verificationRepo;
         _userRepository = userRepository;
+        _personProvisioningService = personProvisioningService;
         _customerRepository = customerRepository;
         _jwtTokenService = jwtTokenService;
         _unitOfWork = unitOfWork;
@@ -75,34 +78,40 @@ public sealed class CompleteCustomerAuthenticationCommandHandler
 
         _logger.LogInformation("Phone verification successful for: {Phone}", MaskPhoneNumber(request.PhoneNumber));
 
-        // Step 2: Look up or create User
-        var user = await _userRepository.GetByPhoneNumberAsync(phoneNumber.Value, cancellationToken);
-        bool isNewUser = false;
-        bool isNewCustomer = false;
+        // Step 2: Resolve the Person for this phone through the single guarded path.
+        // ONE PERSON PER PHONE: an existing account is reused and granted the Customer
+        // capacity (a provider booking as a customer becomes Type=Both) instead of
+        // being rejected — which previously created a second account for one human.
+        var provisioning = await _personProvisioningService.GetOrCreateByPhoneAsync(
+            phoneNumber,
+            UserType.Customer,
+            request.FirstName,
+            request.LastName,
+            request.Email,
+            cancellationToken);
 
-        if (user == null)
+        var user = provisioning.Person;
+        var isNewUser = provisioning.IsNewPerson;
+        // A Customer aggregate is needed whenever this person is newly able to act
+        // as a customer — a brand-new account or an existing provider gaining it.
+        var isNewCustomer = provisioning.IsNewPerson || provisioning.CapacityGranted;
+
+        _logger.LogInformation(
+            "Resolved customer person {UserId} (new: {IsNew}, capacity granted: {Granted})",
+            user.Id.Value, isNewUser, provisioning.CapacityGranted);
+
+        // Blocked/inactive accounts must not obtain tokens via OTP. The password
+        // path enforces this in User.Authenticate(), but the OTP flow issues tokens
+        // directly and would otherwise bypass it. Deleted users never reach here —
+        // the DbContext query filter excludes them.
+        if (user.Status is UserStatus.Banned or UserStatus.Suspended or UserStatus.Inactive)
         {
-            // Create new user for customer
-            user = await CreateNewCustomerUser(request, phoneNumber, cancellationToken);
-            isNewUser = true;
-            isNewCustomer = true;
+            _logger.LogWarning(
+                "Rejected OTP sign-in for {Status} customer account. UserId: {UserId}",
+                user.Status, user.Id.Value);
 
-            _logger.LogInformation(
-                "Created new customer user. UserId: {UserId}",
-                user.Id.Value);
-        }
-        else
-        {
-            // Validate user type
-            if (user.Type != UserType.Customer)
-            {
-                throw new InvalidOperationException(
-                    $"This phone number is registered as {user.Type}. Please use the appropriate login endpoint.");
-            }
-
-            _logger.LogInformation(
-                "Existing customer user found. UserId: {UserId}",
-                user.Id.Value);
+            throw new InvalidOperationException(
+                $"This account is {user.Status} and cannot sign in. Please contact support.");
         }
 
         // Step 3: Ensure Customer aggregate exists
@@ -176,50 +185,6 @@ public sealed class CompleteCustomerAuthenticationCommandHandler
         };
     }
 
-    /// <summary>
-    /// Creates a new User for a customer registration
-    /// </summary>
-    private async Task<User> CreateNewCustomerUser(
-        CompleteCustomerAuthenticationCommand request,
-        PhoneNumber phoneNumber,
-        CancellationToken cancellationToken)
-    {
-        // Use provided names or defaults
-        var firstName = request.FirstName ?? "مهمان"; // "Customer" in Persian
-        var lastName = request.LastName ?? phoneNumber.NationalNumber;
-
-        // Create user profile
-        var profile = UserProfile.Create(
-            firstName,
-            lastName,
-            middleName: null,
-            dateOfBirth: null,
-            gender: null);
-
-        // Create email (use provided or temp)
-        Email email;
-        if (!string.IsNullOrWhiteSpace(request.Email))
-        {
-            email = Email.Create(request.Email);
-        }
-        else
-        {
-            // Temporary email: phone@booksy.customer
-            email = Email.Create($"{phoneNumber.NationalNumber}@booksy.customer");
-        }
-
-        profile.UpdateContactInfo(phoneNumber, null, null);
-
-        // Register user with phone (passwordless)
-        var user = User.RegisterWithPhone(
-            email,
-            phoneNumber,
-            profile,
-            UserType.Customer);
-
-
-        return user;
-    }
 
     /// <summary>
     /// Masks phone number for logging (shows only last 4 digits)

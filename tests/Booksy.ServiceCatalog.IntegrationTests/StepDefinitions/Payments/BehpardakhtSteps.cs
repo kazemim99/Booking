@@ -744,13 +744,6 @@ public class BehpardakhtSteps: ServiceCatalogIntegrationTestBase
 
     #region Common Steps
 
-    [Then(@"the response status code should be (.*)")]
-    public void ThenTheResponseStatusCodeShouldBe(int expectedStatusCode)
-    {
-        var statusCode = _scenarioContext.Get<HttpStatusCode>("LastStatusCode");
-        ((int)statusCode).Should().Be(expectedStatusCode);
-    }
-
     [Then(@"the response should contain:")]
     public void ThenTheResponseShouldContain(Table table)
     {

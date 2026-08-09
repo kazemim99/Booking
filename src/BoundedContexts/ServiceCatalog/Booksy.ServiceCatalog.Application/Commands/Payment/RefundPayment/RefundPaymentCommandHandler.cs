@@ -4,6 +4,7 @@
 using Booksy.Core.Application.Abstractions;
 using Booksy.Core.Domain.ValueObjects;
 using Booksy.Infrastructure.External.Payment;
+using Booksy.ServiceCatalog.Application.Abstractions.Persistence;
 using Booksy.ServiceCatalog.Domain.Repositories;
 using Booksy.ServiceCatalog.Domain.ValueObjects;
 using Microsoft.Extensions.Logging;
@@ -14,15 +15,18 @@ namespace Booksy.ServiceCatalog.Application.Commands.Payment.RefundPayment
     {
         private readonly IPaymentWriteRepository _paymentRepository;
         private readonly IPaymentGateway _paymentGateway;
+        private readonly IServiceCatalogUnitOfWork _unitOfWork;
         private readonly ILogger<RefundPaymentCommandHandler> _logger;
 
         public RefundPaymentCommandHandler(
             IPaymentWriteRepository paymentRepository,
             IPaymentGateway paymentGateway,
+            IServiceCatalogUnitOfWork unitOfWork,
             ILogger<RefundPaymentCommandHandler> logger)
         {
             _paymentRepository = paymentRepository ?? throw new ArgumentNullException(nameof(paymentRepository));
             _paymentGateway = paymentGateway ?? throw new ArgumentNullException(nameof(paymentGateway));
+            _unitOfWork = unitOfWork ?? throw new ArgumentNullException(nameof(unitOfWork));
             _logger = logger ?? throw new ArgumentNullException(nameof(logger));
         }
 
@@ -74,8 +78,11 @@ namespace Booksy.ServiceCatalog.Application.Commands.Payment.RefundPayment
             var refundAmount = Money.Create(request.RefundAmount, payment.Amount.Currency);
             payment.Refund(refundAmount, refundResult.RefundId, request.Reason, request.Notes);
 
-            // Save changes
+            // Persist the refund. This command is INonTransactionalCommand: the gateway refund above ran outside
+            // any retried transaction, and this single CommitAsync is a retry-safe unit — so a transient DB fault
+            // can never re-invoke the gateway and double-refund.
             await _paymentRepository.UpdateAsync(payment, cancellationToken);
+            await _unitOfWork.CommitAsync(cancellationToken);
 
             _logger.LogInformation("Payment {PaymentId} refunded successfully, refund ID {RefundId}",
                 payment.Id.Value, refundResult.RefundId);

@@ -24,7 +24,7 @@ public class ScenarioContextHelper
             return value;
 
         // Pattern: [EntityType:Identifier:Property]
-        var regex = new Regex(@"\[(\w+):(\w+):(\w+)\]");
+        var regex = new Regex(@"\[(\w+):([\w\s]+):(\w+)\]");
 
         return regex.Replace(value, match =>
         {

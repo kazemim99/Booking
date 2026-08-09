@@ -37,16 +37,14 @@ public sealed class SendVerificationCodeCommandHandler
         SendVerificationCodeCommand request,
         CancellationToken cancellationToken)
     {
-        // Normalize phone number with country code
-        var phoneNumberString = request.PhoneNumber.StartsWith("+")
-            ? request.PhoneNumber
-            : $"{request.CountryCode}{request.PhoneNumber}";
-
-        // Validate phone number format
+        // PhoneNumber.From canonicalizes every accepted input format (local
+        // "09…", "+98…", "0098…", bare national) to one E.164 value, so the
+        // country code must NOT be concatenated here — doing so produced the
+        // invalid "+9809121234567" that no later lookup could match.
         PhoneNumber phoneNumber;
         try
         {
-            phoneNumber = PhoneNumber.From(phoneNumberString);
+            phoneNumber = PhoneNumber.From(request.PhoneNumber);
         }
         catch (ArgumentException ex)
         {

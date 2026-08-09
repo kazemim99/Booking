@@ -5,6 +5,7 @@ using Booksy.Core.Application.Abstractions;
 using Booksy.Core.Domain.Enums;
 using Booksy.Core.Domain.ValueObjects;
 using Booksy.Infrastructure.External.Payment;
+using Booksy.ServiceCatalog.Application.Abstractions.Persistence;
 using Booksy.ServiceCatalog.Domain.Aggregates.PaymentAggregate;
 using Booksy.ServiceCatalog.Domain.Repositories;
 using Booksy.ServiceCatalog.Domain.ValueObjects;
@@ -16,15 +17,18 @@ namespace Booksy.ServiceCatalog.Application.Commands.Payment.ProcessPayment
     {
         private readonly IPaymentWriteRepository _paymentRepository;
         private readonly IPaymentGateway _paymentGateway;
+        private readonly IServiceCatalogUnitOfWork _unitOfWork;
         private readonly ILogger<ProcessPaymentCommandHandler> _logger;
 
         public ProcessPaymentCommandHandler(
             IPaymentWriteRepository paymentRepository,
             IPaymentGateway paymentGateway,
+            IServiceCatalogUnitOfWork unitOfWork,
             ILogger<ProcessPaymentCommandHandler> logger)
         {
             _paymentRepository = paymentRepository ?? throw new ArgumentNullException(nameof(paymentRepository));
             _paymentGateway = paymentGateway ?? throw new ArgumentNullException(nameof(paymentGateway));
+            _unitOfWork = unitOfWork ?? throw new ArgumentNullException(nameof(unitOfWork));
             _logger = logger ?? throw new ArgumentNullException(nameof(logger));
         }
 
@@ -82,8 +86,11 @@ namespace Booksy.ServiceCatalog.Application.Commands.Payment.ProcessPayment
                 _logger.LogWarning("Payment processing failed: {Error}", result.ErrorMessage);
             }
 
-            // Save payment
+            // Persist. This command is INonTransactionalCommand (money-moving): the gateway charge above ran
+            // outside any retried transaction, and this single CommitAsync is a retry-safe unit — a transient DB
+            // fault can never re-invoke the gateway and double-charge.
             await _paymentRepository.AddAsync(payment, cancellationToken);
+            await _unitOfWork.CommitAsync(cancellationToken);
 
             _logger.LogInformation("Payment {PaymentId} saved with status {Status}",
                 payment.Id.Value, payment.Status);

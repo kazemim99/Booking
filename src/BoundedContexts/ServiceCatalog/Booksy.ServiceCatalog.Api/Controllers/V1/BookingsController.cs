@@ -74,10 +74,15 @@ public class BookingsController : ControllerBase
         var command = new CreateBookingCommand(
             CustomerId: Guid.Parse(customerId),
             ProviderId: request.ProviderId,
-            ServiceId: request.ServiceId,
+            ServiceId: request.ServiceIds is { Count: > 0 }
+                ? request.ServiceIds[0]
+                : request.ServiceId,
             StaffProviderId: request.StaffProviderId,
             StartTime: request.StartTime,
-            CustomerNotes: request.CustomerNotes);
+            CustomerNotes: request.CustomerNotes,
+            ServiceIds: request.ServiceIds is { Count: > 0 }
+                ? request.ServiceIds
+                : null);
 
         var result = await _mediator.Send(command, cancellationToken);
 
@@ -309,7 +314,8 @@ public class BookingsController : ControllerBase
     {
         var command = new CancelBookingCommand(
             BookingId: id,
-            Reason: request.Reason);
+            Reason: request.Reason,
+            ActingUserId: Guid.Parse(GetCurrentUserId()!));
 
         var result = await _mediator.Send(command, cancellationToken);
 
@@ -348,7 +354,8 @@ public class BookingsController : ControllerBase
             BookingId: id,
             NewStartTime: request.NewStartTime,
             NewStaffId: request.NewStaffId,
-            Reason: request.Reason);
+            Reason: request.Reason,
+            ActingUserId: Guid.Parse(GetCurrentUserId()!));
 
         var result = await _mediator.Send(command, cancellationToken);
 
@@ -580,13 +587,15 @@ public class BookingsController : ControllerBase
         [FromQuery] Guid serviceId,
         [FromQuery] DateTime date,
         [FromQuery] Guid? staffId = null,
+        [FromQuery] List<Guid>? serviceIds = null,
         CancellationToken cancellationToken = default)
     {
         var query = new GetAvailableSlotsQuery(
             ProviderId: providerId,
             ServiceId: serviceId,
             Date: date,
-            StaffId: staffId);
+            StaffId: staffId,
+            ServiceIds: serviceIds is { Count: > 0 } ? serviceIds : null);
 
         var result = await _mediator.Send(query, cancellationToken);
 
@@ -721,8 +730,21 @@ public class BookingsController : ControllerBase
             TotalPrice = booking.PaymentInfo.TotalAmount.Amount,
             Currency = booking.PaymentInfo.TotalAmount.Currency,
             PaymentStatus = booking.PaymentInfo.Status.ToString(),
-            CreatedAt = booking.CreatedAt
+            CreatedAt = booking.CreatedAt,
+            ServiceNames = MapServiceNames(booking)
         };
+    }
+
+    private static List<string> MapServiceNames(dynamic booking)
+    {
+        var names = new List<string>();
+        foreach (var item in booking.Services)
+        {
+            string name = item.Name;
+            if (!string.IsNullOrWhiteSpace(name))
+                names.Add(name);
+        }
+        return names;
     }
 
     // TODO: Fix this mapping - BookingDetailsViewModel structure doesn't match expected properties

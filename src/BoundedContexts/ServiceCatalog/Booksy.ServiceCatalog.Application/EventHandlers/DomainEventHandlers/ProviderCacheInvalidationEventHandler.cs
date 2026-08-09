@@ -28,7 +28,8 @@ namespace Booksy.ServiceCatalog.Application.EventHandlers.DomainEventHandlers
         IDomainEventHandler<ExceptionAddedEvent>,
         IDomainEventHandler<ExceptionRemovedEvent>,
         IDomainEventHandler<HolidayAddedEvent>,
-        IDomainEventHandler<HolidayRemovedEvent>
+        IDomainEventHandler<HolidayRemovedEvent>,
+        IDomainEventHandler<ProviderBookingPolicyChangedEvent>
     {
         private readonly ICacheService _cacheService;
         private readonly ILogger<ProviderCacheInvalidationEventHandler> _logger;
@@ -44,6 +45,16 @@ namespace Booksy.ServiceCatalog.Application.EventHandlers.DomainEventHandlers
         public async Task HandleAsync(BusinessProfileUpdatedEvent domainEvent, CancellationToken cancellationToken)
         {
             await InvalidateProviderCacheAsync(domainEvent.ProviderId, "BusinessProfileUpdated", cancellationToken);
+        }
+
+        /// <summary>
+        /// A deposit-policy change must invalidate the provider cache immediately: booking creation reads the
+        /// provider through this cache to resolve the effective policy, so a stale entry would keep charging (or not
+        /// charging) customers under the previous terms until the entry expired.
+        /// </summary>
+        public async Task HandleAsync(ProviderBookingPolicyChangedEvent domainEvent, CancellationToken cancellationToken)
+        {
+            await InvalidateProviderCacheAsync(domainEvent.ProviderId, "ProviderBookingPolicyChanged", cancellationToken);
         }
 
         public async Task HandleAsync(BusinessHoursUpdatedEvent domainEvent, CancellationToken cancellationToken)

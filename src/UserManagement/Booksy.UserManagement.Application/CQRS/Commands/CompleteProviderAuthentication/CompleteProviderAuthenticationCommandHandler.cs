@@ -10,6 +10,7 @@ using Booksy.UserManagement.Domain.Aggregates;
 using Booksy.UserManagement.Domain.Entities;
 using Booksy.UserManagement.Domain.Enums;
 using Booksy.UserManagement.Domain.Repositories;
+using Booksy.UserManagement.Domain.Services;
 using Booksy.UserManagement.Domain.ValueObjects;
 using MediatR;
 using Microsoft.Extensions.Logging;
@@ -28,6 +29,7 @@ public sealed class CompleteProviderAuthenticationCommandHandler
     private readonly IUserRepository _userRepository;
     private readonly IJwtTokenService _jwtTokenService;
     private readonly IProviderInfoService _providerInfoService;
+    private readonly IPersonProvisioningService _personProvisioningService;
     private readonly Abstractions.Persistence.IUserManagementUnitOfWork _unitOfWork;
     private readonly ILogger<CompleteProviderAuthenticationCommandHandler> _logger;
 
@@ -37,6 +39,7 @@ public sealed class CompleteProviderAuthenticationCommandHandler
         IUserRepository userRepository,
         IJwtTokenService jwtTokenService,
         IProviderInfoService providerInfoService,
+        IPersonProvisioningService personProvisioningService,
         Abstractions.Persistence.IUserManagementUnitOfWork unitOfWork,
         ILogger<CompleteProviderAuthenticationCommandHandler> logger)
     {
@@ -45,6 +48,7 @@ public sealed class CompleteProviderAuthenticationCommandHandler
         _userRepository = userRepository;
         _jwtTokenService = jwtTokenService;
         _providerInfoService = providerInfoService;
+        _personProvisioningService = personProvisioningService;
         _unitOfWork = unitOfWork;
         _logger = logger;
     }
@@ -80,32 +84,37 @@ public sealed class CompleteProviderAuthenticationCommandHandler
 
         _logger.LogInformation("Phone verification successful for: {Phone}", MaskPhoneNumber(request.PhoneNumber));
 
-        // Step 2: Look up or create User
-        var user = await _userRepository.GetByPhoneNumberAsync(phoneNumber.Value, cancellationToken);
-        bool isNewUser = false;
+        // Step 2: Resolve the Person for this phone through the single guarded path.
+        // ONE PERSON PER PHONE: an existing account is reused and granted the Provider
+        // capacity (a customer signing in here becomes Type=Both) instead of being
+        // rejected — which previously pushed the same human into a second account.
+        var provisioning = await _personProvisioningService.GetOrCreateByPhoneAsync(
+            phoneNumber,
+            UserType.Provider,
+            request.FirstName,
+            request.LastName,
+            request.Email,
+            cancellationToken);
 
-        if (user == null)
+        var user = provisioning.Person;
+        var isNewUser = provisioning.IsNewPerson;
+
+        _logger.LogInformation(
+            "Resolved provider person {UserId} (new: {IsNew}, capacity granted: {Granted})",
+            user.Id.Value, isNewUser, provisioning.CapacityGranted);
+
+        // Blocked/inactive accounts must not obtain tokens via OTP. The password
+        // path enforces this in User.Authenticate(), but the OTP flow issues tokens
+        // directly and would otherwise bypass it. Deleted users never reach here —
+        // the DbContext query filter excludes them.
+        if (user.Status is UserStatus.Banned or UserStatus.Suspended or UserStatus.Inactive)
         {
-            // Create new user for provider
-            user = await CreateNewProviderUser(request, phoneNumber, cancellationToken);
-            isNewUser = true;
+            _logger.LogWarning(
+                "Rejected OTP sign-in for {Status} provider account. UserId: {UserId}",
+                user.Status, user.Id.Value);
 
-            _logger.LogInformation(
-                "Created new provider user. UserId: {UserId}",
-                user.Id.Value);
-        }
-        else
-        {
-            // Validate user type
-            if (user.Type != UserType.Provider)
-            {
-                throw new InvalidOperationException(
-                    $"This phone number is registered as {user.Type}. Please use the appropriate login endpoint.");
-            }
-
-            _logger.LogInformation(
-                "Existing provider user found. UserId: {UserId}",
-                user.Id.Value);
+            throw new InvalidOperationException(
+                $"This account is {user.Status} and cannot sign in. Please contact support.");
         }
 
         // Step 3: Query provider information from ServiceCatalog
@@ -209,50 +218,7 @@ public sealed class CompleteProviderAuthenticationCommandHandler
         };
     }
 
-    /// <summary>
-    /// Creates a new User for a provider registration
-    /// </summary>
-    private async Task<User> CreateNewProviderUser(
-        CompleteProviderAuthenticationCommand request,
-        PhoneNumber phoneNumber,
-        CancellationToken cancellationToken)
-    {
-        // Use provided names or defaults
-        var firstName = request.FirstName ?? "ارائه‌دهنده"; // "Provider" in Persian
-        var lastName = request.LastName ?? phoneNumber.NationalNumber;
 
-        // Create user profile
-        var profile = UserProfile.Create(
-            firstName,
-            lastName,
-            middleName: null,
-            dateOfBirth: null,
-            gender: null);
-
-        // Create email (use provided or temp)
-        Email email;
-        if (!string.IsNullOrWhiteSpace(request.Email))
-        {
-            email = Email.Create(request.Email);
-        }
-        else
-        {
-            // Temporary email: phone@booksy.provider
-            email = Email.Create($"{phoneNumber.NationalNumber}@booksy.provider");
-        }
-
-        profile.UpdateContactInfo(phoneNumber, null, null);
-
-        // Register user with phone (passwordless)
-        var user = User.RegisterWithPhone(
-            email,
-            phoneNumber,
-            profile,
-            UserType.Provider);
-
-
-        return user;
-    }
 
     /// <summary>
     /// Masks phone number for logging (shows only last 4 digits)

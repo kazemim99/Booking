@@ -1,5 +1,6 @@
 using Booksy.Core.Domain.ValueObjects;
 using Booksy.Infrastructure.External.Payment;
+using Booksy.ServiceCatalog.Application.Abstractions.Persistence;
 using Booksy.ServiceCatalog.Application.Commands.Payment.ProcessPayment;
 using Booksy.ServiceCatalog.Domain.Aggregates.PaymentAggregate;
 using Booksy.ServiceCatalog.Domain.Enums;
@@ -15,6 +16,7 @@ public class ProcessPaymentCommandHandlerTests
 {
     private readonly IPaymentWriteRepository _paymentRepository;
     private readonly IPaymentGateway _paymentGateway;
+    private readonly IServiceCatalogUnitOfWork _unitOfWork;
     private readonly ILogger<ProcessPaymentCommandHandler> _logger;
     private readonly ProcessPaymentCommandHandler _handler;
 
@@ -22,8 +24,26 @@ public class ProcessPaymentCommandHandlerTests
     {
         _paymentRepository = Substitute.For<IPaymentWriteRepository>();
         _paymentGateway = Substitute.For<IPaymentGateway>();
+        _unitOfWork = Substitute.For<IServiceCatalogUnitOfWork>();
         _logger = Substitute.For<ILogger<ProcessPaymentCommandHandler>>();
-        _handler = new ProcessPaymentCommandHandler(_paymentRepository, _paymentGateway, _logger);
+        _handler = new ProcessPaymentCommandHandler(_paymentRepository, _paymentGateway, _unitOfWork, _logger);
+    }
+
+    [Fact]
+    public async Task Handle_Should_Commit_Its_Own_Unit_Of_Work()
+    {
+        // This command is INonTransactionalCommand: it opts out of the ambient (retrying) transaction, so the
+        // handler must persist its own work via a single CommitAsync. Without this, the charge would not be saved.
+        var command = new ProcessPaymentCommand(
+            BookingId: Guid.NewGuid(), CustomerId: Guid.NewGuid(), ProviderId: Guid.NewGuid(),
+            Amount: 100m, Currency: "USD", Method: PaymentMethod.CreditCard, PaymentMethodId: "pm_test_123");
+
+        _paymentGateway.ProcessPaymentAsync(Arg.Any<PaymentRequest>(), Arg.Any<CancellationToken>())
+            .Returns(new PaymentResult { IsSuccessful = true, PaymentId = "pi_test_123", Status = "succeeded" });
+
+        await _handler.Handle(command, CancellationToken.None);
+
+        await _unitOfWork.Received(1).CommitAsync(Arg.Any<CancellationToken>());
     }
 
     [Fact]

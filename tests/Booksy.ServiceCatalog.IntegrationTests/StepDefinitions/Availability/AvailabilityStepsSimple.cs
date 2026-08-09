@@ -10,11 +10,11 @@ namespace Booksy.ServiceCatalog.IntegrationTests.StepDefinitions.Availability;
 public class AvailabilityStepsSimple
 {
     private readonly ScenarioContext _scenarioContext;
-    private readonly ServiceCatalogIntegrationTestBase _testBase;
+    private readonly ServiceCatalogReqnrollTestBase _testBase;
 
     public AvailabilityStepsSimple(
         ScenarioContext scenarioContext,
-        ServiceCatalogIntegrationTestBase testBase)
+        ServiceCatalogReqnrollTestBase testBase)
     {
         _scenarioContext = scenarioContext;
         _testBase = testBase;

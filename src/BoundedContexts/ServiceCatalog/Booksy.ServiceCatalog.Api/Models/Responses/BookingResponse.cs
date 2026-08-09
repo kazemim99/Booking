@@ -20,6 +20,12 @@ public class BookingResponse
     public DateTime CreatedAt { get; set; }
 
     /// <summary>
+    /// Names of every service bundled in the visit (multi-service bookings).
+    /// Empty on rows written before line items existed.
+    /// </summary>
+    public List<string> ServiceNames { get; set; } = new();
+
+    /// <summary>
     /// Alias for StaffProviderId (backward compatibility)
     /// </summary>
     public Guid? StaffId { get => StaffProviderId; set => StaffProviderId = value; }

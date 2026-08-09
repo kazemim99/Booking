@@ -218,6 +218,18 @@ namespace Booksy.ServiceCatalog.Domain.Aggregates
         }
 
         // Deposit Management
+        //
+        // SOURCE OF TRUTH: BookingPolicy — not these fields.
+        //
+        // `RequiresDeposit`/`DepositPercentage` are a legacy, display-only projection. Booking creation reads the
+        // effective BookingPolicy (service override → provider default → platform default) and never consults these
+        // fields, so writing them cannot make a booking require a deposit. They are retained only because existing
+        // API responses expose them, and are deliberately NOT kept in sync with the policy: two independently
+        // writable representations of the same rule is how a provider ends up advertising a deposit that is never
+        // collected. Configure deposits through the booking policy instead.
+
+        [Obsolete("Deposits are configured on BookingPolicy (provider default, or a service override). This sets a " +
+                  "display-only projection that booking creation ignores, so it cannot make a deposit be collected.")]
         public void EnableDeposit(decimal percentage)
         {
             if (percentage <= 0 || percentage > 100)
@@ -227,6 +239,7 @@ namespace Booksy.ServiceCatalog.Domain.Aggregates
             DepositPercentage = percentage;
         }
 
+        [Obsolete("Deposits are configured on BookingPolicy (provider default, or a service override).")]
         public void DisableDeposit()
         {
             RequiresDeposit = false;

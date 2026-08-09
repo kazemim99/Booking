@@ -19,12 +19,12 @@ namespace Booksy.ServiceCatalog.IntegrationTests.StepDefinitions.Bookings;
 public class BookingSteps
 {
     private readonly ScenarioContext _scenarioContext;
-    private readonly ServiceCatalogIntegrationTestBase _testBase;
+    private readonly ServiceCatalogReqnrollTestBase _testBase;
     private readonly ScenarioContextHelper _helper;
 
     public BookingSteps(
         ScenarioContext scenarioContext,
-        ServiceCatalogIntegrationTestBase testBase)
+        ServiceCatalogReqnrollTestBase testBase)
     {
         _scenarioContext = scenarioContext;
         _testBase = testBase;
@@ -35,16 +35,33 @@ public class BookingSteps
     public async Task WhenISendAPostRequestToCreateABookingWith(Table table)
     {
         var provider = _scenarioContext.Get<Domain.Aggregates.Provider>("Provider:Current");
-        var customerId = _scenarioContext.Get<Guid>("CurrentUserId");
 
         // Build request from table
         var requestData = _helper.BuildDictionaryFromTable(table);
+
+        // Multi-service visits: "ServiceIds" is a comma-separated list of
+        // resolved ids; single-service requests keep using "ServiceId".
+        string[]? serviceIds = requestData.ContainsKey("ServiceIds")
+            ? requestData["ServiceIds"]!
+                .ToString()!
+                .Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
+            : null;
+
+        // Staff is mandatory on the wire; scenarios seed it via
+        // "the provider has at least one staff member".
+        var staffProviderId = _scenarioContext.ContainsKey("CurrentStaffId")
+            ? _scenarioContext.Get<Guid>("CurrentStaffId")
+            : Guid.Empty;
 
         // Create request object
         var request = new
         {
             ProviderId = provider.Id.Value,
-            ServiceId = requestData["ServiceId"],
+            ServiceId = serviceIds is { Length: > 0 }
+                ? serviceIds[0]
+                : requestData["ServiceId"],
+            ServiceIds = serviceIds,
+            StaffProviderId = staffProviderId,
             StartTime = requestData["StartTime"],
             CustomerNotes = requestData.ContainsKey("Notes") ? requestData["Notes"] : null
         };
@@ -56,6 +73,11 @@ public class BookingSteps
         // Store response
         _scenarioContext.Set(response, "LastResponse");
         _scenarioContext.Set(response.StatusCode, "LastStatusCode");
+
+        // Surface the API's own reason in the scenario log — a bare status
+        // assertion hides WHY creation failed.
+        if (response.Error != null)
+            Console.WriteLine($"Create booking error: {response.Error.Code} — {response.Error.Message}");
 
         if (response.Data != null)
         {
@@ -106,14 +128,6 @@ public class BookingSteps
         _scenarioContext.Set(response.StatusCode, "LastStatusCode");
     }
 
-    [Then(@"the response status code should be (.*)")]
-    public void ThenTheResponseStatusCodeShouldBe(int expectedStatusCode)
-    {
-        var actualStatusCode = _scenarioContext.Get<HttpStatusCode>("LastStatusCode");
-        actualStatusCode.Should().Be((HttpStatusCode)expectedStatusCode,
-            $"Expected status code {expectedStatusCode} but got {(int)actualStatusCode}");
-    }
-
     [Then(@"the response should contain a booking with:")]
     public void ThenTheResponseShouldContainABookingWith(Table table)
     {
@@ -153,6 +167,24 @@ public class BookingSteps
         booking.Should().NotBeNull($"Booking with ID {bookingId} should exist in database");
         booking!.Status.ToString().Should().Be(expectedStatus,
             $"Booking status should be {expectedStatus}");
+    }
+
+    [Then(@"the stored booking should have (\d+) service lines, (\d+) minutes and total price (.*)")]
+    public async Task ThenTheStoredBookingShouldHaveServiceLines(
+        int expectedLines, int expectedMinutes, decimal expectedTotal)
+    {
+        var bookingId = _scenarioContext.Get<Guid>("LastBookingId");
+
+        var booking = await _testBase.DbContext.Bookings
+            .FirstOrDefaultAsync(b => b.Id == BookingId.From(bookingId));
+
+        booking.Should().NotBeNull();
+        booking!.Services.Should().HaveCount(expectedLines,
+            "every bundled service becomes one persisted line item");
+        booking.Duration.Value.Should().Be(expectedMinutes,
+            "the visit occupies the combined duration of its services");
+        booking.TotalPrice.Amount.Should().Be(expectedTotal,
+            "the bill is the sum over the service lines");
     }
 
     [Then(@"the booking should have status ""(.*)"" in the database")]

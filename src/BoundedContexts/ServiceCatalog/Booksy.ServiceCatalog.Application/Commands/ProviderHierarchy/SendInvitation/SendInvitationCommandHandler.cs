@@ -2,6 +2,8 @@ using Booksy.Core.Application.Abstractions.CQRS;
 using Booksy.Core.Application.Abstractions.Persistence;
 using Booksy.Core.Application.Exceptions;
 using Booksy.Core.Domain.Exceptions;
+using Booksy.Core.Domain.ValueObjects;
+using Booksy.ServiceCatalog.Application.Abstractions.Identity;
 using Booksy.ServiceCatalog.Domain.Aggregates;
 using Booksy.ServiceCatalog.Domain.Enums;
 using Booksy.ServiceCatalog.Domain.Repositories;
@@ -15,6 +17,8 @@ namespace Booksy.ServiceCatalog.Application.Commands.ProviderHierarchy.SendInvit
         private readonly IProviderReadRepository _providerRepository;
         private readonly IProviderInvitationReadRepository _invitationReadRepository;
         private readonly IProviderInvitationWriteRepository _invitationWriteRepository;
+        private readonly IOrganizationMembershipRepository _membershipRepository;
+        private readonly IPersonDirectory _personDirectory;
         private readonly IServiceCatalogUnitOfWork _unitOfWork;
         private readonly ILogger<SendInvitationCommandHandler> _logger;
 
@@ -22,12 +26,16 @@ namespace Booksy.ServiceCatalog.Application.Commands.ProviderHierarchy.SendInvit
             IProviderReadRepository providerRepository,
             IProviderInvitationReadRepository invitationReadRepository,
             IProviderInvitationWriteRepository invitationWriteRepository,
+            IOrganizationMembershipRepository membershipRepository,
+            IPersonDirectory personDirectory,
             IServiceCatalogUnitOfWork unitOfWork,
             ILogger<SendInvitationCommandHandler> logger)
         {
             _providerRepository = providerRepository;
             _invitationReadRepository = invitationReadRepository;
             _invitationWriteRepository = invitationWriteRepository;
+            _membershipRepository = membershipRepository;
+            _personDirectory = personDirectory;
             _unitOfWork = unitOfWork;
             _logger = logger;
         }
@@ -47,26 +55,35 @@ namespace Booksy.ServiceCatalog.Application.Commands.ProviderHierarchy.SendInvit
             if (organization.HierarchyType != ProviderHierarchyType.Organization)
                 throw new DomainValidationException("Only organizations can send invitations");
 
+            // Normalize the phone up front so every lookup uses the canonical form.
+            var phoneNumber = PhoneNumber.From(request.PhoneNumber);
+
             // Check for existing pending invitation to same phone number
             var existingInvitation = await _invitationReadRepository.GetByPhoneNumberAndOrganizationAsync(
-                request.PhoneNumber, organizationId, cancellationToken);
+                phoneNumber.Value, organizationId, cancellationToken);
 
             if (existingInvitation != null)
-                throw new DomainValidationException($"A pending invitation already exists for phone number {request.PhoneNumber}");
+                throw new DomainValidationException($"A pending invitation already exists for phone number {phoneNumber.Value}");
 
-            // TODO: Check if user with this phone number already exists
-            // This validation should be added to prevent inviting registered users
-            // var existingUser = await _userRepository.GetByPhoneNumberAsync(request.PhoneNumber, cancellationToken);
-            // if (existingUser != null)
-            // {
-            //     // If user exists, they should use the regular join request flow instead
-            //     throw new DomainValidationException(
-            //         $"A user account with phone number {request.PhoneNumber} already exists. " +
-            //         "This user can join the organization by accepting the invitation through their account.");
-            // }
+            // Reuse-by-phone: if an account already exists for this phone, the invitation is
+            // still valid (they will accept and get a membership — never a duplicate person),
+            // BUT they must not already belong to this organization. This is where a self-invite
+            // (the owner inviting their own number) and re-inviting an existing member are blocked.
+            var existingPerson = await _personDirectory.FindByPhoneAsync(phoneNumber.Value, cancellationToken);
+            if (existingPerson != null)
+            {
+                var personId = UserId.From(existingPerson.PersonId);
+                var isOwner = organization.OwnerId == personId;
+                var alreadyMember = await _membershipRepository.HasActiveMembershipAsync(
+                    personId, organizationId, cancellationToken);
+
+                if (isOwner || alreadyMember)
+                    throw new DomainValidationException(
+                        "This phone number already belongs to a member of your organization. " +
+                        "You cannot invite yourself or an existing member.");
+            }
 
             // Create invitation
-            var phoneNumber = PhoneNumber.From(request.PhoneNumber);
             var invitation = ProviderInvitation.Create(
                 organizationId,
                 phoneNumber,

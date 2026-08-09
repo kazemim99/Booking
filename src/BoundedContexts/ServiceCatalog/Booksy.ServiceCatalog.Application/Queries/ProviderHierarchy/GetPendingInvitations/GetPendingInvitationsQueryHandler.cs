@@ -42,7 +42,12 @@ namespace Booksy.ServiceCatalog.Application.Queries.ProviderHierarchy.GetPending
             var invitations = await _invitationRepository.GetByOrganizationIdAndStatusAsync(
                 organizationId, InvitationStatus.Pending, cancellationToken);
 
-            var invitationDtos = invitations.Select(i => new InvitationDto(
+            // Status stays 'Pending' until something touches the invitation, so a
+            // lapsed one would otherwise linger in the owner's list forever. The
+            // aggregate decides validity (pending AND not past expiry).
+            var invitationDtos = invitations
+                .Where(i => i.IsValid())
+                .Select(i => new InvitationDto(
                 InvitationId: i.Id,
                 PhoneNumber: i.PhoneNumber.Value,
                 InviteeName: i.InviteeName,

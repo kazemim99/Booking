@@ -43,6 +43,7 @@ public class PlatformController : ControllerBase
     /// <returns>Platform statistics</returns>
     /// <response code="200">Statistics retrieved successfully</response>
     [HttpGet("statistics")]
+    [Microsoft.AspNetCore.Authorization.AllowAnonymous] // Documented public marketing statistics (C1 authz audit)
     [EnableRateLimiting("public-api")]
     [ProducesResponseType(typeof(PlatformStatisticsViewModel), StatusCodes.Status200OK)]
     [ResponseCache(Duration = 300)] // Cache for 5 minutes

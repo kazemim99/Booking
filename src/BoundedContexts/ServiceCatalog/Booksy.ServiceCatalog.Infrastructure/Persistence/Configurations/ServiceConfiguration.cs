@@ -151,6 +151,20 @@ namespace Booksy.ServiceCatalog.Infrastructure.Persistence.Configurations
                     .HasColumnType("decimal(5,2)")
                     .IsRequired();
 
+                // Deposits may be a percentage of the total or a flat amount (accepted product requirement).
+                policy.Property(p => p.DepositType)
+                    .HasColumnName("BookingPolicyDepositType")
+                    .HasConversion<string>()
+                    .HasMaxLength(20)
+                    .HasDefaultValue(Domain.Enums.DepositType.Percentage)
+                    .IsRequired();
+
+                policy.Property(p => p.DepositFixedAmount)
+                    .HasColumnName("BookingPolicyDepositFixedAmount")
+                    .HasColumnType("decimal(18,2)")
+                    .HasDefaultValue(0m)
+                    .IsRequired();
+
                 // EF Core 9: Explicitly configure foreign key to not be part of composite key
                 policy.WithOwner().HasForeignKey("ServiceId");
                 policy.Property<Guid>("ServiceId").ValueGeneratedNever();
@@ -316,7 +330,10 @@ namespace Booksy.ServiceCatalog.Infrastructure.Persistence.Configurations
                 priceTier.ToTable("ServicePriceTiers", "ServiceCatalog");
 
                 priceTier.HasKey(pt => pt.Id);
-                priceTier.Property(pt => pt.Id).HasColumnName("Id");
+                // Client-generated Guid key (PriceTier.Create sets Id = Guid.NewGuid()). ValueGeneratedNever stops
+                // EF from treating a price tier newly added to an already-loaded Service as an existing row
+                // (phantom UPDATE → 0 rows → DbUpdateConcurrencyException). Mirrors ServiceOption above.
+                priceTier.Property(pt => pt.Id).HasColumnName("Id").ValueGeneratedNever();
 
                 // Shadow property for foreign key
                 priceTier.WithOwner()

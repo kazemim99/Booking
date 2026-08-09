@@ -3,8 +3,11 @@ using Booksy.Core.Domain.Abstractions.Entities;
 using Booksy.ServiceCatalog.Domain.Aggregates;
 using Booksy.ServiceCatalog.Domain.Aggregates.BookingAggregate;
 using Booksy.ServiceCatalog.Domain.Aggregates.NotificationAggregate;
+using Booksy.ServiceCatalog.Domain.Aggregates.MembershipAuditAggregate;
+using Booksy.ServiceCatalog.Domain.Aggregates.OrganizationMembershipAggregate;
 using Booksy.ServiceCatalog.Domain.Aggregates.NotificationTemplateAggregate;
 using Booksy.ServiceCatalog.Domain.Aggregates.UserNotificationPreferencesAggregate;
+using Booksy.ServiceCatalog.Domain.Aggregates.LedgerAggregate;
 using Booksy.ServiceCatalog.Domain.Aggregates.PaymentAggregate;
 using Booksy.ServiceCatalog.Domain.Aggregates.PayoutAggregate;
 using Booksy.ServiceCatalog.Domain.Aggregates.ProviderAvailabilityAggregate;
@@ -37,6 +40,8 @@ namespace Booksy.ServiceCatalog.Infrastructure.Persistence.Context
         public DbSet<Booking> Bookings => Set<Booking>();
         public DbSet<Payment> Payments => Set<Payment>();
         public DbSet<Payout> Payouts => Set<Payout>();
+        public DbSet<LedgerEntry> LedgerEntries => Set<LedgerEntry>();
+        public DbSet<Idempotency.IdempotencyReservation> IdempotencyReservations => Set<Booksy.ServiceCatalog.Infrastructure.Persistence.Idempotency.IdempotencyReservation>();
         public DbSet<Notification> Notifications => Set<Notification>();
         public DbSet<NotificationTemplate> NotificationTemplates => Set<NotificationTemplate>();
         public DbSet<UserNotificationPreferences> UserNotificationPreferences => Set<UserNotificationPreferences>();
@@ -44,6 +49,8 @@ namespace Booksy.ServiceCatalog.Infrastructure.Persistence.Context
         public DbSet<Review> Reviews => Set<Review>();
         public DbSet<ProviderInvitation> ProviderInvitations => Set<ProviderInvitation>();
         public DbSet<ProviderJoinRequest> ProviderJoinRequests => Set<ProviderJoinRequest>();
+        public DbSet<OrganizationMembership> OrganizationMemberships => Set<OrganizationMembership>();
+        public DbSet<MembershipAuditEntry> MembershipAuditEntries => Set<MembershipAuditEntry>();
 
         // Reference Data (not part of aggregates)
         public DbSet<ProvinceCities> ProvinceCities => Set<ProvinceCities>();
@@ -90,7 +97,27 @@ namespace Booksy.ServiceCatalog.Infrastructure.Persistence.Context
         public override async Task<int> SaveChangesAsync(CancellationToken cancellationToken = default)
         {
             UpdateAuditableEntities();
+            EnforceLedgerAppendOnly();
             return await base.SaveChangesAsync(cancellationToken);
+        }
+
+        /// <summary>
+        /// The ledger is an immutable, append-only audit log: once a <see cref="LedgerEntry"/> is committed it must
+        /// never be updated or deleted. Corrections are made by posting a compensating <c>LedgerTransaction</c>. This
+        /// guard makes that a hard invariant — any attempt to modify or delete a ledger entry throws before it can be
+        /// written, rather than relying on convention.
+        /// </summary>
+        private void EnforceLedgerAppendOnly()
+        {
+            foreach (var entry in ChangeTracker.Entries<LedgerEntry>())
+            {
+                if (entry.State is EntityState.Modified or EntityState.Deleted)
+                {
+                    throw new InvalidOperationException(
+                        $"Ledger entries are immutable (append-only): a {entry.State} operation on LedgerEntry " +
+                        $"'{entry.Entity.Id}' is not allowed. Post a compensating transaction instead.");
+                }
+            }
         }
 
         private void UpdateAuditableEntities()

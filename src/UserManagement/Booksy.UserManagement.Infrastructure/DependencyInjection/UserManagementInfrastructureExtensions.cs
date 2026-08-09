@@ -126,6 +126,8 @@ namespace Booksy.UserManagement.Infrastructure.DependencyInjection
 
             // Register Domain Services
             services.AddScoped<IUserValidationService, UserValidationService>();
+            // The single guarded path for phone → Person (one Person per phone number).
+            services.AddScoped<IPersonProvisioningService, PersonProvisioningService>();
             services.AddScoped<IReferralService, ReferralService>();
             services.AddScoped<IPasswordPolicy, PasswordPolicyService>();
             services.AddScoped<IReferralDomainService, ReferralDomainService>();

@@ -39,7 +39,10 @@ namespace Booksy.ServiceCatalog.Domain.Aggregates.PaymentAggregate.Entities
             Dictionary<string, object>? metadata = null) : base(Guid.NewGuid())
         {
             Type = type;
-            Amount = amount ?? throw new ArgumentNullException(nameof(amount));
+            // Defensive copy: a Transaction's owned Money must be a reference-distinct instance from the
+            // parent Payment's Money (callers routinely pass Payment.Amount). Sharing the instance corrupts
+            // EF's change tracker and makes this newly-added Transaction persist as a phantom UPDATE. See Money.Clone().
+            Amount = (amount ?? throw new ArgumentNullException(nameof(amount))).Clone();
             ExternalTransactionId = externalTransactionId;
             Reference = reference;
             Status = status ?? throw new ArgumentNullException(nameof(status));

@@ -10,11 +10,11 @@ namespace Booksy.ServiceCatalog.IntegrationTests.StepDefinitions.Common;
 public class AuthenticationSteps
 {
     private readonly ScenarioContext _scenarioContext;
-    private readonly ServiceCatalogIntegrationTestBase _testBase;
+    private readonly ServiceCatalogReqnrollTestBase _testBase;
 
     public AuthenticationSteps(
         ScenarioContext scenarioContext,
-        ServiceCatalogIntegrationTestBase testBase)
+        ServiceCatalogReqnrollTestBase testBase)
     {
         _scenarioContext = scenarioContext;
         _testBase = testBase;

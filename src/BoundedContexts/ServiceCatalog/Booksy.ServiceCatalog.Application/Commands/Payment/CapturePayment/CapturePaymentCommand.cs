@@ -11,5 +11,8 @@ namespace Booksy.ServiceCatalog.Application.Commands.Payment.CapturePayment
     public sealed record CapturePaymentCommand(
         Guid PaymentId,
         decimal? AmountToCapture = null,
-        Guid? IdempotencyKey = null) : ICommand<CapturePaymentResult>;
+        Guid? IdempotencyKey = null)
+        : ICommand<CapturePaymentResult>,
+          Core.Application.Abstractions.CQRS.INonTransactionalCommand, // gateway capture must not run in a retried tx
+          Core.Application.Abstractions.CQRS.IRequireIdempotency;      // at-most-once per idempotency key
 }

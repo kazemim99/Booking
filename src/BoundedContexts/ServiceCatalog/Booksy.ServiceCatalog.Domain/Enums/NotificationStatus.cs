@@ -51,6 +51,12 @@ namespace Booksy.ServiceCatalog.Domain.Enums
         /// <summary>
         /// Notification expired (scheduled notification not sent)
         /// </summary>
-        Expired
+        Expired,
+
+        /// <summary>
+        /// Delivery failed and all retries are exhausted — moved to the dead-letter queue for inspection/replay.
+        /// Terminal: never retried automatically; surfaced for observability and manual intervention.
+        /// </summary>
+        DeadLettered
     }
 }

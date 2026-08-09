@@ -169,7 +169,7 @@ namespace Booksy.ServiceCatalog.Domain.Aggregates.PayoutAggregate
             BankAccountLast4 = bankAccountLast4;
             BankName = bankName;
 
-            RaiseDomainEvent(new PayoutCompletedEvent(Id, ProviderId, NetAmount, PaidAt.Value));
+            RaiseDomainEvent(new PayoutCompletedEvent(Id, ProviderId, NetAmount, PaidAt.Value, GrossAmount, CommissionAmount));
         }
 
         /// <summary>

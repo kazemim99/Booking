@@ -20,6 +20,13 @@ public class CreateBookingRequest
     public Guid ServiceId { get; set; }
 
     /// <summary>
+    /// Optional: every service bundled in this visit (multi-service booking,
+    /// e.g. cut + color). When set, supersedes ServiceId; slot length and
+    /// total price are the sums over these services.
+    /// </summary>
+    public List<Guid>? ServiceIds { get; set; }
+
+    /// <summary>
     /// Staff provider ID (required - individual provider in hierarchy who will perform the service)
     /// </summary>
     [Required]

@@ -52,7 +52,14 @@ namespace Booksy.ServiceCatalog.Infrastructure.Persistence.Repositories
 
         public async Task UpdateAsync(Payment payment, CancellationToken cancellationToken = default)
         {
-            Context.Update(payment);
+            // A Payment loaded through this repository is already tracked, so EF change tracking has captured
+            // every mutation — including a newly-added Transaction as Added. Calling Context.Update here would
+            // re-stamp the whole graph as Modified and turn that new Transaction into a phantom UPDATE
+            // (0 rows affected → DbUpdateConcurrencyException on every verify/capture/refund). Only attach when
+            // the aggregate is genuinely detached; owned child-collection aggregates must be loaded-then-mutated.
+            if (Context.Entry(payment).State == Microsoft.EntityFrameworkCore.EntityState.Detached)
+                Context.Update(payment);
+
             await Task.CompletedTask;
         }
 

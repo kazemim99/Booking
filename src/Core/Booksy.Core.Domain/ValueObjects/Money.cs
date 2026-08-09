@@ -34,6 +34,20 @@ public sealed class Money : ValueObject
 
     public static Money Zero(string currency) => Create(0, currency);
 
+    /// <summary>
+    /// Returns a reference-distinct copy carrying the same value.
+    /// <para>
+    /// Required because <see cref="Money"/> is persisted as an EF Core <b>owned</b> entity: two owned
+    /// navigations on the same aggregate (e.g. <c>Payment.Amount</c> and <c>Payment.PaidAmount</c>, or a
+    /// child <c>Transaction.Amount</c>) must never share the same CLR instance. Sharing an instance corrupts
+    /// the EF change tracker (raises <c>DuplicateDependentEntityTypeInstanceWarning</c>) and causes a
+    /// newly-added child to be tracked as <c>Modified</c> instead of <c>Added</c> — producing a phantom
+    /// UPDATE that affects 0 rows and throws <c>DbUpdateConcurrencyException</c>. Assign a <see cref="Clone"/>
+    /// whenever the same monetary value flows into more than one owned slot.
+    /// </para>
+    /// </summary>
+    public new Money Clone() => new(Amount, Currency);
+
     public Money Add(Money other)
     {
         if (Currency != other.Currency)

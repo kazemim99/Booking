@@ -214,7 +214,7 @@ namespace Booksy.ServiceCatalog.Domain.Aggregates.PaymentAggregate
             if (AuthorizedAt == null)
                 throw new InvalidOperationException("Payment must be authorized before capture");
 
-            PaidAmount = Amount;
+            PaidAmount = Amount.Clone(); // reference-distinct: PaidAmount and Amount are separate owned slots
             Status = PaymentStatus.Paid;
             CapturedAt = DateTime.UtcNow;
 
@@ -242,7 +242,7 @@ namespace Booksy.ServiceCatalog.Domain.Aggregates.PaymentAggregate
 
             PaymentIntentId = paymentIntentId;
             PaymentMethodId = paymentMethodId;
-            PaidAmount = Amount;
+            PaidAmount = Amount.Clone(); // reference-distinct: PaidAmount and Amount are separate owned slots
             Status = PaymentStatus.Paid;
             CapturedAt = DateTime.UtcNow;
 
@@ -445,7 +445,7 @@ namespace Booksy.ServiceCatalog.Domain.Aggregates.PaymentAggregate
                 Fee =  Money.Create(fee.Value, Amount.Currency);
             }
 
-            PaidAmount = Amount;
+            PaidAmount = Amount.Clone(); // reference-distinct: PaidAmount and Amount are separate owned slots
             Status = PaymentStatus.Paid;
             CapturedAt = DateTime.UtcNow;
 

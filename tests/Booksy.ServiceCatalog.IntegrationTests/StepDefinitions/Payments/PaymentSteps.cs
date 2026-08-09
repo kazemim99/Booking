@@ -20,12 +20,12 @@ namespace Booksy.ServiceCatalog.IntegrationTests.StepDefinitions.Payments;
 public class PaymentSteps
 {
     private readonly ScenarioContext _scenarioContext;
-    private readonly ServiceCatalogIntegrationTestBase _testBase;
+    private readonly ServiceCatalogReqnrollTestBase _testBase;
     private readonly ScenarioContextHelper _helper;
 
     public PaymentSteps(
         ScenarioContext scenarioContext,
-        ServiceCatalogIntegrationTestBase testBase)
+        ServiceCatalogReqnrollTestBase testBase)
     {
         _scenarioContext = scenarioContext;
         _testBase = testBase;

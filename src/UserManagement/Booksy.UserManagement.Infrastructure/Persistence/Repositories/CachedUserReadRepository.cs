@@ -224,4 +224,11 @@ public class CachedUserRepository : IUserRepository
     {
         return await _innerRepository.GetByPhoneNumberAsync(phoneNumber, cancellationToken);
     }
+
+    public async Task<bool> ExistsByPhoneNumberAsync(PhoneNumber phoneNumber, CancellationToken cancellationToken = default)
+    {
+        // Not cached: uniqueness must reflect the latest writes to avoid a stale
+        // "available" verdict that would let a duplicate account slip through.
+        return await _innerRepository.ExistsByPhoneNumberAsync(phoneNumber, cancellationToken);
+    }
 }

@@ -10,5 +10,8 @@ namespace Booksy.ServiceCatalog.Application.Commands.Payment.VerifyZarinPalPayme
     /// </summary>
     public sealed record VerifyZarinPalPaymentCommand(
         string Authority,
-        string Status, Guid? IdempotencyKey =null) : ICommand<VerifyZarinPalPaymentResult>;
+        string Status, Guid? IdempotencyKey = null)
+        : ICommand<VerifyZarinPalPaymentResult>,
+          Core.Application.Abstractions.CQRS.INonTransactionalCommand, // gateway verify must not run in a retried tx
+          Core.Application.Abstractions.CQRS.IRequireIdempotency;      // at-most-once per idempotency key
 }

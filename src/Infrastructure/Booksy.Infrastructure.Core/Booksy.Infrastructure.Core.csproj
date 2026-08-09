@@ -1,4 +1,4 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
     <TargetFramework>net9.0</TargetFramework>
@@ -21,6 +21,11 @@
 
   <ItemGroup>
     <Folder Include="Persistence\Configurations\" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- Exposes the cache circuit-breaker counter to its unit tests. -->
+    <InternalsVisibleTo Include="Booksy.Infrastructure.Core.UnitTests" />
   </ItemGroup>
 
 </Project>

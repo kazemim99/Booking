@@ -44,7 +44,11 @@ public class TestWebApplicationFactory<TStartup, TDbContext>
             {
                 [$"ConnectionStrings:{_contextName}"] = _postgresFixture.ConnectionString,
                 ["ConnectionStrings:DefaultConnection"] = _postgresFixture.ConnectionString,
-                ["DatabaseSettings:EnableSensitiveDataLogging"] = "true"
+                ["DatabaseSettings:EnableSensitiveDataLogging"] = "true",
+                // Tests must not depend on a live Redis: the appsettings
+                // default points at localhost:6379 and the CachingBehavior
+                // times out the whole request pipeline when it is absent.
+                ["Cache:Provider"] = "InMemory"
             }!);
         });
 
@@ -84,14 +88,25 @@ public class TestWebApplicationFactory<TStartup, TDbContext>
                 "IntegrationTest",
                 options => { });
 
+            // The host registers a Redis-backed IDistributedCache
+            // unconditionally (Program.cs); swap it for the in-memory one so
+            // tests never depend on a live Redis.
+            services.RemoveAll(typeof(Microsoft.Extensions.Caching.Distributed.IDistributedCache));
+            services.AddDistributedMemoryCache();
+
             // Allow derived factories to add custom service configuration
             ConfigureTestServices(services);
 
-            // Build service provider and ensure database is created
+            // Build service provider and bring the schema up via MIGRATIONS,
+            // not EnsureCreated: the host also runs Migrate() at startup, and
+            // EnsureCreated builds the schema without migration history, so
+            // the subsequent Migrate() re-runs the initial migration and dies
+            // with "relation already exists". Migrate() is idempotent in both
+            // orders.
             var serviceProvider = services.BuildServiceProvider();
             using var scope = serviceProvider.CreateScope();
             var dbContext = scope.ServiceProvider.GetRequiredService<TDbContext>();
-            dbContext.Database.EnsureCreated();
+            dbContext.Database.Migrate();
         });
 
         builder.UseEnvironment("Test");

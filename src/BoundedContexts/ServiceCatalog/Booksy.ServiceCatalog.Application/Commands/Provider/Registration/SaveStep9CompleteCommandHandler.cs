@@ -5,6 +5,7 @@ using Booksy.Core.Domain.Abstractions;
 using Booksy.Core.Domain.ValueObjects;
 using Booksy.ServiceCatalog.Application.Services.Interfaces;
 using Booksy.ServiceCatalog.Domain.Aggregates;
+using Booksy.ServiceCatalog.Domain.Aggregates.OrganizationMembershipAggregate;
 using Booksy.ServiceCatalog.Domain.Enums;
 using Booksy.ServiceCatalog.Domain.Repositories;
 using Booksy.ServiceCatalog.Domain.ValueObjects;
@@ -17,6 +18,7 @@ public sealed class SaveStep9CompleteCommandHandler
 {
     private readonly IProviderWriteRepository _providerRepository;
     private readonly IServiceWriteRepository _serviceRepository;
+    private readonly IOrganizationMembershipRepository _membershipRepository;
     private readonly IServiceCatalogUnitOfWork _unitOfWork;
     private readonly ICurrentUserService _currentUserService;
     private readonly ITokenService _tokenService;
@@ -25,6 +27,7 @@ public sealed class SaveStep9CompleteCommandHandler
     public SaveStep9CompleteCommandHandler(
         IProviderWriteRepository providerRepository,
         IServiceWriteRepository serviceRepository,
+        IOrganizationMembershipRepository membershipRepository,
         IServiceCatalogUnitOfWork unitOfWork,
         ICurrentUserService currentUserService,
         ITokenService tokenService,
@@ -32,6 +35,7 @@ public sealed class SaveStep9CompleteCommandHandler
     {
         _providerRepository = providerRepository;
         _serviceRepository = serviceRepository;
+        _membershipRepository = membershipRepository;
         _unitOfWork = unitOfWork;
         _currentUserService = currentUserService;
         _tokenService = tokenService;
@@ -78,6 +82,21 @@ public sealed class SaveStep9CompleteCommandHandler
         // Complete registration - transitions to PendingVerification
         provider.CompleteRegistration();
         provider.UpdateRegistrationStep(9);
+
+        // Guarantee the owner has a membership. This is the durable anchor of the
+        // membership model: it must not depend on the client's follow-up
+        // "do you provide services?" call (which only refines this to +StaffProvider).
+        // Idempotent — skip if one already exists.
+        var ownerMembership = await _membershipRepository.GetActiveByPersonAndOrganizationAsync(
+            userId, provider.Id, cancellationToken);
+        if (ownerMembership is null)
+        {
+            ownerMembership = OrganizationMembership.CreateOwner(userId, provider.Id, providesServices: false);
+            await _membershipRepository.SaveAsync(ownerMembership, cancellationToken);
+            _logger.LogInformation(
+                "Created owner membership {MembershipId} for provider {ProviderId}",
+                ownerMembership.Id, provider.Id.Value);
+        }
 
         await _unitOfWork.CommitAsync(cancellationToken);
 

@@ -14,6 +14,7 @@ using Booksy.ServiceCatalog.Application.Queries.ProviderHierarchy.GetPendingJoin
 using Booksy.ServiceCatalog.Application.Queries.ProviderHierarchy.GetProviderWithStaff;
 using Booksy.ServiceCatalog.Application.Queries.ProviderHierarchy.GetSentJoinRequests;
 using Booksy.ServiceCatalog.Application.Queries.ProviderHierarchy.GetStaffMembers;
+using Booksy.ServiceCatalog.Application.Queries.Membership.GetOrganizationMemberships;
 using MediatR;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -80,6 +81,19 @@ public class ProviderHierarchyController : ControllerBase
     public async Task<IActionResult> GetStaffMembers(Guid providerId, CancellationToken cancellationToken)
     {
         var result = await _mediator.Send(new GetStaffMembersQuery(providerId), cancellationToken);
+        return Ok(result);
+    }
+
+    /// <summary>
+    /// Get the organization's members from the membership model (roles, status,
+    /// provides-services), enriched with each person's name/phone. Supersedes the
+    /// legacy <c>staff</c> endpoint above, which reads the old sub-provider model.
+    /// </summary>
+    [HttpGet("members")]
+    [ProducesResponseType(typeof(GetOrganizationMembershipsResult), StatusCodes.Status200OK)]
+    public async Task<IActionResult> GetMembers(Guid providerId, CancellationToken cancellationToken)
+    {
+        var result = await _mediator.Send(new GetOrganizationMembershipsQuery(providerId), cancellationToken);
         return Ok(result);
     }
 

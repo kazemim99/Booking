@@ -1,14 +1,18 @@
 // ========================================
 // Booksy.ServiceCatalog.Infrastructure/Hubs/NotificationHub.cs
 // ========================================
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.SignalR;
 using Microsoft.Extensions.Logging;
 
 namespace Booksy.ServiceCatalog.Infrastructure.Hubs
 {
     /// <summary>
-    /// SignalR Hub for real-time notifications
+    /// SignalR Hub for real-time notifications. Requires an authenticated connection (C1): the notification stream
+    /// is per-user, so an anonymous connection is never permitted — the JWT is supplied via the SignalR
+    /// <c>access_token</c> query-string during negotiation (see JwtAuthenticationExtensions.OnMessageReceived).
     /// </summary>
+    [Authorize]
     public sealed class NotificationHub : Hub
     {
         private readonly ILogger<NotificationHub> _logger;

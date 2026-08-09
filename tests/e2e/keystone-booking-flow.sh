@@ -35,6 +35,7 @@ SUF=$(printf '%07d' "$(( ($$ * 1000 + RANDOM) % 10000000 ))")
 RND="$SUF"
 PPHONE="912$SUF"   # provider mobile
 CPHONE="913$SUF"   # customer mobile
+MPHONE="914$SUF"   # invited team member mobile
 
 say()  { printf '\n\033[1;36m== %s\033[0m\n' "$*"; }
 ok()   { printf '  \033[32mPASS\033[0m %s\n' "$*"; PASS=$((PASS+1)); }
@@ -106,3 +107,62 @@ code=$(http GET "/api/v1/Bookings/my-bookings" "$CTOK" - /tmp/k_my.json)
 [ "$code" = "200" ] && grep -q "$BID" /tmp/k_my.json && ok "booking in my-bookings" || fail "booking not in my-bookings (HTTP $code)"
 
 printf '\n\033[1;32mALL %d ASSERTIONS PASSED — keystone booking flow is green.\033[0m\n' "$PASS"
+
+# ============================================================================
+# MEMBERSHIP CHAIN — the identity model that supersedes sub-provider staff.
+# Proves: invite by phone -> the invitee accepts with their OWN account (no
+# duplicate person) -> the membership becomes a BOOKABLE RESOURCE -> a customer
+# books that specific person. This is the revenue path for multi-staff salons.
+# ============================================================================
+
+say "6) Provider invites a team member by phone"
+code=$(http POST "/api/v1/providers/$PROV/hierarchy/invitations" "$PTOK" \
+  "{\"inviteePhoneNumber\":\"$MPHONE\",\"inviteeName\":\"Mina\"}" /tmp/k_inv.json)
+[ "$code" = "201" ] || [ "$code" = "200" ] && ok "send-invitation ($code)" || fail "send-invitation (HTTP $code): $(jget /tmp/k_inv.json message)"
+INV=$(jget /tmp/k_inv.json invitationId); [ -n "$INV" ] || fail "no invitationId"
+
+say "7) Self-invite is refused (S7)"
+code=$(http POST "/api/v1/providers/$PROV/hierarchy/invitations" "$PTOK" \
+  "{\"inviteePhoneNumber\":\"$PPHONE\",\"inviteeName\":\"Me\"}" /tmp/k_self.json)
+[ "$code" = "400" ] || [ "$code" = "409" ] && ok "self-invite rejected ($code)" || fail "self-invite was NOT rejected (HTTP $code)"
+
+say "8) The invited person signs up and accepts (one Person, reused)"
+auth customer "$MPHONE"; MTOK=$TOKEN; MPERSON=$USERID
+code=$(http POST "/api/v1/memberships/invitations/$INV/accept" "$MTOK" - /tmp/k_acc.json)
+[ "$code" = "200" ] && ok "accept-invitation 200" || fail "accept-invitation (HTTP $code): $(jget /tmp/k_acc.json message)"
+MEMBERSHIP=$(jget /tmp/k_acc.json membershipId); [ -n "$MEMBERSHIP" ] || fail "no membershipId"
+APERSON=$(jget /tmp/k_acc.json personId)
+[ "$APERSON" = "$MPERSON" ] && ok "membership reuses the existing person (no duplicate)" \
+  || fail "person mismatch: signed up as $MPERSON but membership says $APERSON"
+
+say "9) The member appears in the organization roster"
+code=$(http GET "/api/v1/providers/$PROV/hierarchy/members" "$PTOK" - /tmp/k_mem.json)
+[ "$code" = "200" ] && ok "list-members 200" || fail "list-members (HTTP $code)"
+grep -q "$MEMBERSHIP" /tmp/k_mem.json && ok "member is on the roster" || fail "member missing from roster"
+
+say "10) The member is bookable: slots exist for them"
+DAY="${START%%T*}"
+code=$(http GET "/api/v1/Bookings/available-slots?providerId=$PROV&serviceId=$SVC&date=$DAY&staffId=$MEMBERSHIP" "$CTOK" - /tmp/k_slots.json)
+[ "$code" = "200" ] && ok "available-slots 200 for the member" || fail "available-slots (HTTP $code)"
+grep -q '"startTime"' /tmp/k_slots.json && ok "member has bookable slots" \
+  || fail "member has NO slots (bookability was not provisioned): $(jget /tmp/k_slots.json message)"
+
+say "11) A customer books that specific member"
+MSTART="${DAY}T11:00:00Z"
+BODY="{\"providerId\":\"$PROV\",\"serviceId\":\"$SVC\",\"staffProviderId\":\"$MEMBERSHIP\",\"startTime\":\"$MSTART\",\"customerNotes\":\"keystone membership e2e\"}"
+code=$(http POST "/api/v1/Bookings" "$CTOK" "$BODY" /tmp/k_mbook.json)
+[ "$code" = "201" ] && ok "booking against the MEMBER 201" || fail "member booking (HTTP $code): $(jget /tmp/k_mbook.json message)"
+MBID=$(jget /tmp/k_mbook.json id); [ -n "$MBID" ] || fail "no member bookingId"
+
+say "12) Removing the last owner is refused (organization always keeps an owner)"
+code=$(http GET "/api/v1/memberships/me" "$PTOK" - /tmp/k_mine.json)
+[ "$code" = "200" ] && ok "my-memberships 200" || fail "my-memberships (HTTP $code)"
+OWNMEM=$(jget /tmp/k_mine.json membershipId)
+if [ -n "$OWNMEM" ]; then
+  code=$(http POST "/api/v1/memberships/$OWNMEM/terminate" "$PTOK" '{"reason":"e2e"}' /tmp/k_term.json)
+  [ "$code" = "400" ] || [ "$code" = "409" ] && ok "last-owner termination rejected ($code)" \
+    || fail "last owner WAS removable (HTTP $code)"
+fi
+
+printf '\n\033[1;32mKEYSTONE PASSED — %d checks (legacy staff + membership chain).\033[0m\n' "$PASS"
+

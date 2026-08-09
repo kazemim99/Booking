@@ -16,12 +16,12 @@ namespace Booksy.ServiceCatalog.IntegrationTests.StepDefinitions.Common;
 public class SharedSteps
 {
     private readonly ScenarioContext _scenarioContext;
-    private readonly ServiceCatalogIntegrationTestBase _testBase;
+    private readonly ServiceCatalogReqnrollTestBase _testBase;
     private readonly ScenarioContextHelper _helper;
 
     public SharedSteps(
         ScenarioContext scenarioContext,
-        ServiceCatalogIntegrationTestBase testBase)
+        ServiceCatalogReqnrollTestBase testBase)
     {
         _scenarioContext = scenarioContext;
         _testBase = testBase;
@@ -206,7 +206,9 @@ public class SharedSteps
 
     #region Field Value Extraction and Comparison
 
-    [Then(@"the response should contain a (.*) with:")]
+    // Negative lookahead: "booking" has its own typed step in BookingSteps
+    // (reads ApiResponse<BookingResponse>); both matching is a BindingException.
+    [Then(@"the response should contain a (?!booking)(.*) with:")]
     public void ThenTheResponseShouldContainEntityWith(string entityType, Table table)
     {
         var response = _scenarioContext.Get<ApiResponse>("LastResponse");

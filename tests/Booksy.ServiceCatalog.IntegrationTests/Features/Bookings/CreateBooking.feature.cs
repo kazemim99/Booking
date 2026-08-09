@@ -346,6 +346,115 @@ namespace Booksy.ServiceCatalog.IntegrationTests.Features.Bookings
             }
             await this.ScenarioCleanupAsync();
         }
+
+        [Xunit.SkippableFactAttribute(DisplayName="Provider-created walk-in is born Confirmed")]
+        [Xunit.TraitAttribute("FeatureTitle", "Create Booking")]
+        [Xunit.TraitAttribute("Description", "Provider-created walk-in is born Confirmed")]
+        [Xunit.TraitAttribute("Category", "smoke")]
+        [Xunit.TraitAttribute("Category", "booking")]
+        [Xunit.TraitAttribute("Category", "create")]
+        [Xunit.TraitAttribute("Category", "walkin")]
+        public async System.Threading.Tasks.Task ProviderCreatedWalkInIsBornConfirmed()
+        {
+            string[] tagsOfScenario = new string[] {
+                    "smoke",
+                    "booking",
+                    "create",
+                    "walkin"};
+            System.Collections.Specialized.OrderedDictionary argumentsOfScenario = new System.Collections.Specialized.OrderedDictionary();
+            global::Reqnroll.ScenarioInfo scenarioInfo = new global::Reqnroll.ScenarioInfo("Provider-created walk-in is born Confirmed", null, tagsOfScenario, argumentsOfScenario, featureTags);
+            this.ScenarioInitialize(scenarioInfo);
+            if ((global::Reqnroll.TagHelper.ContainsIgnoreTag(scenarioInfo.CombinedTags) || global::Reqnroll.TagHelper.ContainsIgnoreTag(featureTags)))
+            {
+                testRunner.SkipScenario();
+            }
+            else
+            {
+                await this.ScenarioStartAsync();
+                await this.FeatureBackgroundAsync();
+                await testRunner.GivenAsync("I am authenticated as the provider", ((string)(null)), ((global::Reqnroll.Table)(null)), "Given ");
+                global::Reqnroll.Table tableW1 = new global::Reqnroll.Table(new string[] {
+                            "Field",
+                            "Value"});
+                tableW1.AddRow(new string[] {
+                            "ServiceId",
+                            "[Service:Haircut:Id]"});
+                tableW1.AddRow(new string[] {
+                            "StartTime",
+                            "2 days from now at 10:00"});
+                tableW1.AddRow(new string[] {
+                            "Notes",
+                            "Walk-in client"});
+                await testRunner.WhenAsync("I send a POST request to create a booking with:", ((string)(null)), tableW1, "When ");
+                await testRunner.ThenAsync("the response status code should be 201", ((string)(null)), ((global::Reqnroll.Table)(null)), "Then ");
+                global::Reqnroll.Table tableW2 = new global::Reqnroll.Table(new string[] {
+                            "Field",
+                            "Value"});
+                tableW2.AddRow(new string[] {
+                            "Status",
+                            "Confirmed"});
+                await testRunner.AndAsync("the response should contain a booking with:", ((string)(null)), tableW2, "And ");
+                await testRunner.AndAsync("the booking should exist in the database with status \"Confirmed\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "And ");
+            }
+            await this.ScenarioCleanupAsync();
+        }
+
+        [Xunit.SkippableFactAttribute(DisplayName="Multi-service visit sums duration and price")]
+        [Xunit.TraitAttribute("FeatureTitle", "Create Booking")]
+        [Xunit.TraitAttribute("Description", "Multi-service visit sums duration and price")]
+        [Xunit.TraitAttribute("Category", "booking")]
+        [Xunit.TraitAttribute("Category", "create")]
+        [Xunit.TraitAttribute("Category", "multiservice")]
+        public async System.Threading.Tasks.Task MultiServiceVisitSumsDurationAndPrice()
+        {
+            string[] tagsOfScenario = new string[] {
+                    "booking",
+                    "create",
+                    "multiservice"};
+            System.Collections.Specialized.OrderedDictionary argumentsOfScenario = new System.Collections.Specialized.OrderedDictionary();
+            global::Reqnroll.ScenarioInfo scenarioInfo = new global::Reqnroll.ScenarioInfo("Multi-service visit sums duration and price", null, tagsOfScenario, argumentsOfScenario, featureTags);
+            this.ScenarioInitialize(scenarioInfo);
+            if ((global::Reqnroll.TagHelper.ContainsIgnoreTag(scenarioInfo.CombinedTags) || global::Reqnroll.TagHelper.ContainsIgnoreTag(featureTags)))
+            {
+                testRunner.SkipScenario();
+            }
+            else
+            {
+                await this.ScenarioStartAsync();
+                await this.FeatureBackgroundAsync();
+                global::Reqnroll.Table tableM1 = new global::Reqnroll.Table(new string[] {
+                            "Field",
+                            "Value"});
+                tableM1.AddRow(new string[] {
+                            "Name",
+                            "Hair color"});
+                tableM1.AddRow(new string[] {
+                            "Price",
+                            "120.00"});
+                tableM1.AddRow(new string[] {
+                            "Duration",
+                            "90"});
+                tableM1.AddRow(new string[] {
+                            "Currency",
+                            "USD"});
+                await testRunner.GivenAsync("the provider has a service \"Hair color\" with:", ((string)(null)), tableM1, "Given ");
+                await testRunner.AndAsync("I am authenticated as a customer", ((string)(null)), ((global::Reqnroll.Table)(null)), "And ");
+                global::Reqnroll.Table tableM2 = new global::Reqnroll.Table(new string[] {
+                            "Field",
+                            "Value"});
+                tableM2.AddRow(new string[] {
+                            "ServiceIds",
+                            "[Service:Haircut:Id],[Service:Hair color:Id]"});
+                tableM2.AddRow(new string[] {
+                            "StartTime",
+                            "2 days from now at 10:00"});
+                await testRunner.WhenAsync("I send a POST request to create a booking with:", ((string)(null)), tableM2, "When ");
+                await testRunner.ThenAsync("the response status code should be 201", ((string)(null)), ((global::Reqnroll.Table)(null)), "Then ");
+                await testRunner.AndAsync("the booking should exist in the database with status \"Requested\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "And ");
+                await testRunner.AndAsync("the stored booking should have 2 service lines, 150 minutes and total price 170.00", ((string)(null)), ((global::Reqnroll.Table)(null)), "And ");
+            }
+            await this.ScenarioCleanupAsync();
+        }
         
         [System.CodeDom.Compiler.GeneratedCodeAttribute("Reqnroll", "2.0.0.0")]
         [System.Runtime.CompilerServices.CompilerGeneratedAttribute()]

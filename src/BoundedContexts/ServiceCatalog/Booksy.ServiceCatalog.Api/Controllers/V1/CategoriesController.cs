@@ -12,6 +12,7 @@ namespace Booksy.ServiceCatalog.API.Controllers.V1;
 [ApiVersion("1.0")]
 [Route("api/v{version:apiVersion}/[controller]")]
 [Produces("application/json")]
+[Microsoft.AspNetCore.Authorization.AllowAnonymous] // Public discovery: service categories are browseable without authentication (C1 authz audit)
 public class CategoriesController : ControllerBase
 {
     private readonly ISender _mediator;

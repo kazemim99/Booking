@@ -7,6 +7,7 @@ namespace Booksy.ServiceCatalog.Api.Controllers.V1
 {
     [ApiController]
     [Route("api/v1/[controller]")]
+    [Microsoft.AspNetCore.Authorization.AllowAnonymous] // Public reference data (provinces/cities/districts) used by anonymous discovery (C1 authz audit)
     public class LocationsController : ControllerBase
     {
         private readonly ServiceCatalogDbContext _context;

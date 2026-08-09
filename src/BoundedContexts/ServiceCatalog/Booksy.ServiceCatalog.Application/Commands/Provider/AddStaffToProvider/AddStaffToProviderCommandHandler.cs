@@ -1,12 +1,26 @@
 // ========================================
 // AddStaffToProviderCommandHandler.cs
-// Adds a staff member to the caller's organization as an Active Individual
-// sub-provider (the model the booking flow resolves staff through), and
-// qualifies the staff for the organization's services so they become bookable.
+// Adds a staff member to the caller's organization as an ORGANIZATION MEMBERSHIP.
+//
+// This used to mint a synthetic `UserId.CreateNew()` and a shadow Individual
+// sub-provider — an account-less duplicate person with no identity. It now creates
+// a real membership:
+//   • phone given and it belongs to a known person  → membership linked to them
+//   • otherwise                                     → an UNCLAIMED membership that
+//     carries a display name and is bookable immediately; when that person later
+//     accepts an invitation on their phone the membership is claimed and keeps its
+//     history and bookings.
 // ========================================
 using Booksy.Core.Application.Abstractions.CQRS;
+using Booksy.Core.Application.Exceptions;
+using Booksy.Core.Domain.Exceptions;
 using Booksy.Core.Domain.ValueObjects;
+using Booksy.ServiceCatalog.Application.Abstractions.Identity;
 using Booksy.ServiceCatalog.Application.Abstractions.Persistence;
+using Booksy.ServiceCatalog.Application.Services.Interfaces;
+using Booksy.ServiceCatalog.Domain.Aggregates.MembershipAuditAggregate;
+using Booksy.ServiceCatalog.Domain.Aggregates.OrganizationMembershipAggregate;
+using Booksy.ServiceCatalog.Domain.Enums;
 using Booksy.ServiceCatalog.Domain.Repositories;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Logging;
@@ -17,31 +31,33 @@ namespace Booksy.ServiceCatalog.Application.Commands.Provider.AddStaffToProvider
 public sealed class AddStaffToProviderCommandHandler
     : ICommandHandler<AddStaffToProviderCommand, AddStaffToProviderResult>
 {
-    private readonly IProviderWriteRepository _providerRepository;
-    private readonly IServiceWriteRepository _serviceRepository;
-    private readonly IProviderAvailabilityWriteRepository _availabilityRepository;
+    private readonly IProviderReadRepository _providerRepository;
+    private readonly IOrganizationMembershipRepository _membershipRepository;
+    private readonly IMembershipAuditRepository _auditRepository;
+    private readonly IPersonDirectory _personDirectory;
+    private readonly IMemberBookabilityService _memberBookability;
     private readonly IServiceCatalogUnitOfWork _unitOfWork;
     private readonly IHttpContextAccessor _httpContextAccessor;
     private readonly ILogger<AddStaffToProviderCommandHandler> _logger;
 
-    // Availability auto-generation window for a new staff member.
-    private const int AvailabilityDaysAhead = 30;
-    private const int SlotMinutes = 30;
-
     public AddStaffToProviderCommandHandler(
-        IProviderWriteRepository providerRepository,
-        IServiceWriteRepository serviceRepository,
-        IProviderAvailabilityWriteRepository availabilityRepository,
+        IProviderReadRepository providerRepository,
+        IOrganizationMembershipRepository membershipRepository,
+        IMembershipAuditRepository auditRepository,
+        IPersonDirectory personDirectory,
+        IMemberBookabilityService memberBookability,
         IServiceCatalogUnitOfWork unitOfWork,
         IHttpContextAccessor httpContextAccessor,
         ILogger<AddStaffToProviderCommandHandler> logger)
     {
-        _providerRepository = providerRepository ?? throw new ArgumentNullException(nameof(providerRepository));
-        _serviceRepository = serviceRepository ?? throw new ArgumentNullException(nameof(serviceRepository));
-        _availabilityRepository = availabilityRepository ?? throw new ArgumentNullException(nameof(availabilityRepository));
-        _unitOfWork = unitOfWork ?? throw new ArgumentNullException(nameof(unitOfWork));
-        _httpContextAccessor = httpContextAccessor ?? throw new ArgumentNullException(nameof(httpContextAccessor));
-        _logger = logger ?? throw new ArgumentNullException(nameof(logger));
+        _providerRepository = providerRepository;
+        _membershipRepository = membershipRepository;
+        _auditRepository = auditRepository;
+        _personDirectory = personDirectory;
+        _memberBookability = memberBookability;
+        _unitOfWork = unitOfWork;
+        _httpContextAccessor = httpContextAccessor;
+        _logger = logger;
     }
 
     public async Task<AddStaffToProviderResult> Handle(
@@ -50,107 +66,83 @@ public sealed class AddStaffToProviderCommandHandler
     {
         if (string.IsNullOrWhiteSpace(request.FirstName))
             throw new ArgumentException("First name is required", nameof(request));
-        if (string.IsNullOrWhiteSpace(request.LastName))
-            throw new ArgumentException("Last name is required", nameof(request));
+
+        var userIdStr = _httpContextAccessor.HttpContext?.User.FindFirstValue(ClaimTypes.NameIdentifier);
+        if (string.IsNullOrWhiteSpace(userIdStr))
+            throw new UnauthorizedAccessException("User not authenticated");
+        var callerId = UserId.From(userIdStr);
 
         // A provider may only add staff to their OWN organization.
-        var userId = _httpContextAccessor.HttpContext?.User.FindFirstValue(ClaimTypes.NameIdentifier);
-        if (string.IsNullOrWhiteSpace(userId))
-            throw new UnauthorizedAccessException("User not authenticated");
+        var organization = await _providerRepository.GetByOwnerIdAsync(callerId, cancellationToken)
+            ?? throw new NotFoundException("No provider found for the authenticated user.");
 
-        var organization = await _providerRepository.GetByOwnerIdAsync(UserId.From(userId), cancellationToken);
-        if (organization is null)
-            throw new KeyNotFoundException("No provider found for the authenticated user.");
+        var displayName = $"{request.FirstName} {request.LastName}".Trim();
 
-        // Create the staff member as an Active Individual sub-provider under the organization.
-        // (Synthetic owner id — staff are an internal resource and don't get a login.)
-        var staff = Booksy.ServiceCatalog.Domain.Aggregates.Provider.RegisterStaffMember(
-            organization,
-            UserId.CreateNew(),
-            request.FirstName,
-            request.LastName);
-
-        await _providerRepository.SaveProviderAsync(staff, cancellationToken);
-
-        // Generate bookable availability slots for the staff from the org's business hours, so the
-        // customer-facing slot picker has times to show. Tracked here, committed below in one batch.
-        var slots = await GenerateStaffAvailabilityAsync(organization, staff.Id, cancellationToken);
-
-        await _unitOfWork.CommitAsync(cancellationToken);
-
-        // Qualify the new staff member for every one of the organization's services so a
-        // customer can book them immediately. (Booking checks Service.IsStaffQualified(staffId).)
-        var services = await _serviceRepository.GetServicesByProviderIdAsync(organization.Id, cancellationToken);
-        var qualified = 0;
-        foreach (var service in services)
+        // Link to a real person when the phone identifies one — one Person per phone.
+        UserId? personId = null;
+        if (!string.IsNullOrWhiteSpace(request.PhoneNumber))
         {
-            service.AddQualifiedStaff(staff.Id.Value);
-            // A Draft service becomes bookable once it has a qualified staff member.
-            if (service.Status != Booksy.ServiceCatalog.Domain.Enums.ServiceStatus.Active)
-                service.Activate();
-            await _serviceRepository.SaveServiceAsync(service, cancellationToken);
-            qualified++;
-        }
-
-        _logger.LogInformation(
-            "Staff {StaffId} ({First} {Last}) added to organization {OrgId}; qualified for {Count} service(s)",
-            staff.Id.Value, request.FirstName, request.LastName, organization.Id.Value, qualified);
-
-        return new AddStaffToProviderResult(
-            organization.Id.Value,
-            staff.Id.Value,
-            request.FirstName,
-            request.LastName,
-            request.Role,
-            true,
-            staff.RegisteredAt);
-    }
-
-    /// <summary>
-    /// Generates Available slots for the staff member from the organization's business hours,
-    /// for the next <see cref="AvailabilityDaysAhead"/> days in <see cref="SlotMinutes"/>-minute
-    /// increments. Slots are tracked on the repository; the caller commits them in one batch.
-    /// </summary>
-    private async Task<int> GenerateStaffAvailabilityAsync(
-        Booksy.ServiceCatalog.Domain.Aggregates.Provider organization,
-        Booksy.ServiceCatalog.Domain.ValueObjects.ProviderId staffId,
-        CancellationToken cancellationToken)
-    {
-        var hoursByDay = organization.BusinessHours
-            .Where(h => h.IsOpen)
-            .GroupBy(h => h.DayOfWeek)
-            .ToDictionary(g => g.Key, g => g.First());
-        if (hoursByDay.Count == 0)
-            return 0;
-
-        var today = DateTime.UtcNow.Date;
-        var count = 0;
-        for (var d = 0; d < AvailabilityDaysAhead; d++)
-        {
-            var date = today.AddDays(d);
-            // BusinessHours uses the domain DayOfWeek enum (same int values as System.DayOfWeek).
-            var domainDay = (Booksy.ServiceCatalog.Domain.Enums.DayOfWeek)(int)date.DayOfWeek;
-            if (!hoursByDay.TryGetValue(domainDay, out var bh) || bh.OpenTime is null || bh.CloseTime is null)
-                continue;
-
-            var slotStart = bh.OpenTime.Value;
-            var close = bh.CloseTime.Value;
-            while (true)
+            var person = await _personDirectory.FindByPhoneAsync(request.PhoneNumber, cancellationToken);
+            if (person is not null)
             {
-                var slotEnd = slotStart.AddMinutes(SlotMinutes);
-                // Stop at/after closing time; the `<= slotStart` guard handles a midnight wrap.
-                if (slotEnd <= slotStart || slotEnd > close)
-                    break;
+                personId = UserId.From(person.PersonId);
 
-                var slot = Booksy.ServiceCatalog.Domain.Aggregates.ProviderAvailabilityAggregate.ProviderAvailability
-                    .CreateAvailable(staffId, date, slotStart, slotEnd);
-                await _availabilityRepository.SaveAsync(slot, cancellationToken);
-                count++;
-                slotStart = slotEnd;
+                if (await _membershipRepository.HasActiveMembershipAsync(
+                        personId, organization.Id, cancellationToken))
+                {
+                    throw new ConflictException(
+                        "This phone number already belongs to a member of your organization.");
+                }
             }
         }
 
-        _logger.LogInformation("Generated {Count} availability slots for staff {StaffId}", count, staffId.Value);
-        return count;
+        OrganizationMembership membership;
+        if (personId is not null)
+        {
+            // Known person: they are a member straight away (the owner is adding them
+            // deliberately, so no invitation round-trip is required to make them bookable).
+            membership = OrganizationMembership.InviteExisting(personId, organization.Id);
+            membership.Accept();
+            membership.EnableStaffProfile();
+        }
+        else
+        {
+            // No account behind this person (yet) — a real, bookable member the salon
+            // manages on their behalf, claimable later via an invitation.
+            membership = OrganizationMembership.CreateUnclaimed(organization.Id, displayName);
+        }
+
+        await _membershipRepository.SaveAsync(membership, cancellationToken);
+
+        await _auditRepository.AppendAsync(
+            MembershipAuditEntry.Record(
+                membership.Id,
+                membership.OrganizationId,
+                MembershipAuditAction.MemberAdded,
+                membership.Status,
+                subjectPersonId: membership.PersonId,
+                actorPersonId: callerId,
+                roles: membership.Roles,
+                reason: membership.IsUnclaimed ? "added without an app account" : null),
+            cancellationToken);
+
+        // Qualify for the org's services + generate availability so the member is
+        // bookable immediately (the behaviour the old synthetic path provided).
+        await _memberBookability.SyncAsync(membership, cancellationToken);
+
+        await _unitOfWork.SaveAndPublishEventsAsync(cancellationToken);
+
+        _logger.LogInformation(
+            "Member {MembershipId} ({Name}) added to organization {OrgId}; unclaimed={Unclaimed}",
+            membership.Id, displayName, organization.Id.Value, membership.IsUnclaimed);
+
+        return new AddStaffToProviderResult(
+            organization.Id.Value,
+            membership.Id,               // the bookable resource id
+            request.FirstName,
+            request.LastName ?? string.Empty,
+            request.Role,
+            membership.IsActive,
+            membership.JoinedAt ?? DateTime.UtcNow);
     }
 }

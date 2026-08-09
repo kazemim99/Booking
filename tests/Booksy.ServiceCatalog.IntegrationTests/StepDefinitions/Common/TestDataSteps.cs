@@ -16,11 +16,11 @@ namespace Booksy.ServiceCatalog.IntegrationTests.StepDefinitions.Common;
 public class TestDataSteps
 {
     private readonly ScenarioContext _scenarioContext;
-    private readonly ServiceCatalogIntegrationTestBase _testBase;
+    private readonly ServiceCatalogReqnrollTestBase _testBase;
 
     public TestDataSteps(
         ScenarioContext scenarioContext,
-        ServiceCatalogIntegrationTestBase testBase)
+        ServiceCatalogReqnrollTestBase testBase)
     {
         _scenarioContext = scenarioContext;
         _testBase = testBase;
@@ -63,6 +63,17 @@ public class TestDataSteps
 
         var service = await _testBase.CreateServiceForProviderAsync(provider, name, price, duration);
 
+        // Services added AFTER staff exists (mid-scenario) must be qualified
+        // and activated immediately; ones added before are handled when the
+        // staff step runs.
+        if (_scenarioContext.ContainsKey("Staff:Current"))
+        {
+            var staff = _scenarioContext.Get<Provider>("Staff:Current");
+            service.AddQualifiedStaff(staff.Id.Value);
+            service.Activate();
+            await _testBase.UpdateEntityAsync(service);
+        }
+
         _scenarioContext.Set(service, $"Service:{serviceName}");
         _scenarioContext.Set(service, "Service:Current");
     }
@@ -100,7 +111,39 @@ public class TestDataSteps
     {
         var provider = _scenarioContext.Get<Provider>("Provider:Current");
 
-     
+        // A real Individual sub-provider in the hierarchy: bookings REQUIRE a
+        // staff provider (StaffProviderId), so without this every creation
+        // scenario dies with a 400 before reaching any business rule.
+        var staff = Provider.RegisterStaffMember(
+            provider,
+            UserId.From(Guid.NewGuid()),
+            "Test",
+            "Staff");
+        await _testBase.CreateEntityAsync(staff);
+
+        _scenarioContext.Set(staff, "Staff:Current");
+        _scenarioContext.Set(staff.Id.Value, "CurrentStaffId");
+
+        // Services are born Draft and can only be Activated once they have a
+        // qualified staff member — and the Background seeds services BEFORE
+        // staff. Qualify + activate them here so they are bookable.
+        await ActivateProviderServicesAsync(provider, staff);
+    }
+
+    /// <summary>
+    /// Assigns <paramref name="staff"/> to every Draft service of the provider
+    /// and activates it. Bookings reject non-Active services.
+    /// </summary>
+    private async Task ActivateProviderServicesAsync(Provider provider, Provider staff)
+    {
+        var services = await _testBase.GetProviderServicesAsync(provider.Id.Value);
+        foreach (var service in services)
+        {
+            service.AddQualifiedStaff(staff.Id.Value);
+            if (service.Status != Domain.Enums.ServiceStatus.Active)
+                service.Activate();
+            await _testBase.UpdateEntityAsync(service);
+        }
     }
 
     [Given(@"I have a booking for ""(.*)"" scheduled for tomorrow at (.*)")]

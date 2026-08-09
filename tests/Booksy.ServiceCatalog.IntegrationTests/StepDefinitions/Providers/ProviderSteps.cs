@@ -15,12 +15,12 @@ namespace Booksy.ServiceCatalog.IntegrationTests.StepDefinitions.Providers;
 public class ProviderSteps
 {
     private readonly ScenarioContext _scenarioContext;
-    private readonly ServiceCatalogIntegrationTestBase _testBase;
+    private readonly ServiceCatalogReqnrollTestBase _testBase;
     private readonly ScenarioContextHelper _helper;
 
     public ProviderSteps(
         ScenarioContext scenarioContext,
-        ServiceCatalogIntegrationTestBase testBase)
+        ServiceCatalogReqnrollTestBase testBase)
     {
         _scenarioContext = scenarioContext;
         _testBase = testBase;

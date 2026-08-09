@@ -57,10 +57,14 @@ namespace Booksy.ServiceCatalog.Domain.ValueObjects
                 totalAmount.Currency != refundedAmount.Currency)
                 throw new ArgumentException("All amounts must have the same currency");
 
-            TotalAmount = totalAmount;
-            DepositAmount = depositAmount;
-            PaidAmount = paidAmount;
-            RefundedAmount = refundedAmount;
+            // Defensive copies: the With* methods build a new PaymentInfo reusing the current instance's Money
+            // objects. Sharing a Money CLR instance across the replaced (deleted) and new (added) owned PaymentInfo
+            // corrupts EF's owned-entity tracking (nulls the mapped columns on save). Distinct instances per owned
+            // slot — same rule as ADR-005 (Money.Clone / owned-entity aliasing).
+            TotalAmount = totalAmount.Clone();
+            DepositAmount = depositAmount.Clone();
+            PaidAmount = paidAmount.Clone();
+            RefundedAmount = refundedAmount.Clone();
             Status = status;
             PaymentIntentId = paymentIntentId;
             DepositPaymentIntentId = depositPaymentIntentId;

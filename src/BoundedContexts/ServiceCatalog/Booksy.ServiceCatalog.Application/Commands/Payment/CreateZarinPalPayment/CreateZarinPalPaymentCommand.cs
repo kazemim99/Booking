@@ -18,5 +18,8 @@ namespace Booksy.ServiceCatalog.Application.Commands.Payment.CreateZarinPalPayme
         string? Mobile = null,
         string? Email = null,
         Dictionary<string, object>? Metadata = null,
-        Guid? IdempotencyKey = null) : ICommand<CreateZarinPalPaymentResult>;
+        Guid? IdempotencyKey = null)
+        : ICommand<CreateZarinPalPaymentResult>,
+          Core.Application.Abstractions.CQRS.INonTransactionalCommand, // gateway request must not run in a retried tx
+          Core.Application.Abstractions.CQRS.IRequireIdempotency;      // at-most-once per idempotency key
 }

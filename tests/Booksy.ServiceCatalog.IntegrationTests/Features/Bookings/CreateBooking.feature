@@ -75,3 +75,36 @@ Feature: Create Booking
       | 2 days from now at 14:00     | 201        |
       | 2 days from now at 18:00     | 400        |
       | 1 day ago at 10:00           | 400        |
+
+  @smoke @booking @create @walkin
+  Scenario: Provider-created walk-in is born Confirmed
+    # The provider IS the approver: a booking they enter on their own
+    # calendar must never wait in their own pending queue.
+    Given I am authenticated as the provider
+    When I send a POST request to create a booking with:
+      | Field      | Value                            |
+      | ServiceId  | [Service:Haircut:Id]             |
+      | StartTime  | 2 days from now at 10:00         |
+      | Notes      | Walk-in client                   |
+    Then the response status code should be 201
+    And the response should contain a booking with:
+      | Field      | Value                            |
+      | Status     | Confirmed                        |
+    And the booking should exist in the database with status "Confirmed"
+
+  @booking @create @multiservice
+  Scenario: Multi-service visit sums duration and price
+    Given the provider has a service "Hair color" with:
+      | Field    | Value      |
+      | Name     | Hair color |
+      | Price    | 120.00     |
+      | Duration | 90         |
+      | Currency | USD        |
+    And I am authenticated as a customer
+    When I send a POST request to create a booking with:
+      | Field      | Value                                        |
+      | ServiceIds | [Service:Haircut:Id],[Service:Hair color:Id] |
+      | StartTime  | 2 days from now at 10:00                     |
+    Then the response status code should be 201
+    And the booking should exist in the database with status "Requested"
+    And the stored booking should have 2 service lines, 150 minutes and total price 170.00

@@ -35,6 +35,18 @@ namespace Booksy.Infrastructure.External.Payment
         /// <summary>
         /// Creates a payment gateway instance for the specified provider
         /// </summary>
+        /// <summary>
+        /// Gateways that are not real payment integrations: Behpardakht returns mock success without moving money
+        /// (would record phantom-paid bookings), Parsian/Saman are unimplemented placeholders. They are refused
+        /// unless explicitly opted-in via <c>Payments:AllowStubGateways=true</c> (non-production only).
+        /// </summary>
+        private static readonly HashSet<PaymentProvider> NonFunctionalProviders = new()
+        {
+            PaymentProvider.Behpardakht,
+            PaymentProvider.Parsian,
+            PaymentProvider.Saman
+        };
+
         public IPaymentGateway CreatePaymentGateway(PaymentProvider provider)
         {
             _logger.LogInformation("Creating payment gateway for provider: {Provider}", provider);
@@ -43,6 +55,18 @@ namespace Booksy.Infrastructure.External.Payment
             {
                 _logger.LogError("Payment provider {Provider} is not supported or not configured", provider);
                 throw new ArgumentException($"Payment provider {provider} is not supported or not configured", nameof(provider));
+            }
+
+            // Fail closed: never hand back a non-functional gateway in production. A stub gateway that reports
+            // success without charging would record phantom-paid payments — money that never moved, marked Paid.
+            if (NonFunctionalProviders.Contains(provider) && !AllowStubGateways())
+            {
+                _logger.LogError(
+                    "Refusing non-functional payment provider {Provider} (fail-closed). Set Payments:AllowStubGateways=true to enable it in non-production environments.",
+                    provider);
+                throw new InvalidOperationException(
+                    $"Payment provider {provider} is a non-functional stub gateway and is refused (fail-closed). " +
+                    "Use a real gateway (e.g. ZarinPal) or set Payments:AllowStubGateways=true for non-production use.");
             }
 
             try
@@ -138,6 +162,11 @@ namespace Booksy.Infrastructure.External.Payment
 
             return supportedProviders;
         }
+
+        /// <summary>
+        /// Whether non-functional stub gateways are explicitly allowed (non-production only). Defaults to false.
+        /// </summary>
+        private bool AllowStubGateways() => _configuration.GetValue("Payments:AllowStubGateways", false);
 
         /// <summary>
         /// Helper method to get a service from the service provider

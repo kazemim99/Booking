@@ -6,6 +6,7 @@ using Booksy.Core.Domain.Abstractions.Rules;
 using Booksy.Core.Domain.Base;
 using Booksy.Core.Domain.Exceptions;
 using Booksy.Core.Domain.ValueObjects;
+using Booksy.ServiceCatalog.Domain.Aggregates.BookingAggregate.Entities;
 using Booksy.ServiceCatalog.Domain.Enums;
 using Booksy.ServiceCatalog.Domain.Events;
 using Booksy.ServiceCatalog.Domain.ValueObjects;
@@ -18,6 +19,7 @@ namespace Booksy.ServiceCatalog.Domain.Aggregates.BookingAggregate
     public sealed class Booking : AggregateRoot<BookingId>, IAuditableEntity
     {
         private readonly List<BookingHistoryEntry> _history = new();
+        private readonly List<BookingServiceItem> _services = new();
 
         // Core Identity
         public UserId CustomerId { get; private set; }
@@ -63,6 +65,13 @@ namespace Booksy.ServiceCatalog.Domain.Aggregates.BookingAggregate
         // Collections
         public IReadOnlyList<BookingHistoryEntry> History => _history.AsReadOnly();
 
+        /// <summary>
+        /// The service lines bundled in this visit. Always at least one entry
+        /// once created through a factory; TimeSlot/TotalPrice are their sums.
+        /// (Empty only on legacy rows written before multi-service landed.)
+        /// </summary>
+        public IReadOnlyList<BookingServiceItem> Services => _services.AsReadOnly();
+
         // Audit Properties
         public DateTime CreatedAt { get; set; }
         public string? CreatedBy { get; set; }
@@ -86,7 +95,8 @@ namespace Booksy.ServiceCatalog.Domain.Aggregates.BookingAggregate
             Price totalPrice,
             BookingPolicy policy,
             string? customerNotes = null,
-            ProviderId? individualProviderId = null)
+            ProviderId? individualProviderId = null,
+            IReadOnlyList<BookingServiceItem>? services = null)
         {
             var timeSlot = TimeSlot.Create(startTime, duration);
             var depositAmount = policy.CalculateDepositAmount(
@@ -114,6 +124,9 @@ namespace Booksy.ServiceCatalog.Domain.Aggregates.BookingAggregate
                 RequestedAt = DateTime.UtcNow
             };
 
+            if (services is { Count: > 0 })
+                booking._services.AddRange(services);
+
             booking.AddHistoryEntry("Booking requested", BookingStatus.Requested);
 
             booking.RaiseDomainEvent(new BookingRequestedEvent(
@@ -130,9 +143,89 @@ namespace Booksy.ServiceCatalog.Domain.Aggregates.BookingAggregate
             return booking;
         }
 
+        /// <summary>
+        /// Creates a booking the provider entered on their own calendar
+        /// (walk-in / phone booking). Born Confirmed: the provider IS the
+        /// approver, so the request→confirm handshake would be them asking
+        /// themselves. Deliberately bypasses the deposit and advance-notice
+        /// rules — those protect the provider from customers, and do not
+        /// apply to the provider recording their own appointment.
+        /// </summary>
+        public static Booking CreateConfirmedByProvider(
+            UserId customerId,
+            ProviderId providerId,
+            ServiceId serviceId,
+            Guid staffId,
+            DateTime startTime,
+            Duration duration,
+            Price totalPrice,
+            BookingPolicy policy,
+            string? customerNotes = null,
+            ProviderId? individualProviderId = null,
+            IReadOnlyList<BookingServiceItem>? services = null)
+        {
+            var booking = CreateBookingRequest(
+                customerId,
+                providerId,
+                serviceId,
+                staffId,
+                startTime,
+                duration,
+                totalPrice,
+                policy,
+                customerNotes,
+                individualProviderId,
+                services);
+
+            // A walk-in is Confirmed from birth, not requested-then-confirmed.
+            // Drop the BookingRequestedEvent raised by the delegate factory so
+            // downstream handlers see a single Confirmed signal — otherwise the
+            // provider would get a spurious "new request" notification for a
+            // booking they entered themselves.
+            booking.ClearDomainEvents();
+
+            booking.Status = BookingStatus.Confirmed;
+            booking.ConfirmedAt = DateTime.UtcNow;
+            booking.AddHistoryEntry(
+                "Booking created by provider (walk-in) — auto-confirmed",
+                BookingStatus.Confirmed);
+
+            booking.RaiseDomainEvent(new BookingConfirmedEvent(
+                booking.Id,
+                booking.CustomerId,
+                booking.ProviderId,
+                booking.ServiceId,
+                booking.StaffId,
+                booking.TimeSlot.StartTime,
+                booking.TimeSlot.EndTime,
+                booking.ConfirmedAt.Value));
+
+            return booking;
+        }
+
         // ========================================
         // BUSINESS METHODS - STATE TRANSITIONS
         // ========================================
+
+        /// <summary>
+        /// Records that the required deposit has been paid (create-then-pay: invoked when the deposit payment is
+        /// verified by the gateway). After this, <see cref="Confirm"/> passes the deposit gate. Idempotent: a no-op
+        /// if no deposit is required or the deposit is already covered — so a replayed payment event is safe.
+        /// </summary>
+        public void RecordDepositPaid(string paymentReference)
+        {
+            if (string.IsNullOrWhiteSpace(paymentReference))
+                throw new ArgumentException("Payment reference is required", nameof(paymentReference));
+
+            if (!Policy.RequireDeposit || PaymentInfo.DepositAmount.Amount == 0m)
+                return; // no deposit to record
+
+            if (PaymentInfo.IsDepositPaid())
+                return; // already recorded — idempotent
+
+            PaymentInfo = PaymentInfo.WithDepositPaid(paymentReference);
+            AddHistoryEntry("Deposit paid", Status);
+        }
 
         /// <summary>
         /// Confirm the booking after validation and optional payment

@@ -2,28 +2,39 @@
 // Booksy.Core.Application/Behaviors/IdempotencyBehavior.cs
 // ========================================
 using Booksy.Core.Application.Abstractions.CQRS;
+using Booksy.Core.Application.Abstractions.Idempotency;
+using Booksy.Core.Application.Exceptions;
 using MediatR;
-using Microsoft.Extensions.Caching.Distributed;
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using System.Text.Json;
 
 namespace Booksy.Core.Application.Behaviors
 {
     /// <summary>
-    /// Pipeline behavior for command idempotency using distributed cache
-    /// Prevents duplicate command execution by caching command results
+    /// Enforces at-most-once execution for commands marked <see cref="IRequireIdempotency"/> using an atomic
+    /// database reservation (<see cref="IIdempotencyStore"/>), replacing the old non-atomic cache check-then-act.
+    /// <para>
+    /// Flow: reserve the key (an INSERT against a unique <c>(RequestType, Key)</c> — the serialization point). If we
+    /// win, run the handler exactly once, then store its serialized result. If the key is already <b>Completed</b>,
+    /// return the stored result (a retried request never re-charges). If it is still <b>in-flight</b> (a concurrent
+    /// duplicate), throw <see cref="IdempotencyConflictException"/> → HTTP 409. On handler failure we release the
+    /// reservation so the request can be retried; a crashed in-flight reservation is reclaimed after a staleness window.
+    /// </para>
     /// </summary>
     public sealed class IdempotencyBehavior<TRequest, TResponse> : IPipelineBehavior<TRequest, TResponse>
         where TRequest : ICommand<TResponse>
     {
-        private readonly IDistributedCache _cache;
+        private static readonly TimeSpan StaleAfter = TimeSpan.FromMinutes(5);
+
+        private readonly IServiceProvider _serviceProvider;
         private readonly ILogger<IdempotencyBehavior<TRequest, TResponse>> _logger;
 
         public IdempotencyBehavior(
-            IDistributedCache cache,
+            IServiceProvider serviceProvider,
             ILogger<IdempotencyBehavior<TRequest, TResponse>> logger)
         {
-            _cache = cache;
+            _serviceProvider = serviceProvider;
             _logger = logger;
         }
 
@@ -32,65 +43,65 @@ namespace Booksy.Core.Application.Behaviors
             RequestHandlerDelegate<TResponse> next,
             CancellationToken cancellationToken)
         {
-            // Skip idempotency if no key provided
-            if (request.IdempotencyKey == null)
+            // Only commands that opt in are protected.
+            if (request is not IRequireIdempotency)
+                return await next();
+
+            var store = _serviceProvider.GetService<IIdempotencyStore>();
+            if (store is null)
             {
+                // No store registered for this context — do not silently drop protection on a money command.
+                _logger.LogWarning(
+                    "{CommandType} requires idempotency but no IIdempotencyStore is registered; proceeding WITHOUT protection.",
+                    typeof(TRequest).Name);
                 return await next();
             }
 
-            var cacheKey = $"idempotency:{typeof(TRequest).Name}:{request.IdempotencyKey}";
+            var requestType = typeof(TRequest).Name;
+
+            // A client-supplied key makes retries idempotent. If absent, generate one (still guards this attempt +
+            // concurrent duplicates of it) and log — clients SHOULD send an Idempotency-Key header.
+            var providedKey = ((IRequireIdempotency)request).IdempotencyKey;
+            if (providedKey is null)
+                _logger.LogWarning("{CommandType} has no idempotency key; generating one. Clients should send Idempotency-Key.", requestType);
+            var key = (providedKey ?? Guid.NewGuid()).ToString("N");
+
+            var outcome = await store.TryReserveAsync(requestType, key, StaleAfter, cancellationToken);
+
+            switch (outcome.State)
+            {
+                case IdempotencyState.Completed:
+                    _logger.LogInformation("Idempotent replay for {CommandType} key {Key}: returning stored result.", requestType, key);
+                    return Deserialize(outcome.ResultJson);
+
+                case IdempotencyState.InFlight:
+                    _logger.LogWarning("Duplicate in-flight {CommandType} key {Key}: rejecting with 409.", requestType, key);
+                    throw new IdempotencyConflictException(requestType, key);
+
+                case IdempotencyState.Reserved:
+                default:
+                    break;
+            }
 
             try
             {
-                // Check if this command was already processed
-                var cached = await _cache.GetStringAsync(cacheKey, cancellationToken);
-
-                if (cached != null)
-                {
-                    _logger.LogInformation(
-                        "Duplicate command detected. Returning cached result for {CommandType} with IdempotencyKey: {Key}",
-                        typeof(TRequest).Name,
-                        request.IdempotencyKey);
-
-                    // Deserialize and return cached response
-                    var cachedResponse = JsonSerializer.Deserialize<TResponse>(cached);
-                    return cachedResponse!;
-                }
-
-                // Process the command
-                _logger.LogDebug(
-                    "Processing command {CommandType} with IdempotencyKey: {Key}",
-                    typeof(TRequest).Name,
-                    request.IdempotencyKey);
-
                 var response = await next();
-
-                // Cache the response for 24 hours
-                var options = new DistributedCacheEntryOptions
-                {
-                    AbsoluteExpirationRelativeToNow = TimeSpan.FromHours(24)
-                };
-
-                var serialized = JsonSerializer.Serialize(response);
-                await _cache.SetStringAsync(cacheKey, serialized, options, cancellationToken);
-
-                _logger.LogDebug(
-                    "Cached response for command {CommandType} with IdempotencyKey: {Key}",
-                    typeof(TRequest).Name,
-                    request.IdempotencyKey);
-
+                await store.CompleteAsync(requestType, key, JsonSerializer.Serialize(response), cancellationToken);
                 return response;
             }
-            catch (Exception ex)
+            catch
             {
-                _logger.LogError(ex,
-                    "Error in idempotency behavior for command {CommandType} with IdempotencyKey: {Key}",
-                    typeof(TRequest).Name,
-                    request.IdempotencyKey);
-
-                // On error, don't cache and let the exception propagate
+                // Failed → release the reservation so the client can retry (the gateway was not left "reserved").
+                await store.ReleaseAsync(requestType, key, CancellationToken.None);
                 throw;
             }
+        }
+
+        private static TResponse Deserialize(string? json)
+        {
+            if (string.IsNullOrEmpty(json))
+                throw new InvalidOperationException("Idempotency reservation completed without a stored result.");
+            return JsonSerializer.Deserialize<TResponse>(json)!;
         }
     }
 }

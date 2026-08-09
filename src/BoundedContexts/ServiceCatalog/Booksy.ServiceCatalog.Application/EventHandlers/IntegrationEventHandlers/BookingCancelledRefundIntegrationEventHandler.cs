@@ -80,6 +80,9 @@ namespace Booksy.ServiceCatalog.Application.EventHandlers.IntegrationEventHandle
                 PaymentId: payment.Id.Value,
                 RefundAmount: refundAmount.Amount,
                 Reason: RefundReason.CustomerCancellation,
+                // System-initiated (auto-refund on cancellation): no HTTP user. The
+                // AuthorizationBehavior treats an unauthenticated context as trusted system.
+                ActingUserId: Guid.Empty,
                 Notes: $"Automatic refund due to booking cancellation. Reason: {integrationEvent.CancellationReason}. Cancelled by: {integrationEvent.CancelledBy}");
 
             try

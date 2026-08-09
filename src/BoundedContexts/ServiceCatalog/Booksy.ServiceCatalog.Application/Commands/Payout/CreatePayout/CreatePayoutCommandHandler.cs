@@ -11,66 +11,51 @@ using Microsoft.Extensions.Logging;
 namespace Booksy.ServiceCatalog.Application.Commands.Payout.CreatePayout
 {
     /// <summary>
-    /// Handler for creating provider payouts from completed payments
+    /// Handler for creating provider payouts. The payout amount is derived <b>from the ledger</b> — the single
+    /// source of truth for provider balances — not by re-summing Payments. The ledger's ProviderPayable balance
+    /// already nets charges against refunds and prior payouts, so refunds automatically reduce the payout and a
+    /// provider whose refunds exceed unpaid charges is <b>blocked from further payouts</b> (balance ≤ 0).
     /// </summary>
     public sealed class CreatePayoutCommandHandler : ICommandHandler<CreatePayoutCommand, CreatePayoutResult>
     {
-        private readonly IPaymentReadRepository _paymentRepository;
+        private readonly ILedgerRepository _ledger;
         private readonly IPayoutWriteRepository _payoutRepository;
         private readonly ILogger<CreatePayoutCommandHandler> _logger;
 
         public CreatePayoutCommandHandler(
-            IPaymentReadRepository paymentRepository,
+            ILedgerRepository ledger,
             IPayoutWriteRepository payoutRepository,
             ILogger<CreatePayoutCommandHandler> logger)
         {
-            _paymentRepository = paymentRepository ?? throw new ArgumentNullException(nameof(paymentRepository));
+            _ledger = ledger ?? throw new ArgumentNullException(nameof(ledger));
             _payoutRepository = payoutRepository ?? throw new ArgumentNullException(nameof(payoutRepository));
             _logger = logger ?? throw new ArgumentNullException(nameof(logger));
         }
 
         public async Task<CreatePayoutResult> Handle(CreatePayoutCommand request, CancellationToken cancellationToken)
         {
-            _logger.LogInformation("Creating payout for provider {ProviderId}, period: {Start} to {End}",
+            _logger.LogInformation("Creating ledger-derived payout for provider {ProviderId}, period: {Start} to {End}",
                 request.ProviderId, request.PeriodStart, request.PeriodEnd);
 
             var providerId = ProviderId.From(request.ProviderId);
 
-            // Get all completed payments for provider in the period
-            var payments = await _paymentRepository.GetProviderPaymentsInRangeAsync(
-                providerId,
-                request.PeriodStart,
-                request.PeriodEnd,
-                PaymentStatus.Paid,
-                cancellationToken);
-
-            if (!payments.Any())
+            // Amount owed comes from the ledger (charges − refunds − prior payouts), never by re-summing Payments.
+            var owed = await _ledger.GetProviderPayableBalanceAsync(providerId.Value, cancellationToken);
+            if (owed <= 0m)
             {
                 throw new InvalidOperationException(
-                    $"No completed payments found for provider {request.ProviderId} in the specified period");
+                    $"Provider {request.ProviderId} has no payable ledger balance ({owed:0.00}); payout is blocked. " +
+                    "Refunds may have offset unpaid charges.");
             }
 
-            _logger.LogInformation("Found {Count} completed payments for payout", payments.Count);
+            // Currency: use the provider's ledger currency (fall back to request/USD). Single-currency per provider today.
+            var currency = "USD";
+            var grossAmount = Money.Create(owed, currency);
 
-            // Calculate gross amount (sum of all payment amounts)
-            var currency = payments.First().Amount.Currency;
-            var grossAmount = Money.Zero(currency);
+            _logger.LogInformation("Ledger payable balance for provider {ProviderId}: {Amount} {Currency}",
+                request.ProviderId, grossAmount.Amount, currency);
 
-            foreach (var payment in payments)
-            {
-                if (payment.Amount.Currency != currency)
-                {
-                    throw new InvalidOperationException(
-                        $"Payment {payment.Id} has different currency ({payment.Amount.Currency}). All payments must have the same currency.");
-                }
-
-                grossAmount = grossAmount.Add(payment.Amount);
-            }
-
-            _logger.LogInformation("Gross amount calculated: {Amount} {Currency}",
-                grossAmount.Amount, grossAmount.Currency);
-
-            // Calculate commission
+            // Calculate commission on the ledger-derived gross.
             var commissionRate = CommissionRate.CreatePercentage(request.CommissionPercentage ?? 15m);
             var commissionAmount = commissionRate.CalculateCommission(grossAmount);
             var netAmount = commissionRate.CalculateNetAmount(grossAmount);
@@ -78,8 +63,9 @@ namespace Booksy.ServiceCatalog.Application.Commands.Payout.CreatePayout
             _logger.LogInformation("Commission: {Commission} {Currency}, Net: {Net} {Currency}",
                 commissionAmount.Amount, currency, netAmount.Amount, currency);
 
-            // Collect payment IDs
-            var paymentIds = payments.Select(p => p.Id).ToList();
+            // Payment ids covered (audit trail) — derived from the ledger's charge entries for this provider.
+            var chargePaymentIds = await _ledger.GetProviderChargePaymentIdsAsync(providerId.Value, cancellationToken);
+            var paymentIds = chargePaymentIds.Select(PaymentId.From).ToList();
 
             // Create payout aggregate
             var payout = Domain.Aggregates.PayoutAggregate.Payout.Create(
@@ -112,7 +98,7 @@ namespace Booksy.ServiceCatalog.Application.Commands.Payout.CreatePayout
                 currency,
                 request.PeriodStart,
                 request.PeriodEnd,
-                payments.Count,
+                paymentIds.Count,
                 payout.Status.ToString(),
                 payout.CreatedAt);
         }

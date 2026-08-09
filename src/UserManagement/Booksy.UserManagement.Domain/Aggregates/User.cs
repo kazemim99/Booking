@@ -422,6 +422,52 @@ namespace Booksy.UserManagement.Domain.Aggregates
             Profile = newProfile ?? throw new ArgumentNullException(nameof(newProfile));
         }
 
+        /// <summary>
+        /// Ensures this person can act in the given capacity (Customer or Provider).
+        ///
+        /// ONE PERSON PER PHONE NUMBER: when the same human appears on the other side
+        /// of the marketplace (a customer who becomes a provider, or vice-versa) we do
+        /// NOT create a second account — the existing person gains the capability.
+        /// <see cref="Type"/> becomes <see cref="UserType.Both"/> and the matching role
+        /// is added. Idempotent; Admin/Support are granted deliberately and never
+        /// inferred here.
+        /// </summary>
+        /// <returns>True when this call changed the person's capacities.</returns>
+        public bool EnsureCanActAs(UserType capacity)
+        {
+            if (capacity is not (UserType.Customer or UserType.Provider))
+                return false;
+
+            var changed = false;
+
+            var roleName = capacity == UserType.Customer ? "Customer" : "Provider";
+            if (!HasRole(roleName))
+            {
+                AddRole(roleName);
+                changed = true;
+            }
+
+            // Admin/Support keep their elevated type; Both already covers everything.
+            if (Type is UserType.Customer or UserType.Provider &&
+                Type != capacity &&
+                Type != UserType.Both)
+            {
+                Type = UserType.Both;
+                changed = true;
+            }
+
+            return changed;
+        }
+
+        /// <summary>
+        /// True when this person may act in the given capacity.
+        /// </summary>
+        public bool CanActAs(UserType capacity) =>
+            Type == capacity ||
+            Type == UserType.Both ||
+            (capacity == UserType.Customer && HasRole("Customer")) ||
+            (capacity == UserType.Provider && HasRole("Provider"));
+
         // Role Management
         public void AddRole(string roleName)
         {

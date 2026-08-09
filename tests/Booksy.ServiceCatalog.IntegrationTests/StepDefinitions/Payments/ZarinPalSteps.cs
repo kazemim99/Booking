@@ -26,13 +26,13 @@ namespace Booksy.ServiceCatalog.IntegrationTests.StepDefinitions.Payments;
 public class ZarinPalSteps
 {
     private readonly ScenarioContext _scenarioContext;
-    private readonly ServiceCatalogIntegrationTestBase _testBase;
+    private readonly ServiceCatalogReqnrollTestBase _testBase;
     private readonly ScenarioContextHelper _helper;
     private readonly Mock<IZarinPalService> _mockZarinPalService;
 
     public ZarinPalSteps(
         ScenarioContext scenarioContext,
-        ServiceCatalogIntegrationTestBase testBase)
+        ServiceCatalogReqnrollTestBase testBase)
     {
         _scenarioContext = scenarioContext;
         _testBase = testBase;
@@ -507,13 +507,6 @@ public class ZarinPalSteps
     #endregion
 
     #region Common Steps
-
-    [Then(@"the response status code should be (.*)")]
-    public void ThenTheResponseStatusCodeShouldBe(int expectedStatusCode)
-    {
-        var statusCode = _scenarioContext.Get<HttpStatusCode>("LastStatusCode");
-        ((int)statusCode).Should().Be(expectedStatusCode);
-    }
 
     [Then(@"the response should contain:")]
     public void ThenTheResponseShouldContain(Table table)

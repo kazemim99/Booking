@@ -111,6 +111,39 @@ public partial class ExceptionHandlingMiddleware
                 errorResponse = new ApiErrorResult(conflictEx.Message, conflictEx.ErrorCode);
                 break;
 
+            // C3 booking-slot-integrity: a violation of the DB exclusion constraint means
+            // the staff time slot was just taken by a concurrent booking. Surface a clean
+            // 409 (not a 500) so the client can refresh availability and reselect.
+            case Exception slotEx when slotEx.ToString().Contains("EXC_Bookings_Staff_NoOverlap", StringComparison.OrdinalIgnoreCase):
+                response.StatusCode = (int)HttpStatusCode.Conflict;
+                errorResponse = new ApiErrorResult(
+                    "The selected time slot was just taken. Please choose another time.", "SLOT_TAKEN");
+                break;
+
+            // C2 payment-consistency: a second captured payment for a booking violates
+            // the partial unique index — the booking is already paid → 409, never a double charge.
+            case Exception dupPayEx when dupPayEx.ToString().Contains("UX_Payments_OneCapturedPerBooking", StringComparison.OrdinalIgnoreCase):
+                response.StatusCode = (int)HttpStatusCode.Conflict;
+                errorResponse = new ApiErrorResult(
+                    "This booking already has a completed payment.", "DUPLICATE_PAYMENT");
+                break;
+
+            // C2 §2 atomic idempotency: a concurrent duplicate of an in-flight request → 409 (retry shortly,
+            // then the original's stored result is returned). Never executes the handler side effect twice.
+            case Booksy.Core.Application.Exceptions.IdempotencyConflictException:
+                response.StatusCode = (int)HttpStatusCode.Conflict;
+                errorResponse = new ApiErrorResult(
+                    "A matching request is already being processed. Please retry in a moment.", "IDEMPOTENCY_CONFLICT");
+                break;
+
+            // Optimistic-concurrency loss (e.g. an availability slot updated by a
+            // concurrent booking) is a conflict, not a server error → 409 retry.
+            case Exception concurrencyEx when concurrencyEx.GetType().Name == "DbUpdateConcurrencyException":
+                response.StatusCode = (int)HttpStatusCode.Conflict;
+                errorResponse = new ApiErrorResult(
+                    "The item was just modified by another request. Please refresh and try again.", "CONCURRENCY_CONFLICT");
+                break;
+
             case ExternalServiceException externalEx:
                 response.StatusCode = externalEx.StatusCode ?? (int)HttpStatusCode.ServiceUnavailable;
                 errorResponse = new ApiErrorResult(externalEx.Message, externalEx.ErrorCode);

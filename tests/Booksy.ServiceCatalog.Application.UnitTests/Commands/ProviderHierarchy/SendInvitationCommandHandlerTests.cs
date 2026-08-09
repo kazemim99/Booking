@@ -1,4 +1,5 @@
 using Booksy.ServiceCatalog.Application.Abstractions.Persistence;
+using Booksy.ServiceCatalog.Application.Abstractions.Identity;
 using Booksy.Core.Application.Abstractions.Persistence;
 using Booksy.Core.Application.Exceptions;
 using Booksy.Core.Domain.Exceptions;
@@ -19,6 +20,8 @@ public class SendInvitationCommandHandlerTests
     private readonly IProviderReadRepository _providerRepository;
     private readonly IProviderInvitationReadRepository _invitationReadRepository;
     private readonly IProviderInvitationWriteRepository _invitationWriteRepository;
+    private readonly IOrganizationMembershipRepository _membershipRepository;
+    private readonly IPersonDirectory _personDirectory;
     private readonly IServiceCatalogUnitOfWork _unitOfWork;
     private readonly ILogger<SendInvitationCommandHandler> _logger;
     private readonly SendInvitationCommandHandler _handler;
@@ -28,6 +31,8 @@ public class SendInvitationCommandHandlerTests
         _providerRepository = Substitute.For<IProviderReadRepository>();
         _invitationReadRepository = Substitute.For<IProviderInvitationReadRepository>();
         _invitationWriteRepository = Substitute.For<IProviderInvitationWriteRepository>();
+        _membershipRepository = Substitute.For<IOrganizationMembershipRepository>();
+        _personDirectory = Substitute.For<IPersonDirectory>();
         _unitOfWork = Substitute.For<IServiceCatalogUnitOfWork>();
         _logger = Substitute.For<ILogger<SendInvitationCommandHandler>>();
 
@@ -35,6 +40,8 @@ public class SendInvitationCommandHandlerTests
             _providerRepository,
             _invitationReadRepository,
             _invitationWriteRepository,
+            _membershipRepository,
+            _personDirectory,
             _unitOfWork,
             _logger);
     }
@@ -196,5 +203,91 @@ public class SendInvitationCommandHandlerTests
                 i.InviteeName == null &&
                 i.Message == null),
             Arg.Any<CancellationToken>());
+    }
+
+    [Fact]
+    public async Task Handle_Should_Reject_Self_Invite_When_Phone_Belongs_To_The_Owner()
+    {
+        // Arrange — the invited phone resolves to the organization's own owner (S7).
+        var organization = CreateOrganization();
+        var command = new SendInvitationCommand(
+            OrganizationId: organization.Id.Value,
+            PhoneNumber: "+989121234567");
+
+        _providerRepository.GetByIdAsync(organization.Id, Arg.Any<CancellationToken>())
+            .Returns(organization);
+        _invitationReadRepository.GetByPhoneNumberAndOrganizationAsync(
+            Arg.Any<string>(), Arg.Any<ProviderId>(), Arg.Any<CancellationToken>())
+            .Returns((ProviderInvitation?)null);
+        _personDirectory.FindByPhoneAsync(Arg.Any<string>(), Arg.Any<CancellationToken>())
+            .Returns(new PersonInfo(organization.OwnerId.Value, "Owner", "Person", "+989121234567", "Active"));
+
+        // Act
+        Func<Task> act = () => _handler.Handle(command, CancellationToken.None);
+
+        // Assert
+        await act.Should().ThrowAsync<DomainValidationException>()
+            .WithMessage("*already belongs to a member*");
+        await _invitationWriteRepository.DidNotReceive()
+            .SaveAsync(Arg.Any<ProviderInvitation>(), Arg.Any<CancellationToken>());
+    }
+
+    [Fact]
+    public async Task Handle_Should_Reject_Inviting_An_Existing_Member()
+    {
+        // Arrange — the invited phone belongs to an existing person who is already a
+        // (non-owner) active member of this organization.
+        var organization = CreateOrganization();
+        var command = new SendInvitationCommand(
+            OrganizationId: organization.Id.Value,
+            PhoneNumber: "+989121234567");
+
+        _providerRepository.GetByIdAsync(organization.Id, Arg.Any<CancellationToken>())
+            .Returns(organization);
+        _invitationReadRepository.GetByPhoneNumberAndOrganizationAsync(
+            Arg.Any<string>(), Arg.Any<ProviderId>(), Arg.Any<CancellationToken>())
+            .Returns((ProviderInvitation?)null);
+        _personDirectory.FindByPhoneAsync(Arg.Any<string>(), Arg.Any<CancellationToken>())
+            .Returns(new PersonInfo(Guid.NewGuid(), "Some", "One", "+989121234567", "Active"));
+        _membershipRepository.HasActiveMembershipAsync(
+            Arg.Any<UserId>(), Arg.Any<ProviderId>(), Arg.Any<CancellationToken>())
+            .Returns(true);
+
+        // Act
+        Func<Task> act = () => _handler.Handle(command, CancellationToken.None);
+
+        // Assert
+        await act.Should().ThrowAsync<DomainValidationException>()
+            .WithMessage("*already belongs to a member*");
+    }
+
+    [Fact]
+    public async Task Handle_Should_Allow_Inviting_Existing_Account_Not_Yet_A_Member()
+    {
+        // Arrange — reuse-by-phone: the phone has an account elsewhere, but they are
+        // NOT a member of this organization, so the invitation is allowed (S4).
+        var organization = CreateOrganization();
+        var command = new SendInvitationCommand(
+            OrganizationId: organization.Id.Value,
+            PhoneNumber: "+989121234567");
+
+        _providerRepository.GetByIdAsync(organization.Id, Arg.Any<CancellationToken>())
+            .Returns(organization);
+        _invitationReadRepository.GetByPhoneNumberAndOrganizationAsync(
+            Arg.Any<string>(), Arg.Any<ProviderId>(), Arg.Any<CancellationToken>())
+            .Returns((ProviderInvitation?)null);
+        _personDirectory.FindByPhoneAsync(Arg.Any<string>(), Arg.Any<CancellationToken>())
+            .Returns(new PersonInfo(Guid.NewGuid(), "Some", "One", "+989121234567", "Active"));
+        _membershipRepository.HasActiveMembershipAsync(
+            Arg.Any<UserId>(), Arg.Any<ProviderId>(), Arg.Any<CancellationToken>())
+            .Returns(false);
+
+        // Act
+        var result = await _handler.Handle(command, CancellationToken.None);
+
+        // Assert
+        result.InvitationId.Should().NotBeEmpty();
+        await _invitationWriteRepository.Received(1)
+            .SaveAsync(Arg.Any<ProviderInvitation>(), Arg.Any<CancellationToken>());
     }
 }

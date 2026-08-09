@@ -46,6 +46,15 @@ public class PaymentsController : ControllerBase
     }
 
     /// <summary>
+    /// Reads the client-supplied <c>Idempotency-Key</c> header (a GUID) that makes a money command at-most-once
+    /// across retries (C2 §2). If absent/invalid the server generates one per attempt (still guards concurrent
+    /// duplicates of that attempt) — clients SHOULD send a stable key so a network retry never double-charges.
+    /// </summary>
+    private Guid? ReadIdempotencyKey()
+        => Request.Headers.TryGetValue("Idempotency-Key", out var v) && Guid.TryParse(v.ToString(), out var g)
+            ? g : (Guid?)null;
+
+    /// <summary>
     /// Process a payment for a booking
     /// </summary>
     /// <param name="request">Payment processing details</param>
@@ -81,7 +90,8 @@ public class PaymentsController : ControllerBase
             Method: paymentMethod,
             PaymentMethodId: request.PaymentMethodId,
             Description: request.Description,
-            Metadata: request.Metadata?.ToDictionary(kvp => kvp.Key, kvp => (object)kvp.Value));
+            Metadata: request.Metadata?.ToDictionary(kvp => kvp.Key, kvp => (object)kvp.Value),
+            IdempotencyKey: ReadIdempotencyKey());
 
         var result = await _mediator.Send(command, cancellationToken);
 
@@ -133,7 +143,8 @@ public class PaymentsController : ControllerBase
     {
         var command = new CapturePaymentCommand(
             PaymentId: id,
-            AmountToCapture: request.Amount);
+            AmountToCapture: request.Amount,
+            IdempotencyKey: ReadIdempotencyKey());
 
         var result = await _mediator.Send(command, cancellationToken);
 
@@ -192,7 +203,9 @@ public class PaymentsController : ControllerBase
             PaymentId: id,
             RefundAmount: request.Amount ?? 0,
             Reason: refundReason,
-            Notes: request.Notes);
+            ActingUserId: Guid.Parse(GetCurrentUserId()!),
+            Notes: request.Notes,
+            IdempotencyKey: ReadIdempotencyKey());
 
         var result = await _mediator.Send(command, cancellationToken);
 
@@ -340,7 +353,8 @@ public class PaymentsController : ControllerBase
             Description: request.Description,
             Mobile: request.Mobile,
             Email: request.Email,
-            Metadata: request.Metadata?.ToDictionary(kvp => kvp.Key, kvp => (object)kvp.Value));
+            Metadata: request.Metadata?.ToDictionary(kvp => kvp.Key, kvp => (object)kvp.Value),
+            IdempotencyKey: ReadIdempotencyKey());
 
         var result = await _mediator.Send(command, cancellationToken);
 
@@ -416,7 +430,15 @@ public class PaymentsController : ControllerBase
         [FromBody] VerifyZarinPalPaymentRequest request,
         CancellationToken cancellationToken = default)
     {
-        var command = new VerifyZarinPalPaymentCommand(request.Authority, "OK");
+        // Forward the reported gateway outcome (B2) instead of assuming "OK", so a customer cancellation is settled
+        // now rather than lingering as Pending until reconciliation. ZarinPal — not this flag — remains the authority
+        // on whether money moved: "OK" still triggers a real verification, and an already-Paid payment is never
+        // flipped to Failed (the handler short-circuits on Paid first).
+        // Forward the Idempotency-Key header (B3) so a client retry replays the stored result instead of re-verifying.
+        var command = new VerifyZarinPalPaymentCommand(
+            request.Authority,
+            string.IsNullOrWhiteSpace(request.Status) ? "OK" : request.Status,
+            IdempotencyKey: ReadIdempotencyKey());
         var result = await _mediator.Send(command, cancellationToken);
 
         if (!result.IsSuccessful)

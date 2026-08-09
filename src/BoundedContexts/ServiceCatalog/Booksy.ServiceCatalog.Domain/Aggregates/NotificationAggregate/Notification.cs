@@ -378,16 +378,57 @@ namespace Booksy.ServiceCatalog.Domain.Aggregates.NotificationAggregate
                 reason ?? "Cancelled by system"));
         }
 
+        /// <summary>The maximum number of delivery attempts before a notification is dead-lettered.</summary>
+        public const int MaxRetryAttempts = 5;
+
         public bool ShouldRetry()
         {
             if (Status != NotificationStatus.Failed)
                 return false;
 
-            if (AttemptCount >= 5) // Max retry attempts
+            if (HasExhaustedRetries())
                 return false;
 
             var lastAttempt = _deliveryAttempts.LastOrDefault();
             return lastAttempt?.ShouldRetry() ?? false;
+        }
+
+        /// <summary>True once all delivery attempts are used up — the notification must be dead-lettered, not retried.</summary>
+        public bool HasExhaustedRetries() => AttemptCount >= MaxRetryAttempts;
+
+        /// <summary>
+        /// Moves a failed-but-retryable notification back to Queued so the dispatcher can attempt delivery again.
+        /// Only valid when <see cref="ShouldRetry"/> is true (failed, under the attempt cap, and the backoff delay
+        /// has elapsed) — guarding against premature or exhausted retries.
+        /// </summary>
+        public void PrepareForRetry()
+        {
+            if (!ShouldRetry())
+                throw new InvalidOperationException(
+                    $"Notification {Id} is not eligible for retry (Status={Status}, Attempts={AttemptCount}/{MaxRetryAttempts}).");
+
+            Status = NotificationStatus.Queued;
+        }
+
+        /// <summary>
+        /// Moves an exhausted, still-failing notification to the dead-letter queue (terminal). It is never retried
+        /// automatically; it is surfaced for observability/support and can be replayed manually. Requires the retry
+        /// budget to be exhausted so we never dead-letter a notification that could still succeed.
+        /// </summary>
+        public void MarkAsDeadLettered(string reason)
+        {
+            if (Status is NotificationStatus.Delivered or NotificationStatus.Read or NotificationStatus.Sent)
+                throw new InvalidOperationException($"Cannot dead-letter a {Status} notification.");
+
+            if (!HasExhaustedRetries())
+                throw new InvalidOperationException(
+                    $"Cannot dead-letter notification {Id}: retries not exhausted ({AttemptCount}/{MaxRetryAttempts}).");
+
+            Status = NotificationStatus.DeadLettered;
+            ErrorMessage = reason;
+
+            RaiseDomainEvent(new NotificationFailedEvent(
+                Id, RecipientId, Type, Channel, $"Dead-lettered: {reason}", AttemptCount));
         }
 
         public bool IsExpired()

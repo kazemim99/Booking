@@ -50,9 +50,9 @@ namespace Booksy.UserManagement.Application.CQRS.Commands.Customer.RegisterCusto
 
                 // Validate email availability
                 var email = Email.Create(request.Email);
-                var emailExists = await _validationService.IsEmailAvailableAsync(email, cancellationToken);
+                var emailAvailable = await _validationService.IsEmailAvailableAsync(email, cancellationToken);
 
-                if (emailExists)
+                if (!emailAvailable)
                 {
                     throw new UserAlreadyExistsException(email);
                 }
@@ -93,7 +93,23 @@ namespace Booksy.UserManagement.Application.CQRS.Commands.Customer.RegisterCusto
                 }
 
                 // Create User aggregate
+                // ONE PERSON PER PHONE: the account's phone is the identity, so it must be
+                // stored canonically ON THE USER (not only on the profile) and be unique —
+                // otherwise this account is invisible to phone lookup and a later OTP sign-in
+                // would create a second person for the same human.
+                PhoneNumber? accountPhone = null;
+                if (!string.IsNullOrWhiteSpace(request.PhoneNumber))
+                {
+                    accountPhone = PhoneNumber.From(request.PhoneNumber);
+                    if (await _userRepository.ExistsByPhoneNumberAsync(accountPhone, cancellationToken))
+                        throw new InvalidOperationException(
+                            "این شماره موبایل قبلاً ثبت شده است");
+                }
+
                 var user = User.Register(email, password, profile, UserType.Customer);
+                if (accountPhone is not null)
+                    user.SetPhoneNumber(accountPhone);
+
 
                 // Persist user first to ensure we have a valid UserId
                 await _userRepository.SaveAsync(user, cancellationToken);

@@ -1,6 +1,8 @@
 using Booksy.ServiceCatalog.Application.Commands.Provider.Registration;
+using Booksy.ServiceCatalog.Application.Commands.Membership.SetOwnerProvidesServices;
 using Booksy.ServiceCatalog.Application.Queries.Provider.GetRegistrationProgress;
 using Booksy.ServiceCatalog.Application.Services;
+using Booksy.ServiceCatalog.Api.Models.Requests;
 using Booksy.Core.Domain.Exceptions;
 using MediatR;
 using Microsoft.AspNetCore.Authorization;
@@ -45,6 +47,25 @@ public class ProviderRegistrationController : ControllerBase
         var result = await _sender.Send(query, cancellationToken);
 
         return  Ok(result);
+    }
+
+    /// <summary>
+    /// Onboarding branch: record whether the owner personally provides services.
+    /// Yes ⇒ the owner's membership gains the StaffProvider role + a StaffProfile and
+    /// they become the first active staff member (no invitation). No ⇒ owner-only.
+    /// </summary>
+    /// <response code="200">Owner membership created/updated</response>
+    [HttpPost("owner-provides-services")]
+    [ProducesResponseType(typeof(SetOwnerProvidesServicesResult), StatusCodes.Status200OK)]
+    public async Task<IActionResult> SetOwnerProvidesServices(
+        [FromBody] SetOwnerProvidesServicesRequest request,
+        CancellationToken cancellationToken)
+    {
+        var result = await _sender.Send(
+            new SetOwnerProvidesServicesCommand(request.ProvidesServices),
+            cancellationToken);
+
+        return Ok(result);
     }
 
     /// <summary>

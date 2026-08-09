@@ -21,11 +21,19 @@ namespace Booksy.ServiceCatalog.Domain.DomainServices
         /// <param name="individualProvider">Optional specific individual provider (staff member)</param>
         /// <param name="cancellationToken">Cancellation token</param>
         /// <returns>List of available time slots</returns>
+        /// <param name="durationOverride">Overrides the service's own duration
+        /// when the visit bundles several services (combined length).</param>
+        /// <param name="staffId">
+        /// Optional bookable-resource id to restrict slots to. A resource is a
+        /// membership (a person working at the organization) or — for a solo business
+        /// with no members — the organization itself. It is NOT a provider record.
+        /// </param>
         Task<IReadOnlyList<AvailableTimeSlot>> GetAvailableTimeSlotsAsync(
             Provider provider,
             Service service,
             DateTime date,
-            Provider? individualProvider = null,
+            Guid? staffId = null,
+            Duration? durationOverride = null,
             CancellationToken cancellationToken = default);
 
         /// <summary>

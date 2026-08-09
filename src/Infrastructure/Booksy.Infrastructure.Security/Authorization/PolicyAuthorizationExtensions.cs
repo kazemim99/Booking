@@ -19,6 +19,16 @@ public static class PolicyAuthorizationExtensions
     {
         services.AddAuthorization(options =>
         {
+            // Global fallback (C1 harden-resource-authorization): any endpoint that does
+            // not carry an explicit [Authorize]/[AllowAnonymous] requires an authenticated
+            // user. Genuinely public endpoints are explicitly [AllowAnonymous] (see the C1
+            // authorization audit). Infrastructure endpoints (health checks, Swagger) are
+            // exempted at their mapping in Program.cs. This closes the "unannotated endpoint
+            // is implicitly public" gap.
+            options.FallbackPolicy = new AuthorizationPolicyBuilder()
+                .RequireAuthenticatedUser()
+                .Build();
+
             // Admin policies
             options.AddPolicy("AdminOnly", policy =>
                 policy.RequireRole("Administrator", "SysAdmin"));
