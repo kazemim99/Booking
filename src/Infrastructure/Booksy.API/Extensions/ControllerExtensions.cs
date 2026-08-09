@@ -7,15 +7,32 @@ namespace Booksy.API.Extensions;
 public static class ControllerExtensions
 {
     /// <summary>
-    /// Get the current user ID from claims
+    /// The current user's id, taken from the claim the platform issues
+    /// (<see cref="ClaimTypes.NameIdentifier"/>), falling back to <c>sub</c>.
+    ///
+    /// <para>Throws <see cref="UnauthorizedAccessException"/> — mapped to <b>401</b> by
+    /// <c>ExceptionHandlingMiddleware</c> — when no usable id is present. Previously this called
+    /// <c>Guid.Parse</c> directly, so a token missing the claim raised <see cref="ArgumentNullException"/> and
+    /// surfaced as a <b>500</b>: a server-fault response to what is an authentication problem.</para>
+    ///
+    /// <para><b>Why this never returns <see cref="Guid.Empty"/>.</b> That would look tidier at the one call site
+    /// that checks for it, but only one of this method's callers does; the rest would carry an empty id into
+    /// queries and commands as though it were a real user. Failing loudly is the safe behaviour for an identity
+    /// lookup, so an unusable claim is always an exception, never a sentinel.</para>
     /// </summary>
+    /// <exception cref="UnauthorizedAccessException">No parsable user-id claim on the principal.</exception>
     public static Guid GetUserId(this ClaimsPrincipal user)
     {
         var userId = user?.FindFirst(ClaimTypes.NameIdentifier)?.Value
             ?? user?.FindFirst("sub")?.Value;
-     
 
-        return Guid.Parse(userId);
+        if (!Guid.TryParse(userId, out var id))
+        {
+            throw new UnauthorizedAccessException(
+                "The authenticated principal carries no usable user-id claim.");
+        }
+
+        return id;
     }
     /// <summary>
     /// Create a paginated response with proper headers
