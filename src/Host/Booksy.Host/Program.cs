@@ -109,10 +109,24 @@ builder.Services.AddCors(options =>
 {
     options.AddPolicy("AllowSpecificOrigins", policy =>
     {
-        policy.WithOrigins(builder.Configuration.GetSection("Cors:AllowedOrigins").Get<string[]>() ?? new[] { "*" })
-              .AllowAnyHeader()
+        policy.AllowAnyHeader()
               .AllowAnyMethod()
               .AllowCredentials();
+
+        if (builder.Environment.IsDevelopment())
+        {
+            // Flutter's web dev server (and Vite, if its default ports are
+            // taken) picks a random port per run, so a static allowlist
+            // constantly falls behind. Locally, trust any localhost/127.0.0.1
+            // origin on any port instead of chasing ports one at a time.
+            policy.SetIsOriginAllowed(origin =>
+                Uri.TryCreate(origin, UriKind.Absolute, out var uri) &&
+                (uri.Host == "localhost" || uri.Host == "127.0.0.1"));
+        }
+        else
+        {
+            policy.WithOrigins(builder.Configuration.GetSection("Cors:AllowedOrigins").Get<string[]>() ?? Array.Empty<string>());
+        }
     });
 });
 
