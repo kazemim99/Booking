@@ -17,18 +17,14 @@ docker-compose -f docker-compose.infrastructure.yml ps
 Write-Host ""
 Write-Host "🔗 Service URLs:" -ForegroundColor Cyan
 Write-Host "  PostgreSQL:   localhost:54321 (user: booksy_admin, pass: Booksy@2024!)" -ForegroundColor White
-Write-Host "  Redis:        localhost:6379 (pass: Redis@2024!)" -ForegroundColor White
-Write-Host "  RabbitMQ:     localhost:15672 (user: booksy_admin, pass: Booksy@2024!)" -ForegroundColor White
+Write-Host "  Redis:        localhost:16379 (pass: Redis@2024!)" -ForegroundColor White
 Write-Host "  Seq Logs:     http://localhost:5341 (user: admin, pass: Booksy@2024!)" -ForegroundColor White
 Write-Host "  pgAdmin:      http://localhost:5050 (email: admin@booksy.local, pass: Booksy@2024!)" -ForegroundColor White
 
 Write-Host ""
 Write-Host "📝 Next Steps:" -ForegroundColor Yellow
-Write-Host "  1. Open Booksy.sln in Visual Studio" -ForegroundColor White
-Write-Host "  2. Set Multiple Startup Projects:" -ForegroundColor White
-Write-Host "     - Booksy.UserManagement.API (Start)" -ForegroundColor White
-Write-Host "     - Booksy.ServiceCatalog.Api (Start)" -ForegroundColor White
-Write-Host "     - Booksy.Gateway (Start)" -ForegroundColor White
+Write-Host "  1. Open Booksy.sln in Visual Studio (single host: Booksy.Host)" -ForegroundColor White
+Write-Host "  2. Set Booksy.Host as the startup project" -ForegroundColor White
 Write-Host "  3. Select 'http' profile (not https or Docker)" -ForegroundColor White
 Write-Host "  4. Press F5 to debug" -ForegroundColor White
 
