@@ -6,6 +6,7 @@ using Booksy.ServiceCatalog.Domain.Enums;
 using Booksy.ServiceCatalog.Domain.Enums.Extensions;
 using Booksy.ServiceCatalog.Domain.Repositories;
 using Booksy.ServiceCatalog.Domain.ValueObjects;
+using MediatR;
 using Microsoft.Extensions.Logging;
 
 namespace Booksy.ServiceCatalog.Application.Queries.Provider.GetProviderById
@@ -14,15 +15,18 @@ namespace Booksy.ServiceCatalog.Application.Queries.Provider.GetProviderById
     {
         private readonly IProviderReadRepository _providerRepository;
         private readonly IServiceReadRepository _serviceRepository;
+        private readonly ISender _mediator;
         private readonly ILogger<GetProviderByIdQueryHandler> _logger;
 
         public GetProviderByIdQueryHandler(
             IProviderReadRepository providerRepository,
             IServiceReadRepository serviceRepository,
+            ISender mediator,
             ILogger<GetProviderByIdQueryHandler> logger)
         {
             _providerRepository = providerRepository;
             _serviceRepository = serviceRepository;
+            _mediator = mediator;
             _logger = logger;
         }
 
@@ -135,7 +139,61 @@ namespace Booksy.ServiceCatalog.Application.Queries.Provider.GetProviderById
                 }).ToList();
             }
 
-          
+            // Bookable staff for the customer-facing booking flow.
+            //
+            // This was never populated, so `staff` came back [] no matter what IncludeStaff
+            // said. The customer app decides whether to show its "choose a team member" step
+            // from exactly this list, so a salon with a full roster looked like a one-person
+            // shop and every booking silently went to the provider's default resource.
+            //
+            // Delegated to GetProviderStaffQuery rather than re-projected here: staff live in
+            // two models at once (OrganizationMembership + StaffProfile for invited members,
+            // and legacy individual sub-Providers awaiting migration) and that handler already
+            // merges both, resolves display names through the person directory, and falls back
+            // to the salon-provided name for members who have not claimed their account.
+            // Duplicating any of that is how these two projections drifted apart to begin
+            // with. StaffProviders above stays as it is: it describes only the sub-Provider
+            // hierarchy, which is a different question from "who can I book with".
+            if (request.IncludeStaff)
+            {
+                var staffResult = await _mediator.Send(
+                    new GetProviderStaff.GetProviderStaffQuery(providerId.Value, IncludeInactive: false),
+                    cancellationToken);
+
+                viewModel.Staff = staffResult.Staff
+                    // Bookable members only. The management roster legitimately includes
+                    // receptionists and owners who just run the business; offering them in the
+                    // customer's "choose a team member" step is a dead end, because asking for
+                    // their availability correctly returns zero slots.
+                    .Where(s => s.ProvidesServices)
+                    .Select(s => new ProviderStaffItem
+                    {
+                        // The membership id — the identifier availability and booking both
+                        // expect as StaffId/StaffProviderId.
+                        Id = s.Id,
+                        FirstName = s.FirstName,
+                        LastName = s.LastName,
+                        FullName = s.FullName,
+                        // StaffDto carries no email: an invited member is identified by phone,
+                        // and unclaimed members have no account to take an email from.
+                        Email = string.Empty,
+                        Phone = s.PhoneNumber,
+                        // StaffDto carries the coarse "Owner"/"Staff" label; ProviderStaffItem
+                        // wants the finer StaffRole. Anything that is not the owner is a
+                        // service provider as far as booking is concerned.
+                        Role = string.Equals(s.Role, nameof(StaffRole.Owner), StringComparison.OrdinalIgnoreCase)
+                            ? StaffRole.Owner
+                            : StaffRole.ServiceProvider,
+                        IsActive = s.IsActive,
+                        HiredAt = s.HiredAt
+                    })
+                    .ToList();
+
+                _logger.LogInformation(
+                    "Provider {ProviderId} exposes {StaffCount} bookable staff",
+                    request.ProviderId,
+                    viewModel.Staff.Count);
+            }
 
             if (request.IncludeServices)
             {

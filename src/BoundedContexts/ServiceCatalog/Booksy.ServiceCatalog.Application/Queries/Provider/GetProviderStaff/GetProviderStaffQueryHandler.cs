@@ -86,7 +86,9 @@ namespace Booksy.ServiceCatalog.Application.Queries.Provider.GetProviderStaff
                     null)
                 {
                     Biography = member.StaffProfile?.BioOverride ?? string.Empty,
-                    ProfilePhotoUrl = string.Empty
+                    ProfilePhotoUrl = string.Empty,
+                    // Roles + profile flag combined by the aggregate; see StaffDto.
+                    ProvidesServices = member.ProvidesServices
                 });
             }
 
@@ -110,7 +112,11 @@ namespace Booksy.ServiceCatalog.Application.Queries.Provider.GetProviderStaff
                     null)
                 {
                     Biography = string.Empty,
-                    ProfilePhotoUrl = sp.Profile?.ProfileImageUrl ?? string.Empty
+                    ProfilePhotoUrl = sp.Profile?.ProfileImageUrl ?? string.Empty,
+                    // A linked individual sub-provider exists precisely to perform services,
+                    // so it is bookable whenever it is active — there is no separate profile
+                    // flag to consult on this legacy shape.
+                    ProvidesServices = sp.Status == ProviderStatus.Active
                 });
             }
 

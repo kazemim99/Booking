@@ -86,6 +86,24 @@ public sealed class AcceptInvitationAsMemberCommandHandler
         invitation.AcceptByMember();
         await _invitationWriteRepository.UpdateAsync(invitation, cancellationToken);
 
+        // Attach the staff profile that makes this member a bookable resource.
+        //
+        // InviteExisting already grants the StaffProvider ROLE, but ProvidesServices requires
+        // the role AND a StaffProfile — and nothing on the invitation path ever created one, so
+        // every accepted member came out with ProvidesServices == false. SyncAsync below then
+        // returned None (it deliberately skips non-service-providing members), leaving the
+        // member unqualified for the salon's services and with no generated availability: they
+        // never appeared as bookable and their calendar was permanently empty, which is what the
+        // keystone flow reports as "member has NO slots (bookability was not provisioned)".
+        // AddStaffToProvider — the older way to add a colleague — has always called this, which
+        // is why staff added that way were bookable and invited ones were not.
+        //
+        // A ProviderInvitation carries no role, so accepting one means exactly "join this salon
+        // as a team member who performs services"; that is the entire purpose of the invite in
+        // the provider app. Idempotent: _roles is a HashSet and the profile is only created when
+        // absent, so re-accepting or a rejoining member changes nothing.
+        membership.EnableStaffProfile();
+
         // The accepted member becomes bookable straight away (qualification +
         // availability), so customers can book them the moment they join.
         await _memberBookability.SyncAsync(membership, cancellationToken);
