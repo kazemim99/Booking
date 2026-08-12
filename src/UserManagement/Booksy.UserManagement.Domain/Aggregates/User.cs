@@ -142,7 +142,22 @@ namespace Booksy.UserManagement.Domain.Aggregates
                 PhoneNumberVerified = true, // Already verified via OTP
                 PhoneVerifiedAt = DateTime.UtcNow,
                 Type = type,
-                Status = UserStatus.Draft, // Immediately darft since phone is verified
+                // Immediately active: the phone was proven by OTP before this factory runs,
+                // and ActivatedAt below is stamped on the same object. Draft here (introduced
+                // by an unrelated frontend-utility refactor, which left this comment behind
+                // reading "darft") stranded every OTP account permanently:
+                //   * Suspend(reason, until) and Deactivate(reason) both require Active, so
+                //     admins could not moderate any phone-registered person at all;
+                //   * ChangePassword / RequestPasswordReset / Authenticate() likewise require
+                //     Active;
+                //   * ActiveUserSpecification excluded them from queries built on it.
+                // No path could recover: Activate(token) needs the email activation token this
+                // factory sets to null, and VerifyPhoneNumber() — the one method that promotes
+                // a phone user to Active — is unreachable because PhoneNumberVerified is
+                // already true here. Provider approval is tracked separately by
+                // ProviderStatus on the Provider aggregate, so it does not need UserStatus to
+                // stay non-Active.
+                Status = UserStatus.Active,
                 RegisteredAt = DateTime.UtcNow,
                 ActivatedAt = DateTime.UtcNow,
                 FailedLoginAttempts = 0,
