@@ -1,0 +1,33 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net9.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <IsPackable>false</IsPackable>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="coverlet.collector" Version="6.0.2" />
+    <PackageReference Include="FluentAssertions" Version="8.7.0" />
+    <!-- Match the version Booksy.Tests.Commons already pulls in; a lower one trips NU1605. -->
+    <PackageReference Include="Microsoft.AspNetCore.Mvc.Testing" Version="9.0.4" />
+    <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.12.0" />
+    <PackageReference Include="xunit" Version="2.9.2" />
+    <PackageReference Include="xunit.runner.visualstudio" Version="2.8.2" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- The whole point of this project: assert on how the HOST composes the two
+         bounded contexts. It is the only test project that references Booksy.Host;
+         every other one boots a per-context Startup and so cannot see the
+         composition root at all. -->
+    <ProjectReference Include="..\..\src\Host\Booksy.Host\Booksy.Host.csproj" />
+    <ProjectReference Include="..\Booksy.Tests.Commons\Booksy.Tests.Commons.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Using Include="Xunit" />
+  </ItemGroup>
+
+</Project>

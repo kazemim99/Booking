@@ -136,7 +136,21 @@ public sealed class CompleteProviderAuthenticationCommandHandler
                 {
                     providerId = providerInfo.ProviderId.ToString();
                     providerStatus = providerInfo.Status;
-                    requiresOnboarding = providerStatus == "Pending";
+
+                    // Onboarding is outstanding only while the provider profile is still a
+                    // draft. This compared against "Pending", which is not a member of
+                    // ServiceCatalog's ProviderStatus (Drafted, PendingVerification,
+                    // Verified, Active, Inactive, Suspended, Archived) and so was never
+                    // true -- the mirror image of the bug that made providerInfo always
+                    // null: with the lookup fixed, a half-registered Drafted provider
+                    // would otherwise be told onboarding was complete and dropped into a
+                    // dashboard with no services or hours.
+                    //
+                    // "Drafted" is also exactly the rule the provider app applies client
+                    // side (ProviderStatus.needsOnboarding), which it adopted precisely
+                    // because this flag could not be trusted -- see AUTH_SPECIFICATION.md
+                    // BUG-1. Server and client now agree.
+                    requiresOnboarding = providerInfo.RequiresOnboarding;
 
                     _logger.LogInformation(
                         "Provider found: ProviderId={ProviderId}, Status={Status}",

@@ -10,6 +10,7 @@ using AspNetCoreRateLimit;
 using Booksy.API.Extensions;
 using Booksy.API.Middleware;
 using Booksy.Core.Domain.Infrastructure.Middleware;
+using Booksy.Host.Composition;
 using Booksy.Infrastructure.Core.DependencyInjection;
 using Booksy.Infrastructure.Security;
 using Booksy.Infrastructure.Security.Authorization;
@@ -19,6 +20,7 @@ using Booksy.ServiceCatalog.Infrastructure.Persistence.Context;
 using Booksy.UserManagement.API.Extensions;
 using Booksy.UserManagement.Application.DependencyInjection;
 using Booksy.UserManagement.Application.EventHandlers.IntegrationEventHandlers;
+using Booksy.UserManagement.Application.Services.Interfaces;
 using Booksy.UserManagement.Infrastructure.DependencyInjection;
 using Booksy.UserManagement.Infrastructure.Persistence.Context;
 using Booksy.UserManagement.Infrastructure.Persistence.Seeders;
@@ -158,6 +160,14 @@ builder.Services.AddUserManagementInfrastructure(builder.Configuration);
 // ServiceCatalog context
 builder.Services.AddServiceCatalogApplication();
 builder.Services.AddServiceCatalogInfrastructureWithCache(builder.Configuration);
+
+// Cross-context composition: serve UserManagement's provider lookup in-process rather
+// than over a loopback HTTP call that the host's own auth fallback policy rejects.
+// Registered AFTER AddUserManagementInfrastructure so this replaces the HTTP adapter it
+// registers (last registration wins for a single-service resolve), and after
+// AddServiceCatalogApplication so the query handler it dispatches to is available.
+// See InProcessProviderInfoService for why the adapter belongs in the Host.
+builder.Services.AddScoped<IProviderInfoService, InProcessProviderInfoService>();
 
 AppContext.SetSwitch("Npgsql.EnableLegacyTimestampBehavior", true);
 

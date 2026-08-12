@@ -97,8 +97,16 @@ namespace Booksy.UserManagement.Infrastructure.Persistence.Configurations
 
                 fp.HasKey(f => f.Id);
 
+                // Domain-assigned key (CustomerFavoriteProvider.Create -> Guid.NewGuid()).
+                // Without this, EF's Guid-key convention is ValueGeneratedOnAdd and an
+                // appended favourite is tracked Modified rather than Added, producing an
+                // UPDATE of a row that was never inserted -> 0 rows affected ->
+                // DbUpdateConcurrencyException. See UserRoleConfiguration for the full
+                // write-up; this is the same defect on a collection that grows over the
+                // life of an already-persisted customer.
                 fp.Property(f => f.Id)
-                    .HasColumnName("id");
+                    .HasColumnName("id")
+                    .ValueGeneratedNever();
 
                 fp.Property(f => f.ProviderId)
                     .HasColumnName("provider_id")
@@ -125,8 +133,10 @@ namespace Booksy.UserManagement.Infrastructure.Persistence.Configurations
 
                 rv.HasKey(r => r.Id);
 
+                // Domain-assigned key — same reasoning as FavoriteProviders above.
                 rv.Property(r => r.Id)
-                    .HasColumnName("id");
+                    .HasColumnName("id")
+                    .ValueGeneratedNever();
 
                 rv.Property(r => r.ProviderId)
                     .HasColumnName("provider_id")
