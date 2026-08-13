@@ -1,5 +1,6 @@
 import 'package:dartz/dartz.dart';
 import 'package:dio/dio.dart';
+import 'package:flutter/foundation.dart' show visibleForTesting;
 import '../../../../core/constants/app_strings.dart';
 import '../../../../core/errors/dio_failure_mapper.dart';
 import '../../../../core/errors/failures.dart';
@@ -123,19 +124,37 @@ class BookingRepositoryImpl implements BookingRepository {
                 imageUrl: s['imageUrl'] as String?,
               ))
           .toList(),
-      staff: (json['staff'] as List<dynamic>? ?? [])
-          .whereType<Map<String, dynamic>>()
-          .map((s) => StaffMember(
-                id: s['id'].toString(),
-                name: [s['firstName'], s['lastName']]
-                    .whereType<String>()
-                    .where((p) => p.isNotEmpty)
-                    .join(' '),
-                role: s['role'] as String?,
-                isActive: s['isActive'] as bool? ?? true,
-              ))
-          .toList(),
+      staff: parseStaff(json['staff']),
     );
+  }
+
+  /// The team members a customer may choose between when booking.
+  ///
+  /// The backend sends this list already filtered to bookable members, so anyone
+  /// here can be selected and will have availability.
+  @visibleForTesting
+  static List<StaffMember> parseStaff(dynamic raw) {
+    if (raw is! List) return const [];
+
+    return raw.whereType<Map<String, dynamic>>().map((s) {
+      // fullName wins: a member invited by phone who has not claimed their
+      // account yet has no first/last name — only the salon-provided display
+      // name — so joining the parts produced an empty label and the picker
+      // showed a blank, unidentifiable row.
+      final fullName = (s['fullName'] as String?)?.trim();
+      final joined = [s['firstName'], s['lastName']]
+          .whereType<String>()
+          .map((p) => p.trim())
+          .where((p) => p.isNotEmpty)
+          .join(' ');
+
+      return StaffMember(
+        id: s['id'].toString(),
+        name: (fullName != null && fullName.isNotEmpty) ? fullName : joined,
+        role: s['role'] as String?,
+        isActive: s['isActive'] as bool? ?? true,
+      );
+    }).toList();
   }
 
   TimeSlot _parseSlot(Map<String, dynamic> json) {

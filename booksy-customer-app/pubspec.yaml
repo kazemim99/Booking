@@ -76,10 +76,12 @@ flutter:
   uses-material-design: true
 
   # Assets
-  assets:
-    - assets/images/
-    - assets/icons/
-    - assets/lottie/
+  # No asset directories are declared: images/, icons/ and lottie/ were listed but
+  # never created, and nothing in lib/ or test/ referenced them. Declaring a
+  # missing directory makes every `flutter run` print
+  # "Error: unable to find directory entry in pubspec.yaml: …assets\images\"
+  # (three of them, on a normal successful launch) and raises three analyzer
+  # warnings. Re-add a line here when the directory and its first asset exist.
 
   # Fonts
   fonts:

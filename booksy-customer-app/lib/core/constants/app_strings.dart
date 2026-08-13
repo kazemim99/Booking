@@ -30,6 +30,14 @@ class AppStrings {
   static const String offlineBanner = 'اتصال اینترنت برقرار نیست';
   static const String offlineActionError =
       'برای انجام این عملیات به اینترنت نیاز دارید';
+
+  /// Shown when the session is gone and the refresh token could not renew it —
+  /// the user has to sign in again, so say that instead of leaking Dio's own
+  /// untranslated "invalid status code of 401" text.
+  static const String sessionExpiredError =
+      'نشست شما به پایان رسیده است. لطفاً دوباره وارد شوید';
+  static const String forbiddenError =
+      'شما به این بخش دسترسی ندارید';
   static const String loading = 'در حال بارگذاری…';
 
   // Auth — login

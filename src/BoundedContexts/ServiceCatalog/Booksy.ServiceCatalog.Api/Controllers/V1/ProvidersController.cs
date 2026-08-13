@@ -1,4 +1,4 @@
-using Booksy.API.Extensions;
+﻿using Booksy.API.Extensions;
 using Booksy.Core.Application.DTOs;
 using Booksy.Core.Application.Exceptions;
 using Booksy.Core.Domain.Exceptions;
@@ -1308,6 +1308,11 @@ public class ProvidersController : ControllerBase
             {
                 FirstName = c.FirstName,
                 LastName = c.LastName,
+                // Falls back to first+last for legacy sub-provider staff, whose names are on
+                // the Provider record rather than a staff profile.
+                FullName = string.IsNullOrWhiteSpace(c.FullName)
+                    ? $"{c.FirstName} {c.LastName}".Trim()
+                    : c.FullName,
                 Id = c.Id,
                 IsActive = c.IsActive,
                 JoinedAt = c.HiredAt,
