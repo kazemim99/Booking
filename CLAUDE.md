@@ -8,6 +8,28 @@ This repository contains both the **source code** and the **deployment configura
 
 > **Migration note**: The backend was migrated from a microservices architecture to a modular monolith. The Ocelot API Gateway and per-service hosts have been retired, and RabbitMQ has been removed in favor of in-process CAP events. See [MONOLITH_MIGRATION_PLAN.md](MONOLITH_MIGRATION_PLAN.md) for details.
 
+## Knowledge & Source of Truth
+
+Read **[docs/KNOWLEDGE.md](docs/KNOWLEDGE.md)** before answering architecture questions. It defines
+where each kind of knowledge lives and which copy wins when two disagree.
+
+The short version:
+
+| Question | Authoritative source |
+|---|---|
+| What is this system? | [openspec/project.md](openspec/project.md) — verified against source, cites its evidence |
+| What does it do? | the code, then `openspec/specs/<capability>/spec.md` |
+| Why did we choose this? | [ARCHITECTURAL_DECISIONS.md](ARCHITECTURAL_DECISIONS.md) |
+| What's in flight? | `openspec/changes/` |
+
+**Your memory is a cache, not a source of truth.** `~/.claude/projects/c--Repos-Booking/memory/` is
+not versioned and may be deleted at any time without loss. Verify recalled facts against git before
+relying on them; when memory and the code disagree, the code is right. If you learn something
+durable, propose adding it to the right file above rather than leaving it in memory alone.
+
+Note that this file (`CLAUDE.md`) is *guidance*, not an authoritative source — where it and
+`openspec/project.md` disagree about architecture, `project.md` is the verified one.
+
 ## 📚 Developer Documentation
 
 Docs are organized in three tiers: **root** (living — current architecture, API surface, active plans), **`docs/`** (living but secondary — deployment/testing how-tos), and **`docs/archive/`** (historical — point-in-time implementation write-ups for features that have since shipped; kept for context, not guaranteed current).

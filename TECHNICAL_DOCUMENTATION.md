@@ -1585,6 +1585,34 @@ Completely redesigned the provider bookings management page (`ProviderBookingsVi
 - Name: `ProviderBookings`
 - Component: `ProviderBookingsView.vue`
 
+### Issue 15: Two parallel, non-equivalent customer "bookings" UIs (OPEN — verified 2026-08-16)
+
+**Symptom:**
+A customer can cancel a booking from one place and reschedule it from another. Whether the
+reschedule affordance exists depends on how the user navigated to their bookings — which looks
+like a bug to the user and repeatedly costs investigation time during booking-UI work.
+
+**Root Cause:**
+`booksy-frontend` ships two independent customer bookings surfaces backed by the same data source
+(`bookingService.getMyBookings()`), with different capabilities:
+
+| Surface | Entry point | Capabilities |
+|---|---|---|
+| **Page** — `src/modules/customer/views/MyBookingsView.vue` | the routed page (`customer.routes.ts`, title «رزروهای من») | view + **cancel only** — the file contains no reschedule affordance at all |
+| **Sidebar** — `src/modules/customer/components/modals/BookingsSidebar.vue` (+ `RescheduleBookingModal.vue`) | `customerStore.openModal('bookings')`, called from `RoleBasedUserMenu.vue` («نوبت‌های من», line 195-199) and `BottomNavigation.vue` («نوبت‌ها», line 55-58); rendered by `CustomerModalsContainer.vue` when `activeModal === 'bookings'` | view + cancel + **reschedule** (`booking.canReschedule`, `data-testid="booking-reschedule-button"`) |
+
+There is also a third component, `src/modules/customer/components/modals/BookingCard.vue`, with its
+own `reschedule`/`cancel` emit handlers, that **no component or route imports** — apparently dead
+code left from an earlier iteration. (The `BookingCardView` interface in `customer.types.ts` is
+unrelated despite the similar name.)
+
+**Status:** unresolved — documented so the divergence is discovered before the next booking-UI
+change, not during it. The sidebar is the more complete implementation.
+
+**Resolution options** (not yet decided): converge the page onto the sidebar's capabilities, retire
+one surface, or extract the shared booking-actions logic into a composable used by both. Deleting
+`BookingCard.vue` should be verified against the Playwright/Cypress suites first.
+
 ---
 
 ## Session Summaries & Progress
