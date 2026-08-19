@@ -4,6 +4,7 @@
 using Booksy.Core.Application.Abstractions.CQRS;
 using Booksy.Core.Application.Abstractions.Persistence;
 using Booksy.Core.Application.Exceptions;
+using Booksy.ServiceCatalog.Application.Services;
 using Booksy.ServiceCatalog.Domain.DomainServices;
 using Booksy.ServiceCatalog.Domain.Enums;
 using Booksy.ServiceCatalog.Domain.Repositories;
@@ -20,16 +21,23 @@ namespace Booksy.ServiceCatalog.Application.Commands.Booking.RescheduleBooking
     public sealed class RescheduleBookingCommandHandler : ICommandHandler<RescheduleBookingCommand, RescheduleBookingResult>
     {
         private readonly IBookingWriteRepository _bookingWriteRepository;
+        private readonly IBookingReadRepository _bookingReadRepository;
         private readonly IProviderReadRepository _providerRepository;
+        private readonly IBookableResourceResolver _resourceResolver;
         private readonly IServiceReadRepository _serviceRepository;
         private readonly IProviderAvailabilityWriteRepository _availabilityWriteRepository;
         private readonly IAvailabilityService _availabilityService;
         private readonly IServiceCatalogUnitOfWork _unitOfWork;
         private readonly ILogger<RescheduleBookingCommandHandler> _logger;
 
+        /// <summary>Gap kept after an appointment, matching booking creation.</summary>
+        private const int BufferMinutes = 15;
+
         public RescheduleBookingCommandHandler(
             IBookingWriteRepository bookingWriteRepository,
+            IBookingReadRepository bookingReadRepository,
             IProviderReadRepository providerRepository,
+            IBookableResourceResolver resourceResolver,
             IServiceReadRepository serviceRepository,
             IProviderAvailabilityWriteRepository availabilityWriteRepository,
             IAvailabilityService availabilityService,
@@ -37,7 +45,9 @@ namespace Booksy.ServiceCatalog.Application.Commands.Booking.RescheduleBooking
             ILogger<RescheduleBookingCommandHandler> logger)
         {
             _bookingWriteRepository = bookingWriteRepository;
+            _bookingReadRepository = bookingReadRepository;
             _providerRepository = providerRepository;
+            _resourceResolver = resourceResolver;
             _serviceRepository = serviceRepository;
             _availabilityWriteRepository = availabilityWriteRepository;
             _availabilityService = availabilityService;
@@ -74,38 +84,25 @@ namespace Booksy.ServiceCatalog.Application.Commands.Booking.RescheduleBooking
             if (service == null)
                 throw new NotFoundException($"Service with ID {existingBooking.ServiceId} not found");
 
-            // Determine staff ID (use new staff if provided, otherwise keep current)
+            // Resolve the bookable resource the SAME way booking creation does: a
+            // membership, the organization itself, or a legacy individual sub-provider.
+            // This handler used to assume the third case unconditionally, which 404'd
+            // every booking made against a member — i.e. every booking under the current
+            // staff model. A caller-supplied NewStaffId is a genuine reassignment and
+            // must be bookable; the resource already on the booking is not re-litigated,
+            // so a member who has since been deactivated can still have their existing
+            // appointments moved.
+            var isStaffChange = request.NewStaffId is not null
+                && request.NewStaffId.Value != existingBooking.StaffId;
             var newStaffId = request.NewStaffId ?? existingBooking.StaffId;
 
-            // Load individual provider (staff member) using hierarchy
-            var individualProvider = await _providerRepository.GetByIdAsync(
-                ProviderId.From(newStaffId),
-                cancellationToken);
-
-            if (individualProvider == null)
-                throw new NotFoundException($"Individual provider with ID {newStaffId} not found");
-
-            // Verify they belong to this organization
-            if (individualProvider.ParentProviderId != provider.Id)
-                throw new NotFoundException($"Individual provider {newStaffId} does not belong to organization");
-
-            // Verify they are an individual provider
-            if (individualProvider.HierarchyType != ProviderHierarchyType.Individual)
-                throw new NotFoundException($"Provider {newStaffId} is not an individual provider");
-
-            // Validate availability for new time slot
-            var isAvailable = await _availabilityService.IsTimeSlotAvailableAsync(
+            var resource = await _resourceResolver.ResolveAsync(
                 provider,
-                service,
-                individualProvider,
-                request.NewStartTime,
-                service.Duration,
+                newStaffId,
+                requireBookable: isStaffChange,
                 cancellationToken);
 
-            if (!isAvailable)
-                throw new ConflictException("The requested time slot is not available");
-
-            // Validate booking constraints for new time
+            // Validate booking constraints for the new time (status, business hours, holidays).
             var validationResult = await _availabilityService.ValidateBookingConstraintsAsync(
                 provider,
                 service,
@@ -114,6 +111,21 @@ namespace Booksy.ServiceCatalog.Application.Commands.Booking.RescheduleBooking
 
             if (!validationResult.IsValid)
                 throw new ConflictException($"Booking validation failed: {string.Join(", ", validationResult.Errors)}");
+
+            // Does anything else already occupy the new time for this resource? Keyed by the
+            // resolved resource id, mirroring creation — IsTimeSlotAvailableAsync cannot be
+            // used here because its signature demands a staff Provider aggregate, which a
+            // member does not have. The booking being moved is excluded: a shift within its
+            // own buffer window would otherwise collide with itself.
+            var newEndTime = request.NewStartTime.AddMinutes(service.Duration.Value + BufferMinutes);
+            var conflicts = await _bookingReadRepository.GetConflictingBookingsAsync(
+                resource.ResourceId,
+                request.NewStartTime,
+                newEndTime,
+                cancellationToken);
+
+            if (conflicts.Any(b => b.Id != existingBooking.Id))
+                throw new ConflictException("The requested time slot is not available");
 
             // Reschedule the booking (returns new booking)
             var newBooking = existingBooking.Reschedule(
@@ -133,7 +145,7 @@ namespace Booksy.ServiceCatalog.Application.Commands.Booking.RescheduleBooking
 
             // Step 1: Release old availability slots
             await ReleaseOldAvailabilitySlotsAsync(
-                existingBooking.ProviderId,
+                resource.SlotOwnerId,
                 existingBooking.TimeSlot.StartTime,
                 existingBooking.TimeSlot.EndTime,
                 existingBooking.Id.Value,
@@ -141,7 +153,7 @@ namespace Booksy.ServiceCatalog.Application.Commands.Booking.RescheduleBooking
 
             // Step 2: Mark new availability slots as booked
             await MarkNewAvailabilitySlotsAsBookedAsync(
-                newBooking.ProviderId,
+                resource.SlotOwnerId,
                 newBooking.TimeSlot.StartTime,
                 newBooking.TimeSlot.EndTime,
                 newBooking.Id.Value,

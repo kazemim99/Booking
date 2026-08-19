@@ -25,7 +25,7 @@ namespace Booksy.ServiceCatalog.Application.Commands.Booking.CreateBooking
         private readonly IBookingWriteRepository _bookingWriteRepository;
         private readonly IBookingReadRepository _bookingReadRepository;
         private readonly IProviderReadRepository _providerRepository;
-        private readonly IOrganizationMembershipRepository _membershipRepository;
+        private readonly IBookableResourceResolver _resourceResolver;
         private readonly IServiceReadRepository _serviceRepository;
         private readonly IProviderAvailabilityWriteRepository _availabilityWriteRepository;
         private readonly IAvailabilityService _availabilityService;
@@ -36,7 +36,7 @@ namespace Booksy.ServiceCatalog.Application.Commands.Booking.CreateBooking
             IBookingWriteRepository bookingWriteRepository,
             IBookingReadRepository bookingReadRepository,
             IProviderReadRepository providerRepository,
-            IOrganizationMembershipRepository membershipRepository,
+            IBookableResourceResolver resourceResolver,
             IServiceReadRepository serviceRepository,
             IProviderAvailabilityWriteRepository availabilityWriteRepository,
             IAvailabilityService availabilityService,
@@ -46,7 +46,7 @@ namespace Booksy.ServiceCatalog.Application.Commands.Booking.CreateBooking
             _bookingWriteRepository = bookingWriteRepository;
             _bookingReadRepository = bookingReadRepository;
             _providerRepository = providerRepository;
-            _membershipRepository = membershipRepository;
+            _resourceResolver = resourceResolver;
             _serviceRepository = serviceRepository;
             _availabilityWriteRepository = availabilityWriteRepository;
             _availabilityService = availabilityService;
@@ -121,39 +121,10 @@ namespace Booksy.ServiceCatalog.Application.Commands.Booking.CreateBooking
             // Resolve the bookable resource. StaffProviderId is a RESOURCE id: a
             // MembershipId (a person working here), the organization itself (solo
             // direct booking), or a legacy individual sub-provider until migrated.
-            var resourceId = request.StaffProviderId;
-            var isOrgDirect = resourceId == provider.Id.Value;
-
-            var membership = await _membershipRepository.GetByIdAsync(resourceId, cancellationToken);
-            ProviderAggregate? legacyStaffProvider = null;
-
-            if (membership is not null)
-            {
-                if (membership.OrganizationId != provider.Id)
-                    throw new ConflictException("Member does not belong to the specified organization");
-                if (membership.Status != Domain.Enums.MembershipStatus.Active || !membership.ProvidesServices)
-                    throw new ConflictException("This team member is not currently bookable");
-            }
-            else if (!isOrgDirect)
-            {
-                // Legacy sub-provider staff.
-                legacyStaffProvider = await _providerRepository.GetByIdAsync(
-                    ProviderId.From(resourceId), cancellationToken);
-
-                if (legacyStaffProvider == null)
-                    throw new NotFoundException($"Bookable resource with ID {resourceId} not found");
-
-                if (legacyStaffProvider.ParentProviderId != provider.Id)
-                    throw new ConflictException("Staff provider does not belong to the specified organization");
-
-                if (legacyStaffProvider.Status != Domain.Enums.ProviderStatus.Active)
-                {
-                    var legacyName = $"{legacyStaffProvider.OwnerFirstName} {legacyStaffProvider.OwnerLastName}".Trim();
-                    if (string.IsNullOrEmpty(legacyName))
-                        legacyName = legacyStaffProvider.Profile.BusinessName;
-                    throw new ConflictException($"Staff provider {legacyName} is not currently active");
-                }
-            }
+            // Rescheduling resolves the same way, via the same resolver.
+            var resource = await _resourceResolver.ResolveAsync(
+                provider, request.StaffProviderId, requireBookable: true, cancellationToken);
+            var resourceId = resource.ResourceId;
 
             // Validate booking constraints (provider status, business hours, holidays, etc.)
             var validationResult = await _availabilityService.ValidateBookingConstraintsAsync(
@@ -189,8 +160,7 @@ namespace Booksy.ServiceCatalog.Application.Commands.Booking.CreateBooking
             var callerId = UserId.From(request.CustomerId);
             var isProviderCreated =
                 provider.OwnerId == callerId
-                || (membership?.PersonId is not null && membership.PersonId.Equals(callerId))
-                || (legacyStaffProvider is not null && legacyStaffProvider.OwnerId == callerId);
+                || (resource.PersonId is not null && resource.PersonId.Equals(callerId));
 
             // Create the booking
             var booking = isProviderCreated
@@ -223,10 +193,10 @@ namespace Booksy.ServiceCatalog.Application.Commands.Booking.CreateBooking
             // Mark availability slot as booked atomically
             var endTime = request.StartTime.Add(totalDuration.ToTimeSpan());
             await MarkAvailabilityAsBookedAsync(
-                // Member slots belong to the organization and carry StaffId=MembershipId;
+                // How slots are keyed is the resolver's decision, not this handler's:
+                // member slots belong to the organization and carry StaffId=MembershipId;
                 // legacy sub-provider slots are keyed by the sub-provider itself.
-                membership is not null ? provider.Id : ProviderId.From(resourceId),
-                membership is not null ? resourceId : null,
+                resource.SlotOwnerId,
                 request.StartTime,
                 endTime,
                 booking.Id.Value,
@@ -258,7 +228,6 @@ namespace Booksy.ServiceCatalog.Application.Commands.Booking.CreateBooking
         /// </summary>
         private async Task MarkAvailabilityAsBookedAsync(
             ProviderId providerId,
-            Guid? staffId,
             DateTime startTime,
             DateTime endTime,
             Guid bookingId,
@@ -269,12 +238,19 @@ namespace Booksy.ServiceCatalog.Application.Commands.Booking.CreateBooking
             var endTimeOnly = TimeOnly.FromDateTime(endTime);
 
             // Find all overlapping availability slots
+            // NOTE: the 5th argument is `excludeSlotId` — a slot to skip — NOT a staff
+            // filter. `staffId` used to be passed here, which is a no-op in practice (a
+            // membership id never equals a slot id) but reads as staff-scoping that is not
+            // happening: FindOverlappingSlotsAsync does not filter on ProviderAvailability
+            // .StaffId at all, so an organization's overlapping slots are returned
+            // regardless of which member they belong to. Left as-is behaviourally; the
+            // missing staff filter belongs to the booking-slot-integrity change.
             var overlappingSlots = await _availabilityWriteRepository.FindOverlappingSlotsAsync(
                 providerId,
                 date,
                 startTimeOnly,
                 endTimeOnly,
-                staffId,
+                excludeSlotId: null,
                 cancellationToken);
 
             if (overlappingSlots.Count == 0)

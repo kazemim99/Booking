@@ -128,6 +128,121 @@ public class BookingSteps
         _scenarioContext.Set(response.StatusCode, "LastStatusCode");
     }
 
+    [When(@"I send a POST request to reschedule the booking with:")]
+    public async Task WhenISendAPostRequestToRescheduleTheBookingWith(Table table)
+    {
+        var bookingId = _scenarioContext.Get<Guid>("CurrentBookingId");
+
+        var requestData = _helper.BuildDictionaryFromTable(table);
+
+        var request = new
+        {
+            NewStartTime = _helper.ParseRelativeTime(requestData["NewStartTime"]!.ToString()!),
+            Reason = requestData.ContainsKey("Reason") ? requestData["Reason"] : null
+        };
+
+        var response = await _testBase.PostAsJsonAsync(
+            $"/api/v1/bookings/{bookingId}/reschedule", request);
+
+        _scenarioContext.Set(response, "LastResponse");
+        _scenarioContext.Set(response.StatusCode, "LastStatusCode");
+
+        // Surface the API's own reason — a bare status assertion hides WHY it failed.
+        if (response.Error != null)
+            Console.WriteLine($"Reschedule error: {response.Error.Code} — {response.Error.Message}");
+    }
+
+    [Then(@"the old booking should have status ""(.*)"" in the database")]
+    public async Task ThenTheOldBookingShouldHaveStatusInTheDatabase(string expectedStatus)
+    {
+        var bookingId = _scenarioContext.Get<Guid>("CurrentBookingId");
+
+        var booking = await _testBase.DbContext.Bookings
+            .AsNoTracking()
+            .FirstOrDefaultAsync(b => b.Id == BookingId.From(bookingId));
+
+        booking.Should().NotBeNull($"Booking with ID {bookingId} should exist in database");
+        booking!.Status.ToString().Should().Be(expectedStatus,
+            "the rescheduled-away booking is retained and marked, not deleted");
+    }
+
+    [Then(@"a new booking should exist for the new time slot")]
+    public async Task ThenANewBookingShouldExistForTheNewTimeSlot()
+    {
+        var oldBookingId = _scenarioContext.Get<Guid>("CurrentBookingId");
+
+        var newBooking = await _testBase.DbContext.Bookings
+            .AsNoTracking()
+            .FirstOrDefaultAsync(b => b.PreviousBookingId == BookingId.From(oldBookingId));
+
+        newBooking.Should().NotBeNull(
+            "rescheduling creates a successor booking linked back to the original");
+
+        _scenarioContext.Set(newBooking!, "NewBooking:Current");
+    }
+
+    /// <summary>
+    /// Rescheduling moves a booking in TIME; it must not silently move it to a
+    /// different staff member, which is what a resource-resolution bug would do.
+    /// </summary>
+    [Then(@"the new booking should be held for the same resource")]
+    public void ThenTheNewBookingShouldBeHeldForTheSameResource()
+    {
+        var newBooking = _scenarioContext.Get<Booking>("NewBooking:Current");
+        var originalResourceId = _scenarioContext.Get<Guid>("CurrentBookingResourceId");
+
+        newBooking.StaffId.Should().Be(originalResourceId,
+            "a reschedule that does not name a new staff member keeps the original resource");
+    }
+
+    [Then(@"the booking should still be scheduled for its original time")]
+    public async Task ThenTheBookingShouldStillBeScheduledForItsOriginalTime()
+    {
+        var bookingId = _scenarioContext.Get<Guid>("CurrentBookingId");
+        var originalStart = _scenarioContext.Get<DateTime>("CurrentBookingStartTime");
+
+        var booking = await _testBase.DbContext.Bookings
+            .AsNoTracking()
+            .FirstOrDefaultAsync(b => b.Id == BookingId.From(bookingId));
+
+        booking.Should().NotBeNull();
+        booking!.TimeSlot.StartTime.Should().BeCloseTo(originalStart, TimeSpan.FromSeconds(1),
+            "a rejected reschedule must not move the booking it failed to reschedule");
+    }
+
+    /// <summary>
+    /// The successor booking must own its policy and payment state rather than borrow the
+    /// original's instances — sharing them makes EF treat the save as re-parenting an owned
+    /// entity and reject it. Asserting the ORIGINAL still has its own is how we detect the
+    /// aliasing having been reintroduced.
+    /// </summary>
+    [Then(@"the original booking still has its own policy and payment information")]
+    public async Task ThenTheOriginalBookingStillHasItsOwnPolicyAndPaymentInformation()
+    {
+        var bookingId = _scenarioContext.Get<Guid>("CurrentBookingId");
+
+        var original = await _testBase.DbContext.Bookings
+            .AsNoTracking()
+            .FirstOrDefaultAsync(b => b.Id == BookingId.From(bookingId));
+
+        original.Should().NotBeNull();
+        original!.Policy.Should().NotBeNull("the rescheduled-away booking keeps its own policy");
+        original.PaymentInfo.Should().NotBeNull("and its own payment state");
+        original.TotalPrice.Should().NotBeNull("and its own price");
+
+        var successor = await _testBase.DbContext.Bookings
+            .AsNoTracking()
+            .FirstOrDefaultAsync(b => b.PreviousBookingId == BookingId.From(bookingId));
+
+        successor.Should().NotBeNull();
+        successor!.Policy.RescheduleWindowHours.Should().Be(original.Policy.RescheduleWindowHours,
+            "the successor carries the same policy TERMS");
+        successor.TotalPrice.Amount.Should().Be(original.TotalPrice.Amount,
+            "and the same price");
+        successor.PaymentInfo.Status.Should().Be(original.PaymentInfo.Status,
+            "and the same payment state");
+    }
+
     [Then(@"the response should contain a booking with:")]
     public void ThenTheResponseShouldContainABookingWith(Table table)
     {

@@ -168,6 +168,10 @@ namespace Booksy.ServiceCatalog.Infrastructure.DependencyInjection
             // Members are bookable resources keyed by MembershipId (no shadow staff provider).
             services.AddScoped<Application.Services.Interfaces.IMemberBookabilityService,
                 Application.Services.MemberBookabilityService>();
+            // The single answer to "what is this booking held against, and how are its slots
+            // keyed" — shared by booking creation and rescheduling so they cannot drift.
+            services.AddScoped<Application.Services.IBookableResourceResolver,
+                Application.Services.BookableResourceResolver>();
 
             // Application Services
             services.AddScoped<IProviderApplicationService, ProviderApplicationService>();

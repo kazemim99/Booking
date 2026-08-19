@@ -117,9 +117,15 @@ namespace Booksy.ServiceCatalog.Domain.Aggregates.BookingAggregate
                 TimeSlot = timeSlot,
                 Duration = duration,
                 Status = BookingStatus.Requested,
-                TotalPrice = totalPrice,
+                // Defensive copies. TotalPrice and Policy are EF owned entities keyed by their
+                // owning booking, and callers legitimately pass instances that belong to another
+                // aggregate — `service.BasePrice` and `service.BookingPolicy` are the Service's
+                // own. Storing those instances here would make two aggregates share one owned
+                // entity, which EF rejects on save as re-parenting ("part of a key and so cannot
+                // be modified"). Same rule as ADR-005; PaymentInfo already does this internally.
+                TotalPrice = totalPrice.Clone(),
                 PaymentInfo = paymentInfo,
-                Policy = policy,
+                Policy = policy.Clone(),
                 CustomerNotes = customerNotes,
                 RequestedAt = DateTime.UtcNow
             };
@@ -333,9 +339,15 @@ namespace Booksy.ServiceCatalog.Domain.Aggregates.BookingAggregate
                 TimeSlot = TimeSlot.Create(newStartTime, Duration),
                 Duration = Duration,
                 Status = BookingStatus.Requested,
-                TotalPrice = TotalPrice,
-                PaymentInfo = PaymentInfo, // Transfer payment info
-                Policy = Policy,
+                // Clone every owned value object rather than handing over this booking's
+                // instances: TotalPrice, PaymentInfo and Policy are all EF owned entities
+                // keyed by their owning booking, so sharing an instance across two bookings
+                // reads as re-parenting and is rejected on save ("part of a key and so
+                // cannot be modified"). The successor carries the same VALUES, not the same
+                // objects. See ADR-005.
+                TotalPrice = TotalPrice.Clone(),
+                PaymentInfo = PaymentInfo.Clone(), // Transfer payment state (deposit, intents)
+                Policy = Policy.Clone(),
                 CustomerNotes = CustomerNotes,
                 PreviousBookingId = Id,
                 RequestedAt = now

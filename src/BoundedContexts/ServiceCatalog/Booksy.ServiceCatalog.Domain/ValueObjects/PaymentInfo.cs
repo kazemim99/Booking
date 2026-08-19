@@ -73,6 +73,27 @@ namespace Booksy.ServiceCatalog.Domain.ValueObjects
             RefundedAt = refundedAt;
         }
 
+        /// <summary>
+        /// Returns an equal <see cref="PaymentInfo"/> — including payment state such as intent ids and
+        /// paid/refunded timestamps — as a distinct CLR instance, with its own <see cref="Money"/> instances.
+        /// </summary>
+        /// <remarks>
+        /// Needed when the same payment state flows into a second owned slot, e.g. a rescheduled booking
+        /// inheriting its predecessor's. A shallow copy is not enough: the nested amounts are themselves owned
+        /// entities, so they must be de-aliased too (the constructor clones them). See ADR-005.
+        /// </remarks>
+        public new PaymentInfo Clone() => new(
+            TotalAmount,
+            DepositAmount,
+            PaidAmount,
+            RefundedAmount,
+            Status,
+            PaymentIntentId,
+            DepositPaymentIntentId,
+            RefundId,
+            PaidAt,
+            RefundedAt);
+
         public static PaymentInfo Create(Money totalAmount, Money depositAmount)
         {
             return new PaymentInfo(

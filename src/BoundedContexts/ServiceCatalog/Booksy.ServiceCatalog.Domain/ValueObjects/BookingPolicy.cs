@@ -157,6 +157,27 @@ namespace Booksy.ServiceCatalog.Domain.ValueObjects
             DepositFixedAmount = source.DepositFixedAmount;
         }
 
+        /// <summary>
+        /// Returns an equal <see cref="BookingPolicy"/> that is a distinct CLR instance.
+        /// </summary>
+        /// <remarks>
+        /// <see cref="BookingPolicy"/> is persisted as an EF Core <b>owned</b> entity keyed by its owning
+        /// booking, so the same CLR instance must never occupy two owned slots — a rescheduled booking
+        /// inheriting its predecessor's policy reads to EF as re-parenting the original ("part of a key and so
+        /// cannot be modified"). See ADR-005.
+        /// </remarks>
+        public new BookingPolicy Clone() => new(
+            MinAdvanceBookingHours,
+            MaxAdvanceBookingDays,
+            CancellationWindowHours,
+            CancellationFeePercentage,
+            AllowRescheduling,
+            RescheduleWindowHours,
+            RequireDeposit,
+            DepositPercentage,
+            DepositType,
+            DepositFixedAmount);
+
         public static BookingPolicy Create(
             int minAdvanceBookingHours,
             int maxAdvanceBookingDays,

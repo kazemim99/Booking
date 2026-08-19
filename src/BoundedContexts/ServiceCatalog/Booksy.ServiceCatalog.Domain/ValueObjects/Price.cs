@@ -34,6 +34,18 @@ namespace Booksy.ServiceCatalog.Domain.ValueObjects
         public bool IsZero => Amount == 0;
         public bool IsPositive => Amount > 0;
 
+        /// <summary>
+        /// Returns an equal <see cref="Price"/> that is a distinct CLR instance.
+        /// </summary>
+        /// <remarks>
+        /// <see cref="Price"/> is persisted as an EF Core <b>owned</b> entity, so the same CLR instance must
+        /// never occupy two owned slots (e.g. an original booking's <c>TotalPrice</c> and its rescheduled
+        /// successor's). Sharing one corrupts owned-entity tracking — EF treats the second slot as a re-parent
+        /// of the first and refuses it ("part of a key and so cannot be modified"). Same rule as
+        /// <see cref="Core.Domain.ValueObjects.Money.Clone"/>; see ADR-005.
+        /// </remarks>
+        public new Price Clone() => new(Amount, Currency);
+
         public override string ToString() => $"{Amount:F2} {Currency}";
 
         protected override IEnumerable<object> GetAtomicValues()

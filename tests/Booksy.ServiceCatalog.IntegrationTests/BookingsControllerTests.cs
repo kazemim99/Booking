@@ -334,7 +334,13 @@ public class BookingsControllerTests : ServiceCatalogIntegrationTestBase
 
         AuthenticateAsUser(customerId, "customer@test.com");
 
-        var newStartTime = DateTime.UtcNow.AddDays(5).AddHours(14); // 2 PM, 5 days from now
+        // 2 PM on the next weekday at least 5 days out. Two traps here: `UtcNow.AddDays(5)`
+        // keeps the current time-of-day, so `.AddHours(14)` lands in the early hours of the
+        // FOLLOWING day (4 AM when run mid-afternoon) rather than 2 PM; and the test provider
+        // opens Mon-Fri only, so a fixed offset can fall on a weekend. Both put the new time
+        // outside business hours, which now surfaces as a 409 — previously invisible because
+        // the endpoint 404'd before it ever reached validation.
+        var newStartTime = NextWeekdayAtHour(DateTime.UtcNow.Date.AddDays(5), 14);
 
         var request = new RescheduleBookingRequest
         {
@@ -402,6 +408,19 @@ public class BookingsControllerTests : ServiceCatalogIntegrationTestBase
         return booking;
     }
 
+    /// <summary>
+    /// The first Monday-Friday date on or after <paramref name="from"/>, at <paramref name="hour"/>.
+    /// Keeps time-dependent assertions off the calendar: the test provider opens Mon-Fri only.
+    /// </summary>
+    private static DateTime NextWeekdayAtHour(DateTime from, int hour)
+    {
+        var day = from.Date;
+        while (day.DayOfWeek is System.DayOfWeek.Saturday or System.DayOfWeek.Sunday)
+            day = day.AddDays(1);
+
+        return day.AddHours(hour);
+    }
+
     private async Task<Domain.Aggregates.Provider> CreateTestProviderWithServicesAsync()
     {
         var provider = await CreateAndAuthenticateAsProviderAsync("Test Provider", "provider@test.com");
@@ -420,8 +439,15 @@ public class BookingsControllerTests : ServiceCatalogIntegrationTestBase
 
         await DbContext.SaveChangesAsync();
 
-        // Create a service
-        await CreateServiceForProviderAsync(provider, "Test Service", 50.00m, 60);
+        // Create a service — and make it bookable. Services are born Draft, and bookings
+        // reject a non-Active service ("این خدمت فعال نیست"), which surfaces as a 409 from
+        // ValidateBookingConstraints. These tests book the organization directly, so the
+        // organization itself is the qualified "staff" for its own services.
+        var service = await CreateServiceForProviderAsync(provider, "Test Service", 50.00m, 60);
+        service.AddQualifiedStaff(provider.Id.Value);
+        if (service.Status != Domain.Enums.ServiceStatus.Active)
+            service.Activate();
+        await DbContext.SaveChangesAsync();
 
         return provider;
     }
