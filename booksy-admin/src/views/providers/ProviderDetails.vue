@@ -6,17 +6,17 @@
       @back="handleBack"
     >
       <template #extra>
-        <a-space>
-          <a-button v-if="provider?.status === 'Pending'" type="primary" @click="handleApprove">
-            <check-outlined /> {{ t('provider.approve') }}
+        <a-popconfirm
+          v-if="provider && canActivate(provider.status)"
+          :title="t('provider.confirmActivate')"
+          :ok-text="t('common.confirm')"
+          :cancel-text="t('common.cancel')"
+          @confirm="handleActivate"
+        >
+          <a-button type="primary">
+            <check-outlined /> {{ t('provider.activate') }}
           </a-button>
-          <a-button v-if="provider?.status === 'Pending'" danger @click="handleReject">
-            <close-outlined /> {{ t('provider.reject') }}
-          </a-button>
-          <a-button v-if="provider?.status === 'Approved'" danger @click="handleSuspend">
-            <stop-outlined /> {{ t('provider.suspend') }}
-          </a-button>
-        </a-space>
+        </a-popconfirm>
       </template>
     </a-page-header>
 
@@ -30,24 +30,33 @@
               </a-descriptions-item>
               <a-descriptions-item :label="t('common.status')">
                 <a-tag :color="getStatusColor(provider?.status)">
-                  {{ provider?.status }}
+                  {{ t(statusLabelKey(provider?.status)) }}
                 </a-tag>
               </a-descriptions-item>
+              <a-descriptions-item :label="t('provider.tableType')">
+                {{ provider?.type }}
+              </a-descriptions-item>
+              <a-descriptions-item :label="t('provider.isApproved')">
+                {{ provider?.isVerified ? t('common.yes') : t('common.no') }}
+              </a-descriptions-item>
               <a-descriptions-item :label="t('provider.email')">
-                {{ provider?.email }}
+                {{ provider?.contactInfo?.email || t('provider.notAvailable') }}
               </a-descriptions-item>
               <a-descriptions-item :label="t('provider.phone')">
-                {{ provider?.phoneNumber }}
+                {{ provider?.contactInfo?.primaryPhone || t('provider.notAvailable') }}
               </a-descriptions-item>
               <a-descriptions-item :label="t('provider.rating')" :span="2">
-                <a-rate :value="provider?.rating || 0" disabled allow-half />
-                <span style="margin-left: 8px">{{ provider?.rating?.toFixed(2) }}</span>
+                <a-rate :value="provider?.averageRating || 0" disabled allow-half />
+                <span style="margin-left: 8px">
+                  {{ provider?.averageRating?.toFixed(2) ?? '—' }}
+                  ({{ provider?.totalReviews ?? 0 }})
+                </span>
               </a-descriptions-item>
               <a-descriptions-item :label="t('provider.description')" :span="2">
                 {{ provider?.description || t('provider.noDescriptionProvided') }}
               </a-descriptions-item>
               <a-descriptions-item :label="t('provider.address')" :span="2">
-                {{ provider?.address || t('provider.noAddressProvided') }}
+                {{ formattedAddress || t('provider.noAddressProvided') }}
               </a-descriptions-item>
             </a-descriptions>
           </a-card>
@@ -56,19 +65,13 @@
         <a-col :xs="24" :lg="8">
           <a-card :title="t('provider.statistics')">
             <a-statistic
-              :title="t('provider.totalBookings')"
-              :value="provider?.totalBookings || 0"
+              :title="t('provider.tableServices')"
+              :value="provider?.serviceCount ?? 0"
               style="margin-bottom: 16px"
             />
             <a-statistic
               :title="t('provider.registered')"
-              :value="formatDate(provider?.createdAt)"
-            />
-            <a-divider />
-            <a-statistic
-              v-if="provider?.approvedAt"
-              :title="t('provider.approvedOn')"
-              :value="formatDate(provider?.approvedAt)"
+              :value="formatDate(provider?.registeredAt) || '—'"
             />
           </a-card>
         </a-col>
@@ -79,12 +82,7 @@
         <a-col :span="24">
           <a-card :title="t('provider.gallery')">
             <template #extra>
-              <a-tag :color="galleryStats.pending > 0 ? 'orange' : 'green'">
-                {{ galleryStats.total }} {{ t('provider.images') }}
-                <span v-if="galleryStats.pending > 0">
-                  ({{ galleryStats.pending }} {{ t('provider.pendingReview') }})
-                </span>
-              </a-tag>
+              <a-tag>{{ galleryImages.length }} {{ t('provider.images') }}</a-tag>
             </template>
 
             <a-spin :spinning="galleryLoading">
@@ -104,38 +102,26 @@
                       {{ t('provider.primaryImage') }}
                     </div>
                     <div class="image-overlay">
-                      <a-space>
-                        <a-button
-                          v-if="image.status === 'Pending'"
-                          type="primary"
-                          size="small"
-                          @click="handleApproveImage(image)"
-                        >
-                          {{ t('provider.approveImage') }}
+                      <a-space direction="vertical">
+                        <a-button size="small" @click="openImage(image)">
+                          {{ t('provider.viewGallery') }}
                         </a-button>
-                        <a-button
-                          v-if="image.status === 'Pending'"
-                          danger
-                          size="small"
-                          @click="handleRejectImage(image)"
+                        <a-popconfirm
+                          :title="t('provider.confirmDeleteImage')"
+                          :ok-text="t('common.confirm')"
+                          :cancel-text="t('common.cancel')"
+                          @confirm="handleDeleteImage(image)"
                         >
-                          {{ t('provider.rejectImage') }}
-                        </a-button>
-                        <a-button
-                          danger
-                          size="small"
-                          @click="handleDeleteImage(image)"
-                        >
-                          {{ t('provider.deleteImage') }}
-                        </a-button>
+                          <a-button danger size="small">
+                            {{ t('provider.deleteImage') }}
+                          </a-button>
+                        </a-popconfirm>
                       </a-space>
                     </div>
                   </div>
                   <div class="image-info">
-                    <a-tag :color="getImageStatusColor(image.status)">
-                      {{ image.status }}
-                    </a-tag>
                     <div v-if="image.caption" class="image-caption">{{ image.caption }}</div>
+                    <small>{{ t('provider.uploadedAt') }}: {{ formatDate(image.uploadedAt) }}</small>
                   </div>
                 </div>
               </div>
@@ -152,54 +138,35 @@ import { ref, onMounted, computed } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useI18n } from 'vue-i18n'
 import { message } from 'ant-design-vue'
-import dayjs from 'dayjs'
-import {
-  CheckOutlined,
-  CloseOutlined,
-  StopOutlined,
-} from '@ant-design/icons-vue'
+import { CheckOutlined } from '@ant-design/icons-vue'
 import { providersApi } from '../../api/providers.api'
 import { galleryApi, type GalleryImage } from '../../api/gallery.api'
-import type { Provider } from '../../types'
+import { getStatusColor, statusLabelKey, type ProviderStatus } from '../../constants/provider-status'
+import { formatDate } from '../../utils/date'
+import type { ProviderDetails } from '../../types'
 
 const { t } = useI18n()
 
 const route = useRoute()
 const router = useRouter()
 const loading = ref(false)
-const provider = ref<Provider | null>(null)
+const provider = ref<ProviderDetails | null>(null)
 const galleryLoading = ref(false)
 const galleryImages = ref<GalleryImage[]>([])
 
-const galleryStats = computed(() => {
-  return {
-    total: galleryImages.value.length,
-    pending: galleryImages.value.filter(img => img.status === 'Pending').length,
-    approved: galleryImages.value.filter(img => img.status === 'Approved').length,
-    rejected: galleryImages.value.filter(img => img.status === 'Rejected').length,
-  }
+const formattedAddress = computed(() => {
+  const address = provider.value?.address
+  if (!address) return ''
+  return [address.formattedAddress, address.city, address.state].filter(Boolean).join('، ')
 })
 
-const getStatusColor = (status?: string) => {
-  const colors: Record<string, string> = {
-    Pending: 'orange',
-    Approved: 'green',
-    Rejected: 'red',
-    Suspended: 'volcano',
-  }
-  return colors[status || ''] || 'default'
-}
-
-const formatDate = (date?: string) => {
-  if (!date) return t('provider.notAvailable')
-  return dayjs(date).format('MMM DD, YYYY')
-}
+const canActivate = (status: ProviderStatus) =>
+  status !== 'Active' && status !== 'Suspended' && status !== 'Archived'
 
 const loadProvider = async () => {
   loading.value = true
   try {
-    const id = route.params.id as string
-    provider.value = await providersApi.getProviderById(id)
+    provider.value = await providersApi.getProviderById(route.params.id as string)
   } catch (error) {
     message.error(t('provider.failedToLoadProviders'))
     router.back()
@@ -209,42 +176,21 @@ const loadProvider = async () => {
 }
 
 const handleBack = () => {
-  // Check if there's a history entry to go back to
   if (window.history.length > 1) {
     router.back()
   } else {
-    // If no history, navigate to providers list
     router.push('/providers')
   }
 }
 
-const handleApprove = async () => {
+const handleActivate = async () => {
   try {
-    await providersApi.approveProvider(provider.value!.id)
-    message.success(t('provider.providerApprovedSuccessfully'))
+    await providersApi.activateProvider(provider.value!.id)
+    message.success(t('provider.providerActivatedSuccessfully'))
     loadProvider()
   } catch (error) {
-    message.error(t('provider.failedToApproveProvider'))
+    message.error(t('provider.failedToActivateProvider'))
   }
-}
-
-const handleReject = () => {
-  // Implementation with modal for reason
-  message.info('Reject functionality - add modal for reason')
-}
-
-const handleSuspend = () => {
-  // Implementation with modal for reason
-  message.info('Suspend functionality - add modal for reason')
-}
-
-const getImageStatusColor = (status: string) => {
-  const colors: Record<string, string> = {
-    Pending: 'orange',
-    Approved: 'green',
-    Rejected: 'red',
-  }
-  return colors[status] || 'default'
 }
 
 const loadGallery = async () => {
@@ -260,29 +206,13 @@ const loadGallery = async () => {
   }
 }
 
-const handleApproveImage = async (image: GalleryImage) => {
-  try {
-    await galleryApi.approveImage(image.providerId, image.id)
-    message.success(t('provider.imageApproved'))
-    loadGallery()
-  } catch (error) {
-    message.error(t('provider.failedToApproveImage'))
-  }
-}
-
-const handleRejectImage = async (image: GalleryImage) => {
-  try {
-    await galleryApi.rejectImage(image.providerId, image.id)
-    message.success(t('provider.imageRejected'))
-    loadGallery()
-  } catch (error) {
-    message.error(t('provider.failedToRejectImage'))
-  }
+const openImage = (image: GalleryImage) => {
+  window.open(image.originalUrl, '_blank', 'noopener')
 }
 
 const handleDeleteImage = async (image: GalleryImage) => {
   try {
-    await galleryApi.deleteImage(image.providerId, image.id)
+    await galleryApi.deleteImage(provider.value!.id, image.id)
     message.success(t('provider.imageDeleted'))
     loadGallery()
   } catch (error) {

@@ -1,6 +1,7 @@
 import 'package:dartz/dartz.dart';
 import 'package:dio/dio.dart';
 import 'package:injectable/injectable.dart';
+import '../../../../core/constants/app_strings.dart';
 import '../../../../core/errors/failures.dart';
 import '../../../../core/storage/secure_storage_service.dart';
 import '../../domain/entities/user.dart';
@@ -37,7 +38,7 @@ class AuthRepositoryImpl implements AuthRepository {
     } on DioException catch (e) {
       return Left(_handleDioError(e));
     } catch (e) {
-      return Left(ServerFailure('خطای نامشخص: ${e.toString()}'));
+      return Left(_handleUnexpectedError(e));
     }
   }
 
@@ -82,7 +83,7 @@ class AuthRepositoryImpl implements AuthRepository {
     } on DioException catch (e) {
       return Left(_handleDioError(e));
     } catch (e) {
-      return Left(ServerFailure('خطای نامشخص: ${e.toString()}'));
+      return Left(_handleUnexpectedError(e));
     }
   }
 
@@ -102,7 +103,7 @@ class AuthRepositoryImpl implements AuthRepository {
     } on DioException catch (e) {
       return Left(_handleDioError(e));
     } catch (e) {
-      return Left(ServerFailure('خطای نامشخص: ${e.toString()}'));
+      return Left(_handleUnexpectedError(e));
     }
   }
 
@@ -153,7 +154,7 @@ class AuthRepositoryImpl implements AuthRepository {
     } on DioException catch (e) {
       return Left(_handleDioError(e));
     } catch (e) {
-      return Left(ServerFailure('خطای نامشخص: ${e.toString()}'));
+      return Left(_handleUnexpectedError(e));
     }
   }
 
@@ -263,6 +264,39 @@ class AuthRepositoryImpl implements AuthRepository {
     );
   }
 
+  /// Classifies anything that escaped the `DioException` handler.
+  ///
+  /// These sites previously returned `ServerFailure('خطای نامشخص: $e')`, which put the raw Dart error in front
+  /// of the customer — the toast reading `<TypeError: null: type 'Null' is not a subtype of type
+  /// 'Map<String, dynamic>'` came from here. That text is meaningless to a user and, worse, it hid a genuine
+  /// contract break: the login response had changed shape and the DTO was still parsing the old one.
+  ///
+  /// A decoding failure is now named as such, so the same class of defect is recognisable next time instead of
+  /// looking like a generic outage.
+  static Failure _handleUnexpectedError(Object error) {
+    if (error is TypeError || error is FormatException) {
+      return const ServerFailure(
+        'پاسخ دریافتی از سرور قابل پردازش نبود. لطفا دوباره تلاش کنید',
+      );
+    }
+
+    return ServerFailure('خطای نامشخص: $error');
+  }
+
+  /// Whether the server actually explained itself, as opposed to Dio's own technical text.
+  ///
+  /// `ErrorInterceptor` copies the server's `data['message']` into `DioException.message`, but when the body
+  /// carries no message it falls back to strings like "Http status error [401]". Showing those to a customer is
+  /// no better than the wrong message they replaced, so they are treated as absent.
+  static bool _hasServerMessage(DioException error) {
+    final body = error.response?.data;
+    if (body is Map<String, dynamic>) {
+      final message = body['message'];
+      return message is String && message.trim().isNotEmpty;
+    }
+    return false;
+  }
+
   /// Handle Dio errors
   Failure _handleDioError(DioException error) {
     if (error.type == DioExceptionType.connectionError ||
@@ -278,7 +312,17 @@ class AuthRepositoryImpl implements AuthRepository {
         case 400:
           return ValidationFailure(message);
         case 401:
-          return const AuthFailure('نام کاربری یا رمز عبور اشتباه است');
+          // This app authenticates by OTP only — it has no username and no password — so the previous
+          // hard-coded "نام کاربری یا رمز عبور اشتباه است" was both meaningless to the customer and
+          // actively misleading: a mistyped code is the one thing a 401 means here.
+          //
+          // The server already returns a precise reason ("Invalid verification code. N attempts
+          // remaining."), and ErrorInterceptor has resolved it into `error.message` by the time we get
+          // here. Discarding it also threw away the attempts-remaining count, which is the single most
+          // useful thing to tell someone at this point. Prefer it; fall back to the OTP wording.
+          return AuthFailure(
+            _hasServerMessage(error) ? message : AppStrings.otpWrongCode,
+          );
         case 404:
           return const NotFoundFailure('اطلاعات مورد نظر یافت نشد');
         default:

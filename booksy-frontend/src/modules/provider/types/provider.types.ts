@@ -385,7 +385,13 @@ export interface ProviderResponse {
   businessName: string
   description: string
   status: string
-  primaryCategory?: number  // NEW: Primary category enum value
+  /**
+   * Primary category as sent by the API. The host serialises enums with
+   * `JsonStringEnumConverter(JsonNamingPolicy.CamelCase)`, so this normally arrives as
+   * `"hairSalon"`; older payloads may still send the numeric id. Run it through
+   * `parseCategory()` rather than reading it directly.
+   */
+  primaryCategory?: number | string
   type?: string  // DEPRECATED: Legacy type for backward compatibility
   logoUrl?: string
   coverImageUrl?: string

@@ -9,6 +9,7 @@ import 'package:booksy_provider_app/features/auth/presentation/bloc/auth_state.d
 import 'package:booksy_provider_app/features/home/domain/entities/home_booking.dart';
 import 'package:booksy_provider_app/features/home/domain/entities/home_context.dart';
 import 'package:booksy_provider_app/features/home/domain/entities/home_enums.dart';
+import 'package:booksy_provider_app/features/home/domain/entities/home_snapshot.dart';
 import 'package:booksy_provider_app/features/home/presentation/cubit/home_cubit.dart';
 import 'package:booksy_provider_app/features/home/presentation/pages/home_page.dart';
 import 'package:flutter/material.dart';
@@ -33,6 +34,7 @@ HomeContext ctx({
   List<HomeBannerKind> banners = const [],
   bool isStale = false,
   List<HomeBooking> bookings = const [],
+  HomeIdentity identity = const HomeIdentity(),
   int tomorrow = 0,
   bool allCompleted = false,
   bool hasUpcoming = true,
@@ -56,6 +58,7 @@ HomeContext ctx({
     hasUpcomingToday: hasUpcoming,
     hasNudge: false,
     completenessPct: completenessPct,
+    identity: identity,
     todayBookings: bookings,
     tomorrowApptCount: tomorrow,
   );
@@ -202,6 +205,30 @@ void main() {
       expect(find.byKey(const Key('home-share-link')), findsOneWidget);
       expect(find.text(AppStrings.homeChecklistTitle), findsNothing);
     });
+
+    testWidgets(
+        'pending verification: hero swaps to pending copy and the share '
+        'CTA is disabled (an unapproved business is not bookable)',
+        (tester) async {
+      await pump(
+        tester,
+        ctx(
+          maturity: HomeMaturity.growth,
+          day: HomeDayContext.noAppts,
+          hasUpcoming: false,
+          pending: true,
+          banners: const [HomeBannerKind.pending],
+        ),
+      );
+      // Copy must not claim readiness while the pending banner is shown.
+      expect(find.text(AppStrings.homeDiscoverPendingTitle), findsOneWidget);
+      expect(find.text(AppStrings.homeDiscoverTitle), findsNothing);
+      final share = tester.widget<FilledButton>(find.descendant(
+        of: find.byKey(const Key('home-share-link')),
+        matching: find.byType(FilledButton),
+      ));
+      expect(share.onPressed, isNull);
+    });
   });
 
   group('Operational active day', () {
@@ -298,6 +325,48 @@ void main() {
         ]),
       );
       expect(tester.takeException(), isNull);
+    });
+  });
+
+  group('chrome identity (masthead)', () {
+    testWidgets('shows the BUSINESS name from identity, greeting beneath',
+        (tester) async {
+      await pump(
+        tester,
+        ctx(identity: const HomeIdentity(businessName: 'سالن رُز تهران')),
+      );
+      expect(find.text('سالن رُز تهران'), findsOneWidget);
+      // The account holder's name must not headline the masthead.
+      expect(find.textContaining('صبح بخیر، سالن رُز'), findsNothing);
+    });
+
+    testWidgets('falls back to the account display name without identity',
+        (tester) async {
+      await pump(tester, ctx());
+      // Session fullName from the harness.
+      expect(find.text('سالن رُز'), findsOneWidget);
+    });
+  });
+
+  group('activation checklist done-flags', () {
+    testWidgets('reflect live identity signals instead of hardcoded values',
+        (tester) async {
+      await pump(
+        tester,
+        ctx(
+          maturity: HomeMaturity.setup,
+          day: HomeDayContext.noAppts,
+          hasUpcoming: false,
+          identity: const HomeIdentity(
+            hasServices: true,
+            hasStaff: true,
+            hasGallery: false,
+          ),
+        ),
+      );
+      // 2 of 4 done (services + staff; gallery false, share unobservable).
+      expect(find.text(AppStrings.homeChecklistProgress(2, 4)),
+          findsOneWidget);
     });
   });
 }

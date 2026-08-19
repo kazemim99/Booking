@@ -54,7 +54,10 @@ public class AvailabilityController : ControllerBase
             ProviderId: request.ProviderId,
             ServiceId: request.ServiceId,
             Date: request.Date,
-            StaffId: request.StaffId);
+            StaffId: request.StaffId,
+            // Forward the full set so a multi-service appointment is measured against its real total duration.
+            // Null when absent, which makes the query fall back to ServiceId alone.
+            ServiceIds: request.ServiceIds is { Count: > 0 } ? request.ServiceIds : null);
 
         var result = await _mediator.Send(query, cancellationToken);
 

@@ -1,4 +1,4 @@
-// ========================================
+﻿// ========================================
 // Booksy.ServiceCatalog.Application/Commands/Notifications/SendBulkNotification/SendBulkNotificationCommandHandler.cs
 // ========================================
 using Booksy.Core.Application.Abstractions.CQRS;
@@ -6,7 +6,6 @@ using Booksy.Core.Domain.Exceptions;
 using Booksy.Core.Domain.ValueObjects;
 using Booksy.ServiceCatalog.Application.Services.Notifications;
 using Booksy.ServiceCatalog.Domain.Aggregates.NotificationAggregate;
-using Booksy.ServiceCatalog.Domain.Enums;
 using Booksy.ServiceCatalog.Domain.Repositories;
 using Microsoft.Extensions.Logging;
 
@@ -19,25 +18,13 @@ namespace Booksy.ServiceCatalog.Application.Commands.Notifications.SendBulkNotif
         : ICommandHandler<SendBulkNotificationCommand, SendBulkNotificationResult>
     {
         private readonly INotificationWriteRepository _notificationRepository;
-        private readonly IEmailNotificationService _emailService;
-        private readonly ISmsNotificationService _smsService;
-        private readonly IPushNotificationService _pushService;
-        private readonly IInAppNotificationService _inAppService;
         private readonly ILogger<SendBulkNotificationCommandHandler> _logger;
 
         public SendBulkNotificationCommandHandler(
             INotificationWriteRepository notificationRepository,
-            IEmailNotificationService emailService,
-            ISmsNotificationService smsService,
-            IPushNotificationService pushService,
-            IInAppNotificationService inAppService,
             ILogger<SendBulkNotificationCommandHandler> logger)
         {
             _notificationRepository = notificationRepository;
-            _emailService = emailService;
-            _smsService = smsService;
-            _pushService = pushService;
-            _inAppService = inAppService;
             _logger = logger;
         }
 
@@ -110,24 +97,11 @@ namespace Booksy.ServiceCatalog.Application.Commands.Notifications.SendBulkNotif
 
                     notificationIds.Add(notification.Id.Value);
 
-                    // Try to send immediately (don't wait for all to complete)
-                    _ = Task.Run(async () =>
-                    {
-                        try
-                        {
-                            await SendNotificationAsync(notification, cancellationToken);
-                            await _notificationRepository.UpdateNotificationAsync(notification, cancellationToken);
-                        }
-                        catch (Exception ex)
-                        {
-                            _logger.LogWarning(ex,
-                                "Failed to send notification in bulk: NotificationId={NotificationId}",
-                                notification.Id.Value);
-                            notification.MarkAsFailed(ex.Message);
-                            await _notificationRepository.UpdateNotificationAsync(notification, cancellationToken);
-                        }
-                    }, cancellationToken);
-
+                    // Left Queued for NotificationProcessorService to deliver. A bulk send used to fan out on a
+                    // detached Task.Run per recipient, which outlived the request scope and kept using its
+                    // disposed DbContext — and skipped the preference gate, de-duplication and retry rules that
+                    // the dispatcher enforces. The sweep applies all of them, and a batch of up to 1000 sends no
+                    // longer races the caller's request.
                     successCount++;
                 }
                 catch (Exception ex)
@@ -157,91 +131,5 @@ namespace Booksy.ServiceCatalog.Application.Commands.Notifications.SendBulkNotif
                 errors);
         }
 
-        private async Task SendNotificationAsync(Notification notification, CancellationToken cancellationToken)
-        {
-            bool success;
-            string? messageId = null;
-            string? errorMessage = null;
-
-            switch (notification.Channel)
-            {
-                case NotificationChannel.Email:
-                    if (string.IsNullOrWhiteSpace(notification.RecipientEmail))
-                    {
-                        throw new InvalidOperationException("Recipient email is required for email notifications");
-                    }
-
-                    var emailResult = await _emailService.SendEmailAsync(
-                        notification.RecipientEmail,
-                        notification.Subject,
-                        notification.Body,
-                        notification.PlainTextBody,
-                        metadata: notification.Metadata.ToDictionary(kvp => kvp.Key, kvp => kvp.Value),
-                        cancellationToken: cancellationToken);
-
-                    success = emailResult.Success;
-                    messageId = emailResult.MessageId;
-                    errorMessage = emailResult.ErrorMessage;
-                    break;
-
-                case NotificationChannel.SMS:
-                    if (string.IsNullOrWhiteSpace(notification.RecipientPhone))
-                    {
-                        throw new InvalidOperationException("Recipient phone is required for SMS notifications");
-                    }
-
-                    var smsResult = await _smsService.SendSmsAsync(
-                        notification.RecipientPhone,
-                        notification.Body,
-                        notification.Metadata.ToDictionary(kvp => kvp.Key, kvp => kvp.Value),
-                        cancellationToken);
-
-                    success = smsResult.Success;
-                    messageId = smsResult.MessageId;
-                    errorMessage = smsResult.ErrorMessage;
-                    break;
-
-                case NotificationChannel.PushNotification:
-                    var pushResult = await _pushService.SendPushAsync(
-                        "device-token-placeholder",
-                        notification.Subject,
-                        notification.Body,
-                        notification.Metadata.ToDictionary(kvp => kvp.Key, kvp => kvp.Value),
-                        cancellationToken);
-
-                    success = pushResult.Success;
-                    messageId = pushResult.MessageId;
-                    errorMessage = pushResult.ErrorMessage;
-                    break;
-
-                case NotificationChannel.InApp:
-                    var inAppResult = await _inAppService.SendToUserAsync(
-                        notification.RecipientId.Value,
-                        notification.Subject,
-                        notification.Body,
-                        notification.Type.ToString(),
-                        notification.Metadata.ToDictionary(kvp => kvp.Key, kvp => kvp.Value),
-                        cancellationToken);
-
-                    success = inAppResult.Success;
-                    errorMessage = inAppResult.ErrorMessage;
-                    break;
-
-                default:
-                    throw new NotSupportedException($"Notification channel {notification.Channel} is not supported");
-            }
-
-            // Update notification status
-            notification.Send();
-
-            if (success)
-            {
-                notification.MarkAsDelivered(messageId);
-            }
-            else
-            {
-                notification.MarkAsFailed(errorMessage ?? "Unknown error");
-            }
-        }
     }
 }

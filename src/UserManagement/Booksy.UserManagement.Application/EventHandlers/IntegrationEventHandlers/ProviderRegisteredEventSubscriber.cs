@@ -106,5 +106,5 @@ public sealed record ProviderRegisteredIntegrationEvent(
     Guid ProviderId,
     Guid OwnerId,
     string BusinessName,
-    string ProviderType, // Changed from enum to string for cross-context compatibility
+    string PrimaryCategory, // ServiceCategory sent as a string so neither context owns the other's enum
     DateTime RegisteredAt);

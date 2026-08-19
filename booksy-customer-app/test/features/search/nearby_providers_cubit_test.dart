@@ -51,6 +51,19 @@ class _FakeSearchRepository implements SearchRepository {
     capturedSortBy = sortBy;
     return response;
   }
+
+  /// Not exercised by these tests — the map cubit has its own suite. Present so the fake still
+  /// satisfies the SearchRepository contract.
+  @override
+  Future<Either<Failure, List<ProviderSummary>>> providersByLocation({
+    required double latitude,
+    required double longitude,
+    double radiusKm = 10,
+    String? serviceCategory,
+    int pageNumber = 1,
+    int pageSize = 50,
+  }) async =>
+      const Right(<ProviderSummary>[]);
 }
 
 void main() {

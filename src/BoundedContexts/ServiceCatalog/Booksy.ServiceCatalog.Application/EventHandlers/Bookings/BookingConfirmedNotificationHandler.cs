@@ -1,4 +1,4 @@
-// ========================================
+﻿// ========================================
 // Booksy.ServiceCatalog.Application/EventHandlers/Bookings/BookingConfirmedNotificationHandler.cs
 // ========================================
 using Booksy.Core.Application.Abstractions.Events;
@@ -83,7 +83,9 @@ namespace Booksy.ServiceCatalog.Application.EventHandlers.Bookings
                 Priority: NotificationPriority.High,
                 PlainTextBody: plainTextBody,
                 BookingId: notification.BookingId.Value,
-                ProviderId: notification.ProviderId.Value);
+                ProviderId: notification.ProviderId.Value,
+                // Dedup scope: the same lifecycle event re-delivered must not notify the customer twice.
+                IdempotencyKey: notification.EventId);
 
             await _mediator.Send(command, cancellationToken);
         }
@@ -113,7 +115,9 @@ namespace Booksy.ServiceCatalog.Application.EventHandlers.Bookings
                 Body: body,
                 Priority: NotificationPriority.Normal,
                 BookingId: notification.BookingId.Value,
-                ProviderId: notification.ProviderId.Value);
+                ProviderId: notification.ProviderId.Value,
+                // Dedup scope: the same lifecycle event re-delivered must not notify the customer twice.
+                IdempotencyKey: notification.EventId);
 
             await _mediator.Send(command, cancellationToken);
         }

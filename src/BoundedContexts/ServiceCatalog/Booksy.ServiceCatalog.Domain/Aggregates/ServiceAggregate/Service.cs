@@ -1,5 +1,6 @@
 ﻿using Booksy.Core.Domain.Abstractions.Entities;
 using Booksy.ServiceCatalog.Domain.Entities;
+using Booksy.ServiceCatalog.Domain.Enums.Extensions;
 using Booksy.ServiceCatalog.Domain.Events;
 using Booksy.ServiceCatalog.Domain.Exceptions;
 using Booksy.ServiceCatalog.Domain.ValueObjects;
@@ -65,6 +66,18 @@ namespace Booksy.ServiceCatalog.Domain.Aggregates
         // Private constructor for EF Core
         private Service() : base() { }
 
+        /// <summary>
+        /// A service is always filed under a declared ServiceCategory. Undefined values reach
+        /// here from string/numeric parsing at the API edge, and would later blow up in the
+        /// display metadata lookups, so they are rejected at creation instead.
+        /// </summary>
+        private static void EnsureCategoryIsValid(ServiceCategory category)
+        {
+            if (!category.IsDefinedCategory())
+                throw new InvalidServiceException(
+                    $"'{(int)category}' is not a valid service category. Use a value from the ServiceCategory enum.");
+        }
+
         // Factory method
         public static Service Create(
             ProviderId providerId,
@@ -75,6 +88,8 @@ namespace Booksy.ServiceCatalog.Domain.Aggregates
             Price basePrice,
             Duration duration)
         {
+            EnsureCategoryIsValid(category);
+
             var serviceId = ServiceId.New();
 
             var service = new Service
@@ -114,6 +129,8 @@ namespace Booksy.ServiceCatalog.Domain.Aggregates
         // Business Methods
         public void UpdateBasicInfo(string name, string description, ServiceCategory category)
         {
+            EnsureCategoryIsValid(category);
+
             Name = name;
             Description = description;
             Category = category;

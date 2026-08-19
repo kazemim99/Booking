@@ -39,6 +39,11 @@ dependencies:
   shamsi_date: ^1.0.1
 
   # Maps & Location
+  # Map rendering. OpenStreetMap tiles via flutter_map: no API key, no billing, and it renders on
+  # Flutter web — which google_maps_flutter (still listed below but referenced nowhere in the app)
+  # does not do without a billed JS key.
+  flutter_map: ^8.3.1
+  latlong2: ^0.9.1
   google_maps_flutter: ^2.5.3
   geolocator: ^11.0.0
   geocoding: ^2.1.1

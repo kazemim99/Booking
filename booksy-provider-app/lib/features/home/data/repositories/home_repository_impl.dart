@@ -68,10 +68,14 @@ class HomeRepositoryImpl implements HomeRepository {
           .toList();
       final tomorrow = bookings.length - today.length;
 
-      final signals = await _fetchSignals(providerId, today, now);
-      final availability = await _todayAvailability(providerId, now);
-      return Right(
-          _compose(status, today, tomorrow, signals, now, availability));
+      final signalsF = _fetchSignals(providerId, today, now);
+      final availabilityF = _todayAvailability(providerId, now);
+      final identityF = _fetchIdentity(providerId);
+      final signals = await signalsF;
+      final availability = await availabilityF;
+      final identity = await identityF;
+      return Right(_compose(
+          status, today, tomorrow, signals, now, availability, identity));
     });
   }
 
@@ -136,16 +140,7 @@ class HomeRepositoryImpl implements HomeRepository {
       if (b.serviceName.isNotEmpty) return b;
       final sid = HomeApiService.readString(m, const ['serviceId']);
       final name = serviceNames[sid];
-      return name == null
-          ? b
-          : HomeBooking(
-              id: b.id,
-              start: b.start,
-              clientName: b.clientName,
-              clientPhone: b.clientPhone,
-              serviceName: name,
-              status: b.status,
-            );
+      return name == null ? b : b.copyWith(serviceName: name);
     }).toList();
   }
 
@@ -207,6 +202,88 @@ class HomeRepositoryImpl implements HomeRepository {
               role: role),
           'افزودن عضو تیم ناموفق بود',
         ));
+  }
+
+  @override
+  Future<Either<Failure, void>> inviteStaff({
+    required String phoneNumber,
+    String? inviteeName,
+  }) {
+    return _withProviderId((providerId) => _action(
+          () => _api.inviteStaff(providerId,
+              phoneNumber: phoneNumber, inviteeName: inviteeName),
+          'ارسال دعوت‌نامه ناموفق بود',
+        ));
+  }
+
+  @override
+  Future<Either<Failure, List<OrgMember>>> fetchOrgMembers() {
+    return _withProviderId((providerId) async {
+      try {
+        final raw = await _api.getOrganizationMembers(providerId);
+        return Right(raw
+            .map((m) {
+              final phone = HomeApiService.readString(m, const ['phoneNumber', 'phone']);
+              return OrgMember(
+                membershipId: HomeApiService.readString(m, const ['membershipId']),
+                personId: () {
+                  final p = HomeApiService.readString(m, const ['personId']);
+                  return p.isEmpty ? null : p;
+                }(),
+                name: HomeApiService.readString(m, const ['name']),
+                phone: phone.isEmpty ? null : phone,
+                roles: (m['roles'] is List)
+                    ? (m['roles'] as List).map((e) => e.toString()).toList()
+                    : const [],
+                status: HomeApiService.readString(m, const ['status']),
+                isOwner: m['isOwner'] == true,
+                providesServices: m['providesServices'] == true,
+              );
+            })
+            .where((m) => m.membershipId.isNotEmpty)
+            .toList());
+      } on DioException {
+        return const Left(ServerFailure('دریافت فهرست تیم ناموفق بود'));
+      }
+    });
+  }
+
+  @override
+  Future<Either<Failure, void>> terminateMember(String membershipId) {
+    // Membership-scoped (not provider-scoped); the backend authorizes by owner.
+    return _action(
+      () => _api.terminateMembership(membershipId),
+      'حذف عضو تیم ناموفق بود',
+    );
+  }
+
+  @override
+  Future<Either<Failure, List<ProviderMembership>>> fetchMyMemberships() async {
+    // Person-scoped (resolved from the JWT), so no _withProviderId here.
+    try {
+      final raw = await _api.getMyMemberships();
+      return Right(raw
+          .map((m) {
+            final logo = HomeApiService.readString(m, const ['organizationLogo']);
+            return ProviderMembership(
+              membershipId: HomeApiService.readString(m, const ['membershipId']),
+              organizationId:
+                  HomeApiService.readString(m, const ['organizationId']),
+              organizationName:
+                  HomeApiService.readString(m, const ['organizationName']),
+              organizationLogo: logo.isEmpty ? null : logo,
+              roles: (m['roles'] is List)
+                  ? (m['roles'] as List).map((e) => e.toString()).toList()
+                  : const [],
+              status: HomeApiService.readString(m, const ['status']),
+              providesServices: m['providesServices'] == true,
+            );
+          })
+          .where((m) => m.membershipId.isNotEmpty)
+          .toList());
+    } on DioException {
+      return const Left(ServerFailure('دریافت سالن‌ها ناموفق بود'));
+    }
   }
 
   @override
@@ -621,18 +698,33 @@ class HomeRepositoryImpl implements HomeRepository {
       try {
         final results = await Future.wait([
           _api.getProviderServices(providerId),
-          _api.getProviderStaff(providerId),
+          // The team roster comes from memberships — the same source as the Team
+          // screen — so a member who accepts an invitation is immediately bookable
+          // here. Their MembershipId IS the bookable resource id.
+          _api.getOrganizationMembers(providerId),
         ]);
         final services =
             results[0].map(_mapService).where((s) => s.id.isNotEmpty).toList();
         final staff = results[1]
-            .map((s) => ComposerStaff(
-                  id: HomeApiService.readString(s, const ['id']),
-                  name: HomeApiService.readString(
-                      s, const ['fullName', 'name', 'firstName']),
-                ))
+            .where((m) =>
+                HomeApiService.readString(m, const ['status']) == 'Active' &&
+                m['providesServices'] == true)
+            .map((m) {
+              final name = HomeApiService.readString(m, const ['name']);
+              return ComposerStaff(
+                id: HomeApiService.readString(m, const ['membershipId']),
+                name: name.isEmpty
+                    ? HomeApiService.readString(m, const ['phoneNumber'])
+                    : name,
+              );
+            })
             .where((s) => s.id.isNotEmpty)
             .toList();
+        // Solo business: nobody provides services → bookable directly as the
+        // business (keyed by providerId); the backend treats it as an org booking.
+        if (staff.isEmpty) {
+          staff.add(ComposerStaff(id: providerId, name: 'خودم'));
+        }
         return Right(ComposerCatalog(services: services, staff: staff));
       } on DioException {
         return const Left(ServerFailure('دریافت اطلاعات خدمات و تیم ناموفق بود'));
@@ -641,20 +733,22 @@ class HomeRepositoryImpl implements HomeRepository {
   }
 
   @override
-  Future<Either<Failure, List<DateTime>>> fetchAvailableSlots({
+  Future<Either<Failure, SlotAvailability>> fetchAvailableSlots({
     required String serviceId,
     required DateTime date,
     String? staffId,
+    List<String> serviceIds = const [],
   }) async {
     return _withProviderId((providerId) async {
       try {
-        final slots = await _api.getAvailableSlots(
+        final availability = await _api.getAvailableSlots(
           providerId: providerId,
           serviceId: serviceId,
           date: date,
           staffId: staffId,
+          serviceIds: serviceIds,
         );
-        return Right(slots);
+        return Right(availability);
       } on DioException {
         return const Left(ServerFailure('دریافت زمان‌های خالی ناموفق بود'));
       }
@@ -669,6 +763,7 @@ class HomeRepositoryImpl implements HomeRepository {
     String? clientName,
     String? clientPhone,
     String? notes,
+    List<String> serviceIds = const [],
   }) async {
     return _withProviderId((providerId) async {
       try {
@@ -677,6 +772,7 @@ class HomeRepositoryImpl implements HomeRepository {
           serviceId: serviceId,
           staffProviderId: staffId,
           startTime: startTime,
+          serviceIds: serviceIds,
           customerNotes: walkInNotes(
             clientName: clientName,
             clientPhone: clientPhone,
@@ -796,6 +892,41 @@ class HomeRepositoryImpl implements HomeRepository {
     }
   }
 
+  /// Business identity + completeness signals for the header and checklist.
+  /// Runs parallel to the other snapshot calls; failures degrade each signal
+  /// to false / '' rather than failing the snapshot — the Home must render
+  /// even when a profile endpoint hiccups.
+  Future<HomeIdentity> _fetchIdentity(String providerId) async {
+    Future<T> tryOr<T>(Future<T> Function() call, T fallback) async {
+      try {
+        return await call();
+      } on DioException {
+        return fallback;
+      }
+    }
+
+    final detailsF = tryOr(
+        () => _api.getProviderDetails(providerId), const <String, dynamic>{});
+    final servicesF = tryOr(
+        () => _api.getProviderServices(providerId), const <Map<String, dynamic>>[]);
+    final staffF = tryOr(
+        () => _api.getOrganizationMembers(providerId),
+        const <Map<String, dynamic>>[]);
+    final galleryF =
+        tryOr(() => _api.getGallery(providerId), const <Map<String, dynamic>>[]);
+
+    final details = await detailsF;
+    return HomeIdentity(
+      businessName:
+          HomeApiService.readString(details, const ['businessName', 'name']),
+      hasDescription: HomeApiService.readString(
+              details, const ['description']).trim().isNotEmpty,
+      hasServices: (await servicesF).isNotEmpty,
+      hasStaff: (await staffF).isNotEmpty,
+      hasGallery: (await galleryF).isNotEmpty,
+    );
+  }
+
   HomeSnapshot _compose(
     ProviderStatus status,
     List<HomeBooking> today,
@@ -803,6 +934,7 @@ class HomeRepositoryImpl implements HomeRepository {
     MaturitySignals signals,
     DateTime now,
     HomeAvailability availability,
+    HomeIdentity identity,
   ) {
     final active =
         today.where((b) => b.status != HomeBookingStatus.cancelled).toList()
@@ -821,6 +953,7 @@ class HomeRepositoryImpl implements HomeRepository {
     return HomeSnapshot(
       providerStatus: status,
       bookingMode: HomeBookingMode.request,
+      identity: identity,
       availability: availability,
       signals: signals,
       todayApptCount: active.length,

@@ -62,7 +62,13 @@ namespace Booksy.ServiceCatalog.Infrastructure.Persistence.Seeders
             var services = new List<Service>();
             var baseServices = GetServicesByCategory(provider.PrimaryCategory);
 
-            foreach (var (persianName, englishName, description, price, duration, category) in baseServices)
+            // The tuple's last element is a Persian display label ("آرایشگری", "آرایش و زیبایی"). It was being
+            // passed to Enum.Parse<ServiceCategory>, whose members are English (Barbershop, HairSalon, …), so it
+            // threw ArgumentException for every seeded service — failing ServiceSeeder, the seeding orchestrator,
+            // and with it every database-backed integration test that boots the host. The label is descriptive
+            // text, never an enum name; the service's category is the category its provider was selected by,
+            // which GetServicesByCategory is already keyed on.
+            foreach (var (persianName, englishName, description, price, duration, _) in baseServices)
             {
                 var priceValue = Price.Create(price, "IRR"); // Iranian Rial
                 var durationValue = Duration.FromMinutes(duration);
@@ -71,7 +77,7 @@ namespace Booksy.ServiceCatalog.Infrastructure.Persistence.Seeders
                     provider.Id,
                     $"{englishName} - {persianName}",
                     description,
-                    Enum.Parse<ServiceCategory>(category),
+                    provider.PrimaryCategory,
                     ServiceType.Standard,
                     priceValue,
                     durationValue);
@@ -155,6 +161,56 @@ namespace Booksy.ServiceCatalog.Infrastructure.Persistence.Seeders
                 },
 
               
+
+                // The five categories below previously fell through to the empty default, so any provider in
+                // them was seeded with NO services at all — unbookable, and rendering as an empty profile that
+                // looks like a loading failure rather than a business.
+                ServiceCategory.BeautySalon => new List<(string, string, string, decimal, int, string)>
+                {
+                    ("کوتاهی و براشینگ", "Cut & Blow Dry", "کوتاهی مو و حالت‌دهی", 900000m, 60, "مو"),
+                    ("رنگ و مش", "Color & Highlights", "رنگ مو و مش با متد روز", 2500000m, 120, "مو"),
+                    ("کراتینه مو", "Keratin Treatment", "صافی و احیای مو با کراتین", 4500000m, 150, "مو"),
+                    ("آرایش عروس", "Bridal Makeup", "میکاپ کامل عروس به همراه شینیون", 8000000m, 180, "آرایش"),
+                    ("شینیون مجلسی", "Evening Updo", "بستن مو برای مراسم", 2000000m, 90, "آرایش"),
+                    ("اصلاح ابرو", "Eyebrow Shaping", "اصلاح و فرم‌دهی ابرو", 400000m, 20, "آرایش"),
+                },
+
+                ServiceCategory.NailSalon => new List<(string, string, string, decimal, int, string)>
+                {
+                    ("مانیکور", "Manicure", "مانیکور کامل دست", 700000m, 45, "ناخن"),
+                    ("پدیکور", "Pedicure", "پدیکور کامل پا", 900000m, 60, "ناخن"),
+                    ("کاشت ناخن", "Nail Extension", "کاشت ناخن با ژل", 2200000m, 120, "ناخن"),
+                    ("لاک ژل", "Gel Polish", "لاک ژل بادوام", 800000m, 45, "ناخن"),
+                    ("ترمیم ناخن", "Nail Refill", "ترمیم و رشد مجدد ناخن کاشته‌شده", 1500000m, 90, "ناخن"),
+                    ("طراحی ناخن", "Nail Art", "طراحی و دیزاین اختصاصی", 500000m, 30, "ناخن"),
+                },
+
+                ServiceCategory.Massage => new List<(string, string, string, decimal, int, string)>
+                {
+                    ("ماساژ ریلکسی", "Relaxation Massage", "ماساژ آرام‌بخش سراسر بدن", 1600000m, 60, "ماساژ"),
+                    ("ماساژ درمانی", "Therapeutic Massage", "ماساژ تخصصی برای دردهای عضلانی", 2200000m, 75, "ماساژ"),
+                    ("ماساژ ورزشی", "Sports Massage", "ماساژ ویژه ورزشکاران", 2000000m, 60, "ماساژ"),
+                    ("ماساژ کمر و گردن", "Back & Neck Massage", "تمرکز بر کمر، شانه و گردن", 1200000m, 40, "ماساژ"),
+                    ("رفلکسولوژی", "Reflexology", "ماساژ نقاط فشاری کف پا", 1400000m, 50, "ماساژ"),
+                },
+
+                ServiceCategory.Yoga => new List<(string, string, string, decimal, int, string)>
+                {
+                    ("یوگا مبتدی", "Beginner Yoga", "کلاس گروهی یوگا برای شروع", 600000m, 60, "یوگا"),
+                    ("هاتا یوگا", "Hatha Yoga", "تمرکز بر تنفس و حرکات پایه", 700000m, 75, "یوگا"),
+                    ("یوگا خصوصی", "Private Yoga", "جلسه اختصاصی با مربی", 2000000m, 60, "یوگا"),
+                    ("مدیتیشن", "Meditation Session", "جلسه مدیتیشن و ذهن‌آگاهی", 500000m, 45, "مدیتیشن"),
+                    ("یوگا بارداری", "Prenatal Yoga", "یوگا ویژه دوران بارداری", 900000m, 60, "یوگا"),
+                },
+
+                ServiceCategory.Physiotherapy => new List<(string, string, string, decimal, int, string)>
+                {
+                    ("ارزیابی اولیه", "Initial Assessment", "معاینه و تعیین برنامه درمانی", 1000000m, 45, "فیزیوتراپی"),
+                    ("فیزیوتراپی جلسه‌ای", "Physiotherapy Session", "جلسه درمانی با دستگاه و تمرین", 1800000m, 60, "فیزیوتراپی"),
+                    ("درمان دستی", "Manual Therapy", "تکنیک‌های دستی برای مفاصل و عضلات", 2000000m, 60, "فیزیوتراپی"),
+                    ("توانبخشی ورزشی", "Sports Rehabilitation", "بازتوانی پس از آسیب ورزشی", 2200000m, 75, "توانبخشی"),
+                    ("الکتروتراپی", "Electrotherapy", "تحریک الکتریکی برای کاهش درد", 1200000m, 30, "فیزیوتراپی"),
+                },
 
                 _ => new List<(string, string, string, decimal, int, string)>()
             };

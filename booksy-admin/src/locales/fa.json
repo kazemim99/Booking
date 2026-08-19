@@ -188,11 +188,9 @@
     "providePleasePleaseReason": "لطفاً دلیلی برای رد این ارائه‌دهنده بیان کنید",
     "providePleaseReasonSuspend": "لطفاً دلیلی برای معلق کردن این ارائه‌دهنده بیان کنید",
     "businessInformation": "اطلاعات کسب‌وکار",
-    "businessName": "نام کسب‌وکار",
     "email": "ایمیل",
     "phone": "تلفن",
     "rating": "امتیاز",
-    "address": "آدرس",
     "noDescriptionProvided": "توضیحات ارائه نشده",
     "noAddressProvided": "آدرسی ارائه نشده",
     "statistics": "آمار",
@@ -227,7 +225,9 @@
     "uploadedBy": "آپلود شده توسط",
     "uploadedAt": "تاریخ آپلود",
     "primaryImage": "تصویر اصلی",
-    "caption": "عنوان"
+    "caption": "عنوان",
+    "confirmActivate": "این ارائه‌دهنده فعال شود؟",
+    "confirmDeleteImage": "این تصویر حذف شود؟"
   },
   "service": {
     "title": "خدمات",
@@ -390,5 +390,20 @@
     "showing": "نمایش",
     "to": "تا",
     "totalItems": "مجموع موارد"
+  },
+  "providerStatus": {
+    "Drafted": "پیش‌نویس",
+    "PendingVerification": "در انتظار تایید",
+    "Verified": "تاییدشده",
+    "Active": "فعال",
+    "Inactive": "غیرفعال",
+    "Suspended": "معلق",
+    "Archived": "بایگانی‌شده",
+    "unknown": "نامشخص"
+  },
+  "gallery": {
+    "unavailableTitle": "بازبینی سراسری تصاویر در دسترس نیست",
+    "unavailableDescription": "سرویس پشتیبان هنوز امکان فهرست کردن یا تایید تصاویر همه ارائه‌دهندگان را ندارد. تصاویر هر ارائه‌دهنده از صفحه جزئیات همان ارائه‌دهنده قابل مشاهده و مدیریت است.",
+    "browseProviders": "مشاهده ارائه‌دهندگان"
   }
 }

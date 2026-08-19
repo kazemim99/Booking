@@ -55,6 +55,12 @@ void main() {
     when(() => api.getProviderServices(any())).thenAnswer((_) async => []);
     when(() => api.getHolidays(any())).thenAnswer((_) async => []);
     when(() => api.getExceptions(any())).thenAnswer((_) async => []);
+    // Identity defaults (businessName + completeness signals).
+    when(() => api.getProviderDetails(any())).thenAnswer(
+        (_) async => {'businessName': 'سالن رُز', 'description': 'توضیح'});
+    when(() => api.getProviderStaff(any())).thenAnswer((_) async => []);
+    when(() => api.getOrganizationMembers(any())).thenAnswer((_) async => []);
+    when(() => api.getGallery(any())).thenAnswer((_) async => []);
   });
 
   HomeRepositoryImpl build() => HomeRepositoryImpl(api, auth, now: () => now);
@@ -76,6 +82,44 @@ void main() {
     final result = await build().fetchSnapshot();
 
     expect(result.isLeft(), isTrue);
+  });
+
+  group('fetchComposerCatalog — solo business bookability', () {
+    test('no staff → offers the business itself (keyed by providerId)', () async {
+      // Defaults: getProviderStaff → [] (a freshly-onboarded solo provider).
+      final result = await build().fetchComposerCatalog();
+
+      expect(result.isRight(), isTrue);
+      result.fold((_) => fail('expected a catalog'), (catalog) {
+        expect(catalog.staff, hasLength(1));
+        expect(catalog.staff.single.id, 'p-1'); // the org / providerId → org-direct booking
+      });
+    });
+
+    test('with members → lists members by MembershipId, no business injection',
+        () async {
+      when(() => api.getOrganizationMembers(any())).thenAnswer((_) async => [
+            {
+              'membershipId': 'mem-1',
+              'name': 'سارا',
+              'status': 'Active',
+              'providesServices': true,
+            },
+            // Not bookable: no StaffProfile → must be excluded from the composer.
+            {
+              'membershipId': 'mem-2',
+              'name': 'مدیر',
+              'status': 'Active',
+              'providesServices': false,
+            },
+          ]);
+
+      final result = await build().fetchComposerCatalog();
+
+      result.fold((_) => fail('expected a catalog'), (catalog) {
+        expect(catalog.staff.map((s) => s.id), ['mem-1']);
+      });
+    });
   });
 
   test('composes today counts from mixed booking statuses', () async {
@@ -565,9 +609,14 @@ void main() {
           {'id': 's1', 'name': 'اصلاح', 'duration': 45, 'basePrice': 250000.0},
         ],
       );
-      when(() => api.getProviderStaff(any())).thenAnswer(
+      when(() => api.getOrganizationMembers(any())).thenAnswer(
         (_) async => [
-          {'id': 'st1', 'fullName': 'سارا استایلیست'},
+          {
+            'membershipId': 'mem-1',
+            'name': 'سارا استایلیست',
+            'status': 'Active',
+            'providesServices': true,
+          },
         ],
       );
 
@@ -577,6 +626,7 @@ void main() {
       expect(catalog.services.single.name, 'اصلاح');
       expect(catalog.services.single.durationMinutes, 45);
       expect(catalog.staff.single.name, 'سارا استایلیست');
+      expect(catalog.staff.single.id, 'mem-1'); // bookable resource = MembershipId
     });
 
     test('declineBooking sends the USER id as cancelledBy (backend Guid)',
@@ -634,5 +684,85 @@ void main() {
     expect(snap.openCapacity, greaterThan(0)); // never fully-booked yet
     expect(snap.exceptionCount, 0);
     expect(snap.alertCount, 0);
+  });
+
+  group('firstValidationMessage (empty-day reason parsing)', () {
+    test('returns the first non-empty message', () {
+      expect(
+        HomeApiService.firstValidationMessage({
+          'validationMessages': ['کارمندی اضافه نشده است', 'دیگر'],
+        }),
+        'کارمندی اضافه نشده است',
+      );
+    });
+
+    test('skips blank entries', () {
+      expect(
+        HomeApiService.firstValidationMessage({
+          'validationMessages': ['', '   ', 'دلیل واقعی'],
+        }),
+        'دلیل واقعی',
+      );
+    });
+
+    test('returns null when absent, empty, or not a list', () {
+      expect(HomeApiService.firstValidationMessage({}), isNull);
+      expect(
+          HomeApiService.firstValidationMessage(
+              {'validationMessages': <String>[]}),
+          isNull);
+      expect(
+          HomeApiService.firstValidationMessage(
+              {'validationMessages': 'not-a-list'}),
+          isNull);
+      expect(
+          HomeApiService.firstValidationMessage({'validationMessages': null}),
+          isNull);
+    });
+  });
+
+  group('identity (businessName + completeness signals)', () {
+    test('snapshot carries the business name and derives completeness', () async {
+      when(() => api.getProviderBookings(any(),
+              from: any(named: 'from'), to: any(named: 'to')))
+          .thenAnswer((_) async => []);
+      when(() => api.getProviderServices(any()))
+          .thenAnswer((_) async => [{'id': 's1', 'name': 'اصلاح'}]);
+      // hasStaff derives from the membership roster (the single team source).
+      when(() => api.getOrganizationMembers(any())).thenAnswer((_) async => [
+            {'membershipId': 'mem-1', 'name': 'سارا', 'status': 'Active'},
+          ]);
+      when(() => api.getGallery(any())).thenAnswer((_) async => []);
+
+      final result = await build().fetchSnapshot();
+      final snap = result.getOrElse(() => throw StateError('failed'));
+
+      expect(snap.identity.businessName, 'سالن رُز');
+      expect(snap.identity.hasDescription, isTrue);
+      expect(snap.identity.hasServices, isTrue);
+      expect(snap.identity.hasStaff, isTrue);
+      expect(snap.identity.hasGallery, isFalse);
+      // 3 of 4 signals present -> 75%.
+      expect(snap.identity.completenessPct, 75);
+    });
+
+    test('identity endpoints failing degrades signals without failing Home',
+        () async {
+      when(() => api.getProviderBookings(any(),
+              from: any(named: 'from'), to: any(named: 'to')))
+          .thenAnswer((_) async => []);
+      when(() => api.getProviderDetails(any()))
+          .thenThrow(DioException(requestOptions: RequestOptions(path: '/')));
+      when(() => api.getProviderStaff(any()))
+          .thenThrow(DioException(requestOptions: RequestOptions(path: '/')));
+      when(() => api.getGallery(any()))
+          .thenThrow(DioException(requestOptions: RequestOptions(path: '/')));
+
+      final result = await build().fetchSnapshot();
+      final snap = result.getOrElse(() => throw StateError('failed'));
+
+      expect(snap.identity.businessName, isEmpty);
+      expect(snap.identity.completenessPct, 0);
+    });
   });
 }

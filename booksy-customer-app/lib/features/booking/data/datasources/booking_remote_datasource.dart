@@ -34,11 +34,15 @@ class BookingRemoteDataSource {
     );
   }
 
+  /// [serviceIds] is sent as repeated `ServiceIds=` query parameters, which is
+  /// how the backend binds the multi-service visit; slots then span the summed
+  /// duration of the whole set instead of `ServiceId` alone.
   Future<Map<String, dynamic>> getAvailableSlots({
     required String providerId,
     required String serviceId,
     required DateTime date,
     String? staffId,
+    List<String>? serviceIds,
   }) async {
     final response = await serviceCatalogDio.get(
       ApiConstants.availableSlots,
@@ -47,6 +51,8 @@ class BookingRemoteDataSource {
         'ServiceId': serviceId,
         'Date': date.toIso8601String(),
         if (staffId != null) 'StaffId': staffId,
+        if (serviceIds != null && serviceIds.isNotEmpty)
+          'ServiceIds': serviceIds,
       },
     );
     final data = unwrap(response.data);
@@ -62,11 +68,16 @@ class BookingRemoteDataSource {
   }
 
   /// Returns the created booking id.
+  ///
+  /// `serviceId` is always sent because the backend still marks it required;
+  /// `serviceIds` supersedes it when present, and the booking's duration and
+  /// price become the sums over that set.
   Future<String> createBooking({
     required String providerId,
     required String serviceId,
     required String staffProviderId,
     required DateTime startTime,
+    List<String>? serviceIds,
   }) async {
     final response = await serviceCatalogDio.post(
       ApiConstants.createBooking,
@@ -75,6 +86,8 @@ class BookingRemoteDataSource {
         'serviceId': serviceId,
         'staffProviderId': staffProviderId,
         'startTime': startTime.toUtc().toIso8601String(),
+        if (serviceIds != null && serviceIds.isNotEmpty)
+          'serviceIds': serviceIds,
       },
     );
     if (response.statusCode == 200 || response.statusCode == 201) {

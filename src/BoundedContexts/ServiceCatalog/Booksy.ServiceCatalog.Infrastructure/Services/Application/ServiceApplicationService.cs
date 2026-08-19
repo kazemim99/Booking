@@ -81,7 +81,7 @@ namespace Booksy.ServiceCatalog.Application.Services.Implementations
         }
 
         public async Task<IReadOnlyList<ServiceSummaryDto>> GetServicesByCategoryAsync(
-            string category,
+            ServiceCategory category,
             CancellationToken cancellationToken = default)
         {
 

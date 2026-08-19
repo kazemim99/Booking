@@ -39,12 +39,14 @@ namespace Booksy.ServiceCatalog.Infrastructure.Persistence.Repositories
                 .ToListAsync(cancellationToken);
         }
 
-        public async Task<IReadOnlyList<Service>> GetByCategoryAsync(string category, CancellationToken cancellationToken = default)
+        public async Task<IReadOnlyList<Service>> GetByCategoryAsync(ServiceCategory category, CancellationToken cancellationToken = default)
         {
+            // Category is stored as an int (HasConversion<int>), so compare on the enum itself.
+            // The previous `s.Category.ToString() == category` form had no SQL translation.
             return await DbSet
                 .Include(s => s.Options)
                 .Include(s => s.PriceTiers)
-                .Where(s => s.Category.ToString() == category)
+                .Where(s => s.Category == category)
                 .ToListAsync(cancellationToken);
         }
 
@@ -180,10 +182,10 @@ namespace Booksy.ServiceCatalog.Infrastructure.Persistence.Repositories
                 .ToListAsync(cancellationToken);
         }
 
-        public async Task<decimal> GetAveragePriceByCategoryAsync(string category, string currency, CancellationToken cancellationToken = default)
+        public async Task<decimal> GetAveragePriceByCategoryAsync(ServiceCategory category, string currency, CancellationToken cancellationToken = default)
         {
             var services = await DbSet
-                .Where(s => s.Category.ToString() == category && s.BasePrice.Currency == currency)
+                .Where(s => s.Category == category && s.BasePrice.Currency == currency)
                 .Select(s => s.BasePrice.Amount)
                 .ToListAsync(cancellationToken);
 

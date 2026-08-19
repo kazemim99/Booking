@@ -27,7 +27,8 @@ void main() {
           serviceId: any(named: 'serviceId'),
           date: any(named: 'date'),
           staffId: any(named: 'staffId'),
-        )).thenAnswer((_) async => Right([slotA, slotB]));
+          serviceIds: any(named: 'serviceIds'),
+        )).thenAnswer((_) async => Right(SlotAvailability(slots: [slotA, slotB])));
   });
 
   ComposerCubit build({List<ComposerService>? services}) {
@@ -55,6 +56,7 @@ void main() {
           serviceId: any(named: 'serviceId'),
           date: DateTime(2026, 7, 20),
           staffId: any(named: 'staffId'),
+          serviceIds: any(named: 'serviceIds'),
         )).called(1);
     await cubit.close();
   });
@@ -82,6 +84,7 @@ void main() {
           serviceId: any(named: 'serviceId'),
           date: any(named: 'date'),
           staffId: any(named: 'staffId'),
+          serviceIds: any(named: 'serviceIds'),
         ));
     await cubit.close();
   });
@@ -103,7 +106,7 @@ void main() {
   test('changing selection clears a slot that no longer exists', () async {
     final cubit = build();
     await cubit.load();
-    cubit.selectService(service1);
+    cubit.toggleService(service1);
     await Future<void>.delayed(Duration.zero);
     cubit.selectSlot(slotA);
     expect(cubit.state.slot, slotA);
@@ -113,7 +116,8 @@ void main() {
           serviceId: any(named: 'serviceId'),
           date: any(named: 'date'),
           staffId: any(named: 'staffId'),
-        )).thenAnswer((_) async => Right([slotB]));
+          serviceIds: any(named: 'serviceIds'),
+        )).thenAnswer((_) async => Right(SlotAvailability(slots: [slotB])));
     cubit.selectDate(DateTime(2026, 7, 16));
     await Future<void>.delayed(Duration.zero);
 
@@ -123,27 +127,33 @@ void main() {
   });
 
   test('stale slots response is discarded (spec: race guard)', () async {
-    final cubit = build();
+    // Single pre-selected service so every fetch keys on the same service;
+    // the guard is about the monotonic sequence, not the arguments. Two
+    // rapid date changes race: the slower earlier one must not overwrite.
+    final cubit = build(services: const [service1]);
     await cubit.load();
+    await Future<void>.delayed(Duration.zero);
 
-    final slow = Completer<Either<Failure, List<DateTime>>>();
+    final slow = Completer<Either<Failure, SlotAvailability>>();
     when(() => repository.fetchAvailableSlots(
-          serviceId: 's1',
-          date: any(named: 'date'),
+          serviceId: any(named: 'serviceId'),
+          date: DateTime(2026, 7, 16),
           staffId: any(named: 'staffId'),
+          serviceIds: any(named: 'serviceIds'),
         )).thenAnswer((_) => slow.future);
     when(() => repository.fetchAvailableSlots(
-          serviceId: 's2',
-          date: any(named: 'date'),
+          serviceId: any(named: 'serviceId'),
+          date: DateTime(2026, 7, 17),
           staffId: any(named: 'staffId'),
-        )).thenAnswer((_) async => Right([slotB]));
+          serviceIds: any(named: 'serviceIds'),
+        )).thenAnswer((_) async => Right(SlotAvailability(slots: [slotB])));
 
-    cubit.selectService(service1); // slow request in flight
-    cubit.selectService(service2); // fast request wins
+    cubit.selectDate(DateTime(2026, 7, 16)); // slow request in flight
+    cubit.selectDate(DateTime(2026, 7, 17)); // fast request wins
     await Future<void>.delayed(Duration.zero);
     expect(cubit.state.slots, [slotB]);
 
-    slow.complete(Right([slotA])); // stale — must be discarded
+    slow.complete(Right(SlotAvailability(slots: [slotA]))); // stale — discard
     await Future<void>.delayed(Duration.zero);
     expect(cubit.state.slots, [slotB]);
     expect(cubit.state.slotsStatus, SlotsStatus.ready);
@@ -159,6 +169,7 @@ void main() {
           serviceId: any(named: 'serviceId'),
           staffId: any(named: 'staffId'),
           startTime: any(named: 'startTime'),
+          serviceIds: any(named: 'serviceIds'),
           clientName: any(named: 'clientName'),
           clientPhone: any(named: 'clientPhone'),
           notes: any(named: 'notes'),
@@ -169,7 +180,7 @@ void main() {
   test('submit success → submitted; failure preserves selections', () async {
     final cubit = build();
     await cubit.load();
-    cubit.selectService(service1);
+    cubit.toggleService(service1);
     cubit.selectStaff(staff1);
     await Future<void>.delayed(Duration.zero);
     cubit.selectSlot(slotA);
@@ -178,6 +189,7 @@ void main() {
           serviceId: any(named: 'serviceId'),
           staffId: any(named: 'staffId'),
           startTime: any(named: 'startTime'),
+          serviceIds: any(named: 'serviceIds'),
           clientName: any(named: 'clientName'),
           clientPhone: any(named: 'clientPhone'),
           notes: any(named: 'notes'),
@@ -194,6 +206,7 @@ void main() {
           serviceId: any(named: 'serviceId'),
           staffId: any(named: 'staffId'),
           startTime: any(named: 'startTime'),
+          serviceIds: any(named: 'serviceIds'),
           clientName: any(named: 'clientName'),
           clientPhone: any(named: 'clientPhone'),
           notes: any(named: 'notes'),
@@ -208,6 +221,7 @@ void main() {
           clientName: 'رضا',
           clientPhone: '0912',
           notes: any(named: 'notes'),
+          serviceIds: any(named: 'serviceIds'),
         )).called(1);
     await cubit.close();
   });

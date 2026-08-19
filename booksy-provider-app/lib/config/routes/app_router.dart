@@ -18,6 +18,7 @@ import '../../features/home/presentation/pages/clients_page.dart';
 import '../../features/home/presentation/pages/gallery_page.dart';
 import '../../features/home/presentation/pages/more_page.dart';
 import '../../features/home/presentation/pages/more_sub_pages.dart';
+import '../../features/invitations/presentation/accept_invitation_page.dart';
 import '../../features/home/presentation/pages/home_page.dart';
 
 /// Route paths.
@@ -37,6 +38,8 @@ class Routes {
   static const String moreInsights = '/more/insights';
   static const String moreServices = '/more/services';
   static const String moreStaff = '/more/staff';
+  static const String moreMemberships = '/more/memberships';
+  static const String acceptInvitation = '/invite'; // + /:invitationId
   static const String newBooking = '/booking/new';
 
   /// Composer route pre-filled with a client's identity (book-again).
@@ -241,6 +244,16 @@ class AppRouter {
         GoRoute(
           path: Routes.moreStaff,
           builder: (_, _) => const StaffPage(),
+        ),
+        GoRoute(
+          path: Routes.moreMemberships,
+          builder: (_, _) => const MyMembershipsPage(),
+        ),
+        GoRoute(
+          path: '${Routes.acceptInvitation}/:invitationId',
+          builder: (_, state) => AcceptInvitationPage(
+            invitationId: state.pathParameters['invitationId'] ?? '',
+          ),
         ),
         GoRoute(
           path: Routes.newBooking,

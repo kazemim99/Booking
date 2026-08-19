@@ -1,11 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:go_router/go_router.dart';
 
+import '../../../../config/routes/app_router.dart';
 import '../../../../config/theme/app_tokens.dart';
 import '../../../../core/constants/app_strings.dart';
 import '../../../../core/di/injection.dart';
 import '../../../../core/widgets/app_button.dart';
 import '../../../../core/widgets/app_error_state.dart';
+import '../../../../core/widgets/app_page_scaffold.dart';
 import '../../../../core/widgets/app_snackbar.dart';
 import '../../../../core/widgets/app_text_field.dart';
 import '../../domain/entities/composer_models.dart';
@@ -86,21 +89,8 @@ class _ComposerViewState extends State<ComposerView> {
       },
       builder: (context, state) {
         final cubit = context.read<ComposerCubit>();
-        return Scaffold(
-          backgroundColor: Colors.white,
-          appBar: AppBar(
-            backgroundColor: Colors.white,
-            surfaceTintColor: Colors.transparent,
-            elevation: 0,
-            title: const Text(
-              AppStrings.composerTitle,
-              style: TextStyle(
-                fontSize: 17,
-                fontWeight: FontWeight.w700,
-                color: AppColors.ink,
-              ),
-            ),
-          ),
+        return AppPageScaffold(
+          title: AppStrings.composerTitle,
           body: switch (state.status) {
             ComposerStatus.loading =>
               const Center(child: CircularProgressIndicator()),
@@ -138,13 +128,32 @@ class _ComposerViewState extends State<ComposerView> {
     return ListView(
       padding: const EdgeInsets.all(AppSpacing.md),
       children: [
+        // No staff ⇒ the backend can never generate a slot for any date.
+        // Say it once, up front, with the fix one tap away.
+        if (state.catalog.hasNoStaff) ...[
+          const _NoStaffNotice(),
+          const SizedBox(height: AppSpacing.md),
+        ],
         _sectionLabel(AppStrings.composerServiceLabel),
         _pickerField(
           key: const Key('composer-service-field'),
-          hint: AppStrings.composerPickService,
-          value: state.service?.name,
-          onTap: () => _pickService(context, state, cubit),
+          hint: AppStrings.composerServicesHint,
+          value: state.services.isEmpty
+              ? null
+              : state.services.map((s) => s.name).join('، '),
+          onTap: () => _pickServices(context, state, cubit),
         ),
+        if (state.services.isNotEmpty) ...[
+          const SizedBox(height: AppSpacing.xs),
+          Text(
+            AppStrings.composerServicesSummary(
+              state.totalDurationMinutes,
+              _formatPrice(state.totalPrice),
+            ),
+            key: const Key('composer-services-summary'),
+            style: const TextStyle(fontSize: 13, color: AppColors.subtitle),
+          ),
+        ],
         const SizedBox(height: AppSpacing.md),
         _sectionLabel(AppStrings.composerStaffLabel),
         _pickerField(
@@ -267,10 +276,31 @@ class _ComposerViewState extends State<ComposerView> {
         );
       case SlotsStatus.ready:
         if (state.slots.isEmpty) {
-          return const Text(
-            AppStrings.composerNoSlots,
-            key: Key('composer-no-slots'),
-            style: TextStyle(fontSize: 13, color: AppColors.muted),
+          // Prefer the server's reason ("no staff added yet", "closed", …):
+          // without it every empty day reads as "fully booked", hiding a
+          // setup problem the provider is the only one who can fix.
+          final reason = state.slotsUnavailableReason;
+          if (reason == null) {
+            return const Text(
+              AppStrings.composerNoSlots,
+              key: Key('composer-no-slots'),
+              style: TextStyle(fontSize: 13, color: AppColors.muted),
+            );
+          }
+          return Row(
+            key: const Key('composer-no-slots-reason'),
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Icon(Icons.info_outline,
+                  size: AppIconSize.sm, color: AppColors.warning),
+              const SizedBox(width: AppSpacing.sm),
+              Expanded(
+                child: Text(
+                  reason,
+                  style: const TextStyle(fontSize: 13, color: AppColors.ink),
+                ),
+              ),
+            ],
           );
         }
         return Wrap(
@@ -297,17 +327,80 @@ class _ComposerViewState extends State<ComposerView> {
     }
   }
 
-  void _pickService(
+  static String _formatPrice(double amount) {
+    final whole = amount.round().toString();
+    final b = StringBuffer();
+    for (var i = 0; i < whole.length; i++) {
+      if (i > 0 && (whole.length - i) % 3 == 0) b.write(',');
+      b.write(whole[i]);
+    }
+    return b.toString();
+  }
+
+  /// Multi-select sheet: tap services to add/remove them from the visit.
+  /// Selections apply live (slots re-fetch against the combined duration),
+  /// so the sheet is a simple checklist with a Done button to dismiss.
+  void _pickServices(
       BuildContext context, ComposerState state, ComposerCubit cubit) {
-    _showPickerSheet<ComposerService>(
+    showModalBottomSheet<void>(
       context: context,
-      title: AppStrings.composerPickService,
-      options: state.catalog.services,
-      labelOf: (s) => s.durationMinutes > 0
-          ? AppStrings.composerServiceMeta(s.name, s.durationMinutes)
-          : s.name,
-      keyOf: (s) => 'pick-service-${s.id}',
-      onPicked: cubit.selectService,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(
+          top: Radius.circular(AppRadius.bottomSheet),
+        ),
+      ),
+      builder: (sheetContext) => SafeArea(
+        // Rebuild the checklist as selections change, from the live cubit.
+        child: BlocBuilder<ComposerCubit, ComposerState>(
+          bloc: cubit,
+          builder: (context, s) => Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Padding(
+                padding: const EdgeInsets.all(AppSpacing.md),
+                child: Text(
+                  AppStrings.composerServicesHint,
+                  style: const TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.w700,
+                    color: AppColors.ink,
+                  ),
+                ),
+              ),
+              Flexible(
+                child: ListView(
+                  shrinkWrap: true,
+                  children: [
+                    for (final svc in s.catalog.services)
+                      CheckboxListTile(
+                        key: Key('pick-service-${svc.id}'),
+                        value: s.services.any((x) => x.id == svc.id),
+                        onChanged: (_) => cubit.toggleService(svc),
+                        activeColor: AppColors.success,
+                        title: Text(
+                          svc.durationMinutes > 0
+                              ? AppStrings.composerServiceMeta(
+                                  svc.name, svc.durationMinutes)
+                              : svc.name,
+                        ),
+                      ),
+                  ],
+                ),
+              ),
+              Padding(
+                padding: const EdgeInsets.all(AppSpacing.md),
+                child: AppButton(
+                  key: const Key('composer-services-done'),
+                  label: AppStrings.composerDone,
+                  size: AppButtonSize.medium,
+                  onPressed: () => Navigator.pop(sheetContext),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
     );
   }
 
@@ -419,6 +512,60 @@ class _DateStrip extends StatelessWidget {
             ),
           );
         },
+      ),
+    );
+  }
+}
+
+/// Up-front notice that the business has no staff yet. Slot generation
+/// requires at least one staff member server-side, so without one every date
+/// looks "fully booked" — this names the real cause and links to the fix.
+class _NoStaffNotice extends StatelessWidget {
+  const _NoStaffNotice();
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      key: const Key('composer-no-staff'),
+      padding: const EdgeInsets.all(AppSpacing.card),
+      decoration: BoxDecoration(
+        color: AppColors.successSoft,
+        borderRadius: BorderRadius.circular(AppRadius.card),
+        border: Border.all(color: AppColors.border),
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Icon(Icons.groups_outlined,
+              size: AppIconSize.md, color: AppColors.primary),
+          const SizedBox(width: AppSpacing.card),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text(
+                  AppStrings.composerNoStaffTitle,
+                  style: TextStyle(
+                    color: AppColors.ink,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+                const SizedBox(height: AppSpacing.xs),
+                const Text(
+                  AppStrings.composerNoStaffBody,
+                  style: TextStyle(fontSize: 13, color: AppColors.subtitle),
+                ),
+                const SizedBox(height: AppSpacing.sm),
+                AppButton.secondary(
+                  key: const Key('composer-add-staff'),
+                  label: AppStrings.composerNoStaffCta,
+                  size: AppButtonSize.small,
+                  onPressed: () => context.push(Routes.moreStaff),
+                ),
+              ],
+            ),
+          ),
+        ],
       ),
     );
   }

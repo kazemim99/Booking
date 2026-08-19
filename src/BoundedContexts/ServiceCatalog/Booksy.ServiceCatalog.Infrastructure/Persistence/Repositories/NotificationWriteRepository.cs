@@ -40,14 +40,28 @@ namespace Booksy.ServiceCatalog.Infrastructure.Persistence.Repositories
 
         public async Task UpdateNotificationAsync(Notification notification, CancellationToken cancellationToken = default)
         {
-            _context.Set<Notification>().Update(notification);
+            // Only attach-and-mark when the aggregate is genuinely detached. For the normal load-then-mutate
+            // flow EF change tracking has already captured the changes — including the DeliveryAttempt the send
+            // just appended, which is Added. Calling Update() there re-stamps the whole graph as Modified, so
+            // that brand-new child is issued as an UPDATE, affects 0 rows, and throws
+            // DbUpdateConcurrencyException. Every send appends an attempt, so this fires on the happy path.
+            if (_context.Entry(notification).State == EntityState.Detached)
+            {
+                _context.Set<Notification>().Update(notification);
+            }
+
             await _context.SaveChangesAsync(cancellationToken);
         }
 
         public async Task<List<Notification>> GetPendingNotificationsAsync(int batchSize = 100, CancellationToken cancellationToken = default)
         {
+            // Failed notifications belong here too: without them nothing ever retries a transient gateway error,
+            // and nothing ever moves an exhausted notification to the dead-letter queue. The dispatcher decides
+            // per notification whether the backoff has elapsed (ShouldRetry) or the budget is spent.
             return await _context.Set<Notification>()
-                .Where(n => n.Status == NotificationStatus.Pending || n.Status == NotificationStatus.Queued)
+                .Where(n => n.Status == NotificationStatus.Pending
+                         || n.Status == NotificationStatus.Queued
+                         || n.Status == NotificationStatus.Failed)
                 .OrderBy(n => n.Priority)
                 .ThenBy(n => n.CreatedAt)
                 .Take(batchSize)

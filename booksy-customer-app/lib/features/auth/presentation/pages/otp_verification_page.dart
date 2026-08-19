@@ -97,7 +97,24 @@ class _OtpVerificationPageState extends State<OtpVerificationPage> {
           listener: (context, state) {
             if (state is Authenticated) {
               AppSnackbar.success(context, AppStrings.loginSuccess);
-              // Router redirect performs the actual navigation.
+
+              // Navigate explicitly rather than leaving it to the router's top-level `redirect`.
+              //
+              // This screen is reached with `context.push` (point-of-need login from the booking flow pushes
+              // `/login?redirect=…`, which pushes `/otp?phone=…&redirect=…`). GoRouter's global redirect governs
+              // route *matching*; it does not reliably re-drive an imperatively pushed page when
+              // `refreshListenable` fires. The result was that a customer who signed in at the end of a booking
+              // saw "ورود موفق" and then simply sat on the OTP screen — the one moment in the journey where
+              // being stranded costs a booking.
+              //
+              // `go` rather than `push`: the auth pages must not stay on the stack behind the destination, or
+              // Android back would walk the signed-in customer back into the OTP screen.
+              final target = widget.redirect;
+              context.go(
+                target == null || target.isEmpty
+                    ? Routes.home
+                    : Uri.decodeComponent(target),
+              );
             } else if (state is OtpResentSuccess) {
               AppSnackbar.info(context, AppStrings.otpResent);
               _startCountdown();

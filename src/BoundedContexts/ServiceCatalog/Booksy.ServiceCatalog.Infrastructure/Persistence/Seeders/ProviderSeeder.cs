@@ -1,4 +1,4 @@
-using Booksy.Core.Domain.ValueObjects;
+﻿using Booksy.Core.Domain.ValueObjects;
 using Booksy.Infrastructure.Core.Persistence.Base;
 using Booksy.ServiceCatalog.Domain.Aggregates;
 using Booksy.ServiceCatalog.Domain.Enums;
@@ -50,272 +50,209 @@ namespace Booksy.ServiceCatalog.Infrastructure.Persistence.Seeders
             }
         }
 
+        /// <summary>
+        /// Seed providers for <b>Parsabad Moghan (پارس‌آباد مغان)</b>, Ardabil province — the first city the
+        /// product goes to market in, and therefore the city discovery has to work correctly in.
+        ///
+        /// <para>This replaces a seed set with two problems. It scattered providers across ten cities the product
+        /// does not launch in, and — because <c>CreateProvider</c> hard-coded Tehran's coordinates for every row —
+        /// every provider sat on one identical point. "Near me", radius filtering and the map could not be
+        /// exercised at all: distance was either zero or meaningless across the whole catalogue.</para>
+        ///
+        /// <para>Each provider below carries its own coordinates, spread over roughly 4 km of the real town, so
+        /// nearest-first ordering, radius cut-offs and map pin separation all produce observable results. The
+        /// spread is deliberate: several pairs sit close together to exercise tie-breaking and overlapping pins,
+        /// while the outliers sit far enough out to fall outside a small radius.</para>
+        /// </summary>
         private List<Provider> GetIranianProviders()
         {
+            // Parsabad Moghan town centre is approximately 39.6482 N, 47.9174 E.
             return new List<Provider>
             {
-                // Tehran Providers
                 CreateProvider(
-                    "آرایشگاه زیبای پارسی",
-                    "Arayeshgah Ziba Parsi",
-                    "آرایشگاه تخصصی بانوان با خدمات کامل زیبایی",
-                    ServiceCategory.HairSalon,
-                    "Tehran",
-                    "Vanak",
-                    "info@zibaparsi.ir",
-                    "02188776655",
-                    "Sara",
-                    "Rezaei"),
+                    "آرایشگاه مردانه شهریار",
+                    "Shahriar Barbershop",
+                    "اصلاح و آرایش مو و ریش آقایان با جدیدترین متدهای روز",
+                    ServiceCategory.Barbershop,
+                    "خیابان امام خمینی",
+                    "shahriar.barber@booksy.ir",
+                    "09141110001",
+                    "شهریار",
+                    "احمدی",
+                    39.6491, 47.9182,
+                    "https://images.unsplash.com/photo-1503951914875-452162b0f3f1?w=800&q=80"),
 
                 CreateProvider(
-                    "سالن زیبایی نگین",
-                    "Negin Beauty HairSalon",
-                    "مرکز تخصصی پوست، مو و زیبایی",
-                    ServiceCategory.HairSalon,
-                    "Tehran",
-                    "Saadat Abad",
-                    "contact@neginbeauty.ir",
-                    "02188123456",
-                    "Mina",
-                    "Karimi"),
+                    "سالن زیبایی نگین مغان",
+                    "Negin Moghan Beauty Salon",
+                    "خدمات تخصصی پوست، مو، ناخن و آرایش عروس",
+                    ServiceCategory.BeautySalon,
+                    "خیابان طالقانی",
+                    "negin.moghan@booksy.ir",
+                    "09141110002",
+                    "نگین",
+                    "رستمی",
+                    39.6503, 47.9161,
+                    "https://images.unsplash.com/photo-1560066984-138dadb4c035?w=800&q=80"),
+
+                CreateProvider(
+                    "ناخن‌کده آرام",
+                    "Aram Nail Studio",
+                    "کاشت، ترمیم و طراحی ناخن با مواد درجه یک",
+                    ServiceCategory.NailSalon,
+                    "خیابان شهید بهشتی",
+                    "aram.nails@booksy.ir",
+                    "09141110003",
+                    "آرام",
+                    "موسوی",
+                    39.6467, 47.9203,
+                    "https://images.unsplash.com/photo-1604654894610-df63bc536371?w=800&q=80"),
+
+                CreateProvider(
+                    "اسپا و ماساژ آرامش",
+                    "Aramesh Spa",
+                    "ماساژ تخصصی، سنگ داغ و برنامه‌های آرام‌سازی",
+                    ServiceCategory.Spa,
+                    "بلوار ولیعصر",
+                    "aramesh.spa@booksy.ir",
+                    "09141110004",
+                    "سحر",
+                    "قاسمی",
+                    39.6528, 47.9218,
+                    "https://images.unsplash.com/photo-1540555700478-4be289fbecef?w=800&q=80"),
+
+                CreateProvider(
+                    "ماساژ درمانی سلامت",
+                    "Salamat Massage Therapy",
+                    "ماساژ درمانی، ورزشی و تسکین دردهای عضلانی",
+                    ServiceCategory.Massage,
+                    "خیابان مطهری",
+                    "salamat.massage@booksy.ir",
+                    "09141110005",
+                    "بابک",
+                    "نجفی",
+                    39.6455, 47.9139,
+                    "https://images.unsplash.com/photo-1600334089648-b0d9d3028eb2?w=800&q=80"),
+
+                CreateProvider(
+                    "باشگاه بدنسازی پارس",
+                    "Pars Fitness Club",
+                    "سالن بدنسازی مجهز با مربیان حرفه‌ای و برنامه تمرینی شخصی",
+                    ServiceCategory.Gym,
+                    "شهرک ولیعصر",
+                    "pars.gym@booksy.ir",
+                    "09141110006",
+                    "رضا",
+                    "علیزاده",
+                    39.6572, 47.9245,
+                    "https://images.unsplash.com/photo-1534438327276-14e5300c3a48?w=800&q=80"),
+
+                CreateProvider(
+                    "خانه یوگا مهر",
+                    "Mehr Yoga House",
+                    "کلاس‌های یوگا، تنفس و مدیتیشن برای همه سطوح",
+                    ServiceCategory.Yoga,
+                    "خیابان فردوسی",
+                    "mehr.yoga@booksy.ir",
+                    "09141110007",
+                    "مهسا",
+                    "کریمی",
+                    39.6438, 47.9098,
+                    "https://images.unsplash.com/photo-1544367567-0f2fcb009e0b?w=800&q=80"),
+
+                CreateProvider(
+                    "کلینیک پوست و مو مغان",
+                    "Moghan Skin Clinic",
+                    "خدمات تخصصی پوست، لیزر و جوان‌سازی زیر نظر پزشک",
+                    ServiceCategory.MedicalClinic,
+                    "خیابان امام خمینی",
+                    "moghan.clinic@booksy.ir",
+                    "09141110008",
+                    "لیلا",
+                    "حسینی",
+                    39.6486, 47.9176,
+                    "https://images.unsplash.com/photo-1576091160399-112ba8d25d1d?w=800&q=80"),
+
+                CreateProvider(
+                    "دندانپزشکی لبخند",
+                    "Labkhand Dental",
+                    "دندانپزشکی زیبایی، ترمیمی و بهداشت دهان و دندان",
+                    ServiceCategory.Dental,
+                    "خیابان شریعتی",
+                    "labkhand.dental@booksy.ir",
+                    "09141110009",
+                    "امیر",
+                    "صادقی",
+                    39.6512, 47.9134,
+                    "https://images.unsplash.com/photo-1588776814546-1ffcf47267a5?w=800&q=80"),
+
+                CreateProvider(
+                    "فیزیوتراپی توان",
+                    "Tavan Physiotherapy",
+                    "توانبخشی، فیزیوتراپی و درمان آسیب‌های ورزشی",
+                    ServiceCategory.Physiotherapy,
+                    "بلوار معلم",
+                    "tavan.physio@booksy.ir",
+                    "09141110010",
+                    "سعید",
+                    "زارعی",
+                    39.6399, 47.9231,
+                    "https://images.unsplash.com/photo-1519494026892-80bbd2d6fd0d?w=800&q=80"),
+
+                CreateProvider(
+                    "سالن زیبایی گلستان",
+                    "Golestan Beauty Salon",
+                    "آرایش، شینیون و خدمات کامل عروس",
+                    ServiceCategory.BeautySalon,
+                    "خیابان طالقانی",
+                    "golestan.beauty@booksy.ir",
+                    "09141110011",
+                    "گلناز",
+                    "یوسفی",
+                    39.6506, 47.9158,
+                    "https://images.unsplash.com/photo-1595476108010-b4d1f102b1b1?w=800&q=80"),
 
                 CreateProvider(
                     "آرایشگاه مردانه آریا",
                     "Arya Barbershop",
-                    "آرایشگاه مردانه با سبک مدرن و سنتی",
+                    "پیرایش مردانه، اصلاح صورت و خدمات ویژه دامادی",
                     ServiceCategory.Barbershop,
-                    "Tehran",
-                    "Jordan",
-                    "info@aryabarbershop.ir",
-                    "02188234567",
-                    "Reza",
-                    "Mohammadi"),
-
-                CreateProvider(
-                    "اسپا و ماساژ درمانی کوهسار",
-                    "Koohsar Spa & Therapeutic Massage",
-                    "مرکز تخصصی ماساژ درمانی و اسپا",
-                    ServiceCategory.Spa,
-                    "Tehran",
-                    "Farmanieh",
-                    "info@koohsarspa.ir",
-                    "02188345678",
-                    "Amir",
-                    "Hosseini"),
-
-                // Mashhad Providers
-                CreateProvider(
-                    "کلینیک زیبایی مهر",
-                    "Mehr Beauty Clinic",
-                    "کلینیک تخصصی پوست و مو با پزشکان مجرب",
-                    ServiceCategory.HairSalon,
-                    "Mashhad",
-                    "Ahmadabad",
-                    "info@mehrclinic.ir",
-                    "05138112233",
-                    "Dr. Maryam",
-                    "Abbasi"),
-
-                CreateProvider(
-                    "سالن زیبایی گلستان",
-                    "Golestan Beauty Center",
-                    "ارائه خدمات زیبایی و آرایشی با کیفیت بالا",
-                    ServiceCategory.HairSalon,
-                    "Mashhad",
-                    "Koohsangi",
-                    "contact@golestanbeauty.ir",
-                    "05138223344",
-                    "Zahra",
-                    "Gholami"),
-
-                // Isfahan Providers
-                CreateProvider(
-                    "آرایشگاه زرین کوب",
-                    "Zarrin Koob HairSalon",
-                    "آرایشگاه سنتی و مدرن در قلب اصفهان",
-                    ServiceCategory.Barbershop,
-                    "Isfahan",
-                    "Enghelab",
-                    "info@zarrinkoob.ir",
-                    "03136334455",
-                    "Fatemeh",
-                    "Bahrami"),
-
-                CreateProvider(
-                    "اسپا سیمرغ",
-                    "Simorgh Spa",
-                    "مرکز اسپا و ماساژ با تجهیزات مدرن",
-                    ServiceCategory.Spa,
-                    "Isfahan",
-                    "Shahrak Azadi",
-                    "info@simorghspa.ir",
-                    "03136445566",
-                    "Hassan",
-                    "Sadeghi"),
-
-                // Shiraz Providers
-                CreateProvider(
-                    "سالن زیبایی پریناز",
-                    "Parinaz Beauty HairSalon",
-                    "سالن زیبایی مجهز به تکنولوژی روز",
-                    ServiceCategory.HairSalon,
-                    "Shiraz",
-                    "Chamran",
-                    "info@parinazbeauty.ir",
-                    "07138556677",
-                    "Parinaz",
-                    "Jafari"),
-
-                CreateProvider(
-                    "آرایشگاه مردانه پارس",
-                    "Pars Men's Barbershop",
-                    "آرایشگاه مردانه با طراحی مدرن",
-                    ServiceCategory.Barbershop,
-                    "Shiraz",
-                    "Zand",
-                    "info@parsbarbershop.ir",
-                    "07138667788",
-                    "Ali",
-                    "Rahimi"),
-
-                // Tabriz Providers
-                CreateProvider(
-                    "کلینیک تخصصی آذر",
-                    "Azar Specialty Clinic",
-                    "کلینیک زیبایی با پزشکان متخصص",
-                    ServiceCategory.HairSalon,
-                    "Tabriz",
-                    "Valiasr",
-                    "info@azarclinic.ir",
-                    "04138778899",
-                    "Dr. Leila",
-                    "Ahmadi"),
-
-                CreateProvider(
-                    "سالن زیبایی شاهدخت",
-                    "Shahdokht Beauty Center",
-                    "مرکز جامع خدمات زیبایی بانوان",
-                    ServiceCategory.HairSalon,
-                    "Tabriz",
-                    "Elgoli",
-                    "contact@shahdokht.ir",
-                    "04138889900",
-                    "Nazanin",
-                    "Moradi"),
-
-                // Karaj Providers
-                CreateProvider(
-                    "اسپا و سلامت البرز",
-                    "Alborz Health & Spa",
-                    "مرکز سلامت و تندرستی با اسپای لوکس",
-                    ServiceCategory.Spa,
-                    "Karaj",
-                    "Gohardasht",
-                    "info@alborzspa.ir",
-                    "02632990011",
-                    "Mehdi",
-                    "Rahmani"),
-
-                CreateProvider(
-                    "آرایشگاه مهسا",
-                    "Mahsa Hair HairSalon",
-                    "آرایشگاه بانوان با کادر حرفه‌ای",
-                    ServiceCategory.HairSalon,
-                    "Karaj",
-                    "Rajaee Shahr",
-                    "info@mahsasalon.ir",
-                    "02632001122",
-                    "Mahsa",
-                    "Salehi"),
-
-                // Qom Providers
-                CreateProvider(
-                    "سالن زیبایی فاطمه",
-                    "Fatemeh Beauty HairSalon",
-                    "سالن زیبایی با رعایت موازین اسلامی",
-                    ServiceCategory.HairSalon,
-                    "Qom",
-                    "Moalem",
-                    "info@fatemehsalon.ir",
-                    "02538112233",
-                    "Fatemeh",
-                    "Kazemi"),
-
-                // Ahvaz Providers
-                CreateProvider(
-                    "کلینیک پوست و مو کارون",
-                    "Karoun Skin & Hair Clinic",
-                    "کلینیک تخصصی درمان‌های پوستی",
-                    ServiceCategory.HairSalon,
-                    "Ahvaz",
-                    "Kianpars",
-                    "info@karounclinic.ir",
-                    "06138223344",
-                    "Dr. Saeed",
-                    "Najafi"),
-
-                CreateProvider(
-                    "باشگاه بدنسازی پارسیان",
-                    "Parsian Fitness Club",
-                    "باشگاه ورزشی با مربیان مجرب",
-                    ServiceCategory.Gym,
-                    "Tehran",
-                    "Niavaran",
-                    "info@parsianfitness.ir",
-                    "02188998877",
-                    "Mohammad",
-                    "Azizi"),
-
-                CreateProvider(
-                    "مرکز ماساژ درمانی سپید",
-                    "Sepid Therapeutic Massage Center",
-                    "مرکز تخصصی فیزیوتراپی و ماساژ",
-                    ServiceCategory.Spa,
-                    "Tehran",
-                    "Elahieh",
-                    "info@sepidmassage.ir",
-                    "02188776644",
-                    "Saman",
-                    "Rostami"),
-
-                CreateProvider(
-                    "سالن زیبایی یاس",
-                    "Yas Beauty Parlor",
-                    "خدمات کامل آرایش عروس و مهمانی",
-                    ServiceCategory.HairSalon,
-                    "Kerman",
-                    "Azadi Square",
-                    "info@yasbeauty.ir",
-                    "03438334455",
-                    "Yasamin",
-                    "Hashemi"),
-
-                CreateProvider(
-                    "آرایشگاه مردانه شاهین",
-                    "Shahin Men's Grooming",
-                    "آرایشگاه مردانه VIP",
-                    ServiceCategory.Barbershop,
-                    "Rasht",
-                    "Golsar",
-                    "info@shahingroom.ir",
-                    "01338445566",
-                    "Shahin",
-                    "Farahani")
+                    "خیابان سعدی",
+                    "arya.barber@booksy.ir",
+                    "09141110012",
+                    "آرش",
+                    "مرادی",
+                    39.6624, 47.9302,
+                    "https://images.unsplash.com/photo-1585747860715-2ba37e788b70?w=800&q=80"),
             };
         }
 
+        /// <param name="latitude">
+        /// Real coordinates for this specific business. Previously every seeded provider was given Tehran's
+        /// centre, which made distance sorting, radius filtering and the map meaningless — all pins landed on
+        /// one another. Each provider now sits where it actually is.
+        /// </param>
+        /// <param name="profileImageUrl">
+        /// Storefront image. Without one the catalogue rendered as rows of identical grey placeholders, which
+        /// made the list impossible to scan and hid whether image loading worked at all.
+        /// </param>
         private Provider CreateProvider(
             string persianName,
             string englishName,
             string description,
             ServiceCategory type,
-            string city,
-            string district,
+            string street,
             string email,
             string phone,
             string ownerFirstName,
-            string ownerLastName)
+            string ownerLastName,
+            double latitude,
+            double longitude,
+            string profileImageUrl)
         {
+            const string City = "پارس‌آباد";
+            const string Province = "اردبیل";
+
             var ownerId = UserId.From(Guid.NewGuid());
             var emailValue = Email.Create(email);
             var phoneValue = PhoneNumber.From(phone);
@@ -327,28 +264,34 @@ namespace Booksy.ServiceCatalog.Infrastructure.Persistence.Seeders
                 $"https://www.{englishName.Replace(" ", "").Replace("'", "").ToLower()}.ir");
 
             var address = BusinessAddress.Create(
-                $"{district}, {city}, Iran",
-                district,
-                city,
-                city, // State/Province
-                "00000",
-                "Iran",
+                $"{street}، {City}، {Province}، ایران",
+                street,
+                City,
+                Province,
+                "5691",
+                "ایران",
                 null,
                 null,
-                35.6892, // Default Tehran coordinates
-                51.3890);
+                latitude,
+                longitude);
+
+            // The Persian name leads: this is what a customer in Parsabad reads and searches for. The previous
+            // "English - Persian" order buried it behind a transliteration nobody types.
+            var displayName = persianName;
 
             var provider = Provider.CreateDraft(
                 ownerId,
                 ownerFirstName,
                 ownerLastName,
-                $"{englishName} - {persianName}",
+                displayName,
                 description,
                 type,
                 contactInfo,
                 address,
                 ProviderHierarchyType.Organization,
                 registrationStep: 9);
+
+            provider.UpdateBusinessProfile(displayName, description, profileImageUrl);
 
             // Complete registration and activate the provider for seeding
             provider.CompleteRegistration();

@@ -1,3 +1,4 @@
+import '../../../auth/domain/entities/provider_status.dart';
 import '../../domain/entities/onboarding_data.dart';
 import '../../domain/entities/onboarding_draft.dart';
 
@@ -12,6 +13,9 @@ import '../../domain/entities/onboarding_draft.dart';
 ///   "fixed"/"variable".
 /// - `businessHours[]` are FLATTENED (openTimeHours/openTimeMinutes/…), arrive
 ///   UNORDERED, and closed days omit the time fields entirely.
+/// - `status` ("Drafted", "PendingVerification", …) sits alongside
+///   `registrationStep` on `draftData` and used to be dropped entirely —
+///   see [OnboardingDraft.isFullyComplete].
 class DraftSnapshot {
   DraftSnapshot._();
 
@@ -32,6 +36,7 @@ class DraftSnapshot {
       providerId: providerId,
       registrationStep:
           _int(draft['registrationStep']) ?? _int(json['currentStep']) ?? 3,
+      status: ProviderStatus.tryParse(draft['status']?.toString()),
       data: OnboardingData(
         businessInfo: BusinessInfo(
           businessName: _str(info['businessName']),

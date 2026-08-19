@@ -90,8 +90,8 @@ namespace Booksy.ServiceCatalog.Infrastructure.Persistence.Repositories
         public Task<IReadOnlyList<Provider>> GetByStatusAsync(ProviderStatus status, CancellationToken cancellationToken = default) =>
             _inner.GetByStatusAsync(status, cancellationToken);
 
-        public Task<IReadOnlyList<Provider>> GetByTypeAsync(ServiceCategory type, CancellationToken cancellationToken = default) =>
-            _inner.GetByTypeAsync(type, cancellationToken);
+        public Task<IReadOnlyList<Provider>> GetByCategoryAsync(ServiceCategory category, CancellationToken cancellationToken = default) =>
+            _inner.GetByCategoryAsync(category, cancellationToken);
 
         public Task<IReadOnlyList<Provider>> GetByCityAsync(string city, CancellationToken cancellationToken = default) =>
             _inner.GetByCityAsync(city, cancellationToken);
@@ -113,6 +113,9 @@ namespace Booksy.ServiceCatalog.Infrastructure.Persistence.Repositories
 
         public Task<int> CountByStatusAsync(ProviderStatus status, CancellationToken cancellationToken = default) =>
             _inner.CountByStatusAsync(status, cancellationToken);
+
+        public Task<IReadOnlyDictionary<ServiceCategory, int>> CountByCategoryAsync(ProviderStatus status, CancellationToken cancellationToken = default) =>
+            _inner.CountByCategoryAsync(status, cancellationToken);
 
         public Task<IReadOnlyList<Provider>> GetRecentlyActiveAsync(int count, CancellationToken cancellationToken = default) =>
             _inner.GetRecentlyActiveAsync(count, cancellationToken);

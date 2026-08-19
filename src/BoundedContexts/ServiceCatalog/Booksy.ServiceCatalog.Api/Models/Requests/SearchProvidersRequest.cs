@@ -93,6 +93,28 @@ namespace Booksy.ServiceCatalog.API.Models.Requests
         public double? UserLongitude { get; set; }
 
         /// <summary>
+        /// Alias for <see cref="UserLatitude"/>.
+        /// </summary>
+        /// <remarks>
+        /// The customer app sends <c>Latitude</c>/<c>Longitude</c>, which bound to nothing here, so "near me"
+        /// silently searched with no reference point and distance sorting could never engage — the request
+        /// succeeded and simply ignored where the customer was standing. Accepting both spellings fixes that
+        /// without breaking callers already using the <c>User*</c> names.
+        /// </remarks>
+        [Range(-90, 90, ErrorMessage = "Latitude must be between -90 and 90")]
+        public double? Latitude { get; set; }
+
+        /// <summary>Alias for <see cref="UserLongitude"/> — see <see cref="Latitude"/>.</summary>
+        [Range(-180, 180, ErrorMessage = "Longitude must be between -180 and 180")]
+        public double? Longitude { get; set; }
+
+        /// <summary>The caller's latitude, whichever spelling it arrived under.</summary>
+        public double? EffectiveLatitude => UserLatitude ?? Latitude;
+
+        /// <summary>The caller's longitude, whichever spelling it arrived under.</summary>
+        public double? EffectiveLongitude => UserLongitude ?? Longitude;
+
+        /// <summary>
         /// Include inactive providers
         /// </summary>
         public bool IncludeInactive { get; set; } = false;

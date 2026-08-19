@@ -31,6 +31,9 @@ abstract class OnboardingRepository {
   /// Completes registration for [providerId] (step 9).
   Future<Either<Failure, void>> complete(String providerId);
 
+  /// Records whether the owner personally provides services (onboarding branch).
+  Future<Either<Failure, void>> setOwnerProvidesServices(bool providesServices);
+
   /// Returns the in-progress draft (with every saved field rehydrated), or null.
   Future<Either<Failure, OnboardingDraft?>> getDraft();
 }

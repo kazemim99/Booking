@@ -1,6 +1,7 @@
 import 'package:equatable/equatable.dart';
 
 import 'home_booking.dart';
+import 'home_snapshot.dart';
 import 'home_enums.dart';
 
 /// The single immutable value object the Home renders from (spec §3).
@@ -36,6 +37,9 @@ class HomeContext extends Equatable {
   final bool hasNudge;
   final int completenessPct;
 
+  /// Business identity + per-signal completeness flags (header, checklist).
+  final HomeIdentity identity;
+
   /// Today's booking rows (agenda/now-next/queue render from these).
   final List<HomeBooking> todayBookings;
 
@@ -59,6 +63,7 @@ class HomeContext extends Equatable {
     required this.hasUpcomingToday,
     required this.hasNudge,
     required this.completenessPct,
+    this.identity = const HomeIdentity(),
     this.todayBookings = const [],
     this.tomorrowApptCount = 0,
   });
@@ -81,6 +86,7 @@ class HomeContext extends Equatable {
         hasUpcomingToday,
         hasNudge,
         completenessPct,
+        identity,
         todayBookings,
         tomorrowApptCount,
       ];

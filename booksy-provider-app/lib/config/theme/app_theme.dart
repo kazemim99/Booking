@@ -67,13 +67,28 @@ class AppTheme {
           disabledForegroundColor: Colors.white,
         ),
       ),
+      // Secondary role (Coliride production): white fill, 2px primary
+      // outline, primary label; disabled swaps both to the muted grey.
       outlinedButtonTheme: OutlinedButtonThemeData(
-        style: OutlinedButton.styleFrom(
-          minimumSize: const Size.fromHeight(AppDimens.buttonHeight),
-          shape: buttonShape,
-          textStyle: buttonTextStyle,
-          foregroundColor: AppColors.ink,
-          side: const BorderSide(color: AppColors.borderFocus, width: 1.5),
+        style: ButtonStyle(
+          minimumSize: const WidgetStatePropertyAll(
+            Size.fromHeight(AppDimens.buttonHeight),
+          ),
+          shape: WidgetStatePropertyAll(buttonShape),
+          textStyle: const WidgetStatePropertyAll(buttonTextStyle),
+          foregroundColor: WidgetStateProperty.resolveWith(
+            (states) => states.contains(WidgetState.disabled)
+                ? AppColors.disabled
+                : AppColors.primary,
+          ),
+          side: WidgetStateProperty.resolveWith(
+            (states) => BorderSide(
+              color: states.contains(WidgetState.disabled)
+                  ? AppColors.disabled
+                  : AppColors.primary,
+              width: AppDimens.secondaryButtonBorderWidth,
+            ),
+          ),
         ),
       ),
       textButtonTheme: TextButtonThemeData(
@@ -92,9 +107,10 @@ class AppTheme {
             fieldBorder(AppColors.border, AppDimens.inputBorderWidth),
         focusedBorder:
             fieldBorder(AppColors.borderFocus, AppDimens.inputFocusBorderWidth),
-        errorBorder: fieldBorder(AppColors.danger, AppDimens.inputBorderWidth),
+        errorBorder:
+            fieldBorder(AppColors.inputError, AppDimens.inputBorderWidth),
         focusedErrorBorder:
-            fieldBorder(AppColors.danger, AppDimens.inputFocusBorderWidth),
+            fieldBorder(AppColors.inputError, AppDimens.inputFocusBorderWidth),
         disabledBorder:
             fieldBorder(AppColors.divider, AppDimens.inputBorderWidth),
         labelStyle: const TextStyle(
@@ -159,6 +175,32 @@ class AppTheme {
         behavior: SnackBarBehavior.floating,
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(AppRadius.snackbar),
+        ),
+      ),
+      // Text tabs: green active label + 2px green bottom indicator over a
+      // hairline grey divider (Coliride AppTabBar).
+      tabBarTheme: const TabBarThemeData(
+        labelColor: AppColors.success,
+        unselectedLabelColor: AppColors.ink,
+        labelStyle: TextStyle(
+          fontSize: AppDimens.tabFontSize,
+          fontWeight: FontWeight.w700,
+          fontFamily: 'Vazir',
+        ),
+        unselectedLabelStyle: TextStyle(
+          fontSize: AppDimens.tabFontSize,
+          fontWeight: FontWeight.w700,
+          fontFamily: 'Vazir',
+        ),
+        dividerColor: AppColors.border,
+        indicatorSize: TabBarIndicatorSize.tab,
+        indicator: BoxDecoration(
+          border: Border(
+            bottom: BorderSide(
+              color: AppColors.success,
+              width: AppDimens.tabIndicatorWidth,
+            ),
+          ),
         ),
       ),
       dividerTheme: const DividerThemeData(color: AppColors.divider),

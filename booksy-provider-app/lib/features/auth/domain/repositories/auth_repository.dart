@@ -32,6 +32,13 @@ abstract class AuthRepository {
   /// Restores the session from secure storage (no network); null if none.
   Future<Either<Failure, ProviderSession?>> getCurrentSession();
 
+  /// Switches the active organization (salon) for a person who belongs to more
+  /// than one. The session is re-scoped to [providerId] so every provider-scoped
+  /// screen follows, and the choice survives a restart.
+  Future<Either<Failure, ProviderSession>> switchActiveOrganization({
+    required String providerId,
+  });
+
   /// Re-fetches the provider status from the server and persists it, returning
   /// the updated session. Call after onboarding completes — the cached JWT
   /// still carries the stale "Drafted" status.

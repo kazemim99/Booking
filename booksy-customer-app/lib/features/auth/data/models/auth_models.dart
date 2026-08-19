@@ -116,8 +116,56 @@ class CompleteCustomerAuthResponse {
     required this.expiresIn,
   });
 
-  factory CompleteCustomerAuthResponse.fromJson(Map<String, dynamic> json) =>
-      _$CompleteCustomerAuthResponseFromJson(json);
+  /// Parsed by hand rather than by the generated `_$CompleteCustomerAuthResponseFromJson`.
+  ///
+  /// The server returns this payload **flat** — `userId`, `phoneNumber`, `email`, `fullName` sit alongside the
+  /// tokens — but the generated parser expected a nested `user` object and cast it with
+  /// `json['user'] as Map<String, dynamic>`. Against the real response that is a cast of null, which threw
+  /// `type 'Null' is not a subtype of type 'Map<String, dynamic>'` and broke **every** customer login: the API
+  /// answered 200 and issued tokens, then the app failed while reading its own success response.
+  ///
+  /// The generated file cannot be regenerated (build_runner codegen is broken on this toolchain), so the parser
+  /// lives here instead of drifting further from the wire format. A nested `user` object is still honoured if a
+  /// future server sends one, so this reads both shapes.
+  factory CompleteCustomerAuthResponse.fromJson(Map<String, dynamic> json) {
+    final nested = json['user'];
+
+    return CompleteCustomerAuthResponse(
+      accessToken: json['accessToken'] as String? ?? '',
+      refreshToken: json['refreshToken'] as String? ?? '',
+      userId: json['userId'] as String? ?? '',
+      customerId: json['customerId'] as String? ?? '',
+      user: nested is Map<String, dynamic>
+          ? UserDto.fromJson(nested)
+          : _userFromFlatPayload(json),
+      customer: json['customer'] is Map<String, dynamic>
+          ? CustomerDto.fromJson(json['customer'] as Map<String, dynamic>)
+          : null,
+      expiresIn: (json['expiresIn'] as num?)?.toInt() ?? 0,
+    );
+  }
+
+  /// Builds the user from the flat fields the server actually sends.
+  static UserDto _userFromFlatPayload(Map<String, dynamic> json) {
+    final fullName = (json['fullName'] as String?)?.trim() ?? '';
+    final parts = fullName.isEmpty
+        ? const <String>[]
+        : fullName.split(RegExp(r'\s+'));
+
+    return UserDto(
+      id: json['userId'] as String? ?? '',
+      phoneNumber: json['phoneNumber'] as String? ?? '',
+      email: json['email'] as String?,
+      firstName: parts.isNotEmpty ? parts.first : null,
+      // Everything after the first token, so multi-word family names survive.
+      lastName: parts.length > 1 ? parts.skip(1).join(' ') : null,
+      emailVerified: json['emailVerified'] as bool? ?? false,
+      // Reaching this response means an OTP was just verified for this number.
+      phoneVerified: json['phoneVerified'] as bool? ?? true,
+      createdAt: DateTime.tryParse(json['createdAt'] as String? ?? '') ??
+          DateTime.now(),
+    );
+  }
 
   Map<String, dynamic> toJson() => _$CompleteCustomerAuthResponseToJson(this);
 }

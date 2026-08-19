@@ -31,6 +31,9 @@ class HomeContextResolver {
     final availability = input.availability; // consumed as-is (backend-managed)
 
     // ---- Layer 2: Maturity · Day-Context ----
+    // Deliberately independent of providerStatus (§4): maturity describes how
+    // established the business is, lifecycle describes whether it is approved.
+    // The Growth zone adapts its own copy while pending — see GetDiscovered.
     final maturity = classifyMaturity(input.signals, input.thresholds);
 
     final HomeDayContext day;
@@ -71,7 +74,8 @@ class HomeContextResolver {
       allCompleted: input.allCompleted,
       hasUpcomingToday: input.hasUpcomingToday,
       hasNudge: input.hasNudge,
-      completenessPct: input.completenessPct,
+      completenessPct: input.identity.completenessPct,
+      identity: input.identity,
       todayBookings: input.todayBookings,
       tomorrowApptCount: input.tomorrowApptCount,
     );

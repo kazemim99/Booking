@@ -25,6 +25,10 @@ import '../../features/onboarding/data/datasources/geocoding_service.dart';
 import '../../features/onboarding/data/datasources/location_api_service.dart';
 import '../../features/onboarding/data/datasources/onboarding_api_service.dart';
 import '../../features/onboarding/data/repositories/onboarding_repository_impl.dart';
+import '../../features/invitations/data/invitation_api_service.dart';
+import '../../features/invitations/data/invitation_repository_impl.dart';
+import '../../features/invitations/domain/invitation_repository.dart';
+import '../../features/invitations/presentation/accept_invitation_cubit.dart';
 import '../../features/onboarding/domain/repositories/onboarding_repository.dart';
 import '../../features/onboarding/presentation/cubit/onboarding_cubit.dart';
 
@@ -95,6 +99,19 @@ Future<void> configureDependencies() async {
     () => OnboardingCubit(getIt<OnboardingRepository>()),
   );
 
+  // ---- Invitations (accept from SMS link) ----
+  getIt.registerLazySingleton<InvitationApiService>(
+    () => InvitationApiService(authedDio),
+  );
+  getIt.registerLazySingleton<InvitationRepository>(
+    () => InvitationRepositoryImpl(getIt<InvitationApiService>()),
+  );
+  // Factory: one cubit per accept screen, keyed on the invitation id.
+  getIt.registerFactoryParam<AcceptInvitationCubit, String, void>(
+    (invitationId, _) =>
+        AcceptInvitationCubit(getIt<InvitationRepository>(), invitationId),
+  );
+
   // ---- Home (Today workspace) ----
   getIt.registerLazySingleton<HomeApiService>(
     () => HomeApiService(authedDio),
@@ -134,6 +151,9 @@ Future<void> configureDependencies() async {
   );
   getIt.registerFactory<StaffCubit>(
     () => StaffCubit(getIt<HomeRepository>()),
+  );
+  getIt.registerFactory<MembershipsCubit>(
+    () => MembershipsCubit(getIt<HomeRepository>(), getIt<AuthRepository>()),
   );
   getIt.registerFactory<BusinessProfileCubit>(
     () => BusinessProfileCubit(getIt<HomeRepository>()),

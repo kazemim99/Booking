@@ -13,10 +13,11 @@
           :key="category.id"
           class="category-card"
           :class="{ selected: selectedCategory === category.id }"
+          :data-testid="`category-${category.slug}`"
           @click="selectCategory(category.id)"
         >
           <div class="category-icon">{{ category.icon }}</div>
-          <h3 class="category-name">{{ category.name }}</h3>
+          <h3 class="category-name">{{ category.persianName }}</h3>
         </div>
       </div>
 
@@ -49,12 +50,21 @@
 import { ref, watch } from 'vue'
 
 import AppButton from '@/shared/components/ui/Button/AppButton.vue'
+import { ProviderCategory } from '@/core/types/enums.types'
+import { getCategoryMetadata, parseCategory } from '@/core/constants/provider-categories'
 
 interface Props {
-  modelValue?: string | null
+  /**
+   * The category the wizard already holds. Accepts anything the backend or a saved draft may
+   * carry — the canonical slug, the enum member name ("HairSalon", which is what the draft
+   * endpoints return), or the numeric id — and normalises it so resuming a draft re-selects
+   * the right card.
+   */
+  modelValue?: string | number | null
 }
 
 interface Emits {
+  /** Emits the canonical category slug, e.g. "hair-salon". */
   (e: 'update:modelValue', value: string): void
   (e: 'next'): void
   (e: 'back'): void
@@ -63,33 +73,50 @@ interface Emits {
 const props = defineProps<Props>()
 const emit = defineEmits<Emits>()
 
-const selectedCategory = ref(props.modelValue || null)
-
-// Watch for changes in modelValue (when draft is loaded)
-watch(() => props.modelValue, (newValue) => {
-  if (newValue) {
-    selectedCategory.value = newValue
-  }
-}, { immediate: true })
-
-const categories = [
-  { id: 'hair_salon', name: 'آریشگاه زنانه', icon: '💇‍♀️' },
-  // { id: 'nail_salon', name: 'مانیکور و پدیکور', icon: '💅' },
-  // { id: 'beauty_spa', name: 'سالن زیبایی', icon: '✨' },
-  // { id: 'massage', name: 'ماساژ', icon: '💆' },
-  { id: 'barber', name: 'آرایشگاه مردانه', icon: '💇‍♂️' },
-  // { id: 'gym', name: 'باشگاه ورزشی', icon: '🏋️' },
-  // { id: 'dental', name: 'دندانپزشکی', icon: '🦷' },
-  // { id: 'other', name: 'سایر', icon: '📋' },
+/**
+ * Categories offered during registration.
+ *
+ * Deliberately a subset: the platform has 15 categories, but onboarding is currently open to
+ * hair salons and barbershops only. Adding one here is all that is needed to open it up — the
+ * label, icon and slug all come from the shared metadata table, so this list cannot drift from
+ * the backend enum the way the old hardcoded array did.
+ */
+const ENABLED_CATEGORIES: ProviderCategory[] = [
+  ProviderCategory.HairSalon,
+  ProviderCategory.Barbershop,
+  // ProviderCategory.BeautySalon,
+  // ProviderCategory.NailSalon,
+  // ProviderCategory.Spa,
+  // ProviderCategory.Massage,
+  // ProviderCategory.Gym,
+  // ProviderCategory.Dental,
 ]
 
-const selectCategory = (categoryId: string) => {
+const categories = ENABLED_CATEGORIES.map(getCategoryMetadata)
+
+const selectedCategory = ref<ProviderCategory | null>(null)
+
+// The draft endpoints return the enum member name ("HairSalon"), not the slug the cards are
+// keyed by, so the incoming value is normalised rather than compared verbatim — otherwise
+// resuming a registration left every card unselected.
+watch(
+  () => props.modelValue,
+  (newValue) => {
+    const parsed = parseCategory(newValue)
+    if (parsed !== null) {
+      selectedCategory.value = parsed
+    }
+  },
+  { immediate: true }
+)
+
+const selectCategory = (categoryId: ProviderCategory) => {
   selectedCategory.value = categoryId
 }
 
 const handleNext = () => {
-  if (selectedCategory.value) {
-    emit('update:modelValue', selectedCategory.value)
+  if (selectedCategory.value !== null) {
+    emit('update:modelValue', getCategoryMetadata(selectedCategory.value).slug)
     emit('next')
   }
 }

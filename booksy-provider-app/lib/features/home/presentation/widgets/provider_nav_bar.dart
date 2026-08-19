@@ -4,77 +4,80 @@ import 'package:go_router/go_router.dart';
 import '../../../../config/routes/app_router.dart';
 import '../../../../config/theme/app_tokens.dart';
 import '../../../../core/constants/app_strings.dart';
-import '../../../../core/widgets/app_snackbar.dart';
+import '../../../../core/widgets/app_bottom_bar.dart';
 
 /// Live bottom-nav destinations.
 enum NavTab { home, calendar, clients, more }
 
-/// The provider app's shared bottom navigation (spec: provider-calendar,
-/// shared bottom navigation). Center notch hosts the ⊕ create action.
-/// Clients/More stay visibly inactive until their tabs land.
+/// The provider app's shared bottom navigation, rendered as the floating
+/// blue pill (DESIGN_LANGUAGE.md §5.11) via [AppBottomBar]. Pages that own
+/// a create flow pass [onCreate]; the ⊕ then sits mid-pill as a white disc
+/// (replacing the old center-docked FAB).
 class ProviderNavBar extends StatelessWidget {
   final NavTab active;
+  final VoidCallback? onCreate;
+  final Key? createKey;
 
-  const ProviderNavBar({super.key, required this.active});
+  const ProviderNavBar({
+    super.key,
+    required this.active,
+    this.onCreate,
+    this.createKey,
+  });
+
+  static const _tabs = [NavTab.home, NavTab.calendar, NavTab.clients, NavTab.more];
 
   @override
   Widget build(BuildContext context) {
-    Widget item(
-      IconData icon,
-      String label, {
-      NavTab? tab,
-    }) {
-      final isActive = tab == active;
-      return Expanded(
-        child: InkWell(
-          onTap: isActive
-              ? null
-              : () => switch (tab) {
-                    NavTab.home => context.go(Routes.dashboard),
-                    NavTab.calendar => context.go(Routes.calendar),
-                    NavTab.clients => context.go(Routes.clients),
-                    NavTab.more => context.go(Routes.more),
-                    null =>
-                      AppSnackbar.info(context, AppStrings.comingSoon),
-                  },
-          child: Padding(
-            padding: const EdgeInsets.symmetric(vertical: AppSpacing.xs),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Icon(icon,
-                    size: AppIconSize.md,
-                    color: isActive ? AppColors.primary : AppColors.muted),
-                Text(
-                  label,
-                  style: TextStyle(
-                    fontSize: 11,
-                    color: isActive ? AppColors.primary : AppColors.muted,
+    return AppBottomBar(
+      items: const [
+        AppBottomBarItem(
+          icon: Icons.home_outlined,
+          semanticLabel: AppStrings.navHome,
+        ),
+        AppBottomBarItem(
+          icon: Icons.calendar_month_outlined,
+          semanticLabel: AppStrings.navCalendar,
+        ),
+        AppBottomBarItem(
+          icon: Icons.people_outline,
+          semanticLabel: AppStrings.navClients,
+        ),
+        AppBottomBarItem(
+          icon: Icons.more_horiz,
+          semanticLabel: AppStrings.navMore,
+        ),
+      ],
+      activeIndex: _tabs.indexOf(active),
+      onTap: (index) => switch (_tabs[index]) {
+        NavTab.home => context.go(Routes.dashboard),
+        NavTab.calendar => context.go(Routes.calendar),
+        NavTab.clients => context.go(Routes.clients),
+        NavTab.more => context.go(Routes.more),
+      },
+      center: onCreate == null
+          ? null
+          : Tooltip(
+              message: AppStrings.homeCreateTitle,
+              child: Material(
+                key: createKey,
+                color: Colors.white,
+                shape: const CircleBorder(),
+                child: InkWell(
+                  onTap: onCreate,
+                  customBorder: const CircleBorder(),
+                  child: const SizedBox(
+                    width: 44,
+                    height: 44,
+                    child: Icon(
+                      Icons.add,
+                      size: AppIconSize.md,
+                      color: AppColors.primary,
+                    ),
                   ),
                 ),
-              ],
+              ),
             ),
-          ),
-        ),
-      );
-    }
-
-    return BottomAppBar(
-      color: Colors.white,
-      shape: const CircularNotchedRectangle(),
-      notchMargin: 6,
-      padding: EdgeInsets.zero,
-      child: Row(
-        children: [
-          item(Icons.home_outlined, AppStrings.navHome, tab: NavTab.home),
-          item(Icons.calendar_month_outlined, AppStrings.navCalendar,
-              tab: NavTab.calendar),
-          const Expanded(child: SizedBox()), // notch space for the ⊕
-          item(Icons.people_outline, AppStrings.navClients,
-              tab: NavTab.clients),
-          item(Icons.more_horiz, AppStrings.navMore, tab: NavTab.more),
-        ],
-      ),
     );
   }
 }

@@ -1,5 +1,6 @@
 import 'package:bloc_test/bloc_test.dart';
 import 'package:booksy_provider_app/core/errors/failures.dart';
+import 'package:booksy_provider_app/features/auth/domain/entities/provider_status.dart';
 import 'package:booksy_provider_app/features/onboarding/domain/entities/onboarding_data.dart';
 import 'package:booksy_provider_app/features/onboarding/domain/entities/onboarding_draft.dart';
 import 'package:booksy_provider_app/features/onboarding/domain/repositories/onboarding_repository.dart';
@@ -157,6 +158,88 @@ void main() {
       expect(cubit.state.draftProviderId, isNull);
       expect(cubit.state.data.businessHours, hasLength(7));
     });
+
+    // Regression: a resumed draft whose registration had already fully
+    // completed (backend step 9 / status advanced past Drafted — reachable
+    // when the router lands here on a stale cached JWT that still says
+    // "Drafted") used to fall through OnboardingDraft.resumeStep's switch to
+    // its `default: 1`, dumping the provider back on the business-info screen
+    // despite being fully registered and pending admin verification.
+    test(
+      'a draft already past registration (status PendingVerification) jumps '
+      'straight to the completion screen instead of business-info step 1',
+      () async {
+        when(() => repo.getDraft()).thenAnswer(
+          (_) async => const Right(
+            OnboardingDraft(
+              providerId: 'prov-done',
+              registrationStep: 9,
+              status: ProviderStatus.pendingVerification,
+              data: OnboardingData(
+                businessInfo: BusinessInfo(businessName: 'آرایشگاه نهال'),
+              ),
+            ),
+          ),
+        );
+
+        final cubit = build();
+        await cubit.init(phoneNumber: '09123135143');
+
+        expect(cubit.state.draftProviderId, 'prov-done');
+        expect(cubit.state.step, OnboardingState.totalSteps);
+        expect(cubit.state.phase, OnboardingPhase.completed);
+        expect(cubit.state.isCompleted, isTrue);
+      },
+    );
+
+    // Pins the case that actually reproduced the bug report: the backend can
+    // omit `status` on some payload shapes, so registrationStep alone (>= 9,
+    // one past this wizard's own 8-step numbering) must be sufficient.
+    test(
+      'registrationStep 9 alone (no status field) is still treated as complete',
+      () async {
+        when(() => repo.getDraft()).thenAnswer(
+          (_) async => const Right(
+            OnboardingDraft(
+              providerId: 'prov-done-2',
+              registrationStep: 9,
+              data: OnboardingData(),
+            ),
+          ),
+        );
+
+        final cubit = build();
+        await cubit.init(phoneNumber: '09123135143');
+
+        expect(cubit.state.step, OnboardingState.totalSteps);
+        expect(cubit.state.phase, OnboardingPhase.completed);
+      },
+    );
+
+    test(
+      'a mid-wizard draft (Drafted status, step 6) still resumes normally',
+      () async {
+        when(() => repo.getDraft()).thenAnswer(
+          (_) async => const Right(
+            OnboardingDraft(
+              providerId: 'prov-mid',
+              registrationStep: 6,
+              status: ProviderStatus.drafted,
+              data: OnboardingData(
+                businessInfo: BusinessInfo(businessName: 'سالن ب'),
+              ),
+            ),
+          ),
+        );
+
+        final cubit = build();
+        await cubit.init(phoneNumber: '09121234567');
+
+        expect(cubit.state.step, 6);
+        expect(cubit.state.phase, OnboardingPhase.editing);
+        expect(cubit.state.data.businessInfo.businessName, 'سالن ب');
+      },
+    );
   });
 
   group('step validation', () {
@@ -498,10 +581,16 @@ void main() {
   });
 
   group('complete', () {
+    void stubComplete() {
+      when(() => repo.complete(any()))
+          .thenAnswer((_) async => const Right(null));
+      when(() => repo.setOwnerProvidesServices(any()))
+          .thenAnswer((_) async => const Right(null));
+    }
+
     blocTest<OnboardingCubit, OnboardingState>(
-      'completes registration and lands on step 8',
-      setUp: () => when(() => repo.complete(any()))
-          .thenAnswer((_) async => const Right(null)),
+      'completes registration, submits the provides-services answer, lands on step 8',
+      setUp: stubComplete,
       build: build,
       seed: () => const OnboardingState(step: 7, draftProviderId: 'p1'),
       act: (c) => c.complete(),
@@ -509,6 +598,47 @@ void main() {
         expect(c.state.step, 8);
         expect(c.state.isCompleted, isTrue);
         verify(() => repo.complete('p1')).called(1);
+        // Defaults to yes → owner becomes the first active staff member (S1).
+        verify(() => repo.setOwnerProvidesServices(true)).called(1);
+      },
+    );
+
+    blocTest<OnboardingCubit, OnboardingState>(
+      'submits provides-services = false when the owner only manages (S2)',
+      setUp: stubComplete,
+      build: build,
+      seed: () => const OnboardingState(step: 7, draftProviderId: 'p1'),
+      act: (c) async {
+        c.setOwnerProvidesServices(false);
+        await c.complete();
+      },
+      verify: (c) {
+        expect(c.state.step, 8);
+        verify(() => repo.setOwnerProvidesServices(false)).called(1);
+      },
+    );
+
+    blocTest<OnboardingCubit, OnboardingState>(
+      'owner-provides-services defaults to true and toggles',
+      build: build,
+      act: (c) {
+        c.setOwnerProvidesServices(false);
+        c.setOwnerProvidesServices(true);
+      },
+      verify: (c) => expect(c.state.data.ownerProvidesServices, isTrue),
+    );
+
+    blocTest<OnboardingCubit, OnboardingState>(
+      'a completion failure never blocks on the provides-services call',
+      setUp: () => when(() => repo.complete(any()))
+          .thenAnswer((_) async => const Left(ServerFailure('boom'))),
+      build: build,
+      seed: () => const OnboardingState(step: 7, draftProviderId: 'p1'),
+      act: (c) => c.complete(),
+      verify: (c) {
+        expect(c.state.phase, OnboardingPhase.error);
+        expect(c.state.step, 7);
+        verifyNever(() => repo.setOwnerProvidesServices(any()));
       },
     );
   });

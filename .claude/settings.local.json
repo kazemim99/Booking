@@ -7,7 +7,12 @@
       "Bash",
       "SlashCommand(/openspec:archive)",
       "Skill(openspec:archive)",
-      "Skill(openspec:archive:*)"
+      "Skill(openspec:archive:*)",
+      "Skill(run)",
+      "Skill(run:*)",
+      "WebFetch(domain:ui-skills.com)",
+      "mcp__codebase-memory-mcp__manage_adr",
+      "WebFetch(domain:hermes-agent.nousresearch.com)"
     ],
     "deny": [],
     "ask": []

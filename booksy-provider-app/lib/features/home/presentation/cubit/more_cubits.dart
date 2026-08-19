@@ -7,6 +7,7 @@ import '../../../onboarding/domain/entities/onboarding_data.dart'
     show BreakTime, ClockTime, DayHours, GalleryImageUpload;
 import '../../domain/entities/composer_models.dart';
 import '../../domain/entities/more_models.dart';
+import '../../../auth/domain/repositories/auth_repository.dart';
 import '../../domain/repositories/home_repository.dart';
 
 /// Shared load lifecycle for the More tab's read surfaces.
@@ -50,6 +51,26 @@ class InsightsCubit extends _MoreLoadCubit<InsightsSummary> {
   @override
   Future<Either<Failure, InsightsSummary>> fetch() =>
       _repository.fetchInsights();
+}
+
+/// More → سالن‌های من (the person's memberships; makes multi-salon visible — S6).
+class MembershipsCubit extends _MoreLoadCubit<List<ProviderMembership>> {
+  final HomeRepository _repository;
+  final AuthRepository _auth;
+  MembershipsCubit(this._repository, this._auth);
+
+  @override
+  Future<Either<Failure, List<ProviderMembership>>> fetch() =>
+      _repository.fetchMyMemberships();
+
+  /// Makes [organizationId] the active salon. Every provider-scoped screen is
+  /// keyed on the session's provider, so re-scoping the session switches the
+  /// whole workspace. Returns null on success, or the Failure to surface.
+  Future<Failure?> switchTo(String organizationId) async {
+    final result = await _auth.switchActiveOrganization(providerId: organizationId);
+    if (isClosed) return null;
+    return result.fold((f) => f, (_) => null);
+  }
 }
 
 /// More → خدمات — catalog list + CRUD mutations
@@ -277,43 +298,30 @@ class HolidaysCubit extends _MoreLoadCubit<List<ProviderHoliday>> {
   }
 }
 
-/// More → تیم (Staff) — list + CRUD mutations
-/// (spec: provider-staff-management).
-class StaffCubit extends _MoreLoadCubit<List<ProviderStaffMember>> {
+/// More → تیم (Staff) — the organization's members, sourced from the membership
+/// model (`/hierarchy/members`). Add = invite by phone (creates a pending
+/// invitation → membership on accept); remove = terminate the membership.
+class StaffCubit extends _MoreLoadCubit<List<OrgMember>> {
   final HomeRepository _repository;
   StaffCubit(this._repository);
 
   @override
-  Future<Either<Failure, List<ProviderStaffMember>>> fetch() =>
-      _repository.fetchStaff();
+  Future<Either<Failure, List<OrgMember>>> fetch() =>
+      _repository.fetchOrgMembers();
 
-  Future<Failure?> addStaff({
-    required String firstName,
-    String? lastName,
-    String? phoneNumber,
-    String? role,
+  /// Invites a person by phone to join the team (creates a pending invitation).
+  /// The invitee appears here once they accept (a membership is created then).
+  /// Returns null on success (list reloads), or the Failure to surface.
+  Future<Failure?> inviteStaff({
+    required String phoneNumber,
+    String? inviteeName,
   }) =>
-      _mutate(() => _repository.addStaff(
-          firstName: firstName,
-          lastName: lastName,
-          phoneNumber: phoneNumber,
-          role: role));
+      _mutate(() => _repository.inviteStaff(
+          phoneNumber: phoneNumber, inviteeName: inviteeName));
 
-  Future<Failure?> updateStaff(
-    String staffId, {
-    required String firstName,
-    String? lastName,
-    String? phoneNumber,
-    String? role,
-  }) =>
-      _mutate(() => _repository.updateStaff(staffId,
-          firstName: firstName,
-          lastName: lastName,
-          phoneNumber: phoneNumber,
-          role: role));
-
-  Future<Failure?> removeStaff(String staffId) =>
-      _mutate(() => _repository.removeStaff(staffId));
+  /// Removes a member by terminating their membership.
+  Future<Failure?> removeMember(String membershipId) =>
+      _mutate(() => _repository.terminateMember(membershipId));
 
   /// Home-style mutation: null on success (and the list reloads), or the
   /// Failure for the caller to surface.

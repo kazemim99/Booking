@@ -218,12 +218,18 @@ class OnboardingData extends Equatable {
   final List<ServiceDraft> services;
   final List<DayHours> businessHours;
 
+  /// Whether the owner personally provides services. Set on the preview step and
+  /// submitted at completion (Yes ⇒ owner becomes the first active staff member).
+  /// Defaults to true — most solo owners provide services.
+  final bool ownerProvidesServices;
+
   const OnboardingData({
     this.businessInfo = const BusinessInfo(),
     this.categoryId,
     this.address = const OnboardingAddress(),
     this.services = const [],
     this.businessHours = const [],
+    this.ownerProvidesServices = true,
   });
 
   OnboardingData copyWith({
@@ -232,6 +238,7 @@ class OnboardingData extends Equatable {
     OnboardingAddress? address,
     List<ServiceDraft>? services,
     List<DayHours>? businessHours,
+    bool? ownerProvidesServices,
   }) {
     return OnboardingData(
       businessInfo: businessInfo ?? this.businessInfo,
@@ -239,12 +246,14 @@ class OnboardingData extends Equatable {
       address: address ?? this.address,
       services: services ?? this.services,
       businessHours: businessHours ?? this.businessHours,
+      ownerProvidesServices:
+          ownerProvidesServices ?? this.ownerProvidesServices,
     );
   }
 
   @override
   List<Object?> get props =>
-      [businessInfo, categoryId, address, services, businessHours];
+      [businessInfo, categoryId, address, services, businessHours, ownerProvidesServices];
 }
 
 /// Business categories.

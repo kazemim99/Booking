@@ -6,6 +6,7 @@ using Booksy.Core.Domain.Base;
 using Booksy.Core.Domain.Exceptions;
 using Booksy.ServiceCatalog.Domain.Entities;
 using Booksy.ServiceCatalog.Domain.Enums;
+using Booksy.ServiceCatalog.Domain.Enums.Extensions;
 using Booksy.ServiceCatalog.Domain.Events;
 using Booksy.ServiceCatalog.Domain.Exceptions;
 using Booksy.ServiceCatalog.Domain.ValueObjects;
@@ -74,6 +75,19 @@ namespace Booksy.ServiceCatalog.Domain.Aggregates
         // Private constructor for EF Core
         private Provider() : base() { }
 
+        /// <summary>
+        /// Every provider must carry exactly one category drawn from the ServiceCategory enum.
+        /// Callers reach the aggregate through strings (registration payloads, slugs) and
+        /// <c>Enum.TryParse</c> happily accepts out-of-range numbers, so the aggregate refuses
+        /// undefined values rather than persisting a category nothing can render.
+        /// </summary>
+        private static void EnsureCategoryIsValid(ServiceCategory primaryCategory)
+        {
+            if (!primaryCategory.IsDefinedCategory())
+                throw new InvalidProviderException(
+                    $"'{(int)primaryCategory}' is not a valid service category. A provider must have exactly one category from the ServiceCategory enum.");
+        }
+
         // Factory method for creating draft provider (progressive registration)
         public static Provider CreateDraft(
             UserId ownerId,
@@ -88,6 +102,8 @@ namespace Booksy.ServiceCatalog.Domain.Aggregates
             int registrationStep = 3,
             string? logoUrl = null)
         {
+            EnsureCategoryIsValid(primaryCategory);
+
             var profile = BusinessProfile.Create(businessName, description, logoUrl);
 
             var provider = new Provider
@@ -137,6 +153,8 @@ namespace Booksy.ServiceCatalog.Domain.Aggregates
             string ownerFirstName = "",
             string ownerLastName = "")
         {
+            EnsureCategoryIsValid(primaryCategory);
+
             var profile = BusinessProfile.Create(businessName, description, logoUrl: null, profileImageUrl: null);
 
             var provider = new Provider
@@ -328,6 +346,8 @@ namespace Booksy.ServiceCatalog.Domain.Aggregates
             // Only allow updating draft providers
             if (Status != ProviderStatus.Drafted)
                 throw new InvalidOperationException("Can only update draft providers");
+
+            EnsureCategoryIsValid(primaryCategory);
 
             OwnerFirstName = ownerFirstName;
             OwnerLastName = ownerLastName;

@@ -50,8 +50,8 @@ export const LOCALE_CONFIG: Record<Language, LocaleConfig> = {
   [Language.Persian]: {
     name: 'فارسی',
     direction: Direction.RTL,
-    dateFormat: DateFormat.Gregorian,
-    numberFormat: NumberFormat.Western,
+    dateFormat: DateFormat.Jalaali,
+    numberFormat: NumberFormat.Persian,
   },
   [Language.English]: {
     name: 'English',

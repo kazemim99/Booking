@@ -67,7 +67,7 @@ namespace Booksy.ServiceCatalog.Infrastructure.Persistence.Repositories
         public Task<IReadOnlyList<Service>> GetByProviderIdAndStatusAsync(ProviderId providerId, ServiceStatus status, CancellationToken cancellationToken = default) =>
             _inner.GetByProviderIdAndStatusAsync(providerId, status, cancellationToken);
 
-        public Task<IReadOnlyList<Service>> GetByCategoryAsync(string category, CancellationToken cancellationToken = default) =>
+        public Task<IReadOnlyList<Service>> GetByCategoryAsync(ServiceCategory category, CancellationToken cancellationToken = default) =>
             _inner.GetByCategoryAsync(category, cancellationToken);
 
         public Task<IReadOnlyList<Service>> GetByStatusAsync(ServiceStatus status, CancellationToken cancellationToken = default) =>
@@ -103,7 +103,7 @@ namespace Booksy.ServiceCatalog.Infrastructure.Persistence.Repositories
         public Task<IReadOnlyList<Service>> GetServicesByTagAsync(string tag, CancellationToken cancellationToken = default) =>
             _inner.GetServicesByTagAsync(tag, cancellationToken);
 
-        public Task<decimal> GetAveragePriceByCategoryAsync(string category, string currency, CancellationToken cancellationToken = default) =>
+        public Task<decimal> GetAveragePriceByCategoryAsync(ServiceCategory category, string currency, CancellationToken cancellationToken = default) =>
             _inner.GetAveragePriceByCategoryAsync(category, currency, cancellationToken);
 
         // IReadRepository implementation

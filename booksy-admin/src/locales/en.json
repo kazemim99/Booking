@@ -186,11 +186,9 @@
     "providePleasePleaseReason": "Please provide a reason for rejecting this provider",
     "providePleaseReasonSuspend": "Please provide a reason for suspending this provider",
     "businessInformation": "Business Information",
-    "businessName": "Business Name",
     "email": "Email",
     "phone": "Phone",
     "rating": "Rating",
-    "address": "Address",
     "noDescriptionProvided": "No description provided",
     "noAddressProvided": "No address provided",
     "statistics": "Statistics",
@@ -225,7 +223,9 @@
     "uploadedBy": "Uploaded By",
     "uploadedAt": "Uploaded At",
     "primaryImage": "Primary Image",
-    "caption": "Caption"
+    "caption": "Caption",
+    "confirmActivate": "Activate this provider?",
+    "confirmDeleteImage": "Delete this image?"
   },
   "service": {
     "title": "Services",
@@ -388,5 +388,20 @@
     "showing": "Showing",
     "to": "to",
     "totalItems": "Total items"
+  },
+  "providerStatus": {
+    "Drafted": "Drafted",
+    "PendingVerification": "Pending verification",
+    "Verified": "Verified",
+    "Active": "Active",
+    "Inactive": "Inactive",
+    "Suspended": "Suspended",
+    "Archived": "Archived",
+    "unknown": "Unknown"
+  },
+  "gallery": {
+    "unavailableTitle": "Platform-wide image moderation is unavailable",
+    "unavailableDescription": "The backend cannot yet list or moderate images across providers. Each provider's images are viewable and manageable from that provider's details page.",
+    "browseProviders": "Browse providers"
   }
 }

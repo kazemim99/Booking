@@ -42,11 +42,23 @@ The backend stack must be running with **sandbox auth** so OTP login is determin
 ```bash
 # from repo root — Postgres + Redis + host
 OTP_SANDBOX_CODE=123456 Sms__SandboxMode=true ASPNETCORE_ENVIRONMENT=Development \
-  dotnet run --project src/Host/Booksy.Host
+  Services__UserManagement__BaseUrl=http://localhost:5050/api \
+  Services__ServiceCatalog__BaseUrl=http://localhost:5050/api \
+  dotnet run --project src/Host/Booksy.Host --urls http://localhost:5050
 
 # (Postgres + Redis via docker-compose; the host listens on :5050,
 #  which the Vite dev proxy forwards /api to — see vite.config.ts)
 ```
+
+> **The two `Services__*__BaseUrl` overrides are required, not optional.** Parts of
+> ServiceCatalog still reach UserManagement over HTTP *to the host itself* (e.g.
+> `TokenService.GenerateTokenWithProviderClaimsAsync`, used by
+> `Registration/step-9/complete` and `Providers/current/refresh-token`). `appsettings.json`
+> still points those at `http://localhost:5000/api` — the port `launchSettings.json` uses,
+> but **not** the `:5050` local dev actually runs on (`:5000` is taken by the CoRide
+> backend). Without the overrides that self-call hits a dead port and
+> **finishing the registration wizard fails with a 500**. Retiring the self-call entirely
+> is COMPLETION_ROADMAP Epic 1.1.
 
 The Vite dev server (port 3000) is started automatically by Playwright's
 `webServer` config; you do **not** need to run `npm run dev` yourself.

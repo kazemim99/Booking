@@ -93,6 +93,24 @@ abstract class HomeRepository {
   /// Removes a team member.
   Future<Either<Failure, void>> removeStaff(String staffId);
 
+  /// Invites a person by phone to join the organization as staff. The backend
+  /// reuses an existing account (never a duplicate) and blocks self-invite /
+  /// inviting an existing member.
+  Future<Either<Failure, void>> inviteStaff({
+    required String phoneNumber,
+    String? inviteeName,
+  });
+
+  /// The authenticated person's organization memberships (person-scoped; not
+  /// tied to the active provider). Powers the "My salons" surface.
+  Future<Either<Failure, List<ProviderMembership>>> fetchMyMemberships();
+
+  /// The active organization's members (membership model) — the staff directory.
+  Future<Either<Failure, List<OrgMember>>> fetchOrgMembers();
+
+  /// Terminate a membership (remove a member from the active organization).
+  Future<Either<Failure, void>> terminateMember(String membershipId);
+
   /// Booking statistics: all-time + trailing 30 days.
   Future<Either<Failure, InsightsSummary>> fetchInsights();
 
@@ -168,11 +186,13 @@ abstract class HomeRepository {
   /// The composer's pickable catalog: the provider's services and staff.
   Future<Either<Failure, ComposerCatalog>> fetchComposerCatalog();
 
-  /// Available start times (local) for the selection on [date].
-  Future<Either<Failure, List<DateTime>>> fetchAvailableSlots({
+  /// Available start times (local) for the selection on [date], plus the
+  /// server's reason when there are none.
+  Future<Either<Failure, SlotAvailability>> fetchAvailableSlots({
     required String serviceId,
     required DateTime date,
     String? staffId,
+    List<String> serviceIds = const [],
   });
 
   /// Creates a walk-in booking. Client name/phone (when given) are carried in
@@ -184,5 +204,6 @@ abstract class HomeRepository {
     String? clientName,
     String? clientPhone,
     String? notes,
+    List<String> serviceIds = const [],
   });
 }

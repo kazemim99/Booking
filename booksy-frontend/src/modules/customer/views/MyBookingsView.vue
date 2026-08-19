@@ -8,13 +8,25 @@
     </div>
 
     <div class="bookings-tabs">
-      <button @click="activeTab = 'upcoming'" :class="{ active: activeTab === 'upcoming' }">
+      <button
+        @click="activeTab = 'upcoming'"
+        :class="{ active: activeTab === 'upcoming' }"
+        data-testid="bookings-tab-upcoming"
+      >
         آینده ({{ upcomingCount }})
       </button>
-      <button @click="activeTab = 'past'" :class="{ active: activeTab === 'past' }">
+      <button
+        @click="activeTab = 'past'"
+        :class="{ active: activeTab === 'past' }"
+        data-testid="bookings-tab-past"
+      >
         گذشته ({{ pastCount }})
       </button>
-      <button @click="activeTab = 'cancelled'" :class="{ active: activeTab === 'cancelled' }">
+      <button
+        @click="activeTab = 'cancelled'"
+        :class="{ active: activeTab === 'cancelled' }"
+        data-testid="bookings-tab-cancelled"
+      >
         لغو شده ({{ cancelledCount }})
       </button>
     </div>

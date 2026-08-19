@@ -1,4 +1,4 @@
-// ========================================
+﻿// ========================================
 // Booksy.ServiceCatalog.Application/EventHandlers/Payments/PaymentFailedNotificationHandler.cs
 // ========================================
 using Booksy.Core.Application.Abstractions.Events;
@@ -105,7 +105,9 @@ namespace Booksy.ServiceCatalog.Application.EventHandlers.Payments
                 Priority: NotificationPriority.High,
                 PlainTextBody: plainTextBody,
                 BookingId: notification.BookingId?.Value,
-                PaymentId: notification.PaymentId.Value);
+                PaymentId: notification.PaymentId.Value,
+                // Dedup scope: the same lifecycle event re-delivered must not notify the customer twice.
+                IdempotencyKey: notification.EventId);
 
             await _mediator.Send(command, cancellationToken);
         }

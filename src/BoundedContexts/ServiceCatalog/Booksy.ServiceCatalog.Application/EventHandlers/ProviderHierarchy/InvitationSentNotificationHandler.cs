@@ -1,6 +1,7 @@
-// ========================================
+﻿// ========================================
 // Booksy.ServiceCatalog.Application/EventHandlers/ProviderHierarchy/InvitationSentNotificationHandler.cs
 // ========================================
+using Booksy.Core.Application.Services.Notifications;
 using Booksy.Core.Application.Abstractions.Events;
 using Booksy.ServiceCatalog.Application.Services;
 using Booksy.ServiceCatalog.Domain.Events;
@@ -73,14 +74,26 @@ namespace Booksy.ServiceCatalog.Application.EventHandlers.ProviderHierarchy
                     domainEvent.InvitationId);
 
                 // Send SMS
-                await _smsService.SendSmsAsync(
+                var result = await _smsService.SendSmsAsync(
                     domainEvent.PhoneNumber,
                     message,
-                    cancellationToken);
+                    cancellationToken: cancellationToken);
 
-                _logger.LogInformation(
-                    "Invitation SMS sent successfully for invitation {InvitationId}",
-                    domainEvent.InvitationId);
+                if (result.Success)
+                {
+                    _logger.LogInformation(
+                        "Invitation SMS sent successfully for invitation {InvitationId}",
+                        domainEvent.InvitationId);
+                }
+                else
+                {
+                    // The canonical sender reports gateway failures instead of throwing, so an unchecked
+                    // result would have logged "sent successfully" for an SMS that never left the building.
+                    _logger.LogError(
+                        "Invitation SMS failed for invitation {InvitationId}: {Error}",
+                        domainEvent.InvitationId,
+                        result.ErrorMessage);
+                }
             }
             catch (Exception ex)
             {

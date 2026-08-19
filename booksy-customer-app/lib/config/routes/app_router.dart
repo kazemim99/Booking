@@ -19,9 +19,8 @@ import '../../features/bookings/presentation/pages/appointment_detail_page.dart'
 import '../../features/bookings/presentation/pages/appointments_page.dart';
 import '../../features/home/presentation/pages/home_page.dart';
 import '../../features/profile/presentation/pages/profile_tab_page.dart';
-import '../../features/search/presentation/pages/area_page.dart';
 import '../../features/search/presentation/pages/explore_page.dart';
-import '../../features/search/presentation/pages/nearby_page.dart';
+import '../../features/search/presentation/pages/map_discovery_page.dart';
 import '../../features/search/presentation/pages/provider_detail_page.dart';
 
 /// Route paths. All primary destinations are addressable (deep-linkable).
@@ -34,8 +33,11 @@ class Routes {
 
   static const String home = '/home';
   static const String explore = '/explore';
-  static const String exploreNearby = '/explore/nearby';
-  static const String exploreArea = '/explore/area';
+
+  /// Map + carousel discovery. Replaces the former `/explore/nearby` and
+  /// `/explore/area` destinations: the map's own search field covers area
+  /// search, and its floating action button covers "near me".
+  static const String exploreMap = '/explore/map';
   static const String appointments = '/appointments';
   static const String profile = '/profile';
 
@@ -209,12 +211,8 @@ class AppRouter {
                 builder: (context, state) => const ExplorePage(),
                 routes: [
                   GoRoute(
-                    path: 'nearby',
-                    builder: (context, state) => const NearbyPage(),
-                  ),
-                  GoRoute(
-                    path: 'area',
-                    builder: (context, state) => const AreaPage(),
+                    path: 'map',
+                    builder: (context, state) => const MapDiscoveryPage(),
                   ),
                 ],
               ),

@@ -77,7 +77,18 @@ export class MyBookingsPage {
     // Cancellation is confirmed via a native window.confirm() dialog — auto-accept it.
     this.page.once('dialog', (dialog) => dialog.accept())
     await row.getByTestId('booking-cancel-button').click()
+
+    // The list is tab-filtered and defaults to "upcoming", so a cancelled booking
+    // LEAVES the visible list rather than changing status in place — assert on the
+    // "لغو شده" (cancelled) tab instead.
+    const cancelledTab = this.page.getByTestId('bookings-tab-cancelled')
+    await expect(cancelledTab).toContainText('(1)', { timeout: 20_000 })
+    await cancelledTab.click()
+
     // Status label is localized (fa); match the Persian "لغو" or English "cancel".
-    await expect(row.getByTestId('booking-status')).toContainText(/لغو|cancel/i)
+    const cancelledRow = this.page.getByTestId('booking-row').first()
+    await expect(cancelledRow.getByTestId('booking-status')).toContainText(/لغو|cancel/i, {
+      timeout: 20_000,
+    })
   }
 }

@@ -180,6 +180,15 @@ class AppStrings {
   static const String previewTitle = 'بررسی نهایی';
   static const String previewSubtitle = 'اطلاعات خود را بررسی و تأیید کنید';
 
+  // Step 7 — "do you personally provide services?" onboarding branch
+  static const String providesServicesQuestion =
+      'آیا خودتان خدمات ارائه می‌دهید؟';
+  static const String providesServicesHint =
+      'اگر بله، شما به عنوان اولین عضو تیم اضافه می‌شوید و می‌توانید نوبت بگیرید.';
+  static const String providesServicesYes = 'بله، خودم خدمات ارائه می‌دهم';
+  static const String providesServicesNo =
+      'خیر، فقط کسب‌وکار را مدیریت می‌کنم';
+
   // Step 8 — completion
   static const String completionTitle = 'ثبت‌نام تکمیل شد!';
   static const String completionBody =
@@ -222,6 +231,14 @@ class AppStrings {
 
   // Get discovered (Growth)
   static const String homeDiscoverTitle = 'کسب‌وکار شما آماده است';
+
+  /// Growth-zone copy while the business is still awaiting approval. It must
+  /// not claim the business is "ready": customers cannot book it yet, and the
+  /// pending banner sits directly above this card.
+  static const String homeDiscoverPendingTitle =
+      'پروفایل شما کامل است';
+  static const String homeDiscoverPendingBody =
+      'پس از تأیید کسب‌وکار، می‌توانید لینک رزرو را به‌اشتراک بگذارید.';
   static const String homeDiscoverBody =
       'برای دریافت اولین نوبت، لینک رزرو را به‌اشتراک بگذارید';
   static const String homeShareLink = 'اشتراک‌گذاری لینک رزرو';
@@ -239,6 +256,8 @@ class AppStrings {
   static const String homeStatusDone = 'انجام شد';
   static const String homeStatusNoShow = 'عدم حضور';
   static const String homeStatusPending = 'در انتظار تأیید';
+  static const String homeStatusConfirmed = 'قطعی';
+  static const String homeStatusCancelled = 'لغو شده';
   static const String homeStatusNow = 'اکنون';
 
   // Now / next
@@ -298,7 +317,12 @@ class AppStrings {
 
   // ==================== Booking composer ====================
   static const String composerTitle = 'نوبت جدید';
-  static const String composerServiceLabel = 'خدمت';
+  static const String composerServiceLabel = 'خدمات';
+  static const String composerServicesHint = 'انتخاب خدمت‌ها';
+  static String composerServicesCount(int n) => '$n خدمت انتخاب شده';
+  static String composerServicesSummary(int minutes, String price) =>
+      'مجموع: $minutes دقیقه · $price';
+  static const String composerDone = 'تأیید';
   static const String composerStaffLabel = 'کارمند';
   static const String composerDateLabel = 'تاریخ';
   static const String composerSlotsLabel = 'زمان‌های خالی';
@@ -309,6 +333,14 @@ class AppStrings {
   static const String composerNoSlots =
       'در این روز زمان خالی وجود ندارد؛ روز دیگری را امتحان کنید';
   static const String composerSlotsError = 'دریافت زمان‌های خالی ناموفق بود';
+
+  /// Shown when the business has no staff at all: no date can ever have a free
+  /// time until someone is added, so we say so up front instead of letting the
+  /// provider search date by date.
+  static const String composerNoStaffTitle = 'هنوز کارمندی اضافه نکرده‌اید';
+  static const String composerNoStaffBody =
+      'برای ثبت نوبت باید حداقل یک کارمند داشته باشید؛ تا آن زمان هیچ زمان خالی نمایش داده نمی‌شود.';
+  static const String composerNoStaffCta = 'افزودن کارمند';
   static const String composerClientName = 'نام مشتری (اختیاری)';
   static const String composerClientPhone = 'شماره مشتری (اختیاری)';
   static const String composerNotes = 'یادداشت (اختیاری)';
@@ -348,6 +380,11 @@ class AppStrings {
   static const String moreAccountSection = 'حساب کاربری';
   static const String moreServices = 'خدمات';
   static const String moreStaff = 'تیم';
+  static const String moreMemberships = 'سالن‌های من';
+  static const String membershipsEmpty = 'شما عضو هیچ سالنی نیستید';
+  static const String membershipOwner = 'مالک';
+  static const String membershipProvidesServices = 'ارائه‌دهنده خدمات';
+  static String membershipSwitched(String org) => 'به «$org» تغییر کرد';
   static const String moreInsights = 'گزارش‌ها';
   static const String moreBusinessProfile = 'مشخصات کسب‌وکار';
   static const String moreWorkingHours = 'ساعات کاری';
@@ -392,6 +429,28 @@ class AppStrings {
       '«$name» از تیم حذف شود؟';
   static const String staffRemoveConfirm = 'حذف';
   static const String staffAdded = 'عضو تیم اضافه شد';
+
+  // Invite-by-phone (membership model)
+  static const String staffInvite = 'دعوت با شماره موبایل';
+  static const String staffInviteHint =
+      'یک پیامک دعوت ارسال می‌شود. اگر این شماره از قبل حساب داشته باشد، همان حساب استفاده می‌شود.';
+  static const String staffInviteNameOptional = 'نام (اختیاری)';
+  static const String staffInviteSend = 'ارسال دعوت';
+  static const String staffInviteSent = 'دعوت‌نامه ارسال شد';
+  static const String staffInvitePending = 'در انتظار پذیرش';
+
+  // Accept-invitation screen (from an SMS link)
+  static const String acceptInvitationTitle = 'پذیرش دعوت';
+  static const String acceptInvitationNotFound = 'دعوت‌نامه یافت نشد یا منقضی شده است';
+  static String acceptInvitationInvitedTo(String org) =>
+      'شما به «$org» دعوت شده‌اید';
+  static const String acceptInvitationAccept = 'پذیرش و پیوستن';
+  static const String acceptInvitationAccepted = 'شما به تیم پیوستید';
+  static const String acceptInvitationGoDashboard = 'رفتن به داشبورد';
+  static const String acceptInvitationExpired = 'این دعوت‌نامه دیگر معتبر نیست';
+  static const String acceptInvitationLoginPrompt =
+      'برای پذیرش دعوت، ابتدا وارد حساب خود شوید.';
+  static const String acceptInvitationLogin = 'ورود';
 
   // ==================== Business profile editing ====================
   static const String businessProfileName = 'نام کسب‌وکار';

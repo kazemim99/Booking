@@ -1,4 +1,3 @@
-import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
@@ -7,23 +6,39 @@ import '../../../../config/routes/app_router.dart';
 import '../../../../config/theme/app_tokens.dart';
 import '../../../../core/constants/app_strings.dart';
 import '../../../../core/di/injection.dart';
-import '../../../../core/utils/jalali_formatter.dart';
 import '../../../../core/widgets/widgets.dart';
 import '../../../booking/domain/entities/booking_entities.dart';
 import '../bloc/provider_detail_cubit.dart';
+import '../widgets/contact_location_section.dart';
+import '../widgets/services_grid.dart';
+import '../widgets/working_hours_section.dart';
 
-/// Provider detail (deep-linkable at /providers/:id): gallery header,
-/// name/rating/address/hours, bookable services. The booking CTA is pinned
-/// to the bottom so it is always visible without scrolling.
+/// Provider profile (deep-linkable at `/providers/:id`).
+///
+/// Hero cover → name + meta line → working hours (with an "open now" pill) →
+/// services grid → about → contact & location, with the booking CTA pinned to
+/// the bottom so it is reachable without scrolling.
 class ProviderDetailPage extends StatelessWidget {
   final String providerId;
 
-  const ProviderDetailPage({super.key, required this.providerId});
+  /// Cubit override for tests; resolved from DI in the app.
+  final ProviderDetailCubit? cubit;
+
+  /// Fixed "now" for deterministic open/closed tests.
+  final DateTime? now;
+
+  const ProviderDetailPage({
+    super.key,
+    required this.providerId,
+    this.cubit,
+    this.now,
+  });
 
   @override
   Widget build(BuildContext context) {
-    return BlocProvider(
-      create: (_) => getIt<ProviderDetailCubit>()..load(providerId),
+    return BlocProvider<ProviderDetailCubit>(
+      create: (_) =>
+          cubit ?? (getIt<ProviderDetailCubit>()..load(providerId)),
       child: BlocBuilder<ProviderDetailCubit, ProviderDetailState>(
         builder: (context, state) {
           return Scaffold(
@@ -35,6 +50,7 @@ class ProviderDetailPage extends StatelessWidget {
                     child: Padding(
                       padding: const EdgeInsets.all(AppSpacing.md),
                       child: AppButton(
+                        key: const Key('provider-book-cta'),
                         label: AppStrings.bookAction,
                         onPressed: () =>
                             context.push(Routes.bookingFlow(providerId)),
@@ -54,22 +70,31 @@ class ProviderDetailPage extends StatelessWidget {
               skeleton: SkeletonLoader(
                 child: ListView(
                   physics: const NeverScrollableScrollPhysics(),
-                  padding: const EdgeInsets.all(AppSpacing.md),
+                  padding: EdgeInsets.zero,
                   children: [
-                    SkeletonLoader.box(height: 180, radius: AppRadius.lg),
+                    SkeletonLoader.box(height: 200, radius: 0),
                     const SizedBox(height: AppSpacing.md),
-                    SkeletonLoader.box(width: 180, height: 24),
-                    const SizedBox(height: AppSpacing.sm),
-                    SkeletonLoader.box(width: 120, height: 16),
-                    const SizedBox(height: AppSpacing.lg),
-                    SkeletonLoader.box(height: 72, radius: AppRadius.lg),
-                    const SizedBox(height: AppSpacing.sm),
-                    SkeletonLoader.box(height: 72, radius: AppRadius.lg),
+                    Padding(
+                      padding:
+                          const EdgeInsets.symmetric(horizontal: AppSpacing.md),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          SkeletonLoader.box(width: 180, height: 24),
+                          const SizedBox(height: AppSpacing.sm),
+                          SkeletonLoader.box(width: 120, height: 16),
+                          const SizedBox(height: AppSpacing.lg),
+                          SkeletonLoader.box(height: 72, radius: AppRadius.md),
+                          const SizedBox(height: AppSpacing.sm),
+                          SkeletonLoader.box(height: 72, radius: AppRadius.md),
+                        ],
+                      ),
+                    ),
                   ],
                 ),
               ),
               contentBuilder: (context) =>
-                  _ProviderContent(provider: state.provider!),
+                  _ProviderContent(provider: state.provider!, now: now),
             ),
           );
         },
@@ -80,200 +105,81 @@ class ProviderDetailPage extends StatelessWidget {
 
 class _ProviderContent extends StatelessWidget {
   final ProviderDetail provider;
+  final DateTime? now;
 
-  const _ProviderContent({required this.provider});
+  const _ProviderContent({required this.provider, this.now});
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final image = provider.profileImageUrl ?? provider.logoUrl;
+    final address = [provider.city, provider.addressLine]
+        .whereType<String>()
+        .where((part) => part.isNotEmpty)
+        .join('، ');
+
+    // The meta line's first slot is the category — which `ProviderDetail` does
+    // not carry (the payload's `type` is dropped by the parser), so the city
+    // stands in for it. Rating hides itself while the provider is unrated, and
+    // the price band is derived from this provider's own service prices.
+    final meta = ProviderMetaLine(
+      category: provider.city,
+      rating: provider.averageRating,
+      reviewCount: provider.totalReviews,
+      priceBand: PriceBand.fromPrices(provider.services.map((s) => s.price)),
+    );
+
+    final contact = ContactLocationSection(
+      address: address.isEmpty ? null : address,
+    );
 
     return ListView(
       padding: const EdgeInsets.only(bottom: AppSpacing.lg),
       children: [
-        SizedBox(
+        ProviderImage(
+          key: const Key('provider-hero-image'),
+          imageUrl: provider.profileImageUrl ?? provider.logoUrl,
+          width: double.infinity,
           height: 200,
-          child: image != null
-              ? CachedNetworkImage(
-                  imageUrl: image,
-                  fit: BoxFit.cover,
-                  placeholder: (_, __) => SkeletonLoader(
-                    child: SkeletonLoader.box(height: 200, radius: 0),
-                  ),
-                  errorWidget: (_, __, ___) => _headerPlaceholder(theme),
-                )
-              : _headerPlaceholder(theme),
+          placeholderIconSize: AppIconSize.hero,
         ),
         Padding(
           padding: const EdgeInsets.all(AppSpacing.md),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text(provider.businessName, style: theme.textTheme.headlineSmall),
-              const SizedBox(height: AppSpacing.xs),
-              Row(
-                children: [
-                  const Icon(Icons.star, size: 18, color: Colors.amber),
-                  const SizedBox(width: AppSpacing.xxs),
-                  Text(
-                    provider.averageRating.toStringAsFixed(1),
-                    style: theme.textTheme.titleSmall,
-                  ),
-                  const SizedBox(width: AppSpacing.xxs),
-                  Text(
-                    '(${JalaliFormatter.toPersianDigits('${provider.totalReviews}')} نظر)',
-                    style: theme.textTheme.bodySmall,
-                  ),
-                ],
+              Text(
+                provider.businessName,
+                style: theme.textTheme.headlineSmall,
               ),
-              if (provider.addressLine != null || provider.city != null) ...[
+              if (meta.hasContent) ...[
                 const SizedBox(height: AppSpacing.xs),
-                Row(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Icon(
-                      Icons.location_on_outlined,
-                      size: 18,
-                      color: theme.colorScheme.onSurfaceVariant,
-                    ),
-                    const SizedBox(width: AppSpacing.xxs),
-                    Expanded(
-                      child: Text(
-                        [provider.city, provider.addressLine]
-                            .whereType<String>()
-                            .join('، '),
-                        style: theme.textTheme.bodyMedium,
-                      ),
-                    ),
-                  ],
+                meta,
+              ],
+              if (provider.businessHours.isNotEmpty) ...[
+                const SizedBox(height: AppSpacing.lg),
+                WorkingHoursSection(
+                  hours: provider.businessHours,
+                  now: now,
                 ),
               ],
+              const SizedBox(height: AppSpacing.lg),
+              Text(AppStrings.servicesTitle, style: theme.textTheme.titleLarge),
+              const SizedBox(height: AppSpacing.xs),
+              ServicesGrid(services: provider.services),
               if (provider.description?.isNotEmpty == true) ...[
-                const SizedBox(height: AppSpacing.md),
+                const SizedBox(height: AppSpacing.lg),
                 Text(AppStrings.aboutTitle, style: theme.textTheme.titleLarge),
                 const SizedBox(height: AppSpacing.xs),
                 Text(provider.description!, style: theme.textTheme.bodyLarge),
               ],
-              if (provider.businessHours.isNotEmpty) ...[
-                const SizedBox(height: AppSpacing.md),
-                Text(
-                  AppStrings.workingHoursTitle,
-                  style: theme.textTheme.titleLarge,
-                ),
-                const SizedBox(height: AppSpacing.xs),
-                ...provider.businessHours.map(
-                  (h) => Padding(
-                    padding: const EdgeInsets.symmetric(
-                      vertical: AppSpacing.xxs,
-                    ),
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        Text(h.dayOfWeek, style: theme.textTheme.bodyMedium),
-                        Text(
-                          h.isClosed
-                              ? 'تعطیل'
-                              : JalaliFormatter.toPersianDigits(
-                                  '${h.openTime ?? ''} – ${h.closeTime ?? ''}',
-                                ),
-                          style: theme.textTheme.bodyMedium,
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
+              if (contact.hasContent) ...[
+                const SizedBox(height: AppSpacing.lg),
+                contact,
               ],
-              const SizedBox(height: AppSpacing.md),
-              Text(AppStrings.servicesTitle, style: theme.textTheme.titleLarge),
-              const SizedBox(height: AppSpacing.xs),
-              if (provider.services.isEmpty)
-                Text(
-                  AppStrings.noResultsTitle,
-                  style: theme.textTheme.bodyMedium,
-                )
-              else
-                ...provider.services.map(
-                  (service) => Padding(
-                    padding: const EdgeInsets.only(bottom: AppSpacing.sm),
-                    child: ServiceTile(service: service),
-                  ),
-                ),
             ],
           ),
         ),
       ],
-    );
-  }
-
-  Widget _headerPlaceholder(ThemeData theme) => Container(
-        color: theme.colorScheme.surfaceContainerHighest,
-        child: Icon(
-          Icons.storefront_outlined,
-          size: 56,
-          color: theme.colorScheme.onSurfaceVariant,
-        ),
-      );
-}
-
-/// A bookable service row: name, duration, price.
-class ServiceTile extends StatelessWidget {
-  final ServiceItem service;
-  final VoidCallback? onTap;
-  final bool selected;
-
-  const ServiceTile({
-    super.key,
-    required this.service,
-    this.onTap,
-    this.selected = false,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final price = JalaliFormatter.toPersianDigits(
-      '${service.price.toStringAsFixed(0)} ${service.currency}'.trim(),
-    );
-    final duration = JalaliFormatter.toPersianDigits(
-      '${service.durationMinutes} دقیقه',
-    );
-
-    return AppCard(
-      onTap: onTap,
-      semanticLabel: '${service.name}، $duration، $price',
-      child: Row(
-        children: [
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(service.name, style: theme.textTheme.titleSmall),
-                const SizedBox(height: AppSpacing.xxs),
-                Row(
-                  children: [
-                    Icon(
-                      Icons.schedule,
-                      size: 14,
-                      color: theme.colorScheme.onSurfaceVariant,
-                    ),
-                    const SizedBox(width: AppSpacing.xxs),
-                    Text(duration, style: theme.textTheme.bodySmall),
-                  ],
-                ),
-              ],
-            ),
-          ),
-          Text(price, style: theme.textTheme.titleSmall),
-          if (selected) ...[
-            const SizedBox(width: AppSpacing.xs),
-            Icon(
-              Icons.check_circle,
-              size: 20,
-              color: theme.colorScheme.primary,
-            ),
-          ],
-        ],
-      ),
     );
   }
 }

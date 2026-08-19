@@ -11,9 +11,8 @@ import '../../../../core/utils/jalali_formatter.dart';
 import '../../../../core/widgets/widgets.dart';
 import '../../../auth/presentation/bloc/auth_bloc.dart';
 import '../../../auth/presentation/bloc/auth_state.dart';
-import '../../../search/presentation/pages/provider_detail_page.dart'
-    show ServiceTile;
 import '../bloc/booking_bloc.dart';
+import '../widgets/service_selection_step.dart';
 import '../widgets/slot_picker.dart';
 
 /// Stepped booking flow: service → staff (auto-skipped for single-staff
@@ -42,7 +41,7 @@ class _BookingFlowPageState extends State<BookingFlowPage> {
   String get _stepTitle {
     switch (_bloc.state.step) {
       case BookingStep.service:
-        return AppStrings.bookingSelectService;
+        return AppStrings.bookingSelectServices;
       case BookingStep.staff:
         return AppStrings.bookingSelectStaff;
       case BookingStep.time:
@@ -106,7 +105,8 @@ class _BookingFlowPageState extends State<BookingFlowPage> {
                         _bloc.add(BookingStarted(widget.providerId)),
                   ),
                 BookingProviderStatus.loaded => switch (state.step) {
-                    BookingStep.service => _ServiceStep(state: state),
+                    BookingStep.service =>
+                      ServiceSelectionStep(state: state),
                     BookingStep.staff => _StaffStep(state: state),
                     BookingStep.time => _TimeStep(state: state),
                     BookingStep.confirm => _ConfirmStep(
@@ -119,37 +119,6 @@ class _BookingFlowPageState extends State<BookingFlowPage> {
           );
         },
       ),
-    );
-  }
-}
-
-class _ServiceStep extends StatelessWidget {
-  final BookingState state;
-
-  const _ServiceStep({required this.state});
-
-  @override
-  Widget build(BuildContext context) {
-    final services = state.provider?.services ?? [];
-    if (services.isEmpty) {
-      return const EmptyState(
-        icon: Icons.design_services_outlined,
-        title: AppStrings.noResultsTitle,
-      );
-    }
-    return ListView.separated(
-      padding: const EdgeInsets.all(AppSpacing.md),
-      itemCount: services.length,
-      separatorBuilder: (_, __) => const SizedBox(height: AppSpacing.sm),
-      itemBuilder: (context, index) {
-        final service = services[index];
-        return ServiceTile(
-          service: service,
-          selected: state.service?.id == service.id,
-          onTap: () =>
-              context.read<BookingBloc>().add(BookingServiceSelected(service)),
-        );
-      },
     );
   }
 }
@@ -271,15 +240,21 @@ class _ConfirmStep extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final service = state.service;
+    final services = state.services;
     final slot = state.slot;
-    if (service == null || slot == null) {
+    if (services.isEmpty || slot == null) {
       return const SizedBox.shrink();
     }
 
     final rows = <(String, String)>[
       (AppStrings.bookingProvider, state.provider?.businessName ?? ''),
-      (AppStrings.bookingService, service.name),
+      (
+        // Plural label once the visit bundles more than one service.
+        services.length > 1
+            ? AppStrings.servicesTitle
+            : AppStrings.bookingService,
+        services.map((s) => s.name).join('، '),
+      ),
       (
         AppStrings.bookingStaff,
         state.staff?.name ?? slot.staffName ?? AppStrings.bookingAnyStaff,
@@ -288,12 +263,14 @@ class _ConfirmStep extends StatelessWidget {
       (AppStrings.bookingTime, JalaliFormatter.formatTime(slot.startTime)),
       (
         AppStrings.bookingDuration,
-        JalaliFormatter.toPersianDigits('${service.durationMinutes} دقیقه'),
+        JalaliFormatter.toPersianDigits(
+          '${state.totalDurationMinutes} دقیقه',
+        ),
       ),
       (
         AppStrings.bookingPrice,
         JalaliFormatter.toPersianDigits(
-          '${service.price.toStringAsFixed(0)} ${service.currency}'.trim(),
+          '${state.totalPrice.toStringAsFixed(0)} ${state.currency}'.trim(),
         ),
       ),
     ];

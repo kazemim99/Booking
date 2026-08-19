@@ -6,6 +6,7 @@ import { ref, computed } from 'vue'
 import type { LocaleState } from '../types/locale.types'
 import { Language, Direction, DateFormat, NumberFormat, LOCALE_CONFIG } from '../types/locale.types'
 
+
 const STORAGE_KEY = 'booksy_admin_locale_settings'
 
 export const useLocaleStore = defineStore('locale', () => {
@@ -65,25 +66,25 @@ export const useLocaleStore = defineStore('locale', () => {
   }
 
   function initializeFromStorage() {
+    // Only the language is a user choice; direction, calendar and digits are
+    // consequences of it, so they are re-derived from LOCALE_CONFIG rather than
+    // restored. Restoring them meant a session that had persisted the old
+    // Gregorian defaults kept Gregorian dates forever, even after Persian was
+    // switched to the Jalali calendar.
+    let locale: Language = Language.Persian
+
     if (typeof localStorage !== 'undefined') {
       const stored = localStorage.getItem(STORAGE_KEY)
       if (stored) {
         try {
-          const state: LocaleState = JSON.parse(stored)
-          currentLocale.value = state.currentLocale || Language.Persian
-          direction.value = state.direction || Direction.RTL
-          dateFormat.value = state.dateFormat || DateFormat.Gregorian
-          numberFormat.value = state.numberFormat || NumberFormat.Western
-          updateDocumentDirection()
-          return
+          locale = (JSON.parse(stored) as LocaleState).currentLocale || Language.Persian
         } catch (error) {
           console.error('Failed to parse stored locale settings:', error)
         }
       }
     }
 
-    // If no stored settings, use defaults
-    setLocale(Language.Persian)
+    setLocale(locale)
   }
 
   return {

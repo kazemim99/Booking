@@ -22,8 +22,22 @@ apiClient.interceptors.request.use(
   }
 )
 
+// The API wraps every 2xx body in { success, statusCode, message, data, metadata }
+// (ApiResponseMiddleware). Unwrap it once here so callers always receive the payload
+// itself — previously only the paginated endpoints unwrapped, and every single-item
+// call silently handed the envelope object back to the UI as if it were the resource.
+const isApiEnvelope = (body: unknown): body is { data: unknown } =>
+  typeof body === 'object' &&
+  body !== null &&
+  'success' in body &&
+  'statusCode' in body &&
+  'data' in body
+
 apiClient.interceptors.response.use(
   (response: AxiosResponse) => {
+    if (isApiEnvelope(response.data)) {
+      response.data = response.data.data
+    }
     return response
   },
   (error: AxiosError) => {

@@ -26,6 +26,33 @@ public static class NotificationExtensions
     }
 
     /// <summary>
+    /// Splits a combined <see cref="NotificationChannel"/> flag value into the individual channels it names.
+    /// </summary>
+    /// <remarks>
+    /// Callers routinely build a channel set such as <c>Email | SMS | InApp</c>. Anything that switches on the
+    /// combined value instead of iterating it silently falls through to the default branch — which is how
+    /// multi-channel lifecycle notifications used to fail wholesale with "channel is not supported".
+    /// </remarks>
+    public static IEnumerable<NotificationChannel> EnumerateChannels(this NotificationChannel channels)
+    {
+        foreach (NotificationChannel candidate in Enum.GetValues<NotificationChannel>())
+        {
+            // Skip None and the composite All member; only single-bit channels are deliverable.
+            if (candidate == NotificationChannel.None || !IsSingleChannel(candidate))
+                continue;
+
+            if (channels.HasFlag(candidate))
+                yield return candidate;
+        }
+    }
+
+    private static bool IsSingleChannel(NotificationChannel channel)
+    {
+        var value = (int)channel;
+        return value > 0 && (value & (value - 1)) == 0;
+    }
+
+    /// <summary>
     /// Check if a channel supports rich content (images, formatting, etc.)
     /// </summary>
     public static bool SupportsRichContent(this NotificationChannel channel)

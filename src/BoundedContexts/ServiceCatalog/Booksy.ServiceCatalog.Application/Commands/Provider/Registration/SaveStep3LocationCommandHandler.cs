@@ -6,6 +6,7 @@ using Booksy.Core.Domain.ValueObjects;
 using Booksy.ServiceCatalog.Application.Services;
 using Booksy.ServiceCatalog.Application.Services.Interfaces;
 using Booksy.ServiceCatalog.Domain.Aggregates;
+using Booksy.ServiceCatalog.Application.Common;
 using Booksy.ServiceCatalog.Domain.Enums;
 using Booksy.ServiceCatalog.Domain.Repositories;
 using Booksy.ServiceCatalog.Domain.ValueObjects;
@@ -121,7 +122,10 @@ public sealed class SaveStep3LocationCommandHandler
         }
 
         // Parse category to ServiceCategory enum
-        if (!Enum.TryParse<ServiceCategory>(request.Category, true, out var category))
+        // Resolved centrally: accepts the enum name, the numeric id, the category slug and the
+        // wizard's legacy taxonomy ids, and rejects anything else. A bare Enum.TryParse used to
+        // accept any number here, letting an undefined category reach the aggregate.
+        if (!ServiceCategoryResolver.TryResolve(request.Category, out var category))
         {
             throw new InvalidOperationException($"Invalid category: {request.Category}");
         }

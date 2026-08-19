@@ -13,13 +13,20 @@ enum SlotsStatus { idle, loading, ready, failed }
 class ComposerState extends Equatable {
   final ComposerStatus status;
   final ComposerCatalog catalog;
-  final ComposerService? service;
+
+  /// One or more services performed in a single visit (cut + color).
+  /// Order = selection order; the first is the primary.
+  final List<ComposerService> services;
   final ComposerStaff? staff;
 
   /// Date-only (local) day being composed.
   final DateTime date;
   final SlotsStatus slotsStatus;
   final List<DateTime> slots;
+
+  /// Server's explanation for an empty [slots] (no staff, closed day, …).
+  /// Null when slots exist or the server offered no reason.
+  final String? slotsUnavailableReason;
   final DateTime? slot;
   final bool submitting;
   final bool submitted;
@@ -28,28 +35,40 @@ class ComposerState extends Equatable {
   const ComposerState({
     this.status = ComposerStatus.loading,
     this.catalog = const ComposerCatalog(services: [], staff: []),
-    this.service,
+    this.services = const [],
     this.staff,
     required this.date,
     this.slotsStatus = SlotsStatus.idle,
     this.slots = const [],
+    this.slotsUnavailableReason,
     this.slot,
     this.submitting = false,
     this.submitted = false,
     this.error,
   });
 
+  /// Primary (first) service, or null when nothing is selected.
+  ComposerService? get service => services.isEmpty ? null : services.first;
+
+  /// Combined length of all selected services (the slot's duration).
+  int get totalDurationMinutes =>
+      services.fold(0, (sum, s) => sum + s.durationMinutes);
+
+  /// Combined price of all selected services.
+  double get totalPrice => services.fold(0.0, (sum, s) => sum + s.price);
+
   bool get canSubmit =>
-      service != null && staff != null && slot != null && !submitting;
+      services.isNotEmpty && staff != null && slot != null && !submitting;
 
   ComposerState copyWith({
     ComposerStatus? status,
     ComposerCatalog? catalog,
-    ComposerService? service,
+    List<ComposerService>? services,
     ComposerStaff? staff,
     DateTime? date,
     SlotsStatus? slotsStatus,
     List<DateTime>? slots,
+    String? Function()? slotsUnavailableReason,
     DateTime? Function()? slot,
     bool? submitting,
     bool? submitted,
@@ -58,11 +77,14 @@ class ComposerState extends Equatable {
     return ComposerState(
       status: status ?? this.status,
       catalog: catalog ?? this.catalog,
-      service: service ?? this.service,
+      services: services ?? this.services,
       staff: staff ?? this.staff,
       date: date ?? this.date,
       slotsStatus: slotsStatus ?? this.slotsStatus,
       slots: slots ?? this.slots,
+      slotsUnavailableReason: slotsUnavailableReason != null
+          ? slotsUnavailableReason()
+          : this.slotsUnavailableReason,
       slot: slot != null ? slot() : this.slot,
       submitting: submitting ?? this.submitting,
       submitted: submitted ?? this.submitted,
@@ -74,11 +96,12 @@ class ComposerState extends Equatable {
   List<Object?> get props => [
         status,
         catalog,
-        service,
+        services,
         staff,
         date,
         slotsStatus,
         slots,
+        slotsUnavailableReason,
         slot,
         submitting,
         submitted,
@@ -115,18 +138,28 @@ class ComposerCubit extends Cubit<ComposerState> {
         emit(state.copyWith(
           status: ComposerStatus.ready,
           catalog: catalog,
-          service:
-              catalog.services.length == 1 ? catalog.services.single : null,
+          services: catalog.services.length == 1
+              ? [catalog.services.single]
+              : const [],
           staff: catalog.staff.length == 1 ? catalog.staff.single : null,
           error: () => null,
         ));
-        if (state.service != null) _refreshSlots();
+        if (state.services.isNotEmpty) _refreshSlots();
       },
     );
   }
 
-  void selectService(ComposerService service) {
-    emit(state.copyWith(service: service, slot: () => null));
+  /// Adds the service to the visit, or removes it if already selected.
+  /// Slots re-fetch against the new combined duration.
+  void toggleService(ComposerService service) {
+    final next = List<ComposerService>.from(state.services);
+    final at = next.indexWhere((s) => s.id == service.id);
+    if (at >= 0) {
+      next.removeAt(at);
+    } else {
+      next.add(service);
+    }
+    emit(state.copyWith(services: next, slot: () => null));
     _refreshSlots();
   }
 
@@ -143,30 +176,35 @@ class ComposerCubit extends Cubit<ComposerState> {
   void selectSlot(DateTime slot) => emit(state.copyWith(slot: () => slot));
 
   Future<void> _refreshSlots() async {
-    final service = state.service;
-    if (service == null) {
+    if (state.services.isEmpty) {
       emit(state.copyWith(slotsStatus: SlotsStatus.idle, slots: const []));
       return;
     }
     final seq = ++_slotsSeq;
     emit(state.copyWith(slotsStatus: SlotsStatus.loading));
     final result = await _repository.fetchAvailableSlots(
-      serviceId: service.id,
+      serviceId: state.services.first.id,
       date: state.date,
       staffId: state.staff?.id,
+      serviceIds: state.services.map((s) => s.id).toList(),
     );
     if (isClosed || seq != _slotsSeq) return; // superseded — discard
     result.fold(
       (f) => emit(state.copyWith(
         slotsStatus: SlotsStatus.failed,
         slots: const [],
+        slotsUnavailableReason: () => null,
         slot: () => null,
       )),
-      (slots) => emit(state.copyWith(
+      (availability) => emit(state.copyWith(
         slotsStatus: SlotsStatus.ready,
-        slots: slots,
+        slots: availability.slots,
+        // Why the day is empty (no staff, closed, …) — shown in place of the
+        // generic "no times" so a misconfiguration is not silently hidden.
+        slotsUnavailableReason: () => availability.unavailableReason,
         // Keep the selection only if it still exists.
-        slot: () => slots.contains(state.slot) ? state.slot : null,
+        slot: () =>
+            availability.slots.contains(state.slot) ? state.slot : null,
       )),
     );
   }
@@ -181,9 +219,10 @@ class ComposerCubit extends Cubit<ComposerState> {
     if (!state.canSubmit) return;
     emit(state.copyWith(submitting: true, error: () => null));
     final result = await _repository.createBooking(
-      serviceId: state.service!.id,
+      serviceId: state.services.first.id,
       staffId: state.staff!.id,
       startTime: state.slot!,
+      serviceIds: state.services.map((s) => s.id).toList(),
       clientName: clientName,
       clientPhone: clientPhone,
       notes: notes,

@@ -20,6 +20,7 @@ using Booksy.UserManagement.Infrastructure.Queries;
 using Booksy.Infrastructure.Core.DependencyInjection;
 using Booksy.Infrastructure.Core.EventBus;
 using Booksy.Infrastructure.External.Notifications;
+using Booksy.Infrastructure.External.Notifications.Sms;
 using Booksy.Infrastructure.Core.EventBus.Abstractions;
 using Booksy.UserManagement.Application.Services.Interfaces;
 using Booksy.UserManagement.Infrastructure.Services.Application;
@@ -99,12 +100,12 @@ namespace Booksy.UserManagement.Infrastructure.DependencyInjection
 
             services.AddExternalServices(configuration);
 
-            // Register SMS Notification Service (UserManagement bounded context)
-            // Unique client name: in the modular monolith the ServiceCatalog context also has a
-            // RahyabSmsNotificationService, and the HttpClient factory keys typed clients by type
-            // name without namespace — so both need explicit unique names to avoid a collision.
-            services.AddHttpClient<RahyabSmsNotificationService>("UserManagement.RahyabSmsNotificationService");
-            services.AddScoped<ISmsNotificationService, RahyabSmsNotificationService>();
+            // Register the single, process-wide SMS gateway. UserManagement used to own a byte-for-byte
+            // copy of the Rahyab sender bound to its own copy of ISmsNotificationService; in the monolith
+            // that meant two typed HttpClients and two registrations racing for the same abstraction.
+            // AddSmsNotificationService is idempotent, so whichever context composes first wins and the
+            // rest are no-ops.
+            services.AddSmsNotificationService(configuration);
 
             // Register context-specific infrastructure
             //services.AddScoped<IUnitOfWork, UserManagementUnitOfWork>();

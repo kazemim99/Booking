@@ -27,6 +27,81 @@ class ProviderStaffMember extends Equatable {
       [id, name, firstName, lastName, phone, role, isActive];
 }
 
+/// A member of the organization (membership model) shown on More → تیم.
+/// Sourced from `/hierarchy/members`; a member appears here once they accept an
+/// invitation (an owner appears from onboarding).
+class OrgMember extends Equatable {
+  final String membershipId;
+  final String? personId;
+  final String name;
+  final String? phone;
+  final List<String> roles;
+  final String status;
+  final bool isOwner;
+  final bool providesServices;
+
+  const OrgMember({
+    required this.membershipId,
+    this.personId,
+    this.name = '',
+    this.phone,
+    this.roles = const [],
+    this.status = '',
+    this.isOwner = false,
+    this.providesServices = false,
+  });
+
+  bool get isActive => status == 'Active';
+
+  @override
+  List<Object?> get props => [
+        membershipId,
+        personId,
+        name,
+        phone,
+        roles,
+        status,
+        isOwner,
+        providesServices,
+      ];
+}
+
+/// One of the person's organization memberships (More → سالن‌های من).
+/// A person may hold several — the model that makes multi-salon (S6) visible.
+class ProviderMembership extends Equatable {
+  final String membershipId;
+  final String organizationId;
+  final String organizationName;
+  final String? organizationLogo;
+  final List<String> roles;
+  final String status;
+  final bool providesServices;
+
+  const ProviderMembership({
+    required this.membershipId,
+    required this.organizationId,
+    required this.organizationName,
+    this.organizationLogo,
+    this.roles = const [],
+    this.status = '',
+    this.providesServices = false,
+  });
+
+  bool get isOwner => roles.contains('Owner');
+  bool get isActive => status == 'Active';
+
+  @override
+  List<Object?> get props => [
+        membershipId,
+        organizationId,
+        organizationName,
+        organizationLogo,
+        roles,
+        status,
+        providesServices,
+      ];
+}
+
 /// The editable public business profile (More → مشخصات کسب‌وکار).
 class BusinessProfile extends Equatable {
   final String businessName;

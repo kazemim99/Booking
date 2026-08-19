@@ -9,10 +9,12 @@ import '../../../../core/di/injection.dart';
 import '../../../../core/errors/failures.dart';
 import '../../../../core/widgets/app_empty_state.dart';
 import '../../../../core/widgets/app_error_state.dart';
+import '../../../../core/widgets/app_page_scaffold.dart';
 import '../../../../core/widgets/app_snackbar.dart';
 import '../../domain/entities/home_booking.dart';
 import '../cubit/calendar_cubit.dart';
 import '../widgets/block_time_sheet.dart';
+import '../widgets/booking_card.dart';
 import '../widgets/provider_nav_bar.dart';
 
 /// The Calendar tab (spec: provider-calendar): RTL week strip + selected-day
@@ -38,29 +40,29 @@ class CalendarView extends StatelessWidget {
     return BlocBuilder<CalendarCubit, CalendarState>(
       builder: (context, state) {
         final cubit = context.read<CalendarCubit>();
-        return Scaffold(
-          backgroundColor: Colors.white,
-          appBar: AppBar(
-            backgroundColor: Colors.white,
-            surfaceTintColor: Colors.transparent,
-            elevation: 0,
-            automaticallyImplyLeading: false,
-            title: const Text(
-              AppStrings.calendarTitle,
-              style: TextStyle(
-                fontSize: 17,
-                fontWeight: FontWeight.w700,
-                color: AppColors.ink,
-              ),
+        // Week navigation belongs to the chrome, not the sheet: it stays put
+        // on the blue while the day's timeline scrolls underneath it.
+        final onChrome = state.status == CalendarStatus.ready;
+        return AppPageScaffold(
+          automaticallyImplyLeading: false,
+          title: AppStrings.calendarTitle,
+          actions: [
+            TextButton(
+              key: const Key('calendar-today'),
+              onPressed: cubit.jumpToToday,
+              style: TextButton.styleFrom(foregroundColor: Colors.white),
+              child: const Text(AppStrings.calendarToday),
             ),
-            actions: [
-              TextButton(
-                key: const Key('calendar-today'),
-                onPressed: cubit.jumpToToday,
-                child: const Text(AppStrings.calendarToday),
-              ),
-            ],
-          ),
+          ],
+          chromeFooter: onChrome
+              ? Column(
+                  children: [
+                    _WeekHeader(state: state, cubit: cubit),
+                    _WeekStrip(state: state, cubit: cubit),
+                    const SizedBox(height: AppSpacing.sm),
+                  ],
+                )
+              : null,
           body: switch (state.status) {
             CalendarStatus.loading => const Center(
                 child: CircularProgressIndicator(),
@@ -71,8 +73,6 @@ class CalendarView extends StatelessWidget {
               ),
             CalendarStatus.ready => Column(
                 children: [
-                  _WeekHeader(state: state, cubit: cubit),
-                  _WeekStrip(state: state, cubit: cubit),
                   if (state.stale)
                     Padding(
                       padding: const EdgeInsets.symmetric(
@@ -84,20 +84,15 @@ class CalendarView extends StatelessWidget {
                             fontSize: 12, color: AppColors.muted),
                       ),
                     ),
-                  const Divider(color: AppColors.divider, height: 1),
                   Expanded(child: _DayTimeline(state: state, cubit: cubit)),
                 ],
               ),
           },
-          floatingActionButton: FloatingActionButton(
-            key: const Key('calendar-create-action'),
-            tooltip: AppStrings.homeCreateTitle,
-            onPressed: () => _showCreateSheet(context, state.selectedDay),
-            child: const Icon(Icons.add),
+          bottomNavigationBar: ProviderNavBar(
+            active: NavTab.calendar,
+            createKey: const Key('calendar-create-action'),
+            onCreate: () => _showCreateSheet(context, state.selectedDay),
           ),
-          floatingActionButtonLocation:
-              FloatingActionButtonLocation.centerDocked,
-          bottomNavigationBar: const ProviderNavBar(active: NavTab.calendar),
         );
       },
     );
@@ -179,21 +174,21 @@ class _WeekHeader extends StatelessWidget {
             key: const Key('calendar-prev-week'),
             tooltip: AppStrings.calendarPrevWeek,
             icon: const Icon(Icons.chevron_right,
-                size: AppIconSize.md, color: AppColors.muted),
+                size: AppIconSize.md, color: Colors.white),
             onPressed: cubit.previousWeek,
           ),
           Expanded(
             child: Text(
               AppStrings.calendarWeekOf(_dm(state.weekStart), _dm(weekEnd)),
               textAlign: TextAlign.center,
-              style: const TextStyle(fontSize: 13, color: AppColors.muted),
+              style: const TextStyle(fontSize: 13, color: Colors.white70),
             ),
           ),
           IconButton(
             key: const Key('calendar-next-week'),
             tooltip: AppStrings.calendarNextWeek,
             icon: const Icon(Icons.chevron_left,
-                size: AppIconSize.md, color: AppColors.muted),
+                size: AppIconSize.md, color: Colors.white),
             onPressed: cubit.nextWeek,
           ),
         ],
@@ -236,12 +231,11 @@ class _WeekStrip extends StatelessWidget {
           constraints: const BoxConstraints(minHeight: 62),
           margin: const EdgeInsets.symmetric(horizontal: 2),
           padding: const EdgeInsets.symmetric(vertical: AppSpacing.xs),
+          // On the blue chrome the selected day inverts to a white pill;
+          // the rest stay translucent so the chrome reads as one surface.
           decoration: BoxDecoration(
-            color: selected ? AppColors.primarySoft : null,
+            color: selected ? Colors.white : Colors.white24,
             borderRadius: BorderRadius.circular(AppRadius.md),
-            border: Border.all(
-              color: selected ? AppColors.primary : AppColors.border,
-            ),
           ),
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
@@ -250,7 +244,7 @@ class _WeekStrip extends StatelessWidget {
                 AppStrings.weekDays[day.weekday % 7],
                 style: TextStyle(
                   fontSize: 11,
-                  color: selected ? AppColors.primary : AppColors.muted,
+                  color: selected ? AppColors.primary : Colors.white70,
                 ),
               ),
               Text(
@@ -258,7 +252,7 @@ class _WeekStrip extends StatelessWidget {
                 style: TextStyle(
                   fontSize: 15,
                   fontWeight: FontWeight.w700,
-                  color: selected ? AppColors.primary : AppColors.ink,
+                  color: selected ? AppColors.primary : Colors.white,
                 ),
               ),
               SizedBox(
@@ -270,7 +264,7 @@ class _WeekStrip extends StatelessWidget {
                         decoration: BoxDecoration(
                           color: selected
                               ? AppColors.primary
-                              : AppColors.icon,
+                              : Colors.white38,
                           borderRadius: BorderRadius.circular(AppRadius.lg),
                         ),
                         child: Text(
@@ -303,7 +297,7 @@ class _DayTimeline extends StatelessWidget {
   Widget build(BuildContext context) {
     final bookings = state.selectedDayBookings;
     if (bookings.isEmpty) {
-      return AppEmptyState(
+      return AppEmptyState.add(
         icon: Icons.event_available_outlined,
         message: AppStrings.calendarEmptyDay,
         actionLabel: '+ ${AppStrings.homeAddAppointment}',
@@ -319,62 +313,10 @@ class _DayTimeline extends StatelessWidget {
       separatorBuilder: (_, _) => const SizedBox(height: AppSpacing.sm),
       itemBuilder: (context, i) {
         final b = bookings[i];
-        return InkWell(
+        return BookingCard(
           key: Key('calendar-booking-${b.id}'),
+          booking: b,
           onTap: () => _showBookingSheet(context, b),
-          borderRadius: BorderRadius.circular(AppRadius.card),
-          child: Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              SizedBox(
-                width: 48,
-                child: Text(
-                  _time(b.start),
-                  style: TextStyle(
-                    fontSize: 15,
-                    fontWeight: FontWeight.w600,
-                    color: b.isDone ? AppColors.muted : AppColors.ink,
-                  ),
-                ),
-              ),
-              const SizedBox(width: AppSpacing.sm),
-              Expanded(
-                child: Container(
-                  padding: const EdgeInsets.all(AppSpacing.card),
-                  decoration: BoxDecoration(
-                    color: b.status == HomeBookingStatus.pending
-                        ? AppColors.primarySoft
-                        : Colors.white,
-                    borderRadius: BorderRadius.circular(AppRadius.card),
-                    border: Border.all(color: AppColors.border),
-                  ),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        [b.clientName, b.serviceName]
-                            .where((s) => s.isNotEmpty)
-                            .join(' · '),
-                        style: TextStyle(
-                          fontSize: 14,
-                          color:
-                              b.isDone ? AppColors.muted : AppColors.ink,
-                        ),
-                      ),
-                      const SizedBox(height: AppSpacing.xs),
-                      Text(
-                        _statusLabel(b.status),
-                        style: TextStyle(
-                          fontSize: 12,
-                          color: _statusColor(b.status),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-            ],
-          ),
         );
       },
     );
@@ -384,8 +326,8 @@ class _DayTimeline extends StatelessWidget {
         HomeBookingStatus.pending => AppStrings.homeStatusPending,
         HomeBookingStatus.completed => AppStrings.homeStatusDone,
         HomeBookingStatus.noShow => AppStrings.homeStatusNoShow,
-        HomeBookingStatus.cancelled => AppStrings.homeDeclined,
-        HomeBookingStatus.confirmed => AppStrings.homeConfirm,
+        HomeBookingStatus.cancelled => AppStrings.homeStatusCancelled,
+        HomeBookingStatus.confirmed => AppStrings.homeStatusConfirmed,
       };
 
   static Color _statusColor(HomeBookingStatus s) => switch (s) {

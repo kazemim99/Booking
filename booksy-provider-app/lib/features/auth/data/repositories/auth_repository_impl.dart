@@ -135,6 +135,33 @@ class AuthRepositoryImpl implements AuthRepository {
   Future<bool> isLoggedIn() => _storage.isLoggedIn();
 
   @override
+  Future<Either<Failure, ProviderSession>> switchActiveOrganization({
+    required String providerId,
+  }) async {
+    try {
+      final current = _cachedSession;
+      // Persist first so a restart lands in the chosen salon, then drop the
+      // cache so the next read re-derives the session from storage.
+      await _storage.saveProviderState(providerId: providerId, providerStatus: null);
+      _cachedSession = null;
+
+      // Re-derive status for the newly active organization from the server.
+      final refreshed = await refreshProviderStatus();
+      return refreshed.fold(
+        (failure) {
+          // Keep the switch (it is persisted) but report the status failure so
+          // the caller can decide whether to retry.
+          _cachedSession = current;
+          return Left(failure);
+        },
+        Right.new,
+      );
+    } catch (e) {
+      return Left(ServerFailure('تغییر سالن ناموفق بود: $e'));
+    }
+  }
+
+  @override
   Future<Either<Failure, ProviderSession?>> getCurrentSession() async {
     // Prefer the live in-memory session from the last auth/refresh; storage
     // is only the cold-start restore path.

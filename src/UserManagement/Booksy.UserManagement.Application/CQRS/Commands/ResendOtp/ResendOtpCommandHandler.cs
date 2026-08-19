@@ -1,6 +1,7 @@
-// ========================================
+﻿// ========================================
 // Booksy.UserManagement.Application/Commands/PhoneVerification/ResendOtp/ResendOtpCommandHandler.cs
 // ========================================
+using Booksy.Core.Application.Services.Notifications;
 using Booksy.Core.Application.Abstractions.CQRS;
 using Booksy.Core.Application.Exceptions;
 using Booksy.UserManagement.Application.Services.Interfaces;

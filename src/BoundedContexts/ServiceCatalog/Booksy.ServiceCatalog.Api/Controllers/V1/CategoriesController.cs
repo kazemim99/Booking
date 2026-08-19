@@ -1,4 +1,9 @@
+using Booksy.Core.Application.CQRS;
+using Booksy.Core.Application.DTOs;
 using Booksy.ServiceCatalog.Application.Queries.Category.GetCategoriesWithCounts;
+using Booksy.ServiceCatalog.Application.Queries.Provider.SearchProviders;
+using Booksy.ServiceCatalog.Domain.Enums;
+using Booksy.ServiceCatalog.Domain.Enums.Extensions;
 using MediatR;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.RateLimiting;
@@ -89,5 +94,70 @@ public class CategoriesController : ControllerBase
         _logger.LogInformation("Popular categories retrieved: {Count} categories", result.Count);
 
         return Ok(result);
+    }
+
+    /// <summary>
+    /// Get the providers in a single category
+    /// </summary>
+    /// <remarks>
+    /// Accepts either the numeric ServiceCategory id (e.g. <c>1</c>) or its slug
+    /// (e.g. <c>hair-salon</c>), so category pages can use readable URLs.
+    ///
+    /// This is the category-scoped view of provider search and returns the same paginated
+    /// shape; use <c>/api/v1/providers/search</c> when you need the other filters as well.
+    /// </remarks>
+    /// <param name="category">ServiceCategory id or slug</param>
+    /// <param name="pageNumber">1-based page number (default: 1)</param>
+    /// <param name="pageSize">Page size (default: 20)</param>
+    /// <returns>Paginated providers in the category</returns>
+    /// <response code="200">Providers retrieved successfully</response>
+    /// <response code="404">No such category</response>
+    [HttpGet("{category}/providers")]
+    [EnableRateLimiting("public-api")]
+    [ProducesResponseType(typeof(PagedResult<ProviderSearchItem>), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> GetProvidersInCategory(
+        string category,
+        [FromQuery] int pageNumber = 1,
+        [FromQuery] int pageSize = 20,
+        CancellationToken cancellationToken = default)
+    {
+        if (!TryResolveCategory(category, out var resolved))
+        {
+            _logger.LogInformation("Unknown category requested: {Category}", category);
+            return NotFound(new { message = $"Unknown service category '{category}'." });
+        }
+
+        var query = new SearchProvidersQuery(Category: resolved)
+        {
+            Pagination = new PaginationRequest
+            {
+                PageNumber = pageNumber,
+                PageSize = pageSize
+            }
+        };
+
+        var result = await _mediator.Send(query, cancellationToken);
+
+        _logger.LogInformation(
+            "Category {Category} returned {Count} providers", resolved, result.Items.Count);
+
+        return Ok(result);
+    }
+
+    /// <summary>
+    /// Resolves a route value to a ServiceCategory, accepting the numeric id or the slug.
+    /// Numeric ids are checked against the declared enum members so an out-of-range number
+    /// 404s instead of silently filtering on a category that does not exist.
+    /// </summary>
+    private static bool TryResolveCategory(string value, out ServiceCategory category)
+    {
+        if (int.TryParse(value, out var id))
+        {
+            category = (ServiceCategory)id;
+            return category.IsDefinedCategory();
+        }
+
+        return ServiceCategoryExtensions.TryParseSlug(value, out category);
     }
 }

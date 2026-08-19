@@ -306,7 +306,149 @@ Common issues and solutions:
 5. **Port conflicts**: Ensure no other services are using the required ports (5000, 80, 443, 5341, 5050)
 6. **Swagger not accessible**: Verify `booksy-api` is healthy with `docker ps`. An unhealthy host cannot serve Swagger UI.
 
+## Test-First Development for Business Behavior Changes
+
+For any non-trivial feature, domain behavior change, workflow change, or cross-boundary modification, follow a test-first approach.
+
+The implementation workflow must be:
+
+1. Understand and document the business behavior.
+2. Define acceptance scenarios before writing production code.
+3. Create or update tests that describe the expected behavior.
+4. Implement the minimum production changes required to satisfy those tests.
+5. Refactor while keeping all behavioral tests green.
+
+The goal is not test coverage percentage. The goal is protecting business rules and system behavior.
+
+### Test Selection Rules
+
+Choose the appropriate test level based on the type of change.
+
+#### Integration Tests are mandatory for:
+
+- Domain workflows spanning multiple components.
+- State transitions.
+- Persistence behavior.
+- Database-backed business rules.
+- API contracts.
+- Background jobs.
+- Event publishing.
+- Real-time/message/event flows (CAP integration events).
+- Payment and financial workflows.
+- Availability/slot computation, booking lifecycle, provider onboarding and approval, and ledger/settlement behavior.
+- Any feature where multiple bounded contexts interact.
+
+Integration tests should verify the complete business scenario, not individual implementation details.
+
+Examples:
+
+- Provider registration → staff invitation → service publication → customer booking.
+- Booking lifecycle changes (confirm → reschedule → cancel → refund).
+- Availability computation → persistence → API exposure.
+- State machine transitions.
+- Notification triggering.
+
+In this repository, acceptance scenarios for ServiceCatalog behavior belong in the Reqnroll Gherkin features under `tests/Booksy.ServiceCatalog.IntegrationTests/` — see [docs/REQNROLL_TESTING.md](docs/REQNROLL_TESTING.md).
+
+#### Unit Tests are preferred for:
+
+Pure deterministic logic and isolated rules, including:
+
+- Calculators.
+- Policies.
+- Value objects.
+- Validators.
+- Algorithms.
+- Mathematical models.
+- Time window calculations.
+- Pricing formulas.
+
+Unit tests should validate business invariants and edge cases.
+
+Examples:
+
+- Extending a service's duration must never increase the number of bookable slots in a fixed window.
+- Adding a staff break must never increase available capacity.
+- A refund must never exceed the amount actually captured for a booking.
+
+#### End-to-End Tests are reserved for:
+
+Critical user journeys where validating the complete stack provides unique value.
+
+Avoid replacing integration tests with excessive E2E tests.
+
+### Acceptance Scenarios Before Implementation
+
+Before implementing a significant feature:
+
+- Identify the affected business capabilities.
+- Write explicit Given/When/Then scenarios.
+- Identify existing behavior that must remain unchanged.
+- Identify edge cases and failure scenarios.
+- Confirm ambiguous business decisions before coding.
+
+A feature is not complete until the important business scenarios are covered by automated tests.
+
+### Protect Business Rules, Not Implementation Details
+
+Tests should describe:
+
+- What the system must do.
+- What users/business expect.
+- What invariants must always hold.
+
+Tests should NOT:
+
+- Lock unnecessary implementation details.
+- Be rewritten only to make new code pass.
+- Duplicate production code logic.
+
+When requirements change, update the scenarios first, then update implementation.
+
+### Investigation Before Implementation
+
+For existing systems, before modifying code:
+
+1. Inspect the current architecture.
+2. Identify existing capabilities.
+3. Identify current behavior through code and tests.
+4. Identify compatibility risks.
+5. Propose the smallest safe change.
+
+Do not implement based only on a feature description or meeting notes.
+
+### Incremental Delivery
+
+Prefer:
+
+- Small vertical slices.
+- Backward-compatible changes.
+- Additive API changes.
+- Feature flags/dark launches where appropriate.
+- Migration paths with rollback strategies.
+
+Avoid large changes that combine:
+
+- new business rules,
+- architecture refactoring,
+- and unrelated cleanup
+
+in a single step.
+
+### Definition of Done
+
+A significant feature is complete only when:
+
+- Acceptance scenarios exist.
+- Relevant integration tests exist.
+- Unit tests cover pure logic.
+- Existing behavior remains protected.
+- API/event contracts are validated where applicable.
+- The implementation matches the approved business rules.
+
 ## Testing Policy
+
+The Testing Policy below is the operational detail of the test-first principle above — the two are one policy, not alternatives. Where they overlap, the test-first workflow governs *when* tests are written; this section governs *how*.
 
 Testing is mandatory, not optional. Quality is a non-negotiable requirement: every change must maintain or improve the project's reliability, and every feature is incomplete until all relevant automated tests pass. Every code change must include appropriate automated tests unless there is a documented technical reason why a specific test type is not applicable.
 

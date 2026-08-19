@@ -2,6 +2,7 @@ import 'package:equatable/equatable.dart';
 
 import '../../../auth/domain/entities/provider_status.dart';
 import 'home_booking.dart';
+import 'home_snapshot.dart';
 import 'home_enums.dart';
 
 /// Device connectivity, as seen by the Home.
@@ -82,7 +83,7 @@ class HomeInputs extends Equatable {
   final int exceptionCount;
   final int alertCount;
   final bool hasNudge;
-  final int completenessPct;
+  final HomeIdentity identity;
 
   /// Today's booking rows (agenda/now-next/queue render from these).
   final List<HomeBooking> todayBookings;
@@ -107,7 +108,7 @@ class HomeInputs extends Equatable {
     this.exceptionCount = 0,
     this.alertCount = 0,
     this.hasNudge = false,
-    this.completenessPct = 0,
+    this.identity = const HomeIdentity(),
     this.todayBookings = const [],
     this.tomorrowApptCount = 0,
   });
@@ -130,7 +131,7 @@ class HomeInputs extends Equatable {
         exceptionCount,
         alertCount,
         hasNudge,
-        completenessPct,
+        identity,
         todayBookings,
         tomorrowApptCount,
       ];

@@ -1,4 +1,4 @@
-﻿using Booksy.API.Extensions;
+using Booksy.API.Extensions;
 using Booksy.Core.Application.DTOs;
 using Booksy.Core.Application.Exceptions;
 using Booksy.Core.Domain.Exceptions;
@@ -1356,14 +1356,15 @@ public class ProvidersController : ControllerBase
         };
     }
 
-    private ProviderSummaryResponse MapToProviderSummaryResponse(dynamic provider)
+    private static ProviderSummaryResponse MapToProviderSummaryResponse(
+        Booksy.ServiceCatalog.Application.Queries.Provider.GetProvidersByStatus.ProviderListViewModel provider)
     {
         return new ProviderSummaryResponse
         {
             Id = provider.Id,
             BusinessName = provider.BusinessName,
             Description = provider.Description,
-            Type = provider.Type.ToString(),
+            Type = provider.PrimaryCategory.ToString(),
             Status = provider.Status.ToString(),
             City = provider.City,
             State = provider.State,

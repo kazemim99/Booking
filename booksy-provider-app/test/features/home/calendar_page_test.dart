@@ -163,8 +163,10 @@ void main() {
       (tester) async {
     await pump(tester);
 
-    // Twice: the app-bar title and the active nav label.
-    expect(find.text(AppStrings.navCalendar), findsNWidgets(2));
+    // App-bar title once — the nav pill is icons-only, its calendar
+    // destination exposed via icon + semantics instead of a text label.
+    expect(find.text(AppStrings.navCalendar), findsOneWidget);
+    expect(find.byIcon(Icons.calendar_month_outlined), findsOneWidget);
     expect(find.byKey(const Key('calendar-today')), findsOneWidget);
     expect(find.byKey(const Key('calendar-create-action')), findsOneWidget);
   });

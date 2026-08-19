@@ -11,7 +11,6 @@ using Booksy.ServiceCatalog.Domain.Services;
 using Booksy.ServiceCatalog.Infrastructure.Notifications;
 using Booksy.ServiceCatalog.Infrastructure.Notifications.Email;
 using Booksy.ServiceCatalog.Infrastructure.Notifications.Push;
-using Booksy.ServiceCatalog.Infrastructure.Notifications.Sms;
 using Booksy.ServiceCatalog.Infrastructure.Persistence.Context;
 using Booksy.ServiceCatalog.Infrastructure.Persistence.Repositories;
 using Booksy.ServiceCatalog.Infrastructure.Persistence.Seeders;
@@ -31,11 +30,11 @@ using Booksy.Infrastructure.External.Payment.IDPay;
 using Booksy.Infrastructure.External.Payment.Behpardakht;
 using Booksy.Infrastructure.External.Payment.Parsian;
 using Booksy.Infrastructure.External.Payment.Saman;
-using Booksy.ServiceCatalog.Infrastructure.ExternalServices.Sms;
 using System.Threading;
 using Booksy.ServiceCatalog.Application.Abstractions;
 using Booksy.ServiceCatalog.Infrastructure.Services;
 using Booksy.Infrastructure.External.OTP;
+using Booksy.Infrastructure.External.Notifications.Sms;
 
 namespace Booksy.ServiceCatalog.Infrastructure.DependencyInjection
 {
@@ -144,7 +143,7 @@ namespace Booksy.ServiceCatalog.Infrastructure.DependencyInjection
             services.AddScoped<IMembershipAuditRepository, MembershipAuditRepository>();
 
             // Notification Services
-            services.AddNotificationServices();
+            services.AddNotificationServices(configuration);
 
             services.AddScoped<IProviderApplicationService, ProviderApplicationService>();
             services.AddScoped<IServiceApplicationService, ServiceApplicationService>();
@@ -256,28 +255,35 @@ namespace Booksy.ServiceCatalog.Infrastructure.DependencyInjection
         /// This respects bounded context architecture by keeping ServiceCatalog
         /// notification implementations within the ServiceCatalog bounded context.
         /// </summary>
-        public static IServiceCollection AddNotificationServices(this IServiceCollection services)
+        public static IServiceCollection AddNotificationServices(
+            this IServiceCollection services,
+            IConfiguration configuration)
         {
+            // The one SMS gateway for the process (see SmsNotificationServiceExtensions). Idempotent:
+            // UserManagement.Infrastructure calls it too, and only the first call registers.
+            services.AddSmsNotificationService(configuration);
+
             // Template Engine & Services
             services.AddSingleton<ITemplateEngine, TemplateEngine>();
             services.AddScoped<INotificationTemplateService, NotificationTemplateService>();
 
             // Multi-Channel Notification Services
             services.AddScoped<IEmailNotificationService, SendGridEmailNotificationService>();
-            services.AddScoped<ISmsNotificationService, RahyabSmsNotificationService>();
             services.AddScoped<IPushNotificationService, FirebasePushNotificationService>();
             services.AddScoped<IInAppNotificationService, InAppNotificationService>();
 
-            // Register old ISmsNotificationService for booking event handlers
-            services.AddHttpClient<ExternalServices.Sms.KavenegarSmsService>();
-            services.AddScoped<Application.Services.ISmsNotificationService, ExternalServices.Sms.KavenegarSmsService>();
+            // Reliable dispatch: one send path enforcing preferences, de-duplication and the delivery log,
+            // plus the CAP subscriber that retries failed sends out of the durable outbox.
+            services.AddSingleton(new NotificationDispatchOptions
+            {
+                ReliableDispatch = configuration.GetValue(NotificationDispatchOptions.ReliableDispatchKey, true)
+            });
+            services.AddScoped<INotificationDeliveryLog, Persistence.Notifications.NotificationDeliveryLog>();
+            services.AddScoped<INotificationDispatcher, NotificationDispatcher>();
+            services.AddTransient<EventHandlers.NotificationRetrySubscriber>();
 
             // HTTP Clients for notification services
-            // Unique client name: UserManagement also registers a RahyabSmsNotificationService, and
-            // the HttpClient factory keys typed clients by type name without namespace — give each a
-            // unique name so the two contexts don't collide in the monolith host.
             services.AddHttpClient<SendGridEmailNotificationService>();
-            services.AddHttpClient<RahyabSmsNotificationService>("ServiceCatalog.RahyabSmsNotificationService");
 
             return services;
         }

@@ -93,21 +93,37 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
   ) async {
     emit(const AuthLoading());
 
-    final isLoggedIn = await _authRepository.isLoggedIn();
+    // AppRouter's AuthNotifier only leaves the splash route on a TERMINAL state
+    // (Authenticated / Unauthenticated / LoggedOut) — see app_router.dart. This handler
+    // is the only thing that runs at cold start, so if it throws before emitting one,
+    // the router is stuck on splash forever with no way to recover.
+    //
+    // That is exactly what happened: flutter_secure_storage on web decrypts each value
+    // with a key derived per browser origin/session, so a token written by an earlier
+    // build or session can fail to decrypt after a rebuild and throw here instead of
+    // returning null. A cold-start auth check must never be allowed to leave the app
+    // in an unresolved state — falling back to signed-out is always safe and always
+    // recoverable (the customer can just sign in again), whereas an infinite spinner
+    // is not.
+    try {
+      final isLoggedIn = await _authRepository.isLoggedIn();
 
-    if (isLoggedIn) {
-      final result = await _authRepository.getCurrentSession();
-      result.fold(
-        (failure) => emit(const Unauthenticated()),
-        (session) {
-          if (session != null) {
-            emit(Authenticated(session));
-          } else {
-            emit(const Unauthenticated());
-          }
-        },
-      );
-    } else {
+      if (isLoggedIn) {
+        final result = await _authRepository.getCurrentSession();
+        result.fold(
+          (failure) => emit(const Unauthenticated()),
+          (session) {
+            if (session != null) {
+              emit(Authenticated(session));
+            } else {
+              emit(const Unauthenticated());
+            }
+          },
+        );
+      } else {
+        emit(const Unauthenticated());
+      }
+    } catch (_) {
       emit(const Unauthenticated());
     }
   }

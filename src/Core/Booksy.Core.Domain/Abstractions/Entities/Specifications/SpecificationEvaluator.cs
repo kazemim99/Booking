@@ -3,6 +3,7 @@
 ///// <summary>
 ///// Evaluates specifications against EF Core queryables
 ///// </summary>
+using Booksy.Core.Domain.Abstractions.Entities.Specifications;
 using Microsoft.EntityFrameworkCore;
 
 public class SpecificationEvaluator<TEntity> where TEntity : class
@@ -29,26 +30,44 @@ public class SpecificationEvaluator<TEntity> where TEntity : class
             query,
             (current, includeString) => current.Include(includeString));
 
-        // Apply ordering
-        //if (specification.OrderBy != null)
-        //{
-        //    query = query.Order(specification.OrderBy);
-        //}
-        //else 
-        //if (specification.OrderByDescending != null)
-        //{
-        //    query = query.OrderByDescending(specification.OrderByDescending);
-        //}
+        // Apply ordering.
+        //
+        // This was commented out, so EVERY specification-based query in the system came back unordered
+        // regardless of what it asked for: provider search returned the same sequence for SortBy=name,
+        // SortBy=rating and SortBy=distance alike. It failed silently — a plausible list arrived, simply not in
+        // the requested order — which is why it survived so long.
+        //
+        // The dead code referenced a single `specification.OrderBy` expression, but the API is now a LIST of
+        // OrderExpression<T> (primary + subsequent ThenBy). That signature change is presumably why it was
+        // disabled and never restored; this walks the list instead.
+        //
+        // Ordering must precede the Skip/Take below, or paging would slice an unordered sequence and pages
+        // could repeat or drop rows.
+        if (specification.OrderBy.Count > 0)
+        {
+            IOrderedQueryable<TEntity>? ordered = null;
 
-        //// Apply secondary ordering
-        //if (specification.ThenBy != null)
-        //{
-        //    query = ((IOrderedQueryable<TEntity>)query).ThenBy(specification.ThenBy);
-        //}
-        //else if (specification.ThenByDescending != null)
-        //{
-        //    query = ((IOrderedQueryable<TEntity>)query).ThenByDescending(specification.ThenByDescending);
-        //}
+            foreach (var order in specification.OrderBy)
+            {
+                // The first expression establishes the ordering; IsSubsequentOrdering marks the ThenBy chain.
+                // A ThenBy arriving first (no primary) is still treated as the primary, so a mis-built
+                // specification degrades to a sensible order rather than throwing at runtime.
+                if (ordered is null)
+                {
+                    ordered = order.Direction == OrderDirection.Descending
+                        ? query.OrderByDescending(order.KeySelector)
+                        : query.OrderBy(order.KeySelector);
+                }
+                else
+                {
+                    ordered = order.Direction == OrderDirection.Descending
+                        ? ordered.ThenByDescending(order.KeySelector)
+                        : ordered.ThenBy(order.KeySelector);
+                }
+            }
+
+            query = ordered!;
+        }
 
         // Apply grouping
         if (specification.GroupBy != null)

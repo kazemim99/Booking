@@ -34,6 +34,22 @@ class OnboardingCubit extends Cubit<OnboardingState> {
       (draft) {
         if (draft == null) return;
 
+        // The provider already finished registration (possibly in an earlier
+        // session — the router can land here on a stale cached JWT that still
+        // says "Drafted"; see the matching comment on
+        // OnboardingWizardPage/CompletionStep.onDone). There is no wizard step
+        // to resume into: jump straight to the same completion screen a
+        // fresh submit would show, which re-checks the auth session and lets
+        // the router move the provider on to the dashboard.
+        if (draft.isFullyComplete) {
+          emit(state.copyWith(
+            draftProviderId: draft.providerId,
+            step: OnboardingState.totalSteps,
+            phase: OnboardingPhase.completed,
+          ));
+          return;
+        }
+
         final restored = draft.data;
         emit(state.copyWith(
           draftProviderId: draft.providerId,
@@ -67,6 +83,11 @@ class OnboardingCubit extends Cubit<OnboardingState> {
 
   void setBusinessHours(List<DayHours> hours) =>
       emit(state.copyWith(data: state.data.copyWith(businessHours: hours)));
+
+  /// Onboarding branch (set on the preview step): does the owner personally
+  /// provide services? Submitted at [complete].
+  void setOwnerProvidesServices(bool providesServices) => emit(state.copyWith(
+      data: state.data.copyWith(ownerProvidesServices: providesServices)));
 
   void back() {
     if (state.step > 1) {
@@ -131,13 +152,21 @@ class OnboardingCubit extends Cubit<OnboardingState> {
   }
 
   /// Final submit from the preview step (step 7) → complete → step 8.
+  ///
+  /// Also records the onboarding branch answer ("do you provide services?"). That
+  /// call is best-effort: it must never block finishing onboarding — the owner can
+  /// change it later from settings — so its result is intentionally not awaited for
+  /// success/failure gating.
   Future<void> complete() async {
     await _requireDraft((id) => _run(
           () => _repository.complete(id),
-          onOk: (_) => emit(state.copyWith(
-            step: 8,
-            phase: OnboardingPhase.completed,
-          )),
+          onOk: (_) {
+            _repository.setOwnerProvidesServices(state.data.ownerProvidesServices);
+            emit(state.copyWith(
+              step: 8,
+              phase: OnboardingPhase.completed,
+            ));
+          },
         ));
   }
 

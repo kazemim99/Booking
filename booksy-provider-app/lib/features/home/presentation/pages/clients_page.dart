@@ -9,6 +9,7 @@ import '../../../../core/constants/app_strings.dart';
 import '../../../../core/di/injection.dart';
 import '../../../../core/widgets/app_empty_state.dart';
 import '../../../../core/widgets/app_error_state.dart';
+import '../../../../core/widgets/app_page_scaffold.dart';
 import '../../../../core/widgets/app_snackbar.dart';
 import '../../../../core/widgets/app_text_field.dart';
 import '../../domain/entities/provider_client.dart';
@@ -38,32 +39,28 @@ class ClientsView extends StatelessWidget {
     return BlocBuilder<ClientsCubit, ClientsState>(
       builder: (context, state) {
         final cubit = context.read<ClientsCubit>();
-        return Scaffold(
-          backgroundColor: Colors.white,
-          appBar: AppBar(
-            backgroundColor: Colors.white,
-            surfaceTintColor: Colors.transparent,
-            elevation: 0,
-            automaticallyImplyLeading: false,
-            title: Row(
-              children: [
-                const Text(
-                  AppStrings.clientsTitle,
-                  style: TextStyle(
-                    fontSize: 17,
-                    fontWeight: FontWeight.w700,
-                    color: AppColors.ink,
-                  ),
+        return AppPageScaffold(
+          automaticallyImplyLeading: false,
+          titleWidget: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const Text(
+                AppStrings.clientsTitle,
+                style: TextStyle(
+                  fontSize: 17,
+                  fontWeight: FontWeight.w700,
+                  color: Colors.white,
                 ),
-                const SizedBox(width: AppSpacing.sm),
-                if (state.status == ClientsStatus.ready)
-                  Text(
-                    AppStrings.clientsCount(state.all.length),
-                    style:
-                        const TextStyle(fontSize: 13, color: AppColors.muted),
-                  ),
-              ],
-            ),
+              ),
+              const SizedBox(width: AppSpacing.sm),
+              if (state.status == ClientsStatus.ready)
+                Text(
+                  AppStrings.clientsCount(state.all.length),
+                  // Softened white, not muted grey: the count is secondary
+                  // but still sits on the blue chrome.
+                  style: const TextStyle(fontSize: 13, color: Colors.white70),
+                ),
+            ],
           ),
           body: switch (state.status) {
             ClientsStatus.loading =>

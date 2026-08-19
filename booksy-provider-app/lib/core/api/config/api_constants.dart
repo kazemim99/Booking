@@ -105,6 +105,29 @@ class ApiConstants {
   static String providerStaff(String providerId) =>
       '/$apiVersion/Providers/$providerId/staff';
 
+  /// POST — invite a person (by phone) to join the organization as staff.
+  static String providerHierarchyInvitations(String providerId) =>
+      '/$apiVersion/providers/$providerId/hierarchy/invitations';
+
+  /// GET — the organization's members (membership model: roles, status, name).
+  static String providerHierarchyMembers(String providerId) =>
+      '/$apiVersion/providers/$providerId/hierarchy/members';
+
+  /// POST — terminate a membership (remove a staff member / leave).
+  static String membershipTerminate(String membershipId) =>
+      '/$apiVersion/memberships/$membershipId/terminate';
+
+  /// GET — the authenticated person's organization memberships (salon switcher).
+  static const String myMemberships = '/$apiVersion/memberships/me';
+
+  /// GET — public summary of an invitation (accept screen from an SMS link).
+  static String invitationSummary(String invitationId) =>
+      '/$apiVersion/memberships/invitations/$invitationId';
+
+  /// POST — accept an invitation as the authenticated (existing) person.
+  static String invitationAccept(String invitationId) =>
+      '/$apiVersion/memberships/invitations/$invitationId/accept';
+
   /// GET — available time slots (query: providerId/serviceId/date[/staffId]).
   static const String availableSlots = '/$apiVersion/Bookings/available-slots';
 
@@ -148,4 +171,9 @@ class ApiConstants {
   /// POST — complete registration (onboarding step 9).
   static const String registrationComplete =
       '/$apiVersion/Registration/step-9/complete';
+
+  /// POST — onboarding branch: whether the owner personally provides services
+  /// (Yes ⇒ owner becomes the first active staff member; No ⇒ owner-only).
+  static const String registrationOwnerProvidesServices =
+      '/$apiVersion/Registration/owner-provides-services';
 }

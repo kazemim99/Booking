@@ -30,8 +30,8 @@ export interface UpdateUserRequest {
 
 export const usersApi = {
   getUsers: async (query: UsersQuery = {}): Promise<PaginatedResponse<User>> => {
-    const response = await apiClient.get<{ data: PaginatedResponse<User> }>('/Users/search', { params: query })
-    return response.data.data
+    const response = await apiClient.get<PaginatedResponse<User>>('/Users/search', { params: query })
+    return response.data
   },
 
   getUserById: async (id: string): Promise<User> => {

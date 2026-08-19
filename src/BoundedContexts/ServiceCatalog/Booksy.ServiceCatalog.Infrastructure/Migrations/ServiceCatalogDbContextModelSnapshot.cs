@@ -491,6 +491,9 @@ namespace Booksy.ServiceCatalog.Infrastructure.Migrations
                     b.Property<DateTime?>("SentAt")
                         .HasColumnType("timestamp with time zone");
 
+                    b.Property<Guid?>("SourceEventId")
+                        .HasColumnType("uuid");
+
                     b.Property<string>("Status")
                         .IsRequired()
                         .HasMaxLength(50)
@@ -1916,6 +1919,55 @@ namespace Booksy.ServiceCatalog.Infrastructure.Migrations
                         .HasDatabaseName("IX_IdempotencyReservations_CreatedAt");
 
                     b.ToTable("IdempotencyReservations", "ServiceCatalog");
+                });
+
+            modelBuilder.Entity("Booksy.ServiceCatalog.Infrastructure.Persistence.Notifications.NotificationDelivery", b =>
+                {
+                    b.Property<Guid>("EventId")
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("Channel")
+                        .HasMaxLength(50)
+                        .HasColumnType("character varying(50)");
+
+                    b.Property<string>("Recipient")
+                        .HasMaxLength(320)
+                        .HasColumnType("character varying(320)");
+
+                    b.Property<int>("AttemptCount")
+                        .HasColumnType("integer");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("ErrorMessage")
+                        .HasMaxLength(1000)
+                        .HasColumnType("character varying(1000)");
+
+                    b.Property<string>("GatewayMessageId")
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)");
+
+                    b.Property<Guid>("NotificationId")
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("character varying(20)");
+
+                    b.Property<DateTime>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.HasKey("EventId", "Channel", "Recipient");
+
+                    b.HasIndex("CreatedAt")
+                        .HasDatabaseName("IX_NotificationDeliveries_CreatedAt");
+
+                    b.HasIndex("NotificationId")
+                        .HasDatabaseName("IX_NotificationDeliveries_NotificationId");
+
+                    b.ToTable("NotificationDeliveries", "ServiceCatalog");
                 });
 
             modelBuilder.Entity("Booksy.Core.Domain.Domain.Entities.ProvinceCities", b =>

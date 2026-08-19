@@ -142,4 +142,99 @@ public sealed class PhoneNumberTests
         phone.NationalNumber.Should().Be("7911123456");
         phone.Value.Should().Be("+447911123456");
     }
+
+    // ------------------------------------------------------------------ Iranian numbers are mobile-only
+    //
+    // An Iranian number is valid here only as a mobile (national form 9xxxxxxxxx, written locally as
+    // 09xxxxxxxxx). Landlines are refused outright.
+    //
+    // This is not merely a format preference: PhoneNumber is the SINGLE validation gate in front of the OTP
+    // destination. SendVerificationCodeCommandHandler calls PhoneNumber.From on the caller-supplied number and
+    // performs no separate mobile check of its own, so this rule is the only thing preventing someone asking
+    // the platform to text a verification code to a landline. Loosening it to accept landlines — for example
+    // to let providers store a landline as their business contact — would silently enable landline OTP as a
+    // side effect. Any such change needs a mobile-only gate added on the OTP path FIRST.
+
+    public static TheoryData<string> IranianLandlines() => new()
+    {
+        "02188776655",   // Tehran
+        "05138112233",   // Mashhad
+        "03136334455",   // Isfahan
+        "07138556677",   // Shiraz
+        "04138778899",   // Tabriz
+        "02632990011",   // Karaj
+        "02538112233",   // Qom
+        "06138223344",   // Ahvaz
+        "03438334455",   // Kerman
+        "01338445566",   // Rasht
+    };
+
+    [Theory]
+    [MemberData(nameof(IranianLandlines))]
+    public void From_RejectsIranianLandlines(string landline)
+    {
+        // Regression: the provider seeder shipped twenty of these. Every one threw here, which failed
+        // ProviderSeeder.SeedAsync, which failed the whole seeding orchestrator -- and with it every
+        // database-backed integration test that boots the host.
+        var act = () => PhoneNumber.From(landline);
+
+        act.Should().Throw<ArgumentException>(
+            "an Iranian landline is not a valid platform phone number; it cannot receive an OTP");
+    }
+
+    [Theory]
+    [InlineData("09121234567")]   // Hamrah-e Aval
+    [InlineData("09351234567")]   // Irancell
+    [InlineData("09011234567")]   // Irancell (09xx range)
+    [InlineData("09901234567")]   // Rightel/others
+    [InlineData("09151234567")]   // Mashhad-region Hamrah-e Aval
+    [InlineData("09171234567")]   // Shiraz-region
+    public void From_AcceptsIranianMobilesAcrossOperatorPrefixes(string mobile)
+    {
+        var phone = PhoneNumber.From(mobile);
+
+        phone.CountryCode.Should().Be("+98");
+        phone.NationalNumber.Should().StartWith("9").And.HaveLength(10);
+        phone.Value.Should().Be("+98" + mobile.TrimStart('0'));
+    }
+
+    [Theory]
+    [InlineData("0912123456")]      // one digit short
+    [InlineData("091212345678")]    // one digit long
+    [InlineData("08121234567")]     // national part starts with 8, not 9
+    [InlineData("+98212345678")]    // landline in international form
+    [InlineData("00982188776655")]  // landline via the international access code
+    public void From_RejectsMalformedIranianNumbers(string input)
+    {
+        var act = () => PhoneNumber.From(input);
+
+        act.Should().Throw<ArgumentException>();
+    }
+
+    [Fact]
+    public void MobileOnlyRule_AppliesToEveryEntryPoint()
+    {
+        // From, FromNational and the (countryCode, national) overload must agree. A landline slipping through
+        // any one of them would reach the OTP path, which has no validation of its own.
+        var landline = "02188776655";
+
+        var fromLocal = () => PhoneNumber.From(landline);
+        var fromNational = () => PhoneNumber.FromNational(landline);
+        var fromInternational = () => PhoneNumber.From("+98" + landline.TrimStart('0'));
+
+        fromLocal.Should().Throw<ArgumentException>();
+        fromNational.Should().Throw<ArgumentException>();
+        fromInternational.Should().Throw<ArgumentException>();
+    }
+
+    [Fact]
+    public void NonIranianLandlines_AreStillAccepted()
+    {
+        // The mobile-only rule is deliberately scoped to +98. A foreign number keeps the general
+        // 8-15 digit rule, so tightening Iran must not accidentally reject the rest of the world.
+        var phone = PhoneNumber.From("+442071838750"); // a London landline
+
+        phone.CountryCode.Should().Be("+44");
+        phone.Value.Should().Be("+442071838750");
+    }
 }

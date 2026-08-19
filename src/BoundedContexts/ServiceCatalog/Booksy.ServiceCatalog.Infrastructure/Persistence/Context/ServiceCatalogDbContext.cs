@@ -43,6 +43,8 @@ namespace Booksy.ServiceCatalog.Infrastructure.Persistence.Context
         public DbSet<LedgerEntry> LedgerEntries => Set<LedgerEntry>();
         public DbSet<Idempotency.IdempotencyReservation> IdempotencyReservations => Set<Booksy.ServiceCatalog.Infrastructure.Persistence.Idempotency.IdempotencyReservation>();
         public DbSet<Notification> Notifications => Set<Notification>();
+        public DbSet<Booksy.ServiceCatalog.Infrastructure.Persistence.Notifications.NotificationDelivery> NotificationDeliveries
+            => Set<Booksy.ServiceCatalog.Infrastructure.Persistence.Notifications.NotificationDelivery>();
         public DbSet<NotificationTemplate> NotificationTemplates => Set<NotificationTemplate>();
         public DbSet<UserNotificationPreferences> UserNotificationPreferences => Set<UserNotificationPreferences>();
         public DbSet<ProviderAvailability> ProviderAvailability => Set<ProviderAvailability>();

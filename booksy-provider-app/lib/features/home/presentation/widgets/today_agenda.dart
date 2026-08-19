@@ -5,6 +5,7 @@ import '../../../../core/constants/app_strings.dart';
 import '../../../../core/widgets/app_card.dart';
 import '../../../../core/widgets/app_empty_state.dart';
 import '../../domain/entities/home_booking.dart';
+import 'booking_card.dart';
 
 /// Zone: today's agenda — the day timeline. Renders the positive empty state
 /// when the day has no bookings (never a bare "nothing here").
@@ -30,7 +31,7 @@ class TodayAgenda extends StatelessWidget {
       return AppCard(
         child: Padding(
           padding: const EdgeInsets.symmetric(vertical: AppSpacing.md),
-          child: AppEmptyState(
+          child: AppEmptyState.add(
             icon: Icons.event_available_outlined,
             message: AppStrings.homeAgendaEmptyTitle,
             description: tomorrowApptCount > 0
@@ -96,102 +97,38 @@ class _AgendaRow extends StatelessWidget {
     required this.onNoShow,
   });
 
-  String get _time {
-    final s = booking.start;
-    if (s == null) return '—';
-    return '${s.hour.toString().padLeft(2, '0')}:${s.minute.toString().padLeft(2, '0')}';
-  }
-
   @override
   Widget build(BuildContext context) {
     final done = booking.isDone;
-    final trailing = switch (booking.status) {
-      HomeBookingStatus.completed => const _StatusLabel(
-          AppStrings.homeStatusDone, AppColors.success, Icons.check_circle),
-      HomeBookingStatus.noShow => const _StatusLabel(
-          AppStrings.homeStatusNoShow, AppColors.muted, Icons.person_off),
-      HomeBookingStatus.pending => const _StatusLabel(
-          AppStrings.homeStatusPending, AppColors.primary, Icons.schedule),
-      _ => null,
-    };
 
-    return Container(
+    return Padding(
       key: Key('agenda-row-${booking.id}'),
-      constraints: const BoxConstraints(minHeight: 48),
-      margin: const EdgeInsets.only(bottom: AppSpacing.xs),
-      padding: const EdgeInsets.symmetric(
-        horizontal: AppSpacing.sm,
-        vertical: AppSpacing.xs,
-      ),
-      decoration: BoxDecoration(
-        color: isCurrent ? AppColors.primarySoft : null,
-        borderRadius: BorderRadius.circular(AppRadius.sm),
-      ),
-      child: Row(
-        children: [
-          Text(
-            _time,
-            style: TextStyle(
-              fontSize: 15,
-              fontWeight: FontWeight.w600,
-              color: done ? AppColors.muted : AppColors.ink,
-            ),
-          ),
-          const SizedBox(width: AppSpacing.sm),
-          Expanded(
-            child: Text(
-              [booking.clientName, booking.serviceName]
-                  .where((s) => s.isNotEmpty)
-                  .join(' · '),
-              overflow: TextOverflow.ellipsis,
-              style: TextStyle(
-                fontSize: 14,
-                color: done ? AppColors.muted : AppColors.ink,
+      padding: const EdgeInsets.only(bottom: AppSpacing.sm),
+      child: BookingCard(
+        booking: booking,
+        highlighted: isCurrent,
+        trailing: done
+            ? null
+            : PopupMenuButton<String>(
+                key: Key('agenda-menu-${booking.id}'),
+                iconSize: AppIconSize.action,
+                iconColor: AppColors.muted,
+                onSelected: (v) => v == 'complete'
+                    ? onComplete(booking.id)
+                    : onNoShow(booking.id),
+                itemBuilder: (_) => const [
+                  PopupMenuItem(
+                    value: 'complete',
+                    child: Text(AppStrings.homeActionComplete),
+                  ),
+                  PopupMenuItem(
+                    value: 'noshow',
+                    child: Text(AppStrings.homeActionNoShow),
+                  ),
+                ],
               ),
-            ),
-          ),
-          ?trailing,
-          if (!done)
-            PopupMenuButton<String>(
-              key: Key('agenda-menu-${booking.id}'),
-              iconSize: AppIconSize.action,
-              iconColor: AppColors.muted,
-              onSelected: (v) => v == 'complete'
-                  ? onComplete(booking.id)
-                  : onNoShow(booking.id),
-              itemBuilder: (_) => const [
-                PopupMenuItem(
-                  value: 'complete',
-                  child: Text(AppStrings.homeActionComplete),
-                ),
-                PopupMenuItem(
-                  value: 'noshow',
-                  child: Text(AppStrings.homeActionNoShow),
-                ),
-              ],
-            ),
-        ],
       ),
     );
   }
 }
 
-class _StatusLabel extends StatelessWidget {
-  final String label;
-  final Color color;
-  final IconData icon;
-
-  const _StatusLabel(this.label, this.color, this.icon);
-
-  @override
-  Widget build(BuildContext context) {
-    return Row(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        Icon(icon, size: AppIconSize.sm, color: color),
-        const SizedBox(width: AppSpacing.xs),
-        Text(label, style: TextStyle(fontSize: 12, color: color)),
-      ],
-    );
-  }
-}

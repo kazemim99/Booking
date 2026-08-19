@@ -53,11 +53,11 @@ namespace Booksy.ServiceCatalog.Infrastructure.Persistence.Repositories
                 .ToListAsync(cancellationToken);
         }
 
-        public async Task<IReadOnlyList<Provider>> GetByTypeAsync(ServiceCategory type, CancellationToken cancellationToken = default)
+        public async Task<IReadOnlyList<Provider>> GetByCategoryAsync(ServiceCategory category, CancellationToken cancellationToken = default)
         {
             return await DbSet
                 .Include(p => p.BusinessHours)
-                .Where(p => p.PrimaryCategory == type)
+                .Where(p => p.PrimaryCategory == category)
                 .ToListAsync(cancellationToken);
         }
 
@@ -143,6 +143,21 @@ namespace Booksy.ServiceCatalog.Infrastructure.Persistence.Repositories
         public async Task<int> CountByStatusAsync(ProviderStatus status, CancellationToken cancellationToken = default)
         {
             return await DbSet.CountAsync(p => p.Status == status, cancellationToken);
+        }
+
+        public async Task<IReadOnlyDictionary<ServiceCategory, int>> CountByCategoryAsync(
+            ProviderStatus status,
+            CancellationToken cancellationToken = default)
+        {
+            // GROUP BY runs in the database — the category browse page must not scale with the
+            // number of providers. Served by IX_Providers_PrimaryCategory.
+            var counts = await DbSet
+                .Where(p => p.Status == status)
+                .GroupBy(p => p.PrimaryCategory)
+                .Select(g => new { Category = g.Key, Count = g.Count() })
+                .ToListAsync(cancellationToken);
+
+            return counts.ToDictionary(x => x.Category, x => x.Count);
         }
 
         public async Task<IReadOnlyList<Provider>> GetRecentlyActiveAsync(int count, CancellationToken cancellationToken = default)

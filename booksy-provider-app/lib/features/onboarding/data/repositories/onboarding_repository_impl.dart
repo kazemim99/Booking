@@ -49,6 +49,11 @@ class OnboardingRepositoryImpl implements OnboardingRepository {
   }
 
   @override
+  Future<Either<Failure, void>> setOwnerProvidesServices(bool providesServices) {
+    return _guard(() => _api.setOwnerProvidesServices(providesServices));
+  }
+
+  @override
   Future<Either<Failure, OnboardingDraft?>> getDraft() {
     return _guard(() => _api.getDraft());
   }

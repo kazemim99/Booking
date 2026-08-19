@@ -2,45 +2,23 @@
   <div class="page-container">
     <a-page-header :title="$t('provider.management')" :sub-title="$t('provider.manageAndApprove')" />
 
-    <a-tabs v-model:activeKey="activeTab" @change="handleTabChange">
+    <a-tabs v-model:activeKey="activeTab">
       <a-tab-pane key="all" :tab="$t('provider.allProviders')">
-        <provider-table
-          :status="undefined"
-          @view-details="handleViewDetails"
-        />
+        <provider-table :status="undefined" @view-details="handleViewDetails" />
       </a-tab-pane>
 
-      <a-tab-pane key="pending">
+      <a-tab-pane v-for="status in PROVIDER_STATUS_TABS" :key="status">
         <template #tab>
-          <a-badge :count="pendingCount" :overflow-count="99">
-            <span>{{ $t('provider.pendingApproval') }}</span>
+          <a-badge
+            v-if="status === 'PendingVerification'"
+            :count="pendingCount"
+            :overflow-count="99"
+          >
+            <span>{{ $t(statusLabelKey(status)) }}</span>
           </a-badge>
+          <span v-else>{{ $t(statusLabelKey(status)) }}</span>
         </template>
-        <provider-table
-          status="Pending"
-          @view-details="handleViewDetails"
-        />
-      </a-tab-pane>
-
-      <a-tab-pane key="approved" :tab="$t('provider.approved')">
-        <provider-table
-          status="Approved"
-          @view-details="handleViewDetails"
-        />
-      </a-tab-pane>
-
-      <a-tab-pane key="rejected" :tab="$t('provider.rejected')">
-        <provider-table
-          status="Rejected"
-          @view-details="handleViewDetails"
-        />
-      </a-tab-pane>
-
-      <a-tab-pane key="suspended" :tab="$t('provider.suspended')">
-        <provider-table
-          status="Suspended"
-          @view-details="handleViewDetails"
-        />
+        <provider-table :status="status" @view-details="handleViewDetails" />
       </a-tab-pane>
     </a-tabs>
   </div>
@@ -49,19 +27,13 @@
 <script setup lang="ts">
 import { ref, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
-import { useI18n } from 'vue-i18n'
 import ProviderTable from './components/ProviderTable.vue'
 import { providersApi } from '../../api/providers.api'
-
-useI18n()
+import { PROVIDER_STATUS_TABS, statusLabelKey } from '../../constants/provider-status'
 
 const router = useRouter()
 const activeTab = ref('all')
 const pendingCount = ref(0)
-
-const handleTabChange = () => {
-  // Tab change handled by component
-}
 
 const handleViewDetails = (id: string) => {
   router.push(`/providers/${id}`)
@@ -69,17 +41,11 @@ const handleViewDetails = (id: string) => {
 
 const loadPendingCount = async () => {
   try {
-    const response = await providersApi.getProviders({
-      status: 'Pending',
-      pageSize: 1,
-    })
-    pendingCount.value = response.totalCount
+    pendingCount.value = await providersApi.getPendingVerificationCount()
   } catch (error) {
     console.error('Failed to load pending count:', error)
   }
 }
 
-onMounted(() => {
-  loadPendingCount()
-})
+onMounted(loadPendingCount)
 </script>

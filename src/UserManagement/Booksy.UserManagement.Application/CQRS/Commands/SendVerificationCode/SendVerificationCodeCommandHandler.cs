@@ -1,7 +1,8 @@
-// ========================================
+﻿// ========================================
 // SendVerificationCodeCommandHandler.cs
 // Handles sending OTP verification codes via SMS
 // ========================================
+using Booksy.Core.Application.Services.Notifications;
 using Booksy.Core.Application.Abstractions.CQRS;
 using Booksy.Core.Domain.Exceptions;
 using Booksy.Core.Domain.ValueObjects;

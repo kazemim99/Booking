@@ -40,6 +40,31 @@ class ComposerCatalog extends Equatable {
 
   const ComposerCatalog({required this.services, required this.staff});
 
+  /// Slots can never be generated without at least one staff member — the
+  /// backend requires a qualified individual provider to own the appointment.
+  bool get hasNoStaff => staff.isEmpty;
+
   @override
   List<Object?> get props => [services, staff];
+}
+
+/// Result of a slot lookup: the bookable start times plus, when there are
+/// none, the backend's explanation of *why* (e.g. the provider has not added
+/// staff yet). Without the reason every empty day looks identical to the
+/// provider, who cannot tell "fully booked" from "misconfigured".
+class SlotAvailability extends Equatable {
+  final List<DateTime> slots;
+
+  /// Server-supplied reason, already localized. Only meaningful when [slots]
+  /// is empty; null when the server gave no explanation.
+  final String? unavailableReason;
+
+  const SlotAvailability({required this.slots, this.unavailableReason});
+
+  const SlotAvailability.empty({this.unavailableReason}) : slots = const [];
+
+  bool get isEmpty => slots.isEmpty;
+
+  @override
+  List<Object?> get props => [slots, unavailableReason];
 }

@@ -75,6 +75,37 @@ class PreviewStep extends StatelessWidget {
                 onEdit: () => cubit.goToStep(5),
                 rows: {AppStrings.hoursTitle: '$openDays روز کاری'},
               ),
+              Card(
+                margin: const EdgeInsets.only(bottom: AppSpacing.md),
+                child: Padding(
+                  padding: const EdgeInsets.all(AppSpacing.md),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        AppStrings.providesServicesQuestion,
+                        style: Theme.of(context).textTheme.titleMedium,
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        AppStrings.providesServicesHint,
+                        style: Theme.of(context).textTheme.bodySmall,
+                      ),
+                      SwitchListTile(
+                        key: const Key('owner-provides-services-switch'),
+                        contentPadding: EdgeInsets.zero,
+                        value: data.ownerProvidesServices,
+                        onChanged: cubit.setOwnerProvidesServices,
+                        title: Text(
+                          data.ownerProvidesServices
+                              ? AppStrings.providesServicesYes
+                              : AppStrings.providesServicesNo,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
             ],
           ),
         );

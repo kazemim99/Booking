@@ -21,10 +21,11 @@ import '../../features/profile/data/datasources/profile_remote_datasource.dart';
 import '../../features/search/data/datasources/search_remote_datasource.dart';
 import '../../features/search/data/repositories/search_repository_impl.dart';
 import '../../features/search/domain/repositories/search_repository.dart';
-import '../../features/search/presentation/bloc/area_search_cubit.dart';
+import '../../features/search/presentation/bloc/map_discovery_cubit.dart';
 import '../../features/search/presentation/bloc/nearby_providers_cubit.dart';
 import '../../features/search/presentation/bloc/provider_detail_cubit.dart';
 import '../../features/search/presentation/bloc/search_bloc.dart';
+import '../constants/app_strings.dart';
 import '../location/geocoding_service.dart';
 import '../location/location_service.dart';
 import '../network/connectivity_service.dart';
@@ -69,10 +70,16 @@ Future<void> configureDependencies() async {
       repository: getIt(),
     ),
   );
-  getIt.registerFactory<AreaSearchCubit>(
-    () => AreaSearchCubit(
-      geocodingService: getIt(),
+  // Map + carousel discovery. Replaces the former AreaSearchCubit: the map page's own search field
+  // does area/city lookup, so a separate area-search screen no longer exists.
+  getIt.registerFactory<MapDiscoveryCubit>(
+    () => MapDiscoveryCubit(
       repository: getIt(),
+      locationService: getIt(),
+      geocodingService: getIt(),
+      // Shown in the search field until the customer types a real city/area —
+      // the launch city, so the field never starts on a bare hint.
+      fallbackAreaLabel: AppStrings.mapDefaultAreaLabel,
     ),
   );
   getIt.registerLazySingleton<BookingRemoteDataSource>(

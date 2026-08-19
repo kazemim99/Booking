@@ -1,4 +1,5 @@
 ﻿
+using Booksy.ServiceCatalog.Domain.Enums.Extensions;
 using Microsoft.EntityFrameworkCore;
 
 
@@ -84,29 +85,43 @@ namespace Booksy.ServiceCatalog.Domain.Specifications.Provider
                 AddCriteria(provider => provider.AverageRating >= minRating.Value);
             }
 
-            // Service category filter
+            // Service category filter.
+            //
+            // The whole body of this branch was commented out, so a caller-supplied category was accepted and
+            // then silently ignored: `?ServiceCategory=Barbershop` returned the entire catalogue — dentists,
+            // gyms and physiotherapists included. Silent because nothing failed; the results merely had nothing
+            // to do with what was asked for, which is worse than an error.
+            //
+            // The enum-typed `category` parameter above already expresses the intended filter, so the string
+            // form simply resolves to the same criterion.
             if (!string.IsNullOrWhiteSpace(serviceCategory))
             {
                 var categoryInput = serviceCategory.Trim();
 
-                // Try to find matching category by slug or name (in-memory)
-                //var matchingCategory = ServiceCategory.All
-                //    .FirstOrDefault(c =>
-                //        c.Slug.Equals(categoryInput, StringComparison.OrdinalIgnoreCase) ||
-                //        c.Name.Contains(categoryInput, StringComparison.OrdinalIgnoreCase));
+                // TryParse alone accepts any numeric string ("99"), so IsDefined guards against a value that
+                // parses but names no real category. Slugs are accepted too, because that is the form the
+                // category chips and category URLs use ("hair-salon"), and requiring the enum member name
+                // here is why the search filter matched nothing for every slug-shaped value.
+                var resolved =
+                    Enum.TryParse<ServiceCategory>(categoryInput, ignoreCase: true, out var parsedCategory)
+                    && Enum.IsDefined(typeof(ServiceCategory), parsedCategory);
 
-                //if (matchingCategory != null)
-                //{
-                //    // Use the actual category name for matching
-                //    var categoryName = matchingCategory.Name;
-                //    AddCriteria(provider => provider.Services.Any());
-                //}
-                //else
-                //{
-                //    // Fallback: search by input directly (for backward compatibility)
-                //    var searchPattern = $"%{categoryInput}%";
-                //    AddCriteria(provider => provider.Services.Any());
-                //}
+                if (!resolved)
+                {
+                    resolved = ServiceCategoryExtensions.TryParseSlug(categoryInput, out parsedCategory);
+                }
+
+                if (resolved)
+                {
+                    var categoryFilter = parsedCategory;
+                    AddCriteria(provider => provider.PrimaryCategory == categoryFilter);
+                }
+                else
+                {
+                    // An unrecognised category matches nothing. Returning everything — the previous behaviour —
+                    // reads as "here are your results" and quietly hides the fact that the filter never applied.
+                    AddCriteria(provider => false);
+                }
             }
 
             // Price range filter

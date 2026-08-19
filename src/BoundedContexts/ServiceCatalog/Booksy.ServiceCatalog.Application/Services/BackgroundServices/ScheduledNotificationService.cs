@@ -76,9 +76,15 @@ namespace Booksy.ServiceCatalog.Application.Services.BackgroundServices
             {
                 try
                 {
-                    // Queue the notification for sending
-                    notification.Queue();
-                    await notificationRepository.UpdateNotificationAsync(notification, cancellationToken);
+                    // Queue the notification for sending. Notification.Schedule() already leaves it Queued, and
+                    // Queue() only accepts Pending — calling it unconditionally threw for every scheduled
+                    // notification, which the catch below then recorded as a delivery failure with no attempt
+                    // behind it, so the retry sweep could never rescue it either. Every reminder ended up stranded.
+                    if (notification.Status == NotificationStatus.Pending)
+                    {
+                        notification.Queue();
+                        await notificationRepository.UpdateNotificationAsync(notification, cancellationToken);
+                    }
 
                     _logger.LogInformation(
                         "Queued scheduled notification {NotificationId} for user {UserId}",

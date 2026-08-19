@@ -213,13 +213,100 @@ export const getCategoryDescription = (category: ProviderCategory): string => {
  * Parse slug to category
  */
 export const parseCategorySlug = (slug: string): ProviderCategory | null => {
-  const normalized = slug.toLowerCase().replace('_', '-')
+  const normalized = slug.toLowerCase().replace(/_/g, '-')
 
   const entry = Object.entries(CATEGORY_METADATA).find(
     ([_, metadata]) => metadata.slug === normalized
   )
 
   return entry ? (Number(entry[0]) as ProviderCategory) : null
+}
+
+/**
+ * Every declared ProviderCategory, as numbers.
+ * `Object.keys` on a numeric TS enum yields both the names and the values, so the
+ * reverse-mapping keys are filtered out.
+ */
+const CATEGORY_VALUES: ProviderCategory[] = Object.keys(CATEGORY_METADATA).map(
+  (key) => Number(key) as ProviderCategory
+)
+
+export const isProviderCategory = (value: unknown): value is ProviderCategory =>
+  typeof value === 'number' && CATEGORY_VALUES.includes(value as ProviderCategory)
+
+/**
+ * Category ids the registration wizard used before it moved to canonical slugs, plus the
+ * narrower taxonomy ids that fold into a broader category.
+ *
+ * Mirrors `ServiceCategoryResolver.LegacyAliases` and `ServiceCategoryExtensions.TryParseSlug`
+ * on the backend. Saved drafts still carry these, so dropping them would leave a returning
+ * registrant with no category selected.
+ */
+const LEGACY_CATEGORY_ALIASES: Record<string, ProviderCategory> = {
+  barber: ProviderCategory.Barbershop,
+  beauty: ProviderCategory.BeautySalon,
+  beauty_spa: ProviderCategory.BeautySalon,
+  nails: ProviderCategory.NailSalon,
+  fitness: ProviderCategory.Gym,
+  clinic: ProviderCategory.MedicalClinic,
+  physio: ProviderCategory.Physiotherapy,
+  education: ProviderCategory.Tutoring,
+  auto: ProviderCategory.Automotive,
+  pet: ProviderCategory.PetCare,
+  brows_lashes: ProviderCategory.BeautySalon,
+  braids_locs: ProviderCategory.HairSalon,
+  aesthetic_medicine: ProviderCategory.MedicalClinic,
+  dental_orthodontics: ProviderCategory.Dental,
+  hair_removal: ProviderCategory.Spa,
+  health_fitness: ProviderCategory.Gym,
+  other: ProviderCategory.BeautySalon,
+}
+
+/**
+ * Normalises whatever the API sent into a `ProviderCategory`.
+ *
+ * The backend stores the category as an int, but the host serialises every enum with
+ * `JsonStringEnumConverter(JsonNamingPolicy.CamelCase)` — so `primaryCategory` arrives on the
+ * wire as `"hairSalon"`, not `1`. Reading it as a number produced `undefined` metadata and a
+ * blank category badge. This accepts all the shapes the category can legitimately take:
+ *
+ *  - the enum number (`1`) or its numeric string (`"1"`), as sent by clients that post ids
+ *  - the enum member name in any casing (`"hairSalon"`, `"HairSalon"`), as sent by the API
+ *  - the URL slug (`"hair-salon"`), as used in category routes
+ *
+ * Returns `null` for anything unrecognised, so callers decide the fallback rather than
+ * silently landing on category 0, which is not a real category.
+ */
+export const parseCategory = (value: unknown): ProviderCategory | null => {
+  if (value === null || value === undefined || value === '') return null
+
+  if (typeof value === 'number') {
+    return isProviderCategory(value) ? value : null
+  }
+
+  if (typeof value !== 'string') return null
+
+  const trimmed = value.trim()
+  if (trimmed === '') return null
+
+  // Numeric string, e.g. "1"
+  if (/^\d+$/.test(trimmed)) {
+    const asNumber = Number(trimmed)
+    return isProviderCategory(asNumber) ? asNumber : null
+  }
+
+  // Enum member name in any casing, e.g. "hairSalon" / "HairSalon"
+  const byName = CATEGORY_VALUES.find(
+    (category) => ProviderCategory[category]?.toLowerCase() === trimmed.toLowerCase()
+  )
+  if (byName !== undefined) return byName
+
+  // Slug form, e.g. "hair-salon"
+  const bySlug = parseCategorySlug(trimmed)
+  if (bySlug !== null) return bySlug
+
+  // Finally the aliases carried by older drafts, e.g. "barber"
+  return LEGACY_CATEGORY_ALIASES[trimmed.toLowerCase()] ?? null
 }
 
 /**

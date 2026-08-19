@@ -1,3 +1,5 @@
+import 'package:booksy_provider_app/features/auth/domain/entities/provider_status.dart';
+import 'package:booksy_provider_app/features/onboarding/data/models/draft_snapshot.dart';
 import 'package:booksy_provider_app/features/onboarding/data/models/onboarding_models.dart';
 import 'package:booksy_provider_app/features/onboarding/domain/entities/onboarding_data.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -107,6 +109,99 @@ void main() {
       expect(closed['isOpen'], isFalse);
       expect(closed['openTime'], isNull);
       expect(closed['closeTime'], isNull);
+    });
+  });
+
+  group('DraftSnapshot.fromProgressJson', () {
+    // Trimmed from a live GET /v1/Registration/progress response for a
+    // provider whose registration had fully completed (backend step 9,
+    // status PendingVerification). Reported bug: the provider app showed the
+    // step-1 business-info screen instead of routing to the dashboard.
+    Map<String, dynamic> completedResponse({Object? status = 'PendingVerification'}) => {
+          'hasDraft': true,
+          'currentStep': 9,
+          'providerId': 'a8346c06-b292-46cb-8951-d1f8bf711ed2',
+          'draftData': {
+            'providerId': 'a8346c06-b292-46cb-8951-d1f8bf711ed2',
+            'registrationStep': 9,
+            'status': ?status,
+            'businessInfo': {
+              'businessName': 'آرایشگاه نهال',
+              'businessDescription': 'آرایشگاه با بیش از 20 سابقه',
+              'category': 'Barbershop',
+              'phoneNumber': '+989123135143',
+              'email': '',
+              'ownerFirstName': 'مصطفی',
+              'ownerLastName': 'کاظمی',
+            },
+            'location': {
+              'addressLine1': 'کرامت ۳۴',
+              'city': 'اسلامشهر',
+              'province': 'تهران',
+              'postalCode': '',
+              'latitude': 35.567001737131,
+              'longitude': 51.2468278972986,
+            },
+            'services': <Object?>[],
+            'businessHours': <Object?>[],
+          },
+        };
+
+    test('parses status alongside registrationStep', () {
+      final draft = DraftSnapshot.fromProgressJson(completedResponse());
+
+      expect(draft, isNotNull);
+      expect(draft!.registrationStep, 9);
+      expect(draft.status, ProviderStatus.pendingVerification);
+    });
+
+    test('a fully-completed draft (step 9, PendingVerification) is reported complete', () {
+      final draft = DraftSnapshot.fromProgressJson(completedResponse());
+
+      expect(draft!.isFullyComplete, isTrue,
+          reason: 'this is the exact payload from the bug report — the provider app must not '
+              'resume the wizard on it');
+    });
+
+    test('registrationStep 9 alone is complete even if status is missing', () {
+      final draft =
+          DraftSnapshot.fromProgressJson(completedResponse(status: null));
+
+      expect(draft!.status, isNull);
+      expect(draft.isFullyComplete, isTrue);
+    });
+
+    test('an unrecognized status string parses to null rather than throwing', () {
+      final draft =
+          DraftSnapshot.fromProgressJson(completedResponse(status: 'SomeFutureStatus'));
+
+      expect(draft!.status, isNull);
+      // registrationStep 9 alone is still enough to know it's done.
+      expect(draft.isFullyComplete, isTrue);
+    });
+
+    test('a genuinely in-progress draft (step 6, Drafted) is not complete', () {
+      final json = {
+        'hasDraft': true,
+        'draftData': {
+          'providerId': 'prov-mid',
+          'registrationStep': 6,
+          'status': 'Drafted',
+          'businessInfo': <String, Object?>{},
+          'location': <String, Object?>{},
+          'services': <Object?>[],
+          'businessHours': <Object?>[],
+        },
+      };
+
+      final draft = DraftSnapshot.fromProgressJson(json);
+
+      expect(draft!.isFullyComplete, isFalse);
+      expect(draft.resumeStep, 6); // gallery saved → preview... (existing switch)
+    });
+
+    test('no draft on the server parses to null', () {
+      expect(DraftSnapshot.fromProgressJson({'hasDraft': false}), isNull);
     });
   });
 }

@@ -3,6 +3,7 @@ import 'package:dio/dio.dart';
 import '../../../../core/api/config/api_constants.dart';
 import '../../../onboarding/domain/entities/onboarding_data.dart'
     show BreakTime, ClockTime, DayHours, GalleryImageUpload;
+import '../../domain/entities/composer_models.dart' show SlotAvailability;
 import '../../domain/entities/home_booking.dart';
 
 /// Raw API access for the Home snapshot (manual JSON — no codegen, see
@@ -82,11 +83,17 @@ class HomeApiService {
 
   /// GET /v1/Bookings/available-slots — available start times for the
   /// selection, normalized to local wall-clock time.
-  Future<List<DateTime>> getAvailableSlots({
+  ///
+  /// When the server returns no slots it also explains why via
+  /// `validationMessages` (no staff added, outside the booking window, …).
+  /// That reason is carried back so the UI can show it instead of a generic
+  /// "no times" that hides a misconfiguration.
+  Future<SlotAvailability> getAvailableSlots({
     required String providerId,
     required String serviceId,
     required DateTime date,
     String? staffId,
+    List<String> serviceIds = const [],
   }) async {
     final res = await _dio.get(
       ApiConstants.availableSlots,
@@ -95,15 +102,36 @@ class HomeApiService {
         'serviceId': serviceId,
         'date': date.toIso8601String(),
         'staffId': ?staffId,
+        // Multi-service: the slot must span the combined duration.
+        if (serviceIds.length > 1) 'serviceIds': serviceIds,
       },
     );
-    final slots = unwrapMap(res.data)['availableSlots'];
-    if (slots is! List) return const [];
-    return slots
-        .whereType<Map<String, dynamic>>()
-        .map(bookingStart)
-        .whereType<DateTime>()
-        .toList();
+    final data = unwrapMap(res.data);
+    final raw = data['availableSlots'];
+    final slots = raw is List
+        ? raw
+            .whereType<Map<String, dynamic>>()
+            .map(bookingStart)
+            .whereType<DateTime>()
+            .toList()
+        : <DateTime>[];
+
+    return SlotAvailability(
+      slots: slots,
+      unavailableReason:
+          slots.isEmpty ? firstValidationMessage(data) : null,
+    );
+  }
+
+  /// First non-empty entry of `validationMessages`, or null.
+  static String? firstValidationMessage(Map<String, dynamic> data) {
+    final messages = data['validationMessages'];
+    if (messages is! List) return null;
+    for (final m in messages) {
+      final text = m?.toString().trim() ?? '';
+      if (text.isNotEmpty) return text;
+    }
+    return null;
   }
 
   /// POST /v1/Bookings — creates a booking (customer = the JWT caller).
@@ -113,6 +141,7 @@ class HomeApiService {
     required String staffProviderId,
     required DateTime startTime,
     String? customerNotes,
+    List<String> serviceIds = const [],
   }) =>
       _dio.post(
         ApiConstants.bookings,
@@ -121,6 +150,8 @@ class HomeApiService {
           'serviceId': serviceId,
           'staffProviderId': staffProviderId,
           'startTime': startTime.toUtc().toIso8601String(),
+          // Multi-service visit: all lines, priced/lengthed server-side.
+          if (serviceIds.length > 1) 'serviceIds': serviceIds,
           if (customerNotes != null && customerNotes.isNotEmpty)
             'customerNotes': customerNotes,
         },
@@ -416,6 +447,60 @@ class HomeApiService {
   Future<void> removeStaff(String providerId, String staffId) =>
       _dio.delete('${ApiConstants.providerStaff(providerId)}/$staffId');
 
+  /// POST /v1/providers/{id}/hierarchy/invitations — invites a person by phone to
+  /// join as staff. The backend reuses an existing account by phone (never a
+  /// duplicate) and rejects inviting yourself or an existing member.
+  Future<void> inviteStaff(
+    String providerId, {
+    required String phoneNumber,
+    String? inviteeName,
+  }) =>
+      _dio.post(
+        ApiConstants.providerHierarchyInvitations(providerId),
+        data: {
+          'inviteePhoneNumber': phoneNumber,
+          if (inviteeName != null && inviteeName.isNotEmpty)
+            'inviteeName': inviteeName,
+        },
+      );
+
+  /// GET /v1/memberships/me — the caller's memberships. The list is nested under
+  /// `data.memberships` in the enveloped response.
+  Future<List<Map<String, dynamic>>> getMyMemberships() async {
+    final res = await _dio.get(ApiConstants.myMemberships);
+    final body = res.data;
+    final data = (body is Map && body['data'] is Map) ? body['data'] : body;
+    final list = (data is Map && data['memberships'] is List)
+        ? data['memberships'] as List
+        : (data is List ? data : const []);
+    return list
+        .whereType<Map>()
+        .map((e) => Map<String, dynamic>.from(e))
+        .toList();
+  }
+
+  /// GET /v1/providers/{id}/hierarchy/members — the org's members (membership
+  /// model). List is nested under `data.members` in the enveloped response.
+  Future<List<Map<String, dynamic>>> getOrganizationMembers(String providerId) async {
+    final res = await _dio.get(ApiConstants.providerHierarchyMembers(providerId));
+    final body = res.data;
+    final data = (body is Map && body['data'] is Map) ? body['data'] : body;
+    final list = (data is Map && data['members'] is List)
+        ? data['members'] as List
+        : (data is List ? data : const []);
+    return list
+        .whereType<Map>()
+        .map((e) => Map<String, dynamic>.from(e))
+        .toList();
+  }
+
+  /// POST /v1/memberships/{id}/terminate — remove a member (or leave).
+  Future<void> terminateMembership(String membershipId, {String? reason}) =>
+      _dio.post(
+        ApiConstants.membershipTerminate(membershipId),
+        data: {if (reason != null && reason.isNotEmpty) 'reason': reason},
+      );
+
   // ==================== booking quick actions ====================
 
   /// POST /v1/Bookings/{id}/confirm — provider approves a pending request.
@@ -540,6 +625,7 @@ class HomeApiService {
     return HomeBooking(
       id: readString(booking, const ['id', 'bookingId']),
       start: bookingStart(booking),
+      end: readDate(booking, const ['endTime', 'end', 'endDateTime']),
       clientName: readString(
         booking,
         const ['customerName', 'clientName', 'customerFullName'],
@@ -552,8 +638,35 @@ class HomeApiService {
         booking,
         const ['serviceName', 'serviceTitle', 'service'],
       ),
+      price: readDouble(booking, const ['totalPrice', 'price', 'amount']),
+      currency: readString(booking, const ['currency']),
       status: status,
     );
+  }
+
+  /// First parsable date under [keys], or null.
+  static DateTime? readDate(Map<String, dynamic> map, List<String> keys) {
+    for (final k in keys) {
+      final v = map[k];
+      if (v is String && v.isNotEmpty) {
+        final parsed = DateTime.tryParse(v);
+        if (parsed != null) return parsed;
+      }
+    }
+    return null;
+  }
+
+  /// First numeric value under [keys], or null.
+  static double? readDouble(Map<String, dynamic> map, List<String> keys) {
+    for (final k in keys) {
+      final v = map[k];
+      if (v is num) return v.toDouble();
+      if (v is String) {
+        final parsed = double.tryParse(v);
+        if (parsed != null) return parsed;
+      }
+    }
+    return null;
   }
 
   /// First integer found under [keys] in [map]; [fallback] otherwise.

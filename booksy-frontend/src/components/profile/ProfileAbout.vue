@@ -263,7 +263,7 @@
 import { computed } from 'vue'
 import type { Provider, DayOfWeek, BusinessHours } from '@/modules/provider/types/provider.types'
 import { ProviderCategory } from '@/core/types/enums.types'
-import { getCategoryPersianName } from '@/core/constants/provider-categories'
+import { getCategoryPersianName, parseCategory } from '@/core/constants/provider-categories'
 
 interface Props {
   provider: Provider
@@ -367,9 +367,11 @@ const getDirections = () => {
 
 /** Get category label supporting both new ProviderCategory and legacy ProviderType */
 const getProviderCategoryLabel = (category: ProviderCategory | string | undefined): string => {
-  if (typeof category === 'number') {
-    // New ProviderCategory enum
-    return getCategoryPersianName(category as ProviderCategory)
+  // Accepts the numeric id, the camelCase enum name the API serialises ("hairSalon")
+  // and the URL slug — anything that is a real category resolves to its Persian name.
+  const parsed = parseCategory(category)
+  if (parsed !== null) {
+    return getCategoryPersianName(parsed)
   }
   // Legacy ProviderType fallback
   const labels: Record<string, string> = {
@@ -382,7 +384,8 @@ const getProviderCategoryLabel = (category: ProviderCategory | string | undefine
     professional: 'حرفه‌ای',
     other: 'سایر',
   }
-  return labels[category?.toLowerCase() || ''] || category || 'نامشخص'
+  const legacyKey = typeof category === 'string' ? category.toLowerCase() : ''
+  return labels[legacyKey] || legacyKey || 'نامشخص'
 }
 </script>
 

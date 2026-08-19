@@ -102,7 +102,14 @@ class GetHomeData {
         failedSections: failed,
       ));
     } catch (e) {
-      return Left(ServerFailure('خطا در بارگذاری داده‌ها: ${e.toString()}'));
+      // Deliberately no ${e} here: this is a fallback for whatever escapes the per-section
+      // Either handling above, and a raw platform exception (a Persian user actually hit
+      // "OperationError: ..." — a Web Crypto DOMException from a stale secure-storage
+      // value, since fixed at the source in SecureStorageService) is not a message a
+      // customer can act on.
+      return const Left(
+        ServerFailure('خطا در بارگذاری داده‌ها. لطفاً دوباره تلاش کنید.'),
+      );
     }
   }
 

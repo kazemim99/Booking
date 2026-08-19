@@ -1,8 +1,11 @@
 import 'package:bloc_test/bloc_test.dart';
 import 'package:booksy_provider_app/config/theme/app_theme.dart';
 import 'package:booksy_provider_app/core/constants/app_strings.dart';
+import 'package:booksy_provider_app/config/theme/app_tokens.dart';
 import 'package:booksy_provider_app/core/errors/failures.dart';
+import 'package:booksy_provider_app/core/widgets/profile_header.dart';
 import 'package:booksy_provider_app/features/auth/domain/entities/provider_session.dart';
+import 'package:booksy_provider_app/features/auth/domain/repositories/auth_repository.dart';
 import 'package:booksy_provider_app/features/auth/domain/entities/provider_status.dart';
 import 'package:booksy_provider_app/features/auth/presentation/bloc/auth_bloc.dart';
 import 'package:booksy_provider_app/features/auth/presentation/bloc/auth_event.dart';
@@ -26,6 +29,8 @@ import 'package:mocktail/mocktail.dart';
 
 class MockHomeRepository extends Mock implements HomeRepository {}
 
+class _MockAuthRepo extends Mock implements AuthRepository {}
+
 class _MockAuthBloc extends MockBloc<AuthEvent, AuthState>
     implements AuthBloc {}
 
@@ -43,6 +48,13 @@ ProviderSession get _session => ProviderSession(
       isNewProvider: false,
       requiresOnboarding: false,
     );
+
+AuthRepository _authRepo() {
+  final auth = _MockAuthRepo();
+  when(() => auth.switchActiveOrganization(providerId: any(named: 'providerId')))
+      .thenAnswer((_) async => Right(_session));
+  return auth;
+}
 
 void main() {
   late MockHomeRepository repository;
@@ -76,9 +88,9 @@ void main() {
           ComposerService(id: 's1', name: 'اصلاح', durationMinutes: 45),
         ]),
       );
-      when(() => repository.fetchStaff()).thenAnswer(
+      when(() => repository.fetchOrgMembers()).thenAnswer(
         (_) async => const Right([
-          ProviderStaffMember(id: 'm1', name: 'سارا', role: 'Stylist'),
+          OrgMember(membershipId: 'mem-1', name: 'سارا', roles: ['StaffProvider'], status: 'Active'),
         ]),
       );
 
@@ -154,11 +166,43 @@ void main() {
       expect(find.byKey(const Key('more-logout')), findsOneWidget);
     });
 
+    testWidgets('renders the profile chrome: blue header with the identity',
+        (tester) async {
+      await pump(tester);
+
+      // Blue chrome carrying the identity (DESIGN_LANGUAGE.md §5.12).
+      expect(find.byType(ProfileHeader), findsOneWidget);
+      final header = tester.widget<ProfileHeader>(find.byType(ProfileHeader));
+      expect(header.name, 'سالن رُز');
+      expect(header.subtitle, contains('09121234567'));
+      // Logout lives once, as a labelled row — not duplicated as a disc.
+      expect(header.action, isNull);
+    });
+
+    testWidgets('groups rows into cards with hairline dividers', (tester) async {
+      await pump(tester);
+
+      // Business card: 8 rows ⇒ 7 internal dividers (§4.2 one card, many rows).
+      final dividers = find.descendant(
+        of: find.byType(ListView),
+        matching: find.byType(Divider),
+      );
+      expect(tester.widgetList<Divider>(dividers).length, greaterThanOrEqualTo(7));
+      for (final d in tester.widgetList<Divider>(dividers)) {
+        expect(d.color, AppColors.menuBorder);
+      }
+    });
+
     testWidgets('logout dispatches LogoutRequested', (tester) async {
       await pump(tester);
 
+      // scrollUntilVisible stops as soon as the row attaches, which can leave
+      // it under the floating nav pill; ensureVisible brings it fully into
+      // the viewport so the tap lands on the row, not the nav.
       await tester.scrollUntilVisible(
           find.byKey(const Key('more-logout')), 200);
+      await tester.ensureVisible(find.byKey(const Key('more-logout')));
+      await tester.pumpAndSettle();
       await tester.tap(find.byKey(const Key('more-logout')));
 
       verify(() => authBloc.add(const LogoutRequested())).called(1);
@@ -309,6 +353,25 @@ void main() {
       await tester.pumpAndSettle();
       return cubit;
     }
+
+    testWidgets('list leads with the green add row; it opens the form sheet',
+        (tester) async {
+      await pumpServices(tester);
+
+      final row = find.byKey(const Key('service-add-row'));
+      expect(row, findsOneWidget);
+      expect(
+        tester.getTopLeft(row).dy,
+        lessThan(
+            tester.getTopLeft(find.byKey(const Key('service-row-s1'))).dy),
+      );
+
+      await tester.tap(
+        find.descendant(of: row, matching: find.byType(TextButton)),
+      );
+      await tester.pumpAndSettle();
+      expect(find.byKey(const Key('service-save')), findsOneWidget);
+    });
 
     testWidgets('add flow: gated until valid, then submits the payload',
         (tester) async {
@@ -690,6 +753,12 @@ void main() {
       return cubit;
     }
 
+    testWidgets('list leads with the green add row', (tester) async {
+      await pumpHolidays(tester);
+
+      expect(find.byKey(const Key('holiday-add-row')), findsOneWidget);
+    });
+
     testWidgets('lists holidays with recurring badge; remove is confirmed',
         (tester) async {
       await pumpHolidays(tester);
@@ -955,33 +1024,34 @@ void main() {
     });
   });
 
-  group('Staff management (spec: provider-staff-management)', () {
-    const member = ProviderStaffMember(
-      id: 'm1',
+  group('Staff management (spec: organization-membership)', () {
+    const owner = OrgMember(
+      membershipId: 'mem-owner',
+      personId: 'p-owner',
+      name: 'مالک سالن',
+      roles: ['Owner', 'StaffProvider'],
+      status: 'Active',
+      isOwner: true,
+      providesServices: true,
+    );
+    const staff = OrgMember(
+      membershipId: 'mem-1',
+      personId: 'p-1',
       name: 'سارا احمدی',
-      firstName: 'سارا',
-      lastName: 'احمدی',
-      phone: '0912',
-      role: 'Stylist',
+      phone: '09121112233',
+      roles: ['StaffProvider'],
+      status: 'Active',
+      providesServices: true,
     );
 
     setUp(() {
-      when(() => repository.fetchStaff())
-          .thenAnswer((_) async => const Right([member]));
-      when(() => repository.addStaff(
-            firstName: any(named: 'firstName'),
-            lastName: any(named: 'lastName'),
+      when(() => repository.fetchOrgMembers())
+          .thenAnswer((_) async => const Right([owner, staff]));
+      when(() => repository.inviteStaff(
             phoneNumber: any(named: 'phoneNumber'),
-            role: any(named: 'role'),
+            inviteeName: any(named: 'inviteeName'),
           )).thenAnswer((_) async => const Right(null));
-      when(() => repository.updateStaff(
-            any(),
-            firstName: any(named: 'firstName'),
-            lastName: any(named: 'lastName'),
-            phoneNumber: any(named: 'phoneNumber'),
-            role: any(named: 'role'),
-          )).thenAnswer((_) async => const Right(null));
-      when(() => repository.removeStaff(any()))
+      when(() => repository.terminateMember(any()))
           .thenAnswer((_) async => const Right(null));
     });
 
@@ -989,16 +1059,16 @@ void main() {
       final cubit = StaffCubit(repository);
       await cubit.load();
       clearInteractions(repository);
-      when(() => repository.fetchStaff())
-          .thenAnswer((_) async => const Right([member]));
+      when(() => repository.fetchOrgMembers())
+          .thenAnswer((_) async => const Right([owner, staff]));
 
-      expect(await cubit.addStaff(firstName: 'رضا'), isNull);
+      expect(await cubit.inviteStaff(phoneNumber: '09121110022'), isNull);
       await Future<void>.delayed(Duration.zero);
-      verify(() => repository.fetchStaff()).called(1);
+      verify(() => repository.fetchOrgMembers()).called(1);
 
-      when(() => repository.removeStaff(any()))
+      when(() => repository.terminateMember(any()))
           .thenAnswer((_) async => const Left(ServerFailure('خطا')));
-      final failure = await cubit.removeStaff('m1');
+      final failure = await cubit.removeMember('mem-1');
       expect(failure!.message, 'خطا');
       await cubit.close();
     });
@@ -1023,77 +1093,200 @@ void main() {
       return cubit;
     }
 
-    testWidgets('add flow: gated on first name, submits and refreshes',
+    testWidgets('lists members; owner has a badge and no remove, staff can be removed',
         (tester) async {
       await pumpStaff(tester);
 
-      await tester.tap(find.byKey(const Key('staff-add')));
+      expect(find.byKey(const Key('member-row-mem-owner')), findsOneWidget);
+      expect(find.byKey(const Key('member-row-mem-1')), findsOneWidget);
+      // Owner cannot be removed from here; a regular member can.
+      expect(find.byKey(const Key('member-remove-mem-owner')), findsNothing);
+      expect(find.byKey(const Key('member-remove-mem-1')), findsOneWidget);
+    });
+
+    testWidgets('the invite action is visible against the blue header',
+        (tester) async {
+      await pumpStaff(tester);
+
+      final icon = tester.widget<Icon>(
+        find.descendant(
+          of: find.byKey(const Key('staff-invite')),
+          matching: find.byType(Icon),
+        ),
+      );
+
+      // Regression: this shipped as AppColors.primary (0xFF3777BF) on the
+      // 0xFF3777C0 app bar — one step apart in the blue channel, so the only
+      // route to inviting a team member was invisible and the feature looked
+      // unbuilt. Add affordances on the chrome use the green accent, the rule
+      // AppPageScaffold.actions documents and service-add/holiday-add follow.
+      expect(icon.color, AppColors.success);
+      expect(
+        icon.color,
+        isNot(AppColors.primary),
+        reason: 'brand blue disappears against the blue header',
+      );
+    });
+
+    testWidgets('a populated member list still offers the discoverable add row',
+        (tester) async {
+      await pumpStaff(tester);
+
+      // Services and Holidays pin a green "+ add" row above a populated list
+      // because the header icon alone proved easy to miss; Staff was the one
+      // list that never got it, leaving invite reachable only from the
+      // (then invisible) chrome icon.
+      expect(find.byKey(const Key('staff-invite-row')), findsOneWidget);
+      expect(find.byKey(const Key('member-row-mem-owner')), findsOneWidget,
+          reason: 'the add row must not displace the members');
+    });
+
+    testWidgets('the add row opens the invite sheet', (tester) async {
+      await pumpStaff(tester);
+
+      // _AddLinkRow is Align-wrapped, so the row's box is wider than its
+      // button and its centre misses the tap target — press the button itself.
+      await tester.tap(find.descendant(
+        of: find.byKey(const Key('staff-invite-row')),
+        matching: find.byType(TextButton),
+      ));
       await tester.pumpAndSettle();
 
-      // Gated while the required name is empty.
-      final saveButton =
-          tester.widget<FilledButton>(find.descendant(
-        of: find.byKey(const Key('staff-save')),
-        matching: find.byType(FilledButton),
-      ));
-      expect(saveButton.onPressed, isNull);
+      expect(find.byKey(const Key('invite-phone')), findsOneWidget);
+    });
+
+    testWidgets('invite flow: gated on a valid phone, submits and confirms',
+        (tester) async {
+      await pumpStaff(tester);
+
+      await tester.tap(find.byKey(const Key('staff-invite')));
+      await tester.pumpAndSettle();
+
+      FilledButton sendButton() => tester.widget<FilledButton>(
+            find.descendant(
+              of: find.byKey(const Key('invite-send')),
+              matching: find.byType(FilledButton),
+            ),
+          );
+
+      // Gated until a valid Iranian mobile is entered.
+      expect(sendButton().onPressed, isNull);
 
       await tester.enterText(
-          find.byKey(const Key('staff-first-name')), 'رضا');
+          find.byKey(const Key('invite-phone')), '09121110022');
       await tester.pumpAndSettle();
-      await tester.tap(find.byKey(const Key('staff-save')));
+      expect(sendButton().onPressed, isNotNull);
+
+      await tester.tap(find.byKey(const Key('invite-send')));
       await tester.pumpAndSettle();
 
-      verify(() => repository.addStaff(
-            firstName: 'رضا',
-            lastName: any(named: 'lastName'),
-            phoneNumber: any(named: 'phoneNumber'),
-            role: any(named: 'role'),
+      verify(() => repository.inviteStaff(
+            phoneNumber: '09121110022',
+            inviteeName: any(named: 'inviteeName'),
           )).called(1);
-      expect(find.text(AppStrings.staffAdded), findsOneWidget);
+      expect(find.text(AppStrings.staffInviteSent), findsOneWidget);
     });
 
-    testWidgets('edit flow: pre-filled form updates the member',
+    testWidgets('remove requires confirmation; cancel terminates nothing',
         (tester) async {
       await pumpStaff(tester);
 
-      await tester.tap(find.byKey(const Key('staff-row-m1')));
+      await tester.tap(find.byKey(const Key('member-remove-mem-1')));
+      await tester.pumpAndSettle();
+      await tester.tap(find.byKey(const Key('member-remove-cancel')));
+      await tester.pumpAndSettle();
+      verifyNever(() => repository.terminateMember(any()));
+
+      await tester.tap(find.byKey(const Key('member-remove-mem-1')));
+      await tester.pumpAndSettle();
+      await tester.tap(find.byKey(const Key('member-remove-confirm')));
       await tester.pumpAndSettle();
 
-      expect(find.text('سارا'), findsOneWidget); // pre-filled
-      await tester.enterText(find.byKey(const Key('staff-role')), 'Barber');
-      await tester.tap(find.byKey(const Key('staff-save')));
-      await tester.pumpAndSettle();
-
-      verify(() => repository.updateStaff(
-            'm1',
-            firstName: 'سارا',
-            lastName: any(named: 'lastName'),
-            phoneNumber: any(named: 'phoneNumber'),
-            role: 'Barber',
-          )).called(1);
-    });
-
-    testWidgets('remove requires confirmation; cancel deletes nothing',
-        (tester) async {
-      await pumpStaff(tester);
-
-      await tester.tap(find.byKey(const Key('staff-row-m1')));
-      await tester.pumpAndSettle();
-      await tester.tap(find.byKey(const Key('staff-remove')));
-      await tester.pumpAndSettle();
-
-      await tester.tap(find.byKey(const Key('staff-remove-cancel')));
-      await tester.pumpAndSettle();
-      verifyNever(() => repository.removeStaff(any()));
-
-      await tester.tap(find.byKey(const Key('staff-remove')));
-      await tester.pumpAndSettle();
-      await tester.tap(find.byKey(const Key('staff-remove-confirm')));
-      await tester.pumpAndSettle();
-
-      verify(() => repository.removeStaff('m1')).called(1);
+      verify(() => repository.terminateMember('mem-1')).called(1);
       expect(find.text(AppStrings.staffRemoved), findsOneWidget);
+    });
+  });
+
+  group('My salons (memberships — S6)', () {
+    const membership = ProviderMembership(
+      membershipId: 'm-1',
+      organizationId: 'org-1',
+      organizationName: 'سالن رُز',
+      roles: ['Owner', 'StaffProvider'],
+      status: 'Active',
+      providesServices: true,
+    );
+
+    test('MembershipsCubit: ready on success, failed with message on error',
+        () async {
+      when(() => repository.fetchMyMemberships())
+          .thenAnswer((_) async => const Right([membership]));
+      final cubit = MembershipsCubit(repository, _authRepo());
+      await cubit.load();
+      expect(cubit.state.status, MoreStatus.ready);
+      expect(cubit.state.data!.single.organizationName, 'سالن رُز');
+      expect(cubit.state.data!.single.isOwner, isTrue);
+
+      when(() => repository.fetchMyMemberships())
+          .thenAnswer((_) async => const Left(ServerFailure('خطا')));
+      await cubit.load();
+      expect(cubit.state.status, MoreStatus.failed);
+      expect(cubit.state.error, 'خطا');
+      await cubit.close();
+    });
+
+    testWidgets('lists memberships with roles and the owner/provider badges',
+        (tester) async {
+      when(() => repository.fetchMyMemberships())
+          .thenAnswer((_) async => const Right([membership]));
+      final cubit = MembershipsCubit(repository, _authRepo());
+      addTearDown(cubit.close);
+      await tester.pumpWidget(
+        MaterialApp(
+          theme: AppTheme.light,
+          builder: (context, child) => Directionality(
+            textDirection: TextDirection.rtl,
+            child: child ?? const SizedBox.shrink(),
+          ),
+          home: BlocProvider<MembershipsCubit>.value(
+            value: cubit..load(),
+            child: const MyMembershipsView(),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      expect(find.byKey(const Key('membership-row-m-1')), findsOneWidget);
+      expect(find.text('سالن رُز'), findsOneWidget);
+      expect(
+        find.text(
+            '${AppStrings.membershipOwner} · ${AppStrings.membershipProvidesServices}'),
+        findsOneWidget,
+      );
+    });
+
+    testWidgets('empty state when the person has no memberships',
+        (tester) async {
+      when(() => repository.fetchMyMemberships())
+          .thenAnswer((_) async => const Right(<ProviderMembership>[]));
+      final cubit = MembershipsCubit(repository, _authRepo());
+      addTearDown(cubit.close);
+      await tester.pumpWidget(
+        MaterialApp(
+          theme: AppTheme.light,
+          builder: (context, child) => Directionality(
+            textDirection: TextDirection.rtl,
+            child: child ?? const SizedBox.shrink(),
+          ),
+          home: BlocProvider<MembershipsCubit>.value(
+            value: cubit..load(),
+            child: const MyMembershipsView(),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      expect(find.text(AppStrings.membershipsEmpty), findsOneWidget);
     });
   });
 
@@ -1141,12 +1334,50 @@ void main() {
       expect(find.text('5'), findsOneWidget);
     });
 
-    testWidgets('Staff list marks inactive members', (tester) async {
-      when(() => repository.fetchStaff()).thenAnswer(
+    testWidgets(
+        'sub-pages wear the blue chrome with a white title '
+        '(DESIGN_LANGUAGE.md §1) — not a white app bar', (tester) async {
+      when(() => repository.fetchServices())
+          .thenAnswer((_) async => const Right([]));
+      final cubit = ServicesCubit(repository);
+      addTearDown(cubit.close);
+      await pumpView(
+        tester,
+        BlocProvider<ServicesCubit>.value(
+          value: cubit..load(),
+          child: const ServicesView(),
+        ),
+      );
+
+      final scaffold = tester.widget<Scaffold>(find.byType(Scaffold).last);
+      expect(scaffold.backgroundColor, AppColors.appBar,
+          reason: 'the chrome behind the sheet must be brand blue');
+
+      final title = tester.widget<Text>(find.text(AppStrings.moreServices));
+      expect(title.style?.color, Colors.white,
+          reason: 'title sits on blue, so it must be white');
+
+      // Add actions use the green accent: brand blue would vanish on blue.
+      final addIcon = tester.widget<Icon>(find.descendant(
+        of: find.byKey(const Key('service-add')),
+        matching: find.byType(Icon),
+      ));
+      expect(addIcon.color, AppColors.success);
+    });
+
+    testWidgets('Staff list marks pending (invited) members', (tester) async {
+      when(() => repository.fetchOrgMembers()).thenAnswer(
         (_) async => const Right([
-          ProviderStaffMember(id: 'm1', name: 'سارا', role: 'Stylist'),
-          ProviderStaffMember(
-              id: 'm2', name: 'رضا', role: 'Barber', isActive: false),
+          OrgMember(
+              membershipId: 'mem-1',
+              name: 'سارا',
+              roles: ['StaffProvider'],
+              status: 'Active'),
+          OrgMember(
+              membershipId: 'mem-2',
+              name: 'رضا',
+              roles: ['StaffProvider'],
+              status: 'Invited'),
         ]),
       );
       final cubit = StaffCubit(repository);
@@ -1159,8 +1390,8 @@ void main() {
         ),
       );
 
-      expect(find.byKey(const Key('staff-row-m1')), findsOneWidget);
-      expect(find.textContaining(AppStrings.staffInactive), findsOneWidget);
+      expect(find.byKey(const Key('member-row-mem-1')), findsOneWidget);
+      expect(find.textContaining(AppStrings.staffInvitePending), findsOneWidget);
     });
 
     testWidgets('Services failure shows retry that reloads', (tester) async {

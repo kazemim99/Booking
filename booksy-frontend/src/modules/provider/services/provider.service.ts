@@ -16,6 +16,8 @@ import type {
   GalleryImage,
 } from '../types/provider.types'
 import type { PagedResult } from '@/core/types/common.types'
+import { parseCategory } from '@/core/constants/provider-categories'
+import { ProviderCategory } from '@/core/types/enums.types'
 
 const API_VERSION = 'v1'
 const API_BASE = `/${API_VERSION}/Providers`
@@ -364,7 +366,10 @@ class ProviderService {
       },
       profileImageUrl: response.profileImageUrl, // Map profileImageUrl at root level
       status: response.status as ProviderStatus,
-      primaryCategory: response.primaryCategory || 1, // Default to HairSalon if not provided
+      // The API serialises enums as camelCase strings ("hairSalon"), while older payloads and
+      // the registration flow use the numeric id. parseCategory accepts both; HairSalon is the
+      // documented fallback when a provider predates the category model.
+      primaryCategory: parseCategory(response.primaryCategory) ?? ProviderCategory.HairSalon,
       type: response.type as ProviderType, // DEPRECATED - for backward compatibility
       contactInfo: response.contactInfo || {
         email: response.email, // Fallback to old structure

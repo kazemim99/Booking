@@ -190,14 +190,24 @@ public static class ServiceCategoryExtensions
     }
 
     /// <summary>
+    /// Determines whether the value is one of the categories declared on the enum.
+    /// Guards against undefined values produced by casting, numeric <c>Enum.TryParse</c>
+    /// input, or legacy database rows written before the category model existed.
+    /// </summary>
+    /// <param name="category">The service category</param>
+    /// <returns>True when the value is a declared ServiceCategory member</returns>
+    public static bool IsDefinedCategory(this ServiceCategory category)
+        => Enum.IsDefined(category);
+
+    /// <summary>
     /// Tries to parse a slug to a ServiceCategory
     /// </summary>
     /// <param name="slug">The slug to parse</param>
-    /// <param name="category">The parsed category if successful</param>
+    /// <param name="category">The parsed category if successful, otherwise <c>default</c></param>
     /// <returns>True if parsing succeeded, false otherwise</returns>
-    public static bool TryParseSlug(string slug, out ServiceCategory category)
+    public static bool TryParseSlug(string? slug, out ServiceCategory category)
     {
-        category = slug?.ToLowerInvariant() switch
+        var parsed = slug?.Trim().ToLowerInvariant() switch
         {
             "hair-salon" or "hair_salon" => ServiceCategory.HairSalon,
             "barbershop" or "barber" => ServiceCategory.Barbershop,
@@ -215,8 +225,9 @@ public static class ServiceCategoryExtensions
             "home-services" or "home_services" => ServiceCategory.HomeServices,
             "pet-care" or "pet_care" or "pet" => ServiceCategory.PetCare,
             _ => (ServiceCategory?)null
-        } ?? default;
+        };
 
-        return category != default || slug == "0";
+        category = parsed ?? default;
+        return parsed.HasValue;
     }
 }

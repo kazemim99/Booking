@@ -32,29 +32,37 @@ namespace Booksy.ServiceCatalog.Infrastructure.Persistence.Seeders
                 new ProviderSeeder(_context,
                     Microsoft.Extensions.Logging.Abstractions.NullLogger<ProviderSeeder>.Instance),
 
-                // 3. Staff - REMOVED: Now using Provider Hierarchy system with invitations
-                // Staff members are added via SendInvitation/AcceptInvitation flow, not seeded
-                // new StaffSeeder(_context,
-                //     Microsoft.Extensions.Logging.Abstractions.NullLogger<StaffSeeder>.Instance),
+                // 3. Staff (depends on Providers).
+                // Seeded as unclaimed OrganizationMemberships — the same mechanism a salon uses to add a colleague
+                // who does not use the app yet. This MUST precede ServiceActivationSeeder: an organization's service
+                // cannot be activated (and therefore cannot be booked) until somebody is qualified to perform it.
+                new StaffSeeder(_context,
+                    Microsoft.Extensions.Logging.Abstractions.NullLogger<StaffSeeder>.Instance),
 
                 // 4. BusinessHours (depends on Providers)
                 new BusinessHoursSeeder(_context,
                     Microsoft.Extensions.Logging.Abstractions.NullLogger<BusinessHoursSeeder>.Instance),
 
-                // 5. Services (depends on Providers)
+                // 5. Services (depends on Providers) — created as Draft
                 new ServiceSeeder(_context,
                     Microsoft.Extensions.Logging.Abstractions.NullLogger<ServiceSeeder>.Instance),
 
-                // 6. ServiceOptions (depends on Services)
+                // 6. Service activation (depends on Staff + Services)
+                // Qualifies each provider's members for its services and activates them, so the availability engine
+                // will offer slots. Without this every seeded service stays Draft and the app shows no free times.
+                new ServiceActivationSeeder(_context,
+                    Microsoft.Extensions.Logging.Abstractions.NullLogger<ServiceActivationSeeder>.Instance),
+
+                // 7. ServiceOptions (depends on Services)
                 new ServiceOptionSeeder(_context,
                     Microsoft.Extensions.Logging.Abstractions.NullLogger<ServiceOptionSeeder>.Instance),
 
-                // 7. Availability (depends on Providers, Staff, BusinessHours, Services)
+                // 8. Availability (depends on Providers, Staff, BusinessHours, Services)
                 // MUST run BEFORE BookingSeeder because bookings need availability slots
                 new AvailabilitySeeder(_context,
                     Microsoft.Extensions.Logging.Abstractions.NullLogger<AvailabilitySeeder>.Instance),
 
-                // 8. Notification Templates (independent)
+                // 9. Notification Templates (independent)
                 new NotificationTemplateSeeder(_context,
                     Microsoft.Extensions.Logging.Abstractions.NullLogger<NotificationTemplateSeeder>.Instance),
 

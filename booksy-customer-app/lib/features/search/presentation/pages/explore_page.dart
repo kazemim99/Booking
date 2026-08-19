@@ -11,6 +11,7 @@ import '../../../../core/di/injection.dart';
 import '../../../../core/widgets/widgets.dart';
 import '../bloc/search_bloc.dart';
 import '../widgets/provider_result_card.dart';
+import '../widgets/service_categories.dart';
 
 /// Explore: debounced search-as-you-type over providers with category
 /// filter chips. Stale in-flight results never overwrite newer ones
@@ -25,15 +26,11 @@ class ExplorePage extends StatefulWidget {
 class _ExplorePageState extends State<ExplorePage> {
   static const _debounce = Duration(milliseconds: 350);
 
-  // Static category list until a categories-for-search endpoint exists.
-  static const List<String> _categories = [
-    'آرایشگاه مردانه',
-    'سالن زیبایی',
-    'ماساژ',
-    'سلامت و اسپا',
-    'ناخن',
-    'مراقبت از پوست',
-  ];
+  /// Category chips come from [kServiceCategories] — the same list the home
+  /// tile row uses, so a home tile can never deep-link to a category these
+  /// chips would reject, and the Persian label/API-value separation lives in
+  /// exactly one place.
+  static const _categories = kServiceCategories;
 
   late final SearchBloc _bloc;
   final _searchController = TextEditingController();
@@ -51,12 +48,13 @@ class _ExplorePageState extends State<ExplorePage> {
     super.didChangeDependencies();
     if (_initializedFromRoute) return;
     _initializedFromRoute = true;
-    // Deep link support: /explore?category=<name> (from home chips).
+    // Deep link support: /explore?category=<name> (from home chips). The parameter carries the API value, and
+    // is accepted only if it is one this screen actually offers — an unknown value shows everything rather
+    // than sending the API something it will reject.
     final category =
         GoRouterState.of(context).uri.queryParameters['category'];
-    _bloc.add(SearchCategoryChanged(
-      category != null && _categories.contains(category) ? category : null,
-    ));
+    final known = _categories.any((c) => c.apiValue == category);
+    _bloc.add(SearchCategoryChanged(known ? category : null));
   }
 
   @override
@@ -104,25 +102,19 @@ class _ExplorePageState extends State<ExplorePage> {
                   onChanged: _onQueryChanged,
                 ),
               ),
-              // Location-based discovery entry points (own routes within the
-              // explore branch). Scrollable so labels never overflow.
-              SingleChildScrollView(
-                scrollDirection: Axis.horizontal,
-                padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md),
-                child: Row(
-                  children: [
-                    ActionChip(
-                      avatar: const Icon(Icons.near_me_outlined, size: 18),
-                      label: const Text(AppStrings.nearMe),
-                      onPressed: () => context.push(Routes.exploreNearby),
-                    ),
-                    const SizedBox(width: AppSpacing.sm),
-                    ActionChip(
-                      avatar: const Icon(Icons.map_outlined, size: 18),
-                      label: const Text(AppStrings.searchByArea),
-                      onPressed: () => context.push(Routes.exploreArea),
-                    ),
-                  ],
+              // A single location-based entry point. There were two chips — «اطراف من» and
+              // «جستجو در محله» — leading to two separate list screens. Both are now the one map
+              // page: its floating button covers "near me" and its search field covers area/city
+              // lookup, so a second chip would open the same screen under another name.
+              Align(
+                alignment: AlignmentDirectional.centerStart,
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md),
+                  child: ActionChip(
+                    avatar: const Icon(Icons.near_me_outlined, size: 18),
+                    label: const Text(AppStrings.nearMe),
+                    onPressed: () => context.push(Routes.exploreMap),
+                  ),
                 ),
               ),
               const SizedBox(height: AppSpacing.sm),
@@ -150,10 +142,11 @@ class _ExplorePageState extends State<ExplorePage> {
                         }
                         final category = _categories[index - 1];
                         return ChoiceChip(
-                          label: Text(category),
-                          selected: state.category == category,
-                          onSelected: (_) =>
-                              _bloc.add(SearchCategoryChanged(category)),
+                          // Persian for the customer, enum name for the API.
+                          label: Text(category.label),
+                          selected: state.category == category.apiValue,
+                          onSelected: (_) => _bloc
+                              .add(SearchCategoryChanged(category.apiValue)),
                         );
                       },
                     );

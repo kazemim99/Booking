@@ -77,16 +77,13 @@
             @change="handleChange"
           >
             <option :value="undefined">همه دسته‌ها</option>
-            <option value="haircut">آرایشگری و مدل مو</option>
-            <option value="coloring">رنگ مو</option>
-            <option value="massage">ماساژ درمانی</option>
-            <option value="spa">خدمات اسپا</option>
-            <option value="facial">پاکسازی و مراقبت پوست</option>
-            <option value="manicure">مانیکور و پدیکور</option>
-            <option value="waxing">اپیلاسیون</option>
-            <option value="makeup">آرایش و زیبایی</option>
-            <option value="barbering">آرایشگری مردانه</option>
-            <option value="tattoo">تاتو و پیرسینگ</option>
+            <option
+              v-for="category in serviceCategories"
+              :key="category.id"
+              :value="category.slug"
+            >
+              {{ category.icon }} {{ category.persianName }}
+            </option>
           </select>
           <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
@@ -156,25 +153,6 @@
       </div>
 
       <!-- Business Type (for more specific filtering) -->
-      <div class="filter-section">
-        <label class="filter-label">
-          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
-          </svg>
-          نوع کسب‌وکار
-        </label>
-        <div class="type-chips">
-          <button
-            v-for="type in providerTypes"
-            :key="type.value"
-            :class="['chip-btn', { active: localFilters.type === type.value }]"
-            @click="selectType(type.value)"
-          >
-            {{ type.label }}
-          </button>
-        </div>
-      </div>
-
       <!-- Status Filter (if admin) -->
       <div v-if="showStatusFilter" class="filter-section">
         <label class="filter-label">وضعیت</label>
@@ -302,10 +280,10 @@
 import { ref, computed, watch, onMounted, onUnmounted } from 'vue'
 import type {
   ProviderSearchFilters,
-  ProviderType,
   ProviderStatus,
   PriceRange,
 } from '../types/provider.types'
+import { getAllCategories } from '@/core/constants/provider-categories'
 
 // Props
 interface Props {
@@ -378,15 +356,13 @@ const providerHierarchyTypes = [
   { value: 'Individual', label: 'متخصص فردی', icon: '👤' },
 ]
 
-// Business types (legacy - for more specific filtering)
-const providerTypes = [
-  { value: 'Salon', label: 'سالن' },
-  { value: 'Clinic', label: 'کلینیک' },
-  { value: 'Spa', label: 'اسپا' },
-  { value: 'Studio', label: 'استودیو' },
-  { value: 'Barbershop', label: 'آرایشگاه' },
-  { value: 'BeautySalon', label: 'سالن زیبایی' },
-]
+// Service categories offered by the category filter.
+//
+// Previously this dropdown listed ad-hoc ids (haircut, coloring, facial, waxing, tattoo, ...) that
+// are not ServiceCategory members. The backend fails closed on an unrecognised category, so eight of
+// the ten options returned no providers at all. Driving the list from the shared metadata table
+// keeps the values in step with the backend enum, and the slug is what the API resolves.
+const serviceCategories = getAllCategories()
 
 // Computed
 const hasActiveFilters = computed(() => {
@@ -472,11 +448,6 @@ const handleClearAll = () => {
 
 const selectPriceRange = (range: string) => {
   localFilters.value.priceRange = localFilters.value.priceRange === range ? undefined : (range as PriceRange)
-  handleChange()
-}
-
-const selectType = (type: string) => {
-  localFilters.value.type = localFilters.value.type === type ? undefined : (type as ProviderType)
   handleChange()
 }
 
@@ -574,9 +545,6 @@ const getCleanFilters = (): ProviderSearchFilters => {
   }
   if (localFilters.value.priceRange) {
     filters.priceRange = localFilters.value.priceRange
-  }
-  if (localFilters.value.type) {
-    filters.type = localFilters.value.type as ProviderType
   }
   if (localFilters.value.hierarchyType) {
     filters.hierarchyType = localFilters.value.hierarchyType

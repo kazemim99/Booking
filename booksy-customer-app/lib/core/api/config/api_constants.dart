@@ -95,6 +95,13 @@ class ApiConstants {
   /// POST /api/v1/Providers/search
   static const String searchProviders = '/$apiVersion/Providers/search';
 
+  /// Providers near a point, WITH coordinates and a computed distance.
+  ///
+  /// The only endpoint that returns either: `/Providers/search` can order by distance but its response
+  /// carries neither a position nor a distance value, so it cannot drive a map or a "1.2 km away" label.
+  /// Params: latitude, longitude, radiusKm, optional `type` (ServiceCategory enum name), pageNumber, pageSize.
+  static const String providersByLocation = '/$apiVersion/Providers/by-location';
+
   /// Get provider by ID
   /// GET /api/v1/Providers/{id}
   static String providerById(String id) => '/$apiVersion/Providers/$id';

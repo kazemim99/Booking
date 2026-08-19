@@ -58,6 +58,24 @@ namespace Booksy.ServiceCatalog.Domain.Aggregates.NotificationAggregate
         public string? CampaignId { get; private set; }
         public string? BatchId { get; private set; }
 
+        /// <summary>
+        /// Id of the domain/integration event that caused this notification, when there was one.
+        /// </summary>
+        /// <remarks>
+        /// This is the stable half of the de-duplication tuple <c>(SourceEventId, Channel, Recipient)</c>. A
+        /// lifecycle event that gets re-delivered (CAP redelivery, a retried handler, a replayed outbox row)
+        /// carries the same event id, so the dedup log recognises the second dispatch and the customer is not
+        /// notified twice. Null for notifications raised directly through the API, which fall back to
+        /// <see cref="DedupKey"/>'s notification-id scope.
+        /// </remarks>
+        public Guid? SourceEventId { get; private set; }
+
+        /// <summary>
+        /// The de-duplication scope for this notification: the originating event when known, otherwise the
+        /// notification's own id (so retries of *this* notification still cannot double-send per channel).
+        /// </summary>
+        public Guid DedupKey => SourceEventId ?? Id.Value;
+
         // Tracking
         public string? OpenedFrom { get; private set; } // IP, device info
         public string? ClickedLink { get; private set; }
@@ -223,6 +241,17 @@ namespace Booksy.ServiceCatalog.Domain.Aggregates.NotificationAggregate
         public void AddMetadata(string key, string value)
         {
             Metadata[key] = value;
+        }
+
+        /// <summary>
+        /// Records which event caused this notification, fixing its de-duplication scope.
+        /// </summary>
+        public void SetSourceEvent(Guid sourceEventId)
+        {
+            if (sourceEventId == Guid.Empty)
+                throw new ArgumentException("Source event id cannot be empty", nameof(sourceEventId));
+
+            SourceEventId = sourceEventId;
         }
 
         public void SetCampaign(string? campaignId, string? batchId)

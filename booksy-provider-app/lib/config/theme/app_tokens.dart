@@ -56,9 +56,17 @@ class AppDimens {
   AppDimens._();
   static const double buttonHeight = 46;
   static const double buttonFontSize = 17;
+  static const double buttonMediumFontSize = 16;
+  static const double buttonDialogHeight = 40;
+  static const double buttonDialogFontSize = 15.5;
+  static const double buttonSmallHeight = 30;
+  static const double buttonSmallFontSize = 14;
+  static const double secondaryButtonBorderWidth = 2;
   static const double fieldLabelFontSize = 14;
   static const double inputBorderWidth = 1.9;
   static const double inputFocusBorderWidth = 2.1;
+  static const double tabIndicatorWidth = 2;
+  static const double tabFontSize = 16;
 }
 
 /// Brand palette (Coliride): blue chrome for primary actions and app bars,
@@ -75,6 +83,10 @@ class AppColors {
   static const Color danger = Color(0xFFFF6171);
   static const Color warning = Color(0xFFFFCB33);
 
+  /// Input error border only — production Coliride uses this darker red for
+  /// field borders, never [danger] (which stays on badges/toasts/buttons).
+  static const Color inputError = Color(0xFFE74A3B);
+
   // Greys / structure
   static const Color border = Color(0xFFEBEEF3); // resting input/card borders
   static const Color borderFocus = Color(0xFFC3CAD9); // focused input border
@@ -86,8 +98,24 @@ class AppColors {
   static const Color surfaceSoft = Color(0xFFFAFAFA); // soft item fill
   static const Color primarySoft = Color(0xFFE3F2FD); // tinted icon containers
   static const Color successSoft = Color(0xFFE9FFF6); // completed-state fill
+  static const Color surface = Color(0xFFF5F5F5); // M3 surface grey
+  static const Color menuBorder = Color(0xFFE5E8EB); // hub card border/dividers, sticky footer top
+  static const Color dividerSoft = Color(0xFFE8EDF4); // read-only detail-row dividers
+  static const Color readLabel = Color(0xFFB8C1D1); // read-only row labels
+  static const Color subtitle = Color(0xFF7F8696); // row subtitles, helper sentences
+  static const Color avatarBorder = Color(0xFFF0F0F0); // avatar rim on white
+  static const Color checkOff = Color(0xFFC7CFDE); // unchecked toggle-check rows
+
+  // Choice-chip pastel family (Figma biography chips). Ink text on the fill;
+  // icon tile uses a saturated sibling of the same hue.
+  static const Color chipPink = Color(0xFFFFE0FC);
+  static const Color chipPeriwinkle = Color(0xFFD3DCFF);
+  static const Color chipMint = Color(0xFFCBFAEA);
+  static const Color chipRose = Color(0xFFFFD3D4);
+  static const Color chipButter = Color(0xFFFBECBB);
 
   // Overlay barriers (depth comes from dimming, never elevation).
   static const Color dialogBarrier = Color(0x24000000);
   static const Color sheetBarrier = Color(0x47000000);
+  static const Color loadingOverlay = Color(0x22000000);
 }

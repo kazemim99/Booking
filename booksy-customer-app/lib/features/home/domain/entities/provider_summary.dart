@@ -12,6 +12,19 @@ class ProviderSummary extends Equatable {
   final bool isOpen;
   final String? closingTime;
 
+  /// Where the business actually is. Nullable because only `/Providers/by-location` returns coordinates —
+  /// `/Providers/search` does not — so a summary built from a plain search has none. The map needs them to
+  /// place a pin; everything else ignores them.
+  final double? latitude;
+  final double? longitude;
+
+  /// The provider's category as the API's `ServiceCategory` enum name (e.g. `Barbershop`), not a display
+  /// label. Used to pick a pin glyph and to echo the active filter.
+  final String? category;
+
+  /// City / street line, when the payload carried an address.
+  final String? addressLine;
+
   const ProviderSummary({
     required this.id,
     required this.name,
@@ -22,7 +35,14 @@ class ProviderSummary extends Equatable {
     required this.startingPrice,
     required this.isOpen,
     this.closingTime,
+    this.latitude,
+    this.longitude,
+    this.category,
+    this.addressLine,
   });
+
+  /// True when this summary can be drawn on a map.
+  bool get hasCoordinates => latitude != null && longitude != null;
 
   @override
   List<Object?> get props => [
@@ -35,5 +55,9 @@ class ProviderSummary extends Equatable {
         startingPrice,
         isOpen,
         closingTime,
+        latitude,
+        longitude,
+        category,
+        addressLine,
       ];
 }

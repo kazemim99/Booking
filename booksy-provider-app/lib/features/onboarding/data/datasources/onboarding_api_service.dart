@@ -52,6 +52,15 @@ class OnboardingApiService {
     );
   }
 
+  /// Records whether the owner personally provides services. The backend resolves
+  /// the owner's provider from the authenticated user, so no providerId is sent.
+  Future<void> setOwnerProvidesServices(bool providesServices) async {
+    await _dio.post(
+      ApiConstants.registrationOwnerProvidesServices,
+      data: {'providesServices': providesServices},
+    );
+  }
+
   /// Returns the resumable draft (all saved fields), or null if none.
   Future<OnboardingDraft?> getDraft() async {
     try {

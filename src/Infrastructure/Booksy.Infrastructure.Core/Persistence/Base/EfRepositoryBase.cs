@@ -2,6 +2,7 @@
 using Booksy.Core.Application.Abstractions.Persistence;
 using Booksy.Core.Application.DTOs;
 using Booksy.Core.Domain.Abstractions.Entities;
+using Booksy.Core.Domain.Abstractions.Entities.Specifications;
 using Microsoft.EntityFrameworkCore;
 using System.Linq.Expressions;
 
@@ -187,14 +188,55 @@ public abstract class EfRepositoryBase<TEntity, TId, TContext> : IReadRepository
         ISpecification<TEntity> specification,
         PaginationRequest pagination)
     {
-        // If specification is orderable and has ordering, don't override
-        //if (specification is IOrderableSpecification<TEntity> orderableSpec && orderableSpec.OrderBy.Any())
-        //{
-        //    return query; // Specification handles ordering
-        //}
+        // A specification that asked for an order gets it.
+        //
+        // This check was commented out AND the ordering was never applied anywhere else: ApplySpecification
+        // above copies only Criteria and Includes, so every ordering a specification declared was dropped on
+        // the floor. Provider search returned an identical sequence for SortBy=name, SortBy=rating and
+        // SortBy=distance — the request succeeded and quietly ignored the order it was given, which is why
+        // "nearest first" listed the farthest provider first.
+        //
+        // Restoring the guard alone would not have been enough; the ordering has to actually be applied, which
+        // is what ApplySpecificationOrdering below does.
+        if (specification is IOrderableSpecification<TEntity> orderableSpec && orderableSpec.OrderBy.Count > 0)
+        {
+            return ApplySpecificationOrdering(query, orderableSpec);
+        }
 
         // Apply pagination sorting
         return ApplySortingDescriptors(query, pagination.SortBy);
+    }
+
+    /// <summary>
+    /// Applies the ordering a specification declared: the first expression establishes the order, and any
+    /// subsequent ones extend it as ThenBy. Must run before Skip/Take, or paging would slice an unordered
+    /// sequence and pages could repeat or drop rows.
+    /// </summary>
+    protected virtual IQueryable<TEntity> ApplySpecificationOrdering(
+        IQueryable<TEntity> query,
+        IOrderableSpecification<TEntity> specification)
+    {
+        IOrderedQueryable<TEntity>? ordered = null;
+
+        foreach (var order in specification.OrderBy)
+        {
+            // A ThenBy arriving with no primary is treated as the primary, so a mis-built specification
+            // degrades to a sensible order rather than throwing at runtime.
+            if (ordered is null)
+            {
+                ordered = order.Direction == OrderDirection.Descending
+                    ? query.OrderByDescending(order.KeySelector)
+                    : query.OrderBy(order.KeySelector);
+            }
+            else
+            {
+                ordered = order.Direction == OrderDirection.Descending
+                    ? ordered.ThenByDescending(order.KeySelector)
+                    : ordered.ThenBy(order.KeySelector);
+            }
+        }
+
+        return ordered ?? query;
     }
 
     /// <summary>

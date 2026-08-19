@@ -1,5 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:go_router/go_router.dart';
+
+import '../../../../config/routes/app_router.dart';
 
 import '../../../../config/theme/app_tokens.dart';
 import '../../../../core/constants/app_strings.dart';
@@ -8,6 +11,7 @@ import '../../../../core/widgets/app_button.dart';
 import '../../../../core/widgets/app_card.dart';
 import '../../../../core/widgets/app_empty_state.dart';
 import '../../../../core/widgets/app_error_state.dart';
+import '../../../../core/widgets/app_page_scaffold.dart';
 import '../../../../core/widgets/app_snackbar.dart';
 import '../../../../core/widgets/app_text_field.dart';
 import '../../../onboarding/domain/entities/onboarding_data.dart'
@@ -15,6 +19,37 @@ import '../../../onboarding/domain/entities/onboarding_data.dart'
 import '../../domain/entities/composer_models.dart';
 import '../../domain/entities/more_models.dart';
 import '../cubit/more_cubits.dart';
+
+/// Green "+ add" link row pinned at the top of a populated list — the
+/// ColiRide list-add affordance. The chrome icon stays for muscle memory,
+/// but this is the discoverable path (spec ruling after visual QA: the tiny
+/// header icon was easy to miss on first use).
+class _AddLinkRow extends StatelessWidget {
+  final String label;
+  final VoidCallback onTap;
+
+  const _AddLinkRow({super.key, required this.label, required this.onTap});
+
+  @override
+  Widget build(BuildContext context) {
+    return Align(
+      alignment: AlignmentDirectional.centerStart,
+      child: TextButton.icon(
+        onPressed: onTap,
+        icon: const Icon(Icons.add_circle,
+            size: AppIconSize.action, color: AppColors.success),
+        label: Text(label),
+        style: TextButton.styleFrom(
+          foregroundColor: AppColors.success,
+          padding: const EdgeInsets.symmetric(
+              horizontal: AppSpacing.xs, vertical: AppSpacing.sm),
+          textStyle:
+              const TextStyle(fontSize: 14, fontWeight: FontWeight.bold),
+        ),
+      ),
+    );
+  }
+}
 
 String _formatMoney(double amount, String currency) {
   final rounded =
@@ -42,22 +77,9 @@ class _MoreSubScaffold<T> extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: Colors.white,
-      appBar: AppBar(
-        backgroundColor: Colors.white,
-        surfaceTintColor: Colors.transparent,
-        elevation: 0,
-        title: Text(
-          title,
-          style: const TextStyle(
-            fontSize: 17,
-            fontWeight: FontWeight.w700,
-            color: AppColors.ink,
-          ),
-        ),
-        actions: actions,
-      ),
+    return AppPageScaffold(
+      title: title,
+      actions: actions,
       body: switch (state.status) {
         MoreStatus.loading =>
           const Center(child: CircularProgressIndicator()),
@@ -238,14 +260,16 @@ class ServicesView extends StatelessWidget {
           IconButton(
             key: const Key('service-add'),
             tooltip: AppStrings.serviceAdd,
-            icon: const Icon(Icons.add_circle_outline,
-                color: AppColors.primary),
+            // Green add affordance on the blue chrome (ColiRide sub-page
+            // pattern): "add" reads as the positive accent, not brand blue,
+            // which would vanish against the blue header.
+            icon: const Icon(Icons.add_circle, color: AppColors.success),
             onPressed: () => _ServiceFormSheet.show(
                 context, context.read<ServicesCubit>()),
           ),
         ],
         bodyBuilder: (context, services) => services.isEmpty
-            ? AppEmptyState(
+            ? AppEmptyState.add(
                 icon: Icons.design_services_outlined,
                 message: AppStrings.servicesEmpty,
                 actionLabel: '+ ${AppStrings.serviceAdd}',
@@ -254,11 +278,19 @@ class ServicesView extends StatelessWidget {
               )
             : ListView.separated(
                 padding: const EdgeInsets.all(AppSpacing.md),
-                itemCount: services.length,
+                itemCount: services.length + 1,
                 separatorBuilder: (_, _) =>
                     const Divider(color: AppColors.divider, height: 1),
                 itemBuilder: (context, i) {
-                  final s = services[i];
+                  if (i == 0) {
+                    return _AddLinkRow(
+                      key: const Key('service-add-row'),
+                      label: AppStrings.serviceAdd,
+                      onTap: () => _ServiceFormSheet.show(
+                          context, context.read<ServicesCubit>()),
+                    );
+                  }
+                  final s = services[i - 1];
                   return ListTile(
                     key: Key('service-row-${s.id}'),
                     contentPadding: EdgeInsets.zero,
@@ -489,6 +521,114 @@ class _ServiceFormSheetState extends State<_ServiceFormSheet> {
 }
 
 /// More → تیم (read-only).
+/// More → سالن‌های من — the person's organization memberships (multi-salon, S6).
+class MyMembershipsPage extends StatelessWidget {
+  const MyMembershipsPage({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return BlocProvider<MembershipsCubit>(
+      create: (_) => getIt<MembershipsCubit>()..load(),
+      child: const MyMembershipsView(),
+    );
+  }
+}
+
+/// Separated from [MyMembershipsPage] so tests can pump it with a fake cubit.
+class MyMembershipsView extends StatelessWidget {
+  const MyMembershipsView({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return BlocBuilder<MembershipsCubit, MoreState<List<ProviderMembership>>>(
+      builder: (context, state) =>
+          _MoreSubScaffold<List<ProviderMembership>>(
+        title: AppStrings.moreMemberships,
+        state: state,
+        onRetry: context.read<MembershipsCubit>().load,
+        bodyBuilder: (context, memberships) => memberships.isEmpty
+            ? const Center(
+                child: Padding(
+                  padding: EdgeInsets.all(AppSpacing.lg),
+                  child: Text(
+                    AppStrings.membershipsEmpty,
+                    style: TextStyle(color: AppColors.muted),
+                    textAlign: TextAlign.center,
+                  ),
+                ),
+              )
+            : ListView.separated(
+                padding: const EdgeInsets.all(AppSpacing.md),
+                itemCount: memberships.length,
+                separatorBuilder: (_, _) =>
+                    const Divider(color: AppColors.divider, height: 1),
+                itemBuilder: (context, i) {
+                  final m = memberships[i];
+                  // Only an owner/manager membership can become the active
+                  // workspace: the management screens are owner-authorized
+                  // server-side, so switching into a staff-only membership
+                  // would fail. A dedicated staff workspace is a separate step.
+                  final canSwitch = m.isOwner && m.isActive;
+                  return ListTile(
+                    key: Key('membership-row-${m.membershipId}'),
+                    contentPadding: EdgeInsets.zero,
+                    enabled: canSwitch,
+                    onTap: canSwitch ? () => _switchTo(context, m) : null,
+                    leading: CircleAvatar(
+                      backgroundColor: AppColors.primarySoft,
+                      child: Text(
+                        m.organizationName.isNotEmpty
+                            ? m.organizationName.characters.first
+                            : '؟',
+                        style: const TextStyle(
+                          color: AppColors.primary,
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
+                    ),
+                    title: Text(
+                      m.organizationName,
+                      style: TextStyle(
+                        fontSize: 15,
+                        color: m.isActive ? AppColors.ink : AppColors.muted,
+                      ),
+                    ),
+                    subtitle: Text(
+                      [
+                        if (m.isOwner) AppStrings.membershipOwner,
+                        if (m.providesServices)
+                          AppStrings.membershipProvidesServices,
+                        if (!m.isActive) m.status,
+                      ].join(' · '),
+                      style:
+                          const TextStyle(fontSize: 12, color: AppColors.muted),
+                    ),
+                    trailing: canSwitch
+                        ? const Icon(Icons.swap_horiz,
+                            size: AppIconSize.action, color: AppColors.primary)
+                        : null,
+                  );
+                },
+              ),
+      ),
+    );
+  }
+
+  /// Re-scopes the session to [m]'s organization, then returns to the dashboard
+  /// so every provider-scoped screen reloads against the newly active salon.
+  Future<void> _switchTo(BuildContext context, ProviderMembership m) async {
+    final cubit = context.read<MembershipsCubit>();
+    final failure = await cubit.switchTo(m.organizationId);
+    if (!context.mounted) return;
+    if (failure == null) {
+      AppSnackbar.success(context, AppStrings.membershipSwitched(m.organizationName));
+      context.go(Routes.dashboard);
+    } else {
+      AppSnackbar.error(context, failure.message);
+    }
+  }
+}
+
 class StaffPage extends StatelessWidget {
   const StaffPage({super.key});
 
@@ -502,51 +642,73 @@ class StaffPage extends StatelessWidget {
 }
 
 /// Separated from [StaffPage] so tests can pump it with a fake cubit.
+/// Lists the organization's members from the membership model; "add" is invite
+/// by phone, "remove" terminates the membership. Owners can't be removed here.
 class StaffView extends StatelessWidget {
   const StaffView({super.key});
 
   @override
   Widget build(BuildContext context) {
-    return BlocBuilder<StaffCubit, MoreState<List<ProviderStaffMember>>>(
-      builder: (context, state) =>
-          _MoreSubScaffold<List<ProviderStaffMember>>(
+    return BlocBuilder<StaffCubit, MoreState<List<OrgMember>>>(
+      builder: (context, state) => _MoreSubScaffold<List<OrgMember>>(
         title: AppStrings.moreStaff,
         state: state,
         onRetry: context.read<StaffCubit>().load,
         actions: [
           IconButton(
-            key: const Key('staff-add'),
-            tooltip: AppStrings.staffAdd,
-            icon: const Icon(Icons.person_add_alt, color: AppColors.primary),
+            key: const Key('staff-invite'),
+            tooltip: AppStrings.staffInvite,
+            // Green add affordance on the blue chrome (ColiRide sub-page
+            // pattern): "add" reads as the positive accent, not brand blue,
+            // which would vanish against the blue header.
+            //
+            // This one was missed while its siblings (service-add, holiday-add)
+            // got the accent: AppColors.primary is 0xFF3777BF against an
+            // 0xFF3777C0 header — one step apart in the blue channel — so the
+            // only way to invite a team member was an invisible icon, and the
+            // feature read as unbuilt.
+            icon: const Icon(Icons.person_add_alt_1, color: AppColors.success),
             onPressed: () =>
-                StaffFormSheet.show(context, context.read<StaffCubit>()),
+                InviteStaffSheet.show(context, context.read<StaffCubit>()),
           ),
         ],
-        bodyBuilder: (context, staff) => staff.isEmpty
-            ? AppEmptyState(
+        bodyBuilder: (context, members) => members.isEmpty
+            ? AppEmptyState.add(
                 icon: Icons.people_outline,
                 message: AppStrings.staffEmpty,
-                actionLabel: '+ ${AppStrings.staffAdd}',
+                actionLabel: '+ ${AppStrings.staffInvite}',
                 onAction: () =>
-                    StaffFormSheet.show(context, context.read<StaffCubit>()),
+                    InviteStaffSheet.show(context, context.read<StaffCubit>()),
               )
             : ListView.separated(
                 padding: const EdgeInsets.all(AppSpacing.md),
-                itemCount: staff.length,
+                // +1 for the leading add row, as Services and Holidays do.
+                itemCount: members.length + 1,
                 separatorBuilder: (_, _) =>
                     const Divider(color: AppColors.divider, height: 1),
                 itemBuilder: (context, i) {
-                  final m = staff[i];
+                  // The discoverable path to inviting someone. The chrome icon
+                  // stays for muscle memory, but the spec ruling after visual
+                  // QA was that the tiny header icon is easy to miss on first
+                  // use — which is exactly how this screen read while the icon
+                  // was also painted brand-blue on the blue header.
+                  if (i == 0) {
+                    return _AddLinkRow(
+                      key: const Key('staff-invite-row'),
+                      label: AppStrings.staffInvite,
+                      onTap: () => InviteStaffSheet.show(
+                          context, context.read<StaffCubit>()),
+                    );
+                  }
+                  final m = members[i - 1];
+                  final display = m.name.isNotEmpty ? m.name : (m.phone ?? '؟');
                   return ListTile(
-                    key: Key('staff-row-${m.id}'),
+                    key: Key('member-row-${m.membershipId}'),
                     contentPadding: EdgeInsets.zero,
-                    onTap: () => StaffFormSheet.show(
-                        context, context.read<StaffCubit>(),
-                        member: m),
                     leading: CircleAvatar(
                       backgroundColor: AppColors.primarySoft,
                       child: Text(
-                        m.name.isNotEmpty ? m.name.characters.first : '؟',
+                        display.isNotEmpty ? display.characters.first : '؟',
                         style: const TextStyle(
                           color: AppColors.primary,
                           fontWeight: FontWeight.w700,
@@ -554,25 +716,94 @@ class StaffView extends StatelessWidget {
                       ),
                     ),
                     title: Text(
-                      m.name,
+                      display,
                       style: TextStyle(
                         fontSize: 15,
                         color: m.isActive ? AppColors.ink : AppColors.muted,
                       ),
                     ),
                     subtitle: Text(
-                      [
-                        if (m.role.isNotEmpty) m.role,
-                        if (!m.isActive) AppStrings.staffInactive,
-                      ].join(' · '),
-                      style: const TextStyle(
-                          fontSize: 12, color: AppColors.muted),
+                      _subtitle(m),
+                      style: const TextStyle(fontSize: 12, color: AppColors.muted),
                     ),
-                    trailing: const Icon(Icons.chevron_left,
-                        size: AppIconSize.action, color: AppColors.muted),
+                    trailing: m.isOwner
+                        ? const _OwnerBadge()
+                        : IconButton(
+                            key: Key('member-remove-${m.membershipId}'),
+                            tooltip: AppStrings.staffRemove,
+                            icon: const Icon(Icons.person_remove_outlined,
+                                size: AppIconSize.action, color: AppColors.danger),
+                            onPressed: () => _confirmRemove(context, m),
+                          ),
                   );
                 },
               ),
+      ),
+    );
+  }
+
+  static String _subtitle(OrgMember m) {
+    final parts = <String>[
+      if (m.isOwner) AppStrings.membershipOwner,
+      if (m.providesServices) AppStrings.membershipProvidesServices,
+      if (!m.isActive)
+        (m.status == 'Invited'
+            ? AppStrings.staffInvitePending
+            : AppStrings.staffInactive),
+    ];
+    return parts.join(' · ');
+  }
+
+  Future<void> _confirmRemove(BuildContext context, OrgMember m) async {
+    final cubit = context.read<StaffCubit>();
+    final label = m.name.isNotEmpty ? m.name : (m.phone ?? '');
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: const Text(AppStrings.staffRemoveConfirmTitle),
+        content: Text(AppStrings.staffRemoveConfirmBody(label)),
+        actions: [
+          TextButton(
+            key: const Key('member-remove-cancel'),
+            onPressed: () => Navigator.pop(dialogContext, false),
+            child: const Text(AppStrings.cancel),
+          ),
+          TextButton(
+            key: const Key('member-remove-confirm'),
+            onPressed: () => Navigator.pop(dialogContext, true),
+            style: TextButton.styleFrom(foregroundColor: AppColors.danger),
+            child: const Text(AppStrings.staffRemoveConfirm),
+          ),
+        ],
+      ),
+    );
+    if (confirmed != true || !context.mounted) return;
+
+    final failure = await cubit.removeMember(m.membershipId);
+    if (!context.mounted) return;
+    if (failure == null) {
+      AppSnackbar.success(context, AppStrings.staffRemoved);
+    } else {
+      AppSnackbar.error(context, failure.message);
+    }
+  }
+}
+
+class _OwnerBadge extends StatelessWidget {
+  const _OwnerBadge();
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+      decoration: BoxDecoration(
+        color: AppColors.primarySoft,
+        borderRadius: BorderRadius.circular(8),
+      ),
+      child: const Text(
+        AppStrings.membershipOwner,
+        style: TextStyle(
+            fontSize: 11, color: AppColors.primary, fontWeight: FontWeight.w600),
       ),
     );
   }
@@ -843,8 +1074,10 @@ class HolidaysView extends StatelessWidget {
           IconButton(
             key: const Key('holiday-add'),
             tooltip: AppStrings.holidayAdd,
-            icon: const Icon(Icons.add_circle_outline,
-                color: AppColors.primary),
+            // Green add affordance on the blue chrome (ColiRide sub-page
+            // pattern): "add" reads as the positive accent, not brand blue,
+            // which would vanish against the blue header.
+            icon: const Icon(Icons.add_circle, color: AppColors.success),
             onPressed: () =>
                 _HolidayFormSheet.show(context, context.read<HolidaysCubit>()),
           ),
@@ -855,7 +1088,7 @@ class HolidaysView extends StatelessWidget {
             if (holidays.isEmpty)
               SizedBox(
                 height: 220,
-                child: AppEmptyState(
+                child: AppEmptyState.add(
                   icon: Icons.beach_access_outlined,
                   message: AppStrings.holidaysEmpty,
                   actionLabel: '+ ${AppStrings.holidayAdd}',
@@ -863,11 +1096,18 @@ class HolidaysView extends StatelessWidget {
                       context, context.read<HolidaysCubit>()),
                 ),
               )
-            else
+            else ...[
+              _AddLinkRow(
+                key: const Key('holiday-add-row'),
+                label: AppStrings.holidayAdd,
+                onTap: () => _HolidayFormSheet.show(
+                    context, context.read<HolidaysCubit>()),
+              ),
               for (final h in holidays) ...[
                 _holidayTile(context, h),
                 const Divider(color: AppColors.divider, height: 1),
               ],
+            ],
             const SizedBox(height: AppSpacing.lg),
             const _ExceptionsSection(),
           ],
@@ -1292,19 +1532,14 @@ class _BusinessProfileFormState extends State<_BusinessProfileForm> {
   }
 }
 
-/// Add/edit form for a team member (spec: provider-staff-management).
-/// Pre-filled = edit (offers a confirm-guarded remove); empty = add.
-class StaffFormSheet extends StatefulWidget {
+/// Invite a person by phone to join the team (spec: organization-membership).
+/// The backend reuses an existing account by phone (never a duplicate) and
+/// rejects inviting yourself or an existing member.
+class InviteStaffSheet extends StatefulWidget {
   final StaffCubit cubit;
-  final ProviderStaffMember? member;
+  const InviteStaffSheet({super.key, required this.cubit});
 
-  const StaffFormSheet({super.key, required this.cubit, this.member});
-
-  static Future<void> show(
-    BuildContext context,
-    StaffCubit cubit, {
-    ProviderStaffMember? member,
-  }) {
+  static Future<void> show(BuildContext context, StaffCubit cubit) {
     return showModalBottomSheet<void>(
       context: context,
       isScrollControlled: true,
@@ -1316,94 +1551,42 @@ class StaffFormSheet extends StatefulWidget {
       builder: (_) => Padding(
         padding:
             EdgeInsets.only(bottom: MediaQuery.of(context).viewInsets.bottom),
-        child: StaffFormSheet(cubit: cubit, member: member),
+        child: InviteStaffSheet(cubit: cubit),
       ),
     );
   }
 
   @override
-  State<StaffFormSheet> createState() => _StaffFormSheetState();
+  State<InviteStaffSheet> createState() => _InviteStaffSheetState();
 }
 
-class _StaffFormSheetState extends State<StaffFormSheet> {
-  late final _firstName =
-      TextEditingController(text: widget.member?.firstName ?? '');
-  late final _lastName =
-      TextEditingController(text: widget.member?.lastName ?? '');
-  late final _phone = TextEditingController(text: widget.member?.phone ?? '');
-  late final _role = TextEditingController(text: widget.member?.role ?? '');
+class _InviteStaffSheetState extends State<InviteStaffSheet> {
+  final _phone = TextEditingController();
+  final _name = TextEditingController();
   bool _submitting = false;
 
-  bool get _isEdit => widget.member != null;
+  // Iranian mobile, same rule as the login screen.
+  bool get _phoneValid => RegExp(r'^09\d{9}$').hasMatch(_phone.text.trim());
 
   @override
   void dispose() {
-    _firstName.dispose();
-    _lastName.dispose();
     _phone.dispose();
-    _role.dispose();
+    _name.dispose();
     super.dispose();
   }
 
   Future<void> _submit() async {
     setState(() => _submitting = true);
-    final failure = _isEdit
-        ? await widget.cubit.updateStaff(
-            widget.member!.id,
-            firstName: _firstName.text.trim(),
-            lastName: _lastName.text.trim(),
-            phoneNumber: _phone.text.trim(),
-            role: _role.text.trim(),
-          )
-        : await widget.cubit.addStaff(
-            firstName: _firstName.text.trim(),
-            lastName: _lastName.text.trim(),
-            phoneNumber: _phone.text.trim(),
-            role: _role.text.trim(),
-          );
-    if (!mounted) return;
-    if (failure == null) {
-      Navigator.pop(context);
-      AppSnackbar.success(
-          context, _isEdit ? AppStrings.staffUpdated : AppStrings.staffAdded);
-    } else {
-      // Failure preserves the entered values for retry (spec).
-      setState(() => _submitting = false);
-      AppSnackbar.error(context, failure.message);
-    }
-  }
-
-  Future<void> _remove() async {
-    final confirmed = await showDialog<bool>(
-      context: context,
-      builder: (dialogContext) => AlertDialog(
-        title: const Text(AppStrings.staffRemoveConfirmTitle),
-        content:
-            Text(AppStrings.staffRemoveConfirmBody(widget.member!.name)),
-        actions: [
-          TextButton(
-            key: const Key('staff-remove-cancel'),
-            onPressed: () => Navigator.pop(dialogContext, false),
-            child: const Text(AppStrings.cancel),
-          ),
-          TextButton(
-            key: const Key('staff-remove-confirm'),
-            onPressed: () => Navigator.pop(dialogContext, true),
-            style: TextButton.styleFrom(foregroundColor: AppColors.danger),
-            child: const Text(AppStrings.staffRemoveConfirm),
-          ),
-        ],
-      ),
+    final failure = await widget.cubit.inviteStaff(
+      phoneNumber: _phone.text.trim(),
+      inviteeName: _name.text.trim().isEmpty ? null : _name.text.trim(),
     );
-    if (confirmed != true || !mounted) return;
-
-    setState(() => _submitting = true);
-    final failure = await widget.cubit.removeStaff(widget.member!.id);
     if (!mounted) return;
     if (failure == null) {
       Navigator.pop(context);
-      AppSnackbar.success(context, AppStrings.staffRemoved);
+      AppSnackbar.success(context, AppStrings.staffInviteSent);
     } else {
+      // Preserve the entered values for retry (e.g. self-invite → fix the number).
       setState(() => _submitting = false);
       AppSnackbar.error(context, failure.message);
     }
@@ -1418,60 +1601,40 @@ class _StaffFormSheetState extends State<StaffFormSheet> {
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(
-              _isEdit ? AppStrings.staffEdit : AppStrings.staffAdd,
-              style: const TextStyle(
+            const Text(
+              AppStrings.staffInvite,
+              style: TextStyle(
                 fontSize: 16,
                 fontWeight: FontWeight.w700,
                 color: AppColors.ink,
               ),
             ),
+            const SizedBox(height: 4),
+            const Text(
+              AppStrings.staffInviteHint,
+              style: TextStyle(fontSize: 12, color: AppColors.muted),
+            ),
             const SizedBox(height: AppSpacing.md),
             AppTextField(
-              key: const Key('staff-first-name'),
-              controller: _firstName,
-              label: AppStrings.staffFirstName,
+              key: const Key('invite-phone'),
+              controller: _phone,
+              label: AppStrings.staffPhone,
+              keyboardType: TextInputType.phone,
               onChanged: (_) => setState(() {}),
             ),
             const SizedBox(height: AppSpacing.sm),
             AppTextField(
-              key: const Key('staff-last-name'),
-              controller: _lastName,
-              label: AppStrings.staffLastName,
-            ),
-            const SizedBox(height: AppSpacing.sm),
-            AppTextField(
-              key: const Key('staff-phone'),
-              controller: _phone,
-              label: AppStrings.staffPhone,
-              keyboardType: TextInputType.phone,
-            ),
-            const SizedBox(height: AppSpacing.sm),
-            AppTextField(
-              key: const Key('staff-role'),
-              controller: _role,
-              label: AppStrings.staffRole,
+              key: const Key('invite-name'),
+              controller: _name,
+              label: AppStrings.staffInviteNameOptional,
             ),
             const SizedBox(height: AppSpacing.md),
             AppButton(
-              key: const Key('staff-save'),
-              label: AppStrings.staffSave,
+              key: const Key('invite-send'),
+              label: AppStrings.staffInviteSend,
               loading: _submitting,
-              onPressed:
-                  _firstName.text.trim().isEmpty ? null : _submit,
+              onPressed: _phoneValid ? _submit : null,
             ),
-            if (_isEdit)
-              Align(
-                alignment: AlignmentDirectional.center,
-                child: TextButton(
-                  key: const Key('staff-remove'),
-                  onPressed: _submitting ? null : _remove,
-                  style:
-                      TextButton.styleFrom(foregroundColor: AppColors.danger),
-                  child: const Text(AppStrings.staffRemove),
-                ),
-              ),
-            const SizedBox(height: AppSpacing.sm),
           ],
         ),
       ),

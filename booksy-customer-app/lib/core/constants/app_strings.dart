@@ -107,6 +107,16 @@ class AppStrings {
 
   // Booking flow
   static const String bookingSelectService = 'انتخاب خدمت';
+  static const String bookingSelectServices = 'انتخاب خدمات';
+  static const String bookingSelectServicesHint =
+      'می‌توانید چند خدمت را همزمان انتخاب کنید';
+  static const String bookingSelectAtLeastOneService =
+      'حداقل یک خدمت انتخاب کنید';
+  static const String bookingServicesSelectedSuffix = 'خدمت انتخاب شده';
+  static const String bookingServiceSelectedA11y = 'انتخاب شده';
+  static const String bookingTotalDuration = 'مدت کل';
+  static const String bookingTotalPrice = 'مجموع';
+  static const String bookingContinue = 'ادامه';
   static const String bookingSelectStaff = 'انتخاب متخصص';
   static const String bookingSelectTime = 'انتخاب زمان';
   static const String bookingConfirmTitle = 'تایید نوبت';
@@ -193,4 +203,67 @@ class AppStrings {
   static const String checkoutNothingDueBody = 'برای این نوبت بیعانه‌ای لازم نیست. هزینه در محل پرداخت می‌شود.';
 
   static const String checkoutPayLaterCta = 'پرداخت بعداً';
+
+  // ---------------------------------------------------------------------
+  // Home — redesigned discovery surface
+  // ---------------------------------------------------------------------
+  static const String homeTitle = 'بوکسی';
+  static const String homeMenu = 'منو';
+  static const String homeSearchHint = 'جستجوی آرایشگاه، سالن، اسپا…';
+  static const String mapSearch = 'جستجو روی نقشه';
+  static const String nearestTitle = 'نزدیک‌ترین‌ها';
+  static const String bookNowShort = 'رزرو';
+  static const String viewProfile = 'مشاهده پروفایل';
+
+  // Service-category tiles/chips — display labels only. Each label's API value
+  // (the ServiceCategory enum name) lives next to it in `kServiceCategories`
+  // so the Persian text is never sent on the wire.
+  static const String categoryBarbershop = 'آرایشگاه مردانه';
+  static const String categoryHairSalon = 'آرایشگاه زنانه';
+  static const String categorySpa = 'اسپا';
+  static const String categoryNailSalon = 'سالن ناخن';
+  static const String categoryBeautySalon = 'پوست و زیبایی';
+  static const String categoryMassage = 'ماساژ';
+  static const String categoryMore = 'بیشتر';
+
+  // ---------------------------------------------------------------------
+  // Provider detail — redesigned profile surface
+  // ---------------------------------------------------------------------
+  static const String openNow = 'باز است';
+  static const String closedDay = 'تعطیل';
+  static const String contactAndLocationTitle = 'تماس و موقعیت';
+  static const String providerPhoneLabel = 'تلفن تماس';
+  static const String providerAddressLabel = 'نشانی';
+  static const String noServicesYet = 'خدمتی برای این سالن ثبت نشده است';
+  static String reviewCountLabel(String count) => '$count نظر';
+  static String distanceKmLabel(String km) => '$km کیلومتر';
+
+  /// Price band glyphs. Derived from the provider's own service prices —
+  /// never shown when no priced service exists.
+  static const String priceBandLow = r'$';
+  static const String priceBandMid = r'$$';
+  static const String priceBandHigh = r'$$$';
+
+  // ---------------------------------------------------------------------
+  // Map discovery — the map + carousel surface that replaced the
+  // list-only "nearby" and "area" pages.
+  // ---------------------------------------------------------------------
+  static const String mapTitle = 'نقشه';
+  static const String mapAreaSearchHint = 'نام شهر یا محله را وارد کنید';
+
+  /// Where the app starts before the device location is known: Parsabad in
+  /// Ardabil province, the launch city.
+  static const String mapDefaultAreaLabel = 'پارس‌آباد، اردبیل';
+  static const String mapSearchThisArea = 'جستجو در این محدوده';
+  static const String mapMyLocation = 'موقعیت من';
+  static const String mapEmptyTitle = 'سالنی در این محدوده پیدا نشد';
+  static const String mapEmptySubtitle =
+      'محدوده نقشه را تغییر دهید یا فیلتر دسته‌بندی را بردارید';
+  static const String mapAreaNotFound = 'شهر یا محله‌ای با این نام پیدا نشد';
+  static const String mapLocationFallbackNotice =
+      'موقعیت شما در دسترس نیست؛ نقشه روی پارس‌آباد تنظیم شد';
+  static const String mapAttribution = 'مشارکت‌کنندگان OpenStreetMap';
+  static String mapClusterLabel(String count) => '$count سالن';
+  static String mapPinLabel(String name) => 'نشانگر $name';
+  static const String mapProvidersCarouselLabel = 'فهرست سالن‌های روی نقشه';
 }

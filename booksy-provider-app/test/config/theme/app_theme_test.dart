@@ -54,10 +54,25 @@ void main() {
           AppColors.disabled);
     });
 
-    test('outlined and text buttons use navy ink', () {
-      expect(
-          theme.outlinedButtonTheme.style!.foregroundColor?.resolve({}),
-          AppColors.ink);
+    test(
+        'outlined (secondary role) buttons carry a 2px primary border '
+        'and primary label', () {
+      final style = theme.outlinedButtonTheme.style!;
+      expect(style.foregroundColor?.resolve({}), AppColors.primary);
+      final side = style.side!.resolve({})!;
+      expect(side.color, AppColors.primary);
+      expect(side.width, AppDimens.secondaryButtonBorderWidth);
+    });
+
+    test('disabled outlined buttons swap border and label to muted grey', () {
+      final style = theme.outlinedButtonTheme.style!;
+      expect(style.foregroundColor?.resolve({WidgetState.disabled}),
+          AppColors.disabled);
+      expect(style.side?.resolve({WidgetState.disabled})?.color,
+          AppColors.disabled);
+    });
+
+    test('text buttons use navy ink', () {
       expect(theme.textButtonTheme.style!.foregroundColor?.resolve({}),
           AppColors.ink);
     });
@@ -75,6 +90,17 @@ void main() {
           theme.inputDecorationTheme.focusedBorder! as OutlineInputBorder;
       expect(focused.borderSide.color, AppColors.borderFocus);
       expect(focused.borderSide.width, AppDimens.inputFocusBorderWidth);
+    });
+
+    test('error borders use the production input-error red, not danger', () {
+      final error =
+          theme.inputDecorationTheme.errorBorder! as OutlineInputBorder;
+      expect(error.borderSide.color, AppColors.inputError);
+      expect(error.borderSide.color, const Color(0xFFE74A3B));
+      final focusedError = theme.inputDecorationTheme.focusedErrorBorder!
+          as OutlineInputBorder;
+      expect(focusedError.borderSide.color, AppColors.inputError);
+      expect(focusedError.borderSide.width, AppDimens.inputFocusBorderWidth);
     });
 
     test('labels are bold navy, hints are soft grey', () {
@@ -95,6 +121,21 @@ void main() {
     test('switch track turns green when selected', () {
       expect(theme.switchTheme.trackColor?.resolve({WidgetState.selected}),
           AppColors.success);
+    });
+  });
+
+  group('tabs', () {
+    test('active label and 2px bottom indicator are green over navy', () {
+      final tabs = theme.tabBarTheme;
+      expect(tabs.labelColor, AppColors.success);
+      expect(tabs.unselectedLabelColor, AppColors.ink);
+      expect(tabs.labelStyle?.fontSize, AppDimens.tabFontSize);
+      expect(tabs.labelStyle?.fontWeight, FontWeight.w700);
+      expect(tabs.dividerColor, AppColors.border);
+      expect(tabs.indicatorSize, TabBarIndicatorSize.tab);
+      final indicator = tabs.indicator! as BoxDecoration;
+      expect(indicator.border!.bottom.color, AppColors.success);
+      expect(indicator.border!.bottom.width, AppDimens.tabIndicatorWidth);
     });
   });
 
@@ -143,6 +184,35 @@ void main() {
     test('overlay barrier colors', () {
       expect(AppColors.dialogBarrier, const Color(0x24000000));
       expect(AppColors.sheetBarrier, const Color(0x47000000));
+      expect(AppColors.loadingOverlay, const Color(0x22000000));
+    });
+
+    test('structure greys from the Coliride production palette', () {
+      expect(AppColors.menuBorder, const Color(0xFFE5E8EB));
+      expect(AppColors.dividerSoft, const Color(0xFFE8EDF4));
+      expect(AppColors.readLabel, const Color(0xFFB8C1D1));
+      expect(AppColors.subtitle, const Color(0xFF7F8696));
+      expect(AppColors.avatarBorder, const Color(0xFFF0F0F0));
+      expect(AppColors.checkOff, const Color(0xFFC7CFDE));
+      expect(AppColors.surface, const Color(0xFFF5F5F5));
+    });
+
+    test('choice-chip pastel family', () {
+      expect(AppColors.chipPink, const Color(0xFFFFE0FC));
+      expect(AppColors.chipPeriwinkle, const Color(0xFFD3DCFF));
+      expect(AppColors.chipMint, const Color(0xFFCBFAEA));
+      expect(AppColors.chipRose, const Color(0xFFFFD3D4));
+      expect(AppColors.chipButter, const Color(0xFFFBECBB));
+    });
+
+    test('button size ramp dimensions', () {
+      expect(AppDimens.buttonHeight, 46);
+      expect(AppDimens.buttonFontSize, 17);
+      expect(AppDimens.buttonMediumFontSize, 16);
+      expect(AppDimens.buttonDialogHeight, 40);
+      expect(AppDimens.buttonDialogFontSize, 15.5);
+      expect(AppDimens.buttonSmallHeight, 30);
+      expect(AppDimens.buttonSmallFontSize, 14);
     });
 
     testWidgets('back icon is white via the global actionIconTheme',
@@ -184,6 +254,31 @@ void main() {
       final spinner = tester.widget<CircularProgressIndicator>(
           find.byType(CircularProgressIndicator));
       expect(spinner.color, AppTheme.light.colorScheme.primary);
+    });
+
+    testWidgets('is brand blue on the secondary (outlined) variant',
+        (tester) async {
+      await tester.pumpWidget(MaterialApp(
+        theme: AppTheme.light,
+        home: const Scaffold(
+          body: AppButton.secondary(label: 'انصراف', loading: true),
+        ),
+      ));
+      final spinner = tester.widget<CircularProgressIndicator>(
+          find.byType(CircularProgressIndicator));
+      expect(spinner.color, AppTheme.light.colorScheme.primary);
+    });
+
+    testWidgets('is white on the destructive variant', (tester) async {
+      await tester.pumpWidget(MaterialApp(
+        theme: AppTheme.light,
+        home: const Scaffold(
+          body: AppButton.destructive(label: 'حذف', loading: true),
+        ),
+      ));
+      final spinner = tester.widget<CircularProgressIndicator>(
+          find.byType(CircularProgressIndicator));
+      expect(spinner.color, AppTheme.light.colorScheme.onPrimary);
     });
   });
 }

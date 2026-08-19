@@ -1,3 +1,5 @@
+import type { ProviderStatus } from '../constants/provider-status'
+
 export interface User {
   id: string
   email: string
@@ -12,17 +14,50 @@ export interface User {
 
 export interface Provider {
   id: string
-  userId: string
   businessName: string
   description?: string
-  address?: string
-  phoneNumber: string
-  email: string
-  status: 'Pending' | 'Approved' | 'Rejected' | 'Suspended'
-  rating?: number
-  totalBookings?: number
-  createdAt: string
-  approvedAt?: string
+  type?: string
+  status: ProviderStatus
+  city?: string
+  state?: string
+  country?: string
+  logoUrl?: string
+  profileImageUrl?: string
+  allowOnlineBooking?: boolean
+  offersMobileServices?: boolean
+  isVerified?: boolean
+  averageRating?: number
+  totalReviews?: number
+  serviceCount?: number
+  registeredAt?: string
+  lastActiveAt?: string
+}
+
+/**
+ * `GET /Providers/{id}` returns a richer, nested shape than the list endpoints —
+ * contact details and address are objects, not flat fields.
+ */
+export interface ProviderDetails extends Provider {
+  ownerId?: string
+  contactInfo?: {
+    email?: string
+    primaryPhone?: string
+    secondaryPhone?: string
+    website?: string
+  }
+  address?: {
+    formattedAddress?: string
+    city?: string
+    state?: string
+    postalCode?: string
+    country?: string
+    latitude?: number
+    longitude?: number
+  }
+  yearsInBusiness?: number
+  hierarchyType?: string
+  isIndependent?: boolean
+  tags?: string[]
 }
 
 export interface Service {

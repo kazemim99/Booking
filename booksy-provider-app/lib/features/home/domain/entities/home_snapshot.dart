@@ -9,6 +9,38 @@ import 'home_inputs.dart';
 /// Layers 1–2). Produced by `HomeRepository.fetchSnapshot`; the system layer
 /// (connectivity / load status / cache) is owned by the cubit, which combines
 /// the two via [toInputs].
+/// Business identity + profile-completeness signals for the Home header and
+/// Setup checklist. Fetched once per snapshot, parallel to the other calls.
+class HomeIdentity extends Equatable {
+  final String businessName;
+  final bool hasDescription;
+  final bool hasServices;
+  final bool hasStaff;
+  final bool hasGallery;
+
+  const HomeIdentity({
+    this.businessName = '',
+    this.hasDescription = false,
+    this.hasServices = false,
+    this.hasStaff = false,
+    this.hasGallery = false,
+  });
+
+  /// Percentage across the four completeness signals (25% each). The share
+  /// step is intentionally excluded: the app cannot know whether the provider
+  /// shared their link.
+  int get completenessPct {
+    final done = [hasDescription, hasServices, hasStaff, hasGallery]
+        .where((f) => f)
+        .length;
+    return done * 25;
+  }
+
+  @override
+  List<Object?> get props =>
+      [businessName, hasDescription, hasServices, hasStaff, hasGallery];
+}
+
 class HomeSnapshot extends Equatable {
   final ProviderStatus providerStatus;
   final HomeBookingMode bookingMode;
@@ -23,7 +55,7 @@ class HomeSnapshot extends Equatable {
   final int exceptionCount;
   final int alertCount;
   final bool hasNudge;
-  final int completenessPct;
+  final HomeIdentity identity;
   final List<HomeBooking> todayBookings;
   final int tomorrowApptCount;
 
@@ -41,7 +73,7 @@ class HomeSnapshot extends Equatable {
     this.exceptionCount = 0,
     this.alertCount = 0,
     this.hasNudge = false,
-    this.completenessPct = 0,
+    this.identity = const HomeIdentity(),
     this.todayBookings = const [],
     this.tomorrowApptCount = 0,
   });
@@ -70,7 +102,7 @@ class HomeSnapshot extends Equatable {
       exceptionCount: exceptionCount,
       alertCount: alertCount,
       hasNudge: hasNudge,
-      completenessPct: completenessPct,
+      identity: identity,
       todayBookings: todayBookings,
       tomorrowApptCount: tomorrowApptCount,
     );
@@ -91,7 +123,7 @@ class HomeSnapshot extends Equatable {
         exceptionCount,
         alertCount,
         hasNudge,
-        completenessPct,
+        identity,
         todayBookings,
         tomorrowApptCount,
       ];

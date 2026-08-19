@@ -25,13 +25,25 @@ class BookingStarted extends BookingEvent {
   List<Object?> get props => [providerId];
 }
 
-class BookingServiceSelected extends BookingEvent {
+/// Adds the service to the visit, or removes it when already selected.
+///
+/// A visit may bundle several services (cut + colour), so this only mutates the
+/// selection — advancing to the next step is [BookingServicesConfirmed]. Any
+/// change invalidates already-loaded slots, because the slot length is the sum
+/// of the selected services' durations.
+class BookingServiceToggled extends BookingEvent {
   final ServiceItem service;
 
-  const BookingServiceSelected(this.service);
+  const BookingServiceToggled(this.service);
 
   @override
   List<Object?> get props => [service];
+}
+
+/// Leaves the service step. Ignored while nothing is selected — a visit needs
+/// at least one service.
+class BookingServicesConfirmed extends BookingEvent {
+  const BookingServicesConfirmed();
 }
 
 /// null staff = «فرقی نمی‌کند» (any staff; backend picks per slot).
@@ -91,7 +103,10 @@ class BookingState extends Equatable {
   final String? providerError;
 
   final BookingStep step;
-  final ServiceItem? service;
+
+  /// Every service bundled into this visit, in the order the customer picked
+  /// them. Empty until the first selection; never null.
+  final List<ServiceItem> services;
   final StaffMember? staff;
   final bool anyStaff;
   final DateTime? date;
@@ -109,7 +124,7 @@ class BookingState extends Equatable {
     this.provider,
     this.providerError,
     this.step = BookingStep.service,
-    this.service,
+    this.services = const [],
     this.staff,
     this.anyStaff = false,
     this.date,
@@ -134,13 +149,37 @@ class BookingState extends Equatable {
   /// assigned staff when «any» was selected.
   String? get effectiveStaffId => staff?.id ?? slot?.staffId;
 
+  /// Whether the visit has at least one service — the gate on leaving the
+  /// service step and on submitting.
+  bool get hasServices => services.isNotEmpty;
+
+  /// Ids of every selected service, in selection order. The first one is also
+  /// sent as the request's required single `serviceId`.
+  List<String> get selectedServiceIds =>
+      services.map((s) => s.id).toList(growable: false);
+
+  /// How long the appointment runs: services in one visit are performed
+  /// back-to-back, so the slot must span their combined duration.
+  int get totalDurationMinutes =>
+      services.fold(0, (sum, s) => sum + s.durationMinutes);
+
+  /// What the visit costs — the sum over the selected services.
+  double get totalPrice => services.fold(0, (sum, s) => sum + s.price);
+
+  /// Currency for [totalPrice]. The backend rejects a visit mixing currencies,
+  /// so the first service's currency describes the whole set.
+  String get currency => services.isEmpty ? '' : services.first.currency;
+
+  bool isServiceSelected(ServiceItem service) =>
+      services.any((s) => s.id == service.id);
+
   BookingState copyWith({
     String? providerId,
     BookingProviderStatus? providerStatus,
     ProviderDetail? provider,
     String? providerError,
     BookingStep? step,
-    ServiceItem? service,
+    List<ServiceItem>? services,
     StaffMember? Function()? staff,
     bool? anyStaff,
     DateTime? date,
@@ -157,7 +196,7 @@ class BookingState extends Equatable {
       provider: provider ?? this.provider,
       providerError: providerError,
       step: step ?? this.step,
-      service: service ?? this.service,
+      services: services ?? this.services,
       staff: staff != null ? staff() : this.staff,
       anyStaff: anyStaff ?? this.anyStaff,
       date: date ?? this.date,
@@ -177,7 +216,7 @@ class BookingState extends Equatable {
         provider,
         providerError,
         step,
-        service,
+        services,
         staff,
         anyStaff,
         date,
@@ -192,17 +231,22 @@ class BookingState extends Equatable {
 
 // ---------- Bloc ----------
 
-/// Stepped booking flow: service → staff (auto-skipped for single-staff
+/// Stepped booking flow: services → staff (auto-skipped for single-staff
 /// providers) → Jalali date/slot → confirm. Selections survive back/forward
 /// navigation; a slot-taken failure returns to the slot step with refreshed
 /// availability while keeping every other selection.
+///
+/// A visit may bundle several services. Their durations sum into the slot
+/// length requested from the backend, and their prices sum into the total the
+/// customer is shown, so the slot offered always fits the whole visit.
 class BookingBloc extends Bloc<BookingEvent, BookingState> {
   final BookingRepository repository;
   int _slotsRequestId = 0;
 
   BookingBloc(this.repository) : super(const BookingState()) {
     on<BookingStarted>(_onStarted);
-    on<BookingServiceSelected>(_onServiceSelected);
+    on<BookingServiceToggled>(_onServiceToggled);
+    on<BookingServicesConfirmed>(_onServicesConfirmed);
     on<BookingStaffSelected>(_onStaffSelected);
     on<BookingDateSelected>(_onDateSelected);
     on<BookingSlotSelected>(_onSlotSelected);
@@ -236,13 +280,39 @@ class BookingBloc extends Bloc<BookingEvent, BookingState> {
     );
   }
 
-  void _onServiceSelected(
-    BookingServiceSelected event,
+  void _onServiceToggled(
+    BookingServiceToggled event,
     Emitter<BookingState> emit,
   ) {
+    final selected = state.services.toList();
+    final index = selected.indexWhere((s) => s.id == event.service.id);
+    if (index >= 0) {
+      selected.removeAt(index);
+    } else {
+      selected.add(event.service);
+    }
+
+    // Changing the set changes the visit's length, so any slots already
+    // fetched are for the wrong duration. Drop them rather than re-fetch on
+    // every tap — the fetch happens once the selection is confirmed.
+    emit(state.copyWith(
+      services: selected,
+      slots: const [],
+      slotsStatus: SlotsStatus.initial,
+      slot: () => null,
+    ));
+  }
+
+  void _onServicesConfirmed(
+    BookingServicesConfirmed event,
+    Emitter<BookingState> emit,
+  ) {
+    // A visit needs at least one service. The UI disables its continue button,
+    // and this guard keeps the rule true regardless of the caller.
+    if (!state.hasServices) return;
+
     final singleStaff = (state.provider?.activeStaff.length ?? 0) <= 1;
     emit(state.copyWith(
-      service: event.service,
       // Auto-skip the staff step when there is no real choice.
       step: singleStaff ? BookingStep.time : BookingStep.staff,
       staff: singleStaff
@@ -275,9 +345,9 @@ class BookingBloc extends Bloc<BookingEvent, BookingState> {
     BookingDateSelected event,
     Emitter<BookingState> emit,
   ) async {
-    final service = state.service;
+    final serviceIds = state.selectedServiceIds;
     final providerId = state.providerId;
-    if (service == null || providerId == null) return;
+    if (serviceIds.isEmpty || providerId == null) return;
 
     final requestId = ++_slotsRequestId;
     emit(state.copyWith(
@@ -287,11 +357,15 @@ class BookingBloc extends Bloc<BookingEvent, BookingState> {
       slot: () => null,
     ));
 
+    // The whole set goes to the backend so the returned slots are long enough
+    // for the combined duration — a two-service visit must not be offered a
+    // slot sized for one.
     final result = await repository.getAvailableSlots(
       providerId: providerId,
-      serviceId: service.id,
+      serviceId: serviceIds.first,
       date: event.date,
       staffId: state.staff?.id,
+      serviceIds: serviceIds,
     );
 
     // A newer day selection superseded this request — never show stale
@@ -331,10 +405,10 @@ class BookingBloc extends Bloc<BookingEvent, BookingState> {
     Emitter<BookingState> emit,
   ) async {
     final providerId = state.providerId;
-    final service = state.service;
+    final serviceIds = state.selectedServiceIds;
     final slot = state.slot;
     final staffId = state.effectiveStaffId;
-    if (providerId == null || service == null || slot == null) return;
+    if (providerId == null || serviceIds.isEmpty || slot == null) return;
     if (staffId == null) {
       emit(state.copyWith(submitStatus: SubmitStatus.error));
       return;
@@ -343,9 +417,10 @@ class BookingBloc extends Bloc<BookingEvent, BookingState> {
     emit(state.copyWith(submitStatus: SubmitStatus.submitting));
     final result = await repository.createBooking(
       providerId: providerId,
-      serviceId: service.id,
+      serviceId: serviceIds.first,
       staffProviderId: staffId,
       startTime: slot.startTime,
+      serviceIds: serviceIds,
     );
 
     await result.fold(

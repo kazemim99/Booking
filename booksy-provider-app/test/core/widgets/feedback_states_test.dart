@@ -127,4 +127,54 @@ void main() {
       expect(find.text(AppStrings.retry), findsNothing);
     });
   });
+
+  group('AppEmptyState.add (Coliride add affordance)', () {
+    testWidgets('renders a green circle-plus and green label, not a pill',
+        (tester) async {
+      await pump(
+        tester,
+        AppEmptyState.add(
+          message: 'هنوز خدمتی اضافه نشده',
+          actionLabel: '+ افزودن خدمت',
+          onAction: () {},
+        ),
+      );
+
+      expect(find.byKey(const Key('empty-state-add')), findsOneWidget);
+      expect(find.byType(FilledButton), findsNothing,
+          reason: 'the add affordance is a green text action, not a pill');
+      final icon = tester.widget<Icon>(find.byIcon(Icons.add_circle));
+      expect(icon.color, AppColors.success);
+    });
+
+    testWidgets('fires its action when tapped', (tester) async {
+      var tapped = false;
+      await pump(
+        tester,
+        AppEmptyState.add(
+          message: 'خالی',
+          actionLabel: '+ افزودن',
+          onAction: () => tapped = true,
+        ),
+      );
+
+      await tester.tap(find.byKey(const Key('empty-state-add')));
+      expect(tapped, isTrue);
+    });
+
+    testWidgets('the default constructor keeps the filled brand pill',
+        (tester) async {
+      await pump(
+        tester,
+        AppEmptyState(
+          message: 'خالی',
+          actionLabel: 'تلاش دوباره',
+          onAction: () {},
+        ),
+      );
+
+      expect(find.byType(FilledButton), findsOneWidget);
+      expect(find.byKey(const Key('empty-state-add')), findsNothing);
+    });
+  });
 }

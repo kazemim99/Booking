@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../../../../config/theme/app_tokens.dart';
 import '../../../../core/constants/app_strings.dart';
 import '../../../../core/widgets/app_card.dart';
+import '../../domain/entities/home_snapshot.dart';
 
 /// One activation task shown in the checklist.
 class ActivationItem {
@@ -13,11 +14,9 @@ class ActivationItem {
 }
 
 /// Zone: activation checklist — the Setup-phase hero guiding first-value
-/// setup. Items completed during onboarding show as done.
-///
-/// Until per-item completeness signals ship (staff/gallery sources), the
-/// default item set marks services done (onboarding required them) and the
-/// rest to-do.
+/// setup. Done-ness comes from the snapshot's [HomeIdentity] signals via
+/// [ActivationChecklist.fromIdentity]; the share step stays manual (the app
+/// cannot observe whether the provider shared their link).
 class ActivationChecklist extends StatelessWidget {
   final List<ActivationItem> items;
   final void Function(String key) onItemTap;
@@ -34,6 +33,17 @@ class ActivationChecklist extends StatelessWidget {
     ActivationItem('gallery', AppStrings.homeChecklistGallery),
     ActivationItem('share', AppStrings.homeChecklistShare),
   ];
+
+  /// Item set with done-flags derived from live completeness signals.
+  static List<ActivationItem> fromIdentity(HomeIdentity identity) => [
+        ActivationItem('services', AppStrings.homeChecklistServices,
+            done: identity.hasServices),
+        ActivationItem('staff', AppStrings.homeChecklistStaff,
+            done: identity.hasStaff),
+        ActivationItem('gallery', AppStrings.homeChecklistGallery,
+            done: identity.hasGallery),
+        const ActivationItem('share', AppStrings.homeChecklistShare),
+      ];
 
   @override
   Widget build(BuildContext context) {

@@ -51,6 +51,9 @@ namespace Booksy.ServiceCatalog.Application.Queries.Provider.SearchProviders
                 // Create business specification with new filters
                 var specification = new SearchProvidersSpecification(
                     searchTerm: request.SearchTerm,
+                    // `category` was omitted here, so SearchProvidersQuery.Category was a dead filter:
+                    // it was accepted and logged, then every provider came back regardless of category.
+                    category: request.Category,
                     city: request.City,
                     state: request.State,
                     country: request.Country,
@@ -131,18 +134,48 @@ namespace Booksy.ServiceCatalog.Application.Queries.Provider.SearchProviders
                     break;
 
                 case "distance":
-                    // Note: Distance sorting requires geospatial calculation
-                    // For now, fallback to rating if coordinates not provided
-                    // TODO: Implement PostGIS distance calculation in Phase 4
+                    // "Sort by distance" used to sort by RATING — both branches below were identical, so asking
+                    // for nearest-first returned the highest-rated first and the caller had no way to tell. In
+                    // Parsabad that put the farthest provider at the top of "near me".
+                    //
+                    // PostGIS is not required to order by proximity. Ordering only needs a value that increases
+                    // with real distance, so this uses squared planar distance with the longitude axis scaled by
+                    // cos(latitude) to correct for meridian convergence. `lonScale` is computed here in C#, so
+                    // the expression is plain arithmetic over two columns and translates to SQL. Over a city it
+                    // ranks identically to Haversine, and skipping the square root keeps it exact in integers
+                    // rather than introducing rounding.
+                    //
+                    // True distances in km are still CalculateDistance's job; this is strictly the ORDER BY.
                     if (userLatitude.HasValue && userLongitude.HasValue)
                     {
-                        // Distance sorting will be implemented with PostGIS in Phase 4
-                        // For now, we'll use rating as fallback
-                        specification.AddOrderByDescending(p => p.AverageRating);
+                        var lat0 = userLatitude.Value;
+                        var lon0 = userLongitude.Value;
+                        var lonScale = Math.Cos(lat0 * Math.PI / 180.0);
+
+                        // Providers with no coordinates cannot be ranked by proximity; they sort last rather
+                        // than being dropped from results or landing at position zero.
+                        System.Linq.Expressions.Expression<Func<Domain.Aggregates.Provider, object>> byProximity =
+                            p => p.Address.Latitude == null || p.Address.Longitude == null
+                                ? double.MaxValue
+                                : ((p.Address.Latitude.Value - lat0) * (p.Address.Latitude.Value - lat0))
+                                  + ((p.Address.Longitude.Value - lon0) * lonScale)
+                                    * ((p.Address.Longitude.Value - lon0) * lonScale);
+
+                        // Ascending is nearest-first, which is what "near me" means.
+                        if (sortDescending)
+                            specification.AddOrderByDescending(byProximity);
+                        else
+                            specification.AddOrderBy(byProximity);
+
+                        // Deterministic tie-break so equal-distance providers keep a stable page order.
+                        specification.AddThenBy(p => p.Profile.BusinessName);
                     }
                     else
                     {
+                        // Without a reference point there is no distance to sort by; fall back to rating, as
+                        // before, but only in the case where that is genuinely the best available ordering.
                         specification.AddOrderByDescending(p => p.AverageRating);
+                        specification.AddThenBy(p => p.Profile.BusinessName);
                     }
                     break;
 

@@ -10,6 +10,7 @@ import '../../../../core/constants/app_strings.dart';
 import '../../../../core/di/injection.dart';
 import '../../../../core/errors/failures.dart';
 import '../../../../core/widgets/app_error_state.dart';
+import '../../../../core/widgets/app_page_scaffold.dart';
 import '../../../../core/widgets/app_snackbar.dart';
 import '../../../auth/presentation/bloc/auth_bloc.dart';
 import '../../../auth/presentation/bloc/auth_event.dart';
@@ -56,9 +57,10 @@ class HomeView extends StatelessWidget {
   Widget build(BuildContext context) {
     return BlocBuilder<HomeCubit, HomeContext>(
       builder: (context, ctx) {
-        return Scaffold(
-          backgroundColor: Colors.white,
-          appBar: _appBar(context),
+        return AppPageScaffold(
+          automaticallyImplyLeading: false,
+          titleWidget: _header(context),
+          actions: _actions(context),
           body: switch (ctx.system) {
             SystemState.loading => const HomeSkeleton(),
             SystemState.error => AppErrorState(
@@ -83,17 +85,13 @@ class HomeView extends StatelessWidget {
                 ),
               ),
           },
-          floatingActionButton: ctx.system == SystemState.error
-              ? null
-              : FloatingActionButton(
-                  key: const Key('home-create-action'),
-                  tooltip: AppStrings.homeCreateTitle,
-                  onPressed: () => _showCreateSheet(context),
-                  child: const Icon(Icons.add),
-                ),
-          floatingActionButtonLocation:
-              FloatingActionButtonLocation.centerDocked,
-          bottomNavigationBar: const ProviderNavBar(active: NavTab.home),
+          bottomNavigationBar: ProviderNavBar(
+            active: NavTab.home,
+            createKey: const Key('home-create-action'),
+            onCreate: ctx.system == SystemState.error
+                ? null
+                : () => _showCreateSheet(context),
+          ),
         );
       },
     );
@@ -101,10 +99,19 @@ class HomeView extends StatelessWidget {
 
   // ==================== chrome ====================
 
-  PreferredSizeWidget _appBar(BuildContext context) {
+  /// Identity row shown in the blue chrome: avatar + business name over the
+  /// time-of-day greeting. The business name is what providers recognise as
+  /// "their" panel; the account holder's name/phone belongs in the account
+  /// sheet, not the masthead.
+  Widget _header(BuildContext context) {
     final authState = context.watch<AuthBloc>().state;
     final session = authState is Authenticated ? authState.session : null;
-    final name = session?.user.displayName ?? '';
+    final ctx = context.watch<HomeCubit>().state;
+    final businessName = ctx.identity.businessName.trim().isNotEmpty
+        ? ctx.identity.businessName
+        : (session?.user.displayName ?? '');
+    final initial =
+        businessName.isNotEmpty ? businessName.characters.first : '؟';
 
     final hour = DateTime.now().hour;
     final greeting = hour < 12
@@ -113,23 +120,18 @@ class HomeView extends StatelessWidget {
             ? AppStrings.homeGreetingAfternoon
             : AppStrings.homeGreetingEvening;
 
-    return AppBar(
-      backgroundColor: Colors.white,
-      surfaceTintColor: Colors.transparent,
-      elevation: 0,
-      titleSpacing: AppSpacing.md,
-      automaticallyImplyLeading: false,
-      title: Row(
-        children: [
+    return Row(
+      children: [
           InkWell(
             key: const Key('home-avatar'),
             onTap: () => _showAccountSheet(context),
             customBorder: const CircleBorder(),
             child: CircleAvatar(
               radius: 20,
-              backgroundColor: AppColors.primarySoft,
+              // Inverted on the chrome: white disc, brand-blue initial.
+              backgroundColor: Colors.white,
               child: Text(
-                name.isNotEmpty ? name.characters.first : '؟',
+                initial,
                 style: const TextStyle(
                   fontSize: 16,
                   color: AppColors.primary,
@@ -140,28 +142,43 @@ class HomeView extends StatelessWidget {
           ),
           const SizedBox(width: AppSpacing.sm),
           Expanded(
-            child: Text(
-              name.isEmpty ? greeting : '$greeting، $name',
-              overflow: TextOverflow.ellipsis,
-              style: const TextStyle(
-                fontSize: 17,
-                fontWeight: FontWeight.w600,
-                color: AppColors.ink,
-              ),
+            child: Column(
+              key: const Key('home-identity'),
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(
+                  businessName.isEmpty ? greeting : businessName,
+                  overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.w700,
+                    color: Colors.white,
+                  ),
+                ),
+                if (businessName.isNotEmpty)
+                  Text(
+                    greeting,
+                    style:
+                        const TextStyle(fontSize: 12, color: Colors.white70),
+                  ),
+              ],
             ),
           ),
         ],
-      ),
-      actions: [
+    );
+  }
+
+  /// Chrome actions. The bell is a placeholder until notifications ship —
+  /// see FUNCTIONAL_GAPS.md; it must not pretend to have unread counts.
+  List<Widget> _actions(BuildContext context) => [
         IconButton(
           key: const Key('home-bell'),
           tooltip: AppStrings.homeCreateTitle,
-          icon: const Icon(Icons.notifications_none, color: AppColors.ink),
+          icon: const Icon(Icons.notifications_none, color: Colors.white),
           onPressed: () => AppSnackbar.info(context, AppStrings.comingSoon),
         ),
-      ],
-    );
-  }
+      ];
 
   // ==================== zone mapping ====================
 
@@ -175,6 +192,7 @@ class HomeView extends StatelessWidget {
         );
       case HomeWidgetId.activationChecklist:
         return ActivationChecklist(
+          items: ActivationChecklist.fromIdentity(ctx.identity),
           onItemTap: (key) {
             switch (key) {
               case 'share':
@@ -193,6 +211,7 @@ class HomeView extends StatelessWidget {
       case HomeWidgetId.getDiscovered:
         return GetDiscovered(
           completenessPct: ctx.completenessPct,
+          pendingVerification: ctx.pendingVerification,
           onShare: () => _shareLink(context),
           onAddWalkIn: () => _openComposer(context),
         );

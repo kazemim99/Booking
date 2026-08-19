@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart' show visibleForTesting;
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:injectable/injectable.dart';
 
@@ -16,6 +17,51 @@ class SecureStorageService {
   static const String _customerIdKey = 'customer_id';
   static const String _phoneNumberKey = 'phone_number';
 
+  /// Every read in this service goes through here rather than calling
+  /// `_secureStorage.read` directly.
+  ///
+  /// On Flutter web, `flutter_secure_storage` encrypts values with the Web Crypto API
+  /// (AES-GCM) using a key tied to the browser session/origin. A value written by an
+  /// earlier build or session can fail to decrypt after a rebuild, and the platform
+  /// throws a `DOMException` — `OperationError` — instead of the read simply
+  /// returning null. Two different call sites (`AuthBloc.CheckAuthStatusEvent` and
+  /// `GetHomeData`) each independently hit this and surfaced it two different ways:
+  /// one hung the app on the splash screen forever, the other displayed
+  /// "OperationError: ..." — a raw platform exception — as if it were a server error.
+  ///
+  /// An unreadable value is, from the app's perspective, indistinguishable from no
+  /// value at all: both mean "we don't know who this is," which is a normal,
+  /// recoverable, signed-out-like state — never a fatal error. So a failed read
+  /// returns null here rather than letting the platform exception escape, and the
+  /// unreadable key is proactively deleted so the same failure doesn't repeat on
+  /// every subsequent read this session.
+  Future<String?> _readSafely(String key) => readSafely(
+        read: () => _secureStorage.read(key: key),
+        delete: () => _secureStorage.delete(key: key),
+      );
+
+  /// The actual catch/recover logic, factored out so it can be exercised without a real
+  /// `FlutterSecureStorage` (a concrete platform-channel class that cannot be faked in a
+  /// plain unit test without a plugin like mockito). [read] and [delete] stand in for the
+  /// plugin calls; production always passes the real ones via [_readSafely].
+  @visibleForTesting
+  static Future<String?> readSafely({
+    required Future<String?> Function() read,
+    required Future<void> Function() delete,
+  }) async {
+    try {
+      return await read();
+    } catch (_) {
+      try {
+        await delete();
+      } catch (_) {
+        // Deletion is best-effort cleanup; the read above already resolved to "absent"
+        // regardless of whether this succeeds.
+      }
+      return null;
+    }
+  }
+
   // ==================== Token Management ====================
 
   /// Save access token
@@ -25,7 +71,7 @@ class SecureStorageService {
 
   /// Get access token
   Future<String?> getAccessToken() async {
-    return await _secureStorage.read(key: _accessTokenKey);
+    return _readSafely(_accessTokenKey);
   }
 
   /// Save refresh token
@@ -35,7 +81,7 @@ class SecureStorageService {
 
   /// Get refresh token
   Future<String?> getRefreshToken() async {
-    return await _secureStorage.read(key: _refreshTokenKey);
+    return _readSafely(_refreshTokenKey);
   }
 
   /// Delete tokens
@@ -53,7 +99,7 @@ class SecureStorageService {
 
   /// Get user ID
   Future<String?> getUserId() async {
-    return await _secureStorage.read(key: _userIdKey);
+    return _readSafely(_userIdKey);
   }
 
   /// Save customer ID
@@ -63,7 +109,7 @@ class SecureStorageService {
 
   /// Get customer ID
   Future<String?> getCustomerId() async {
-    return await _secureStorage.read(key: _customerIdKey);
+    return _readSafely(_customerIdKey);
   }
 
   /// Save phone number
@@ -73,7 +119,7 @@ class SecureStorageService {
 
   /// Get phone number
   Future<String?> getPhoneNumber() async {
-    return await _secureStorage.read(key: _phoneNumberKey);
+    return _readSafely(_phoneNumberKey);
   }
 
   // ==================== Session Management ====================
@@ -125,7 +171,7 @@ class SecureStorageService {
 
   /// Get generic string value
   Future<String?> getString(String key) async {
-    return await _secureStorage.read(key: key);
+    return _readSafely(key);
   }
 
   /// Delete generic value

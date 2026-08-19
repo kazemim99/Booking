@@ -10,6 +10,7 @@ using Booksy.ServiceCatalog.Application.Services.Interfaces;
 using Booksy.ServiceCatalog.Application.Exceptions;
 using Booksy.ServiceCatalog.Domain.Aggregates;
 using Booksy.ServiceCatalog.Domain.Entities;
+using Booksy.ServiceCatalog.Application.Common;
 using Booksy.ServiceCatalog.Domain.Enums;
 using Booksy.ServiceCatalog.Domain.Repositories;
 using Booksy.ServiceCatalog.Domain.ValueObjects;
@@ -375,24 +376,11 @@ namespace Booksy.ServiceCatalog.Application.Commands.Provider.RegisterProviderFu
             _logger.LogDebug("Business rules validation passed");
         }
 
+        // Delegates to ServiceCategoryResolver so every registration path agrees on what a
+        // category string means. The local map used to miss the wizard's "barber" id and
+        // silently filed men's barbershops under BeautySalon.
         private ServiceCategory MapCategoryToServiceCategory(string categoryId)
-        {
-            return categoryId.ToLowerInvariant() switch
-            {
-                "nail_salon" => ServiceCategory.NailSalon,
-                "hair_salon" => ServiceCategory.HairSalon,
-                "brows_lashes" => ServiceCategory.HairSalon,
-                "braids_locs" => ServiceCategory.HairSalon,
-                "massage" => ServiceCategory.Massage,
-                "barbershop" => ServiceCategory.Barbershop,
-                "aesthetic_medicine" => ServiceCategory.MedicalClinic,
-                "dental_orthodontics" => ServiceCategory.Dental,
-                "hair_removal" => ServiceCategory.Spa,
-                "health_fitness" => ServiceCategory.Gym,
-                "home_services" => ServiceCategory.HomeServices,
-                _ => ServiceCategory.BeautySalon // Default
-            };
-        }
+            => ServiceCategoryResolver.Resolve(categoryId, ServiceCategory.BeautySalon);
 
         private StaffRole DetermineStaffRole(string position)
         {

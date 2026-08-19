@@ -31,7 +31,8 @@ void main() {
           serviceId: any(named: 'serviceId'),
           date: any(named: 'date'),
           staffId: any(named: 'staffId'),
-        )).thenAnswer((_) async => Right([slot]));
+          serviceIds: any(named: 'serviceIds'),
+        )).thenAnswer((_) async => Right(SlotAvailability(slots: [slot])));
     when(() => repository.createBooking(
           serviceId: any(named: 'serviceId'),
           staffId: any(named: 'staffId'),
@@ -39,6 +40,7 @@ void main() {
           clientName: any(named: 'clientName'),
           clientPhone: any(named: 'clientPhone'),
           notes: any(named: 'notes'),
+          serviceIds: any(named: 'serviceIds'),
         )).thenAnswer((_) async => const Right(null));
   });
 
@@ -120,11 +122,16 @@ void main() {
           clientName: 'رضا کریمی',
           clientPhone: any(named: 'clientPhone'),
           notes: any(named: 'notes'),
+          serviceIds: any(named: 'serviceIds'),
         )).called(1);
     expect(result(), isTrue); // popped with true → Home refreshes
   });
 
   testWidgets('book-again prefill seeds the walk-in fields', (tester) async {
+    // The client fields sit low in a lazy list; a taller surface builds both in
+    // the default test viewport (they are otherwise never constructed).
+    await tester.binding.setSurfaceSize(const Size(1080, 2400));
+    addTearDown(() => tester.binding.setSurfaceSize(null));
     final cubit = ComposerCubit(repository, now: () => day);
     addTearDown(cubit.close);
     await tester.pumpWidget(
@@ -154,12 +161,36 @@ void main() {
           serviceId: any(named: 'serviceId'),
           date: any(named: 'date'),
           staffId: any(named: 'staffId'),
-        )).thenAnswer((_) async => const Right([]));
+          serviceIds: any(named: 'serviceIds'),
+        )).thenAnswer((_) async => const Right(SlotAvailability.empty()));
 
     await pumpComposer(tester);
 
     expect(find.byKey(const Key('composer-no-slots')), findsOneWidget);
     expect(find.text(AppStrings.composerNoSlots), findsOneWidget);
+  });
+
+  testWidgets(
+      'an explained empty day shows the server reason, not the generic text',
+      (tester) async {
+    const reason = 'این ارائه‌دهنده هنوز کارمندی اضافه نکرده است.';
+    when(() => repository.fetchAvailableSlots(
+          serviceId: any(named: 'serviceId'),
+          date: any(named: 'date'),
+          staffId: any(named: 'staffId'),
+          serviceIds: any(named: 'serviceIds'),
+        )).thenAnswer(
+        (_) async => const Right(SlotAvailability.empty(
+              unavailableReason: reason,
+            )));
+
+    await pumpComposer(tester);
+
+    expect(find.byKey(const Key('composer-no-slots-reason')), findsOneWidget);
+    expect(find.text(reason), findsOneWidget);
+    // The generic message must not double up with the specific one.
+    expect(find.byKey(const Key('composer-no-slots')), findsNothing);
+    expect(find.text(AppStrings.composerNoSlots), findsNothing);
   });
 
   testWidgets('creation failure keeps the composer open with selections',
@@ -171,6 +202,7 @@ void main() {
           clientName: any(named: 'clientName'),
           clientPhone: any(named: 'clientPhone'),
           notes: any(named: 'notes'),
+          serviceIds: any(named: 'serviceIds'),
         )).thenAnswer(
             (_) async => const Left(ServerFailure('ثبت نوبت ناموفق بود')));
 
@@ -184,5 +216,38 @@ void main() {
     expect(result(), isNull);
     expect(find.byKey(const Key('composer-submit')), findsOneWidget);
     expect(find.text('ثبت نوبت ناموفق بود'), findsOneWidget);
+  });
+
+  group('no staff (spec: provider-booking-composer)', () {
+    void withoutStaff() {
+      when(() => repository.fetchComposerCatalog()).thenAnswer(
+        (_) async => const Right(
+            ComposerCatalog(services: [service], staff: [])),
+      );
+      when(() => repository.fetchAvailableSlots(
+            serviceId: any(named: 'serviceId'),
+            date: any(named: 'date'),
+            staffId: any(named: 'staffId'),
+            serviceIds: any(named: 'serviceIds'),
+          )).thenAnswer((_) async => const Right(SlotAvailability.empty(
+            unavailableReason: 'این ارائه‌دهنده هنوز کارمندی اضافه نکرده است.',
+          )));
+    }
+
+    testWidgets('shows the up-front notice with an add-staff action',
+        (tester) async {
+      withoutStaff();
+      await pumpComposer(tester);
+
+      expect(find.byKey(const Key('composer-no-staff')), findsOneWidget);
+      expect(find.text(AppStrings.composerNoStaffTitle), findsOneWidget);
+      expect(find.byKey(const Key('composer-add-staff')), findsOneWidget);
+    });
+
+    testWidgets('is absent when the business has staff', (tester) async {
+      await pumpComposer(tester);
+
+      expect(find.byKey(const Key('composer-no-staff')), findsNothing);
+    });
   });
 }

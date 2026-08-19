@@ -7,6 +7,7 @@ import '../../../../core/constants/app_strings.dart';
 import '../../../../core/di/injection.dart';
 import '../../../../core/widgets/app_empty_state.dart';
 import '../../../../core/widgets/app_error_state.dart';
+import '../../../../core/widgets/app_page_scaffold.dart';
 import '../../../../core/widgets/app_snackbar.dart';
 import '../../../onboarding/domain/entities/onboarding_data.dart'
     show GalleryImageUpload;
@@ -50,30 +51,18 @@ class GalleryView extends StatelessWidget {
     return BlocBuilder<GalleryCubit, MoreState<List<GalleryImage>>>(
       builder: (context, state) {
         final cubit = context.read<GalleryCubit>();
-        return Scaffold(
-          backgroundColor: Colors.white,
-          appBar: AppBar(
-            backgroundColor: Colors.white,
-            surfaceTintColor: Colors.transparent,
-            elevation: 0,
-            title: const Text(
-              AppStrings.moreGallery,
-              style: TextStyle(
-                fontSize: 17,
-                fontWeight: FontWeight.w700,
-                color: AppColors.ink,
-              ),
+        return AppPageScaffold(
+          title: AppStrings.moreGallery,
+          actions: [
+            IconButton(
+              key: const Key('gallery-upload'),
+              tooltip: AppStrings.galleryUpload,
+              // Green add affordance: brand blue would vanish on the chrome.
+              icon: const Icon(Icons.add_photo_alternate,
+                  color: AppColors.success),
+              onPressed: () => _upload(context, cubit),
             ),
-            actions: [
-              IconButton(
-                key: const Key('gallery-upload'),
-                tooltip: AppStrings.galleryUpload,
-                icon: const Icon(Icons.add_photo_alternate_outlined,
-                    color: AppColors.primary),
-                onPressed: () => _upload(context, cubit),
-              ),
-            ],
-          ),
+          ],
           body: switch (state.status) {
             MoreStatus.loading =>
               const Center(child: CircularProgressIndicator()),
