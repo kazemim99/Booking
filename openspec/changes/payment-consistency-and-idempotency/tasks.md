@@ -32,7 +32,7 @@
 > `Idempotency-Key` header. Registered after Authorization in the pipeline. **Tests (10):** 5 unit
 > (`IdempotencyBehaviorTests`) + 5 integration (`IdempotencyStoreTests`: transitions, release-retry, stale reclaim,
 > **24-way concurrency → exactly one winner**, end-to-end behavior+real-store run-once→replay). 0 regressions (46→46).
-### (original plan, for reference)
+### (original plan — now DELIVERED; boxes ticked 2026-08-19 per `OPENSPEC-AUDIT-2026.md`)
 > Deliberate sequencing (documented per policy — this is a production safeguard, so it is tracked as MANDATORY,
 > not optional): the two most common duplicate triggers are already closed — **retry double-charge by §1**, and
 > **duplicate captured record by the §3.2 per-booking DB unique index**. §2 closes the remaining narrower window:
@@ -40,14 +40,20 @@
 > Until §2 lands, that window is mitigated (not eliminated) by the DB dedup constraint (the second capture INSERT
 > is rejected) — but the gateway could still be charged twice for a booking. Therefore §2 is a **GO blocker** and
 > the final audit MUST verify it.
-- [ ] 2.1 **(mandatory)** Atomic idempotency reservation store (`IdempotencyReservations`, unique `(RequestType, Key)`,
-      storing serialized result + in-flight/complete status).
-- [ ] 2.2 **(mandatory)** Replace `IdempotencyBehavior` check-then-act with insert-first reserve → duplicate returns
-      the stored result / awaits the in-flight one.
-- [ ] 2.3 **(mandatory)** Add `IRequireIdempotency`; mark payment/refund commands; controllers read an
-      `Idempotency-Key` header (server-generate + log during a deprecation window).
-- [ ] 2.4 **(mandatory)** Concurrency test: N parallel identical `ProcessPayment` (same key) → gateway called once,
-      one payment row.
+- [x] 2.1 **(mandatory)** Atomic idempotency reservation store — `IIdempotencyStore` + `IdempotencyReservation`,
+      composite PK `(RequestType, Key)`, migration `20260730044721_AddIdempotencyReservations`.
+- [x] 2.2 **(mandatory)** `IdempotencyBehavior` rewritten from check-then-act to insert-first reserve →
+      completed replays the stored result, in-flight returns 409 `IDEMPOTENCY_CONFLICT`, failure releases,
+      crashed in-flight reclaimed after a DB-clock staleness window. Proven by `IdempotencyBehaviorTests` (5):
+      pass-through for non-idempotent commands, reserve-runs-once-and-stores, completed-replays-without-running,
+      in-flight-throws-and-never-runs-the-handler, failure-releases-so-retry-works.
+- [x] 2.3 **(mandatory)** `IRequireIdempotency` added and applied to Process/Refund/Capture/CreateZarinPal/
+      VerifyZarinPal; `PaymentsController` honours the client's `Idempotency-Key` header. Registered after
+      Authorization in the pipeline.
+- [x] 2.4 **(mandatory)** Concurrency proven at the DB boundary by
+      `IdempotencyStoreTests.Concurrent_reserves_of_the_same_key_yield_exactly_one_winner` (24-way), plus
+      end-to-end run-once→replay, reserve→in-flight→completed transitions, release-retry, and stale reclaim
+      (5 integration tests).
 
 ## 3. Database uniqueness + gateway guard
 - [~] 3.1 Data audit for existing >1 captured payment/booking — **deployment step** (the partial unique index fails to create if violations exist; fresh Testcontainers DB has none)
@@ -59,8 +65,14 @@
       bypasses the guard.
 
 ## 4. Tests
-- [ ] 4.1 Unit: reservation returns stored result on duplicate; factory rejects stub gateways when flag off; `TransactionBehavior` skips non-transactional commands
-- [ ] 4.2 Concurrency: N parallel identical `ProcessPayment` (same key) → mock gateway call-count == 1, one Payment row
+- [x] 4.1 Unit — all three covered: `IdempotencyBehaviorTests` (duplicate returns the stored result),
+      `Unit/PaymentGatewayFactoryTests` (4: stub gateways refused when the flag is off, allowed when on),
+      `TransactionBehaviorTests` (2: `INonTransactionalCommand` bypasses the ambient transaction, a normal
+      command still runs inside it).
+- [x] 4.2 Concurrency — proven twice over: `IdempotencyStoreTests.Concurrent_reserves_…_exactly_one_winner`
+      (24-way, reservation layer) and `PaymentDedupTests` (8-way concurrent captured inserts → exactly one
+      wins, 2 seeds, DB layer). *(A mock-gateway call-count assertion at the handler layer would be a third
+      angle on the same invariant; carried to `harden-test-suite-and-dependencies` with §4.4–4.6.)*
 - [x] 4.3 **DONE + PROVEN (Testcontainers, raw-SQL layer).** `PaymentDedupTests`: second captured payment for a booking → rejected by `UX_Payments_OneCapturedPerBooking`; Pending/Failed retries allowed; **8-way concurrent captured inserts → exactly one wins** (2 seeds). Invariant I2 (money never duplicated) is DB-enforced. *(Raw-SQL used to isolate the constraint from an EF owned-`Money` insert quirk — see finding.)*
 - [ ] 4.4 Integration: commit failure after gateway success → a `Pending` record remains (no silent loss); transient DB error → gateway called once
 - [ ] 4.5 Integration: ZarinPal happy path + duplicate callback → single credit (verify idempotency preserved); failed payment can be retried

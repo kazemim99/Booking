@@ -1,4 +1,4 @@
-# mobile-auth-ux
+# customer-app-auth
 
 ## ADDED Requirements
 

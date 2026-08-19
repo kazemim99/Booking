@@ -1,4 +1,4 @@
-# mobile-app-shell-ux
+# customer-app-chrome-styling
 
 ## ADDED Requirements
 
@@ -54,7 +54,7 @@ Every user-initiated mutation (booking, cancel, reschedule, login) SHALL produce
 - **THEN** the user sees an error with actionable wording, the triggering control returns to its enabled state, and entered data is not lost
 
 ### Requirement: App-wide accessibility conformance
-Every screen SHALL pass the accessibility baseline defined by the design system: WCAG AA contrast, ≥48dp targets, meaningful Persian semantics labels announced by TalkBack/VoiceOver, no information conveyed by color alone, usable at 1.3× font scale, and reduced-motion honored for screen transitions.
+Every screen SHALL meet the accessibility baseline defined for shared components, applied at screen level: WCAG AA contrast, ≥48dp targets, meaningful Persian semantics labels announced by TalkBack/VoiceOver, no information conveyed by color alone, usable at 1.3× font scale, and reduced-motion honored for screen transitions.
 
 #### Scenario: Screen reader traversal
 - **WHEN** a screen-reader user traverses the appointments screen

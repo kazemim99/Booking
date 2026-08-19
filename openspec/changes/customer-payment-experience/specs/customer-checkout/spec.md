@@ -31,8 +31,6 @@ The checkout screens SHALL render loading, error (retry), and offline states, co
 - **WHEN** connectivity is lost during checkout
 - **THEN** an offline state is shown and no partial/ambiguous charge is initiated
 
-## MODIFIED Requirements
-
 ### Requirement: Deposit-required booking confirmation
 Booking confirmation SHALL require a verified deposit payment when the provider's policy requires a deposit; a deposit-required booking is not confirmed until its deposit is paid.
 

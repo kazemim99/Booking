@@ -17,17 +17,50 @@ No backend or API contract changes; the app consumes the existing `/api/v1` surf
 
 ## Capabilities
 
+> **Capability naming (revised 2026-08-19, per `OPENSPEC-AUDIT-2026.md` finding F3).** This change was
+> originally authored against five new `mobile-*` capabilities. Four of them collided directly with the
+> `customer-app-*` / `customer-*-journey` capabilities that the archived
+> `unify-customer-app-with-provider-design` change had meanwhile promoted into `openspec/specs/`. Promoting
+> both families would have described the customer app twice. The deltas are therefore folded into the
+> existing family, and narrowed to what those specs do not already cover.
+
 ### New Capabilities
 
-- `mobile-design-system`: Design tokens (color, type, spacing, elevation, radius, motion) and the reusable Flutter component library; consistency and theming rules all screens must follow.
-- `mobile-auth-ux`: Splash, phone login, and OTP verification screen behavior — validation, keyboard/autofill handling, error recovery, and session-restore flow.
-- `mobile-discovery-ux`: Home dashboard and explore/search screens — content hierarchy, category/provider browsing, search and filtering, loading/empty states.
-- `mobile-booking-ux`: Provider detail → service → time-slot → confirmation journey plus appointments list with cancel/reschedule interactions and their confirmation/undo patterns.
-- `mobile-app-shell-ux`: Bottom navigation, back-stack rules, and the standardized cross-cutting states (loading skeletons, empty, error, offline, success feedback) and accessibility requirements applying to every screen.
+- `customer-app-auth`: Splash, phone login, and OTP verification behavior — validation, keyboard/autofill
+  handling, error recovery, session restore, and login-at-the-point-of-need. (Was `mobile-auth-ux`; it is
+  the one delta with no existing counterpart — `specs/authentication` covers the *Vue provider* login.)
 
 ### Modified Capabilities
 
-<!-- None. Existing specs (authentication, customer-profile, provider-*, service-management, staff-management, working-hours-management) describe backend/web behavior; their requirements are unchanged. The mobile app consumes the same APIs. -->
+All additive (`ADDED` requirements only) — no existing requirement is replaced or removed:
+
+- `customer-app-visual-tokens` (was part of `mobile-design-system`): theme as the single styling source,
+  spacing scale + dark-theme-ready structure, RTL-first rendering, centralized strings.
+- `customer-app-component-styling` (was part of `mobile-design-system`): the shared component library as the
+  only styling surface, plus the component accessibility baseline.
+- `customer-app-chrome-styling` (was `mobile-app-shell-ux`): router-driven shell, back behavior,
+  standardized async states, offline awareness, mutation feedback, app-wide accessibility.
+- `customer-booking-journey` (was `mobile-booking-ux`): step progress/back-preservation, day-browser
+  availability indication, provider-detail deep linking and image fallbacks, appointments list, cancel,
+  reschedule.
+- `customer-discovery-journey` (was `mobile-discovery-ux`): home content hierarchy, pull-to-refresh,
+  search-as-you-type with in-flight cancellation.
+
+### Deliberately dropped as already specified
+
+These requirements were subsumed by post-unify specs and are **not** promoted, to avoid two requirements
+covering one subject:
+
+| Dropped from | Already covered by |
+|---|---|
+| `mobile-design-system` → "Design token set" | `customer-app-visual-tokens`: brand palette, radius scale, elevation policy, motion tokens, icon ramp, typography (only the spacing scale survives) |
+| `mobile-booking-ux` → "Stepped booking flow", "Jalali date and slot picker", "Confirmation summary before commit" | `customer-booking-journey`: service selection, staff selection incl. single-staff auto-skip, date/time selection, booking confirmation incl. slot-taken recovery, reservation completion |
+| `mobile-discovery-ux` → "Provider detail screen" (core), "Explore search" (filter + state parts) | `customer-booking-journey`: provider details; `customer-discovery-journey`: category/service filtering, discovery states |
+
+One factual correction was applied while merging: `mobile-design-system` asserted a `#1A365D` primary and a
+lingering purple `primarySwatch`. Neither is true — the customer app's primary is `#3777BF`, identical to the
+provider app (`app_colors.dart:13` vs `app_tokens.dart:78`), and `primarySwatch` is gone. The palette claim
+was removed; the "styling is sourced only from the theme" guarantee was kept.
 
 ## Impact
 

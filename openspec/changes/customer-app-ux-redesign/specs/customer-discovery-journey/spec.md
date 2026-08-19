@@ -1,4 +1,8 @@
-# mobile-discovery-ux
+# customer-discovery-journey
+
+> The existing requirements "Provider discovery entry points", "Category and service filtering" and
+> "Discovery states rendered consistently" already cover discovery entry, filtering, and loading/empty/error
+> states. The deltas below add only what they do not cover.
 
 ## ADDED Requirements
 
@@ -24,8 +28,8 @@ Home, explore results, and appointments SHALL support pull-to-refresh using the 
 - **WHEN** the user pulls down on home
 - **THEN** a refresh indicator appears and all sections re-fetch
 
-### Requirement: Explore search with live results
-The explore screen SHALL provide a search field with debounced search-as-you-type across providers and services, category filter chips, and result cards showing image, name, rating, and distance/location. Loading SHALL use skeleton cards; typing a new query SHALL cancel the in-flight search.
+### Requirement: Explore searches as the user types
+The explore search field SHALL search as the user types, debounced and without a submit action, cancelling any in-flight request when the query changes so a stale response can never overwrite a newer one. Loading SHALL use skeleton cards; result cards SHALL show image, name, rating, and distance/location.
 
 #### Scenario: Debounced typing
 - **WHEN** the user types a query
@@ -34,22 +38,3 @@ The explore screen SHALL provide a search field with debounced search-as-you-typ
 #### Scenario: No results
 - **WHEN** a search returns no matches
 - **THEN** an empty state explains no results were found for that query and offers clearing the search/filters
-
-#### Scenario: Filter by category
-- **WHEN** the user selects a category chip
-- **THEN** results are constrained to that category and the active chip is visually distinct with accessible contrast
-
-### Requirement: Provider detail screen
-The app SHALL provide a provider detail screen (deep-linkable by provider id) showing gallery imagery with placeholders, name, rating, address with map affordance, working hours, and the bookable services list with prices and durations. The primary booking CTA SHALL remain visible without scrolling on a standard viewport.
-
-#### Scenario: Open provider from explore
-- **WHEN** the user taps a provider card
-- **THEN** the detail screen loads with skeleton placeholders resolving to gallery, info, and services
-
-#### Scenario: Provider images unavailable
-- **WHEN** a provider has no gallery images or an image fails to load
-- **THEN** a branded placeholder renders instead of a broken or empty image area
-
-#### Scenario: Deep link to provider
-- **WHEN** the app is opened via a provider deep link
-- **THEN** the provider detail screen opens directly with a working back affordance to home

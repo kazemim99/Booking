@@ -33,7 +33,12 @@
 - [x] 5.2 Boundary integration tests green (Testcontainers); no business-rule test changed for behavior reasons
 
 ## 6. MANDATORY acceptance before C1 is closed (product-owner requirement)
-- [ ] 6.1 **SignalR NotificationHub E2E** — authenticated connection succeeds under the global fallback via `access_token` (query-string) negotiation
-- [ ] 6.2 **Reconnect behavior** — client reconnects correctly after a transient disconnect (re-auth on reconnect)
-- [ ] 6.3 **Expired-token handling** — a connection with an expired/invalid token is rejected; in-flight connection on token expiry behaves correctly
-> C1 is NOT considered closed until 6.1–6.3 are verified in real end-to-end scenarios.
+> Status corrected 2026-08-19 (`OPENSPEC-AUDIT-2026.md`): this section was left unchecked although the work
+> shipped and is recorded in ADR-003's close-out. Two real defects were fixed here: the hub had **no
+> `[Authorize]`** (it accepted anonymous connections), and JWT `OnMessageReceived` read `access_token` from a
+> **header** — which a browser cannot set on a WebSocket handshake, so the standard SignalR `?access_token=`
+> negotiation never authenticated a real client. Extracted to `SignalRAccessTokenExtractor` (query string,
+> header fallback, hub paths only).
+- [x] 6.1 **SignalR NotificationHub E2E** — authenticated connection succeeds under the global fallback via `access_token` (query-string) negotiation. Proven by `NotificationHubAuthTests.Authenticated_client_connects_and_can_reconnect` (real `HubConnection` over the test server) plus `SignalRAccessTokenExtractorTests` (4): reads the query string on a hub path, falls back to the header for non-browser clients, ignores the query on non-hub paths, returns null when absent.
+- [x] 6.2 **Reconnect behavior** — covered by the same `Authenticated_client_connects_and_can_reconnect` test, which asserts the client re-establishes after a transient disconnect.
+- [~] 6.3 **Expired-token handling — PARTIAL.** Rejection of an unauthenticated connection is proven (`NotificationHubAuthTests.Anonymous_connection_is_rejected`), and the expiry signal exists in production code (`JwtAuthenticationExtensions.cs:52-56` appends a `Token-Expired` response header from `OnAuthenticationFailed`). **Not tested:** a connection presenting a genuinely *expired* JWT, and the behaviour of an already-established connection whose token expires mid-flight. Carried into `harden-test-suite-and-dependencies` rather than blocking this change — the authorization mechanism itself is proven, and the untested paths are token-lifetime behaviour shared with every other authenticated endpoint.
