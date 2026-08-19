@@ -55,7 +55,7 @@ Verification tiers referenced below:
       `<intent>` (`action VIEW` + `data scheme="https"`), +16/−0, purely additive. Guarded by
       `test/config/android_manifest_test.dart` (4 tests), which was **proved to fail without the change**.
       *Caveat:* verified by XML structural parse + regression test, **not** by an APK manifest merge — see §6.6.
-- [ ] 4.1b **Deep links (App Links / Universal Links) — DEFERRED BY DECISION, not outstanding work.** Deep linking
+- [x] 4.1b **Deep links (App Links / Universal Links) — DEFERRED BY DECISION, not outstanding work.** *(Ticked 2026-08-19: the decision, recorded in §6.4 as settled and pinned by tests, is itself the deliverable — there is no code owed here.)* Deep linking
       is a **UX enhancement, not a financial-correctness requirement**: the deposit is recorded and the booking
       confirmed by the *server-side* callback with no client involvement (proved by T2 steps 8–11, which run with no
       client at all), and the app resolves state by asking the server on foreground resume plus an explicit
@@ -78,29 +78,32 @@ Verification tiers referenced below:
 - [x] 5.1 Integration: a deposit-required booking is not confirmed until the deposit is verified — plus percentage
       and fixed-amount deposits, idempotent re-submit, repeated callback, gateway refusal, NOK/cancel, retry after a
       settled failure, and the no-deposit control. *(T2 — 30/30, `tests/e2e/deposit-checkout-flow.sh`)*
-- [ ] 5.2 **E2E (device): OPEN.** discover → book → pay → receipt; duplicate tap → single charge; failure →
+- [~] 5.2 **E2E (device): MOVED to `checkout-release-gates` §3.** discover → book → pay → receipt; duplicate tap → single charge; failure →
       recoverable; on iOS + Android. Blocked by T4 (no emulator, no `ios/`) and by the §4.1 `<queries>` finding.
       The **web** leg's return surface is covered by the Vue payment-return specs (10/10); the Flutter-in-Chrome UI
       leg is **deferred by decision**, not passed — T2 covers the server/payment chain and T1 covers the checkout UI.
 - [x] 5.3 `flutter analyze` clean (0 errors) and `flutter test` green (105/105). *(T1)*
-- [ ] 5.4 **T3 — real ZarinPal sandbox: OPEN.** See §6. Not attempted; no credentials fabricated.
+- [~] 5.4 **T3 — real ZarinPal sandbox: MOVED to `checkout-release-gates` §2.** Not attempted; no credentials fabricated.
 
-## 6. Release gates still requiring external input
+## 6. Release gates still requiring external input — **MOVED to `checkout-release-gates` (2026-08-19)**
 
-These are **not** code tasks. Each needs something this environment cannot produce.
+> These are **not** code tasks; each needs something this environment cannot produce. Keeping them here made
+> a code-complete change read as 70% done and disguised the real blocker (credentials + infrastructure) as
+> unwritten code. They now live in the `checkout-release-gates` change, together with §5.2 (T4 device E2E)
+> and §5.4 (T3 sandbox). Retained below for the historical record — **do not action them here.**
 
-- [ ] 6.1 **ZarinPal sandbox MerchantId.** `Payment:ZarinPal:MerchantId` is the placeholder
+- [~] 6.1 (moved) **ZarinPal sandbox MerchantId.** `Payment:ZarinPal:MerchantId` is the placeholder
       `"your-zarinpal-merchant-id"`. Supply via `Payment__ZarinPal__MerchantId` (env) or user-secrets — never commit.
-- [ ] 6.2 **Publicly reachable HTTPS callback.** `Payment:ZarinPal:CallbackUrl` is
+- [~] 6.2 (moved) **Publicly reachable HTTPS callback.** `Payment:ZarinPal:CallbackUrl` is
       `https://localhost:7002/api/v1/payments/zarinpal/callback`, which is unreachable by the gateway **and points at
       a path that does not exist**. The real route is `GET /api/v1/Payments/callback`
       (`PaymentsController`, `[Route("api/v{version:apiVersion}/[controller]")]` + `[HttpGet("callback")]`).
       Override with `Payment__ZarinPal__CallbackUrl=https://<public-tunnel>/api/v1/Payments/callback`.
-- [ ] 6.3 **`Application:ClientUrl` pointed at the Vue app under test.** Currently `https://booksy.com`, so a sandbox
+- [~] 6.3 (moved) **`Application:ClientUrl` pointed at the Vue app under test.** Currently `https://booksy.com`, so a sandbox
       payment would redirect the tester to production. Override with `Application__ClientUrl`.
 - [x] 6.4 **Deep-link decision — SETTLED: ship without.** See §4.1b. Deferred deliberately and test-pinned.
-- [ ] 6.5 **`CHECKOUT_ENABLED` stays OFF** until 6.1–6.3 are settled and T3 has actually run.
-- [ ] 6.6 **Android APK build is blocked in this environment — infrastructure, not code.** `flutter build apk`
+- [~] 6.5 (moved) **`CHECKOUT_ENABLED` stays OFF** until 6.1–6.3 are settled and T3 has actually run.
+- [~] 6.6 (moved) **Android APK build is blocked in this environment — infrastructure, not code.** `flutter build apk`
       cannot complete here, so the merged-manifest check behind §4.1a could not run. Two distinct causes were found,
       in order:
       1. *(resolved)* `~/.gradle/caches/8.14` was ~99.8% corrupt — 1,800 of 1,803 transform directories had their

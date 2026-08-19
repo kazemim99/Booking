@@ -240,27 +240,10 @@ class PaymentService {
     }
   }
 
-  /**
-   * Get payments for a booking
-   * GET /api/v1/payments/booking/{bookingId}
-   */
-  async getPaymentsByBooking(bookingId: string): Promise<Payment[]> {
-    try {
-      console.log(`[PaymentService] Fetching payments for booking: ${bookingId}`)
-
-      const response = await serviceCategoryClient.get<ApiResponse<Payment[]>>(
-        `${API_BASE}/booking/${bookingId}`
-      )
-
-      console.log('[PaymentService] Payments retrieved:', response.data)
-
-      const payments = response.data?.data || response.data
-      return payments as Payment[]
-    } catch (error) {
-      console.error(`[PaymentService] Error fetching payments for booking ${bookingId}:`, error)
-      throw this.handleError(error)
-    }
-  }
+  // Removed: getPaymentsByBooking() requested GET /api/v1/payments/booking/{id}, a route that does not
+  // exist on PaymentsController — it would have 404'd on first use. Nothing called it. A booking's payment
+  // state is authoritative on the booking's own PaymentInfo, which is where the Flutter checkout client
+  // deliberately reads it from.
 
   /**
    * Get customer payments
