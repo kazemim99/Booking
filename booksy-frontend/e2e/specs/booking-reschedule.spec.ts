@@ -1,7 +1,7 @@
 import { test, expect } from '../fixtures/test-base'
 import { LoginPage } from '../pages/login.page'
 import { RescheduleFlowPage } from '../pages/reschedule.page'
-import { seedBookingWithToken } from '../utils/api-seed'
+import { seedBookingWithToken, SEED_SLOTS } from '../utils/api-seed'
 import { readSharedSeed } from '../utils/seed-fixture'
 import { newCustomerIdentity } from '../utils/identity'
 
@@ -26,7 +26,7 @@ test('customer reschedules a booking to a new time', async ({ page }) => {
   await login.loginAs('customer', newCustomerIdentity())
 
   const token = await login.accessToken()
-  await seedBookingWithToken(token, seeded)
+  await seedBookingWithToken(token, seeded, SEED_SLOTS.reschedule)
 
   const reschedule = new RescheduleFlowPage(page)
   await reschedule.openBookingsSidebar()

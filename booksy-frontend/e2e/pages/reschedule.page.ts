@@ -30,9 +30,15 @@ export class RescheduleFlowPage {
   }
 
   /** Picks the earliest non-empty, non-disabled day in the inline calendar (the
-   * modal enforces a minimum of "tomorrow"). */
+   * modal enforces a minimum of "tomorrow").
+   *
+   * NOTE the `[disabled="true"]` (not a bare `[disabled]`): the picker renders each
+   * day as a `<div>` with `:disabled` bound, and `disabled` is not one of Vue's
+   * special boolean attributes, so *every* day carries the attribute literally as
+   * "true" or "false". A bare `:not([disabled])` therefore matches nothing. The
+   * library's own stylesheet keys off `[disabled=true]` for the same reason. */
   async pickEarliestAvailableDate(): Promise<void> {
-    const day = this.page.locator('.vpd-day:not(.vpd-empty):not([disabled])').first()
+    const day = this.page.locator('.vpd-day:not(.vpd-empty):not([disabled="true"])').first()
     await expect(day).toBeVisible({ timeout: 15_000 })
     await day.click()
   }

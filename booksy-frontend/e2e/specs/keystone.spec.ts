@@ -1,7 +1,7 @@
 import { test, expect } from '../fixtures/test-base'
 import { LoginPage } from '../pages/login.page'
 import { BookingFlowPage, MyBookingsPage } from '../pages/booking.page'
-import { seedBookingWithToken } from '../utils/api-seed'
+import { seedBookingWithToken, SEED_SLOTS } from '../utils/api-seed'
 import { readSharedSeed } from '../utils/seed-fixture'
 import { newCustomerIdentity } from '../utils/identity'
 
@@ -63,7 +63,7 @@ test.describe('Customer My Bookings (UI)', () => {
     // Seed the booking against this exact browser session's token/identity, not a
     // separately-generated one — sidesteps any phone-normalization mismatch.
     const token = await login.accessToken()
-    await seedBookingWithToken(token, seeded)
+    await seedBookingWithToken(token, seeded, SEED_SLOTS.keystone)
 
     const myBookings = new MyBookingsPage(page)
     await myBookings.open()

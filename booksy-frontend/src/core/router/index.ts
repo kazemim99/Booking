@@ -12,7 +12,11 @@ import providerRoutes from '@/core/router/routes/provider.routes'
 import customerRoutes from './routes/customer.routes'
 import paymentRoutes from './routes/payment.routes'
 
-const routes: RouteRecordRaw[] = [
+/**
+ * Exported so tests can build a guard-free router from the exact same list.
+ * Route names must be globally unique — see `__tests__/routes.spec.ts`.
+ */
+export const routes: RouteRecordRaw[] = [
   {
     path: '/',
     name: 'Home',

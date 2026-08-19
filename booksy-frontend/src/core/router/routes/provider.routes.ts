@@ -21,7 +21,10 @@ const providerRoutes: RouteRecordRaw[] = [
   },
   {
     path: '/providers',
-    name: 'ProviderList',
+    // NOT 'ProviderList' — that name belongs to /customer/providers. Route names must
+    // be unique: vue-router's addRoute() evicts any existing record with the same
+    // name, so a duplicate here silently deletes the customer route at startup.
+    name: 'ProviderBrowse',
     component: () => import('@/modules/provider/views/ProviderListView.vue'),
     meta: {
       requiresAuth: false,
@@ -313,7 +316,9 @@ const providerRoutes: RouteRecordRaw[] = [
   // My Bookings (Staff Member Only)
   {
     path: '/provider/my-bookings',
-    name: 'MyBookings',
+    // NOT 'MyBookings' — that name belongs to /customer/my-bookings (see the note on
+    // ProviderBrowse above; a duplicate name deletes the customer route at startup).
+    name: 'StaffMyBookings',
     component: () => import('@/modules/provider/views/staff/MyBookingsView.vue'),
     meta: {
       requiresAuth: true,

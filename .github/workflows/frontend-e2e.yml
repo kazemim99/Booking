@@ -70,6 +70,14 @@ jobs:
         EventBus__Provider: "InMemory"
         OTP_SANDBOX_CODE: "123456"
         Sms__SandboxMode: "true"
+        # Point the cross-context HTTP self-calls at THIS host. appsettings.json still has
+        # them on :5000 from the microservices era, so completing provider registration
+        # (which refreshes the token via ProvidersController.RefreshProviderToken) fails with
+        # "connection actively refused" unless this is overridden. Locally it can appear to
+        # work by accident when another service happens to occupy :5000. Tracked properly as
+        # COMPLETION_ROADMAP Epic 1.1 — the self-call should become an in-process call.
+        Services__UserManagement__BaseUrl: "http://localhost:5050/api"
+        Services__ServiceCatalog__BaseUrl: "http://localhost:5050/api"
       run: |
         dotnet run --project src/Host/Booksy.Host/Booksy.Host.csproj --configuration Release > host.log 2>&1 &
         echo $! > host.pid

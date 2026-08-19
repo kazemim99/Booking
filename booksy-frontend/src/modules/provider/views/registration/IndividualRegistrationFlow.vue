@@ -79,6 +79,7 @@ import { ref, computed, onMounted, onBeforeUnmount } from 'vue'
 import { useRouter } from 'vue-router'
 import { toastService } from '@/core/services/toast.service'
 import { useAuthStore } from '@/core/stores/modules/auth.store'
+import { toLocalFormat } from '@/core/utils'
 import { hierarchyService } from '../../services/hierarchy.service'
 import type { RegisterIndependentIndividualRequest } from '../../types/hierarchy.types'
 
@@ -120,7 +121,9 @@ const registrationData = ref({
     firstName: authStore.user?.profile?.firstName || '',
     lastName: authStore.user?.profile?.lastName || '',
     email: '',
-    phone: authStore.user?.phoneNumber || '',
+    // See OrganizationRegistrationFlow: the verified phone is stored in E.164 but
+    // this disabled field is validated as a local Iranian mobile (09…).
+    phone: toLocalFormat(authStore.user?.phoneNumber),
     bio: '',
     avatarUrl: '',
     specializations: [] as string[],

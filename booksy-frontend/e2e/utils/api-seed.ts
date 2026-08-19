@@ -129,6 +129,21 @@ export async function seedBookableProvider(): Promise<SeededProvider> {
 }
 
 /**
+ * Slots used when seeding bookings, in UTC. The seeded provider is open 09:00-18:00
+ * local (Tehran, UTC+3:30), so 10:00Z = 13:30 local sits comfortably inside the day.
+ *
+ * Specs run in parallel against the SAME shared provider+staff seeded by
+ * global-setup, and the backend rejects an overlapping slot for a staff member with
+ * 409 RESOURCE_CONFLICT — so every spec that seeds a booking must claim its own slot
+ * here. Distinct days (not just distinct hours) keep them clear of each other's
+ * service duration and buffer time.
+ */
+export const SEED_SLOTS = {
+  keystone: '2026-09-01T10:00:00Z',
+  reschedule: '2026-09-02T10:00:00Z',
+} as const
+
+/**
  * Seeds a booking for `customer` against the seeded provider, so the customer's
  * My Bookings has a real (backend) row to display and cancel through the UI.
  * `customerNationalPhone` is the API form (913…, no leading 0).
@@ -138,6 +153,7 @@ export async function seedCustomerBooking(
   firstName: string,
   lastName: string,
   seeded: SeededProvider,
+  startTime: string = SEED_SLOTS.keystone,
 ): Promise<string> {
   const api = await playwrightRequest.newContext({ baseURL: API_BASE, timeout: 90_000 })
   try {
@@ -148,7 +164,7 @@ export async function seedCustomerBooking(
         providerId: seeded.providerId,
         serviceId: seeded.serviceId,
         staffProviderId: seeded.staffId,
-        startTime: '2026-09-01T10:00:00Z',
+        startTime,
         customerNotes: 'e2e ui keystone',
       },
     })
@@ -163,8 +179,14 @@ export async function seedCustomerBooking(
  * Seeds a booking for the user identified by `token` (captured from the browser
  * after UI login) — guarantees the booking belongs to exactly the logged-in
  * customer, sidestepping any phone-normalization identity mismatch.
+ *
+ * `startTime` must be a slot no other spec claims — see SEED_SLOTS.
  */
-export async function seedBookingWithToken(token: string, seeded: SeededProvider): Promise<string> {
+export async function seedBookingWithToken(
+  token: string,
+  seeded: SeededProvider,
+  startTime: string,
+): Promise<string> {
   const api = await playwrightRequest.newContext({ baseURL: API_BASE, timeout: 90_000 })
   try {
     const res = await api.post('/api/v1/Bookings', {
@@ -173,7 +195,7 @@ export async function seedBookingWithToken(token: string, seeded: SeededProvider
         providerId: seeded.providerId,
         serviceId: seeded.serviceId,
         staffProviderId: seeded.staffId,
-        startTime: '2026-09-01T10:00:00Z',
+        startTime,
         customerNotes: 'e2e ui keystone',
       },
     })

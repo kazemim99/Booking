@@ -93,6 +93,7 @@ import { ref, computed, onMounted, onBeforeUnmount } from 'vue'
 import { useRouter } from 'vue-router'
 import { toastService } from '@/core/services/toast.service'
 import { useAuthStore } from '@/core/stores/modules/auth.store'
+import { toLocalFormat } from '@/core/utils'
 import { useLocations } from '@/shared/composables/useLocations'
 import { useProviderRegistration } from '../../composables/useProviderRegistration'
 import { hierarchyService } from '../../services/hierarchy.service'
@@ -150,7 +151,10 @@ const registrationData = ref({
     ownerFirstName: '',
     ownerLastName: '',
     email: '',
-    phone: authStore.user?.phoneNumber || '',
+    // The verified phone is stored in E.164 (+989…) but this field is disabled and
+    // validated as a local Iranian mobile (09…), so prefilling it raw left the step
+    // permanently invalid with no way for the user to correct it.
+    phone: toLocalFormat(authStore.user?.phoneNumber),
     description: '',
     logoUrl: '',
     coverImageUrl: '',
