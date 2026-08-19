@@ -13,6 +13,8 @@ Any agent — or any human — can be oriented by reading this page and the file
 | **Project knowledge** — what the system *is*, and what it currently does | [`../openspec/project.md`](../openspec/project.md) (system shape) and `../openspec/specs/<capability>/spec.md` (per-capability behavior) | git |
 | **Authoritative decisions** — what we chose and why | [`../ARCHITECTURAL_DECISIONS.md`](../ARCHITECTURAL_DECISIONS.md) | git |
 | **Work in flight** — proposals, tasks, delta specs | `../openspec/changes/**`, archived under `../openspec/changes/archive/` | git |
+| **Procedural knowledge** — how *we* perform a recurring task | [`../.hermes/skills/<name>/SKILL.md`](../.hermes/skills/) — vendor-neutral, loaded on demand | git |
+| **Agent instructions** — the rules every AI assistant must follow | [`../AGENTS.md`](../AGENTS.md) (vendor-neutral; `CLAUDE.md` defers to it) | git |
 | **Project documentation** — how-tos, references, guides | `docs/**`, root `*.md`, `docs-site/` | git |
 | **Historical write-ups** — point-in-time, not maintained | [`archive/`](archive/) | git |
 | **AI working memory** | `~/.claude/projects/c--Repos-Booking/memory/` | **no — a cache** |
@@ -26,7 +28,10 @@ Any agent — or any human — can be oriented by reading this page and the file
 2. **"Why did we choose this?"** → **`ARCHITECTURAL_DECISIONS.md`**.
    A doc contradicting an accepted ADR is a bug worth filing.
 3. **"What is this system?"** → **`openspec/project.md`**.
-4. **AI memory never wins.** If memory and git disagree, git is right and the memory is stale.
+4. **"How do we do X?"** → the **skill** in `.hermes/skills/`. Skills carry *procedure only* —
+   never facts about the system. A skill asserting architecture is out of its lane; that belongs
+   in `project.md` or a spec.
+5. **AI memory never wins.** If memory and git disagree, git is right and the memory is stale.
 
 ## Rules
 
