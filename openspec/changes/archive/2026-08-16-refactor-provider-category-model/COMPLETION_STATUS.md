@@ -1,5 +1,23 @@
 # Refactor Provider Category Model - Completion Status
 
+> ## ⚠️ SUPERSEDED — read `tasks.md` instead
+>
+> **This document is a point-in-time snapshot from 2025-12-23 and its conclusions were wrong.**
+> Kept only for history.
+>
+> It declared the backend "COMPLETE" on the strength of a clean compile. A clean compile was
+> standing in for working code. When the change was finished on **2026-08-16**, eight real defects
+> were found behind that claim, including: every pre-existing provider stranded on the invalid
+> category `0`; two repository queries that could not be translated to SQL; three filters that were
+> accepted and silently ignored; every men's barbershop registering as `BeautySalon`; and a blank
+> category badge caused by a string/number contract mismatch.
+>
+> The accurate record — what was built, what was tested, what is deliberately not done, and the
+> full defect list — is in **`tasks.md`** (see its Testing Summary) and in
+> **`docs/SERVICE_CATEGORY_MODEL.md`**.
+>
+> The status lines below are the original, uncorrected text.
+
 ## Summary
 **Date**: 2025-12-23
 **Status**: **Backend Complete** ✅ | **Frontend Complete** ✅

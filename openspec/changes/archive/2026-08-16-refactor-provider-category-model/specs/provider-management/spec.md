@@ -17,18 +17,21 @@ The Provider aggregate SHALL have clear identity and categorization properties t
 - **AND** the `PrimaryCategory` must be one of the predefined ServiceCategory enum values
 - **AND** the provider cannot be created without a valid category
 
-#### Scenario: Provider category is immutable by default
-- **WHEN** a provider attempts to change their primary category
-- **THEN** the system prevents the change by default
-- **AND** requires admin approval workflow for category changes (future phase)
-- **AND** preserves the original category in audit log
+#### Scenario: Provider category is settled once registration completes
+- **WHEN** a provider is still in `Drafted` status
+- **THEN** the category can be corrected via `UpdateDraftInfo` (the registration wizard's "back" path)
+- **AND** the replacement must itself be a valid ServiceCategory
+- **WHEN** the provider has left `Drafted` status
+- **THEN** no command exposes a category change, so the category is effectively immutable
+- **AND** an admin-approval workflow for later changes is NOT implemented (future phase)
 
 #### Scenario: Provider search by category
 - **WHEN** customers search for providers by category
 - **THEN** the system filters providers using the `PrimaryCategory` property
-- **AND** returns results grouped by category
-- **AND** displays category badge/icon for each provider
-- **AND** category filter performs efficiently (<50ms p95)
+- **AND** the filter accepts the enum member name, the numeric id, or the category slug
+- **AND** an unrecognised category matches nothing rather than returning every provider
+- **AND** the query is served by the `IX_Providers_PrimaryCategory` index
+- **AND** results are returned as a flat paginated list; grouping by category is NOT implemented
 
 ## ADDED Requirements
 
@@ -80,18 +83,21 @@ Every provider SHALL have exactly one primary service category that defines thei
 Customers SHALL be able to discover providers by browsing or filtering by service category.
 
 #### Scenario: Browse providers by category
-- **WHEN** a customer navigates to category browse page
-- **THEN** the system displays all available categories
-- **AND** shows provider count for each category
-- **AND** categories with zero providers are shown but marked as "Coming Soon"
-- **AND** clicking a category shows all providers in that category
+- **WHEN** a client requests `GET /api/v1/categories`
+- **THEN** the system returns every category in the taxonomy, not only the populated ones
+- **AND** each carries its id, key, Persian and English names, slug, description, icon, colour and gradient
+- **AND** each carries the count of Active providers in that category
+- **AND** categories with zero providers are returned with `isComingSoon: true` rather than omitted
+- **AND** `GET /api/v1/categories/popular` instead returns only populated categories, ranked by count
+- **AND** `GET /api/v1/categories/{idOrSlug}/providers` lists the providers in one category
+- **AND** an unknown category on that route responds 404 rather than returning every provider
 
 #### Scenario: Filter search results by category
 - **WHEN** a customer searches for providers
-- **THEN** category filter chips display available categories
+- **THEN** the search UI offers the categories from the shared metadata table
 - **AND** selecting a category filters results to that category only
-- **AND** category filter persists across pagination
-- **AND** category filter combines with location filter
+- **AND** the category filter combines with the other search filters
+- **AND** the filter travels as a query parameter, so it survives pagination
 
 #### Scenario: Multi-category vs single category
 - **WHEN** a provider offers services in multiple domains (e.g., hair + beauty)

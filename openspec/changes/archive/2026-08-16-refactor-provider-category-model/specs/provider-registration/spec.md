@@ -6,41 +6,34 @@
 The Category Selection step MUST display business categories that map directly to backend ServiceCategory enum values. The system SHALL provide clear visual feedback for the selected category.
 
 **Changes**:
-- Category IDs now map 1:1 to ServiceCategory enum
-- Category metadata (name, icon, color) matches backend enum extension methods
-- Selection saves as ServiceCategory enum value (not string)
+- Category cards are derived from the shared category metadata table, so they cannot drift from the backend enum
+- Category metadata (name, icon, color) matches the backend enum extension methods
+- Selection is transmitted as the canonical category slug, which the backend resolves to the enum
 
 #### Scenario: User selects business category
 - **GIVEN** the user is on the Category Selection step (step 2)
 - **WHEN** the page loads
-- **THEN** the user sees a grid of business categories:
-  - HairSalon: "آرایشگاه زنانه" with icon 💇‍♀️
-  - Barbershop: "آرایشگاه مردانه" with icon 💇‍♂️
-  - BeautySalon: "سالن زیبایی" with icon ✨
-  - NailSalon: "آرایش ناخن" with icon 💅
-  - Spa: "اسپا" with icon 🧖
-  - Massage: "ماساژ" with icon 💆
-  - Gym: "باشگاه ورزشی" with icon 🏋️
-  - MedicalClinic: "کلینیک پزشکی" with icon 🏥
-  - Dental: "دندانپزشکی" with icon 🦷
-  - (additional categories...)
+- **THEN** the user sees a card for each category in `ENABLED_CATEGORIES`
+- **AND** onboarding currently enables a deliberate subset — HairSalon ("آرایشگاه زنانه", 💇‍♀️) and
+  Barbershop ("آرایشگاه مردانه", 💇‍♂️) — rather than the full 15-category taxonomy
+- **AND** each card's label, icon and slug come from the shared metadata table, never hardcoded
 - **AND** categories display in RTL layout with proper Persian typography
-- **AND** each category card shows icon, name, and optional description
-- **AND** visual selection indicator appears when category is clicked
+- **AND** a visual selection indicator appears when a category is clicked
 
 #### Scenario: Category selection validation
 - **WHEN** the user clicks "بعدی" on the Category Selection step
 - **THEN** the system validates that exactly one category is selected
-- **AND** displays error message if no category selected: "لطفاً یک دسته‌بندی انتخاب کنید"
-- **AND** prevents navigation to next step until valid category selected
-- **AND** selected category value is a valid ServiceCategory enum value
+- **AND** the "بعدی" button stays disabled until a category is chosen
+- **AND** navigation to the next step is prevented until a valid category is selected
 
 #### Scenario: Category value transmission to backend
-- **WHEN** the user completes registration
-- **THEN** the selected category is sent to backend as ServiceCategory enum integer value
-- **AND** backend validates the category is a valid enum value
-- **AND** backend creates Provider with `PrimaryCategory` set to selected enum value
-- **AND** registration fails if invalid category value is sent
+- **WHEN** the user completes the Category Selection step
+- **THEN** the step emits the canonical category slug (e.g. `barbershop`)
+- **AND** the backend resolves it through `ServiceCategoryResolver`, which also accepts the enum
+  member name, the numeric id, and the legacy wizard aliases that saved drafts still carry
+- **AND** the Provider aggregate rejects any category that is not a declared enum member
+- **AND** the backend creates the Provider with `PrimaryCategory` set to the resolved value
+- **AND** registration fails if an unresolvable category value is sent
 
 ## ADDED Requirements
 
@@ -49,19 +42,19 @@ The frontend category selection SHALL map directly to backend ServiceCategory en
 
 #### Scenario: Frontend-backend category mapping
 - **WHEN** the frontend CategorySelectionStep renders
-- **THEN** each category button/card has:
-  - `id`: ServiceCategory enum name (e.g., "HairSalon", "Barbershop")
-  - `value`: ServiceCategory enum integer ID (e.g., 1, 2)
-  - `name`: Persian display name from backend metadata
-  - `icon`: Emoji icon from backend metadata
-  - `color`: Color hex code from backend metadata
-- **AND** frontend TypeScript types match backend C# enum exactly
+- **THEN** each category card is a `CategoryMetadata` entry carrying:
+  - `id`: the ProviderCategory enum value, matching the backend integer exactly
+  - `slug`: the canonical URL slug, which is what the step emits
+  - `persianName` / `englishName`, `icon`, `colorHex`, `gradient`, `description`
+- **AND** the frontend `ProviderCategory` enum integers match the backend C# enum exactly
 
 #### Scenario: Category metadata synchronization
-- **WHEN** backend ServiceCategory enum metadata changes
-- **THEN** frontend TypeScript types are regenerated/updated
-- **AND** category display names, icons, and colors stay in sync
-- **AND** build fails if frontend references undefined category
+- **WHEN** the backend ServiceCategory enum or its metadata changes
+- **THEN** the frontend `ProviderCategory` enum and `CATEGORY_METADATA` must be updated by hand —
+  there is no code generation between the two
+- **AND** tests on both sides pin the integer ids and the spot-checked names, so a renumbering that
+  would silently re-label existing provider rows fails the suite rather than shipping
+- **AND** TypeScript rejects a reference to a category that is not declared in the enum
 
 ### Requirement: Category Selection Persistence
 The selected category SHALL be persisted through the registration flow and saved to the provider profile.
@@ -72,6 +65,15 @@ The selected category SHALL be persisted through the registration flow and saved
 - **THEN** the previously selected category is still highlighted
 - **AND** user can change the selection before proceeding
 - **AND** new selection overrides previous selection
+
+#### Scenario: Category is restored when a saved draft is resumed
+- **GIVEN** a registration draft was saved with a category
+- **WHEN** the registrant returns and the draft is loaded
+- **THEN** the Category Selection step re-selects the saved category
+- **AND** this holds regardless of the form the saved value takes — the draft endpoints return the
+  enum member name (`"HairSalon"`), while older drafts hold wizard aliases such as `barber` and
+  the wizard now writes slugs
+- **AND** an unrecognised saved value leaves the step with nothing selected rather than guessing
 
 #### Scenario: Category saved to provider
 - **WHEN** user completes all registration steps

@@ -17,12 +17,12 @@ Service entities SHALL use ServiceCategory enum (not value object) for categoriz
 - **AND** the service cannot be created without a valid category
 - **AND** category is stored as integer in database (not string)
 
-#### Scenario: Service category immutability
-- **WHEN** a provider attempts to change a service's category
-- **THEN** the system allows the change (category can be updated)
-- **AND** updates the category value
-- **AND** logs the change in audit trail
-- **AND** does NOT validate alignment with Provider.PrimaryCategory (phase 2 feature)
+#### Scenario: Service category can be changed
+- **WHEN** a provider changes a service's category via `UpdateBasicInfo`
+- **THEN** the system allows the change and updates the category value
+- **AND** the replacement must itself be a declared ServiceCategory, or the change is rejected
+- **AND** a `ServiceUpdatedEvent` is raised
+- **AND** the system does NOT validate alignment with Provider.PrimaryCategory (phase 2 feature)
 
 ## ADDED Requirements
 
@@ -37,12 +37,11 @@ Services SHALL align with their provider's primary category when Phase 2 validat
 - **AND** no validation warnings are shown
 - **AND** service appears in provider's service list
 
-#### Scenario: Cross-category service creation (allowed but flagged)
+#### Scenario: Cross-category service creation (allowed)
 - **WHEN** a HairSalon provider creates a service with Category = Massage
 - **THEN** the service is created successfully (NO blocking in Phase 1)
-- **AND** backend logs a warning about category mismatch
-- **AND** admin dashboard MAY flag this for review
-- **AND** future phase will add validation/compatibility rules
+- **AND** no mismatch warning is logged and no admin flag is raised — neither is implemented
+- **AND** a future phase will add validation/compatibility rules
 
 #### Scenario: Future category compatibility matrix
 - **WHEN** Phase 2 category validation is implemented
@@ -59,17 +58,19 @@ Services SHALL align with their provider's primary category when Phase 2 validat
 Service category queries SHALL be optimized for fast filtering and aggregation.
 
 #### Scenario: Query services by category
-- **WHEN** system queries services by category
-- **THEN** database uses integer comparison (fast)
-- **AND** category column is indexed for performance
-- **AND** queries execute in <50ms p95
-- **AND** no string parsing or conversion required
+- **WHEN** the system queries services or providers by category
+- **THEN** the comparison happens in the database on the integer column
+- **AND** the predicate compares the enum directly — filtering on `Category.ToString()` has no SQL
+  translation for a `HasConversion<int>()` column and must never be reintroduced
+- **AND** provider category filtering is served by `IX_Providers_PrimaryCategory`
+- **NOTE** the <50ms p95 target has not been measured; it needs a production-sized dataset
 
-#### Scenario: Aggregate services by category
-- **WHEN** system aggregates service counts by category
-- **THEN** GROUP BY clause uses integer category values
-- **AND** aggregation completes in <100ms p95
-- **AND** results return category enum values with metadata
+#### Scenario: Aggregate providers by category
+- **WHEN** the system aggregates provider counts by category
+- **THEN** the GROUP BY runs in the database over the integer category values
+- **AND** the endpoint must not materialise every active provider to count them in memory
+- **AND** results return the category enum values with their metadata
+- **NOTE** the <100ms p95 target has not been measured
 
 ## REMOVED Requirements
 
