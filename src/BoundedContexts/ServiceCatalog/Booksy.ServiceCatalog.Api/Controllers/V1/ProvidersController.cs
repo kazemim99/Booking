@@ -50,15 +50,18 @@ public class ProvidersController : ControllerBase
     private readonly ISender _mediator;
     private readonly ILogger<ProvidersController> _logger;
     private readonly Application.Services.IImageStorageService _imageStorageService;
+    private readonly Application.Services.Interfaces.ITokenService _tokenService;
 
     public ProvidersController(
         ISender mediator,
         ILogger<ProvidersController> logger,
-        Application.Services.IImageStorageService imageStorageService)
+        Application.Services.IImageStorageService imageStorageService,
+        Application.Services.Interfaces.ITokenService tokenService)
     {
         _mediator = mediator ?? throw new ArgumentNullException(nameof(mediator));
         _logger = logger ?? throw new ArgumentNullException(nameof(logger));
         _imageStorageService = imageStorageService ?? throw new ArgumentNullException(nameof(imageStorageService));
+        _tokenService = tokenService ?? throw new ArgumentNullException(nameof(tokenService));
     }
 
 
@@ -613,40 +616,31 @@ public class ProvidersController : ControllerBase
                 providerStatus.ProviderId,
                 providerStatus.Status);
 
-            // Make HTTP call to UserManagement API to generate new token with provider claims
-            using var httpClient = new HttpClient();
-            var userManagementBaseUrl = HttpContext.RequestServices
-                .GetRequiredService<IConfiguration>()
-                .GetValue<string>("Services:UserManagement:BaseUrl") ?? "http://localhost:5001";
-
-            var tokenRequest = new
+            if (!Guid.TryParse(userIdClaim, out var userId))
             {
-                userId = userIdClaim,
-                additionalClaims = new Dictionary<string, string>
+                return Unauthorized(new
                 {
-                    { "provider_id", providerStatus.ProviderId.ToString() },
-                    { "provider_status", providerStatus.Status.ToString() }
-                }
-            };
-
-            var response = await httpClient.PostAsJsonAsync(
-                $"{userManagementBaseUrl}/api/v1/auth/generate-token",
-                tokenRequest,
-                cancellationToken);
-
-            if (!response.IsSuccessStatusCode)
-            {
-                _logger.LogError(
-                    "Failed to generate token from UserManagement API. Status: {StatusCode}",
-                    response.StatusCode);
-
-                return StatusCode(
-                    (int)response.StatusCode,
-                    new { message = "Failed to generate new token" });
+                    success = false,
+                    message = "User ID in token is not a valid identifier",
+                    errorCode = "INVALID_TOKEN"
+                });
             }
 
-            var tokenResponse = await response.Content.ReadFromJsonAsync<TokenGenerationResponse>(
-                cancellationToken: cancellationToken);
+            // Mint the new token in-process via ITokenService.
+            //
+            // This used to build a raw `new HttpClient()` and POST to
+            // {Services:UserManagement:BaseUrl}/api/v1/auth/generate-token, defaulting to
+            // http://localhost:5001 — a standalone UserManagement host that stopped existing when the
+            // system became a modular monolith. It also attached no bearer token, so it would have hit
+            // the host-wide RequireAuthenticatedUser fallback and 401'd even against a live host. The
+            // call could only fail, and the catch below turned it into a generic 500. That is why a
+            // freshly-registered provider's dashboard and gallery rendered empty: loadCurrentProvider()
+            // depends on this refresh to obtain the providerId claim, and it silently never arrived.
+            var tokenResponse = await _tokenService.GenerateTokenWithProviderClaimsAsync(
+                userId,
+                providerStatus.ProviderId,
+                providerStatus.Status.ToString(),
+                cancellationToken);
 
             _logger.LogInformation(
                 "Successfully refreshed token for provider {ProviderId}",
@@ -654,10 +648,10 @@ public class ProvidersController : ControllerBase
 
             return Ok(new RefreshProviderTokenResponse
             {
-                AccessToken = tokenResponse?.AccessToken ?? string.Empty,
-                RefreshToken = tokenResponse?.RefreshToken,
-                ExpiresIn = tokenResponse?.ExpiresIn ?? 900,
-                TokenType = "Bearer",
+                AccessToken = tokenResponse.AccessToken,
+                RefreshToken = tokenResponse.RefreshToken,
+                ExpiresIn = tokenResponse.ExpiresIn,
+                TokenType = tokenResponse.TokenType,
                 ProviderId = providerStatus.ProviderId.ToString(),
                 ProviderStatus = providerStatus.Status.ToString()
             });

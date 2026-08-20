@@ -31,7 +31,8 @@ public class ProvidersByStatusMappingTests
         new(
             mediator.Object,
             NullLogger<ProvidersController>.Instance,
-            Mock.Of<IImageStorageService>());
+            Mock.Of<IImageStorageService>(),
+            Mock.Of<Booksy.ServiceCatalog.Application.Services.Interfaces.ITokenService>());
 
     private static ProviderListViewModel ViewModel(
         ProviderStatus status = ProviderStatus.PendingVerification,

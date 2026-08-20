@@ -169,6 +169,13 @@ builder.Services.AddServiceCatalogInfrastructureWithCache(builder.Configuration)
 // See InProcessProviderInfoService for why the adapter belongs in the Host.
 builder.Services.AddScoped<IProviderInfoService, InProcessProviderInfoService>();
 
+// The reverse direction: ServiceCatalog needs UserManagement to mint a token carrying provider
+// claims. Registered here for the same reasons and with the same ordering constraint — it must come
+// after AddServiceCatalogInfrastructure, which registers the HTTP TokenService this replaces.
+// See InProcessTokenService for the two loopback callers it retires.
+builder.Services
+    .AddScoped<Booksy.ServiceCatalog.Application.Services.Interfaces.ITokenService, InProcessTokenService>();
+
 AppContext.SetSwitch("Npgsql.EnableLegacyTimestampBehavior", true);
 
 // ---------------------------------------------------------------------------
