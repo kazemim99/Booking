@@ -104,7 +104,7 @@
 - [x] 11.1 `GetProviderStaffQueryHandler` (legacy `GET /Providers/{id}/staff`) now reads the **membership roster** (name/phone via `IPersonDirectory`, owner flagged, ids = MembershipId) and appends any not-yet-migrated legacy sub-providers. Response DTO shape unchanged, so the Vue admin keeps working while seeing the same people the Flutter app sees.
 - [x] 11.2 Flutter `hasStaff` completeness signal switched from `getProviderStaff` to `getOrganizationMembers` — the Home checklist, Team screen and composer now agree.
 - [x] 11.3 Verified: backend **421 green**, Flutter **387 green**, analyze clean.
-- [ ] 11.4 REMAINING (needs a product decision): `POST /Providers/{id}/staff` still runs `AddStaffToProviderCommandHandler` (synthetic `UserId.CreateNew()` sub-provider). Converging it needs a decision on **staff without an app account** (see §12).
+- [x] 11.4 **STALE — corrected 2026-08-19.** `POST /Providers/{id}/staff` no longer mints a synthetic UserId; §18 rewrote `AddStaffToProviderCommandHandler` onto `OrganizationMembership.InviteExisting`/`CreateUnclaimed`, and `GetProviderStaffQueryHandler` reads the membership roster. Read + create are membership-native. The real gap was **write**: `DELETE` 500'd (handler commented out — fixed 2026-08-19, 6 tests) and `PUT` still 500s (FOLLOW-UPS #16, needs a product decision). Original text: (needs a product decision): `POST /Providers/{id}/staff` still runs `AddStaffToProviderCommandHandler` (synthetic `UserId.CreateNew()` sub-provider). Converging it needs a decision on **staff without an app account** (see §12).
 
 ## 12. OPEN PRODUCT DECISION — staff who do not use the app
 Vue's "add staff" creates a bookable person from a name alone (no phone/account). The membership model requires a Person. Options:
