@@ -16,7 +16,7 @@ namespace Booksy.ServiceCatalog.IntegrationTests;
 [Collection("Integration Tests")]
 public class StepBasedRegistrationTests : ServiceCatalogIntegrationTestBase
 {
-    public StepBasedRegistrationTests(ServiceCatalogTestWebApplicationFactory<Booksy.API.Startup> factory)
+    public StepBasedRegistrationTests(ServiceCatalogTestWebApplicationFactory<Startup> factory)
         : base(factory)
     {
     }

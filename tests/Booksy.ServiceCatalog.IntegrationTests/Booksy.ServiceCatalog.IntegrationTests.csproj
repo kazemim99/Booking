@@ -21,6 +21,9 @@
   </ItemGroup>
 
   <ItemGroup>
+    <!-- Booksy.Host is the system under test: these suites boot the real composed monolith, not a
+         bounded context's own (retired) per-service entry point. See GlobalUsing.cs. -->
+    <ProjectReference Include="..\..\src\Host\Booksy.Host\Booksy.Host.csproj" />
     <ProjectReference Include="..\..\src\BoundedContexts\ServiceCatalog\Booksy.ServiceCatalog.Api\Booksy.ServiceCatalog.Api.csproj" />
     <ProjectReference Include="..\..\src\BoundedContexts\ServiceCatalog\Booksy.ServiceCatalog.Infrastructure\Booksy.ServiceCatalog.Infrastructure.csproj" />
     <ProjectReference Include="..\Booksy.Tests.Commons\Booksy.Tests.Commons.csproj" />
