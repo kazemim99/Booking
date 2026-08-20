@@ -2,9 +2,18 @@
 
 > **Status:** APPROVED AND LARGELY IMPLEMENTED (~80%). The Person → OrganizationMembership →
 > StaffProfile model is live: one Person per phone, membership-based staff, members are bookable
-> resources keyed by MembershipId, full lifecycle audit trail. Supersedes `add-provider-hierarchy`.
+> resources keyed by MembershipId, full lifecycle audit trail.
 > Progress is tracked in `openspec/changes/refactor-identity-and-membership/tasks.md`.
 > Remaining: Vue admin UI migration, salon switcher, staged data migrations, integration/E2E execution.
+>
+> **`add-provider-hierarchy` is superseded and was archived on 2026-08-19**
+> (`openspec/changes/archive/2026-08-19-add-provider-hierarchy/`), with `--skip-specs` so its
+> `MODIFIED`/`REMOVED` deltas could not write the retired sub-provider staff model back into
+> `openspec/specs/`. What it built is *retained and rewired*, not discarded: the `ProviderInvitation`
+> and `ProviderJoinRequest` aggregates and per-staff booking attribution live on. What is retired is
+> its identity mechanism — **`ParentProviderId`-as-membership**. Its remaining 58 tasks were
+> deliberately not carried forward (see that change's proposal for the reasoning); the one live
+> remnant, migrating the Vue hierarchy UI off sub-providers, is task 8.7 here.
 > **Scope:** `Booksy.UserManagement` + `Booksy.ServiceCatalog` bounded contexts (backend) and `booksy-provider-app` (Flutter). The Vue `booksy-frontend` is a secondary consumer flagged for follow-up alignment.
 > **Author:** Architecture audit, 2026-07-21.
 
