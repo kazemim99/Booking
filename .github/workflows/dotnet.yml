@@ -12,9 +12,12 @@ env:
   SOLUTION_PATH: './Booksy.sln'
 
 jobs:
-  # Job 1: Build only (tests disabled for now)
-  build:
-    name: Build Solution
+  # Job 1: Build + unit tests.
+  # Build and test share a job so the test step can reuse the build output; running them as separate
+  # jobs meant a fresh checkout with no artifacts, which is why the old commented-out jobs passed
+  # `--no-build` and could never have worked.
+  build-and-test:
+    name: Build & Unit Tests
     runs-on: ubuntu-latest
 
     steps:
@@ -42,56 +45,81 @@ jobs:
     - name: Build solution
       run: dotnet build ${{ env.SOLUTION_PATH }} --configuration Release --no-restore
 
-  # TEMPORARILY DISABLED TESTS - Will enable after fixing test failures
-  # Uncomment the sections below when tests pass locally
+    - name: Run unit tests
+      run: >-
+        dotnet test ${{ env.SOLUTION_PATH }}
+        --configuration Release --no-build
+        --filter "FullyQualifiedName~UnitTests"
+        --logger "trx;LogFileName=unit-tests.trx"
+        --results-directory ./TestResults
 
-  # Job 2: Unit Tests
-  # unit-tests:
-  #   name: Run Unit Tests
-  #   runs-on: ubuntu-latest
-  #   needs: build
-  #   steps:
-  #   - name: Checkout code
-  #     uses: actions/checkout@v4
-  #   - name: Setup .NET
-  #     uses: actions/setup-dotnet@v4
-  #     with:
-  #       dotnet-version: ${{ env.DOTNET_VERSION }}
-  #   - name: Restore dependencies
-  #     run: dotnet restore ${{ env.SOLUTION_PATH }}
-  #   - name: Run Unit Tests
-  #     run: dotnet test ${{ env.SOLUTION_PATH }} --configuration Release --no-build --filter "FullyQualifiedName~UnitTests"
+    - name: Upload test results
+      if: always()
+      uses: actions/upload-artifact@v4
+      with:
+        name: unit-test-results
+        path: ./TestResults
+        retention-days: 7
 
-  # Job 3: Integration Tests
+  # Job 2: Dependency vulnerability gate.
+  # The solution was brought to zero known advisories (5 HIGH + 2 moderate remediated). This job keeps
+  # it there: any HIGH or CRITICAL advisory fails the build. Moderates are reported but not fatal, so a
+  # newly-published moderate doesn't block unrelated work.
+  dependency-audit:
+    name: Dependency Vulnerability Audit
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Setup .NET
+      uses: actions/setup-dotnet@v4
+      with:
+        dotnet-version: ${{ env.DOTNET_VERSION }}
+
+    - name: Restore dependencies
+      run: dotnet restore ${{ env.SOLUTION_PATH }}
+
+    - name: Scan for vulnerable packages
+      run: |
+        dotnet list ${{ env.SOLUTION_PATH }} package --vulnerable --include-transitive \
+          > vulnerable.txt 2>&1 || true
+        cat vulnerable.txt
+
+        if grep -qE '\b(High|Critical)\b' vulnerable.txt; then
+          echo "::error::HIGH or CRITICAL dependency advisory detected"
+          grep -E '^\s+> ' vulnerable.txt | sort -u
+          exit 1
+        fi
+
+        if grep -qE '\bModerate\b' vulnerable.txt; then
+          echo "::warning::Moderate dependency advisories present (not blocking)"
+          grep -E '^\s+> ' vulnerable.txt | sort -u
+        fi
+
+        echo "No HIGH or CRITICAL advisories."
+
+  # Job 3: Integration tests — STILL DISABLED, and this is a real known gap, not neglect.
+  #
+  # The ServiceCatalog integration suite does not currently pass: the per-service integration projects
+  # were written against the retired per-service hosts and have not been retargeted to Booksy.Host.
+  # Enabling this job today would make every build red and train people to ignore CI.
+  #
+  # Tracked in COMPLETION_ROADMAP.md Epic 3.1 and openspec/changes/FOLLOW-UPS.md.
+  # When re-enabling: needs Postgres + Redis services (see deploy.yml's e2e-keystone job for the
+  # working pattern), and must run in the same job as the build, as above.
+  #
   # integration-tests:
   #   name: Integration Tests
   #   runs-on: ubuntu-latest
-  #   needs: build
-  #   steps:
-  #   - name: Checkout code
-  #     uses: actions/checkout@v4
-  #   - name: Setup .NET
-  #     uses: actions/setup-dotnet@v4
-  #     with:
-  #       dotnet-version: ${{ env.DOTNET_VERSION }}
-  #   - name: Restore dependencies
-  #     run: dotnet restore ${{ env.SOLUTION_PATH }}
-  #   - name: Run Integration Tests
-  #     run: dotnet test ${{ env.SOLUTION_PATH }} --configuration Release --no-build --filter "FullyQualifiedName~IntegrationTests"
+  #   services:
+  #     postgres: ...
+  #     redis: ...
 
-  # Job 4: Architecture Tests
-  # architecture-tests:
-  #   name: Architecture Tests
-  #   runs-on: ubuntu-latest
-  #   needs: build
-  #   steps:
-  #   - name: Checkout code
-  #     uses: actions/checkout@v4
-  #   - name: Setup .NET
-  #     uses: actions/setup-dotnet@v4
-  #     with:
-  #       dotnet-version: ${{ env.DOTNET_VERSION }}
-  #   - name: Restore dependencies
-  #     run: dotnet restore ${{ env.SOLUTION_PATH }}
-  #   - name: Run Architecture Tests
-  #     run: dotnet test ${{ env.SOLUTION_PATH }} --configuration Release --no-build --filter "FullyQualifiedName~ArchitectureTests"
+  # Job 4: Architecture tests — intentionally not wired yet.
+  #
+  # tests/Booksy.ArchitectureTests references NetArchTest.Rules but contains only an empty template test,
+  # so the job would pass while asserting nothing. Wire it once real rules exist — the first two worth
+  # having are "no IPaymentGateway call inside a DB transaction scope" (ADR-006) and "every owned entity
+  # with a domain-generated key is ValueGeneratedNever" (ADR-005, a rule already violated four times).
