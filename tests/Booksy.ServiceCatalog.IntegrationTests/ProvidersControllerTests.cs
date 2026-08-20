@@ -845,22 +845,53 @@ public class ProvidersControllerTests : ServiceCatalogIntegrationTestBase
         response.StatusCode.Should().Be(HttpStatusCode.NoContent);
     }
 
+    /// <summary>
+    /// Replaces <c>UpdateBusinessInfo_WithInvalidPhoneNumber_ShouldReturn400BadRequest</c>, which asserted
+    /// behaviour this endpoint does not have. That test posted <c>PhoneNumber</c>, <c>Email</c>,
+    /// <c>OwnerFirstName</c> and <c>OwnerLastName</c>, none of which exist on
+    /// <see cref="UpdateBusinessInfoRequest"/> — model binding discarded them, the handler
+    /// (<c>UpdateBusinessProfileCommand</c>) only touches business name, description and logo, and 204 was
+    /// the correct response. It was testing a richer request shape that no longer exists, so it was failing
+    /// for being stale rather than finding a defect. Contact details are not editable through this route.
+    ///
+    /// <para>The original intent — invalid input must be rejected — is kept, retargeted at fields the
+    /// endpoint really declares: <c>BusinessName</c> is <c>[Required]</c> and <c>LogoUrl</c> is
+    /// <c>[Url]</c>.</para>
+    /// </summary>
     [Fact]
-    public async Task UpdateBusinessInfo_WithInvalidPhoneNumber_ShouldReturn400BadRequest()
+    public async Task UpdateBusinessInfo_WithMissingBusinessName_ShouldReturn400BadRequest()
     {
         // Arrange
         var userId = Guid.NewGuid();
         var provider = await CreateProviderWithStatusAsync(userId, "Test Provider", ProviderStatus.Active);
         AuthenticateAsUser(userId, "provider@test.com");
 
+        // BusinessName is [Required]; omitting it must fail model validation.
+        var request = new
+        {
+            Description = "Updated description"
+        };
+
+        // Act
+        var response = await Client.PutAsJsonAsync("/api/v1/providers/business", request);
+
+        // Assert
+        response.StatusCode.Should().Be(HttpStatusCode.BadRequest);
+    }
+
+    [Fact]
+    public async Task UpdateBusinessInfo_WithMalformedLogoUrl_ShouldReturn400BadRequest()
+    {
+        // Arrange
+        var userId = Guid.NewGuid();
+        var provider = await CreateProviderWithStatusAsync(userId, "Test Provider", ProviderStatus.Active);
+        AuthenticateAsUser(userId, "provider@test.com");
+
+        // LogoUrl carries [Url]; a non-URL must fail model validation.
         var request = new
         {
             BusinessName = "Updated Business Name",
-            Description = "Updated description",
-            OwnerFirstName = "John",
-            OwnerLastName = "Doe",
-            PhoneNumber = "invalid",
-            Email = "business@example.com"
+            LogoUrl = "not-a-url"
         };
 
         // Act
