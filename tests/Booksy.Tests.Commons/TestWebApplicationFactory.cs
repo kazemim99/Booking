@@ -37,6 +37,29 @@ public class TestWebApplicationFactory<TStartup, TDbContext>
 
     protected override void ConfigureWebHost(IWebHostBuilder builder)
     {
+        // UseSetting, not just ConfigureAppConfiguration.
+        //
+        // ConfigureAppConfiguration is applied while the host is being built — AFTER the entry point's
+        // top-level statements have already registered services. Anything that resolves a connection
+        // string from IConfiguration *during registration* therefore never sees the override and keeps
+        // the value from the Host's own appsettings.json, which points at the developer's local Postgres
+        // (Port=54321). CAP's storage initializer is one such consumer, but it is not the only one: this
+        // was the single largest cause of failures when the suite was retargeted at Booksy.Host, showing
+        // up as "Npgsql.NpgsqlException: Failed to connect to 127.0.0.1:54321" across whole test classes.
+        //
+        // UseSetting writes into the host configuration before the application builder reads it, so
+        // registration-time consumers see the container's connection string too. It is per-builder rather
+        // than process-wide, so each factory keeps its own database and test isolation is unaffected.
+        builder.UseSetting($"ConnectionStrings:{_contextName}", _postgresFixture.ConnectionString);
+        builder.UseSetting("ConnectionStrings:DefaultConnection", _postgresFixture.ConnectionString);
+        builder.UseSetting("Cache:Provider", "InMemory");
+
+        // The Host registers Redis unconditionally. abortConnect=false keeps StackExchange.Redis lazy so
+        // a missing server cannot fail startup — mirroring HostCompositionFactory, which boots the same
+        // Host successfully.
+        builder.UseSetting("ConnectionStrings:Redis", "localhost:6379,abortConnect=false");
+        builder.UseSetting("Cache:RedisConnectionString", "localhost:6379,abortConnect=false");
+
         builder.ConfigureAppConfiguration((context, config) =>
         {
             // Add test-specific configuration
