@@ -28,9 +28,14 @@ Any agent — or any human — can be oriented by reading this page and the file
 2. **"Why did we choose this?"** → **`ARCHITECTURAL_DECISIONS.md`**.
    A doc contradicting an accepted ADR is a bug worth filing.
 3. **"What is this system?"** → **`openspec/project.md`**.
-4. **"How do we do X?"** → the **skill** in `.hermes/skills/`. Skills carry *procedure only* —
-   never facts about the system. A skill asserting architecture is out of its lane; that belongs
-   in `project.md` or a spec.
+4. **"How do we do X?"** or **"which document answers this?"** → the **skill** in
+   `.hermes/skills/`. Skills carry *procedure* (how we work) and *navigation* (where to look,
+   what to trust) — never system behavior. A skill asserting how the system works is out of its
+   lane; that belongs in `project.md`, a spec, or an ADR.
+
+   Everything a skill asserts must be **re-derivable from the repository** — a date from
+   `git log`, a count from `ls`. A skill is a faster path to the truth, never a second copy of
+   it, and it always loses to the file it points at.
 5. **AI memory never wins.** If memory and git disagree, git is right and the memory is stale.
 
 ## Rules
