@@ -16,7 +16,7 @@ Load this when you are about to **archive** a change, **judge whether a change i
 **promote delta specs** into `openspec/specs/`.
 
 This skill deliberately does **not** repeat the generic OpenSpec workflow, CLI flags, or delta
-syntax. Those live in [`openspec/AGENTS.md`](../../../openspec/AGENTS.md) and
+syntax. Those live in the OpenSpec instruction file at `openspec/` (repo root) and in
 `openspec/reference/`. What follows is only the project-specific judgement that has repeatedly
 been got wrong in this repository.
 
@@ -66,7 +66,7 @@ carry that placeholder.
 
 Write one real sentence **as part of archiving**, not as a later sweep. A capability whose Purpose
 is a TODO cannot answer the "what does it do?" question that
-[`docs/KNOWLEDGE.md`](../../../docs/KNOWLEDGE.md) assigns to it.
+`docs/KNOWLEDGE.md` (repo root) assigns to it.
 
 ### 6. Validate, then commit the archive on its own
 

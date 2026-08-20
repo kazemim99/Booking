@@ -12,6 +12,10 @@ lives and which copy wins when two sources disagree. In short:
 - **Why we chose it** → [ARCHITECTURAL_DECISIONS.md](ARCHITECTURAL_DECISIONS.md)
 - **What's in flight** → `openspec/changes/`
 
+Before searching the documentation, read **[docs/KNOWLEDGE_MAP.md](docs/KNOWLEDGE_MAP.md)** —
+which document answers which question, and which are too stale to trust. Much of the older
+documentation describes a retired microservices architecture; the map says which.
+
 **Any AI memory you carry is a cache, not a source of truth.** Verify it against git before
 relying on it; if it disagrees with the code, the code is right. Nothing durable may live only
 in agent memory — if a fact matters, propose adding it to the right file above.

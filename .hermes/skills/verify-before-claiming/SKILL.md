@@ -27,8 +27,8 @@ every reader trusted the previous reader.
 
 Check the claim against `.csproj`, `Program.cs`, `appsettings*.json`, `docker-compose*.yml`,
 migrations, workflows, or tests. Do **not** verify one document against another — that is how the
-original errors propagated. `CLAUDE.md`, `README.md`, and `docs-site/` are *guidance*, not
-evidence.
+original errors propagated. Assistant-instruction files, `README.md`, and `docs-site/` are
+*guidance*, not evidence.
 
 ### 2. "Referenced" is not "wired"
 

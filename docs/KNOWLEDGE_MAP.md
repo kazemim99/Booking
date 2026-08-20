@@ -1,10 +1,105 @@
-# Booking Document Index
+# Booking Knowledge Map
 
-File-by-file map of the markdown corpus. **Dates are the last commit touching the file** — the
-single best available proxy for whether the content still describes reality.
+Which document answers which question, and which documents can still be trusted.
 
-Nothing here is a substitute for opening the file. This index tells you *whether it is worth
-opening* and *what it claims to answer*.
+> **Read this before grepping the documentation.** The repository carries roughly **1 MB of
+> markdown across ~465 tracked files** written over about ten months, and a large fraction of it
+> describes a system that no longer exists. Search alone will confidently return a 2025 document
+> about the retired microservices architecture.
+
+**This is a map, not a copy.** It records *where* knowledge lives and *how much to trust it* —
+never the knowledge itself. Always open the source before answering. If this map and a source
+disagree, the source wins and this map is the bug. Everything here is re-derivable from
+`git log` and `ls`; the commands are at the end of each section.
+
+
+# Booking Knowledge Map
+
+## When to Use
+
+Load this **before** grepping the documentation, answering a question about how Booking works,
+or citing any markdown file you found by search.
+
+The repository carries roughly **1 MB of markdown across ~465 tracked files**, written over
+about ten months. A large fraction of it describes a system that no longer exists. Grep alone
+will confidently hand you a 2025 document about a microservices architecture that was retired.
+This map exists so that does not happen.
+
+## The one rule
+
+**This skill is a map, not a copy.** It records *where* knowledge lives and *how much to trust
+it* — never the knowledge itself. Always open the source file before answering. If this map and
+a source disagree, the source wins and this map is the bug.
+
+Consequently: never "answer from the map." Route with it, then read.
+
+## Trust ladder
+
+Freshness is measured by last commit touching the file, and it correlates strongly with accuracy
+in this repo.
+
+| Tier | Sources | How to treat them |
+|---|---|---|
+| **Verified** | [`openspec/project.md`]openspec/project.md) — every claim checked against source and citing its evidence | Authoritative for "what is this system". Start here. |
+| **Current** (Aug 2026) | [`AGENTS.md`]AGENTS.md), [`ARCHITECTURAL_DECISIONS.md`]ARCHITECTURAL_DECISIONS.md), [`TECHNICAL_DOCUMENTATION.md`]TECHNICAL_DOCUMENTATION.md), [`PRODUCTION_READINESS_AUDIT.md`]PRODUCTION_READINESS_AUDIT.md), [`IDENTITY_AND_STAFF_ARCHITECTURE.md`]IDENTITY_AND_STAFF_ARCHITECTURE.md), `openspec/specs/`, `openspec/changes/` | Trust, but still verify specifics against code. |
+| **Aging** (Jun–Jul 2026) | `API_ENDPOINTS.md`, `COMPLETION_ROADMAP.md`, `README.md`, `DTO_MAPPING.md`, `CHANGELOG.md`, `MONOLITH_MIGRATION_PLAN.md` | Directionally right; individual endpoints, DTOs, and statuses may have moved. Confirm against code. |
+| **Stale** (2025) | Most of `docs/` — 32 of its 36 files predate 2026 | Historical. Useful for *why*, unreliable for *what is*. |
+| **Do not trust** | `docs-site/` (untouched since 2025-12-22) and `docs/archive/` | `docs-site/` still documents RabbitMQ, an API gateway, and per-service hosts — all retired. `docs/archive/` is explicitly point-in-time. Never cite either as current behavior. |
+
+Two known traps:
+
+- **`docs/INDEX.md` is broken** — ten of its links point at files that no longer exist. Do not
+  use it as a directory.
+- **`README.md`'s "Recent Updates" is from 2025-12-21.** The banner is not a freshness signal.
+
+## Routing table
+
+| Question | Go to |
+|---|---|
+| What is this system? Stack, contexts, what's *not* present? | [`openspec/project.md`]openspec/project.md) |
+| Why was it built this way? | [`ARCHITECTURAL_DECISIONS.md`]ARCHITECTURAL_DECISIONS.md) — ADR-001…007 |
+| What does capability X do today? | `openspec/specs/<capability>/spec.md` (40 capabilities) |
+| What work is in flight? | `openspec/changes/` — 4 active; 42 archived under `changes/archive/` |
+| How does auth / OTP / registration / EF owned entities work? Known issues? | [`TECHNICAL_DOCUMENTATION.md`]TECHNICAL_DOCUMENTATION.md) — see its `## Known Issues & Solutions` |
+| Is it ready to ship? What's blocking? | [`PRODUCTION_READINESS_AUDIT.md`]PRODUCTION_READINESS_AUDIT.md) |
+| How do staff / memberships / identity work? | [`IDENTITY_AND_STAFF_ARCHITECTURE.md`]IDENTITY_AND_STAFF_ARCHITECTURE.md) + change `refactor-identity-and-membership` |
+| What endpoints exist? | [`API_ENDPOINTS.md`]API_ENDPOINTS.md) *(aging)* → confirm against controllers in `src/**/Controllers/` |
+| What are the rules for working here? | [`AGENTS.md`]AGENTS.md) — test-first standard + testing policy |
+| Where does knowledge live, and which copy wins? | [`docs/KNOWLEDGE.md`]docs/KNOWLEDGE.md) |
+| How do I run / deploy / debug it? | [`CLAUDE.md`]CLAUDE.md) — commands, Docker, health checks, troubleshooting |
+| How do I write or run tests? | `AGENTS.md` (policy) · `docs/REQNROLL_TESTING.md` (BDD) · `CLAUDE.md` `## Test Suites` |
+| How do we archive an OpenSpec change? | skill `openspec-change-lifecycle` |
+| How do I confirm a claim is true? | skill `verify-before-claiming` |
+
+## Where the code is
+
+Do not infer structure from the docs — read [`openspec/project.md`]openspec/project.md),
+which is verified against source. In brief: one ASP.NET Core host (`src/Host/Booksy.Host`)
+composing bounded contexts under `src/BoundedContexts/` and `src/UserManagement/`; four client
+apps (`booksy-frontend`, `booksy-admin`, `booksy-customer-app`, `booksy-provider-app`); tests
+under `tests/`.
+
+## Full index
+
+A file-by-file annotated index follows below.
+it actually answers — is in
+the Document Index below. Load it when the routing table above
+does not resolve your question.
+
+## Verification
+
+```bash
+git log -1 --format=%ad --date=short -- <file>   # freshness of any doc
+grep -rl "TBD - created by archiving" openspec/specs/   # capabilities lacking a real Purpose
+```
+
+When a document turns out to be wrong, fix the document and update this map's tier for it —
+do not simply remember the correction.
+
+---
+
+# Document Index
+
 
 Regenerate the dates with:
 
@@ -92,7 +187,7 @@ keeps `MEMORY.md` / `USER.md` under `$HERMES_HOME/memories/` — which is `~/.he
 macOS but **`%LOCALAPPDATA%\hermes` on Windows**; resolve it with `hermes config` rather than
 assuming.
 
-Both are **caches**. Per [`docs/KNOWLEDGE.md`](../../../../docs/KNOWLEDGE.md), nothing durable may
+Both are **caches**. Per [`docs/KNOWLEDGE.md`]docs/KNOWLEDGE.md), nothing durable may
 live only there — deleting either must cost nothing but re-derivation time. Hermes's memory is
 additionally too small to hold project knowledge even if you wanted it to: `MEMORY.md` is capped
 at ~2,200 characters and is shared across *every* project on the machine. It is for pointers

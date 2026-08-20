@@ -14,6 +14,7 @@ Any agent — or any human — can be oriented by reading this page and the file
 | **Authoritative decisions** — what we chose and why | [`../ARCHITECTURAL_DECISIONS.md`](../ARCHITECTURAL_DECISIONS.md) | git |
 | **Work in flight** — proposals, tasks, delta specs | `../openspec/changes/**`, archived under `../openspec/changes/archive/` | git |
 | **Procedural knowledge** — how *we* perform a recurring task | [`../.hermes/skills/<name>/SKILL.md`](../.hermes/skills/) — vendor-neutral, loaded on demand | git |
+| **Documentation navigation** — which doc answers what, and what is stale | [`KNOWLEDGE_MAP.md`](KNOWLEDGE_MAP.md) | git |
 | **Agent instructions** — the rules every AI assistant must follow | [`../AGENTS.md`](../AGENTS.md) (vendor-neutral; `CLAUDE.md` defers to it) | git |
 | **Project documentation** — how-tos, references, guides | `docs/**`, root `*.md`, `docs-site/` | git |
 | **Historical write-ups** — point-in-time, not maintained | [`archive/`](archive/) | git |

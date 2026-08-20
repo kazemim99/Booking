@@ -14,7 +14,6 @@ The repository already says *what the system is* (`openspec/project.md`), *what 
 
 | Skill | Answers |
 |---|---|
-| [`booking-knowledge-map/`](booking-knowledge-map/) | Which document answers which question, and which documents are current versus stale. Read before grepping the docs. |
 | [`openspec-change-lifecycle/`](openspec-change-lifecycle/) | Booking's own discipline for verifying and archiving OpenSpec changes — the judgement the generic docs omit. |
 | [`verify-before-claiming/`](verify-before-claiming/) | How to establish that a claim about this repo is true before writing it somewhere durable. |
 
