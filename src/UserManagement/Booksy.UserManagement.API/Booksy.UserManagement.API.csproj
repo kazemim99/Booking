@@ -13,17 +13,17 @@
 
 	<ItemGroup>
 
-		<PackageReference Include="Microsoft.EntityFrameworkCore.Design" Version="9.0.4">
+		<PackageReference Include="Microsoft.EntityFrameworkCore.Design" Version="9.0.19">
 			<IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
 			<PrivateAssets>all</PrivateAssets>
 		</PackageReference>
 		
 		
 		<!-- ASP.NET Core -->
-		<PackageReference Include="Microsoft.AspNetCore.Authentication.JwtBearer" Version="9.0.4" />
+		<PackageReference Include="Microsoft.AspNetCore.Authentication.JwtBearer" Version="9.0.19" />
 		<PackageReference Include="Microsoft.AspNetCore.Mvc.Versioning" Version="5.1.0" />
 		<PackageReference Include="Microsoft.AspNetCore.Mvc.Versioning.ApiExplorer" Version="5.1.0" />
-		<PackageReference Include="Microsoft.Extensions.Diagnostics.HealthChecks.EntityFrameworkCore" Version="9.0.4" />
+		<PackageReference Include="Microsoft.Extensions.Diagnostics.HealthChecks.EntityFrameworkCore" Version="9.0.19" />
 		<PackageReference Include="Serilog.Enrichers.Thread" Version="4.0.0" />
 		<PackageReference Include="Serilog.Sinks.Seq" Version="9.0.0" />
 
@@ -40,7 +40,9 @@
 		<PackageReference Include="Serilog.Enrichers.Environment" Version="3.0.1" />
 
 		<!-- Health Checks -->
-		<PackageReference Include="AspNetCore.HealthChecks.SqlServer" Version="8.0.0" />
+		<!-- AspNetCore.HealthChecks.SqlServer removed: this system runs on PostgreSQL and nothing ever
+		     registered a SQL Server health check. It pulled Microsoft.Data.SqlClient 5.1.1 (HIGH), which in
+		     turn pulled System.Formats.Asn1 5.0.0 (HIGH) and Azure.Identity 1.7.0 (moderate). -->
 		<PackageReference Include="AspNetCore.HealthChecks.Redis" Version="9.0.0" />
 		<PackageReference Include="AspNetCore.HealthChecks.UI.Client" Version="8.0.0" />
 

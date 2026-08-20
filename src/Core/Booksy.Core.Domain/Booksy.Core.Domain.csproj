@@ -1,4 +1,4 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+<Project Sdk="Microsoft.NET.Sdk">
 
 	<PropertyGroup>
 		<TargetFramework>net9.0</TargetFramework>
@@ -31,14 +31,18 @@
 
 
 	<ItemGroup>
+		<!-- ASP.NET Core types (Microsoft.AspNetCore.Http/.Builder) come from the shared framework.
+		     Was PackageReference Microsoft.AspNetCore.Http 2.3.0 + Http.Abstractions 2.3.0 — ASP.NET Core *2.x*
+		     packages on a net9.0 project. Note this project also uses Microsoft.AspNetCore.Builder, which those
+		     packages never provided, so it was already relying on the framework transitively.
+		     (Architectural smell recorded separately: a Core.Domain project should not need ASP.NET Core at all.) -->
+		<FrameworkReference Include="Microsoft.AspNetCore.App" />
 		<PackageReference Include="FluentValidation" Version="12.0.0" />
 		<PackageReference Include="MediatR" Version="13.0.0" />
-		<PackageReference Include="Microsoft.AspNetCore.Http" Version="2.3.0" />
-		<PackageReference Include="Microsoft.AspNetCore.Http.Abstractions" Version="2.3.0" />
-		<PackageReference Include="Microsoft.EntityFrameworkCore" Version="9.0.4" />
-		<PackageReference Include="Microsoft.Extensions.Logging" Version="9.0.4" />
+		<PackageReference Include="Microsoft.EntityFrameworkCore" Version="9.0.19" />
+		<PackageReference Include="Microsoft.Extensions.Logging" Version="9.0.19" />
 		<PackageReference Include="FluentValidation.DependencyInjectionExtensions" Version="12.0.0" />
-		<PackageReference Include="Microsoft.Extensions.Options.ConfigurationExtensions" Version="9.0.4" />
+		<PackageReference Include="Microsoft.Extensions.Options.ConfigurationExtensions" Version="9.0.19" />
 		<PackageReference Include="Npgsql.EntityFrameworkCore.PostgreSQL" Version="9.0.4" />
 		<PackageReference Include="EFCore.NamingConventions" Version="9.0.0" />
 
