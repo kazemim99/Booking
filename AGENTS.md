@@ -2,19 +2,37 @@
 
 Vendor-neutral entry point for any AI assistant working in this repository.
 
-## Start here: the knowledge contract
+## Source of truth — read this before answering anything about this repository
 
-Read **[docs/KNOWLEDGE.md](docs/KNOWLEDGE.md)** first. It states where each kind of knowledge
-lives and which copy wins when two sources disagree. In short:
+**Authority is ordered. When two sources disagree, the higher one wins.**
 
-- **What the system is** → [openspec/project.md](openspec/project.md) — verified against source, cites its evidence
-- **What it does** → the code, then `openspec/specs/<capability>/spec.md`
-- **Why we chose it** → [ARCHITECTURAL_DECISIONS.md](ARCHITECTURAL_DECISIONS.md)
-- **What's in flight** → `openspec/changes/`
+1. **The code, tests, and git history.** Final authority on what the system does. A document the
+   code contradicts is wrong, by definition.
 
-Before searching the documentation, read **[docs/KNOWLEDGE_MAP.md](docs/KNOWLEDGE_MAP.md)** —
-which document answers which question, and which are too stale to trust. Much of the older
-documentation describes a retired microservices architecture; the map says which.
+2. **[openspec/project.md](openspec/project.md) — the verified source of truth for what this
+   system *is*.** Every claim in it was checked directly against source and cites the file that
+   proves it, including an explicit *"Explicitly not present"* table. **Start here for any
+   architecture question.**
+
+3. **Specifications and decisions.** `openspec/specs/<capability>/spec.md` — what each capability
+   does. [ARCHITECTURAL_DECISIONS.md](ARCHITECTURAL_DECISIONS.md) — why we chose it.
+   `openspec/changes/` — what is in flight.
+
+4. **Routing and index documents.** These tell you *where to look* and *what to trust* — never
+   what is true: [docs/KNOWLEDGE.md](docs/KNOWLEDGE.md) (which source wins for which question)
+   and [docs/KNOWLEDGE_MAP.md](docs/KNOWLEDGE_MAP.md) (which document answers what, and which are
+   too stale to trust).
+
+5. **Everything else is guidance, not authority** — `README.md`, `docs/**`, `docs-site/`, and
+   `CLAUDE.md`. **`CLAUDE.md` is explicitly NOT authoritative.** It is Claude-Code-oriented
+   operational guidance; where it and `openspec/project.md` disagree, `project.md` is correct.
+   **Never cite `CLAUDE.md` as this repository's source of truth.**
+
+**Follow this routing path before relying on search.** Read
+[docs/KNOWLEDGE_MAP.md](docs/KNOWLEDGE_MAP.md) *before* grepping the documentation, and never
+treat an incidental grep hit as an authoritative answer. Every file in `docs-site/` and the large
+majority of `docs/` predates 2026, and many describe a retired microservices architecture — search
+cannot tell you which. The map can, and it carries the commands to re-derive its own freshness.
 
 **Any AI memory you carry is a cache, not a source of truth.** Verify it against git before
 relying on it; if it disagrees with the code, the code is right. Nothing durable may live only
