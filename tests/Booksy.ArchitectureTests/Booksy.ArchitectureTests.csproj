@@ -1,4 +1,4 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
     <TargetFramework>net9.0</TargetFramework>
@@ -9,9 +9,21 @@
 
   <ItemGroup>
     <PackageReference Include="coverlet.collector" Version="6.0.2" />
+    <PackageReference Include="FluentAssertions" Version="8.7.0" />
     <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.12.0" />
+    <PackageReference Include="NetArchTest.Rules" Version="1.3.2" />
+    <PackageReference Include="NSubstitute" Version="5.1.0" />
     <PackageReference Include="xunit" Version="2.9.2" />
     <PackageReference Include="xunit.runner.visualstudio" Version="2.8.2" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- The assemblies under test. Infrastructure is needed for the EF model conventions
+         (ADR-005); Application for the money-command rule (ADR-006). -->
+    <ProjectReference Include="..\..\src\BoundedContexts\ServiceCatalog\Booksy.ServiceCatalog.Application\Booksy.ServiceCatalog.Application.csproj" />
+    <ProjectReference Include="..\..\src\BoundedContexts\ServiceCatalog\Booksy.ServiceCatalog.Infrastructure\Booksy.ServiceCatalog.Infrastructure.csproj" />
+    <ProjectReference Include="..\..\src\Core\Booksy.Core.Application\Booksy.Core.Application.csproj" />
+    <ProjectReference Include="..\..\src\Core\Booksy.Core.Domain\Booksy.Core.Domain.csproj" />
   </ItemGroup>
 
   <ItemGroup>

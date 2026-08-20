@@ -49,7 +49,7 @@ jobs:
       run: >-
         dotnet test ${{ env.SOLUTION_PATH }}
         --configuration Release --no-build
-        --filter "FullyQualifiedName~UnitTests"
+        --filter "FullyQualifiedName~UnitTests|FullyQualifiedName~ArchitectureTests"
         --logger "trx;LogFileName=unit-tests.trx"
         --results-directory ./TestResults
 
@@ -117,9 +117,12 @@ jobs:
   #     postgres: ...
   #     redis: ...
 
-  # Job 4: Architecture tests — intentionally not wired yet.
+  # Job 4: Architecture tests.
   #
-  # tests/Booksy.ArchitectureTests references NetArchTest.Rules but contains only an empty template test,
-  # so the job would pass while asserting nothing. Wire it once real rules exist — the first two worth
-  # having are "no IPaymentGateway call inside a DB transaction scope" (ADR-006) and "every owned entity
-  # with a domain-generated key is ValueGeneratedNever" (ADR-005, a rule already violated four times).
+  # These enforce ADR-005 (graph-attached children with domain-generated GUID keys must be
+  # ValueGeneratedNever) and ADR-006 (a handler reaching a payment gateway must handle an
+  # INonTransactionalCommand). Both rules had been documented and then violated repeatedly; the
+  # ADR-006 rule found two live money defects the day it was written. They need no database — the EF
+  # rule inspects the model, the money rule uses reflection — so they run in the build job.
+  #
+  # Included in the unit-test filter below via FullyQualifiedName~ArchitectureTests.

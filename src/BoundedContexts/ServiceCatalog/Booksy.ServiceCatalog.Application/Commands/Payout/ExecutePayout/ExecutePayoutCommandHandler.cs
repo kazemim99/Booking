@@ -17,15 +17,18 @@ namespace Booksy.ServiceCatalog.Application.Commands.Payout.ExecutePayout
     {
         private readonly IPayoutWriteRepository _payoutRepository;
         private readonly IPaymentGateway _paymentGateway;
+        private readonly IServiceCatalogUnitOfWork _unitOfWork;
         private readonly ILogger<ExecutePayoutCommandHandler> _logger;
 
         public ExecutePayoutCommandHandler(
             IPayoutWriteRepository payoutRepository,
             IPaymentGateway paymentGateway,
+            IServiceCatalogUnitOfWork unitOfWork,
             ILogger<ExecutePayoutCommandHandler> logger)
         {
             _payoutRepository = payoutRepository ?? throw new ArgumentNullException(nameof(payoutRepository));
             _paymentGateway = paymentGateway ?? throw new ArgumentNullException(nameof(paymentGateway));
+            _unitOfWork = unitOfWork ?? throw new ArgumentNullException(nameof(unitOfWork));
             _logger = logger ?? throw new ArgumentNullException(nameof(logger));
         }
 
@@ -99,8 +102,18 @@ namespace Booksy.ServiceCatalog.Application.Commands.Payout.ExecutePayout
                     payout.Id.Value, result.ErrorMessage);
             }
 
-            // Update in repository (TransactionBehaviour will save)
+            // Persist our own single unit rather than relying on TransactionBehavior.
+            //
+            // ExecutePayoutCommand is INonTransactionalCommand (ADR-006) because CreatePayoutAsync above
+            // moves real money: inside the ambient retried transaction, a transient DB fault would re-run
+            // this handler and pay the provider twice. Opting out means nothing else will save for us, so
+            // the commit has to happen here — one SaveChanges is itself a retry-safe unit.
+            //
+            // The commit deliberately follows the gateway call: if it fails after the payout succeeded,
+            // the record is recoverable from the gateway's truth (the same reconciliation posture the
+            // payment path takes), whereas committing first could mark a payout Completed that never left.
             await _payoutRepository.UpdateAsync(payout, cancellationToken);
+            await _unitOfWork.CommitAndPublishEventsAsync(cancellationToken);
 
             return new ExecutePayoutResult(
                 payout.Id.Value,
