@@ -23,8 +23,10 @@ public class ProvidersControllerTests : ServiceCatalogIntegrationTestBase
     [Fact]
     public async Task RegisterProvider_WithValidRequest_ShouldReturn201Created()
     {
-        var userId = Guid.NewGuid();
-        AuthenticateAsUser(userId);
+        // A real UserManagement user, not a fabricated identity: registration mints a provider token at
+        // the end, which looks the owner up in user_management.users.
+        var userId = await CreateAndAuthenticateAsRealUserAsync("beauty-salon-owner@test.com");
+
         // Arrange
         var request = new RegisterProviderRequest
         {
@@ -145,8 +147,8 @@ public class ProvidersControllerTests : ServiceCatalogIntegrationTestBase
     public async Task RegisterProviderFull_WithValidRequest_ShouldReturn201Created()
     {
         // Arrange
-        var userId = Guid.NewGuid();
-        AuthenticateAsUser(userId, "owner@test.com");
+        // A real UserManagement user — register-full also mints a provider token on completion.
+        var userId = await CreateAndAuthenticateAsRealUserAsync("owner@test.com");
 
         var request = new RegisterProviderFullRequest
         {
@@ -185,7 +187,7 @@ public class ProvidersControllerTests : ServiceCatalogIntegrationTestBase
             AssistanceOptions = new List<string> { "Online Booking" },
             TeamMembers = new List<TeamMemberRequest>
             {
-                new TeamMemberRequest { Name = "John Doe", Email = "john@test.com", PhoneNumber = "1234567890", CountryCode = "+98", Position = "Owner", IsOwner = false }
+                new TeamMemberRequest { Name = "John Doe", Email = "john@test.com", PhoneNumber = "09121234567", CountryCode = "+98", Position = "Owner", IsOwner = false }
             }
         };
 
@@ -193,11 +195,16 @@ public class ProvidersControllerTests : ServiceCatalogIntegrationTestBase
         var result = await PostAsJsonAsync<RegisterProviderFullRequest, ProviderFullRegistrationResponse>("/api/v1/providers/register-full", request);
 
         // Assert
+        result.Error.Should().BeNull();
         result.StatusCode.Should().Be(HttpStatusCode.Created);
 
         result.Data.Should().NotBeNull();
         result.Data!.BusinessName.Should().Be("Full Service Salon");
-        result.Data.Status.Should().Be(ProviderStatus.PendingVerification.ToString());
+        // register-full auto-approves (ServiceCatalog:AutoApproveProviders, default true — see
+        // RegisterProviderFullCommandHandler and ROADMAP Epic 1.2), so the provider is Active
+        // immediately. The plain /register endpoint has no such step and still yields
+        // PendingVerification, which is why the sibling test above expects a different status.
+        result.Data.Status.Should().Be(ProviderStatus.Active.ToString());
         result.Data.ServicesCount.Should().Be(1);
         result.Data.StaffCount.Should().Be(1);
 
@@ -710,7 +717,10 @@ public class ProvidersControllerTests : ServiceCatalogIntegrationTestBase
         // Assert
         response.StatusCode.Should().Be(HttpStatusCode.OK);
 
-        var result = await response.Content.ReadFromJsonAsync<UploadImageResponse>();
+        // Responses are wrapped by ApiResponseMiddleware ({ success, data, error, ... }); reading the
+        // body directly as UploadImageResponse bound the envelope, leaving ImageUrl at its default "".
+        // GetResponseAsync unwraps `data`, which is how the gallery tests already read responses.
+        var result = await GetResponseAsync<UploadImageResponse>(response);
         result.Should().NotBeNull();
         result!.ImageUrl.Should().NotBeNullOrEmpty();
         result.ImageUrl.Should().Contain("/uploads/providers/");
@@ -754,7 +764,8 @@ public class ProvidersControllerTests : ServiceCatalogIntegrationTestBase
         response.StatusCode.Should().Be(HttpStatusCode.BadRequest);
 
         var errorContent = await response.Content.ReadAsStringAsync();
-        errorContent.Should().Contain("No image file provided");
+        // The API's wording is "Image file is required"; the old expectation predates it.
+        errorContent.Should().Contain("Image file is required");
     }
 
     [Fact]
@@ -778,7 +789,10 @@ public class ProvidersControllerTests : ServiceCatalogIntegrationTestBase
         // Assert
         response.StatusCode.Should().Be(HttpStatusCode.OK);
 
-        var result = await response.Content.ReadFromJsonAsync<UploadImageResponse>();
+        // Responses are wrapped by ApiResponseMiddleware ({ success, data, error, ... }); reading the
+        // body directly as UploadImageResponse bound the envelope, leaving ImageUrl at its default "".
+        // GetResponseAsync unwraps `data`, which is how the gallery tests already read responses.
+        var result = await GetResponseAsync<UploadImageResponse>(response);
         result.Should().NotBeNull();
         result!.ImageUrl.Should().NotBeNullOrEmpty();
         result.ImageUrl.Should().Contain("/uploads/providers/");

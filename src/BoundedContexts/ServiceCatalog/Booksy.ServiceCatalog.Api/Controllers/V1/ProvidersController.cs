@@ -1239,13 +1239,26 @@ public class ProvidersController : ControllerBase
             teamMembers);
     }
 
-    private ProviderResponse MapToProviderResponse(dynamic result)
+    /// <summary>
+    /// Maps the registration result onto the API response.
+    /// </summary>
+    /// <remarks>
+    /// Statically typed, deliberately. This was <c>dynamic</c> and read <c>result.Type</c>, which
+    /// <see cref="Application.Commands.Provider.RegisterProvider.RegisterProviderResult"/> does not have —
+    /// the category is exposed as <c>PrimaryCategory</c>. The compiler could not see the mismatch, so it
+    /// bound at runtime and <c>POST /api/v1/providers/register</c> threw <c>RuntimeBinderException</c>
+    /// and returned 500 on every successful registration. Identical in kind to the defect
+    /// <c>ProvidersByStatusMappingTests</c> was written for, and fixed the same way: making the parameter
+    /// concrete turns an equivalent future mistake into a compile error.
+    /// </remarks>
+    private ProviderResponse MapToProviderResponse(
+        Application.Commands.Provider.RegisterProvider.RegisterProviderResult result)
     {
         return new ProviderResponse
         {
             Id = result.ProviderId,
             BusinessName = result.BusinessName,
-            Type = result.Type.ToString(),
+            Type = result.PrimaryCategory.ToString(),
             Status = result.Status.ToString(),
             RegisteredAt = result.RegisteredAt,
             AccessToken = result.AccessToken,

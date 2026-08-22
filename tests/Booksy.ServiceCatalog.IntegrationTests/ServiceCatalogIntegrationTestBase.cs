@@ -5,6 +5,7 @@ using Booksy.ServiceCatalog.Domain.ValueObjects;
 using Booksy.ServiceCatalog.Infrastructure.Persistence.Context;
 using Booksy.Tests.Common.Infrastructure;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.DependencyInjection;
 using System.Linq.Expressions;
 
 namespace Booksy.ServiceCatalog.IntegrationTests.Infrastructure;
@@ -44,6 +45,45 @@ public abstract class ServiceCatalogIntegrationTestBase
     // ================================================
     // SERVICE CATALOG SPECIFIC ENTITY HELPERS
     // ================================================
+
+    /// <summary>
+    /// Creates a real user in the UserManagement schema and authenticates as them, returning the id.
+    /// </summary>
+    /// <remarks>
+    /// Needed because the Host composes both bounded contexts, so a ServiceCatalog flow can legitimately
+    /// call into UserManagement. Provider registration does exactly that: after saving the provider it
+    /// mints a token carrying the new provider claims, which requires the owner to exist in
+    /// <c>user_management.users</c>.
+    ///
+    /// <para>Authenticating as a bare <c>Guid.NewGuid()</c> fabricates an identity with no backing user
+    /// row. That was invisible while the suite booted the ServiceCatalog-only host — nothing could reach
+    /// UserManagement — and surfaced as "User with ID ... not found" once the suite was retargeted at the
+    /// real Host. It is a gap in the test fixture, not a production defect: a real provider has always
+    /// signed up before registering a business, so the user exists.</para>
+    /// </remarks>
+    public async Task<Guid> CreateAndAuthenticateAsRealUserAsync(
+        string email = "provider-owner@test.com",
+        UserManagement.Domain.Enums.UserType type = UserManagement.Domain.Enums.UserType.Provider)
+    {
+        var userDbContext = Scope.ServiceProvider
+            .GetRequiredService<UserManagement.Infrastructure.Persistence.Context.UserManagementDbContext>();
+
+        // The profile-carrying Register overload, deliberately: GetUserByIdQueryHandler dereferences
+        // user.Profile unconditionally, so a user created through the profile-less overload NREs there.
+        // (That asymmetry is a real robustness gap in production code — recorded in FOLLOW-UPS — but a
+        // test fixture should create the complete user a real sign-up produces, not the degenerate one.)
+        var user = UserManagement.Domain.Aggregates.User.Register(
+            Core.Domain.ValueObjects.Email.Create(email),
+            UserManagement.Domain.ValueObjects.HashedPassword.FromHash("$2a$11$integrationtestplaceholderhash"),
+            UserManagement.Domain.Entities.UserProfile.Create("Test", "Owner"),
+            type);
+
+        userDbContext.Add(user);
+        await userDbContext.SaveChangesAsync();
+
+        AuthenticateAsUser(user.Id.Value, email);
+        return user.Id.Value;
+    }
 
     /// <summary>
     /// Find a Provider by ID, reading the database's current state.
