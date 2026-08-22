@@ -34,6 +34,10 @@ public sealed class SetPrimaryGalleryImageCommandHandler
 
         provider.Profile.SetPrimaryGalleryImage(request.ImageId);
 
+        // UpdateProviderAsync as well as SaveChangesAsync: EF needs the owned collection's parent
+        // explicitly marked modified for changes to the child images to be detected, which is why
+        // DeleteGalleryImageCommandHandler does both.
+        await _providerRepository.UpdateProviderAsync(provider, cancellationToken);
         await _unitOfWork.SaveChangesAsync(cancellationToken);
     }
 }

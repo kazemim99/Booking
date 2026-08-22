@@ -9,12 +9,14 @@ public sealed class ReorderGalleryImagesCommandHandler
     : ICommandHandler<ReorderGalleryImagesCommand>
 {
     private readonly IProviderWriteRepository _providerRepository;
+    private readonly IServiceCatalogUnitOfWork _unitOfWork;
 
     public ReorderGalleryImagesCommandHandler(
         IProviderWriteRepository providerRepository,
         IServiceCatalogUnitOfWork unitOfWork)
     {
         _providerRepository = providerRepository;
+        _unitOfWork = unitOfWork;
     }
 
     public async Task Handle(
@@ -37,5 +39,13 @@ public sealed class ReorderGalleryImagesCommandHandler
         {
             provider.Profile.SetPrimaryGalleryImage(request.PrimaryImageId.Value);
         }
+
+        // The unit of work was previously a constructor parameter that was never even assigned to a
+        // field, so a reorder mutated the in-memory aggregate and was then discarded — the GET that
+        // followed returned the original order. Same defect family as
+        // UpdateGalleryImageMetadataCommandHandler. UpdateProviderAsync is required in addition to
+        // SaveChangesAsync because EF needs the owned collection's parent explicitly marked modified.
+        await _providerRepository.UpdateProviderAsync(provider, cancellationToken);
+        await _unitOfWork.SaveChangesAsync(cancellationToken);
     }
 }

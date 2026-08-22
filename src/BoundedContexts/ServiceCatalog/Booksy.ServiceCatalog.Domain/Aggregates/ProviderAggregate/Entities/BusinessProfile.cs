@@ -11,6 +11,9 @@ namespace Booksy.ServiceCatalog.Domain.Entities
         private readonly List<GalleryImage> _galleryImages = new();
         private const int MaxGalleryImages = 20;
 
+        // Mirrors the persisted column width for GalleryImage.Caption / .AltText.
+        private const int MaxGalleryTextLength = 500;
+
         public string BusinessName { get; private set; }
         public string BusinessDescription { get; private set; }
         public string? Website { get; private set; }
@@ -166,6 +169,25 @@ namespace Booksy.ServiceCatalog.Domain.Entities
             if (image == null)
             {
                 throw new DomainValidationException("Gallery image not found or inactive");
+            }
+
+            // Enforced here rather than only in a FluentValidation validator, because ServiceCatalog's
+            // validators are not currently registered (see openspec/changes/FOLLOW-UPS.md #23) — so an
+            // over-long value would otherwise reach Postgres and fail as a DbUpdateException, a 500 for
+            // what is plainly bad input. The limit mirrors the persisted column width
+            // (ProviderConfiguration maps Caption and AltText with HasMaxLength(500)). Keeping the
+            // invariant in the aggregate is correct independently of the validator question: the domain
+            // should not accept a value it cannot store.
+            if (caption is { Length: > MaxGalleryTextLength })
+            {
+                throw new DomainValidationException(
+                    $"Caption cannot exceed {MaxGalleryTextLength} characters");
+            }
+
+            if (altText is { Length: > MaxGalleryTextLength })
+            {
+                throw new DomainValidationException(
+                    $"Alt text cannot exceed {MaxGalleryTextLength} characters");
             }
 
             if (image.Caption == caption && image.AltText == altText)
