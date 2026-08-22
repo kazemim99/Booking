@@ -41,6 +41,19 @@ public abstract class IntegrationTestBase<TFactory, TDbContext, TStartup>
         Scope = Factory.Services.CreateScope();
         DbContext = Scope.ServiceProvider.GetRequiredService<TDbContext>();
         _userContext = Scope.ServiceProvider.GetRequiredService<TestUserContext>();
+
+        // Start every test unauthenticated.
+        //
+        // TestUserContext is registered as a SINGLETON on the factory, so it is shared by every test in
+        // the class. Without this reset, whoever the previous test signed in as is still signed in, and a
+        // test that never calls an Authenticate* helper silently inherits that identity. That is exactly
+        // why UploadProfileImage_WithoutAuthentication and UpdateProfile_WithoutAuthentication returned
+        // 200/204 instead of 401: they correctly send no credentials, but the shared context still held a
+        // user from an earlier test. Tests that need an identity establish it explicitly, so clearing here
+        // is safe and makes the "without authentication" cases independent of execution order.
+        _userContext.ClearUser();
+        Client.DefaultRequestHeaders.Authorization = null;
+
         // Clean database before each test
         await CleanDatabaseAsync();
     }

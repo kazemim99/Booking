@@ -70,9 +70,16 @@ public class ProvidersControllerTests : ServiceCatalogIntegrationTestBase
     public async Task RegisterProvider_WithMissingBusinessName_ShouldReturn400BadRequest()
     {
         // Arrange
+        // Authenticate explicitly: this test exercises payload validation, not authorization, and the
+        // endpoint is [Authorize]. It used to pass only because TestUserContext is a singleton and an
+        // earlier test in the class had left a user signed in — with per-test auth reset in place, an
+        // unauthenticated request now correctly returns 401 before validation is ever reached.
+        var userId = Guid.NewGuid();
+        AuthenticateAsUser(userId);
+
         var request = new RegisterProviderRequest
         {
-            OwnerId = Guid.NewGuid(),
+            OwnerId = userId,
             BusinessName = "", // Invalid: empty
             Description = "A professional beauty salon",
             PrimaryCategory = ServiceCategory.BeautySalon,
