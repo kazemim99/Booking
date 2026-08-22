@@ -31,12 +31,27 @@ public sealed class UpdateGalleryImageMetadataCommandHandler
             throw new InvalidOperationException($"Provider {request.ProviderId} not found");
         }
 
-        var image = provider.Profile.GetGalleryImage(request.ImageId);
-        if (image == null)
+        if (provider.Profile.GetGalleryImage(request.ImageId) is null)
         {
             throw new InvalidOperationException($"Gallery image {request.ImageId} not found");
         }
 
-        image.UpdateMetadata(request.Caption, request.AltText);
+        // Route the edit through BusinessProfile rather than mutating the child directly, so
+        // Profile.LastUpdatedAt advances with every meaningful gallery change. Returns false for a
+        // no-op edit, in which case there is nothing to persist.
+        var changed = provider.Profile.UpdateGalleryImageMetadata(
+            request.ImageId, request.Caption, request.AltText);
+
+        if (!changed)
+        {
+            return;
+        }
+
+        // This handler previously mutated the image and returned: _unitOfWork was injected but never
+        // used and the repository was never told the aggregate had changed, so caption/alt-text edits
+        // were silently discarded. Mirrors DeleteGalleryImageCommandHandler, which does both because
+        // EF needs the owned collection's parent explicitly marked modified.
+        await _providerRepository.UpdateProviderAsync(provider, cancellationToken);
+        await _unitOfWork.SaveChangesAsync(cancellationToken);
     }
 }

@@ -46,10 +46,24 @@ public abstract class ServiceCatalogIntegrationTestBase
     // ================================================
 
     /// <summary>
-    /// Find a Provider by ID
+    /// Find a Provider by ID, reading the database's current state.
     /// </summary>
+    /// <remarks>
+    /// The change tracker is cleared first. This helper exists to assert on what an HTTP call actually
+    /// persisted, and that write happens in the request's own DI scope and <c>DbContext</c> — not this
+    /// one. Without clearing, EF's identity map returns the instance this context loaded earlier,
+    /// complete with its pre-request field values, so an assertion can pass or fail on stale data with
+    /// no relation to what is in the database.
+    ///
+    /// <para>Concretely: <c>SetPrimaryGalleryImage_UpdatesBusinessProfileTimestamp</c> read a
+    /// <c>Profile.LastUpdatedAt</c> byte-identical to the one captured before the request and reported a
+    /// missing timestamp update, while the domain had updated and persisted it correctly all along.
+    /// Callers only assert on the result, so returning fresh state is always what they want.</para>
+    /// </remarks>
     public async Task<Provider?> FindProviderAsync(Guid providerId)
     {
+        DbContext.ChangeTracker.Clear();
+
         return await DbContext.Providers
             .Include(p => p.BusinessHours)
             .Include(p => p.Holidays)

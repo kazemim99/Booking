@@ -165,4 +165,116 @@ public class BusinessProfileGalleryTests
         // Assert
         Assert.Null(result);
     }
+
+    // ----------------------------------------------------------------------------------------------
+    // Rule: every meaningful gallery change advances Profile.LastUpdatedAt.
+    //
+    // Add, remove, reorder and set-primary already did. Metadata editing was the gap — callers reached
+    // the child image through GetGalleryImage and mutated it directly, so the profile's timestamp never
+    // moved and anything using it for cache invalidation or "last changed" display saw a stale value.
+    // ----------------------------------------------------------------------------------------------
+
+    private static (BusinessProfile Profile, Guid ImageId) ProfileWithOneImage()
+    {
+        var profile = BusinessProfile.Create("Test Business", "Test Description", "profileImageUrl");
+        var image = profile.AddGalleryImage(
+            ProviderId.New(),
+            "https://example.com/image.webp",
+            "https://example.com/thumb.webp",
+            "https://example.com/medium.webp");
+        return (profile, image.Id);
+    }
+
+    [Fact]
+    public void UpdateGalleryImageMetadata_Should_Advance_LastUpdatedAt()
+    {
+        var (profile, imageId) = ProfileWithOneImage();
+        var before = profile.LastUpdatedAt;
+
+        var changed = profile.UpdateGalleryImageMetadata(imageId, "A caption", "Alt text");
+
+        Assert.True(changed);
+        Assert.True(
+            profile.LastUpdatedAt > before,
+            "editing a gallery image's metadata is a meaningful change and must advance LastUpdatedAt");
+    }
+
+    [Fact]
+    public void UpdateGalleryImageMetadata_Should_Apply_The_New_Values()
+    {
+        var (profile, imageId) = ProfileWithOneImage();
+
+        profile.UpdateGalleryImageMetadata(imageId, "A caption", "Alt text");
+
+        var image = profile.GetGalleryImage(imageId);
+        Assert.Equal("A caption", image!.Caption);
+        Assert.Equal("Alt text", image.AltText);
+    }
+
+    [Fact]
+    public void UpdateGalleryImageMetadata_Should_Be_A_NoOp_When_Nothing_Changes()
+    {
+        var (profile, imageId) = ProfileWithOneImage();
+        profile.UpdateGalleryImageMetadata(imageId, "A caption", "Alt text");
+        var after = profile.LastUpdatedAt;
+
+        var changed = profile.UpdateGalleryImageMetadata(imageId, "A caption", "Alt text");
+
+        Assert.False(changed);
+        Assert.Equal(after, profile.LastUpdatedAt);
+    }
+
+    [Fact]
+    public void UpdateGalleryImageMetadata_Should_Reject_An_Unknown_Image()
+    {
+        var (profile, _) = ProfileWithOneImage();
+
+        Assert.Throws<DomainValidationException>(
+            () => profile.UpdateGalleryImageMetadata(Guid.NewGuid(), "caption", "alt"));
+    }
+
+    [Theory]
+    [InlineData("add")]
+    [InlineData("remove")]
+    [InlineData("reorder")]
+    [InlineData("set-primary")]
+    [InlineData("metadata")]
+    public void Every_Meaningful_Gallery_Change_Advances_LastUpdatedAt(string operation)
+    {
+        var profile = BusinessProfile.Create("Test Business", "Test Description", "profileImageUrl");
+        var providerId = ProviderId.New();
+        var first = profile.AddGalleryImage(providerId, "url1", "thumb1", "medium1");
+        var second = profile.AddGalleryImage(providerId, "url2", "thumb2", "medium2");
+
+        var before = profile.LastUpdatedAt;
+
+        switch (operation)
+        {
+            case "add":
+                profile.AddGalleryImage(providerId, "url3", "thumb3", "medium3");
+                break;
+            case "remove":
+                profile.RemoveGalleryImage(second.Id);
+                break;
+            case "reorder":
+                profile.ReorderGalleryImages(new Dictionary<Guid, int>
+                {
+                    [first.Id] = 1,
+                    [second.Id] = 0,
+                });
+                break;
+            case "set-primary":
+                profile.SetPrimaryGalleryImage(second.Id);
+                break;
+            case "metadata":
+                profile.UpdateGalleryImageMetadata(first.Id, "new caption", "new alt");
+                break;
+            default:
+                throw new ArgumentOutOfRangeException(nameof(operation), operation, null);
+        }
+
+        Assert.True(
+            profile.LastUpdatedAt > before,
+            $"'{operation}' is a meaningful gallery change and must advance Profile.LastUpdatedAt");
+    }
 }

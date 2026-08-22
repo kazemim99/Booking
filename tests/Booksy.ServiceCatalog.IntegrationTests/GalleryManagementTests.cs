@@ -118,8 +118,11 @@ public class GalleryManagementTests : ServiceCatalogIntegrationTestBase
         // Arrange
         var provider = await CreateAndAuthenticateAsProviderAsync();
 
-        // Upload 50 images (the max limit)
-        for (int i = 0; i < 5; i++)
+        // Fill the gallery to its limit. BusinessProfile.MaxGalleryImages is 20; this suite predates that
+        // change (it was 50) and was never updated, because it has not been running in CI. The equivalent
+        // unit tests were corrected when the limit changed — see COMPLETION_ROADMAP Epic 3.1,
+        // "fixed stale BusinessProfileGalleryTests (50->20 limit)".
+        for (int i = 0; i < 2; i++)
         {
             var batch = CreateTestImageFiles(10);
             await PostMultipartAsync($"/api/v1/providers/{provider.Id.Value}/gallery", batch);
@@ -136,7 +139,7 @@ public class GalleryManagementTests : ServiceCatalogIntegrationTestBase
         // Assert
         response.StatusCode.Should().Be(HttpStatusCode.BadRequest);
         var error = await response.Content.ReadAsStringAsync();
-        error.Should().Contain("Cannot add more than 50 gallery images");
+        error.Should().Contain("Cannot add more than 20 gallery images");
     }
 
     [Fact]
@@ -486,16 +489,14 @@ public class GalleryManagementTests : ServiceCatalogIntegrationTestBase
         // Arrange
         var provider = await CreateAndAuthenticateAsProviderAsync();
 
-        // Act - Upload in batches
-        await PostMultipartAsync($"/api/v1/providers/{provider.Id.Value}/gallery", CreateTestImageFiles(10));
-        await PostMultipartAsync($"/api/v1/providers/{provider.Id.Value}/gallery", CreateTestImageFiles(10));
-        await PostMultipartAsync($"/api/v1/providers/{provider.Id.Value}/gallery", CreateTestImageFiles(10));
+        // Act - Upload in batches up to BusinessProfile.MaxGalleryImages (20, not the 50 this test was
+        // written against; see the comment in UploadGalleryImages_ExceedsMaxLimit_ReturnsBadRequest).
         await PostMultipartAsync($"/api/v1/providers/{provider.Id.Value}/gallery", CreateTestImageFiles(10));
         await PostMultipartAsync($"/api/v1/providers/{provider.Id.Value}/gallery", CreateTestImageFiles(10));
 
         // Assert
         var images = await GetGalleryImagesAsync(provider.Id.Value);
-        images.Should().HaveCount(50);
+        images.Should().HaveCount(20);
         images.Should().BeInAscendingOrder(img => img.DisplayOrder);
     }
 
@@ -503,7 +504,7 @@ public class GalleryManagementTests : ServiceCatalogIntegrationTestBase
     public async Task GalleryManagement_AllowsReUpload_AfterDeletion()
     {
         // Arrange
-        var provider = await CreateProviderWithGalleryAsync(50); // At max limit
+        var provider = await CreateProviderWithGalleryAsync(20); // At max limit (MaxGalleryImages = 20)
         AuthenticateAsProviderOwner(provider);
 
         var images = await GetGalleryImagesAsync(provider.Id.Value);
@@ -522,7 +523,7 @@ public class GalleryManagementTests : ServiceCatalogIntegrationTestBase
         // Assert
         response.StatusCode.Should().Be(HttpStatusCode.OK);
         var allImages = await GetGalleryImagesAsync(provider.Id.Value);
-        allImages.Should().HaveCount(50); // 45 active + 5 new = 50
+        allImages.Should().HaveCount(20); // 15 remaining active + 5 new = 20
     }
 
     #endregion

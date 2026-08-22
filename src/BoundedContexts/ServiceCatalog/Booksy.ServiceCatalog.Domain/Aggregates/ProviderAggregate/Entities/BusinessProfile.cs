@@ -145,6 +145,39 @@ namespace Booksy.ServiceCatalog.Domain.Entities
             return _galleryImages.FirstOrDefault(img => img.Id == imageId);
         }
 
+        /// <summary>
+        /// Updates a gallery image's caption and alt text, stamping the profile as modified.
+        /// </summary>
+        /// <remarks>
+        /// Every meaningful gallery change must advance <see cref="LastUpdatedAt"/> — add, remove,
+        /// reorder and set-primary all do. Metadata editing was the one gap: callers reached the child
+        /// through <see cref="GetGalleryImage"/> and mutated it directly, so the profile's timestamp
+        /// never moved and consumers that use it for cache invalidation or "last changed" display saw a
+        /// stale value. Routing the edit through the profile closes that.
+        ///
+        /// <para>The update is skipped when neither value actually changes, so a no-op PUT does not
+        /// advance the timestamp — "meaningful" means the content differs, not merely that a request
+        /// arrived.</para>
+        /// </remarks>
+        /// <returns>True when something changed (and the timestamp advanced); false for a no-op.</returns>
+        public bool UpdateGalleryImageMetadata(Guid imageId, string? caption, string? altText)
+        {
+            var image = _galleryImages.FirstOrDefault(img => img.Id == imageId && img.IsActive);
+            if (image == null)
+            {
+                throw new DomainValidationException("Gallery image not found or inactive");
+            }
+
+            if (image.Caption == caption && image.AltText == altText)
+            {
+                return false;
+            }
+
+            image.UpdateMetadata(caption, altText);
+            LastUpdatedAt = DateTime.UtcNow;
+            return true;
+        }
+
         public void SetPrimaryGalleryImage(Guid imageId)
         {
             var image = _galleryImages.FirstOrDefault(img => img.Id == imageId && img.IsActive);
