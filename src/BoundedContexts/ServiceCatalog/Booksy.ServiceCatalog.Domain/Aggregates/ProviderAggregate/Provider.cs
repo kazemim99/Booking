@@ -876,5 +876,28 @@ namespace Booksy.ServiceCatalog.Domain.Aggregates
             // Reuse GalleryImageUploadedEvent since it updates the provider
             RaiseDomainEvent(new GalleryImageUploadedEvent(Id, imageId, string.Empty, DateTime.UtcNow));
         }
+
+        /// <summary>
+        /// Updates a gallery image's caption/alt text and raises a domain event for cache invalidation.
+        /// </summary>
+        /// <remarks>
+        /// Exists so metadata edits go through the aggregate root like every other gallery mutation. The
+        /// read path is decorated by <c>CachedProviderReadRepository</c> and invalidation is driven by
+        /// these events, so editing <c>Profile</c> directly persists the change but leaves the cache
+        /// serving the old caption. Returns false for a no-op edit, in which case no event is raised and
+        /// there is nothing to persist.
+        /// </remarks>
+        public bool UpdateGalleryImageMetadata(Guid imageId, string? caption, string? altText)
+        {
+            if (!Profile.UpdateGalleryImageMetadata(imageId, caption, altText))
+            {
+                return false;
+            }
+
+            // Reuse GalleryImageUploadedEvent: it carries provider + image id, which is all the cache
+            // invalidation needs, and matches how SetPrimaryGalleryImage signals the same thing.
+            RaiseDomainEvent(new GalleryImageUploadedEvent(Id, imageId, string.Empty, DateTime.UtcNow));
+            return true;
+        }
     }
 }

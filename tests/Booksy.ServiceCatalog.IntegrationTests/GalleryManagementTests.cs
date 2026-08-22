@@ -5,6 +5,7 @@ using Booksy.ServiceCatalog.Domain.Aggregates;
 using Booksy.ServiceCatalog.IntegrationTests.Infrastructure;
 using FluentAssertions;
 using Microsoft.AspNetCore.Http;
+using Microsoft.EntityFrameworkCore;
 using System.Net;
 using System.Net.Http.Headers;
 using Xunit;
@@ -417,12 +418,18 @@ public class GalleryManagementTests : ServiceCatalogIntegrationTestBase
         // Assert
         response.StatusCode.Should().Be(HttpStatusCode.NoContent);
 
-        // Verify deletion (soft delete)
+        // Verify deletion is a HARD delete: the row is gone, not flagged inactive.
+        //
+        // This test previously expected soft-delete semantics (image still present with IsActive=false).
+        // That is not the contract: BusinessProfile.RemoveGalleryImage removes the entity from the
+        // collection outright and says so ("Hard delete - completely remove from collection and
+        // database"), and DeleteGalleryImageCommandHandler deletes the backing image files as well, which
+        // would make a "soft-deleted" row unrecoverable anyway. Confirmed as the intended behaviour, so
+        // the test is corrected rather than the domain.
         var updatedProvider = await FindProviderAsync(provider.Id.Value);
-        var deletedImage = updatedProvider!.Profile.GalleryImages
-            .FirstOrDefault(img => img.Id == imageToDelete.Id);
-        deletedImage.Should().NotBeNull();
-        deletedImage!.IsActive.Should().BeFalse();
+        updatedProvider!.Profile.GalleryImages
+            .Should().NotContain(img => img.Id == imageToDelete.Id,
+                "gallery deletion is a hard delete — no row should remain for the image");
 
         // Verify image not returned in GET
         var remainingImages = await GetGalleryImagesAsync(provider.Id.Value);

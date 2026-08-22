@@ -19,6 +19,7 @@ namespace Booksy.ServiceCatalog.Application.EventHandlers.DomainEventHandlers
         IDomainEventHandler<BusinessHoursUpdatedEvent>,
         IDomainEventHandler<GalleryImageUploadedEvent>,
         IDomainEventHandler<GalleryImageDeletedEvent>,
+        IDomainEventHandler<GalleryImagesReorderedEvent>,
         IDomainEventHandler<ProviderLocationUpdatedEvent>,
         IDomainEventHandler<StaffAddedEvent>,
         IDomainEventHandler<StaffRemovedEvent>,
@@ -70,6 +71,15 @@ namespace Booksy.ServiceCatalog.Application.EventHandlers.DomainEventHandlers
         public async Task HandleAsync(GalleryImageDeletedEvent domainEvent, CancellationToken cancellationToken)
         {
             await InvalidateProviderCacheAsync(domainEvent.ProviderId, "GalleryImageDeleted", cancellationToken);
+        }
+
+        // GalleryImagesReorderedEvent was raised by Provider.ReorderGalleryImages but handled nowhere, so
+        // a reorder persisted correctly and then kept serving the pre-reorder gallery from
+        // CachedProviderReadRepository. Every sibling gallery mutation already invalidated; this one was
+        // simply missed.
+        public async Task HandleAsync(GalleryImagesReorderedEvent domainEvent, CancellationToken cancellationToken)
+        {
+            await InvalidateProviderCacheAsync(domainEvent.ProviderId, "GalleryImagesReordered", cancellationToken);
         }
 
         public async Task HandleAsync(ProviderLocationUpdatedEvent domainEvent, CancellationToken cancellationToken)

@@ -32,7 +32,9 @@ public sealed class SetPrimaryGalleryImageCommandHandler
             throw new DomainValidationException($"Provider {request.ProviderId} not found");
         }
 
-        provider.Profile.SetPrimaryGalleryImage(request.ImageId);
+        // Through the aggregate root so the cache-invalidation domain event is raised; see the note in
+        // ReorderGalleryImagesCommandHandler.
+        provider.SetPrimaryGalleryImage(request.ImageId);
 
         // UpdateProviderAsync as well as SaveChangesAsync: EF needs the owned collection's parent
         // explicitly marked modified for changes to the child images to be detected, which is why

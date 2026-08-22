@@ -40,10 +40,10 @@ public sealed class UpdateGalleryImageMetadataCommandHandler
             throw new DomainValidationException($"Gallery image {request.ImageId} not found");
         }
 
-        // Route the edit through BusinessProfile rather than mutating the child directly, so
-        // Profile.LastUpdatedAt advances with every meaningful gallery change. Returns false for a
-        // no-op edit, in which case there is nothing to persist.
-        var changed = provider.Profile.UpdateGalleryImageMetadata(
+        // Through the aggregate root: it stamps Profile.LastUpdatedAt (every meaningful gallery change
+        // must) and raises the domain event that invalidates CachedProviderReadRepository. Returns false
+        // for a no-op edit, in which case there is nothing to persist.
+        var changed = provider.UpdateGalleryImageMetadata(
             request.ImageId, request.Caption, request.AltText);
 
         if (!changed)
