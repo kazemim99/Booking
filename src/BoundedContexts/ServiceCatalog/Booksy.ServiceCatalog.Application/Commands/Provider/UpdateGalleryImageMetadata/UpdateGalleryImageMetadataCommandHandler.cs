@@ -1,5 +1,6 @@
 using Booksy.Core.Application.Abstractions.CQRS;
 using Booksy.Core.Application.Abstractions.Persistence;
+using Booksy.Core.Domain.Exceptions;
 using Booksy.ServiceCatalog.Domain.Repositories;
 using Booksy.ServiceCatalog.Domain.ValueObjects;
 
@@ -28,12 +29,15 @@ public sealed class UpdateGalleryImageMetadataCommandHandler
 
         if (provider == null)
         {
-            throw new InvalidOperationException($"Provider {request.ProviderId} not found");
+            // DomainValidationException, matching DeleteGalleryImageCommandHandler: the middleware maps it
+            // to a clean 4xx, whereas InvalidOperationException escaped as a 500 for a plainly-addressable
+            // client error.
+            throw new DomainValidationException($"Provider {request.ProviderId} not found");
         }
 
         if (provider.Profile.GetGalleryImage(request.ImageId) is null)
         {
-            throw new InvalidOperationException($"Gallery image {request.ImageId} not found");
+            throw new DomainValidationException($"Gallery image {request.ImageId} not found");
         }
 
         // Route the edit through BusinessProfile rather than mutating the child directly, so

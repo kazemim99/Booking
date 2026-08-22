@@ -2,8 +2,25 @@ using FluentValidation;
 
 namespace Booksy.ServiceCatalog.Application.Commands.Provider.UpdateGalleryImageMetadata;
 
-public sealed class UpdateGalleryImageMetadataCommandValidator : AbstractValidator<UpdateGalleryImageMetadataCommand>
+/// <summary>
+/// Validates gallery image metadata before it reaches the database.
+/// </summary>
+/// <remarks>
+/// The 500-character limits mirror the persisted column widths (<c>ProviderConfiguration</c> maps both
+/// <c>Caption</c> and <c>AltText</c> with <c>HasMaxLength(500)</c>). Without this, an over-long value
+/// reached Postgres and surfaced as a <c>DbUpdateException</c> — a 500-class failure for plainly bad
+/// input. It only became reachable once the handler started persisting at all.
+///
+/// <para>This is a FluentValidation validator rather than DataAnnotations on the API request model
+/// because the host sets <c>ApiBehaviorOptions.SuppressModelStateInvalidFilter = true</c>, which disables
+/// automatic model-state validation application-wide. Attributes on request models are therefore inert;
+/// validation runs through the MediatR <c>ValidationBehavior</c> against the command.</para>
+/// </remarks>
+public sealed class UpdateGalleryImageMetadataCommandValidator
+    : AbstractValidator<UpdateGalleryImageMetadataCommand>
 {
+    private const int MaxTextLength = 500;
+
     public UpdateGalleryImageMetadataCommandValidator()
     {
         RuleFor(x => x.ProviderId)
@@ -14,18 +31,12 @@ public sealed class UpdateGalleryImageMetadataCommandValidator : AbstractValidat
             .NotEmpty()
             .WithMessage("Image ID is required");
 
-        When(x => !string.IsNullOrEmpty(x.Caption), () =>
-        {
-            RuleFor(x => x.Caption)
-                .MaximumLength(500)
-                .WithMessage("Caption must not exceed 500 characters");
-        });
+        RuleFor(x => x.Caption)
+            .MaximumLength(MaxTextLength)
+            .WithMessage($"Caption cannot exceed {MaxTextLength} characters");
 
-        When(x => !string.IsNullOrEmpty(x.AltText), () =>
-        {
-            RuleFor(x => x.AltText)
-                .MaximumLength(500)
-                .WithMessage("Alt text must not exceed 500 characters");
-        });
+        RuleFor(x => x.AltText)
+            .MaximumLength(MaxTextLength)
+            .WithMessage($"Alt text cannot exceed {MaxTextLength} characters");
     }
 }
