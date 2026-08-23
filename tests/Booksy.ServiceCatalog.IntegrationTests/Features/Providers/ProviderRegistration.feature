@@ -10,7 +10,7 @@ Feature: Provider Registration
       | Field           | Value                  |
       | BusinessName    | Beautiful Hair Salon   |
       | Description     | Professional salon     |
-      | Type            | Salon                  |
+      | Type            | BeautySalon                  |
       | PrimaryPhone    | +989121234567          |
       | Email           | salon@test.com         |
       | Street          | 123 Main St            |

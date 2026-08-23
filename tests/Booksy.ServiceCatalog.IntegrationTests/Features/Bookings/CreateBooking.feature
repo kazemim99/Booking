@@ -7,7 +7,7 @@ Feature: Create Booking
     Given a provider "Beauty Salon Alpha" exists with the following details:
       | Field        | Value                |
       | BusinessName | Beauty Salon Alpha   |
-      | Type         | Salon                |
+      | Type         | BeautySalon                |
       | Status       | Active               |
     And the provider has a service "Haircut" with:
       | Field    | Value   |

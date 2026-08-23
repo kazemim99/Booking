@@ -11,7 +11,7 @@ Feature: Provider Command Handlers - Complete Coverage
     When I execute RegisterProviderCommand with valid data:
       | Field        | Value              |
       | BusinessName | Beautiful Salon    |
-      | Type         | Salon              |
+      | Type         | BeautySalon              |
       | Email        | salon@test.com     |
       | Phone        | +989121234567      |
       | City         | Tehran             |
@@ -94,7 +94,8 @@ Feature: Provider Command Handlers - Complete Coverage
 
   @command @provider @staff @add @happy-path
   Scenario: AddStaffCommand - Add staff member successfully
-    Given I am authenticated as the provider
+    Given a provider exists
+    And I am authenticated as the provider
     When I execute AddStaffCommand with:
       | Field     | Value           |
       | FirstName | John            |
@@ -109,7 +110,8 @@ Feature: Provider Command Handlers - Complete Coverage
 
   @command @provider @staff @add @validation @duplicate-email
   Scenario: AddStaffCommand - Duplicate email validation
-    Given I am authenticated as the provider
+    Given a provider exists
+    And I am authenticated as the provider
     And the provider has staff with email "existing@test.com"
     When I execute AddStaffCommand with email "existing@test.com"
     Then the command should fail with ConflictException
@@ -117,13 +119,15 @@ Feature: Provider Command Handlers - Complete Coverage
 
   @command @provider @staff @add @validation @empty-name
   Scenario: AddStaffCommand - First name required
-    Given I am authenticated as the provider
+    Given a provider exists
+    And I am authenticated as the provider
     When I execute AddStaffCommand with empty first name
     Then the command should fail with ValidationException
 
   @command @provider @staff @add @validation @invalid-role
   Scenario: AddStaffCommand - Invalid role validation
-    Given I am authenticated as the provider
+    Given a provider exists
+    And I am authenticated as the provider
     When I execute AddStaffCommand with invalid role "InvalidRole"
     Then the command should fail with ValidationException
 
@@ -137,7 +141,8 @@ Feature: Provider Command Handlers - Complete Coverage
 
   @command @provider @hours @update @happy-path
   Scenario: UpdateBusinessHoursCommand - Update business hours
-    Given I am authenticated as the provider
+    Given a provider exists
+    And I am authenticated as the provider
     When I execute UpdateBusinessHoursCommand with:
       | Day    | IsOpen | OpenTime | CloseTime |
       | Monday | true   | 09:00    | 18:00     |
@@ -148,14 +153,16 @@ Feature: Provider Command Handlers - Complete Coverage
 
   @command @provider @hours @update @validation @invalid-time-range
   Scenario: UpdateBusinessHoursCommand - Close time before open time
-    Given I am authenticated as the provider
+    Given a provider exists
+    And I am authenticated as the provider
     When I execute UpdateBusinessHoursCommand with open 18:00 and close 09:00
     Then the command should fail with ValidationException
     And the error should indicate invalid time range
 
   @command @provider @hours @update @validation @overlapping-breaks
   Scenario: UpdateBusinessHoursCommand - Overlapping break times
-    Given I am authenticated as the provider
+    Given a provider exists
+    And I am authenticated as the provider
     When I execute UpdateBusinessHoursCommand with overlapping breaks:
       | BreakStart | BreakEnd |
       | 12:00      | 13:00    |
@@ -166,7 +173,8 @@ Feature: Provider Command Handlers - Complete Coverage
 
   @command @provider @gallery @upload @happy-path
   Scenario: UploadGalleryImagesCommand - Upload images successfully
-    Given I am authenticated as the provider
+    Given a provider exists
+    And I am authenticated as the provider
     When I execute UploadGalleryImagesCommand with 3 valid images
     Then the command should succeed
     And 3 GalleryImageUploadedEvents should be published
@@ -175,21 +183,24 @@ Feature: Provider Command Handlers - Complete Coverage
 
   @command @provider @gallery @upload @validation @max-count
   Scenario: UploadGalleryImagesCommand - Exceeds maximum images
-    Given I am authenticated as the provider
+    Given a provider exists
+    And I am authenticated as the provider
     When I execute UploadGalleryImagesCommand with 11 images
     Then the command should fail with ValidationException
     And the error should indicate maximum 10 images allowed
 
   @command @provider @gallery @upload @validation @file-size
   Scenario: UploadGalleryImagesCommand - File size exceeds limit
-    Given I am authenticated as the provider
+    Given a provider exists
+    And I am authenticated as the provider
     When I execute UploadGalleryImagesCommand with 12MB image
     Then the command should fail with ValidationException
     And the error should indicate file size exceeded
 
   @command @provider @gallery @upload @validation @invalid-format
   Scenario: UploadGalleryImagesCommand - Invalid file format
-    Given I am authenticated as the provider
+    Given a provider exists
+    And I am authenticated as the provider
     When I execute UploadGalleryImagesCommand with PDF file
     Then the command should fail with ValidationException
     And the error should indicate invalid file type

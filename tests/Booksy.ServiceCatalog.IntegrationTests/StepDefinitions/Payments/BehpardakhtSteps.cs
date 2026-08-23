@@ -1,3 +1,10 @@
+// NOTE: eight step definitions that were byte-identical to their ZarinPalSteps counterparts were
+// removed from this file on 2026-08-24. Defining the same step text in two [Binding] classes makes
+// the binding ambiguous, which Reqnroll reports as a BindingException failure on every scenario that
+// uses it. The surviving ZarinPal definitions are gateway-agnostic (they resolve the payment from
+// ScenarioContext's LastPaymentId), so Behpardakht scenarios behave identically through them.
+// Four further duplicates were deliberately LEFT in place because the two implementations DIFFER and
+// merging them would change behaviour - see openspec/changes/FOLLOW-UPS.md.
 using Booksy.Core.Domain.ValueObjects;
 using Booksy.Infrastructure.External.Payment.Behpardakht;
 using Booksy.ServiceCatalog.API.Models.Requests;
@@ -90,17 +97,6 @@ public class BehpardakhtSteps: ServiceCatalogIntegrationTestBase
         }
     }
 
-    [When(@"with metadata:")]
-    public void WithMetadata(Table table)
-    {
-        var metadata = new Dictionary<string, object>();
-        foreach (var row in table.Rows)
-        {
-            metadata[row["Key"]] = row["Value"];
-        }
-        _scenarioContext.Set(metadata, "RequestMetadata");
-    }
-
     [Then(@"the response should contain ""(.*)""")]
     public void ThenTheResponseShouldContain(string field)
     {
@@ -108,59 +104,6 @@ public class BehpardakhtSteps: ServiceCatalogIntegrationTestBase
 
         var propertyValue = response.GetType().GetProperty(field)?.GetValue(response);
         propertyValue.Should().NotBeNull($"Response should contain {field}");
-    }
-
-    [Then(@"a payment should exist in the database with:")]
-    public async Task ThenAPaymentShouldExistInTheDatabaseWith(Table table)
-    {
-        var paymentId = _scenarioContext.Get<Guid>("LastPaymentId");
-
-        var payment = await DbContext.Set<Payment>()
-            .Include(p => p.Transactions)
-            .FirstOrDefaultAsync(p => p.Id == PaymentId.From(paymentId));
-
-        payment.Should().NotBeNull($"Payment with ID {paymentId} should exist in database");
-
-        foreach (var row in table.Rows)
-        {
-            var field = row["Field"];
-            var expectedValue = row["Value"];
-
-            switch (field)
-            {
-                case "Status":
-                    payment!.Status.ToString().Should().Be(expectedValue);
-                    break;
-                case "Method":
-                    payment!.Method.ToString().Should().Be(expectedValue);
-                    break;
-                case "Amount":
-                    payment!.Amount.Amount.Should().Be(decimal.Parse(expectedValue));
-                    break;
-                case "BookingId":
-                    if (expectedValue == "null")
-                        payment!.BookingId.Should().BeNull();
-                    break;
-            }
-        }
-    }
-
-    [Then(@"the payment metadata should be stored correctly")]
-    public async Task ThenThePaymentMetadataShouldBeStoredCorrectly()
-    {
-        var paymentId = _scenarioContext.Get<Guid>("LastPaymentId");
-        var expectedMetadata = _scenarioContext.Get<Dictionary<string, object>>("RequestMetadata");
-
-        var payment = await DbContext.Set<Payment>()
-            .FirstOrDefaultAsync(p => p.Id == PaymentId.From(paymentId));
-
-        payment.Should().NotBeNull();
-        payment!.Metadata.Should().NotBeNull();
-
-        foreach (var kvp in expectedMetadata)
-        {
-            payment.Metadata.Should().ContainKey(kvp.Key);
-        }
     }
 
     [Then(@"the payment should have payer ID stored")]
@@ -244,12 +187,6 @@ public class BehpardakhtSteps: ServiceCatalogIntegrationTestBase
         _scenarioContext.Set("navigated", "PaymentGatewayStatus");
     }
 
-    [When(@"the customer clicks cancel button")]
-    public void WhenTheCustomerClicksCancelButton()
-    {
-        _scenarioContext.Set("cancelled", "PaymentGatewayAction");
-    }
-
     [When(@"Behpardakht redirects to callback with:")]
     public async Task WhenBehpardakhtRedirectsToCallbackWith(Table table)
     {
@@ -266,20 +203,6 @@ public class BehpardakhtSteps: ServiceCatalogIntegrationTestBase
 
         _scenarioContext.Set(response.StatusCode, "CallbackStatusCode");
         _scenarioContext.Set(response, "CallbackResponse");
-    }
-
-    [Then(@"the callback response should redirect to success page")]
-    public void ThenTheCallbackResponseShouldRedirectToSuccessPage()
-    {
-        var statusCode = _scenarioContext.Get<HttpStatusCode>("CallbackStatusCode");
-        statusCode.Should().BeOneOf(HttpStatusCode.Redirect, HttpStatusCode.Found, HttpStatusCode.MovedPermanently);
-    }
-
-    [Then(@"the callback response should redirect to failure page")]
-    public void ThenTheCallbackResponseShouldRedirectToFailurePage()
-    {
-        var statusCode = _scenarioContext.Get<HttpStatusCode>("CallbackStatusCode");
-        statusCode.Should().BeOneOf(HttpStatusCode.Redirect, HttpStatusCode.Found);
     }
 
     [Then(@"the payment should have status ""(.*)"" in the database")]
@@ -573,7 +496,6 @@ public class BehpardakhtSteps: ServiceCatalogIntegrationTestBase
         _scenarioContext.Set(response.StatusCode, "LastStatusCode");
     }
 
-    [Then(@"the total refunded amount should be (.*)")]
     [Then(@"the refunded amount should be (.*)")]
     public async Task ThenTheTotalRefundedAmountShouldBe(decimal expectedAmount)
     {
@@ -584,12 +506,6 @@ public class BehpardakhtSteps: ServiceCatalogIntegrationTestBase
 
         payment.Should().NotBeNull();
         payment!.RefundedAmount.Amount.Should().Be(expectedAmount);
-    }
-
-    [Given(@"the payment has been partially refunded (.*) Rials")]
-    public async Task GivenThePaymentHasBeenPartiallyRefundedRials(decimal amount)
-    {
-        await WhenIRefundRialsWithReason(amount, "Partial refund");
     }
 
     [Given(@"the payment has been fully refunded")]
