@@ -67,8 +67,16 @@ public class ProviderSettingsController : ControllerBase
         [FromRoute] Guid id,
         CancellationToken cancellationToken = default)
     {
-        // Authorization check
-      
+        // Every other action in this controller calls CanManageProvider(id) here; this one had
+        // just the comment with no call ever written, so any authenticated user — including a
+        // different provider — could read any other provider's business-info (BusinessName,
+        // Description, phone, email, website). Confirmed IDOR: GetBusinessInfo_AsNonOwner_Should-
+        // Return403Forbidden expected 403 and got 200. Same check, same idiom as every sibling
+        // action in this file.
+        if (!await CanManageProvider(id))
+        {
+            return Forbid();
+        }
 
         var query = new GetProviderByIdQuery(id, false, false);
         var provider = await _mediator.Send(query, cancellationToken);
@@ -142,7 +150,12 @@ public class ProviderSettingsController : ControllerBase
         [FromRoute] Guid id,
         CancellationToken cancellationToken = default)
     {
-      
+        // Same gap as GetBusinessInfo: the auth check was never written. Confirmed by
+        // GetLocation_AsNonOwner_ShouldReturn403Forbidden (expected 403, got 200).
+        if (!await CanManageProvider(id))
+        {
+            return Forbid();
+        }
 
         var query = new GetProviderByIdQuery(id, false, false);
         var provider = await _mediator.Send(query, cancellationToken);
@@ -204,7 +217,12 @@ public class ProviderSettingsController : ControllerBase
 
         var response = new LocationResponse
         {
-            AddressLine1 = result.FormattedAddress,
+            // Was result.FormattedAddress — a field named AddressLine1 returning the full
+            // formatted string ("456 New Street, Suite 100, Tehran") instead of just the address
+            // line ("456 New Street"). UpdateLocationResult.AddressLine1 exists and is the correct
+            // source; confirmed by UpdateLocation_WithValidRequest_ShouldReturn200OK, which failed
+            // with the two strings diverging exactly at the length of the address line.
+            AddressLine1 = result.AddressLine1,
             Street = result.FormattedAddress,
             City = result.City ?? "",
             State = "",
@@ -224,39 +242,53 @@ public class ProviderSettingsController : ControllerBase
     /// <summary>
     /// Get provider working hours
     /// </summary>
-    //[HttpGet("{id:guid}/working-hours")]
-    //[ProducesResponseType(typeof(WorkingHoursResponse), StatusCodes.Status200OK)]
-    //[ProducesResponseType(StatusCodes.Status404NotFound)]
-    //[ProducesResponseType(StatusCodes.Status403Forbidden)]
-    //public async Task<IActionResult> GetWorkingHours(
-    //    [FromRoute] Guid id,
-    //    CancellationToken cancellationToken = default)
-    //{
-     
-    //    var query = new GetProviderByIdQuery(id, false, false);
-    //    var provider = await _mediator.Send(query, cancellationToken);
+    [HttpGet("{id:guid}/working-hours")]
+    [ProducesResponseType(typeof(WorkingHoursResponse), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
+    public async Task<IActionResult> GetWorkingHours(
+        [FromRoute] Guid id,
+        CancellationToken cancellationToken = default)
+    {
+        // This action was commented out in its entirety — the PUT sibling below stayed live, so
+        // working hours could be written but never read back through this controller. It also
+        // predates a shape change: GetProviderByIdQuery.BusinessHours is a List<BusinessHoursData>
+        // (int DayOfWeek, IsOpen, OpenTimeHours/Minutes, CloseTimeHours/Minutes, Breaks) today, not
+        // the Dictionary<DayOfWeek, ...> the old code assumed — restoring it verbatim would not
+        // have compiled. Rewritten against the current shape; the response DTO itself
+        // (WorkingHoursResponse / BusinessHoursDetailResponse) is unchanged.
+        if (!await CanManageProvider(id))
+        {
+            return Forbid();
+        }
 
-    //    if (provider == null)
-    //    {
-    //        return NotFound();
-    //    }
+        var query = new GetProviderByIdQuery(id, false, false);
+        var provider = await _mediator.Send(query, cancellationToken);
 
-    //    var response = new WorkingHoursResponse
-    //    {
-    //        BusinessHours = provider.BusinessHours?.ToDictionary(
-    //            kvp => kvp.Key.ToString(),
-    //            kvp => kvp.Value != null ? new BusinessHoursDetailResponse
-    //            {
-    //                DayOfWeek = (int)kvp.Key,
-    //                IsOpen = true,
-    //                OpenTime = kvp.Value.OpenTime?.ToString("HH:mm") ?? "",
-    //                CloseTime = kvp.Value.CloseTime?.ToString("HH:mm") ?? ""
-    //            } : null) ?? [],
-            
-    //    };
+        if (provider == null)
+        {
+            return NotFound();
+        }
 
-    //    return Ok(response);
-    //}
+        var response = new WorkingHoursResponse
+        {
+            BusinessHours = provider.BusinessHours?.ToDictionary(
+                bh => bh.DayOfWeek.ToString(),
+                bh => new BusinessHoursDetailResponse
+                {
+                    DayOfWeek = bh.DayOfWeek,
+                    IsOpen = bh.IsOpen,
+                    OpenTime = bh.OpenTimeHours.HasValue
+                        ? $"{bh.OpenTimeHours:D2}:{bh.OpenTimeMinutes ?? 0:D2}"
+                        : "",
+                    CloseTime = bh.CloseTimeHours.HasValue
+                        ? $"{bh.CloseTimeHours:D2}:{bh.CloseTimeMinutes ?? 0:D2}"
+                        : ""
+                }) ?? []
+        };
+
+        return Ok(response);
+    }
 
     /// <summary>
     /// Update provider working hours
@@ -323,7 +355,13 @@ public class ProviderSettingsController : ControllerBase
         [FromRoute] Guid id,
         CancellationToken cancellationToken = default)
     {
-     
+        // Same gap as GetBusinessInfo/GetLocation/GetServices in this file: [Authorize] requires
+        // *a* signed-in user, but nothing checked it was this provider's own owner, so any
+        // authenticated customer or a different provider could read it.
+        if (!await CanManageProvider(id))
+        {
+            return Forbid();
+        }
 
         var query = new GetBusinessHoursQuery(id);
         var result = await _mediator.Send(query, cancellationToken);
@@ -375,7 +413,11 @@ public class ProviderSettingsController : ControllerBase
         [FromRoute] Guid id,
         CancellationToken cancellationToken = default)
     {
-      
+        // Same gap as GetBusinessInfo/GetLocation/GetServices in this file.
+        if (!await CanManageProvider(id))
+        {
+            return Forbid();
+        }
 
         var query = new GetHolidaysQuery(id);
         var result = await _mediator.Send(query, cancellationToken);
@@ -461,7 +503,11 @@ public class ProviderSettingsController : ControllerBase
         [FromRoute] Guid id,
         CancellationToken cancellationToken = default)
     {
-      
+        // Same gap as GetBusinessInfo/GetLocation/GetServices in this file.
+        if (!await CanManageProvider(id))
+        {
+            return Forbid();
+        }
 
         var query = new GetExceptionsQuery(id);
         var result = await _mediator.Send(query, cancellationToken);
@@ -576,7 +622,12 @@ public class ProviderSettingsController : ControllerBase
         [FromRoute] Guid id,
         CancellationToken cancellationToken = default)
     {
-       
+        // Same gap as GetBusinessInfo: the auth check was never written. Confirmed by
+        // GetServices_AsNonOwner_ShouldReturn403Forbidden (expected 403, got 200).
+        if (!await CanManageProvider(id))
+        {
+            return Forbid();
+        }
 
         var providerId = ServiceCatalog.Domain.ValueObjects.ProviderId.From(id);
         var services = await _serviceReadRepository.GetByProviderIdAsync(providerId, cancellationToken);

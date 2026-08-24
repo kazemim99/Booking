@@ -57,9 +57,13 @@ public class ZarinPalSteps
             BookingId = booking?.Id.Value,
             ProviderId = provider.Id.Value,
             Amount = (decimal)requestData["Amount"],
-            Description = requestData.ContainsKey("Description") ? (string)requestData["Description"] : null,
-            Mobile = requestData.ContainsKey("Mobile") ? (string)requestData["Mobile"] : null,
-            Email = requestData.ContainsKey("Email") ? (string)requestData["Email"] : null
+            // .ToString() rather than a hard (string) cast: ScenarioContextHelper.ConvertValueToType
+            // parses any cell that looks numeric into a decimal, and an 11-digit Iranian mobile
+            // number ("09123456789") parses as a valid decimal — the cast then threw
+            // InvalidCastException on every scenario that supplied a Mobile field.
+            Description = requestData.ContainsKey("Description") ? requestData["Description"].ToString() : null,
+            Mobile = requestData.ContainsKey("Mobile") ? requestData["Mobile"].ToString() : null,
+            Email = requestData.ContainsKey("Email") ? requestData["Email"].ToString() : null
         };
 
         // Mock ZarinPal service response

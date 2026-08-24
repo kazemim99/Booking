@@ -55,12 +55,16 @@ public class BehpardakhtSteps: ServiceCatalogIntegrationTestBase
             BookingId = booking?.Id.Value,
             ProviderId = provider.Id.Value,
             Amount = (decimal)requestData["Amount"],
+            // .ToString() rather than a hard (string) cast on Mobile/AdditionalData:
+            // ScenarioContextHelper.ConvertValueToType parses any numeric-looking cell into a
+            // decimal, and an 11-digit Iranian mobile number ("09123456789") parses as a valid
+            // decimal — the cast then threw InvalidCastException on every scenario supplying one.
             Currency = requestData.ContainsKey("Currency") ? (string)requestData["Currency"] : "IRR",
             Description = requestData.ContainsKey("Description") ? (string)requestData["Description"] : null,
-            Mobile = requestData.ContainsKey("Mobile") ? (string)requestData["Mobile"] : null,
+            Mobile = requestData.ContainsKey("Mobile") ? requestData["Mobile"].ToString() : null,
             Email = requestData.ContainsKey("Email") ? (string)requestData["Email"] : null,
             PayerId = requestData.ContainsKey("PayerId") ? long.Parse(requestData["PayerId"].ToString()!) : 0,
-            AdditionalData = requestData.ContainsKey("AdditionalData") ? (string)requestData["AdditionalData"] : null
+            AdditionalData = requestData.ContainsKey("AdditionalData") ? requestData["AdditionalData"].ToString() : null
         };
 
         // Mock Behpardakht service response

@@ -6,6 +6,7 @@ using Booksy.ServiceCatalog.Domain.Aggregates.PaymentAggregate;
 using Booksy.ServiceCatalog.Domain.Enums;
 using Booksy.ServiceCatalog.Domain.ValueObjects;
 using Booksy.ServiceCatalog.IntegrationTests.Infrastructure;
+using Booksy.ServiceCatalog.IntegrationTests.Support;
 using Microsoft.EntityFrameworkCore;
 using Reqnroll;
 
@@ -19,6 +20,7 @@ public class TestDataSteps
 {
     private readonly ScenarioContext _scenarioContext;
     private readonly ServiceCatalogReqnrollTestBase _testBase;
+    private readonly ScenarioContextHelper _helper;
 
     public TestDataSteps(
         ScenarioContext scenarioContext,
@@ -26,6 +28,7 @@ public class TestDataSteps
     {
         _scenarioContext = scenarioContext;
         _testBase = testBase;
+        _helper = _scenarioContext.Get<ScenarioContextHelper>("Helper");
     }
 
     [Given(@"a provider ""(.*)"" exists with the following details:")]
@@ -52,6 +55,115 @@ public class TestDataSteps
         _scenarioContext.Set(provider, $"Provider:{providerName}");
         _scenarioContext.Set(provider, "Provider:Current");
         _scenarioContext.Set(provider.Id.Value, "CurrentProviderId");
+    }
+
+    /// <summary>
+    /// Registers an active provider with an explicit business name, category and (optional)
+    /// contact email — used by the payment-gateway feature backgrounds
+    /// (ZarinPal/Behpardakht), which all declare the same table shape:
+    /// <c>BusinessName</c>, <c>BusinessType</c>, and an optional <c>Email</c>. Also authenticates
+    /// the scenario as the new provider's owner.
+    /// </summary>
+    /// <remarks>
+    /// This step text was unbound in seven feature files across both gateways with identical
+    /// wording — it carries no gateway-specific behaviour, so it is implemented once here
+    /// rather than duplicated per gateway.
+    ///
+    /// <para>Authenticating here (rather than requiring a separate step) matches every scenario
+    /// that actually uses this step: none of the ten gateway-creation/verification scenarios that
+    /// consume it declare a separate "I am authenticated as..." step, and the create-payment
+    /// endpoints are <c>[Authorize]</c>d — omitting this made every one of them 401. It also
+    /// mirrors the established test-helper convention elsewhere in this suite
+    /// (<c>CreateAndAuthenticateAsProviderAsync</c>), which always couples creation with
+    /// authentication as the caller.</para>
+    /// </remarks>
+    [Given(@"a registered provider exists with:")]
+    public async Task GivenARegisteredProviderExistsWith(Table table)
+    {
+        var data = _helper.BuildDictionaryFromTable(table);
+        var businessName = (string)data["BusinessName"];
+        var category = Enum.Parse<ServiceCategory>((string)data["BusinessType"]);
+        var email = data.TryGetValue("Email", out var e) ? (string)e : "provider@example.com";
+
+        var provider = Provider.RegisterProvider(
+            UserId.From(Guid.NewGuid()),
+            businessName,
+            $"Description for {businessName}",
+            category,
+            ContactInfo.Create(
+                Email.Create(email),
+                PhoneNumber.From("+989120000000")),
+            BusinessAddress.Create(
+                "123 Test St", "123 Test St", "Test City", "TS", "12345", "Iran"));
+
+        provider.SetSatus(ProviderStatus.Active);
+        provider.SetAllowOnlineBooking(true);
+        await _testBase.CreateEntityAsync(provider);
+
+        _scenarioContext.Set(provider, "Provider:Current");
+        _scenarioContext.Set(provider.Id.Value, "CurrentProviderId");
+        _testBase.AuthenticateAsProviderOwner(provider);
+    }
+
+    /// <summary>
+    /// Seeds a Confirmed booking against <c>Provider:Current</c> with the given amount and
+    /// currency — the minimum a payment-gateway scenario needs to attach a payment request to.
+    /// </summary>
+    /// <remarks>
+    /// Booked directly against the organisation (<c>staffId == provider.Id</c>), matching the
+    /// "organization-direct" resource kind that <c>CreateBooking.feature</c> and
+    /// <c>RescheduleBooking.feature</c> already exercise. Built via
+    /// <see cref="Booking.CreateConfirmedByProvider"/> rather than
+    /// <c>CreateBookingRequest</c> + <c>Confirm()</c>: the latter enforces a deposit-paid gate
+    /// and a booking-window check that this seed has no reason to satisfy — the gateway
+    /// scenarios are testing payment creation against an existing confirmed booking, not
+    /// booking-confirmation rules. A throwaway service is created only to satisfy the
+    /// booking's <c>ServiceId</c> foreign key; its own price is irrelevant because the
+    /// booking's <c>TotalPrice</c> is passed explicitly.
+    ///
+    /// <para>Every scenario using this step requests <c>Status: Confirmed</c> — no other value
+    /// is exercised anywhere in the two gateway feature directories. A different value throws
+    /// rather than silently producing a Confirmed booking, so a future scenario that needs one
+    /// fails loudly instead of asserting against the wrong state.</para>
+    /// </remarks>
+    [Given(@"a booking exists for the provider with:")]
+    public async Task GivenABookingExistsForTheProviderWith(Table table)
+    {
+        var data = _helper.BuildDictionaryFromTable(table);
+        // BuildDictionaryFromTable already converts numeric-looking cell text to decimal (via
+        // ScenarioContextHelper.ConvertValueToType), so Amount arrives as a decimal, not a string
+        // to re-parse — casting straight to string threw InvalidCastException on every call.
+        var amount = Convert.ToDecimal(data["Amount"]);
+        var currency = data["Currency"].ToString()!;
+        var status = data.TryGetValue("Status", out var s) ? s.ToString()! : "Confirmed";
+
+        if (status != "Confirmed")
+        {
+            throw new NotSupportedException(
+                $"'a booking exists for the provider with: Status={status}' is not implemented — " +
+                "every current usage of this step requests Confirmed. Extend this step rather than " +
+                "guessing what a different status should seed.");
+        }
+
+        var provider = _scenarioContext.Get<Provider>("Provider:Current");
+        var service = await _testBase.CreateServiceForProviderAsync(
+            provider, "Gateway Test Service", price: 1m, durationMinutes: 60);
+
+        var booking = Booking.CreateConfirmedByProvider(
+            UserId.From(Guid.NewGuid()),
+            provider.Id,
+            service.Id,
+            provider.Id.Value, // organization-direct: staffId == provider.Id
+            DateTime.UtcNow.AddDays(1),
+            service.Duration,
+            Price.Create(amount, currency),
+            BookingPolicy.Default,
+            "Gateway test booking");
+
+        await _testBase.CreateEntityAsync(booking);
+
+        _scenarioContext.Set(booking, "Booking:Current");
+        _scenarioContext.Set(booking.Id.Value, "CurrentBookingId");
     }
 
     [Given(@"the provider has a service ""(.*)"" with:")]

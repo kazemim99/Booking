@@ -136,12 +136,23 @@ public class ScenarioContextHelper
         if (Guid.TryParse(value, out var guidValue))
             return guidValue;
 
+        // A leading zero followed by another digit is never a meaningful decimal quantity in a
+        // Gherkin table — it is an identifier or a phone number (Iranian mobile numbers are
+        // "09XXXXXXXXX"). Parsing it as decimal and handing it to a caller that then calls
+        // .ToString() silently drops the leading zero — "09123456789" round-trips as
+        // "9123456789" — which is real data corruption, not just a type mismatch: it produced a
+        // phone number that fails validation for looking wrong, not for being wrong. Genuine
+        // decimals never carry a redundant leading zero in test fixtures ("0.5" is unaffected
+        // here because the character after "0" is "." not another digit), so this only turns off
+        // numeric parsing for values that were never meant to be numbers.
+        var looksLikeCodeNotNumber = value.Length > 1 && value[0] == '0' && char.IsDigit(value[1]);
+
         // Try decimal
-        if (decimal.TryParse(value, out var decimalValue))
+        if (!looksLikeCodeNotNumber && decimal.TryParse(value, out var decimalValue))
             return decimalValue;
 
-        // Try int
-        if (int.TryParse(value, out var intValue))
+        // Try int (same leading-zero guard as decimal above)
+        if (!looksLikeCodeNotNumber && int.TryParse(value, out var intValue))
             return intValue;
 
         // Try bool

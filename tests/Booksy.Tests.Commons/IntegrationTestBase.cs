@@ -170,8 +170,16 @@ public abstract class IntegrationTestBase<TFactory, TDbContext, TStartup>
             var content = await result.Content.ReadAsStringAsync();
             if (string.IsNullOrEmpty(content))
             {
+                // Was `return new ApiResponse<TResponse> { }` — an empty response body silently
+                // discarded the REAL HTTP status code, leaving every field (including StatusCode)
+                // at its default: 0. Callers asserting on StatusCode saw "0" regardless of what the
+                // server actually returned (200, 400, 404, ...), which is indistinguishable from a
+                // request that never completed. Preserving result.StatusCode here does not change
+                // any currently-passing assertion — it only replaces a meaningless placeholder with
+                // the value the response line above already has in hand.
                 return new ApiResponse<TResponse>
                 {
+                    StatusCode = result.StatusCode
                 };
             }
             var response = JsonConvert.DeserializeObject<ApiResponse<TResponse>>(content);
@@ -190,8 +198,16 @@ public abstract class IntegrationTestBase<TFactory, TDbContext, TStartup>
             var content = await result.Content.ReadAsStringAsync();
             if (string.IsNullOrEmpty(content))
             {
+                // Was `return new ApiResponse<TResponse> { }` — an empty response body silently
+                // discarded the REAL HTTP status code, leaving every field (including StatusCode)
+                // at its default: 0. Callers asserting on StatusCode saw "0" regardless of what the
+                // server actually returned (200, 400, 404, ...), which is indistinguishable from a
+                // request that never completed. Preserving result.StatusCode here does not change
+                // any currently-passing assertion — it only replaces a meaningless placeholder with
+                // the value the response line above already has in hand.
                 return new ApiResponse<TResponse>
                 {
+                    StatusCode = result.StatusCode
                 };
             }
             var response = JsonConvert.DeserializeObject<ApiResponse<TResponse>>(content);

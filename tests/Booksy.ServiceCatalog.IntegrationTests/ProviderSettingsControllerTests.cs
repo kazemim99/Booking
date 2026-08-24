@@ -96,7 +96,10 @@ public class ProviderSettingsControllerTests : ServiceCatalogIntegrationTestBase
 
         response.Data.Should().NotBeNull();
         response.Data!.BusinessName.Should().Be("Updated Business Name");
-        response.Data.Email.Should().Be("updated@test.com");
+        response.Data.Description.Should().Be("Updated description");
+        // Email assertion removed: UpdateBusinessInfoRequest has no Email property (only
+        // BusinessName, Description, LogoUrl), and the owner's email was never "updated@test.com"
+        // anywhere in this test — the value could never have come from anywhere.
     }
 
     [Fact]
