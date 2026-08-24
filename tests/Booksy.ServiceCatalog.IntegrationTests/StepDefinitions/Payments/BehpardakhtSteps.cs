@@ -97,7 +97,7 @@ public class BehpardakhtSteps: ServiceCatalogIntegrationTestBase
         }
     }
 
-    [Then(@"the response should contain ""(.*)""")]
+    [Then(@"the Behpardakht response should contain ""(.*)""")]
     public void ThenTheResponseShouldContain(string field)
     {
         var response = _scenarioContext.Get<CreateBehpardakhtPaymentResponse>("LastBehpardakhtResponse");
@@ -205,52 +205,6 @@ public class BehpardakhtSteps: ServiceCatalogIntegrationTestBase
         _scenarioContext.Set(response, "CallbackResponse");
     }
 
-    [Then(@"the payment should have status ""(.*)"" in the database")]
-    public async Task ThenThePaymentShouldHaveStatusInTheDatabase(string expectedStatus)
-    {
-        var paymentId = _scenarioContext.Get<Guid>("LastPaymentId");
-
-        var payment = await DbContext.Set<Payment>()
-            .FirstOrDefaultAsync(p => p.Id == PaymentId.From(paymentId));
-
-        payment.Should().NotBeNull($"Payment with ID {paymentId} should exist in database");
-        payment!.Status.ToString().Should().Be(expectedStatus,
-            $"Payment status should be {expectedStatus}");
-    }
-
-    [Then(@"the payment should have ""(.*)"" stored")]
-    public async Task ThenThePaymentShouldHaveStored(string field)
-    {
-        var paymentId = _scenarioContext.Get<Guid>("LastPaymentId");
-
-        var payment = await DbContext.Set<Payment>()
-            .FirstOrDefaultAsync(p => p.Id == PaymentId.From(paymentId));
-
-        payment.Should().NotBeNull();
-
-        switch (field)
-        {
-            case "RefNumber":
-                payment!.RefNumber.Should().NotBeNullOrEmpty();
-                break;
-            case "CardPan":
-                payment!.CardPan.Should().NotBeNullOrEmpty();
-                break;
-        }
-    }
-
-    [Then(@"the payment failure reason should be ""(.*)""")]
-    public async Task ThenThePaymentFailureReasonShouldBe(string expectedReason)
-    {
-        var paymentId = _scenarioContext.Get<Guid>("LastPaymentId");
-
-        var payment = await DbContext.Set<Payment>()
-            .FirstOrDefaultAsync(p => p.Id == PaymentId.From(paymentId));
-
-        payment.Should().NotBeNull();
-        payment!.FailureReason.Should().Be(expectedReason);
-    }
-
     [Given(@"Behpardakht captured card details:")]
     public void GivenBehpardakhtCapturedCardDetails(Table table)
     {
@@ -270,7 +224,7 @@ public class BehpardakhtSteps: ServiceCatalogIntegrationTestBase
         });
     }
 
-    [Then(@"the payment should have these details:")]
+    [Then(@"the Behpardakht payment should have these details:")]
     public async Task ThenThePaymentShouldHaveTheseDetails(Table table)
     {
         var paymentId = _scenarioContext.Get<Guid>("LastPaymentId");
@@ -294,7 +248,7 @@ public class BehpardakhtSteps: ServiceCatalogIntegrationTestBase
         }
     }
 
-    [When(@"the payment is verified successfully")]
+    [When(@"the Behpardakht payment is verified successfully")]
     public async Task WhenThePaymentIsVerifiedSuccessfully()
     {
         var table = new Table("Parameter", "Value");
@@ -479,7 +433,7 @@ public class BehpardakhtSteps: ServiceCatalogIntegrationTestBase
         _scenarioContext.Set(payment.Id.Value, "LastPaymentId");
     }
 
-    [When(@"I refund (.*) Rials with reason ""(.*)""")]
+    [When(@"I refund via Behpardakht (.*) Rials with reason ""(.*)""")]
     public async Task WhenIRefundRialsWithReason(decimal amount, string reason)
     {
         var paymentId = _scenarioContext.Get<Guid>("CurrentPaymentId");
@@ -496,7 +450,7 @@ public class BehpardakhtSteps: ServiceCatalogIntegrationTestBase
         _scenarioContext.Set(response.StatusCode, "LastStatusCode");
     }
 
-    [Then(@"the refunded amount should be (.*)")]
+    [Then(@"the Behpardakht refunded amount should be (.*)")]
     public async Task ThenTheTotalRefundedAmountShouldBe(decimal expectedAmount)
     {
         var paymentId = _scenarioContext.Get<Guid>("CurrentPaymentId");
@@ -508,7 +462,7 @@ public class BehpardakhtSteps: ServiceCatalogIntegrationTestBase
         payment!.RefundedAmount.Amount.Should().Be(expectedAmount);
     }
 
-    [Given(@"the payment has been fully refunded")]
+    [Given(@"the Behpardakht payment has been fully refunded")]
     public async Task GivenThePaymentHasBeenFullyRefunded()
     {
         var paymentId = _scenarioContext.Get<Guid>("CurrentPaymentId");
@@ -660,7 +614,7 @@ public class BehpardakhtSteps: ServiceCatalogIntegrationTestBase
 
     #region Common Steps
 
-    [Then(@"the response should contain:")]
+    [Then(@"the Behpardakht response should contain:")]
     public void ThenTheResponseShouldContain(Table table)
     {
         var response = _scenarioContext.Get<object>("LastBehpardakhtResponse")
@@ -686,18 +640,9 @@ public class BehpardakhtSteps: ServiceCatalogIntegrationTestBase
         }
     }
 
-    [Then(@"the response should contain validation error for ""(.*)""")]
-    [Then(@"the response should contain error ""(.*)""")]
-    [Then(@"the response should contain validation error ""(.*)""")]
-    [Then(@"the response should contain ""(.*)""")]
-    public void ThenTheResponseShouldContainError(string errorOrField)
-    {
-        var statusCode = _scenarioContext.Get<HttpStatusCode>("LastStatusCode");
-        statusCode.Should().BeOneOf(HttpStatusCode.BadRequest, HttpStatusCode.InternalServerError, HttpStatusCode.NotFound, HttpStatusCode.OK);
-    }
-
-    [Then(@"a ""(.*)"" domain event should be published")]
-    [Then(@"a ""(.*)"" domain event should be published with:")]
+    [Then(@"the Behpardakht response should contain validation error for ""(.*)""")]
+    [Then(@"the Behpardakht response should contain validation error ""(.*)""")]
+    [Then(@"a Behpardakht ""(.*)"" domain event should be published with:")]
     public async Task ThenADomainEventShouldBePublishedWith(string eventName, Table? table = null)
     {
         var paymentId = _scenarioContext.Get<Guid>("LastPaymentId");
@@ -766,4 +711,21 @@ public class BehpardakhtSteps: ServiceCatalogIntegrationTestBase
     }
 
     #endregion
+
+    // Plain helper, deliberately WITHOUT a [Then] attribute. The step text
+    // "the payment should have status ""(.*)"" in the database" is owned by ZarinPalSteps (and
+    // PaymentSteps); binding it here as well made it ambiguous. Behpardakht scenarios still reach the
+    // shared binding, while this file's internal callers keep a local implementation.
+    private async Task ThenThePaymentShouldHaveStatusInTheDatabase(string expectedStatus)
+    {
+        var paymentId = _scenarioContext.Get<Guid>("LastPaymentId");
+
+        var payment = await DbContext.Set<Payment>()
+            .FirstOrDefaultAsync(p => p.Id == PaymentId.From(paymentId));
+
+        payment.Should().NotBeNull($"Payment with ID {paymentId} should exist in database");
+        payment!.Status.ToString().Should().Be(expectedStatus,
+            $"Payment status should be {expectedStatus}");
+    }
+
 }

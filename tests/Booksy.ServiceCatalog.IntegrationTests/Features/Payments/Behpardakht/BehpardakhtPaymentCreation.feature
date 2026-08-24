@@ -4,12 +4,12 @@ Feature: Behpardakht Payment Creation
     So that I can pay for my booking using Iranian payment gateway
 
 Background:
-    Given a registered provider exists with:
+    Given a Behpardakht registered provider exists with:
         | Field         | Value                    |
         | BusinessName  | Test Beauty Salon        |
         | BusinessType  | BeautySalon              |
         | Email         | provider@example.com     |
-    And a booking exists for the provider with:
+    And a Behpardakht booking exists for the provider with:
         | Field       | Value      |
         | Amount      | 500000     |
         | Currency    | IRR        |
@@ -23,19 +23,19 @@ Scenario: Successfully create Behpardakht payment request for booking
         | Mobile      | 09123456789           |
         | Email       | customer@example.com  |
     Then the response status code should be 200
-    And the response should contain:
+    And the Behpardakht response should contain:
         | Field        | Value                  |
         | IsSuccessful | true                   |
         | Currency     | IRR                    |
         | Amount       | 500000                 |
-    And the response should contain "RefId"
-    And the response should contain "PaymentUrl"
-    And a payment should exist in the database with:
+    And the Behpardakht response should contain "RefId"
+    And the Behpardakht response should contain "PaymentUrl"
+    And a Behpardakht payment should exist in the database with:
         | Field    | Value        |
         | Status   | Pending      |
         | Method   | Behpardakht  |
         | Amount   | 500000       |
-    And a PaymentRequest transaction should be recorded
+    And a Behpardakht PaymentRequest transaction should be recorded
 
 Scenario: Create Behpardakht payment request with minimum amount
     When I send a POST request to "/api/v1/payments/behpardakht/create" with:
@@ -44,7 +44,7 @@ Scenario: Create Behpardakht payment request with minimum amount
         | Description | Minimum payment      |
         | Mobile      | 09121234567          |
     Then the response status code should be 200
-    And the response should contain:
+    And the Behpardakht response should contain:
         | Field        | Value  |
         | IsSuccessful | true   |
         | Amount       | 1000   |
@@ -55,7 +55,7 @@ Scenario: Fail to create Behpardakht payment with amount below minimum
         | Amount      | 500                |
         | Description | Too small payment  |
     Then the response status code should be 400
-    And the response should contain validation error for "Amount"
+    And the Behpardakht response should contain validation error for "Amount"
 
 Scenario: Create payment with Iranian mobile number validation
     When I send a POST request to "/api/v1/payments/behpardakht/create" with:
@@ -64,7 +64,7 @@ Scenario: Create payment with Iranian mobile number validation
         | Description | Test payment   |
         | Mobile      | 09991234567    |
     Then the response status code should be 200
-    And the response should contain:
+    And the Behpardakht response should contain:
         | Field        | Value  |
         | IsSuccessful | true   |
 
@@ -75,7 +75,7 @@ Scenario: Fail to create payment with invalid mobile format
         | Description | Test payment   |
         | Mobile      | 1234567890     |
     Then the response status code should be 400
-    And the response should contain validation error for "Mobile"
+    And the Behpardakht response should contain validation error for "Mobile"
 
 Scenario: Create payment with metadata
     When I send a POST request to "/api/v1/payments/behpardakht/create" with:
@@ -108,7 +108,7 @@ Scenario: Fail to create payment with invalid currency
         | Currency    | USD          |
         | Description | USD payment  |
     Then the response status code should be 400
-    And the response should contain validation error "Currency must be IRR for Behpardakht"
+    And the Behpardakht response should contain validation error "Currency must be IRR for Behpardakht"
 
 Scenario: Create payment and verify PaymentRequestCreated event is published
     When I send a POST request to "/api/v1/payments/behpardakht/create" with:
@@ -117,7 +117,7 @@ Scenario: Create payment and verify PaymentRequestCreated event is published
         | Description | Event test payment |
         | Mobile      | 09123456789        |
     Then the response status code should be 200
-    And a "PaymentRequestCreatedEvent" domain event should be published with:
+    And a Behpardakht "PaymentRequestCreatedEvent" domain event should be published with:
         | Field      | Value    |
         | RefId      | not-null |
         | PaymentUrl | not-null |
@@ -130,7 +130,7 @@ Scenario: Create payment with additional data
         | Mobile         | 09123456789          |
         | AdditionalData | Custom data here     |
     Then the response status code should be 200
-    And the response should contain "RefId"
+    And the Behpardakht response should contain "RefId"
 
 Scenario: Create payment request with domain verification
     When I send a POST request to "/api/v1/payments/behpardakht/create" with:

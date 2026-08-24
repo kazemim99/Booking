@@ -94,7 +94,6 @@ public class ZarinPalSteps
         }
     }
 
-    [When(@"I send a POST request to ""(.*)"" with:")]
     [When(@"with metadata:")]
     public void WithMetadata(Table table)
     {
@@ -106,7 +105,7 @@ public class ZarinPalSteps
         _scenarioContext.Set(metadata, "RequestMetadata");
     }
 
-    [Then(@"the response should contain ""(.*)""")]
+    [Then(@"the ZarinPal response should contain ""(.*)""")]
     public void ThenTheResponseShouldContain(string field)
     {
         var response = _scenarioContext.Get<ApiResponse<CreateZarinPalPaymentResult>>("LastZarinPalResponse");
@@ -150,7 +149,7 @@ public class ZarinPalSteps
         }
     }
 
-    [Then(@"the response should contain validation error for ""(.*)""")]
+    [Then(@"the ZarinPal response should contain validation error for ""(.*)""")]
     public void ThenTheResponseShouldContainValidationErrorFor(string fieldName)
     {
         var statusCode = _scenarioContext.Get<HttpStatusCode>("LastStatusCode");
@@ -284,8 +283,8 @@ public class ZarinPalSteps
         statusCode.Should().BeOneOf(HttpStatusCode.Redirect, HttpStatusCode.Found);
     }
 
-    [Then(@"the payment should have status ""(.*)"" in the database")]
-    public async Task ThenThePaymentShouldHaveStatusInTheDatabase(string expectedStatus)
+    // Binding removed: this step text is owned by PaymentSteps.cs (gateway-agnostic).
+    private async Task ThenThePaymentShouldHaveStatusInTheDatabase(string expectedStatus)
     {
         var paymentId = _scenarioContext.Get<Guid>("LastPaymentId");
 
@@ -350,7 +349,7 @@ public class ZarinPalSteps
         });
     }
 
-    [Then(@"the payment should have these details:")]
+    [Then(@"the ZarinPal payment should have these details:")]
     public async Task ThenThePaymentShouldHaveTheseDetails(Table table)
     {
         var paymentId = _scenarioContext.Get<Guid>("LastPaymentId");
@@ -383,7 +382,7 @@ public class ZarinPalSteps
         _scenarioContext.Set(fee, "ZarinPalFee");
     }
 
-    [When(@"the payment is verified successfully")]
+    [When(@"the ZarinPal payment is verified successfully")]
     public async Task WhenThePaymentIsVerifiedSuccessfully()
     {
         var authority = _scenarioContext.Get<string>("LastAuthority");
@@ -439,7 +438,7 @@ public class ZarinPalSteps
         _scenarioContext.Set(payment.Id.Value, "LastPaymentId");
     }
 
-    [When(@"I refund (.*) Rials with reason ""(.*)""")]
+    [When(@"I refund via ZarinPal (.*) Rials with reason ""(.*)""")]
     public async Task WhenIRefundRialsWithReason(decimal amount, string reason)
     {
         var paymentId = _scenarioContext.Get<Guid>("CurrentPaymentId");
@@ -457,7 +456,7 @@ public class ZarinPalSteps
     }
 
     [Then(@"the total refunded amount should be (.*)")]
-    [Then(@"the refunded amount should be (.*)")]
+    [Then(@"the ZarinPal refunded amount should be (.*)")]
     public async Task ThenTheTotalRefundedAmountShouldBe(decimal expectedAmount)
     {
         var paymentId = _scenarioContext.Get<Guid>("CurrentPaymentId");
@@ -475,7 +474,7 @@ public class ZarinPalSteps
         await WhenIRefundRialsWithReason(amount, "Partial refund");
     }
 
-    [Given(@"the payment has been fully refunded")]
+    [Given(@"the ZarinPal payment has been fully refunded")]
     public async Task GivenThePaymentHasBeenFullyRefunded()
     {
         var paymentId = _scenarioContext.Get<Guid>("CurrentPaymentId");
@@ -492,7 +491,7 @@ public class ZarinPalSteps
     #region Domain Event Steps
 
     [Then(@"a ""(.*)"" domain event should be published")]
-    [Then(@"a ""(.*)"" domain event should be published with:")]
+    [Then(@"a ZarinPal ""(.*)"" domain event should be published with:")]
     public async Task ThenADomainEventShouldBePublished(string eventName, Table? table = null)
     {
         var paymentId = _scenarioContext.Get<Guid>("LastPaymentId");
@@ -508,7 +507,7 @@ public class ZarinPalSteps
 
     #region Common Steps
 
-    [Then(@"the response should contain:")]
+    [Then(@"the ZarinPal response should contain:")]
     public void ThenTheResponseShouldContain(Table table)
     {
         var response = _scenarioContext.Get<object>("LastZarinPalResponse")
@@ -535,7 +534,7 @@ public class ZarinPalSteps
     }
 
     [Then(@"the response should contain error ""(.*)""")]
-    [Then(@"the response should contain validation error ""(.*)""")]
+    [Then(@"the ZarinPal response should contain validation error ""(.*)""")]
     public void ThenTheResponseShouldContainError(string errorMessage)
     {
         // Error validation logic

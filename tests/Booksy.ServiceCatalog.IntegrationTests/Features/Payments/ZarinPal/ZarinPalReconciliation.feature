@@ -27,7 +27,7 @@ Scenario: View reconciliation summary for date range
         | Parameter | Value      |
         | StartDate | 2024-01-15 |
         | EndDate   | 2024-01-18 |
-    Then the response should contain:
+    Then the ZarinPal response should contain:
         | Field            | Value   |
         | TotalPayments    | 4       |
         | SuccessfulCount  | 3       |
@@ -59,7 +59,7 @@ Scenario: View detailed transaction list in reconciliation
         | CreatedAt   | yes     |
 
 Scenario: Identify discrepancies in payment amounts
-    Given a payment has different amounts in database and gateway
+    Given a ZarinPal payment has different amounts in database and gateway
     When I run reconciliation check
     Then the discrepancy should be flagged
     And the report should show:
@@ -85,7 +85,7 @@ Scenario: Calculate total fees collected by ZarinPal
         | 300000  | 3000 |
         | 200000  | 2000 |
     When I request reconciliation report
-    Then the response should contain:
+    Then the ZarinPal response should contain:
         | Field     | Value |
         | TotalFees | 10000 |
 
@@ -96,13 +96,13 @@ Scenario: Track refunds in reconciliation
         | 400000  | Refunded          | 400000         |
         | 300000  | PartiallyRefunded | 150000         |
     When I request reconciliation report
-    Then the response should contain:
+    Then the ZarinPal response should contain:
         | Field            | Value  |
         | TotalRefunds     | 550000 |
         | RefundedPayments | 2      |
 
 Scenario: Identify missing verification for payment requests
-    Given a payment request was created but never verified
+    Given a ZarinPal payment request was created but never verified
     When I run reconciliation check
     Then the unverified payment should be flagged
     And it should appear in "Pending Verification" section
@@ -125,7 +125,7 @@ Scenario: Export reconciliation report as Excel
 Scenario: Daily automated reconciliation check
     Given it is end of day
     When the automated reconciliation job runs
-    Then a reconciliation report should be generated
+    Then a ZarinPal reconciliation report should be generated
     And any discrepancies should be reported
 
 Scenario: Compare with ZarinPal settlement report
@@ -135,7 +135,7 @@ Scenario: Compare with ZarinPal settlement report
     And highlight any mismatches
 
 Scenario: Track payment status changes
-    Given a payment changed status during the day
+    Given a ZarinPal payment changed status during the day
     When I view reconciliation report
     Then the status history should be shown
 
@@ -147,7 +147,7 @@ Scenario: Calculate net settlement amount
         | Refund  | 150000  |
         | Payment | 200000  |
     When I request reconciliation report
-    Then the response should contain:
+    Then the ZarinPal response should contain:
         | Field            | Value   |
         | TotalPayments    | 1000000 |
         | TotalRefunds     | 150000  |
@@ -180,14 +180,14 @@ Scenario: Monthly reconciliation summary
         | Parameter | Value   |
         | Year      | 2024    |
         | Month     | 1       |
-    Then the response should contain monthly summary
+    Then the ZarinPal response should contain monthly summary
     And daily breakdowns should be included
 
 Scenario: Unauthorized access to reconciliation
     Given I am logged in as a customer
     When I attempt to access reconciliation report
     Then the response status code should be 403
-    And the response should contain error "Unauthorized"
+    And the ZarinPal response should contain error "Unauthorized"
 
 Scenario: Unauthorized access for regular provider
     Given I am logged in as a provider

@@ -4,7 +4,7 @@ Feature: ZarinPal Customer Payment History
     So that I can track all my transactions and receipts
 
 Background:
-    Given a registered provider exists with:
+    Given a ZarinPal registered provider exists with:
         | Field        | Value     |
         | BusinessName | Salon Pro |
         | BusinessType | BeautySalon |
@@ -13,7 +13,7 @@ Background:
 Scenario: View empty payment history for new customer
     When I send a GET request to "/api/v1/payments/customer/history"
     Then the response status code should be 200
-    And the response should contain:
+    And the ZarinPal response should contain:
         | Field       | Value |
         | TotalCount  | 0     |
     And the payments list should be empty
@@ -26,7 +26,7 @@ Scenario: View payment history with successful payments
         | 150000  | Nail service     | Paid   | 2024-01-25 |
     When I send a GET request to "/api/v1/payments/customer/history"
     Then the response status code should be 200
-    And the response should contain:
+    And the ZarinPal response should contain:
         | Field      | Value |
         | TotalCount | 3     |
     And the payments should be ordered by date descending
@@ -45,7 +45,7 @@ Scenario: Paginate through payment history
         | Parameter | Value |
         | Page      | 1     |
         | PageSize  | 20    |
-    Then the response should contain 20 payments
+    Then the ZarinPal response should contain 20 payments
     And the response should indicate more pages available
 
 Scenario: View second page of payment history
@@ -54,7 +54,7 @@ Scenario: View second page of payment history
         | Parameter | Value |
         | Page      | 2     |
         | PageSize  | 20    |
-    Then the response should contain 20 payments
+    Then the ZarinPal response should contain 20 payments
     And the payments should be different from page 1
 
 Scenario: View payment history including all statuses
@@ -66,7 +66,7 @@ Scenario: View payment history including all statuses
         | 400000  | Refunded          | 2024-01-18 |
         | 250000  | PartiallyRefunded | 2024-01-19 |
     When I send a GET request to "/api/v1/payments/customer/history"
-    Then the response should contain all 5 payments
+    Then the ZarinPal response should contain all 5 payments
     And each payment should show its correct status
 
 Scenario: View payment details in history
@@ -116,13 +116,13 @@ Scenario: Filter by payment method
     When I send a GET request to "/api/v1/payments/customer/history" with parameters:
         | Parameter     | Value    |
         | PaymentMethod | ZarinPal |
-    Then the response should contain 2 payments
+    Then the ZarinPal response should contain 2 payments
     And all payments should have method "ZarinPal"
 
 Scenario: Default page size when not specified
     Given I have 30 completed payments
     When I send a GET request to "/api/v1/payments/customer/history"
-    Then the response should contain 20 payments
+    Then the ZarinPal response should contain 20 payments
     And the default page size should be applied
 
 Scenario: View payment with card information masked

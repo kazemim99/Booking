@@ -4,13 +4,13 @@ Feature: ZarinPal Provider Revenue Analytics
     So that I can track my earnings and business performance
 
 Background:
-    Given a registered provider "Beauty Salon Pro" exists
+    Given a ZarinPal registered provider "Beauty Salon Pro" exists
     And I am logged in as the provider
 
 Scenario: View revenue with no payments
     When I send a GET request to "/api/v1/payments/provider/{providerId}/revenue"
     Then the response status code should be 200
-    And the response should contain:
+    And the ZarinPal response should contain:
         | Field               | Value |
         | TotalRevenue        | 0     |
         | TotalRefunds        | 0     |
@@ -26,7 +26,7 @@ Scenario: Calculate total revenue from successful payments
         | 300000  | Paid   | 2024-01-16 |
         | 200000  | Paid   | 2024-01-17 |
     When I send a GET request to "/api/v1/payments/provider/{providerId}/revenue"
-    Then the response should contain:
+    Then the ZarinPal response should contain:
         | Field          | Value   |
         | TotalRevenue   | 1000000 |
         | NetRevenue     | 1000000 |
@@ -38,7 +38,7 @@ Scenario: Calculate net revenue after refunds
         | 400000  | PartiallyRefunded | 150000         |
         | 300000  | Refunded          | 300000         |
     When I send a GET request to "/api/v1/payments/provider/{providerId}/revenue"
-    Then the response should contain:
+    Then the ZarinPal response should contain:
         | Field        | Value   |
         | TotalRevenue | 1200000 |
         | TotalRefunds | 450000  |
@@ -53,7 +53,7 @@ Scenario: Calculate success rate with mixed payment statuses
         | 200000  | Paid    |
         | 100000  | Failed  |
     When I send a GET request to "/api/v1/payments/provider/{providerId}/revenue"
-    Then the response should contain:
+    Then the ZarinPal response should contain:
         | Field              | Value |
         | SuccessfulPayments | 3     |
         | TotalPayments      | 5     |
@@ -82,7 +82,7 @@ Scenario: Exclude pending payments from revenue calculations
         | 300000  | Pending |
         | 200000  | Paid    |
     When I send a GET request to "/api/v1/payments/provider/{providerId}/revenue"
-    Then the response should contain:
+    Then the ZarinPal response should contain:
         | Field        | Value  |
         | TotalRevenue | 700000 |
     And pending payments should not be included
@@ -96,7 +96,7 @@ Scenario: View revenue broken down by payment method
     When I send a GET request to "/api/v1/payments/provider/{providerId}/revenue" with parameters:
         | Parameter     | Value    |
         | PaymentMethod | ZarinPal |
-    Then the response should contain:
+    Then the ZarinPal response should contain:
         | Field        | Value  |
         | TotalRevenue | 700000 |
 
@@ -107,7 +107,7 @@ Scenario: View average transaction value
         | 300000  |
         | 200000  |
     When I send a GET request to "/api/v1/payments/provider/{providerId}/revenue"
-    Then the response should contain:
+    Then the ZarinPal response should contain:
         | Field               | Value  |
         | AverageTransaction  | 333333 |
 
@@ -117,7 +117,7 @@ Scenario: View revenue including ZarinPal fees
         | 500000  | 5000 | Paid   |
         | 300000  | 3000 | Paid   |
     When I send a GET request to "/api/v1/payments/provider/{providerId}/revenue"
-    Then the response should contain:
+    Then the ZarinPal response should contain:
         | Field      | Value  |
         | TotalFees  | 8000   |
         | NetRevenue | 792000 |
@@ -129,17 +129,17 @@ Scenario: View monthly revenue trend
         | StartDate | 2024-01-01 |
         | EndDate   | 2024-06-30 |
         | GroupBy   | Month      |
-    Then the response should contain monthly breakdown
+    Then the ZarinPal response should contain monthly breakdown
 
 Scenario: Provider cannot view other providers' revenue
     Given another provider exists with revenue
     When I attempt to access their revenue
     Then the response status code should be 403
-    And the response should contain error "Unauthorized"
+    And the ZarinPal response should contain error "Unauthorized"
 
 Scenario: Admin can view any provider's revenue
     Given I am logged in as an admin
-    And a provider exists with revenue data
+    And a ZarinPal provider exists with revenue data
     When I send a GET request to "/api/v1/payments/provider/{providerId}/revenue"
     Then the response status code should be 200
     And I should see the provider's revenue statistics
@@ -170,12 +170,12 @@ Scenario: View top earning days
     When I send a GET request to "/api/v1/payments/provider/{providerId}/revenue/top-days" with parameters:
         | Parameter | Value |
         | Limit     | 10    |
-    Then the response should contain top 10 earning days
+    Then the ZarinPal response should contain top 10 earning days
     And each day should show total revenue
 
 Scenario: Real-time revenue updates
     Given the provider is viewing revenue dashboard
-    When a new payment is completed
+    When a ZarinPal new payment is completed
     Then the revenue statistics should be updated
     And the TotalRevenue should increase accordingly
 
@@ -193,14 +193,14 @@ Scenario: View refund rate statistics
         | 300000  | PartiallyRefunded |
         | 200000  | Paid              |
     When I send a GET request to "/api/v1/payments/provider/{providerId}/revenue"
-    Then the response should contain:
+    Then the ZarinPal response should contain:
         | Field       | Value |
         | RefundRate  | 37.5  |
 
 Scenario: View payment count by status
     Given the provider has payments with various statuses
     When I send a GET request to "/api/v1/payments/provider/{providerId}/revenue/breakdown"
-    Then the response should contain counts for each status:
+    Then the ZarinPal response should contain counts for each status:
         | Status            | Present |
         | Paid              | yes     |
         | Failed            | yes     |

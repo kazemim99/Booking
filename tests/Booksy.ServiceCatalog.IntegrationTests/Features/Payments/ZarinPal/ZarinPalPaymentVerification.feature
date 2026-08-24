@@ -4,17 +4,17 @@ Feature: ZarinPal Payment Verification
     So that my booking can be confirmed and payment recorded
 
 Background:
-    Given a registered provider exists with:
+    Given a ZarinPal registered provider exists with:
         | Field        | Value               |
         | BusinessName | Test Salon          |
         | BusinessType | BeautySalon         |
         | Email        | salon@example.com   |
-    And a booking exists for the provider with:
+    And a ZarinPal booking exists for the provider with:
         | Field    | Value     |
         | Amount   | 500000    |
         | Currency | IRR       |
         | Status   | Confirmed |
-    And a ZarinPal payment request has been created with:
+    And a ZarinPal ZarinPal payment request has been created with:
         | Field       | Value           |
         | Amount      | 500000          |
         | Description | Booking payment |
@@ -30,7 +30,7 @@ Scenario: Successfully verify payment after customer completes it on ZarinPal
     And the payment should have status "Paid" in the database
     And the payment should have "RefNumber" stored
     And the payment should have "CardPan" stored
-    And a "PaymentVerifiedEvent" domain event should be published
+    And a ZarinPal "PaymentVerifiedEvent" domain event should be published
 
 Scenario: Handle user cancellation on ZarinPal payment page
     Given the customer navigated to ZarinPal payment page
@@ -54,7 +54,7 @@ Scenario: Verify payment with card information captured
         | Authority | {LastAuthority} |
         | Status    | OK    |
     Then the payment should have status "Paid" in the database
-    And the payment should have these details:
+    And the ZarinPal payment should have these details:
         | Field   | Value        |
         | CardPan | 6274****1234 |
         | Fee     | 5000         |
@@ -62,18 +62,18 @@ Scenario: Verify payment with card information captured
 Scenario: Calculate net amount after fee deduction
     Given the customer completed the payment on ZarinPal gateway
     And ZarinPal charged a fee of 5000 Rials
-    When the payment is verified successfully
+    When the ZarinPal payment is verified successfully
     Then the payment net amount should be 495000
 
 Scenario: Handle payment verification failure from ZarinPal
-    Given a payment request exists with authority
+    Given a ZarinPal payment request exists with authority
     When I verify the payment with ZarinPal API
     And ZarinPal returns verification error "-53"
     Then the payment should have status "Failed" in the database
     And the payment failure reason should contain "verification unsuccessful"
 
 Scenario: Handle already verified payment (Code 101)
-    Given a payment was already verified successfully
+    Given a ZarinPal payment was already verified successfully
     When ZarinPal redirects to callback again with:
         | Parameter | Value |
         | Authority | {LastAuthority} |
@@ -92,7 +92,7 @@ Scenario: Fail verification when payment not found
 
 Scenario: Verify payment and update booking status
     Given the customer completed the payment on ZarinPal gateway
-    When the payment is verified successfully
+    When the ZarinPal payment is verified successfully
     Then the payment should have status "Paid" in the database
     And the associated booking should be updated accordingly
 
@@ -104,8 +104,8 @@ Scenario: Handle verification with missing card PAN
 
 Scenario: Verify payment creates transaction record
     Given the customer completed the payment on ZarinPal gateway
-    When the payment is verified successfully
-    Then a transaction record should exist with:
+    When the ZarinPal payment is verified successfully
+    Then a ZarinPal transaction record should exist with:
         | Field           | Value        |
         | Type            | Verification |
         | Status          | Succeeded    |
@@ -113,7 +113,7 @@ Scenario: Verify payment creates transaction record
 
 Scenario: Frontend redirect to success page with payment details
     Given the customer completed the payment on ZarinPal gateway
-    When the payment is verified successfully
+    When the ZarinPal payment is verified successfully
     Then the callback should redirect to frontend success URL
     And the redirect URL should contain query parameters:
         | Parameter  | Value               |
@@ -132,7 +132,7 @@ Scenario: Frontend redirect to failure page with error details
         | reason    | User cancelled    |
 
 Scenario: Concurrent verification requests should be handled safely
-    Given a payment request exists with authority
+    Given a ZarinPal payment request exists with authority
     When multiple verification requests are sent simultaneously
     Then only one verification should succeed
     And the payment should have status "Paid" in the database

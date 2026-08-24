@@ -262,15 +262,6 @@ public class BookingSteps
         }
     }
 
-    [Then(@"the response message should contain ""(.*)""")]
-    public void ThenTheResponseMessageShouldContain(string expectedText)
-    {
-        var response = _scenarioContext.Get<ApiResponse>("LastResponse");
-
-        response.Message.Should().Contain(expectedText,
-            $"Response message should contain '{expectedText}'");
-    }
-
     [Then(@"the booking should exist in the database with status ""(.*)""")]
     public async Task ThenTheBookingShouldExistInTheDatabaseWithStatus(string expectedStatus)
     {
