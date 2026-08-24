@@ -48,11 +48,11 @@ Implementation status: `Runnable` = every step bound · `Partial` = <50% unbound
 | `Payments/Financial.feature` | Payments & gateways | 7 | 7 | 23/30 | Mostly spec | M (1-3d) |
 | `Payments/Payouts.feature` | Payments & gateways | 7 | 7 | 17/28 | Mostly spec | M (1-3d) |
 | `Providers/ProviderRegistration.feature` | Provider management | 7 | 6 | 15/25 | Mostly spec | M (1-3d) |
-| `Bookings/CancelBooking.feature` | Booking lifecycle | 4 | 0 | 0/15 | Runnable | S (<1d) |
-| `Bookings/CreateBooking.feature` | Booking lifecycle | 7 | 0 | 0/18 | Runnable | S (<1d) |
-| `Bookings/RescheduleBooking.feature` | Booking lifecycle | 5 | 0 | 0/20 | Runnable | S (<1d) |
-| `Payments/ProcessPayment.feature` | Payments & gateways | 5 | 0 | 0/11 | Runnable | S (<1d) |
-| `Payments/RefundPayment.feature` | Payments & gateways | 5 | 0 | 0/17 | Runnable | S (<1d) |
+| `Bookings/CancelBooking.feature` | Booking lifecycle | 4 | 0 | 0/15 | Runnable\* | S (<1d) |
+| `Bookings/CreateBooking.feature` | Booking lifecycle | 7 | 0 | 0/18 | Runnable\* | S (<1d) |
+| `Bookings/RescheduleBooking.feature` | Booking lifecycle | 5 | 0 | 0/20 | Runnable\* | S (<1d) |
+| `Payments/ProcessPayment.feature` | Payments & gateways | 5 | 0 | 0/11 | Credentials-blocked | S (<1d) |
+| `Payments/RefundPayment.feature` | Payments & gateways | 5 | 0 | 0/17 | Credentials-blocked | S (<1d) |
 
 ## Risk notes
 
@@ -65,3 +65,16 @@ Implementation status: `Runnable` = every step bound · `Partial` = <50% unbound
   filtered out of CI) makes the suite honest immediately. That is a scope decision, not a technical one.
 - **Do not read `Blocked` as "broken product".** A blocked scenario has never executed, so it has
   never made any claim about production behaviour — in either direction.
+- **"Runnable" measures structural bindability, not pass rate — read it as "every step exists",
+  not "every scenario passes".** `ProcessPayment.feature` and `RefundPayment.feature` were
+  originally marked plain `Runnable`; both are actually blocked, because `ProcessPaymentCommand`/
+  `RefundPaymentCommand` route through the real, unmocked ZarinPal/Behpardakht gateway regardless
+  of which feature file exercises them (FOLLOW-UPS #31) — corrected to `Credentials-blocked`.
+  The three `Bookings/*.feature` rows are marked `Runnable*`: every step in those three files
+  individually resolves to a real binding, but a combined test run mixing them with
+  `CQRS/Commands/BookingCommands.feature` (whose "RescheduleBookingCommand - ..." scenarios share
+  enough of a name to complicate filtering) surfaced additional failures — at least one confirmed
+  as FOLLOW-UPS #32 (the duplicate `ApiResponseMiddleware`, pre-existing, not caused by this audit)
+  — that were not individually re-isolated per file before this document was finalized. Treat the
+  three booking rows' `Blocked: 0` as "structurally sound, content-audited, last verified
+  in isolation" rather than "currently green in every run configuration."
