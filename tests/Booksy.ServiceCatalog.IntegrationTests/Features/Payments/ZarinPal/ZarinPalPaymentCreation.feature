@@ -4,12 +4,12 @@ Feature: ZarinPal Payment Creation
     So that I can pay for my booking using Iranian payment gateway
 
 Background:
-    Given a ZarinPal registered provider exists with:
+    Given a registered provider exists with:
         | Field         | Value                    |
         | BusinessName  | Test Beauty Salon        |
         | BusinessType  | BeautySalon              |
         | Email         | provider@example.com     |
-    And a ZarinPal booking exists for the provider with:
+    And a booking exists for the provider with:
         | Field       | Value      |
         | Amount      | 500000     |
         | Currency    | IRR        |
@@ -30,7 +30,7 @@ Scenario: Successfully create ZarinPal payment request for booking
         | Amount       | 500000                 |
     And the ZarinPal response should contain "Authority"
     And the ZarinPal response should contain "PaymentUrl"
-    And a ZarinPal payment should exist in the database with:
+    And a payment should exist in the database with:
         | Field    | Value     |
         | Status   | Pending   |
         | Method   | ZarinPal  |
@@ -67,7 +67,7 @@ Scenario: Create direct payment without booking
     And the ZarinPal response should contain:
         | Field        | Value  |
         | IsSuccessful | true   |
-    And a ZarinPal payment should exist in the database with:
+    And a payment should exist in the database with:
         | Field     | Value    |
         | Status    | Pending  |
         | BookingId | null     |

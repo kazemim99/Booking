@@ -4,14 +4,14 @@ Feature: Behpardakht Settlement and Reversal
     So that payments are properly finalized or reversed when needed
 
 Background:
-    Given a Behpardakht registered provider exists with:
+    Given a registered provider exists with:
         | Field         | Value                |
         | BusinessName  | Test Beauty Salon    |
         | BusinessType  | BeautySalon          |
         | Email         | provider@example.com |
 
 Scenario: Successfully settle verified payment
-    Given a Behpardakht verified Behpardakht payment exists with:
+    Given a verified Behpardakht payment exists with:
         | Field          | Value           |
         | Amount         | 500000          |
         | Currency       | IRR             |
@@ -24,7 +24,7 @@ Scenario: Successfully settle verified payment
     And the payment should have status "Settled" in the database
 
 Scenario: Handle duplicate settlement request
-    Given a Behpardakht verified Behpardakht payment exists with:
+    Given a verified Behpardakht payment exists with:
         | Field          | Value           |
         | Amount         | 400000          |
         | Currency       | IRR             |
@@ -38,7 +38,7 @@ Scenario: Handle duplicate settlement request
     And the response should indicate "Transaction already settled"
 
 Scenario: Fail to settle unverified payment
-    Given a Behpardakht Behpardakht payment exists with:
+    Given a Behpardakht payment exists with:
         | Field          | Value           |
         | Amount         | 350000          |
         | Currency       | IRR             |
@@ -46,10 +46,10 @@ Scenario: Fail to settle unverified payment
         | Status         | Pending         |
     When the system attempts to settle the payment
     Then the response status code should be 400
-    And the Behpardakht response should contain error "Payment must be verified before settlement"
+    And the response should contain error "Payment must be verified before settlement"
 
 Scenario: Successfully reverse verified payment
-    Given a Behpardakht verified Behpardakht payment exists with:
+    Given a verified Behpardakht payment exists with:
         | Field          | Value           |
         | Amount         | 300000          |
         | Currency       | IRR             |
@@ -63,7 +63,7 @@ Scenario: Successfully reverse verified payment
     And the payment should have status "Reversed" in the database
 
 Scenario: Handle duplicate reversal request
-    Given a Behpardakht verified Behpardakht payment exists with:
+    Given a verified Behpardakht payment exists with:
         | Field          | Value           |
         | Amount         | 450000          |
         | Currency       | IRR             |
@@ -77,7 +77,7 @@ Scenario: Handle duplicate reversal request
     And the response should indicate "Transaction already reversed"
 
 Scenario: Fail to reverse settled payment
-    Given a Behpardakht completed Behpardakht payment exists with:
+    Given a completed Behpardakht payment exists with:
         | Field          | Value           |
         | Amount         | 550000          |
         | Currency       | IRR             |
@@ -87,10 +87,10 @@ Scenario: Fail to reverse settled payment
         | Status         | Settled         |
     When the system attempts to reverse the payment
     Then the response status code should be 400
-    And the Behpardakht response should contain error "Cannot reverse settled payment"
+    And the response should contain error "Cannot reverse settled payment"
 
 Scenario: Auto-reverse payment after verification timeout
-    Given a Behpardakht verified Behpardakht payment exists with:
+    Given a verified Behpardakht payment exists with:
         | Field          | Value           |
         | Amount         | 280000          |
         | Currency       | IRR             |
@@ -105,7 +105,7 @@ Scenario: Auto-reverse payment after verification timeout
     And the payment should have status "AutoReversed" in the database
 
 Scenario: Inquiry payment status before settlement
-    Given a Behpardakht verified Behpardakht payment exists with:
+    Given a verified Behpardakht payment exists with:
         | Field          | Value           |
         | Amount         | 420000          |
         | Currency       | IRR             |
@@ -118,7 +118,7 @@ Scenario: Inquiry payment status before settlement
     And the inquiry response should confirm transaction details
 
 Scenario: Inquiry failed payment status
-    Given a Behpardakht Behpardakht payment exists with:
+    Given a Behpardakht payment exists with:
         | Field          | Value           |
         | Amount         | 320000          |
         | Currency       | IRR             |
@@ -129,7 +129,7 @@ Scenario: Inquiry failed payment status
     And the inquiry should provide failure reason
 
 Scenario: Settlement with automatic booking confirmation
-    Given a Behpardakht verified Behpardakht payment exists for a booking with:
+    Given a verified Behpardakht payment exists for a booking with:
         | Field          | Value           |
         | Amount         | 600000          |
         | Currency       | IRR             |
@@ -140,10 +140,10 @@ Scenario: Settlement with automatic booking confirmation
     When the system settles the payment
     Then the payment should have status "Settled" in the database
     And the booking should have status "Confirmed"
-    And a Behpardakht "BookingConfirmedEvent" should be published
+    And a "BookingConfirmedEvent" should be published
 
 Scenario: Reversal with automatic booking cancellation
-    Given a Behpardakht verified Behpardakht payment exists for a booking with:
+    Given a verified Behpardakht payment exists for a booking with:
         | Field          | Value           |
         | Amount         | 380000          |
         | Currency       | IRR             |
@@ -154,10 +154,10 @@ Scenario: Reversal with automatic booking cancellation
     When the system reverses the payment
     Then the payment should have status "Reversed" in the database
     And the booking should have status "Cancelled"
-    And a Behpardakht "BookingCancelledEvent" should be published
+    And a "BookingCancelledEvent" should be published
 
 Scenario: Handle settlement network timeout
-    Given a Behpardakht verified Behpardakht payment exists with:
+    Given a verified Behpardakht payment exists with:
         | Field          | Value           |
         | Amount         | 470000          |
         | Currency       | IRR             |
@@ -171,7 +171,7 @@ Scenario: Handle settlement network timeout
     And the payment should remain in "PendingSettlement" status
 
 Scenario: Reversal time window validation
-    Given a Behpardakht verified Behpardakht payment exists with:
+    Given a verified Behpardakht payment exists with:
         | Field          | Value           |
         | Amount         | 290000          |
         | Currency       | IRR             |

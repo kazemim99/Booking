@@ -4,7 +4,7 @@ Feature: ZarinPal Provider Revenue Analytics
     So that I can track my earnings and business performance
 
 Background:
-    Given a ZarinPal registered provider "Beauty Salon Pro" exists
+    Given a registered provider "Beauty Salon Pro" exists
     And I am logged in as the provider
 
 Scenario: View revenue with no payments
@@ -129,17 +129,17 @@ Scenario: View monthly revenue trend
         | StartDate | 2024-01-01 |
         | EndDate   | 2024-06-30 |
         | GroupBy   | Month      |
-    Then the ZarinPal response should contain monthly breakdown
+    Then the response should contain monthly breakdown
 
 Scenario: Provider cannot view other providers' revenue
     Given another provider exists with revenue
     When I attempt to access their revenue
     Then the response status code should be 403
-    And the ZarinPal response should contain error "Unauthorized"
+    And the response should contain error "Unauthorized"
 
 Scenario: Admin can view any provider's revenue
     Given I am logged in as an admin
-    And a ZarinPal provider exists with revenue data
+    And a provider exists with revenue data
     When I send a GET request to "/api/v1/payments/provider/{providerId}/revenue"
     Then the response status code should be 200
     And I should see the provider's revenue statistics
@@ -170,12 +170,12 @@ Scenario: View top earning days
     When I send a GET request to "/api/v1/payments/provider/{providerId}/revenue/top-days" with parameters:
         | Parameter | Value |
         | Limit     | 10    |
-    Then the ZarinPal response should contain top 10 earning days
+    Then the response should contain top 10 earning days
     And each day should show total revenue
 
 Scenario: Real-time revenue updates
     Given the provider is viewing revenue dashboard
-    When a ZarinPal new payment is completed
+    When a new payment is completed
     Then the revenue statistics should be updated
     And the TotalRevenue should increase accordingly
 
@@ -200,7 +200,7 @@ Scenario: View refund rate statistics
 Scenario: View payment count by status
     Given the provider has payments with various statuses
     When I send a GET request to "/api/v1/payments/provider/{providerId}/revenue/breakdown"
-    Then the ZarinPal response should contain counts for each status:
+    Then the response should contain counts for each status:
         | Status            | Present |
         | Paid              | yes     |
         | Failed            | yes     |

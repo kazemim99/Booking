@@ -4,14 +4,14 @@ Feature: Behpardakht Payment Refunds
     So that I can return money to customers when needed
 
 Background:
-    Given a Behpardakht registered provider exists with:
+    Given a registered provider exists with:
         | Field         | Value                |
         | BusinessName  | Test Beauty Salon    |
         | BusinessType  | BeautySalon          |
         | Email         | provider@example.com |
 
 Scenario: Successfully refund full amount
-    Given a Behpardakht completed Behpardakht payment exists with:
+    Given a completed Behpardakht payment exists with:
         | Field          | Value           |
         | Amount         | 500000          |
         | Currency       | IRR             |
@@ -25,7 +25,7 @@ Scenario: Successfully refund full amount
     And the payment should have status "Refunded" in the database
 
 Scenario: Successfully refund partial amount
-    Given a Behpardakht completed Behpardakht payment exists with:
+    Given a completed Behpardakht payment exists with:
         | Field          | Value           |
         | Amount         | 500000          |
         | Currency       | IRR             |
@@ -39,7 +39,7 @@ Scenario: Successfully refund partial amount
     And the payment should have status "PartiallyRefunded" in the database
 
 Scenario: Refund multiple partial amounts
-    Given a Behpardakht completed Behpardakht payment exists with:
+    Given a completed Behpardakht payment exists with:
         | Field          | Value           |
         | Amount         | 600000          |
         | Currency       | IRR             |
@@ -53,7 +53,7 @@ Scenario: Refund multiple partial amounts
     And the total refunded amount should be 400000
 
 Scenario: Fail to refund more than payment amount
-    Given a Behpardakht completed Behpardakht payment exists with:
+    Given a completed Behpardakht payment exists with:
         | Field          | Value           |
         | Amount         | 300000          |
         | Currency       | IRR             |
@@ -63,10 +63,10 @@ Scenario: Fail to refund more than payment amount
         | CardPan        | 6104****3456    |
     When I refund via Behpardakht 400000 Rials with reason "Exceeds amount"
     Then the response status code should be 400
-    And the Behpardakht response should contain error "Refund amount exceeds payment amount"
+    And the response should contain error "Refund amount exceeds payment amount"
 
 Scenario: Fail to refund more than remaining amount
-    Given a Behpardakht completed Behpardakht payment exists with:
+    Given a completed Behpardakht payment exists with:
         | Field          | Value           |
         | Amount         | 500000          |
         | Currency       | IRR             |
@@ -77,10 +77,10 @@ Scenario: Fail to refund more than remaining amount
     And the payment has been partially refunded 300000 Rials
     When I refund via Behpardakht 300000 Rials with reason "Exceeds remaining"
     Then the response status code should be 400
-    And the Behpardakht response should contain error "Refund amount exceeds remaining amount"
+    And the response should contain error "Refund amount exceeds remaining amount"
 
 Scenario: Fail to refund already fully refunded payment
-    Given a Behpardakht completed Behpardakht payment exists with:
+    Given a completed Behpardakht payment exists with:
         | Field          | Value           |
         | Amount         | 400000          |
         | Currency       | IRR             |
@@ -91,10 +91,10 @@ Scenario: Fail to refund already fully refunded payment
     And the Behpardakht payment has been fully refunded
     When I refund via Behpardakht 100000 Rials with reason "Already refunded"
     Then the response status code should be 400
-    And the Behpardakht response should contain error "Payment already fully refunded"
+    And the response should contain error "Payment already fully refunded"
 
 Scenario: Refund with specific refund reason codes
-    Given a Behpardakht completed Behpardakht payment exists with:
+    Given a completed Behpardakht payment exists with:
         | Field          | Value                  |
         | Amount         | 350000                 |
         | Currency       | IRR                    |
@@ -107,7 +107,7 @@ Scenario: Refund with specific refund reason codes
     And the refund should have reason "Customer dissatisfaction"
 
 Scenario: Handle Behpardakht refund gateway error
-    Given a Behpardakht completed Behpardakht payment exists with:
+    Given a completed Behpardakht payment exists with:
         | Field          | Value           |
         | Amount         | 450000          |
         | Currency       | IRR             |
@@ -121,7 +121,7 @@ Scenario: Handle Behpardakht refund gateway error
     And the Behpardakht response should contain "Refund failed"
 
 Scenario: Refund unsettled payment should fail
-    Given a Behpardakht verified Behpardakht payment exists with:
+    Given a verified Behpardakht payment exists with:
         | Field          | Value           |
         | Amount         | 250000          |
         | Currency       | IRR             |
@@ -130,10 +130,10 @@ Scenario: Refund unsettled payment should fail
         | Status         | Verified        |
     When I refund via Behpardakht 250000 Rials with reason "Unsettled refund"
     Then the response status code should be 400
-    And the Behpardakht response should contain error "Payment must be settled before refund"
+    And the response should contain error "Payment must be settled before refund"
 
 Scenario: Track refund transaction details
-    Given a Behpardakht completed Behpardakht payment exists with:
+    Given a completed Behpardakht payment exists with:
         | Field          | Value           |
         | Amount         | 520000          |
         | Currency       | IRR             |
@@ -143,7 +143,7 @@ Scenario: Track refund transaction details
         | CardPan        | 6104****4567    |
     When I refund via Behpardakht 520000 Rials with reason "Full service cancellation"
     Then the response status code should be 200
-    And a Behpardakht refund transaction should be recorded with:
+    And a refund transaction should be recorded with:
         | Field          | Value                      |
         | Amount         | 520000                     |
         | Reason         | Full service cancellation  |

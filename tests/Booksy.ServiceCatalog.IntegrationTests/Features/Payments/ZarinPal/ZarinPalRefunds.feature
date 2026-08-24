@@ -4,11 +4,11 @@ Feature: ZarinPal Payment Refunds
     So that I can return money to customers when needed
 
 Background:
-    Given a ZarinPal registered provider exists with:
+    Given a registered provider exists with:
         | Field        | Value          |
         | BusinessName | Beauty Center  |
         | BusinessType | BeautySalon    |
-    And a ZarinPal completed ZarinPal payment exists with:
+    And a completed ZarinPal payment exists with:
         | Field       | Value           |
         | Amount      | 500000          |
         | Currency    | IRR             |
@@ -60,7 +60,7 @@ Scenario: Fail to refund more than payment amount
         | Amount | 600000         |
         | Reason | Invalid refund |
     Then the response status code should be 400
-    And the ZarinPal response should contain error "Refund amount exceeds available amount"
+    And the response should contain error "Refund amount exceeds available amount"
 
 Scenario: Fail to refund already fully refunded payment
     Given the ZarinPal payment has been fully refunded
@@ -69,7 +69,7 @@ Scenario: Fail to refund already fully refunded payment
         | Amount | 100000        |
         | Reason | Double refund |
     Then the response status code should be 400
-    And the ZarinPal response should contain error "Payment is already fully refunded"
+    And the response should contain error "Payment is already fully refunded"
 
 Scenario: Refund with detailed description
     When I send a POST request to "/api/v1/payments/refund" with:
@@ -85,7 +85,7 @@ Scenario: Refund creates transaction record
         | Field  | Value          |
         | Amount | 300000         |
         | Reason | Test refund    |
-    Then a ZarinPal refund transaction should exist with:
+    Then a refund transaction should exist with:
         | Field  | Value     |
         | Type   | Refund    |
         | Amount | 300000    |
@@ -106,16 +106,16 @@ Scenario: Refund minimum amount validation
     And the ZarinPal response should contain validation error for "Amount"
 
 Scenario: Refund pending payment should fail
-    Given a ZarinPal payment exists with status "Pending"
+    Given a payment exists with status "Pending"
     When I attempt to refund the payment
     Then the response status code should be 400
-    And the ZarinPal response should contain error "Cannot refund payment that is not paid"
+    And the response should contain error "Cannot refund payment that is not paid"
 
 Scenario: Refund failed payment should fail
-    Given a ZarinPal payment exists with status "Failed"
+    Given a payment exists with status "Failed"
     When I attempt to refund the payment
     Then the response status code should be 400
-    And the ZarinPal response should contain error "Cannot refund failed payment"
+    And the response should contain error "Cannot refund failed payment"
 
 Scenario: ZarinPal API refund failure handling
     When I send a POST request to "/api/v1/payments/refund" with:
@@ -128,7 +128,7 @@ Scenario: ZarinPal API refund failure handling
     And the refunded amount should remain 0
 
 Scenario: Idempotent refund requests
-    Given a ZarinPal refund request with idempotency key "refund-123"
+    Given a refund request with idempotency key "refund-123"
     When I send the same refund request twice
     Then only one refund should be processed
     And both responses should return the same result
@@ -137,7 +137,7 @@ Scenario: Refund authorization check
     Given I am logged in as a customer
     When I attempt to refund a payment
     Then the response status code should be 403
-    And the ZarinPal response should contain error "Unauthorized"
+    And the response should contain error "Unauthorized"
 
 Scenario: Provider can refund their own payments
     Given I am logged in as the provider

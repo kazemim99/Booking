@@ -4,14 +4,14 @@ Feature: Behpardakht Payment Verification
     So that I can confirm the payment and update booking status
 
 Background:
-    Given a Behpardakht registered provider exists with:
+    Given a registered provider exists with:
         | Field         | Value                |
         | BusinessName  | Test Beauty Salon    |
         | BusinessType  | BeautySalon          |
         | Email         | provider@example.com |
 
 Scenario: Successfully verify Behpardakht payment after customer payment
-    Given a Behpardakht Behpardakht payment request has been created with:
+    Given a Behpardakht payment request has been created with:
         | Field       | Value             |
         | Amount      | 500000            |
         | Description | Booking payment   |
@@ -26,11 +26,11 @@ Scenario: Successfully verify Behpardakht payment after customer payment
     And the payment should have status "Completed" in the database
     And the payment should have "RefNumber" stored
     And the payment should have "CardPan" stored
-    And a Behpardakht PaymentRequest transaction should be recorded
-    And a Behpardakht Verification transaction should be recorded
+    And a PaymentRequest transaction should be recorded
+    And a Verification transaction should be recorded
 
 Scenario: Handle Behpardakht callback with failed payment
-    Given a Behpardakht Behpardakht payment request has been created with:
+    Given a Behpardakht payment request has been created with:
         | Field       | Value             |
         | Amount      | 300000            |
         | Description | Failed payment    |
@@ -43,11 +43,11 @@ Scenario: Handle Behpardakht callback with failed payment
     Then the callback response should redirect to failure page
     And the payment should have status "Failed" in the database
     And the payment failure reason should be "Customer cancelled the transaction"
-    And a Behpardakht PaymentRequest transaction should be recorded
-    And a Behpardakht Failed transaction should be recorded
+    And a PaymentRequest transaction should be recorded
+    And a Failed transaction should be recorded
 
 Scenario: Handle duplicate verification request
-    Given a Behpardakht Behpardakht payment request has been created with:
+    Given a Behpardakht payment request has been created with:
         | Field       | Value                |
         | Amount      | 200000               |
         | Description | Duplicate verify test|
@@ -59,7 +59,7 @@ Scenario: Handle duplicate verification request
     And the payment should still have status "Completed" in the database
 
 Scenario: Verify payment with card holder information
-    Given a Behpardakht Behpardakht payment request has been created with:
+    Given a Behpardakht payment request has been created with:
         | Field       | Value             |
         | Amount      | 450000            |
         | Description | Card info test    |
@@ -73,7 +73,7 @@ Scenario: Verify payment with card holder information
         | CardPan | 6104****1234 |
 
 Scenario: Handle verification timeout
-    Given a Behpardakht Behpardakht payment request has been created with:
+    Given a Behpardakht payment request has been created with:
         | Field       | Value              |
         | Amount      | 350000             |
         | Description | Timeout test       |
@@ -89,7 +89,7 @@ Scenario: Handle verification timeout
     And the payment failure reason should be "Verification timeout"
 
 Scenario: Verify payment and trigger settlement
-    Given a Behpardakht Behpardakht payment request has been created with:
+    Given a Behpardakht payment request has been created with:
         | Field       | Value              |
         | Amount      | 600000             |
         | Description | Settlement test    |
@@ -99,7 +99,7 @@ Scenario: Verify payment and trigger settlement
     Then the payment should have status "Settled" in the database
 
 Scenario: Handle invalid RefId in callback
-    Given a Behpardakht Behpardakht payment request has been created with:
+    Given a Behpardakht payment request has been created with:
         | Field       | Value           |
         | Amount      | 250000          |
         | Description | Invalid RefId   |
@@ -111,7 +111,7 @@ Scenario: Handle invalid RefId in callback
     And the Behpardakht response should contain "Payment not found"
 
 Scenario: Verify payment with Iranian Rial amount validation
-    Given a Behpardakht Behpardakht payment request has been created with:
+    Given a Behpardakht payment request has been created with:
         | Field       | Value           |
         | Amount      | 1500000         |
         | Currency    | IRR             |
@@ -122,7 +122,7 @@ Scenario: Verify payment with Iranian Rial amount validation
     And the payment currency should be IRR
 
 Scenario: Handle network error during verification
-    Given a Behpardakht Behpardakht payment request has been created with:
+    Given a Behpardakht payment request has been created with:
         | Field       | Value          |
         | Amount      | 400000         |
         | Description | Network test   |
@@ -133,11 +133,11 @@ Scenario: Handle network error during verification
     And the payment should remain in "PendingVerification" status
 
 Scenario: Verify payment and publish domain events
-    Given a Behpardakht Behpardakht payment request has been created with:
+    Given a Behpardakht payment request has been created with:
         | Field       | Value               |
         | Amount      | 550000              |
         | Description | Domain event test   |
     And the customer completed the payment on Behpardakht gateway
     When the Behpardakht payment is verified successfully
-    Then a Behpardakht "PaymentVerifiedEvent" domain event should be published
-    And a Behpardakht "PaymentCompletedEvent" domain event should be published
+    Then a "PaymentVerifiedEvent" domain event should be published
+    And a "PaymentCompletedEvent" domain event should be published

@@ -4,12 +4,12 @@ Feature: Behpardakht Payment Creation
     So that I can pay for my booking using Iranian payment gateway
 
 Background:
-    Given a Behpardakht registered provider exists with:
+    Given a registered provider exists with:
         | Field         | Value                    |
         | BusinessName  | Test Beauty Salon        |
         | BusinessType  | BeautySalon              |
         | Email         | provider@example.com     |
-    And a Behpardakht booking exists for the provider with:
+    And a booking exists for the provider with:
         | Field       | Value      |
         | Amount      | 500000     |
         | Currency    | IRR        |
@@ -30,12 +30,12 @@ Scenario: Successfully create Behpardakht payment request for booking
         | Amount       | 500000                 |
     And the Behpardakht response should contain "RefId"
     And the Behpardakht response should contain "PaymentUrl"
-    And a Behpardakht payment should exist in the database with:
+    And a payment should exist in the database with:
         | Field    | Value        |
         | Status   | Pending      |
         | Method   | Behpardakht  |
         | Amount   | 500000       |
-    And a Behpardakht PaymentRequest transaction should be recorded
+    And a PaymentRequest transaction should be recorded
 
 Scenario: Create Behpardakht payment request with minimum amount
     When I send a POST request to "/api/v1/payments/behpardakht/create" with:
