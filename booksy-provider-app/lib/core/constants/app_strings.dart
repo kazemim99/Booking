@@ -42,6 +42,12 @@ class AppStrings {
   // Logout
   static const String logout = 'خروج';
   static const String loggedOut = 'با موفقیت خارج شدید';
+  static const String logoutConfirmTitle = 'خروج از حساب';
+  static const String logoutConfirmBody =
+      'آیا مطمئن هستید که می‌خواهید از حساب کاربری خود خارج شوید؟';
+
+  // Generic confirm dialog default (callers usually pass a specific label)
+  static const String confirm = 'تأیید';
 
   // Onboarding handoff
   static const String onboardingRequiredTitle = 'تکمیل پروفایل کسب‌وکار';

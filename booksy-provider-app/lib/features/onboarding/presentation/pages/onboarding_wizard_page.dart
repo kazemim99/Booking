@@ -8,6 +8,7 @@ import '../../../../core/widgets/app_icon_button.dart';
 import '../../../../core/widgets/app_snackbar.dart';
 import '../../../auth/presentation/bloc/auth_bloc.dart';
 import '../../../auth/presentation/bloc/auth_event.dart';
+import '../../../auth/presentation/widgets/confirm_logout.dart';
 import '../cubit/onboarding_cubit.dart';
 import '../cubit/onboarding_state.dart';
 import '../steps/business_info_step.dart';
@@ -72,8 +73,7 @@ class _OnboardingWizardView extends StatelessWidget {
                 AppIconButton(
                   tooltip: AppStrings.logout,
                   icon: Icons.logout,
-                  onTap: () =>
-                      context.read<AuthBloc>().add(const LogoutRequested()),
+                  onTap: () => confirmAndLogout(context),
                 ),
             ],
           ),
