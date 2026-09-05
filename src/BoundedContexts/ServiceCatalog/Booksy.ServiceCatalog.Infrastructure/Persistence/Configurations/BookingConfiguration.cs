@@ -359,12 +359,16 @@ namespace Booksy.ServiceCatalog.Infrastructure.Persistence.Configurations
             //        .IsRequired();
             //});
 
-            //// Indexes for performance
-            //builder.HasIndex(b => b.CustomerId)
-            //    .HasDatabaseName("IX_Bookings_CustomerId");
+            // Indexes for performance.
+            //
+            // Restored 2026-08-24 (booking-data-and-migration-hygiene §1). These had been commented
+            // out with no live index behind CustomerId/ProviderId/StaffId/Status, so `my-bookings`,
+            // provider-dashboard, and history queries full-scanned the table.
+            builder.HasIndex(b => b.CustomerId)
+                .HasDatabaseName("IX_Bookings_CustomerId");
 
-            //builder.HasIndex(b => b.ProviderId)
-            //    .HasDatabaseName("IX_Bookings_ProviderId");
+            builder.HasIndex(b => b.ProviderId)
+                .HasDatabaseName("IX_Bookings_ProviderId");
 
             builder.HasIndex(b => b.ServiceId)
                 .HasDatabaseName("IX_Bookings_ServiceId");
@@ -373,19 +377,25 @@ namespace Booksy.ServiceCatalog.Infrastructure.Persistence.Configurations
             builder.HasIndex(b => b.IndividualProviderId)
                 .HasDatabaseName("IX_Bookings_IndividualProviderId");
 
-            //builder.HasIndex(b => b.StaffId)
-            //    .HasDatabaseName("IX_Bookings_StaffId");
+            builder.HasIndex(b => b.StaffId)
+                .HasDatabaseName("IX_Bookings_StaffId");
 
-            //builder.HasIndex(b => b.Status)
-            //    .HasDatabaseName("IX_Bookings_Status");
+            builder.HasIndex(b => b.Status)
+                .HasDatabaseName("IX_Bookings_Status");
 
-            //builder.HasIndex(b => new { b.StaffId, b.Status })
-            //    .HasDatabaseName("IX_Bookings_StaffId_Status");
-
-            //// Composite index for availability checks
-            //builder.HasIndex("StaffId", "Status")
-            //    .HasDatabaseName("IX_Bookings_Availability")
-            //    .HasFilter("[Status] IN ('Requested', 'Confirmed')");
+            // NOT restored: a (StaffId, Status) composite, and a further composite filtered to
+            // WHERE Status IN ('Requested', 'Confirmed') for availability/conflict checks (the
+            // original text used SQL Server bracket syntax — [Status] — which is invalid on
+            // PostgreSQL and would have failed to apply at host startup if uncommented as-is).
+            //
+            // Both are unnecessary now: ADR-004 (see migration 20260728064537_AddBookingSlotOverlap-
+            // Constraint) added a GiST exclusion constraint over
+            // (StaffId WITH =, tstzrange(StartTime, EndTime) WITH &&) WHERE Status IN
+            // ('Requested', 'Confirmed') — the *exact* predicate BookingReadRepository.Get-
+            // ConflictingBookingsAsync filters on. That GiST index already serves this query, and
+            // serves it better than a B-tree composite could (it also covers the time-range
+            // comparison, which StaffId+Status alone cannot). A parallel composite here would be
+            // pure write overhead on every booking mutation with no query it uniquely serves.
         }
     }
 }

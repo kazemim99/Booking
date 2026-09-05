@@ -5,6 +5,21 @@ using Microsoft.EntityFrameworkCore.Migrations;
 
 namespace Booksy.ServiceCatalog.Infrastructure.Persistence.Migrations
 {
+    // NOTE (booking-data-and-migration-hygiene §2, 2026-08-24): this folder and the sibling
+    // ../Migrations/ folder both hold migrations for the same ServiceCatalogDbContext, compiled
+    // into the same assembly. EF Core discovers migrations by scanning the whole assembly for
+    // [Migration]-attributed classes tied to the target DbContext — it does not care about
+    // namespace or folder, so this is NOT two competing histories. Verified directly:
+    // `dotnet ef migrations list` returns all four of this folder's migrations
+    // (AddOwnerNamesToProvider/2/3, RemoveStaff) interleaved by timestamp with the ../Migrations/
+    // lineage into one coherent, correctly-ordered sequence, and a full Host boot against a fresh
+    // Postgres container applies all of them cleanly.
+    //
+    // Per the task's own instruction ("consolidate only if provably unapplied/duplicate;
+    // otherwise document and leave intact"), this is left in place rather than moved — a file
+    // relocation would be unrequested churn on a proven-working migration history. If this folder
+    // is ever tidied up, it is a pure file move (update the `using`/namespace, nothing else); do
+    // not delete these files, they are live, applied migrations.
     /// <inheritdoc />
     public partial class RemoveStaff : Migration
     {
