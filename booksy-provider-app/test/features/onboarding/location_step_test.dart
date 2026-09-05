@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:booksy_provider_app/config/theme/app_tokens.dart';
 import 'package:booksy_provider_app/core/constants/app_strings.dart';
 import 'package:booksy_provider_app/core/di/injection.dart';
 import 'package:booksy_provider_app/core/widgets/app_error_state.dart';
@@ -102,6 +103,29 @@ void main() {
     expect(address.city, 'کاشان');
     // Province is derived from the city — never typed by the user.
     expect(address.province, 'اصفهان');
+  });
+
+  testWidgets(
+      'the city chevron rotates 180° when the inline list opens and closes',
+      (tester) async {
+    await pumpStep(tester);
+
+    AnimatedRotation chevron() => tester.widget<AnimatedRotation>(
+          find.byKey(const Key('onboarding-city-chevron')),
+        );
+
+    expect(chevron().turns, 0);
+
+    await tester.enterText(find.byKey(const Key('onboarding-city')), 'کاشان');
+    await tester.pump();
+    expect(find.byKey(const Key('onboarding-city-results')), findsOneWidget);
+    expect(chevron().turns, 0.5);
+    expect(chevron().duration, AppMotion.fast);
+
+    await tester.tap(find.text('کاشان (اصفهان)').last);
+    await tester.pump();
+    expect(find.byKey(const Key('onboarding-city-results')), findsNothing);
+    expect(chevron().turns, 0);
   });
 
   testWidgets('city search matches across kaf variants (mobile-keyboard bug)',

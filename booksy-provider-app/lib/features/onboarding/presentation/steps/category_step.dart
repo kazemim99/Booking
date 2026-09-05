@@ -29,13 +29,21 @@ class CategoryStep extends StatelessWidget {
             runSpacing: AppSpacing.md,
             children: BusinessCategory.all.map((category) {
               final isSelected = selected == category.id;
+              // Coliride three-state selection colors (spec: shared-ui-
+              // components — idle grey #7F8696, selected brand blue); the
+              // "completed" tinted-fill state doesn't apply to a single-
+              // select grid and is reserved for step indicators.
+              final contentColor =
+                  isSelected ? AppColors.appBar : AppColors.subtitle;
               return SizedBox(
                 width: 150,
                 child: InkWell(
                   key: Key('category-${category.id}'),
                   borderRadius: BorderRadius.circular(AppRadius.md),
                   onTap: () => cubit.selectCategory(category.id),
-                  child: Container(
+                  child: AnimatedContainer(
+                    duration: AppMotion.fast,
+                    curve: AppMotion.curve,
                     padding: const EdgeInsets.symmetric(
                       vertical: AppSpacing.lg,
                       horizontal: AppSpacing.md,
@@ -43,27 +51,23 @@ class CategoryStep extends StatelessWidget {
                     decoration: BoxDecoration(
                       borderRadius: BorderRadius.circular(AppRadius.md),
                       border: Border.all(
-                        color: isSelected
-                            ? Theme.of(context).colorScheme.primary
-                            : Theme.of(context).colorScheme.outline,
+                        color: contentColor,
                         width: isSelected ? 2 : 1,
                       ),
-                      color: isSelected
-                          ? Theme.of(context)
-                              .colorScheme
-                              .primary
-                              .withValues(alpha: 0.08)
-                          : null,
                     ),
                     child: Column(
                       children: [
                         Text(category.emoji,
                             style: const TextStyle(fontSize: 32)),
                         const SizedBox(height: AppSpacing.sm),
-                        Text(
-                          category.label,
+                        AnimatedDefaultTextStyle(
+                          duration: AppMotion.fast,
+                          curve: AppMotion.curve,
+                          style: (Theme.of(context).textTheme.bodyMedium ??
+                                  const TextStyle())
+                              .copyWith(color: contentColor),
                           textAlign: TextAlign.center,
-                          style: Theme.of(context).textTheme.bodyMedium,
+                          child: Text(category.label),
                         ),
                       ],
                     ),

@@ -285,9 +285,11 @@ class _LocationStepState extends State<LocationStep> {
             labelText: AppStrings.city,
             hintText: AppStrings.cityHint,
             prefixIcon: const Icon(Icons.location_city_outlined),
-            suffixIcon: _cityCtrl.text.isEmpty
-                ? null
-                : IconButton(
+            suffixIcon: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                if (_cityCtrl.text.isNotEmpty)
+                  IconButton(
                     icon: const Icon(Icons.close),
                     onPressed: () {
                       setState(() {
@@ -298,6 +300,17 @@ class _LocationStepState extends State<LocationStep> {
                       _commit();
                     },
                   ),
+                // Rotates 180° with the inline result list's open/closed
+                // state (spec: shared-ui-components — dropdown trigger
+                // affordance).
+                AnimatedRotation(
+                  key: const Key('onboarding-city-chevron'),
+                  duration: AppMotion.fast,
+                  turns: _showCityList ? 0.5 : 0,
+                  child: const Icon(Icons.keyboard_arrow_down),
+                ),
+              ],
+            ),
           ),
         ),
         if (_showCityList)
