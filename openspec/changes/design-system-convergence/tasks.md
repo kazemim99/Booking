@@ -21,23 +21,43 @@ All work is presentation-only inside `booksy-provider-app/`. Every numbered grou
 
 ## 3. Structure components (cards, rows, headers, badges, icon buttons)
 
-- [ ] 3.1 Create `core/widgets/app_card.dart` (`AppCard` — white, r15, 1px `AppColors.border`, elevation 0, 12dp interior) with widget tests (flat, border, radius, padding)
-- [ ] 3.2 Create `core/widgets/app_info_card.dart` (`AppInfoCard` — top tag strip + 40×40 r8 tinted icon container + muted-label/navy-value column on an `AppCard` body) with widget tests
-- [ ] 3.3 Create `core/widgets/app_list_row.dart` (`AppListRow` — `surfaceSoft` fill, r10, min-height 48, `AppColors.icon` leading, navy title, muted subtitle, chevron-when-tappable, bounded ripple) with widget tests incl. ≥48dp hit-target assertion
-- [ ] 3.4 Create `core/widgets/app_section_header.dart` + `core/widgets/app_inline_add_button.dart` (bold navy title, trailing green icon+label add action, shrink-wrapped target) with widget tests
-- [ ] 3.5 Create `core/widgets/app_status_badge.dart` (`AppStatusBadge` — r6, 12×6 padding, 12sp w600, success/warning/danger/neutral variants; neutral = border bg + navy text) with widget tests per variant
-- [ ] 3.6 Create `core/widgets/app_icon_button.dart` (`AppIconButton` — 44×44 visual, r12, 20dp glyph, primary-tinted 4–5% splash, optional badge slot, ≥48dp gesture target) with widget tests (badge layout stability, target size)
-- [ ] 3.7 Create `core/widgets/app_dashed_divider.dart` (5px dash segments, `AppColors.divider`) with a widget test
-- [ ] 3.8 First consumers: preview step sections → `AppInfoCard`; preview price-summary separators → `AppDashedDivider`; services step list rows → `AppListRow`; services step header + add-service affordance → `AppSectionHeader` + `AppInlineAddButton`; app-bar logout actions (wizard, dashboard) → `AppIconButton`. Update affected step tests (presentation assertions only — keep existing Keys/behavior green)
-- [ ] 3.9 Run the quality gate
+> **2026-09-05 finding**: every widget in this group already existed (commit `df1433c5`,
+> 2026-07-15 — predates this change), with full widget-test coverage in
+> `test/core/widgets/design_system_components_test.dart`/`feedback_states_test.dart`, and each
+> one verified against the spec values below (radius/padding/color/size all matched exactly on
+> inspection — nothing needed correcting). Only §3.8 (wiring them into real screens) was
+> outstanding; the rest of this group is verification, not new work.
+
+- [x] 3.1 `core/widgets/app_card.dart` (`AppCard` — white, r15, 1px `AppColors.border`, elevation 0, 12dp interior) — verified against spec, pre-existing
+- [x] 3.2 `core/widgets/app_info_card.dart` (`AppInfoCard` — top tag strip + 40×40 r8 tinted icon container + muted-label/navy-value column on an `AppCard` body) — verified against spec, pre-existing
+- [x] 3.3 `core/widgets/app_list_row.dart` (`AppListRow` — `surfaceSoft` fill, r10, min-height 48, `AppColors.icon` leading, navy title, muted subtitle, chevron-when-tappable, bounded ripple) — verified against spec, pre-existing
+- [x] 3.4 `core/widgets/app_section_header.dart` (`AppSectionHeader` + `AppInlineAddButton`, bold navy title, trailing green icon+label add action, shrink-wrapped target) — verified against spec, pre-existing
+- [x] 3.5 `core/widgets/app_status_badge.dart` (`AppStatusBadge` — r6, 12×6 padding, 12sp w600, success/warning/danger/neutral variants) — verified against spec, pre-existing
+- [x] 3.6 `core/widgets/app_icon_button.dart` (`AppIconButton` — 44×44 visual, r12, 20dp glyph, primary-tinted press feedback, optional badge slot, ≥48dp gesture target) — verified against spec, pre-existing
+- [x] 3.7 `core/widgets/app_dashed_divider.dart` (5px dash segments, `AppColors.divider`) — verified against spec, pre-existing
+- [x] 3.8 **DONE THIS TURN.** First consumers: preview step's 5 sections (`preview_step.dart`) → `AppInfoCard` (one icon per section: storefront/category/location/design_services/access_time; the edit `TextButton` moved to `AppInfoCard.trailing`); services step (`services_step.dart`) list rows → `AppListRow` (leading icon + delete trailing), header + add-service affordance → `AppSectionHeader` + `AppInlineAddButton` (replacing the standalone `OutlinedButton.icon`, same `onboarding-add-service` Key preserved); app-bar logout actions in `onboarding_wizard_page.dart` and `provider_dashboard_page.dart` → `AppIconButton`. Added `test/features/onboarding/services_step_test.dart` (3 tests: empty state, rows render name+subtitle, delete removes from cubit state) — no prior test file existed for this step. **Not migrated**: "preview price-summary separators → `AppDashedDivider`" — `preview_step.dart` has no price-summary/separator content today (each service row already shows its own price inline); this half of §3.8 has no current target and is not a defect, just inapplicable until such a summary section is built.
+- [x] 3.9 **DONE.** `flutter analyze`: no issues (whole project). Targeted test run (services/gallery/location/working-hours steps + both design-system test files): 57/57 passed.
 
 ## 4. Button system extension + overlays
 
-- [ ] 4.1 Extend `core/widgets/app_button.dart` with `ButtonSize {big, dialog, small}` (46/17, 40/15.5, 30/14) and variants primary/secondary(outlined)/destructive/text; keep full-width default, loading-contrast rule, and backward-compatible existing constructors; extend its widget tests (all sizes × variants, destructive fill, loading contrast per variant)
-- [ ] 4.2 Create `core/widgets/app_dialog.dart` (`AppDialog` + `showAppDialog()` — r16 flat white panel, `0x24000000` barrier, optional header with centered navy title + close + divider, `ButtonSize.dialog` action row, max-width constraint) with widget tests (barrier color, dismissal paths, action sizing, wide-viewport width cap)
-- [ ] 4.3 Create `core/widgets/app_bottom_sheet.dart` (`showAppBottomSheet()` — r14 top, `0x47000000` barrier, slide-up on `AppMotion.curve`/`reverseCurve`, keyboard-aware padding within 200ms, optional heightFactor) with widget tests (motion curves via token assertions, keyboard inset behavior)
-- [ ] 4.4 Wire the first dialog consumer: logout confirmation (wizard + dashboard logout actions) via `showAppDialog` with a destructive confirm — presentation wrapper only, same `LogoutRequested` dispatch; add widget test
-- [ ] 4.5 Run the quality gate
+> **2026-09-05 finding**: §4.1 was also already done pre-existing (verified below). §4.2/§4.3 are
+> functionally satisfied by two *differently-named* pre-existing widgets — `AppDialogHeader`
+> (a header component, composed into a call site's own `AlertDialog`) and `AppSheetScaffold` +
+> `showAppSheet()` (a full sheet scaffold + presenter, keyboard-aware, r14 top, matching barrier
+> token) — rather than the spec's literal `AppDialog`/`showAppDialog()`/`app_bottom_sheet.dart`/
+> `showAppBottomSheet()` names. Recommendation: keep the existing names (they're already covered
+> by `design_system_components_test.dart` and would require touching every call site to rename)
+> and treat this as the convergence's actual outcome rather than adding parallel same-purpose
+> widgets under new names — that would fragment the design system into two competing dialog/sheet
+> conventions, which is the opposite of what this change is for. Flagging rather than deciding
+> unilaterally: this is a naming/documentation call, not a behavior change, so low risk either way,
+> but it's the kind of decision worth a explicit nod before more call sites build on one name.
+
+- [x] 4.1 `core/widgets/app_button.dart` already has `AppButtonSize {big, dialog, small}` (+ an extra `medium`) at the exact spec heights/sizes (46/17 big, 40/15.5 dialog, 30/14 small) and all four role variants (primary/secondary/destructive/text); full test coverage in `design_system_components_test.dart` (`AppButton roles` + `AppButton size ramp` groups, 8 tests) — verified against spec, pre-existing
+- [x] 4.2 Satisfied by `AppDialogHeader` (40px band, centered 18-bold navy title, trailing close disc, optional divider) — see naming note above. Not a literal `AppDialog`/`showAppDialog()` wrapper.
+- [x] 4.3 Satisfied by `AppSheetScaffold` + `showAppSheet()` (r14 top via theme, `AppColors.sheetBarrier` barrier, keyboard-inset-aware padding, 90%-height cap, modal + picker variants) — see naming note above. Not a literal `app_bottom_sheet.dart`/`showAppBottomSheet()`.
+- [ ] 4.4 **Not done.** Logout is still a direct, unconfirmed action (both migrated `AppIconButton` call sites in §3.8 dispatch `LogoutRequested` immediately on tap, matching the pre-migration behavior exactly — no behavior change was introduced). Wiring a destructive confirmation via `AlertDialog` + `AppDialogHeader` (per the naming note) is still owed.
+- [ ] 4.5 Run the quality gate (once 4.4 lands)
 
 ## 5. Selection states + motion polish
 

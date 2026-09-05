@@ -4,6 +4,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../../../config/theme/app_tokens.dart';
 import '../../../../core/constants/app_strings.dart';
 import '../../../../core/di/injection.dart';
+import '../../../../core/widgets/app_icon_button.dart';
 import '../../../../core/widgets/app_snackbar.dart';
 import '../../../auth/presentation/bloc/auth_bloc.dart';
 import '../../../auth/presentation/bloc/auth_event.dart';
@@ -68,10 +69,10 @@ class _OnboardingWizardView extends StatelessWidget {
             ),
             actions: [
               if (!state.isCompleted)
-                IconButton(
+                AppIconButton(
                   tooltip: AppStrings.logout,
-                  icon: const Icon(Icons.logout),
-                  onPressed: () =>
+                  icon: Icons.logout,
+                  onTap: () =>
                       context.read<AuthBloc>().add(const LogoutRequested()),
                 ),
             ],

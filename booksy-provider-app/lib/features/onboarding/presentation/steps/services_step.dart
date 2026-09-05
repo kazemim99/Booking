@@ -4,6 +4,8 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../../../config/theme/app_tokens.dart';
 import '../../../../core/constants/app_strings.dart';
 import '../../../../core/utils/persian_digits.dart';
+import '../../../../core/widgets/app_list_row.dart';
+import '../../../../core/widgets/app_section_header.dart';
 import '../../domain/entities/onboarding_data.dart';
 import '../cubit/onboarding_cubit.dart';
 import '../cubit/onboarding_state.dart';
@@ -39,6 +41,15 @@ class ServicesStep extends StatelessWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
+              AppSectionHeader(
+                title: AppStrings.servicesTitle,
+                action: AppInlineAddButton(
+                  key: const Key('onboarding-add-service'),
+                  label: AppStrings.addService,
+                  onPressed: () => _addService(context),
+                ),
+              ),
+              const SizedBox(height: AppSpacing.sm),
               if (services.isEmpty)
                 Padding(
                   padding: const EdgeInsets.symmetric(vertical: AppSpacing.lg),
@@ -52,13 +63,13 @@ class ServicesStep extends StatelessWidget {
                 ...services.asMap().entries.map((entry) {
                   final i = entry.key;
                   final s = entry.value;
-                  return Card(
-                    child: ListTile(
-                      title: Text(s.name),
-                      subtitle: Text(
-                        '${s.durationHours * 60 + s.durationMinutes} دقیقه · '
-                        '${s.price.toStringAsFixed(0)} تومان',
-                      ),
+                  return Padding(
+                    padding: const EdgeInsets.only(bottom: AppSpacing.sm),
+                    child: AppListRow(
+                      leadingIcon: Icons.design_services_outlined,
+                      title: s.name,
+                      subtitle: '${s.durationHours * 60 + s.durationMinutes} '
+                          'دقیقه · ${s.price.toStringAsFixed(0)} تومان',
                       trailing: IconButton(
                         icon: const Icon(Icons.delete_outline),
                         onPressed: () {
@@ -69,13 +80,6 @@ class ServicesStep extends StatelessWidget {
                     ),
                   );
                 }),
-              const SizedBox(height: AppSpacing.md),
-              OutlinedButton.icon(
-                key: const Key('onboarding-add-service'),
-                onPressed: () => _addService(context),
-                icon: const Icon(Icons.add),
-                label: const Text(AppStrings.addService),
-              ),
             ],
           ),
         );

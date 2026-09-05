@@ -3,6 +3,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 
 import '../../../../config/theme/app_tokens.dart';
 import '../../../../core/constants/app_strings.dart';
+import '../../../../core/widgets/app_icon_button.dart';
 import '../bloc/auth_bloc.dart';
 import '../bloc/auth_event.dart';
 
@@ -17,10 +18,10 @@ class ProviderDashboardPage extends StatelessWidget {
       appBar: AppBar(
         title: const Text(AppStrings.dashboardTitle),
         actions: [
-          IconButton(
+          AppIconButton(
             tooltip: AppStrings.logout,
-            icon: const Icon(Icons.logout),
-            onPressed: () =>
+            icon: Icons.logout,
+            onTap: () =>
                 context.read<AuthBloc>().add(const LogoutRequested()),
           ),
         ],
