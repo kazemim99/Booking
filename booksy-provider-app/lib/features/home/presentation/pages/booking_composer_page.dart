@@ -8,6 +8,7 @@ import '../../../../core/constants/app_strings.dart';
 import '../../../../core/di/injection.dart';
 import '../../../../core/widgets/app_button.dart';
 import '../../../../core/widgets/app_error_state.dart';
+import '../../../../core/widgets/app_loading.dart';
 import '../../../../core/widgets/app_page_scaffold.dart';
 import '../../../../core/widgets/app_snackbar.dart';
 import '../../../../core/widgets/app_text_field.dart';
@@ -92,8 +93,7 @@ class _ComposerViewState extends State<ComposerView> {
         return AppPageScaffold(
           title: AppStrings.composerTitle,
           body: switch (state.status) {
-            ComposerStatus.loading =>
-              const Center(child: CircularProgressIndicator()),
+            ComposerStatus.loading => const AppLoading.page(),
             ComposerStatus.failed => AppErrorState(
                 message: state.error ?? AppStrings.homeLoadError,
                 onRetry: cubit.load,
@@ -256,7 +256,7 @@ class _ComposerViewState extends State<ComposerView> {
       case SlotsStatus.loading:
         return const Padding(
           padding: EdgeInsets.symmetric(vertical: AppSpacing.md),
-          child: Center(child: CircularProgressIndicator(strokeWidth: 2)),
+          child: AppLoading(size: 20, centered: true),
         );
       case SlotsStatus.failed:
         return Row(

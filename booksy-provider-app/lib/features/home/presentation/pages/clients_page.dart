@@ -9,6 +9,7 @@ import '../../../../core/constants/app_strings.dart';
 import '../../../../core/di/injection.dart';
 import '../../../../core/widgets/app_empty_state.dart';
 import '../../../../core/widgets/app_error_state.dart';
+import '../../../../core/widgets/app_loading.dart';
 import '../../../../core/widgets/app_page_scaffold.dart';
 import '../../../../core/widgets/app_snackbar.dart';
 import '../../../../core/widgets/app_text_field.dart';
@@ -63,8 +64,7 @@ class ClientsView extends StatelessWidget {
             ],
           ),
           body: switch (state.status) {
-            ClientsStatus.loading =>
-              const Center(child: CircularProgressIndicator()),
+            ClientsStatus.loading => const AppLoading.page(),
             ClientsStatus.failed => AppErrorState(
                 message: state.error ?? AppStrings.homeLoadError,
                 onRetry: cubit.load,

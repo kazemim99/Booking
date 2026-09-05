@@ -11,6 +11,7 @@ import '../../../../core/widgets/app_button.dart';
 import '../../../../core/widgets/app_card.dart';
 import '../../../../core/widgets/app_empty_state.dart';
 import '../../../../core/widgets/app_error_state.dart';
+import '../../../../core/widgets/app_loading.dart';
 import '../../../../core/widgets/app_page_scaffold.dart';
 import '../../../../core/widgets/app_snackbar.dart';
 import '../../../../core/widgets/app_text_field.dart';
@@ -81,8 +82,7 @@ class _MoreSubScaffold<T> extends StatelessWidget {
       title: title,
       actions: actions,
       body: switch (state.status) {
-        MoreStatus.loading =>
-          const Center(child: CircularProgressIndicator()),
+        MoreStatus.loading => const AppLoading.page(),
         MoreStatus.failed => AppErrorState(
             message: state.error ?? AppStrings.homeLoadError,
             onRetry: onRetry,
@@ -1206,8 +1206,7 @@ class _ExceptionsSection extends StatelessWidget {
             switch (state.status) {
               MoreStatus.loading => const Padding(
                   padding: EdgeInsets.all(AppSpacing.sm),
-                  child: Center(
-                      child: CircularProgressIndicator(strokeWidth: 2)),
+                  child: AppLoading(size: 20, centered: true),
                 ),
               MoreStatus.failed => Row(
                   children: [

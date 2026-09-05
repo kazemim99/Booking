@@ -7,6 +7,7 @@ import '../../../config/theme/app_tokens.dart';
 import '../../../core/constants/app_strings.dart';
 import '../../../core/di/injection.dart';
 import '../../../core/widgets/app_button.dart';
+import '../../../core/widgets/app_loading.dart';
 import '../../../core/widgets/app_snackbar.dart';
 import 'accept_invitation_cubit.dart';
 
@@ -41,7 +42,7 @@ class AcceptInvitationView extends StatelessWidget {
           final cubit = context.read<AcceptInvitationCubit>();
           switch (state.phase) {
             case AcceptPhase.loading:
-              return const Center(child: CircularProgressIndicator());
+              return const AppLoading.page();
             case AcceptPhase.notFound:
               return const _Message(
                 icon: Icons.link_off,

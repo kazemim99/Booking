@@ -9,6 +9,7 @@ import '../../../../core/di/injection.dart';
 import '../../../../core/errors/failures.dart';
 import '../../../../core/widgets/app_empty_state.dart';
 import '../../../../core/widgets/app_error_state.dart';
+import '../../../../core/widgets/app_loading.dart';
 import '../../../../core/widgets/app_page_scaffold.dart';
 import '../../../../core/widgets/app_snackbar.dart';
 import '../../domain/entities/home_booking.dart';
@@ -64,9 +65,7 @@ class CalendarView extends StatelessWidget {
                 )
               : null,
           body: switch (state.status) {
-            CalendarStatus.loading => const Center(
-                child: CircularProgressIndicator(),
-              ),
+            CalendarStatus.loading => const AppLoading.page(),
             CalendarStatus.failed => AppErrorState(
                 message: state.error ?? AppStrings.homeLoadError,
                 onRetry: cubit.load,

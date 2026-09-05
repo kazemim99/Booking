@@ -7,6 +7,7 @@ import '../../../../core/constants/app_strings.dart';
 import '../../../../core/di/injection.dart';
 import '../../../../core/widgets/app_empty_state.dart';
 import '../../../../core/widgets/app_error_state.dart';
+import '../../../../core/widgets/app_loading.dart';
 import '../../../../core/widgets/app_page_scaffold.dart';
 import '../../../../core/widgets/app_snackbar.dart';
 import '../../../onboarding/domain/entities/onboarding_data.dart'
@@ -64,8 +65,7 @@ class GalleryView extends StatelessWidget {
             ),
           ],
           body: switch (state.status) {
-            MoreStatus.loading =>
-              const Center(child: CircularProgressIndicator()),
+            MoreStatus.loading => const AppLoading.page(),
             MoreStatus.failed => AppErrorState(
                 message: state.error ?? AppStrings.homeLoadError,
                 onRetry: cubit.load,
