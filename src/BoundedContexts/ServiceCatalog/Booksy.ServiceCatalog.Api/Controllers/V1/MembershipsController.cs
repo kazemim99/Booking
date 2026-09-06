@@ -3,6 +3,7 @@ using Booksy.ServiceCatalog.Application.Commands.Membership.AcceptInvitationAsMe
 using Booksy.ServiceCatalog.Application.Commands.Membership.ChangeMembershipRoles;
 using Booksy.ServiceCatalog.Application.Commands.Membership.RegisterAndAcceptInvitation;
 using Booksy.ServiceCatalog.Application.Commands.Membership.RevokeInvitation;
+using Booksy.ServiceCatalog.Application.Commands.Membership.SendInvitationOtp;
 using Booksy.ServiceCatalog.Application.Commands.Membership.TerminateMembership;
 using Booksy.ServiceCatalog.Application.Queries.Membership.GetInvitationSummary;
 using Booksy.ServiceCatalog.Application.Queries.Membership.GetMyMemberships;
@@ -76,6 +77,26 @@ public class MembershipsController : ControllerBase
     public async Task<IActionResult> AcceptInvitation(Guid invitationId, CancellationToken cancellationToken)
     {
         var result = await _mediator.Send(new AcceptInvitationAsMemberCommand(invitationId), cancellationToken);
+        return Ok(result);
+    }
+
+    /// <summary>
+    /// New-user path, step 1: send an OTP to the phone the invitation was sent to, so
+    /// an account-less invitee can prove they own it before registering. Anonymous —
+    /// the phone number itself is never accepted from or returned to the caller.
+    /// </summary>
+    /// <response code="200">Code sent; response carries only the masked phone</response>
+    /// <response code="400">Invitation not pending or expired</response>
+    /// <response code="404">Invitation not found</response>
+    [HttpPost("invitations/{invitationId:guid}/send-otp")]
+    [AllowAnonymous]
+    [ProducesResponseType(typeof(SendInvitationOtpResult), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> SendInvitationOtp(
+        Guid invitationId, CancellationToken cancellationToken)
+    {
+        var result = await _mediator.Send(new SendInvitationOtpCommand(invitationId), cancellationToken);
         return Ok(result);
     }
 

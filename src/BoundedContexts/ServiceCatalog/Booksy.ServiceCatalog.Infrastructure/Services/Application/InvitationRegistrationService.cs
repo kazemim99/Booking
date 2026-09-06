@@ -72,6 +72,14 @@ public class InvitationRegistrationService : IInvitationRegistrationService
         }
     }
 
+    public Task<string> GenerateOtpCodeAsync(string phoneNumber, CancellationToken cancellationToken = default)
+    {
+        // TOTP: deterministic for (secret + phoneNumber, current time window) -- nothing to
+        // persist, and VerifyOtpAsync (above) accepts exactly this value for the same phone
+        // within the same window.
+        return Task.FromResult(_otpService.GetCode(phoneNumber));
+    }
+
     public async Task<UserId> CreateUserWithPhoneAsync(
         string phoneNumber,
         string firstName,

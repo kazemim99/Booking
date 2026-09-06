@@ -15,6 +15,13 @@ public interface IInvitationRegistrationService
     Task<bool> VerifyOtpAsync(string phoneNumber, string otpCode, CancellationToken cancellationToken = default);
 
     /// <summary>
+    /// Generates the current OTP code for a phone number (TOTP — deterministic for the same
+    /// phone and time window, no record to persist). The caller is responsible for actually
+    /// delivering it (SMS); this only computes the value <see cref="VerifyOtpAsync"/> will accept.
+    /// </summary>
+    Task<string> GenerateOtpCodeAsync(string phoneNumber, CancellationToken cancellationToken = default);
+
+    /// <summary>
     /// Creates a new user account with verified phone number
     /// Returns the created user ID
     /// </summary>
