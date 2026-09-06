@@ -5,6 +5,7 @@ using Booksy.Core.Domain.Exceptions;
 using Booksy.Core.Domain.ValueObjects;
 using Booksy.ServiceCatalog.Application.Commands.ProviderHierarchy.ApproveJoinRequest;
 using Booksy.ServiceCatalog.Domain.Aggregates;
+using Booksy.ServiceCatalog.Domain.Aggregates.OrganizationMembershipAggregate;
 using Booksy.ServiceCatalog.Domain.Enums;
 using Booksy.ServiceCatalog.Domain.Repositories;
 using Booksy.ServiceCatalog.Domain.ValueObjects;
@@ -20,6 +21,7 @@ public class ApproveJoinRequestCommandHandlerTests
     private readonly IProviderWriteRepository _providerWriteRepository;
     private readonly IProviderJoinRequestReadRepository _joinRequestReadRepository;
     private readonly IProviderJoinRequestWriteRepository _joinRequestWriteRepository;
+    private readonly IOrganizationMembershipRepository _membershipRepository;
     private readonly IServiceCatalogUnitOfWork _unitOfWork;
     private readonly ILogger<ApproveJoinRequestCommandHandler> _logger;
     private readonly ApproveJoinRequestCommandHandler _handler;
@@ -30,6 +32,7 @@ public class ApproveJoinRequestCommandHandlerTests
         _providerWriteRepository = Substitute.For<IProviderWriteRepository>();
         _joinRequestReadRepository = Substitute.For<IProviderJoinRequestReadRepository>();
         _joinRequestWriteRepository = Substitute.For<IProviderJoinRequestWriteRepository>();
+        _membershipRepository = Substitute.For<IOrganizationMembershipRepository>();
         _unitOfWork = Substitute.For<IServiceCatalogUnitOfWork>();
         _logger = Substitute.For<ILogger<ApproveJoinRequestCommandHandler>>();
 
@@ -38,6 +41,7 @@ public class ApproveJoinRequestCommandHandlerTests
             _providerWriteRepository,
             _joinRequestReadRepository,
             _joinRequestWriteRepository,
+            _membershipRepository,
             _unitOfWork,
             _logger);
     }
@@ -106,6 +110,73 @@ public class ApproveJoinRequestCommandHandlerTests
         await _joinRequestWriteRepository.Received(1).UpdateAsync(joinRequest, Arg.Any<CancellationToken>());
         await _providerWriteRepository.Received(1).UpdateAsync(requester, Arg.Any<CancellationToken>());
         await _unitOfWork.Received(1).SaveAndPublishEventsAsync(Arg.Any<CancellationToken>());
+    }
+
+    /// <summary>
+    /// refactor-identity-and-membership §4.3: approval must also grant the requester's owner
+    /// a real, active Manager membership of the parent organization -- additive alongside the
+    /// pre-existing ParentProviderId link, not a replacement for it.
+    /// </summary>
+    [Fact]
+    public async Task Handle_Grants_The_Requesters_Owner_An_Active_Manager_Membership()
+    {
+        // Arrange
+        var organization = CreateOrganization();
+        var requester = CreateIndividualProvider();
+        var joinRequest = ProviderJoinRequest.Create(organization.Id, requester.Id);
+
+        _joinRequestReadRepository.GetByIdAsync(joinRequest.Id, Arg.Any<CancellationToken>())
+            .Returns(joinRequest);
+        _providerReadRepository.GetByIdAsync(requester.Id, Arg.Any<CancellationToken>())
+            .Returns(requester);
+        _membershipRepository.HasActiveMembershipAsync(
+                requester.OwnerId, organization.Id, Arg.Any<CancellationToken>())
+            .Returns(false);
+
+        // Act
+        await _handler.Handle(
+            new ApproveJoinRequestCommand(joinRequest.Id, Guid.NewGuid()), CancellationToken.None);
+
+        // Assert
+        await _membershipRepository.Received(1).SaveAsync(
+            Arg.Is<OrganizationMembership>(m =>
+                m.PersonId == requester.OwnerId
+                && m.OrganizationId == organization.Id
+                && m.IsActive
+                && m.Roles.Contains(MembershipRole.Manager)),
+            Arg.Any<CancellationToken>());
+    }
+
+    /// <summary>
+    /// If a membership already exists (e.g. granted through some other path before this
+    /// approval landed), approval must not create a second one -- the DB-level uniqueness
+    /// backstop (ux_membership_person_org_active) would refuse it anyway, but the guard means
+    /// the request still succeeds instead of failing with a constraint violation.
+    /// </summary>
+    [Fact]
+    public async Task Handle_Does_Not_Duplicate_An_Already_Existing_Membership()
+    {
+        // Arrange
+        var organization = CreateOrganization();
+        var requester = CreateIndividualProvider();
+        var joinRequest = ProviderJoinRequest.Create(organization.Id, requester.Id);
+
+        _joinRequestReadRepository.GetByIdAsync(joinRequest.Id, Arg.Any<CancellationToken>())
+            .Returns(joinRequest);
+        _providerReadRepository.GetByIdAsync(requester.Id, Arg.Any<CancellationToken>())
+            .Returns(requester);
+        _membershipRepository.HasActiveMembershipAsync(
+                requester.OwnerId, organization.Id, Arg.Any<CancellationToken>())
+            .Returns(true);
+
+        // Act
+        var result = await _handler.Handle(
+            new ApproveJoinRequestCommand(joinRequest.Id, Guid.NewGuid()), CancellationToken.None);
+
+        // Assert
+        result.Should().NotBeNull("approval must still succeed even when a membership already exists");
+        await _membershipRepository.DidNotReceive().SaveAsync(
+            Arg.Any<OrganizationMembership>(), Arg.Any<CancellationToken>());
     }
 
     [Fact]
