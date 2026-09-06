@@ -29,6 +29,7 @@ import '../../features/invitations/data/invitation_api_service.dart';
 import '../../features/invitations/data/invitation_repository_impl.dart';
 import '../../features/invitations/domain/invitation_repository.dart';
 import '../../features/invitations/presentation/accept_invitation_cubit.dart';
+import '../../features/invitations/presentation/register_and_accept_cubit.dart';
 import '../../features/onboarding/domain/repositories/onboarding_repository.dart';
 import '../../features/onboarding/presentation/cubit/onboarding_cubit.dart';
 
@@ -110,6 +111,11 @@ Future<void> configureDependencies() async {
   getIt.registerFactoryParam<AcceptInvitationCubit, String, void>(
     (invitationId, _) =>
         AcceptInvitationCubit(getIt<InvitationRepository>(), invitationId),
+  );
+  // Factory: one cubit per register-and-accept screen (new invitee, no account).
+  getIt.registerFactoryParam<RegisterAndAcceptCubit, String, void>(
+    (invitationId, _) =>
+        RegisterAndAcceptCubit(getIt<InvitationRepository>(), invitationId),
   );
 
   // ---- Home (Today workspace) ----

@@ -141,6 +141,23 @@ class _Body extends StatelessWidget {
                 label: AppStrings.acceptInvitationLogin,
                 onPressed: () => context.go(Routes.login),
               ),
+              const SizedBox(height: AppSpacing.md),
+              Wrap(
+                alignment: WrapAlignment.center,
+                children: [
+                  const Text(
+                    AppStrings.acceptInvitationNoAccountPrompt,
+                    style: TextStyle(color: AppColors.muted),
+                  ),
+                  TextButton(
+                    key: const Key('accept-register-instead'),
+                    onPressed: () => context.go(
+                      '${Routes.acceptInvitation}/${s.invitationId}/register',
+                    ),
+                    child: const Text(AppStrings.acceptInvitationRegisterInstead),
+                  ),
+                ],
+              ),
             ] else ...[
               AppButton(
                 key: const Key('accept-invitation'),

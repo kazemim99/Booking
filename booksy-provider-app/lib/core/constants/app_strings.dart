@@ -457,6 +457,25 @@ class AppStrings {
   static const String acceptInvitationLoginPrompt =
       'برای پذیرش دعوت، ابتدا وارد حساب خود شوید.';
   static const String acceptInvitationLogin = 'ورود';
+  static const String acceptInvitationNoAccountPrompt = 'حساب کاربری ندارید؟';
+  static const String acceptInvitationRegisterInstead = 'ثبت‌نام کنید';
+
+  // Register-and-accept screen (new invitee, no account yet)
+  static const String registerAcceptTitle = 'ثبت‌نام و پیوستن';
+  static const String registerAcceptFirstName = 'نام';
+  static const String registerAcceptLastName = 'نام خانوادگی';
+  static const String registerAcceptEmailOptional = 'ایمیل (اختیاری)';
+  static const String registerAcceptSendCode = 'ارسال کد تایید';
+  static String registerAcceptCodeSentTo(String maskedPhone) =>
+      'کد تایید به شماره $maskedPhone ارسال شد';
+  static const String registerAcceptVerifying = 'در حال بررسی...';
+  static const String registerAcceptChangeInfo = 'ویرایش اطلاعات';
+  static const String registerAcceptSuccess = 'ثبت‌نام شما با موفقیت انجام شد';
+  static const String registerAcceptSuccessHint =
+      'برای ورود به حساب خود، شماره تلفن خود را وارد کنید.';
+  static const String registerAcceptGoToLogin = 'ورود به حساب';
+  static const String registerAcceptFieldsRequired =
+      'لطفاً نام و نام خانوادگی را وارد کنید';
 
   // ==================== Business profile editing ====================
   static const String businessProfileName = 'نام کسب‌وکار';

@@ -19,6 +19,7 @@ import '../../features/home/presentation/pages/gallery_page.dart';
 import '../../features/home/presentation/pages/more_page.dart';
 import '../../features/home/presentation/pages/more_sub_pages.dart';
 import '../../features/invitations/presentation/accept_invitation_page.dart';
+import '../../features/invitations/presentation/register_and_accept_page.dart';
 import '../../features/home/presentation/pages/home_page.dart';
 
 /// Route paths.
@@ -252,6 +253,12 @@ class AppRouter {
         GoRoute(
           path: '${Routes.acceptInvitation}/:invitationId',
           builder: (_, state) => AcceptInvitationPage(
+            invitationId: state.pathParameters['invitationId'] ?? '',
+          ),
+        ),
+        GoRoute(
+          path: '${Routes.acceptInvitation}/:invitationId/register',
+          builder: (_, state) => RegisterAndAcceptPage(
             invitationId: state.pathParameters['invitationId'] ?? '',
           ),
         ),

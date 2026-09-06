@@ -128,6 +128,16 @@ class ApiConstants {
   static String invitationAccept(String invitationId) =>
       '/$apiVersion/memberships/invitations/$invitationId/accept';
 
+  /// POST — send an OTP to the invitation's own phone (new-user path, step 1).
+  /// Anonymous; the phone number itself never crosses this boundary.
+  static String invitationSendOtp(String invitationId) =>
+      '/$apiVersion/memberships/invitations/$invitationId/send-otp';
+
+  /// POST — register (name) + verify the OTP + accept, in one call (new-user
+  /// path, step 2). Anonymous.
+  static String invitationRegisterAndAccept(String invitationId) =>
+      '/$apiVersion/memberships/invitations/$invitationId/register-and-accept';
+
   /// GET — available time slots (query: providerId/serviceId/date[/staffId]).
   static const String availableSlots = '/$apiVersion/Bookings/available-slots';
 

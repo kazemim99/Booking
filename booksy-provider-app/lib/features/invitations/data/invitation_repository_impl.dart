@@ -37,6 +37,42 @@ class InvitationRepositoryImpl implements InvitationRepository {
     }
   }
 
+  @override
+  Future<Either<Failure, String>> sendOtp(String invitationId) async {
+    try {
+      final maskedPhone = await _api.sendOtp(invitationId);
+      return Right(maskedPhone);
+    } on DioException catch (e) {
+      return Left(_mapDioError(e));
+    } catch (e) {
+      return Left(ServerFailure('خطای نامشخص: $e'));
+    }
+  }
+
+  @override
+  Future<Either<Failure, void>> registerAndAccept(
+    String invitationId, {
+    required String firstName,
+    required String lastName,
+    String? email,
+    required String otpCode,
+  }) async {
+    try {
+      await _api.registerAndAccept(
+        invitationId,
+        firstName: firstName,
+        lastName: lastName,
+        email: email,
+        otpCode: otpCode,
+      );
+      return const Right(null);
+    } on DioException catch (e) {
+      return Left(_mapDioError(e));
+    } catch (e) {
+      return Left(ServerFailure('خطای نامشخص: $e'));
+    }
+  }
+
   Failure _mapDioError(DioException error) {
     if (error.type == DioExceptionType.connectionError ||
         error.type == DioExceptionType.connectionTimeout ||

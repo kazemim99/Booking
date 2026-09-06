@@ -20,4 +20,32 @@ class InvitationApiService {
   /// POST accept as the authenticated (existing) person.
   Future<void> accept(String invitationId) =>
       _dio.post(ApiConstants.invitationAccept(invitationId));
+
+  /// POST send an OTP to the invitation's own phone (new-user path, step 1).
+  /// Returns the masked phone the server echoes back — never the real one.
+  Future<String> sendOtp(String invitationId) async {
+    final res = await _dio.post(ApiConstants.invitationSendOtp(invitationId));
+    final body = res.data;
+    final data = (body is Map && body['data'] is Map) ? body['data'] : body;
+    return (data is Map ? data['maskedPhoneNumber']?.toString() : null) ?? '';
+  }
+
+  /// POST register (name) + verify the OTP + accept, in one call (new-user
+  /// path, step 2).
+  Future<void> registerAndAccept(
+    String invitationId, {
+    required String firstName,
+    required String lastName,
+    String? email,
+    required String otpCode,
+  }) =>
+      _dio.post(
+        ApiConstants.invitationRegisterAndAccept(invitationId),
+        data: {
+          'firstName': firstName,
+          'lastName': lastName,
+          if (email != null && email.isNotEmpty) 'email': email,
+          'otpCode': otpCode,
+        },
+      );
 }
