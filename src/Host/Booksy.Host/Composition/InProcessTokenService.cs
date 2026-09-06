@@ -55,15 +55,18 @@ public sealed class InProcessTokenService : ITokenService
 
     private readonly ISender _mediator;
     private readonly IJwtTokenService _jwtTokenService;
+    private readonly IMembershipInfoService _membershipInfoService;
     private readonly ILogger<InProcessTokenService> _logger;
 
     public InProcessTokenService(
         ISender mediator,
         IJwtTokenService jwtTokenService,
+        IMembershipInfoService membershipInfoService,
         ILogger<InProcessTokenService> logger)
     {
         _mediator = mediator;
         _jwtTokenService = jwtTokenService;
+        _membershipInfoService = membershipInfoService;
         _logger = logger;
     }
 
@@ -85,6 +88,23 @@ public sealed class InProcessTokenService : ITokenService
             ? parsed
             : Booksy.UserManagement.Domain.Enums.UserType.Customer;
 
+        // Best-effort, same fail-open posture as every other token-issuing call site
+        // (refactor-identity-and-membership §5.4): a membership-lookup hiccup must not
+        // block minting the provider-claims token.
+        IReadOnlyList<MembershipSummary> memberships = Array.Empty<MembershipSummary>();
+        try
+        {
+            memberships = await _membershipInfoService.GetMembershipsForPersonAsync(userId, cancellationToken);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex,
+                "Error querying memberships for UserId: {UserId}, continuing without membership claims",
+                userId);
+        }
+        var activeMembershipId = MembershipClaimResolver.ResolveActiveMembershipId(
+            memberships, providerId.ToString());
+
         var accessToken = _jwtTokenService.GenerateAccessToken(
             Booksy.Core.Domain.ValueObjects.UserId.From(user.UserId),
             userType,
@@ -98,6 +118,8 @@ public sealed class InProcessTokenService : ITokenService
             providerStatus,
             customerId: null,
             user.PhoneNumber,
+            memberships,
+            activeMembershipId,
             AccessTokenLifetimeHours);
 
         _logger.LogInformation(

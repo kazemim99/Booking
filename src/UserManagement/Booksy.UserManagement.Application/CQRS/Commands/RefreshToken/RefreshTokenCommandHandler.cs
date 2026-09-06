@@ -9,6 +9,7 @@ namespace Booksy.UserManagement.Application.CQRS.Commands.RefreshToken
         private readonly ICustomerRepository _customerRepository;
         private readonly IJwtTokenService _jwtTokenService;
         private readonly IProviderInfoService _providerInfoService;
+        private readonly IMembershipInfoService _membershipInfoService;
         private readonly ILogger<RefreshTokenCommandHandler> _logger;
 
         public RefreshTokenCommandHandler(
@@ -16,12 +17,14 @@ namespace Booksy.UserManagement.Application.CQRS.Commands.RefreshToken
             ICustomerRepository customerRepository,
             IJwtTokenService jwtTokenService,
             IProviderInfoService providerInfoService,
+            IMembershipInfoService membershipInfoService,
             ILogger<RefreshTokenCommandHandler> logger)
         {
             _userRepository = userWriteRepository;
             _customerRepository = customerRepository;
             _jwtTokenService = jwtTokenService;
             _providerInfoService = providerInfoService;
+            _membershipInfoService = membershipInfoService;
             _logger = logger;
         }
 
@@ -91,6 +94,23 @@ namespace Booksy.UserManagement.Application.CQRS.Commands.RefreshToken
                 }
             }
 
+            // Query this person's organization memberships (refactor-identity-and-
+            // membership §5.4) so a refreshed token carries the same claims a fresh
+            // sign-in would -- otherwise memberships silently vanish on the first refresh.
+            IReadOnlyList<MembershipSummary> memberships = Array.Empty<MembershipSummary>();
+            try
+            {
+                memberships = await _membershipInfoService.GetMembershipsForPersonAsync(
+                    user.Id.Value, cancellationToken);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogWarning(ex,
+                    "Error querying memberships for UserId: {UserId}, continuing without membership claims",
+                    user.Id);
+            }
+            var activeMembershipId = MembershipClaimResolver.ResolveActiveMembershipId(memberships, providerId);
+
             // Generate new access token
             var accessToken = _jwtTokenService.GenerateAccessToken(
                 user.Id,
@@ -105,6 +125,8 @@ namespace Booksy.UserManagement.Application.CQRS.Commands.RefreshToken
                 providerStatus,
                 customerId,
                 user.PhoneNumber?.Value,
+                memberships,
+                activeMembershipId,
                 24); // 24 hours
 
             await _userRepository.UpdateAsync(user, cancellationToken);

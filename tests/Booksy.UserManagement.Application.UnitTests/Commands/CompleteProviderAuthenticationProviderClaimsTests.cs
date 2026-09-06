@@ -44,6 +44,7 @@ public class CompleteProviderAuthenticationProviderClaimsTests
     private readonly IUserRepository _userRepository = Substitute.For<IUserRepository>();
     private readonly IJwtTokenService _jwtTokenService = Substitute.For<IJwtTokenService>();
     private readonly IProviderInfoService _providerInfoService = Substitute.For<IProviderInfoService>();
+    private readonly IMembershipInfoService _membershipInfoService = Substitute.For<IMembershipInfoService>();
     private readonly IUserManagementUnitOfWork _unitOfWork = Substitute.For<IUserManagementUnitOfWork>();
     private readonly IPersonProvisioningService _personProvisioning = Substitute.For<IPersonProvisioningService>();
     private readonly CompleteProviderAuthenticationCommandHandler _handler;
@@ -58,6 +59,7 @@ public class CompleteProviderAuthenticationProviderClaimsTests
             _userRepository,
             _jwtTokenService,
             _providerInfoService,
+            _membershipInfoService,
             _personProvisioning,
             _unitOfWork,
             Substitute.For<ILogger<CompleteProviderAuthenticationCommandHandler>>());
@@ -120,6 +122,8 @@ public class CompleteProviderAuthenticationProviderClaimsTests
             providerStatus: "Active",
             customerId: Arg.Any<string?>(),
             phoneNumber: Arg.Any<string?>(),
+            memberships: Arg.Any<IEnumerable<MembershipSummary>?>(),
+            activeMembershipId: Arg.Any<string?>(),
             expirationHours: Arg.Any<int>());
     }
 
@@ -224,10 +228,15 @@ public class CompleteProviderAuthenticationProviderClaimsTests
             .GetProviderByOwnerIdAsync(Arg.Any<Guid>(), Arg.Any<CancellationToken>())
             .Returns(providerInfo);
 
+        _membershipInfoService
+            .GetMembershipsForPersonAsync(Arg.Any<Guid>(), Arg.Any<CancellationToken>())
+            .Returns(Array.Empty<MembershipSummary>());
+
         _jwtTokenService.GenerateAccessToken(
                 Arg.Any<UserId>(), Arg.Any<UserType>(), Arg.Any<Email>(), Arg.Any<string>(),
                 Arg.Any<string>(), Arg.Any<string>(), Arg.Any<string>(), Arg.Any<IEnumerable<string>>(),
                 Arg.Any<string?>(), Arg.Any<string?>(), Arg.Any<string?>(), Arg.Any<string?>(),
+                Arg.Any<IEnumerable<MembershipSummary>?>(), Arg.Any<string?>(),
                 Arg.Any<int>())
             .Returns("jwt");
     }

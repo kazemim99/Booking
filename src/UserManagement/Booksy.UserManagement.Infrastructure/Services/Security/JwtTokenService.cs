@@ -9,6 +9,7 @@ using Microsoft.IdentityModel.Tokens;
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using System.Text;
+using System.Text.Json;
 using Booksy.Core.Domain.ValueObjects;
 using Booksy.UserManagement.Domain.Enums;
 
@@ -44,6 +45,8 @@ namespace Booksy.UserManagement.Infrastructure.Services.Security
             string? providerStatus = null,
             string? customerId = null,
             string? phoneNumber = null,
+            IEnumerable<MembershipSummary>? memberships = null,
+            string? activeMembershipId = null,
             int expirationHours = 24)
         {
             var claims = new List<Claim>
@@ -81,6 +84,28 @@ namespace Booksy.UserManagement.Infrastructure.Services.Security
             if (!string.IsNullOrEmpty(phoneNumber))
             {
                 claims.Add(new Claim(ClaimTypes.MobilePhone, phoneNumber));
+            }
+
+            // One "membership" claim per organization the person belongs to (refactor-
+            // identity-and-membership §5.4) — a compact JSON value per claim, since JWT
+            // claims are flat and a membership carries more than one field.
+            if (memberships != null)
+            {
+                foreach (var membership in memberships)
+                {
+                    var json = JsonSerializer.Serialize(new
+                    {
+                        id = membership.MembershipId,
+                        organizationId = membership.OrganizationId,
+                        roles = membership.Roles
+                    });
+                    claims.Add(new Claim("membership", json));
+                }
+            }
+
+            if (!string.IsNullOrEmpty(activeMembershipId))
+            {
+                claims.Add(new Claim("activeMembershipId", activeMembershipId));
             }
 
             foreach (var role in roles)

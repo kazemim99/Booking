@@ -263,7 +263,11 @@ public class AuthController : ControllerBase
                 providerStatus,
                 customerId: null,
                 user.PhoneNumber,
-                15 // 15 minutes expiration
+                // This endpoint does not resolve memberships (it mints from a caller-supplied
+                // UserId + claims dictionary, not a live sign-in) — left null, no behavior change.
+                memberships: null,
+                activeMembershipId: null,
+                expirationHours: 15 // pre-existing: see FOLLOW-UPS #18 (comment says "15 minutes", param is hours)
             );
 
             // Generate refresh token (user aggregate handles this)

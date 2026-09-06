@@ -158,6 +158,7 @@ namespace Booksy.UserManagement.Infrastructure.DependencyInjection
 
             // Register External Services
             services.AddScoped<IProviderInfoService, ProviderInfoService>();
+            services.AddScoped<IMembershipInfoService, MembershipInfoService>();
 
             // Add distributed caching
             var cacheProvider = configuration.GetValue<string>("CacheSettings:Provider");

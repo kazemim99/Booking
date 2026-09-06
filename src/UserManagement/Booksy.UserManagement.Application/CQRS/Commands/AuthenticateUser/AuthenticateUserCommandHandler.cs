@@ -14,6 +14,7 @@ namespace Booksy.UserManagement.Application.CQRS.Commands.AuthenticateUser
         private readonly IJwtTokenService _jwtTokenService;
         private readonly IAuditUserService _auditService;
         private readonly IProviderInfoService _providerInfoService;
+        private readonly IMembershipInfoService _membershipInfoService;
         private readonly ILogger<AuthenticateUserCommandHandler> _logger;
 
         public AuthenticateUserCommandHandler(
@@ -22,6 +23,7 @@ namespace Booksy.UserManagement.Application.CQRS.Commands.AuthenticateUser
             IJwtTokenService jwtTokenService,
             IAuditUserService auditService,
             IProviderInfoService providerInfoService,
+            IMembershipInfoService membershipInfoService,
             ILogger<AuthenticateUserCommandHandler> logger)
         {
             _userRepository = userWriteRepository;
@@ -29,6 +31,7 @@ namespace Booksy.UserManagement.Application.CQRS.Commands.AuthenticateUser
             _jwtTokenService = jwtTokenService;
             _auditService = auditService;
             _providerInfoService = providerInfoService;
+            _membershipInfoService = membershipInfoService;
             _logger = logger;
         }
 
@@ -103,6 +106,23 @@ namespace Booksy.UserManagement.Application.CQRS.Commands.AuthenticateUser
                     }
                 }
 
+                // Query this person's organization memberships (refactor-identity-and-
+                // membership §5.4) — same best-effort, fail-open posture as the provider
+                // lookup above.
+                IReadOnlyList<MembershipSummary> memberships = Array.Empty<MembershipSummary>();
+                try
+                {
+                    memberships = await _membershipInfoService.GetMembershipsForPersonAsync(
+                        user.Id.Value, cancellationToken);
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogWarning(ex,
+                        "Error querying memberships for UserId: {UserId}, continuing without membership claims",
+                        user.Id);
+                }
+                var activeMembershipId = MembershipClaimResolver.ResolveActiveMembershipId(memberships, providerId);
+
                 // Generate JWT token
                 var tokenExpirationHours = request.RememberMe ? 168 : 24; // 7 days or 1 day
                 var accessToken = _jwtTokenService.GenerateAccessToken(
@@ -118,6 +138,8 @@ namespace Booksy.UserManagement.Application.CQRS.Commands.AuthenticateUser
                     providerStatus,
                     customerId,
                     user.PhoneNumber?.Value,
+                    memberships,
+                    activeMembershipId,
                     tokenExpirationHours);
 
                 await _auditService.LogSuccessfulLoginAsync(

@@ -30,6 +30,7 @@ public class CompleteProviderAuthenticationStatusGateTests
     private readonly IUserRepository _userRepository = Substitute.For<IUserRepository>();
     private readonly IJwtTokenService _jwtTokenService = Substitute.For<IJwtTokenService>();
     private readonly IProviderInfoService _providerInfoService = Substitute.For<IProviderInfoService>();
+    private readonly IMembershipInfoService _membershipInfoService = Substitute.For<IMembershipInfoService>();
     private readonly IUserManagementUnitOfWork _unitOfWork = Substitute.For<IUserManagementUnitOfWork>();
     private readonly IPersonProvisioningService _personProvisioning = Substitute.For<IPersonProvisioningService>();
     private readonly CompleteProviderAuthenticationCommandHandler _handler;
@@ -44,6 +45,7 @@ public class CompleteProviderAuthenticationStatusGateTests
             _userRepository,
             _jwtTokenService,
             _providerInfoService,
+            _membershipInfoService,
             _personProvisioning,
             _unitOfWork,
             Substitute.For<ILogger<CompleteProviderAuthenticationCommandHandler>>());

@@ -29,6 +29,7 @@ public sealed class CompleteProviderAuthenticationCommandHandler
     private readonly IUserRepository _userRepository;
     private readonly IJwtTokenService _jwtTokenService;
     private readonly IProviderInfoService _providerInfoService;
+    private readonly IMembershipInfoService _membershipInfoService;
     private readonly IPersonProvisioningService _personProvisioningService;
     private readonly Abstractions.Persistence.IUserManagementUnitOfWork _unitOfWork;
     private readonly ILogger<CompleteProviderAuthenticationCommandHandler> _logger;
@@ -39,6 +40,7 @@ public sealed class CompleteProviderAuthenticationCommandHandler
         IUserRepository userRepository,
         IJwtTokenService jwtTokenService,
         IProviderInfoService providerInfoService,
+        IMembershipInfoService membershipInfoService,
         IPersonProvisioningService personProvisioningService,
         Abstractions.Persistence.IUserManagementUnitOfWork unitOfWork,
         ILogger<CompleteProviderAuthenticationCommandHandler> logger)
@@ -48,6 +50,7 @@ public sealed class CompleteProviderAuthenticationCommandHandler
         _userRepository = userRepository;
         _jwtTokenService = jwtTokenService;
         _providerInfoService = providerInfoService;
+        _membershipInfoService = membershipInfoService;
         _personProvisioningService = personProvisioningService;
         _unitOfWork = unitOfWork;
         _logger = logger;
@@ -172,6 +175,26 @@ public sealed class CompleteProviderAuthenticationCommandHandler
             }
         }
 
+        // Step 3b: Query this person's organization memberships (refactor-identity-and-
+        // membership §5.4) — best-effort, same fail-open posture as the provider lookup
+        // above: a membership-lookup hiccup must not block sign-in.
+        IReadOnlyList<MembershipSummary> memberships = Array.Empty<MembershipSummary>();
+        try
+        {
+            memberships = await _membershipInfoService.GetMembershipsForPersonAsync(
+                user.Id.Value, cancellationToken);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex,
+                "Error querying memberships for UserId: {UserId}, continuing without membership claims",
+                user.Id);
+        }
+
+        // The "active" membership is the one for the org this person owns/manages
+        // (matching providerId above), falling back to the first membership otherwise.
+        var activeMembershipId = MembershipClaimResolver.ResolveActiveMembershipId(memberships, providerId);
+
         // Step 4: Generate authentication tokens
         var roles = user.Roles.Select(r => r.Name).ToList();
         var displayName = user.Profile.GetFullName();
@@ -188,6 +211,8 @@ public sealed class CompleteProviderAuthenticationCommandHandler
             providerId: providerId,
             providerStatus: providerStatus,
             phoneNumber: user.PhoneNumber?.Value,
+            memberships: memberships,
+            activeMembershipId: activeMembershipId,
             expirationHours: 24
         );
 

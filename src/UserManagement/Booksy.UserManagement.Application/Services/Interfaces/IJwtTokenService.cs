@@ -24,6 +24,8 @@ namespace Booksy.UserManagement.Application.Services.Interfaces
             string? providerStatus = null,
             string? customerId = null,
             string? phoneNumber = null,
+            IEnumerable<MembershipSummary>? memberships = null,
+            string? activeMembershipId = null,
             int expirationHours = 24);
 
         ClaimsPrincipal? ValidateToken(string token);
