@@ -66,7 +66,7 @@ public sealed class TerminateMembershipCommandHandler
         }
 
         if (!callerIsOrgOwner && !callerIsSelf)
-            throw new UnauthorizedAccessException("You cannot terminate this membership.");
+            throw new ForbiddenException("You cannot terminate this membership.");
 
         // An organization must always keep at least one active owner.
         if (membership.IsOwner)

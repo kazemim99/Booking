@@ -2,7 +2,7 @@ using Booksy.Core.Application.Exceptions;
 using Booksy.Core.Domain.Exceptions;
 using Booksy.Core.Domain.ValueObjects;
 using Booksy.ServiceCatalog.Application.Abstractions.Persistence;
-using Booksy.ServiceCatalog.Application.Commands.Membership.TerminateMembership;
+using Booksy.ServiceCatalog.Application.Commands.Membership.ChangeMembershipRoles;
 using Booksy.ServiceCatalog.Domain.Aggregates;
 using Booksy.ServiceCatalog.Domain.Aggregates.MembershipAuditAggregate;
 using Booksy.ServiceCatalog.Domain.Aggregates.OrganizationMembershipAggregate;
@@ -17,7 +17,13 @@ using System.Security.Claims;
 
 namespace Booksy.ServiceCatalog.Application.UnitTests.Commands.Membership;
 
-public class TerminateMembershipCommandHandlerTests
+/// <summary>
+/// No app-layer test existed for this handler before (only its domain method,
+/// OrganizationMembership.ChangeRoles, was covered) -- these were added while fixing the
+/// handler's authorization failure to throw ForbiddenException (403) instead of
+/// UnauthorizedAccessException (401), which the controller's own XML docs already promised.
+/// </summary>
+public class ChangeMembershipRolesCommandHandlerTests
 {
     private readonly IOrganizationMembershipRepository _membershipRepository =
         Substitute.For<IOrganizationMembershipRepository>();
@@ -28,7 +34,7 @@ public class TerminateMembershipCommandHandlerTests
     private readonly IMembershipAuditRepository _audit =
         Substitute.For<IMembershipAuditRepository>();
 
-    private TerminateMembershipCommandHandler CreateHandler(Guid callerId)
+    private ChangeMembershipRolesCommandHandler CreateHandler(Guid callerId)
     {
         var accessor = Substitute.For<IHttpContextAccessor>();
         var httpContext = Substitute.For<HttpContext>();
@@ -36,13 +42,13 @@ public class TerminateMembershipCommandHandlerTests
             new[] { new Claim(ClaimTypes.NameIdentifier, callerId.ToString()) })));
         accessor.HttpContext.Returns(httpContext);
 
-        return new TerminateMembershipCommandHandler(
+        return new ChangeMembershipRolesCommandHandler(
             _membershipRepository,
             _audit,
             _providerRepository,
             _unitOfWork,
             accessor,
-            Substitute.For<ILogger<TerminateMembershipCommandHandler>>());
+            Substitute.For<ILogger<ChangeMembershipRolesCommandHandler>>());
     }
 
     private static Provider CreateOrg(UserId owner) => Provider.RegisterProvider(
@@ -62,7 +68,7 @@ public class TerminateMembershipCommandHandlerTests
     }
 
     [Fact]
-    public async Task Owner_Can_Terminate_A_Staff_Member()
+    public async Task Owner_Can_Change_A_Members_Roles()
     {
         var owner = UserId.From(Guid.NewGuid());
         var org = CreateOrg(owner);
@@ -72,96 +78,55 @@ public class TerminateMembershipCommandHandlerTests
         _providerRepository.GetByIdAsync(org.Id, Arg.Any<CancellationToken>()).Returns(org);
 
         var handler = CreateHandler(owner.Value);
-        var result = await handler.Handle(new TerminateMembershipCommand(staff.Id, "let go"), CancellationToken.None);
+        var result = await handler.Handle(
+            new ChangeMembershipRolesCommand(staff.Id, new[] { "Manager" }), CancellationToken.None);
 
-        staff.Status.Should().Be(MembershipStatus.Terminated);
-        result.MembershipId.Should().Be(staff.Id);
+        staff.Roles.Should().ContainSingle().Which.Should().Be(MembershipRole.Manager);
+        result.Roles.Should().ContainSingle("Manager");
         await _unitOfWork.Received(1).SaveAndPublishEventsAsync(Arg.Any<CancellationToken>());
     }
 
     [Fact]
-    public async Task A_Member_Can_Leave_Their_Own_Membership()
+    public async Task A_Non_Owner_Cannot_Change_Roles()
     {
         var owner = UserId.From(Guid.NewGuid());
         var org = CreateOrg(owner);
-        var me = UserId.From(Guid.NewGuid());
-        var staff = ActiveStaff(me, org.Id);
+        var staff = ActiveStaff(UserId.From(Guid.NewGuid()), org.Id);
 
         _membershipRepository.GetByIdAsync(staff.Id, Arg.Any<CancellationToken>()).Returns(staff);
         _providerRepository.GetByIdAsync(org.Id, Arg.Any<CancellationToken>()).Returns(org);
         _membershipRepository.GetActiveByPersonAndOrganizationAsync(
-            Arg.Any<UserId>(), Arg.Any<ProviderId>(), Arg.Any<CancellationToken>())
+                Arg.Any<UserId>(), Arg.Any<ProviderId>(), Arg.Any<CancellationToken>())
             .Returns((OrganizationMembership?)null);
 
-        var handler = CreateHandler(me.Value);
-        await handler.Handle(new TerminateMembershipCommand(staff.Id, "leaving"), CancellationToken.None);
+        var handler = CreateHandler(Guid.NewGuid()); // unrelated caller
+        Func<Task> act = () => handler.Handle(
+            new ChangeMembershipRolesCommand(staff.Id, new[] { "Manager" }), CancellationToken.None);
 
-        staff.Status.Should().Be(MembershipStatus.Terminated);
+        await act.Should().ThrowAsync<ForbiddenException>(
+            "authenticated but not permitted must be 403, not 401");
+        staff.Roles.Should().ContainSingle().Which.Should().Be(MembershipRole.StaffProvider);
     }
 
     [Fact]
-    public async Task Cannot_Remove_The_Last_Owner()
+    public async Task Cannot_Demote_The_Last_Owner()
     {
         var owner = UserId.From(Guid.NewGuid());
         var org = CreateOrg(owner);
         var ownerMembership = OrganizationMembership.CreateOwner(owner, org.Id, providesServices: false);
 
-        _membershipRepository.GetByIdAsync(ownerMembership.Id, Arg.Any<CancellationToken>()).Returns(ownerMembership);
+        _membershipRepository.GetByIdAsync(ownerMembership.Id, Arg.Any<CancellationToken>())
+            .Returns(ownerMembership);
         _providerRepository.GetByIdAsync(org.Id, Arg.Any<CancellationToken>()).Returns(org);
         _membershipRepository.GetByOrganizationAsync(org.Id, Arg.Any<CancellationToken>())
             .Returns(new List<OrganizationMembership> { ownerMembership });
 
         var handler = CreateHandler(owner.Value);
         Func<Task> act = () => handler.Handle(
-            new TerminateMembershipCommand(ownerMembership.Id, null), CancellationToken.None);
+            new ChangeMembershipRolesCommand(ownerMembership.Id, new[] { "Manager" }), CancellationToken.None);
 
         await act.Should().ThrowAsync<DomainValidationException>().WithMessage("*last owner*");
-        ownerMembership.Status.Should().Be(MembershipStatus.Active);
-    }
-
-    [Fact]
-    public async Task A_Stranger_Cannot_Terminate_A_Membership()
-    {
-        var owner = UserId.From(Guid.NewGuid());
-        var org = CreateOrg(owner);
-        var staff = ActiveStaff(UserId.From(Guid.NewGuid()), org.Id);
-
-        _membershipRepository.GetByIdAsync(staff.Id, Arg.Any<CancellationToken>()).Returns(staff);
-        _providerRepository.GetByIdAsync(org.Id, Arg.Any<CancellationToken>()).Returns(org);
-        _membershipRepository.GetActiveByPersonAndOrganizationAsync(
-            Arg.Any<UserId>(), Arg.Any<ProviderId>(), Arg.Any<CancellationToken>())
-            .Returns((OrganizationMembership?)null);
-
-        var handler = CreateHandler(Guid.NewGuid()); // unrelated caller
-        Func<Task> act = () => handler.Handle(
-            new TerminateMembershipCommand(staff.Id, null), CancellationToken.None);
-
-        await act.Should().ThrowAsync<ForbiddenException>(
-            "authenticated but not permitted must be 403, not 401");
-        staff.Status.Should().Be(MembershipStatus.Active);
-    }
-
-    [Fact]
-    public async Task Termination_Is_Recorded_In_The_Audit_Trail()
-    {
-        var owner = UserId.From(Guid.NewGuid());
-        var org = CreateOrg(owner);
-        var staff = ActiveStaff(UserId.From(Guid.NewGuid()), org.Id);
-
-        _membershipRepository.GetByIdAsync(staff.Id, Arg.Any<CancellationToken>()).Returns(staff);
-        _providerRepository.GetByIdAsync(org.Id, Arg.Any<CancellationToken>()).Returns(org);
-
-        var handler = CreateHandler(owner.Value);
-        await handler.Handle(new TerminateMembershipCommand(staff.Id, "moved away"), CancellationToken.None);
-
-        await _audit.Received(1).AppendAsync(
-            Arg.Is<MembershipAuditEntry>(e =>
-                e.MembershipId == staff.Id &&
-                e.Action == MembershipAuditAction.Terminated &&
-                e.StatusAfter == MembershipStatus.Terminated &&
-                e.ActorPersonId!.Value == owner.Value &&
-                e.Reason == "moved away"),
-            Arg.Any<CancellationToken>());
+        ownerMembership.Roles.Should().Contain(MembershipRole.Owner);
     }
 
     [Fact]
@@ -172,8 +137,24 @@ public class TerminateMembershipCommandHandlerTests
 
         var handler = CreateHandler(Guid.NewGuid());
         Func<Task> act = () => handler.Handle(
-            new TerminateMembershipCommand(Guid.NewGuid(), null), CancellationToken.None);
+            new ChangeMembershipRolesCommand(Guid.NewGuid(), new[] { "Manager" }), CancellationToken.None);
 
         await act.Should().ThrowAsync<NotFoundException>();
+    }
+
+    [Fact]
+    public async Task Rejects_An_Unknown_Role_Name()
+    {
+        var owner = UserId.From(Guid.NewGuid());
+        var org = CreateOrg(owner);
+        var staff = ActiveStaff(UserId.From(Guid.NewGuid()), org.Id);
+
+        _membershipRepository.GetByIdAsync(staff.Id, Arg.Any<CancellationToken>()).Returns(staff);
+
+        var handler = CreateHandler(owner.Value);
+        Func<Task> act = () => handler.Handle(
+            new ChangeMembershipRolesCommand(staff.Id, new[] { "SuperAdmin" }), CancellationToken.None);
+
+        await act.Should().ThrowAsync<DomainValidationException>().WithMessage("*Unknown role*");
     }
 }

@@ -105,7 +105,8 @@ public class RevokeInvitationCommandHandlerTests
         Func<Task> act = () => CreateHandler(Guid.NewGuid())
             .Handle(new RevokeInvitationCommand(invitation.Id, null), CancellationToken.None);
 
-        await act.Should().ThrowAsync<UnauthorizedAccessException>();
+        await act.Should().ThrowAsync<ForbiddenException>(
+            "authenticated but not permitted must be 403, not 401");
         invitation.Status.Should().Be(InvitationStatus.Pending);
     }
 

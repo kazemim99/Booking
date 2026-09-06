@@ -68,7 +68,7 @@ public sealed class RevokeInvitationCommandHandler
             callerIsOwner = callerMembership?.IsOwner == true;
         }
         if (!callerIsOwner)
-            throw new UnauthorizedAccessException("Only an organization owner can revoke an invitation.");
+            throw new ForbiddenException("Only an organization owner can revoke an invitation.");
 
         if (invitation.Status != InvitationStatus.Pending)
             throw new DomainValidationException(

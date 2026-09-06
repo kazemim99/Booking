@@ -64,7 +64,7 @@ public sealed class ChangeMembershipRolesCommandHandler
             callerIsOrgOwner = callerMembership?.IsOwner == true;
         }
         if (!callerIsOrgOwner)
-            throw new UnauthorizedAccessException("Only an organization owner can change member roles.");
+            throw new ForbiddenException("Only an organization owner can change member roles.");
 
         // Keep at least one active owner: block demoting the last owner.
         var demotingAnOwner = membership.IsOwner && !roles.Contains(MembershipRole.Owner);
