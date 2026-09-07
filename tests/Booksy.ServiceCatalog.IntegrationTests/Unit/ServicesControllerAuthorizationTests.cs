@@ -3,6 +3,8 @@ using Booksy.ServiceCatalog.API.Controllers.V1;
 using Booksy.ServiceCatalog.Application.Commands.Service.ActivateService;
 using Booksy.ServiceCatalog.Application.Commands.Service.ArchiveService;
 using Booksy.ServiceCatalog.Application.Commands.Service.DeactivateService;
+using Booksy.ServiceCatalog.Application.Commands.Service.DeleteProviderService;
+using Booksy.ServiceCatalog.Application.Commands.Service.UpdateProviderService;
 using Booksy.ServiceCatalog.Application.Queries.Provider.GetCurrentProviderStatus;
 using Booksy.ServiceCatalog.Application.Queries.Service.GetServiceById;
 using Booksy.ServiceCatalog.Domain.Enums;
@@ -119,8 +121,24 @@ public class ServicesControllerAuthorizationTests
             .Setup(m => m.Send(It.IsAny<ArchiveServiceCommand>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(new ArchiveServiceResult(ServiceId, "Haircut", OwningProviderId, "reason"));
 
+        mediator
+            .Setup(m => m.Send(It.IsAny<UpdateProviderServiceCommand>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new UpdateProviderServiceResult(ServiceId, "Haircut", 100m, 30, DateTime.UtcNow));
+
+        mediator
+            .Setup(m => m.Send(It.IsAny<DeleteProviderServiceCommand>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new DeleteProviderServiceResult(ServiceId, true, "Service deleted successfully"));
+
         return mediator;
     }
+
+    private static UpdateProviderServiceRequest UpdateRequest() => new()
+    {
+        ServiceName = "Haircut",
+        DurationHours = 0,
+        DurationMinutes = 30,
+        Price = 100m,
+    };
 
     // ---------------------------------------------------------------- the owner path (was 403 for everyone)
 
@@ -169,6 +187,28 @@ public class ServicesControllerAuthorizationTests
         var result = await controller.ActivateService(ServiceId);
 
         result.Should().BeOfType<OkObjectResult>();
+    }
+
+    [Fact]
+    public async Task Owning_provider_can_update_its_own_service()
+    {
+        var mediator = Mediator(owningProviderId: OwningProviderId);
+        var controller = BuildController(Principal(OwningProviderId, "Provider"), mediator);
+
+        var result = await controller.UpdateService(OwningProviderId, ServiceId, UpdateRequest());
+
+        result.Should().BeOfType<OkObjectResult>();
+    }
+
+    [Fact]
+    public async Task Owning_provider_can_delete_its_own_service()
+    {
+        var mediator = Mediator(owningProviderId: OwningProviderId);
+        var controller = BuildController(Principal(OwningProviderId, "Provider"), mediator);
+
+        var result = await controller.DeleteService(OwningProviderId, ServiceId);
+
+        result.Should().BeOfType<NoContentResult>();
     }
 
     // ---------------------------------------------------------------- the admin path (was 403 for admins too)
@@ -224,6 +264,42 @@ public class ServicesControllerAuthorizationTests
 
         result.Should().BeOfType<ForbidResult>(
             "archive is destructive; it must never be reachable across tenants");
+    }
+
+    [Fact]
+    public async Task A_different_provider_cannot_update_someone_elses_service()
+    {
+        // The vulnerability this pins: UpdateService/DeleteService had no CanManageService
+        // check at all (unlike Activate/Deactivate/Archive above) -- only the bare
+        // "ProviderOrAdmin" policy, which any provider satisfies. Passing someone else's
+        // providerId/serviceId pair here reached the handler with no ownership check.
+        var mediator = Mediator(owningProviderId: OwningProviderId);
+        var controller = BuildController(Principal(OtherProviderId, "Provider"), mediator);
+
+        var result = await controller.UpdateService(OwningProviderId, ServiceId, UpdateRequest());
+
+        result.Should().BeOfType<ForbidResult>(
+            "cross-tenant service editing must be refused -- this returned 200 before the fix");
+        mediator.Verify(
+            m => m.Send(It.IsAny<UpdateProviderServiceCommand>(), It.IsAny<CancellationToken>()),
+            Times.Never,
+            "authorization must short-circuit before any state change is dispatched");
+    }
+
+    [Fact]
+    public async Task A_different_provider_cannot_delete_someone_elses_service()
+    {
+        var mediator = Mediator(owningProviderId: OwningProviderId);
+        var controller = BuildController(Principal(OtherProviderId, "Provider"), mediator);
+
+        var result = await controller.DeleteService(OwningProviderId, ServiceId);
+
+        result.Should().BeOfType<ForbidResult>(
+            "cross-tenant service deletion must be refused -- this returned 204 before the fix");
+        mediator.Verify(
+            m => m.Send(It.IsAny<DeleteProviderServiceCommand>(), It.IsAny<CancellationToken>()),
+            Times.Never,
+            "authorization must short-circuit before any state change is dispatched");
     }
 
     [Fact]

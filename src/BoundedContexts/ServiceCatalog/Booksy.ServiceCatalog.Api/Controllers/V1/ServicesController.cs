@@ -61,7 +61,16 @@ public class ServicesController : ControllerBase
         [FromBody] UpdateProviderServiceRequest request,
         CancellationToken cancellationToken = default)
     {
-      
+        // SECURITY FIX: this route only required the "ProviderOrAdmin" policy (any
+        // provider), unlike ActivateService/DeactivateService/ArchiveService on this same
+        // controller, which all call CanManageService first. Without it, any provider could
+        // pass someone else's providerId/serviceId pair and edit that provider's service.
+        if (!await CanManageService(serviceId))
+        {
+            _logger.LogWarning("User {RequestingUser} attempted to update service {ServiceId} without permission",
+                GetCurrentUserId(), serviceId);
+            return Forbid();
+        }
 
         var command = new UpdateProviderServiceCommand(
             serviceId,
@@ -103,6 +112,13 @@ public class ServicesController : ControllerBase
         [FromRoute] Guid serviceId,
         CancellationToken cancellationToken = default)
     {
+        // SECURITY FIX: see UpdateService above -- same missing check, same fix.
+        if (!await CanManageService(serviceId))
+        {
+            _logger.LogWarning("User {RequestingUser} attempted to delete service {ServiceId} without permission",
+                GetCurrentUserId(), serviceId);
+            return Forbid();
+        }
 
         var command = new DeleteProviderServiceCommand(serviceId, providerId);
         await _mediator.Send(command, cancellationToken);
