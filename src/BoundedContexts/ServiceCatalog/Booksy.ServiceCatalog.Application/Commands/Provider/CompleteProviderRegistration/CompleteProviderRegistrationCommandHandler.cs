@@ -1,6 +1,7 @@
 using Booksy.Core.Application.Abstractions.CQRS;
 using Booksy.Core.Application.Abstractions.Persistence;
 using Booksy.Core.Application.Abstractions.Services;
+using Booksy.Core.Application.Exceptions;
 using Booksy.Core.Domain.Abstractions;
 using Booksy.Core.Domain.ValueObjects;
 using Booksy.ServiceCatalog.Domain.Enums;
@@ -46,7 +47,7 @@ public sealed class CompleteProviderRegistrationCommandHandler
         // 3. Verify ownership
         if (provider.OwnerId != userId)
         {
-            throw new UnauthorizedAccessException("You are not authorized to complete this registration");
+            throw new ForbiddenException("You are not authorized to complete this registration");
         }
 
         // 4. Verify provider is in draft status

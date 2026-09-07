@@ -141,7 +141,8 @@ public class DeactivateProviderStaffCommandHandlerTests
             new DeactivateProviderStaffCommand(org.Id.Value, staff.Id, "nope"),
             CancellationToken.None);
 
-        await act.Should().ThrowAsync<UnauthorizedAccessException>();
+        await act.Should().ThrowAsync<ForbiddenException>(
+            "authenticated but not permitted must be 403, not 401");
         staff.Status.Should().Be(MembershipStatus.Active);
     }
 

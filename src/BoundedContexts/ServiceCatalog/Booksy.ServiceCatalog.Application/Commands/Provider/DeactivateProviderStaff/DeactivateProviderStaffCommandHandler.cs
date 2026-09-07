@@ -108,7 +108,7 @@ namespace Booksy.ServiceCatalog.Application.Commands.Provider.DeactivateProvider
             }
 
             if (!callerIsOrgOwner && !callerIsSelf)
-                throw new UnauthorizedAccessException("You cannot remove this staff member.");
+                throw new ForbiddenException("You cannot remove this staff member.");
 
             // An organization must always retain at least one active owner.
             if (membership.IsOwner)
@@ -194,7 +194,7 @@ namespace Booksy.ServiceCatalog.Application.Commands.Provider.DeactivateProvider
             }
 
             if (!callerIsOrgOwner)
-                throw new UnauthorizedAccessException("You cannot remove this staff member.");
+                throw new ForbiddenException("You cannot remove this staff member.");
 
             // Provider.Deactivate throws unless the provider is Active, so anything already
             // inactive/suspended/archived is treated as a no-op — a retried DELETE stays a 204.

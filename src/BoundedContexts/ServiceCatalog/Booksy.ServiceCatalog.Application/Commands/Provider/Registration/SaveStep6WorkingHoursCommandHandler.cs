@@ -1,6 +1,7 @@
 using Booksy.Core.Application.Abstractions.CQRS;
 using Booksy.Core.Application.Abstractions.Persistence;
 using Booksy.Core.Application.Abstractions.Services;
+using Booksy.Core.Application.Exceptions;
 using Booksy.Core.Domain.Abstractions;
 using Booksy.Core.Domain.ValueObjects;
 using Booksy.ServiceCatalog.Domain.Aggregates;
@@ -42,7 +43,7 @@ public sealed class SaveStep6WorkingHoursCommandHandler
             throw new InvalidOperationException("Provider not found");
 
         if (provider.OwnerId != userId)
-            throw new UnauthorizedAccessException("You are not authorized to update this provider");
+            throw new ForbiddenException("You are not authorized to update this provider");
 
         if (provider.Status != ProviderStatus.Drafted)
             throw new InvalidOperationException("Provider is not in draft status");
