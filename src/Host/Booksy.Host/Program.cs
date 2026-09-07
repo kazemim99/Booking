@@ -176,6 +176,17 @@ builder.Services.AddScoped<IProviderInfoService, InProcessProviderInfoService>()
 builder.Services
     .AddScoped<Booksy.ServiceCatalog.Application.Services.Interfaces.ITokenService, InProcessTokenService>();
 
+// Third seam in the same direction: the invitation register-and-accept flow creates and
+// (on failure) compensates by deleting a UserManagement account. Not an "override" like the
+// two above — IPersonAccountProvisioningService has no prior HTTP-based registration to
+// replace, this is its only registration — but it needs the same ordering: after
+// AddUserManagementInfrastructure (IPersonProvisioningService, IUserRepository) and after
+// AddServiceCatalogInfrastructure (InvitationRegistrationService, which now depends on it).
+// See InProcessPersonAccountProvisioningService for the two loopback callers it retires.
+builder.Services
+    .AddScoped<Booksy.ServiceCatalog.Application.Services.Interfaces.IPersonAccountProvisioningService,
+        InProcessPersonAccountProvisioningService>();
+
 AppContext.SetSwitch("Npgsql.EnableLegacyTimestampBehavior", true);
 
 // ---------------------------------------------------------------------------

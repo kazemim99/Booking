@@ -156,7 +156,7 @@ Recommendation: **(a)** — it preserves the "one roster" model, keeps every boo
   - [x] 8.5.5 (done — §10.7 — backend 416 green / 0 failed, Flutter 387 green) Regression tests: existing sub-provider + org-direct bookings unaffected; new member bookings work.
 - [ ] 8.6 Active-salon switcher (1b): `ProviderSession.memberships[]` + `activeMembershipId` + re-scope app; **needs staff-member UX scope decision**.
 - [ ] 8.7 Vue frontend → memberships (unblocks 8.3); then re-key booking to memberships + retire sub-providers (Option B end-state).
-- [ ] 8.8 In-process cross-context calls (replace `InvitationRegistrationService` self-HTTP); integration-test harness (two-schema DB): concurrent double-accept, reuse-by-phone.
+- [~] 8.8 **In-process cross-context calls DONE 2026-09-07** — `InvitationRegistrationService`'s create/delete no longer self-HTTP; see FOLLOW-UPS #19 for the full account (also found and fixed: the compensating-delete was completely unreachable, not just untidy, and a related persistence gap in the create path). **Still owed**: the two-schema integration-test harness for concurrent double-accept / reuse-by-phone at the HTTP/OTP boundary — see §16.3, unchanged by this.
 
 ## 7. Verification
 - [x] 7.1 Backend unit tests **409 passed / 0 failed** (SC domain 304, SC app 62, UM app 14, Core 21, Infra 7, Arch 1); all ServiceCatalog projects build 0 errors. (DB-backed integration tests still owed — 8.8.)
