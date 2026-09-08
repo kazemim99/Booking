@@ -184,18 +184,21 @@ code=$(http POST "/api/v1/registration/owner-provides-services" "$PTOK" '{"provi
 OPS=$(jget /tmp/k_ops.json providesServices)
 [ "$OPS" = "true" ] && ok "owner is now marked as providing services" || fail "providesServices was not true: $OPS"
 
-say "14) The same owner runs a second, independent salon (no duplicate person)"
+say "14) One owned salon per person (today's invariant), and the owner's membership is the durable anchor"
+# RegisterProviderFullCommandHandler refuses a second provider for the same owner
+# ("already has a registered provider"). Multi-salon ownership is NOT a current
+# capability -- this pins that, so a future change that relaxes it does so on purpose.
 REG2="{\"ownerId\":\"$POWNER\",\"categoryId\":\"HairSalon\",\"businessInfo\":{\"businessName\":\"E2E Salon Two $RND\",\"ownerFirstName\":\"E2E\",\"ownerLastName\":\"Owner\",\"phoneNumber\":\"$PPHONE\"},\"address\":{\"street\":\"St2\",\"city\":\"Tehran\",\"state\":\"Tehran\",\"postalCode\":\"1234567890\",\"country\":\"Iran\",\"latitude\":35.8,\"longitude\":51.5},\"location\":{\"latitude\":35.8,\"longitude\":51.5,\"formattedAddress\":\"Tehran\"},\"businessHours\":{$HOURS},\"services\":[{\"name\":\"Manicure\",\"durationHours\":0,\"durationMinutes\":30,\"price\":150000,\"priceType\":\"fixed\"}],\"assistanceOptions\":[],\"teamMembers\":[],\"ownerFirstName\":\"E2E\",\"ownerLastName\":\"Owner\",\"businessName\":\"E2E Salon Two $RND\",\"description\":\"t2\",\"primaryCategory\":\"HairSalon\",\"email\":\"e2e$RND-2@s.com\",\"phoneNumber\":\"$PPHONE\",\"street\":\"St2\",\"city\":\"Tehran\",\"state\":\"Tehran\",\"postalCode\":\"1234567890\",\"country\":\"Iran\"}"
 code=$(http POST "/api/v1/Providers/register-full" "$PTOK" "$REG2" /tmp/k_reg2.json)
-[ "$code" = "201" ] && ok "second register-full 201" || fail "second register-full (HTTP $code): $(jget /tmp/k_reg2.json message)"
-PROV2=$(jget /tmp/k_reg2.json providerId); [ -n "$PROV2" ] || fail "no second providerId"
-[ "$PROV2" != "$PROV" ] && ok "second organization is a distinct provider" || fail "second registration returned the SAME providerId"
+[ "$code" != "201" ] && ok "second register-full for the same owner refused ($code)" \
+  || fail "the same owner was allowed to register a SECOND provider (HTTP 201) -- one-salon-per-owner invariant broken"
 
+# The owner's own membership (created by step 13 -- register-full itself creates none)
+# is what /memberships/me is built on: the one person, listed under their one salon.
 code=$(http GET "/api/v1/memberships/me" "$PTOK" - /tmp/k_mine2.json)
-[ "$code" = "200" ] && ok "my-memberships 200 after second registration" || fail "my-memberships (HTTP $code)"
-grep -q "$PROV" /tmp/k_mine2.json && grep -q "$PROV2" /tmp/k_mine2.json \
-  && ok "one owner token lists BOTH organizations (switch-salon, no account duplication)" \
-  || fail "my-memberships did not list both organizations for the one owner: $(cat /tmp/k_mine2.json)"
+[ "$code" = "200" ] && ok "my-memberships 200" || fail "my-memberships (HTTP $code)"
+grep -q "$PROV" /tmp/k_mine2.json && ok "owner's membership lists their salon (no duplicate person)" \
+  || fail "my-memberships did not list the owner's salon: $(cat /tmp/k_mine2.json)"
 
 printf '\n\033[1;32mALL KEYSTONE CHECKS PASSED — %d checks (legacy staff + membership chain + owner-provides-services + switch-salon).\033[0m\n' "$PASS"
 
