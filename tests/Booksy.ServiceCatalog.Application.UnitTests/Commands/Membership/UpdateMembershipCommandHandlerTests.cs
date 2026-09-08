@@ -7,6 +7,7 @@ using Booksy.ServiceCatalog.Application.Services.Interfaces;
 using Booksy.ServiceCatalog.Domain.Aggregates;
 using Booksy.ServiceCatalog.Domain.Aggregates.MembershipAuditAggregate;
 using Booksy.ServiceCatalog.Domain.Aggregates.OrganizationMembershipAggregate;
+using Booksy.ServiceCatalog.Domain.Aggregates.OrganizationMembershipAggregate.Entities;
 using Booksy.ServiceCatalog.Domain.Enums;
 using Booksy.ServiceCatalog.Domain.Repositories;
 using Booksy.ServiceCatalog.Domain.ValueObjects;
@@ -15,6 +16,7 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Logging;
 using NSubstitute;
 using System.Security.Claims;
+using DomainDayOfWeek = Booksy.ServiceCatalog.Domain.Enums.DayOfWeek;
 
 namespace Booksy.ServiceCatalog.Application.UnitTests.Commands.Membership;
 
@@ -137,7 +139,7 @@ public class UpdateMembershipCommandHandlerTests
 
         result.ProvidesServices.Should().BeTrue();
         result.Roles.Should().Contain(nameof(MembershipRole.StaffProvider));
-        await _bookability.Received(1).SyncAsync(membership, Arg.Any<CancellationToken>());
+        await _bookability.Received(1).SyncAsync(membership, Arg.Any<bool>(), Arg.Any<CancellationToken>());
     }
 
     [Fact]
@@ -153,7 +155,94 @@ public class UpdateMembershipCommandHandlerTests
 
         result.ProvidesServices.Should().BeFalse();
         membership.Status.Should().Be(MembershipStatus.Active);
-        await _bookability.DidNotReceive().SyncAsync(Arg.Any<OrganizationMembership>(), Arg.Any<CancellationToken>());
+        await _bookability.DidNotReceive().SyncAsync(Arg.Any<OrganizationMembership>(), Arg.Any<bool>(), Arg.Any<CancellationToken>());
+    }
+
+    [Fact]
+    public async Task Setting_A_Working_Schedule_Regenerates_The_Members_Availability()
+    {
+        // A schedule edit has to REGENERATE availability, not just re-sync: the days that
+        // were already generated under the old roster would otherwise stand forever.
+        var org = CreateOrg();
+        var membership = Claimed(org);
+        var handler = CreateHandler(OwnerId, membership, org);
+
+        var result = await handler.Handle(
+            new UpdateMembershipCommand(
+                membership.Id,
+                WorkingDays: new[]
+                {
+                    new MembershipWorkingDayInput(
+                        DomainDayOfWeek.Tuesday, new TimeOnly(10, 0), new TimeOnly(16, 0))
+                }),
+            CancellationToken.None);
+
+        result.WorkingDays.Should().ContainSingle()
+            .Which.DayOfWeek.Should().Be(DomainDayOfWeek.Tuesday);
+        await _bookability.Received(1).SyncAsync(
+            membership, regenerateAvailability: true, cancellationToken: Arg.Any<CancellationToken>());
+    }
+
+    [Fact]
+    public async Task Assigning_Services_Re_Syncs_The_Member()
+    {
+        var org = CreateOrg();
+        var membership = Claimed(org);
+        var haircut = Guid.NewGuid();
+        var handler = CreateHandler(OwnerId, membership, org);
+
+        var result = await handler.Handle(
+            new UpdateMembershipCommand(membership.Id, ServiceIds: new[] { haircut }),
+            CancellationToken.None);
+
+        result.ServiceIds.Should().Equal(haircut);
+        membership.StaffProfile!.PerformsService(haircut).Should().BeTrue();
+        membership.StaffProfile.PerformsService(Guid.NewGuid()).Should().BeFalse();
+        await _bookability.Received(1).SyncAsync(
+            membership, Arg.Any<bool>(), Arg.Any<CancellationToken>());
+    }
+
+    [Fact]
+    public async Task Leaving_Schedule_And_Services_Null_Changes_Neither()
+    {
+        // Null means "leave unchanged" — only an explicitly empty list clears them.
+        var org = CreateOrg();
+        var membership = Claimed(org);
+        membership.SetWorkingSchedule(new[]
+        {
+            StaffWorkingDay.Create(DomainDayOfWeek.Friday, new TimeOnly(12, 0), new TimeOnly(20, 0))
+        });
+        membership.SetServiceAssignments(new[] { Guid.NewGuid() });
+        var handler = CreateHandler(OwnerId, membership, org);
+
+        var result = await handler.Handle(
+            new UpdateMembershipCommand(membership.Id, BioOverride: "just a bio edit"),
+            CancellationToken.None);
+
+        result.WorkingDays.Should().ContainSingle();
+        result.ServiceIds.Should().ContainSingle();
+        await _bookability.DidNotReceive().SyncAsync(
+            Arg.Any<OrganizationMembership>(), Arg.Any<bool>(), Arg.Any<CancellationToken>());
+    }
+
+    [Fact]
+    public async Task An_Empty_Schedule_Puts_The_Member_Back_On_The_Salons_Hours()
+    {
+        var org = CreateOrg();
+        var membership = Claimed(org);
+        membership.SetWorkingSchedule(new[]
+        {
+            StaffWorkingDay.Create(DomainDayOfWeek.Friday, new TimeOnly(12, 0), new TimeOnly(20, 0))
+        });
+        var handler = CreateHandler(OwnerId, membership, org);
+
+        var result = await handler.Handle(
+            new UpdateMembershipCommand(
+                membership.Id, WorkingDays: Array.Empty<MembershipWorkingDayInput>()),
+            CancellationToken.None);
+
+        result.WorkingDays.Should().BeEmpty();
+        membership.StaffProfile!.HasOwnSchedule.Should().BeFalse();
     }
 
     [Fact]

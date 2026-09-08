@@ -138,7 +138,7 @@ public class RegisterProviderFullMembershipTests
         var member = _saved.Should().ContainSingle(m => !m.IsOwner).Subject;
         member.IsUnclaimed.Should().BeTrue();
         member.StaffProfile!.DisplayName.Should().Be("Sara Stylist");
-        await _bookability.Received(1).SyncAsync(member, Arg.Any<CancellationToken>());
+        await _bookability.Received(1).SyncAsync(member, Arg.Any<bool>(), Arg.Any<CancellationToken>());
     }
 
     [Fact]

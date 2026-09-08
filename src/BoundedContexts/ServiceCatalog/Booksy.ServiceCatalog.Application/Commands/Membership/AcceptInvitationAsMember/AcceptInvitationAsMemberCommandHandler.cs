@@ -106,7 +106,7 @@ public sealed class AcceptInvitationAsMemberCommandHandler
 
         // The accepted member becomes bookable straight away (qualification +
         // availability), so customers can book them the moment they join.
-        await _memberBookability.SyncAsync(membership, cancellationToken);
+        await _memberBookability.SyncAsync(membership, cancellationToken: cancellationToken);
 
         // Audit: membership changes decide who acts for a business and who gets
         // paid, so every transition is recorded with actor, roles and reason.

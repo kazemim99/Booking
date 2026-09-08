@@ -94,7 +94,7 @@ public sealed class SetOwnerProvidesServicesCommandHandler
 
         // A member who provides services must be immediately bookable — qualified for
         // the org's services with availability generated. Tracked here, committed below.
-        await _memberBookability.SyncAsync(membership, cancellationToken);
+        await _memberBookability.SyncAsync(membership, cancellationToken: cancellationToken);
 
         await _unitOfWork.SaveAndPublishEventsAsync(cancellationToken);
 

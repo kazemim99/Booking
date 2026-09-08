@@ -1,5 +1,6 @@
 using Booksy.Core.Application.Abstractions.CQRS;
 using Booksy.ServiceCatalog.Application.Exceptions;
+using Booksy.ServiceCatalog.Application.Services.Interfaces;
 using Booksy.ServiceCatalog.Domain.Enums;
 using Booksy.ServiceCatalog.Domain.Repositories;
 using Booksy.ServiceCatalog.Domain.ValueObjects;
@@ -12,17 +13,20 @@ public sealed class AddProviderServiceCommandHandler : ICommandHandler<AddProvid
     private readonly IServiceWriteRepository _serviceWriteRepository;
     private readonly IServiceReadRepository _serviceReadRepository;
     private readonly IProviderReadRepository _providerReadRepository;
+    private readonly IMemberBookabilityService _memberBookability;
     private readonly ILogger<AddProviderServiceCommandHandler> _logger;
 
     public AddProviderServiceCommandHandler(
         IServiceWriteRepository serviceWriteRepository,
         IServiceReadRepository serviceReadRepository,
         IProviderReadRepository providerReadRepository,
+        IMemberBookabilityService memberBookability,
         ILogger<AddProviderServiceCommandHandler> logger)
     {
         _serviceWriteRepository = serviceWriteRepository;
         _serviceReadRepository = serviceReadRepository;
         _providerReadRepository = providerReadRepository;
+        _memberBookability = memberBookability;
         _logger = logger;
     }
 
@@ -77,6 +81,12 @@ public sealed class AddProviderServiceCommandHandler : ICommandHandler<AddProvid
 
         // Save service
         await _serviceWriteRepository.SaveServiceAsync(service, cancellationToken);
+
+        // Service.Create leaves the service in Draft with nobody qualified to perform it,
+        // and Activate() refuses to run without a qualified member — so without this the
+        // salon adds a service it can never sell. Qualifying the members who perform it
+        // (everyone, unless they have narrowed their assignments) activates it.
+        await _memberBookability.SyncServiceAsync(service, cancellationToken);
 
         _logger.LogInformation(
             "Service {ServiceId} added successfully for provider {ProviderId}",

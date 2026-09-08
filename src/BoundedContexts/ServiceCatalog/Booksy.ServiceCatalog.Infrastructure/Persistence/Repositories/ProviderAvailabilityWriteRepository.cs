@@ -77,6 +77,50 @@ public sealed class ProviderAvailabilityWriteRepository
         return await query.ToListAsync(cancellationToken);
     }
 
+    public async Task<bool> HasSlotsForStaffOnDateAsync(
+        ProviderId providerId,
+        DateTime date,
+        Guid staffId,
+        CancellationToken cancellationToken = default)
+    {
+        var dateOnly = date.Date;
+
+        return await DbSet.AnyAsync(
+            a => a.ProviderId == providerId.Value &&
+                 a.Date == dateOnly &&
+                 a.StaffId == staffId,
+            cancellationToken);
+    }
+
+    public async Task<int> RemoveFreeStaffSlotsFromAsync(
+        ProviderId providerId,
+        Guid staffId,
+        DateTime fromDate,
+        CancellationToken cancellationToken = default)
+    {
+        var dateOnly = fromDate.Date;
+
+        // Only Available slots go: a Booked/TentativeHold/Blocked slot represents a
+        // real commitment that a schedule edit has no business erasing.
+        var free = await DbSet
+            .Where(a => a.ProviderId == providerId.Value &&
+                        a.StaffId == staffId &&
+                        a.Date >= dateOnly &&
+                        a.Status == AvailabilityStatus.Available)
+            .ToListAsync(cancellationToken);
+
+        if (free.Count == 0)
+            return 0;
+
+        DbSet.RemoveRange(free);
+
+        _logger.LogInformation(
+            "Removed {Count} free slot(s) for staff {StaffId} of provider {ProviderId} from {FromDate:d}",
+            free.Count, staffId, providerId.Value, dateOnly);
+
+        return free.Count;
+    }
+
     public async Task SaveAsync(
         ProviderAvailability availability,
         CancellationToken cancellationToken = default)

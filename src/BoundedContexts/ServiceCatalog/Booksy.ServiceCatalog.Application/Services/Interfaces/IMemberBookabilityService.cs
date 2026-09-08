@@ -22,8 +22,35 @@ public interface IMemberBookabilityService
     /// services (or is not active) is a no-op.
     /// Changes are tracked; the caller commits them.
     /// </summary>
+    /// <param name="regenerateAvailability">
+    /// Pass true when the member's WORKING SCHEDULE changed. Existing days are
+    /// otherwise left alone for idempotency, which would keep serving the old roster;
+    /// this first clears the member's still-free future slots so the new schedule
+    /// takes effect. Booked and held slots are never removed.
+    /// </param>
     Task<MemberBookabilityResult> SyncAsync(
         OrganizationMembership membership,
+        bool regenerateAvailability = false,
+        CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// The mirror of <see cref="SyncAsync"/>, from the service's side: qualifies the
+    /// organization's service-providing members for a service and activates it once at
+    /// least one of them can perform it.
+    /// </summary>
+    /// <remarks>
+    /// Without this a newly added service is stranded: <c>Service.Create</c> leaves it in
+    /// Draft with no qualified staff, <c>Activate()</c> refuses to run without a qualified
+    /// member, and only membership events ever qualified anyone — so a salon could add a
+    /// service and never be able to sell it.
+    ///
+    /// Members who have narrowed their assignments and do not list this service are left
+    /// out, which is what makes assignments mean anything for a service added later.
+    /// Changes are tracked; the caller commits them.
+    /// </remarks>
+    /// <returns>How many members were qualified.</returns>
+    Task<int> SyncServiceAsync(
+        Domain.Aggregates.Service service,
         CancellationToken cancellationToken = default);
 }
 

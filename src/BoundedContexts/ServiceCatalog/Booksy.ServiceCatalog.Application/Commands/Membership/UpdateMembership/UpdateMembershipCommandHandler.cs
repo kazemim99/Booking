@@ -4,6 +4,7 @@ using Booksy.Core.Domain.ValueObjects;
 using Booksy.ServiceCatalog.Application.Abstractions.Persistence;
 using Booksy.ServiceCatalog.Application.Services.Interfaces;
 using Booksy.ServiceCatalog.Domain.Aggregates.MembershipAuditAggregate;
+using Booksy.ServiceCatalog.Domain.Aggregates.OrganizationMembershipAggregate.Entities;
 using Booksy.ServiceCatalog.Domain.Enums;
 using Booksy.ServiceCatalog.Domain.Repositories;
 using Microsoft.AspNetCore.Http;
@@ -94,6 +95,25 @@ public sealed class UpdateMembershipCommandHandler
             membership.UpdateStaffDetails(request.DisplayName, request.BioOverride, request.PhotoUrl);
         }
 
+        // Schedule and service assignments are only meaningful for a member who
+        // provides services; DisableStaffProfile above may have just removed the profile.
+        var scheduleChanged = false;
+        if (membership.StaffProfile is not null)
+        {
+            if (request.WorkingDays is not null)
+            {
+                membership.SetWorkingSchedule(request.WorkingDays.Select(d =>
+                    StaffWorkingDay.Create(d.DayOfWeek, d.StartTime, d.EndTime)));
+                scheduleChanged = true;
+            }
+
+            if (request.ServiceIds is not null)
+            {
+                membership.SetServiceAssignments(request.ServiceIds);
+                scheduleChanged = true;
+            }
+        }
+
         await _membershipRepository.UpdateAsync(membership, cancellationToken);
 
         await _auditRepository.AppendAsync(
@@ -112,9 +132,16 @@ public sealed class UpdateMembershipCommandHandler
             cancellationToken);
 
         // Newly service-providing members must become bookable in the same transaction,
-        // exactly as they do when added or when an owner opts in.
-        if (providesServicesChanged && membership.ProvidesServices)
-            await _memberBookability.SyncAsync(membership, cancellationToken);
+        // exactly as they do when added or when an owner opts in. A schedule or
+        // assignment edit re-syncs too, and asks for availability to be REGENERATED —
+        // without that the already-generated days would keep serving the old roster.
+        if (membership.ProvidesServices && (providesServicesChanged || scheduleChanged))
+        {
+            await _memberBookability.SyncAsync(
+                membership,
+                regenerateAvailability: scheduleChanged,
+                cancellationToken: cancellationToken);
+        }
 
         await _unitOfWork.SaveAndPublishEventsAsync(cancellationToken);
 
@@ -130,6 +157,10 @@ public sealed class UpdateMembershipCommandHandler
             membership.StaffProfile?.BioOverride,
             membership.StaffProfile?.PhotoUrl,
             membership.ProvidesServices,
-            membership.Roles.Select(r => r.ToString()).ToList());
+            membership.Roles.Select(r => r.ToString()).ToList(),
+            membership.StaffProfile?.WorkingDays
+                .Select(d => new MembershipWorkingDayInput(d.DayOfWeek, d.StartTime, d.EndTime))
+                .ToList() ?? new List<MembershipWorkingDayInput>(),
+            membership.StaffProfile?.ServiceIds.ToList() ?? new List<Guid>());
     }
 }

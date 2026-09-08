@@ -280,6 +280,44 @@ namespace Booksy.ServiceCatalog.Domain.Aggregates.OrganizationMembershipAggregat
             RaiseDomainEvent(new MembershipRoleChangedEvent(Id, OrganizationId, DateTime.UtcNow));
         }
 
+        /// <summary>
+        /// Set this member's working week at this salon. An empty list restores the default:
+        /// the member works the salon's own opening hours.
+        /// </summary>
+        /// <remarks>
+        /// Per-membership rather than per-person, which is what makes working at two salons
+        /// on different days expressible — the same human has one identity and two schedules.
+        /// The hours are stored as given; they are intersected with the salon's opening hours
+        /// when availability is generated, since nobody is bookable while the shop is shut.
+        /// </remarks>
+        public void SetWorkingSchedule(IEnumerable<StaffWorkingDay> workingDays)
+        {
+            EnsureNotTerminated(nameof(SetWorkingSchedule));
+
+            if (StaffProfile is null)
+                throw new DomainValidationException(
+                    "This member does not provide services, so they have no schedule to set.");
+
+            StaffProfile.SetWorkingDays(workingDays);
+            RaiseDomainEvent(new StaffProfileEnabledEvent(Id, OrganizationId, DateTime.UtcNow));
+        }
+
+        /// <summary>
+        /// Set which of the salon's services this member performs. An empty list restores
+        /// the default: they perform all of them.
+        /// </summary>
+        public void SetServiceAssignments(IEnumerable<Guid> serviceIds)
+        {
+            EnsureNotTerminated(nameof(SetServiceAssignments));
+
+            if (StaffProfile is null)
+                throw new DomainValidationException(
+                    "This member does not provide services, so they have no service assignments.");
+
+            StaffProfile.SetServiceIds(serviceIds);
+            RaiseDomainEvent(new StaffProfileEnabledEvent(Id, OrganizationId, DateTime.UtcNow));
+        }
+
         /// <summary>Stop providing services: drop the StaffProvider role and StaffProfile (owner/manager roles remain).</summary>
         public void DisableStaffProfile()
         {

@@ -1,5 +1,7 @@
+using System.Text.Json;
 using Booksy.Core.Domain.ValueObjects;
 using Booksy.ServiceCatalog.Domain.Aggregates.OrganizationMembershipAggregate;
+using Booksy.ServiceCatalog.Domain.Aggregates.OrganizationMembershipAggregate.Entities;
 using Booksy.ServiceCatalog.Domain.Enums;
 using Booksy.ServiceCatalog.Domain.ValueObjects;
 using Microsoft.EntityFrameworkCore;
@@ -101,6 +103,49 @@ namespace Booksy.ServiceCatalog.Infrastructure.Persistence.Configurations
                 sp.Property(p => p.PhotoUrl)
                     .HasMaxLength(500)
                     .HasColumnName("photo_url");
+
+                // Both collections are mapped through their backing fields, so the
+                // read-only projections the domain exposes must be left unmapped —
+                // otherwise EF discovers WorkingDays as a second, owner-less navigation.
+                sp.Ignore(p => p.WorkingDays);
+                sp.Ignore(p => p.ServiceIds);
+
+                // Which of the salon's services this member performs. Empty = all of them,
+                // so the common case stores an empty array rather than a row per service.
+                sp.Property<List<Guid>>("_serviceIds")
+                    .HasColumnName("service_ids")
+                    .HasColumnType("jsonb")
+                    .HasConversion(
+                        v => JsonSerializer.Serialize(v, (JsonSerializerOptions?)null),
+                        v => JsonSerializer.Deserialize<List<Guid>>(v, (JsonSerializerOptions?)null) ?? new List<Guid>(),
+                        new ValueComparer<List<Guid>>(
+                            (a, b) => (a ?? new List<Guid>()).SequenceEqual(b ?? new List<Guid>()),
+                            c => c == null ? 0 : c.Aggregate(0, (h, v) => HashCode.Combine(h, v.GetHashCode())),
+                            c => c == null ? new List<Guid>() : c.ToList()));
+
+                // The member's working week at this salon, as its own table so a day can be
+                // queried and edited individually. Empty = the salon's own opening hours.
+                sp.OwnsMany<StaffWorkingDay>("_workingDays", wd =>
+                {
+                    wd.ToTable("staff_working_days", "ServiceCatalog");
+                    wd.WithOwner().HasForeignKey("membership_id");
+                    wd.Property<Guid>("membership_id").HasColumnName("membership_id");
+                    wd.Property<int>("Id").ValueGeneratedOnAdd().HasColumnName("id");
+                    wd.HasKey("Id");
+
+                    wd.Property(d => d.DayOfWeek)
+                        .HasConversion<string>()
+                        .HasMaxLength(20)
+                        .IsRequired()
+                        .HasColumnName("day_of_week");
+
+                    wd.Property(d => d.StartTime).IsRequired().HasColumnName("start_time");
+                    wd.Property(d => d.EndTime).IsRequired().HasColumnName("end_time");
+
+                    wd.HasIndex("membership_id").HasDatabaseName("ix_staff_working_days_membership");
+                });
+
+                sp.Navigation("_workingDays").UsePropertyAccessMode(PropertyAccessMode.Field);
             });
             builder.Navigation(m => m.StaffProfile).IsRequired(false);
 

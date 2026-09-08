@@ -128,7 +128,7 @@ public sealed class AddStaffToProviderCommandHandler
 
         // Qualify for the org's services + generate availability so the member is
         // bookable immediately (the behaviour the old synthetic path provided).
-        await _memberBookability.SyncAsync(membership, cancellationToken);
+        await _memberBookability.SyncAsync(membership, cancellationToken: cancellationToken);
 
         await _unitOfWork.SaveAndPublishEventsAsync(cancellationToken);
 

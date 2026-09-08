@@ -111,7 +111,7 @@ public sealed class RegisterAndAcceptInvitationCommandHandler
                 cancellationToken);
 
             // Newly registered member is bookable immediately.
-            await _memberBookability.SyncAsync(membership, cancellationToken);
+            await _memberBookability.SyncAsync(membership, cancellationToken: cancellationToken);
 
             await _unitOfWork.SaveAndPublishEventsAsync(cancellationToken);
 

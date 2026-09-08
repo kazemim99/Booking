@@ -199,8 +199,9 @@ public class MembershipsController : ControllerBase
 
     /// <summary>
     /// Update a member's organization-scoped details: the salon's display name for them
-    /// (unclaimed members only), their per-salon bio, and whether they currently provide
-    /// services. An owner may update any member; a member may update their own.
+    /// (unclaimed members only), their per-salon bio, whether they currently provide
+    /// services, the days they work here, and which services they perform.
+    /// An owner may update any member; a member may update their own.
     /// </summary>
     /// <remarks>
     /// Person-level fields (name, email, phone of someone who has their own account) are
@@ -227,7 +228,11 @@ public class MembershipsController : ControllerBase
                 request.DisplayName,
                 request.BioOverride,
                 request.ProvidesServices,
-                request.PhotoUrl),
+                request.PhotoUrl,
+                request.WorkingDays?
+                    .Select(d => new MembershipWorkingDayInput(d.DayOfWeek, d.StartTime, d.EndTime))
+                    .ToList(),
+                request.ServiceIds),
             cancellationToken);
         return Ok(result);
     }

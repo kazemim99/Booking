@@ -341,7 +341,7 @@ namespace Booksy.ServiceCatalog.Application.Commands.Provider.RegisterProviderFu
 
                 // Qualify for the org's services and generate availability, so a member
                 // listed at registration is bookable without a second round-trip.
-                await _memberBookability.SyncAsync(membership, cancellationToken);
+                await _memberBookability.SyncAsync(membership, cancellationToken: cancellationToken);
             }
 
             // ====================================

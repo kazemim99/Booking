@@ -1,3 +1,5 @@
+using Booksy.Core.Domain.Exceptions;
+
 namespace Booksy.ServiceCatalog.Domain.Aggregates.OrganizationMembershipAggregate.Entities
 {
     /// <summary>
@@ -8,12 +10,16 @@ namespace Booksy.ServiceCatalog.Domain.Aggregates.OrganizationMembershipAggregat
     /// while remaining a single person identity.
     /// </summary>
     /// <remarks>
-    /// Phase 1 keeps this intentionally lean (the flag + an optional per-org bio).
-    /// Service assignments and the per-org working schedule (validated within the
-    /// organization's hours) are a follow-up task and are not modelled here yet.
+    /// Carries the member's per-salon presentation (display name, bio, photo), their
+    /// working week, and which of the salon's services they perform. Both of the latter
+    /// default to empty and mean "the salon's hours" and "all of the salon's services" —
+    /// so a salon that does not distinguish between its staff never has to fill them in.
     /// </remarks>
     public sealed class StaffProfile
     {
+        private readonly List<StaffWorkingDay> _workingDays = new();
+        private readonly List<Guid> _serviceIds = new();
+
         public bool ProvidesServices { get; private set; }
 
         /// <summary>Optional bio shown for this person at this organization; overrides the person-level bio.</summary>
@@ -62,5 +68,56 @@ namespace Booksy.ServiceCatalog.Domain.Aggregates.OrganizationMembershipAggregat
 
         public void UpdatePhotoUrl(string? photoUrl) =>
             PhotoUrl = string.IsNullOrWhiteSpace(photoUrl) ? null : photoUrl.Trim();
+
+        /// <summary>
+        /// This member's working week at this salon. Empty means "the salon's own hours",
+        /// which is the default and the common case.
+        /// </summary>
+        public IReadOnlyList<StaffWorkingDay> WorkingDays => _workingDays.AsReadOnly();
+
+        /// <summary>
+        /// The services this member performs. Empty means "everything the salon offers",
+        /// so a salon that does not care about per-member specialisation never has to say so.
+        /// </summary>
+        public IReadOnlyList<Guid> ServiceIds => _serviceIds.AsReadOnly();
+
+        /// <summary>True when this member keeps hours of their own rather than the salon's.</summary>
+        public bool HasOwnSchedule => _workingDays.Count > 0;
+
+        /// <summary>
+        /// Replace the working week wholesale. At most one entry per day: a split shift is
+        /// not modelled, and silently keeping two rows for one day would make availability
+        /// generation ambiguous.
+        /// </summary>
+        public void SetWorkingDays(IEnumerable<StaffWorkingDay> days)
+        {
+            var replacement = (days ?? Enumerable.Empty<StaffWorkingDay>()).ToList();
+
+            var duplicated = replacement
+                .GroupBy(d => d.DayOfWeek)
+                .FirstOrDefault(g => g.Count() > 1);
+
+            if (duplicated is not null)
+                throw new DomainValidationException(
+                    nameof(WorkingDays),
+                    $"A member can have only one working period per day; {duplicated.Key} was given more than once.");
+
+            _workingDays.Clear();
+            _workingDays.AddRange(replacement);
+        }
+
+        /// <summary>Replace the assigned services. Empty restores "performs everything".</summary>
+        public void SetServiceIds(IEnumerable<Guid> serviceIds)
+        {
+            _serviceIds.Clear();
+            _serviceIds.AddRange((serviceIds ?? Enumerable.Empty<Guid>()).Distinct());
+        }
+
+        /// <summary>
+        /// Whether this member performs the given service. An empty assignment list means
+        /// they perform all of the salon's services.
+        /// </summary>
+        public bool PerformsService(Guid serviceId) =>
+            _serviceIds.Count == 0 || _serviceIds.Contains(serviceId);
     }
 }

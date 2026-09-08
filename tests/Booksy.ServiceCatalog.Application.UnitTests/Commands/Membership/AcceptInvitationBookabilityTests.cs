@@ -67,7 +67,7 @@ public class AcceptInvitationBookabilityTests
         _people.FindByPhoneAsync(Arg.Any<string>(), Arg.Any<CancellationToken>())
             .Returns(new PersonInfo(_inviteePersonId, "رضا", "قاسمی", InviteePhone, "Active"));
 
-        _bookability.SyncAsync(Arg.Any<OrganizationMembership>(), Arg.Any<CancellationToken>())
+        _bookability.SyncAsync(Arg.Any<OrganizationMembership>(), Arg.Any<bool>(), Arg.Any<CancellationToken>())
             .Returns(new MemberBookabilityResult(1, 18));
     }
 
@@ -104,7 +104,7 @@ public class AcceptInvitationBookabilityTests
 
         OrganizationMembership? synced = null;
         await _bookability.SyncAsync(
-            Arg.Do<OrganizationMembership>(m => synced = m), Arg.Any<CancellationToken>());
+            Arg.Do<OrganizationMembership>(m => synced = m), Arg.Any<bool>(), Arg.Any<CancellationToken>());
         _bookability.ClearReceivedCalls();
 
         // Act
@@ -115,7 +115,7 @@ public class AcceptInvitationBookabilityTests
         // Asserting on ProvidesServices (not merely "SyncAsync was called") is the point: the bug
         // was that the call happened but was a no-op for a member with no staff profile.
         await _bookability.Received(1).SyncAsync(
-            Arg.Any<OrganizationMembership>(), Arg.Any<CancellationToken>());
+            Arg.Any<OrganizationMembership>(), Arg.Any<bool>(), Arg.Any<CancellationToken>());
         synced.Should().NotBeNull();
         synced!.ProvidesServices.Should().BeTrue(
             "SyncAsync skips members who do not provide services, so without the staff profile " +
@@ -142,7 +142,7 @@ public class AcceptInvitationBookabilityTests
 
         // Assert
         existing.ProvidesServices.Should().BeTrue();
-        await _bookability.Received(1).SyncAsync(existing, Arg.Any<CancellationToken>());
+        await _bookability.Received(1).SyncAsync(existing, Arg.Any<bool>(), Arg.Any<CancellationToken>());
     }
 
     /// <summary>
