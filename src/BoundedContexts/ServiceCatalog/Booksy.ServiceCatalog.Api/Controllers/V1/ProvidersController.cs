@@ -17,6 +17,7 @@ using Booksy.ServiceCatalog.Application.Commands.Provider.RegisterProviderFull;
 using Booksy.ServiceCatalog.Application.Commands.Provider.Registration;
 using Booksy.ServiceCatalog.Application.Commands.Provider.UpdateBusinessProfile;
 using Booksy.ServiceCatalog.Application.Commands.Membership.UpdateMembership;
+using Booksy.ServiceCatalog.Application.Queries.Membership.CanManageOrganization;
 using Booksy.ServiceCatalog.Application.Queries.Provider.GetCurrentProviderStatus;
 using Booksy.ServiceCatalog.Application.Queries.Provider.GetProviderClients;
 using Booksy.ServiceCatalog.Application.Queries.Provider.GetDraftProvider;
@@ -1264,20 +1265,11 @@ public class ProvidersController : ControllerBase
         if (claimProviderId.HasValue && claimProviderId.Value == providerId)
             return true;
 
-        // ...or, when the claim isn't on the token yet, resolve the caller's provider in-process
-        // and check ownership. (Avoids depending on the token-refresh round-trip.)
-        try
-        {
-            var status = await _mediator.Send(new GetCurrentProviderStatusQuery());
-            if (status is not null && status.ProviderId.ToString() == providerId.ToString())
-                return true;
-        }
-        catch
-        {
-            // no provider associated with the current user
-        }
-
-        return false;
+        // ...otherwise the caller's membership of this salon decides. Running the business
+        // (its profile, hours, services and team) is an Owner/Manager capability, and an
+        // employed manager can legitimately have it without owning anything.
+        return await _mediator.Send(new CanManageOrganizationQuery(
+            providerId, OrganizationPermission.ManageOrganization));
     }
 
     #endregion

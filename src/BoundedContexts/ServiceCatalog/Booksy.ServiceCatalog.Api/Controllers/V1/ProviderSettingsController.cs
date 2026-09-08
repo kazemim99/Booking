@@ -787,22 +787,15 @@ public class ProviderSettingsController : ControllerBase
         if (!string.IsNullOrEmpty(claimProviderId) && claimProviderId == providerId.ToString())
             return true;
 
-        // ...or, when the claim isn't on the token yet, resolve the caller's
-        // provider in-process and check ownership (same fallback as
-        // ProvidersController.CanManageProvider).
-        try
-        {
-            var status = await _mediator.Send(
-                new Booksy.ServiceCatalog.Application.Queries.Provider.GetCurrentProviderStatus.GetCurrentProviderStatusQuery());
-            if (status is not null && status.ProviderId.ToString() == providerId.ToString())
-                return true;
-        }
-        catch
-        {
-            // no provider associated with the current user
-        }
-
-        return false;
+        // ...otherwise the caller's membership of this salon decides. These are the
+        // business's own settings, so Owner/Manager — a stylist working here does not
+        // get to rewrite the salon's hours.
+        return await _mediator.Send(
+            new Booksy.ServiceCatalog.Application.Queries.Membership.CanManageOrganization
+                .CanManageOrganizationQuery(
+                    providerId,
+                    Booksy.ServiceCatalog.Application.Queries.Membership.CanManageOrganization
+                        .OrganizationPermission.ManageOrganization));
     }
 
     #region Booking preferences (deposit policy)

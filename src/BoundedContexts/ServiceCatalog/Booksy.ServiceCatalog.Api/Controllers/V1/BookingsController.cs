@@ -10,6 +10,7 @@ using Booksy.ServiceCatalog.Application.Commands.Booking.ConfirmBooking;
 using Booksy.ServiceCatalog.Application.Commands.Booking.CreateBooking;
 using Booksy.ServiceCatalog.Application.Commands.Booking.MarkNoShow;
 using Booksy.ServiceCatalog.Application.Commands.Booking.RescheduleBooking;
+using Booksy.ServiceCatalog.Application.Queries.Membership.CanManageOrganization;
 using Booksy.ServiceCatalog.Application.Queries.Booking.GetAvailableSlots;
 using Booksy.ServiceCatalog.Application.Queries.Booking.GetBookingDetails;
 using Booksy.ServiceCatalog.Application.Queries.Booking.GetBookingStatistics;
@@ -660,6 +661,16 @@ public class BookingsController : ControllerBase
         return User.FindFirst("providerId")?.Value;
     }
 
+    /// <summary>
+    /// Whether the caller may act on this salon's appointments.
+    /// </summary>
+    /// <remarks>
+    /// This used to ask "does the caller OWN this provider?". An employed stylist,
+    /// receptionist or manager owns nothing, so every provider-scoped booking route
+    /// returned 403 for them and the provider app's day view was empty for anyone but a
+    /// salon owner. Access now comes from an active membership of the salon, which is
+    /// what the membership model made the source of truth.
+    /// </remarks>
     private async Task<bool> CanManageProvider(Guid providerId)
     {
         var currentUserId = GetCurrentUserId();
@@ -670,27 +681,14 @@ public class BookingsController : ControllerBase
         if (User.IsInRole("Admin") || User.IsInRole("SysAdmin"))
             return true;
 
-        // Provider owners can manage their own provider — via the providerId claim
-        // (present after a post-registration token refresh)...
+        // Fast path: the providerId claim an owner carries after a post-registration
+        // token refresh, which saves a round trip for by far the commonest caller.
         var currentProviderId = GetCurrentUserProviderId();
         if (!string.IsNullOrEmpty(currentProviderId) && currentProviderId == providerId.ToString())
             return true;
 
-        // ...or, when the claim isn't on the token yet (first session after
-        // onboarding), resolve the caller's provider in-process and check
-        // ownership — same fallback ProvidersController.CanManageProvider uses.
-        try
-        {
-            var status = await _mediator.Send(new GetCurrentProviderStatusQuery());
-            if (status is not null && status.ProviderId.ToString() == providerId.ToString())
-                return true;
-        }
-        catch
-        {
-            // no provider associated with the current user
-        }
-
-        return false;
+        return await _mediator.Send(new CanManageOrganizationQuery(
+            providerId, OrganizationPermission.ManageBookings));
     }
 
     private bool CanViewBooking(BookingDetailsViewModel booking, string? userId)
