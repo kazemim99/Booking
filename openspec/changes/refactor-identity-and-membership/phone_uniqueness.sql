@@ -10,11 +10,53 @@
 -- ⚠️ ORDER MATTERS: the unique index CREATION WILL FAIL if duplicates already
 -- exist. Run STEP 1 (report), resolve any duplicates, THEN run STEP 2.
 --
+-- STEP 1 below only catches duplicates stored in the IDENTICAL format. For
+-- cross-format duplicates (same human as "+989121234567" on one row and
+-- "09121234567" on another) and accounts whose profile carries a phone that
+-- was never backfilled onto the account itself, run
+-- `scripts/find-duplicate-phone-numbers.sql` (repo root) as well -- it
+-- targets exactly those two gaps and was validated against a real Postgres
+-- schema with a synthetic cross-format duplicate. STEP 0 further below is
+-- that report's other half: the actual backfill, not just detection.
+--
 -- Column facts (UserConfiguration.cs / InitialCreate migration):
 --   user_management.users."PhoneNumber" varchar(20) (canonical E.164 for new
 --   rows; legacy rows MAY be non-canonical), "Status" varchar (enum NAME;
 --   'Deleted' = soft-deleted, hidden by the app's global query filter).
 -- ============================================================================
+
+-- ----------------------------------------------------------------------------
+-- STEP 0 — Backfill account-level PhoneNumber from the profile, where the
+-- account itself has none (refactor-identity-and-membership §1.3, other
+-- half). WS1 §9.4 made every NEW creation path canonicalize the phone onto
+-- the account; this catches rows created before that path existed, which
+-- the app's own phone lookups (IUserRepository.GetByPhoneNumberAsync,
+-- IPersonDirectory) cannot see today because they only ever query
+-- users."PhoneNumber", never user_profiles.
+--
+-- Safe and additive: only fills a NULL, never overwrites an existing value.
+-- Uses PhoneNumber.From's own canonicalization rule (Iranian mobile:
+-- "9xxxxxxxxx" national -> "+989xxxxxxxxx" E.164) so the backfilled value
+-- matches exactly what the app would have written itself.
+-- ----------------------------------------------------------------------------
+UPDATE user_management.users u
+SET "PhoneNumber" = '+98' || p.phone_national_number,
+    "NationalNumber" = p.phone_national_number
+FROM user_management.user_profiles p
+WHERE p.user_id = u.id
+  AND u."PhoneNumber" IS NULL
+  AND u."Status" <> 'Deleted'
+  AND p.phone_national_number IS NOT NULL
+  AND p.phone_national_number ~ '^9\d{9}$';
+
+-- Rows this UPDATE deliberately skips (profile phone doesn't match the
+-- Iranian-mobile shape PhoneNumber.From accepts) -- review manually:
+--   SELECT u.id, u.email, p.phone_national_number, p.phone_country_code
+--   FROM user_management.users u
+--   JOIN user_management.user_profiles p ON p.user_id = u.id
+--   WHERE u."PhoneNumber" IS NULL AND u."Status" <> 'Deleted'
+--     AND p.phone_national_number IS NOT NULL
+--     AND p.phone_national_number !~ '^9\d{9}$';
 
 -- ----------------------------------------------------------------------------
 -- STEP 1 — Dedupe report. Resolve every row before creating the index.
