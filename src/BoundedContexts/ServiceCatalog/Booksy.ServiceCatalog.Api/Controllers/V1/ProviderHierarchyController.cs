@@ -1,5 +1,5 @@
-using Booksy.ServiceCatalog.Application.Commands.ProviderHierarchy.AcceptInvitation;
-using Booksy.ServiceCatalog.Application.Commands.ProviderHierarchy.AcceptInvitationWithRegistration;
+using Booksy.ServiceCatalog.Application.Commands.Membership.AcceptInvitationAsMember;
+using Booksy.ServiceCatalog.Application.Commands.Membership.RegisterAndAcceptInvitation;
 using Booksy.ServiceCatalog.Application.Commands.ProviderHierarchy.ApproveJoinRequest;
 using Booksy.ServiceCatalog.Application.Commands.ProviderHierarchy.CancelInvitation;
 using Booksy.ServiceCatalog.Application.Commands.ProviderHierarchy.CancelJoinRequest;
@@ -166,10 +166,21 @@ public class ProviderHierarchyController : ControllerBase
     }
 
     /// <summary>
-    /// Accept an invitation (called by the invited provider)
+    /// Accept an invitation (called by the invited person).
     /// </summary>
+    /// <remarks>
+    /// COMPATIBILITY SHIM. Delegates to <c>AcceptInvitationAsMemberCommand</c>, the same
+    /// command <c>POST /memberships/invitations/{id}/accept</c> uses. Prefer that route.
+    ///
+    /// This used to send the ProviderHierarchy <c>AcceptInvitationCommand</c>, which called
+    /// <c>individualProvider.LinkToOrganization(...)</c> — it required the invitee to already
+    /// own an Individual provider and re-parented that provider row under the salon. Working
+    /// somewhere does not make a person a Provider, so that handler is gone. The
+    /// <c>providerId</c> route segment is now ignored: the invitation identifies the salon,
+    /// and the member is the authenticated caller.
+    /// </remarks>
     [HttpPost("invitations/{invitationId}/accept")]
-    [ProducesResponseType(typeof(AcceptInvitationResult), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(AcceptInvitationAsMemberResult), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IActionResult> AcceptInvitation(
@@ -178,25 +189,34 @@ public class ProviderHierarchyController : ControllerBase
         CancellationToken cancellationToken)
     {
         var result = await _mediator.Send(
-            new AcceptInvitationCommand(invitationId, providerId),
+            new AcceptInvitationAsMemberCommand(invitationId),
             cancellationToken);
         return Ok(result);
     }
 
     /// <summary>
-    /// Accept an invitation with quick registration for unregistered users
+    /// Accept an invitation as someone who does not have an account yet.
     /// </summary>
     /// <remarks>
-    /// This endpoint handles the complete onboarding flow for unregistered users:
-    /// - Verifies OTP code
-    /// - Creates user account and provider profile
-    /// - Clones organization data (services, working hours, gallery)
-    /// - Links new provider to organization
-    /// - Returns JWT authentication tokens
+    /// COMPATIBILITY SHIM. Delegates to <c>RegisterAndAcceptInvitationCommand</c>, the same
+    /// command <c>POST /memberships/invitations/{id}/register-and-accept</c> uses. Prefer
+    /// that route.
+    ///
+    /// The previous handler ran a saga that created a brand-new User AND a brand-new
+    /// Individual Provider for the invitee — with manual compensating deletes when a step
+    /// failed — then cloned the organization's services, working hours and gallery onto that
+    /// shadow provider. An employee is a membership of the salon, so there is no second
+    /// provider to create and nothing to clone; that handler is gone.
+    ///
+    /// Behaviour changes callers should know about: the OTP is verified against the phone
+    /// the invitation was ISSUED to (a phone in the body is ignored, so an invitation cannot
+    /// be redirected to a different number), an existing account on that phone is REUSED
+    /// rather than duplicated, the clone flags are ignored, and no session tokens are
+    /// returned — the new member signs in with their own phone through the normal OTP flow.
     /// </remarks>
     [HttpPost("invitations/{invitationId}/accept-with-registration")]
     [AllowAnonymous]
-    [ProducesResponseType(typeof(AcceptInvitationWithRegistrationResult), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(RegisterAndAcceptInvitationResult), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IActionResult> AcceptInvitationWithRegistration(
@@ -205,19 +225,15 @@ public class ProviderHierarchyController : ControllerBase
         [FromBody] AcceptInvitationWithRegistrationRequest request,
         CancellationToken cancellationToken)
     {
-        var command = new AcceptInvitationWithRegistrationCommand(
-            InvitationId: invitationId,
-            OrganizationId: providerId,
-            PhoneNumber: request.PhoneNumber,
-            FirstName: request.FirstName,
-            LastName: request.LastName,
-            Email: request.Email,
-            OtpCode: request.OtpCode,
-            CloneServices: request.CloneServices,
-            CloneWorkingHours: request.CloneWorkingHours,
-            CloneGallery: request.CloneGallery);
+        var result = await _mediator.Send(
+            new RegisterAndAcceptInvitationCommand(
+                InvitationId: invitationId,
+                FirstName: request.FirstName,
+                LastName: request.LastName,
+                Email: request.Email,
+                OtpCode: request.OtpCode),
+            cancellationToken);
 
-        var result = await _mediator.Send(command, cancellationToken);
         return Ok(result);
     }
 

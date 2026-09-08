@@ -32,27 +32,10 @@ public interface IInvitationRegistrationService
         string? email,
         CancellationToken cancellationToken = default);
 
-    /// <summary>
-    /// Creates an individual provider profile for a staff member
-    /// </summary>
-    Task<Provider> CreateIndividualProviderAsync(
-        UserId userId,
-        string firstName,
-        string lastName,
-        string phoneNumber,
-        string? email,
-        ProviderId organizationId,
-        CancellationToken cancellationToken = default);
-
-    /// <summary>
-    /// Generates JWT access and refresh tokens for authenticated user
-    /// </summary>
-    Task<(string AccessToken, string RefreshToken)> GenerateAuthTokensAsync(
-        UserId userId,
-        ProviderId providerId,
-        string email,
-        string displayName,
-        CancellationToken cancellationToken = default);
+    // CreateIndividualProviderAsync and GenerateAuthTokensAsync were removed with the
+    // accept-with-registration saga. Joining a salon makes a person a MEMBER of it, so
+    // there is no individual provider profile to create; and acceptance no longer mints a
+    // session — the new member signs in with their own phone through the normal OTP flow.
 
     /// <summary>
     /// Compensation: Deletes a user account if registration flow fails
