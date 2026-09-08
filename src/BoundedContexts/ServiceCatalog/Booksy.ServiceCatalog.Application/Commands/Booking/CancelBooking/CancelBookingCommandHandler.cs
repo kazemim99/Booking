@@ -142,13 +142,19 @@ namespace Booksy.ServiceCatalog.Application.Commands.Booking.CancelBooking
             var startTimeOnly = TimeOnly.FromDateTime(startTime);
             var endTimeOnly = TimeOnly.FromDateTime(endTime);
 
-            // Find all slots that overlap with the cancelled booking time range
+            // Deliberately NOT staff-scoped. This handler has no resolver, and the only staff
+            // key to hand is Booking.StaffId -- which is the MEMBERSHIP id for a member
+            // booking but the ORGANIZATION id for one taken against the salon directly, and
+            // the latter matches no slot's StaffId at all. Passing it would silently release
+            // nothing for every direct booking. The release is exact regardless, because the
+            // loop below only touches slots already carrying this booking's own BookingId.
             var overlappingSlots = await _availabilityWriteRepository.FindOverlappingSlotsAsync(
                 providerId,
                 date.ToDateTime(TimeOnly.MinValue),
                 startTimeOnly,
                 endTimeOnly,
-                null,
+                excludeSlotId: null,
+                staffId: null,
                 cancellationToken);
 
             foreach (var slot in overlappingSlots)

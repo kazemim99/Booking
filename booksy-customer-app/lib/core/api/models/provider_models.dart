@@ -25,11 +25,6 @@ class ProviderDto {
   final List<String>? tags;
   final String? registeredAt;
   final String? lastActiveAt;
-  final String? hierarchyType;
-  final bool? isIndependent;
-  final String? parentProviderId;
-  final String? parentProviderName;
-  final int? staffProviderCount;
 
   ProviderDto({
     required this.id,
@@ -52,11 +47,6 @@ class ProviderDto {
     this.tags,
     this.registeredAt,
     this.lastActiveAt,
-    this.hierarchyType,
-    this.isIndependent,
-    this.parentProviderId,
-    this.parentProviderName,
-    this.staffProviderCount,
   });
 
   factory ProviderDto.fromJson(Map<String, dynamic> json) =>

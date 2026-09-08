@@ -64,12 +64,6 @@ export interface Provider {
   businessHours?: BusinessHours[]
   gallery?: GalleryImage[] // Gallery images
 
-  // Provider Hierarchy (NEW)
-  hierarchyType?: 'Organization' | 'Individual' // Provider hierarchy type
-  isIndependent?: boolean // True if independent individual provider
-  parentProviderId?: string // For individuals linked to organizations
-  staffProviders?: StaffProvider[] // Staff as individual providers (for organizations)
-
   // Timestamps
   registeredAt: string
   activatedAt?: string
@@ -169,11 +163,9 @@ export interface ProviderSummary {
   totalReviews?: number // NEW: Total review count
   registeredAt: string
   lastActiveAt?: string
-  // Hierarchy fields for organization/staff display
-  staffCount?: number // Number of active staff members
-  isOrganization?: boolean // True if provider is an organization with staff
-  hierarchyType?: 'Organization' | 'Individual' // Provider hierarchy type
-  staff?: StaffMember[] // Staff members (for displaying in cards)
+  // How many active members the salon has, for the card's team badge and preview.
+  staffCount?: number
+  staff?: StaffMember[]
   // Location coordinates for map display
   address?: BusinessAddress // Full address with coordinates
   latitude?: number // Latitude for map (fallback if address.latitude not present)
@@ -222,21 +214,6 @@ export interface StaffMember {
   specializations: string[]
 }
 
-// Staff Provider (for organization hierarchy - individual providers linked to an organization)
-export interface StaffProvider {
-  providerId: string
-  businessName: string
-  profileImageUrl?: string
-  status: string
-  isIndependent: boolean
-  joinedAt?: string
-  averageRating: number
-  totalReviews?: number
-  serviceCount: number
-  specializations?: string[]
-  bio?: string
-}
-
 // ============================================
 // Search & Filter Models
 // ============================================
@@ -254,7 +231,6 @@ export interface ProviderSearchFilters extends PaginationParams {
   state?: string
   country?: string
   type?: ProviderType
-  hierarchyType?: string // Filter by hierarchy type: 'Organization' or 'Individual'
   status?: ProviderStatus
   serviceCategory?: string // NEW: Filter by service category (e.g., "haircut", "massage")
   priceRange?: PriceRange // NEW: Filter by price range (Budget, Moderate, Premium)
@@ -426,12 +402,6 @@ export interface ProviderResponse {
   services?: ServiceSummary[]
   staff?: StaffMember[]
   businessHours?: BusinessHours[]
-
-  // Provider hierarchy fields (from backend)
-  hierarchyType?: string // "Organization" | "Individual"
-  isIndependent?: boolean
-  parentProviderId?: string
-  staffProviders?: StaffProvider[] // Staff as individual providers (for organizations)
 }
 
 // ============================================

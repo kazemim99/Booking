@@ -30,12 +30,25 @@ public interface IProviderAvailabilityWriteRepository : IWriteRepository<Provide
     /// Find overlapping availability slots for a time range
     /// Used for conflict detection
     /// </summary>
+    /// <param name="excludeSlotId">A single slot to leave out of the result, by its own id.</param>
+    /// <param name="staffId">
+    /// Narrows the result to one member's slots (<c>ProviderAvailability.StaffId</c>).
+    /// Null means "every slot this organization has in the range, whoever owns it", which is
+    /// what the organization-direct booking path wants.
+    /// </param>
+    /// <remarks>
+    /// The staff filter is not optional decoration: availability is generated PER MEMBER, so
+    /// an unfiltered lookup returns a member's colleagues' slots as if they were their own.
+    /// The callers that go on to WRITE (marking slots Booked) then consume the whole salon's
+    /// capacity for one appointment.
+    /// </remarks>
     Task<IReadOnlyList<ProviderAvailability>> FindOverlappingSlotsAsync(
         ProviderId providerId,
         DateTime date,
         TimeOnly startTime,
         TimeOnly endTime,
         Guid? excludeSlotId = null,
+        Guid? staffId = null,
         CancellationToken cancellationToken = default);
 
     /// <summary>

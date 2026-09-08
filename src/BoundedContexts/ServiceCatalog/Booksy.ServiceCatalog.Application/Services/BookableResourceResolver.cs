@@ -11,16 +11,18 @@ using ProviderAggregate = Booksy.ServiceCatalog.Domain.Aggregates.Provider;
 namespace Booksy.ServiceCatalog.Application.Services
 {
     /// <summary>What kind of thing a booking's <c>StaffId</c> points at.</summary>
+    /// <remarks>
+    /// There were three kinds until the provider hierarchy was removed; <c>LegacySubProvider</c>
+    /// (an employee modelled as a second Provider) is gone along with the model itself, and the
+    /// resolver has no branch that can produce it.
+    /// </remarks>
     public enum BookableResourceKind
     {
         /// <summary>A person working at the organization (the current staff model).</summary>
         Member,
 
         /// <summary>The organization itself — a solo/direct booking with no specific staff member.</summary>
-        Organization,
-
-        /// <summary>An individual sub-provider, from before staff became memberships.</summary>
-        LegacySubProvider
+        Organization
     }
 
     /// <summary>
@@ -28,26 +30,33 @@ namespace Booksy.ServiceCatalog.Application.Services
     /// slots are keyed.
     /// </summary>
     /// <param name="ResourceId">The value stored in <c>Booking.StaffId</c>.</param>
-    /// <param name="Kind">Which of the three resource kinds this is.</param>
+    /// <param name="Kind">Which of the two resource kinds this is.</param>
     /// <param name="SlotOwnerId">The provider whose availability rows carry the slot.</param>
+    /// <param name="SlotStaffId">
+    /// The <c>ProviderAvailability.StaffId</c> to narrow slot lookups by: the membership id for a
+    /// <see cref="BookableResourceKind.Member"/>, and null for
+    /// <see cref="BookableResourceKind.Organization"/> — the salon booked as a whole owns all of
+    /// its capacity, so its lookups stay unnarrowed.
+    /// </param>
     /// <remarks>
-    /// There is deliberately no "staff key" here. A member's availability rows hang off the
-    /// organization and carry <c>ProviderAvailability.StaffId</c>, but
-    /// <c>FindOverlappingSlotsAsync</c> does not filter on it — so slot lookups cannot currently be
-    /// narrowed to one member, and pretending otherwise would be a lie in the type. Closing that gap
-    /// belongs to the booking-slot-integrity change.
+    /// This field used to be deliberately absent, on the grounds that
+    /// <c>FindOverlappingSlotsAsync</c> could not filter on <c>StaffId</c> and a key here would be
+    /// "a lie in the type". The repository can filter now, so the key is real — and it had to
+    /// become real, because without it booking one member marked every colleague's overlapping
+    /// slot as Booked.
     /// </remarks>
     /// <param name="PersonId">
-    /// The person behind this resource, when there is one — a member's account, or a legacy
-    /// sub-provider's owner. Null for <see cref="BookableResourceKind.Organization"/> and for a member
-    /// whose record has not been claimed yet. Used to tell a provider-entered walk-in from a customer
-    /// booking: if the caller *is* the resource, no request→confirm handshake is warranted.
+    /// The person behind this resource, when there is one. Null for
+    /// <see cref="BookableResourceKind.Organization"/> and for a member whose record has not been
+    /// claimed yet. Used to tell a provider-entered walk-in from a customer booking: if the caller
+    /// *is* the resource, no request→confirm handshake is warranted.
     /// </param>
     public sealed record BookableResource(
         Guid ResourceId,
         BookableResourceKind Kind,
         ProviderId SlotOwnerId,
-        UserId? PersonId);
+        UserId? PersonId,
+        Guid? SlotStaffId);
 
     /// <summary>
     /// Resolves the bookable resource a booking is (or will be) held against.
@@ -107,7 +116,9 @@ namespace Booksy.ServiceCatalog.Application.Services
                     resourceId,
                     BookableResourceKind.Organization,
                     organization.Id,
-                    PersonId: null);
+                    PersonId: null,
+                    // The salon as a whole, so its slot lookups are not narrowed to anyone.
+                    SlotStaffId: null);
             }
 
             var membership = await _membershipRepository.GetByIdAsync(resourceId, cancellationToken);
@@ -120,12 +131,14 @@ namespace Booksy.ServiceCatalog.Application.Services
                     (membership.Status != MembershipStatus.Active || !membership.ProvidesServices))
                     throw new ConflictException("This team member is not currently bookable");
 
-                // A member's slots belong to the organization, not to a sub-provider row.
+                // A member's slots belong to the organization but are keyed by their
+                // membership id, which is what keeps one member's booking off a colleague.
                 return new BookableResource(
                     resourceId,
                     BookableResourceKind.Member,
                     organization.Id,
-                    PersonId: membership.PersonId);
+                    PersonId: membership.PersonId,
+                    SlotStaffId: resourceId);
             }
 
             // There is nothing else a staff reference can be. The third branch here used to

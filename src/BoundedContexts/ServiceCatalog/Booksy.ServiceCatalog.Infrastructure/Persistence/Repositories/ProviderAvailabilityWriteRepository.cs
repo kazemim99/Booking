@@ -59,6 +59,7 @@ public sealed class ProviderAvailabilityWriteRepository
         TimeOnly startTime,
         TimeOnly endTime,
         Guid? excludeSlotId = null,
+        Guid? staffId = null,
         CancellationToken cancellationToken = default)
     {
         var dateOnly = date.Date;
@@ -68,6 +69,14 @@ public sealed class ProviderAvailabilityWriteRepository
                        a.Date == dateOnly &&
                        a.StartTime < endTime &&
                        a.EndTime > startTime);
+
+        // Availability is generated per member, so an unfiltered lookup hands a member
+        // their colleagues' slots. Null stays unfiltered on purpose: that is the
+        // organization-direct booking path, which owns the salon's whole capacity.
+        if (staffId.HasValue)
+        {
+            query = query.Where(a => a.StaffId == staffId.Value);
+        }
 
         if (excludeSlotId.HasValue)
         {

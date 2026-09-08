@@ -110,14 +110,13 @@ namespace Booksy.ServiceCatalog.Application.Queries.Provider.GetProviderById
             // from exactly this list, so a salon with a full roster looked like a one-person
             // shop and every booking silently went to the provider's default resource.
             //
-            // Delegated to GetProviderStaffQuery rather than re-projected here: staff live in
-            // two models at once (OrganizationMembership + StaffProfile for invited members,
-            // and legacy individual sub-Providers awaiting migration) and that handler already
-            // merges both, resolves display names through the person directory, and falls back
-            // to the salon-provided name for members who have not claimed their account.
+            // Delegated to GetProviderStaffQuery rather than re-projected here: that handler
+            // already resolves display names through the person directory and falls back to
+            // the salon-provided name for members who have not claimed their account.
             // Duplicating any of that is how these two projections drifted apart to begin
-            // with. StaffProviders above stays as it is: it describes only the sub-Provider
-            // hierarchy, which is a different question from "who can I book with".
+            // with. (It used to merge two models — memberships and legacy individual
+            // sub-Providers — but the sub-provider hierarchy is gone, so a staff member is a
+            // membership and nothing else.)
             if (request.IncludeStaff)
             {
                 var staffResult = await _mediator.Send(

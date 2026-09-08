@@ -1,21 +1,14 @@
 <template>
   <div class="staff-section">
-    <!-- Hierarchy Type Check: Independent Individual Cannot Add Staff -->
-    <div v-if="isIndependentIndividual" class="info-card">
-      <div class="info-icon-wrapper">ℹ️</div>
-      <div class="info-content">
-        <h4 class="info-title">حساب فردی</h4>
-        <p class="info-text">
-          شما به عنوان یک متخصص فردی ثبت‌نام کرده‌اید. برای اضافه کردن پرسنل، باید ابتدا
-          <router-link to="/provider/convert-to-organization" class="convert-link">
-            به سازمان تبدیل شوید
-          </router-link>.
-        </p>
-      </div>
-    </div>
-
-    <!-- Hierarchy Type Check: Organization Should Use Advanced Dashboard -->
-    <div v-else-if="isOrganization" class="info-card info-card-primary">
+    <!--
+      Every provider is a salon that can have a team, so this is unconditional. It used to
+      sit behind two hierarchyType branches — "independent individual, convert to an
+      organization first" and "organization, use the advanced dashboard" — and once the
+      provider hierarchy was removed the backend stopped sending hierarchyType, so BOTH
+      branches were false and this component rendered nothing at all. The individual branch
+      also linked to /provider/convert-to-organization, a route that no longer exists.
+    -->
+    <div class="info-card info-card-primary">
       <div class="info-icon-wrapper">👥</div>
       <div class="info-content">
         <h4 class="info-title">مدیریت پیشرفته پرسنل</h4>
@@ -75,55 +68,6 @@ const formData = ref({
   name: '',
   position: '',
   phone: '',
-})
-
-// Computed: Check provider hierarchy type
-const currentProvider = computed(() => {
-  const provider = providerStore.currentProvider
-
-  // Debug logging to check if hierarchy fields are present
-  if (provider) {
-    const hasHierarchyFields = provider.hierarchyType !== undefined || provider.isIndependent !== undefined
-
-    console.log('[ProfileStaffSection] Current provider:', {
-      id: provider.id,
-      businessName: provider.profile?.businessName,
-      hierarchyType: provider.hierarchyType,
-      isIndependent: provider.isIndependent,
-      hasStaff: provider.staff?.length || 0,
-      hasHierarchyFields
-    })
-
-    if (!hasHierarchyFields) {
-      console.warn(
-        '[ProfileStaffSection] ⚠️ Backend is not returning hierarchyType and isIndependent fields.\n' +
-        'This means the provider hierarchy system is not fully integrated with the backend.\n' +
-        'The legacy staff management interface will be shown.\n\n' +
-        'TO FIX: Update the backend Provider API (GetProviderById endpoint) to include:\n' +
-        '- hierarchyType: "Organization" | "Individual"\n' +
-        '- isIndependent: boolean\n' +
-        '- parentProviderId: string | null'
-      )
-    }
-  }
-
-  return provider
-})
-
-const isIndependentIndividual = computed(() => {
-  // Check if hierarchy type is explicitly set to Individual with isIndependent flag
-  if (currentProvider.value?.hierarchyType === 'Individual' && currentProvider.value?.isIndependent === true) {
-    return true
-  }
-  return false
-})
-
-const isOrganization = computed(() => {
-  // Check if hierarchy type is explicitly set to Organization
-  if (currentProvider.value?.hierarchyType === 'Organization') {
-    return true
-  }
-  return false
 })
 
 // Load staff on mount

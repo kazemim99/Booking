@@ -140,12 +140,13 @@ The Provider aggregate SHALL have clear identity and categorization properties t
 **Changes**:
 - **REMOVED**: `ProviderType` property (conflated business structure with service category)
 - **ADDED**: `PrimaryCategory` property (required ServiceCategory enum)
-- **KEPT**: `ProviderHierarchyType` (Organization vs Individual)
+- **REMOVED**: `ProviderHierarchyType` (Organization vs Individual) — retired with the provider
+  hierarchy. Every Provider is a salon; a person who works at one holds an
+  `OrganizationMembership` and is never a Provider.
 
 #### Scenario: Provider creation with category
 - **WHEN** a new provider is created
 - **THEN** the system requires a `PrimaryCategory` (ServiceCategory enum value)
-- **AND** the system requires a `HierarchyType` (Organization or Individual)
 - **AND** the `PrimaryCategory` must be one of the predefined ServiceCategory enum values
 - **AND** the provider cannot be created without a valid category
 
@@ -198,16 +199,17 @@ Every provider SHALL have exactly one primary service category that defines thei
 - **AND** attempting to set multiple categories fails validation
 
 #### Scenario: Category aligns with business model
-- **WHEN** an Organization provider registers as a HairSalon
+- **WHEN** a provider registers as a HairSalon
 - **THEN** the system sets `PrimaryCategory = ServiceCategory.HairSalon`
 - **AND** the provider can offer hair-related services
 - **AND** search results show the provider in "Hair Salon" category
 
-#### Scenario: Individual providers have categories
-- **WHEN** an Individual provider (freelancer) registers
+#### Scenario: A solo practitioner has a category like any other salon
+- **WHEN** a freelancer registers their own business
 - **THEN** they must also select a `PrimaryCategory`
-- **AND** Independent individuals appear in category search alongside organizations
-- **AND** category is independent of `HierarchyType` (both Individual and Organization have categories)
+- **AND** they appear in category search alongside larger salons
+- **AND** no separate "individual" provider kind exists — they are a salon whose only
+  service-providing member is its owner
 
 ### Requirement: Category-Based Provider Discovery
 Customers SHALL be able to discover providers by browsing or filtering by service category.

@@ -146,6 +146,7 @@ namespace Booksy.ServiceCatalog.Application.Commands.Booking.RescheduleBooking
             // Step 1: Release old availability slots
             await ReleaseOldAvailabilitySlotsAsync(
                 resource.SlotOwnerId,
+                resource.SlotStaffId,
                 existingBooking.TimeSlot.StartTime,
                 existingBooking.TimeSlot.EndTime,
                 existingBooking.Id.Value,
@@ -154,6 +155,7 @@ namespace Booksy.ServiceCatalog.Application.Commands.Booking.RescheduleBooking
             // Step 2: Mark new availability slots as booked
             await MarkNewAvailabilitySlotsAsBookedAsync(
                 resource.SlotOwnerId,
+                resource.SlotStaffId,
                 newBooking.TimeSlot.StartTime,
                 newBooking.TimeSlot.EndTime,
                 newBooking.Id.Value,
@@ -177,6 +179,7 @@ namespace Booksy.ServiceCatalog.Application.Commands.Booking.RescheduleBooking
         /// </summary>
         private async Task ReleaseOldAvailabilitySlotsAsync(
             ProviderId providerId,
+            Guid? slotStaffId,
             DateTime startTime,
             DateTime endTime,
             Guid bookingId,
@@ -186,13 +189,16 @@ namespace Booksy.ServiceCatalog.Application.Commands.Booking.RescheduleBooking
             var startTimeOnly = TimeOnly.FromDateTime(startTime);
             var endTimeOnly = TimeOnly.FromDateTime(endTime);
 
-            // Find all availability slots that overlap with the old booking
+            // Scoped to this booking's own member. The BookingId re-check below already made
+            // this path safe, so the filter is about not dragging a whole salon's slots back
+            // to release two of them.
             var overlappingSlots = await _availabilityWriteRepository.FindOverlappingSlotsAsync(
                 providerId,
                 date.ToDateTime(TimeOnly.MinValue),
                 startTimeOnly,
                 endTimeOnly,
-                null,
+                excludeSlotId: null,
+                staffId: slotStaffId,
                 cancellationToken);
 
             // Release slots that were booked by this booking
@@ -224,6 +230,7 @@ namespace Booksy.ServiceCatalog.Application.Commands.Booking.RescheduleBooking
         /// </summary>
         private async Task MarkNewAvailabilitySlotsAsBookedAsync(
             ProviderId providerId,
+            Guid? slotStaffId,
             DateTime startTime,
             DateTime endTime,
             Guid newBookingId,
@@ -233,13 +240,16 @@ namespace Booksy.ServiceCatalog.Application.Commands.Booking.RescheduleBooking
             var startTimeOnly = TimeOnly.FromDateTime(startTime);
             var endTimeOnly = TimeOnly.FromDateTime(endTime);
 
-            // Find all availability slots that overlap with the new booking
+            // Scoped to the member being rescheduled onto. Unscoped, moving one booking to
+            // 14:00 marked every colleague's 14:00 slot as Booked as well -- the same
+            // whole-salon consumption CreateBooking had, reached by a different route.
             var overlappingSlots = await _availabilityWriteRepository.FindOverlappingSlotsAsync(
                 providerId,
                 date.ToDateTime(TimeOnly.MinValue),
                 startTimeOnly,
                 endTimeOnly,
-                null,
+                excludeSlotId: null,
+                staffId: slotStaffId,
                 cancellationToken);
 
             if (!overlappingSlots.Any())

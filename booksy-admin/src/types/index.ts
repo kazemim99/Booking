@@ -55,8 +55,6 @@ export interface ProviderDetails extends Provider {
     longitude?: number
   }
   yearsInBusiness?: number
-  hierarchyType?: string
-  isIndependent?: boolean
   tags?: string[]
 }
 

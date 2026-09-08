@@ -194,9 +194,10 @@ namespace Booksy.ServiceCatalog.Application.Commands.Booking.CreateBooking
             var endTime = request.StartTime.Add(totalDuration.ToTimeSpan());
             await MarkAvailabilityAsBookedAsync(
                 // How slots are keyed is the resolver's decision, not this handler's:
-                // member slots belong to the organization and carry StaffId=MembershipId;
-                // legacy sub-provider slots are keyed by the sub-provider itself.
+                // member slots belong to the organization and carry StaffId=MembershipId,
+                // while the organization booked directly owns all of its slots.
                 resource.SlotOwnerId,
+                resource.SlotStaffId,
                 request.StartTime,
                 endTime,
                 booking.Id.Value,
@@ -228,6 +229,7 @@ namespace Booksy.ServiceCatalog.Application.Commands.Booking.CreateBooking
         /// </summary>
         private async Task MarkAvailabilityAsBookedAsync(
             ProviderId providerId,
+            Guid? slotStaffId,
             DateTime startTime,
             DateTime endTime,
             Guid bookingId,
@@ -237,20 +239,19 @@ namespace Booksy.ServiceCatalog.Application.Commands.Booking.CreateBooking
             var startTimeOnly = TimeOnly.FromDateTime(startTime);
             var endTimeOnly = TimeOnly.FromDateTime(endTime);
 
-            // Find all overlapping availability slots
-            // NOTE: the 5th argument is `excludeSlotId` — a slot to skip — NOT a staff
-            // filter. `staffId` used to be passed here, which is a no-op in practice (a
-            // membership id never equals a slot id) but reads as staff-scoping that is not
-            // happening: FindOverlappingSlotsAsync does not filter on ProviderAvailability
-            // .StaffId at all, so an organization's overlapping slots are returned
-            // regardless of which member they belong to. Left as-is behaviourally; the
-            // missing staff filter belongs to the booking-slot-integrity change.
+            // Scoped to the member being booked. Unscoped, this marked EVERY colleague's
+            // overlapping slot as Booked too, so one 10:00 appointment consumed the whole
+            // salon's 10:00 capacity. (A staffId was once passed as the 5th argument, which
+            // is `excludeSlotId` — a no-op that read like staff-scoping and hid the gap.)
+            // Null here means the organization was booked directly, which does own all of
+            // its capacity, so that path stays unnarrowed.
             var overlappingSlots = await _availabilityWriteRepository.FindOverlappingSlotsAsync(
                 providerId,
                 date,
                 startTimeOnly,
                 endTimeOnly,
                 excludeSlotId: null,
+                staffId: slotStaffId,
                 cancellationToken);
 
             if (overlappingSlots.Count == 0)

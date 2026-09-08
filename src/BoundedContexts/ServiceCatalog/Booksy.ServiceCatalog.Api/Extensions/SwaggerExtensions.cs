@@ -28,17 +28,20 @@ public static class SwaggerExtensions
                 Version = "v1",
                 Description = @"API for managing service providers, bookings, and services in the Booksy platform.
 
-## Provider Hierarchy
-This API supports a provider hierarchy model:
-- **Organizations**: Business entities (salons, clinics, etc.) that can have staff members
-- **Individuals**: Single professionals who can be independent or linked to an organization
+## People, salons and memberships
+A **Provider** is a salon. A **Person** may own at most one salon and hold any number of
+**memberships** in others; working somewhere never creates a Provider of your own, so one
+person can work at several salons while remaining a single identity.
 
-### Key Features:
-- Register as Organization or Individual provider
-- Invite staff members to join an organization
-- Submit join requests to organizations
-- Convert individual provider to organization
-- Manage staff members and invitations",
+A membership carries org-scoped roles (Owner, Manager, StaffProvider, Receptionist) and,
+for anyone who provides services, a staff profile with their working week and the services
+they perform at that salon.
+
+### Key features:
+- Register a salon
+- Invite people to join it, including people who have no app account yet
+- Manage members, their roles, schedules and service assignments
+- Book a specific member, or the salon itself",
                 Contact = new OpenApiContact
                 {
                     Name = "Booksy Team",

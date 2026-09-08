@@ -265,7 +265,6 @@ The selected category SHALL be persisted through the registration flow and saved
 - **AND** submits the final registration
 - **THEN** backend creates Provider entity with:
   - `PrimaryCategory` = selected ServiceCategory enum value
-  - `HierarchyType` = Organization or Individual (from separate step)
 - **AND** provider profile displays category badge
 - **AND** provider appears in category-filtered search results
 

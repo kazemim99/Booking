@@ -4,17 +4,12 @@
 TBD - created by archiving change fix-reschedule-membership-staff. Update Purpose after archive.
 ## Requirements
 ### Requirement: Rescheduling works for every bookable-resource kind
-Rescheduling SHALL resolve the booking's staff reference using the same rules booking creation uses — an organization membership, the organization itself, or a legacy individual sub-provider — and SHALL NOT assume the reference is an individual provider.
+Rescheduling SHALL resolve the booking's staff reference using the same rules booking creation uses — an organization membership, or the organization itself — and SHALL NOT assume the reference is an individual provider.
 
 #### Scenario: Booking against an organization member
 - **GIVEN** a confirmed booking whose `StaffId` is a `MembershipId` of an active, service-providing member
 - **WHEN** the customer reschedules it to an available time
 - **THEN** the reschedule succeeds and the new booking is held for the same member
-
-#### Scenario: Booking against a legacy individual sub-provider
-- **GIVEN** a confirmed booking whose `StaffId` is a legacy individual sub-provider's `ProviderId`
-- **WHEN** the customer reschedules it to an available time
-- **THEN** the reschedule succeeds and the new booking is held for the same sub-provider
 
 #### Scenario: Booking made directly against the organization
 - **GIVEN** a confirmed booking whose `StaffId` is the organization's own `ProviderId`
@@ -22,7 +17,7 @@ Rescheduling SHALL resolve the booking's staff reference using the same rules bo
 - **THEN** the reschedule succeeds and the new booking is held against the organization
 
 #### Scenario: Staff reference that resolves to nothing
-- **WHEN** a booking's staff reference matches no membership, organization, or sub-provider
+- **WHEN** a booking's staff reference matches neither a membership of the organization nor the organization itself
 - **THEN** the request fails with a not-found error naming the unresolvable resource
 
 ### Requirement: Rescheduling moves the occupied slot for the correct resource

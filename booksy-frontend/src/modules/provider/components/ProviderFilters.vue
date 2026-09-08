@@ -131,26 +131,6 @@
         </div>
       </div>
 
-      <!-- Provider Hierarchy Type (Organization vs Individual) -->
-      <div class="filter-section">
-        <label class="filter-label">
-          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
-          </svg>
-          نوع ارائه‌دهنده
-        </label>
-        <div class="hierarchy-type-btns">
-          <button
-            v-for="hType in providerHierarchyTypes"
-            :key="hType.value"
-            :class="['hierarchy-btn', { active: localFilters.hierarchyType === hType.value }]"
-            @click="selectHierarchyType(hType.value)"
-          >
-            <span class="hierarchy-icon">{{ hType.icon }}</span>
-            <span class="hierarchy-label">{{ hType.label }}</span>
-          </button>
-        </div>
-      </div>
 
       <!-- Business Type (for more specific filtering) -->
       <!-- Status Filter (if admin) -->
@@ -321,7 +301,6 @@ const localFilters = ref<ProviderSearchFilters>({
   serviceCategory: undefined,
   priceRange: undefined,
   type: undefined,
-  hierarchyType: undefined,
   status: undefined,
   allowOnlineBooking: undefined,
   offersMobileServices: undefined,
@@ -348,12 +327,6 @@ const priceRanges = [
   { value: 'Budget', label: 'اقتصادی', icon: '💰' },
   { value: 'Moderate', label: 'متوسط', icon: '💰💰' },
   { value: 'Premium', label: 'لوکس', icon: '💰💰💰' },
-]
-
-// Provider types - hierarchy types (Organization vs Individual)
-const providerHierarchyTypes = [
-  { value: 'Organization', label: 'سازمان / کسب‌وکار', icon: '🏢' },
-  { value: 'Individual', label: 'متخصص فردی', icon: '👤' },
 ]
 
 // Service categories offered by the category filter.
@@ -423,7 +396,6 @@ const handleClearAll = () => {
     serviceCategory: undefined,
     priceRange: undefined,
     type: undefined,
-    hierarchyType: undefined,
     status: undefined,
     allowOnlineBooking: undefined,
     offersMobileServices: undefined,
@@ -448,11 +420,6 @@ const handleClearAll = () => {
 
 const selectPriceRange = (range: string) => {
   localFilters.value.priceRange = localFilters.value.priceRange === range ? undefined : (range as PriceRange)
-  handleChange()
-}
-
-const selectHierarchyType = (hType: string) => {
-  localFilters.value.hierarchyType = localFilters.value.hierarchyType === hType ? undefined : hType
   handleChange()
 }
 
@@ -545,9 +512,6 @@ const getCleanFilters = (): ProviderSearchFilters => {
   }
   if (localFilters.value.priceRange) {
     filters.priceRange = localFilters.value.priceRange
-  }
-  if (localFilters.value.hierarchyType) {
-    filters.hierarchyType = localFilters.value.hierarchyType
   }
   if (localFilters.value.status) {
     filters.status = localFilters.value.status as ProviderStatus
@@ -958,48 +922,11 @@ defineExpose({
 }
 
 /* Hierarchy Type Buttons */
-.hierarchy-type-btns {
-  display: grid;
-  grid-template-columns: repeat(2, 1fr);
-  gap: 0.75rem;
-}
 
-.hierarchy-btn {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 0.5rem;
-  padding: 1rem;
-  background: var(--color-bg-secondary);
-  border: 2px solid var(--color-border);
-  border-radius: 12px;
-  cursor: pointer;
-  transition: all 0.3s ease;
-}
 
-.hierarchy-btn:hover {
-  background: var(--color-primary-light);
-  border-color: var(--color-primary);
-  transform: translateY(-2px);
-}
 
-.hierarchy-btn.active {
-  background: var(--color-primary);
-  border-color: var(--color-primary);
-  color: white;
-  box-shadow: 0 4px 12px rgba(var(--color-primary-rgb), 0.3);
-}
 
-.hierarchy-icon {
-  font-size: 1.75rem;
-}
 
-.hierarchy-label {
-  font-size: 0.875rem;
-  font-weight: 600;
-  font-family: 'Vazir', 'IRANSans', sans-serif;
-  text-align: center;
-}
 
 /* Type Chips */
 .type-chips {

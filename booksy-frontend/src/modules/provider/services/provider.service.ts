@@ -400,11 +400,6 @@ class ProviderService {
       lastActiveAt: response.lastActiveAt,
       createdAt: response.registeredAt,
       lastModifiedAt: response.lastActiveAt,
-      // Provider hierarchy fields
-      hierarchyType: response.hierarchyType as 'Organization' | 'Individual' | undefined,
-      isIndependent: response.isIndependent,
-      parentProviderId: response.parentProviderId,
-      staffProviders: response.staffProviders, // Staff as individual providers (for organizations)
     }
   }
 

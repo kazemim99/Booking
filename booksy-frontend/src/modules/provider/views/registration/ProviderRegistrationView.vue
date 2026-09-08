@@ -19,13 +19,14 @@
         </div>
       </div>
 
-      <!-- Registration Flow -->
-      <div class="flow-container">
-        <ProviderTypeSelection
-          @select="handleTypeSelection"
-          @back="handleBack"
-        />
-      </div>
+      <!--
+        This used to host ProviderTypeSelection — an "Organization or Individual?" step
+        from the provider hierarchy. Everyone registers a salon now, so the step was
+        already a choice with one outcome: onMounted redirected to OrganizationRegistration
+        whichever card was clicked, and the picker only flashed on screen first. Nothing
+        renders here now; the redirect below is the whole behaviour.
+      -->
+      <div class="flow-container"></div>
     </div>
 
     <!-- Background Decoration -->
@@ -40,7 +41,6 @@
 <script setup lang="ts">
 import { onMounted } from 'vue'
 import { useRouter } from 'vue-router'
-import ProviderTypeSelection from '../../components/registration/ProviderTypeSelection.vue'
 import LanguageSwitcher from '@/shared/components/layout/Header/LanguageSwitcher.vue'
 import { useRTL } from '@/core/composables/useRTL'
 
@@ -48,21 +48,10 @@ import { useRTL } from '@/core/composables/useRTL'
 const { direction, initializeRTL } = useRTL()
 const router = useRouter()
 
-function handleTypeSelection(type?: string) {
-  if (!type) return
-
-  // Everyone registers as an Organization now
-  router.push({ name: 'OrganizationRegistration' })
-}
-
-function handleBack() {
-  router.push({ name: 'Home' })
-}
-
 onMounted(() => {
   initializeRTL()
-  // Automatically redirect to OrganizationRegistration since everyone registers as an Organization
-  router.push({ name: 'OrganizationRegistration' })
+  // There is one registration flow: a salon.
+  router.replace({ name: 'OrganizationRegistration' })
 })
 </script>
 

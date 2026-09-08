@@ -41,17 +41,7 @@
         <!-- Staff Info -->
         <div class="staff-info">
           <h3 class="staff-name">{{ getStaffName(staff) }}</h3>
-          <p v-if="'title' in staff && staff.title" class="staff-title">{{ staff.title }}</p>
-
-          <!-- For StaffProvider: Show rating and service count -->
-          <div v-if="isDisplayingStaffProviders && 'averageRating' in staff" class="staff-stats">
-            <span v-if="staff.averageRating > 0" class="stat-item">
-              ⭐ {{ staff.averageRating.toFixed(1) }}
-            </span>
-            <span v-if="staff.serviceCount > 0" class="stat-item">
-              {{ staff.serviceCount }} خدمت
-            </span>
-          </div>
+          <p v-if="staff.title" class="staff-title">{{ staff.title }}</p>
 
           <p v-if="staff.bio" class="staff-bio">{{ truncateText(staff.bio, 80) }}</p>
 
@@ -101,7 +91,7 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue'
 import { useRouter } from 'vue-router'
-import type { Provider, StaffMember, StaffProvider } from '@/modules/provider/types/provider.types'
+import type { Provider, StaffMember } from '@/modules/provider/types/provider.types'
 
 interface Props {
   provider: Provider
@@ -115,8 +105,8 @@ const props = withDefaults(defineProps<Props>(), {
 })
 
 const emit = defineEmits<{
-  (e: 'staff-selected', staff: StaffMember | StaffProvider): void
-  (e: 'book-with-staff', staff: StaffMember | StaffProvider): void
+  (e: 'staff-selected', staff: StaffMember): void
+  (e: 'book-with-staff', staff: StaffMember): void
 }>()
 
 const router = useRouter()
@@ -125,71 +115,34 @@ const router = useRouter()
 const loading = ref(false)
 
 // Computed
-const staffMembers = computed(() => {
-  // For organizations, use staffProviders (individual providers linked to the organization)
-  if (props.provider.hierarchyType === 'Organization' && props.provider.staffProviders) {
-    return props.provider.staffProviders
-  }
-  // Otherwise, use traditional staff members (filter to only show active staff)
-  return (props.provider.staff || []).filter(s => s.isActive)
-})
-
-// Check if we're displaying staff providers (organizations) or traditional staff members
-const isDisplayingStaffProviders = computed(() => {
-  return props.provider.hierarchyType === 'Organization' && props.provider.staffProviders && props.provider.staffProviders.length > 0
-})
+// A salon's team is its active members. There used to be a staffProviders branch here for
+// "organization" providers, whose team members were themselves Provider records; that model
+// is gone, the backend no longer sends hierarchyType or staffProviders, and the branch could
+// never be taken. `staff` is membership-backed and carries the membership id, which is the
+// identifier booking and availability both expect.
+const staffMembers = computed(() =>
+  (props.provider.staff || []).filter(s => s.isActive)
+)
 
 // Methods
-const getStaffName = (staff: StaffMember | StaffProvider): string => {
-  // Check if it's a StaffProvider (has businessName)
-  if ('businessName' in staff) {
-    return staff.businessName || 'بدون نام'
-  }
-  // It's a StaffMember (has firstName/lastName)
-  return `${staff.firstName} ${staff.lastName}`.trim() || 'بدون نام'
-}
+// These used to discriminate at runtime between a StaffMember and a StaffProvider (a team
+// member who was themselves a Provider record). That second shape no longer exists, so each
+// of them collapses to the StaffMember branch.
+const getStaffName = (staff: StaffMember): string =>
+  `${staff.firstName} ${staff.lastName}`.trim() || 'بدون نام'
 
-const getInitials = (staff: StaffMember | StaffProvider): string => {
-  // Check if it's a StaffProvider
-  if ('businessName' in staff) {
-    const words = staff.businessName.split(' ')
-    if (words.length >= 2) {
-      return `${words[0].charAt(0)}${words[1].charAt(0)}`.toUpperCase()
-    }
-    return staff.businessName.substring(0, 2).toUpperCase() || '??'
-  }
-  // It's a StaffMember
+const getInitials = (staff: StaffMember): string => {
   const first = staff.firstName?.charAt(0) || ''
   const last = staff.lastName?.charAt(0) || ''
   return `${first}${last}`.toUpperCase() || '??'
 }
 
-const getStaffId = (staff: StaffMember | StaffProvider): string => {
-  // StaffProvider uses providerId, StaffMember uses id
-  if ('providerId' in staff) {
-    return staff.providerId
-  }
-  // It's a StaffMember
-  return (staff as StaffMember).id
-}
+// The membership id — what availability and booking both expect as staffId.
+const getStaffId = (staff: StaffMember): string => staff.id
 
-const isStaffActive = (staff: StaffMember | StaffProvider): boolean => {
-  // StaffProvider checks status, StaffMember checks isActive
-  if ('isActive' in staff) {
-    return staff.isActive
-  }
-  // For StaffProvider, consider active if status is Active or PendingVerification
-  return staff.status === 'Active' || staff.status === 'PendingVerification'
-}
+const isStaffActive = (staff: StaffMember): boolean => staff.isActive
 
-const getStaffPhotoUrl = (staff: StaffMember | StaffProvider): string | undefined => {
-  // StaffProvider uses profileImageUrl, StaffMember uses photoUrl
-  if ('profileImageUrl' in staff) {
-    return staff.profileImageUrl
-  }
-  // It's a StaffMember
-  return (staff as StaffMember).photoUrl
-}
+const getStaffPhotoUrl = (staff: StaffMember): string | undefined => staff.photoUrl
 
 const getAvatarGradient = (index: number): string => {
   const gradients = [
@@ -213,13 +166,13 @@ const handleImageError = (event: Event) => {
   img.style.display = 'none'
 }
 
-const handleStaffSelect = (staff: StaffMember | StaffProvider) => {
+const handleStaffSelect = (staff: StaffMember) => {
   if (props.selectable) {
     emit('staff-selected', staff)
   }
 }
 
-const handleBookWithStaff = (staff: StaffMember | StaffProvider) => {
+const handleBookWithStaff = (staff: StaffMember) => {
   emit('book-with-staff', staff)
   router.push({
     name: 'NewBooking',

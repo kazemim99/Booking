@@ -206,5 +206,30 @@ code=$(http GET "/api/v1/memberships/me" "$PTOK" - /tmp/k_mine2.json)
 grep -q "$PROV" /tmp/k_mine2.json && ok "owner's membership lists their salon (no duplicate person)" \
   || fail "my-memberships did not list the owner's salon: $(cat /tmp/k_mine2.json)"
 
-printf '\n\033[1;32mALL KEYSTONE CHECKS PASSED — %d checks (legacy staff + membership chain + owner-provides-services + switch-salon).\033[0m\n' "$PASS"
+say "15) One member's booking does not consume the whole salon's capacity"
+# Step 11 booked $MEMBERSHIP at 11:00. The owner opted into providing services in
+# step 13, so the salon now has TWO bookable people, and the owner must still be
+# free at 11:00.
+#
+# This pins the defect that closed FOLLOW-UPS #1: MarkAvailabilityAsBookedAsync
+# looked up overlapping slots WITHOUT filtering ProviderAvailability.StaffId, so it
+# marked every colleague's overlapping slot as Booked too and the salon went dark
+# after a single appointment. It stayed hidden because, until per-member schedules
+# landed, only the first member of a salon ever had slots generated at all.
+code=$(http GET "/api/v1/memberships/me" "$PTOK" - /tmp/k_mine3.json)
+[ "$code" = "200" ] && ok "my-memberships 200" || fail "my-memberships (HTTP $code)"
+OWNMEM2=$(jget /tmp/k_mine3.json membershipId)
+if [ -n "$OWNMEM2" ] && [ "$OWNMEM2" != "$MEMBERSHIP" ]; then
+  code=$(http GET "/api/v1/Bookings/available-slots?providerId=$PROV&serviceId=$SVC&date=$DAY&staffId=$OWNMEM2" "$CTOK" - /tmp/k_own_slots.json)
+  [ "$code" = "200" ] && ok "available-slots 200 for the owner" || fail "owner available-slots (HTTP $code)"
+  if grep -q '"startTime"' /tmp/k_own_slots.json; then
+    ok "the owner is still bookable after a colleague was booked"
+  else
+    fail "booking one member consumed the whole salon availability (FOLLOW-UPS #1 regression): $(cat /tmp/k_own_slots.json)"
+  fi
+else
+  ok "owner membership not distinguishable from the booked member; capacity check skipped"
+fi
+
+printf '\n\033[1;32mALL KEYSTONE CHECKS PASSED — %d checks (legacy staff + membership chain + owner-provides-services + switch-salon + per-member capacity).\033[0m\n' "$PASS"
 

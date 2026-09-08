@@ -58,7 +58,8 @@ public class MemberBookabilityServiceTests
             .Returns(new List<Service>());
         _availability.FindOverlappingSlotsAsync(
                 Arg.Any<ProviderId>(), Arg.Any<DateTime>(), Arg.Any<TimeOnly>(),
-                Arg.Any<TimeOnly>(), Arg.Any<Guid?>(), Arg.Any<CancellationToken>())
+                Arg.Any<TimeOnly>(), Arg.Any<Guid?>(), Arg.Any<Guid?>(),
+                Arg.Any<CancellationToken>())
             .Returns(new List<ProviderAvailability>());
         _availability.HasSlotsForStaffOnDateAsync(
                 Arg.Any<ProviderId>(), Arg.Any<DateTime>(), Arg.Any<Guid>(),

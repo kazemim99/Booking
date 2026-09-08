@@ -36,26 +36,8 @@
           <Badge :variant="getTypeVariant(provider.type)">
             {{ provider.type }}
           </Badge>
-          <!-- Organization Badge -->
-          <Badge v-if="isOrganization" variant="primary" class="organization-badge">
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              fill="none"
-              viewBox="0 0 24 24"
-              stroke="currentColor"
-              class="badge-icon"
-            >
-              <path
-                stroke-linecap="round"
-                stroke-linejoin="round"
-                stroke-width="2"
-                d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"
-              />
-            </svg>
-            سازمان
-          </Badge>
           <!-- Staff Count Badge -->
-          <Badge v-if="isOrganization && staffCount > 0" variant="info" class="staff-count-badge">
+          <Badge v-if="staffCount > 0" variant="info" class="staff-count-badge">
             <svg
               xmlns="http://www.w3.org/2000/svg"
               fill="none"
@@ -160,7 +142,7 @@
       </div>
 
       <!-- Professionals Preview (for Organizations) -->
-      <div v-if="isOrganization && staffMembers.length > 0" class="professionals-preview">
+      <div v-if="staffMembers.length > 0" class="professionals-preview">
         <div class="professionals-header">
           <span class="professionals-label">متخصصین این مرکز:</span>
         </div>
@@ -276,10 +258,10 @@ const remainingTagsCount = computed(() => {
   return props.provider.tags.length - props.maxTags
 })
 
-const isOrganization = computed(() => {
-  return props.provider.hierarchyType === 'Organization'
-})
-
+// The staff badge and team preview used to be gated on hierarchyType === 'Organization'.
+// Every provider is a salon now, and the backend stopped sending hierarchyType with the
+// hierarchy itself, so the gate was permanently false and neither ever rendered. They are
+// gated on simply having staff instead, which is the question they were really asking.
 const staffCount = computed(() => {
   return props.provider.staffCount || 0
 })
