@@ -55,14 +55,12 @@ public sealed class ChangeMembershipRolesCommandHandler
         var organization = await _providerRepository.GetByIdAsync(membership.OrganizationId, cancellationToken)
             ?? throw new NotFoundException("Organization not found");
 
-        // Only an owner of the organization may change roles.
-        var callerIsOrgOwner = callerId.Equals(organization.OwnerId);
-        if (!callerIsOrgOwner)
-        {
-            var callerMembership = await _membershipRepository.GetActiveByPersonAndOrganizationAsync(
-                callerId, membership.OrganizationId, cancellationToken);
-            callerIsOrgOwner = callerMembership?.IsOwner == true;
-        }
+        // Only an owner of the organization may change roles. Ownership is read from the
+        // MEMBERSHIP first; Provider.OwnerId is a migration-only fallback for orgs that
+        // predate owner memberships (see TerminateMembershipCommandHandler, FOLLOW-UPS #40).
+        var callerMembership = await _membershipRepository.GetActiveByPersonAndOrganizationAsync(
+            callerId, membership.OrganizationId, cancellationToken);
+        var callerIsOrgOwner = callerMembership?.IsOwner == true || callerId.Equals(organization.OwnerId);
         if (!callerIsOrgOwner)
             throw new ForbiddenException("Only an organization owner can change member roles.");
 

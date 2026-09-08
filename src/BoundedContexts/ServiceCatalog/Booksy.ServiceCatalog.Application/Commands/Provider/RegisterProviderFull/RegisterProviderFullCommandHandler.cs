@@ -6,9 +6,13 @@
 using Booksy.Core.Application.Abstractions.CQRS;
 using Booksy.Core.Application.Abstractions.Persistence;
 using Booksy.Core.Domain.ValueObjects;
+using Booksy.ServiceCatalog.Application.Abstractions.Identity;
+using Booksy.ServiceCatalog.Application.Abstractions.Persistence;
 using Booksy.ServiceCatalog.Application.Services.Interfaces;
 using Booksy.ServiceCatalog.Application.Exceptions;
 using Booksy.ServiceCatalog.Domain.Aggregates;
+using Booksy.ServiceCatalog.Domain.Aggregates.MembershipAuditAggregate;
+using Booksy.ServiceCatalog.Domain.Aggregates.OrganizationMembershipAggregate;
 using Booksy.ServiceCatalog.Domain.Entities;
 using Booksy.ServiceCatalog.Application.Common;
 using Booksy.ServiceCatalog.Domain.Enums;
@@ -25,6 +29,10 @@ namespace Booksy.ServiceCatalog.Application.Commands.Provider.RegisterProviderFu
         private readonly IProviderReadRepository _providerReadRepository;
         private readonly IServiceWriteRepository _serviceWriteRepository;
         private readonly IProviderRegistrationService _registrationService;
+        private readonly IOrganizationMembershipRepository _membershipRepository;
+        private readonly IMembershipAuditRepository _auditRepository;
+        private readonly IPersonDirectory _personDirectory;
+        private readonly IMemberBookabilityService _memberBookability;
         private readonly IServiceCatalogUnitOfWork _unitOfWork;
         private readonly IConfiguration _configuration;
         private readonly ILogger<RegisterProviderFullCommandHandler> _logger;
@@ -34,6 +42,10 @@ namespace Booksy.ServiceCatalog.Application.Commands.Provider.RegisterProviderFu
             IProviderReadRepository providerReadRepository,
             IServiceWriteRepository serviceWriteRepository,
             IProviderRegistrationService registrationService,
+            IOrganizationMembershipRepository membershipRepository,
+            IMembershipAuditRepository auditRepository,
+            IPersonDirectory personDirectory,
+            IMemberBookabilityService memberBookability,
             IServiceCatalogUnitOfWork unitOfWork,
             IConfiguration configuration,
             ILogger<RegisterProviderFullCommandHandler> logger)
@@ -42,6 +54,10 @@ namespace Booksy.ServiceCatalog.Application.Commands.Provider.RegisterProviderFu
             _providerReadRepository = providerReadRepository;
             _serviceWriteRepository = serviceWriteRepository;
             _registrationService = registrationService;
+            _membershipRepository = membershipRepository;
+            _auditRepository = auditRepository;
+            _personDirectory = personDirectory;
+            _memberBookability = memberBookability;
             _unitOfWork = unitOfWork;
             _configuration = configuration;
             _logger = logger;
@@ -210,36 +226,65 @@ namespace Booksy.ServiceCatalog.Application.Commands.Provider.RegisterProviderFu
             // STEP 7: Add Team Members (Staff)
             // ====================================
 
-            var staffAdded = 0;
-            if (request.TeamMembers.Count > 0)
+            // Every person the salon works with is a MEMBERSHIP of this organization —
+            // never a second Provider. Two shapes, matching AddStaffToProviderCommandHandler:
+            //   • the phone identifies an existing person → membership linked to them
+            //   • otherwise                               → an unclaimed membership carrying
+            //     a display name, bookable now and claimable later by invitation.
+            // Before this, the loop below ended in a commented-out `provider.AddStaff(...)`:
+            // register-full accepted teamMembers, counted them, and silently discarded them.
+            var newMemberships = new List<OrganizationMembership>();
+
+            foreach (var memberDto in request.TeamMembers)
             {
-                foreach (var memberDto in request.TeamMembers)
+                if (memberDto.IsOwner)
+                    continue; // the owner's own membership is created below
+
+                var displayName = (memberDto.Name ?? string.Empty).Trim();
+                if (displayName.Length == 0)
+                    continue;
+
+                UserId? memberPersonId = null;
+                if (!string.IsNullOrWhiteSpace(memberDto.PhoneNumber))
                 {
-                    if (memberDto.IsOwner)
-                        continue; // Owner is already set
-
-                    var staffPhone = PhoneNumber.From(memberDto.PhoneNumber);
-                    var staffEmail = Email.Create(memberDto.Email);
-
-                    // Parse staff name
-                    var nameParts = memberDto.Name.Split(' ', 2);
-                    var firstName = nameParts[0];
-                    var lastName = nameParts.Length > 1 ? nameParts[1] : "";
-
-                    // Determine role
-                    var role = DetermineStaffRole(memberDto.Position);
-
-                    //provider.AddStaff(firstName, lastName, role, staffPhone);
-
-                    staffAdded++;
-
-                    _logger.LogDebug(
-                        "Added staff member: {Name}, Position: {Position}, Role: {Role}",
-                        memberDto.Name,
-                        memberDto.Position,
-                        role);
+                    var person = await _personDirectory.FindByPhoneAsync(memberDto.PhoneNumber, cancellationToken);
+                    if (person is not null)
+                        memberPersonId = UserId.From(person.PersonId);
                 }
+
+                // A team member listed twice (or one who is also the owner) must not
+                // violate ux_membership_person_org_active.
+                if (memberPersonId is not null &&
+                    (memberPersonId.Equals(ownerId) ||
+                     newMemberships.Any(m => memberPersonId.Equals(m.PersonId))))
+                {
+                    _logger.LogDebug("Skipping duplicate team member {Name} during registration", displayName);
+                    continue;
+                }
+
+                OrganizationMembership membership;
+                if (memberPersonId is not null)
+                {
+                    membership = OrganizationMembership.InviteExisting(memberPersonId, provider.Id);
+                    membership.Accept();
+                    membership.EnableStaffProfile();
+                }
+                else
+                {
+                    membership = OrganizationMembership.CreateUnclaimed(provider.Id, displayName);
+                }
+
+                newMemberships.Add(membership);
+
+                _logger.LogDebug(
+                    "Registered team member {Name} (position {Position}) as membership {MembershipId}, unclaimed={Unclaimed}",
+                    displayName,
+                    memberDto.Position,
+                    membership.Id,
+                    membership.IsUnclaimed);
             }
+
+            var staffAdded = newMemberships.Count;
 
             // ====================================
             // STEP 7.5: Add Provider to DbContext
@@ -253,6 +298,51 @@ namespace Booksy.ServiceCatalog.Application.Commands.Provider.RegisterProviderFu
             await _providerWriteRepository.SaveProviderAsync(provider, cancellationToken);
 
             _logger.LogDebug("Provider {ProviderId} added to DbContext (EntityState marked for insert)", provider.Id);
+
+            // ====================================
+            // STEP 7.6: Owner membership — the durable anchor of the membership model
+            // ====================================
+            // Ownership is expressed as a membership carrying the Owner role, NOT only by
+            // Provider.OwnerId. The step-9 wizard path already did this; register-full did
+            // not, so one-shot registrations produced a salon whose owner was invisible to
+            // every membership-based read (/memberships/me, the roster, role checks) until
+            // they happened to call /registration/owner-provides-services.
+            //
+            // providesServices: false — owning a salon does not imply working in it. The
+            // owner opts in separately via SetOwnerProvidesServices, which adds the
+            // StaffProvider role + StaffProfile and makes them bookable.
+            var ownerMembership = OrganizationMembership.CreateOwner(ownerId, provider.Id, providesServices: false);
+            await _membershipRepository.SaveAsync(ownerMembership, cancellationToken);
+            await _auditRepository.AppendAsync(
+                MembershipAuditEntry.Record(
+                    ownerMembership.Id,
+                    ownerMembership.OrganizationId,
+                    MembershipAuditAction.OwnerCreated,
+                    ownerMembership.Status,
+                    subjectPersonId: ownerMembership.PersonId,
+                    actorPersonId: ownerId,
+                    roles: ownerMembership.Roles),
+                cancellationToken);
+
+            foreach (var membership in newMemberships)
+            {
+                await _membershipRepository.SaveAsync(membership, cancellationToken);
+                await _auditRepository.AppendAsync(
+                    MembershipAuditEntry.Record(
+                        membership.Id,
+                        membership.OrganizationId,
+                        MembershipAuditAction.MemberAdded,
+                        membership.Status,
+                        subjectPersonId: membership.PersonId,
+                        actorPersonId: ownerId,
+                        roles: membership.Roles,
+                        reason: membership.IsUnclaimed ? "added without an app account" : null),
+                    cancellationToken);
+
+                // Qualify for the org's services and generate availability, so a member
+                // listed at registration is bookable without a second round-trip.
+                await _memberBookability.SyncAsync(membership, cancellationToken);
+            }
 
             // ====================================
             // STEP 8: Persist Changes & Dispatch Events

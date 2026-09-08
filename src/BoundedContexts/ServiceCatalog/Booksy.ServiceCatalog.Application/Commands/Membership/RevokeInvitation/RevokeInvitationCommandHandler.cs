@@ -60,13 +60,11 @@ public sealed class RevokeInvitationCommandHandler
             ?? throw new NotFoundException("Organization not found");
 
         // Only an owner of the inviting organization may withdraw its invitations.
-        var callerIsOwner = callerId.Equals(organization.OwnerId);
-        if (!callerIsOwner)
-        {
-            var callerMembership = await _membershipRepository.GetActiveByPersonAndOrganizationAsync(
-                callerId, invitation.OrganizationId, cancellationToken);
-            callerIsOwner = callerMembership?.IsOwner == true;
-        }
+        // Membership is the source of truth for ownership; Provider.OwnerId is a
+        // migration-only fallback (see TerminateMembershipCommandHandler, FOLLOW-UPS #40).
+        var callerMembership = await _membershipRepository.GetActiveByPersonAndOrganizationAsync(
+            callerId, invitation.OrganizationId, cancellationToken);
+        var callerIsOwner = callerMembership?.IsOwner == true || callerId.Equals(organization.OwnerId);
         if (!callerIsOwner)
             throw new ForbiddenException("Only an organization owner can revoke an invitation.");
 

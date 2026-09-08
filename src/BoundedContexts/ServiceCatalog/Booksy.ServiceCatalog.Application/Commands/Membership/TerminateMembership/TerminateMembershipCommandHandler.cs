@@ -56,14 +56,16 @@ public sealed class TerminateMembershipCommandHandler
 
         // Authorization: an owner of the org may remove staff; a member may remove
         // (leave) their own membership.
+        //
+        // Ownership is read from the MEMBERSHIP first — that is the source of truth for
+        // "who runs this salon". Provider.OwnerId is consulted only as a migration
+        // fallback, for organizations registered before owner memberships existed and
+        // not yet covered by backfill_memberships.sql STEP 1. Remove the fallback once
+        // that backfill has run everywhere (FOLLOW-UPS #40).
         var callerIsSelf = membership.PersonId is not null && callerId.Equals(membership.PersonId);
-        var callerIsOrgOwner = callerId.Equals(organization.OwnerId);
-        if (!callerIsOrgOwner)
-        {
-            var callerMembership = await _membershipRepository.GetActiveByPersonAndOrganizationAsync(
-                callerId, membership.OrganizationId, cancellationToken);
-            callerIsOrgOwner = callerMembership?.IsOwner == true;
-        }
+        var callerMembership = await _membershipRepository.GetActiveByPersonAndOrganizationAsync(
+            callerId, membership.OrganizationId, cancellationToken);
+        var callerIsOrgOwner = callerMembership?.IsOwner == true || callerId.Equals(organization.OwnerId);
 
         if (!callerIsOrgOwner && !callerIsSelf)
             throw new ForbiddenException("You cannot terminate this membership.");
