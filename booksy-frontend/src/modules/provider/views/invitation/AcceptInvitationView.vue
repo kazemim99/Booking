@@ -46,7 +46,7 @@
         <div class="invitation-header">
           <div class="organization-logo" v-if="invitation?.organizationLogo">
             <img
-              :src="invitation.organizationLogo"
+              :src="invitation.organizationName"
               :alt="invitation.organizationName"
               @error="handleImageError"
               @load="handleImageLoad"
@@ -268,22 +268,29 @@
 <script setup lang="ts">
 import { ref, computed, onMounted, reactive } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import { useHierarchyStore } from '../../stores/hierarchy.store'
+import { useMembershipStore } from '../../stores/membership.store'
 import { useAuthStore } from '@/core/stores/modules/auth.store'
 import { useNotification } from '@/core/composables/useNotification'
 import AppButton from '@/shared/components/ui/Button/AppButton.vue'
 import OTPInput from '@/shared/components/ui/OTPInput.vue'
 import phoneVerificationApi from '@/modules/auth/api/phoneVerification.api'
-import { hierarchyService } from '../../services/hierarchy.service'
-import type { ProviderInvitation } from '../../types/hierarchy.types'
-import { InvitationStatus } from '../../types/hierarchy.types'
+import type { ProviderInvitation } from '../../types/membership.types'
+
+// Invitation lifecycle states as the API reports them.
+const InvitationStatus = {
+  Pending: 'Pending',
+  Accepted: 'Accepted',
+  Rejected: 'Rejected',
+  Expired: 'Expired',
+  Revoked: 'Revoked',
+} as const
 import type { User } from '@/modules/user-management/types/user.types'
 import { UserType, UserStatus } from '@/modules/user-management/types/user.types'
 import { formatPhone, formatDateTime, formatDate } from '@/core/utils'
 
 const route = useRoute()
 const router = useRouter()
-const hierarchyStore = useHierarchyStore()
+const membershipStore = useMembershipStore()
 const authStore = useAuthStore()
 const { success, error: notifyError } = useNotification()
 
@@ -359,7 +366,17 @@ async function loadInvitation() {
     invitationId.value = id
 
     // Load invitation details from API
-    invitation.value = await hierarchyStore.getInvitation(orgId, id)
+    // The invitation identifies its own salon; no organization id is needed from the URL.
+    const summary = await membershipStore.getInvitation(id)
+    invitation.value = {
+      id: summary.invitationId,
+      organizationId: summary.organizationId,
+      organizationName: summary.organizationName,
+      inviteePhoneNumber: summary.maskedPhone,
+      inviteeName: summary.inviteeName,
+      status: summary.status,
+      expiresAt: summary.expiresAt,
+    }
 
   } catch (err) {
     error.value = err instanceof Error ? err.message : 'خطا در بارگذاری دعوت'
@@ -384,13 +401,7 @@ async function handleAccept() {
   try {
     // organizationId is accepted for call-site compatibility and no longer sent — the
     // invitation itself identifies the salon.
-    await hierarchyStore.acceptInvitation(
-      invitation.value.organizationId,
-      invitationId.value,
-      {
-        invitationId: invitationId.value,
-      }
-    )
+    await membershipStore.acceptInvitation(invitationId.value)
 
     invitation.value.status = InvitationStatus.Accepted
 
@@ -524,113 +535,27 @@ async function verifyOTPAndAccept() {
   otpError.value = ''
 
   try {
-    // Call the hierarchy service directly since store method doesn't exist yet
-    const response = await hierarchyService.acceptInvitationWithRegistration({
-      invitationId: invitationId.value,
-      organizationId: invitation.value.organizationId,
-      phoneNumber: invitation.value.inviteePhoneNumber,
+    // The OTP is verified against the phone the invitation was ISSUED to, so no phone is
+    // sent from here — an invitation cannot be redirected to a different number. An
+    // account already registered on that phone is reused rather than duplicated.
+    const response = await membershipStore.registerAndAcceptInvitation(invitationId.value, {
       firstName: registrationForm.firstName,
       lastName: registrationForm.lastName,
       email: registrationForm.email || undefined,
       otpCode: otpCode.value,
-      cloneServices: registrationForm.cloneServices,
-      cloneWorkingHours: registrationForm.cloneWorkingHours,
-      cloneGallery: registrationForm.cloneGallery,
     })
 
-    console.log('acceptInvitationWithRegistration response:', response)
-
-    // The service already unwraps the response, so response is directly the data object
-    if (response && response.userId && response.accessToken) {
-      // Store authentication tokens
-      authStore.setToken(response.accessToken)
-      authStore.setRefreshToken(response.refreshToken)
-
-      // Create and set user object from registration data
-      const userData: User = {
-        id: response.userId,
-        email: registrationForm.email || `${invitation.value.inviteePhoneNumber.replace('+', '')}@booksy.temp`,
-        firstName: registrationForm.firstName,
-        lastName: registrationForm.lastName,
-        fullName: `${registrationForm.firstName} ${registrationForm.lastName}`,
-        phoneNumber: invitation.value.inviteePhoneNumber,
-        roles: ['Provider', 'Staff'],
-        userType: UserType.Provider,
-        status: UserStatus.Active,
-        emailVerified: !!registrationForm.email,
-        phoneVerified: true,
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString(),
-        lastModifiedAt: new Date().toISOString(),
-        profile: {
-          firstName: registrationForm.firstName,
-          lastName: registrationForm.lastName,
-          phoneNumber: invitation.value.inviteePhoneNumber,
-          avatarUrl: undefined,
-        },
-        preferences: {
-          theme: 'light',
-          notifications: {
-            email: true,
-            sms: true,
-            push: true,
-            marketing: false,
-            bookingReminders: true,
-            promotions: false,
-            newsletter: false,
-          },
-          language: 'fa',
-          timezone: 'Asia/Tehran',
-          currency: 'IRR',
-          dateFormat: 'YYYY-MM-DD',
-          timeFormat: '24h',
-          notificationSettings: {
-            emailNotifications: true,
-            smsNotifications: true,
-            pushNotifications: true,
-            appointmentReminders: true,
-            promotionalEmails: false,
-          },
-          privacySettings: undefined,
-        },
-        metadata: {
-          totalBookings: 0,
-          completedBookings: 0,
-          cancelledBookings: 0,
-          noShows: 0,
-          favoriteProviders: [],
-          lastActivityAt: new Date().toISOString(),
-        },
-      }
-      authStore.setUser(userData)
-
-      // Update invitation status
+    if (response?.membershipId) {
       invitation.value.status = InvitationStatus.Accepted
 
-      // Build success message with cloning details
-      const orgName = invitation.value.organizationName
-      const clonedItems: string[] = []
+      // No session is minted here: accepting an invitation makes you a member of a salon,
+      // it does not sign you in. The person signs in with their own phone through the
+      // normal OTP flow — which also means nothing is cloned onto a shadow provider,
+      // because a member simply works from the salon's own services and hours.
+      success('موفقیت', `به تیم ${invitation.value.organizationName} خوش آمدید! اکنون می‌توانید با شماره خود وارد شوید.`)
 
-      if (response.clonedServicesCount > 0) {
-        clonedItems.push(`${response.clonedServicesCount} خدمت`)
-      }
-      if (response.clonedWorkingHoursCount > 0) {
-        clonedItems.push(`${response.clonedWorkingHoursCount} ساعت کاری`)
-      }
-      if (response.clonedGalleryCount > 0) {
-        clonedItems.push(`${response.clonedGalleryCount} تصویر`)
-      }
-
-      const successMessage = clonedItems.length > 0
-        ? `به تیم ${orgName} خوش آمدید! ${clonedItems.join(' و ')} کپی شد.`
-        : `به تیم ${orgName} خوش آمدید!`
-
-      // Show success message using notification composable
-      success('موفقیت', successMessage)
-
-      // Redirect to dashboard
       setTimeout(() => {
-        router.push('/provider/dashboard')
+        router.push({ name: 'Login' })
       }, 2000)
     } else {
       otpError.value = 'خطا در تأیید کد و پذیرش دعوت'

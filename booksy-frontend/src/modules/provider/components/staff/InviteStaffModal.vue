@@ -166,8 +166,7 @@
 
 <script setup lang="ts">
 import { ref, computed, reactive } from 'vue'
-import { useHierarchyStore } from '../../stores/hierarchy.store'
-import type { SendInvitationRequest } from '../../types/hierarchy.types'
+import { useMembershipStore } from '../../stores/membership.store'
 import AppButton from '@/shared/components/ui/Button/AppButton.vue'
 import { useNotification } from '@/core/composables/useNotification'
 import { isValidIranianMobile } from '@/core/utils'
@@ -191,7 +190,7 @@ const emit = defineEmits<{
 // Composables
 // ============================================
 
-const hierarchyStore = useHierarchyStore()
+const membershipStore = useMembershipStore()
 const { success, error } = useNotification()
 
 // ============================================
@@ -317,17 +316,15 @@ async function handleSubmit(): Promise<void> {
   isSubmitting.value = true
 
   try {
-    const request: SendInvitationRequest = {
-      organizationId: props.organizationId,
-      inviteePhoneNumber: `+98${formData.phoneNumber}`,
-      inviteeName: `${formData.firstName.trim()} ${formData.lastName.trim()}`,
-      firstName: formData.firstName.trim(),
-      lastName: formData.lastName.trim(),
-      email: formData.email.trim() || undefined,
-      message: formData.message || undefined,
-    }
-
-    await hierarchyStore.sendInvitation(props.organizationId, request)
+    // An invitation carries only the phone it is sent to and a name to show while it is
+    // pending. Email and other personal details belong to the invitee's own account —
+    // which they either already have (and it is reused) or create themselves on accepting.
+    // The salon never supplies them.
+    await membershipStore.sendInvitation(
+      props.organizationId,
+      `+98${formData.phoneNumber}`,
+      `${formData.firstName.trim()} ${formData.lastName.trim()}`.trim(),
+    )
 
     success('موفقیت', 'دعوت با موفقیت ارسال شد')
     emit('invited')

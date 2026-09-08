@@ -472,6 +472,26 @@ class ProviderRegistrationService {
   }
 
   /**
+   * The in-progress registration draft, flattened for the registration wizard, or null.
+   *
+   * Replaces the old `hierarchyService.getDraftProvider()`, which hit the same
+   * `/Registration/progress` endpoint and returned `draftData` with the current step
+   * merged in. It lived on the hierarchy service only because the organization-vs-individual
+   * registration flows did; there is one kind of provider now, so it belongs here.
+   */
+  async getDraftRegistration(): Promise<
+    (RegistrationProgressResponse['draftData'] & { registrationStep: number }) | null
+  > {
+    const progress = await this.getRegistrationProgress()
+    if (!progress?.hasDraft || !progress.draftData) return null
+
+    return {
+      ...progress.draftData,
+      registrationStep: progress.currentStep ?? 0,
+    }
+  }
+
+  /**
    * Upload business logo during registration (before draft is created)
    * This uploads the image file and returns a URL that can be used in the draft
    */

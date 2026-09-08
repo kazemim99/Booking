@@ -1,11 +1,7 @@
 import type { RouteRecordRaw, NavigationGuardNext, RouteLocationNormalized } from 'vue-router'
 import { useAuthStore } from '@/core/stores/modules/auth.store'
 import { ProviderStatus } from '@/core/types/enums.types'
-import {
-  organizationOnlyGuard,
-  staffMemberOnlyGuard,
-  independentIndividualOnlyGuard
-} from '../guards/hierarchy.guard'
+import { ownerOnlyGuard, staffMemberOnlyGuard } from '../guards/membership.guard'
 
 const providerRoutes: RouteRecordRaw[] = [
   // Public Provider Pages (customer-facing)
@@ -259,7 +255,7 @@ const providerRoutes: RouteRecordRaw[] = [
       roles: ['Provider', 'ServiceProvider'],
       title: 'Staff Management',
     },
-    beforeEnter: organizationOnlyGuard,
+    beforeEnter: ownerOnlyGuard,
   },
 
   // Invitation Routes
@@ -274,40 +270,10 @@ const providerRoutes: RouteRecordRaw[] = [
     },
   },
 
-  // Join Request Routes
-  {
-    path: '/provider/organizations/search',
-    name: 'SearchOrganizations',
-    component: () => import('@/modules/provider/components/joinrequest/SearchOrganizations.vue'),
-    meta: {
-      requiresAuth: true,
-      roles: ['Provider', 'ServiceProvider'],
-      title: 'Search Organizations',
-    },
-  },
-  {
-    path: '/provider/join-requests',
-    name: 'MyJoinRequests',
-    component: () => import('@/modules/provider/views/joinrequest/MyJoinRequestsView.vue'),
-    meta: {
-      requiresAuth: true,
-      roles: ['Provider', 'ServiceProvider'],
-      title: 'My Join Requests',
-    },
-  },
-
-  // Conversion Route (Independent Individual Only)
-  {
-    path: '/provider/convert-to-organization',
-    name: 'ConvertToOrganization',
-    component: () => import('@/modules/provider/views/conversion/ConvertToOrganizationView.vue'),
-    meta: {
-      requiresAuth: true,
-      roles: ['Provider', 'ServiceProvider'],
-      title: 'Convert to Organization',
-    },
-    beforeEnter: independentIndividualOnlyGuard,
-  },
+  // Join requests, organization search and convert-to-organization were removed with the
+  // provider-hierarchy model: they expressed one Provider joining or becoming another, which
+  // is not a concept in this product. A person joins a salon by accepting an invitation,
+  // which creates a membership and never a Provider.
 
   // ============================================================================
   // STAFF MEMBER ROUTES (Individual with Parent Organization)

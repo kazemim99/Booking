@@ -158,9 +158,8 @@
 import { ref, computed, h, onMounted } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { useProviderStore } from '../../stores/provider.store'
-import { useHierarchyStore } from '../../stores/hierarchy.store'
+import { useMembershipStore } from '../../stores/membership.store'
 import { useAuthStore } from '@/core/stores/modules/auth.store'
-import { HierarchyType } from '../../types/hierarchy.types'
 
 // Icon Components (Simple SVG-based)
 const CalendarIcon = () => h('svg', { class: 'w-5 h-5', fill: 'none', stroke: 'currentColor', viewBox: '0 0 24 24' }, [
@@ -186,7 +185,7 @@ const UsersIcon = () => h('svg', { class: 'w-5 h-5', fill: 'none', stroke: 'curr
 const router = useRouter()
 const route = useRoute()
 const providerStore = useProviderStore()
-const hierarchyStore = useHierarchyStore()
+const membershipStore = useMembershipStore()
 const authStore = useAuthStore()
 const mobileMenuOpen = ref(false)
 
@@ -211,14 +210,9 @@ async function loadProviderData() {
       await providerStore.loadCurrentProvider()
     }
 
-    // Load hierarchy information using the provider ID
-    if (providerStore.currentProvider?.id) {
-      console.log('[DashboardLayout] Loading hierarchy for provider:', providerStore.currentProvider.id)
-      await hierarchyStore.loadProviderHierarchy(providerStore.currentProvider.id)
-      console.log('[DashboardLayout] Hierarchy loaded successfully:', hierarchyStore.currentHierarchy)
-    } else {
-      console.warn('[DashboardLayout] No provider ID found, cannot load hierarchy')
-    }
+    // What this person can do is decided by their MEMBERSHIPS, not by what kind of
+    // Provider they own -- a person may own one salon and work at another.
+    await membershipStore.loadMyMemberships()
   } catch (error) {
     console.error('[DashboardLayout] Failed to load provider data:', error)
     hierarchyLoadError.value = 'خطا در بارگذاری اطلاعات'
@@ -233,7 +227,8 @@ function retryLoadHierarchy() {
 }
 
 const currentProvider = computed(() => providerStore.currentProvider)
-const currentHierarchy = computed(() => hierarchyStore.currentHierarchy)
+const isOwner = computed(() => membershipStore.isOwner)
+const isStaffMember = computed(() => membershipStore.isStaffMember)
 
 const displayName = computed(() => {
   if (!currentProvider.value) return 'مدیر'
@@ -244,44 +239,17 @@ const avatarLetter = computed(() => {
   return displayName.value.charAt(0)
 })
 
-// Role-based badge label
+// Badges describe the person's relationship to a salon, which is their membership.
+// Owning and working are independent, so someone can legitimately be both.
 const roleLabel = computed(() => {
-  const provider = currentHierarchy.value?.provider
-  const hierarchyType = provider?.hierarchyType
-  const hasParentOrg = !!provider?.parentOrganizationId
-
-  if (hierarchyType === HierarchyType.Organization) {
-    return ''
-  }
-
-  if (hierarchyType === HierarchyType.Individual && hasParentOrg) {
-    return 'کارمند'
-  }
-
-  if (hierarchyType === HierarchyType.Individual && !hasParentOrg) {
-    return 'فردی'
-  }
-
+  if (isOwner.value) return ''
+  if (isStaffMember.value) return 'کارمند'
   return null
 })
 
 const roleBadgeClass = computed(() => {
-  const provider = currentHierarchy.value?.provider
-  const hierarchyType = provider?.hierarchyType
-  const hasParentOrg = !!provider?.parentOrganizationId
-
-  if (hierarchyType === HierarchyType.Organization) {
-    return 'badge-organization'
-  }
-
-  if (hierarchyType === HierarchyType.Individual && hasParentOrg) {
-    return 'badge-staff'
-  }
-
-  if (hierarchyType === HierarchyType.Individual && !hasParentOrg) {
-    return 'badge-individual'
-  }
-
+  if (isOwner.value) return 'badge-organization'
+  if (isStaffMember.value) return 'badge-staff'
   return ''
 })
 
@@ -291,82 +259,47 @@ const DashboardIcon = () => h('svg', { class: 'w-5 h-5', fill: 'none', stroke: '
 ])
 
 const menuItems = computed(() => {
-  const provider = currentHierarchy.value?.provider
-  const hierarchyType = provider?.hierarchyType
-  const hasParentOrg = !!provider?.parentOrganizationId
-
-  // Base menu items for all providers
+  // Navigation follows MEMBERSHIP, not what kind of Provider the user owns. The old
+  // version branched on hierarchyType (Organization / Individual-with-parent /
+  // Individual-standalone) — three shapes that no longer exist. Owning and working are
+  // independent now, so an owner who also works elsewhere sees both sets.
   const baseItems = [
     { id: 'dashboard', label: 'داشبورد', icon: DashboardIcon, route: '/provider/dashboard' }
   ]
 
-  // If loading, show loading state with base items
-  if (isLoadingHierarchy.value) {
-    console.log('[DashboardLayout] Menu: Loading hierarchy...')
+  if (isLoadingHierarchy.value || hierarchyLoadError.value) {
     return baseItems
   }
 
-  // If error occurred, show base items with retry option
-  if (hierarchyLoadError.value) {
-    console.log('[DashboardLayout] Menu: Error loading hierarchy, showing base items')
-    return baseItems
-  }
+  const ownerItems = [
+    { id: 'bookings', label: 'رزروها', icon: CalendarIcon, route: '/provider/bookings' },
+    { id: 'financial', label: 'مالی', icon: CurrencyIcon, route: '/provider/financial' },
+    { id: 'staff', label: 'پرسنل', icon: UsersIcon, route: '/provider/staff' },
+    { id: 'profile', label: 'پروفایل', icon: UserIcon, route: '/provider/profile' }
+  ]
 
-  // If no hierarchy loaded yet, show enhanced fallback menu
-  if (!currentHierarchy.value || !hierarchyType) {
-    console.log('[DashboardLayout] Menu: No hierarchy data, showing enhanced fallback')
-    // Enhanced fallback - show common items that most providers need
-    return [
-      ...baseItems,
+  const staffItems = [
+    { id: 'my-bookings', label: 'رزروهای من', icon: CalendarIcon, route: '/provider/my-bookings' },
+    { id: 'my-earnings', label: 'درآمد من', icon: CurrencyIcon, route: '/provider/my-earnings' },
+    { id: 'my-profile', label: 'پروفایل من', icon: UserIcon, route: '/provider/my-profile' },
+    { id: 'organization', label: 'سالن من', icon: UsersIcon, route: '/provider/my-organization' }
+  ]
+
+  const items = [...baseItems]
+  if (isOwner.value) items.push(...ownerItems)
+  if (isStaffMember.value) items.push(...staffItems)
+
+  // Neither yet (memberships still loading, or a provider mid-registration): show the
+  // items every provider needs rather than an empty sidebar.
+  if (items.length === baseItems.length) {
+    items.push(
       { id: 'profile', label: 'پروفایل', icon: UserIcon, route: '/provider/profile' },
       { id: 'bookings', label: 'رزروها', icon: CalendarIcon, route: '/provider/bookings' },
       { id: 'financial', label: 'مالی', icon: CurrencyIcon, route: '/provider/financial' }
-    ]
+    )
   }
 
-  // ORGANIZATION MENU - Full management capabilities
-  if (hierarchyType === HierarchyType.Organization) {
-    console.log('[DashboardLayout] Menu: Organization type')
-    return [
-      ...baseItems,
-      { id: 'bookings', label: 'رزروها', icon: CalendarIcon, route: '/provider/bookings' },
-      { id: 'financial', label: 'مالی', icon: CurrencyIcon, route: '/provider/financial' },
-      { id: 'staff', label: 'پرسنل', icon: UsersIcon, route: '/provider/staff' }, // ← ORG ONLY
-      { id: 'profile', label: 'پروفایل', icon: UserIcon, route: '/provider/profile' }
-    ]
-  }
-
-  // STAFF MEMBER MENU - Limited to own data
-  if (hierarchyType === HierarchyType.Individual && hasParentOrg) {
-    console.log('[DashboardLayout] Menu: Staff member type')
-    return [
-      ...baseItems,
-      { id: 'my-bookings', label: 'رزروهای من', icon: CalendarIcon, route: '/provider/my-bookings' },
-      { id: 'my-earnings', label: 'درآمد من', icon: CurrencyIcon, route: '/provider/my-earnings' },
-      { id: 'my-profile', label: 'پروفایل من', icon: UserIcon, route: '/provider/my-profile' },
-      { id: 'organization', label: 'سازمان من', icon: UsersIcon, route: '/provider/my-organization' }
-    ]
-  }
-
-  // INDEPENDENT INDIVIDUAL MENU - Full control, no staff management
-  if (hierarchyType === HierarchyType.Individual && !hasParentOrg) {
-    console.log('[DashboardLayout] Menu: Independent individual type')
-    return [
-      ...baseItems,
-      { id: 'bookings', label: 'رزروها', icon: CalendarIcon, route: '/provider/bookings' },
-      { id: 'financial', label: 'مالی', icon: CurrencyIcon, route: '/provider/financial' },
-      { id: 'profile', label: 'پروفایل من', icon: UserIcon, route: '/provider/profile' }
-    ]
-  }
-
-  // Final fallback
-  console.log('[DashboardLayout] Menu: Unknown hierarchy type, using enhanced fallback')
-  return [
-    ...baseItems,
-    { id: 'profile', label: 'پروفایل', icon: UserIcon, route: '/provider/profile' },
-    { id: 'bookings', label: 'رزروها', icon: CalendarIcon, route: '/provider/bookings' },
-    { id: 'financial', label: 'مالی', icon: CurrencyIcon, route: '/provider/financial' }
-  ]
+  return items
 })
 
 // Determine if a menu item is active based on current route

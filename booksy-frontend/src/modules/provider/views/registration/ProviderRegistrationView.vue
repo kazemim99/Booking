@@ -43,12 +43,12 @@ import { useRouter } from 'vue-router'
 import ProviderTypeSelection from '../../components/registration/ProviderTypeSelection.vue'
 import LanguageSwitcher from '@/shared/components/layout/Header/LanguageSwitcher.vue'
 import { useRTL } from '@/core/composables/useRTL'
-import { HierarchyType } from '../../types/hierarchy.types'
+
 
 const { direction, initializeRTL } = useRTL()
 const router = useRouter()
 
-function handleTypeSelection(type?: HierarchyType) {
+function handleTypeSelection(type?: string) {
   if (!type) return
 
   // Everyone registers as an Organization now

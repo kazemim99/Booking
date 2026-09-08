@@ -13,36 +13,30 @@
     <div v-else-if="staffMembers.length > 0" class="staff-list">
       <div
         v-for="staff in staffMembers"
-        :key="staff.id"
+        :key="staff.membershipId"
         class="staff-item"
         data-testid="staff-option"
-        :class="{ selected: selectedStaffId === staff.id, disabled: !staff.isActive }"
+        :class="{ selected: selectedStaffId === staff.membershipId, disabled: staff.status !== 'Active' }"
         @click="handleSelect(staff)"
       >
         <div class="staff-avatar">
-          <img v-if="staff.photoUrl" :src="staff.photoUrl" :alt="staff.fullName" />
+          <img v-if="staff.photoUrl" :src="staff.photoUrl" :alt="staff.name" />
           <div v-else class="avatar-placeholder">
             <i class="icon-user"></i>
           </div>
-          <div v-if="selectedStaffId === staff.id" class="selected-badge">
+          <div v-if="selectedStaffId === staff.membershipId" class="selected-badge">
             <i class="icon-check"></i>
           </div>
         </div>
 
         <div class="staff-info">
-          <h4 class="staff-name">{{ staff.fullName }}</h4>
-          <p v-if="staff.title" class="staff-title">{{ staff.title }}</p>
-          <p v-if="staff.bio" class="staff-bio">{{ staff.bio }}</p>
-
-          <div class="staff-meta">
-            <span v-if="staff.specializations?.length" class="meta-item">
-              <i class="icon-award"></i>
-              {{ staff.specializations.join(', ') }}
-            </span>
-          </div>
+          <h4 class="staff-name">{{ staff.name }}</h4>
+          <!-- Bio is per-salon: the same person can describe themselves differently at
+               each salon they work at, so it comes from the membership, not the person. -->
+          <p v-if="staff.bioOverride" class="staff-bio">{{ staff.bioOverride }}</p>
         </div>
 
-        <div v-if="!staff.isActive" class="inactive-badge">
+        <div v-if="staff.status !== 'Active'" class="inactive-badge">
           غیرفعال
         </div>
       </div>
@@ -57,15 +51,15 @@
     <!-- Selected Staff Summary -->
     <div v-if="selectedStaff" class="selected-summary">
       <i class="icon-check-circle"></i>
-      <span>کارمند انتخاب شده: <strong>{{ selectedStaff.fullName }}</strong></span>
+      <span>کارمند انتخاب شده: <strong>{{ selectedStaff.name }}</strong></span>
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue'
-import { useHierarchyStore } from '@/modules/provider/stores/hierarchy.store'
-import type { StaffMember } from '@/modules/provider/types/hierarchy.types'
+import { useMembershipStore } from '@/modules/provider/stores/membership.store'
+import type { OrgMember } from '@/modules/provider/types/membership.types'
 
 interface Props {
   organizationId: string
@@ -74,20 +68,23 @@ interface Props {
 
 interface Emits {
   (e: 'update:modelValue', value: string | null): void
-  (e: 'select', staff: StaffMember): void
+  (e: 'select', staff: OrgMember): void
 }
 
 const props = defineProps<Props>()
 const emit = defineEmits<Emits>()
 
-const hierarchyStore = useHierarchyStore()
+const membershipStore = useMembershipStore()
 
 const isLoading = ref(false)
 const selectedStaffId = ref<string | null>(props.modelValue || null)
 
-const staffMembers = computed(() => hierarchyStore.staffMembers || [])
+// Only members who actually take customer bookings can be picked for one.
+const staffMembers = computed(() =>
+  membershipStore.members.filter((m) => m.providesServices && m.status === 'Active'),
+)
 const selectedStaff = computed(() =>
-  staffMembers.value.find((s) => s.id === selectedStaffId.value)
+  staffMembers.value.find((s) => s.membershipId === selectedStaffId.value)
 )
 
 onMounted(async () => {
@@ -100,10 +97,7 @@ async function loadStaffMembers() {
   isLoading.value = true
 
   try {
-    await hierarchyStore.loadStaffMembers({
-      organizationId: props.organizationId,
-      isActive: true,
-    })
+    await membershipStore.loadMembers(props.organizationId)
   } catch (error) {
     console.error('Error loading staff members:', error)
   } finally {
@@ -111,11 +105,11 @@ async function loadStaffMembers() {
   }
 }
 
-function handleSelect(staff: StaffMember) {
-  if (!staff.isActive) return
+function handleSelect(staff: OrgMember) {
+  if (staff.status !== 'Active') return
 
-  selectedStaffId.value = staff.id
-  emit('update:modelValue', staff.id)
+  selectedStaffId.value = staff.membershipId
+  emit('update:modelValue', staff.membershipId)
   emit('select', staff)
 }
 </script>

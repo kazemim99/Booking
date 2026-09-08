@@ -96,9 +96,7 @@ import { useAuthStore } from '@/core/stores/modules/auth.store'
 import { toLocalFormat } from '@/core/utils'
 import { useLocations } from '@/shared/composables/useLocations'
 import { useProviderRegistration } from '../../composables/useProviderRegistration'
-import { hierarchyService } from '../../services/hierarchy.service'
 import { providerRegistrationService } from '../../services/provider-registration.service'
-import type { RegisterOrganizationRequest } from '../../types/hierarchy.types'
 import { parseApiError } from '@/shared/utils/validation/error-parser'
 
 // Components
@@ -269,7 +267,10 @@ async function handleNext() {
     if (currentStep.value === 3) {
       // Step 3: Create organization draft
       console.log('✅ Step 3 complete - Creating organization draft...')
-      const request: RegisterOrganizationRequest = {
+      // There is only one kind of Provider now -- a salon -- so this is simply
+      // "create the provider draft", not "register an Organization as opposed to an
+      // Individual". The hierarchy-typed registration endpoints are gone.
+      const request = {
         businessName: registrationData.value.businessInfo.businessName,
         businessDescription: registrationData.value.businessInfo.description || undefined,
         category: registrationData.value.categoryId,
@@ -287,8 +288,8 @@ async function handleNext() {
         logoUrl: registrationData.value.businessInfo.logoUrl || undefined,
       }
 
-      const response = await hierarchyService.registerOrganization(request)
-      draftProviderId = response.data?.providerId
+      const response = await providerRegistrationService.createProviderDraft(request as any)
+      draftProviderId = (response as any)?.providerId
       console.log('✅ Organization draft created:', draftProviderId)
       toastService.success('اطلاعات شما ذخیره شد')
     } else if (currentStep.value === 4) {
@@ -418,7 +419,7 @@ onMounted(async () => {
 
   // Check if user has an existing draft provider
   try {
-    const draft = await hierarchyService.getDraftProvider()
+    const draft = await providerRegistrationService.getDraftRegistration()
     if (draft) {
       console.log('📋 Found existing draft provider:', draft)
 

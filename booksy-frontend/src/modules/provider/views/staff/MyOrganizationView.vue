@@ -66,21 +66,20 @@
         </div>
 
         <div v-else-if="otherStaffMembers.length > 0" class="staff-list">
-          <div v-for="staff in otherStaffMembers" :key="staff.id" class="staff-item">
+          <div v-for="staff in otherStaffMembers" :key="staff.membershipId" class="staff-item">
             <div class="staff-avatar">
-              <img v-if="staff.photoUrl" :src="staff.photoUrl" :alt="staff.fullName" />
+              <img v-if="staff.photoUrl" :src="staff.photoUrl" :alt="staff.name" />
               <div v-else class="avatar-placeholder">
-                {{ staff.fullName.charAt(0) }}
+                {{ staff.name.charAt(0) }}
               </div>
             </div>
             <div class="staff-info">
-              <h4>{{ staff.fullName }}</h4>
-              <p v-if="staff.title" class="staff-title">{{ staff.title }}</p>
-              <p v-else class="staff-role">{{ staff.role }}</p>
+              <h4>{{ staff.name }}</h4>
+              <p class="staff-role">{{ staff.isOwner ? 'مالک' : staff.roles.join('، ') }}</p>
             </div>
             <div class="staff-status">
-              <span :class="['status-badge', staff.isActive ? 'status-active' : 'status-inactive']">
-                {{ staff.isActive ? 'فعال' : 'غیرفعال' }}
+              <span :class="['status-badge', staff.status === 'Active' ? 'status-active' : 'status-inactive']">
+                {{ staff.status === 'Active' ? 'فعال' : 'غیرفعال' }}
               </span>
             </div>
           </div>
@@ -108,16 +107,30 @@
 
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue'
-import { useHierarchyStore } from '../../stores/hierarchy.store'
-import { useProviderStore } from '../../stores/provider.store'
+import { useMembershipStore } from '../../stores/membership.store'
 
-const hierarchyStore = useHierarchyStore()
-const providerStore = useProviderStore()
+// "The salon I work at" is this person's non-owner MEMBERSHIP. It used to be
+// `currentHierarchy.parentOrganization` — the organization their own Individual provider
+// row was parented to — which required every staff member to be a Provider.
+const membershipStore = useMembershipStore()
 const loading = ref(true)
 const loadingStaff = ref(false)
 
-const parentOrganization = computed(() => hierarchyStore.currentHierarchy?.parentOrganization)
-const currentProvider = computed(() => providerStore.currentProvider)
+const myMembership = computed(() => membershipStore.activeStaffMembership)
+
+const parentOrganization = computed(() => {
+  const m = myMembership.value
+  if (!m) return null
+  // The roster endpoint carries the people; the membership carries the salon's identity.
+  return {
+    id: m.organizationId,
+    businessName: m.organizationName,
+    logoUrl: m.organizationLogo ?? undefined,
+    city: undefined as string | undefined,
+    state: undefined as string | undefined,
+    businessType: undefined as string | undefined,
+  }
+})
 
 const logoLetter = computed(() => {
   return parentOrganization.value?.businessName?.charAt(0) || 'س'
@@ -130,34 +143,26 @@ const location = computed(() => {
   return parts.join(', ')
 })
 
-const staffCount = computed(() => {
-  return hierarchyStore.staffMembers.length + 1 // +1 for current user
-})
+// The roster now INCLUDES this person (they are a member like anyone else), so these are
+// straight counts rather than "others + 1".
+const staffCount = computed(() => membershipStore.staffCount)
+const activeStaffCount = computed(() => membershipStore.activeStaffCount)
 
-const activeStaffCount = computed(() => {
-  const activeOthers = hierarchyStore.staffMembers.filter(s => s.isActive).length
-  return activeOthers + 1 // +1 for current user (assuming they're active)
-})
-
-const otherStaffMembers = computed(() => {
-  // Filter out the current user from the staff list
-  return hierarchyStore.staffMembers.filter(s => s.providerId !== currentProvider.value?.id)
-})
+const otherStaffMembers = computed(() =>
+  membershipStore.members.filter((m) => m.membershipId !== myMembership.value?.membershipId),
+)
 
 onMounted(async () => {
-  console.log('[MyOrganizationView] Staff member organization view mounted')
-
+  await membershipStore.loadMyMemberships()
   loading.value = false
 
-  // Load staff members if parent organization exists
-  if (parentOrganization.value?.id) {
+  const orgId = myMembership.value?.organizationId
+  if (orgId) {
     loadingStaff.value = true
     try {
-      await hierarchyStore.loadStaffMembers({
-        organizationId: parentOrganization.value.id
-      })
+      await membershipStore.loadMembers(orgId)
     } catch (error) {
-      console.error('[MyOrganizationView] Failed to load staff members:', error)
+      console.error('[MyOrganizationView] Failed to load members:', error)
     } finally {
       loadingStaff.value = false
     }

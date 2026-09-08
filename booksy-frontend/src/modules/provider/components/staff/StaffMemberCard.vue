@@ -1,10 +1,10 @@
 <template>
-  <div class="staff-member-card" :class="{ inactive: !staff.isActive }">
+  <div class="staff-member-card" :class="{ inactive: !(staff.status === 'Active') }">
     <!-- Header with Avatar -->
     <div class="card-header">
       <div class="avatar-section">
         <div v-if="staff.photoUrl" class="avatar">
-          <img :src="staff.photoUrl" :alt="staff.fullName" />
+          <img :src="staff.photoUrl" :alt="staff.name" />
         </div>
         <div v-else class="avatar avatar-placeholder">
           <span>{{ initials }}</span>
@@ -36,40 +36,28 @@
 
     <!-- Staff Info -->
     <div class="card-body">
-      <h3 class="staff-name">{{ staff.fullName || `${staff.firstName} ${staff.lastName}` }}</h3>
+      <h3 class="staff-name">{{ staff.name }}</h3>
 
-      <div v-if="staff.title" class="staff-title">
-        {{ staff.title }}
+      <!-- Roles at THIS salon. A membership carries a set (an owner who also cuts hair
+           holds both), which is why this is a list rather than one title. -->
+      <div class="staff-title">
+        {{ staff.isOwner ? 'مالک' : staff.roles.join('، ') }}
       </div>
 
-      <!-- Contact Info -->
+      <!-- Contact Info. Email is not shown: it belongs to the person's own account, not
+           to the salon's record of them. -->
       <div class="contact-info">
-        <div v-if="staff.email" class="contact-item">
-          <i class="icon-mail"></i>
-          <a :href="`mailto:${staff.email}`" class="contact-link">{{ staff.email }}</a>
-        </div>
         <div v-if="staff.phoneNumber" class="contact-item">
           <i class="icon-phone"></i>
           <a :href="`tel:${staff.phoneNumber}`" class="contact-link" dir="ltr">{{ staff.phoneNumber }}</a>
         </div>
-      </div>
-
-      <!-- Specializations -->
-      <div v-if="staff.specializations.length > 0" class="specializations">
-        <div class="section-label">تخصص‌ها:</div>
-        <div class="tags">
-          <span
-            v-for="specialization in staff.specializations.slice(0, 3)"
-            :key="specialization"
-            class="tag"
-          >
-            {{ specialization }}
-          </span>
-          <span v-if="staff.specializations.length > 3" class="tag tag-more">
-            +{{ staff.specializations.length - 3 }}
-          </span>
+        <div v-else-if="staff.isUnclaimed" class="contact-item">
+          <i class="icon-user"></i>
+          <span>بدون حساب کاربری</span>
         </div>
       </div>
+
+      <div v-if="staff.bioOverride" class="staff-bio">{{ staff.bioOverride }}</div>
 
       <!-- Services Count -->
       <div class="services-info">
@@ -96,7 +84,7 @@
 <script setup lang="ts">
 import { ref, computed } from 'vue'
 import { onClickOutside } from '@vueuse/core'
-import type { StaffMember } from '../../types/hierarchy.types'
+import type { OrgMember } from '../../types/membership.types'
 import AppButton from '@/shared/components/ui/Button/AppButton.vue'
 import { getNameInitials, formatDate } from '@/core/utils'
 
@@ -105,7 +93,7 @@ import { getNameInitials, formatDate } from '@/core/utils'
 // ============================================
 
 interface Props {
-  staff: StaffMember
+  staff: OrgMember
 }
 
 const props = defineProps<Props>()
@@ -115,8 +103,8 @@ const props = defineProps<Props>()
 // ============================================
 
 const emit = defineEmits<{
-  (e: 'view', staff: StaffMember): void
-  (e: 'remove', staff: StaffMember): void
+  (e: 'view', staff: OrgMember): void
+  (e: 'remove', staff: OrgMember): void
 }>()
 
 // ============================================
@@ -130,20 +118,16 @@ const menuRef = ref<HTMLElement | null>(null)
 // Computed
 // ============================================
 
-const initials = computed(() => {
-  // Fallback to firstName + lastName if fullName is not available
-  const fullName = props.staff.fullName || `${props.staff.firstName || ''} ${props.staff.lastName || ''}`.trim()
+const isActive = computed(() => props.staff.status === 'Active')
 
+const initials = computed(() => {
+  const fullName = props.staff.name?.trim()
   return fullName ? getNameInitials(fullName) : '??'
 })
 
-const statusClass = computed(() => {
-  return props.staff.isActive ? 'status-active' : 'status-inactive'
-})
+const statusClass = computed(() => (isActive.value ? 'status-active' : 'status-inactive'))
 
-const statusText = computed(() => {
-  return props.staff.isActive ? 'فعال' : 'غیرفعال'
-})
+const statusText = computed(() => (isActive.value ? 'فعال' : 'غیرفعال'))
 
 // ============================================
 // Methods

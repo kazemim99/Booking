@@ -81,14 +81,12 @@
 import { ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { useProviderStore } from '@/modules/provider/stores/provider.store'
-import { useHierarchyStore } from '@/modules/provider/stores/hierarchy.store'
 import { useAuthStore } from '@/core/stores/modules/auth.store'
 import { toastService } from '@/core/services/toast.service'
 import AppButton from '@/shared/components/ui/Button/AppButton.vue'
 
 const router = useRouter()
 const providerStore = useProviderStore()
-const hierarchyStore = useHierarchyStore()
 const authStore = useAuthStore()
 
 const isLoading = ref(false)
@@ -134,14 +132,9 @@ const goToDashboard = async () => {
       console.error('[CompletionStep] ❌ Provider not loaded - currentProvider is null')
     }
 
-    // Step 3: Load hierarchy using the fresh provider ID
-    if (providerStore.currentProvider?.id) {
-      console.log('[CompletionStep] Step 3: Loading hierarchy for provider:', providerStore.currentProvider.id)
-      await hierarchyStore.loadProviderHierarchy(providerStore.currentProvider.id)
-      console.log('[CompletionStep] ✅ Hierarchy loaded:', hierarchyStore.currentHierarchy)
-    } else {
-      console.warn('[CompletionStep] ⚠️ Skipping hierarchy load - no provider ID available')
-    }
+    // There is no hierarchy to load any more: completing registration creates the
+    // provider and the owner's membership server-side, and the dashboard reads the
+    // membership list itself.
 
     // Step 4: Fetch latest provider status from API (updates auth store)
     // This is a fallback in case token refresh didn't work
@@ -155,7 +148,6 @@ const goToDashboard = async () => {
       providerId: authStore.providerId,
       providerStatus: authStore.providerStatus,
       currentProvider: providerStore.currentProvider?.id,
-      hierarchyLoaded: !!hierarchyStore.currentHierarchy
     })
     router.push({ name: 'ProviderDashboard' })
   } catch (error) {

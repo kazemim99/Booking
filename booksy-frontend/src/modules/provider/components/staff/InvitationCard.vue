@@ -74,9 +74,16 @@
 
 <script setup lang="ts">
 import { computed, ref, onUnmounted } from 'vue'
-import type { ProviderInvitation } from '../../types/hierarchy.types'
-import { InvitationStatus } from '../../types/hierarchy.types'
-import { hierarchyService } from '../../services/hierarchy.service'
+import type { ProviderInvitation } from '../../types/membership.types'
+import { membershipService } from '../../services/membership.service'
+
+const InvitationStatus = {
+  Pending: 'Pending',
+  Accepted: 'Accepted',
+  Rejected: 'Rejected',
+  Expired: 'Expired',
+  Revoked: 'Revoked',
+} as const
 import { useNotification } from '@/core/composables/useNotification'
 import { formatPhone, formatDate } from '@/core/utils'
 
@@ -141,13 +148,14 @@ const expiryText = computed(() => {
   }
 })
 
-function getStatusLabel(status: InvitationStatus): string {
-  const labels: Record<InvitationStatus, string> = {
-    [InvitationStatus.Pending]: 'در انتظار',
-    [InvitationStatus.Accepted]: 'پذیرفته شده',
-    [InvitationStatus.Rejected]: 'رد شده',
-    [InvitationStatus.Expired]: 'منقضی شده',
-    [InvitationStatus.Cancelled]: 'لغو شده',
+function getStatusLabel(status: string): string {
+  const labels: Record<string, string> = {
+    Pending: 'در انتظار',
+    Accepted: 'پذیرفته شده',
+    Rejected: 'رد شده',
+    Expired: 'منقضی شده',
+    // Withdrawing an invitation is a REVOKE now (audited, never deleted).
+    Revoked: 'لغو شده',
   }
   return labels[status] || status
 }
@@ -170,9 +178,11 @@ async function handleResend() {
 
   try {
     // Call backend API to resend invitation (reuses send invitation endpoint)
-    const response = await hierarchyService.resendInvitation(
+    // Resending is simply issuing the invitation again to the same phone.
+    const response = await membershipService.sendInvitation(
       props.invitation.organizationId,
-      props.invitation
+      props.invitation.inviteePhoneNumber,
+      props.invitation.inviteeName,
     )
 
     // Show success message
@@ -182,8 +192,8 @@ async function handleResend() {
     resendCount.value++
 
     // Emit event with updated invitation (if backend returns it)
-    if (response.data) {
-      emit('resent', response.data)
+    if (response) {
+      emit('resent', response)
     }
 
     // Start 60-second cooldown timer

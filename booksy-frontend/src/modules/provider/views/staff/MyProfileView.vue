@@ -289,9 +289,15 @@
 
 <script setup lang="ts">
 import { ref, computed, onMounted, h } from 'vue'
-import { useHierarchyStore } from '../../stores/hierarchy.store'
+import { useMembershipStore } from '../../stores/membership.store'
+import { useAuthStore } from '@/core/stores/modules/auth.store'
 
-const hierarchyStore = useHierarchyStore()
+// A staff member's identity is their PERSON (auth), and where they work is their
+// MEMBERSHIP. Neither is a Provider: this view previously read
+// currentHierarchy.provider / .parentOrganization, which only existed because staff used
+// to be modelled as sub-providers.
+const membershipStore = useMembershipStore()
+const authStore = useAuthStore()
 
 // Icon components
 const UserIcon = () => h('svg', { class: 'w-5 h-5', fill: 'none', stroke: 'currentColor', viewBox: '0 0 24 24' }, [
@@ -325,9 +331,33 @@ const tabs = [
 
 const activeTab = ref('personal')
 
-const provider = computed(() => hierarchyStore.currentHierarchy?.provider)
-const parentOrganization = computed(() => hierarchyStore.currentHierarchy?.parentOrganization)
-const organizationName = computed(() => hierarchyStore.currentHierarchy?.parentOrganization?.businessName)
+const myMembership = computed(() => membershipStore.activeStaffMembership)
+
+/** This person's own record on the salon's roster — their per-salon bio and photo. */
+const myMember = computed(() =>
+  membershipStore.members.find((m) => m.membershipId === myMembership.value?.membershipId) ?? null,
+)
+
+const provider = computed(() =>
+  myMember.value
+    ? { photoUrl: myMember.value.photoUrl ?? undefined, bio: myMember.value.bioOverride ?? '' }
+    : null,
+)
+
+const parentOrganization = computed(() => {
+  const m = myMembership.value
+  if (!m) return null
+  return {
+    id: m.organizationId,
+    businessName: m.organizationName,
+    logoUrl: m.organizationLogo ?? undefined,
+    city: undefined as string | undefined,
+    state: undefined as string | undefined,
+    businessType: undefined as string | undefined,
+  }
+})
+
+const organizationName = computed(() => myMembership.value?.organizationName)
 
 const personalForm = ref({
   firstName: '',
@@ -349,16 +379,21 @@ const getBusinessTypeLabel = (type: string) => {
   return labels[type] || type
 }
 
-onMounted(() => {
-  // Populate form with provider data
-  if (provider.value) {
-    personalForm.value = {
-      firstName: (provider.value as any).firstName || '',
-      lastName: (provider.value as any).lastName || '',
-      email: (provider.value as any).email || '',
-      phoneNumber: (provider.value as any).phoneNumber || '',
-      bio: (provider.value as any).bio || '',
-    }
+onMounted(async () => {
+  await membershipStore.loadMyMemberships()
+
+  const orgId = myMembership.value?.organizationId
+  if (orgId) await membershipStore.loadMembers(orgId)
+
+  // Name/email/phone are the PERSON's, from their account — not the salon's to hold.
+  // Only the bio is per-salon, and it lives on their membership's staff profile.
+  const user = authStore.user as any
+  personalForm.value = {
+    firstName: user?.firstName ?? '',
+    lastName: user?.lastName ?? '',
+    email: user?.email ?? '',
+    phoneNumber: user?.phoneNumber ?? '',
+    bio: myMember.value?.bioOverride ?? '',
   }
 })
 </script>

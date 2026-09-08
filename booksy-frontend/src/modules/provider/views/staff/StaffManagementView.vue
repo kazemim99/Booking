@@ -51,15 +51,6 @@
           </div>
         </div>
 
-        <div class="stat-card">
-          <div class="stat-icon" style="background: linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%)">
-            <i class="icon-clipboard"></i>
-          </div>
-          <div class="stat-content">
-            <div class="stat-value">{{ pendingRequestsCount }}</div>
-            <div class="stat-label">درخواست‌های پیوستن</div>
-          </div>
-        </div>
       </div>
 
       <!-- Tabs -->
@@ -80,14 +71,6 @@
           >
             <i class="icon-mail"></i>
             دعوت‌ها ({{ pendingInvitationsCount }})
-          </button>
-          <button
-            class="tab"
-            :class="{ active: activeTab === 'requests' }"
-            @click="activeTab = 'requests'"
-          >
-            <i class="icon-clipboard"></i>
-            درخواست‌ها ({{ pendingRequestsCount }})
           </button>
         </div>
       </div>
@@ -133,7 +116,7 @@
           <div v-else class="staff-grid">
             <StaffMemberCard
               v-for="staff in filteredStaff"
-              :key="staff.id"
+              :key="staff.membershipId"
               :staff="staff"
               @view="viewStaffDetails"
               @edit="editStaff"
@@ -198,29 +181,6 @@
           </div>
         </div>
 
-        <!-- Join Requests Tab -->
-        <div v-else-if="activeTab === 'requests'" class="requests-tab">
-          <div v-if="isLoadingRequests" class="loading-state">
-            <div class="spinner"></div>
-            <p>در حال بارگذاری درخواست‌ها...</p>
-          </div>
-
-          <div v-else-if="pendingJoinRequestsList.length === 0" class="empty-state">
-            <i class="icon-clipboard"></i>
-            <h3>درخواستی وجود ندارد</h3>
-            <p>درخواست‌های پیوستن در اینجا نمایش داده می‌شوند</p>
-          </div>
-
-          <div v-else class="requests-list">
-            <JoinRequestCard
-              v-for="request in pendingJoinRequestsList"
-              :key="request.id"
-              :request="request"
-              @approve="approveRequest"
-              @reject="rejectRequest"
-            />
-          </div>
-        </div>
       </div>
 
       <!-- Invite Staff Modal -->
@@ -235,7 +195,7 @@
       <ConfirmationModal
         v-if="showRemoveConfirm"
         title="حذف کارمند"
-        :message="`آیا مطمئن هستید که می‌خواهید ${staffToRemove?.fullName} را از تیم خود حذف کنید؟`"
+        :message="`آیا مطمئن هستید که می‌خواهید ${staffToRemove?.name} را از تیم خود حذف کنید؟`"
         confirm-text="حذف کارمند"
         cancel-text="انصراف"
         variant="danger"
@@ -250,12 +210,11 @@
 import { ref, computed, onMounted, watch } from 'vue'
 import DashboardLayout from '../../components/dashboard/DashboardLayout.vue'
 import { useProviderStore } from '../../stores/provider.store'
-import { useHierarchyStore } from '../../stores/hierarchy.store'
-import type { StaffMember, JoinRequest, ProviderInvitation } from '../../types/hierarchy.types'
+import { useMembershipStore } from '../../stores/membership.store'
+import type { OrgMember, ProviderInvitation } from '../../types/membership.types'
 import AppButton from '@/shared/components/ui/Button/AppButton.vue'
 import StaffMemberCard from '../../components/staff/StaffMemberCard.vue'
 import InvitationCard from '../../components/staff/InvitationCard.vue'
-import JoinRequestCard from '../../components/staff/JoinRequestCard.vue'
 import InviteStaffModal from '../../components/staff/InviteStaffModal.vue'
 import ConfirmationModal from '@/shared/components/ConfirmationModal.vue'
 import { useNotification } from '@/core/composables/useNotification'
@@ -265,14 +224,14 @@ import { useNotification } from '@/core/composables/useNotification'
 // ============================================
 
 const providerStore = useProviderStore()
-const hierarchyStore = useHierarchyStore()
+const membershipStore = useMembershipStore()
 const { success, error } = useNotification()
 
 // ============================================
 // State
 // ============================================
 
-const activeTab = ref<'staff' | 'invitations' | 'requests'>('staff')
+const activeTab = ref<'staff' | 'invitations'>('staff')
 const searchQuery = ref('')
 const statusFilter = ref<'all' | 'active' | 'inactive'>('all')
 const currentPage = ref(1)
@@ -280,78 +239,57 @@ const pageSize = ref(12)
 
 const showInviteModal = ref(false)
 const showRemoveConfirm = ref(false)
-const staffToRemove = ref<StaffMember | null>(null)
+const staffToRemove = ref<OrgMember | null>(null)
 
 // ============================================
 // Computed
 // ============================================
 
-// Get the organization ID - either current provider if Organization, or parent if Individual
-const organizationId = computed(() => {
-  const currentProvider = providerStore.currentProvider
-  const hierarchy = hierarchyStore.currentHierarchy
+// The salon being managed is the one this person OWNS. Staff management is owner-only
+// (ownerOnlyGuard), so there is no "or my parent organization" branch any more -- that
+// existed because a staff member used to be an Individual provider under an Organization.
+const organizationId = computed(
+  () => membershipStore.ownedMemberships[0]?.organizationId || providerStore.currentProvider?.id || '',
+)
 
-  // If current provider is an Organization, use their ID
-  if (hierarchy?.provider?.hierarchyType === 'Organization') {
-    return currentProvider?.id || ''
-  }
+const staffCount = computed(() => membershipStore.staffCount)
+const activeStaffCount = computed(() => membershipStore.activeStaffCount)
 
-  // If current provider is an Individual with a parent organization, use parent's ID
-  if (hierarchy?.provider?.hierarchyType === 'Individual' && hierarchy?.parentOrganization) {
-    return hierarchy.parentOrganization.id || ''
-  }
-
-  // Fallback to current provider ID (shouldn't happen, but safe fallback)
-  return currentProvider?.id || ''
-})
-
-const staffCount = computed(() => hierarchyStore.staffMembers?.length || 0)
-const activeStaffCount = computed(() => hierarchyStore.activeStaffCount || 0)
-
-const staffList = computed(() => hierarchyStore.staffMembers || [])
+const staffList = computed(() => membershipStore.members)
 
 const filteredStaff = computed(() => {
   let result = staffList.value
 
-  // Search filter
+  // Search filter. Email is not searchable any more: it belongs to the person's own
+  // account, not to the salon's record of them, so the roster does not carry it.
   if (searchQuery.value) {
     const query = searchQuery.value.toLowerCase()
     result = result.filter(
-      (staff: StaffMember) =>
-        staff.fullName.toLowerCase().includes(query) ||
-        staff.email?.toLowerCase().includes(query) ||
+      (staff: OrgMember) =>
+        staff.name.toLowerCase().includes(query) ||
         staff.phoneNumber?.toLowerCase().includes(query)
     )
   }
 
   // Status filter
   if (statusFilter.value !== 'all') {
-    const isActive = statusFilter.value === 'active'
-    result = result.filter((staff: StaffMember) => staff.isActive === isActive)
+    const wantActive = statusFilter.value === 'active'
+    result = result.filter((staff: OrgMember) => (staff.status === 'Active') === wantActive)
   }
 
   return result
 })
 
 const pendingInvitationsList = computed(
-  () => hierarchyStore.pendingInvitations || []
+  () => membershipStore.pendingInvitations || []
 )
 
 const pendingInvitationsCount = computed(
-  () => hierarchyStore.pendingInvitations?.length || 0
+  () => membershipStore.pendingInvitations?.length || 0
 )
 
-const pendingJoinRequestsList = computed(
-  () => hierarchyStore.pendingJoinRequests || []
-)
-
-const pendingRequestsCount = computed(
-  () => hierarchyStore.pendingJoinRequests?.length || 0
-)
-
-const isLoadingStaff = computed(() => hierarchyStore.loading.staff)
-const isLoadingInvitations = computed(() => hierarchyStore.loading.invitations)
-const isLoadingRequests = computed(() => hierarchyStore.loading.joinRequests)
+const isLoadingStaff = computed(() => membershipStore.loading.members)
+const isLoadingInvitations = computed(() => membershipStore.loading.invitations)
 
 const totalPages = computed(() => Math.ceil(filteredStaff.value.length / pageSize.value))
 
@@ -383,11 +321,7 @@ async function loadData(): Promise<void> {
       await providerStore.loadCurrentProvider()
     }
 
-    // Load hierarchy to determine organization ID
-    const currentProviderId = providerStore.currentProvider?.id
-    if (currentProviderId && !hierarchyStore.currentHierarchy) {
-      await hierarchyStore.loadProviderHierarchy(currentProviderId)
-    }
+    await membershipStore.loadMyMemberships()
 
     const orgId = organizationId.value
     if (!orgId) {
@@ -396,9 +330,8 @@ async function loadData(): Promise<void> {
     }
 
     await Promise.all([
-      hierarchyStore.loadStaffMembers({ organizationId: orgId }),
-      hierarchyStore.loadSentInvitations(orgId),
-      hierarchyStore.loadReceivedJoinRequests(orgId),
+      membershipStore.loadMembers(orgId),
+      membershipStore.loadSentInvitations(orgId),
     ])
   } catch (err) {
     error('خطا', 'خطا در بارگذاری اطلاعات')
@@ -406,17 +339,17 @@ async function loadData(): Promise<void> {
   }
 }
 
-function viewStaffDetails(staff: StaffMember): void {
+function viewStaffDetails(staff: OrgMember): void {
   // Navigate to staff details page or show modal
   console.log('View staff:', staff)
 }
 
-function editStaff(staff: StaffMember): void {
+function editStaff(staff: OrgMember): void {
   // Navigate to edit staff page or show modal
   console.log('Edit staff:', staff)
 }
 
-function confirmRemoveStaff(staff: StaffMember): void {
+function confirmRemoveStaff(staff: OrgMember): void {
   staffToRemove.value = staff
   showRemoveConfirm.value = true
 }
@@ -428,7 +361,7 @@ async function handleRemoveStaff(): Promise<void> {
   if (!orgId) return
 
   try {
-    await hierarchyStore.removeStaffMember(orgId, staffToRemove.value.id)
+    await membershipStore.removeMember(staffToRemove.value.membershipId)
 
     success('موفقیت', 'کارمند با موفقیت حذف شد')
     showRemoveConfirm.value = false
@@ -450,10 +383,11 @@ async function resendInvitation(invitationId: string): Promise<void> {
   if (!orgId) return
 
   try {
-    await hierarchyStore.resendInvitation(orgId, invitationId)
+    const invitation = membershipStore.sentInvitations.find((i) => i.id === invitationId)
+    if (invitation) await membershipStore.resendInvitation(orgId, invitation)
     success('موفقیت', 'دعوت مجدداً ارسال شد')
     // Reload invitations to reflect updated status
-    await hierarchyStore.loadSentInvitations(orgId)
+    await membershipStore.loadSentInvitations(orgId)
   } catch (err) {
     error('خطا', 'خطا در ارسال مجدد دعوت')
     console.error('Error resending invitation:', err)
@@ -465,10 +399,10 @@ async function cancelInvitation(invitationId: string): Promise<void> {
   if (!orgId) return
 
   try {
-    await hierarchyStore.cancelInvitation(orgId, invitationId)
+    await membershipStore.cancelInvitation(invitationId)
     success('موفقیت', 'دعوت لغو شد')
     // Reload invitations to reflect the cancelled invitation
-    await hierarchyStore.loadSentInvitations(orgId)
+    await membershipStore.loadSentInvitations(orgId)
   } catch (err) {
     error('خطا', 'خطا در لغو دعوت')
     console.error('Error cancelling invitation:', err)
@@ -479,32 +413,6 @@ function viewInvitationDetails(invitation: ProviderInvitation): void {
   // Show invitation details in a modal or navigate to details page
   console.log('View invitation details:', invitation)
   // TODO: Implement invitation details modal or navigation
-}
-
-async function approveRequest(request: JoinRequest): Promise<void> {
-  const orgId = organizationId.value
-  if (!orgId) return
-
-  try {
-    await hierarchyStore.approveJoinRequest(orgId, request.id)
-    success('موفقیت', 'درخواست تأیید شد')
-  } catch (err) {
-    error('خطا', 'خطا در تأیید درخواست')
-    console.error('Error approving request:', err)
-  }
-}
-
-async function rejectRequest(request: JoinRequest): Promise<void> {
-  const orgId = organizationId.value
-  if (!orgId) return
-
-  try {
-    await hierarchyStore.rejectJoinRequest(orgId, request.id, 'Not suitable at this time')
-    success('موفقیت', 'درخواست رد شد')
-  } catch (err) {
-    error('خطا', 'خطا در رد درخواست')
-    console.error('Error rejecting request:', err)
-  }
 }
 
 function goToPage(page: number): void {
@@ -527,9 +435,7 @@ watch(activeTab, () => {
   if (!orgId) return
 
   if (activeTab.value === 'invitations' && pendingInvitationsList.value.length === 0) {
-    hierarchyStore.loadSentInvitations(orgId)
-  } else if (activeTab.value === 'requests' && pendingJoinRequestsList.value.length === 0) {
-    hierarchyStore.loadReceivedJoinRequests(orgId)
+    membershipStore.loadSentInvitations(orgId)
   }
 })
 </script>

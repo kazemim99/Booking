@@ -95,7 +95,7 @@
         </div>
         <div v-if="selectedStaffMember" class="summary-item">
           <span class="summary-label">کارمند:</span>
-          <span class="summary-value">{{ selectedStaffMember.fullName }}</span>
+          <span class="summary-value">{{ selectedStaffMember.name }}</span>
         </div>
       </div>
     </form>
@@ -120,9 +120,8 @@ import Modal from '@/shared/components/Modal.vue'
 import VuePersianDatetimePicker from 'vue3-persian-datetime-picker'
 import StaffSelector from '@/modules/booking/components/StaffSelector.vue'
 import { convertEnglishToPersianNumbers } from '@/shared/utils/date/jalali.utils'
-import { useHierarchyStore } from '@/modules/provider/stores/hierarchy.store'
-import { ProviderHierarchyType } from '@/modules/provider/types/hierarchy.types'
-import type { StaffMember } from '@/modules/provider/types/hierarchy.types'
+import { useMembershipStore } from '@/modules/provider/stores/membership.store'
+import type { OrgMember } from '@/modules/provider/types/membership.types'
 
 interface Customer {
   id: string
@@ -163,7 +162,7 @@ const emit = defineEmits<{
   'submit': [data: BookingFormData]
 }>()
 
-const hierarchyStore = useHierarchyStore()
+const membershipStore = useMembershipStore()
 
 const isOpen = computed({
   get: () => props.modelValue,
@@ -174,7 +173,7 @@ const searchCustomer = ref('')
 const showCustomerDropdown = ref(false)
 const filteredCustomers = ref<Customer[]>([])
 const selectedCustomerName = ref('')
-const selectedStaffMember = ref<StaffMember | null>(null)
+const selectedStaffMember = ref<OrgMember | null>(null)
 
 const formData = ref<BookingFormData>({
   customerId: '',
@@ -188,18 +187,15 @@ const selectedService = computed(() => {
   return props.services.find(s => s.id === formData.value.serviceId)
 })
 
-// Check if provider is an organization with staff
-const providerHierarchy = computed(() => hierarchyStore.currentHierarchy)
-const isOrganizationWithStaff = computed(() => {
-  return providerHierarchy.value?.provider?.hierarchyType === ProviderHierarchyType.Organization &&
-         (providerHierarchy.value?.provider?.staffCount ?? 0) > 0
-})
-
-// Show staff selector if organization has staff
-const shouldShowStaffSelector = computed(() => isOrganizationWithStaff.value)
+// Offer a staff picker when the salon actually has someone bookable. Previously this
+// asked whether the provider was an "Organization" with staffCount > 0; a salon is just a
+// salon now, so the real question is whether any member provides services.
+const shouldShowStaffSelector = computed(() =>
+  membershipStore.members.some((m) => m.providesServices && m.status === 'Active'),
+)
 
 // Require staff selection for organizations with staff
-const requiresStaffSelection = computed(() => isOrganizationWithStaff.value)
+const requiresStaffSelection = computed(() => shouldShowStaffSelector.value)
 
 const isFormValid = computed(() => {
   const basicValid = formData.value.customerId &&
@@ -242,7 +238,7 @@ const handleServiceChange = () => {
   selectedStaffMember.value = null
 }
 
-const handleStaffSelect = (staff: StaffMember) => {
+const handleStaffSelect = (staff: OrgMember) => {
   selectedStaffMember.value = staff
 }
 
@@ -281,9 +277,9 @@ const convertToPersian = (num: number) => {
 watch(() => isOpen.value, async (newValue) => {
   if (newValue && props.providerId) {
     try {
-      await hierarchyStore.loadProviderHierarchy(props.providerId)
+      await membershipStore.loadMembers(props.providerId)
     } catch (error) {
-      console.error('Error loading provider hierarchy:', error)
+      console.error('Error loading salon members:', error)
     }
   }
   if (!newValue) {
@@ -302,9 +298,9 @@ onMounted(async () => {
   // Load provider hierarchy if providerId is available
   if (props.providerId) {
     try {
-      await hierarchyStore.loadProviderHierarchy(props.providerId)
+      await membershipStore.loadMembers(props.providerId)
     } catch (error) {
-      console.error('Error loading provider hierarchy:', error)
+      console.error('Error loading salon members:', error)
     }
   }
 })

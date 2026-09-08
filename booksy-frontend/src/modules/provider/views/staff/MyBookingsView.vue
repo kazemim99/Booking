@@ -30,13 +30,15 @@
 
 <script setup lang="ts">
 import { onMounted } from 'vue'
-import { useHierarchyStore } from '../../stores/hierarchy.store'
+import { useMembershipStore } from '../../stores/membership.store'
 
-const hierarchyStore = useHierarchyStore()
+// The salon this staff member works at comes from their MEMBERSHIP -- a staff member
+// has no Provider of their own under this model.
+const membershipStore = useMembershipStore()
 
-onMounted(() => {
-  console.log('[MyBookingsView] Staff member bookings view mounted')
-  console.log('[MyBookingsView] Current provider:', hierarchyStore.currentHierarchy?.provider)
+onMounted(async () => {
+  await membershipStore.loadMyMemberships()
+  console.log('[MyBookingsView] Staff bookings view for membership:', membershipStore.activeStaffMembership)
 })
 </script>
 
