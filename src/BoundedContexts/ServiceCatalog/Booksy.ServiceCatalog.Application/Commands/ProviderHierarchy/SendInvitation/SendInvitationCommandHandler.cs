@@ -52,9 +52,6 @@ namespace Booksy.ServiceCatalog.Application.Commands.ProviderHierarchy.SendInvit
             if (organization == null)
                 throw new NotFoundException($"Organization with ID {request.OrganizationId} not found");
 
-            if (organization.HierarchyType != ProviderHierarchyType.Organization)
-                throw new DomainValidationException("Only organizations can send invitations");
-
             // Normalize the phone up front so every lookup uses the canonical form.
             var phoneNumber = PhoneNumber.From(request.PhoneNumber);
 

@@ -99,45 +99,9 @@ namespace Booksy.ServiceCatalog.Application.Queries.Provider.GetProviderById
                 Tags = provider.Profile.Tags.AsReadOnly(),
                 RegisteredAt = provider.RegisteredAt,
                 ActivatedAt = provider.ActivatedAt,
-                LastActiveAt = provider.LastActiveAt,
-                // Hierarchy information
-                HierarchyType = provider.HierarchyType,
-                IsIndependent = provider.IsIndependent,
-                ParentProviderId = provider.ParentProviderId?.Value
+                LastActiveAt = provider.LastActiveAt
             };
 
-            // Fetch parent provider info if this is a linked individual
-            if (provider.ParentProviderId != null)
-            {
-                var parentProvider = await _providerRepository.GetByIdAsync(provider.ParentProviderId, cancellationToken);
-                if (parentProvider != null)
-                {
-                    viewModel.ParentProvider = new ParentProviderInfo
-                    {
-                        Id = parentProvider.Id.Value,
-                        BusinessName = parentProvider.Profile.BusinessName,
-                        ProfileImageUrl = parentProvider.Profile.ProfileImageUrl,
-                        Status = parentProvider.Status
-                    };
-                }
-            }
-
-            // Fetch staff providers if this is an organization
-            if (provider.HierarchyType == Domain.Enums.ProviderHierarchyType.Organization)
-            {
-                var staffProviders = await _providerRepository.GetStaffByOrganizationIdAsync(providerId, cancellationToken);
-                viewModel.StaffProviderCount = staffProviders.Count;
-                viewModel.StaffProviders = staffProviders.Select(sp => new StaffProviderInfo
-                {
-                    Id = sp.Id.Value,
-                    BusinessName = sp.Profile.BusinessName,
-                    ProfileImageUrl = sp.Profile.ProfileImageUrl,
-                    Status = sp.Status,
-                    IsIndependent = sp.IsIndependent,
-                    AverageRating = sp.AverageRating,
-                    ServiceCount = sp.Services.Count
-                }).ToList();
-            }
 
             // Bookable staff for the customer-facing booking flow.
             //

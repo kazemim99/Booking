@@ -218,7 +218,7 @@ namespace Booksy.ServiceCatalog.Infrastructure.Persistence.Seeders
                 type,
                 contactInfo,
                 address,
-                ProviderHierarchyType.Organization,
+
                 registrationStep: 9);
 
             // Complete registration and activate the provider for seeding

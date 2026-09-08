@@ -155,12 +155,13 @@ namespace Booksy.ServiceCatalog.Domain.Aggregates
             if (Status == ServiceStatus.Active)
                 throw new InvalidServiceException("Service is already active");
 
-            // Business rule: Organization services must have at least one qualified staff member.
-            // Individual hierarchy types don't need qualified staff (they perform their own services).
-            // Null-safe on the Provider navigation (not always loaded): a null/unknown hierarchy is
-            // treated as non-Individual, i.e. it still requires a qualified staff member.
-            if (Provider?.HierarchyType != ProviderHierarchyType.Individual && !_qualifiedStaff.Any())
-                throw new InvalidServiceException("Organization service must have at least one qualified staff member to be activated");
+            // A service must have someone who can perform it, and that someone is a MEMBER of
+            // the salon — including a solo owner, whose own membership gains the StaffProvider
+            // role when they opt into providing services. The old "Individual providers perform
+            // their own services" exemption is gone with the sub-provider model: a person is
+            // never a Provider, so there is no case where a service has no qualified member.
+            if (!_qualifiedStaff.Any())
+                throw new InvalidServiceException("A service must have at least one qualified staff member to be activated");
 
             Status = ServiceStatus.Active;
             ActivatedAt = DateTime.UtcNow;
@@ -316,11 +317,8 @@ namespace Booksy.ServiceCatalog.Domain.Aggregates
         // Query Methods
         public bool CanBeBooked()
         {
-            // Individual hierarchy services can be booked by the provider themselves
-            // Organization hierarchy services require qualified staff
-            if (Provider.HierarchyType == ProviderHierarchyType.Individual)
-                return Status == ServiceStatus.Active && AllowOnlineBooking;
-
+            // Bookable when active, online booking is enabled, and at least one member of the
+            // salon is qualified to perform it.
             return Status == ServiceStatus.Active && AllowOnlineBooking && _qualifiedStaff.Any();
         }
 

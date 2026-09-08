@@ -87,22 +87,7 @@ public class ProviderPrimaryCategoryTests
         Assert.Equal(ServiceCategory.Spa, registered.PrimaryCategory);
     }
 
-    [Fact]
-    public void Category_IsIndependentOfHierarchyType()
-    {
-        // An individual freelancer is categorised exactly like an organization is.
-        var individual = Provider.RegisterProvider(
-            _ownerId,
-            "Mobile Barber",
-            "Home visits",
-            ServiceCategory.Barbershop,
-            NewContactInfo(),
-            NewAddress(),
-            ProviderHierarchyType.Individual);
 
-        Assert.Equal(ProviderHierarchyType.Individual, individual.HierarchyType);
-        Assert.Equal(ServiceCategory.Barbershop, individual.PrimaryCategory);
-    }
 
     #endregion
 
@@ -226,31 +211,4 @@ public class ProviderPrimaryCategoryTests
 
     #endregion
 
-    #region Staff sub-providers
-
-    [Fact]
-    public void RegisterStaffMember_InheritsTheOrganizationsCategory()
-    {
-        // Staff are modelled as sub-providers; they must show up under the same category
-        // as the organization they belong to.
-        var organization = Provider.RegisterProvider(
-            _ownerId,
-            "Elite Salon",
-            "Premium services",
-            ServiceCategory.BeautySalon,
-            NewContactInfo(),
-            NewAddress(),
-            ProviderHierarchyType.Organization);
-
-        var staff = Provider.RegisterStaffMember(
-            organization,
-            UserId.From(Guid.NewGuid()),
-            "Mina",
-            "Rezaei");
-
-        Assert.Equal(ServiceCategory.BeautySalon, staff.PrimaryCategory);
-        Assert.Equal(organization.Id, staff.ParentProviderId);
-    }
-
-    #endregion
 }

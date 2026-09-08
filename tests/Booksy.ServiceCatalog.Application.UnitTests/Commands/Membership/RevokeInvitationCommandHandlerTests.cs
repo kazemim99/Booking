@@ -44,8 +44,7 @@ public class RevokeInvitationCommandHandlerTests
         _organization = Provider.RegisterProvider(
             _owner, "Salon", "desc", ServiceCategory.Barbershop,
             ContactInfo.Create(Email.Create("s@t.com"), PhoneNumber.From("+989123456789")),
-            BusinessAddress.Create("a", "b", "c", "d", "12345", "IR"),
-            ProviderHierarchyType.Organization);
+            BusinessAddress.Create("a", "b", "c", "d", "12345", "IR"));
 
         _providers.GetByIdAsync(Arg.Any<ProviderId>(), Arg.Any<CancellationToken>())
             .Returns(_organization);

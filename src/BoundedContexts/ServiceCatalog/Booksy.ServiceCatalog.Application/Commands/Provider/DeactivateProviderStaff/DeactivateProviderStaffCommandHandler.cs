@@ -87,8 +87,10 @@ namespace Booksy.ServiceCatalog.Application.Commands.Provider.DeactivateProvider
                     membership, organization.OwnerId, callerId, request, cancellationToken);
             }
 
-            return await DeactivateLegacySubProviderAsync(
-                organizationId, callerId, organization.OwnerId, request, cancellationToken);
+            // A staffId that is not a membership of this salon is simply unknown. It used to
+            // fall through to a legacy Individual sub-provider lookup, which no longer exists.
+            throw new NotFoundException(
+                $"Staff member {request.StaffId} does not belong to provider {request.ProviderId}");
         }
 
         private async Task<DeactivateProviderStaffResult> TerminateMembershipAsync(
@@ -167,63 +169,5 @@ namespace Booksy.ServiceCatalog.Application.Commands.Provider.DeactivateProvider
                 request.Reason);
         }
 
-        private async Task<DeactivateProviderStaffResult> DeactivateLegacySubProviderAsync(
-            ProviderId organizationId,
-            UserId callerId,
-            UserId organizationOwnerId,
-            DeactivateProviderStaffCommand request,
-            CancellationToken cancellationToken)
-        {
-            var staffProviderId = ProviderId.From(request.StaffId);
-            var staffProvider = await _providerReadRepository.GetByIdAsync(staffProviderId, cancellationToken)
-                ?? throw new NotFoundException($"Staff member {request.StaffId} not found");
-
-            if (staffProvider.ParentProviderId is null
-                || !staffProvider.ParentProviderId.Equals(organizationId))
-            {
-                throw new NotFoundException(
-                    $"Staff member {request.StaffId} does not belong to provider {organizationId.Value}");
-            }
-
-            var callerIsOrgOwner = callerId.Equals(organizationOwnerId);
-            if (!callerIsOrgOwner)
-            {
-                var callerMembership = await _membershipRepository.GetActiveByPersonAndOrganizationAsync(
-                    callerId, organizationId, cancellationToken);
-                callerIsOrgOwner = callerMembership?.IsOwner == true;
-            }
-
-            if (!callerIsOrgOwner)
-                throw new ForbiddenException("You cannot remove this staff member.");
-
-            // Provider.Deactivate throws unless the provider is Active, so anything already
-            // inactive/suspended/archived is treated as a no-op — a retried DELETE stays a 204.
-            if (staffProvider.Status != ProviderStatus.Active)
-            {
-                return new DeactivateProviderStaffResult(
-                    organizationId.Value,
-                    request.StaffId,
-                    $"{staffProvider.OwnerFirstName} {staffProvider.OwnerLastName}".Trim(),
-                    false,
-                    DateTime.UtcNow,
-                    request.Reason);
-            }
-
-            staffProvider.Deactivate(request.Reason);
-            await _providerWriteRepository.UpdateAsync(staffProvider, cancellationToken);
-            await _unitOfWork.SaveAndPublishEventsAsync(cancellationToken);
-
-            _logger.LogInformation(
-                "Legacy staff sub-provider {StaffId} deactivated for organization {OrgId} by {CallerId}",
-                request.StaffId, organizationId.Value, callerId.Value);
-
-            return new DeactivateProviderStaffResult(
-                organizationId.Value,
-                request.StaffId,
-                $"{staffProvider.OwnerFirstName} {staffProvider.OwnerLastName}".Trim(),
-                false,
-                DateTime.UtcNow,
-                request.Reason);
-        }
     }
 }

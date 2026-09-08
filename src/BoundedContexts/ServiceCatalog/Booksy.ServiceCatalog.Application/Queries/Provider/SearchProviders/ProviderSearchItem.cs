@@ -23,12 +23,8 @@ public sealed class ProviderSearchItem
     public DateTime RegisteredAt { get; init; }
     public DateTime? LastActiveAt { get; init; }
 
-    // Hierarchy information
-    public ProviderHierarchyType HierarchyType { get; init; }
-    public bool IsIndependent { get; init; }
-    public Guid? ParentProviderId { get; init; }
-    public string? ParentProviderName { get; init; }
-    public int StaffProviderCount { get; init; }
+    /// <summary>How many members of this salon currently take bookings.</summary>
+    public int StaffMemberCount { get; init; }
 
     public ProviderSearchItem(
         Guid id,
@@ -49,11 +45,7 @@ public sealed class ProviderSearchItem
         bool isVerified,
         DateTime registeredAt,
         DateTime? lastActiveAt,
-        ProviderHierarchyType hierarchyType = ProviderHierarchyType.Organization,
-        bool isIndependent = false,
-        Guid? parentProviderId = null,
-        string? parentProviderName = null,
-        int staffProviderCount = 0)
+        int staffMemberCount = 0)
     {
         Id = id;
         BusinessName = businessName;
@@ -73,10 +65,6 @@ public sealed class ProviderSearchItem
         IsVerified = isVerified;
         RegisteredAt = registeredAt;
         LastActiveAt = lastActiveAt;
-        HierarchyType = hierarchyType;
-        IsIndependent = isIndependent;
-        ParentProviderId = parentProviderId;
-        ParentProviderName = parentProviderName;
-        StaffProviderCount = staffProviderCount;
+        StaffMemberCount = staffMemberCount;
     }
 }

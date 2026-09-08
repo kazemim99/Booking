@@ -31,12 +31,5 @@ namespace Booksy.ServiceCatalog.Domain.Repositories
         /// </summary>
         Task<IReadOnlyDictionary<ServiceCategory, int>> CountByCategoryAsync(ProviderStatus status, CancellationToken cancellationToken = default);
         Task<IReadOnlyList<Provider>> GetRecentlyActiveAsync(int count, CancellationToken cancellationToken = default);
-
-        // Hierarchy-related methods
-        Task<IReadOnlyList<Provider>> GetStaffByOrganizationIdAsync(ProviderId organizationId, CancellationToken cancellationToken = default);
-        Task<Provider?> GetOrganizationByStaffIdAsync(ProviderId staffProviderId, CancellationToken cancellationToken = default);
-        Task<IReadOnlyList<Provider>> GetByHierarchyTypeAsync(ProviderHierarchyType hierarchyType, CancellationToken cancellationToken = default);
-        Task<IReadOnlyList<Provider>> GetIndependentIndividualsAsync(CancellationToken cancellationToken = default);
-        Task<int> CountStaffByOrganizationAsync(ProviderId organizationId, CancellationToken cancellationToken = default);
     }
 }

@@ -151,14 +151,9 @@ namespace Booksy.ServiceCatalog.Infrastructure.Services.Domain
         {
             try
             {
-                // Business rules for maximum services based on provider hierarchy type
-                // Organizations can have more services than individuals
-                return provider.HierarchyType switch
-                {
-                    ProviderHierarchyType.Individual => 20,
-                    ProviderHierarchyType.Organization => 200,
-                    _ => 50
-                };
+                // One flat ceiling: there is one kind of provider now, so the old
+                // Individual-vs-Organization split has nothing to key on.
+                return 200;
             }
             catch (Exception ex)
             {

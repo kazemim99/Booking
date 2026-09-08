@@ -54,21 +54,9 @@ public class SendInvitationCommandHandlerTests
             "Test description",
             ServiceCategory.Barbershop,
             ContactInfo.Create(Email.Create("salon@test.com"), PhoneNumber.From("+989123456789")),
-            BusinessAddress.Create("123 Test St", "Suite 1", "Test City", "TS", "12345", "IR"),
-            ProviderHierarchyType.Organization);
+            BusinessAddress.Create("123 Test St", "Suite 1", "Test City", "TS", "12345", "IR"));
     }
 
-    private static Provider CreateIndividualProvider()
-    {
-        return Provider.RegisterProvider(
-            UserId.From(Guid.NewGuid()),
-            "Solo Barber",
-            "Test description",
-            ServiceCategory.Barbershop,
-            ContactInfo.Create(Email.Create("barber@test.com"), PhoneNumber.From("+989123456788")),
-            BusinessAddress.Create("123 Test St", "Suite 1", "Test City", "TS", "12345", "IR"),
-            ProviderHierarchyType.Individual);
-    }
 
     [Fact]
     public async Task Handle_Should_Create_Invitation_Successfully()
@@ -125,26 +113,6 @@ public class SendInvitationCommandHandlerTests
         // Assert
         await act.Should().ThrowAsync<NotFoundException>()
             .WithMessage("*not found*");
-    }
-
-    [Fact]
-    public async Task Handle_Should_Throw_When_Provider_Is_Not_Organization()
-    {
-        // Arrange
-        var individual = CreateIndividualProvider();
-        var command = new SendInvitationCommand(
-            OrganizationId: individual.Id.Value,
-            PhoneNumber: "+989121234567");
-
-        _providerRepository.GetByIdAsync(individual.Id, Arg.Any<CancellationToken>())
-            .Returns(individual);
-
-        // Act
-        Func<Task> act = () => _handler.Handle(command, CancellationToken.None);
-
-        // Assert
-        await act.Should().ThrowAsync<DomainValidationException>()
-            .WithMessage("*Only organizations can send invitations*");
     }
 
     [Fact]

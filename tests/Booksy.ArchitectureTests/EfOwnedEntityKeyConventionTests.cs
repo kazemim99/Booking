@@ -194,7 +194,6 @@ public class EfOwnedEntityKeyConventionTests
                 "OrganizationMembership",
                 "ProviderAvailability",
                 "ProviderInvitation",
-                "ProviderJoinRequest",
                 "Review",
             },
             "this list is a snapshot, not an approval. If it grew, prefer .ValueGeneratedNever() on the " +

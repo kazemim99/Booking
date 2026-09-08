@@ -86,28 +86,15 @@ public class ServiceActivationTests
     }
 
     [Fact]
-    public void Activate_ForAnIndividualProvider_NeedsNoQualifiedStaff()
+    public void Activate_AlwaysRequiresAQualifiedMember()
     {
-        // Arrange — a solo practitioner performs their own services
+        // A service needs someone who can perform it. The old pair of tests here asserted
+        // that an "Individual" provider could activate with no qualified staff while an
+        // "Organization" could not -- a distinction that disappeared with the sub-provider
+        // model. A solo owner is a MEMBER of their own salon, so they qualify the same way.
         var service = NewDraftService();
-        AttachProvider(service, CreateProvider(ProviderHierarchyType.Individual));
+        AttachProvider(service, CreateProvider());
 
-        // Act
-        service.Activate();
-
-        // Assert
-        Assert.Equal(ServiceStatus.Active, service.Status);
-        Assert.Empty(service.QualifiedStaff);
-    }
-
-    [Fact]
-    public void Activate_ForAnOrganizationProvider_StillRequiresQualifiedStaff()
-    {
-        // Arrange
-        var service = NewDraftService();
-        AttachProvider(service, CreateProvider(ProviderHierarchyType.Organization));
-
-        // Act & Assert
         Assert.Throws<InvalidServiceException>(() => service.Activate());
     }
 
@@ -203,7 +190,7 @@ public class ServiceActivationTests
     {
         // Arrange
         var service = NewDraftService();
-        AttachProvider(service, CreateProvider(ProviderHierarchyType.Organization));
+        AttachProvider(service, CreateProvider());
 
         // Assert — draft, no staff
         Assert.False(service.CanBeBooked());
@@ -221,7 +208,7 @@ public class ServiceActivationTests
     {
         // Arrange — an active service can outlive its staff; it must stop being bookable
         var service = NewDraftService();
-        AttachProvider(service, CreateProvider(ProviderHierarchyType.Organization));
+        AttachProvider(service, CreateProvider());
         var membershipId = Guid.NewGuid();
         service.AddQualifiedStaff(membershipId);
         service.Activate();
@@ -235,19 +222,20 @@ public class ServiceActivationTests
     }
 
     [Fact]
-    public void CanBeBooked_ForAnIndividual_NeedsOnlyActiveStatus()
+    public void CanBeBooked_RequiresActiveStatusAndAQualifiedMember()
     {
-        // Arrange
+        // Was CanBeBooked_ForAnIndividual_NeedsOnlyActiveStatus, which asserted that an
+        // "Individual" provider's service was bookable with no qualified staff at all —
+        // the solo-practitioner-is-their-own-provider case. A solo owner is a member of
+        // their own salon now, so the rule is uniform: active + someone qualified.
         var service = NewDraftService();
-        AttachProvider(service, CreateProvider(ProviderHierarchyType.Individual));
+        AttachProvider(service, CreateProvider());
 
-        // Assert
         Assert.False(service.CanBeBooked());
 
-        // Act
+        service.AddQualifiedStaff(Guid.NewGuid());
         service.Activate();
 
-        // Assert
         Assert.True(service.CanBeBooked());
     }
 
@@ -259,7 +247,7 @@ public class ServiceActivationTests
     /// Builds a real Provider aggregate so the hierarchy branch of the rule is exercised against production
     /// behaviour rather than a stand-in.
     /// </summary>
-    private static Provider CreateProvider(ProviderHierarchyType hierarchyType) =>
+    private static Provider CreateProvider() =>
         Provider.CreateDraft(
             UserId.CreateNew(),
             "آرش",
@@ -280,8 +268,7 @@ public class ServiceActivationTests
                 null,
                 null,
                 39.6624,
-                47.9302),
-            hierarchyType);
+                47.9302));
 
     /// <summary>
     /// Sets the Provider navigation the way EF Core does. Service.Create only takes a ProviderId and the

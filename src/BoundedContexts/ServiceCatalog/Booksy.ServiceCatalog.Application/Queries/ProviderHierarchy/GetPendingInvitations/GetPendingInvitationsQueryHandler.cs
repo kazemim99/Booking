@@ -35,9 +35,6 @@ namespace Booksy.ServiceCatalog.Application.Queries.ProviderHierarchy.GetPending
             if (organization == null)
                 throw new NotFoundException($"Organization with ID {request.OrganizationId} not found");
 
-            if (organization.HierarchyType != ProviderHierarchyType.Organization)
-                throw new DomainValidationException("Provider is not an organization");
-
             // Get pending invitations
             var invitations = await _invitationRepository.GetByOrganizationIdAndStatusAsync(
                 organizationId, InvitationStatus.Pending, cancellationToken);

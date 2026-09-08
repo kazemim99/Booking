@@ -288,7 +288,7 @@ namespace Booksy.ServiceCatalog.Infrastructure.Persistence.Seeders
                 type,
                 contactInfo,
                 address,
-                ProviderHierarchyType.Organization,
+
                 registrationStep: 9);
 
             provider.UpdateBusinessProfile(displayName, description, profileImageUrl);

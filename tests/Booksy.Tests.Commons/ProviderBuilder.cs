@@ -111,7 +111,6 @@ public class ProviderBuilder
                 "12345",
                 "USA"
             ),
-            ProviderHierarchyType.Organization,
             registrationStep: 9
         );
 

@@ -57,8 +57,7 @@ public class ChangeMembershipRolesCommandHandlerTests
         "desc",
         ServiceCategory.Barbershop,
         ContactInfo.Create(Email.Create("s@t.com"), PhoneNumber.From("+989123456789")),
-        BusinessAddress.Create("a", "b", "c", "d", "12345", "IR"),
-        ProviderHierarchyType.Organization);
+        BusinessAddress.Create("a", "b", "c", "d", "12345", "IR"));
 
     private static OrganizationMembership ActiveStaff(UserId person, ProviderId org)
     {

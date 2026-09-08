@@ -144,96 +144,6 @@ namespace Booksy.ServiceCatalog.Application.Services
             return availableSlots.AsReadOnly();
         }
 
-        public async Task<bool> IsTimeSlotAvailableAsync(
-            Provider provider,
-            Service service,
-            Provider individualProvider,
-            DateTime startTime,
-            Duration duration,
-            CancellationToken cancellationToken = default)
-        {
-            _logger.LogInformation(
-                "Checking if time slot is available: Individual Provider {ProviderId}, Start {StartTime}, Duration {Duration}",
-                individualProvider.Id, startTime, duration);
-
-            // Validate basic constraints
-            var validationResult = await ValidateBookingConstraintsAsync(provider, service, startTime, cancellationToken);
-            if (!validationResult.IsValid)
-            {
-                return false;
-            }
-
-            // Check if individual provider is active
-            if (individualProvider.Status != ProviderStatus.Active)
-            {
-                _logger.LogWarning("Individual Provider {ProviderId} is not active", individualProvider.Id);
-                return false;
-            }
-
-            // Check if individual provider is qualified for the service
-            if (!service.IsStaffQualified(individualProvider.Id.Value))
-            {
-                _logger.LogWarning("Individual Provider {ProviderId} is not qualified for service {ServiceId}",
-                    individualProvider.Id, service.Id);
-                return false;
-            }
-
-            // Check for conflicts with existing bookings
-            var endTime = startTime.AddMinutes(duration.Value + BufferTimeMinutes);
-            var conflictingBookings = await _bookingRepository.GetConflictingBookingsAsync(
-                individualProvider.Id.Value,
-                startTime,
-                endTime,
-                cancellationToken);
-
-            if (conflictingBookings.Any())
-            {
-                _logger.LogInformation("Time slot conflicts with existing booking(s)");
-                return false;
-            }
-
-            return true;
-        }
-
-        public async Task<IReadOnlyList<Provider>> GetAvailableStaffAsync(
-            Provider provider,
-            Service service,
-            DateTime startTime,
-            Duration duration,
-            CancellationToken cancellationToken = default)
-        {
-            _logger.LogInformation(
-                "Getting available individual providers for Service {ServiceId} at {StartTime}",
-                service.Id, startTime);
-
-            // Legacy provider-typed API (still consumed by older queries): only the
-            // sub-provider staff are Provider records. Member-based availability is
-            // served by GetAvailableTimeSlotsAsync, which is resource-based.
-            var qualifiedIndividuals = (await _providerRepository
-                    .GetStaffByOrganizationIdAsync(provider.Id, cancellationToken))
-                .Where(s => s.Status == ProviderStatus.Active)
-                .ToList();
-            var availableIndividuals = new List<Provider>();
-
-            foreach (var individual in qualifiedIndividuals)
-            {
-                var isAvailable = await IsTimeSlotAvailableAsync(
-                    provider,
-                    service,
-                    individual,
-                    startTime,
-                    duration,
-                    cancellationToken);
-
-                if (isAvailable)
-                {
-                    availableIndividuals.Add(individual);
-                }
-            }
-
-            _logger.LogInformation("Found {Count} available individual providers", availableIndividuals.Count);
-            return availableIndividuals.AsReadOnly();
-        }
 
         public async Task<AvailabilityValidationResult> ValidateBookingConstraintsAsync(
             Provider provider,
@@ -570,27 +480,13 @@ namespace Booksy.ServiceCatalog.Application.Services
                 }
             }
 
-            // 2. Legacy individual sub-providers (pre-membership staff), until migrated.
-            var legacyStaff = await _providerRepository.GetStaffByOrganizationIdAsync(provider.Id, cancellationToken);
-            foreach (var staff in legacyStaff.Where(s => s.Status == ProviderStatus.Active))
-            {
-                if (resources.Any(r => r.Id == staff.Id.Value))
-                    continue;
-
-                var name = $"{staff.OwnerFirstName} {staff.OwnerLastName}".Trim();
-                if (string.IsNullOrEmpty(name))
-                    name = staff.Profile.BusinessName;
-
-                resources.Add(new BookableResource(staff.Id.Value, name));
-            }
-
-            // 3. Solo business: bookable as itself when nobody else can serve.
-            if (resources.Count == 0 &&
-                provider.HierarchyType == ProviderHierarchyType.Organization &&
-                provider.CanAcceptDirectBookings())
+            // 2. Solo business: bookable as itself when no member can serve. (The branch
+            // that used to sit here listed legacy Individual sub-providers as bookable
+            // resources; staff are memberships now, so step 1 above is the whole roster.)
+            if (resources.Count == 0 && provider.CanAcceptDirectBookings())
             {
                 _logger.LogInformation(
-                    "No members for organization {ProviderId}; offering direct booking with the business",
+                    "No service-providing members for provider {ProviderId}; offering direct booking with the business",
                     provider.Id);
                 resources.Add(new BookableResource(provider.Id.Value, provider.Profile.BusinessName));
             }

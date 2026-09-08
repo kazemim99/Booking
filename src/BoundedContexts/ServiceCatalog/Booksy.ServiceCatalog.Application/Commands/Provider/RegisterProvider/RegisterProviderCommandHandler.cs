@@ -88,19 +88,6 @@ namespace Booksy.ServiceCatalog.Application.Commands.Provider.RegisterProvider
                 contactInfo,
                 address);
 
-            // For Individual hierarchy providers, automatically add owner as staff member
-            if (provider.HierarchyType == Domain.Enums.ProviderHierarchyType.Individual)
-            {
-                var ownerPhone = !string.IsNullOrEmpty(request.PrimaryPhone)
-                    ? PhoneNumber.From(request.PrimaryPhone)
-                    : null;
-
-                _logger.LogInformation(
-                    "Automatically added owner {OwnerName} as staff for Individual provider {ProviderId}",
-                    $"{request.OwnerFirstName} {request.OwnerLastName}",
-                    provider.Id);
-            }
-
             // Save to repository
             await _providerWriteRepository.SaveProviderAsync(provider, cancellationToken);
 

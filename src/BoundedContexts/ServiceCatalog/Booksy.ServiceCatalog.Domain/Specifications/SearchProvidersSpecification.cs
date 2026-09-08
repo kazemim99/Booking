@@ -140,16 +140,11 @@ namespace Booksy.ServiceCatalog.Domain.Specifications.Provider
                 AddCriteria(provider => provider.Status != ProviderStatus.Archived);
             }
 
-            // Hierarchy filter - exclude individual providers who are staff members of organizations
-            // This ensures search results show only:
-            // 1. Organizations (with their staff count displayed)
-            // 2. Independent individuals (not linked to any organization)
-            if (excludeStaffIndividuals)
-            {
-                AddCriteria(provider =>
-                    provider.HierarchyType == ProviderHierarchyType.Organization ||
-                    (provider.HierarchyType == ProviderHierarchyType.Individual && provider.ParentProviderId == null));
-            }
+            // No hierarchy filter any more. Staff used to be sub-provider rows, so search had
+            // to exclude them or employees would be listed as if they were businesses. Staff
+            // are memberships now and never were Providers, so every Provider row IS a salon
+            // and belongs in the results. `excludeStaffIndividuals` is kept on the signature
+            // because callers still pass it, but there is nothing left for it to exclude.
 
             // Note: Ordering is now handled dynamically in the query handler based on SortBy parameter
             // Removed default ordering to allow flexible sorting (rating, popularity, price, distance)

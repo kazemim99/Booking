@@ -128,31 +128,11 @@ namespace Booksy.ServiceCatalog.Application.Services
                     PersonId: membership.PersonId);
             }
 
-            var legacyStaffProvider = await _providerRepository.GetByIdAsync(
-                ProviderId.From(resourceId), cancellationToken);
-
-            if (legacyStaffProvider is null)
-                throw new NotFoundException($"Bookable resource with ID {resourceId} not found");
-
-            if (legacyStaffProvider.ParentProviderId != organization.Id)
-                throw new ConflictException("Staff provider does not belong to the specified organization");
-
-            if (requireBookable && legacyStaffProvider.Status != ProviderStatus.Active)
-                throw new ConflictException(
-                    $"Staff provider {DescribeLegacyStaff(legacyStaffProvider)} is not currently active");
-
-            // A legacy sub-provider owns its own availability rows.
-            return new BookableResource(
-                resourceId,
-                BookableResourceKind.LegacySubProvider,
-                legacyStaffProvider.Id,
-                PersonId: legacyStaffProvider.OwnerId);
-        }
-
-        private static string DescribeLegacyStaff(ProviderAggregate staff)
-        {
-            var name = $"{staff.OwnerFirstName} {staff.OwnerLastName}".Trim();
-            return string.IsNullOrEmpty(name) ? staff.Profile.BusinessName : name;
+            // There is nothing else a staff reference can be. The third branch here used to
+            // resolve a legacy Individual sub-provider (matched on ParentProviderId) — the
+            // model where an employee was a second Provider. That is gone, so a resource id
+            // is either this salon or one of its memberships.
+            throw new NotFoundException($"Bookable resource with ID {resourceId} not found");
         }
     }
 }

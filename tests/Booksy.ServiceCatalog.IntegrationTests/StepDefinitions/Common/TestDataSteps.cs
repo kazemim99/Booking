@@ -247,35 +247,33 @@ public class TestDataSteps
     {
         var provider = _scenarioContext.Get<Provider>("Provider:Current");
 
-        // A real Individual sub-provider in the hierarchy: bookings REQUIRE a
-        // staff provider (StaffProviderId), so without this every creation
-        // scenario dies with a 400 before reaching any business rule.
-        var staff = Provider.RegisterStaffMember(
-            provider,
-            UserId.From(Guid.NewGuid()),
-            "Test",
-            "Staff");
+        // A member of the salon. This used to register an Individual sub-provider, back
+        // when a staff member was a second Provider; bookings carry a MembershipId now.
+        // Unclaimed (no PersonId) because the scenario only needs someone bookable, not
+        // someone who can sign in.
+        var staff = OrganizationMembership.CreateUnclaimed(
+            provider.Id, "Test Staff", providesServices: true);
         await _testBase.CreateEntityAsync(staff);
 
-        _scenarioContext.Set(staff, "Staff:Current");
-        _scenarioContext.Set(staff.Id.Value, "CurrentStaffId");
+        _scenarioContext.Set(staff, "Membership:Current");
+        _scenarioContext.Set(staff.Id, "CurrentStaffId");
 
         // Services are born Draft and can only be Activated once they have a
         // qualified staff member — and the Background seeds services BEFORE
         // staff. Qualify + activate them here so they are bookable.
-        await ActivateProviderServicesAsync(provider, staff);
+        await ActivateProviderServicesAsync(provider, staff.Id);
     }
 
     /// <summary>
-    /// Assigns <paramref name="staff"/> to every Draft service of the provider
-    /// and activates it. Bookings reject non-Active services.
+    /// Assigns <paramref name="staffId"/> (a MembershipId) to every Draft service of the
+    /// provider and activates it. Bookings reject non-Active services.
     /// </summary>
-    private async Task ActivateProviderServicesAsync(Provider provider, Provider staff)
+    private async Task ActivateProviderServicesAsync(Provider provider, Guid staffId)
     {
         var services = await _testBase.GetProviderServicesAsync(provider.Id.Value);
         foreach (var service in services)
         {
-            service.AddQualifiedStaff(staff.Id.Value);
+            service.AddQualifiedStaff(staffId);
             if (service.Status != Domain.Enums.ServiceStatus.Active)
                 service.Activate();
             await _testBase.UpdateEntityAsync(service);

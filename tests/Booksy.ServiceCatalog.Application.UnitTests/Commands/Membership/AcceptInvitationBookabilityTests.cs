@@ -60,8 +60,7 @@ public class AcceptInvitationBookabilityTests
         _organization = Provider.RegisterProvider(
             UserId.From(Guid.NewGuid()), "Salon", "desc", ServiceCategory.Barbershop,
             ContactInfo.Create(Email.Create("s@t.com"), PhoneNumber.From("+989123456789")),
-            BusinessAddress.Create("a", "b", "c", "d", "12345", "IR"),
-            ProviderHierarchyType.Organization);
+            BusinessAddress.Create("a", "b", "c", "d", "12345", "IR"));
 
         // The invited phone resolves to the accepting caller — the security check the handler
         // performs before doing anything else.

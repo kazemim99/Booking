@@ -92,33 +92,9 @@ namespace Booksy.ServiceCatalog.Application.Queries.Provider.GetProviderStaff
                 });
             }
 
-            // Legacy individual sub-providers that have not been migrated yet.
-            var legacyStaff = await _providerRepository.GetStaffByOrganizationIdAsync(organizationId, cancellationToken);
-            foreach (var sp in legacyStaff.Where(x => includeInactive || x.Status == ProviderStatus.Active))
-            {
-                if (staffDtos.Any(d => d.Id == sp.Id.Value))
-                    continue;
+            // (Legacy Individual sub-providers were listed here as well, until staff stopped
+            // being Providers. The membership roster above is now the whole staff list.)
 
-                staffDtos.Add(new StaffDto(
-                    sp.Id.Value,
-                    sp.OwnerFirstName,
-                    sp.OwnerLastName,
-                    $"{sp.OwnerFirstName} {sp.OwnerLastName}".Trim(),
-                    sp.ContactInfo?.PrimaryPhone?.Value,
-                    "Staff",
-                    sp.Status == ProviderStatus.Active,
-                    sp.RegisteredAt,
-                    null,
-                    null)
-                {
-                    Biography = string.Empty,
-                    ProfilePhotoUrl = sp.Profile?.ProfileImageUrl ?? string.Empty,
-                    // A linked individual sub-provider exists precisely to perform services,
-                    // so it is bookable whenever it is active — there is no separate profile
-                    // flag to consult on this legacy shape.
-                    ProvidesServices = sp.Status == ProviderStatus.Active
-                });
-            }
 
             return new GetProviderStaffResult(
                 organization.Id.Value,

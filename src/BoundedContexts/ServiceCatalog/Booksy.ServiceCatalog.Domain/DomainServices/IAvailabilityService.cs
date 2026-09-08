@@ -35,40 +35,11 @@ namespace Booksy.ServiceCatalog.Domain.DomainServices
             Guid? staffId = null,
             Duration? durationOverride = null,
             CancellationToken cancellationToken = default);
+        // IsTimeSlotAvailableAsync(Provider individualProvider, ...) and GetAvailableStaffAsync
+        // were removed with the sub-provider staff model: both took a second Provider to mean
+        // "the staff member". Availability is resource-based now (GetAvailableTimeSlotsAsync
+        // takes a resource id, which is a MembershipId or the salon itself).
 
-        /// <summary>
-        /// Check if a specific time slot is available for booking
-        /// </summary>
-        /// <param name="provider">The provider (organization)</param>
-        /// <param name="service">The service</param>
-        /// <param name="individualProvider">The individual provider (staff member)</param>
-        /// <param name="startTime">Requested start time</param>
-        /// <param name="duration">Service duration</param>
-        /// <param name="cancellationToken">Cancellation token</param>
-        /// <returns>True if the time slot is available</returns>
-        Task<bool> IsTimeSlotAvailableAsync(
-            Provider provider,
-            Service service,
-            Provider individualProvider,
-            DateTime startTime,
-            Duration duration,
-            CancellationToken cancellationToken = default);
-
-        /// <summary>
-        /// Get available individual providers (staff) for a service at a specific time
-        /// </summary>
-        /// <param name="provider">The provider (organization)</param>
-        /// <param name="service">The service</param>
-        /// <param name="startTime">Desired start time</param>
-        /// <param name="duration">Service duration</param>
-        /// <param name="cancellationToken">Cancellation token</param>
-        /// <returns>List of available qualified individual providers</returns>
-        Task<IReadOnlyList<Provider>> GetAvailableStaffAsync(
-            Provider provider,
-            Service service,
-            DateTime startTime,
-            Duration duration,
-            CancellationToken cancellationToken = default);
 
         /// <summary>
         /// Validate booking constraints (business hours, holidays, minimum/maximum advance booking)

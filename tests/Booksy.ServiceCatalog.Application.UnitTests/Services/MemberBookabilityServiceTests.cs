@@ -41,8 +41,7 @@ public class MemberBookabilityServiceTests
             "desc",
             ServiceCategory.Barbershop,
             ContactInfo.Create(Email.Create("s@t.com"), PhoneNumber.From("+989123456789")),
-            BusinessAddress.Create("a", "b", "c", "d", "12345", "IR"),
-            ProviderHierarchyType.Organization);
+            BusinessAddress.Create("a", "b", "c", "d", "12345", "IR"));
 
         // Open every day 09:00–18:00 so the rolling window always has hours.
         var hours = new Dictionary<DomainDayOfWeek, (TimeOnly? Open, TimeOnly? Close)>();
@@ -137,8 +136,7 @@ public class MemberBookabilityServiceTests
         var closed = Provider.RegisterProvider(
             UserId.CreateNew(), "Closed", "d", ServiceCategory.Barbershop,
             ContactInfo.Create(Email.Create("c@t.com"), PhoneNumber.From("+989123456780")),
-            BusinessAddress.Create("a", "b", "c", "d", "12345", "IR"),
-            ProviderHierarchyType.Organization);
+            BusinessAddress.Create("a", "b", "c", "d", "12345", "IR"));
         _providers.GetByIdAsync(Arg.Any<ProviderId>(), Arg.Any<CancellationToken>()).Returns(closed);
 
         var membership = ServiceProvidingMember();

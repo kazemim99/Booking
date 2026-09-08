@@ -25,9 +25,5 @@ namespace Booksy.ServiceCatalog.Application.DTOs.Provider
         public List<BusinessHoursDto> BusinessHours { get; set; } = new();
         public List<StaffDto> Staff { get; set; } = new();
 
-        // Provider hierarchy properties
-        public ProviderHierarchyType HierarchyType { get; set; }
-        public bool IsIndependent { get; set; }
-        public Guid? ParentProviderId { get; set; }
     }
 }

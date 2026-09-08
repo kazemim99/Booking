@@ -128,19 +128,12 @@ namespace Booksy.ServiceCatalog.Application.Queries.Booking.GetAvailableSlots
                     // This happens when there's no qualified staff
                     validationMessages = new List<string>();
 
-                    // Check if organization has staff (individual providers) - USING HIERARCHY
-                    var staffCount = await _providerRepository.CountStaffByOrganizationAsync(
-                        provider.Id,
-                        cancellationToken);
-
-                    if (staffCount == 0)
-                    {
-                        validationMessages.Add("این ارائه‌دهنده هنوز کارمندی اضافه نکرده است. لطفاً بعداً دوباره تلاش کنید.");
-                    }
-                    else
-                    {
-                        validationMessages.Add("متأسفانه هیچ کارمند واجد شرایطی برای این سرویس در دسترس نیست.");
-                    }
+                    // The salon has no bookable slot for this service. Distinguishing "no
+                    // staff at all" from "staff, but none qualified" used to mean counting
+                    // sub-provider rows; a salon with no service-providing member is also
+                    // bookable as itself (CanAcceptDirectBookings), so an empty result here
+                    // is about qualification and open hours rather than headcount.
+                    validationMessages.Add("متأسفانه هیچ کارمند واجد شرایطی برای این سرویس در دسترس نیست.");
 
                     _logger.LogInformation(
                         "No slots available: {Reason}",

@@ -35,9 +35,6 @@ namespace Booksy.ServiceCatalog.Domain.Aggregates
         public ServiceCategory PrimaryCategory { get; private set; }
 
         // Hierarchy Properties
-        public ProviderHierarchyType HierarchyType { get; private set; }
-        public ProviderId? ParentProviderId { get; private set; }
-        public bool IsIndependent { get; private set; }
 
         // Registration Progress Tracking
         public int RegistrationStep { get; private set; }
@@ -98,7 +95,6 @@ namespace Booksy.ServiceCatalog.Domain.Aggregates
             ServiceCategory primaryCategory,
             ContactInfo contactInfo,
             BusinessAddress address,
-            ProviderHierarchyType hierarchyType = ProviderHierarchyType.Organization,
             int registrationStep = 3,
             string? logoUrl = null)
         {
@@ -115,9 +111,6 @@ namespace Booksy.ServiceCatalog.Domain.Aggregates
                 Profile = profile,
                 Status = ProviderStatus.Drafted,
                 PrimaryCategory = primaryCategory,
-                HierarchyType = hierarchyType,
-                ParentProviderId = null,
-                IsIndependent = hierarchyType == ProviderHierarchyType.Individual,
                 ContactInfo = contactInfo,
                 Address = address,
                 RequiresApproval = false,
@@ -149,7 +142,6 @@ namespace Booksy.ServiceCatalog.Domain.Aggregates
             ServiceCategory primaryCategory,
             ContactInfo contactInfo,
             BusinessAddress address,
-            ProviderHierarchyType hierarchyType = ProviderHierarchyType.Organization,
             string ownerFirstName = "",
             string ownerLastName = "")
         {
@@ -166,9 +158,6 @@ namespace Booksy.ServiceCatalog.Domain.Aggregates
                 Profile = profile,
                 Status = ProviderStatus.PendingVerification,
                 PrimaryCategory = primaryCategory,
-                HierarchyType = hierarchyType,
-                ParentProviderId = null,
-                IsIndependent = hierarchyType == ProviderHierarchyType.Individual,
                 ContactInfo = contactInfo,
                 Address = address,
                 RequiresApproval = false,
@@ -189,75 +178,6 @@ namespace Booksy.ServiceCatalog.Domain.Aggregates
                 provider.RegisteredAt));
 
             return provider;
-        }
-
-        /// <summary>
-        /// Registers a staff member as an Active Individual sub-provider under an organization.
-        /// Booking resolves staff via the provider hierarchy (ParentProviderId == organization),
-        /// so staff are modelled as their own (sub-)provider with independent identity/availability.
-        /// No <see cref="ProviderRegisteredEvent"/> is raised (that would provision a login user);
-        /// a staff sub-provider is an internal resource of the organization.
-        /// </summary>
-        public static Provider RegisterStaffMember(
-            Provider organization,
-            UserId staffOwnerId,
-            string firstName,
-            string lastName)
-        {
-            if (organization is null) throw new ArgumentNullException(nameof(organization));
-            if (!organization.CanHaveStaff())
-                throw new InvalidOperationException("Only organization providers can have staff members.");
-
-            var fullName = $"{firstName} {lastName}".Trim();
-            var profile = BusinessProfile.Create(
-                string.IsNullOrWhiteSpace(fullName) ? "Staff Member" : fullName,
-                $"Staff member of {organization.Profile.BusinessName}",
-                logoUrl: null,
-                profileImageUrl: null);
-
-            // ContactInfo and Address are OWNED entities (keyed by ProviderId via table-splitting),
-            // so the org's tracked instances cannot be reused — build fresh copies for the staff.
-            var orgAddr = organization.Address;
-            var address = BusinessAddress.Create(
-                orgAddr.FormattedAddress, orgAddr.Street, orgAddr.City, orgAddr.State,
-                orgAddr.PostalCode, orgAddr.Country, provinceId: null, cityId: orgAddr.CityId,
-                latitude: orgAddr.Latitude, longitude: orgAddr.Longitude);
-            // Build brand-new Email/PhoneNumber too (they are nested owned entities keyed by the
-            // owner's id), copying string values from the org so nothing tracked is shared.
-            var orgContact = organization.ContactInfo;
-            var email = orgContact.Email is not null
-                ? Email.Create(orgContact.Email.Value)
-                : Email.Create($"staff-{Guid.NewGuid():N}@booksy.local");
-            var phone = orgContact.PrimaryPhone is not null
-                ? PhoneNumber.From(orgContact.PrimaryPhone.Value)
-                : PhoneNumber.FromNational("9120000000");
-            var contactInfo = ContactInfo.Create(email, phone);
-
-            var staff = new Provider
-            {
-                Id = ProviderId.New(),
-                OwnerId = staffOwnerId,
-                OwnerFirstName = firstName ?? string.Empty,
-                OwnerLastName = lastName ?? string.Empty,
-                Profile = profile,
-                // Staff added to an (already active) organization are immediately bookable.
-                Status = ProviderStatus.Active,
-                PrimaryCategory = organization.PrimaryCategory,
-                HierarchyType = ProviderHierarchyType.Individual,
-                ParentProviderId = organization.Id,
-                IsIndependent = false,
-                ContactInfo = contactInfo,
-                Address = address,
-                RequiresApproval = false,
-                AllowOnlineBooking = true,
-                OffersMobileServices = false,
-                PriceRange = organization.PriceRange,
-                RegisteredAt = DateTime.UtcNow,
-                RegistrationStep = 9,
-                IsRegistrationComplete = true
-            };
-
-            return staff;
         }
 
         // Business Methods
@@ -724,110 +644,19 @@ namespace Booksy.ServiceCatalog.Domain.Aggregates
 
       
 
-        // ============================================
-        // Provider Hierarchy Methods
-        // ============================================
-
         /// <summary>
-        /// Converts an individual provider to an organization
-        /// Useful when a solo professional wants to hire staff
+        /// Whether this salon can take bookings at all. Which PERSON a booking is held
+        /// against is a membership question, resolved by BookableResourceResolver; this is
+        /// only about the salon being open for business.
         /// </summary>
-        public void ConvertToOrganization()
-        {
-            if (HierarchyType == ProviderHierarchyType.Organization)
-                throw new InvalidProviderException("Provider is already an organization");
-
-            if (ParentProviderId != null)
-                throw new InvalidProviderException("Cannot convert a staff member to organization. Must leave parent organization first.");
-
-            HierarchyType = ProviderHierarchyType.Organization;
-            IsIndependent = false;
-
-            RaiseDomainEvent(new ProviderConvertedToOrganizationEvent(Id, DateTime.UtcNow));
-        }
-
-        /// <summary>
-        /// Links an individual provider to an organization as a staff member
-        /// </summary>
-        public void LinkToOrganization(ProviderId organizationId)
-        {
-            if (HierarchyType != ProviderHierarchyType.Individual)
-                throw new InvalidProviderException("Only individual providers can be linked to organizations");
-
-            if (ParentProviderId != null)
-                throw new InvalidProviderException("Provider is already linked to an organization");
-
-            // Prevent circular relationships
-            if (organizationId == Id)
-                throw new InvalidProviderException("Provider cannot be its own parent");
-
-            ParentProviderId = organizationId;
-            IsIndependent = false;
-
-            RaiseDomainEvent(new StaffMemberAddedToOrganizationEvent(organizationId, Id, DateTime.UtcNow));
-        }
-
-        /// <summary>
-        /// Unlinks an individual provider from their parent organization
-        /// </summary>
-        public void UnlinkFromOrganization(string reason)
-        {
-            if (ParentProviderId == null)
-                throw new InvalidProviderException("Provider is not linked to any organization");
-
-            var parentId = ParentProviderId;
-            ParentProviderId = null;
-            IsIndependent = true;
-
-            RaiseDomainEvent(new StaffMemberRemovedFromOrganizationEvent(parentId, Id, reason, DateTime.UtcNow));
-        }
-
-        /// <summary>
-        /// Checks if this provider can accept direct bookings
-        /// Organizations can accept bookings if they work solo or have staff
-        /// Individuals can accept bookings if they're independent or linked to an org
-        /// </summary>
+        /// <remarks>
+        /// Replaces a rule that branched on hierarchy: organizations could always accept,
+        /// independent individuals could accept, and a "staff" provider could accept if it
+        /// had a parent. There is one kind of provider now, so the rule is just its status.
+        /// </remarks>
         public bool CanAcceptDirectBookings()
         {
-            if (!AllowOnlineBooking || Status != ProviderStatus.Active)
-                return false;
-
-            // Organizations can always accept bookings (handled by owner or staff)
-            if (HierarchyType == ProviderHierarchyType.Organization)
-                return true;
-
-            // Independent individuals can accept bookings
-            if (IsIndependent)
-                return true;
-
-            // Staff members linked to organizations can accept bookings
-            return ParentProviderId != null;
-        }
-
-        /// <summary>
-        /// Checks if this provider can have staff members
-        /// </summary>
-        public bool CanHaveStaff()
-        {
-            return HierarchyType == ProviderHierarchyType.Organization;
-        }
-
-        /// <summary>
-        /// Validates hierarchy consistency
-        /// </summary>
-        public void ValidateHierarchy()
-        {
-            // Individuals shouldn't have ParentProviderId if they're independent
-            if (HierarchyType == ProviderHierarchyType.Individual && IsIndependent && ParentProviderId != null)
-                throw new InvalidProviderException("Independent individuals cannot have a parent organization");
-
-            // Organizations should not have a parent
-            if (HierarchyType == ProviderHierarchyType.Organization && ParentProviderId != null)
-                throw new InvalidProviderException("Organizations cannot be linked to another organization");
-
-            // Non-independent individuals must have a parent
-            if (HierarchyType == ProviderHierarchyType.Individual && !IsIndependent && ParentProviderId == null)
-                throw new InvalidProviderException("Non-independent individuals must be linked to an organization");
+            return AllowOnlineBooking && Status == ProviderStatus.Active;
         }
 
         // ============================================
