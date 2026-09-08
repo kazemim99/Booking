@@ -166,3 +166,36 @@ fi
 
 printf '\n\033[1;32mKEYSTONE PASSED — %d checks (legacy staff + membership chain).\033[0m\n' "$PASS"
 
+# ============================================================================
+# refactor-identity-and-membership §7.3 — owner-provides-services + the
+# switch-salon invariant (one person, multiple Owner memberships, never a
+# duplicate account). The Flutter salon switch itself is pure client-side
+# state (§17.1/§17.4: it just re-points the session at a different
+# providerId and re-derives status from the server) — nothing new to assert
+# there beyond what steps 1-12 already prove per-organization. What IS
+# server-verifiable, and wasn't covered above, is that the SAME owner token
+# can run a second, completely independent organization without minting a
+# second person.
+# ============================================================================
+
+say "13) Owner opts into personally providing services (S1/S2)"
+code=$(http POST "/api/v1/registration/owner-provides-services" "$PTOK" '{"providesServices":true}' /tmp/k_ops.json)
+[ "$code" = "200" ] && ok "owner-provides-services 200" || fail "owner-provides-services (HTTP $code): $(jget /tmp/k_ops.json message)"
+OPS=$(jget /tmp/k_ops.json providesServices)
+[ "$OPS" = "true" ] && ok "owner is now marked as providing services" || fail "providesServices was not true: $OPS"
+
+say "14) The same owner runs a second, independent salon (no duplicate person)"
+REG2="{\"ownerId\":\"$POWNER\",\"categoryId\":\"HairSalon\",\"businessInfo\":{\"businessName\":\"E2E Salon Two $RND\",\"ownerFirstName\":\"E2E\",\"ownerLastName\":\"Owner\",\"phoneNumber\":\"$PPHONE\"},\"address\":{\"street\":\"St2\",\"city\":\"Tehran\",\"state\":\"Tehran\",\"postalCode\":\"1234567890\",\"country\":\"Iran\",\"latitude\":35.8,\"longitude\":51.5},\"location\":{\"latitude\":35.8,\"longitude\":51.5,\"formattedAddress\":\"Tehran\"},\"businessHours\":{$HOURS},\"services\":[{\"name\":\"Manicure\",\"durationHours\":0,\"durationMinutes\":30,\"price\":150000,\"priceType\":\"fixed\"}],\"assistanceOptions\":[],\"teamMembers\":[],\"ownerFirstName\":\"E2E\",\"ownerLastName\":\"Owner\",\"businessName\":\"E2E Salon Two $RND\",\"description\":\"t2\",\"primaryCategory\":\"HairSalon\",\"email\":\"e2e$RND-2@s.com\",\"phoneNumber\":\"$PPHONE\",\"street\":\"St2\",\"city\":\"Tehran\",\"state\":\"Tehran\",\"postalCode\":\"1234567890\",\"country\":\"Iran\"}"
+code=$(http POST "/api/v1/Providers/register-full" "$PTOK" "$REG2" /tmp/k_reg2.json)
+[ "$code" = "201" ] && ok "second register-full 201" || fail "second register-full (HTTP $code): $(jget /tmp/k_reg2.json message)"
+PROV2=$(jget /tmp/k_reg2.json providerId); [ -n "$PROV2" ] || fail "no second providerId"
+[ "$PROV2" != "$PROV" ] && ok "second organization is a distinct provider" || fail "second registration returned the SAME providerId"
+
+code=$(http GET "/api/v1/memberships/me" "$PTOK" - /tmp/k_mine2.json)
+[ "$code" = "200" ] && ok "my-memberships 200 after second registration" || fail "my-memberships (HTTP $code)"
+grep -q "$PROV" /tmp/k_mine2.json && grep -q "$PROV2" /tmp/k_mine2.json \
+  && ok "one owner token lists BOTH organizations (switch-salon, no account duplication)" \
+  || fail "my-memberships did not list both organizations for the one owner: $(cat /tmp/k_mine2.json)"
+
+printf '\n\033[1;32mALL KEYSTONE CHECKS PASSED — %d checks (legacy staff + membership chain + owner-provides-services + switch-salon).\033[0m\n' "$PASS"
+
