@@ -362,39 +362,85 @@ class HierarchyService {
   }
 
   /**
-   * Accept an invitation to join an organization (existing registered user)
+   * Accept an invitation to join a salon (person who already has an account).
+   * Backend: POST /api/v1/memberships/invitations/{invitationId}/accept
+   *
+   * Working somewhere does not make you a Provider. The old route
+   * (/providers/{myProviderId}/hierarchy/invitations/{id}/accept) required the invitee to
+   * ALREADY be an Individual provider and then re-parented that provider row under the
+   * salon; someone who was only a customer, or had no provider of their own, could not
+   * accept at all. The membership endpoint takes only the invitation and the authenticated
+   * person, and creates a membership.
+   *
+   * `organizationId` is retained in the signature for call-site compatibility and is no
+   * longer sent — the invitation already knows which salon it belongs to.
    */
   async acceptInvitation(
     organizationId: string,
     invitationId: string,
     request: AcceptInvitationRequest
   ): Promise<HierarchyApiResponse<{ staffMemberId: string; organizationId: string }>> {
-    const response = await serviceCategoryClient.post<HierarchyApiResponse<{ staffMemberId: string; organizationId: string }>>(
-      `${API_BASE}/${organizationId}/hierarchy/invitations/${invitationId}/accept`,
-      request
+    const response = await serviceCategoryClient.post<any>(
+      `/${API_VERSION}/memberships/invitations/${invitationId}/accept`
     )
-    return response.data!
+
+    const result = response.data ?? {}
+    return {
+      success: true,
+      data: {
+        staffMemberId: result.membershipId ?? '',
+        organizationId: result.organizationId ?? organizationId,
+      },
+    }
   }
 
   /**
-   * Accept invitation with quick registration (for unregistered users)
-   * This endpoint:
-   * - Verifies OTP code
-   * - Creates user account
-   * - Creates individual provider profile
-   * - Clones services, hours, and gallery from organization
-   * - Accepts the invitation
-   * - Returns authentication tokens and cloning statistics
+   * Accept an invitation as someone who has no account yet.
+   * Backend: POST /api/v1/memberships/invitations/{invitationId}/register-and-accept
+   *
+   * Verifies the OTP against the phone the invitation was sent to, resolves that phone to
+   * a person (REUSING an existing account if one already exists on it, never creating a
+   * second), and creates the membership.
+   *
+   * Replaces .../hierarchy/invitations/{id}/accept-with-registration, whose handler ran a
+   * saga that created a brand-new User AND a brand-new Individual Provider per invitee --
+   * with manual compensating deletes when a step failed -- and cloned the salon's services,
+   * hours and gallery onto that shadow provider. That is the synthetic-provider model this
+   * migration exists to remove: an employee is a membership of the salon, so there is
+   * nothing to clone and no second provider to create.
+   *
+   * Consequences for callers: no tokens are returned (the new member signs in with their
+   * own phone via the normal OTP flow), and the cloning statistics are always zero because
+   * nothing is cloned any more.
    */
   async acceptInvitationWithRegistration(
     request: AcceptInvitationWithRegistrationRequest
   ): Promise<AcceptInvitationWithRegistrationResponse> {
-    const response = await serviceCategoryClient.post<AcceptInvitationWithRegistrationResponse>(
-      `${API_BASE}/${request.organizationId}/hierarchy/invitations/${request.invitationId}/accept-with-registration`,
-      request
+    const response = await serviceCategoryClient.post<any>(
+      `/${API_VERSION}/memberships/invitations/${request.invitationId}/register-and-accept`,
+      {
+        firstName: request.firstName,
+        lastName: request.lastName,
+        email: request.email,
+        otpCode: request.otpCode,
+      }
     )
-    // Backend returns the data directly, not wrapped
-    return response.data!
+
+    const result = response.data ?? {}
+    return {
+      userId: result.personId ?? '',
+      // The membership, not a provider — there is no second provider any more. Kept under
+      // the existing field name so callers that only pass it along keep compiling.
+      providerId: result.membershipId ?? '',
+      // The new member signs in with their own phone through the normal OTP flow; this
+      // endpoint deliberately does not mint a session.
+      accessToken: '',
+      refreshToken: '',
+      // Nothing is cloned any more: a member works from the salon's own services and hours.
+      clonedServicesCount: 0,
+      clonedWorkingHoursCount: 0,
+      clonedGalleryCount: 0,
+    }
   }
 
   /**

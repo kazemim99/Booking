@@ -372,50 +372,20 @@ async function loadInvitation() {
 async function handleAccept() {
   if (!invitation.value || !isUserRegistered.value) return
 
-  // Get current user's provider ID
-  const currentProviderId = authStore.providerId
-  console.log('=== ACCEPT INVITATION DEBUG ===')
-  console.log('Current Provider ID from authStore:', currentProviderId)
-  console.log('Organization ID from invitation:', invitation.value.organizationId)
-
-  if (!currentProviderId) {
-    error.value = 'لطفاً ابتدا ثبت‌نام کنید'
-    return
-  }
-
-  // Check if current provider has hierarchy info loaded
-  if (!hierarchyStore.currentHierarchy) {
-    // Try to load hierarchy to check if user is Individual type
-    try {
-      console.log('Loading hierarchy for provider:', currentProviderId)
-      await hierarchyStore.loadProviderHierarchy(currentProviderId)
-      console.log('Hierarchy loaded:', hierarchyStore.currentHierarchy)
-    } catch (err) {
-      console.error('Could not load provider hierarchy:', err)
-      // If we can't load hierarchy, let the backend validate
-      // The backend will return a proper error if the user is not an Individual
-    }
-  }
-
-  // Validate that current user is an Individual provider (if hierarchy is loaded)
-  const hierarchyType = hierarchyStore.currentHierarchy?.provider?.hierarchyType
-  console.log('Current provider hierarchy type:', hierarchyType)
-
-  if (hierarchyType === 'Organization') {
-    error.value = 'فقط ارائه‌دهندگان فردی می‌توانند دعوت را بپذیرند. شما با حساب سازمانی وارد شده‌اید.'
-    return
-  }
-
+  // Accepting an invitation makes you a MEMBER of the salon; it does not require you to
+  // be a Provider, and does not turn you into one. The previous version of this function
+  // refused to proceed unless the signed-in user already had their own Individual provider
+  // (and rejected owners outright), because the old endpoint re-parented that provider row
+  // under the salon. A person who was only a customer, or who owns their own salon and also
+  // works a shift elsewhere, could not accept at all.
   isSubmitting.value = true
   error.value = null
 
   try {
-    console.log('Calling acceptInvitation with provider ID:', currentProviderId)
-    console.log('API URL will be: /api/v1/providers/' + currentProviderId + '/hierarchy/invitations/' + invitationId.value + '/accept')
-
-    // Use current user's provider ID (not organization ID) in the API call
+    // organizationId is accepted for call-site compatibility and no longer sent — the
+    // invitation itself identifies the salon.
     await hierarchyStore.acceptInvitation(
-      currentProviderId,
+      invitation.value.organizationId,
       invitationId.value,
       {
         invitationId: invitationId.value,
