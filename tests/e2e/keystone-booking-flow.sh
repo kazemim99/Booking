@@ -167,18 +167,24 @@ fi
 printf '\n\033[1;32mKEYSTONE PASSED — %d checks (legacy staff + membership chain).\033[0m\n' "$PASS"
 
 # ============================================================================
-# refactor-identity-and-membership §7.3 — owner-provides-services + the
-# switch-salon invariant (one person, multiple Owner memberships, never a
-# duplicate account). The Flutter salon switch itself is pure client-side
-# state (§17.1/§17.4: it just re-points the session at a different
-# providerId and re-derives status from the server) — nothing new to assert
-# there beyond what steps 1-12 already prove per-organization. What IS
-# server-verifiable, and wasn't covered above, is that the SAME owner token
-# can run a second, completely independent organization without minting a
-# second person.
+# refactor-identity-and-membership §7.3 — ownership as a membership, and the
+# separation between owning a salon and working in it.
+#
+# The Flutter salon switch itself is pure client-side state (§17.1/§17.4: it
+# re-points the session at a different providerId and re-derives status from
+# the server), so there is nothing new to assert for it server-side beyond
+# what steps 1-12 already prove per-organization.
 # ============================================================================
 
-say "13) Owner opts into personally providing services (S1/S2)"
+say "13) Owning a salon does not make you bookable; opting in does (S1/S2)"
+# register-full creates the owner's membership as {Owner} with providesServices
+# false -- permission and service capability are separate concepts. Before the
+# toggle below, the owner must NOT appear as bookable staff on the roster.
+code=$(http GET "/api/v1/providers/$PROV/hierarchy/members" "$PTOK" - /tmp/k_own0.json)
+[ "$code" = "200" ] && ok "roster 200" || fail "roster (HTTP $code)"
+grep -q '"isOwner":true' /tmp/k_own0.json && ok "owner has a membership from registration alone" \
+  || fail "register-full did not create an owner membership: $(cat /tmp/k_own0.json)"
+
 code=$(http POST "/api/v1/registration/owner-provides-services" "$PTOK" '{"providesServices":true}' /tmp/k_ops.json)
 [ "$code" = "200" ] && ok "owner-provides-services 200" || fail "owner-provides-services (HTTP $code): $(jget /tmp/k_ops.json message)"
 OPS=$(jget /tmp/k_ops.json providesServices)
@@ -193,8 +199,8 @@ code=$(http POST "/api/v1/Providers/register-full" "$PTOK" "$REG2" /tmp/k_reg2.j
 [ "$code" != "201" ] && ok "second register-full for the same owner refused ($code)" \
   || fail "the same owner was allowed to register a SECOND provider (HTTP 201) -- one-salon-per-owner invariant broken"
 
-# The owner's own membership (created by step 13 -- register-full itself creates none)
-# is what /memberships/me is built on: the one person, listed under their one salon.
+# The owner's own membership -- created by register-full itself -- is what
+# /memberships/me is built on: the one person, listed under their one salon.
 code=$(http GET "/api/v1/memberships/me" "$PTOK" - /tmp/k_mine2.json)
 [ "$code" = "200" ] && ok "my-memberships 200" || fail "my-memberships (HTTP $code)"
 grep -q "$PROV" /tmp/k_mine2.json && ok "owner's membership lists their salon (no duplicate person)" \
