@@ -18,7 +18,7 @@ using Booksy.ServiceCatalog.Application.Commands.Provider.Registration;
 using Booksy.ServiceCatalog.Application.Commands.Provider.UpdateBusinessProfile;
 using Booksy.ServiceCatalog.Application.Commands.ProviderHierarchy.RegisterIndependentIndividual;
 using Booksy.ServiceCatalog.Application.Commands.ProviderHierarchy.RegisterOrganizationProvider;
-using Booksy.ServiceCatalog.Application.Commands.Provider.UpdateProviderStaff;
+using Booksy.ServiceCatalog.Application.Commands.Membership.UpdateMembership;
 using Booksy.ServiceCatalog.Application.Queries.Provider.GetCurrentProviderStatus;
 using Booksy.ServiceCatalog.Application.Queries.Provider.GetProviderClients;
 using Booksy.ServiceCatalog.Application.Queries.Provider.GetDraftProvider;
@@ -984,33 +984,39 @@ public class ProvidersController : ControllerBase
             return Forbid();
         }
 
-        // ✅ DDD-Compliant: Use UpdateProviderStaffCommand which operates on Provider aggregate
-        var command = new UpdateProviderStaffCommand(
-            id,
-            staffId,
-            request.FirstName,
-            request.LastName,
-            request.Email,
-            request.PhoneNumber,
-            request.CountryCode,
-            request.Role,
-            request.Notes,
-            request.Biography,
-            request.ProfilePhotoUrl);
+        // Staff are MEMBERSHIPS, so `staffId` here is a MembershipId (the roster this
+        // screen lists is built from memberships — see GetProviderStaffQueryHandler).
+        //
+        // This used to send UpdateProviderStaffCommand, whose handler was commented out in
+        // its entirety, so every call to this authorized route threw "handler not found"
+        // (FOLLOW-UPS #16). It now delegates to the membership-native command.
+        //
+        // Name is forwarded as a display name and is honoured only for a member without an
+        // app account; for a member who has one, the command rejects it — their name is
+        // part of their own Person record, not something the salon may rewrite. Email,
+        // phone and country code are likewise person-level and are ignored here.
+        var displayName = $"{request.FirstName} {request.LastName}".Trim();
 
-        var result = await _mediator.Send(command, cancellationToken);
+        var result = await _mediator.Send(
+            new UpdateMembershipCommand(
+                MembershipId: staffId,
+                DisplayName: string.IsNullOrWhiteSpace(displayName) ? null : displayName,
+                BioOverride: request.Biography),
+            cancellationToken);
 
-        _logger.LogInformation("Staff member {StaffId} updated for provider {ProviderId}", staffId, id);
+        _logger.LogInformation("Membership {MembershipId} updated for provider {ProviderId}", staffId, id);
+
+        var nameParts = (result.DisplayName ?? string.Empty).Split(' ', 2);
 
         var response = new StaffDetailsResponse
         {
-            Id = result.StaffId,
-            ProviderId = result.ProviderId,
-            FirstName = result.FirstName,
-            LastName = result.LastName,
-            Email = result.Email,
-            Role = result.Role,
-            IsActive = result.IsActive,
+            Id = result.MembershipId,
+            ProviderId = result.OrganizationId,
+            FirstName = nameParts.Length > 0 ? nameParts[0] : string.Empty,
+            LastName = nameParts.Length > 1 ? nameParts[1] : string.Empty,
+            Email = null,
+            Role = result.Roles.FirstOrDefault(),
+            IsActive = true,
         };
 
         return Ok(response);
@@ -1105,21 +1111,12 @@ public class ProvidersController : ControllerBase
             // Upload using existing image storage service
             var imageUrl = await _imageStorageService.SaveProfileImageAsync(id, file);
 
-            // Update staff profile photo URL via command
-            var command = new UpdateProviderStaffCommand(
-                id,
-                staffId,
-                null, // firstName - not updating
-                null, // lastName - not updating
-                null, // email - not updating
-                null, // phone - not updating
-                null, // countryCode - not updating
-                null, // role - not updating
-                null, // notes - not updating
-                null, // biography - not updating
-                imageUrl); // profilePhotoUrl
-
-            var updatedStaff = await _mediator.Send(command, cancellationToken);
+            // `staffId` is a MembershipId; the photo is stored on that membership's
+            // StaffProfile. Previously this dispatched UpdateProviderStaffCommand, whose
+            // handler was commented out, so the upload succeeded and then 500'd on save.
+            var updatedStaff = await _mediator.Send(
+                new UpdateMembershipCommand(MembershipId: staffId, PhotoUrl: imageUrl),
+                cancellationToken);
 
             _logger.LogInformation("Staff photo uploaded for staff {StaffId} in provider {ProviderId}", staffId, id);
 

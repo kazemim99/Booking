@@ -27,19 +27,28 @@ namespace Booksy.ServiceCatalog.Domain.Aggregates.OrganizationMembershipAggregat
         /// </summary>
         public string? DisplayName { get; private set; }
 
+        /// <summary>
+        /// Photo shown for this member at this organization. Chiefly for a member with no
+        /// account, who has no Person avatar of their own; for a claimed member it acts as
+        /// a per-salon override of their personal avatar.
+        /// </summary>
+        public string? PhotoUrl { get; private set; }
+
         // Private constructor for EF Core
         private StaffProfile() { }
 
         public static StaffProfile Create(
             bool providesServices = true,
             string? bioOverride = null,
-            string? displayName = null)
+            string? displayName = null,
+            string? photoUrl = null)
         {
             return new StaffProfile
             {
                 ProvidesServices = providesServices,
                 BioOverride = string.IsNullOrWhiteSpace(bioOverride) ? null : bioOverride.Trim(),
-                DisplayName = string.IsNullOrWhiteSpace(displayName) ? null : displayName.Trim()
+                DisplayName = string.IsNullOrWhiteSpace(displayName) ? null : displayName.Trim(),
+                PhotoUrl = string.IsNullOrWhiteSpace(photoUrl) ? null : photoUrl.Trim()
             };
         }
 
@@ -50,5 +59,8 @@ namespace Booksy.ServiceCatalog.Domain.Aggregates.OrganizationMembershipAggregat
 
         public void UpdateBio(string? bio) =>
             BioOverride = string.IsNullOrWhiteSpace(bio) ? null : bio.Trim();
+
+        public void UpdatePhotoUrl(string? photoUrl) =>
+            PhotoUrl = string.IsNullOrWhiteSpace(photoUrl) ? null : photoUrl.Trim();
     }
 }

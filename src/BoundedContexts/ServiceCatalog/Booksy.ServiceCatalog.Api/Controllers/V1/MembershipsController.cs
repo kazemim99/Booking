@@ -5,6 +5,7 @@ using Booksy.ServiceCatalog.Application.Commands.Membership.RegisterAndAcceptInv
 using Booksy.ServiceCatalog.Application.Commands.Membership.RevokeInvitation;
 using Booksy.ServiceCatalog.Application.Commands.Membership.SendInvitationOtp;
 using Booksy.ServiceCatalog.Application.Commands.Membership.TerminateMembership;
+using Booksy.ServiceCatalog.Application.Commands.Membership.UpdateMembership;
 using Booksy.ServiceCatalog.Application.Queries.Membership.GetInvitationSummary;
 using Booksy.ServiceCatalog.Application.Queries.Membership.GetMyMemberships;
 using MediatR;
@@ -192,6 +193,41 @@ public class MembershipsController : ControllerBase
     {
         var result = await _mediator.Send(
             new ChangeMembershipRolesCommand(membershipId, request.Roles),
+            cancellationToken);
+        return Ok(result);
+    }
+
+    /// <summary>
+    /// Update a member's organization-scoped details: the salon's display name for them
+    /// (unclaimed members only), their per-salon bio, and whether they currently provide
+    /// services. An owner may update any member; a member may update their own.
+    /// </summary>
+    /// <remarks>
+    /// Person-level fields (name, email, phone of someone who has their own account) are
+    /// deliberately not editable here — they belong to that person, not to the salon.
+    /// Roles have their own endpoint (<c>PATCH {id}/roles</c>) because of the ≥1-owner rule.
+    /// </remarks>
+    /// <response code="200">Membership updated</response>
+    /// <response code="400">Renaming a claimed member, or no staff profile to update</response>
+    /// <response code="403">Caller is neither an owner nor the member themselves</response>
+    /// <response code="404">Membership not found</response>
+    [HttpPatch("{membershipId:guid}")]
+    [ProducesResponseType(typeof(UpdateMembershipResult), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> UpdateMembership(
+        Guid membershipId,
+        [FromBody] UpdateMembershipRequest request,
+        CancellationToken cancellationToken)
+    {
+        var result = await _mediator.Send(
+            new UpdateMembershipCommand(
+                membershipId,
+                request.DisplayName,
+                request.BioOverride,
+                request.ProvidesServices,
+                request.PhotoUrl),
             cancellationToken);
         return Ok(result);
     }

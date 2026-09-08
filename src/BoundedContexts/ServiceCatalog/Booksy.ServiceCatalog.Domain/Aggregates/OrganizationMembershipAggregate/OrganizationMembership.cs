@@ -237,6 +237,49 @@ namespace Booksy.ServiceCatalog.Domain.Aggregates.OrganizationMembershipAggregat
             RaiseDomainEvent(new StaffProfileEnabledEvent(Id, OrganizationId, DateTime.UtcNow));
         }
 
+        /// <summary>
+        /// Edit the organization-scoped details of this membership: the salon's own
+        /// display name for the member and their per-salon bio.
+        /// </summary>
+        /// <remarks>
+        /// <para><paramref name="displayName"/> is honoured ONLY while the membership is
+        /// unclaimed. Once a real person is attached, their name belongs to the Person
+        /// record in UserManagement and is theirs to change — a salon owner must not be
+        /// able to rewrite another human's identity from the staff screen. The legacy
+        /// <c>PUT /providers/{id}/staff/{staffId}</c> contract sent first/last name for
+        /// every member and so conflated the two; this is where that stops.</para>
+        /// <para>The bio is genuinely per-organization (a stylist can describe themselves
+        /// differently at each salon they work in), so it is always editable here.</para>
+        /// </remarks>
+        public void UpdateStaffDetails(string? displayName, string? bioOverride, string? photoUrl = null)
+        {
+            EnsureNotTerminated(nameof(UpdateStaffDetails));
+
+            if (StaffProfile is null)
+                throw new DomainValidationException(
+                    "This member does not provide services, so there is no staff profile to update.");
+
+            if (displayName is not null)
+            {
+                if (!IsUnclaimed)
+                    throw new DomainValidationException(
+                        "This member has their own account; their name is part of their profile and cannot be changed by the organization.");
+
+                if (string.IsNullOrWhiteSpace(displayName))
+                    throw new DomainValidationException("An unclaimed member must keep a display name.");
+
+                StaffProfile.UpdateDisplayName(displayName.Trim());
+            }
+
+            if (bioOverride is not null)
+                StaffProfile.UpdateBio(bioOverride);
+
+            if (photoUrl is not null)
+                StaffProfile.UpdatePhotoUrl(photoUrl);
+
+            RaiseDomainEvent(new MembershipRoleChangedEvent(Id, OrganizationId, DateTime.UtcNow));
+        }
+
         /// <summary>Stop providing services: drop the StaffProvider role and StaffProfile (owner/manager roles remain).</summary>
         public void DisableStaffProfile()
         {

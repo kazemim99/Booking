@@ -97,6 +97,10 @@ namespace Booksy.ServiceCatalog.Infrastructure.Persistence.Configurations
                 sp.Property(p => p.DisplayName)
                     .HasMaxLength(200)
                     .HasColumnName("display_name");
+
+                sp.Property(p => p.PhotoUrl)
+                    .HasMaxLength(500)
+                    .HasColumnName("photo_url");
             });
             builder.Navigation(m => m.StaffProfile).IsRequired(false);
 

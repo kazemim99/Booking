@@ -40,6 +40,12 @@ namespace Booksy.ServiceCatalog.Domain.Enums
         InvitationExpired = 10,
 
         /// <summary>The organization added a member directly (no invitation round-trip).</summary>
-        MemberAdded = 11
+        MemberAdded = 11,
+
+        /// <summary>
+        /// A member's organization-scoped details changed (display name for an unclaimed
+        /// member, per-salon bio). Role and staff-profile changes have their own actions.
+        /// </summary>
+        MemberUpdated = 12
     }
 }
