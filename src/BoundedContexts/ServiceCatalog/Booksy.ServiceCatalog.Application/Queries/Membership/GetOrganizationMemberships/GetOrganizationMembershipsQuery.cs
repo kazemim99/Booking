@@ -22,4 +22,7 @@ public sealed record OrganizationMemberDto(
     string Status,
     bool IsOwner,
     bool ProvidesServices,
-    DateTime? JoinedAt);
+    DateTime? JoinedAt,
+    string? BioOverride = null,
+    string? PhotoUrl = null,
+    bool IsUnclaimed = false);

@@ -6,90 +6,184 @@ import type {
   CreateStaffRequest,
   UpdateStaffRequest,
 } from '../types/staff.types'
+import {
+  isActiveStatus,
+  primaryRole,
+  splitName,
+  type OrganizationMemberDto,
+} from './membership.mapper'
 
 const API_VERSION = 'v1'
 const PROVIDERS_BASE = `/${API_VERSION}/providers`
+const MEMBERSHIPS_BASE = `/${API_VERSION}/memberships`
 
+/**
+ * Staff API client, backed by the MEMBERSHIP model.
+ *
+ * A staff member is an OrganizationMembership of the salon — never a second Provider.
+ * The public method signatures and the `Staff` shape are unchanged so the store and the
+ * views above this layer did not have to move at the same time; what changed is which
+ * backend model answers them. `staffId` throughout is a MembershipId.
+ *
+ * Field-level consequences of the model (see membership.mapper.ts):
+ *  - `email` is no longer returned or written — it belongs to the person's own account.
+ *  - a name can only be written for a member who has no app account; for one who does,
+ *    the backend rejects it, because their name is theirs, not the salon's.
+ */
 class StaffService {
   // ============================================
   // Staff CRUD Operations
   // ============================================
 
+  private toStaff(member: OrganizationMemberDto, providerId: string): Staff {
+    const { firstName, lastName } = splitName(member.name)
+    return {
+      id: member.membershipId,
+      providerId,
+      firstName,
+      lastName,
+      fullName: member.name,
+      phoneNumber: member.phoneNumber ?? undefined,
+      phone: member.phoneNumber ?? undefined,
+      email: undefined,
+      role: primaryRole(member),
+      isActive: isActiveStatus(member.status),
+      hiredAt: member.joinedAt ?? undefined,
+      biography: member.bioOverride ?? undefined,
+      profilePhotoUrl: member.photoUrl ?? undefined,
+    }
+  }
+
   /**
-   * Get all staff for a provider
-   * Backend: GET /api/v1/providers/{id}/staff?activeOnly={boolean}
+   * Get all members of a provider
+   * Backend: GET /api/v1/providers/{id}/hierarchy/members
+   *
+   * Replaces GET /providers/{id}/staff, which read the legacy sub-provider rows and so
+   * could not see anyone added through the invitation/membership flow the mobile app uses.
    */
   async getStaffByProvider(providerId: string, activeOnly = false): Promise<Staff[]> {
     try {
-      console.log(`[StaffService] Fetching staff for provider: ${providerId}`)
-      const response = await serviceCategoryClient.get<Staff[]>(
-        `${PROVIDERS_BASE}/${providerId}/staff`,
-        { params: { activeOnly } }
+      const response = await serviceCategoryClient.get<{ members?: OrganizationMemberDto[] }>(
+        `${PROVIDERS_BASE}/${providerId}/hierarchy/members`
       )
-      console.log(`[StaffService] Staff retrieved:`, response.data)
-      return response.data || []
+
+      const members = response.data?.members ?? []
+      const mapped = members.map((m) => this.toStaff(m, providerId))
+      return activeOnly ? mapped.filter((s) => s.isActive) : mapped
     } catch (error) {
-      console.error(`[StaffService] Error fetching staff for provider ${providerId}:`, error)
+      console.error(`[StaffService] Error fetching members for provider ${providerId}:`, error)
       throw this.handleError(error)
     }
   }
 
   /**
-   * Create new staff member
+   * Add a member to the salon
    * Backend: POST /api/v1/providers/{id}/staff
+   *
+   * The route name is legacy but the handler is membership-native: a phone that identifies
+   * an existing person links to them, otherwise an unclaimed membership is created carrying
+   * the display name, bookable immediately and claimable later by invitation.
    */
   async createStaff(providerId: string, data: CreateStaffRequest): Promise<Staff> {
     try {
-      console.log(`[StaffService] Creating staff for provider ${providerId}:`, data)
-      const response = await serviceCategoryClient.post<Staff>(
+      const response = await serviceCategoryClient.post<any>(
         `${PROVIDERS_BASE}/${providerId}/staff`,
         data
       )
-      console.log(`[StaffService] Staff created:`, response.data)
-      return response.data!
+
+      const created = response.data ?? {}
+      const membershipId = created.membershipId ?? created.id
+      const fullName = created.displayName ?? `${data.firstName} ${data.lastName}`.trim()
+      const { firstName, lastName } = splitName(fullName)
+
+      return {
+        id: membershipId,
+        providerId,
+        firstName,
+        lastName,
+        fullName,
+        phoneNumber: data.phoneNumber,
+        phone: data.phoneNumber,
+        role: data.role ?? 'ServiceProvider',
+        isActive: true,
+        biography: data.biography,
+        profilePhotoUrl: data.profilePhotoUrl,
+      }
     } catch (error) {
-      console.error(`[StaffService] Error creating staff:`, error)
+      console.error(`[StaffService] Error creating member:`, error)
       throw this.handleError(error)
     }
   }
 
   /**
-   * Update staff member
-   * Backend: PUT /api/v1/providers/{id}/staff/{staffId}
+   * Update a member's salon-scoped details
+   * Backend: PATCH /api/v1/memberships/{membershipId}
+   *
+   * Only what the salon owns is sent: display name (rejected by the backend for a member
+   * who has their own account), per-salon bio, and photo. Email/phone are person-level and
+   * are deliberately not written from here.
    */
   async updateStaff(providerId: string, staffId: string, data: UpdateStaffRequest): Promise<Staff> {
     try {
-      console.log(`[StaffService] Updating staff ${staffId} for provider ${providerId}:`, data)
-      const response = await serviceCategoryClient.put<Staff>(
-        `${PROVIDERS_BASE}/${providerId}/staff/${staffId}`,
-        data
+      const displayName = `${data.firstName ?? ''} ${data.lastName ?? ''}`.trim()
+
+      const response = await serviceCategoryClient.patch<any>(
+        `${MEMBERSHIPS_BASE}/${staffId}`,
+        {
+          displayName: displayName.length > 0 ? displayName : undefined,
+          bioOverride: data.biography,
+          photoUrl: data.profilePhotoUrl,
+        }
       )
-      console.log(`[StaffService] Staff updated:`, response.data)
-      return response.data!
+
+      const result = response.data ?? {}
+      const fullName = result.displayName ?? displayName
+      const { firstName, lastName } = splitName(fullName)
+
+      return {
+        id: result.membershipId ?? staffId,
+        providerId,
+        firstName,
+        lastName,
+        fullName,
+        phoneNumber: data.phoneNumber,
+        phone: data.phoneNumber,
+        role: data.role ?? (result.roles?.[0] ?? 'ServiceProvider'),
+        isActive: true,
+        biography: result.bioOverride ?? data.biography,
+        profilePhotoUrl: result.photoUrl ?? data.profilePhotoUrl,
+      }
     } catch (error) {
-      console.error(`[StaffService] Error updating staff ${staffId}:`, error)
+      console.error(`[StaffService] Error updating member ${staffId}:`, error)
       throw this.handleError(error)
     }
   }
 
   /**
-   * Remove/Deactivate staff member
-   * Backend: DELETE /api/v1/providers/{id}/staff/{staffId}
+   * Remove a member from the salon
+   * Backend: POST /api/v1/memberships/{membershipId}/terminate
+   *
+   * Termination is a lifecycle transition, not a delete: the membership keeps its history
+   * (and any bookings attributed to it), and the person keeps their account and can join
+   * another salon — or this one again later.
    */
   async deleteStaff(providerId: string, staffId: string): Promise<void> {
     try {
-      console.log(`[StaffService] Removing staff ${staffId} from provider ${providerId}`)
-      await serviceCategoryClient.delete(`${PROVIDERS_BASE}/${providerId}/staff/${staffId}`)
-      console.log(`[StaffService] Staff removed successfully`)
+      await serviceCategoryClient.post(`${MEMBERSHIPS_BASE}/${staffId}/terminate`, {
+        reason: 'Removed by organization',
+      })
     } catch (error) {
-      console.error(`[StaffService] Error removing staff ${staffId}:`, error)
+      console.error(`[StaffService] Error removing member ${staffId}:`, error)
       throw this.handleError(error)
     }
   }
 
   /**
-   * Upload staff profile photo
-   * Backend: POST /api/v1/providers/{id}/staff/{staffId}/photo
+   * Upload a member's photo
+   * Backend: POST /api/v1/providers/{id}/staff/{membershipId}/photo
+   *
+   * Stored on the membership's staff profile — an unclaimed member has no personal avatar
+   * to fall back on, and for a claimed one it acts as a per-salon override.
    */
   async uploadStaffPhoto(
     providerId: string,
@@ -98,7 +192,6 @@ class StaffService {
     onUploadProgress?: (progressEvent: any) => void
   ): Promise<{ imageUrl: string; thumbnailUrl: string }> {
     try {
-      console.log(`[StaffService] Uploading photo for staff ${staffId}`)
       const formData = new FormData()
       formData.append('file', file)
 
@@ -113,10 +206,9 @@ class StaffService {
         }
       )
 
-      console.log(`[StaffService] Photo uploaded successfully:`, response.data)
       return response.data!
     } catch (error) {
-      console.error(`[StaffService] Error uploading staff photo:`, error)
+      console.error(`[StaffService] Error uploading member photo:`, error)
       throw this.handleError(error)
     }
   }

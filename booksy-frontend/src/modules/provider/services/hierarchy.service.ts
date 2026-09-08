@@ -27,6 +27,12 @@ import type {
   OrganizationSearchFilters,
   HierarchyType,
 } from '../types/hierarchy.types'
+import {
+  isActiveStatus,
+  primaryRole,
+  splitName,
+  type OrganizationMemberDto,
+} from './membership.mapper'
 
 const API_VERSION = 'v1'
 const API_BASE = `/${API_VERSION}/Providers`
@@ -177,75 +183,83 @@ class HierarchyService {
   }
 
   /**
-   * Get staff members for an organization with filtering
+   * Get the organization's members (the salon's roster).
+   * Backend: GET /api/v1/Providers/{id}/hierarchy/members
+   *
+   * Reads MEMBERSHIPS. It previously read `/hierarchy/staff`, which returns the legacy
+   * sub-provider rows — so anyone added through the invitation/membership flow (i.e.
+   * everyone added from the mobile app) was invisible here, including in the customer-facing
+   * staff picker this feeds. `StaffMember.id` is now a MembershipId, which is what
+   * bookings are attributed to and what the update/terminate endpoints expect.
+   *
+   * Paging is client-side: the members endpoint returns a salon's full roster in one
+   * response (rosters are small, and the old endpoint's page/pageSize were not honoured
+   * server-side either).
    */
   async getStaffMembers(request: GetStaffMembersRequest): Promise<PagedHierarchyResponse<StaffMember>> {
-    const params = new URLSearchParams()
-    if (request.isActive !== undefined) params.append('isActive', String(request.isActive))
-    if (request.page) params.append('page', String(request.page))
-    if (request.pageSize) params.append('pageSize', String(request.pageSize))
-
-    const response = await serviceCategoryClient.get<any>(
-      `${API_BASE}/${request.organizationId}/hierarchy/staff?${params.toString()}`
+    const response = await serviceCategoryClient.get<{ members?: OrganizationMemberDto[] }>(
+      `${API_BASE}/${request.organizationId}/hierarchy/members`
     )
 
-    console.log('getStaffMembers raw response:', response.data)
-
-    // Map staff member to ensure fullName is present
-    const mapStaffMember = (staff: any): StaffMember => ({
-      ...staff,
-      fullName: staff.fullName || `${staff.firstName || ''} ${staff.lastName || ''}`.trim(),
-      specializations: staff.specializations || [],
-    })
-
-    // Backend returns { organizationId, staffMembers: [...] }
-    // Extract the staffMembers array and wrap in PagedHierarchyResponse format
-    if (response.data && response.data.staffMembers && Array.isArray(response.data.staffMembers)) {
-      const totalCount = response.data.staffMembers.length
-      const pageSize = request.pageSize || totalCount
+    const mapMember = (member: OrganizationMemberDto): StaffMember => {
+      const { firstName, lastName } = splitName(member.name)
       return {
-        items: response.data.staffMembers.map(mapStaffMember),
-        totalCount,
-        page: request.page || 1,
-        pageSize,
-        totalPages: Math.ceil(totalCount / pageSize),
+        id: member.membershipId,
+        // A member is not a Provider any more; the only provider in play is the salon.
+        providerId: request.organizationId,
+        organizationId: request.organizationId,
+        firstName,
+        lastName,
+        fullName: member.name,
+        email: undefined,
+        phoneNumber: member.phoneNumber ?? undefined,
+        photoUrl: member.photoUrl ?? undefined,
+        role: primaryRole(member),
+        bio: member.bioOverride ?? undefined,
+        specializations: [],
+        isActive: isActiveStatus(member.status),
+        joinedAt: member.joinedAt ? new Date(member.joinedAt) : new Date(),
       }
     }
 
-    // Fallback: if response.data already has the expected format
-    if (response.data && response.data.items) {
-      return {
-        ...response.data,
-        items: response.data.items.map(mapStaffMember),
-      } as PagedHierarchyResponse<StaffMember>
+    let items = (response.data?.members ?? []).map(mapMember)
+
+    if (request.isActive !== undefined) {
+      items = items.filter((s) => s.isActive === request.isActive)
     }
 
-    // No staff members found
-    const pageSize = request.pageSize || 10
+    const totalCount = items.length
+    const pageSize = request.pageSize || totalCount || 10
+    const page = request.page || 1
+
+    if (request.page && request.pageSize) {
+      items = items.slice((page - 1) * pageSize, page * pageSize)
+    }
+
     return {
-      items: [],
-      totalCount: 0,
-      page: request.page || 1,
+      items,
+      totalCount,
+      page,
       pageSize,
-      totalPages: 0,
+      totalPages: totalCount === 0 ? 0 : Math.ceil(totalCount / pageSize),
     }
   }
 
   /**
-   * Remove a staff member from an organization
+   * Remove a member from an organization.
+   * Backend: POST /api/v1/memberships/{membershipId}/terminate
+   *
+   * Termination is a lifecycle transition, not a delete — the membership keeps its history
+   * and the person keeps their account. Replaces DELETE /hierarchy/staff/{id}, which
+   * un-parented a sub-provider row.
    */
   async removeStaffMember(
     organizationId: string,
     staffId: string,
     reason: string = 'Removed by organization'
   ): Promise<HierarchyApiResponse<void>> {
-    const response = await serviceCategoryClient.delete<HierarchyApiResponse<void>>(
-      `${API_BASE}/${organizationId}/hierarchy/staff/${staffId}`,
-      {
-        data: { reason }
-      }
-    )
-    return response.data!
+    await serviceCategoryClient.post(`/${API_VERSION}/memberships/${staffId}/terminate`, { reason })
+    return { success: true }
   }
 
   // ============================================================================

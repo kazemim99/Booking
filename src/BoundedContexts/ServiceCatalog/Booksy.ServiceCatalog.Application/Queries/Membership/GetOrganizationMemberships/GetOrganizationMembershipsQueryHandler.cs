@@ -69,7 +69,12 @@ public sealed class GetOrganizationMembershipsQueryHandler
                 Status: m.Status.ToString(),
                 IsOwner: m.IsOwner,
                 ProvidesServices: m.ProvidesServices,
-                JoinedAt: m.JoinedAt);
+                JoinedAt: m.JoinedAt,
+                // Per-salon presentation, so the staff screen can render a member without
+                // a second round-trip, and can tell "no app account yet" from "inactive".
+                BioOverride: m.StaffProfile?.BioOverride,
+                PhotoUrl: m.StaffProfile?.PhotoUrl,
+                IsUnclaimed: m.IsUnclaimed);
         }).ToList();
 
         _logger.LogDebug("Organization {OrgId} has {Count} membership(s)", organizationId.Value, members.Count);
