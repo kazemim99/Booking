@@ -83,6 +83,66 @@ WHERE s."HierarchyType" = 'Individual'
   );
 
 -- ----------------------------------------------------------------------------
+-- STEP 2b — Synthetic sub-provider staff  ->  UNCLAIMED memberships.
+--
+-- The staff STEP 2 deliberately skips: sub-providers whose OwnerId has no users
+-- row, minted by the old AddStaffToProvider path (UserId.CreateNew() with the
+-- salon's own phone/email copied onto them). They are real people the salon
+-- books work against — they simply have no account.
+--
+-- The membership model has a first-class shape for exactly this: an UNCLAIMED
+-- membership (person_id NULL) carrying a display name, bookable immediately and
+-- claimable later when that person accepts an invitation on their phone
+-- (OrganizationMembership.CreateUnclaimed / ClaimBy, which preserves the
+-- membership id so their bookings survive).
+--
+-- Run this if you want their history preserved and their bookings re-keyed by
+-- rekey_bookings_to_memberships.sql. SKIP IT only if you intend to keep the
+-- legacy provider rows for those people indefinitely — in which case
+-- ParentProviderId cannot be dropped.
+--
+-- ux_membership_person_org_active does not constrain these rows (its predicate
+-- is person_id IS NOT NULL), so two unclaimed members never collide; the
+-- NOT EXISTS guard below is what makes re-running safe.
+-- ----------------------------------------------------------------------------
+INSERT INTO "ServiceCatalog".organization_memberships
+    (id, person_id, organization_id, status, roles, joined_at, is_deleted, created_at, "Version")
+SELECT gen_random_uuid(), NULL, s."ParentProviderId", 'Active', 'StaffProvider', now(), false, now(), 1
+FROM "ServiceCatalog"."Providers" s
+WHERE s."HierarchyType" = 'Individual'
+  AND s."ParentProviderId" IS NOT NULL
+  AND NOT EXISTS (
+      SELECT 1 FROM user_management.users u WHERE u.id = s."OwnerId"
+  )
+  AND NOT EXISTS (
+      -- already converted on a previous run: an unclaimed membership in this org
+      -- already carries this person's display name
+      SELECT 1
+      FROM "ServiceCatalog".organization_memberships m
+      JOIN "ServiceCatalog".staff_profiles sp2 ON sp2.membership_id = m.id
+      WHERE m.organization_id = s."ParentProviderId"
+        AND m.person_id IS NULL
+        AND m.status <> 'Terminated'
+        AND sp2.display_name = NULLIF(TRIM(CONCAT(s."OwnerFirstName", ' ', s."OwnerLastName")), '')
+  )
+  AND NULLIF(TRIM(CONCAT(s."OwnerFirstName", ' ', s."OwnerLastName")), '') IS NOT NULL;
+
+-- Give those new unclaimed memberships their display name (STEP 3 adds the
+-- staff_profiles row itself; this sets the name it must carry).
+INSERT INTO "ServiceCatalog".staff_profiles (membership_id, provides_services, display_name)
+SELECT m.id, true, NULLIF(TRIM(CONCAT(s."OwnerFirstName", ' ', s."OwnerLastName")), '')
+FROM "ServiceCatalog".organization_memberships m
+JOIN "ServiceCatalog"."Providers" s
+  ON s."ParentProviderId" = m.organization_id
+ AND s."HierarchyType" = 'Individual'
+ AND NOT EXISTS (SELECT 1 FROM user_management.users u WHERE u.id = s."OwnerId")
+WHERE m.person_id IS NULL
+  AND m.status <> 'Terminated'
+  AND NOT EXISTS (
+      SELECT 1 FROM "ServiceCatalog".staff_profiles sp WHERE sp.membership_id = m.id
+  );
+
+-- ----------------------------------------------------------------------------
 -- STEP 3 — StaffProfiles for any StaffProvider membership missing one.
 -- (Owners created in STEP 1 hold only {Owner} → no profile; STEP 2 rows do.)
 -- ----------------------------------------------------------------------------
