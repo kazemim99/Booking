@@ -43,9 +43,13 @@ public class ProgressiveRegistrationTests : ServiceCatalogIntegrationTestBase
             return (response.StatusCode, null, "No data in response");
         }
 
-        var providerIdStr = dataObj["ProviderId"]?.ToString();
+        // The response envelope is serialised camelCase (ApiResponseMiddleware sets
+        // JsonNamingPolicy.CamelCase), and JObject's indexer is case-sensitive: "ProviderId" and
+        // "Message" never matched, so this helper reported no id and no message however well the
+        // endpoint behaved, and every test built on it failed on the arrange.
+        var providerIdStr = dataObj.GetValue("ProviderId", StringComparison.OrdinalIgnoreCase)?.ToString();
         var providerId = !string.IsNullOrEmpty(providerIdStr) && Guid.TryParse(providerIdStr, out var id) ? id : (Guid?)null;
-        var message = (string?)dataObj["Message"] ?? "";
+        var message = dataObj.GetValue("Message", StringComparison.OrdinalIgnoreCase)?.ToString() ?? "";
 
         return (response.StatusCode, providerId, message);
     }
@@ -58,13 +62,13 @@ public class ProgressiveRegistrationTests : ServiceCatalogIntegrationTestBase
     public async Task CreateDraftProvider_WithValidData_CreatesNewDraft()
     {
         // Arrange
-        AuthenticateAsCustomer("test1@example.com");
+        await CreateAndAuthenticateAsRealUserAsync("test1@example.com");
 
         var request = new
         {
             BusinessName = "Test Salon",
             BusinessDescription = "A modern salon",
-            Category = "Salon",
+            Category = "beauty_salon",
             PhoneNumber = "+989123456789",
             Email = "contact@testsalon.com",
             AddressLine1 = "123 Main Street",
@@ -100,13 +104,13 @@ public class ProgressiveRegistrationTests : ServiceCatalogIntegrationTestBase
     public async Task CreateDraftProvider_WhenDraftAlreadyExists_ReturnsExistingDraft()
     {
         // Arrange
-        AuthenticateAsCustomer("test2@example.com");
+        await CreateAndAuthenticateAsRealUserAsync("test2@example.com");
 
         var request = new
         {
             BusinessName = "Test Salon",
             BusinessDescription = "A modern salon",
-            Category = "Salon",
+            Category = "beauty_salon",
             PhoneNumber = "+989123456789",
             Email = "contact@testsalon.com",
             AddressLine1 = "456 Oak Avenue",
@@ -151,7 +155,7 @@ public class ProgressiveRegistrationTests : ServiceCatalogIntegrationTestBase
     public async Task CreateDraftProvider_WithInvalidCategory_ReturnsError()
     {
         // Arrange
-        AuthenticateAsCustomer("test3@example.com");
+        await CreateAndAuthenticateAsRealUserAsync("test3@example.com");
 
         var request = new
         {
@@ -187,7 +191,7 @@ public class ProgressiveRegistrationTests : ServiceCatalogIntegrationTestBase
         {
             BusinessName = "Test Business",
             BusinessDescription = "Test description",
-            Category = "Salon",
+            Category = "beauty_salon",
             PhoneNumber = "+989123456789",
             Email = "test@test.com",
             AddressLine1 = "123 Street",
@@ -214,13 +218,13 @@ public class ProgressiveRegistrationTests : ServiceCatalogIntegrationTestBase
     public async Task GetDraftProvider_WithExistingDraft_ReturnsDraftData()
     {
         // Arrange
-        AuthenticateAsCustomer("test4@example.com");
+        await CreateAndAuthenticateAsRealUserAsync("test4@example.com");
 
         var createRequest = new
         {
             BusinessName = "My Business",
             BusinessDescription = "A great business",
-            Category = "Salon",
+            Category = "beauty_salon",
             PhoneNumber = "+989123456789",
             Email = "contact@test.com",
             AddressLine1 = "789 Test St",
@@ -248,7 +252,7 @@ public class ProgressiveRegistrationTests : ServiceCatalogIntegrationTestBase
     public async Task GetDraftProvider_WithoutDraft_Returns404()
     {
         // Arrange
-        AuthenticateAsCustomer("test5@example.com");
+        await CreateAndAuthenticateAsRealUserAsync("test5@example.com");
 
         // Act - User has no draft provider
         var response = await GetAsync("/api/v1/providers/draft");
@@ -278,13 +282,13 @@ public class ProgressiveRegistrationTests : ServiceCatalogIntegrationTestBase
     public async Task CompleteRegistration_WithoutRequiredData_ReturnsError()
     {
         // Arrange
-        AuthenticateAsCustomer("test6@example.com");
+        await CreateAndAuthenticateAsRealUserAsync("test6@example.com");
 
         var createRequest = new
         {
             BusinessName = "Incomplete Business",
             BusinessDescription = "Missing required data",
-            Category = "Salon",
+            Category = "beauty_salon",
             PhoneNumber = "+989123456789",
             Email = "incomplete@test.com",
             AddressLine1 = "111 Incomplete St",
@@ -317,13 +321,13 @@ public class ProgressiveRegistrationTests : ServiceCatalogIntegrationTestBase
     public async Task CompleteRegistration_ByNonOwner_ReturnsForbidden()
     {
         // Arrange - Create as one user
-        AuthenticateAsCustomer("owner@example.com");
+        await CreateAndAuthenticateAsRealUserAsync("owner@example.com");
 
         var createRequest = new
         {
             BusinessName = "Owner Business",
             BusinessDescription = "Only owner can complete",
-            Category = "Salon",
+            Category = "beauty_salon",
             PhoneNumber = "+989123456789",
             Email = "owner@test.com",
             AddressLine1 = "222 Owner St",
@@ -343,7 +347,7 @@ public class ProgressiveRegistrationTests : ServiceCatalogIntegrationTestBase
         var idToUse = providerId ?? Guid.NewGuid();
 
         // Switch to different user
-        AuthenticateAsCustomer("different@example.com");
+        await CreateAndAuthenticateAsRealUserAsync("different@example.com");
 
         // Act
         var completeRequest = new { ProviderId = idToUse };

@@ -2,6 +2,7 @@ using Booksy.Core.Application.Abstractions.CQRS;
 using Booksy.Core.Application.Abstractions.Persistence;
 using Booksy.Core.Application.Abstractions.Services;
 using Booksy.Core.Domain.Abstractions;
+using Booksy.Core.Domain.Exceptions;
 using Booksy.Core.Domain.ValueObjects;
 using Booksy.ServiceCatalog.Domain.Aggregates;
 using Booksy.ServiceCatalog.Application.Common;
@@ -42,7 +43,10 @@ public sealed class CreateProviderDraftCommandHandler
         // accept any number here, letting an undefined category reach the aggregate.
         if (!ServiceCategoryResolver.TryResolve(request.Category, out var category))
         {
-            throw new InvalidOperationException($"Invalid category: {request.Category}");
+            // The caller sent a category the system does not have; that is a 400, and the action
+            // documents one. InvalidOperationException is unmapped by ExceptionHandlingMiddleware,
+            // so a mistyped category came back as a 500 with no usable message.
+            throw new DomainValidationException(nameof(request.Category), $"Invalid category: {request.Category}");
         }
 
         // 3. Create value objects
@@ -95,7 +99,8 @@ public sealed class CreateProviderDraftCommandHandler
             return new CreateProviderDraftResult(
                 provider.Id.Value,
                 provider.RegistrationStep,
-                "Draft provider updated successfully");
+                "A draft provider already exists for this user; its details were updated",
+                IsNewDraft: false);
         }
 
         // 5. Create new draft provider
@@ -118,6 +123,7 @@ public sealed class CreateProviderDraftCommandHandler
         return new CreateProviderDraftResult(
             provider.Id.Value,
             provider.RegistrationStep,
-            "Draft provider created successfully");
+            "Draft provider created successfully",
+            IsNewDraft: true);
     }
 }

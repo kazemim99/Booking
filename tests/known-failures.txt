@@ -63,29 +63,41 @@
 # server's UTC offset (+3:30 here). Fixing it is a schema migration across all three hosts:
 # FOLLOW-UPS #48.
 #
-# 34 ServiceCatalog entries remain.
+# 2026-09-09 (booking-5d): ONE line ADDED, which the header above forbids without proof, so here is
+# the proof. CheckSlotAvailability_ForBookedSlot_ShouldReturnFalse failed on the FULL verify as an
+# off-baseline failure. It fails identically at 570f802e — the commit BEFORE the change that
+# uncovered it — measured in a clean worktree, so it is not a regression: the baseline was taken at
+# 1a7146ea, before 570f802e made the fixture build a genuinely bookable salon, so this test could
+# not reach the real path when the list was written. It is the same defect as its neighbour
+# GetAvailableSlots_ShouldExcludeBookedSlots, which is already listed, and the cause is FOLLOW-UPS
+# #48: slot grids are computed in process from business hours, while booking times come back from
+# Postgres shifted by the server's UTC offset, so a booked 10:00 slot still reads as free. That is a
+# double-booking risk in production, not just a test failure — see #48, which now carries it.
+#
+# 2026-09-09 (booking-5d): the whole registration block removed — 16 lines, both classes now 21/21.
+# booking-3b handed the cluster over when its owning session ended. Causes, none of them "not yet
+# diagnosed": POST /registration/step-5/staff had NO handler at all (the file was commented out
+# during the membership migration and nothing replaced it, so the wizard's team step answered 500 on
+# every call — it now goes through the same AddStaffToProvider path the salon's own team screen
+# uses); an unknown category, a missing owner name, and every step-9 completion rule answered 500
+# instead of 400/404; POST /providers/draft decided 201-vs-200 by searching its own message for
+# "already exists", which the handler never says, so an updated draft was reported as a creation;
+# and GET /registration/progress documented a 404 its code never returns. Test-side: a helper read
+# the camelCase response envelope with PascalCase keys, identities were fabricated guids with no
+# user row (the base fixture already had CreateAndAuthenticateAsRealUserAsync for exactly that), the
+# category "Salon" is not one the API or any client has ever used, and the gallery step was posting
+# JSON URLs to an endpoint that takes file uploads.
+#
+# 10 ServiceCatalog entries remain (3 WorkingHours, 3 Bookings, 2 Availability, 1 Notifications,
+# 1 ProviderManagement). Counted, not carried forward: the "68 remain" above was already stale when
+# written — the file held 59.
+Booksy.ServiceCatalog.IntegrationTests.API.Bookings.AvailabilityControllerTests.CheckSlotAvailability_ForBookedSlot_ShouldReturnFalse
 Booksy.ServiceCatalog.IntegrationTests.API.Bookings.AvailabilityControllerTests.GetAvailableSlots_ShouldExcludeBookedSlots
 Booksy.ServiceCatalog.IntegrationTests.API.Bookings.BookingsControllerTests.CancelBooking_AsCustomer_ShouldReturn200Ok
 Booksy.ServiceCatalog.IntegrationTests.API.Bookings.BookingsControllerTests.CreateBooking_WithPastDate_ShouldReturn400BadRequest
 Booksy.ServiceCatalog.IntegrationTests.API.Bookings.BookingsControllerTests.RescheduleBooking_WithValidNewTime_ShouldReturn200Ok
 Booksy.ServiceCatalog.IntegrationTests.API.Notifications.NotificationsControllerTests.ScheduleNotification_WithValidData_ShouldReturn200OK
 Booksy.ServiceCatalog.IntegrationTests.API.Providers.ProviderManagementTests.RegisterProvider_WithValidData_ShouldReturn201Created
-Booksy.ServiceCatalog.IntegrationTests.ProgressiveRegistrationTests.CompleteRegistration_ByNonOwner_ReturnsForbidden
-Booksy.ServiceCatalog.IntegrationTests.ProgressiveRegistrationTests.CompleteRegistration_WithoutRequiredData_ReturnsError
-Booksy.ServiceCatalog.IntegrationTests.ProgressiveRegistrationTests.CreateDraftProvider_WhenDraftAlreadyExists_ReturnsExistingDraft
-Booksy.ServiceCatalog.IntegrationTests.ProgressiveRegistrationTests.CreateDraftProvider_WithValidData_CreatesNewDraft
-Booksy.ServiceCatalog.IntegrationTests.ProgressiveRegistrationTests.GetDraftProvider_WithExistingDraft_ReturnsDraftData
-Booksy.ServiceCatalog.IntegrationTests.StepBasedRegistrationTests.GetProgress_WithExistingDraft_ReturnsDraftData
-Booksy.ServiceCatalog.IntegrationTests.StepBasedRegistrationTests.GetProgress_WithoutDraft_ReturnsNotFound
-Booksy.ServiceCatalog.IntegrationTests.StepBasedRegistrationTests.Step3_CreateLocationDraft_WhenAlreadyExists_ReturnsExistingDraft
-Booksy.ServiceCatalog.IntegrationTests.StepBasedRegistrationTests.Step3_CreateLocationDraft_WithValidData_CreatesNewDraft
-Booksy.ServiceCatalog.IntegrationTests.StepBasedRegistrationTests.Step4_SaveServices_WithValidData_SavesSuccessfully
-Booksy.ServiceCatalog.IntegrationTests.StepBasedRegistrationTests.Step5_SaveStaff_WithValidData_SavesSuccessfully
-Booksy.ServiceCatalog.IntegrationTests.StepBasedRegistrationTests.Step6_SaveWorkingHours_WithValidData_SavesSuccessfully
-Booksy.ServiceCatalog.IntegrationTests.StepBasedRegistrationTests.Step7_SaveGallery_MarksStepComplete
-Booksy.ServiceCatalog.IntegrationTests.StepBasedRegistrationTests.Step8_SaveFeedback_WithOptionalFeedback_SavesSuccessfully
-Booksy.ServiceCatalog.IntegrationTests.StepBasedRegistrationTests.Step9_CompleteRegistration_WithAllRequiredData_CompletesSuccessfully
-Booksy.ServiceCatalog.IntegrationTests.StepBasedRegistrationTests.Step9_CompleteRegistration_WithoutServices_FailsValidation
 Booksy.ServiceCatalog.IntegrationTests.WorkingHoursManagementTests.GetExceptions_WithValidProvider_ReturnsExceptionList
 Booksy.ServiceCatalog.IntegrationTests.WorkingHoursManagementTests.UpdateBusinessHours_WithBreaks_SavesBreakPeriodsSuccessfully
 Booksy.ServiceCatalog.IntegrationTests.WorkingHoursManagementTests.UpdateBusinessHours_WithValidData_UpdatesSuccessfully

@@ -3,7 +3,11 @@ using Booksy.ServiceCatalog.Domain.Enums;
 using Booksy.ServiceCatalog.IntegrationTests.Infrastructure;
 using FluentAssertions;
 using Newtonsoft.Json.Linq;
+using SixLabors.ImageSharp;
+using SixLabors.ImageSharp.Formats.Png;
+using SixLabors.ImageSharp.PixelFormats;
 using System.Net;
+using System.Net.Http.Headers;
 using System.Net.Http.Json;
 using Xunit;
 
@@ -25,13 +29,17 @@ public class StepBasedRegistrationTests : ServiceCatalogIntegrationTestBase
     public async Task Step3_CreateLocationDraft_WithValidData_CreatesNewDraft()
     {
         // Arrange
-        AuthenticateAsCustomer("provider1@test.com");
+        await CreateAndAuthenticateAsRealUserAsync("provider1@test.com");
 
         var request = new
         {
+            // Owner names are required (Providers.OwnerFirstName/LastName are NOT NULL, and the
+            // wizard collects them at step 1). Omitting them made this a constraint violation.
+            OwnerFirstName = "Mostafa",
+            OwnerLastName = "Kazemi",
             BusinessName = "Progressive Salon",
             BusinessDescription = "A modern beauty salon",
-            Category = "Salon",
+            Category = "beauty_salon",
             PhoneNumber = "+989123456789",
             Email = "contact@progressivesalon.com",
             AddressLine1 = "123 Test Street",
@@ -62,13 +70,15 @@ public class StepBasedRegistrationTests : ServiceCatalogIntegrationTestBase
     public async Task Step3_CreateLocationDraft_WhenAlreadyExists_ReturnsExistingDraft()
     {
         // Arrange
-        AuthenticateAsCustomer("provider2@test.com");
+        await CreateAndAuthenticateAsRealUserAsync("provider2@test.com");
 
         var request = new
         {
+            OwnerFirstName = "Mostafa",
+            OwnerLastName = "Kazemi",
             BusinessName = "Test Salon",
             BusinessDescription = "Test Description",
-            Category = "Salon",
+            Category = "beauty_salon",
             PhoneNumber = "+989123456789",
             Email = "test@test.com",
             AddressLine1 = "123 Street",
@@ -232,21 +242,27 @@ public class StepBasedRegistrationTests : ServiceCatalogIntegrationTestBase
     public async Task Step7_SaveGallery_MarksStepComplete()
     {
         // Arrange
-        var providerId = await CreateDraftProviderAsync("provider6@test.com");
+        await CreateDraftProviderAsync("provider6@test.com");
 
-        var request = new
+        // Step 7 uploads FILES (the action takes an IFormFileCollection and hands them to the
+        // gallery upload command, which requires a real .jpg/.jpeg/.png/.webp). This test used to
+        // post JSON image URLs, a shape the endpoint has never accepted, so it could only ever be
+        // a model-binding failure. The provider comes from the caller's draft, not the body.
+        using var upload = new MultipartFormDataContent();
+        foreach (var index in Enumerable.Range(0, 2))
         {
-            ProviderId = providerId,
-            ImageUrls = new[] { "image1.jpg", "image2.jpg", "image3.jpg" }
-        };
+            var file = new ByteArrayContent(CreateTestPng());
+            file.Headers.ContentType = new MediaTypeHeaderValue("image/png");
+            upload.Add(file, "files", $"gallery-{index}.png");
+        }
 
         // Act
-        var response = await Client.PostAsJsonAsync("/api/v1/registration/step-7/gallery", request);
+        var response = await Client.PostAsync("/api/v1/registration/step-7/gallery", upload);
 
         // Assert
-        response.StatusCode.Should().Be(HttpStatusCode.OK);
-
         var content = await response.Content.ReadAsStringAsync();
+        response.StatusCode.Should().Be(HttpStatusCode.OK, content);
+
         var data = JObject.Parse(content)["data"];
 
         data!["registrationStep"]!.Value<int>().Should().Be(7);
@@ -329,30 +345,46 @@ public class StepBasedRegistrationTests : ServiceCatalogIntegrationTestBase
     }
 
     [Fact]
-    public async Task GetProgress_WithoutDraft_ReturnsNotFound()
+    public async Task GetProgress_WithoutDraft_ReturnsEmptyProgress()
     {
         // Arrange
-        AuthenticateAsCustomer("newuser@test.com");
+        await CreateAndAuthenticateAsRealUserAsync("newuser@test.com");
 
         // Act
         var response = await Client.GetAsync("/api/v1/registration/progress");
 
         // Assert
-        response.StatusCode.Should().Be(HttpStatusCode.NotFound);
+        // 200 with hasDraft:false, not 404 — see the action's remarks. The wizard resumes on
+        // hasDraft, so "no draft yet" is a normal answer, not a client error. This test asserted the
+        // 404 the action's own documentation claimed and its code never returned.
+        response.StatusCode.Should().Be(HttpStatusCode.OK);
+
+        var content = await response.Content.ReadAsStringAsync();
+        var data = JObject.Parse(content)["data"];
+        data!["hasDraft"]!.Value<bool>().Should().BeFalse();
     }
 
     // Helper methods
 
+    /// <summary>A real 8x8 PNG: the gallery upload validates the file, not just its name.</summary>
+    private static byte[] CreateTestPng()
+    {
+        using var image = new Image<Rgba32>(8, 8);
+        using var buffer = new MemoryStream();
+        image.Save(buffer, new PngEncoder());
+        return buffer.ToArray();
+    }
+
     private async Task<Guid> CreateDraftProviderAsync(string email)
     {
-        AuthenticateAsCustomer(email);
+        await CreateAndAuthenticateAsRealUserAsync(email);
 
         var request = new SaveStep3LocationCommand(
         OwnerFirstName: "Mostafa",
         OwnerLastName: "Kazemi",
             BusinessName: "Test Business",
             BusinessDescription: "Test Description",
-            Category: "Salon",
+            Category: "beauty_salon",
             PhoneNumber: "+989123456789",
             Email: email,
             AddressLine1: "123 Test St",

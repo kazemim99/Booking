@@ -2,6 +2,7 @@ using Booksy.Core.Application.Abstractions.CQRS;
 using Booksy.Core.Application.Abstractions.Persistence;
 using Booksy.Core.Application.Abstractions.Services;
 using Booksy.Core.Domain.Abstractions;
+using Booksy.Core.Domain.Exceptions;
 using Booksy.Core.Domain.ValueObjects;
 using Booksy.ServiceCatalog.Application.Services;
 using Booksy.ServiceCatalog.Application.Services.Interfaces;
@@ -46,6 +47,15 @@ public sealed class SaveStep3LocationCommandHandler
     {
         var userId = UserId.From(_currentUserService.UserId ??
             throw new UnauthorizedAccessException("User not authenticated"));
+
+        // The owner's name is not optional: Providers.OwnerFirstName/OwnerLastName are NOT NULL, so
+        // a payload without them used to reach Postgres and come back as a 500 with a constraint
+        // violation. The wizard collects both at step 1, before it ever calls this.
+        if (string.IsNullOrWhiteSpace(request.OwnerFirstName))
+            throw new DomainValidationException(nameof(request.OwnerFirstName), "Owner first name is required");
+
+        if (string.IsNullOrWhiteSpace(request.OwnerLastName))
+            throw new DomainValidationException(nameof(request.OwnerLastName), "Owner last name is required");
 
         // Check if user already has a draft provider
         var existingProvider = await _providerRepository
@@ -127,7 +137,9 @@ public sealed class SaveStep3LocationCommandHandler
         // accept any number here, letting an undefined category reach the aggregate.
         if (!ServiceCategoryResolver.TryResolve(request.Category, out var category))
         {
-            throw new InvalidOperationException($"Invalid category: {request.Category}");
+            // See CreateProviderDraftCommandHandler: an unknown category is the caller's error, and
+            // an unmapped InvalidOperationException made it a 500.
+            throw new DomainValidationException(nameof(request.Category), $"Invalid category: {request.Category}");
         }
 
         // Create contact info

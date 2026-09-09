@@ -127,7 +127,7 @@ public class ProvidersController : ControllerBase
             result.ProviderId, result.RegistrationStep);
 
         // Return 200 if existing draft was found, 201 if new draft created
-        if (result.Message.Contains("already exists"))
+        if (!result.IsNewDraft)
             return Ok(response);
 
         return CreatedAtAction(

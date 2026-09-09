@@ -36,11 +36,16 @@ public class ProviderRegistrationController : ControllerBase
     /// Get current registration progress and draft data
     /// Used to resume registration flow
     /// </summary>
-    /// <response code="200">Returns registration progress</response>
-    /// <response code="404">No draft found</response>
+    /// <remarks>
+    /// Always 200: progress is a statement about the caller, and "you have no draft" is a valid
+    /// answer carried by <c>hasDraft: false</c>. The wizard resumes on exactly that field
+    /// (<c>provider-registration.service.ts</c> → <c>getDraftRegistration</c>), so a 404 would turn
+    /// the ordinary "starting fresh" case into a client error. The 404 this action used to declare
+    /// was never returned by the code — the documentation, not the behaviour, was wrong.
+    /// </remarks>
+    /// <response code="200">Returns registration progress, with or without a draft</response>
     [HttpGet("progress")]
     [ProducesResponseType(typeof(GetRegistrationProgressResult), StatusCodes.Status200OK)]
-    [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IActionResult> GetProgress(CancellationToken cancellationToken)
     {
         var query = new GetRegistrationProgressQuery();

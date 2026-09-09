@@ -2037,7 +2037,7 @@
                 "header": [],
                 "body": {
                   "mode": "raw",
-                  "raw": "{\n  \"amount\": 300000,\n  \"reason\": \"CustomerRequest\",\n  \"notes\": \"بازگشت وجه به درخواست مشتری\"\n}",
+                  "raw": "{\n  \"amount\": 300000,\n  \"reason\": \"CustomerCancellation\",\n  \"notes\": \"بازگشت وجه به درخواست مشتری\"\n}",
                   "options": {
                     "raw": {
                       "language": "json"

@@ -146,7 +146,12 @@ public class PayoutsController : ControllerBase
     /// <response code="200">Payout details retrieved</response>
     /// <response code="404">Payout not found</response>
     [HttpGet("{id}")]
-    [Authorize]
+    // Admin/Finance, like every other action on this controller that names a payout directly. The
+    // action threw on every call until now, so nothing depended on the wider `[Authorize]` it
+    // carried — and left as it was, reviving it would have let any authenticated user read any
+    // provider's payout amounts by id. The provider-facing view is GET /payouts/provider/{id},
+    // which has its own (missing) ownership check: FOLLOW-UPS #49.
+    [Authorize(Roles = "Admin,Finance")]
     [ProducesResponseType(typeof(PayoutDetailsDto), StatusCodes.Status200OK)]
     public async Task<IActionResult> GetPayoutById(
         Guid id,

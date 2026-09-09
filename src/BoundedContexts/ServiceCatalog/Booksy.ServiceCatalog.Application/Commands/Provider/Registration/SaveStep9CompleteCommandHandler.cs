@@ -3,6 +3,7 @@ using Booksy.Core.Application.Abstractions.Persistence;
 using Booksy.Core.Application.Abstractions.Services;
 using Booksy.Core.Application.Exceptions;
 using Booksy.Core.Domain.Abstractions;
+using Booksy.Core.Domain.Exceptions;
 using Booksy.Core.Domain.ValueObjects;
 using Booksy.ServiceCatalog.Application.Services.Interfaces;
 using Booksy.ServiceCatalog.Domain.Aggregates;
@@ -53,29 +54,33 @@ public sealed class SaveStep9CompleteCommandHandler
         var providerId = ProviderId.From(request.ProviderId);
         var provider = await _providerRepository.GetByIdAsync(providerId, cancellationToken);
 
+        // Every check below answers the caller: the draft is missing something, or is not theirs,
+        // or is already complete. They were InvalidOperationExceptions, which
+        // ExceptionHandlingMiddleware does not map, so "you still need business hours" reached the
+        // registration wizard as a 500 with no field to point at.
         if (provider == null)
-            throw new InvalidOperationException("Provider not found");
+            throw new NotFoundException("Provider", request.ProviderId);
 
         if (provider.OwnerId != userId)
             throw new ForbiddenException("You are not authorized to complete this registration");
 
         if (provider.Status != ProviderStatus.Drafted)
-            throw new InvalidOperationException("Provider is not in draft status");
+            throw new DomainValidationException(nameof(provider.Status), "Provider is not in draft status");
 
         // Validate required data
         if (!provider.BusinessHours.Any())
-            throw new InvalidOperationException("Business hours are required to complete registration");
+            throw new DomainValidationException("BusinessHours", "Business hours are required to complete registration");
 
         // Check services from ServiceRepository (Service is separate aggregate)
         var services = await _serviceRepository.GetServicesByProviderIdAsync(providerId, cancellationToken);
         if (!services.Any())
-            throw new InvalidOperationException("At least one service is required to complete registration");
+            throw new DomainValidationException("Services", "At least one service is required to complete registration");
 
         if (string.IsNullOrWhiteSpace(provider.Profile.BusinessName))
-            throw new InvalidOperationException("Business name is required");
+            throw new DomainValidationException("BusinessName", "Business name is required");
 
         if (provider.Address == null)
-            throw new InvalidOperationException("Business address is required");
+            throw new DomainValidationException("Address", "Business address is required");
 
         if (provider.ContactInfo?.Email == null)
             throw new InvalidOperationException("Contact email is required");

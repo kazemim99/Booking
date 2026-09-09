@@ -24,5 +24,11 @@ public sealed record CreateProviderDraftCommand(
 public sealed record CreateProviderDraftResult(
     Guid ProviderId,
     int RegistrationStep,
-    string Message
+    string Message,
+    /// <summary>
+    /// True when this call created the draft, false when it updated one the user already had.
+    /// The controller answers 201 or 200 on this. It used to decide by searching <see cref="Message"/>
+    /// for "already exists" — which the handler never says — so an update was reported as a creation.
+    /// </summary>
+    bool IsNewDraft
 );
