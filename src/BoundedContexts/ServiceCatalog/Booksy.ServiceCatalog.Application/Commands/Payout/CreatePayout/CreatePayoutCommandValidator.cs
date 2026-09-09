@@ -22,6 +22,12 @@ namespace Booksy.ServiceCatalog.Application.Commands.Payout.CreatePayout
                 .GreaterThan(x => x.PeriodStart)
                 .WithMessage("Period end must be after period start");
 
+            // A period that has not finished cannot be paid out: the ledger balance the payout is
+            // derived from would include charges from beyond the period the payout claims to cover.
+            RuleFor(x => x.PeriodEnd)
+                .LessThanOrEqualTo(_ => DateTime.UtcNow)
+                .WithMessage("Period end cannot be in the future");
+
             RuleFor(x => x.CommissionPercentage)
                 .InclusiveBetween(0, 100)
                 .When(x => x.CommissionPercentage.HasValue)

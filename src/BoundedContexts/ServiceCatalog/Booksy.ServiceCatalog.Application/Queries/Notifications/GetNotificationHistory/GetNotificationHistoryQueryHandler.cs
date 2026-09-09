@@ -46,6 +46,7 @@ namespace Booksy.ServiceCatalog.Application.Queries.Notifications.GetNotificatio
 
             var items = notifications.Select(n => new NotificationHistoryItem(
                 n.Id.Value,
+                n.RecipientId.Value,
                 n.Type.ToString(),
                 n.Channel.ToString(),
                 n.Status.ToString(),

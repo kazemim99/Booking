@@ -26,15 +26,24 @@ public class PayoutsControllerTests : ServiceCatalogIntegrationTestBase
 
     #region Helper Methods
 
-    private async Task<(Provider Provider, List<Payment> Payments)> CreateProviderWithPaymentsAsync()
+    /// <summary>
+    /// A provider who has actually been paid three times.
+    ///
+    /// The charges go through <c>POST /payments</c> rather than being written straight to the
+    /// Payments table, because a payout is derived from the <b>ledger</b> — charges minus refunds
+    /// minus prior payouts — and only the payment pipeline posts to it. Rows inserted behind the
+    /// application left the ledger empty, so every payout in this class was correctly refused with
+    /// "no payable ledger balance" and the tests proved nothing about payouts.
+    /// </summary>
+    private async Task<(Provider Provider, List<PaymentId> PaymentIds)> CreateProviderWithPaymentsAsync()
     {
         var provider = await CreateTestProviderWithServicesAsync();
         var service = await GetFirstServiceForProviderAsync(provider.Id.Value);
         var customerId = Guid.NewGuid();
 
-        var payments = new List<Payment>();
+        var paymentIds = new List<PaymentId>();
 
-        // Create multiple paid payments for the provider
+        // Three captured payments: 100 + 150 + 200 = 450 owed to the provider.
         for (int i = 0; i < 3; i++)
         {
             var booking = Booking.CreateBookingRequest(
@@ -50,19 +59,26 @@ public class PayoutsControllerTests : ServiceCatalogIntegrationTestBase
 
             await CreateEntityAsync(booking);
 
-            var payment = Payment.CreateForBooking(
-                booking.Id,
-                UserId.From(customerId),
-                provider.Id,
-                Money.Create(100 + (i * 50), "USD"),
-                PaymentMethod.CreditCard);
+            AuthenticateAsUser(customerId, "payer@test.com");
+            var charge = await PostAsJsonAsync<ProcessPaymentRequest, PaymentResponse>(
+                "/api/v1/payments",
+                new ProcessPaymentRequest
+                {
+                    BookingId = booking.Id.Value,
+                    ProviderId = provider.Id.Value,
+                    Amount = 100 + (i * 50),
+                    Currency = "USD",
+                    PaymentMethod = "CreditCard",
+                    PaymentMethodId = "pm_test_card",
+                    CaptureImmediately = true,
+                    Description = $"Charge {i + 1}"
+                });
 
-            payment.ProcessCharge($"pi_test_{i}", "pm_test_card");
-            payments.Add(payment);
-            await CreateEntityAsync(payment);
+            charge.StatusCode.Should().Be(HttpStatusCode.Created, charge.Message);
+            paymentIds.Add(PaymentId.From(charge.Data!.PaymentId));
         }
 
-        return (provider, payments);
+        return (provider, paymentIds);
     }
 
     #endregion
@@ -73,9 +89,11 @@ public class PayoutsControllerTests : ServiceCatalogIntegrationTestBase
     public async Task CreatePayout_WithValidData_ShouldReturn201Created()
     {
         // Arrange
-        AuthenticateAsTestAdmin(); // Requires Admin/Finance role
-
+        // CreateTestProviderWithServicesAsync signs the caller in as that provider's owner, so the
+        // identity a test wants has to be taken *after* the arrange. Taking admin first (as this
+        // class used to) left every payout call authenticated as a provider — hence 403.
         var (provider, payments) = await CreateProviderWithPaymentsAsync();
+        AuthenticateAsTestAdmin(); // Requires Admin/Finance role
 
         var request = new CreatePayoutRequest
         {
@@ -112,9 +130,8 @@ public class PayoutsControllerTests : ServiceCatalogIntegrationTestBase
     public async Task CreatePayout_WithCustomCommission_ShouldCalculateCorrectly()
     {
         // Arrange
-        AuthenticateAsTestAdmin();
-
         var (provider, payments) = await CreateProviderWithPaymentsAsync();
+        AuthenticateAsTestAdmin();
 
         var request = new CreatePayoutRequest
         {
@@ -130,7 +147,9 @@ public class PayoutsControllerTests : ServiceCatalogIntegrationTestBase
             "/api/v1/payouts", request);
 
         // Assert
-        response.StatusCode.Should().Be(HttpStatusCode.OK);
+        // POST /payouts answers 201 (its sibling test and the action's own documented contract);
+        // this copy asserted 200.
+        response.StatusCode.Should().Be(HttpStatusCode.Created);
         response.Data.Should().NotBeNull();
 
         // Verify commission calculation
@@ -144,9 +163,8 @@ public class PayoutsControllerTests : ServiceCatalogIntegrationTestBase
     public async Task CreatePayout_WithoutAuthentication_ShouldReturn401Unauthorized()
     {
         // Arrange
-        ClearAuthenticationHeader();
-
         var (provider, payments) = await CreateProviderWithPaymentsAsync();
+        ClearAuthenticationHeader();
 
         var request = new CreatePayoutRequest
         {
@@ -166,9 +184,8 @@ public class PayoutsControllerTests : ServiceCatalogIntegrationTestBase
     public async Task CreatePayout_WithInvalidDateRange_ShouldReturn400BadRequest()
     {
         // Arrange
-        AuthenticateAsTestAdmin();
-
         var (provider, payments) = await CreateProviderWithPaymentsAsync();
+        AuthenticateAsTestAdmin();
 
         var request = new CreatePayoutRequest
         {
@@ -189,9 +206,8 @@ public class PayoutsControllerTests : ServiceCatalogIntegrationTestBase
     public async Task CreatePayout_WithFuturePeriodEnd_ShouldReturn400BadRequest()
     {
         // Arrange
-        AuthenticateAsTestAdmin();
-
         var (provider, payments) = await CreateProviderWithPaymentsAsync();
+        AuthenticateAsTestAdmin();
 
         var request = new CreatePayoutRequest
         {
@@ -212,9 +228,8 @@ public class PayoutsControllerTests : ServiceCatalogIntegrationTestBase
     public async Task CreatePayout_WithNoPaymentsInPeriod_ShouldReturn400BadRequest()
     {
         // Arrange
-        AuthenticateAsTestAdmin();
-
         var provider = await CreateTestProviderWithServicesAsync();
+        AuthenticateAsTestAdmin();
 
         var request = new CreatePayoutRequest
         {
@@ -239,9 +254,8 @@ public class PayoutsControllerTests : ServiceCatalogIntegrationTestBase
     public async Task ExecutePayout_WithValidPayout_ShouldReturn200Ok()
     {
         // Arrange
-        AuthenticateAsTestAdmin();
-
         var (provider, payments) = await CreateProviderWithPaymentsAsync();
+        AuthenticateAsTestAdmin();
 
         // Create a payout first
         var payout = Payout.Create(
@@ -250,7 +264,7 @@ public class PayoutsControllerTests : ServiceCatalogIntegrationTestBase
             Money.Create(45, "USD"),
             DateTime.UtcNow.AddDays(-30),
             DateTime.UtcNow.AddDays(-1),
-            payments.Select(p => p.Id).ToList(),
+            payments,
             "Test payout");
 
         await CreateEntityAsync(payout);
@@ -276,9 +290,8 @@ public class PayoutsControllerTests : ServiceCatalogIntegrationTestBase
     public async Task ExecutePayout_WithoutConnectedAccountId_ShouldReturn400BadRequest()
     {
         // Arrange
-        AuthenticateAsTestAdmin();
-
         var (provider, payments) = await CreateProviderWithPaymentsAsync();
+        AuthenticateAsTestAdmin();
 
         var payout = Payout.Create(
             provider.Id,
@@ -286,7 +299,7 @@ public class PayoutsControllerTests : ServiceCatalogIntegrationTestBase
             Money.Create(45, "USD"),
             DateTime.UtcNow.AddDays(-30),
             DateTime.UtcNow.AddDays(-1),
-            payments.Select(p => p.Id).ToList(),
+            payments,
             "Test payout");
 
         await CreateEntityAsync(payout);
@@ -334,9 +347,8 @@ public class PayoutsControllerTests : ServiceCatalogIntegrationTestBase
     public async Task GetPayoutById_WithValidId_ShouldReturn200Ok()
     {
         // Arrange
-        AuthenticateAsTestAdmin();
-
         var (provider, payments) = await CreateProviderWithPaymentsAsync();
+        AuthenticateAsTestAdmin();
 
         var payout = Payout.Create(
             provider.Id,
@@ -344,7 +356,7 @@ public class PayoutsControllerTests : ServiceCatalogIntegrationTestBase
             Money.Create(45, "USD"),
             DateTime.UtcNow.AddDays(-30),
             DateTime.UtcNow.AddDays(-1),
-            payments.Select(p => p.Id).ToList(),
+            payments,
             "Test payout");
 
         await CreateEntityAsync(payout);
@@ -384,9 +396,8 @@ public class PayoutsControllerTests : ServiceCatalogIntegrationTestBase
     public async Task GetPendingPayouts_ShouldReturnOnlyPendingPayouts()
     {
         // Arrange
-        AuthenticateAsTestAdmin();
-
         var (provider, payments) = await CreateProviderWithPaymentsAsync();
+        AuthenticateAsTestAdmin();
 
         // Create pending and completed payouts
         var pendingPayout = Payout.Create(
@@ -395,7 +406,7 @@ public class PayoutsControllerTests : ServiceCatalogIntegrationTestBase
             Money.Create(45, "USD"),
             DateTime.UtcNow.AddDays(-60),
             DateTime.UtcNow.AddDays(-31),
-            payments.Select(p => p.Id).ToList(),
+            payments,
             "Pending payout");
 
         var completedPayout = Payout.Create(
@@ -404,7 +415,7 @@ public class PayoutsControllerTests : ServiceCatalogIntegrationTestBase
             Money.Create(45, "USD"),
             DateTime.UtcNow.AddDays(-90),
             DateTime.UtcNow.AddDays(-61),
-            payments.Select(p => p.Id).ToList(),
+            payments,
             "Completed payout");
 
         completedPayout.MarkAsProcessing("po_test_123");
@@ -441,7 +452,7 @@ public class PayoutsControllerTests : ServiceCatalogIntegrationTestBase
             Money.Create(45, "USD"),
             DateTime.UtcNow.AddDays(-60),
             DateTime.UtcNow.AddDays(-31),
-            payments.Select(p => p.Id).ToList(),
+            payments,
             "Payout 1");
 
         var payout2 = Payout.Create(
@@ -450,7 +461,7 @@ public class PayoutsControllerTests : ServiceCatalogIntegrationTestBase
             Money.Create(60, "USD"),
             DateTime.UtcNow.AddDays(-30),
             DateTime.UtcNow.AddDays(-1),
-            payments.Select(p => p.Id).ToList(),
+            payments,
             "Payout 2");
 
         await CreateEntityAsync(payout1);
@@ -481,7 +492,7 @@ public class PayoutsControllerTests : ServiceCatalogIntegrationTestBase
             Money.Create(45, "USD"),
             DateTime.UtcNow.AddDays(-60),
             DateTime.UtcNow.AddDays(-31),
-            payments.Select(p => p.Id).ToList(),
+            payments,
             "Pending payout");
 
         var paidPayout = Payout.Create(
@@ -490,7 +501,7 @@ public class PayoutsControllerTests : ServiceCatalogIntegrationTestBase
             Money.Create(60, "USD"),
             DateTime.UtcNow.AddDays(-90),
             DateTime.UtcNow.AddDays(-61),
-            payments.Select(p => p.Id).ToList(),
+            payments,
             "Paid payout");
 
         paidPayout.MarkAsProcessing("po_test_123");

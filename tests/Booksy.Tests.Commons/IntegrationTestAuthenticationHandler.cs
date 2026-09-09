@@ -153,12 +153,21 @@ using System.Text.Encodings.Web;
             }
         };
 
+        /// <summary>
+        /// An administrator. The application does not have one single name for that role: the
+        /// <c>[Authorize(Roles = ...)]</c> attributes ask for "Admin" (payouts, payments, bulk
+        /// notifications, UserManagement customers), the authorization policies in
+        /// <c>PolicyAuthorizationExtensions</c> ask for "Administrator"/"SysAdmin", and controller
+        /// code checks all three. A test admin therefore carries every name, so "authenticate as
+        /// admin" means an actual administrator whichever spelling the endpoint happens to use.
+        /// The vocabulary itself is production debt (FOLLOW-UPS #46), not something a test decides.
+        /// </summary>
         public static TestUser Admin(string email = "admin@test.com") => new()
         {
             UserId = Guid.NewGuid().ToString(),
             Email = email,
             Name = email.Split('@')[0],
-            Role = "Administrator",
+            Role = "Admin,Administrator,SysAdmin",
             AdditionalClaims = new Dictionary<string, string>
             {
                 { "isAdmin", "true" },
@@ -176,10 +185,16 @@ using System.Text.Encodings.Web;
                 new Claim(ClaimTypes.NameIdentifier, UserId),
                 new Claim(ClaimTypes.Email, Email),
                 new Claim(ClaimTypes.Name, Name),
-                new Claim(ClaimTypes.Role, Role),
                 new Claim("userId", UserId),
                 new Claim("email", Email)
             };
+
+            // One claim per role: a real token carries a role claim per granted role, and
+            // Role is allowed to name several (see Admin()).
+            foreach (var role in Role.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries))
+            {
+                claims.Add(new Claim(ClaimTypes.Role, role));
+            }
 
             // Add additional claims
             foreach (var claim in AdditionalClaims)

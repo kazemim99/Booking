@@ -2,6 +2,8 @@
 // Booksy.ServiceCatalog.Application/Commands/Payment/RefundPayment/RefundPaymentCommandHandler.cs
 // ========================================
 using Booksy.Core.Application.Abstractions;
+using Booksy.Core.Application.Exceptions;
+using Booksy.Core.Domain.Exceptions;
 using Booksy.Core.Domain.ValueObjects;
 using Booksy.Infrastructure.External.Payment;
 using Booksy.ServiceCatalog.Application.Abstractions.Persistence;
@@ -39,21 +41,26 @@ namespace Booksy.ServiceCatalog.Application.Commands.Payment.RefundPayment
             var paymentId = PaymentId.From(request.PaymentId);
             var payment = await _paymentRepository.GetByIdAsync(paymentId, cancellationToken);
 
+            // As in CapturePayment: an unknown payment is a 404 and an unrefundable one a 400.
+            // InvalidOperationException is unmapped by ExceptionHandlingMiddleware, so both used to
+            // answer 500 and told the caller nothing.
             if (payment == null)
             {
-                throw new InvalidOperationException($"Payment {request.PaymentId} not found");
+                throw new NotFoundException("Payment", request.PaymentId);
             }
 
             if (!payment.CanBeRefunded())
             {
-                throw new InvalidOperationException($"Payment {request.PaymentId} cannot be refunded");
+                throw new DomainValidationException(
+                    nameof(request.PaymentId), $"Payment {request.PaymentId} cannot be refunded");
             }
 
             // Validate refund amount
             var refundableAmount = payment.GetRefundableAmount();
             if (request.RefundAmount > refundableAmount.Amount)
             {
-                throw new InvalidOperationException(
+                throw new DomainValidationException(
+                    nameof(request.RefundAmount),
                     $"Refund amount {request.RefundAmount} exceeds refundable amount {refundableAmount.Amount}");
             }
 

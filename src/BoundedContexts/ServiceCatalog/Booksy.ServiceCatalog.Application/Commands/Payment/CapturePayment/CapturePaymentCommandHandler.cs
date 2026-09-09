@@ -2,6 +2,8 @@
 // Booksy.ServiceCatalog.Application/Commands/Payment/CapturePayment/CapturePaymentCommandHandler.cs
 // ========================================
 using Booksy.Core.Application.Abstractions;
+using Booksy.Core.Application.Exceptions;
+using Booksy.Core.Domain.Exceptions;
 using Booksy.ServiceCatalog.Application.Abstractions.Persistence;
 using Booksy.ServiceCatalog.Domain.Repositories;
 using Booksy.ServiceCatalog.Domain.ValueObjects;
@@ -37,20 +39,25 @@ namespace Booksy.ServiceCatalog.Application.Commands.Payment.CapturePayment
             var paymentId = PaymentId.From(request.PaymentId);
             var payment = await _paymentRepository.GetByIdAsync(paymentId, cancellationToken);
 
+            // These three are answers to the caller, not server faults: InvalidOperationException is
+            // unmapped by ExceptionHandlingMiddleware, so capturing an unknown payment used to answer
+            // 500 instead of 404, and capturing one twice 500 instead of 400.
             if (payment == null)
             {
-                throw new InvalidOperationException($"Payment {request.PaymentId} not found");
+                throw new NotFoundException("Payment", request.PaymentId);
             }
 
             // Validate payment state
             if (payment.AuthorizedAt == null)
             {
-                throw new InvalidOperationException($"Payment {request.PaymentId} has not been authorized");
+                throw new DomainValidationException(
+                    nameof(request.PaymentId), $"Payment {request.PaymentId} has not been authorized");
             }
 
             if (payment.CapturedAt != null)
             {
-                throw new InvalidOperationException($"Payment {request.PaymentId} has already been captured");
+                throw new DomainValidationException(
+                    nameof(request.PaymentId), $"Payment {request.PaymentId} has already been captured");
             }
 
             // Capture the payment in domain

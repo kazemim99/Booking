@@ -15,6 +15,7 @@ namespace Booksy.ServiceCatalog.Application.Queries.Notifications.GetNotificatio
 
     public sealed record NotificationHistoryItem(
         Guid NotificationId,
+        Guid RecipientId,
         string Type,
         string Channel,
         string Status,
@@ -30,8 +31,5 @@ namespace Booksy.ServiceCatalog.Application.Queries.Notifications.GetNotificatio
         string? FailureReason,
         string? ExternalMessageId,
         int AttemptCount,
-        Dictionary<string, string> Metadata)
-    {
-        public Guid RecipientId { get; set; }
-    }
+        Dictionary<string, string> Metadata);
 }

@@ -389,10 +389,13 @@ namespace Booksy.ServiceCatalog.Domain.Aggregates.NotificationAggregate
 
         public void Cancel(string? reason = null)
         {
-            if (Status == NotificationStatus.Delivered || Status == NotificationStatus.Sent)
-            {
-                throw new InvalidOperationException("Cannot cancel a notification that has been sent or delivered");
-            }
+            // The aggregate's own idiom for a refused transition, and the one the API can answer with:
+            // InvalidAggregateStateException is a 400, while a bare InvalidOperationException reached
+            // the client as a 500.
+            EnsureValidState(
+                () => Status != NotificationStatus.Delivered && Status != NotificationStatus.Sent,
+                "Cancel",
+                Status.ToString());
 
             Status = NotificationStatus.Cancelled;
             if (!string.IsNullOrWhiteSpace(reason))

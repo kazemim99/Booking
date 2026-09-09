@@ -2,6 +2,8 @@
 // Booksy.ServiceCatalog.Application/Commands/Payout/ExecutePayout/ExecutePayoutCommandHandler.cs
 // ========================================
 using Booksy.Core.Application.Abstractions;
+using Booksy.Core.Application.Exceptions;
+using Booksy.Core.Domain.Exceptions;
 using Booksy.Infrastructure.External.Payment;
 using Booksy.ServiceCatalog.Domain.Enums;
 using Booksy.ServiceCatalog.Domain.Repositories;
@@ -40,21 +42,27 @@ namespace Booksy.ServiceCatalog.Application.Commands.Payout.ExecutePayout
             var payoutId = PayoutId.From(request.PayoutId);
             var payout = await _payoutRepository.GetByIdAsync(payoutId, cancellationToken);
 
+            // Answers to the caller, not server faults: InvalidOperationException is unmapped by
+            // ExceptionHandlingMiddleware, so executing an unknown payout answered 500, not 404.
             if (payout == null)
             {
-                throw new InvalidOperationException($"Payout {request.PayoutId} not found");
+                throw new NotFoundException("Payout", request.PayoutId);
             }
 
             // Validate payout status
             if (payout.Status != PayoutStatus.Pending)
             {
-                throw new InvalidOperationException($"Payout {request.PayoutId} cannot be executed. Current status: {payout.Status}");
+                throw new DomainValidationException(
+                    nameof(request.PayoutId),
+                    $"Payout {request.PayoutId} cannot be executed. Current status: {payout.Status}");
             }
 
             // Validate net amount is positive
             if (payout.NetAmount.Amount <= 0)
             {
-                throw new InvalidOperationException($"Payout {request.PayoutId} has invalid net amount: {payout.NetAmount.Amount}");
+                throw new DomainValidationException(
+                    nameof(request.PayoutId),
+                    $"Payout {request.PayoutId} has invalid net amount: {payout.NetAmount.Amount}");
             }
 
             _logger.LogInformation("Processing payout {PayoutId} for provider {ProviderId}, amount: {Amount} {Currency}",

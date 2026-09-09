@@ -43,25 +43,7 @@ namespace Booksy.ServiceCatalog.Application.Queries.Payout.GetProviderPayouts
             }
 
             return filtered
-                .Select(p => new PayoutDetailsDto(
-                    p.Id.Value,
-                    p.ProviderId.Value,
-                    p.GrossAmount.Amount,
-                    p.CommissionAmount.Amount,
-                    p.NetAmount.Amount,
-                    p.NetAmount.Currency,
-                    p.PeriodStart,
-                    p.PeriodEnd,
-                    p.PaymentIds.Count,
-                    p.Status.ToString(),
-                    p.ExternalPayoutId,
-                    p.BankAccountLast4,
-                    p.BankName,
-                    p.CreatedAt,
-                    p.ScheduledAt,
-                    p.PaidAt,
-                    p.FailedAt,
-                    p.FailureReason))
+                .Select(PayoutDetailsDto.From)
                 .ToList();
         }
     }

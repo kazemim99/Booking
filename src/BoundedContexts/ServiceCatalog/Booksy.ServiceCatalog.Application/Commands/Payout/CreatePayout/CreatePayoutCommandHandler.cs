@@ -2,6 +2,7 @@
 // Booksy.ServiceCatalog.Application/Commands/Payout/CreatePayout/CreatePayoutCommandHandler.cs
 // ========================================
 using Booksy.Core.Application.Abstractions;
+using Booksy.Core.Domain.Exceptions;
 using Booksy.Core.Domain.ValueObjects;
 using Booksy.ServiceCatalog.Domain.Enums;
 using Booksy.ServiceCatalog.Domain.Repositories;
@@ -43,7 +44,10 @@ namespace Booksy.ServiceCatalog.Application.Commands.Payout.CreatePayout
             var owed = await _ledger.GetProviderPayableBalanceAsync(providerId.Value, cancellationToken);
             if (owed <= 0m)
             {
-                throw new InvalidOperationException(
+                // A business rule the caller can act on, not a server fault: InvalidOperationException
+                // is unmapped by ExceptionHandlingMiddleware and answered 500.
+                throw new DomainValidationException(
+                    nameof(request.ProviderId),
                     $"Provider {request.ProviderId} has no payable ledger balance ({owed:0.00}); payout is blocked. " +
                     "Refunds may have offset unpaid charges.");
             }

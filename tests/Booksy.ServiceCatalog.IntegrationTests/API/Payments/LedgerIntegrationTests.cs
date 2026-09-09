@@ -1,3 +1,4 @@
+using Booksy.Core.Domain.Exceptions;
 using Booksy.Core.Domain.ValueObjects;
 using Booksy.ServiceCatalog.Application.Abstractions.Persistence;
 using Booksy.ServiceCatalog.Domain.Aggregates.LedgerAggregate;
@@ -260,7 +261,10 @@ public class LedgerIntegrationTests : Infrastructure.ServiceCatalogIntegrationTe
             Microsoft.Extensions.Logging.Abstractions.NullLogger<Application.Commands.Payout.CreatePayout.CreatePayoutCommandHandler>.Instance);
         var act = async () => await handler.Handle(new Application.Commands.Payout.CreatePayout.CreatePayoutCommand(
             providerId, DateTime.UtcNow.AddDays(-7), DateTime.UtcNow), CancellationToken.None);
-        await act.Should().ThrowAsync<InvalidOperationException>("a provider with a negative balance cannot be paid again until it recovers");
+        // DomainValidationException since the block became a 400 rather than a 500: the rule is an
+        // answer to the caller, not a server fault. The behaviour under test — the payout is
+        // refused — is unchanged.
+        await act.Should().ThrowAsync<DomainValidationException>("a provider with a negative balance cannot be paid again until it recovers");
     }
 
     [Fact]
@@ -317,7 +321,7 @@ public class LedgerIntegrationTests : Infrastructure.ServiceCatalogIntegrationTe
         var act = async () => await handler.Handle(new Application.Commands.Payout.CreatePayout.CreatePayoutCommand(
             providerId, DateTime.UtcNow.AddDays(-7), DateTime.UtcNow), CancellationToken.None);
 
-        await act.Should().ThrowAsync<InvalidOperationException>().WithMessage("*no payable ledger balance*");
+        await act.Should().ThrowAsync<DomainValidationException>().WithMessage("*no payable ledger balance*");
     }
 
     [Fact]

@@ -14,6 +14,11 @@ namespace Booksy.ServiceCatalog.Application.Commands.Notifications.ScheduleNotif
         DateTime CreatedAt,
         DateTime ScheduledFor)
     {
-        public bool Success { get; set; }
+        /// <summary>
+        /// Whether the notification is scheduled. Derived from the aggregate's state rather than
+        /// assigned: as a settable property it was never set by the handler, so every successful
+        /// schedule reported <c>success: false</c> to the client.
+        /// </summary>
+        public bool Success => Status == NotificationStatus.Queued;
     }
 }

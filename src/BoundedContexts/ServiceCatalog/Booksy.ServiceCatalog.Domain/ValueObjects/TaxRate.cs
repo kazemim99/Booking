@@ -69,8 +69,11 @@ namespace Booksy.ServiceCatalog.Domain.ValueObjects
             {
                 // Tax is already included in the base amount
                 // Extract tax: taxAmount = baseAmount * (taxRate / (100 + taxRate))
+                // The ratio does not divide exactly (20% of 120 gives 20.000...004), and an amount
+                // that is charged, invoiced and reconciled has to be a real money value, so it is
+                // rounded to the minor unit instead of being handed on with 28 digits of drift.
                 var taxAmount = baseAmount.Amount * (Percentage / (100 + Percentage));
-                return Money.Create(taxAmount, baseAmount.Currency);
+                return Money.Create(RoundToMinorUnit(taxAmount), baseAmount.Currency);
             }
             else
             {
@@ -104,14 +107,24 @@ namespace Booksy.ServiceCatalog.Domain.ValueObjects
             if (IsInclusive)
             {
                 // Remove tax: baseAmount = totalAmount / (1 + taxRate/100)
+                // Rounded for the same reason as the tax half, and so that base + tax adds back up
+                // to the total the customer was shown.
                 var baseAmount = totalAmount.Amount / (1 + Percentage / 100m);
-                return Money.Create(baseAmount, totalAmount.Currency);
+                return Money.Create(RoundToMinorUnit(baseAmount), totalAmount.Currency);
             }
             else
             {
                 return totalAmount;
             }
         }
+
+        /// <summary>
+        /// Rounds a computed amount to the currency's minor unit. Two decimals is what the money
+        /// column, the DTOs and the clients all carry today; there is no per-currency precision
+        /// anywhere in the model yet (FOLLOW-UPS #47).
+        /// </summary>
+        private static decimal RoundToMinorUnit(decimal amount) =>
+            Math.Round(amount, 2, MidpointRounding.AwayFromZero);
 
         protected override IEnumerable<object> GetAtomicValues()
         {

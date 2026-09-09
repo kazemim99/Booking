@@ -235,6 +235,10 @@ public class PaymentsControllerTests : ServiceCatalogIntegrationTestBase
         response.Data.Should().NotBeNull();
         response.Data!.Status.Should().Be("Paid");
 
+        // The capture happened in the request's own DbContext. This context still tracks the
+        // instance the arrange created, and EF hands a tracked instance back instead of the row,
+        // so without clearing the tracker the assertion re-reads the pre-capture object.
+        DbContext.ChangeTracker.Clear();
         var updatedPayment = await DbContext.Set<Payment>()
             .FirstOrDefaultAsync(p => p.Id == payment.Id);
         updatedPayment!.Status.Should().Be(PaymentStatus.Paid);
@@ -315,7 +319,10 @@ public class PaymentsControllerTests : ServiceCatalogIntegrationTestBase
         var request = new RefundPaymentRequest
         {
             Amount = 100.00m, // Full refund
-            Reason = "CustomerRequest",
+            // The API parses this into Domain.Enums.RefundReason; "CustomerRequest" is not one of
+            // its values, so the request was rejected as an invalid reason (400) and the test was
+            // measuring nothing about refunds.
+            Reason = "CustomerCancellation",
             Notes = "Customer requested refund"
         };
 
@@ -328,6 +335,7 @@ public class PaymentsControllerTests : ServiceCatalogIntegrationTestBase
         response.Data.Should().NotBeNull();
         response.Data!.Status.Should().Be("Refunded");
 
+        DbContext.ChangeTracker.Clear();
         var updatedPayment = await DbContext.Set<Payment>()
             .FirstOrDefaultAsync(p => p.Id == payment.Id);
         updatedPayment!.Status.Should().Be(PaymentStatus.Refunded);
@@ -352,7 +360,7 @@ public class PaymentsControllerTests : ServiceCatalogIntegrationTestBase
         var request = new RefundPaymentRequest
         {
             Amount = 50.00m, // Partial refund
-            Reason = "ServiceCancellation",
+            Reason = "ServiceNotDelivered", // see the full-refund test: must be a RefundReason value
             Notes = "Partial service cancellation"
         };
 
@@ -365,6 +373,7 @@ public class PaymentsControllerTests : ServiceCatalogIntegrationTestBase
         response.Data.Should().NotBeNull();
         response.Data!.Status.Should().Be("PartiallyRefunded");
 
+        DbContext.ChangeTracker.Clear();
         var updatedPayment = await DbContext.Set<Payment>()
             .FirstOrDefaultAsync(p => p.Id == payment.Id);
         updatedPayment!.Status.Should().Be(PaymentStatus.PartiallyRefunded);
@@ -439,6 +448,10 @@ public class PaymentsControllerTests : ServiceCatalogIntegrationTestBase
     public async Task GetPaymentById_WithNonExistentId_ShouldReturn404NotFound()
     {
         // Arrange
+        // GET /payments/{id} requires authentication, and the identity is per test class: whichever
+        // test ran last left it behind. Without signing in, this asked about a missing payment
+        // anonymously and got the 401 the endpoint owes an anonymous caller.
+        AuthenticateAsUser(Guid.NewGuid(), "customer@test.com");
         var nonExistentPaymentId = Guid.NewGuid();
 
         // Act

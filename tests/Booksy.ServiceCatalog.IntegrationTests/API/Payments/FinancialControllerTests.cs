@@ -64,9 +64,25 @@ public class FinancialControllerTests : ServiceCatalogIntegrationTestBase
             payment.ProcessCharge($"pi_test_{Guid.NewGuid()}", "pm_test_card");
             payments.Add(payment);
             await CreateEntityAsync(payment);
+            await BackdateAsync(payment, date);
         }
 
         return (provider, payments);
+    }
+
+    /// <summary>
+    /// Moves a payment's <c>CreatedAt</c> into the past.
+    ///
+    /// Earnings are read by payment date (<c>GetProviderPaymentsInRangeAsync</c> filters on
+    /// <c>CreatedAt</c>), but <c>Payment.CreateForBooking</c> stamps "now" — only the *booking*
+    /// carried the intended date. So every payment these tests seeded sat outside the period they
+    /// then asked about, and each one measured the empty-period path instead of the earnings maths.
+    /// Seeding history means writing the date the payment is supposed to have.
+    /// </summary>
+    private async Task BackdateAsync(Payment payment, DateTime createdAt)
+    {
+        DbContext.Entry(payment).Property(p => p.CreatedAt).CurrentValue = createdAt;
+        await DbContext.SaveChangesAsync();
     }
 
     #endregion
@@ -150,13 +166,15 @@ public class FinancialControllerTests : ServiceCatalogIntegrationTestBase
         // Arrange
         var (provider, payments) = await CreateProviderWithEarningsAsync();
 
-        // Refund one of the payments
+        // Refund one of the payments. The refund has to be saved: the aggregate was only mutated in
+        // memory before, so the API read the un-refunded rows and reported nothing refunded.
         var paymentToRefund = payments.First();
         paymentToRefund.Refund(
             Money.Create(50, "USD"),
             "re_test_123",
             RefundReason.CustomerCancellation,
             "Partial refund");
+        await DbContext.SaveChangesAsync();
 
         AuthenticateAsProviderOwner(provider);
 
@@ -328,6 +346,8 @@ public class FinancialControllerTests : ServiceCatalogIntegrationTestBase
 
         payment.ProcessCharge("pi_previous_month", "pm_test_card");
         await CreateEntityAsync(payment);
+        // Earnings are grouped by payment date, not booking date (see BackdateAsync).
+        await BackdateAsync(payment, new DateTime(lastMonth.Year, lastMonth.Month, 15));
 
         AuthenticateAsProviderOwner(provider);
 

@@ -280,11 +280,17 @@ public class NotificationsControllerTests : ServiceCatalogIntegrationTestBase
         response.Data.SuccessCount.Should().BeGreaterThan(0);
         response.Data.NotificationIds.Should().HaveCount(3);
 
-        // Verify notifications exist in database
-        var notifications = await DbContext.Notifications
-            .Where(n => recipientIds.Contains(n.RecipientId.Value))
-            .ToListAsync();
-        notifications.Should().HaveCountGreaterThanOrEqualTo(3);
+        // Verify the notifications the call reported exist, and went to the recipients asked for.
+        // (Filtering on RecipientId.Value inside Contains is not translatable, so each id is looked
+        // up by its own key, which is.)
+        foreach (var notificationId in response.Data.NotificationIds)
+        {
+            var stored = await DbContext.Notifications
+                .AsNoTracking()
+                .FirstOrDefaultAsync(n => n.Id == NotificationId.From(notificationId));
+            stored.Should().NotBeNull();
+            recipientIds.Should().Contain(stored!.RecipientId.Value);
+        }
     }
 
     [Fact]
@@ -391,7 +397,10 @@ public class NotificationsControllerTests : ServiceCatalogIntegrationTestBase
         response.Data!.Success.Should().BeTrue();
         response.Data.Message.Should().Contain("cancelled");
 
-        // Verify notification status in database
+        // Verify notification status in database. The tracker is cleared first: the cancellation
+        // happened in the request's own context, and EF would otherwise hand back the instance this
+        // test arranged, which still says Queued.
+        DbContext.ChangeTracker.Clear();
         var cancelledNotification = await DbContext.Notifications
             .FirstOrDefaultAsync(n => n.Id == notification.Id);
         cancelledNotification.Should().NotBeNull();
@@ -432,7 +441,12 @@ public class NotificationsControllerTests : ServiceCatalogIntegrationTestBase
             NotificationPriority.Normal,
             recipientEmail: "user@test.com");
 
-        notification.MarkAsSent("msg-123");
+        // A notification reaches Sent the way the dispatcher takes it there: Queue() then Send(),
+        // which is also what records the delivery attempt. MarkAsSent() straight from Pending is a
+        // state the application never produces, and the aggregate refuses it — so this arrange used
+        // to throw before the request was ever made.
+        notification.Queue();
+        notification.Send();
         await CreateEntityAsync(notification);
 
         var cancelRequest = new CancelNotificationRequest(Reason: "Test");
@@ -465,15 +479,21 @@ public class NotificationsControllerTests : ServiceCatalogIntegrationTestBase
             NotificationPriority.Normal,
             recipientEmail: "user@test.com");
 
+        // A resendable notification is one whose delivery attempt failed and whose backoff has
+        // elapsed. Send() records the attempt, MarkAsFailed() fails it and sets the next-retry time
+        // five seconds out; the test then moves that moment into the past rather than sleeping.
+        notification.Queue();
+        notification.Send();
         notification.MarkAsFailed("SMTP connection error");
         await CreateEntityAsync(notification);
+        await ElapseRetryBackoffAsync(notification);
 
         // Act
         var response = await PostAsJsonAsync<object, ResendNotificationResult>(
             $"/api/v1/notifications/{notification.Id.Value}/resend", new { });
 
         // Assert
-        response.StatusCode.Should().Be(HttpStatusCode.OK);
+        response.StatusCode.Should().Be(HttpStatusCode.OK, response.Message);
         response.Data.Should().NotBeNull();
         response.Data!.Success.Should().BeTrue();
     }
@@ -645,7 +665,9 @@ public class NotificationsControllerTests : ServiceCatalogIntegrationTestBase
             NotificationPriority.Normal,
             recipientEmail: "user@test.com");
 
-        notification.MarkAsSent("msg-12345");
+        // Queue() + Send() is how a notification becomes Sent (see the cancel test).
+        notification.Queue();
+        notification.Send();
         await CreateEntityAsync(notification);
 
         // Act
@@ -697,7 +719,9 @@ public class NotificationsControllerTests : ServiceCatalogIntegrationTestBase
             "Body",
             NotificationPriority.Normal,
             recipientEmail: "user@test.com");
-        sentNotification.MarkAsSent("msg-1");
+        // Queue() + Send() is how a notification becomes Sent (see the cancel test).
+        sentNotification.Queue();
+        sentNotification.Send();
         await CreateEntityAsync(sentNotification);
 
         var failedNotification = Notification.CreateImmediate(
@@ -708,6 +732,9 @@ public class NotificationsControllerTests : ServiceCatalogIntegrationTestBase
             "Body",
             NotificationPriority.Normal,
             recipientPhone: "+1234567890");
+        // A failure is a failed *attempt*: the dispatcher sends first, then marks the failure.
+        failedNotification.Queue();
+        failedNotification.Send();
         failedNotification.MarkAsFailed("Error");
         await CreateEntityAsync(failedNotification);
 
@@ -769,6 +796,24 @@ public class NotificationsControllerTests : ServiceCatalogIntegrationTestBase
     #endregion
 
     #region Helper Methods
+
+    /// <summary>
+    /// Brings the last delivery attempt's retry moment forward into the past, so a notification
+    /// that just failed is eligible for retry now. <c>DeliveryAttempt.ShouldRetry()</c> requires the
+    /// exponential backoff (5s on the first attempt) to have elapsed — which is correct behaviour,
+    /// and the reason an immediate resend is refused.
+    /// </summary>
+    private async Task ElapseRetryBackoffAsync(Notification notification)
+    {
+        // A day, not a minute: the hosts enable Npgsql's legacy timestamp behaviour and the
+        // DateTime columns are `timestamp without time zone`, so a UTC instant is written shifted
+        // by the server's UTC offset (FOLLOW-UPS #48 — the same defect makes the real 5-second
+        // backoff last hours here). A day is comfortably in the past under any offset.
+        var attempt = notification.DeliveryAttempts.Last();
+        DbContext.Entry(attempt).Property(nameof(attempt.NextRetryAt)).CurrentValue =
+            DateTime.UtcNow.AddDays(-1);
+        await DbContext.SaveChangesAsync();
+    }
 
     /// <summary>
     /// Find a notification by ID

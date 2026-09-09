@@ -5,6 +5,7 @@ using Booksy.ServiceCatalog.API.Models.Requests;
 using Booksy.ServiceCatalog.Api.Models.Responses;
 using Booksy.ServiceCatalog.Application.Commands.Payout.CreatePayout;
 using Booksy.ServiceCatalog.Application.Commands.Payout.ExecutePayout;
+using Booksy.ServiceCatalog.Application.Queries.Payout.GetPayoutById;
 using Booksy.ServiceCatalog.Application.Queries.Payout.GetPendingPayouts;
 using Booksy.ServiceCatalog.Application.Queries.Payout.GetProviderPayouts;
 using MediatR;
@@ -151,9 +152,7 @@ public class PayoutsController : ControllerBase
         Guid id,
         CancellationToken cancellationToken = default)
     {
-        var query = new GetProviderPayoutsQuery(Guid.Empty, null, null, null);
-        var allPayouts = await _mediator.Send(query, cancellationToken);
-        var result = allPayouts.FirstOrDefault(p => p.PayoutId == id);
+        var result = await _mediator.Send(new GetPayoutByIdQuery(id), cancellationToken);
 
         if (result == null)
         {
