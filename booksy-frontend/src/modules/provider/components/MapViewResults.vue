@@ -70,7 +70,7 @@
     <!-- Floating Provider Cards -->
     <transition-group name="slide-cards" tag="div" class="floating-cards">
       <div
-        v-for="(provider, index) in visibleProviders"
+        v-for="provider in visibleProviders"
         :key="provider.id"
         :class="['floating-card', { selected: selectedProviderId === provider.id }]"
         @click="selectProvider(provider)"

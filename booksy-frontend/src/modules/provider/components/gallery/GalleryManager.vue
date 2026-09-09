@@ -192,7 +192,7 @@
           <div class="modal-footer">
             <button @click="confirmDelete" :disabled="isDeleting" class="btn btn-danger">
               <span v-if="isDeleting">در حال حذف...</span>
-              <span v-else">بله، حذف شود</span>
+              <span v-else>بله، حذف شود</span>
             </button>
             <button @click="closeDeleteModal" :disabled="isDeleting" class="btn btn-secondary">
               انصراف

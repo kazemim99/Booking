@@ -232,7 +232,7 @@ export function parseDate(dateStr: string): Date | null {
 
   try {
     // Try direct Date constructor first
-    let date = new Date(dateStr)
+    const date = new Date(dateStr)
     if (!isNaN(date.getTime())) {
       return date
     }
