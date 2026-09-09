@@ -12,12 +12,42 @@
 # where 200 is expected; Payouts / Payments / Financial / Notifications / registration steps /
 # WorkingHours -> not yet diagnosed. Owner: whoever next works each area.
 #
+# 2026-09-09 (booking-21): nine ServiceCatalog lines removed. Why each went, so the list stays
+# a record and not a scoreboard:
+#   * AddStaff_AsNonOwner  -> REAL DEFECT FIXED. AddStaffToProviderCommandHandler resolved the
+#     organization with GetByOwnerIdAsync(caller) and ignored the route's providerId, so a request
+#     naming another salon returned 201 and added the member to the CALLER's salon. Handler now
+#     loads the requested org and authorizes Owner/Manager; the controller action, which had no
+#     check at all, now calls CanManageProvider.
+#   * The three AvailabilityControllerTests -> FIXTURE DEFECT FIXED. That class carried a PRIVATE
+#     CreateTestProviderWithServicesAsync that shadowed the shared one: Monday-Friday hours, no
+#     member, service left in Draft. Deleted in favour of the base helper, which now builds a
+#     genuinely bookable salon. Two of the three also deserialized the slots endpoint into
+#     List<AvailableSlotResponse> when it returns an AvailableSlotsResponse envelope, so they
+#     could never have passed whatever the server did.
+#   * DeleteStaff/UpdateStaff_WithNonExistentStaffId -> WRONG EXPECTATION. Both asserted 400 while
+#     their own names and the endpoints say 404. They were written while the route was a dead 500
+#     (FOLLOW-UPS #16), so nobody noticed the contradiction.
+#   * UpdateStaff_AsOwner / StaffCompleteWorkflow -> WRONG EXPECTATION. They expected the response
+#     to echo phone, role and notes. A membership carries the salon's view of a person; phone is
+#     person-level, roles have their own endpoint (the keep-one-owner invariant), notes are not
+#     modelled. A member without an account has ONE display name, so a two-word first name does
+#     not survive the round trip.
+#   * GetBusinessHours_WithNonExistentProvider -> WRONG EXPECTATION. Expected 400 while its name
+#     said NotFound; the endpoint answers 403, deliberately authorizing before existence so an
+#     outsider cannot probe which provider ids exist.
+#
+# NOT removed, and not to be added: this suite is NONDETERMINISTIC. Two back-to-back full runs on
+# identical code gave 60 and 61 failures with a DIFFERENT flaky set each time (all seven
+# ProviderCategoryPersistenceTests in one, RegisterAndAcceptInvitation's concurrency test in the
+# other); ProviderCategoryPersistenceTests passes 10/10 as a class. CleanDatabaseAsync in the
+# shared base is a no-op while xUnit runs classes in parallel against one database, so there is no
+# test isolation. Treat any single full-suite number as +/- several tests, and confirm a class in
+# isolation before crediting a fix.
+#
 # 2026-09-09: all 15 UserManagement entries removed (suite 29/29) — reasons in
 # openspec/changes/_inline/reduce-integration-baseline-um-payments/tasks.md. 68 ServiceCatalog entries remain.
-Booksy.ServiceCatalog.IntegrationTests.API.Bookings.AvailabilityControllerTests.GetAvailableDates_WithValidRange_ShouldReturnDatesWithAvailability
 Booksy.ServiceCatalog.IntegrationTests.API.Bookings.AvailabilityControllerTests.GetAvailableSlots_ShouldExcludeBookedSlots
-Booksy.ServiceCatalog.IntegrationTests.API.Bookings.AvailabilityControllerTests.GetAvailableSlots_WithSpecificStaff_ShouldReturnOnlyTheirSlots
-Booksy.ServiceCatalog.IntegrationTests.API.Bookings.AvailabilityControllerTests.GetAvailableSlots_WithValidDate_ShouldReturn200WithSlots
 Booksy.ServiceCatalog.IntegrationTests.API.Bookings.BookingsControllerTests.CancelBooking_AsCustomer_ShouldReturn200Ok
 Booksy.ServiceCatalog.IntegrationTests.API.Bookings.BookingsControllerTests.CreateBooking_WithPastDate_ShouldReturn400BadRequest
 Booksy.ServiceCatalog.IntegrationTests.API.Bookings.BookingsControllerTests.RescheduleBooking_WithValidNewTime_ShouldReturn200Ok
@@ -56,11 +86,6 @@ Booksy.ServiceCatalog.IntegrationTests.API.Payments.PayoutsControllerTests.Execu
 Booksy.ServiceCatalog.IntegrationTests.API.Payments.PayoutsControllerTests.GetPayoutById_WithNonExistentId_ShouldReturn404NotFound
 Booksy.ServiceCatalog.IntegrationTests.API.Payments.PayoutsControllerTests.GetPayoutById_WithValidId_ShouldReturn200Ok
 Booksy.ServiceCatalog.IntegrationTests.API.Payments.PayoutsControllerTests.GetPendingPayouts_ShouldReturnOnlyPendingPayouts
-Booksy.ServiceCatalog.IntegrationTests.API.ProviderStaff.ProviderStaffTests.AddStaff_AsNonOwner_ShouldReturn403Forbidden
-Booksy.ServiceCatalog.IntegrationTests.API.ProviderStaff.ProviderStaffTests.DeleteStaff_WithNonExistentStaffId_ShouldReturn404NotFound
-Booksy.ServiceCatalog.IntegrationTests.API.ProviderStaff.ProviderStaffTests.StaffCompleteWorkflow_CreateUpdateDelete_ShouldWorkEndToEnd
-Booksy.ServiceCatalog.IntegrationTests.API.ProviderStaff.ProviderStaffTests.UpdateStaff_AsOwner_ShouldReturn200OK
-Booksy.ServiceCatalog.IntegrationTests.API.ProviderStaff.ProviderStaffTests.UpdateStaff_WithNonExistentStaffId_ShouldReturn404NotFound
 Booksy.ServiceCatalog.IntegrationTests.API.Providers.ProviderManagementTests.RegisterProvider_WithValidData_ShouldReturn201Created
 Booksy.ServiceCatalog.IntegrationTests.ProgressiveRegistrationTests.CompleteRegistration_ByNonOwner_ReturnsForbidden
 Booksy.ServiceCatalog.IntegrationTests.ProgressiveRegistrationTests.CompleteRegistration_WithoutRequiredData_ReturnsError
@@ -78,7 +103,6 @@ Booksy.ServiceCatalog.IntegrationTests.StepBasedRegistrationTests.Step7_SaveGall
 Booksy.ServiceCatalog.IntegrationTests.StepBasedRegistrationTests.Step8_SaveFeedback_WithOptionalFeedback_SavesSuccessfully
 Booksy.ServiceCatalog.IntegrationTests.StepBasedRegistrationTests.Step9_CompleteRegistration_WithAllRequiredData_CompletesSuccessfully
 Booksy.ServiceCatalog.IntegrationTests.StepBasedRegistrationTests.Step9_CompleteRegistration_WithoutServices_FailsValidation
-Booksy.ServiceCatalog.IntegrationTests.WorkingHoursManagementTests.GetBusinessHours_WithNonExistentProvider_ReturnsNotFound
 Booksy.ServiceCatalog.IntegrationTests.WorkingHoursManagementTests.GetExceptions_WithValidProvider_ReturnsExceptionList
 Booksy.ServiceCatalog.IntegrationTests.WorkingHoursManagementTests.UpdateBusinessHours_WithBreaks_SavesBreakPeriodsSuccessfully
 Booksy.ServiceCatalog.IntegrationTests.WorkingHoursManagementTests.UpdateBusinessHours_WithValidData_UpdatesSuccessfully

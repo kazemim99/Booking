@@ -28,19 +28,14 @@ public class BookingsControllerTests : ServiceCatalogIntegrationTestBase
         // Arrange
         var provider = await CreateTestProviderWithServicesAsync();
 
-        // Set business hours (9 AM to 5 PM, Monday to Friday)
-        var businessHours = new Dictionary<DayOfWeek, (TimeOnly? Open, TimeOnly? Close)>
-        {
-            { DayOfWeek.Monday, (new TimeOnly(9, 0), new TimeOnly(17, 0)) },
-            { DayOfWeek.Tuesday, (new TimeOnly(9, 0), new TimeOnly(17, 0)) },
-            { DayOfWeek.Wednesday, (new TimeOnly(9, 0), new TimeOnly(17, 0)) },
-            { DayOfWeek.Thursday, (new TimeOnly(9, 0), new TimeOnly(17, 0)) },
-            { DayOfWeek.Friday, (new TimeOnly(9, 0), new TimeOnly(17, 0)) },
-            { DayOfWeek.Saturday, (null, null) }, // Closed
-            { DayOfWeek.Sunday, (null, null) }    // Closed
-        };
-        provider.SetBusinessHours(businessHours);
-        await UpdateEntityAsync(provider);
+        // Business hours come from the fixture (09:00-17:00, every day). This test used to
+        // set them again here, which meant calling SetBusinessHours TWICE on the same tracked
+        // Provider in one DbContext: the second call removes seven already-persisted owned
+        // BusinessHours rows and adds seven new ones, and EF then reports
+        // "expected to affect 1 row(s), but actually affected 0" (the owned child-collection
+        // remove-then-add fragility recorded in FOLLOW-UPS). Nothing in production calls it
+        // twice in one unit of work, and the booking below targets a Monday either way, so
+        // the second call bought nothing and only broke the arrange.
 
         var service = await GetFirstServiceForProviderAsync(provider.Id.Value);
         var staff = provider;
@@ -388,14 +383,17 @@ public class BookingsControllerTests : ServiceCatalogIntegrationTestBase
         Domain.Aggregates.Service service,
         DateTime startTime)
     {
-        var staff = provider;
+        // The salon's service-providing MEMBER, not the salon itself — see
+        // GetBookableMemberIdAsync. A booking held against provider.Id is one that no
+        // bookable resource can see, so the slot it should occupy still reads as free.
+        var staffId = await GetBookableMemberIdAsync(provider);
         var bookingPolicy = service.BookingPolicy ?? BookingPolicy.Default;
 
         var booking = Booking.CreateBookingRequest(
             Core.Domain.ValueObjects.UserId.From(customerId),
             provider.Id,
             service.Id,
-            staff.Id,
+            staffId,
             startTime,
             service.Duration,
             service.BasePrice,
@@ -421,36 +419,12 @@ public class BookingsControllerTests : ServiceCatalogIntegrationTestBase
         return day.AddHours(hour);
     }
 
-    private async Task<Domain.Aggregates.Provider> CreateTestProviderWithServicesAsync()
-    {
-        var provider = await CreateAndAuthenticateAsProviderAsync("Test Provider", "provider@test.com");
-
-        // Add business hours
-        provider.SetBusinessHours(new Dictionary<Domain.Enums.DayOfWeek, (TimeOnly? Open, TimeOnly? Close)>
-        {
-            { Domain.Enums.DayOfWeek.Monday, (TimeOnly.FromTimeSpan(TimeSpan.FromHours(9)), TimeOnly.FromTimeSpan(TimeSpan.FromHours(17))) },
-            { Domain.Enums.DayOfWeek.Tuesday, (TimeOnly.FromTimeSpan(TimeSpan.FromHours(9)), TimeOnly.FromTimeSpan(TimeSpan.FromHours(17))) },
-            { Domain.Enums.DayOfWeek.Wednesday, (TimeOnly.FromTimeSpan(TimeSpan.FromHours(9)), TimeOnly.FromTimeSpan(TimeSpan.FromHours(17))) },
-            { Domain.Enums.DayOfWeek.Thursday, (TimeOnly.FromTimeSpan(TimeSpan.FromHours(9)), TimeOnly.FromTimeSpan(TimeSpan.FromHours(17))) },
-            { Domain.Enums.DayOfWeek.Friday, (TimeOnly.FromTimeSpan(TimeSpan.FromHours(9)), TimeOnly.FromTimeSpan(TimeSpan.FromHours(17))) }
-        });
-
-     
-
-        await DbContext.SaveChangesAsync();
-
-        // Create a service — and make it bookable. Services are born Draft, and bookings
-        // reject a non-Active service ("این خدمت فعال نیست"), which surfaces as a 409 from
-        // ValidateBookingConstraints. These tests book the organization directly, so the
-        // organization itself is the qualified "staff" for its own services.
-        var service = await CreateServiceForProviderAsync(provider, "Test Service", 50.00m, 60);
-        service.AddQualifiedStaff(provider.Id.Value);
-        if (service.Status != Domain.Enums.ServiceStatus.Active)
-            service.Activate();
-        await DbContext.SaveChangesAsync();
-
-        return provider;
-    }
+    // The private CreateTestProviderWithServicesAsync() that used to sit here SHADOWED the
+    // one on ServiceCatalogIntegrationTestBase. It opened Monday-Friday only and created a
+    // Provider + Service and nothing else, so every fix to the shared fixture silently missed
+    // this class: the salon had no service-providing member, its service stayed in Draft, and
+    // a test picking "three days from now" landed on a Saturday the salon was closed. Deleted
+    // in favour of the base helper, which builds a genuinely bookable salon.
 
     private async Task<Domain.Aggregates.Service> GetFirstServiceForProviderAsync(Guid providerId)
     {

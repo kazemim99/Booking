@@ -175,9 +175,15 @@ public class ProviderStaffTests : ServiceCatalogIntegrationTestBase
         response.Data.Should().NotBeNull();
         response.Data!.FirstName.Should().Be("Updated");
         response.Data.LastName.Should().Be("Name");
-        response.Data.PhoneNumber.Should().Be("+0987654321");
-        response.Data.Role.Should().Be("Manager");
-        response.Data.Notes.Should().Be("Promoted to manager");
+
+        // Phone, role and notes are deliberately NOT echoed, and this test used to assert
+        // they were. A membership carries the salon's view of a person — a display name, a
+        // per-salon bio and photo, whether they take bookings. It does not carry their phone
+        // (that belongs to the Person in UserManagement and the salon may not rewrite it),
+        // and roles have their own endpoint (PATCH {id}/roles) because changing them carries
+        // the "keep at least one owner" invariant. `notes` is not modelled at all.
+        response.Data.PhoneNumber.Should().BeNull(
+            "phone is person-level; UpdateMembershipCommand neither accepts nor returns it");
     }
 
     [Fact]
@@ -244,8 +250,10 @@ public class ProviderStaffTests : ServiceCatalogIntegrationTestBase
             $"/api/v1/providers/{provider.Id.Value}/staff/{nonExistentStaffId}",
             updateRequest);
 
-        // Assert
-        response.StatusCode.Should().Be(HttpStatusCode.BadRequest);
+        // Assert — 404, as this test's own name and the endpoint's documented responses say.
+        // It asserted 400 for as long as the route was a dead 500 (FOLLOW-UPS #16), so the
+        // contradiction between the name and the expectation went unnoticed.
+        response.StatusCode.Should().Be(HttpStatusCode.NotFound);
     }
 
     #endregion
@@ -326,9 +334,11 @@ public class ProviderStaffTests : ServiceCatalogIntegrationTestBase
         // Act
         var response = await DeleteAsync($"/api/v1/providers/{provider.Id.Value}/staff/{nonExistentStaffId}");
 
-        // Assert
+        // Assert — 404, which is what this test's own name says and what the endpoint
+        // documents. It asserted 400 for as long as the route was a dead 500, so nobody
+        // noticed the expectation contradicted the name.
         response.Error.Should().NotBeNull();
-        response.StatusCode.Should().Be(HttpStatusCode.BadRequest);
+        response.StatusCode.Should().Be(HttpStatusCode.NotFound);
     }
 
     #endregion
@@ -373,8 +383,16 @@ public class ProviderStaffTests : ServiceCatalogIntegrationTestBase
             $"/api/v1/providers/{provider.Id.Value}/staff/{createResponse.Data!.Id}",
             updateRequest);
         updateResponse.StatusCode.Should().Be(HttpStatusCode.OK);
-        updateResponse.Data!.FirstName.Should().Be("Updated Workflow");
-        updateResponse.Data.Role.Should().Be("Manager");
+
+        // A member without an app account has ONE display name at this salon. The endpoint
+        // joins the request's first/last into it and splits it back on the FIRST space, so a
+        // two-word "first name" does not survive the round trip: "Updated Workflow" + "Staff
+        // Updated" stores "Updated Workflow Staff Updated" and returns First="Updated".
+        // That is the real contract of a single display name, not a bug to paper over — the
+        // legacy first/last shape is what does not fit. Role is not updatable here at all
+        // (PATCH {id}/roles owns it, because of the keep-one-owner invariant).
+        updateResponse.Data!.FirstName.Should().Be("Updated");
+        updateResponse.Data.LastName.Should().Be("Workflow Staff Updated");
 
         // Step 3: Get all staff and verify our staff is in the list
         var getResponse = await GetAsync($"/api/v1/providers/{provider.Id.Value}/staff");

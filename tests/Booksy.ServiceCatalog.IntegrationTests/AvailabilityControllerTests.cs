@@ -5,6 +5,7 @@ using Booksy.ServiceCatalog.Domain.Aggregates.BookingAggregate;
 using Booksy.ServiceCatalog.Domain.Entities;
 using Booksy.ServiceCatalog.Domain.Enums;
 using Booksy.ServiceCatalog.Domain.ValueObjects;
+using Microsoft.EntityFrameworkCore;
 using Xunit;
 
 namespace Booksy.ServiceCatalog.IntegrationTests.API.Bookings;
@@ -32,13 +33,19 @@ public class AvailabilityControllerTests : ServiceCatalogIntegrationTestBase
         var futureDate = DateTime.UtcNow.AddDays(3).Date;
 
         // Act
-        var response = await GetAsync<List<AvailableSlotResponse>>(
+        var response = await GetAsync<AvailableSlotsResponse>(
             $"/api/v1/availability/slots?ProviderId={provider.Id.Value}&ServiceId={service.Id.Value}&Date={futureDate:yyyy-MM-dd}");
 
         // Assert
         response.StatusCode.Should().Be(HttpStatusCode.OK);
         response.Data.Should().NotBeNull();
-        response.Data.Should().NotBeEmpty("Provider has business hours configured, so slots should be available");
+        // The endpoint returns an AvailableSlotsResponse ENVELOPE ({ slots: [...] }), not a
+        // bare array. These assertions deserialized into List<AvailableSlotResponse>, so Data
+        // was empty whatever the server returned — the test could never have passed.
+        response.Data!.Slots.Should().NotBeEmpty(
+            "the salon is open, has a bookable service and a service-providing member. " +
+            "Server-side objections, if any: {0}",
+            string.Join(", ", response.Data.ValidationMessages ?? new List<string>()));
     }
 
     [Fact]
@@ -90,7 +97,7 @@ public class AvailabilityControllerTests : ServiceCatalogIntegrationTestBase
         await DbContext.SaveChangesAsync();
 
         // Act - Get available slots for the same date
-        var response = await GetAsync<List<AvailableSlotResponse>>(
+        var response = await GetAsync<AvailableSlotsResponse>(
             $"/api/v1/availability/slots?ProviderId={provider.Id.Value}&ServiceId={service.Id.Value}&Date={testDate:yyyy-MM-dd}");
 
         // Assert
@@ -98,7 +105,7 @@ public class AvailabilityControllerTests : ServiceCatalogIntegrationTestBase
         response.Data.Should().NotBeNull();
 
         // The booked slot should either be marked as unavailable or not included
-        var bookedSlot = response.Data!.FirstOrDefault(s => s.StartTime.Hour == testDate.Hour);
+        var bookedSlot = response.Data!.Slots.FirstOrDefault(s => s.StartTime.Hour == testDate.Hour);
         if (bookedSlot != null)
         {
             bookedSlot.IsAvailable.Should().BeFalse("Slot should be marked as unavailable");
@@ -116,7 +123,7 @@ public class AvailabilityControllerTests : ServiceCatalogIntegrationTestBase
         var futureDate = DateTime.UtcNow.AddDays(3).Date;
 
         // Act
-        var response = await GetAsync<List<AvailableSlotResponse>>(
+        var response = await GetAsync<AvailableSlotsResponse>(
             $"/api/v1/availability/slots?ProviderId={provider.Id.Value}&ServiceId={service.Id.Value}&Date={futureDate:yyyy-MM-dd}&StaffId={staff.Id}");
 
         // Assert
@@ -124,9 +131,9 @@ public class AvailabilityControllerTests : ServiceCatalogIntegrationTestBase
         response.Data.Should().NotBeNull();
 
         // All returned slots should be for the specified staff
-        if (response.Data!.Any())
+        if (response.Data!.Slots.Any())
         {
-            response.Data.Where(s => s.AvailableStaffId.HasValue)
+            response.Data.Slots.Where(s => s.AvailableStaffId.HasValue)
                 .All(s => s.AvailableStaffId == staff.Id)
                 .Should().BeTrue("All slots should be for the specified staff member");
         }
@@ -287,14 +294,17 @@ public class AvailabilityControllerTests : ServiceCatalogIntegrationTestBase
         Domain.Aggregates.Service service,
         DateTime startTime)
     {
-        var staff = provider;
+        // The salon's service-providing MEMBER, not the salon itself — see
+        // GetBookableMemberIdAsync. A booking held against provider.Id is one that no
+        // bookable resource can see, so the slot it should occupy still reads as free.
+        var staffId = await GetBookableMemberIdAsync(provider);
         var bookingPolicy = service.BookingPolicy ?? BookingPolicy.Default;
 
         var booking = Booking.CreateBookingRequest(
             Core.Domain.ValueObjects.UserId.From(customerId),
             provider.Id,
             service.Id,
-            staff.Id,
+            staffId,
             startTime,
             service.Duration,
             service.BasePrice,
@@ -307,29 +317,12 @@ public class AvailabilityControllerTests : ServiceCatalogIntegrationTestBase
         return booking;
     }
 
-    private async Task<Domain.Aggregates.Provider> CreateTestProviderWithServicesAsync()
-    {
-        var provider = await CreateAndAuthenticateAsProviderAsync("Test Provider", "provider@test.com");
-
-        // Add business hours (Monday-Friday, 9 AM - 5 PM)
-        provider.SetBusinessHours(new Dictionary<Domain.Enums.DayOfWeek, (TimeOnly? Open, TimeOnly? Close)>
-        {
-            { Domain.Enums.DayOfWeek.Monday, (TimeOnly.FromTimeSpan(TimeSpan.FromHours(9)), TimeOnly.FromTimeSpan(TimeSpan.FromHours(17))) },
-            { Domain.Enums.DayOfWeek.Tuesday, (TimeOnly.FromTimeSpan(TimeSpan.FromHours(9)), TimeOnly.FromTimeSpan(TimeSpan.FromHours(17))) },
-            { Domain.Enums.DayOfWeek.Wednesday, (TimeOnly.FromTimeSpan(TimeSpan.FromHours(9)), TimeOnly.FromTimeSpan(TimeSpan.FromHours(17))) },
-            { Domain.Enums.DayOfWeek.Thursday, (TimeOnly.FromTimeSpan(TimeSpan.FromHours(9)), TimeOnly.FromTimeSpan(TimeSpan.FromHours(17))) },
-            { Domain.Enums.DayOfWeek.Friday, (TimeOnly.FromTimeSpan(TimeSpan.FromHours(9)), TimeOnly.FromTimeSpan(TimeSpan.FromHours(17))) }
-        });
-
-        
-
-        await DbContext.SaveChangesAsync();
-
-        // Create a service
-        await CreateServiceForProviderAsync(provider, "Test Service", 50.00m, 60);
-
-        return provider;
-    }
+    // The private CreateTestProviderWithServicesAsync() that used to sit here SHADOWED the
+    // one on ServiceCatalogIntegrationTestBase. It opened Monday-Friday only and created a
+    // Provider + Service and nothing else, so every fix to the shared fixture silently missed
+    // this class: the salon had no service-providing member, its service stayed in Draft, and
+    // a test picking "three days from now" landed on a Saturday the salon was closed. Deleted
+    // in favour of the base helper, which builds a genuinely bookable salon.
 
     private async Task<Domain.Aggregates.Service> GetFirstServiceForProviderAsync(Guid providerId)
     {

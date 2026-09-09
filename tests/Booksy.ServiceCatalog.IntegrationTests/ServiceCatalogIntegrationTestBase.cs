@@ -1,6 +1,10 @@
 ﻿using Booksy.Core.Domain.ValueObjects;
+using Booksy.Infrastructure.Core.Caching;
+using Booksy.ServiceCatalog.Application.Services.Interfaces;
 using Booksy.ServiceCatalog.Domain.Aggregates;
+using Booksy.ServiceCatalog.Domain.Aggregates.OrganizationMembershipAggregate;
 using Booksy.ServiceCatalog.Domain.Enums;
+using Booksy.ServiceCatalog.Domain.Repositories;
 using Booksy.ServiceCatalog.Domain.ValueObjects;
 using Booksy.ServiceCatalog.Infrastructure.Persistence.Context;
 using Booksy.Tests.Common.Infrastructure;
@@ -419,6 +423,14 @@ public abstract class ServiceCatalogIntegrationTestBase
 
         provider.SetSatus(Domain.Enums.ProviderStatus.Active);
         provider.SetAllowOnlineBooking(true);
+
+        // This overload never set business hours at all, so its salon was closed every day
+        // of the week. Open all seven, exactly as the parameterless overload does.
+        var hours = new Dictionary<Domain.Enums.DayOfWeek, (TimeOnly? Open, TimeOnly? Close)>();
+        foreach (Domain.Enums.DayOfWeek day in Enum.GetValues<Domain.Enums.DayOfWeek>())
+            hours[day] = (new TimeOnly(9, 0), new TimeOnly(17, 0));
+        provider.SetBusinessHours(hours);
+
         await CreateEntityAsync(provider);
 
         // Create services
@@ -431,6 +443,11 @@ public abstract class ServiceCatalogIntegrationTestBase
                 60 + (i * 15)
             );
         }
+
+        // Same reason as the parameterless overload: a Provider plus Services is not a
+        // bookable salon under the membership model. Both overloads must produce the same
+        // shape, or which one a caller happens to bind to silently changes the outcome.
+        await MakeBookableAsync(provider);
 
         return provider;
     }
@@ -592,24 +609,151 @@ public abstract class ServiceCatalogIntegrationTestBase
     {
         var provider = await CreateAndAuthenticateAsProviderAsync("Test Provider", "provider@test.com");
 
-        // Add business hours (Monday-Friday, 9 AM - 5 PM)
-        provider.SetBusinessHours(new Dictionary<Domain.Enums.DayOfWeek, (TimeOnly? Open, TimeOnly? Close)>
-        {
-            { Domain.Enums.DayOfWeek.Monday, (TimeOnly.FromTimeSpan(TimeSpan.FromHours(9)), TimeOnly.FromTimeSpan(TimeSpan.FromHours(17))) },
-            { Domain.Enums.DayOfWeek.Tuesday, (TimeOnly.FromTimeSpan(TimeSpan.FromHours(9)), TimeOnly.FromTimeSpan(TimeSpan.FromHours(17))) },
-            { Domain.Enums.DayOfWeek.Wednesday, (TimeOnly.FromTimeSpan(TimeSpan.FromHours(9)), TimeOnly.FromTimeSpan(TimeSpan.FromHours(17))) },
-            { Domain.Enums.DayOfWeek.Thursday, (TimeOnly.FromTimeSpan(TimeSpan.FromHours(9)), TimeOnly.FromTimeSpan(TimeSpan.FromHours(17))) },
-            { Domain.Enums.DayOfWeek.Friday, (TimeOnly.FromTimeSpan(TimeSpan.FromHours(9)), TimeOnly.FromTimeSpan(TimeSpan.FromHours(17))) }
-        });
-
-        
+        // Open every day, so a test that picks "three days from now" is never accidentally
+        // landing on a closed day. This used to be Monday-Friday, which made the fixture
+        // silently date-dependent.
+        var hours = new Dictionary<Domain.Enums.DayOfWeek, (TimeOnly? Open, TimeOnly? Close)>();
+        foreach (Domain.Enums.DayOfWeek day in Enum.GetValues<Domain.Enums.DayOfWeek>())
+            hours[day] = (new TimeOnly(9, 0), new TimeOnly(17, 0));
+        provider.SetBusinessHours(hours);
 
         await DbContext.SaveChangesAsync();
 
         // Create a service
         await CreateServiceForProviderAsync(provider, "Test Service", 50.00m, 60);
 
+        // ...and make the salon actually bookable. See MakeBookableAsync: business hours and
+        // a service are no longer enough on their own.
+        await MakeBookableAsync(provider);
+
         return provider;
+    }
+
+    /// <summary>
+    /// Gives a test salon a service-providing OWNER MEMBERSHIP and, through it, qualified
+    /// services and availability — i.e. everything the booking engine needs beyond a
+    /// Provider row.
+    /// </summary>
+    /// <remarks>
+    /// Under the membership model a salon is not bookable just because it has business hours
+    /// and services. Availability is generated per member (<c>ProviderAvailability.StaffId =
+    /// MembershipId</c>) and a service stays in <c>Draft</c> until at least one member is
+    /// qualified for it, so a fixture that creates only a Provider + Services produces a salon
+    /// nobody works at: no slots, no bookable service, and every availability/booking test
+    /// failing for a reason that has nothing to do with what it is testing.
+    ///
+    /// <para>This deliberately runs the PRODUCTION path (<see cref="IMemberBookabilityService"/>)
+    /// rather than hand-inserting membership, qualification and slot rows. Hand-rolled fixture
+    /// data is exactly how this fixture drifted away from the domain in the first place; going
+    /// through the real service means the fixture cannot claim a salon is bookable in a way the
+    /// application would not.</para>
+    /// </remarks>
+    /// <returns>The owner's membership — the id that availability and bookings use as StaffId.</returns>
+    public async Task<OrganizationMembership> MakeBookableAsync(Provider provider)
+    {
+        var membership = OrganizationMembership.CreateOwner(
+            provider.OwnerId, provider.Id, providesServices: true);
+
+        await CreateEntityAsync(membership);
+
+        // Qualify + activate the salon's services for this member, service by service, rather
+        // than calling SyncAsync.
+        //
+        // SyncAsync would ALSO generate a rolling 30 days of ProviderAvailability rows —
+        // roughly 480 inserts per fixture call. Availability is computed live from business
+        // hours, members and existing bookings (see AvailabilityService), so those rows buy
+        // these tests nothing; what they do buy is heavy write contention on the one
+        // Testcontainers database that every test class shares in parallel, which is how a
+        // fixture change in one class started reddening unrelated classes.
+        var bookability = Scope.ServiceProvider.GetRequiredService<IMemberBookabilityService>();
+        var services = Scope.ServiceProvider.GetRequiredService<IServiceWriteRepository>();
+        foreach (var service in await services.GetServicesByProviderIdAsync(provider.Id))
+        {
+            await bookability.SyncServiceAsync(service);
+        }
+
+        await DbContext.SaveChangesAsync();
+        DbContext.ChangeTracker.Clear();
+
+        // IProviderReadRepository is decorated by CachedProviderReadRepository, and SyncAsync
+        // READ the provider before it activated the services — so the cache now holds a
+        // provider whose Services are still Draft. In production that entry is invalidated by
+        // ProviderCacheInvalidationEventHandler, but this fixture commits through DbContext
+        // directly rather than the unit of work that dispatches domain events, so nothing
+        // invalidates it here. Without this the salon is bookable in the database and NOT
+        // bookable over HTTP, which is precisely the split that made these failures so hard
+        // to read: the fixture's own assertions pass while every test through the API fails.
+        var cache = Scope.ServiceProvider.GetRequiredService<ICacheService>();
+        await cache.RemoveAsync($"Provider:{provider.Id.Value}");
+        await cache.RemoveAsync($"Provider:owner:{provider.OwnerId.Value}");
+
+        await AssertSalonIsBookableAsync(provider);
+
+        return membership;
+    }
+
+    /// <summary>
+    /// The id a booking for this salon must carry as its StaffId: its service-providing
+    /// member's MembershipId.
+    /// </summary>
+    /// <remarks>
+    /// Availability is resolved and booking conflicts are checked PER BOOKABLE RESOURCE
+    /// (<c>GetStaffBookingsInDateRangeAsync(resource.Id, ...)</c>), and a salon with members
+    /// resolves to those members — never to itself. A test that holds its booking against
+    /// <c>provider.Id</c> therefore creates a booking no member can see, and the slot it was
+    /// meant to occupy still reads as free. Booking the member is also what production does:
+    /// the organization is only its own bookable resource when no member can serve.
+    /// </remarks>
+    public async Task<Guid> GetBookableMemberIdAsync(Provider provider)
+    {
+        var member = await DbContext.Set<OrganizationMembership>()
+            .Where(m => m.OrganizationId == provider.Id)
+            .ToListAsync();
+
+        var bookable = member.FirstOrDefault(m => m.ProvidesServices);
+        if (bookable is null)
+            throw new InvalidOperationException(
+                $"Fixture: provider {provider.Id.Value} has no service-providing member " +
+                $"({member.Count} membership(s)). Build it with CreateTestProviderWithServicesAsync.");
+
+        return bookable.Id;
+    }
+
+    /// <summary>
+    /// Verifies the arrange step actually produced a bookable salon, reading back through the
+    /// SAME repositories an HTTP request uses (a fresh scope, the cached provider decorator,
+    /// the service read repository) rather than through the test's own DbContext.
+    /// </summary>
+    /// <remarks>
+    /// Asserting via the test's DbContext is not good enough: it can see tracked or
+    /// uncommitted state that a real request never would, which is exactly how a salon ends
+    /// up bookable in the fixture's opinion and closed in the API's. Failing here, loudly, in
+    /// arrange beats fifteen tests failing in assert with "no slots".
+    /// </remarks>
+    private async Task AssertSalonIsBookableAsync(Provider provider)
+    {
+        using var scope = Factory.Services.CreateScope();
+        var providers = scope.ServiceProvider.GetRequiredService<IProviderReadRepository>();
+        var services = scope.ServiceProvider.GetRequiredService<IServiceReadRepository>();
+
+        var reloaded = await providers.GetByIdAsync(provider.Id)
+            ?? throw new InvalidOperationException(
+                $"Fixture: provider {provider.Id.Value} is not readable through IProviderReadRepository.");
+
+        var openDays = reloaded.BusinessHours.Count(h => h.IsOpen);
+        if (openDays == 0)
+            throw new InvalidOperationException(
+                $"Fixture: provider {provider.Id.Value} has no OPEN business hours as seen by the " +
+                $"read repository ({reloaded.BusinessHours.Count} rows). Availability will be empty.");
+
+        var providerServices = await services.GetByProviderIdAsync(provider.Id);
+        var bookable = providerServices.Where(s => s.CanBeBooked()).ToList();
+        if (bookable.Count == 0)
+            throw new InvalidOperationException(
+                $"Fixture: provider {provider.Id.Value} has {providerServices.Count} service(s) but " +
+                $"none that CanBeBooked (statuses: " +
+                $"{string.Join(", ", providerServices.Select(s => $"{s.Status}/{s.QualifiedStaff.Count} staff"))}). " +
+                "MemberBookabilityService.SyncAsync should have qualified and activated them.");
     }
 
 

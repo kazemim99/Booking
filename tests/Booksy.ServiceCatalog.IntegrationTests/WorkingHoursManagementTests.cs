@@ -44,17 +44,20 @@ public class WorkingHoursManagementTests : ServiceCatalogIntegrationTestBase
     }
 
     [Fact]
-    public async Task GetBusinessHours_WithNonExistentProvider_ReturnsNotFound()
+    public async Task GetBusinessHours_ForASalonTheCallerDoesNotManage_IsForbidden()
     {
-        // Arrange
+        // Arrange — authenticated as one salon's owner, asking about a different salon.
         var provider = await CreateAndAuthenticateAsProviderAsync();
-        var nonExistentId = Guid.NewGuid();
+        var otherSalonId = Guid.NewGuid();
 
         // Act
-        var response = await GetAsync($"/api/v1/providers/{nonExistentId}/business-hours");
+        var response = await GetAsync($"/api/v1/providers/{otherSalonId}/business-hours");
 
-        // Assert
-        response.StatusCode.Should().Be(HttpStatusCode.BadRequest);
+        // Assert — 403, not 404/400. Authorization runs before existence, deliberately: an
+        // outsider must not be able to probe which provider ids exist by comparing "not
+        // found" against "forbidden". This test previously expected 400 while its name said
+        // NotFound, so it disagreed with itself as well as with the endpoint.
+        response.StatusCode.Should().Be(HttpStatusCode.Forbidden);
     }
 
     [Fact]

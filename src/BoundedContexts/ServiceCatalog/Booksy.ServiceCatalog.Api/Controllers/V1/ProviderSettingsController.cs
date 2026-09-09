@@ -387,7 +387,19 @@ public class ProviderSettingsController : ControllerBase
             return Forbid();
         }
 
-       
+        // A body that fails to bind arrives here as null, and dereferencing it turned a
+        // malformed request into a 500 with "Object reference not set to an instance of an
+        // object" — which tells the caller nothing about what was wrong with their payload.
+        // Times are sent as { hours, minutes } (TimeSlotDto), so a client sending "09:00"
+        // hits exactly this path.
+        if (request?.BusinessHours is null or { Count: 0 })
+        {
+            return BadRequest(new
+            {
+                error = "businessHours is required and must contain at least one day. " +
+                        "Times are objects: \"openTime\": { \"hours\": 9, \"minutes\": 0 }."
+            });
+        }
 
         var command = new UpdateBusinessHoursCommand(id, request.BusinessHours);
         var result = await _mediator.Send(command, cancellationToken);

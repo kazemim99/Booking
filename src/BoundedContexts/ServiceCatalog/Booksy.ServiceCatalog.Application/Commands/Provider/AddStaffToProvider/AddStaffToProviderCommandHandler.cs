@@ -72,9 +72,30 @@ public sealed class AddStaffToProviderCommandHandler
             throw new UnauthorizedAccessException("User not authenticated");
         var callerId = UserId.From(userIdStr);
 
-        // A provider may only add staff to their OWN organization.
-        var organization = await _providerRepository.GetByOwnerIdAsync(callerId, cancellationToken)
-            ?? throw new NotFoundException("No provider found for the authenticated user.");
+        // Resolve the organization the CALLER ASKED FOR, then authorize against it.
+        //
+        // This used to be GetByOwnerIdAsync(callerId) — it ignored request.ProviderId and
+        // silently used the caller's own salon instead. A request naming someone else's
+        // salon therefore returned 201 Created and added the member to the caller's salon:
+        // the route parameter was a lie, and the endpoint's documented 403 could never
+        // happen. Silently retargeting a write is worse than refusing it.
+        var organizationId = ProviderId.From(request.ProviderId);
+        var organization = await _providerRepository.GetByIdAsync(organizationId, cancellationToken)
+            ?? throw new NotFoundException($"Provider {request.ProviderId} not found.");
+
+        // Running the salon — adding to its team — is an Owner/Manager capability. Read
+        // membership-first, with Provider.OwnerId as the migration-only fallback for
+        // organizations registered before ownership moved onto memberships (FOLLOW-UPS #40).
+        var callerMembership = await _membershipRepository.GetActiveByPersonAndOrganizationAsync(
+            callerId, organizationId, cancellationToken);
+
+        var callerMayManage =
+            callerMembership?.Roles.Contains(MembershipRole.Owner) == true ||
+            callerMembership?.Roles.Contains(MembershipRole.Manager) == true ||
+            callerId.Equals(organization.OwnerId);
+
+        if (!callerMayManage)
+            throw new ForbiddenException("You cannot add staff to this organization.");
 
         var displayName = $"{request.FirstName} {request.LastName}".Trim();
 

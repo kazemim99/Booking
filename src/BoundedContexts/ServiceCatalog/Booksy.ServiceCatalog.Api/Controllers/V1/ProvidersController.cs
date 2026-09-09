@@ -811,7 +811,18 @@ public class ProvidersController : ControllerBase
         [FromBody] AddStaffRequest request,
         CancellationToken cancellationToken = default)
     {
-
+        // This action had no authorization check at all while documenting a 403 it could
+        // never return. The handler now authorizes too; both are kept, matching the
+        // belt-and-braces precedent set when the ServicesController IDOR was closed
+        // (FOLLOW-UPS #35) — a future caller of the handler stays protected even if a
+        // controller-level check is missed again.
+        if (!await CanManageProvider(providerId))
+        {
+            _logger.LogWarning(
+                "User {UserId} attempted to add staff to provider {ProviderId} without permission",
+                GetCurrentUserId(), providerId);
+            return Forbid();
+        }
 
         var command = new AddStaffToProviderCommand(
             providerId,
