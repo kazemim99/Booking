@@ -851,14 +851,14 @@ namespace Booksy.ServiceCatalog.IntegrationTests.Features.CQRS.Queries
             await this.ScenarioCleanupAsync();
         }
         
-        [Xunit.SkippableFactAttribute(DisplayName="GetCurrentProviderStatusQuery - Get own provider status")]
+        [Xunit.SkippableFactAttribute(DisplayName="GetOwnedProviderStatusQuery - Get own provider status")]
         [Xunit.TraitAttribute("FeatureTitle", "Query Handlers - Complete Coverage")]
-        [Xunit.TraitAttribute("Description", "GetCurrentProviderStatusQuery - Get own provider status")]
+        [Xunit.TraitAttribute("Description", "GetOwnedProviderStatusQuery - Get own provider status")]
         [Xunit.TraitAttribute("Category", "query")]
         [Xunit.TraitAttribute("Category", "provider")]
         [Xunit.TraitAttribute("Category", "current-status")]
         [Xunit.TraitAttribute("Category", "happy-path")]
-        public async System.Threading.Tasks.Task GetCurrentProviderStatusQuery_GetOwnProviderStatus()
+        public async System.Threading.Tasks.Task GetOwnedProviderStatusQuery_GetOwnProviderStatus()
         {
             string[] tagsOfScenario = new string[] {
                     "query",
@@ -866,7 +866,7 @@ namespace Booksy.ServiceCatalog.IntegrationTests.Features.CQRS.Queries
                     "current-status",
                     "happy-path"};
             System.Collections.Specialized.OrderedDictionary argumentsOfScenario = new System.Collections.Specialized.OrderedDictionary();
-            global::Reqnroll.ScenarioInfo scenarioInfo = new global::Reqnroll.ScenarioInfo("GetCurrentProviderStatusQuery - Get own provider status", null, tagsOfScenario, argumentsOfScenario, featureTags);
+            global::Reqnroll.ScenarioInfo scenarioInfo = new global::Reqnroll.ScenarioInfo("GetOwnedProviderStatusQuery - Get own provider status", null, tagsOfScenario, argumentsOfScenario, featureTags);
             this.ScenarioInitialize(scenarioInfo);
             if ((global::Reqnroll.TagHelper.ContainsIgnoreTag(scenarioInfo.CombinedTags) || global::Reqnroll.TagHelper.ContainsIgnoreTag(featureTags)))
             {
@@ -876,20 +876,20 @@ namespace Booksy.ServiceCatalog.IntegrationTests.Features.CQRS.Queries
             {
                 await this.ScenarioStartAsync();
                 await testRunner.GivenAsync("I am authenticated as a provider", ((string)(null)), ((global::Reqnroll.Table)(null)), "Given ");
-                await testRunner.WhenAsync("I execute GetCurrentProviderStatusQuery", ((string)(null)), ((global::Reqnroll.Table)(null)), "When ");
+                await testRunner.WhenAsync("I execute GetOwnedProviderStatusQuery", ((string)(null)), ((global::Reqnroll.Table)(null)), "When ");
                 await testRunner.ThenAsync("my provider status should be returned", ((string)(null)), ((global::Reqnroll.Table)(null)), "Then ");
             }
             await this.ScenarioCleanupAsync();
         }
         
-        [Xunit.SkippableFactAttribute(DisplayName="GetCurrentProviderStatusQuery - Invalid user ID")]
+        [Xunit.SkippableFactAttribute(DisplayName="GetOwnedProviderStatusQuery - Invalid user ID")]
         [Xunit.TraitAttribute("FeatureTitle", "Query Handlers - Complete Coverage")]
-        [Xunit.TraitAttribute("Description", "GetCurrentProviderStatusQuery - Invalid user ID")]
+        [Xunit.TraitAttribute("Description", "GetOwnedProviderStatusQuery - Invalid user ID")]
         [Xunit.TraitAttribute("Category", "query")]
         [Xunit.TraitAttribute("Category", "provider")]
         [Xunit.TraitAttribute("Category", "current-status")]
         [Xunit.TraitAttribute("Category", "validation")]
-        public async System.Threading.Tasks.Task GetCurrentProviderStatusQuery_InvalidUserID()
+        public async System.Threading.Tasks.Task GetOwnedProviderStatusQuery_InvalidUserID()
         {
             string[] tagsOfScenario = new string[] {
                     "query",
@@ -897,7 +897,7 @@ namespace Booksy.ServiceCatalog.IntegrationTests.Features.CQRS.Queries
                     "current-status",
                     "validation"};
             System.Collections.Specialized.OrderedDictionary argumentsOfScenario = new System.Collections.Specialized.OrderedDictionary();
-            global::Reqnroll.ScenarioInfo scenarioInfo = new global::Reqnroll.ScenarioInfo("GetCurrentProviderStatusQuery - Invalid user ID", null, tagsOfScenario, argumentsOfScenario, featureTags);
+            global::Reqnroll.ScenarioInfo scenarioInfo = new global::Reqnroll.ScenarioInfo("GetOwnedProviderStatusQuery - Invalid user ID", null, tagsOfScenario, argumentsOfScenario, featureTags);
             this.ScenarioInitialize(scenarioInfo);
             if ((global::Reqnroll.TagHelper.ContainsIgnoreTag(scenarioInfo.CombinedTags) || global::Reqnroll.TagHelper.ContainsIgnoreTag(featureTags)))
             {
@@ -906,7 +906,7 @@ namespace Booksy.ServiceCatalog.IntegrationTests.Features.CQRS.Queries
             else
             {
                 await this.ScenarioStartAsync();
-                await testRunner.WhenAsync("I execute GetCurrentProviderStatusQuery with invalid user ID", ((string)(null)), ((global::Reqnroll.Table)(null)), "When ");
+                await testRunner.WhenAsync("I execute GetOwnedProviderStatusQuery with invalid user ID", ((string)(null)), ((global::Reqnroll.Table)(null)), "When ");
                 await testRunner.ThenAsync("the query should fail with ValidationException", ((string)(null)), ((global::Reqnroll.Table)(null)), "Then ");
             }
             await this.ScenarioCleanupAsync();

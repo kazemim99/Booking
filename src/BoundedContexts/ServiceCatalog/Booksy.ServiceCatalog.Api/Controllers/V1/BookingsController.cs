@@ -16,7 +16,7 @@ using Booksy.ServiceCatalog.Application.Queries.Booking.GetBookingDetails;
 using Booksy.ServiceCatalog.Application.Queries.Booking.GetBookingStatistics;
 using Booksy.ServiceCatalog.Application.Queries.Booking.GetCustomerBookings;
 using Booksy.ServiceCatalog.Application.Queries.Booking.SearchBookings;
-using Booksy.ServiceCatalog.Application.Queries.Provider.GetCurrentProviderStatus;
+using Booksy.ServiceCatalog.Application.Queries.Provider.GetOwnedProviderStatus;
 using Booksy.ServiceCatalog.Domain.Repositories;
 using MediatR;
 using Microsoft.AspNetCore.Authorization;

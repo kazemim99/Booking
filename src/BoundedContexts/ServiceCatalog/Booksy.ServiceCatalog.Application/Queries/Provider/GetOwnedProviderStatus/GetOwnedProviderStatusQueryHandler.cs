@@ -1,5 +1,5 @@
 // ========================================
-// Booksy.ServiceCatalog.Application/Queries/Provider/GetCurrentProviderStatus/GetCurrentProviderStatusQueryHandler.cs
+// Booksy.ServiceCatalog.Application/Queries/Provider/GetOwnedProviderStatus/GetOwnedProviderStatusQueryHandler.cs
 // ========================================
 using Booksy.Core.Application.Abstractions.CQRS;
 using Booksy.ServiceCatalog.Domain.Repositories;
@@ -7,18 +7,19 @@ using Booksy.ServiceCatalog.Domain.ValueObjects;
 using Microsoft.AspNetCore.Http;
 using System.Security.Claims;
 
-namespace Booksy.ServiceCatalog.Application.Queries.Provider.GetCurrentProviderStatus
+namespace Booksy.ServiceCatalog.Application.Queries.Provider.GetOwnedProviderStatus
 {
     /// <summary>
-    /// Handles fetching the current user's Provider status
+    /// Resolves the salon owned by the current user (by <c>OwnerId</c>) and returns its status;
+    /// null when the user owns no salon, which is the normal answer for an employee.
     /// </summary>
-    public sealed class GetCurrentProviderStatusQueryHandler
-        : IQueryHandler<GetCurrentProviderStatusQuery, ProviderStatusResult?>
+    public sealed class GetOwnedProviderStatusQueryHandler
+        : IQueryHandler<GetOwnedProviderStatusQuery, ProviderStatusResult?>
     {
         private readonly IProviderReadRepository _providerRepository;
         private readonly IHttpContextAccessor _httpContextAccessor;
 
-        public GetCurrentProviderStatusQueryHandler(
+        public GetOwnedProviderStatusQueryHandler(
             IProviderReadRepository providerRepository,
             IHttpContextAccessor httpContextAccessor)
         {
@@ -27,7 +28,7 @@ namespace Booksy.ServiceCatalog.Application.Queries.Provider.GetCurrentProviderS
         }
 
         public async Task<ProviderStatusResult?> Handle(
-            GetCurrentProviderStatusQuery request,
+            GetOwnedProviderStatusQuery request,
             CancellationToken cancellationToken)
         {
             // Get current user ID from claims

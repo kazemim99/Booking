@@ -22,10 +22,11 @@ public interface IInvitationRegistrationService
     Task<string> GenerateOtpCodeAsync(string phoneNumber, CancellationToken cancellationToken = default);
 
     /// <summary>
-    /// Creates a new user account with verified phone number
-    /// Returns the created user ID
+    /// Creates a user account for a verified phone number — or reuses the one that appeared
+    /// for that phone between the caller's own lookup and this call. Returns the person id and
+    /// whether this call created the account; only a created account may be compensated away.
     /// </summary>
-    Task<UserId> CreateUserWithPhoneAsync(
+    Task<CreatedPersonAccount> CreateUserWithPhoneAsync(
         string phoneNumber,
         string firstName,
         string lastName,
@@ -46,3 +47,10 @@ public interface IInvitationRegistrationService
         string reason,
         CancellationToken cancellationToken = default);
 }
+
+/// <summary>
+/// Result of <see cref="IInvitationRegistrationService.CreateUserWithPhoneAsync"/>: the person,
+/// and whether that call created the account (true) or found one that had appeared for the
+/// phone in the meantime (false). Compensation must only ever delete a created account.
+/// </summary>
+public sealed record CreatedPersonAccount(UserId PersonId, bool IsNewAccount);

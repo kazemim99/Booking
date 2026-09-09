@@ -19,7 +19,7 @@ using Booksy.ServiceCatalog.Application.Commands.Service.UpdateProviderService;
 using Booksy.ServiceCatalog.Domain.Repositories;
 using Booksy.ServiceCatalog.Application.Commands.Service.AddProviderService;
 using Booksy.ServiceCatalog.Application.Queries.Service.GetQualifiedStaff;
-using Booksy.ServiceCatalog.Application.Queries.Provider.GetCurrentProviderStatus;
+using Booksy.ServiceCatalog.Application.Queries.Provider.GetOwnedProviderStatus;
 using Microsoft.AspNetCore.RateLimiting;
 using System.Security.Claims;
 
@@ -642,7 +642,7 @@ public class ServicesController : ControllerBase
         // (Avoids depending on the post-registration token-refresh round-trip.)
         try
         {
-            var status = await _mediator.Send(new GetCurrentProviderStatusQuery());
+            var status = await _mediator.Send(new GetOwnedProviderStatusQuery());
             if (status is not null && status.ProviderId == providerId)
                 return true;
         }

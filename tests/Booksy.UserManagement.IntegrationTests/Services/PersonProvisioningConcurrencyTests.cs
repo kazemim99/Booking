@@ -79,7 +79,7 @@ public sealed class PersonProvisioningConcurrencyTests : IClassFixture<PostgresT
     {
         await using var context = NewContext();
         var repository = new UserRepository(context);
-        var service = new PersonProvisioningService(repository, NullLogger<PersonProvisioningService>.Instance);
+        var service = new PersonProvisioningService(repository, context, NullLogger<PersonProvisioningService>.Instance);
 
         var result = await service.GetOrCreateByPhoneAsync(
             phone, capacity, "Race", capacity.ToString());
@@ -88,16 +88,17 @@ public sealed class PersonProvisioningConcurrencyTests : IClassFixture<PostgresT
         return (result.Person.Id.Value, result.IsNewPerson);
     }
 
-    [Fact(Skip =
-        "CONFIRMED FAILING, reproduced 3/3 runs, 2026-09-08 -- deliberately left red-but-skipped " +
-        "rather than fixed blind: GetOrCreateByPhoneAsync has no database-level constraint " +
-        "backing its 'one person per phone' invariant, only an in-process SELECT-then-INSERT " +
-        "check, so two genuinely concurrent requests for the same brand-new phone both observe " +
-        "'no existing row' and both create one. The real fix is refactor-identity-and-membership " +
-        "§1.2 (a partial unique index on users.\"PhoneNumber\"), which is deliberately NOT added " +
-        "blind -- it auto-applies at host startup and would fail if real data already has " +
-        "duplicates (§1.3). Run scripts/find-duplicate-phone-numbers.sql against the real " +
-        "environment first; once §1.2 ships, remove this Skip and confirm the test passes.")]
+    /// <summary>
+    /// History: CONFIRMED FAILING 3/3 runs on 2026-09-08 with the plain SELECT-then-INSERT
+    /// implementation, and left red-but-skipped because the intended fix (§1.2, a partial
+    /// unique index on users."PhoneNumber") auto-applies at host startup and cannot ship
+    /// until the real environment is confirmed free of duplicates. Un-skipped 2026-09-09:
+    /// the create path now serializes per canonical phone with a transaction-scoped
+    /// advisory lock (<c>pg_advisory_xact_lock(hashtext(phone))</c>) and re-checks under
+    /// the lock, so the loser finds the winner's row. §1.2 remains the defence-in-depth
+    /// backstop for anything that bypasses <see cref="PersonProvisioningService"/>.
+    /// </summary>
+    [Fact]
     public async Task Concurrent_Customer_And_Provider_Signin_For_A_Brand_New_Phone()
     {
         var phone = PhoneNumber.From($"912{Random.Shared.Next(1_000_000, 9_999_999)}");

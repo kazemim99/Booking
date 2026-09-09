@@ -63,11 +63,32 @@ public sealed class PersonAccountProvisioningCompositionTests : IClassFixture<Ho
         var userRepository = scope.ServiceProvider.GetRequiredService<IUserRepository>();
 
         var phone = $"+9891{Random.Shared.Next(10000000, 99999999)}";
-        var personId = await sut.CreateWithPhoneAsync(phone, "Test", "Invitee", null, CancellationToken.None);
+        var created = await sut.CreateWithPhoneAsync(phone, "Test", "Invitee", null, CancellationToken.None);
 
-        var person = await userRepository.GetByIdAsync(UserId.From(personId), CancellationToken.None);
+        var person = await userRepository.GetByIdAsync(UserId.From(created.PersonId), CancellationToken.None);
         person.Should().NotBeNull("the id returned must correspond to a real, persisted user");
         person!.Status.Should().NotBe(UserStatus.Deleted);
+        created.IsNewAccount.Should().BeTrue("nobody had this phone before the call");
+    }
+
+    /// <summary>
+    /// The flag a caller's compensation keys on: a second call for a phone that already has an
+    /// account must report the SAME person and IsNewAccount = false. Register-and-accept used
+    /// to assume "true" from its own earlier lookup, and under a race the loser soft-deleted the
+    /// winner's account.
+    /// </summary>
+    [Fact]
+    public async Task CreateWithPhoneAsync_For_A_Phone_That_Already_Has_An_Account_Reuses_It_And_Says_So()
+    {
+        using var scope = _factory.Services.CreateScope();
+        var sut = scope.ServiceProvider.GetRequiredService<IPersonAccountProvisioningService>();
+
+        var phone = $"+9891{Random.Shared.Next(10000000, 99999999)}";
+        var first = await sut.CreateWithPhoneAsync(phone, "First", "Caller", null, CancellationToken.None);
+        var second = await sut.CreateWithPhoneAsync(phone, "Second", "Caller", null, CancellationToken.None);
+
+        second.PersonId.Should().Be(first.PersonId, "one person per phone");
+        second.IsNewAccount.Should().BeFalse("the account already existed, so this call must not claim to own it");
     }
 
     /// <summary>
@@ -84,9 +105,9 @@ public sealed class PersonAccountProvisioningCompositionTests : IClassFixture<Ho
         var userRepository = scope.ServiceProvider.GetRequiredService<IUserRepository>();
 
         var phone = $"+9891{Random.Shared.Next(10000000, 99999999)}";
-        var personId = await sut.CreateWithPhoneAsync(phone, "Test", "Orphan", null, CancellationToken.None);
+        var created = await sut.CreateWithPhoneAsync(phone, "Test", "Orphan", null, CancellationToken.None);
 
-        var deleted = await sut.DeleteAsync(personId, "compensating for a failed register-and-accept",
+        var deleted = await sut.DeleteAsync(created.PersonId, "compensating for a failed register-and-accept",
             CancellationToken.None);
 
         deleted.Should().BeTrue("the account genuinely exists and must be removable");

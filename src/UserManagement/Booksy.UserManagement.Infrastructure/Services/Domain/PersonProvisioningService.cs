@@ -5,6 +5,9 @@ using Booksy.UserManagement.Domain.Enums;
 using Booksy.UserManagement.Domain.Repositories;
 using Booksy.UserManagement.Domain.Services;
 using Booksy.UserManagement.Domain.ValueObjects;
+using Booksy.UserManagement.Infrastructure.Persistence.Context;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Storage;
 using Microsoft.Extensions.Logging;
 
 namespace Booksy.UserManagement.Infrastructure.Services.Domain
@@ -13,13 +16,16 @@ namespace Booksy.UserManagement.Infrastructure.Services.Domain
     public sealed class PersonProvisioningService : IPersonProvisioningService
     {
         private readonly IUserRepository _userRepository;
+        private readonly UserManagementDbContext _dbContext;
         private readonly ILogger<PersonProvisioningService> _logger;
 
         public PersonProvisioningService(
             IUserRepository userRepository,
+            UserManagementDbContext dbContext,
             ILogger<PersonProvisioningService> logger)
         {
             _userRepository = userRepository;
+            _dbContext = dbContext;
             _logger = logger;
         }
 
@@ -40,39 +46,131 @@ namespace Booksy.UserManagement.Infrastructure.Services.Domain
 
             if (existing is not null)
             {
-                // Reuse the person — never a second account for the same phone. If they
-                // are appearing in a new capacity (customer ⇄ provider), grant it.
-                var granted = existing.EnsureCanActAs(capacity);
+                return await ReuseAsync(existing, capacity, cancellationToken);
+            }
 
-                if (granted)
+            // Nothing found. Two requests for the same brand-new phone (a customer sign-in and
+            // a provider sign-in racing, say) both reach this point having both seen "no row",
+            // and without the users(phone_number) unique index (§1.2, blocked on production
+            // data) nothing in the database stops both from inserting. So the CREATE path is
+            // serialized per phone: take a transaction-scoped advisory lock keyed on the
+            // canonical number, look again under the lock, and only then create. The loser
+            // blocks until the winner commits and then finds the winner's row.
+            var strategy = _dbContext.Database.CreateExecutionStrategy();
+            return await strategy.ExecuteAsync(
+                () => CreateUnderPhoneLockAsync(phoneNumber, capacity, firstName, lastName, email, cancellationToken));
+        }
+
+        private async Task<PersonProvisioningResult> ReuseAsync(
+            User existing, UserType capacity, CancellationToken cancellationToken)
+        {
+            // Reuse the person — never a second account for the same phone. If they
+            // are appearing in a new capacity (customer ⇄ provider), grant it.
+            var granted = existing.EnsureCanActAs(capacity);
+
+            if (granted)
+            {
+                _logger.LogInformation(
+                    "Person {UserId} granted {Capacity} capacity (type is now {Type}) — reusing the account for this phone",
+                    existing.Id.Value, capacity, existing.Type);
+
+                await _userRepository.SaveAsync(existing, cancellationToken);
+            }
+
+            return new PersonProvisioningResult(existing, IsNewPerson: false, CapacityGranted: granted);
+        }
+
+        private async Task<PersonProvisioningResult> CreateUnderPhoneLockAsync(
+            PhoneNumber phoneNumber,
+            UserType capacity,
+            string? firstName,
+            string? lastName,
+            string? email,
+            CancellationToken cancellationToken)
+        {
+            var database = _dbContext.Database;
+
+            // pg_advisory_xact_lock is released when its transaction ends, so the lock only
+            // protects anything if the INSERT commits inside that same transaction. When a
+            // caller already has one open, the lock rides along with it and the caller's
+            // commit releases it. When nobody does — the OTP handlers save through the
+            // UserManagement unit of work with no surrounding transaction, since the pipeline's
+            // TransactionBehavior wraps the ServiceCatalog context, not this one — this method
+            // owns a transaction of its own and flushes the new person before committing it.
+            // The person row is therefore durable before the handler continues; if the
+            // handler then fails, an account with no token exists, and the next sign-in reuses
+            // it, which is exactly the "one person per phone" outcome this service exists for.
+            var ownsTransaction = database.CurrentTransaction is null;
+            IDbContextTransaction? transaction = ownsTransaction
+                ? await database.BeginTransactionAsync(cancellationToken)
+                : null;
+
+            try
+            {
+                await database.ExecuteSqlInterpolatedAsync(
+                    $"SELECT pg_advisory_xact_lock(hashtext({phoneNumber.Value}))",
+                    cancellationToken);
+
+                PersonProvisioningResult result;
+
+                var raced = await _userRepository.GetByPhoneNumberAsync(phoneNumber.Value, cancellationToken);
+                if (raced is not null)
                 {
                     _logger.LogInformation(
-                        "Person {UserId} granted {Capacity} capacity (type is now {Type}) — reusing the account for this phone",
-                        existing.Id.Value, capacity, existing.Type);
+                        "Person {UserId} was created concurrently for this phone number — reusing it instead of creating a duplicate",
+                        raced.Id.Value);
 
-                    await _userRepository.SaveAsync(existing, cancellationToken);
+                    result = await ReuseAsync(raced, capacity, cancellationToken);
+                }
+                else
+                {
+                    // Defence in depth: a phone that resolves to nothing above must also be
+                    // absent from the uniqueness guard before we create. Protects against a
+                    // lookup that missed a legacy row shape.
+                    if (await _userRepository.ExistsByPhoneNumberAsync(phoneNumber, cancellationToken))
+                    {
+                        throw new InvalidOperationException(
+                            "A person already exists for this phone number but could not be loaded.");
+                    }
+
+                    var person = CreatePerson(phoneNumber, capacity, firstName, lastName, email);
+                    await _userRepository.SaveAsync(person, cancellationToken);
+
+                    _logger.LogInformation(
+                        "Created person {UserId} with {Capacity} capacity for a previously unknown phone number",
+                        person.Id.Value, capacity);
+
+                    result = new PersonProvisioningResult(person, IsNewPerson: true, CapacityGranted: true);
                 }
 
-                return new PersonProvisioningResult(existing, IsNewPerson: false, CapacityGranted: granted);
-            }
+                if (transaction is not null)
+                {
+                    await _dbContext.SaveChangesAsync(cancellationToken);
+                    await transaction.CommitAsync(cancellationToken);
+                }
 
-            // Defence in depth: a phone that resolves to nothing above must also be
-            // absent from the uniqueness guard before we create. Protects against a
-            // lookup that missed a legacy row shape.
-            if (await _userRepository.ExistsByPhoneNumberAsync(phoneNumber, cancellationToken))
+                return result;
+            }
+            catch
             {
-                throw new InvalidOperationException(
-                    "A person already exists for this phone number but could not be loaded.");
+                if (transaction is not null)
+                {
+                    try { await transaction.RollbackAsync(cancellationToken); }
+                    catch (Exception rollbackFailure)
+                    {
+                        _logger.LogWarning(rollbackFailure, "Rollback after a failed person provisioning also failed");
+                    }
+                }
+
+                throw;
             }
-
-            var person = CreatePerson(phoneNumber, capacity, firstName, lastName, email);
-            await _userRepository.SaveAsync(person, cancellationToken);
-
-            _logger.LogInformation(
-                "Created person {UserId} with {Capacity} capacity for a previously unknown phone number",
-                person.Id.Value, capacity);
-
-            return new PersonProvisioningResult(person, IsNewPerson: true, CapacityGranted: true);
+            finally
+            {
+                if (transaction is not null)
+                {
+                    await transaction.DisposeAsync();
+                }
+            }
         }
 
         private static User CreatePerson(

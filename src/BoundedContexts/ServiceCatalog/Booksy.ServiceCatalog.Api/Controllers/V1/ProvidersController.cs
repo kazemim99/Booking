@@ -18,7 +18,7 @@ using Booksy.ServiceCatalog.Application.Commands.Provider.Registration;
 using Booksy.ServiceCatalog.Application.Commands.Provider.UpdateBusinessProfile;
 using Booksy.ServiceCatalog.Application.Commands.Membership.UpdateMembership;
 using Booksy.ServiceCatalog.Application.Queries.Membership.CanManageOrganization;
-using Booksy.ServiceCatalog.Application.Queries.Provider.GetCurrentProviderStatus;
+using Booksy.ServiceCatalog.Application.Queries.Provider.GetOwnedProviderStatus;
 using Booksy.ServiceCatalog.Application.Queries.Provider.GetProviderClients;
 using Booksy.ServiceCatalog.Application.Queries.Provider.GetDraftProvider;
 using Booksy.ServiceCatalog.Application.Queries.Provider.GetProviderById;
@@ -414,7 +414,7 @@ public class ProvidersController : ControllerBase
     public async Task<IActionResult> GetCurrentProviderStatus(
         CancellationToken cancellationToken = default)
     {
-        var query = new GetCurrentProviderStatusQuery();
+        var query = new GetOwnedProviderStatusQuery();
         var result = await _mediator.Send(query, cancellationToken);
 
         if (result == null)
@@ -462,7 +462,7 @@ public class ProvidersController : ControllerBase
         try
         {
             // Get current provider status
-            var statusQuery = new GetCurrentProviderStatusQuery();
+            var statusQuery = new GetOwnedProviderStatusQuery();
             var providerStatus = await _mediator.Send(statusQuery, cancellationToken);
 
             if (providerStatus == null)
@@ -735,8 +735,18 @@ public class ProvidersController : ControllerBase
     }
 
     /// <summary>
-    /// Gets all staff members for a provider
+    /// Gets all staff members for a provider.
     /// </summary>
+    /// <remarks>
+    /// Legacy contract, kept deliberately. The <c>/staff</c> family (GET/POST/PUT/DELETE/photo)
+    /// is membership-native underneath — the roster is read from <c>OrganizationMembership</c>,
+    /// POST creates a membership, PUT/photo delegate to <c>UpdateMembershipCommand</c>, DELETE
+    /// terminates the membership — and no client calls it any more (Vue, both Flutter apps and
+    /// the admin all use <c>/hierarchy/members</c> and <c>/memberships/*</c>). It stays because
+    /// the keystone deploy gate (<c>tests/e2e/keystone-booking-flow.sh</c> steps 1–5) and the
+    /// Reqnroll <c>StaffManagement</c> feature still exercise this shape. Retiring it means
+    /// moving those suites to the membership endpoints first; until then these are thin shims.
+    /// </remarks>
     /// <param name="id">Provider ID</param>
     /// <param name="activeOnly">Return only active staff members</param>
     /// <returns>List of staff members</returns>

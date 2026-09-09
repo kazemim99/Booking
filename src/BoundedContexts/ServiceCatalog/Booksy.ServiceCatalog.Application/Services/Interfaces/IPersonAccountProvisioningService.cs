@@ -9,14 +9,22 @@ namespace Booksy.ServiceCatalog.Application.Services.Interfaces;
 /// UserManagement's identity store — see the implementing type in <c>Booksy.Host.Composition</c>
 /// for why that seam belongs in the Host.
 /// </summary>
+/// <summary>
+/// What <see cref="IPersonAccountProvisioningService.CreateWithPhoneAsync"/> did: the person's
+/// id, and whether this call created the account or reused one that already existed (because
+/// the phone was registered between the caller's own lookup and this call). The flag is what a
+/// caller's compensation must key on — an account you did not create is not yours to delete.
+/// </summary>
+public sealed record PersonAccountCreation(Guid PersonId, bool IsNewAccount);
+
 public interface IPersonAccountProvisioningService
 {
     /// <summary>
     /// Creates (or, if the phone resolved to someone in the moment between the caller's own
     /// check and this call, reuses) an account for the given phone number. Returns the
-    /// person's id.
+    /// person's id and whether the account was created by this call.
     /// </summary>
-    Task<Guid> CreateWithPhoneAsync(
+    Task<PersonAccountCreation> CreateWithPhoneAsync(
         string phoneNumber,
         string? firstName,
         string? lastName,

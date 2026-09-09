@@ -176,14 +176,14 @@ Feature: Query Handlers - Complete Coverage
     And results should be sorted by distance
 
   @query @provider @current-status @happy-path
-  Scenario: GetCurrentProviderStatusQuery - Get own provider status
+  Scenario: GetOwnedProviderStatusQuery - Get own provider status
     Given I am authenticated as a provider
-    When I execute GetCurrentProviderStatusQuery
+    When I execute GetOwnedProviderStatusQuery
     Then my provider status should be returned
 
   @query @provider @current-status @validation
-  Scenario: GetCurrentProviderStatusQuery - Invalid user ID
-    When I execute GetCurrentProviderStatusQuery with invalid user ID
+  Scenario: GetOwnedProviderStatusQuery - Invalid user ID
+    When I execute GetOwnedProviderStatusQuery with invalid user ID
     Then the query should fail with ValidationException
 
   @query @provider @staff @happy-path

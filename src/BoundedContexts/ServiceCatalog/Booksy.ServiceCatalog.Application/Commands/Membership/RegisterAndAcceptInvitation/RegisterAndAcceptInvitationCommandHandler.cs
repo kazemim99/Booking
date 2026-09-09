@@ -78,9 +78,15 @@ public sealed class RegisterAndAcceptInvitationCommandHandler
         }
         else
         {
-            personId = await _registrationService.CreateUserWithPhoneAsync(
+            // Whether the account was actually created is decided by the provisioning call,
+            // not by the lookup above: two register-and-accept requests for the same new phone
+            // both see "nobody" here, and only the first one creates. The loser reuses the
+            // winner's account and must NOT compensate by deleting it — which is exactly what
+            // happened when this flag was set to true unconditionally.
+            var created = await _registrationService.CreateUserWithPhoneAsync(
                 phone, request.FirstName, request.LastName, request.Email, cancellationToken);
-            isNewAccount = true;
+            personId = created.PersonId;
+            isNewAccount = created.IsNewAccount;
         }
 
         try

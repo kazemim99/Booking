@@ -76,7 +76,7 @@ public class InvitationRegistrationService : IInvitationRegistrationService
         return Task.FromResult(_otpService.GetCode(phoneNumber));
     }
 
-    public async Task<UserId> CreateUserWithPhoneAsync(
+    public async Task<CreatedPersonAccount> CreateUserWithPhoneAsync(
         string phoneNumber,
         string firstName,
         string lastName,
@@ -93,14 +93,15 @@ public class InvitationRegistrationService : IInvitationRegistrationService
         {
             _logger.LogInformation("Creating user account for phone {PhoneNumber}", phoneNumber);
 
-            var personId = await _accountProvisioning.CreateWithPhoneAsync(
+            var created = await _accountProvisioning.CreateWithPhoneAsync(
                 phoneNumber, firstName, lastName, email, cancellationToken);
 
-            var userId = UserId.From(personId);
-            _logger.LogInformation("User account created successfully with ID {UserId} for phone {PhoneNumber}",
-                userId, phoneNumber);
+            var userId = UserId.From(created.PersonId);
+            _logger.LogInformation(
+                "User account {Outcome} with ID {UserId} for phone {PhoneNumber}",
+                created.IsNewAccount ? "created" : "reused (registered concurrently)", userId, phoneNumber);
 
-            return userId;
+            return new CreatedPersonAccount(userId, created.IsNewAccount);
         }
         catch (Exception ex) when (ex is not DomainValidationException)
         {

@@ -5,7 +5,7 @@ using Booksy.ServiceCatalog.Application.Commands.Service.ArchiveService;
 using Booksy.ServiceCatalog.Application.Commands.Service.DeactivateService;
 using Booksy.ServiceCatalog.Application.Commands.Service.DeleteProviderService;
 using Booksy.ServiceCatalog.Application.Commands.Service.UpdateProviderService;
-using Booksy.ServiceCatalog.Application.Queries.Provider.GetCurrentProviderStatus;
+using Booksy.ServiceCatalog.Application.Queries.Provider.GetOwnedProviderStatus;
 using Booksy.ServiceCatalog.Application.Queries.Service.GetServiceById;
 using Booksy.ServiceCatalog.Domain.Enums;
 using FluentAssertions;
@@ -96,13 +96,13 @@ public class ServicesControllerAuthorizationTests
         if (currentProviderStatusId is null)
         {
             mediator
-                .Setup(m => m.Send(It.IsAny<GetCurrentProviderStatusQuery>(), It.IsAny<CancellationToken>()))
+                .Setup(m => m.Send(It.IsAny<GetOwnedProviderStatusQuery>(), It.IsAny<CancellationToken>()))
                 .ThrowsAsync(new InvalidOperationException("no provider for this user"));
         }
         else
         {
             mediator
-                .Setup(m => m.Send(It.IsAny<GetCurrentProviderStatusQuery>(), It.IsAny<CancellationToken>()))
+                .Setup(m => m.Send(It.IsAny<GetOwnedProviderStatusQuery>(), It.IsAny<CancellationToken>()))
                 .ReturnsAsync(new ProviderStatusResult(
                     ProviderId: currentProviderStatusId.Value,
                     Status: ProviderStatus.Active,

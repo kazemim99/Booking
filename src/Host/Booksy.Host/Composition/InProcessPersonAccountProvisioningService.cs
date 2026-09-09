@@ -61,7 +61,7 @@ public sealed class InProcessPersonAccountProvisioningService : IPersonAccountPr
         _logger = logger;
     }
 
-    public async Task<Guid> CreateWithPhoneAsync(
+    public async Task<PersonAccountCreation> CreateWithPhoneAsync(
         string phoneNumber,
         string? firstName,
         string? lastName,
@@ -81,7 +81,9 @@ public sealed class InProcessPersonAccountProvisioningService : IPersonAccountPr
         if (result.IsNewPerson || result.CapacityGranted)
             await _unitOfWork.SaveAndPublishEventsAsync(cancellationToken);
 
-        return result.Person.Id.Value;
+        // IsNewPerson is decided under the per-phone lock inside GetOrCreateByPhoneAsync, so it
+        // is the truth about THIS call — unlike any lookup the caller made beforehand.
+        return new PersonAccountCreation(result.Person.Id.Value, result.IsNewPerson);
     }
 
     public async Task<bool> DeleteAsync(
