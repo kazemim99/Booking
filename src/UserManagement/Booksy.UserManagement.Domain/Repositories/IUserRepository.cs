@@ -1,4 +1,4 @@
-﻿using Booksy.Core.Application.Abstractions.Persistence;
+using Booksy.Core.Application.Abstractions.Persistence;
 using Booksy.Core.Domain.Abstractions.Entities;
 using Booksy.Core.Domain.ValueObjects;
 using Booksy.UserManagement.Domain.Aggregates;
@@ -24,6 +24,13 @@ namespace Booksy.UserManagement.Domain.Repositories
         /// (the other half is the partial unique index on the users table).
         /// </summary>
         Task<bool> ExistsByPhoneNumberAsync(PhoneNumber phoneNumber, CancellationToken cancellationToken = default);
+
+        /// <summary>
+        /// The user who holds this refresh token (any state — the caller decides whether it is
+        /// still valid), loaded with roles, profile and refresh tokens. Replaces loading every
+        /// user and scanning their tokens in memory on each refresh.
+        /// </summary>
+        Task<User?> GetByRefreshTokenAsync(string refreshToken, CancellationToken cancellationToken = default);
         Task<List<User>> GetAllAsync(CancellationToken cancellationToken);
     }
 }

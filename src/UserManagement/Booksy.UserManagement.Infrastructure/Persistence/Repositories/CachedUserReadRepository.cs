@@ -225,6 +225,12 @@ public class CachedUserRepository : IUserRepository
         return await _innerRepository.GetByPhoneNumberAsync(phoneNumber, cancellationToken);
     }
 
+    public async Task<User?> GetByRefreshTokenAsync(string refreshToken, CancellationToken cancellationToken = default)
+    {
+        // Not cached: a rotated or revoked token must be seen as such immediately.
+        return await _innerRepository.GetByRefreshTokenAsync(refreshToken, cancellationToken);
+    }
+
     public async Task<bool> ExistsByPhoneNumberAsync(PhoneNumber phoneNumber, CancellationToken cancellationToken = default)
     {
         // Not cached: uniqueness must reflect the latest writes to avoid a stale

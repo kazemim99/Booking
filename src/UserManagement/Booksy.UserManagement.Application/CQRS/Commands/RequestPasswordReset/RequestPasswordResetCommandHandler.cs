@@ -1,7 +1,8 @@
-﻿// ========================================
+// ========================================
 // Booksy.UserManagement.Application/Commands/ActivateUser/ActivateUserCommand.cs
 // ========================================
 using Booksy.Core.Domain.ValueObjects;
+using Booksy.UserManagement.Application.Abstractions.Persistence;
 using Booksy.Infrastructure.External.Notifications;
 using Booksy.UserManagement.Domain.Aggregates;
 using MediatR;
@@ -44,13 +45,19 @@ namespace Booksy.UserManagement.Application.CQRS.Commands.RequestPasswordReset
 
             if (user == null)
             {
-                // Don't reveal if user exists
+                // Don't reveal if user exists: same silent success as for a known address.
+                // (This used to fall through and dereference null → a 500 that revealed it anyway.)
                 _logger.LogWarning("Password reset requested for non-existent email: {Email}", request.Email);
+                return;
             }
 
             user.RequestPasswordReset();
 
             await _userRepository.UpdateAsync(user, cancellationToken);
+            // Commit the UserManagement unit of work explicitly. The pipeline's TransactionBehavior
+            // commits the ServiceCatalog context (registered last, DI last-wins), so without this the
+            // change was tracked and then silently discarded at the end of the request.
+            await _unitOfWork.SaveAndPublishEventsAsync(cancellationToken);
 
             // Send password reset email
             await SendPasswordResetEmailAsync(user, cancellationToken);

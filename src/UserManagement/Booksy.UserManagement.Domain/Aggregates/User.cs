@@ -286,12 +286,14 @@ namespace Booksy.UserManagement.Domain.Aggregates
 
 
 
+            // The token generated above is what the caller must hand to the client; this used
+            // to return "" here, so password login answered with an empty refresh token.
             return AuthenticationResult.Success(
                 Id,
                 Email,
                 Profile.GetDisplayName(),
                 Roles.Select(r => r.Name).ToList(),
-                "");
+                refreshToken.Token);
         }
 
         // Password Management

@@ -62,8 +62,10 @@ namespace Booksy.UserManagement.Application.CQRS.Commands.Customer.RegisterCusto
                 }
 
                 // Hash password
+                // FromHash, not Create: Create hashes a PLAIN password, so this used to store
+                // bcrypt(bcrypt(pw)) and the customer could never log in with their password.
                 var hashedPassword = _passwordHasher.HashPassword(request.Password);
-                var password = HashedPassword.Create(hashedPassword);
+                var password = HashedPassword.FromHash(hashedPassword);
 
                 // Create user profile
                 var profile = UserProfile.Create(

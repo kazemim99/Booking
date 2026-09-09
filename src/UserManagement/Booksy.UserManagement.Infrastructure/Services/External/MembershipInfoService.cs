@@ -1,6 +1,7 @@
 using Booksy.UserManagement.Application.Services.Interfaces;
 using Booksy.UserManagement.Infrastructure.Persistence.Context;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Storage;
 using Npgsql;
 
 namespace Booksy.UserManagement.Infrastructure.Services.External;
@@ -42,23 +43,47 @@ public sealed class MembershipInfoService : IMembershipInfoService
         if (!wasOpen)
             await connection.OpenAsync(cancellationToken);
 
+        // Every caller treats this lookup as best-effort (catch, log, continue without
+        // membership claims). That only holds if a failure here cannot poison the caller's
+        // transaction: this runs on the context's own connection, so when the pipeline has a
+        // transaction open (the UserManagement-only host does; the composed host wraps the
+        // ServiceCatalog context instead) a failed statement leaves Postgres in the "current
+        // transaction is aborted" state and the caller's later COMMIT silently becomes a
+        // ROLLBACK — the login succeeded from the client's point of view, but its refresh token
+        // and session were never written. A savepoint confines the failure to this read.
+        const string savepoint = "membership_lookup";
+        var transaction = _context.Database.CurrentTransaction;
+        if (transaction is not null)
+            await transaction.CreateSavepointAsync(savepoint, cancellationToken);
+
         try
         {
             await using var command = connection.CreateCommand();
             command.CommandText = Sql;
+            command.Transaction = transaction?.GetDbTransaction();
             command.Parameters.Add(new NpgsqlParameter("personId", personId));
 
-            await using var reader = await command.ExecuteReaderAsync(cancellationToken);
-            while (await reader.ReadAsync(cancellationToken))
+            await using (var reader = await command.ExecuteReaderAsync(cancellationToken))
             {
-                result.Add(new MembershipSummary(
-                    MembershipId: reader.GetGuid(0),
-                    OrganizationId: reader.GetGuid(1),
-                    Roles: reader.GetString(2),
-                    Status: reader.GetString(3)));
+                while (await reader.ReadAsync(cancellationToken))
+                {
+                    result.Add(new MembershipSummary(
+                        MembershipId: reader.GetGuid(0),
+                        OrganizationId: reader.GetGuid(1),
+                        Roles: reader.GetString(2),
+                        Status: reader.GetString(3)));
+                }
             }
 
+            if (transaction is not null)
+                await transaction.ReleaseSavepointAsync(savepoint, cancellationToken);
+
             return result;
+        }
+        catch when (transaction is not null)
+        {
+            await transaction.RollbackToSavepointAsync(savepoint, cancellationToken);
+            throw;
         }
         finally
         {

@@ -1,7 +1,8 @@
-﻿// ========================================
+// ========================================
 // Booksy.UserManagement.Application/Commands/ActivateUser/ActivateUserCommand.cs
 // ========================================
 using Booksy.Core.Domain.ValueObjects;
+using Booksy.UserManagement.Application.Abstractions.Persistence;
 using Booksy.UserManagement.Domain.Exceptions;
 using Microsoft.EntityFrameworkCore;
 
@@ -10,6 +11,7 @@ namespace Booksy.UserManagement.Application.CQRS.Commands.AuthenticateUser
     public sealed class AuthenticateUserCommandHandler : ICommandHandler<AuthenticateUserCommand, AuthenticateUserResult>
     {
         private readonly IUserRepository _userRepository;
+        private readonly IUserManagementUnitOfWork _unitOfWork;
         private readonly ICustomerRepository _customerRepository;
         private readonly IJwtTokenService _jwtTokenService;
         private readonly IAuditUserService _auditService;
@@ -19,6 +21,7 @@ namespace Booksy.UserManagement.Application.CQRS.Commands.AuthenticateUser
 
         public AuthenticateUserCommandHandler(
             IUserRepository userWriteRepository,
+            IUserManagementUnitOfWork unitOfWork,
             ICustomerRepository customerRepository,
             IJwtTokenService jwtTokenService,
             IAuditUserService auditService,
@@ -27,6 +30,7 @@ namespace Booksy.UserManagement.Application.CQRS.Commands.AuthenticateUser
             ILogger<AuthenticateUserCommandHandler> logger)
         {
             _userRepository = userWriteRepository;
+            _unitOfWork = unitOfWork;
             _customerRepository = customerRepository;
             _jwtTokenService = jwtTokenService;
             _auditService = auditService;
@@ -64,6 +68,10 @@ namespace Booksy.UserManagement.Application.CQRS.Commands.AuthenticateUser
                     request.UserAgent);
 
                 await _userRepository.UpdateAsync(user, cancellationToken);
+                // Commit the UserManagement unit of work explicitly. The pipeline's TransactionBehavior
+                // commits the ServiceCatalog context (registered last, DI last-wins), so without this the
+                // change was tracked and then silently discarded at the end of the request.
+                await _unitOfWork.SaveAndPublishEventsAsync(cancellationToken);
 
                 // Query provider information if user has Provider role
                 string? providerId = null;

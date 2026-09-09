@@ -1,11 +1,13 @@
-﻿
+
 using Booksy.UserManagement.Domain.Exceptions;
+using Booksy.UserManagement.Application.Abstractions.Persistence;
 
 namespace Booksy.UserManagement.Application.CQRS.Commands.RefreshToken
 {
     public sealed class RefreshTokenCommandHandler : ICommandHandler<RefreshTokenCommand, RefreshTokenResult>
     {
         private readonly IUserRepository _userRepository;
+        private readonly IUserManagementUnitOfWork _unitOfWork;
         private readonly ICustomerRepository _customerRepository;
         private readonly IJwtTokenService _jwtTokenService;
         private readonly IProviderInfoService _providerInfoService;
@@ -14,6 +16,7 @@ namespace Booksy.UserManagement.Application.CQRS.Commands.RefreshToken
 
         public RefreshTokenCommandHandler(
             IUserRepository userWriteRepository,
+            IUserManagementUnitOfWork unitOfWork,
             ICustomerRepository customerRepository,
             IJwtTokenService jwtTokenService,
             IProviderInfoService providerInfoService,
@@ -21,6 +24,7 @@ namespace Booksy.UserManagement.Application.CQRS.Commands.RefreshToken
             ILogger<RefreshTokenCommandHandler> logger)
         {
             _userRepository = userWriteRepository;
+            _unitOfWork = unitOfWork;
             _customerRepository = customerRepository;
             _jwtTokenService = jwtTokenService;
             _providerInfoService = providerInfoService;
@@ -34,9 +38,13 @@ namespace Booksy.UserManagement.Application.CQRS.Commands.RefreshToken
         {
             _logger.LogInformation("Processing refresh token request");
 
-            // Find user by refresh token
-            var users = await _userRepository.GetAllAsync(cancellationToken);
-            var user = users.FirstOrDefault(u => u.GetValidRefreshToken(request.RefreshToken) != null);
+            // Find the user by refresh token in the database. This used to load EVERY user
+            // (profile, roles and tokens) and search them in memory on each refresh.
+            var user = await _userRepository.GetByRefreshTokenAsync(request.RefreshToken, cancellationToken);
+            if (user is not null && user.GetValidRefreshToken(request.RefreshToken) is null)
+            {
+                user = null;
+            }
 
             if (user == null)
             {
@@ -130,6 +138,10 @@ namespace Booksy.UserManagement.Application.CQRS.Commands.RefreshToken
                 24); // 24 hours
 
             await _userRepository.UpdateAsync(user, cancellationToken);
+            // Commit the UserManagement unit of work explicitly. The pipeline's TransactionBehavior
+            // commits the ServiceCatalog context (registered last, DI last-wins), so without this the
+            // change was tracked and then silently discarded at the end of the request.
+            await _unitOfWork.SaveAndPublishEventsAsync(cancellationToken);
 
             _logger.LogInformation("Refresh token rotated successfully for user: {UserId}", user.Id);
 

@@ -1,10 +1,11 @@
-﻿// ========================================
+// ========================================
 // Booksy.UserManagement.Application/Commands/RegisterUser/RegisterUserCommand.cs
 // ========================================
 
 
 
 using Booksy.Core.Domain.ValueObjects;
+using Booksy.UserManagement.Application.Abstractions.Persistence;
 using Booksy.Infrastructure.External.Notifications;
 using Booksy.UserManagement.Domain.Aggregates;
 using Booksy.UserManagement.Domain.Entities;
@@ -19,6 +20,7 @@ namespace Booksy.UserManagement.Application.CQRS.Commands.RegisterUser
     public sealed class RegisterUserCommandHandler : ICommandHandler<RegisterUserCommand, RegisterUserResult>
     {
         private readonly IUserRepository _userRepository;
+        private readonly IUserManagementUnitOfWork _unitOfWork;
         private readonly IPasswordHasher _passwordHasher;        
         private readonly IUserValidationService _validationService;
         private readonly IEmailTemplateService _emailService;
@@ -28,6 +30,7 @@ namespace Booksy.UserManagement.Application.CQRS.Commands.RegisterUser
 
         public RegisterUserCommandHandler(
             IUserRepository userWriteRepository,
+            IUserManagementUnitOfWork unitOfWork,
             IUserValidationService validationService,
             IEmailTemplateService emailService,
             IReferralService referralService,
@@ -36,6 +39,7 @@ namespace Booksy.UserManagement.Application.CQRS.Commands.RegisterUser
             IPasswordHasher passwordHasher)
         {
             _userRepository = userWriteRepository;
+            _unitOfWork = unitOfWork;
 
             _validationService = validationService;
             _emailService = emailService;
@@ -62,8 +66,11 @@ namespace Booksy.UserManagement.Application.CQRS.Commands.RegisterUser
                     throw new UserAlreadyExistsException(email);
                 }
 
-                var hashedPassword =  _passwordHasher.HashPassword(request.Password);
-                var password = HashedPassword.Create(hashedPassword);
+                // HashedPassword.Create hashes a PLAIN password; handing it the already-hashed
+                // value stored bcrypt(bcrypt(pw)), so Verify(pw) could never succeed and no
+                // e-mail-registered account was able to log in. FromHash wraps the hasher's output.
+                var hashedPassword = _passwordHasher.HashPassword(request.Password);
+                var password = HashedPassword.FromHash(hashedPassword);
 
 
                 // Create user profile
@@ -143,6 +150,10 @@ namespace Booksy.UserManagement.Application.CQRS.Commands.RegisterUser
 
                 // Persist user
                 await _userRepository.SaveAsync(user, cancellationToken);
+                // Commit the UserManagement unit of work explicitly. The pipeline's TransactionBehavior
+                // commits the ServiceCatalog context (registered last, DI last-wins), so without this the
+                // change was tracked and then silently discarded at the end of the request.
+                await _unitOfWork.SaveAndPublishEventsAsync(cancellationToken);
 
                 // Send welcome email if requested
                 if (request.SendWelcomeEmail)

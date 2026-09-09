@@ -1,7 +1,8 @@
-﻿// ========================================
+// ========================================
 // Booksy.UserManagement.Application/Commands/ActivateUser/ActivateUserCommand.cs
 // ========================================
 using Booksy.Core.Domain.ValueObjects;
+using Booksy.UserManagement.Application.Abstractions.Persistence;
 using Booksy.Infrastructure.External.Notifications;
 using MediatR;
 
@@ -10,6 +11,7 @@ namespace Booksy.UserManagement.Application.CQRS.Commands.ChangePassword
     public sealed class ChangePasswordCommandHandler : ICommandHandler<ChangePasswordCommand>
     {
         private readonly IUserRepository _userRepository;
+        private readonly IUserManagementUnitOfWork _unitOfWork;
         private readonly IEmailTemplateService _emailService;
         private readonly IAuditUserService _auditService;
         private readonly ILogger<ChangePasswordCommandHandler> _logger;
@@ -22,6 +24,7 @@ namespace Booksy.UserManagement.Application.CQRS.Commands.ChangePassword
             ILogger<ChangePasswordCommandHandler> logger)
         {
             _userRepository = userWriteRepository;
+            _unitOfWork = unitOfWork;
             _emailService = emailService;
             _auditService = auditService;
             _logger = logger;
@@ -50,6 +53,10 @@ namespace Booksy.UserManagement.Application.CQRS.Commands.ChangePassword
             }
 
             await _userRepository.UpdateAsync(user, cancellationToken);
+            // Commit the UserManagement unit of work explicitly. The pipeline's TransactionBehavior
+            // commits the ServiceCatalog context (registered last, DI last-wins), so without this the
+            // change was tracked and then silently discarded at the end of the request.
+            await _unitOfWork.SaveAndPublishEventsAsync(cancellationToken);
 
             // Send notification email
             await SendPasswordChangedEmailAsync(user.Email.Value, user.Profile.FirstName, cancellationToken);

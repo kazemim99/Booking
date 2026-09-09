@@ -133,6 +133,18 @@ public class UserRepository : EfRepositoryBase<User, UserId, UserManagementDbCon
         await Task.FromResult(DbSet.Update(user));
     }
 
+    public async Task<User?> GetByRefreshTokenAsync(string refreshToken, CancellationToken cancellationToken = default)
+    {
+        if (string.IsNullOrWhiteSpace(refreshToken))
+            return null;
+
+        return await DbSet
+            .Include(u => u.Profile)
+            .Include(u => u.Roles)
+            .Include(u => u.RefreshTokens)
+            .FirstOrDefaultAsync(u => u.RefreshTokens.Any(t => t.Token == refreshToken), cancellationToken);
+    }
+
     public async Task<List<User>> GetAllAsync(CancellationToken cancellationToken)
     {
         return await DbSet.Include(c=>c.Profile).Include(c=>c.Roles).ToListAsync();
