@@ -2,6 +2,7 @@
 // Booksy.UserManagement.Application/CQRS/Commands/Customer/UpdateCustomerProfile/UpdateCustomerProfileCommandHandler.cs
 // ========================================
 using Booksy.Core.Application.Abstractions.CQRS;
+using Booksy.UserManagement.Application.Abstractions.Persistence;
 using Booksy.Core.Domain.ValueObjects;
 using Booksy.UserManagement.Domain.Entities;
 using Booksy.UserManagement.Domain.Repositories;
@@ -16,15 +17,18 @@ namespace Booksy.UserManagement.Application.CQRS.Commands.Customer.UpdateCustome
     public sealed class UpdateCustomerProfileCommandHandler : ICommandHandler<UpdateCustomerProfileCommand, UpdateCustomerProfileResult>
     {
         private readonly ICustomerRepository _customerRepository;
+        private readonly IUserManagementUnitOfWork _unitOfWork;
         private readonly IUserRepository _userRepository;
         private readonly ILogger<UpdateCustomerProfileCommandHandler> _logger;
 
         public UpdateCustomerProfileCommandHandler(
             ICustomerRepository customerRepository,
+            IUserManagementUnitOfWork unitOfWork,
             IUserRepository userRepository,
             ILogger<UpdateCustomerProfileCommandHandler> logger)
         {
             _customerRepository = customerRepository;
+            _unitOfWork = unitOfWork;
             _userRepository = userRepository;
             _logger = logger;
         }
@@ -105,6 +109,10 @@ namespace Booksy.UserManagement.Application.CQRS.Commands.Customer.UpdateCustome
 
                 // Persist changes to User (which owns the Profile)
                 await _userRepository.UpdateAsync(user, cancellationToken);
+                // Commit the UserManagement unit of work explicitly. The pipeline's
+                // TransactionBehavior commits the ServiceCatalog context (DI last-wins),
+                // so without this the change was tracked and then silently discarded.
+                await _unitOfWork.SaveAndPublishEventsAsync(cancellationToken);
 
                 _logger.LogInformation(
                     "Customer profile updated successfully. CustomerId: {CustomerId}, UserId: {UserId}",

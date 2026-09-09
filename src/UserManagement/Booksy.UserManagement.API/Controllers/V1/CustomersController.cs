@@ -56,21 +56,12 @@ public class CustomersController : ControllerBase
         [FromBody][Required] RegisterCustomerCommand request,
         CancellationToken cancellationToken = default)
     {
-        try
-        {
-            var result = await _mediator.Send(request, cancellationToken);
+        var result = await _mediator.Send(request, cancellationToken);
 
-            return CreatedAtAction(
-                nameof(GetCustomerById),
-                new { id = result.CustomerId, version = "1.0" },
-                result);
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Error registering customer");
-            return StatusCode(StatusCodes.Status500InternalServerError,
-                new { error = "An error occurred while registering the customer" });
-        }
+        return CreatedAtAction(
+            nameof(GetCustomerById),
+            new { id = result.CustomerId, version = "1.0" },
+            result);
     }
 
     /// <summary>
@@ -112,12 +103,6 @@ public class CustomersController : ControllerBase
         {
             _logger.LogWarning(ex, "Customer not found: {CustomerId}", id);
             return NotFound(new { error = ex.Message });
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Error retrieving customer {CustomerId}", id);
-            return StatusCode(StatusCodes.Status500InternalServerError,
-                new { error = "An error occurred while retrieving the customer" });
         }
     }
 
@@ -168,12 +153,6 @@ public class CustomersController : ControllerBase
             _logger.LogWarning(ex, "Customer not found: {CustomerId}", id);
             return NotFound(new { error = ex.Message });
         }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Error updating customer profile {CustomerId}", id);
-            return StatusCode(StatusCodes.Status500InternalServerError,
-                new { error = "An error occurred while updating the customer profile" });
-        }
     }
 
     /// <summary>
@@ -216,12 +195,6 @@ public class CustomersController : ControllerBase
             _logger.LogWarning(ex, "Customer not found: {CustomerId}", id);
             return NotFound(new { error = ex.Message });
         }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Error retrieving customer favorites {CustomerId}", id);
-            return StatusCode(StatusCodes.Status500InternalServerError,
-                new { error = "An error occurred while retrieving favorites" });
-        }
     }
 
     /// <summary>
@@ -238,7 +211,7 @@ public class CustomersController : ControllerBase
     /// <response code="403">Not authorized</response>
     [HttpPost("{id:guid}/favorites")]
     [Authorize(Roles = "Customer")]
-    [ProducesResponseType(typeof(AddFavoriteProviderResult), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(AddFavoriteProviderResult), StatusCodes.Status201Created)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
@@ -261,18 +234,12 @@ public class CustomersController : ControllerBase
             var command = new AddFavoriteProviderCommand(id, request.ProviderId, request.Notes);
             var result = await _mediator.Send(command, cancellationToken);
 
-            return Ok(result);
+            return StatusCode(StatusCodes.Status201Created, result);
         }
         catch (InvalidOperationException ex)
         {
             _logger.LogWarning(ex, "Customer not found: {CustomerId}", id);
             return NotFound(new { error = ex.Message });
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Error adding favorite provider for customer {CustomerId}", id);
-            return StatusCode(StatusCodes.Status500InternalServerError,
-                new { error = "An error occurred while adding the favorite provider" });
         }
     }
 
@@ -318,12 +285,6 @@ public class CustomersController : ControllerBase
             _logger.LogWarning(ex, "Customer not found: {CustomerId}", id);
             return NotFound(new { error = ex.Message });
         }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Error removing favorite provider for customer {CustomerId}", id);
-            return StatusCode(StatusCodes.Status500InternalServerError,
-                new { error = "An error occurred while removing the favorite provider" });
-        }
     }
 
     /// <summary>
@@ -346,26 +307,17 @@ public class CustomersController : ControllerBase
         [FromRoute] Guid id,
         CancellationToken cancellationToken = default)
     {
-        try
+        // Check if user can deactivate this customer
+        if (!await CanAccessCustomerProfile(id))
         {
-            // Check if user can deactivate this customer
-            if (!await CanAccessCustomerProfile(id))
-            {
-                _logger.LogWarning("User {RequestingUser} attempted to deactivate customer {CustomerId} without permission",
-                    GetCurrentUserId(), id);
-                return Forbid();
-            }
+            _logger.LogWarning("User {RequestingUser} attempted to deactivate customer {CustomerId} without permission",
+                GetCurrentUserId(), id);
+            return Forbid();
+        }
 
-            // TODO: Implement DeactivateCustomerCommand
-            // For now, return success
-            return Ok(new { message = "Customer deactivation not yet implemented" });
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Error deactivating customer {CustomerId}", id);
-            return StatusCode(StatusCodes.Status500InternalServerError,
-                new { error = "An error occurred while deactivating the customer" });
-        }
+        // TODO: Implement DeactivateCustomerCommand
+        // For now, return success
+        return Ok(new { message = "Customer deactivation not yet implemented" });
     }
 
     /// <summary>
@@ -399,12 +351,6 @@ public class CustomersController : ControllerBase
             _logger.LogWarning(ex, "Customer not found: {CustomerId}", id);
             return NotFound(new { error = ex.Message });
         }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Error retrieving customer profile {CustomerId}", id);
-            return StatusCode(StatusCodes.Status500InternalServerError,
-                new { error = "An error occurred while retrieving the profile" });
-        }
     }
 
     /// <summary>
@@ -423,24 +369,15 @@ public class CustomersController : ControllerBase
         [FromQuery] int limit = 5,
         CancellationToken cancellationToken = default)
     {
-        try
+        if (!await CanAccessCustomerProfile(id))
         {
-            if (!await CanAccessCustomerProfile(id))
-            {
-                return Forbid();
-            }
-
-            var query = new GetUpcomingBookingsQuery(id, limit);
-            var result = await _mediator.Send(query, cancellationToken);
-
-            return Ok(result);
+            return Forbid();
         }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Error retrieving upcoming bookings for customer {CustomerId}", id);
-            return StatusCode(StatusCodes.Status500InternalServerError,
-                new { error = "An error occurred while retrieving upcoming bookings" });
-        }
+
+        var query = new GetUpcomingBookingsQuery(id, limit);
+        var result = await _mediator.Send(query, cancellationToken);
+
+        return Ok(result);
     }
 
     /// <summary>
@@ -461,24 +398,15 @@ public class CustomersController : ControllerBase
         [FromQuery] int pageSize = 20,
         CancellationToken cancellationToken = default)
     {
-        try
+        if (!await CanAccessCustomerProfile(id))
         {
-            if (!await CanAccessCustomerProfile(id))
-            {
-                return Forbid();
-            }
-
-            var query = new GetBookingHistoryQuery(id, page, pageSize);
-            var result = await _mediator.Send(query, cancellationToken);
-
-            return Ok(result);
+            return Forbid();
         }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Error retrieving booking history for customer {CustomerId}", id);
-            return StatusCode(StatusCodes.Status500InternalServerError,
-                new { error = "An error occurred while retrieving booking history" });
-        }
+
+        var query = new GetBookingHistoryQuery(id, page, pageSize);
+        var result = await _mediator.Send(query, cancellationToken);
+
+        return Ok(result);
     }
 
     /// <summary>
@@ -521,12 +449,6 @@ public class CustomersController : ControllerBase
         {
             _logger.LogWarning(ex, "Customer not found: {CustomerId}", id);
             return NotFound(new { error = ex.Message });
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Error updating notification preferences for customer {CustomerId}", id);
-            return StatusCode(StatusCodes.Status500InternalServerError,
-                new { error = "An error occurred while updating preferences" });
         }
     }
 
@@ -578,12 +500,6 @@ public class CustomersController : ControllerBase
             _logger.LogWarning(ex, "Customer not found: {CustomerId}", id);
             return NotFound(new { error = ex.Message });
         }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Error retrieving recently visited providers for customer {CustomerId}", id);
-            return StatusCode(StatusCodes.Status500InternalServerError,
-                new { error = "An error occurred while retrieving recently visited providers" });
-        }
     }
 
     /// <summary>
@@ -630,12 +546,6 @@ public class CustomersController : ControllerBase
             _logger.LogWarning(ex, "Customer not found: {CustomerId}", id);
             return NotFound(new { error = ex.Message });
         }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Error recording provider visit for customer {CustomerId}", id);
-            return StatusCode(StatusCodes.Status500InternalServerError,
-                new { error = "An error occurred while recording the provider visit" });
-        }
     }
 
     #region Helper Methods
@@ -645,12 +555,24 @@ public class CustomersController : ControllerBase
         return User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
     }
 
-    private async Task<bool> CanAccessCustomerProfile(Guid customerId)
+    /// <summary>
+    /// A customer may only reach their own profile; an admin may reach any. The caller's own
+    /// customer id comes from the <c>customerId</c> claim that every customer token carries
+    /// (<c>JwtTokenService</c>), so no lookup is needed and a token without that claim is not a
+    /// customer token at all. This replaced a placeholder that returned true for any
+    /// authenticated user — an IDOR that let any customer read and update any other customer's
+    /// profile, favorites and notification preferences.
+    /// </summary>
+    private Task<bool> CanAccessCustomerProfile(Guid customerId)
     {
-        // TODO: Implement proper authorization logic
-        // For now, allow access if user is authenticated and has Customer role
-        // In a real implementation, you'd check if the user owns this customer profile
-        return User.Identity?.IsAuthenticated == true;
+        if (User.Identity?.IsAuthenticated != true)
+            return Task.FromResult(false);
+
+        if (User.IsInRole("Admin"))
+            return Task.FromResult(true);
+
+        var ownCustomerId = User.FindFirstValue("customerId");
+        return Task.FromResult(Guid.TryParse(ownCustomerId, out var own) && own == customerId);
     }
 
     #endregion

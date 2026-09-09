@@ -59,9 +59,10 @@ public sealed class PersonProvisioningConcurrencyTests : IClassFixture<PostgresT
 
     private UserManagementDbContext NewContext()
     {
-        var options = new DbContextOptionsBuilder<UserManagementDbContext>()
-            .UseNpgsql(_postgres.ConnectionString)
-            .Options;
+        // Same options as production DI — see UserManagementDbContextOptions.
+        var builder = new DbContextOptionsBuilder<UserManagementDbContext>();
+        UserManagementDbContextOptions.Configure(builder, _postgres.ConnectionString);
+        var options = builder.Options;
 
         var clock = Substitute.For<IDateTimeProvider>();
         clock.UtcNow.Returns(_ => DateTime.UtcNow);

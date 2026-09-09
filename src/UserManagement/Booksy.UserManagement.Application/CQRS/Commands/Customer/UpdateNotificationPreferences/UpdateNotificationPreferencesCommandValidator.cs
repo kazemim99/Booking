@@ -22,9 +22,11 @@ namespace Booksy.UserManagement.Application.CQRS.Commands.Customer.UpdateNotific
                 .Must(t => ValidTimings.Contains(t))
                 .WithMessage($"ReminderTiming must be one of: {string.Join(", ", ValidTimings)}");
 
-            RuleFor(x => x)
-                .Must(x => x.SmsEnabled || x.EmailEnabled)
-                .WithMessage("At least one notification channel (SMS or Email) must be enabled");
+            // Deliberately NO "at least one channel" rule. The customer-profile spec gives the
+            // customer two independent toggles and the settings modal warns when both are off
+            // (SettingsModal.vue), and notification-delivery keeps a documented set of
+            // non-suppressible notifications for exactly that state. Refusing the request here
+            // contradicted both and made the "disable all" path a 400.
         }
     }
 }

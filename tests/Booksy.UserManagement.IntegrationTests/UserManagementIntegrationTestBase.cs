@@ -6,6 +6,7 @@ using Booksy.Tests.Common.Infrastructure;
 using Booksy.UserManagement.Domain.Aggregates;
 using Booksy.UserManagement.Domain.Aggregates.CustomerAggregate;
 using Booksy.UserManagement.Domain.Entities;
+using Booksy.UserManagement.Domain.Enums;
 using Booksy.UserManagement.Domain.ReadModels;
 using Booksy.UserManagement.Domain.ValueObjects;
 using Booksy.UserManagement.Infrastructure.Persistence.Context;
@@ -51,6 +52,11 @@ public abstract class UserManagementIntegrationTestBase
     /// </summary>
     public async Task<Customer?> FindCustomerAsync(Guid customerId)
     {
+        // Read what the request actually persisted, not the instance this context already
+        // tracks: the handler wrote through its own scoped DbContext, and EF's identity map
+        // would otherwise hand back the pre-request object with its stale values.
+        DbContext.ChangeTracker.Clear();
+
         return await DbContext.Customers
             .Include(c => c.FavoriteProviders)
             .FirstOrDefaultAsync(c => c.Id == CustomerId.From(customerId));
@@ -61,6 +67,11 @@ public abstract class UserManagementIntegrationTestBase
     /// </summary>
     public async Task<Customer?> FindCustomerAsync(Expression<Func<Customer, bool>> predicate)
     {
+        // Read what the request actually persisted, not the instance this context already
+        // tracks: the handler wrote through its own scoped DbContext, and EF's identity map
+        // would otherwise hand back the pre-request object with its stale values.
+        DbContext.ChangeTracker.Clear();
+
         return await DbContext.Customers
             .Include(c => c.FavoriteProviders)
             .FirstOrDefaultAsync(predicate);
@@ -71,7 +82,13 @@ public abstract class UserManagementIntegrationTestBase
     /// </summary>
     public async Task<User?> FindUserAsync(Guid userId)
     {
+        // Read what the request actually persisted, not the instance this context already
+        // tracks: the handler wrote through its own scoped DbContext, and EF's identity map
+        // would otherwise hand back the pre-request object with its stale values.
+        DbContext.ChangeTracker.Clear();
+
         return await DbContext.Users
+            .Include(u => u.Profile)   // a separate user_profiles row, not an owned type
             .FirstOrDefaultAsync(u => u.Id == UserId.From(userId));
     }
 
@@ -126,7 +143,24 @@ public abstract class UserManagementIntegrationTestBase
     /// </summary>
     public void AuthenticateAsCustomerWithId(Guid customerId, string email = "customer@test.com")
     {
-        base.AuthenticateAsCustomer(customerId, email);
+        // Two callers depend on two readings of "the customer who owns this id": the customer
+        // tests pass a CustomerId and need it as the "customerId" claim (CustomersController
+        // authorizes profile access against it, as a real token from JwtTokenService carries it);
+        // the phone-change tests pass a UserId and need it as the NameIdentifier
+        // (UsersController.CanModifyUser compares the route id with the caller's user id).
+        // Setting both keeps each controller's check honest.
+        AuthenticateAs(new TestUser
+        {
+            UserId = customerId.ToString(),
+            Email = email,
+            Name = email.Split('@')[0],
+            Role = "Customer",
+            AdditionalClaims = new Dictionary<string, string>
+            {
+                { "customerId", customerId.ToString() },
+                { "user_type", "Customer" }
+            }
+        });
     }
 
     /// <summary>
@@ -211,14 +245,28 @@ public abstract class UserManagementIntegrationTestBase
         string lastName = "Doe",
         string phoneNumber = "+989123456789")
     {
-        var userId = UserId.From(Guid.NewGuid());
-        var profile = UserProfile.Create(firstName, lastName, null, null, null);
-
-        // Update profile with phone number
+        // A Customer is a capacity of a Person, never a free-standing record: every real
+        // creation path (PersonProvisioningService) makes the User first, and the profile
+        // handlers load that User for name/email/phone and 404 when it is missing. A
+        // fixture that minted a random UserId with no users row therefore produced a state
+        // the application can never reach — and every profile/preferences/favorites test
+        // failed with 404 for a reason unrelated to what it asserted.
         var phone = PhoneNumber.From(phoneNumber);
-        profile.UpdateContactInfo(phone, null, null);
 
-        var customer = Customer.Create(userId, profile);
+        var userProfile = UserProfile.Create(firstName, lastName, null, null, null);
+        userProfile.UpdateContactInfo(phone, null, null);
+        var user = User.RegisterWithPhone(
+            Email.Create($"customer-{Guid.NewGuid():N}@test.com"),
+            phone,
+            userProfile,
+            UserType.Customer);
+        await CreateEntityAsync(user);
+
+        // The customer aggregate owns its own copy of the profile (an owned entity), so it
+        // must not share the User's tracked instance.
+        var customerProfile = UserProfile.Create(firstName, lastName, null, null, null);
+        customerProfile.UpdateContactInfo(phone, null, null);
+        var customer = Customer.Create(user.Id, customerProfile);
 
         await CreateEntityAsync(customer);
         return customer;

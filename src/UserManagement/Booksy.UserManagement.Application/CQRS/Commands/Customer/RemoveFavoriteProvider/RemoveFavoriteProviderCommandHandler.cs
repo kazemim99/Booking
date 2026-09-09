@@ -2,6 +2,8 @@
 // Booksy.UserManagement.Application/CQRS/Commands/Customer/RemoveFavoriteProvider/RemoveFavoriteProviderCommandHandler.cs
 // ========================================
 using Booksy.Core.Application.Abstractions.CQRS;
+using Booksy.Core.Application.Exceptions;
+using Booksy.UserManagement.Application.Abstractions.Persistence;
 using Booksy.Core.Domain.ValueObjects;
 using Booksy.UserManagement.Domain.Repositories;
 using Microsoft.Extensions.Logging;
@@ -14,13 +16,16 @@ namespace Booksy.UserManagement.Application.CQRS.Commands.Customer.RemoveFavorit
     public sealed class RemoveFavoriteProviderCommandHandler : ICommandHandler<RemoveFavoriteProviderCommand, RemoveFavoriteProviderResult>
     {
         private readonly ICustomerRepository _customerRepository;
+        private readonly IUserManagementUnitOfWork _unitOfWork;
         private readonly ILogger<RemoveFavoriteProviderCommandHandler> _logger;
 
         public RemoveFavoriteProviderCommandHandler(
             ICustomerRepository customerRepository,
+            IUserManagementUnitOfWork unitOfWork,
             ILogger<RemoveFavoriteProviderCommandHandler> logger)
         {
             _customerRepository = customerRepository;
+            _unitOfWork = unitOfWork;
             _logger = logger;
         }
 
@@ -46,10 +51,20 @@ namespace Booksy.UserManagement.Application.CQRS.Commands.Customer.RemoveFavorit
 
                 // Remove favorite provider
                 var removedAt = DateTime.UtcNow;
+                // The aggregate ignores a provider that is not a favorite; the API contract is 404.
+                if (!customer.FavoriteProviders.Any(fp => fp.ProviderId == request.ProviderId))
+                {
+                    throw new NotFoundException("FavoriteProvider", request.ProviderId);
+                }
+
                 customer.RemoveFavoriteProvider(request.ProviderId);
 
                 // Persist changes
                 await _customerRepository.UpdateAsync(customer, cancellationToken);
+                // Commit the UserManagement unit of work explicitly. The pipeline's
+                // TransactionBehavior commits the ServiceCatalog context (DI last-wins),
+                // so without this the change was tracked and then silently discarded.
+                await _unitOfWork.SaveAndPublishEventsAsync(cancellationToken);
 
                 _logger.LogInformation(
                     "Favorite provider removed successfully. CustomerId: {CustomerId}, ProviderId: {ProviderId}",

@@ -2,20 +2,31 @@
 // Booksy.UserManagement.Application/CQRS/Queries/Customer/GetUpcomingBookings/GetUpcomingBookingsQueryHandler.cs
 // ========================================
 using Booksy.Core.Application.Abstractions.CQRS;
+using Booksy.Core.Application.Abstractions.Services;
+using Booksy.UserManagement.Domain.Repositories;
 using Microsoft.Extensions.Logging;
 
 namespace Booksy.UserManagement.Application.CQRS.Queries.Customer.GetUpcomingBookings
 {
     /// <summary>
-    /// Handler for GetUpcomingBookingsQuery
+    /// The customer's upcoming bookings, read from the booking history read model that
+    /// <c>BookingEventSubscribers</c> maintains from ServiceCatalog booking events. (This was a
+    /// stub that always returned an empty list, so the endpoint never showed anything.)
     /// </summary>
-    public sealed class GetUpcomingBookingsQueryHandler : IQueryHandler<GetUpcomingBookingsQuery, List<UpcomingBookingViewModel>>
+    public sealed class GetUpcomingBookingsQueryHandler
+        : IQueryHandler<GetUpcomingBookingsQuery, List<UpcomingBookingViewModel>>
     {
+        private readonly ICustomerBookingHistoryReadRepository _history;
+        private readonly IDateTimeProvider _clock;
         private readonly ILogger<GetUpcomingBookingsQueryHandler> _logger;
 
         public GetUpcomingBookingsQueryHandler(
+            ICustomerBookingHistoryReadRepository history,
+            IDateTimeProvider clock,
             ILogger<GetUpcomingBookingsQueryHandler> logger)
         {
+            _history = history;
+            _clock = clock;
             _logger = logger;
         }
 
@@ -23,24 +34,25 @@ namespace Booksy.UserManagement.Application.CQRS.Queries.Customer.GetUpcomingBoo
             GetUpcomingBookingsQuery request,
             CancellationToken cancellationToken)
         {
-            try
-            {
-                _logger.LogInformation("Getting upcoming bookings for CustomerId: {CustomerId}", request.CustomerId);
+            var entries = await _history.GetUpcomingAsync(
+                request.CustomerId, _clock.UtcNow, request.Limit, cancellationToken);
 
-                // TODO: Implement repository pattern for CustomerBookingHistory
-                // For now, return empty list until the event handlers are set up
-                var bookings = new List<UpcomingBookingViewModel>();
+            _logger.LogInformation(
+                "Found {Count} upcoming bookings for CustomerId: {CustomerId}",
+                entries.Count, request.CustomerId);
 
-                _logger.LogInformation("Found {Count} upcoming bookings for CustomerId: {CustomerId}",
-                    bookings.Count, request.CustomerId);
-
-                return await Task.FromResult(bookings);
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Error getting upcoming bookings for CustomerId: {CustomerId}", request.CustomerId);
-                throw;
-            }
+            return entries
+                .Select(e => new UpcomingBookingViewModel
+                {
+                    BookingId = e.BookingId,
+                    ProviderId = e.ProviderId,
+                    ProviderName = e.ProviderName,
+                    ServiceName = e.ServiceName,
+                    StartTime = e.StartTime,
+                    Status = e.Status,
+                    TotalPrice = e.TotalPrice,
+                })
+                .ToList();
         }
     }
 }

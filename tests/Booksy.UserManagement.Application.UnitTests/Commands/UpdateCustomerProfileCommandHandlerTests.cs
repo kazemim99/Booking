@@ -1,5 +1,6 @@
 using Booksy.Core.Domain.ValueObjects;
 using Booksy.UserManagement.Application.CQRS.Commands.Customer.UpdateCustomerProfile;
+using Booksy.UserManagement.Application.Abstractions.Persistence;
 using Booksy.UserManagement.Domain.Aggregates;
 using Booksy.UserManagement.Domain.Aggregates.CustomerAggregate;
 using Booksy.UserManagement.Domain.Entities;
@@ -24,7 +25,7 @@ public class UpdateCustomerProfileCommandHandlerTests
         _customerRepository = Substitute.For<ICustomerRepository>();
         _userRepository = Substitute.For<IUserRepository>();
         _logger = Substitute.For<ILogger<UpdateCustomerProfileCommandHandler>>();
-        _handler = new UpdateCustomerProfileCommandHandler(_customerRepository, _userRepository, _logger);
+        _handler = new UpdateCustomerProfileCommandHandler(_customerRepository, Substitute.For<IUserManagementUnitOfWork>(), _userRepository, _logger);
     }
 
     private static User CreateUser(string firstName, string lastName)

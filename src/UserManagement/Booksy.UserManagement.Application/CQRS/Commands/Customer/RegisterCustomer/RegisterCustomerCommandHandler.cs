@@ -2,6 +2,7 @@
 // Booksy.UserManagement.Application/CQRS/Commands/Customer/RegisterCustomer/RegisterCustomerCommandHandler.cs
 // ========================================
 using Booksy.Core.Application.Abstractions.CQRS;
+using Booksy.UserManagement.Application.Abstractions.Persistence;
 using Booksy.Core.Domain.ValueObjects;
 using Booksy.UserManagement.Domain.Aggregates;
 using Booksy.UserManagement.Domain.Aggregates.CustomerAggregate;
@@ -22,6 +23,7 @@ namespace Booksy.UserManagement.Application.CQRS.Commands.Customer.RegisterCusto
     {
         private readonly IUserRepository _userRepository;
         private readonly ICustomerRepository _customerRepository;
+        private readonly IUserManagementUnitOfWork _unitOfWork;
         private readonly IPasswordHasher _passwordHasher;
         private readonly IUserValidationService _validationService;
         private readonly ILogger<RegisterCustomerCommandHandler> _logger;
@@ -29,12 +31,14 @@ namespace Booksy.UserManagement.Application.CQRS.Commands.Customer.RegisterCusto
         public RegisterCustomerCommandHandler(
             IUserRepository userRepository,
             ICustomerRepository customerRepository,
+            IUserManagementUnitOfWork unitOfWork,
             IPasswordHasher passwordHasher,
             IUserValidationService validationService,
             ILogger<RegisterCustomerCommandHandler> logger)
         {
             _userRepository = userRepository;
             _customerRepository = customerRepository;
+            _unitOfWork = unitOfWork;
             _passwordHasher = passwordHasher;
             _validationService = validationService;
             _logger = logger;
@@ -119,6 +123,10 @@ namespace Booksy.UserManagement.Application.CQRS.Commands.Customer.RegisterCusto
 
                 // Persist customer
                 await _customerRepository.SaveAsync(customer, cancellationToken);
+                // Commit the UserManagement unit of work explicitly. The pipeline's
+                // TransactionBehavior commits the ServiceCatalog context (DI last-wins),
+                // so without this the change was tracked and then silently discarded.
+                await _unitOfWork.SaveAndPublishEventsAsync(cancellationToken);
 
                 _logger.LogInformation(
                     "Customer registered successfully. CustomerId: {CustomerId}, UserId: {UserId}, Email: {Email}",

@@ -1,3 +1,4 @@
+using System.Net.Http.Json;
 using Booksy.Core.Domain.Infrastructure.Middleware;
 using Booksy.Core.Domain.ValueObjects;
 using Booksy.UserManagement.API.Models.Requests;
@@ -77,11 +78,13 @@ public class CustomersControllerTests : UserManagementIntegrationTestBase
         // Assert
         response.StatusCode.Should().Be(System.Net.HttpStatusCode.OK);
 
-        // Verify in database
-        var updatedCustomer = await FindCustomerAsync(customer.Id.Value);
-        updatedCustomer.Should().NotBeNull();
-        updatedCustomer!.Profile.FirstName.Should().Be("Johnny");
-        updatedCustomer.Profile.LastName.Should().Be("Updated");
+        // Verify in database. The persisted profile lives on the person (User.Profile);
+        // Customer.Profile is an in-memory convenience that CustomerConfiguration ignores,
+        // so asserting on it after a reload can only ever see null.
+        var updatedUser = await FindUserAsync(customer.UserId.Value);
+        updatedUser.Should().NotBeNull();
+        updatedUser!.Profile.FirstName.Should().Be("Johnny");
+        updatedUser.Profile.LastName.Should().Be("Updated");
     }
 
     [Fact]
@@ -424,6 +427,34 @@ public class CustomersControllerTests : UserManagementIntegrationTestBase
 
         // Assert
         response.StatusCode.Should().Be(System.Net.HttpStatusCode.Forbidden);
+    }
+
+    #endregion
+
+    #region Recently Visited Providers Tests
+
+    /// <summary>
+    /// Regression guard for the lost-write bug: every customer command handler used to call
+    /// repository.UpdateAsync (tracking only) and rely on the pipeline's TransactionBehavior,
+    /// which commits the ServiceCatalog context, not this one — so the visit was tracked and then
+    /// dropped at the end of the request. The GET must see what the POST recorded.
+    /// </summary>
+    [Fact]
+    public async Task RecordProviderVisit_IsPersisted_AndListedByRecentlyVisited()
+    {
+        var customer = await CreateAndAuthenticateAsCustomerAsync();
+        var providerId = Guid.NewGuid();
+
+        var post = await Client.PostAsJsonAsync(
+            $"/api/v1/customers/{customer.Id.Value}/recently-visited",
+            new { providerId, viewSource = "search" });
+        post.StatusCode.Should().Be(System.Net.HttpStatusCode.OK);
+
+        var get = await Client.GetAsync($"/api/v1/customers/{customer.Id.Value}/recently-visited?limit=5");
+        get.StatusCode.Should().Be(System.Net.HttpStatusCode.OK);
+        var content = await get.Content.ReadAsStringAsync();
+        content.Should().Contain(providerId.ToString(),
+            "the visit must be committed by the handler, not merely tracked");
     }
 
     #endregion

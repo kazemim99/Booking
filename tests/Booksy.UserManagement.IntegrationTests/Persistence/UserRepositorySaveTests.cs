@@ -124,9 +124,12 @@ public sealed class UserRepositorySaveTests : IClassFixture<PostgresTestContaine
 
     private UserManagementDbContext NewContext()
     {
-        var options = new DbContextOptionsBuilder<UserManagementDbContext>()
-            .UseNpgsql(_postgres.ConnectionString)
-            .Options;
+        // Same options as production DI (provider, migrations assembly/history table, warning
+        // configuration) — a hand-rolled UseNpgsql() differed enough to trip EF's
+        // pending-model-changes check on Migrate(), which the application suppresses.
+        var builder = new DbContextOptionsBuilder<UserManagementDbContext>();
+        UserManagementDbContextOptions.Configure(builder, _postgres.ConnectionString);
+        var options = builder.Options;
 
         // The context guards ICurrentUserService/IDateTimeProvider with `?.`, but the
         // clock is a struct-returning property — an unconfigured substitute would hand

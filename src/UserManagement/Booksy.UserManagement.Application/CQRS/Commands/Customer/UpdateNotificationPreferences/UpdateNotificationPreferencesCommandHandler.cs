@@ -2,6 +2,7 @@
 // Booksy.UserManagement.Application/CQRS/Commands/Customer/UpdateNotificationPreferences/UpdateNotificationPreferencesCommandHandler.cs
 // ========================================
 using Booksy.Core.Application.Abstractions.CQRS;
+using Booksy.UserManagement.Application.Abstractions.Persistence;
 using Booksy.Core.Domain.ValueObjects;
 using Booksy.UserManagement.Domain.Aggregates.CustomerAggregate;
 using Booksy.UserManagement.Domain.Repositories;
@@ -16,13 +17,16 @@ namespace Booksy.UserManagement.Application.CQRS.Commands.Customer.UpdateNotific
     public sealed class UpdateNotificationPreferencesCommandHandler : ICommandHandler<UpdateNotificationPreferencesCommand, UpdateNotificationPreferencesResult>
     {
         private readonly ICustomerRepository _customerRepository;
+        private readonly IUserManagementUnitOfWork _unitOfWork;
         private readonly ILogger<UpdateNotificationPreferencesCommandHandler> _logger;
 
         public UpdateNotificationPreferencesCommandHandler(
             ICustomerRepository customerRepository,
+            IUserManagementUnitOfWork unitOfWork,
             ILogger<UpdateNotificationPreferencesCommandHandler> logger)
         {
             _customerRepository = customerRepository;
+            _unitOfWork = unitOfWork;
             _logger = logger;
         }
 
@@ -54,6 +58,10 @@ namespace Booksy.UserManagement.Application.CQRS.Commands.Customer.UpdateNotific
 
                 // Save changes
                 await _customerRepository.UpdateAsync(customer, cancellationToken);
+                // Commit the UserManagement unit of work explicitly. The pipeline's
+                // TransactionBehavior commits the ServiceCatalog context (DI last-wins),
+                // so without this the change was tracked and then silently discarded.
+                await _unitOfWork.SaveAndPublishEventsAsync(cancellationToken);
 
                 _logger.LogInformation("Successfully updated notification preferences for CustomerId: {CustomerId}", request.CustomerId);
 

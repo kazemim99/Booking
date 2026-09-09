@@ -2,6 +2,7 @@
 // Booksy.UserManagement.Application/CQRS/Commands/Customer/RecordProviderVisit/RecordProviderVisitCommandHandler.cs
 // ========================================
 using Booksy.Core.Application.Abstractions.CQRS;
+using Booksy.UserManagement.Application.Abstractions.Persistence;
 using Booksy.Core.Domain.ValueObjects;
 using Booksy.UserManagement.Domain.Repositories;
 using Microsoft.Extensions.Logging;
@@ -14,13 +15,16 @@ namespace Booksy.UserManagement.Application.CQRS.Commands.Customer.RecordProvide
     public sealed class RecordProviderVisitCommandHandler : ICommandHandler<RecordProviderVisitCommand, RecordProviderVisitResult>
     {
         private readonly ICustomerRepository _customerRepository;
+        private readonly IUserManagementUnitOfWork _unitOfWork;
         private readonly ILogger<RecordProviderVisitCommandHandler> _logger;
 
         public RecordProviderVisitCommandHandler(
             ICustomerRepository customerRepository,
+            IUserManagementUnitOfWork unitOfWork,
             ILogger<RecordProviderVisitCommandHandler> logger)
         {
             _customerRepository = customerRepository;
+            _unitOfWork = unitOfWork;
             _logger = logger;
         }
 
@@ -51,6 +55,10 @@ namespace Booksy.UserManagement.Application.CQRS.Commands.Customer.RecordProvide
 
                 // Persist changes
                 await _customerRepository.UpdateAsync(customer, cancellationToken);
+                // Commit the UserManagement unit of work explicitly. The pipeline's
+                // TransactionBehavior commits the ServiceCatalog context (DI last-wins),
+                // so without this the change was tracked and then silently discarded.
+                await _unitOfWork.SaveAndPublishEventsAsync(cancellationToken);
 
                 _logger.LogInformation(
                     "Provider visit recorded successfully. CustomerId: {CustomerId}, ProviderId: {ProviderId}",

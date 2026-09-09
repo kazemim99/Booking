@@ -40,20 +40,9 @@ namespace Booksy.UserManagement.Infrastructure.DependencyInjection
                 var connectionString = configuration.GetConnectionString("UserManagement")
                     ?? configuration.GetConnectionString("DefaultConnection");
 
-                options.UseNpgsql(connectionString, npgsqlOptions =>
-                {
-                    npgsqlOptions.MigrationsAssembly(typeof(UserManagementDbContext).Assembly.FullName);
-                    npgsqlOptions.MigrationsHistoryTable("__EFMigrationsHistory", "user_management");
-                    npgsqlOptions.CommandTimeout(30);
-                    npgsqlOptions.EnableRetryOnFailure(
-                        maxRetryCount: 3,
-                    maxRetryDelay: TimeSpan.FromSeconds(5),
-                        errorCodesToAdd: null);
-                });
-
-                // Suppress pending model changes warning (false positive during development)
-                options.ConfigureWarnings(warnings =>
-                    warnings.Ignore(Microsoft.EntityFrameworkCore.Diagnostics.RelationalEventId.PendingModelChangesWarning));
+                // Provider, migrations and warning configuration live in one place so the
+                // integration tests build their contexts identically.
+                UserManagementDbContextOptions.Configure(options, connectionString!);
 
                 // Enable logging in development
                 if (configuration.GetValue<bool>("DatabaseSettings:EnableSensitiveDataLogging"))
@@ -97,6 +86,7 @@ namespace Booksy.UserManagement.Infrastructure.DependencyInjection
             services.AddScoped<IUserQueryRepository, UserQueryRepository>();
             services.AddScoped<IPhoneVerificationRepository, PhoneVerificationRepository>();
             services.AddScoped<ICustomerRepository, CustomerRepository>();
+            services.AddScoped<ICustomerBookingHistoryReadRepository, CustomerBookingHistoryReadRepository>();
 
             services.AddExternalServices(configuration);
 
