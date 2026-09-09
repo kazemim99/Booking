@@ -444,6 +444,12 @@ class AppStrings {
   static const String staffInviteSend = 'ارسال دعوت';
   static const String staffInviteSent = 'دعوت‌نامه ارسال شد';
   static const String staffInvitePending = 'در انتظار پذیرش';
+  static const String staffPendingInvitations = 'دعوت‌های در انتظار';
+  static const String staffInvitationCancel = 'لغو دعوت';
+  static const String staffInvitationCancelConfirmTitle = 'لغو دعوت؟';
+  static String staffInvitationCancelConfirmBody(String who) =>
+      'دعوت $who لغو می‌شود و لینک آن دیگر کار نمی‌کند.';
+  static const String staffInvitationCancelled = 'دعوت لغو شد';
 
   // Accept-invitation screen (from an SMS link)
   static const String acceptInvitationTitle = 'پذیرش دعوت';

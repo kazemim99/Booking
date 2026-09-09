@@ -1053,6 +1053,10 @@ void main() {
           )).thenAnswer((_) async => const Right(null));
       when(() => repository.terminateMember(any()))
           .thenAnswer((_) async => const Right(null));
+      when(() => repository.fetchPendingInvitations())
+          .thenAnswer((_) async => const Right(<PendingInvitation>[]));
+      when(() => repository.revokeInvitation(any()))
+          .thenAnswer((_) async => const Right(null));
     });
 
     test('mutations reload on success and surface failures', () async {
@@ -1075,7 +1079,9 @@ void main() {
 
     Future<StaffCubit> pumpStaff(WidgetTester tester) async {
       final cubit = StaffCubit(repository);
+      final pendingCubit = PendingInvitationsCubit(repository);
       addTearDown(cubit.close);
+      addTearDown(pendingCubit.close);
       await tester.pumpWidget(
         MaterialApp(
           theme: AppTheme.light,
@@ -1083,8 +1089,12 @@ void main() {
             textDirection: TextDirection.rtl,
             child: child ?? const SizedBox.shrink(),
           ),
-          home: BlocProvider<StaffCubit>.value(
-            value: cubit..load(),
+          home: MultiBlocProvider(
+            providers: [
+              BlocProvider<StaffCubit>.value(value: cubit..load()),
+              BlocProvider<PendingInvitationsCubit>.value(
+                  value: pendingCubit..load()),
+            ],
             child: const StaffView(),
           ),
         ),
@@ -1092,6 +1102,85 @@ void main() {
       await tester.pumpAndSettle();
       return cubit;
     }
+
+    const invitation = PendingInvitation(
+      invitationId: 'inv-1',
+      phone: '09121110022',
+      inviteeName: 'مریم',
+    );
+
+    test('PendingInvitationsCubit: revoke reloads on success, surfaces failure',
+        () async {
+      when(() => repository.fetchPendingInvitations())
+          .thenAnswer((_) async => const Right([invitation]));
+      final cubit = PendingInvitationsCubit(repository);
+      await cubit.load();
+      expect(cubit.state.status, MoreStatus.ready);
+      expect(cubit.state.data!.single.displayName, 'مریم');
+      clearInteractions(repository);
+      when(() => repository.fetchPendingInvitations())
+          .thenAnswer((_) async => const Right(<PendingInvitation>[]));
+
+      expect(await cubit.revoke('inv-1'), isNull);
+      await Future<void>.delayed(Duration.zero);
+      verify(() => repository.revokeInvitation('inv-1')).called(1);
+      verify(() => repository.fetchPendingInvitations()).called(1);
+
+      when(() => repository.revokeInvitation(any()))
+          .thenAnswer((_) async => const Left(ServerFailure('خطا')));
+      final failure = await cubit.revoke('inv-1');
+      expect(failure!.message, 'خطا');
+      await cubit.close();
+    });
+
+    testWidgets('pending invitations are listed and can be cancelled',
+        (tester) async {
+      when(() => repository.fetchPendingInvitations())
+          .thenAnswer((_) async => const Right([invitation]));
+      await pumpStaff(tester);
+
+      expect(find.byKey(const Key('pending-invitations-header')), findsOneWidget);
+      expect(find.text('مریم'), findsOneWidget);
+      // Members still render below the pending section.
+      expect(find.byKey(const Key('member-row-mem-1')), findsOneWidget);
+
+      // Cancelling asks first; dismissing revokes nothing.
+      await tester.tap(find.byKey(const Key('invitation-cancel-inv-1')));
+      await tester.pumpAndSettle();
+      await tester.tap(find.byKey(const Key('invitation-cancel-cancel')));
+      await tester.pumpAndSettle();
+      verifyNever(() => repository.revokeInvitation(any()));
+
+      await tester.tap(find.byKey(const Key('invitation-cancel-inv-1')));
+      await tester.pumpAndSettle();
+      await tester.tap(find.byKey(const Key('invitation-cancel-confirm')));
+      await tester.pumpAndSettle();
+
+      verify(() => repository.revokeInvitation('inv-1')).called(1);
+      expect(find.text(AppStrings.staffInvitationCancelled), findsOneWidget);
+    });
+
+    testWidgets('a salon with no members but a pending invitation shows the list',
+        (tester) async {
+      when(() => repository.fetchOrgMembers())
+          .thenAnswer((_) async => const Right(<OrgMember>[]));
+      when(() => repository.fetchPendingInvitations())
+          .thenAnswer((_) async => const Right([invitation]));
+      await pumpStaff(tester);
+
+      expect(find.text(AppStrings.staffEmpty), findsNothing);
+      expect(find.byKey(const Key('invitation-row-inv-1')), findsOneWidget);
+    });
+
+    testWidgets('a failed invitations read does not blank the roster',
+        (tester) async {
+      when(() => repository.fetchPendingInvitations())
+          .thenAnswer((_) async => const Left(ServerFailure('خطا')));
+      await pumpStaff(tester);
+
+      expect(find.byKey(const Key('member-row-mem-1')), findsOneWidget);
+      expect(find.byKey(const Key('pending-invitations-header')), findsNothing);
+    });
 
     testWidgets('lists members; owner has a badge and no remove, staff can be removed',
         (tester) async {
@@ -1232,6 +1321,25 @@ void main() {
       await cubit.load();
       expect(cubit.state.status, MoreStatus.failed);
       expect(cubit.state.error, 'خطا');
+      await cubit.close();
+    });
+
+    test('MembershipsCubit.switchTo re-scopes the session through the auth '
+        'repository and surfaces its failure', () async {
+      when(() => repository.fetchMyMemberships())
+          .thenAnswer((_) async => const Right([membership]));
+      final auth = _MockAuthRepo();
+      when(() => auth.switchActiveOrganization(providerId: 'org-1'))
+          .thenAnswer((_) async => Right(_session));
+      final cubit = MembershipsCubit(repository, auth);
+
+      expect(await cubit.switchTo('org-1'), isNull);
+      verify(() => auth.switchActiveOrganization(providerId: 'org-1')).called(1);
+
+      when(() => auth.switchActiveOrganization(providerId: 'org-2'))
+          .thenAnswer((_) async => const Left(ServerFailure('تغییر سالن ناموفق بود')));
+      final failure = await cubit.switchTo('org-2');
+      expect(failure!.message, 'تغییر سالن ناموفق بود');
       await cubit.close();
     });
 
@@ -1380,12 +1488,20 @@ void main() {
               status: 'Invited'),
         ]),
       );
+      when(() => repository.fetchPendingInvitations())
+          .thenAnswer((_) async => const Right(<PendingInvitation>[]));
       final cubit = StaffCubit(repository);
+      final pendingCubit = PendingInvitationsCubit(repository);
       addTearDown(cubit.close);
+      addTearDown(pendingCubit.close);
       await pumpView(
         tester,
-        BlocProvider<StaffCubit>.value(
-          value: cubit..load(),
+        MultiBlocProvider(
+          providers: [
+            BlocProvider<StaffCubit>.value(value: cubit..load()),
+            BlocProvider<PendingInvitationsCubit>.value(
+                value: pendingCubit..load()),
+          ],
           child: const StaffView(),
         ),
       );

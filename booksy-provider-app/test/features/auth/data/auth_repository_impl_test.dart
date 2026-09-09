@@ -114,4 +114,57 @@ void main() {
     expect(result.getOrElse(() => throw StateError('expected Right')), isNull);
     verify(() => storage.getAccessToken()).called(1); // cache was cleared
   });
+
+  group('switchActiveOrganization (salon switcher, WS6a)', () {
+    setUp(() {
+      when(() => storage.saveProviderState(
+            providerId: any(named: 'providerId'),
+            providerStatus: any(named: 'providerStatus'),
+          )).thenAnswer((_) async {});
+      when(() => storage.getAccessToken()).thenAnswer((_) async => 'access');
+      when(() => storage.getRefreshToken()).thenAnswer((_) async => 'refresh');
+      when(() => storage.getUserId()).thenAnswer((_) async => 'u-1');
+      when(() => storage.getPhoneNumber())
+          .thenAnswer((_) async => '09123135143');
+    });
+
+    test('persists the chosen salon BEFORE asking the server, then returns a '
+        'session scoped to it', () async {
+      when(() => api.getCurrentProviderStatus())
+          .thenAnswer((_) async => (providerId: 'p-2', status: 'Active'));
+      when(() => storage.getProviderId()).thenAnswer((_) async => 'p-2');
+      when(() => storage.getProviderStatus()).thenAnswer((_) async => 'Active');
+
+      final result = await repo.switchActiveOrganization(providerId: 'p-2');
+
+      final session = result.getOrElse(() => throw StateError('expected Right'));
+      expect(session.providerId, 'p-2');
+      expect(session.providerStatus, ProviderStatus.active);
+      // The choice is written first so a crash or restart still lands in the
+      // chosen salon, and only then is the status re-derived from the server.
+      verifyInOrder([
+        () => storage.saveProviderState(providerId: 'p-2', providerStatus: null),
+        () => api.getCurrentProviderStatus(),
+      ]);
+    });
+
+    test('when the status refresh fails the switch is reported as a failure '
+        'and the previous in-memory session is kept', () async {
+      when(() => api.completeProviderAuth(any()))
+          .thenAnswer((_) async => authOk());
+      await repo.completeProviderAuthentication(
+          phoneNumber: '09123135143', code: '123456');
+      when(() => api.getCurrentProviderStatus())
+          .thenThrow(Exception('network'));
+
+      final result = await repo.switchActiveOrganization(providerId: 'p-2');
+      expect(result.isLeft(), isTrue);
+
+      // The caller can retry; meanwhile the app still has a usable session.
+      final current = await repo.getCurrentSession();
+      final session = current.getOrElse(() => throw StateError('expected Right'));
+      expect(session!.providerId, 'p-1');
+      verifyNever(() => storage.getAccessToken());
+    });
+  });
 }

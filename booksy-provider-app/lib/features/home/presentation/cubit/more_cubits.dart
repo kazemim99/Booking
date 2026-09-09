@@ -336,3 +336,27 @@ class StaffCubit extends _MoreLoadCubit<List<OrgMember>> {
     });
   }
 }
+
+/// More → تیم — the organization's pending invitations (sent, unaccepted).
+/// Lives beside [StaffCubit] rather than inside it because the two lists come
+/// from different endpoints and fail independently: a broken invitations read
+/// must not blank the member roster.
+class PendingInvitationsCubit extends _MoreLoadCubit<List<PendingInvitation>> {
+  final HomeRepository _repository;
+  PendingInvitationsCubit(this._repository);
+
+  @override
+  Future<Either<Failure, List<PendingInvitation>>> fetch() =>
+      _repository.fetchPendingInvitations();
+
+  /// Revokes a pending invitation. Returns null on success (list reloads), or
+  /// the Failure to surface.
+  Future<Failure?> revoke(String invitationId) async {
+    final result = await _repository.revokeInvitation(invitationId);
+    if (isClosed) return null;
+    return result.fold((f) => f, (_) {
+      load();
+      return null;
+    });
+  }
+}

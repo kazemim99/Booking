@@ -158,6 +158,9 @@ Future<void> configureDependencies() async {
   getIt.registerFactory<StaffCubit>(
     () => StaffCubit(getIt<HomeRepository>()),
   );
+  getIt.registerFactory<PendingInvitationsCubit>(
+    () => PendingInvitationsCubit(getIt<HomeRepository>()),
+  );
   getIt.registerFactory<MembershipsCubit>(
     () => MembershipsCubit(getIt<HomeRepository>(), getIt<AuthRepository>()),
   );

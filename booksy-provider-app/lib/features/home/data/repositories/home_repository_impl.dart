@@ -258,6 +258,39 @@ class HomeRepositoryImpl implements HomeRepository {
   }
 
   @override
+  Future<Either<Failure, List<PendingInvitation>>> fetchPendingInvitations() {
+    return _withProviderId((providerId) async {
+      try {
+        final raw = await _api.getPendingInvitations(providerId);
+        return Right(raw
+            .map((i) {
+              final name = HomeApiService.readString(i, const ['inviteeName']);
+              return PendingInvitation(
+                invitationId: HomeApiService.readString(i, const ['invitationId', 'id']),
+                phone: HomeApiService.readString(i, const ['phoneNumber', 'phone']),
+                inviteeName: name.isEmpty ? null : name,
+                sentAt: DateTime.tryParse(HomeApiService.readString(i, const ['createdAt'])),
+                expiresAt: DateTime.tryParse(HomeApiService.readString(i, const ['expiresAt'])),
+              );
+            })
+            .where((i) => i.invitationId.isNotEmpty)
+            .toList());
+      } on DioException {
+        return const Left(ServerFailure('دریافت دعوت‌های در انتظار ناموفق بود'));
+      }
+    });
+  }
+
+  @override
+  Future<Either<Failure, void>> revokeInvitation(String invitationId) {
+    // Invitation-scoped (not provider-scoped); the backend authorizes by owner.
+    return _action(
+      () => _api.revokeInvitation(invitationId),
+      'لغو دعوت ناموفق بود',
+    );
+  }
+
+  @override
   Future<Either<Failure, List<ProviderMembership>>> fetchMyMemberships() async {
     // Person-scoped (resolved from the JWT), so no _withProviderId here.
     try {

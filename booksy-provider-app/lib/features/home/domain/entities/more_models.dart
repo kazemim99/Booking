@@ -66,6 +66,32 @@ class OrgMember extends Equatable {
       ];
 }
 
+/// An invitation the organization has sent that nobody has accepted yet
+/// (More → تیم, "pending" section). Cancelling revokes it server-side.
+class PendingInvitation extends Equatable {
+  final String invitationId;
+  final String phone;
+  final String? inviteeName;
+  final DateTime? sentAt;
+  final DateTime? expiresAt;
+
+  const PendingInvitation({
+    required this.invitationId,
+    required this.phone,
+    this.inviteeName,
+    this.sentAt,
+    this.expiresAt,
+  });
+
+  /// What to show for the invitee: their name when the owner typed one, else
+  /// the phone the invitation went to.
+  String get displayName =>
+      (inviteeName != null && inviteeName!.isNotEmpty) ? inviteeName! : phone;
+
+  @override
+  List<Object?> get props => [invitationId, phone, inviteeName, sentAt, expiresAt];
+}
+
 /// One of the person's organization memberships (More → سالن‌های من).
 /// A person may hold several — the model that makes multi-salon (S6) visible.
 class ProviderMembership extends Equatable {

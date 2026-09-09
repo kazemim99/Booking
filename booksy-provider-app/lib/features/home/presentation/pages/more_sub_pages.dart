@@ -634,8 +634,12 @@ class StaffPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return BlocProvider<StaffCubit>(
-      create: (_) => getIt<StaffCubit>()..load(),
+    return MultiBlocProvider(
+      providers: [
+        BlocProvider<StaffCubit>(create: (_) => getIt<StaffCubit>()..load()),
+        BlocProvider<PendingInvitationsCubit>(
+            create: (_) => getIt<PendingInvitationsCubit>()..load()),
+      ],
       child: const StaffView(),
     );
   }
@@ -668,39 +672,89 @@ class StaffView extends StatelessWidget {
             // only way to invite a team member was an invisible icon, and the
             // feature read as unbuilt.
             icon: const Icon(Icons.person_add_alt_1, color: AppColors.success),
-            onPressed: () =>
-                InviteStaffSheet.show(context, context.read<StaffCubit>()),
+            onPressed: () => _invite(context),
           ),
         ],
-        bodyBuilder: (context, members) => members.isEmpty
-            ? AppEmptyState.add(
+        bodyBuilder: (context, members) => BlocBuilder<PendingInvitationsCubit,
+            MoreState<List<PendingInvitation>>>(
+          builder: (context, pendingState) {
+            // A failed invitations read must not blank the roster: fall back to
+            // "no pending" and let the members render.
+            final pending = pendingState.data ?? const <PendingInvitation>[];
+            if (members.isEmpty && pending.isEmpty) {
+              return AppEmptyState.add(
                 icon: Icons.people_outline,
                 message: AppStrings.staffEmpty,
                 actionLabel: '+ ${AppStrings.staffInvite}',
-                onAction: () =>
-                    InviteStaffSheet.show(context, context.read<StaffCubit>()),
-              )
-            : ListView.separated(
-                padding: const EdgeInsets.all(AppSpacing.md),
-                // +1 for the leading add row, as Services and Holidays do.
-                itemCount: members.length + 1,
-                separatorBuilder: (_, _) =>
-                    const Divider(color: AppColors.divider, height: 1),
-                itemBuilder: (context, i) {
-                  // The discoverable path to inviting someone. The chrome icon
-                  // stays for muscle memory, but the spec ruling after visual
-                  // QA was that the tiny header icon is easy to miss on first
-                  // use — which is exactly how this screen read while the icon
-                  // was also painted brand-blue on the blue header.
-                  if (i == 0) {
-                    return _AddLinkRow(
-                      key: const Key('staff-invite-row'),
-                      label: AppStrings.staffInvite,
-                      onTap: () => InviteStaffSheet.show(
-                          context, context.read<StaffCubit>()),
+                onAction: () => _invite(context),
+              );
+            }
+            // Row layout: add row, then the pending section (a header + one
+            // row per invitation), then the members.
+            final pendingRows = pending.isEmpty ? 0 : pending.length + 1;
+            return ListView.separated(
+              padding: const EdgeInsets.all(AppSpacing.md),
+              // +1 for the leading add row, as Services and Holidays do.
+              itemCount: 1 + pendingRows + members.length,
+              separatorBuilder: (_, _) =>
+                  const Divider(color: AppColors.divider, height: 1),
+              itemBuilder: (context, i) {
+                // The discoverable path to inviting someone. The chrome icon
+                // stays for muscle memory, but the spec ruling after visual
+                // QA was that the tiny header icon is easy to miss on first
+                // use — which is exactly how this screen read while the icon
+                // was also painted brand-blue on the blue header.
+                if (i == 0) {
+                  return _AddLinkRow(
+                    key: const Key('staff-invite-row'),
+                    label: AppStrings.staffInvite,
+                    onTap: () => _invite(context),
+                  );
+                }
+                if (i <= pendingRows) {
+                  if (i == 1) {
+                    return const Padding(
+                      key: Key('pending-invitations-header'),
+                      padding: EdgeInsets.symmetric(vertical: AppSpacing.sm),
+                      child: Text(
+                        AppStrings.staffPendingInvitations,
+                        style: TextStyle(
+                          fontSize: 13,
+                          fontWeight: FontWeight.w700,
+                          color: AppColors.muted,
+                        ),
+                      ),
                     );
                   }
-                  final m = members[i - 1];
+                  final inv = pending[i - 2];
+                  return ListTile(
+                    key: Key('invitation-row-${inv.invitationId}'),
+                    contentPadding: EdgeInsets.zero,
+                    leading: const CircleAvatar(
+                      backgroundColor: AppColors.primarySoft,
+                      child: Icon(Icons.mail_outline,
+                          size: AppIconSize.action, color: AppColors.primary),
+                    ),
+                    title: Text(
+                      inv.displayName,
+                      style: const TextStyle(fontSize: 15, color: AppColors.muted),
+                    ),
+                    subtitle: Text(
+                      inv.inviteeName == null
+                          ? AppStrings.staffInvitePending
+                          : '${inv.phone} · ${AppStrings.staffInvitePending}',
+                      style: const TextStyle(fontSize: 12, color: AppColors.muted),
+                    ),
+                    trailing: IconButton(
+                      key: Key('invitation-cancel-${inv.invitationId}'),
+                      tooltip: AppStrings.staffInvitationCancel,
+                      icon: const Icon(Icons.cancel_schedule_send_outlined,
+                          size: AppIconSize.action, color: AppColors.danger),
+                      onPressed: () => _confirmCancelInvitation(context, inv),
+                    ),
+                  );
+                }
+                final m = members[i - 1 - pendingRows];
                   final display = m.name.isNotEmpty ? m.name : (m.phone ?? '؟');
                   return ListTile(
                     key: Key('member-row-${m.membershipId}'),
@@ -737,9 +791,53 @@ class StaffView extends StatelessWidget {
                           ),
                   );
                 },
-              ),
+              );
+          },
+        ),
       ),
     );
+  }
+
+  /// Opens the invite sheet, then refreshes the pending list: a sent
+  /// invitation shows up here immediately, not only after a manual reload.
+  Future<void> _invite(BuildContext context) async {
+    await InviteStaffSheet.show(context, context.read<StaffCubit>());
+    if (!context.mounted) return;
+    context.read<PendingInvitationsCubit>().load();
+  }
+
+  Future<void> _confirmCancelInvitation(
+      BuildContext context, PendingInvitation inv) async {
+    final cubit = context.read<PendingInvitationsCubit>();
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: const Text(AppStrings.staffInvitationCancelConfirmTitle),
+        content: Text(AppStrings.staffInvitationCancelConfirmBody(inv.displayName)),
+        actions: [
+          TextButton(
+            key: const Key('invitation-cancel-cancel'),
+            onPressed: () => Navigator.pop(dialogContext, false),
+            child: const Text(AppStrings.cancel),
+          ),
+          TextButton(
+            key: const Key('invitation-cancel-confirm'),
+            onPressed: () => Navigator.pop(dialogContext, true),
+            style: TextButton.styleFrom(foregroundColor: AppColors.danger),
+            child: const Text(AppStrings.staffInvitationCancel),
+          ),
+        ],
+      ),
+    );
+    if (confirmed != true || !context.mounted) return;
+
+    final failure = await cubit.revoke(inv.invitationId);
+    if (!context.mounted) return;
+    if (failure == null) {
+      AppSnackbar.success(context, AppStrings.staffInvitationCancelled);
+    } else {
+      AppSnackbar.error(context, failure.message);
+    }
   }
 
   static String _subtitle(OrgMember m) {

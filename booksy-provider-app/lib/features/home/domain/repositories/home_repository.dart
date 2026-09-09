@@ -111,6 +111,12 @@ abstract class HomeRepository {
   /// Terminate a membership (remove a member from the active organization).
   Future<Either<Failure, void>> terminateMember(String membershipId);
 
+  /// The active organization's pending (sent, unaccepted, unexpired) invitations.
+  Future<Either<Failure, List<PendingInvitation>>> fetchPendingInvitations();
+
+  /// Revoke (cancel) a pending invitation the active organization sent.
+  Future<Either<Failure, void>> revokeInvitation(String invitationId);
+
   /// Booking statistics: all-time + trailing 30 days.
   Future<Either<Failure, InsightsSummary>> fetchInsights();
 

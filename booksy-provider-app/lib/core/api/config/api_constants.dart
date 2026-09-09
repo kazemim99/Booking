@@ -109,6 +109,10 @@ class ApiConstants {
   static String providerHierarchyInvitations(String providerId) =>
       '/$apiVersion/providers/$providerId/hierarchy/invitations';
 
+  /// POST — revoke (cancel) a pending invitation the organization sent.
+  static String membershipInvitationRevoke(String invitationId) =>
+      '/$apiVersion/memberships/invitations/$invitationId/revoke';
+
   /// GET — the organization's members (membership model: roles, status, name).
   static String providerHierarchyMembers(String providerId) =>
       '/$apiVersion/providers/$providerId/hierarchy/members';

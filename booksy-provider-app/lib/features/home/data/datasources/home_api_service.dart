@@ -501,6 +501,30 @@ class HomeApiService {
         data: {if (reason != null && reason.isNotEmpty) 'reason': reason},
       );
 
+  /// GET /v1/providers/{id}/hierarchy/invitations — the organization's pending
+  /// invitations (sent, not yet accepted, not expired). Nested under
+  /// `data.invitations` in the enveloped response.
+  Future<List<Map<String, dynamic>>> getPendingInvitations(String providerId) async {
+    final res = await _dio.get(ApiConstants.providerHierarchyInvitations(providerId));
+    final body = res.data;
+    final data = (body is Map && body['data'] is Map) ? body['data'] : body;
+    final list = (data is Map && data['invitations'] is List)
+        ? data['invitations'] as List
+        : (data is List ? data : const []);
+    return list
+        .whereType<Map>()
+        .map((e) => Map<String, dynamic>.from(e))
+        .toList();
+  }
+
+  /// POST /v1/memberships/invitations/{id}/revoke — cancel a pending invitation
+  /// (owner-only; the invitation is closed, never deleted, and audited).
+  Future<void> revokeInvitation(String invitationId, {String? reason}) =>
+      _dio.post(
+        ApiConstants.membershipInvitationRevoke(invitationId),
+        data: {if (reason != null && reason.isNotEmpty) 'reason': reason},
+      );
+
   // ==================== booking quick actions ====================
 
   /// POST /v1/Bookings/{id}/confirm — provider approves a pending request.
