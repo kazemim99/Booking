@@ -1,0 +1,37 @@
+#!/usr/bin/env bash
+# Claude Code `SessionStart` hook (startup/resume/compact): re-inject the loop state so the
+# assistant knows where it is without re-reading the change after compaction or a restart.
+set -u
+ROOT="${CLAUDE_PROJECT_DIR:-$(git rev-parse --show-toplevel 2>/dev/null)}"
+[ -n "$ROOT" ] && cd "$ROOT" 2>/dev/null || exit 0
+
+TASKS=""
+for f in $(ls -t openspec/changes/*/tasks.md openspec/changes/_inline/*/tasks.md 2>/dev/null); do
+  if head -1 "$f" | grep -q '^Status: *ACTIVE'; then TASKS="$f"; break; fi
+done
+
+echo "OPERATING MODEL (AGENTS.md > Operating Model): own the task to a verified finish; tasks.md is the loop state; scripts/verify -Tier fast after each task, -Tier full to finish; the Stop hook blocks ending the turn while [ ] tasks remain or FULL verify is missing/stale/red."
+if [ -z "$TASKS" ]; then
+  echo "ACTIVE CHANGE: none (no tasks.md with 'Status: ACTIVE'). A feature gets openspec/changes/<id>/tasks.md; a bug or small change gets openspec/changes/_inline/<slug>/tasks.md."
+  exit 0
+fi
+
+CHANGE="$(basename "$(dirname "$TASKS")")"
+OPEN=$(grep -c '^- \[ \]' "$TASKS"); DONE=$(grep -c '^- \[x\]' "$TASKS")
+BLK=$(grep -c '^- \[-\]' "$TASKS"); DEC=$(grep -c '^- \[?\]' "$TASKS")
+echo "ACTIVE CHANGE: $CHANGE  ($TASKS)"
+echo "  $(head -1 "$TASKS") | $(sed -n 2p "$TASKS") | open=$OPEN done=$DONE blocked=$BLK decision=$DEC"
+if [ "$OPEN" -gt 0 ]; then
+  echo "  next open tasks:"; grep '^- \[ \]' "$TASKS" | head -5 | cut -c1-160 | sed 's/^/    /'
+fi
+if [ "$DEC" -gt 0 ]; then
+  echo "  awaiting decisions:"; grep '^- \[?\]' "$TASKS" | head -3 | cut -c1-160 | sed 's/^/    /'
+fi
+LASTDEC="$(awk '/^## Decisions/{f=1;next} /^## /{f=0} f && /^- /{print; exit}' "$TASKS" | cut -c1-200)"
+[ -n "$LASTDEC" ] && echo "  last decision: $LASTDEC"
+if [ -f .verify/status.json ]; then
+  s=.verify/status.json
+  echo "  last verify: tier=$(sed -n 's/.*"tier" *: *"\([^"]*\)".*/\1/p' $s | head -1) result=$(sed -n 's/.*"result" *: *"\([^"]*\)".*/\1/p' $s | head -1) at $(sed -n 's/.*"finishedAt" *: *"\([^"]*\)".*/\1/p' $s | head -1)"
+else
+  echo "  last verify: none recorded"
+fi

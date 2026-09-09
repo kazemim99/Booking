@@ -1,0 +1,53 @@
+{
+  "permissions": {
+    "ask": [
+      "Bash(git push*)",
+      "Bash(rtk git push*)",
+      "PowerShell(git push*)",
+      "PowerShell(rtk git push*)",
+      "Bash(gh pr create*)",
+      "Bash(gh pr merge*)",
+      "Bash(rtk gh pr create*)",
+      "Bash(rtk gh pr merge*)",
+      "PowerShell(gh pr create*)",
+      "PowerShell(gh pr merge*)",
+      "Bash(dotnet ef database update*)",
+      "PowerShell(dotnet ef database update*)",
+      "Bash(docker compose -f docker-compose.prod.yml*)",
+      "Bash(docker compose -f docker-compose.staging.yml*)",
+      "Bash(docker-compose -f docker-compose.prod.yml*)",
+      "Bash(docker-compose -f docker-compose.staging.yml*)",
+      "PowerShell(docker compose -f docker-compose.prod.yml*)",
+      "PowerShell(docker compose -f docker-compose.staging.yml*)",
+      "Bash(ssh *)",
+      "Bash(scp *)",
+      "PowerShell(ssh *)",
+      "PowerShell(scp *)"
+    ]
+  },
+  "hooks": {
+    "Stop": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash \"$CLAUDE_PROJECT_DIR/.claude/hooks/stop-gate\"",
+            "timeout": 30
+          }
+        ]
+      }
+    ],
+    "SessionStart": [
+      {
+        "matcher": "startup|resume|compact",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash \"$CLAUDE_PROJECT_DIR/.claude/hooks/context-brief\"",
+            "timeout": 10
+          }
+        ]
+      }
+    ]
+  }
+}

@@ -287,6 +287,122 @@ Every Pull Request must leave the project in a releasable state:
 - Performance: for changes on hot paths (queries, list rendering, event handlers), state the expected impact and verify it — no unbounded queries, no N+1s, no per-frame allocations in scroll paths.
 - Migrations remain idempotent; deploy gates (keystone E2E) must stay green.
 
+## Operating Model — own the task from intake to a verified finish
+
+This section governs every turn. It grants autonomy over execution and over reversible
+engineering decisions. It grants none over product behavior, money, security or privacy
+semantics, irreversible production data, or anything that leaves the working tree.
+Mechanics that enforce it: `scripts/verify` (checkable "done"), the `Stop` hook in
+`.claude/settings.json` (blocks ending a turn while work remains), and the `ask` permission list
+(protected operations). See [docs/AUTONOMOUS_OPERATING_MODEL.md](docs/AUTONOMOUS_OPERATING_MODEL.md).
+
+### The loop
+
+1. **Intake.** Feature → OpenSpec change under `openspec/changes/<id>/`. Bug or small change →
+   inline task list at `openspec/changes/_inline/<slug>/tasks.md`. Either way the loop state is a
+   file, never the conversation.
+2. **Investigate** per *Investigation Before Implementation*. Write down what must not change.
+3. **Plan** `tasks.md` in the contract format below: acceptance scenarios, then small tasks.
+4. **Execute.** For each open task: write or extend the failing test → implement the minimum →
+   `scripts/verify -Tier fast` → fix the root cause until green → check the task off in its own
+   edit → record any decision taken. Repeat while open tasks remain.
+5. **Finish.** `scripts/verify -Tier full` green → `tasks.md` reflects reality → `Status: DONE`
+   → one report.
+
+Do not stop between tasks to summarize, to ask whether to proceed, or to seek approval for an
+item on an already-approved list. The proposal is the approval. A task being large, tedious, or
+spanning many files is not a reason to stop.
+
+### Decisions — four tiers
+
+Rule: if a git revert undoes it and it is inside the approved scope, decide it; if not, ask.
+
+- **Tier 0, decide silently:** naming, placement, following the module's existing pattern,
+  behavior-preserving refactors.
+- **Tier 1, decide and record:** engineering trade-offs within the spec — pattern choice, test
+  level, defaults, internal shapes, where a guard lives. One line under `## Decisions`.
+- **Tier 2, decide, record, flag:** clear bug fixes and corrections of broken behavior (broken
+  endpoints, incorrect results, architecture defects), legacy cleanup, development migrations
+  (written and applied to local/test databases only), additive public API changes, hot-path
+  performance trade-offs, new dependencies, documented-pattern deviations. Recorded under
+  `## Decisions`, and listed in the final report.
+- **Tier 3, park and ask:** genuinely unresolved decisions about **product or business
+  behavior** the spec does not define or that alters an approved scenario; **money or payment
+  semantics**; **security or privacy semantics** (authn/authz rules, exposure, retention);
+  **irreversible production data loss** (destructive migrations against shared data, ledger
+  rewrites, deleting or weakening tests); **genuinely ambiguous UX requirements**.
+
+A behavior change is not tier 3 because it is visible; it is tier 3 because nobody has decided
+it and the choice is the business's to make. "Needs judgment" is tier 1 or 2; "needs someone
+else's authority" is tier 3. Tier 3 parks the task as `[?] DECISION: <question>` and the loop
+continues with every unblocked task. The run ends only when nothing unblocked remains.
+
+### Protected operations — mechanical, not judgment
+
+These prompt for confirmation through the `ask` list in `.claude/settings.json` regardless of
+tier: `git push`, opening or merging PRs, `dotnet ef database update`, production/staging
+compose, `ssh`/`scp`. Writing a migration is free; applying one to a shared database asks.
+Secrets are never committed, printed, or faked with a realistic-looking placeholder.
+
+**Shared machine.** Several assistant sessions may work in this checkout at once. Never kill a
+process you did not start — a `testhost` or `dotnet` holding the build output is almost always
+a peer's run, and killing it silently corrupts their result. When a build fails on a file lock,
+list the sessions (`ListAgents`), message the peer, and take turns on `dotnet build`/`test`.
+Re-read a file before editing it if it may have changed under you, and prefer exact-match edits
+over whole-file writes on files a peer may hold open.
+
+### Stop conditions — name the one that fired
+
+1. **Done.** Every task `[x]`, or `[-]`/`[?]` with its reason recorded; nothing unblocked
+   remains; `scripts/verify -Tier full` green; `Status: DONE`.
+2. **Decision pending** (tier 3) and no unblocked task remains → `Status: STOPPED(decision)`.
+3. **Blocked** on something the environment cannot produce (credential, external service,
+   broken toolchain) and no unblocked task remains → `Status: STOPPED(blocked)`.
+4. **Budget exhausted:** three failed attempts at the *same* failure. Park it as `[-] BLOCKED:`
+   with the actual error and continue; stop only if nothing else is left →
+   `Status: STOPPED(budget)`.
+
+### `tasks.md` contract
+
+First line `Status: ACTIVE|DONE|STOPPED(<condition>)`; second line `Verify: FAST|FULL` (the
+tier a task must pass before it is checked off). Sections in order: `## Acceptance scenarios`,
+`## Tasks`, `## Decisions`, `## Log`. Tasks are one line each, ≤ 160 characters, imperative,
+independently verifiable. States: `[ ]` open, `[x]` done, `[-]` blocked (`BLOCKED: <reason>`),
+`[?]` awaiting a tier-3 decision (`DECISION: <question>`). Never `[~]` — split partial work into
+a done line and an open line. Narrative goes in `## Log`, dated, newest first; checkbox lines
+never grow. Check a task off in its own edit, right after its verification passes. The file must
+describe reality after a crash at any point. The `Stop` hook reads this file: it blocks ending
+the turn while `[ ]` lines remain or the FULL verify is missing, stale, or red, and it honours
+an explicit `Status: DONE` or `Status: STOPPED(...)`.
+
+### Verification tiers
+
+- **FAST** (after each task): `dotnet build Booksy.sln` + every unit and architecture test
+  project. No Docker required. Plus the affected integration test class(es) when the task
+  touched persistence, API, or events.
+- **FULL** (at finish): FAST + Host composition + both integration suites (Testcontainers
+  Postgres, Docker required) + `type-check`/`lint:check` in each touched Vue app +
+  `flutter analyze`/`flutter test` in each touched Flutter app. The Reqnroll Gherkin features
+  in `ServiceCatalog.IntegrationTests/Features` are excluded from the gate: the repository
+  records them as a specification backlog (`openspec/changes/REQNROLL-COVERAGE-GAP.md`, 707 of
+  739 scenarios with unbound steps) and the payment ones as credentials-blocked (FOLLOW-UPS
+  #31), so they fail by design. Run them on purpose with `-IncludeFeatures` / `--features`.
+- **Known-failure baseline.** `tests/known-failures.txt` lists integration tests that were
+  already red on the committed baseline before a change (83 on 2026-09-09, measured in a clean
+  worktree). A db step passes when every failure is on that list and fails on any failure off
+  it. The list is debt: remove lines as tests are fixed; never add one to make a run green — a
+  new failure is a regression until proven otherwise. `flutter analyze` is fatal on errors only
+  (`--no-fatal-warnings --no-fatal-infos`), matching *Mobile App Testing* ("must be error-free").
+- `scripts/verify` writes `.verify/status.json`; a result is only current for the exact
+  working tree it ran against. Unrun tests are not a finish. A red run is reported red.
+
+### Reporting
+
+One report at the end: the stop condition that fired; what changed; the Testing Summary
+required by *Existing Tests First*; tier-2 decisions and tier-3 questions; anything parked and
+why. Report failures as failures, with the output — never "complete with a minor issue
+outstanding".
+
 <!-- OPENSPEC:START -->
 # OpenSpec Instructions
 

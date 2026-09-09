@@ -1,317 +1,56 @@
 # CLAUDE.md
 
-This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
-
-## Repository Overview
-
-This repository contains both the **source code** and the **deployment configuration** for Booksy, a **modular-monolith** booking platform. The backend is a single ASP.NET Core host (`Booksy.Host`) that composes multiple bounded contexts (UserManagement, ServiceCatalog) in-process. The repository also contains the Vue frontend, Docker Compose configurations, deployment scripts, and GitHub Actions workflows for deploying the application to production servers.
-
-> **Migration note**: The backend was migrated from a microservices architecture to a modular monolith. The Ocelot API Gateway and per-service hosts have been retired, and RabbitMQ has been removed in favor of in-process CAP events. See [MONOLITH_MIGRATION_PLAN.md](MONOLITH_MIGRATION_PLAN.md) for details.
-
-## Knowledge & Source of Truth
-
-Read **[docs/KNOWLEDGE.md](docs/KNOWLEDGE.md)** before answering architecture questions. It defines
-where each kind of knowledge lives and which copy wins when two disagree.
-
-The short version:
-
-| Question | Authoritative source |
-|---|---|
-| What is this system? | [openspec/project.md](openspec/project.md) — verified against source, cites its evidence |
-| What does it do? | the code, then `openspec/specs/<capability>/spec.md` |
-| Why did we choose this? | [ARCHITECTURAL_DECISIONS.md](ARCHITECTURAL_DECISIONS.md) |
-| What's in flight? | `openspec/changes/` |
-
-**Your memory is a cache, not a source of truth.** `~/.claude/projects/c--Repos-Booking/memory/` is
-not versioned and may be deleted at any time without loss. Verify recalled facts against git before
-relying on them; when memory and the code disagree, the code is right. If you learn something
-durable, propose adding it to the right file above rather than leaving it in memory alone.
-
-Note that this file (`CLAUDE.md`) is *guidance*, not an authoritative source — where it and
-`openspec/project.md` disagree about architecture, `project.md` is the verified one.
-
-## 📚 Developer Documentation
-
-Docs are organized in three tiers: **root** (living — current architecture, API surface, active plans), **`docs/`** (living but secondary — deployment/testing how-tos), and **`docs/archive/`** (historical — point-in-time implementation write-ups for features that have since shipped; kept for context, not guaranteed current).
-
-### Root (living)
-
-- **[API_ENDPOINTS.md](API_ENDPOINTS.md)** - Complete API endpoint reference (single host on :5000)
-  - UserManagement endpoints: Authentication, Customer Management
-  - ServiceCatalog endpoints: Categories, Providers, Bookings, Services
-  - All endpoints served from one host (`booksy-api`) under `/api/v1/...`
-  - All request/response schemas, authentication requirements, and examples
-
-- **[DTO_MAPPING.md](DTO_MAPPING.md)** - DTO mapping across all application layers
-  - Backend C# DTOs ↔ Flutter Dart Models ↔ Vue TypeScript Interfaces
-  - Type conversion guidelines (Guid → String, decimal → double, etc.)
-  - JSON serialization best practices
-  - Naming conventions and file locations
-
-- **[TECHNICAL_DOCUMENTATION.md](TECHNICAL_DOCUMENTATION.md)** - Architecture patterns, auth/OTP flow, event-driven design, EF Core owned-entity config, known issues & fixes, session history
-- **[COMPLETION_ROADMAP.md](COMPLETION_ROADMAP.md)** - Current tracked plan to MVP launch (phases, epics, status)
-- **[MONOLITH_MIGRATION_PLAN.md](MONOLITH_MIGRATION_PLAN.md)** - The microservices → modular-monolith migration
-- **[GALLERY_BACKEND_REQUIREMENTS.md](GALLERY_BACKEND_REQUIREMENTS.md)** - Open requirements for provider-gallery admin moderation
-- **[GEOLOCATION_GUIDE.md](GEOLOCATION_GUIDE.md)** - How homepage location auto-detection works, testing, and debugging
-- **[VISUAL_STUDIO_DEBUGGING.md](VISUAL_STUDIO_DEBUGGING.md)** - Running/debugging `Booksy.Host` in Visual Studio against Docker infra
-
-### `docs/` (secondary reference)
-
-- **[docs/REQNROLL_TESTING.md](docs/REQNROLL_TESTING.md)** - Writing/running the Gherkin BDD integration tests
-- **[docs/DOCS_SITE_DEPLOYMENT.md](docs/DOCS_SITE_DEPLOYMENT.md)** - Deploying the Docusaurus docs site (`docs-site/`) to GitHub Pages — unrelated to deploying the Booksy app itself
-
-### `docs/archive/`
-
-Point-in-time implementation guides, build-verification snapshots, and planning docs for features that have since shipped (auth flow, booking cancellation/reschedule, provider profile/search, real-time availability, the Reqnroll migration, the original business proposal/SRD, etc.). Useful for historical context on *why* something was built a certain way; not a source of truth for current behavior.
-
-### Application-Specific Documentation
-
-- **Flutter Customer App**: [booksy-customer-app/](booksy-customer-app/)
-  - [PROJECT_SUMMARY.md](booksy-customer-app/PROJECT_SUMMARY.md) - Architecture & features
-  - [FLUTTER_BACKEND_CONNECTION.md](booksy-customer-app/FLUTTER_BACKEND_CONNECTION.md) - Backend integration guide
-  - [CUSTOMER_APP_UX_FLOW.md](booksy-customer-app/CUSTOMER_APP_UX_FLOW.md) - User experience flow
-
-- **Vue Admin Panel**: [booksy-admin/](booksy-admin/) *(if applicable)*
-  - Admin dashboard for managing providers, services, and bookings
-
-- **Backend Source**: `src/Host/Booksy.Host` (single ASP.NET Core host) plus bounded contexts under `src/`
-  - Domain-Driven Design with CQRS pattern
-  - In-process integration events via CAP (DotNetCore.CAP) on the in-memory transport
-  - Clean Architecture principles
-
-## Test Suites
-
-- **Playwright E2E** (`booksy-frontend/e2e/`): browser-level tests driving the real Vue app against a running stack (sandbox OTP auth, Page Object Model, `data-testid` selectors). Run with `cd booksy-frontend && npm run e2e:pw`; see `booksy-frontend/e2e/README.md`. CI: `.github/workflows/frontend-e2e.yml` (advisory, not a deploy gate).
-- **Reqnroll BDD** (`tests/Booksy.ServiceCatalog.IntegrationTests/`): Gherkin feature files + C# step definitions covering ServiceCatalog business logic end-to-end at the API layer. Run with `dotnet test --filter "FullyQualifiedName~Feature"`; see [docs/REQNROLL_TESTING.md](docs/REQNROLL_TESTING.md).
-- **API keystone smoke test** (`tests/e2e/keystone-booking-flow.sh`): dependency-free curl script exercising the full provider→staff→customer→booking flow against a running host; used as a CI deploy gate (`e2e-keystone` job in `deploy.yml`/`deploy-staging.yml`).
-- **Cypress** (`booksy-frontend/cypress/`): coexists with the Playwright suite (`npm run test:e2e`).
-- **Backend unit tests**: `dotnet test --filter UnitTests` (solution-wide; run in CI on every deploy).
-
-## Architecture
-
-Booksy is a **modular monolith**: a single backend host composes multiple bounded contexts in-process.
-
-### Application Services
-- **Booksy.Host** (`booksy-api`, Port 5000 → internal 80): Single ASP.NET Core host that composes both bounded contexts (UserManagement and ServiceCatalog) in-process and serves all of their controllers under `/api/v1/...`. (A Booking context exists only as empty scaffolding and is not built.) Database migrations run at host startup.
-- **Frontend** (Ports 80/443): Web application frontend served via Nginx; its nginx config proxies `/api` to `booksy-api:80`.
-
-### Infrastructure Services
-- **PostgreSQL** (Port 5432): Single primary database (`booksy`) with schema-per-context (schemas: `user_management`, `ServiceCatalog`, `cap`). One connection string (`DefaultConnection`).
-- **Redis** (Port 6379): Caching layer with LRU eviction policy (512MB limit)
-- **Seq** (Ports 5341, 5342): Centralized structured logging platform
-- **pgAdmin** (Port 5050): Database management interface
-
-### Service Communication
-- All containers connect via a Docker bridge network (`booksy-network`, subnet 172.25.0.0/16)
-- Containers communicate using container names as DNS hostnames
-- Cross-context integration events run **in-process** via CAP (DotNetCore.CAP) on its in-memory transport (`EventBus:Provider=InMemory`) — there is no message broker container
-- Redis provides distributed caching and session management
-
-## Common Commands
-
-### Deployment
-```bash
-# Full deployment (pulls latest images and restarts all services)
-cd /root/booksy && ./scripts/deploy.sh
-
-# Manual deployment steps
-cd /root/booksy
-docker-compose -f docker-compose.prod.yml pull
-
-# Clean up orphaned containers (prevents network removal errors)
-docker ps -a --filter "name=booksy-" --format "{{.Names}}" | xargs -r docker rm -f || true
-
-docker-compose -f docker-compose.prod.yml down --remove-orphans
-docker-compose -f docker-compose.prod.yml up -d
-
-# View all service status
-docker-compose -f docker-compose.prod.yml ps
-
-# View logs for specific service
-docker-compose -f docker-compose.prod.yml logs -f [service-name]
-# Example: docker-compose -f docker-compose.prod.yml logs -f booksy-api
-
-# View logs for all services
-docker-compose -f docker-compose.prod.yml logs -f
-```
-
-### Service Management
-```bash
-# Start all services
-docker-compose -f docker-compose.prod.yml up -d
-
-# Stop all services
-docker-compose -f docker-compose.prod.yml down
-
-# Restart a specific service
-docker-compose -f docker-compose.prod.yml restart [service-name]
-
-# Scale a service (if supported)
-docker-compose -f docker-compose.prod.yml up -d --scale booksy-api=3
-```
-
-### Database Operations
-```bash
-# Access PostgreSQL shell
-docker exec -it booksy-postgres psql -U booksy_admin -d booksy_user_management
-
-# Create database backup
-docker exec booksy-postgres pg_dump -U booksy_admin booksy_user_management > backup_$(date +%Y%m%d_%H%M%S).sql
-
-# Restore from backup
-docker exec -i booksy-postgres psql -U booksy_admin booksy_user_management < backup.sql
-
-# View database logs
-docker logs booksy-postgres
-```
-
-### Redis Operations
-```bash
-# Access Redis CLI
-docker exec -it booksy-redis redis-cli -a YourRedisPassword123!
-
-# Monitor Redis commands in real-time
-docker exec -it booksy-redis redis-cli -a YourRedisPassword123! MONITOR
-
-# Check Redis memory usage
-docker exec -it booksy-redis redis-cli -a YourRedisPassword123! INFO memory
-```
-
-### Integration Events (CAP)
-
-Cross-context integration events run in-process via CAP on its in-memory transport — there is no RabbitMQ broker. CAP persists outbox/inbox state in the `cap` schema of the PostgreSQL database. To inspect published/received messages, query the CAP tables in Postgres or use the Seq logs.
-
-### Monitoring and Logging
-```bash
-# Access Seq logging UI
-# Open browser to: http://server-ip:5341
-
-# View container resource usage
-docker stats
-
-# Check health status of all services
-docker-compose -f docker-compose.prod.yml ps
-
-# View specific service health
-docker inspect --format='{{.State.Health.Status}}' booksy-[service-name]
-```
-
-### API Documentation (Swagger)
-```bash
-# Access Swagger UI on the single host:
-# Booksy API: http://server-ip:5000/swagger
-
-# Note: The service must be healthy for Swagger to be accessible
-# Check service health: docker ps
-```
-
-### Cleanup and Maintenance
-```bash
-# Remove stopped containers and unused images
-docker system prune -a
-
-# Remove only unused images
-docker image prune -f
-
-# View disk usage by Docker
-docker system df
-
-# Clean up orphaned booksy containers (all containers with 'booksy-' prefix)
-docker ps -a --filter "name=booksy-" --format "{{.Names}}" | xargs -r docker rm -f
-
-# Clean up old backups (manual)
-cd /root/booksy/backups && ls -lt | tail -n +10 | awk '{print $9}' | xargs rm -f
-```
-
-## GitHub Actions Workflows
-
-### Build and Push (`build-and-push.yml`)
-- Triggers on: Push to main/develop, PRs, or manual dispatch
-- Builds Docker images for the backend host (`booksy-api`) and the Frontend
-- Pushes images to GitHub Container Registry (ghcr.io)
-- Uses Docker layer caching for faster builds
-- Tags images with branch name, PR number, commit SHA, and 'latest' for main branch
-
-### Deploy (`deploy.yml`)
-- Triggers automatically when build-and-push completes successfully on main branch
-- Can also be manually triggered via workflow_dispatch
-- Uses SSH to connect to production server
-- Pulls latest Docker images from GHCR
-- **Forcibly removes orphaned containers** before docker-compose down to prevent network errors
-- Performs zero-downtime deployment by stopping old containers and starting new ones
-- Includes automatic cleanup of old Docker images
-
-## Environment Configuration
-
-All environment variables are stored in `/root/booksy/.env`. Key variables include:
-
-- **Database**: `POSTGRES_USER`, `POSTGRES_PASSWORD`, `POSTGRES_DB`
-- **Redis**: `REDIS_PASSWORD`
-- **Seq**: `SEQ_FIRSTRUN_ADMINUSERNAME`, `SEQ_FIRSTRUN_ADMINPASSWORD`
-- **Container Registry**: `GITHUB_REPOSITORY_OWNER` (currently: kazemim99)
-
-Never commit the `.env` file to version control. The `.env.backup` file should also be excluded from commits.
-
-## Health Checks
-
-All services have health checks configured using **curl**:
-
-- **Backend API** (`booksy-api`): HTTP check on `/health` endpoint using `curl -f` (30s interval, 10s timeout, 3 retries, 40s start period)
-- **PostgreSQL**: `pg_isready` command (10s interval, 5s timeout, 5 retries, 10s start period)
-- **Redis**: `redis-cli ping` (10s interval, 5s timeout, 3 retries, 5s start period)
-- **Seq**: HTTP check on `/api/health` using `curl -f` (30s interval, 10s timeout, 3 retries, 20s start period)
-- **Frontend**: HTTP check on `/health` using `curl -f` (30s interval, 10s timeout, 3 retries, 20s start period)
-
-**Important**: All Docker images must have `curl` installed for health checks to work. The Dockerfiles in the source repository include curl installation:
-- .NET host: `apt-get install -y curl`
-- Frontend (nginx:alpine): `apk add --no-cache curl`
-
-## Resource Limits
-
-Services have CPU and memory constraints:
-
-- **Backend API** (`booksy-api`): 1 CPU / 1GB RAM (reserved: 0.25 CPU / 256MB)
-- **Frontend**: 0.5 CPU / 256MB RAM (reserved: 0.1 CPU / 64MB)
-- **PostgreSQL**: 2 CPU / 2GB RAM (reserved: 0.5 CPU / 512MB)
-- **Redis**: 0.5 CPU / 512MB RAM (reserved: 0.1 CPU / 128MB)
-- **Seq**: 0.5 CPU / 512MB RAM (reserved: 0.1 CPU / 128MB)
-- **pgAdmin**: 0.5 CPU / 512MB RAM (reserved: 0.1 CPU / 128MB)
-
-## Service Dependencies
-
-The startup order is enforced through Docker Compose dependencies:
-
-1. **Infrastructure** (PostgreSQL, Redis, Seq) starts first
-2. **Backend host** (`booksy-api`) waits for infrastructure health checks, then runs migrations at startup
-3. **Frontend** waits for `booksy-api` to be healthy
-
-## Security Considerations
-
-- Database and cache ports (5432, 6379) are bound to localhost only (`127.0.0.1`)
-- Passwords should be changed from defaults in `.env` before production use
-- GitHub Container Registry authentication is required for pulling images
-- SSH key-based authentication is used for deployment automation
-- All services run in an isolated Docker network with defined subnet
-
-## Troubleshooting
-
-Common issues and solutions:
-
-### Other Common Issues
-
-1. **Service won't start**: Check logs with `docker-compose logs [service]` (e.g., `booksy-api`) and verify health check status
-2. **Database connection errors**: Ensure PostgreSQL is healthy and connection string in `.env` is correct
-3. **Out of memory**: Check `docker stats` and adjust resource limits in docker-compose.prod.yml
-4. **Image pull failures**: Verify GHCR authentication with `docker login ghcr.io`
-5. **Port conflicts**: Ensure no other services are using the required ports (5000, 80, 443, 5341, 5050)
-6. **Swagger not accessible**: Verify `booksy-api` is healthy with `docker ps`. An unhealthy host cannot serve Swagger UI.
-
-## Engineering & Testing Policy
-
-The test-first development standard and the full testing policy that govern work in this
-repository now live in **[AGENTS.md](AGENTS.md)** — the vendor-neutral instruction file that
-every AI assistant reads (Hermes, Cursor, Codex, and Claude Code all honor `AGENTS.md`, and
-several read *only* it).
-
-They were moved there verbatim so there is exactly one copy. Read `AGENTS.md` before making
-any non-trivial behavior change.
+Routing guidance for Claude Code in this repository. It is *guidance*, not an authoritative
+source: policy lives in `AGENTS.md`, facts live in `openspec/project.md` and the code.
+
+## Read first
+
+1. **[AGENTS.md](AGENTS.md)** — the governing policy for every AI assistant here: source-of-truth
+   ordering, the test-first standard, and the **Operating Model** (the autonomous implementation
+   loop, decision tiers, stop conditions, the `tasks.md` contract, verification tiers).
+2. **[openspec/project.md](openspec/project.md)** — what this system *is*, verified against source.
+3. **[docs/KNOWLEDGE.md](docs/KNOWLEDGE.md)** — which document wins when two disagree.
+
+Your memory is a cache. Verify recalled facts against git; when memory and code disagree, the
+code is right.
+
+## How work runs here
+
+- **Loop state is a file.** Features: `openspec/changes/<id>/tasks.md`. Bugs and small changes:
+  `openspec/changes/_inline/<slug>/tasks.md`. Start with `/implement <change-id>`.
+- **Definition of done is a command.** `scripts/verify.ps1 -Tier fast` after each task (build +
+  unit/architecture tests, no Docker); `scripts/verify.ps1 -Tier full` to finish (adds Host
+  composition, both integration suites via Testcontainers, and touched Vue/Flutter apps). POSIX
+  twin: `scripts/verify.sh fast|full`. Result in `.verify/status.json`.
+- **The Stop hook** (`.claude/hooks/stop-gate`) blocks ending a turn while `[ ]` tasks remain in
+  the active change or the FULL verify is missing, stale, or red. `Status: DONE` or
+  `Status: STOPPED(<condition>)` as the first line of `tasks.md` is the explicit way out.
+- **Protected operations ask** (`.claude/settings.json`): push, PR create/merge,
+  `dotnet ef database update`, prod/staging compose, ssh/scp.
+- **Unattended runs:** `scripts/agent-run.ps1 <change-id>` repeats `/implement` until DONE/STOPPED.
+- Full design and rationale: [docs/AUTONOMOUS_OPERATING_MODEL.md](docs/AUTONOMOUS_OPERATING_MODEL.md).
+
+## What this repository is
+
+Booksy, a **modular-monolith** booking platform: one ASP.NET Core host (`src/Host/Booksy.Host`,
+`booksy-api` on :5000) composes the UserManagement and ServiceCatalog bounded contexts in-process
+(DDD + CQRS, CAP in-memory integration events, one PostgreSQL database with schema-per-context,
+Redis, Seq). Clients: Vue web app (`booksy-frontend`), Vue admin (`booksy-admin`), Flutter
+customer and provider apps (`booksy-customer-app`, `booksy-provider-app`). Docker Compose and
+GitHub Actions deploy it. Migration history: [MONOLITH_MIGRATION_PLAN.md](MONOLITH_MIGRATION_PLAN.md).
+
+## Test suites
+
+- **Backend unit/architecture**: the seven projects `scripts/verify` runs in FAST.
+- **Integration** (`tests/Booksy.ServiceCatalog.IntegrationTests`, `tests/Booksy.UserManagement.IntegrationTests`, `tests/Booksy.Host.CompositionTests`): real composed host against Testcontainers Postgres; Reqnroll Gherkin features live in the ServiceCatalog project — see [docs/REQNROLL_TESTING.md](docs/REQNROLL_TESTING.md).
+- **API keystone smoke test** (`tests/e2e/keystone-booking-flow.sh`): curl script over the full provider→staff→customer→booking flow; CI deploy gate (`e2e-keystone`).
+- **Playwright E2E** (`booksy-frontend/e2e/`, `npm run e2e:pw`) and **Cypress** (`npm run test:e2e`): advisory, not deploy gates.
+- **Flutter**: `flutter analyze` + `flutter test` in each app; policy detail in `AGENTS.md › Mobile App Testing`.
+
+## Where the documents are
+
+- Root (living): [API_ENDPOINTS.md](API_ENDPOINTS.md), [DTO_MAPPING.md](DTO_MAPPING.md), [TECHNICAL_DOCUMENTATION.md](TECHNICAL_DOCUMENTATION.md), [COMPLETION_ROADMAP.md](COMPLETION_ROADMAP.md), [ARCHITECTURAL_DECISIONS.md](ARCHITECTURAL_DECISIONS.md), [GEOLOCATION_GUIDE.md](GEOLOCATION_GUIDE.md), [VISUAL_STUDIO_DEBUGGING.md](VISUAL_STUDIO_DEBUGGING.md).
+- Operations: [docs/DEPLOYMENT_RUNBOOK.md](docs/DEPLOYMENT_RUNBOOK.md) — compose commands, health checks, resource limits, environment variables, troubleshooting (moved out of this file 2026-09-08).
+- Navigation and staleness: [docs/KNOWLEDGE_MAP.md](docs/KNOWLEDGE_MAP.md). `docs/archive/` and `docs-site/` are historical.
+- Apps: [booksy-customer-app/PROJECT_SUMMARY.md](booksy-customer-app/PROJECT_SUMMARY.md), [booksy-customer-app/FLUTTER_BACKEND_CONNECTION.md](booksy-customer-app/FLUTTER_BACKEND_CONNECTION.md).
+- Procedures: `.hermes/skills/` (`implementation-loop`, `openspec-change-lifecycle`, `verify-before-claiming`).

@@ -373,3 +373,6 @@ docs-site/node_modules/
 docs-site/build/
 docs-site/.docusaurus/
 docs-site/.cache-loader/
+
+# Autonomous operating model: verify results and stop-hook state (machine-local)
+.verify/

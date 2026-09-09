@@ -1,0 +1,85 @@
+#!/usr/bin/env bash
+# Claude Code `Stop` hook: the implementation loop's continuation mechanism.
+#
+# When a change is ACTIVE (a tasks.md whose first line is `Status: ACTIVE`), ending the turn is
+# blocked while:
+#   - `- [ ]` tasks remain, or
+#   - every task is closed but .verify/status.json is missing, not tier=full, not result=pass,
+#     or was produced for a different commit / working tree than the current one.
+# The block reason is handed back to the assistant as its next instruction.
+#
+# Escapes (always allowed): no ACTIVE tasks.md; `Status: DONE`; `Status: STOPPED(<reason>)`;
+# more than MAX_BLOCKS blocks in one session (loop breaker, logged to .verify/stop-gate.log).
+#
+# Input: hook JSON on stdin (session_id, stop_hook_active). Output: JSON on stdout to block.
+set -u
+MAX_BLOCKS=20
+ROOT="${CLAUDE_PROJECT_DIR:-$(git rev-parse --show-toplevel 2>/dev/null)}"
+[ -n "$ROOT" ] && cd "$ROOT" 2>/dev/null || exit 0
+
+INPUT="$(cat 2>/dev/null)"
+SESSION="$(printf '%s' "$INPUT" | sed -n 's/.*"session_id" *: *"\([^"]*\)".*/\1/p' | head -1)"
+[ -z "$SESSION" ] && SESSION="unknown"
+
+# --- find the active change (most recently modified ACTIVE tasks.md wins)
+TASKS=""
+for f in $(ls -t openspec/changes/*/tasks.md openspec/changes/_inline/*/tasks.md 2>/dev/null); do
+  if head -1 "$f" | grep -q '^Status: *ACTIVE'; then TASKS="$f"; break; fi
+done
+[ -z "$TASKS" ] && exit 0
+CHANGE="$(basename "$(dirname "$TASKS")")"
+
+# --- loop breaker
+mkdir -p .verify
+COUNT_FILE=.verify/stop-count
+COUNT=0
+if [ -f "$COUNT_FILE" ]; then
+  read -r prev_session prev_count < "$COUNT_FILE" || true
+  [ "${prev_session:-}" = "$SESSION" ] && COUNT="${prev_count:-0}"
+fi
+block() {
+  COUNT=$((COUNT + 1))
+  printf '%s %s\n' "$SESSION" "$COUNT" > "$COUNT_FILE"
+  if [ "$COUNT" -gt "$MAX_BLOCKS" ]; then
+    printf '%s  session=%s  loop breaker: %s blocks, allowing stop. Last reason: %s\n' \
+      "$(date -u +%FT%TZ)" "$SESSION" "$COUNT" "$1" >> .verify/stop-gate.log
+    exit 0
+  fi
+  # JSON-escape: backslashes, quotes, control chars
+  reason="$(printf '%s' "$1" | sed 's/\\/\\\\/g; s/"/\\"/g' | tr '\n\r\t' '   ')"
+  printf '{"decision":"block","reason":"%s"}\n' "$reason"
+  exit 0
+}
+
+# --- open tasks?
+OPEN_COUNT="$(grep -c '^- \[ \]' "$TASKS" 2>/dev/null)"   # grep -c prints 0 (exit 1) on no match
+OPEN_COUNT="${OPEN_COUNT:-0}"
+if [ "$OPEN_COUNT" -gt 0 ]; then
+  FIRST="$(grep '^- \[ \]' "$TASKS" | head -3 | sed 's/^- \[ \] //' | cut -c1-120 | paste -sd '|' - | sed 's/|/ | /g')"
+  block "STOP GATE ($CHANGE): $OPEN_COUNT open task(s) remain in $TASKS. Next: $FIRST. Continue the loop (test -> implement -> scripts/verify -Tier fast -> check off). If a task is genuinely blocked or needs a tier-3 decision, mark it [-] BLOCKED: / [?] DECISION: with the reason and move on. Only when nothing unblocked remains: run scripts/verify -Tier full and set the first line to Status: DONE or Status: STOPPED(<condition>)."
+fi
+
+# --- all tasks closed: is there a current, green FULL verify?
+STATUS=.verify/status.json
+if [ ! -f "$STATUS" ]; then
+  block "STOP GATE ($CHANGE): all tasks are closed but no verification has been recorded. Run scripts/verify -Tier full (or scripts/verify.sh full), fix anything red, then set Status: DONE (or STOPPED(<condition>) with the reason) as the first line of $TASKS."
+fi
+field() { sed -n "s/.*\"$1\" *: *\"\([^\"]*\)\".*/\1/p" "$STATUS" | head -1; }
+R_RESULT="$(field result)"; R_TIER="$(field tier)"; R_SHA="$(field sha)"; R_TREE="$(field tree)"
+CUR_SHA="$(git rev-parse HEAD 2>/dev/null)"
+idx=.verify/index-hook
+GIT_INDEX_FILE="$idx" git read-tree HEAD 2>/dev/null
+GIT_INDEX_FILE="$idx" git -c core.safecrlf=false add -A 2>/dev/null
+CUR_TREE="$(GIT_INDEX_FILE="$idx" git write-tree 2>/dev/null)"
+rm -f "$idx"
+
+if [ "$R_TIER" != "full" ]; then
+  block "STOP GATE ($CHANGE): all tasks are closed but the last verify was tier '$R_TIER'. Run scripts/verify -Tier full, then set Status: DONE in $TASKS."
+fi
+if [ "$R_RESULT" != "pass" ]; then
+  block "STOP GATE ($CHANGE): all tasks are closed but the last FULL verify result is '$R_RESULT' (see .verify/status.json failed/blocked). Fix the root cause and re-run scripts/verify -Tier full. If it is blocked by the environment, record why in tasks.md and set Status: STOPPED(blocked)."
+fi
+if [ "$R_SHA" != "$CUR_SHA" ] || [ "$R_TREE" != "$CUR_TREE" ]; then
+  block "STOP GATE ($CHANGE): the working tree changed since the last green FULL verify. Re-run scripts/verify -Tier full, then set Status: DONE in $TASKS."
+fi
+exit 0
