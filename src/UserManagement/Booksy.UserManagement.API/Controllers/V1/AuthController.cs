@@ -120,11 +120,6 @@ public class AuthController : ControllerBase
             _logger.LogWarning(ex, "Customer authentication failed: {Message}", ex.Message);
             return Unauthorized(new { success = false, message = ex.Message });
         }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Error during customer authentication");
-            return StatusCode(500, new { message = "An error occurred during authentication" });
-        }
     }
 
     /// <summary>
@@ -178,11 +173,6 @@ public class AuthController : ControllerBase
             _logger.LogWarning(ex, "Provider authentication failed: {Message}", ex.Message);
             return Unauthorized(new { success = false, message = ex.Message });
         }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Error during provider authentication");
-            return StatusCode(500, new { message = "An error occurred during authentication" });
-        }
     }
 
     /// <summary>
@@ -214,83 +204,75 @@ public class AuthController : ControllerBase
             "Generating new token for user {UserId} with additional claims",
             userId);
 
-        try
+        // Get user - use mediator or repository depending on your architecture
+        var getUserQuery = new Application.CQRS.Queries.GetUserById.GetUserByIdQuery(userId);
+        var user = await _mediator.Send(getUserQuery, cancellationToken);
+
+        if (user == null)
         {
-            // Get user - use mediator or repository depending on your architecture
-            var getUserQuery = new Application.CQRS.Queries.GetUserById.GetUserByIdQuery(userId);
-            var user = await _mediator.Send(getUserQuery, cancellationToken);
-
-            if (user == null)
-            {
-                _logger.LogWarning("User {UserId} not found for token generation", userId);
-                throw new NotFoundException("User not found");
-            }
-
-            // Extract providerId and providerStatus from additional claims if present
-            string? providerId = null;
-            string? providerStatus = null;
-            if (request.AdditionalClaims != null)
-            {
-                if (request.AdditionalClaims.TryGetValue("provider_id", out var providerIdValue))
-                {
-                    providerId = providerIdValue;
-                }
-                if (request.AdditionalClaims.TryGetValue("provider_status", out var providerStatusValue))
-                {
-                    providerStatus = providerStatusValue;
-                }
-            }
-
-            // Parse user type from string
-            var userType = Enum.TryParse<Domain.Enums.UserType>(user.Type, out var parsedType)
-                ? parsedType
-                : Domain.Enums.UserType.Customer;
-
-            // Extract role names from RoleViewModel list
-            var roleNames = user.Roles.Select(r => r.Name).ToList();
-
-            // Generate new access token using the correct signature
-            var accessToken = jwtTokenService.GenerateAccessToken(
-                Core.Domain.ValueObjects.UserId.From(user.UserId),
-                userType,
-                Core.Domain.ValueObjects.Email.Create(user.Email ?? string.Empty),
-                user.DisplayName ?? string.Empty,
-                user.FirstName ?? string.Empty,
-                user.LastName ?? string.Empty,
-                user.Status ?? "Active",
-                roleNames,
-                providerId,
-                providerStatus,
-                customerId: null,
-                user.PhoneNumber,
-                // This endpoint does not resolve memberships (it mints from a caller-supplied
-                // UserId + claims dictionary, not a live sign-in) — left null, no behavior change.
-                memberships: null,
-                activeMembershipId: null,
-                expirationHours: 15 // pre-existing: see FOLLOW-UPS #18 (comment says "15 minutes", param is hours)
-            );
-
-            // Generate refresh token (user aggregate handles this)
-            var refreshTokenValue = Guid.NewGuid().ToString();
-
-            _logger.LogInformation(
-                "Successfully generated new token for user {UserId} with providerId: {ProviderId}",
-                userId,
-                providerId ?? "none");
-
-            return Ok(new GenerateTokenResponse
-            {
-                AccessToken = accessToken,
-                RefreshToken = refreshTokenValue,
-                ExpiresIn = 900, // 15 minutes
-                TokenType = "Bearer"
-            });
+            _logger.LogWarning("User {UserId} not found for token generation", userId);
+            throw new NotFoundException("User not found");
         }
-        catch (Exception ex)
+
+        // Extract providerId and providerStatus from additional claims if present
+        string? providerId = null;
+        string? providerStatus = null;
+        if (request.AdditionalClaims != null)
         {
-            _logger.LogError(ex, "Error generating token for user {UserId}", userId);
-            return StatusCode(500, new { message = "An error occurred while generating the token" });
+            if (request.AdditionalClaims.TryGetValue("provider_id", out var providerIdValue))
+            {
+                providerId = providerIdValue;
+            }
+            if (request.AdditionalClaims.TryGetValue("provider_status", out var providerStatusValue))
+            {
+                providerStatus = providerStatusValue;
+            }
         }
+
+        // Parse user type from string
+        var userType = Enum.TryParse<Domain.Enums.UserType>(user.Type, out var parsedType)
+            ? parsedType
+            : Domain.Enums.UserType.Customer;
+
+        // Extract role names from RoleViewModel list
+        var roleNames = user.Roles.Select(r => r.Name).ToList();
+
+        // Generate new access token using the correct signature
+        var accessToken = jwtTokenService.GenerateAccessToken(
+            Core.Domain.ValueObjects.UserId.From(user.UserId),
+            userType,
+            Core.Domain.ValueObjects.Email.Create(user.Email ?? string.Empty),
+            user.DisplayName ?? string.Empty,
+            user.FirstName ?? string.Empty,
+            user.LastName ?? string.Empty,
+            user.Status ?? "Active",
+            roleNames,
+            providerId,
+            providerStatus,
+            customerId: null,
+            user.PhoneNumber,
+            // This endpoint does not resolve memberships (it mints from a caller-supplied
+            // UserId + claims dictionary, not a live sign-in) — left null, no behavior change.
+            memberships: null,
+            activeMembershipId: null,
+            expirationHours: 15 // pre-existing: see FOLLOW-UPS #18 (comment says "15 minutes", param is hours)
+        );
+
+        // Generate refresh token (user aggregate handles this)
+        var refreshTokenValue = Guid.NewGuid().ToString();
+
+        _logger.LogInformation(
+            "Successfully generated new token for user {UserId} with providerId: {ProviderId}",
+            userId,
+            providerId ?? "none");
+
+        return Ok(new GenerateTokenResponse
+        {
+            AccessToken = accessToken,
+            RefreshToken = refreshTokenValue,
+            ExpiresIn = 900, // 15 minutes
+            TokenType = "Bearer"
+        });
     }
 }
 
