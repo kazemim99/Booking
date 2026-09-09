@@ -24,6 +24,7 @@ working hours, registration steps). This change owns the rest of `tests/known-fa
 - [x] 7d CheckSlotAvailability_ForBookedSlot: proved at 570f802e in a clean worktree that it predates this work, added to the baseline with that proof, and made FOLLOW-UPS #48 carry it — the slot grid is built in memory while booking times come back shifted, so a booked slot reads as free (double-booking risk)
 - [x] 11 ProgressiveRegistrationTests (5): a helper read the camelCase envelope with PascalCase keys; fabricated identities with no user row; draft creation reported 201 for an updated draft
 - [x] 12 StepBasedRegistrationTests (11): step 5 had no handler at all; unknown category / missing owner name / every step-9 rule answered 500; the progress endpoint documented a 404 it never returns; the gallery step posted JSON to a file-upload endpoint. Both classes 21/21
+- [x] 13 The ServiceCatalog integration assembly is serialised (`DisableTestParallelization`): two FULL verifies each failed on a different off-baseline test that passes in isolation, so the gate could not tell a race from a regression. Serialised it reports exactly the 10 baseline failures, 491 passed, 7m27s vs 3m22s (FOLLOW-UPS #45)
 - [ ] 7b FULL verify green for this change
 
 ## Decisions
