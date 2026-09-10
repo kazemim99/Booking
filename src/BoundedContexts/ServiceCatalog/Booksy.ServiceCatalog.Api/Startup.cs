@@ -11,6 +11,7 @@ using System.Text.Json;
 using System.Text.Json.Serialization;
 using Booksy.API.Extensions;
 using Booksy.API.Middleware;
+using Booksy.API.RateLimiting;
 using Booksy.Infrastructure.Security;
 using Booksy.Infrastructure.Security.Authorization;
 using Booksy.ServiceCatalog.Application.DependencyInjection;
@@ -120,6 +121,9 @@ namespace Booksy.API
             services.AddSingleton<IClientResolveContributor, ClientRateLimitResolver>();
             services.AddSingleton<IRateLimitConfiguration, RateLimitConfiguration>();
 
+            // The named policies referenced by [EnableRateLimiting] attributes on this API.
+            services.AddBooksyRateLimiting(Configuration);
+
             //SerilogConfiguration.ConfigureSerilog(Configuration, "ServiceCatalog.API");
 
             // Infrastructure Core (CQRS, Caching, Event Bus, etc.)
@@ -192,6 +196,9 @@ namespace Booksy.API
             // Auth
             app.UseAuthentication();
             app.UseAuthorization();
+
+            // After authentication: the per-policy partition prefers the authenticated user id.
+            app.UseRateLimiter();
 
 
             app.UseEndpoints(endpoints =>

@@ -60,6 +60,15 @@ public class TestWebApplicationFactory<TStartup, TDbContext>
         builder.UseSetting("ConnectionStrings:Redis", "localhost:6379,abortConnect=false");
         builder.UseSetting("Cache:RedisConnectionString", "localhost:6379,abortConnect=false");
 
+        // Abuse limits are raised for the suites, deliberately and visibly. A test that signs the
+        // same phone in twice in a row is exercising identity, not asking to be throttled, and the
+        // 60-second production cooldown would make it a sleep. Raising them HERE rather than
+        // compiling them out (which is what `#if !DEBUG` used to do in the OTP handler) keeps the
+        // production path identical to the one under test, minus the numbers.
+        builder.UseSetting("Otp:Protection:MaxSendsPerWindow", "1000");
+        builder.UseSetting("Otp:Protection:ResendCooldown", "00:00:00");
+        builder.UseSetting("RateLimiting:Enabled", "false");
+
         builder.ConfigureAppConfiguration((context, config) =>
         {
             // Add test-specific configuration

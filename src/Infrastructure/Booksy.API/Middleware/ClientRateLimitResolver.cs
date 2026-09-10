@@ -50,11 +50,21 @@ public class ClientRateLimitResolver : IClientResolveContributor
                 return "admin";
             }
 
-            // Authenticated non-admin user
-            return "authenticated";
+            // One bucket PER USER, not one bucket for everybody signed in. The previous constant
+            // "authenticated" meant a single 1000-per-minute allowance shared by the entire user
+            // base: one busy client could throttle everyone else, and no individual account could
+            // ever be limited.
+            var userId = user.FindFirstValue(ClaimTypes.NameIdentifier)
+                ?? user.FindFirstValue("userId")
+                ?? "unknown";
+
+            return $"user:{userId}";
         }
 
-        // Anonymous user
-        return "anonymous";
+        // Likewise per caller, not one bucket for the whole internet. "anonymous" as a constant was
+        // both useless against a single abuser (they shared the allowance with everyone) and a
+        // shared-fate denial of service (they could spend everyone else's).
+        var ip = httpContext.Connection.RemoteIpAddress?.ToString() ?? "unknown";
+        return $"ip:{ip}";
     }
 }

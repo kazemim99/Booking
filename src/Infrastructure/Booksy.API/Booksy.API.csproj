@@ -6,6 +6,13 @@
     <Nullable>enable</Nullable>
   </PropertyGroup>
 
+  <ItemGroup>
+    <!-- ASP.NET Core's own rate limiter (Microsoft.AspNetCore.RateLimiting) lives in the shared
+         framework. This project already holds middleware built on HttpContext, so the reference
+         only makes explicit what it was already depending on transitively. -->
+    <FrameworkReference Include="Microsoft.AspNetCore.App" />
+  </ItemGroup>
+
 
 	<ItemGroup>
 		<PackageReference Include="AspNetCoreRateLimit" Version="5.0.0" />

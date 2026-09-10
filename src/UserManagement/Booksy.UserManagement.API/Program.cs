@@ -3,6 +3,7 @@
 // ========================================
 using Booksy.API.Extensions;
 using Booksy.API.Middleware;
+using Booksy.API.RateLimiting;
 using Booksy.Core.Domain.Infrastructure.Middleware;
 using Booksy.Infrastructure.Core.DependencyInjection;
 using Booksy.Infrastructure.Core.Persistence.Base;
@@ -122,7 +123,10 @@ builder.Services.AddCors(options =>
 });
 
 // Add Application Services
-builder.Services.AddUserManagementApplication();
+builder.Services.AddUserManagementApplication(builder.Configuration);
+
+// The named policies referenced by [EnableRateLimiting] on the auth and user endpoints.
+builder.Services.AddBooksyRateLimiting(builder.Configuration);
 builder.Services.AddUserManagementInfrastructure(builder.Configuration);
 
 
@@ -180,6 +184,9 @@ app.UseCors("AllowSpecificOrigins");
 // Authentication & Authorization
 app.UseAuthentication();
 app.UseAuthorization();
+
+// After authentication: the per-policy partition prefers the authenticated user id.
+app.UseRateLimiter();
 
 // Health Checks
 app.MapHealthChecks("/health");

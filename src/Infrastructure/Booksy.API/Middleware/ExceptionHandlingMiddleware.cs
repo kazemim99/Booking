@@ -111,6 +111,18 @@ public partial class ExceptionHandlingMiddleware
                 errorResponse = new ApiErrorResult(conflictEx.Message, conflictEx.ErrorCode);
                 break;
 
+            // Asking too often is not a malformed request. Carrying Retry-After lets a client wait
+            // the right amount instead of guessing or hammering.
+            case Booksy.Core.Application.Exceptions.TooManyRequestsException tooManyEx:
+                response.StatusCode = (int)HttpStatusCode.TooManyRequests;
+                if (tooManyEx.RetryAfter is { } retryAfter)
+                {
+                    response.Headers.RetryAfter =
+                        ((int)Math.Ceiling(Math.Max(retryAfter.TotalSeconds, 1))).ToString();
+                }
+                errorResponse = new ApiErrorResult(tooManyEx.Message, "TOO_MANY_REQUESTS");
+                break;
+
             // C3 booking-slot-integrity: a violation of the DB exclusion constraint means
             // the staff time slot was just taken by a concurrent booking. Surface a clean
             // 409 (not a 500) so the client can refresh availability and reselect.

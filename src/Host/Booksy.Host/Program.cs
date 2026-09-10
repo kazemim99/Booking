@@ -9,6 +9,7 @@
 using AspNetCoreRateLimit;
 using Booksy.API.Extensions;
 using Booksy.API.Middleware;
+using Booksy.API.RateLimiting;
 using Booksy.Core.Domain.Infrastructure.Middleware;
 using Booksy.Host.Composition;
 using Booksy.Infrastructure.Core.DependencyInjection;
@@ -147,6 +148,10 @@ builder.Services.AddDistributedRateLimiting();
 builder.Services.AddSingleton<IClientResolveContributor, ClientRateLimitResolver>();
 builder.Services.AddSingleton<IRateLimitConfiguration, RateLimitConfiguration>();
 
+// The named policies the [EnableRateLimiting] attributes refer to. Until this existed they
+// resolved to nothing, so OTP, password reset and registration had only the blanket client rule.
+builder.Services.AddBooksyRateLimiting(builder.Configuration);
+
 // ---------------------------------------------------------------------------
 // Shared infrastructure + bounded contexts
 // ---------------------------------------------------------------------------
@@ -154,7 +159,7 @@ builder.Services.AddInfrastructureCore(builder.Configuration);
 
 // UserManagement context
 builder.Services.AddTransient<ProviderRegisteredEventSubscriber>();
-builder.Services.AddUserManagementApplication();
+builder.Services.AddUserManagementApplication(builder.Configuration);
 builder.Services.AddUserManagementInfrastructure(builder.Configuration);
 
 // ServiceCatalog context
@@ -240,6 +245,10 @@ app.UseClientRateLimiting();
 
 app.UseAuthentication();
 app.UseAuthorization();
+
+// After authentication on purpose: the per-policy partition prefers the authenticated user id, so
+// it has to run once the principal exists. Endpoint-scoped policies apply at endpoint execution.
+app.UseRateLimiter();
 
 // Health probes must stay anonymous — the global fallback policy (C1) would otherwise
 // 401 Docker/K8s/curl liveness+readiness probes and mark the container unhealthy.

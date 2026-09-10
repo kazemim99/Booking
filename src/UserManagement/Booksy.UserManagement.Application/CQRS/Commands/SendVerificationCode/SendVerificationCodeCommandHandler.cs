@@ -4,12 +4,15 @@
 // ========================================
 using Booksy.Core.Application.Services.Notifications;
 using Booksy.Core.Application.Abstractions.CQRS;
+using Booksy.Core.Application.Exceptions;
 using Booksy.Core.Domain.Exceptions;
 using Booksy.Core.Domain.ValueObjects;
+using Booksy.UserManagement.Application.Configuration;
 using Booksy.UserManagement.Application.Services.Interfaces;
 using Booksy.UserManagement.Domain.Enums;
 using Booksy.UserManagement.Domain.Repositories;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
 
 namespace Booksy.UserManagement.Application.CQRS.Commands.SendVerificationCode;
 
@@ -22,15 +25,18 @@ public sealed class SendVerificationCodeCommandHandler
 {
     private readonly IPhoneVerificationRepository _repository;
     private readonly ISmsNotificationService _smsService;
+    private readonly OtpProtectionOptions _protection;
     private readonly ILogger<SendVerificationCodeCommandHandler> _logger;
 
     public SendVerificationCodeCommandHandler(
         IPhoneVerificationRepository repository,
         ISmsNotificationService smsService,
+        IOptions<OtpProtectionOptions> protection,
         ILogger<SendVerificationCodeCommandHandler> logger)
     {
         _repository = repository;
         _smsService = smsService;
+        _protection = protection.Value;
         _logger = logger;
     }
 
@@ -52,20 +58,63 @@ public sealed class SendVerificationCodeCommandHandler
             throw new DomainValidationException("PhoneNumber", $"Invalid phone number: {ex.Message}");
         }
 
-        // Check for recent verification attempts (rate limiting)
+        // Abuse protection for the anonymous send path. Two rules, both per PHONE, because that is
+        // what an SMS costs money against — a limiter keyed on IP cannot see the number.
+        //
+        // This block used to sit inside `#if !DEBUG`, so the only protection on the endpoint
+        // disappeared in any Debug build: whether a phone could be bombed depended on how the binary
+        // was compiled. The limits are configuration now (OtpProtectionOptions), so a test host
+        // raises them deliberately and a deployed host cannot lose them by accident.
         var recentVerifications = await _repository.GetRecentVerificationsByPhoneAsync(
             phoneNumber.Value,
-            TimeSpan.FromMinutes(10),
+            _protection.Window,
             cancellationToken);
 
-#if !DEBUG
-        if (recentVerifications.Count >= 3)
+        if (recentVerifications.Count >= _protection.MaxSendsPerWindow)
         {
-            throw new DomainValidationException(
-                phoneNumber.Value,
-                "تعداد درخواست بیش از حد. لطفا دقایقی دیگر مجدد تلاش کنید");
+            var oldest = recentVerifications.Min(v => v.CreatedAt);
+            var retryAfter = _protection.Window - (DateTime.UtcNow - oldest);
+
+            _logger.LogWarning(
+                "OTP send refused: {Count} codes already sent to {MaskedPhone} within {Window}",
+                recentVerifications.Count, MaskPhoneNumber(phoneNumber.Value), _protection.Window);
+
+            throw new TooManyRequestsException(
+                "تعداد درخواست بیش از حد. لطفا دقایقی دیگر مجدد تلاش کنید",
+                retryAfter > TimeSpan.Zero ? retryAfter : TimeSpan.FromMinutes(1));
         }
-#endif
+
+        // The cooldown PhoneVerification.CanResend() has always modelled, applied to the path that
+        // creates a fresh verification each time and therefore never consulted it.
+        //
+        // INERT UNTIL FOLLOW-UPS #48. These timestamps come back from Postgres shifted into the
+        // future by the server's UTC offset (legacy Npgsql timestamp behaviour against
+        // `timestamp without time zone`), so the elapsed time computes NEGATIVE and this rule would
+        // refuse every request forever. The `sinceLastSend >= Zero` guard is what stops that; it
+        // also makes the rule silently ineffective wherever #48 is unfixed, which is the honest
+        // trade — the per-window cap above still applies and is what bounds the damage today.
+        // When #48 lands, delete the guard and the cooldown starts working with no other change.
+        var lastSentAt = recentVerifications
+            .Select(v => v.LastSentAt ?? v.CreatedAt)
+            .DefaultIfEmpty()
+            .Max();
+
+        var sinceLastSend = DateTime.UtcNow - lastSentAt;
+
+        if (lastSentAt != default
+            && sinceLastSend >= TimeSpan.Zero
+            && sinceLastSend < _protection.ResendCooldown)
+        {
+            var wait = _protection.ResendCooldown - sinceLastSend;
+
+            _logger.LogWarning(
+                "OTP send refused by cooldown for {MaskedPhone}: last sent {LastSentAt:o}, {Elapsed} ago, cooldown {Cooldown}",
+                MaskPhoneNumber(phoneNumber.Value), lastSentAt, sinceLastSend, _protection.ResendCooldown);
+
+            throw new TooManyRequestsException(
+                "کد قبلا ارسال شده است. لطفا کمی صبر کنید",
+                wait > TimeSpan.Zero ? wait : TimeSpan.FromSeconds(1));
+        }
 
         // Create verification aggregate
         var verification = Domain.Aggregates.PhoneVerificationAggregate.PhoneVerification.Create(
