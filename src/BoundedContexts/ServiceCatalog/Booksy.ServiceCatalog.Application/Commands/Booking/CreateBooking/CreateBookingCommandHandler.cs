@@ -4,6 +4,7 @@
 using Booksy.Core.Application.Abstractions.CQRS;
 using Booksy.Core.Application.Abstractions.Persistence;
 using Booksy.Core.Application.Exceptions;
+using Booksy.Core.Domain.Exceptions;
 using Booksy.Core.Domain.ValueObjects;
 using Booksy.ServiceCatalog.Application.Services;
 using Booksy.ServiceCatalog.Domain.Aggregates.BookingAggregate;
@@ -125,6 +126,14 @@ namespace Booksy.ServiceCatalog.Application.Commands.Booking.CreateBooking
             var resource = await _resourceResolver.ResolveAsync(
                 provider, request.StaffProviderId, requireBookable: true, cancellationToken);
             var resourceId = resource.ResourceId;
+
+            // A start time in the past is a malformed request, not a scheduling conflict: no state
+            // of the salon could make it bookable. It used to fall through to the constraint check
+            // below, whose failures are all reported as 409 Conflict, so asking for yesterday got
+            // the same answer as asking for a slot someone else had taken.
+            if (request.StartTime <= DateTime.UtcNow)
+                throw new DomainValidationException(
+                    nameof(request.StartTime), "Cannot create a booking in the past");
 
             // Validate booking constraints (provider status, business hours, holidays, etc.)
             var validationResult = await _availabilityService.ValidateBookingConstraintsAsync(

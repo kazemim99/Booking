@@ -71,12 +71,12 @@ public class WorkingHoursManagementTests : ServiceCatalogIntegrationTestBase
         {
             BusinessHours = new List<BusinessHoursDayDto>
             {
-                new() { DayOfWeek = 1, IsOpen = true, OpenTime = "09:00", CloseTime = "18:00", Breaks = null },
-                new() { DayOfWeek = 2, IsOpen = true, OpenTime = "09:00", CloseTime = "18:00", Breaks = null },
-                new() { DayOfWeek = 3, IsOpen = true, OpenTime = "09:00", CloseTime = "18:00", Breaks = null },
-                new() { DayOfWeek = 4, IsOpen = true, OpenTime = "09:00", CloseTime = "18:00", Breaks = null },
-                new() { DayOfWeek = 5, IsOpen = true, OpenTime = "09:00", CloseTime = "17:00", Breaks = null },
-                new() { DayOfWeek = 6, IsOpen = true, OpenTime = "10:00", CloseTime = "14:00", Breaks = null },
+                new() { DayOfWeek = 1, IsOpen = true, OpenTime = TimeComponentsDto.At(9, 0), CloseTime = TimeComponentsDto.At(18, 0), Breaks = null },
+                new() { DayOfWeek = 2, IsOpen = true, OpenTime = TimeComponentsDto.At(9, 0), CloseTime = TimeComponentsDto.At(18, 0), Breaks = null },
+                new() { DayOfWeek = 3, IsOpen = true, OpenTime = TimeComponentsDto.At(9, 0), CloseTime = TimeComponentsDto.At(18, 0), Breaks = null },
+                new() { DayOfWeek = 4, IsOpen = true, OpenTime = TimeComponentsDto.At(9, 0), CloseTime = TimeComponentsDto.At(18, 0), Breaks = null },
+                new() { DayOfWeek = 5, IsOpen = true, OpenTime = TimeComponentsDto.At(9, 0), CloseTime = TimeComponentsDto.At(17, 0), Breaks = null },
+                new() { DayOfWeek = 6, IsOpen = true, OpenTime = TimeComponentsDto.At(10, 0), CloseTime = TimeComponentsDto.At(14, 0), Breaks = null },
                 new() { DayOfWeek = 0, IsOpen = false, OpenTime = null, CloseTime = null, Breaks = null }
             }
         };
@@ -118,18 +118,18 @@ public class WorkingHoursManagementTests : ServiceCatalogIntegrationTestBase
                 {
                     DayOfWeek = 1,
                     IsOpen = true,
-                    OpenTime = "09:00",
-                    CloseTime = "17:00",
+                    OpenTime = TimeComponentsDto.At(9, 0),
+                    CloseTime = TimeComponentsDto.At(17, 0),
                     Breaks = new List<BreakPeriodDto>
                     {
-                        new() { StartTime = "12:00", EndTime = "13:00", Label = "Lunch Break" },
-                        new() { StartTime = "15:00", EndTime = "15:15", Label = "Coffee Break" }
+                        new() { Start = TimeComponentsDto.At(12, 0), End = TimeComponentsDto.At(13, 0), Label = "Lunch Break" },
+                        new() { Start = TimeComponentsDto.At(15, 0), End = TimeComponentsDto.At(15, 15), Label = "Coffee Break" }
                     }
                 },
-                new() { DayOfWeek = 2, IsOpen = true, OpenTime = "09:00", CloseTime = "17:00", Breaks = null },
-                new() { DayOfWeek = 3, IsOpen = true, OpenTime = "09:00", CloseTime = "17:00", Breaks = null },
-                new() { DayOfWeek = 4, IsOpen = true, OpenTime = "09:00", CloseTime = "17:00", Breaks = null },
-                new() { DayOfWeek = 5, IsOpen = true, OpenTime = "09:00", CloseTime = "17:00", Breaks = null },
+                new() { DayOfWeek = 2, IsOpen = true, OpenTime = TimeComponentsDto.At(9, 0), CloseTime = TimeComponentsDto.At(17, 0), Breaks = null },
+                new() { DayOfWeek = 3, IsOpen = true, OpenTime = TimeComponentsDto.At(9, 0), CloseTime = TimeComponentsDto.At(17, 0), Breaks = null },
+                new() { DayOfWeek = 4, IsOpen = true, OpenTime = TimeComponentsDto.At(9, 0), CloseTime = TimeComponentsDto.At(17, 0), Breaks = null },
+                new() { DayOfWeek = 5, IsOpen = true, OpenTime = TimeComponentsDto.At(9, 0), CloseTime = TimeComponentsDto.At(17, 0), Breaks = null },
                 new() { DayOfWeek = 6, IsOpen = false, OpenTime = null, CloseTime = null, Breaks = null },
                 new() { DayOfWeek = 0, IsOpen = false, OpenTime = null, CloseTime = null, Breaks = null }
             }
@@ -165,7 +165,7 @@ public class WorkingHoursManagementTests : ServiceCatalogIntegrationTestBase
         {
             BusinessHours = new List<BusinessHoursDayDto>
             {
-                new() { DayOfWeek = 1, IsOpen = true, OpenTime = "09:00", CloseTime = "17:00", Breaks = null }
+                new() { DayOfWeek = 1, IsOpen = true, OpenTime = TimeComponentsDto.At(9, 0), CloseTime = TimeComponentsDto.At(17, 0), Breaks = null }
             }
         };
 
@@ -192,7 +192,7 @@ public class WorkingHoursManagementTests : ServiceCatalogIntegrationTestBase
         {
             BusinessHours = new List<BusinessHoursDayDto>
             {
-                new() { DayOfWeek = 1, IsOpen = true, OpenTime = "09:00", CloseTime = "17:00", Breaks = null }
+                new() { DayOfWeek = 1, IsOpen = true, OpenTime = TimeComponentsDto.At(9, 0), CloseTime = TimeComponentsDto.At(17, 0), Breaks = null }
             }
         };
 
@@ -618,19 +618,31 @@ public record UpdateBusinessHoursRequestDto
     public List<BusinessHoursDayDto> BusinessHours { get; init; } = new();
 }
 
+// The wire shape PUT /providers/{id}/business-hours actually takes: times are
+// { hours, minutes } objects (TimeSlotDto), and a break is { start, end, label }. These DTOs used
+// to send "09:00" strings and { startTime, endTime, label }, which the action rejects with a 400
+// whose message spells the real shape out — so the tests never reached the behaviour they name.
 public record BusinessHoursDayDto
 {
     public int DayOfWeek { get; init; }
     public bool IsOpen { get; init; }
-    public string? OpenTime { get; init; }
-    public string? CloseTime { get; init; }
+    public TimeComponentsDto? OpenTime { get; init; }
+    public TimeComponentsDto? CloseTime { get; init; }
     public List<BreakPeriodDto>? Breaks { get; init; }
+}
+
+public record TimeComponentsDto
+{
+    public int Hours { get; init; }
+    public int Minutes { get; init; }
+
+    public static TimeComponentsDto At(int hours, int minutes = 0) => new() { Hours = hours, Minutes = minutes };
 }
 
 public record BreakPeriodDto
 {
-    public string StartTime { get; init; } = string.Empty;
-    public string EndTime { get; init; } = string.Empty;
+    public TimeComponentsDto Start { get; init; } = TimeComponentsDto.At(0);
+    public TimeComponentsDto End { get; init; } = TimeComponentsDto.At(0);
     public string? Label { get; init; }
 }
 
@@ -695,8 +707,11 @@ public record ExceptionViewModel
 {
     public Guid Id { get; init; }
     public string Date { get; init; } = string.Empty;
-    public TimeOnly? OpenTime { get; init; }
-    public TimeOnly? CloseTime { get; init; }
+    // Strings, because that is what the endpoint sends ("10:00"). Typed as TimeOnly?, Newtonsoft
+    // could not convert the value and the whole response failed to deserialise — the test reported
+    // a serialisation error, never the exception list it was checking.
+    public string? OpenTime { get; init; }
+    public string? CloseTime { get; init; }
     public bool IsClosed { get; init; }
     public string Reason { get; init; } = string.Empty;
 }

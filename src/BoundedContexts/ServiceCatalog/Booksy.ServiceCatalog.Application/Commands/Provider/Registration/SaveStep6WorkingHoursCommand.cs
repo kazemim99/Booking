@@ -27,7 +27,13 @@ public sealed record TimeSlotDto(
 
 public sealed record BreakTimeDto(
     TimeSlotDto Start,
-    TimeSlotDto End
+    TimeSlotDto End,
+    /// <summary>
+    /// What the break is called ("Lunch", "Coffee"). Optional, and additive: <c>BreakPeriod</c> has
+    /// always carried a label, but no request shape exposed one, so every break saved through the
+    /// API was unlabelled and the domain field was unreachable.
+    /// </summary>
+    string? Label = null
 );
 
 public sealed record SaveStep6WorkingHoursResult(

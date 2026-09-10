@@ -303,16 +303,23 @@ public class BookingsControllerTests : ServiceCatalogIntegrationTestBase
         };
 
         // Act
-        var response = await PostAsJsonAsync<CancelBookingRequest, CancelBookingRequest>(
+        // The action answers with its own MessageResponse payload; deserialising into the REQUEST
+        // type discarded it. `response.Message` is the envelope's generic "Request completed
+        // successfully" (ApiResponseMiddleware), never the action's text — so this assertion was
+        // reading the wrapper and could not have passed whatever the endpoint said.
+        var response = await PostAsJsonAsync<CancelBookingRequest, BookingMessagePayload>(
             $"/api/v1/bookings/{booking.Id.Value}/cancel", request);
 
         // Assert
         response.Errors.Should().BeNull();
         response.StatusCode.Should().Be(HttpStatusCode.OK);
         response.Data.Should().NotBeNull();
-        response!.Message.Should().Contain("cancelled successfully");
+        response.Data!.Message.Should().Contain("cancelled successfully");
 
-        // Verify booking is cancelled in database
+        // Verify booking is cancelled in database. The tracker is cleared first: the cancellation
+        // happened in the request's own DbContext, so EF's identity map would otherwise hand back
+        // the instance this test arranged, still Requested.
+        DbContext.ChangeTracker.Clear();
         var cancelledBooking = await DbContext.Bookings.FirstAsync(b => b.Id == booking.Id);
         cancelledBooking.Status.Should().Be(BookingStatus.Cancelled);
     }
@@ -344,15 +351,18 @@ public class BookingsControllerTests : ServiceCatalogIntegrationTestBase
         };
 
         // Act
-        var response = await PostAsJsonAsync<RescheduleBookingRequest, RescheduleBookingRequest>(
+        // See CancelBooking_AsCustomer: the action's message lives in the payload, not the envelope.
+        var response = await PostAsJsonAsync<RescheduleBookingRequest, BookingMessagePayload>(
             $"/api/v1/bookings/{booking.Id.Value}/reschedule", request);
 
         // Assert
         response.StatusCode.Should().Be(HttpStatusCode.OK);
         response.Data.Should().NotBeNull();
-        response.Message.Should().Contain("rescheduled successfully");
+        response.Data!.Message.Should().Contain("rescheduled successfully");
 
         // Verify old booking is marked as rescheduled
+        // See CancelBooking_AsCustomer: read the row, not this test's tracked instance.
+        DbContext.ChangeTracker.Clear();
         var oldBooking = await DbContext.Bookings.FirstAsync(b => b.Id == booking.Id);
         oldBooking.Status.Should().Be(BookingStatus.Rescheduled);
 
@@ -433,4 +443,10 @@ public class BookingsControllerTests : ServiceCatalogIntegrationTestBase
     }
 
     #endregion
+}
+
+/// <summary>The payload shape of the cancel and reschedule actions (BookingsController's MessageResponse).</summary>
+public sealed record BookingMessagePayload
+{
+    public string Message { get; init; } = string.Empty;
 }

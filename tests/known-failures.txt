@@ -88,16 +88,34 @@
 # category "Salon" is not one the API or any client has ever used, and the gallery step was posting
 # JSON URLs to an endpoint that takes file uploads.
 #
-# 10 ServiceCatalog entries remain (3 WorkingHours, 3 Bookings, 2 Availability, 1 Notifications,
-# 1 ProviderManagement). Counted, not carried forward: the "68 remain" above was already stale when
-# written — the file held 59.
+# 2026-09-10 (booking-b8): six more removed, and the four left are all ONE known defect.
+# Removed, with causes:
+#   * The three WorkingHoursManagementTests -> WRONG WIRE SHAPE. PUT business-hours takes times as
+#     { hours, minutes } objects and breaks as { start, end, label }; the tests sent "09:00" strings
+#     and { startTime, endTime }, which the action rejects with a 400 whose message spells out the
+#     real shape — so they never reached the behaviour they name. GetExceptions typed openTime as
+#     TimeOnly? while the endpoint sends "10:00", and Newtonsoft failed the whole response. One real
+#     gap fixed with them: BreakPeriod has always carried a Label and no request shape exposed one,
+#     so every break saved through the API was unlabelled; BreakTimeDto now has an optional Label.
+#   * RegisterProvider_WithValidData -> FIXTURE DEFECT. Authenticated as a fabricated guid with no
+#     users row; registration mints a provider token, which loads the owner and threw "User with ID
+#     ... not found". Uses CreateAndAuthenticateAsRealUserAsync now, like the registration cluster.
+#   * CancelBooking_AsCustomer -> the assertion read the ENVELOPE's message ("Request completed
+#     successfully") instead of the action's payload, and then re-read its own tracked booking
+#     instead of the row.
+#   * CreateBooking_WithPastDate -> REAL DEFECT FIXED. A start time in the past fell through to the
+#     constraint check, whose failures are all 409, so asking for yesterday got the same answer as
+#     asking for a slot someone else had taken. It is a 400 now.
+#
+# 4 ServiceCatalog entries remain, and every one of them is FOLLOW-UPS #48 — UTC instants are
+# written to Postgres shifted by the server's offset, because all three hosts enable Npgsql's legacy
+# timestamp behaviour against `timestamp without time zone` columns:
+#   * the two AvailabilityControllerTests (a booked slot still reads as free: double-booking risk),
+#   * RescheduleBooking_WithValidNewTime (the new time reads back +3:30),
+#   * ScheduleNotification_WithValidData (the scheduled time reads back +3:30).
+# Do not pick these off individually. Fix #48 — a schema migration across all three hosts — and all
+# four should go together.
 Booksy.ServiceCatalog.IntegrationTests.API.Bookings.AvailabilityControllerTests.CheckSlotAvailability_ForBookedSlot_ShouldReturnFalse
 Booksy.ServiceCatalog.IntegrationTests.API.Bookings.AvailabilityControllerTests.GetAvailableSlots_ShouldExcludeBookedSlots
-Booksy.ServiceCatalog.IntegrationTests.API.Bookings.BookingsControllerTests.CancelBooking_AsCustomer_ShouldReturn200Ok
-Booksy.ServiceCatalog.IntegrationTests.API.Bookings.BookingsControllerTests.CreateBooking_WithPastDate_ShouldReturn400BadRequest
 Booksy.ServiceCatalog.IntegrationTests.API.Bookings.BookingsControllerTests.RescheduleBooking_WithValidNewTime_ShouldReturn200Ok
 Booksy.ServiceCatalog.IntegrationTests.API.Notifications.NotificationsControllerTests.ScheduleNotification_WithValidData_ShouldReturn200OK
-Booksy.ServiceCatalog.IntegrationTests.API.Providers.ProviderManagementTests.RegisterProvider_WithValidData_ShouldReturn201Created
-Booksy.ServiceCatalog.IntegrationTests.WorkingHoursManagementTests.GetExceptions_WithValidProvider_ReturnsExceptionList
-Booksy.ServiceCatalog.IntegrationTests.WorkingHoursManagementTests.UpdateBusinessHours_WithBreaks_SavesBreakPeriodsSuccessfully
-Booksy.ServiceCatalog.IntegrationTests.WorkingHoursManagementTests.UpdateBusinessHours_WithValidData_UpdatesSuccessfully

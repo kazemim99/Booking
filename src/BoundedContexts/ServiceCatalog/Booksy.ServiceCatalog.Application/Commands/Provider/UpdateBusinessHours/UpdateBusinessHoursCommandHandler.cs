@@ -56,7 +56,7 @@ public sealed class UpdateBusinessHoursCommandHandler
                 {
                     var start = new TimeOnly(b.Start.Hours, b.Start.Minutes);
                     var end = new TimeOnly(b.End.Hours, b.End.Minutes);
-                    return BreakPeriod.Create(start, end);
+                    return BreakPeriod.Create(start, end, b.Label);
                 }).ToList() ?? new List<BreakPeriod>();
 
                 hoursWithBreaks[day] = (openTime, closeTime, breaks);

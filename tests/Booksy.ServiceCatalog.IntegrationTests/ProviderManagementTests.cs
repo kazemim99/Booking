@@ -30,8 +30,11 @@ public class ProviderManagementTests : ServiceCatalogIntegrationTestBase
     [Fact]
     public async Task RegisterProvider_WithValidData_ShouldReturn201Created()
     {
-        // Arrange - Authenticate first (OwnerId comes from User Management BC)
-        var testUser = AuthenticateAsCustomer("testsalon@example.com");
+        // Arrange - Authenticate first (OwnerId comes from User Management BC).
+        // A real user row, not a fabricated guid: registration mints a token carrying the new
+        // provider claims, which loads the owner from user_management.users and threw
+        // "User with ID ... not found" for an identity that only ever existed in a claim.
+        await CreateAndAuthenticateAsRealUserAsync("testsalon@example.com");
 
         var request = new RegisterProviderRequest
         {
