@@ -1,4 +1,4 @@
-Status: ACTIVE
+Status: DONE
 Verify: FULL
 
 Split agreed with booking-21 on 2026-09-09: booking-21 owns every failure that flows through
@@ -25,7 +25,7 @@ working hours, registration steps). This change owns the rest of `tests/known-fa
 - [x] 11 ProgressiveRegistrationTests (5): a helper read the camelCase envelope with PascalCase keys; fabricated identities with no user row; draft creation reported 201 for an updated draft
 - [x] 12 StepBasedRegistrationTests (11): step 5 had no handler at all; unknown category / missing owner name / every step-9 rule answered 500; the progress endpoint documented a 404 it never returns; the gallery step posted JSON to a file-upload endpoint. Both classes 21/21
 - [x] 13 The ServiceCatalog integration assembly is serialised (`DisableTestParallelization`): two FULL verifies each failed on a different off-baseline test that passes in isolation, so the gate could not tell a race from a regression. Serialised it reports exactly the 10 baseline failures, 491 passed, 7m27s vs 3m22s (FOLLOW-UPS #45)
-- [ ] 7b FULL verify green for this change
+- [x] 7b FULL verify GREEN at ad963e27: 17/17 steps pass in 968s — build, all six unit/architecture suites, Host composition (21/21), ServiceCatalog integration (491 passed, exactly the 10 baseline failures and nothing off-list), UserManagement integration (37/37), both Vue apps, both Flutter apps
 
 ## Decisions
 - 2026-09-09 `POST /registration/step-5/staff` is implemented rather than parked. Its handler had been commented out wholesale during the membership migration, so the endpoint answered 500 on every call while the wizard step, the command, the result type and the frontend all still existed — a dead endpoint, not an open product question. It adds nobody in a new way: each listed person goes through the existing `AddStaffToProviderCommand`, the same path the salon's team screen uses, which links to a person when the phone identifies one, otherwise creates an unclaimed membership, audits it and makes them bookable. That path sends no invitation, so registration sends none either. Tier 2 — flag: if the product wants people notified when they are listed during registration, that is a separate decision and belongs in the shared path, not here.
