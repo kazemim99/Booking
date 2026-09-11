@@ -145,11 +145,15 @@ fi
 
 if [ -n "$FAILED" ]; then RESULT=fail; elif [ -n "$BLOCKED" ]; then RESULT=blocked; else RESULT=pass; fi
 to_json_list() { printf '%s' "$1" | awk '{for(i=1;i<=NF;i++) printf "%s\"%s\"", (i>1?",":""), $i}'; }
+# The filter that narrowed the integration steps, or "" when the whole tier ran. Without it a
+# filtered FULL run was indistinguishable from a real one, to the Stop hook and to peer sessions.
+FILTER_JSON=$(printf '%s' "$FILTER" | sed 's/\\/\\\\/g; s/"/\\"/g')
 cat >"$VERIFY_DIR/status.json" <<EOF
 {
   "sha": "$(git rev-parse HEAD)",
   "tree": "$(tree_hash)",
   "tier": "$TIER",
+  "filter": "$FILTER_JSON",
   "result": "$RESULT",
   "startedAt": "$STARTED",
   "finishedAt": "$(date -u +%Y-%m-%dT%H:%M:%SZ)",
@@ -160,6 +164,7 @@ cat >"$VERIFY_DIR/status.json" <<EOF
 }
 EOF
 echo; echo "verify $(echo $TIER | tr a-z A-Z): $(echo $RESULT | tr a-z A-Z)  ($COUNT steps, $(( $(date +%s) - T0 ))s)"
+[ -n "$FILTER" ] && echo "  FILTERED: $FILTER  (a filtered run is not a FULL verification; the Stop hook will not accept it)"
 [ -n "$FAILED" ] && echo "  failed: $FAILED"
 [ -n "$BLOCKED" ] && echo "  blocked:$BLOCKED"
 echo "  status:  .verify/status.json"

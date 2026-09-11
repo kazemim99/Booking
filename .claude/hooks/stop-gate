@@ -4,8 +4,8 @@
 # When a change is ACTIVE (a tasks.md whose first line is `Status: ACTIVE`), ending the turn is
 # blocked while:
 #   - `- [ ]` tasks remain, or
-#   - every task is closed but .verify/status.json is missing, not tier=full, not result=pass,
-#     or was produced for a different commit / working tree than the current one.
+#   - every task is closed but .verify/status.json is missing, not tier=full, filtered, not
+#     result=pass, or was produced for a different commit / working tree than the current one.
 # The block reason is handed back to the assistant as its next instruction.
 #
 # Escapes (always allowed): no ACTIVE tasks.md; `Status: DONE`; `Status: STOPPED(<reason>)`;
@@ -29,17 +29,20 @@ done
 [ -z "$TASKS" ] && exit 0
 CHANGE="$(basename "$(dirname "$TASKS")")"
 
-# --- loop breaker
-mkdir -p .verify
-COUNT_FILE=.verify/stop-count
+# --- loop breaker: one counter file PER SESSION.
+# It used to be a single .verify/stop-count holding "<session> <count>". Several sessions share this
+# checkout, so each one overwrote the other's line and reset its count, and MAX_BLOCKS never tripped
+# for anyone. The legacy file is removed on sight; counters older than two days are pruned.
+mkdir -p .verify/stop-counts
+[ -f .verify/stop-count ] && rm -f .verify/stop-count
+find .verify/stop-counts -type f -mtime +2 -delete 2>/dev/null
+COUNT_FILE=".verify/stop-counts/$(printf '%s' "$SESSION" | tr -c 'A-Za-z0-9-' '_')"
 COUNT=0
-if [ -f "$COUNT_FILE" ]; then
-  read -r prev_session prev_count < "$COUNT_FILE" || true
-  [ "${prev_session:-}" = "$SESSION" ] && COUNT="${prev_count:-0}"
-fi
+[ -f "$COUNT_FILE" ] && read -r COUNT < "$COUNT_FILE"
+COUNT="${COUNT:-0}"
 block() {
   COUNT=$((COUNT + 1))
-  printf '%s %s\n' "$SESSION" "$COUNT" > "$COUNT_FILE"
+  printf '%s\n' "$COUNT" > "$COUNT_FILE"
   if [ "$COUNT" -gt "$MAX_BLOCKS" ]; then
     printf '%s  session=%s  loop breaker: %s blocks, allowing stop. Last reason: %s\n' \
       "$(date -u +%FT%TZ)" "$SESSION" "$COUNT" "$1" >> .verify/stop-gate.log
@@ -66,6 +69,7 @@ if [ ! -f "$STATUS" ]; then
 fi
 field() { sed -n "s/.*\"$1\" *: *\"\([^\"]*\)\".*/\1/p" "$STATUS" | head -1; }
 R_RESULT="$(field result)"; R_TIER="$(field tier)"; R_SHA="$(field sha)"; R_TREE="$(field tree)"
+R_FILTER="$(field filter)"
 CUR_SHA="$(git rev-parse HEAD 2>/dev/null)"
 idx=.verify/index-hook
 GIT_INDEX_FILE="$idx" git read-tree HEAD 2>/dev/null
@@ -75,6 +79,9 @@ rm -f "$idx"
 
 if [ "$R_TIER" != "full" ]; then
   block "STOP GATE ($CHANGE): all tasks are closed but the last verify was tier '$R_TIER'. Run scripts/verify -Tier full, then set Status: DONE in $TASKS."
+fi
+if [ -n "$R_FILTER" ]; then
+  block "STOP GATE ($CHANGE): all tasks are closed but the last FULL verify was FILTERED ($R_FILTER), so it ran only part of the integration suites. A filtered run is for iterating, not for finishing. Run scripts/verify -Tier full with no -Filter, then set Status: DONE in $TASKS."
 fi
 if [ "$R_RESULT" != "pass" ]; then
   block "STOP GATE ($CHANGE): all tasks are closed but the last FULL verify result is '$R_RESULT' (see .verify/status.json failed/blocked). Fix the root cause and re-run scripts/verify -Tier full. If it is blocked by the environment, record why in tasks.md and set Status: STOPPED(blocked)."

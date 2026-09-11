@@ -271,6 +271,10 @@ $status = [ordered]@{
     sha        = (git rev-parse HEAD).Trim()
     tree       = Get-TreeHash
     tier       = $Tier
+    # The filter that narrowed the integration steps, or "" when the whole tier ran. Without this a
+    # `-Filter`ed FULL run was indistinguishable from a real one: a peer session read twenty tests of
+    # one class as a finished FULL verification, and the Stop hook accepted it as one.
+    filter     = $Filter
     result     = $result
     startedAt  = $startedAt.ToString('o')
     finishedAt = (Get-Date).ToString('o')
@@ -286,6 +290,7 @@ $status = [ordered]@{
 Write-Host ""
 $summaryColor = switch ($result) { 'pass' { 'Green' } 'blocked' { 'Yellow' } default { 'Red' } }
 Write-Host ("verify {0}: {1}  ({2} steps, {3:n0}s)" -f $Tier.ToUpper(), $result.ToUpper(), $script:steps.Count, $status.seconds) -ForegroundColor $summaryColor
+if ($Filter) { Write-Host "  FILTERED: $Filter  (a filtered run is not a FULL verification; the Stop hook will not accept it)" -ForegroundColor Yellow }
 if ($failed.Count) { Write-Host ("  failed:  " + ($failed.name -join ', ')) -ForegroundColor Red }
 if ($blocked.Count) { Write-Host ("  blocked: " + ($blocked.name -join ', ')) -ForegroundColor Yellow }
 Write-Host "  status:  .verify/status.json"
