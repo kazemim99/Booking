@@ -16,6 +16,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.ChangeTracking;
 using Microsoft.EntityFrameworkCore.Diagnostics;
 using Booksy.Core.Domain.Domain.Entities;
+using Booksy.Infrastructure.Core.Persistence.Converters;
 
 namespace Booksy.ServiceCatalog.Infrastructure.Persistence.Context
 {
@@ -64,6 +65,13 @@ namespace Booksy.ServiceCatalog.Infrastructure.Persistence.Context
                 warnings.Ignore(RelationalEventId.PendingModelChangesWarning));
 
             base.OnConfiguring(optionsBuilder);
+        }
+
+        protected override void ConfigureConventions(ModelConfigurationBuilder configurationBuilder)
+        {
+            // Every DateTime is a UTC instant; see UtcDateTimeConverter for why this has to be enforced here.
+            configurationBuilder.UseUtcDateTimes();
+            base.ConfigureConventions(configurationBuilder);
         }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)

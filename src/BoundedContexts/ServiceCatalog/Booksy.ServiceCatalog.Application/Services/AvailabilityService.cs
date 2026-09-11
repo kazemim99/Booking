@@ -385,8 +385,11 @@ namespace Booksy.ServiceCatalog.Application.Services
                     ? DateTime.SpecifyKind(slotStart, DateTimeKind.Utc)
                     : slotStart.ToUniversalTime();
 
-                // Only add slot if it's in the future and has no conflicts
-                if (!hasConflict && slotStartUtc > DateTime.Now)
+                // Only add slot if it's in the future and has no conflicts.
+                // `DateTime.Now` here compared a UTC instant against the machine's LOCAL clock, so
+                // on this machine (+03:30) it silently discarded every genuinely-free slot in the
+                // next three and a half hours — the same-day slots a customer is most likely to want.
+                if (!hasConflict && slotStartUtc > DateTime.UtcNow)
                 {
                     availableSlots.Add(new AvailableTimeSlot(
                         slotStart,

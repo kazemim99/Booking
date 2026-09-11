@@ -129,11 +129,6 @@ builder.Services.AddUserManagementApplication(builder.Configuration);
 builder.Services.AddBooksyRateLimiting(builder.Configuration);
 builder.Services.AddUserManagementInfrastructure(builder.Configuration);
 
-
-
-AppContext.SetSwitch("Npgsql.EnableLegacyTimestampBehavior", true);
-
-
 // Add Health Checks
 builder.Services.AddHealthChecks()
     .AddDbContextCheck<UserManagementDbContext>()

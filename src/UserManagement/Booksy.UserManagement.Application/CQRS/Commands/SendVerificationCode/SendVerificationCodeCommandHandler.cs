@@ -85,15 +85,9 @@ public sealed class SendVerificationCodeCommandHandler
         }
 
         // The cooldown PhoneVerification.CanResend() has always modelled, applied to the path that
-        // creates a fresh verification each time and therefore never consulted it.
-        //
-        // INERT UNTIL FOLLOW-UPS #48. These timestamps come back from Postgres shifted into the
-        // future by the server's UTC offset (legacy Npgsql timestamp behaviour against
-        // `timestamp without time zone`), so the elapsed time computes NEGATIVE and this rule would
-        // refuse every request forever. The `sinceLastSend >= Zero` guard is what stops that; it
-        // also makes the rule silently ineffective wherever #48 is unfixed, which is the honest
-        // trade — the per-window cap above still applies and is what bounds the damage today.
-        // When #48 lands, delete the guard and the cooldown starts working with no other change.
+        // creates a fresh verification each time and therefore never consulted it. It depends on
+        // stored timestamps reading back as the UTC instants they are — which they did not until
+        // FOLLOW-UPS #48 removed Npgsql's legacy timestamp behaviour.
         var lastSentAt = recentVerifications
             .Select(v => v.LastSentAt ?? v.CreatedAt)
             .DefaultIfEmpty()
@@ -101,9 +95,7 @@ public sealed class SendVerificationCodeCommandHandler
 
         var sinceLastSend = DateTime.UtcNow - lastSentAt;
 
-        if (lastSentAt != default
-            && sinceLastSend >= TimeSpan.Zero
-            && sinceLastSend < _protection.ResendCooldown)
+        if (lastSentAt != default && sinceLastSend < _protection.ResendCooldown)
         {
             var wait = _protection.ResendCooldown - sinceLastSend;
 

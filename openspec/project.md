@@ -40,7 +40,11 @@ bounded context in-process — there are no per-service hosts and no API gateway
   then `InitializeDatabaseAsync` (`Program.cs`). Seeding happens **only** when the environment is
   Development or its name contains `Test`.
 - Migration counts: ServiceCatalog **17**, UserManagement **3**
-- `AppContext.SetSwitch("Npgsql.EnableLegacyTimestampBehavior", true)` is set in `Program.cs`
+- Timestamps: every timestamp column is `timestamp with time zone`, and every `DateTime` is a UTC
+  instant. Npgsql runs with its modern timestamp behaviour; both DbContexts apply
+  `UtcDateTimeConverter` (`Booksy.Infrastructure.Core/Persistence/Converters`) so an unmarked
+  (`Kind=Unspecified`) value is read as UTC. The legacy switch was removed 2026-09-11 (FOLLOW-UPS #48)
+  — do not reintroduce it: it reads every value back as `Kind=Local`
 
 **Messaging / integration events**
 - **DotNetCore.CAP 8.0.0** with a **PostgreSQL outbox** (`DotNetCore.CAP.PostgreSql 8.0.0`)

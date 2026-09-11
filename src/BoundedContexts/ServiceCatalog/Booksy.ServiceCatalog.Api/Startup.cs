@@ -135,8 +135,6 @@ namespace Booksy.API
             // Use cached version for Redis/InMemory caching on read repositories
             services.AddServiceCatalogInfrastructureWithCache(Configuration);
 
-            AppContext.SetSwitch("Npgsql.EnableLegacyTimestampBehavior", true);
-
             // Other services
             services.AddResponseCompression();
             services.AddHttpContextAccessor();

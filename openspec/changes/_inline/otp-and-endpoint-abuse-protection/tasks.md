@@ -14,7 +14,7 @@ sit behind it, and they are what this change closes.
 
 ## Tasks
 - [x] 1a OTP send enforces the per-phone cap that `#if !DEBUG` used to compile away, and answers 429 with `Retry-After` instead of 400
-- [-] 1b BLOCKED on FOLLOW-UPS #48: the 60-second cooldown is written and guarded off. Stored timestamps read back AHEAD of `UtcNow` by the server's offset, so elapsed time is negative and the rule would refuse every send forever — measured, with the diagnostic log still in place. Delete the `sinceLastSend >= Zero` guard and add its test when #48 lands
+- [x] 1b RESOLVED 2026-09-11 in `utc-instants-end-to-end`: guard deleted, two cooldown tests added. Original note — BLOCKED on FOLLOW-UPS #48: the 60-second cooldown is written and guarded off. Stored timestamps read back AHEAD of `UtcNow` by the server's offset, so elapsed time is negative and the rule would refuse every send forever — measured, with the diagnostic log still in place. Delete the `sinceLastSend >= Zero` guard and add its test when #48 lands
 - [x] 2 All thirteen policies registered from one table (`RateLimitingOptions.Defaults`), partitioned per caller, limits bindable from configuration, master switch for test hosts
 - [x] 3 `UseRateLimiter()` in all three hosts, after authentication so the partition can prefer the user id, with `Retry-After` on rejection
 - [x] 4 `ClientRateLimitResolver` keys per caller — `user:{id}` or `ip:{addr}` — and the blanket rule is 300/min per caller instead of 100/min shared by everyone

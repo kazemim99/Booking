@@ -31,19 +31,13 @@ namespace Booksy.Tests.Common.Fixtures;
 /// </summary>
 public sealed class PostgresTestContainerFixture : IAsyncLifetime
 {
-    static PostgresTestContainerFixture()
-    {
-        // Every production host sets this (Booksy.Host/Program.cs, and both bounded-context entry
-        // points), but Npgsql latches the value when its type mapper first initialises, and this
-        // fixture opens an NpgsqlConnection to CREATE DATABASE *before* the host under test boots.
-        // Without setting it here first, the mapper initialises with the modern behaviour and every
-        // subsequent write of a DateTime with Kind=Utc into a `timestamp without time zone` column
-        // fails with "Cannot write DateTime with Kind=UTC".
-        //
-        // A static constructor is early enough because it runs on first use of this type, which is the
-        // first thing any integration-test factory does.
-        AppContext.SetSwitch("Npgsql.EnableLegacyTimestampBehavior", true);
-    }
+    // This type used to set `Npgsql.EnableLegacyTimestampBehavior` in a static constructor, mirroring
+    // the three production hosts, on the stated grounds that the columns were
+    // `timestamp without time zone`. They never were: all 162 timestamp columns across both contexts
+    // are `timestamp with time zone`, so the switch bought nothing and cost correctness — under it
+    // Npgsql returns `Kind=Local` on read, and every comparison against `DateTime.UtcNow` came out
+    // wrong by the machine's UTC offset. Removed with FOLLOW-UPS #48; see
+    // openspec/changes/_inline/utc-instants-end-to-end.
 
     // One server for the whole test process. Guarded because xUnit starts test classes in parallel, so
     // several fixtures can race to initialise it.

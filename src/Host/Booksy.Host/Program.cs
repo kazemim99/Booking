@@ -192,8 +192,6 @@ builder.Services
     .AddScoped<Booksy.ServiceCatalog.Application.Services.Interfaces.IPersonAccountProvisioningService,
         InProcessPersonAccountProvisioningService>();
 
-AppContext.SetSwitch("Npgsql.EnableLegacyTimestampBehavior", true);
-
 // ---------------------------------------------------------------------------
 // Cross-cutting services
 // ---------------------------------------------------------------------------

@@ -13,6 +13,7 @@ using Booksy.UserManagement.Domain.Aggregates.CustomerAggregate;
 using Booksy.UserManagement.Domain.Aggregates.PhoneVerificationAggregate;
 using Booksy.UserManagement.Domain.ReadModels;
 using Booksy.Infrastructure.Core.EventBus.Abstractions;
+using Booksy.Infrastructure.Core.Persistence.Converters;
 using System.Threading;
 
 namespace Booksy.UserManagement.Infrastructure.Persistence.Context
@@ -47,6 +48,13 @@ namespace Booksy.UserManagement.Infrastructure.Persistence.Context
             _currentUserService = currentUserService;
             _dateTimeProvider = dateTimeProvider;
             _eventDispatcher = eventDispatcher;
+        }
+
+        protected override void ConfigureConventions(ModelConfigurationBuilder configurationBuilder)
+        {
+            // Every DateTime is a UTC instant; see UtcDateTimeConverter for why this has to be enforced here.
+            configurationBuilder.UseUtcDateTimes();
+            base.ConfigureConventions(configurationBuilder);
         }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)

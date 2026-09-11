@@ -52,11 +52,40 @@ public class OtpAbuseProtectionTests : UserManagementIntegrationTestBase
         client.PostAsJsonAsync("/api/v1/auth/send-verification-code",
             new { phoneNumber = phone, countryCode = "+98" });
 
-    // The cooldown rule has no test yet, deliberately. It cannot work until FOLLOW-UPS #48 is
-    // fixed: stored timestamps come back ahead of UtcNow by the server's offset, so "time since the
-    // last send" is negative and the rule is guarded off. A test written today would pass for the
-    // wrong reason — the 429 would come from the cap, not the cooldown — which is worse than no
-    // test. It belongs with #48, which is where the guard gets deleted.
+    [Fact]
+    public async Task A_Second_Send_Inside_The_Cooldown_Is_Refused_With_Retry_After()
+    {
+        // The cap is set far above two sends, so a 429 here can only come from the cooldown. That
+        // matters: while FOLLOW-UPS #48 was open the cooldown was guarded off, and a test with a
+        // tight cap would have passed for the wrong reason.
+        var client = ClientWithLimits(maxSends: 100, cooldown: "00:01:00");
+        var phone = NewLocalPhone();
+
+        var first = await SendCodeAsync(client, phone);
+        first.StatusCode.Should().Be(HttpStatusCode.OK, await first.Content.ReadAsStringAsync());
+
+        var tooSoon = await SendCodeAsync(client, phone);
+
+        tooSoon.StatusCode.Should().Be(HttpStatusCode.TooManyRequests,
+            "the aggregate's own 60-second resend rule must apply to the anonymous send path");
+        tooSoon.Headers.RetryAfter.Should().NotBeNull("the caller must be told when to come back");
+        tooSoon.Headers.RetryAfter!.Delta.Should().NotBeNull();
+        tooSoon.Headers.RetryAfter.Delta!.Value.Should()
+            .BeGreaterThan(TimeSpan.Zero).And.BeLessThanOrEqualTo(TimeSpan.FromMinutes(1),
+                "the wait is what remains of the cooldown, never more — and never hours, which is what a " +
+                "timestamp read back in the server's local time would produce");
+    }
+
+    [Fact]
+    public async Task The_Cooldown_Is_Per_Phone()
+    {
+        var client = ClientWithLimits(maxSends: 100, cooldown: "00:01:00");
+
+        (await SendCodeAsync(client, NewLocalPhone())).StatusCode.Should().Be(HttpStatusCode.OK);
+
+        (await SendCodeAsync(client, NewLocalPhone())).StatusCode.Should().Be(HttpStatusCode.OK,
+            "one number's cooldown must not delay a code to a different number");
+    }
 
     [Fact]
     public async Task The_Send_Cap_Applies_Per_Phone_Within_The_Window()
