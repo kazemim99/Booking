@@ -216,10 +216,10 @@ if ($Tier -eq 'full') {
     $dockerOk = $false
     cmd /c "docker info >nul 2>&1"; if ($LASTEXITCODE -eq 0) { $dockerOk = $true }
 
+    # One project since docs/TEST_ARCHITECTURE_AUDIT.md Phase 2 slice 4 (was three: SC, UM and
+    # Composition each booted their own host).
     $dbProjects = @(
-        'tests/Booksy.Host.CompositionTests',
-        'tests/Booksy.ServiceCatalog.IntegrationTests',
-        'tests/Booksy.UserManagement.IntegrationTests'
+        'tests/Booksy.Host.IntegrationTests'
     )
     # Per-test timings go to a trx per project so the slowest tests of every run are visible
     # (.verify/slowest.txt below); --blame-hang-timeout turns a hung concurrency test into a dump

@@ -148,32 +148,14 @@ jobs:
     - name: Build solution
       run: dotnet build ${{ env.SOLUTION_PATH }} --configuration Release --no-restore
 
-    # One step per project, each continuing on failure, so a red ServiceCatalog run still reports
-    # UserManagement and composition rather than hiding them behind the first failure.
-    - name: Host composition tests
-      id: composition
+    # One project since docs/TEST_ARCHITECTURE_AUDIT.md Phase 2 slice 4 — Host composition,
+    # ServiceCatalog and UserManagement each booted their own host in three separate projects;
+    # now one host, one project.
+    - name: Host integration tests
       run: >-
-        dotnet test tests/Booksy.Host.CompositionTests
+        dotnet test tests/Booksy.Host.IntegrationTests
         --configuration Release --no-build
-        --logger "trx;LogFileName=composition-tests.trx"
-        --results-directory ./TestResults
-        --blame-hang-timeout 5m
-
-    - name: ServiceCatalog integration tests
-      if: always() && steps.composition.conclusion != 'cancelled'
-      run: >-
-        dotnet test tests/Booksy.ServiceCatalog.IntegrationTests
-        --configuration Release --no-build
-        --logger "trx;LogFileName=servicecatalog-integration-tests.trx"
-        --results-directory ./TestResults
-        --blame-hang-timeout 5m
-
-    - name: UserManagement integration tests
-      if: always() && steps.composition.conclusion != 'cancelled'
-      run: >-
-        dotnet test tests/Booksy.UserManagement.IntegrationTests
-        --configuration Release --no-build
-        --logger "trx;LogFileName=usermanagement-integration-tests.trx"
+        --logger "trx;LogFileName=host-integration-tests.trx"
         --results-directory ./TestResults
         --blame-hang-timeout 5m
 

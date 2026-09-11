@@ -1,0 +1,38 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net9.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <IsPackable>false</IsPackable>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="coverlet.collector" />
+    <PackageReference Include="FluentAssertions" />
+    <PackageReference Include="Microsoft.AspNetCore.Mvc.Testing" />
+    <PackageReference Include="Microsoft.AspNetCore.SignalR.Client" />
+    <PackageReference Include="Microsoft.NET.Test.Sdk" />
+    <PackageReference Include="Moq" />
+    <PackageReference Include="NSubstitute" />
+    <PackageReference Include="xunit" />
+    <PackageReference Include="xunit.runner.visualstudio" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- Booksy.Host is the system under test: every suite here boots the real composed monolith,
+         not a bounded context's own (retired) per-service entry point. One project, one host,
+         replacing Booksy.ServiceCatalog.IntegrationTests, Booksy.UserManagement.IntegrationTests and
+         Booksy.Host.CompositionTests (docs/TEST_ARCHITECTURE_AUDIT.md Phase 2 slice 4). -->
+    <ProjectReference Include="..\..\src\Host\Booksy.Host\Booksy.Host.csproj" />
+    <ProjectReference Include="..\..\src\BoundedContexts\ServiceCatalog\Booksy.ServiceCatalog.Api\Booksy.ServiceCatalog.Api.csproj" />
+    <ProjectReference Include="..\..\src\BoundedContexts\ServiceCatalog\Booksy.ServiceCatalog.Infrastructure\Booksy.ServiceCatalog.Infrastructure.csproj" />
+    <ProjectReference Include="..\..\src\UserManagement\Booksy.UserManagement.Infrastructure\Booksy.UserManagement.Infrastructure.csproj" />
+    <ProjectReference Include="..\Booksy.Tests.Commons\Booksy.Tests.Commons.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Using Include="Xunit" />
+  </ItemGroup>
+
+</Project>

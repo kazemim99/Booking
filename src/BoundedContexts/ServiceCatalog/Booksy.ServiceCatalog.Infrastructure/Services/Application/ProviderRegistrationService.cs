@@ -1,6 +1,8 @@
 ﻿// ========================================
 // Booksy.ServiceCatalog.Application/Services/Implementations/ProviderRegistrationService.cs
 // ========================================
+using Booksy.Core.Application.Exceptions;
+using Booksy.Core.Domain.Exceptions;
 using Booksy.ServiceCatalog.Application.Commands.Provider.RegisterProvider;
 using Booksy.ServiceCatalog.Application.Services.Interfaces;
 using Booksy.ServiceCatalog.Domain.Repositories;
@@ -23,26 +25,29 @@ namespace Booksy.ServiceCatalog.Application.Services.Implementations
 
         public async Task ValidateRegistrationAsync(RegisterProviderCommand command, CancellationToken cancellationToken = default)
         {
-            // Check if business name is unique
+            // Check if business name is unique. A real conflict, not a malformed request or a
+            // server fault → ConflictException (409), the same mapping RegisterProviderCommandHandler
+            // uses for "owner already has a provider" (ExceptionHandlingMiddleware has no case for a
+            // bare InvalidOperationException, which used to fall through to an opaque 500).
             var isNameUnique = await IsBusinessNameAvailableAsync(command.BusinessName, cancellationToken);
             if (!isNameUnique)
             {
-                throw new InvalidOperationException($"Business name '{command.BusinessName}' is already taken");
+                throw new ConflictException($"Business name '{command.BusinessName}' is already taken");
             }
 
             // Check if owner is eligible
             var isOwnerEligible = await IsOwnerEligibleAsync(command.OwnerId, cancellationToken);
             if (!isOwnerEligible)
             {
-                throw new InvalidOperationException($"Owner {command.OwnerId} is not eligible to register a provider");
+                throw new ConflictException($"Owner {command.OwnerId} is not eligible to register a provider");
             }
 
-            // Validate address
+            // Validate address — malformed input, not a conflict → 400.
             var isAddressValid = await ValidateBusinessAddressAsync(
                 command.Street, command.City, command.State, command.PostalCode, command.Country, cancellationToken);
             if (!isAddressValid)
             {
-                throw new InvalidOperationException("Invalid business address provided");
+                throw new DomainValidationException("Address", "Invalid business address provided");
             }
         }
 

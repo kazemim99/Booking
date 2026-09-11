@@ -117,7 +117,9 @@ if [ "$TIER" = full ]; then
   if docker info >/dev/null 2>&1; then DOCKER=1; else DOCKER=0; fi
   # Clear the previous run, including the GUID folders the blame collector leaves behind.
   TRX_DIR="$VERIFY_DIR/trx"; mkdir -p "$TRX_DIR"; rm -rf "${TRX_DIR:?}"/*
-  for p in tests/Booksy.Host.CompositionTests tests/Booksy.ServiceCatalog.IntegrationTests tests/Booksy.UserManagement.IntegrationTests; do
+  # One project since docs/TEST_ARCHITECTURE_AUDIT.md Phase 2 slice 4 (was three: SC, UM and
+  # Composition each booted their own host).
+  for p in tests/Booksy.Host.IntegrationTests; do
     n="db:$(basename "$p")"
     if [ $DOCKER -eq 0 ]; then blocked "$n" "Docker is not running; Testcontainers cannot start Postgres"; continue; fi
     clauses=""

@@ -92,7 +92,26 @@ namespace Booksy.Core.Application.Behaviors
             catch
             {
                 // Failed → release the reservation so the client can retry (the gateway was not left "reserved").
-                await store.ReleaseAsync(requestType, key, CancellationToken.None);
+                //
+                // ReleaseAsync opens its OWN scope and connection (docs/TEST_ARCHITECTURE_AUDIT.md Phase 2
+                // slice 4 found this the hard way: under the merged integration suite's load — 480 tests
+                // sharing one connection pool instead of two smaller ones — a transient connection-pool
+                // exhaustion inside ReleaseAsync intermittently threw here, and a bare `throw;` never
+                // executes when the statement above it throws first. That REPLACED the real failure (a
+                // 400-worthy DomainValidationException) with an unrelated 500, for any caller, in
+                // production or under test. A cleanup step must never be able to mask the failure it was
+                // cleaning up after — swallow (log) whatever ReleaseAsync does and always surface the
+                // ORIGINAL exception.
+                try
+                {
+                    await store.ReleaseAsync(requestType, key, CancellationToken.None);
+                }
+                catch (Exception releaseEx)
+                {
+                    _logger.LogError(releaseEx,
+                        "Failed to release idempotency reservation for {CommandType} key {Key} after the handler failed; " +
+                        "it will sit in-flight until the staleness window reclaims it.", requestType, key);
+                }
                 throw;
             }
         }

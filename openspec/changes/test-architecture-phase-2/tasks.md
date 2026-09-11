@@ -32,9 +32,9 @@ Composition 21 tests, step 33.9 s.
 - [x] 3.1 UM tests boot Booksy.Host through HostEntryPoint, in one UM collection
 - [x] 3.2 UserRepositorySaveTests + PersonProvisioningConcurrencyTests take their context from the host's DI scope; EnsureCreated goes
 - [x] 3.3 FULL verify; record every UM failure with cause and resolution
-- [ ] 4.1 tests/Booksy.Host.IntegrationTests: git mv the SC project; UM and composition tests in folders; namespaces follow folders
-- [ ] 4.2 BooksyHostFactory (SC fakes + capturing SMS fake); composition factory stays unfaked; JwtTokenServiceMembershipClaimsTests to a unit project
-- [ ] 4.3 Old projects deleted; Booksy.sln, both verify scripts, CI integration job, docs pointers updated
+- [x] 4.1 tests/Booksy.Host.IntegrationTests: git mv the SC project; UM and composition tests in folders; namespaces follow folders
+- [x] 4.2 BooksyHostFactory (SC fakes + capturing SMS fake); composition factory stays unfaked; JwtTokenServiceMembershipClaimsTests to a unit project
+- [x] 4.3 Old projects deleted; Booksy.sln, both verify scripts, CI integration job, docs pointers updated
 - [ ] 5.1 Template database in PostgresTestContainerFixture: migrate once per process, clone per factory
 - [ ] 5.2 Parallel collections incl. a Concurrency collection; DisableTestParallelization removed; xunit.runner.json
 - [ ] 5.3 Two back-to-back runs identical, or revert to serial collections and record why
@@ -43,6 +43,48 @@ Composition 21 tests, step 33.9 s.
 - [ ] 6.3 FOLLOW-UPS: the four production findings (CAP before commit, unregistered subscribers, null owner cache, upload leak)
 - [ ] 6.4 AGENTS.md, CLAUDE.md, tests/README.md, audit §2.4, memory
 - [ ] 6.5 FULL verify unfiltered; Status: DONE
+
+## Decisions (slice 4)
+- Two production defects, found by the merge's higher load (not introduced by it), fixed in place
+  rather than worked around in the test: (1) `RegisterProviderCommandHandler` ran the business-name-
+  uniqueness/owner-eligibility DB checks *before* constructing `Email`/`PhoneNumber`/`ContactInfo`/
+  `BusinessAddress` value objects, so a malformed request that also happened to collide with an
+  existing business name surfaced the collision's error instead of its own — reordered so value-object
+  construction (and therefore format validation) always runs first. (2) `ProviderRegistrationService`
+  and the handler's "owner already has a provider" check threw a bare `InvalidOperationException`,
+  which `ExceptionHandlingMiddleware` has no case for, so any real caller hitting a genuine name/owner
+  conflict got an opaque 500 instead of 409 — both now throw `ConflictException`; the address-shape
+  check now throws `DomainValidationException` (400) instead. Tier 2 (production behaviour changed:
+  a genuine business-name collision now correctly reports 409 instead of 500; no test asserted the old
+  500/InvalidOperationException, so nothing else depended on it).
+- `IdempotencyBehavior`'s failure-path cleanup (`store.ReleaseAsync` after a handler throws) is now
+  wrapped in its own try/catch instead of running unguarded before the `throw;`: a cleanup step must
+  never be able to replace the failure it was cleaning up after with one of its own. Kept even though
+  it was not the cause of the flake investigated in this slice (see Log) — it is still a real,
+  independently-justified hardening the investigation surfaced along the way. Tier 1.
+- `RegisterProvider_WithInvalidEmail_ShouldReturn400BadRequest`'s flake (reproduced 2/2 standalone runs
+  of the full 480-test suite, 0/2 alone or within its own class) was root-caused via the host's own
+  Serilog file sink (`logs/booksy-host-*.txt`, `EnableSensitiveDataLogging=false` still logs
+  `LogError`) rather than guesswork: the actual exception was
+  `InvalidOperationException: Business name 'Test Salon' is already taken`, not the intermittent
+  `Npgsql` duplicate-key noise from concurrent payment-idempotency tests that first looked like the
+  cause (a red herring from an unrelated, expected race — kept anyway per the decision above). "Test
+  Salon" is a literal shared by ~14 other test methods across the suite (`ProviderSettingsTests`,
+  `ServiceManagementTests`, `ProviderStaffTests`, `ProvidersControllerTests`,
+  `ProgressiveRegistrationTests`, `StepBasedRegistrationTests`); per-test `TRUNCATE` (slice 1) prevents
+  it from leaking *between* tests, but nothing prevented this one test's *own* request from tripping
+  the (wrongly-ordered) uniqueness check before its own email ever got validated whenever that literal
+  happened to already exist earlier in the very same request's test run. Fixing the ordering makes the
+  test's outcome independent of any other test's business-name choices, not just less likely to
+  collide. Recorded as a genuine pre-existing production defect surfaced by the merge, not a test or
+  merge-introduced regression, per AGENTS.md Test Integrity. Not filed as a FOLLOW-UP because it was
+  fixed here, in scope, with the fix verified by two clean full-suite runs (Log below).
+- `BookingSlotIntegrityTests`'s stress-test deadlock (`40P01`, seed 303) seen once, on the very first
+  full run of the merged project, did not reproduce on any of the five full runs since (two before the
+  RegisterProvider fix, two after it, plus this slice's FULL verify). Left as documented pre-existing,
+  load-dependent flakiness (matches FOLLOW-UPS #45's history) rather than chased further: a single
+  non-reproducing deadlock under concurrent-insert stress is exactly the shape that entry already
+  describes, and the merge did not change that test's concurrency model. Tier 1.
 
 ## Decisions (slice 3)
 - The alias for the retargeted entry point is named `Startup`, not `Program`, even though it still
@@ -141,3 +183,20 @@ Composition 21 tests, step 33.9 s.
   `PersonProvisioningConcurrencyTests` now run against the exact production DI registration and
   migrated schema instead of hand-built contexts with substituted services — the `EnsureCreatedAsync`
   workaround and its EF pending-model-changes false positive are both gone, not worked around.
+- 2026-09-11 **Slice 4 done, FULL verify green (uncontended): 17 steps, 477 s, 0 failures — one
+  `db:` step instead of three.** `tests/Booksy.Host.IntegrationTests` now holds all 480 backend
+  integration tests (455 ServiceCatalog + UserManagement behind the shared `BooksyHostFactory`/
+  `BooksyHostTestCollection`, plus the composition tests behind their own unfaked
+  `HostCompositionFactory`); the three old projects (`Booksy.ServiceCatalog.IntegrationTests`,
+  `Booksy.UserManagement.IntegrationTests`, `Booksy.Host.CompositionTests`) are deleted from disk,
+  `Booksy.sln`, both verify scripts and the CI integration job.
+  `JwtTokenServiceMembershipClaimsTests` (pure `JwtTokenService` unit test, no DB/host) moved to
+  `Booksy.UserManagement.Application.UnitTests`, now covered by FAST. Two real test failures
+  surfaced on the first standalone run of the merged suite (478/480) — both investigated to root
+  cause per AGENTS.md Test Integrity rather than retried away; see Decisions above for both. The
+  `RegisterProvider` fix and the `IdempotencyBehavior` hardening are verified by two clean 480/480
+  standalone runs (2 m 12 s, 2 m 42 s) plus this slice's FULL verify (1 m 40 s) — three consecutive
+  green runs of the merged project, none showing either the 500-vs-400 flake or the deadlock.
+  Package references unchanged (`Microsoft.AspNetCore.SignalR.Client`,
+  `Microsoft.AspNetCore.Mvc.Testing`, `System.IdentityModel.Tokens.Jwt` were already centrally
+  declared in `tests/Directory.Packages.props`). Committed as one change.
