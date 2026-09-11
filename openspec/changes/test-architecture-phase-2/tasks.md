@@ -29,9 +29,9 @@ Composition 21 tests, step 33.9 s.
 - [x] 1.5 FULL verify; fix any test that relied on an earlier test's rows; record timings
 - [x] 2.1 IntegrationTestBase drops IClassFixture; one ServiceCatalog collection; [Collection] on every SC class; stale comments fixed
 - [x] 2.2 FULL verify; record ServiceCatalog timings
-- [ ] 3.1 UM tests boot Booksy.Host through HostEntryPoint, in one UM collection
-- [ ] 3.2 UserRepositorySaveTests + PersonProvisioningConcurrencyTests take their context from the host's DI scope; EnsureCreated goes
-- [ ] 3.3 FULL verify; record every UM failure with cause and resolution
+- [x] 3.1 UM tests boot Booksy.Host through HostEntryPoint, in one UM collection
+- [x] 3.2 UserRepositorySaveTests + PersonProvisioningConcurrencyTests take their context from the host's DI scope; EnsureCreated goes
+- [x] 3.3 FULL verify; record every UM failure with cause and resolution
 - [ ] 4.1 tests/Booksy.Host.IntegrationTests: git mv the SC project; UM and composition tests in folders; namespaces follow folders
 - [ ] 4.2 BooksyHostFactory (SC fakes + capturing SMS fake); composition factory stays unfaked; JwtTokenServiceMembershipClaimsTests to a unit project
 - [ ] 4.3 Old projects deleted; Booksy.sln, both verify scripts, CI integration job, docs pointers updated
@@ -43,6 +43,28 @@ Composition 21 tests, step 33.9 s.
 - [ ] 6.3 FOLLOW-UPS: the four production findings (CAP before commit, unregistered subscribers, null owner cache, upload leak)
 - [ ] 6.4 AGENTS.md, CLAUDE.md, tests/README.md, audit §2.4, memory
 - [ ] 6.5 FULL verify unfiltered; Status: DONE
+
+## Decisions (slice 3)
+- The alias for the retargeted entry point is named `Startup`, not `Program`, even though it still
+  points at `Booksy.Host`'s `Program`: `Booksy.Host` transitively references both
+  `Booksy.UserManagement.API` and `Booksy.ServiceCatalog.Api`, and each generates its own global
+  `Program` class (top-level statements), so `global using Program = ...` collides (CS0576) the
+  moment the UM test project references `Booksy.Host`. `Startup` has no such collision and matches
+  the ServiceCatalog suite's own alias name for the identical pattern. Tier 1.
+- `UserManagementTestCollection` mirrors `ServiceCatalogTestCollection` (slice 2) rather than keeping
+  the per-class `IClassFixture` slice 2 had temporarily added: with only 9 classes, doing the host
+  retarget and the collection-sharing together in one slice was cheaper than a throwaway
+  intermediate state. Tier 1.
+- `UserRepositorySaveTests`/`PersonProvisioningConcurrencyTests` resolve `UserManagementDbContext`
+  (and, for the latter, `IPersonProvisioningService`) from the shared factory's DI scope rather than
+  resolving `IUserRepository` by interface: the tests are pinned to `UserRepository`'s own
+  `SaveAsync` behaviour specifically (its `EntityState` handling), and resolving the interface would
+  silently start testing a cache decorator instead if caching is ever turned on. `UserRepository` is
+  still constructed directly with the DI-resolved context. Tier 1.
+- `NewContext()` in both files returns a `DbContext` from a scope it never explicitly disposes,
+  leaning on `DbContext.Dispose()` (called via `await using`) to release the connection and on the GC
+  for the scope itself. A handful of such scopes per test run is an acceptable, pragmatic choice
+  over threading scope disposal through every read-back call. Tier 1.
 
 ## Decisions (slice 2)
 - `IClassFixture<TFactory>` moved off the generic `IntegrationTestBase` and onto the UserManagement
@@ -106,3 +128,16 @@ Composition 21 tests, step 33.9 s.
   from slice 1 held under real sharing: no cross-test data dependency needed fixing, confirming S1 had
   nothing left to catch. Per-class boot median (SC, measured standalone): stays governed by ONE boot
   now rather than 44 — the whole suite's fixed cost is paid once, not per class.
+- 2026-09-11 **Slice 3 done, FULL verify green (uncontended): 18 steps, 526 s, 0 failures.** The
+  UserManagement suite now boots `Booksy.Host` — the same composition that ships — instead of the
+  retired `Booksy.UserManagement.API` per-service host, through a `Startup` alias (see Decisions) and
+  a shared `UserManagementTestCollection` (one host for all 9 classes, mirroring slice 2). All 42
+  tests passed on the FIRST solo run against the real host (33 s), and again on a second solo run
+  (26 s) before the uncontended FULL run (31 s) — no behavioural difference surfaced between the two
+  hosts for anything this suite exercises, despite the real differences the audit found
+  (`IProviderInfoService` HTTP adapter vs `InProcessProviderInfoService`, `IMembershipInfoService`
+  throwing on the unmigrated ServiceCatalog schema under the old host, no client rate limiter under
+  the old host, different transaction-behaviour wrapping). `UserRepositorySaveTests` and
+  `PersonProvisioningConcurrencyTests` now run against the exact production DI registration and
+  migrated schema instead of hand-built contexts with substituted services — the `EnsureCreatedAsync`
+  workaround and its EF pending-model-changes false positive are both gone, not worked around.

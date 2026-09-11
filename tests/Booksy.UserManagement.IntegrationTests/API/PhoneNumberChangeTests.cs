@@ -18,9 +18,10 @@ namespace Booksy.UserManagement.IntegrationTests.API;
 /// UserManagement.Application.UnitTests) -- both routes previously threw on every call because
 /// their MediatR handlers were entirely commented out.
 /// </summary>
+[Collection(UserManagementTestCollection.Name)]
 public class PhoneNumberChangeTests : UserManagementIntegrationTestBase
 {
-    public PhoneNumberChangeTests(UserManagementTestWebApplicationFactory<Program> factory)
+    public PhoneNumberChangeTests(UserManagementTestWebApplicationFactory<Startup> factory)
         : base(factory)
     {
     }

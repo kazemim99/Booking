@@ -17,7 +17,13 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\..\src\UserManagement\Booksy.UserManagement.API\Booksy.UserManagement.API.csproj" />
+    <!-- Booksy.Host is the system under test (docs/TEST_ARCHITECTURE_AUDIT.md Phase 2 slice 3): this
+         suite used to boot Booksy.UserManagement.API's own retired per-service Program, which composes
+         a DIFFERENT service graph (its own IProviderInfoService HTTP adapter instead of the Host's
+         InProcessProviderInfoService, no client rate limiter, IMembershipInfoService throwing on the
+         ServiceCatalog schema it never migrates), so its 42 passing tests said nothing about the
+         composition that actually ships. See GlobalUsing.cs for how `Program` still compiles. -->
+    <ProjectReference Include="..\..\src\Host\Booksy.Host\Booksy.Host.csproj" />
     <ProjectReference Include="..\..\src\UserManagement\Booksy.UserManagement.Infrastructure\Booksy.UserManagement.Infrastructure.csproj" />
     <ProjectReference Include="..\Booksy.Tests.Commons\Booksy.Tests.Commons.csproj" />
   </ItemGroup>

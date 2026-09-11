@@ -15,12 +15,13 @@ namespace Booksy.UserManagement.IntegrationTests.API;
 /// reset all silently discarded their writes. Every step here proves persistence through the real
 /// HTTP pipeline by reading back from the database or by making the next request depend on it.
 /// </summary>
+[Collection(UserManagementTestCollection.Name)]
 public class PasswordAccountLifecycleTests : UserManagementIntegrationTestBase
 {
     private const string Password = "Str0ng!Pass";
     private const string NewPassword = "Even-Str0nger!";
 
-    public PasswordAccountLifecycleTests(UserManagementTestWebApplicationFactory<Program> factory)
+    public PasswordAccountLifecycleTests(UserManagementTestWebApplicationFactory<Startup> factory)
         : base(factory) { }
 
     private static string Field(JsonElement root, string name)

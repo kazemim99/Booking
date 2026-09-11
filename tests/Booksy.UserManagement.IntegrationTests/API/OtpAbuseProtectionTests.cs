@@ -20,9 +20,10 @@ namespace Booksy.UserManagement.IntegrationTests.API;
 /// can sign the same phone in twice; reaching into that singleton to tighten it leaks into every
 /// other class sharing the host, which is exactly what the first version of this file did.</para>
 /// </summary>
+[Collection(UserManagementTestCollection.Name)]
 public class OtpAbuseProtectionTests : UserManagementIntegrationTestBase
 {
-    public OtpAbuseProtectionTests(UserManagementTestWebApplicationFactory<Program> factory)
+    public OtpAbuseProtectionTests(UserManagementTestWebApplicationFactory<Startup> factory)
         : base(factory) { }
 
     private static string NewLocalPhone() => $"0912{Random.Shared.Next(1000000, 9999999)}";
@@ -126,9 +127,10 @@ public class OtpAbuseProtectionTests : UserManagementIntegrationTestBase
 /// unrelated identity tests (which legitimately sign the same phone in twice) start failing with
 /// 429s that have nothing to do with what they are testing.
 /// </summary>
+[Collection(UserManagementTestCollection.Name)]
 public class OtpTestHostLimitsTests : UserManagementIntegrationTestBase
 {
-    public OtpTestHostLimitsTests(UserManagementTestWebApplicationFactory<Program> factory)
+    public OtpTestHostLimitsTests(UserManagementTestWebApplicationFactory<Startup> factory)
         : base(factory) { }
 
     [Fact]

@@ -18,9 +18,10 @@ namespace Booksy.UserManagement.IntegrationTests.API;
 /// The code is read from the SMS the test host's fake gateway captured, exactly as a user would
 /// read it; the aggregate persists only the code's hash.
 /// </summary>
+[Collection(UserManagementTestCollection.Name)]
 public class OtpAuthenticationLifecycleTests : UserManagementIntegrationTestBase
 {
-    public OtpAuthenticationLifecycleTests(UserManagementTestWebApplicationFactory<Program> factory)
+    public OtpAuthenticationLifecycleTests(UserManagementTestWebApplicationFactory<Startup> factory)
         : base(factory) { }
 
     private static string NewLocalPhone() => $"0912{Random.Shared.Next(1000000, 9999999)}";

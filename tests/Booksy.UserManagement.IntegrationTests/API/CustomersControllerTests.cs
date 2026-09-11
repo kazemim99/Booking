@@ -15,9 +15,10 @@ namespace Booksy.UserManagement.IntegrationTests.API;
 /// Covers: Customer profile management, favorites, bookings, preferences
 /// Endpoints: /api/v1/customers/*
 /// </summary>
+[Collection(UserManagementTestCollection.Name)]
 public class CustomersControllerTests : UserManagementIntegrationTestBase
 {
-    public CustomersControllerTests(UserManagementTestWebApplicationFactory<Program> factory)
+    public CustomersControllerTests(UserManagementTestWebApplicationFactory<Startup> factory)
         : base(factory)
     {
     }

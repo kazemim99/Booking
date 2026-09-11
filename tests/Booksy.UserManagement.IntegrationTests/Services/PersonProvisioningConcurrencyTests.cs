@@ -1,27 +1,19 @@
-using Booksy.Core.Application.Abstractions.Services;
 using Booksy.Core.Domain.ValueObjects;
-using Booksy.Infrastructure.Core.EventBus.Abstractions;
-using Booksy.Tests.Common.Fixtures;
 using Booksy.UserManagement.Domain.Enums;
 using Booksy.UserManagement.Domain.Services;
 using Booksy.UserManagement.Infrastructure.Persistence.Context;
-using Booksy.UserManagement.Infrastructure.Persistence.Repositories;
-using Booksy.UserManagement.Infrastructure.Services.Domain;
 using FluentAssertions;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.Logging.Abstractions;
-using NSubstitute;
+using Microsoft.Extensions.DependencyInjection;
 
 namespace Booksy.UserManagement.IntegrationTests.Services;
 
 /// <summary>
 /// refactor-identity-and-membership §1.9: "no-cross-type-duplicate" -- a customer sign-in and a
 /// provider sign-in racing for the same brand-new phone number must resolve to ONE person with
-/// UserType.Both, never two independent accounts. Uses two fully independent DbContext/repository/
-/// service instances (mirroring two real concurrent HTTP requests, each with its own DI scope),
-/// against a real PostgreSQL instance -- same lightweight pattern as
-/// <see cref="Persistence.UserRepositorySaveTests"/>, no host boot needed since
-/// PersonProvisioningService only depends on IUserRepository.
+/// UserType.Both, never two independent accounts. Uses two fully independent DI scopes (mirroring
+/// two real concurrent HTTP requests, each with its own scoped <c>DbContext</c>/repository/service),
+/// against the real composed host's database.
 ///
 /// <para>This is deliberately NOT assumed to pass. §1.2 (a partial unique index on
 /// users(phone_number)) is explicitly not yet done, and GetOrCreateByPhoneAsync's own "defence in
@@ -29,58 +21,40 @@ namespace Booksy.UserManagement.IntegrationTests.Services;
 /// database-level constraint, so two requests that both observe "no existing row" before either
 /// commits are not, on inspection, actually prevented from both inserting. The test reports
 /// what genuinely happens.</para>
+///
+/// <para>Takes its scopes from the shared <see cref="UserManagementTestWebApplicationFactory{TStartup}"/>
+/// (docs/TEST_ARCHITECTURE_AUDIT.md Phase 2 slice 3) instead of a hand-built
+/// <see cref="UserManagementDbContext"/> against its own throwaway container. The real host already
+/// migrates this schema at startup, so the previous <c>EnsureCreatedAsync</c> workaround — needed
+/// only because a hand-built context with substituted services tripped EF's pending-model-changes
+/// check — is gone: this now runs against the exact schema (and the exact
+/// <see cref="IPersonProvisioningService"/> registration) production uses.</para>
 /// </summary>
-public sealed class PersonProvisioningConcurrencyTests : IClassFixture<PostgresTestContainerFixture>, IAsyncLifetime
+[Collection(UserManagementTestCollection.Name)]
+public sealed class PersonProvisioningConcurrencyTests : IAsyncLifetime
 {
-    private readonly PostgresTestContainerFixture _postgres;
+    private readonly UserManagementTestWebApplicationFactory<Startup> _factory;
 
-    public PersonProvisioningConcurrencyTests(PostgresTestContainerFixture postgres)
+    public PersonProvisioningConcurrencyTests(UserManagementTestWebApplicationFactory<Startup> factory)
     {
-        _postgres = postgres;
+        _factory = factory;
     }
 
-    public async Task InitializeAsync()
-    {
-        await using var context = NewContext();
-        // NOT MigrateAsync(): building UserManagementDbContext with substituted
-        // ICurrentUserService/IDomainEventDispatcher (as every test in this project does, see
-        // UserRepositorySaveTests) makes EF Core 9's pending-model-changes check throw --
-        // "has pending changes. Add a new migration before updating the database" -- even
-        // though `dotnet ef migrations has-pending-model-changes` against the real DI-composed
-        // app reports none. This is a pre-existing defect in the test project, not this test;
-        // recorded in FOLLOW-UPS rather than fixed here (fixing it well means finding why the
-        // model hash differs by construction path, which is a separate investigation).
-        // EnsureCreatedAsync builds the schema straight from the live model with no migration
-        // comparison, which is all a throwaway per-fixture database needs anyway.
-        await context.Database.EnsureCreatedAsync();
-    }
+    public Task InitializeAsync() => _factory.ResetStateAsync();
 
     public Task DisposeAsync() => Task.CompletedTask;
 
-    private UserManagementDbContext NewContext()
-    {
-        // Same options as production DI — see UserManagementDbContextOptions.
-        var builder = new DbContextOptionsBuilder<UserManagementDbContext>();
-        UserManagementDbContextOptions.Configure(builder, _postgres.ConnectionString);
-        var options = builder.Options;
+    /// <summary>A fresh context in its own scope, for read-back after both sides have run.</summary>
+    private UserManagementDbContext NewContext() =>
+        _factory.Services.CreateScope().ServiceProvider.GetRequiredService<UserManagementDbContext>();
 
-        var clock = Substitute.For<IDateTimeProvider>();
-        clock.UtcNow.Returns(_ => DateTime.UtcNow);
-
-        return new UserManagementDbContext(
-            options,
-            Substitute.For<ICurrentUserService>(),
-            clock,
-            Substitute.For<IDomainEventDispatcher>());
-    }
-
-    /// <summary>Mirrors one complete request scope: its own context, repository, and service.</summary>
+    /// <summary>Mirrors one complete request scope: its own context and service, from the real container.</summary>
     private async Task<(Guid PersonId, bool IsNewPerson)> ProvisionInOwnScopeAsync(
         PhoneNumber phone, UserType capacity)
     {
-        await using var context = NewContext();
-        var repository = new UserRepository(context);
-        var service = new PersonProvisioningService(repository, context, NullLogger<PersonProvisioningService>.Instance);
+        using var scope = _factory.Services.CreateScope();
+        var context = scope.ServiceProvider.GetRequiredService<UserManagementDbContext>();
+        var service = scope.ServiceProvider.GetRequiredService<IPersonProvisioningService>();
 
         var result = await service.GetOrCreateByPhoneAsync(
             phone, capacity, "Race", capacity.ToString());
@@ -97,7 +71,7 @@ public sealed class PersonProvisioningConcurrencyTests : IClassFixture<PostgresT
     /// the create path now serializes per canonical phone with a transaction-scoped
     /// advisory lock (<c>pg_advisory_xact_lock(hashtext(phone))</c>) and re-checks under
     /// the lock, so the loser finds the winner's row. §1.2 remains the defence-in-depth
-    /// backstop for anything that bypasses <see cref="PersonProvisioningService"/>.
+    /// backstop for anything that bypasses <see cref="IPersonProvisioningService"/>.
     /// </summary>
     [Fact]
     public async Task Concurrent_Customer_And_Provider_Signin_For_A_Brand_New_Phone()

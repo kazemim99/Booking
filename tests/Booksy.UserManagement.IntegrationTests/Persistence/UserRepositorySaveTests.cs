@@ -1,7 +1,4 @@
-using Booksy.Core.Application.Abstractions.Services;
 using Booksy.Core.Domain.ValueObjects;
-using Booksy.Infrastructure.Core.EventBus.Abstractions;
-using Booksy.Tests.Common.Fixtures;
 using Booksy.UserManagement.Domain.Aggregates;
 using Booksy.UserManagement.Domain.Entities;
 using Booksy.UserManagement.Domain.Enums;
@@ -9,7 +6,7 @@ using Booksy.UserManagement.Infrastructure.Persistence.Context;
 using Booksy.UserManagement.Infrastructure.Persistence.Repositories;
 using FluentAssertions;
 using Microsoft.EntityFrameworkCore;
-using NSubstitute;
+using Microsoft.Extensions.DependencyInjection;
 
 namespace Booksy.UserManagement.IntegrationTests.Persistence;
 
@@ -27,31 +24,42 @@ namespace Booksy.UserManagement.IntegrationTests.Persistence;
 /// store-generated, so Update leaves it Added — still was, and failed on
 /// FK_refresh_tokens_users_UserId against a row that was never written.
 /// Every first-time sign-in (provider AND customer) 500'd as a result.
+///
+/// <para>Takes its <see cref="UserManagementDbContext"/> from the shared
+/// <see cref="UserManagementTestWebApplicationFactory{TStartup}"/>'s DI scope
+/// (docs/TEST_ARCHITECTURE_AUDIT.md Phase 2 slice 3) instead of hand-building one with
+/// substituted <c>ICurrentUserService</c>/<c>IDateTimeProvider</c>/<c>IDomainEventDispatcher</c>
+/// against its own throwaway container. That was not just extra code: EF Core 9's
+/// pending-model-changes check threw against the hand-built context even though
+/// <c>dotnet ef migrations has-pending-model-changes</c> against the real DI-composed app reports
+/// none — a divergence between "built like production" and "built like this test" that resolving
+/// from the real container removes by construction, along with the substituted clock's
+/// <c>DateTime.MinValue</c> default that Npgsql rejects for <c>timestamptz</c>.</para>
 /// </summary>
-// A class fixture, not the shared PostgresTestCollection: xUnit only discovers
-// [CollectionDefinition] within the test assembly itself, and that definition lives
-// in Booksy.Tests.Commons.
-public sealed class UserRepositorySaveTests : IClassFixture<PostgresTestContainerFixture>, IAsyncLifetime
+[Collection(UserManagementTestCollection.Name)]
+public sealed class UserRepositorySaveTests : IAsyncLifetime
 {
-    private readonly PostgresTestContainerFixture _postgres;
+    private readonly UserManagementTestWebApplicationFactory<Startup> _factory;
+    private IServiceScope _scope = null!;
     private UserManagementDbContext _context = null!;
     private UserRepository _repository = null!;
 
-    public UserRepositorySaveTests(PostgresTestContainerFixture postgres)
+    public UserRepositorySaveTests(UserManagementTestWebApplicationFactory<Startup> factory)
     {
-        _postgres = postgres;
+        _factory = factory;
     }
 
     public async Task InitializeAsync()
     {
-        _context = NewContext();
-        await _context.Database.MigrateAsync();
+        await _factory.ResetStateAsync();
+        _scope = _factory.Services.CreateScope();
+        _context = _scope.ServiceProvider.GetRequiredService<UserManagementDbContext>();
         _repository = new UserRepository(_context);
     }
 
     public Task DisposeAsync()
     {
-        _context.Dispose();
+        _scope.Dispose();
         return Task.CompletedTask;
     }
 
@@ -122,28 +130,14 @@ public sealed class UserRepositorySaveTests : IClassFixture<PostgresTestContaine
         persisted.Type.Should().Be(UserType.Both);
     }
 
-    private UserManagementDbContext NewContext()
-    {
-        // Same options as production DI (provider, migrations assembly/history table, warning
-        // configuration) — a hand-rolled UseNpgsql() differed enough to trip EF's
-        // pending-model-changes check on Migrate(), which the application suppresses.
-        var builder = new DbContextOptionsBuilder<UserManagementDbContext>();
-        UserManagementDbContextOptions.Configure(builder, _postgres.ConnectionString);
-        var options = builder.Options;
-
-        // The context guards ICurrentUserService/IDateTimeProvider with `?.`, but the
-        // clock is a struct-returning property — an unconfigured substitute would hand
-        // back DateTime.MinValue (Kind=Unspecified), which Npgsql rejects for
-        // `timestamptz`. Return a real UTC instant instead.
-        var clock = Substitute.For<IDateTimeProvider>();
-        clock.UtcNow.Returns(_ => DateTime.UtcNow);
-
-        return new UserManagementDbContext(
-            options,
-            Substitute.For<ICurrentUserService>(),
-            clock,
-            Substitute.For<IDomainEventDispatcher>());
-    }
+    /// <summary>
+    /// A fresh <see cref="UserManagementDbContext"/> in its own DI scope — the identity-map-free
+    /// read the "reload and verify" assertions above need. Disposing the returned context releases
+    /// its connection back to the pool; the scope that produced it is intentionally left for the GC,
+    /// exactly as it would be if a caller only held the context — nothing else is resolved from it.
+    /// </summary>
+    private UserManagementDbContext NewContext() =>
+        _factory.Services.CreateScope().ServiceProvider.GetRequiredService<UserManagementDbContext>();
 
     /// <summary>
     /// A phone-first person shaped exactly like PersonProvisioningService.CreatePerson,
