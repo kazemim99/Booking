@@ -1,5 +1,5 @@
-Status: ACTIVE
-Verify: FAST
+Status: DONE
+Verify: FULL
 
 Phase 2 of `docs/TEST_ARCHITECTURE_AUDIT.md` §9. Plan: real isolation first, then one shared host, then
 UserManagement on the real host, one integration project, parallel collections. Phase 1 already cut the
@@ -38,11 +38,32 @@ Composition 21 tests, step 33.9 s.
 - [x] 5.1 Template database in PostgresTestContainerFixture: migrate once per process, clone per factory (scoped down — see Decisions)
 - [x] 5.2 Parallel collections incl. a Concurrency collection; DisableTestParallelization removed; xunit.runner.json (scoped down — see Decisions)
 - [x] 5.3 Two back-to-back runs identical, or revert to serial collections and record why
-- [ ] 6.1 VerifyZarinPalStatusHandlingTests Moq -> NSubstitute; Moq removed from Directory.Packages.props
-- [ ] 6.2 Unused helpers deleted; CreateProviderWithStatusAsync argument order fixed; dead JWT minting removed from the test auth handler
-- [ ] 6.3 FOLLOW-UPS: the four production findings (CAP before commit, unregistered subscribers, null owner cache, upload leak)
-- [ ] 6.4 AGENTS.md, CLAUDE.md, tests/README.md, audit §2.4, memory
-- [ ] 6.5 FULL verify unfiltered; Status: DONE
+- [x] 6.1 VerifyZarinPalStatusHandlingTests Moq -> NSubstitute; Moq removed from Directory.Packages.props
+- [x] 6.2 Unused helpers deleted; CreateProviderWithStatusAsync argument order fixed; dead JWT minting removed from the test auth handler
+- [x] 6.3 FOLLOW-UPS: the four production findings (CAP before commit, unregistered subscribers, null owner cache, upload leak)
+- [x] 6.4 AGENTS.md, CLAUDE.md, tests/README.md, audit §2.4, memory
+- [x] 6.5 FULL verify unfiltered; Status: DONE
+
+## Decisions (slice 6)
+- `AuthenticateAsServiceOwner` was deleted rather than fixed: it had zero call sites (dead), and its
+  bug — calling `AuthenticateAsProvider(email, providerId)` with the two arguments swapped — was
+  latent precisely because nothing called it. Deleting a latent bug is strictly better than fixing
+  one nothing exercises; if a future test needs it, it gets written correctly from
+  `AuthenticateAsProvider`'s real signature rather than resurrecting a wrong helper. `CreateProviderWithStatusAsync`'s
+  own `BusinessAddress.Create` bug was fixed in place instead, because unlike the helper above it
+  has 14 real call sites (`ProvidersControllerTests`) that were silently running against wrong
+  address data every time. Tier 1.
+- The four production findings in this slice (FOLLOW-UPS #54–57) were recorded, not fixed, matching
+  the plan: none is a regression this phase introduced, each needs either a design call (how CAP's
+  publish-before-commit ordering should be fixed; whether the four booking topics need a real
+  publisher at all, which is a ServiceCatalog-side product question) or is outside a test-only
+  change's footprint (production event-subscriber wiring, cache invalidation). Confirmed each with
+  direct evidence before writing it up (grepped for the missing DI registrations against the two
+  subscribers that *are* wired correctly, read `InMemoryCacheService.RemoveByPatternAsync`'s literal
+  no-op, counted 27 leaked `wwwroot/uploads/providers/*` directories from this session's own runs)
+  rather than transcribing the plan's claims uninspected. Tier 1 (recording a finding); the findings
+  themselves are Tier 3 (CAP ordering/transport is a data-consistency design call; the topics-with-
+  no-publisher question is a product call about whether that notification path should exist).
 
 ## Decisions (slice 5)
 - Scoped down from the original plan's five-way `SC.Bookings`/`SC.Payments`/`SC.Providers`/
@@ -240,3 +261,30 @@ Composition 21 tests, step 33.9 s.
   measured backend-integration wall time across Phase 2: three projects/three db steps, ~296 s
   contended (baseline) → one project/one db step, ~111 s (slice 4) → one project, two collections in
   parallel, ~94-100 s (slice 5).
+- 2026-09-11 **Slice 6 done, FULL verify green: 17 steps, 351 s, 0 failures; `db:` step 84 s.**
+  `VerifyZarinPalStatusHandlingTests` moved off Moq (`Substitute.For`/`Received`/`DidNotReceive`
+  replacing `Mock<T>(MockBehavior.Strict)`/`Verify`); Moq removed from `Directory.Packages.props` —
+  NSubstitute is now the only substitute library in the repo. Six dead helpers deleted
+  (`AuthenticateWithClaims`, `GetCurrentUser`, UM's unused `AuthenticateAsTestAdmin`,
+  `GetAllProvidersAsync`, `GetAllServicesAsync`, `GetAllCustomersAsync`, and the buggy/unused
+  `AuthenticateAsServiceOwner`); `CreateProviderWithStatusAsync`'s `BusinessAddress.Create` call
+  fixed to pass city/state/postalCode/country in the right positions (was silently writing wrong
+  address data for all 14 `ProvidersControllerTests` call sites); dead JWT-minting code removed from
+  `IntegrationTestAuthenticationHandler` (it built and signed a token nothing ever read back — the
+  handler already authenticates straight from the claims). Four production findings confirmed with
+  direct evidence and recorded as `FOLLOW-UPS.md` #54-57 (CAP publish-before-commit ordering; two
+  `[ICapSubscribe]` classes never registered in DI, one of them for four topics with no publisher at
+  all; a cached null owner-lookup un-invalidatable on `InMemoryCacheService`; 27 leaked
+  `wwwroot/uploads/providers/*` directories measured from this session's own runs, consistent with
+  the audit's original 1,099+). `AGENTS.md`, `CLAUDE.md` updated to point at
+  `tests/Booksy.Host.IntegrationTests` (both still named the three retired projects); new
+  `tests/README.md`; audit's new §2.4b records the full slice-by-slice measurement table; memory
+  updated. FULL verify's `db:` step: 84 s, the lowest of the phase (94-100 s in slice 5, run-to-run
+  variance from Testcontainers/host boot rather than a real regression or improvement).
+
+Phase 2 complete. Net result: 3 integration projects (3 host boots, ~296 s contended) -> 1 project, 2
+parallel collections (~84-111 s across runs), 483 tests -> 480 (net: unit-test moves in/out roughly
+cancel; every remaining test is either unchanged or an existing one now running against the real
+host), real per-test isolation where there was none, UserManagement on the host that ships instead
+of a retired one, 2 real production defects found and fixed, 4 more recorded for a future change,
+Moq retired.

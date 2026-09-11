@@ -84,16 +84,6 @@ public abstract class UserManagementIntegrationTestBase
     }
 
     /// <summary>
-    /// Get all customers
-    /// </summary>
-    public async Task<List<Customer>> GetAllCustomersAsync()
-    {
-        return await DbContext.Customers
-            .Include(c => c.FavoriteProviders)
-            .ToListAsync();
-    }
-
-    /// <summary>
     /// Get customer booking history entries
     /// </summary>
     public async Task<List<CustomerBookingHistoryEntry>> GetCustomerBookingHistoryAsync(Guid customerId)
@@ -152,14 +142,6 @@ public abstract class UserManagementIntegrationTestBase
                 { "user_type", "Customer" }
             }
         });
-    }
-
-    /// <summary>
-    /// Authenticate as an admin user
-    /// </summary>
-    public void AuthenticateAsTestAdmin()
-    {
-        base.AuthenticateAsAdmin("admin@booksy.com");
     }
 
     /// <summary>

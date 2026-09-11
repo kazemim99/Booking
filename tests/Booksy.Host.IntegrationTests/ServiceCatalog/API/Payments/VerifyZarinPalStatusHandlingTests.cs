@@ -10,7 +10,7 @@ using Booksy.ServiceCatalog.Domain.ValueObjects;
 using FluentAssertions;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging.Abstractions;
-using Moq;
+using NSubstitute;
 using Xunit;
 
 namespace Booksy.ServiceCatalog.IntegrationTests.API.Payments;
@@ -60,14 +60,14 @@ public class VerifyZarinPalStatusHandlingTests : ServiceCatalogIntegrationTestBa
         return authority;
     }
 
-    /// Builds the real handler over the real DB with a mocked gateway, so we can assert whether the gateway was called.
-    private (VerifyZarinPalPaymentCommandHandler Handler, Mock<IZarinPalService> Gateway, IServiceScope Scope) BuildHandler()
+    /// Builds the real handler over the real DB with a substituted gateway, so we can assert whether the gateway was called.
+    private (VerifyZarinPalPaymentCommandHandler Handler, IZarinPalService Gateway, IServiceScope Scope) BuildHandler()
     {
         var scope = Factory.Services.CreateScope();
-        var gateway = new Mock<IZarinPalService>(MockBehavior.Strict);
+        var gateway = Substitute.For<IZarinPalService>();
         var handler = new VerifyZarinPalPaymentCommandHandler(
             scope.ServiceProvider.GetRequiredService<IPaymentWriteRepository>(),
-            gateway.Object,
+            gateway,
             scope.ServiceProvider.GetRequiredService<IServiceCatalogUnitOfWork>(),
             NullLogger<VerifyZarinPalPaymentCommandHandler>.Instance);
         return (handler, gateway, scope);
@@ -92,9 +92,8 @@ public class VerifyZarinPalStatusHandlingTests : ServiceCatalogIntegrationTestBa
 
             result.IsSuccessful.Should().BeFalse();
             result.PaymentStatus.Should().Be("Failed");
-            // MockBehavior.Strict: any gateway call would throw. A cancellation needs no verification round-trip.
-            gateway.Verify(g => g.VerifyPaymentAsync(It.IsAny<string>(), It.IsAny<decimal>(), It.IsAny<CancellationToken>()),
-                Times.Never);
+            // A cancellation needs no verification round-trip.
+            await gateway.DidNotReceive().VerifyPaymentAsync(Arg.Any<string>(), Arg.Any<decimal>(), Arg.Any<CancellationToken>());
         }
 
         (await StatusOfAsync(authority)).Should().Be(PaymentStatus.Failed,
@@ -113,8 +112,7 @@ public class VerifyZarinPalStatusHandlingTests : ServiceCatalogIntegrationTestBa
 
             result.IsSuccessful.Should().BeTrue("an already-verified payment returns idempotent success");
             result.PaymentStatus.Should().Be("Paid");
-            gateway.Verify(g => g.VerifyPaymentAsync(It.IsAny<string>(), It.IsAny<decimal>(), It.IsAny<CancellationToken>()),
-                Times.Never);
+            await gateway.DidNotReceive().VerifyPaymentAsync(Arg.Any<string>(), Arg.Any<decimal>(), Arg.Any<CancellationToken>());
         }
 
         (await StatusOfAsync(authority)).Should().Be(PaymentStatus.Paid,
@@ -129,15 +127,15 @@ public class VerifyZarinPalStatusHandlingTests : ServiceCatalogIntegrationTestBa
         var (handler, gateway, scope) = BuildHandler();
         using (scope)
         {
-            gateway.Setup(g => g.VerifyPaymentAsync(authority, It.IsAny<decimal>(), It.IsAny<CancellationToken>()))
-                   .ReturnsAsync(new ZarinPalVerifyResult { IsSuccessful = true, RefId = 987654, CardPan = "6274********1234", Fee = 0 });
+            gateway.VerifyPaymentAsync(authority, Arg.Any<decimal>(), Arg.Any<CancellationToken>())
+                   .Returns(new ZarinPalVerifyResult { IsSuccessful = true, RefId = 987654, CardPan = "6274********1234", Fee = 0 });
 
             var result = await handler.Handle(
                 new VerifyZarinPalPaymentCommand(authority, "OK"), CancellationToken.None);
 
             result.IsSuccessful.Should().BeTrue();
-            gateway.Verify(g => g.VerifyPaymentAsync(authority, It.IsAny<decimal>(), It.IsAny<CancellationToken>()),
-                Times.Once, "an OK must be confirmed with the gateway, never trusted blindly");
+            // An OK must be confirmed with the gateway, never trusted blindly.
+            await gateway.Received(1).VerifyPaymentAsync(authority, Arg.Any<decimal>(), Arg.Any<CancellationToken>());
         }
 
         (await StatusOfAsync(authority)).Should().Be(PaymentStatus.Paid);
@@ -150,8 +148,8 @@ public class VerifyZarinPalStatusHandlingTests : ServiceCatalogIntegrationTestBa
         var (handler, gateway, scope) = BuildHandler();
         using (scope)
         {
-            gateway.Setup(g => g.VerifyPaymentAsync(authority, It.IsAny<decimal>(), It.IsAny<CancellationToken>()))
-                   .ReturnsAsync(new ZarinPalVerifyResult { IsSuccessful = false, ErrorCode = -51, ErrorMessage = "Not paid" });
+            gateway.VerifyPaymentAsync(authority, Arg.Any<decimal>(), Arg.Any<CancellationToken>())
+                   .Returns(new ZarinPalVerifyResult { IsSuccessful = false, ErrorCode = -51, ErrorMessage = "Not paid" });
 
             var result = await handler.Handle(
                 new VerifyZarinPalPaymentCommand(authority, "OK"), CancellationToken.None);

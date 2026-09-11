@@ -80,7 +80,7 @@ Examples:
 - State machine transitions.
 - Notification triggering.
 
-In this repository, acceptance scenarios for ServiceCatalog behavior are xUnit integration tests under `tests/Booksy.ServiceCatalog.IntegrationTests/` — one test class per business area, named for the scenario it proves. Reqnroll/Gherkin BDD was retired 2026-09-11: 95% of its scenarios had never run (unbound steps), and the rest were duplicated by, or ported into, xUnit tests — see `openspec/changes/_inline/retire-reqnroll/tasks.md`.
+In this repository, acceptance scenarios for ServiceCatalog behavior are xUnit integration tests under `tests/Booksy.Host.IntegrationTests/ServiceCatalog/` — one test class per business area, named for the scenario it proves. Reqnroll/Gherkin BDD was retired 2026-09-11: 95% of its scenarios had never run (unbound steps), and the rest were duplicated by, or ported into, xUnit tests — see `openspec/changes/_inline/retire-reqnroll/tasks.md`.
 
 #### Unit Tests are preferred for:
 

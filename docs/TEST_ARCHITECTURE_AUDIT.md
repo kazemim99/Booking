@@ -301,6 +301,28 @@ Two things are worth keeping from this measurement:
   it is the one that degrades under a busy machine: 105.9 s inside the contended FULL run, 28.7 s alone
   against a 35 s baseline. A single number from a shared developer machine is not evidence on its own.
 
+### 2.4b Phase 2, measured (2026-09-11, `openspec/changes/test-architecture-phase-2`)
+
+The `db:` step(s) of FULL verify, before → after each slice (uncontended runs; `2.4a`'s baseline
+figures were contended):
+
+| slice | db: step(s) | tests | note |
+|---|---|---|---|
+| before Phase 2 (Phase 1 baseline) | 3 steps: 130.7 (SC alone) + 28.7 (UM alone) + composition | 483 | three projects, three host boots |
+| 1 — real per-test isolation | no change to boot count | 483 | 0 failures; isolation held with nothing to fix |
+| 2 — one ServiceCatalog host | SC 218.3 contended (114.0 test time) | 421 SC | 43 host boots → 1 |
+| 3 — UM on the real `Booksy.Host` | UM 31 (uncontended FULL) | 42 UM | replaced the retired UM.API host |
+| 4 — one project, `Booksy.Host.IntegrationTests` | **111** (was 3 steps, ~296 contended) | **480** | one project, one `db:` step; 2 production defects found and fixed (register-provider validation ordering, a bare `InvalidOperationException` mapping to 500) |
+| 5 — 2 collections in parallel | **94–100** | **480** | `BooksyHostTestCollection` ∥ `HostCompositionCollection`; a pre-existing stress-test deadlock's `catch` clause fixed to match what it already claimed to tolerate |
+
+Net for backend integration: **~296 s contended (3 projects) → ~94–100 s (1 project, 2 parallel
+collections)** — roughly a 3× wall-clock reduction, on top of Phase 1's win. The original estimate
+in §2.4 projected most of the gain from L8 (a 4-collection split) and a template database; neither
+was needed at this scale once slices 2–4 collapsed ~55 host boots to 2 — see slice 5's Decisions in
+`test-architecture-phase-2/tasks.md` for why the plan was scoped down instead of built as designed.
+Slice 6 (Moq → NSubstitute, dead-code cleanup, 4 production findings recorded, this section) closed
+the change.
+
 ---
 
 ## 3. Test pyramid review

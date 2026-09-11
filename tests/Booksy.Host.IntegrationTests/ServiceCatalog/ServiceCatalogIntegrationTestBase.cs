@@ -152,25 +152,6 @@ public abstract class ServiceCatalogIntegrationTestBase
             .ToListAsync();
     }
 
-    /// <summary>
-    /// Get all providers
-    /// </summary>
-    public async Task<List<Provider>> GetAllProvidersAsync()
-    {
-        return await DbContext.Providers.ToListAsync();
-    }
-
-    /// <summary>
-    /// Get all services
-    /// </summary>
-    public async Task<List<Service>> GetAllServicesAsync()
-    {
-        return await DbContext.Services
-            .Include(s => s.Options)
-            .Include(s => s.PriceTiers)
-            .ToListAsync();
-    }
-
     // ================================================
     // AUTHENTICATION HELPERS (Service Catalog Specific)
     // ================================================
@@ -195,17 +176,6 @@ public abstract class ServiceCatalogIntegrationTestBase
         };
 
         _userContext.SetUser(testUser);
-    }
-
-    /// <summary>
-    /// Authenticate as the provider who owns a service
-    /// </summary>
-    public void AuthenticateAsServiceOwner(Service service)
-    {
-        base.AuthenticateAsProvider(
-            service.ProviderId.Value.ToString(),
-            $"provider_{service.ProviderId.Value}@test.com"
-        );
     }
 
     /// <summary>
@@ -581,10 +551,10 @@ public abstract class ServiceCatalogIntegrationTestBase
             BusinessAddress.Create(
                 "123 Test St",
                 "123 Test St",
-                "123 Test St",
-                "123 Test St",
                 "Test City",
-                "TS"
+                "TS",
+                "12345",
+                "USA"
             )
         );
 

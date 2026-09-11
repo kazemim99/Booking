@@ -50,7 +50,7 @@ test; everything else belongs in a unit project.
   of test time for ~960 tests. Two of them (`Booksy.ServiceCatalog.Api.UnitTests`,
   `Booksy.Infrastructure.External.UnitTests`) hold controller, specification, mapping and gateway-adapter
   tests that used to sit inside the integration project behind Docker.
-- **Integration** (`tests/Booksy.ServiceCatalog.IntegrationTests`, `tests/Booksy.UserManagement.IntegrationTests`, `tests/Booksy.Host.CompositionTests`): real composed host against Testcontainers Postgres, plain xUnit. Reqnroll/Gherkin BDD was retired 2026-09-11 — see `openspec/changes/_inline/retire-reqnroll/tasks.md`.
+- **Integration** (`tests/Booksy.Host.IntegrationTests` — one project since Phase 2 slice 4, was three: ServiceCatalog, UserManagement and Host composition each booting their own host): real composed host against Testcontainers Postgres, plain xUnit, two collections (`ServiceCatalog`/`UserManagement` sharing one faked host, `Composition` on its own unfaked one) running in parallel. Reqnroll/Gherkin BDD was retired 2026-09-11 — see `openspec/changes/_inline/retire-reqnroll/tasks.md`.
 - **Test-project conventions**: versions come from `tests/Directory.Packages.props` (one version per
   package; a `Version=` in a test csproj is a mistake). `tests/BannedSymbols.txt` fails the build's
   warning bar on `Task.Delay`, `Thread.Sleep`, `DateTime.Now/Today` and unseeded `Random` — a seeded

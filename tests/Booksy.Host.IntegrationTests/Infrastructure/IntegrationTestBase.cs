@@ -366,22 +366,6 @@ public abstract class IntegrationTestBase<TDbContext> : IAsyncLifetime
         _userContext.SetUser(null);
     }
     /// <summary>
-    /// Authenticate with custom claims
-    /// </summary>
-    public void AuthenticateWithClaims(string email, string role, Dictionary<string, string> claims)
-    {
-        var user = new TestUser
-        {
-            Email = email,
-            Role = role,
-            AdditionalClaims = claims
-        };
-
-        _userContext.SetUser(user);
-
-    }
-
-    /// <summary>
     /// Clear authentication (unauthenticated requests)
     /// </summary>
     public void ClearAuthentication()
@@ -389,15 +373,6 @@ public abstract class IntegrationTestBase<TDbContext> : IAsyncLifetime
         _userContext.ClearUser();
         Client.DefaultRequestHeaders.Authorization = null;
     }
-
-    /// <summary>
-    /// Get current authenticated user
-    /// </summary>
-    public TestUser? GetCurrentUser()
-    {
-        return _userContext.CurrentUser;
-    }
-
 
     public static void AssertSuccessStatusCode(HttpResponseMessage response)
     {

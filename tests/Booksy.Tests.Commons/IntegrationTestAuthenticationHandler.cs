@@ -2,14 +2,9 @@
 // Booksy.Tests.Common/Authentication/IntegrationTestAuthenticationHandler.cs
 // ========================================
 using Microsoft.AspNetCore.Authentication;
-using Microsoft.Extensions.Configuration;
-using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
-using Microsoft.IdentityModel.Tokens;
-using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
-using System.Text;
 using System.Text.Encodings.Web;
 
 
@@ -17,19 +12,16 @@ using System.Text.Encodings.Web;
     public class IntegrationTestAuthenticationHandler : AuthenticationHandler<AuthenticationSchemeOptions>
     {
         private readonly TestUserContext _userContext;
-        private readonly IConfiguration _configuration;
 
         public IntegrationTestAuthenticationHandler(
             IOptionsMonitor<AuthenticationSchemeOptions> options,
             ILoggerFactory logger,
             UrlEncoder encoder,
             ISystemClock clock,
-            TestUserContext userContext,
-            IConfiguration configuration)
+            TestUserContext userContext)
             : base(options, logger, encoder, clock)
         {
             _userContext = userContext;
-            _configuration = configuration;
         }
 
         protected override Task<AuthenticateResult> HandleAuthenticateAsync()
@@ -43,35 +35,16 @@ using System.Text.Encodings.Web;
 
             var testUser = _userContext.CurrentUser!;
 
-            // Get JWT settings from configuration or use defaults
-            var jwtSecret = _configuration["Jwt:SecretKey"] ?? "ThisIsATestSecretKeyForDevelopmentOnly12345678";
-            var jwtIssuer = _configuration["Jwt:Issuer"] ?? "Booksy.Test";
-            var jwtAudience = _configuration["Jwt:Audience"] ?? "Booksy.Test.Api";
-
-            // Generate claims from test user
+            // Generate claims from test user and authenticate directly from them — no token to
+            // mint or decode. This used to also build and sign a JWT and stash it on the request's
+            // Authorization header (docs/TEST_ARCHITECTURE_AUDIT.md Phase 2 slice 6), but nothing
+            // ever consumed it: this handler already returns the AuthenticateResult straight from
+            // the ClaimsPrincipal below, and ASP.NET Core's auth middleware uses that result, not a
+            // re-read of the request header, once a handler has returned success.
             var claims = testUser.ToClaims().ToArray();
-
-            // Create JWT token
-            var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwtSecret));
-            var credentials = new SigningCredentials(key, SecurityAlgorithms.HmacSha256);
-
-            var token = new JwtSecurityToken(
-                issuer: jwtIssuer,
-                audience: jwtAudience,
-                claims: claims,
-                expires: DateTime.UtcNow.AddHours(1),
-                signingCredentials: credentials
-            );
-
-            var jwtToken = new JwtSecurityTokenHandler().WriteToken(token);
-
-            // Create authentication ticket
             var identity = new ClaimsIdentity(claims, "IntegrationTest");
             var principal = new ClaimsPrincipal(identity);
             var ticket = new AuthenticationTicket(principal, "IntegrationTest");
-
-            // Set authorization header for downstream handlers
-            Request.Headers.Authorization = $"Bearer {jwtToken}";
 
             Logger.LogInformation("Authenticated test user: {Email} with role: {Role}",
                 testUser.Email, testUser.Role);

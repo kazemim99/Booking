@@ -48,11 +48,4 @@
     <PackageVersion Include="Microsoft.CodeAnalysis.BannedApiAnalyzers" Version="3.3.4" />
   </ItemGroup>
 
-  <ItemGroup Label="Being retired">
-    <!-- Moq survives in two payment test classes only (VerifyZarinPalStatusHandlingTests and its
-         MockBehavior.Strict gateway). NSubstitute is the one substitute library; the last Moq
-         reference goes with Phase 2 task 2.13. -->
-    <PackageVersion Include="Moq" Version="4.20.72" />
-  </ItemGroup>
-
 </Project>
