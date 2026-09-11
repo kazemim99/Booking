@@ -80,69 +80,62 @@ public sealed class RegisterAndAcceptInvitationCommandHandler
         {
             // Whether the account was actually created is decided by the provisioning call,
             // not by the lookup above: two register-and-accept requests for the same new phone
-            // both see "nobody" here, and only the first one creates. The loser reuses the
-            // winner's account and must NOT compensate by deleting it — which is exactly what
-            // happened when this flag was set to true unconditionally.
+            // both see "nobody" here, and only the first one creates.
             var created = await _registrationService.CreateUserWithPhoneAsync(
                 phone, request.FirstName, request.LastName, request.Email, cancellationToken);
             personId = created.PersonId;
             isNewAccount = created.IsNewAccount;
         }
 
-        try
+        // No compensating delete if anything below fails, and that is deliberate. The person row
+        // committed inside the provisioning call, under the per-phone lock, and from that moment it
+        // is shared by phone: a concurrent request for the same invitation may already have reused
+        // it and be about to commit its membership. This handler used to delete "its" account when
+        // the membership step failed — and when the creating request lost the membership race to the
+        // reusing one, that deleted the account the winner had just made a member of (half of all
+        // runs of the integration race test). An account with no membership is harmless: the next
+        // sign-in with that phone reuses it, which is the outcome PersonProvisioningService is
+        // built around.
+        var membership = await _membershipRepository.GetActiveByPersonAndOrganizationAsync(
+            personId, invitation.OrganizationId, cancellationToken);
+
+        if (membership is null)
         {
-            var membership = await _membershipRepository.GetActiveByPersonAndOrganizationAsync(
-                personId, invitation.OrganizationId, cancellationToken);
-
-            if (membership is null)
-            {
-                membership = OrganizationMembership.InviteExisting(personId, invitation.OrganizationId);
-                membership.Accept();
-                await _membershipRepository.SaveAsync(membership, cancellationToken);
-            }
-
-            invitation.AcceptByMember();
-            await _invitationWriteRepository.UpdateAsync(invitation, cancellationToken);
-
-            await _auditRepository.AppendAsync(
-                MembershipAuditEntry.Record(
-                    membership.Id,
-                    membership.OrganizationId,
-                    MembershipAuditAction.Accepted,
-                    membership.Status,
-                    subjectPersonId: membership.PersonId,
-                    actorPersonId: personId,
-                    roles: membership.Roles,
-                    invitationId: invitation.Id),
-                cancellationToken);
-
-            // Newly registered member is bookable immediately.
-            await _memberBookability.SyncAsync(membership, cancellationToken: cancellationToken);
-
-            await _unitOfWork.SaveAndPublishEventsAsync(cancellationToken);
-
-            _logger.LogInformation(
-                "Register-and-accept: invitation {InvitationId} → person {PersonId} (new={IsNew}) membership {MembershipId} in org {OrgId}",
-                invitation.Id, personId.Value, isNewAccount, membership.Id, invitation.OrganizationId.Value);
-
-            return new RegisterAndAcceptInvitationResult(
-                PersonId: personId.Value,
-                MembershipId: membership.Id,
-                OrganizationId: invitation.OrganizationId.Value,
-                IsNewAccount: isNewAccount,
-                Roles: membership.Roles.Select(r => r.ToString()).ToList(),
-                AcceptedAt: invitation.RespondedAt!.Value);
+            membership = OrganizationMembership.InviteExisting(personId, invitation.OrganizationId);
+            membership.Accept();
+            await _membershipRepository.SaveAsync(membership, cancellationToken);
         }
-        catch (Exception ex) when (isNewAccount)
-        {
-            // Compensation: don't leave an orphaned account behind if the membership
-            // step fails (the account we just created has nothing attached to it).
-            _logger.LogError(ex,
-                "Register-and-accept failed after creating account {PersonId}; compensating by deleting it",
-                personId.Value);
-            await _registrationService.DeleteUserAsync(
-                personId, $"register-and-accept failed: {ex.Message}", cancellationToken);
-            throw;
-        }
+
+        invitation.AcceptByMember();
+        await _invitationWriteRepository.UpdateAsync(invitation, cancellationToken);
+
+        await _auditRepository.AppendAsync(
+            MembershipAuditEntry.Record(
+                membership.Id,
+                membership.OrganizationId,
+                MembershipAuditAction.Accepted,
+                membership.Status,
+                subjectPersonId: membership.PersonId,
+                actorPersonId: personId,
+                roles: membership.Roles,
+                invitationId: invitation.Id),
+            cancellationToken);
+
+        // Newly registered member is bookable immediately.
+        await _memberBookability.SyncAsync(membership, cancellationToken: cancellationToken);
+
+        await _unitOfWork.SaveAndPublishEventsAsync(cancellationToken);
+
+        _logger.LogInformation(
+            "Register-and-accept: invitation {InvitationId} → person {PersonId} (new={IsNew}) membership {MembershipId} in org {OrgId}",
+            invitation.Id, personId.Value, isNewAccount, membership.Id, invitation.OrganizationId.Value);
+
+        return new RegisterAndAcceptInvitationResult(
+            PersonId: personId.Value,
+            MembershipId: membership.Id,
+            OrganizationId: invitation.OrganizationId.Value,
+            IsNewAccount: isNewAccount,
+            Roles: membership.Roles.Select(r => r.ToString()).ToList(),
+            AcceptedAt: invitation.RespondedAt!.Value);
     }
 }

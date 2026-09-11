@@ -16,8 +16,10 @@ public class UtcDateTimeConverterTests
     [Fact]
     public void A_Utc_Value_Is_Stored_Unchanged()
     {
-        UtcDateTimeConverter.ToUtc(Instant).Should().Be(Instant)
-            .And.Subject.Kind.Should().Be(DateTimeKind.Utc);
+        var stored = UtcDateTimeConverter.ToUtc(Instant);
+
+        stored.Should().Be(Instant);
+        stored.Kind.Should().Be(DateTimeKind.Utc);
     }
 
     [Fact]

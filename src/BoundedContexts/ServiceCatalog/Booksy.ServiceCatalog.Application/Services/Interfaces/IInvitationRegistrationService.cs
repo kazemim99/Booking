@@ -37,15 +37,10 @@ public interface IInvitationRegistrationService
     // accept-with-registration saga. Joining a salon makes a person a MEMBER of it, so
     // there is no individual provider profile to create; and acceptance no longer mints a
     // session — the new member signs in with their own phone through the normal OTP flow.
-
-    /// <summary>
-    /// Compensation: Deletes a user account if registration flow fails
-    /// Used for saga pattern rollback
-    /// </summary>
-    Task<bool> DeleteUserAsync(
-        UserId userId,
-        string reason,
-        CancellationToken cancellationToken = default);
+    //
+    // DeleteUserAsync (the "compensation" delete) was removed 2026-09-11: its only caller
+    // deleted a person that a concurrent request had already made a member, and a committed
+    // person is shared by phone, so there is no safe moment for a request to delete it.
 }
 
 /// <summary>
