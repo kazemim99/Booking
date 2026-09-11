@@ -1,5 +1,5 @@
-Status: ACTIVE
-Verify: FAST
+Status: DONE
+Verify: FULL
 
 Phase 1 of `docs/TEST_ARCHITECTURE_AUDIT.md` §9: the quick wins. Measured baseline (2026-09-11 FULL
 verify, all four apps touched): 931.7 s total; `db:Booksy.ServiceCatalog.IntegrationTests` 492.6 s of
@@ -25,19 +25,22 @@ Nothing structural changes here (no shared host, no Respawn, no project merge �
 - [x] 4 Explicit seed gate `Database:SeedOnStartup` (default: Development) in Booksy.Host, ServiceCatalog.Api and UserManagement.API entry points; HostCompositionFactory drops the Staging workaround
 - [x] 5 Remove the duplicate `Migrate()` and `BuildServiceProvider()` from `TestWebApplicationFactory.ConfigureServices`
 - [x] 6 Delete `tests/Booksy.Tests.Common/`, `SC.Application.UnitTests/UnitTest1.cs`; drop `tests/Booksy.ServiceCatalog.UnitTests` from both verify scripts
-- [ ] 7 Composition tests: one `[CollectionDefinition]` + `ICollectionFixture<HostCompositionFactory>`; the four classes join it
+- [x] 7 Composition tests: one `[CollectionDefinition]` + `ICollectionFixture<HostCompositionFactory>`; the four classes join it
 - [x] 8 New `tests/Booksy.Infrastructure.External.UnitTests`: ZarinPal fake/guard/factory tests from `SC.IntegrationTests/Unit` + the orphaned `ZarinPalServiceTests`, ported to NSubstitute
 - [x] 9 New `tests/Booksy.ServiceCatalog.Api.UnitTests`: controller/spec/mapping/claims/SignalR/TokenService unit tests out of the integration project, ported to NSubstitute; both projects in sln, verify lists, CI filter
 - [x] 9b Fix verify's shared temp git index: two overlapping runs raced for one `index.lock`, so the loser wrote no `status.json` at all
-- [ ] 10 `BookingsControllerTests`: remove the two stale `Skip`s; fix or quarantine per audit §5.3 based on what actually fails
-- [ ] 11 `GalleryManagementTests.SetPrimaryGalleryImage_UpdatesBusinessProfileTimestamp`: no `Task.Delay`; back-date the stored timestamp in arrange
-- [ ] 12 Remove the four stray `[Collection("Integration Tests")]` attributes and the unused `PostgresTestCollection`
-- [ ] 13 `.github/workflows/dotnet.yml`: integration job enabled (Testcontainers, `--no-build`, trx artefact); stale comment deleted
-- [ ] 14 `tests/Directory.Packages.props` (central versions for test projects only); FluentAssertions 7.x everywhere; xunit/Test.Sdk/Testcontainers single versions
-- [ ] 15 `tests/Directory.Build.props` + `BannedSymbols.txt` (Task.Delay, Thread.Sleep, DateTime.Now/Today, Random) as warnings
-- [ ] 16 FULL verify; record total time, per-step times and the ServiceCatalog per-class first-test time in the Log; update `docs/TEST_ARCHITECTURE_AUDIT.md` §2.4 with the measured Phase-1 number
+- [x] 10 `BookingsControllerTests`: remove the two stale `Skip`s; fix or quarantine per audit §5.3 based on what actually fails
+- [x] 11 `GalleryManagementTests.SetPrimaryGalleryImage_UpdatesBusinessProfileTimestamp`: no `Task.Delay`; back-date the stored timestamp in arrange
+- [x] 12 Remove the four stray `[Collection("Integration Tests")]` attributes and the unused `PostgresTestCollection`
+- [x] 13 `.github/workflows/dotnet.yml`: integration job enabled (Testcontainers, `--no-build`, trx artefact); stale comment deleted
+- [x] 14 `tests/Directory.Packages.props` (central versions for test projects only); FluentAssertions 7.x everywhere; xunit/Test.Sdk/Testcontainers single versions
+- [x] 15 `tests/Directory.Build.props` + `BannedSymbols.txt` (Task.Delay, Thread.Sleep, DateTime.Now/Today, Random) as warnings
+- [x] 16 FULL verify; record total time, per-step times and the ServiceCatalog per-class first-test time in the Log; update `docs/TEST_ARCHITECTURE_AUDIT.md` §2.4 with the measured Phase-1 number
 
 ## Decisions
+- `AGENTS.md` and `CLAUDE.md` updated in this change rather than deferred: Phase 1 changed the rules a
+  contributor must follow (banned APIs, central versions, the `Testing` environment, no `Skip`), and a
+  policy file that describes the old rules is worse than none. The audit's §7 also asked for it. Tier 1.
 - Test environment named `Testing`, not `Test`: the name must select `appsettings.Testing.json` and must NOT contain the substring the old seed gate matched. Tier 1.
 - Seed gate is `Database:SeedOnStartup` read with `IsDevelopment()` as its default, so no existing deployment changes behaviour. Tier 2 (production entry points touched).
 - Host logging under test is quieted by Serilog's `MinimumLevel`, not by removing the file sink: the sink lives in `Program.cs` and gating it on the environment would put test-shaped branching in production startup for no further gain. Tier 1.
@@ -47,6 +50,42 @@ Nothing structural changes here (no shared host, no Respawn, no project merge �
 - Unit tests leaving the integration project go to two new projects named after the assemblies they test (`Booksy.Infrastructure.External.UnitTests`, `Booksy.ServiceCatalog.Api.UnitTests`) rather than into existing projects whose names would then lie about their contents.
 
 ## Log
+- 2026-09-11 **FULL verify green: 720 s, 19 steps, 0 failures, 0 skips** (`.verify/status.json`, all four apps
+  forced with `-All`). 1 444 backend tests: 961 unit + 21 composition + 420 ServiceCatalog + 42 UserManagement.
+  Baseline was 931.7 s. Step by step, baseline → this run:
+
+  | step | baseline | FULL (contended) | alone, idle machine |
+  |---|---|---|---|
+  | build | 22.8 | 66.4 | — |
+  | 6→8 unit projects | 61.0 | 36.6 | — |
+  | db:Host.CompositionTests | 75.6 | 33.9 | — |
+  | db:ServiceCatalog.IntegrationTests | 492.6 | 156.2 | **130.7** |
+  | db:UserManagement.IntegrationTests | 66.5 | 105.9 | **28.7** |
+  | FULL total | 931.7 | 720.0 | — |
+
+  **Read the middle column with care: that run was contended.** Two peer sessions were building and testing in
+  this checkout throughout — the build took 66 s against a 23 s baseline, `flutter analyze` 103 s against 64 s,
+  and `vue lint` 49 s against 19 s, none of which this change touches. So 720 s understates the gain.
+
+  UserManagement is the one step that looks worse, and it is not. It is the only suite that runs its classes in
+  **parallel** (no `DisableTestParallelization`), so nine hosts boot at once and it is the step that suffers most
+  under CPU contention. Measured alone on an idle machine straight afterwards: **28.7 s wall for 42 tests, against
+  a 35 s baseline** — faster, not slower. The single 79.79 s test in the contended run (`Provider_Signin_Creates_
+  One_Person_And_A_Working_Refresh_Token`) takes 22 s alone including its class's host boot. Nothing was chased
+  further: no code on that path changed in this phase.
+- 2026-09-11 **Closed `Status: DONE` on a green FULL run (14:27–14:39), with one thing stated plainly:**
+  four files changed after that run — `AGENTS.md`, `CLAUDE.md`, `docs/TEST_ARCHITECTURE_AUDIT.md` and this
+  file, plus `.github/workflows/dotnet.yml` a minute into it. None is compiled, tested or read by
+  `scripts/verify`; the code and test tree the run measured is the tree being closed. The Stop hook compares
+  a tree hash and would call this stale, which is why `Status: DONE` exists as its documented escape — using
+  it for a documentation edit is the intent, using it to skip a red or unrun suite would not be.
+- 2026-09-11 **Follow-up found, not fixed here (out of scope, recorded so it is not lost):**
+  `scripts/verify -Tier full -Filter "..."` writes `tier: "full", result: "pass"` to `.verify/status.json`
+  exactly as an unfiltered run does, so the Stop hook cannot tell "the FULL suite passed" from "one class
+  passed". Found when a peer session read a filtered run of mine as a finished FULL verify. The fix is to
+  record the filter in `status.json` and have the hook refuse a filtered result. Separately, a peer
+  reports `.verify/stop-count` is a single shared file keyed by session id, so concurrent sessions
+  overwrite each other's block counters and `MAX_BLOCKS` never reliably trips — theirs to fix, untouched here.
 - 2026-09-11 **Measured after tasks 1–6, 8, 9** (filtered FULL, same machine as the audit's baseline):
   FAST 112 s including a 49 s build, for 961 unit tests (was 61 s of test steps alone for 856 tests, plus build).
   `CategoriesControllerTests` first-test 10.00 s → **8.22 s**; the composition suite 45 s → **29 s** for the same

@@ -20,7 +20,8 @@ namespace Booksy.Host.CompositionTests;
 /// handler runs in) and that create + the compensating delete actually do what they claim
 /// against a real database, not just that the DI graph is shaped correctly.</para>
 /// </summary>
-public sealed class PersonAccountProvisioningCompositionTests : IClassFixture<HostCompositionFactory>
+[Collection(HostCompositionCollection.Name)]
+public sealed class PersonAccountProvisioningCompositionTests
 {
     private readonly HostCompositionFactory _factory;
 

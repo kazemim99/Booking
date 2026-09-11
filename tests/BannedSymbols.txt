@@ -1,0 +1,26 @@
+; APIs banned in test code (Microsoft.CodeAnalysis.BannedApiAnalyzers, RS0030).
+; Each line: <symbol-id>;<message shown at the call site>.
+; Rationale in docs/TEST_ARCHITECTURE_AUDIT.md §5 "Flaky test prevention".
+
+; --- sleeping -----------------------------------------------------------------------------------
+; A sleep either does nothing or hides a race. Wait for the condition (poll with a timeout), or make
+; the clock explicit: back-date the stored value, or inject a test clock.
+M:System.Threading.Tasks.Task.Delay(System.Int32);Await the condition you are waiting for, or control the clock. A sleep is a race with a timeout.
+M:System.Threading.Tasks.Task.Delay(System.TimeSpan);Await the condition you are waiting for, or control the clock. A sleep is a race with a timeout.
+M:System.Threading.Thread.Sleep(System.Int32);Await the condition you are waiting for, or control the clock. A sleep is a race with a timeout.
+M:System.Threading.Thread.Sleep(System.TimeSpan);Await the condition you are waiting for, or control the clock. A sleep is a race with a timeout.
+
+; --- the machine's wall clock -------------------------------------------------------------------
+; The system under test stores UTC instants. A test that reads local time asserts about the machine's
+; time zone, which is how a suite passes in CI and fails at +03:30 (FOLLOW-UPS #48).
+P:System.DateTime.Now;Use DateTime.UtcNow. Local time makes the assertion depend on the machine's time zone.
+P:System.DateTime.Today;Use DateTime.UtcNow.Date. Local time makes the assertion depend on the machine's time zone.
+P:System.DateTimeOffset.Now;Use DateTimeOffset.UtcNow.
+
+; --- unseeded randomness ------------------------------------------------------------------------
+; Random values as a uniqueness trick produce a different test on every run: a failure cannot be
+; reproduced and a collision looks like a product defect. Seeded randomness is fine and stays legal —
+; Random(int) is deliberately NOT banned, because the booking-overlap stress test is a property test
+; whose seeds are part of its contract.
+P:System.Random.Shared;Unique values must be deterministic. Use a per-run counter (Phase 2: Ids.UniquePhone/UniqueEmail); a seeded `new Random(seed)` stays allowed for property tests.
+M:System.Random.#ctor;Seed it — `new Random(seed)` — so a failure can be reproduced.

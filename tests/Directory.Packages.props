@@ -1,0 +1,58 @@
+<Project>
+
+  <!--
+    Central package management for the TEST projects only.
+
+    Scope: this file governs every project under tests/ and nothing else. src/ keeps its per-project
+    versions; moving the whole repository onto central versions in the same change would have touched
+    ~30 csproj files that other sessions are editing, for no gain to the test architecture work
+    (docs/TEST_ARCHITECTURE_AUDIT.md, Phase 1 task 14).
+
+    Why at all: FluentAssertions was 6.12.0 in six test projects and 8.7.0 in four, so two dialects of
+    the same assertion library were in use at once and a test moved between projects could stop
+    compiling. One version per package, declared once, makes that impossible.
+
+    FluentAssertions is pinned to the 7.x line deliberately. Version 8.0.0 moved to Xceed's commercial
+    licence, which requires a paid licence for commercial use; 7.x is the last Apache-2.0 line. This is
+    a licensing decision, not a technical one — see the change's Decisions section.
+  -->
+
+  <PropertyGroup>
+    <ManagePackageVersionsCentrally>true</ManagePackageVersionsCentrally>
+  </PropertyGroup>
+
+  <ItemGroup Label="Test framework">
+    <PackageVersion Include="Microsoft.NET.Test.Sdk" Version="17.12.0" />
+    <PackageVersion Include="xunit" Version="2.9.2" />
+    <PackageVersion Include="xunit.runner.visualstudio" Version="2.8.2" />
+    <PackageVersion Include="coverlet.collector" Version="6.0.2" />
+  </ItemGroup>
+
+  <ItemGroup Label="Assertions and substitutes">
+    <PackageVersion Include="FluentAssertions" Version="7.0.0" />
+    <PackageVersion Include="NSubstitute" Version="5.1.0" />
+    <PackageVersion Include="AutoFixture.AutoNSubstitute" Version="4.18.1" />
+    <PackageVersion Include="NetArchTest.Rules" Version="1.3.2" />
+  </ItemGroup>
+
+  <ItemGroup Label="Integration test infrastructure">
+    <PackageVersion Include="Microsoft.AspNetCore.Mvc.Testing" Version="9.0.19" />
+    <PackageVersion Include="Microsoft.EntityFrameworkCore" Version="9.0.19" />
+    <PackageVersion Include="Microsoft.AspNetCore.SignalR.Client" Version="9.0.0" />
+    <PackageVersion Include="System.IdentityModel.Tokens.Jwt" Version="8.0.1" />
+    <PackageVersion Include="Testcontainers" Version="4.7.0" />
+    <PackageVersion Include="Testcontainers.PostgreSql" Version="4.7.0" />
+  </ItemGroup>
+
+  <ItemGroup Label="Analyzers">
+    <PackageVersion Include="Microsoft.CodeAnalysis.BannedApiAnalyzers" Version="3.3.4" />
+  </ItemGroup>
+
+  <ItemGroup Label="Being retired">
+    <!-- Moq survives in two payment test classes only (VerifyZarinPalStatusHandlingTests and its
+         MockBehavior.Strict gateway). NSubstitute is the one substitute library; the last Moq
+         reference goes with Phase 2 task 2.13. -->
+    <PackageVersion Include="Moq" Version="4.20.72" />
+  </ItemGroup>
+
+</Project>

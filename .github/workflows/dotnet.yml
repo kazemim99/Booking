@@ -45,6 +45,10 @@ jobs:
     - name: Build solution
       run: dotnet build ${{ env.SOLUTION_PATH }} --configuration Release --no-restore
 
+    # The filter selects by namespace: every unit project's tests live under *.UnitTests.*, the
+    # architecture rules under *.ArchitectureTests.*. Two projects joined this tier in 2026-09
+    # (Booksy.ServiceCatalog.Api.UnitTests, Booksy.Infrastructure.External.UnitTests) — ~105 tests
+    # that used to sit inside the Docker-gated integration project and so never ran here.
     - name: Run unit tests
       run: >-
         dotnet test ${{ env.SOLUTION_PATH }}
@@ -100,22 +104,86 @@ jobs:
 
         echo "No HIGH or CRITICAL advisories."
 
-  # Job 3: Integration tests — STILL DISABLED, and this is a real known gap, not neglect.
+  # Job 3: Integration tests. Enabled 2026-09-11 (docs/TEST_ARCHITECTURE_AUDIT.md Phase 1).
   #
-  # The ServiceCatalog integration suite does not currently pass: the per-service integration projects
-  # were written against the retired per-service hosts and have not been retargeted to Booksy.Host.
-  # Enabling this job today would make every build red and train people to ignore CI.
+  # The comment that stood here said the suite "does not currently pass" because it was written against
+  # the retired per-service hosts. That was true when it was written and is not true now: the
+  # ServiceCatalog suite was retargeted at Booksy.Host in August, tests/known-failures.txt is empty, and
+  # the last three FULL verifies were green at 513 + 42 + 21 tests. The strongest gate the project has
+  # was running on developer machines only.
   #
-  # Tracked in COMPLETION_ROADMAP.md Epic 3.1 and openspec/changes/FOLLOW-UPS.md.
-  # When re-enabling: needs Postgres + Redis services (see deploy.yml's e2e-keystone job for the
-  # working pattern), and must run in the same job as the build, as above.
+  # No `services:` block: these suites start their own PostgreSQL through Testcontainers (one container
+  # per test process, a database per test class), and ubuntu-latest ships a working Docker daemon. Redis
+  # is not needed — the test hosts run with an in-memory cache.
   #
-  # integration-tests:
-  #   name: Integration Tests
-  #   runs-on: ubuntu-latest
-  #   services:
-  #     postgres: ...
-  #     redis: ...
+  # Build and test share a job so the test step can reuse the build output; a separate job would get a
+  # fresh checkout with no artifacts, which is why the old commented-out jobs passed `--no-build` and
+  # could never have worked.
+  integration-tests:
+    name: Integration Tests
+    runs-on: ubuntu-latest
+    # Docker pulls + 60-odd host boots; the timeout is a guard against a hang, not a target.
+    timeout-minutes: 30
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Setup .NET
+      uses: actions/setup-dotnet@v4
+      with:
+        dotnet-version: ${{ env.DOTNET_VERSION }}
+
+    - name: Cache NuGet packages
+      uses: actions/cache@v4
+      with:
+        path: ~/.nuget/packages
+        key: ${{ runner.os }}-nuget-${{ hashFiles('**/*.csproj') }}
+        restore-keys: |
+          ${{ runner.os }}-nuget-
+
+    - name: Restore dependencies
+      run: dotnet restore ${{ env.SOLUTION_PATH }}
+
+    - name: Build solution
+      run: dotnet build ${{ env.SOLUTION_PATH }} --configuration Release --no-restore
+
+    # One step per project, each continuing on failure, so a red ServiceCatalog run still reports
+    # UserManagement and composition rather than hiding them behind the first failure.
+    - name: Host composition tests
+      id: composition
+      run: >-
+        dotnet test tests/Booksy.Host.CompositionTests
+        --configuration Release --no-build
+        --logger "trx;LogFileName=composition-tests.trx"
+        --results-directory ./TestResults
+        --blame-hang-timeout 5m
+
+    - name: ServiceCatalog integration tests
+      if: always() && steps.composition.conclusion != 'cancelled'
+      run: >-
+        dotnet test tests/Booksy.ServiceCatalog.IntegrationTests
+        --configuration Release --no-build
+        --logger "trx;LogFileName=servicecatalog-integration-tests.trx"
+        --results-directory ./TestResults
+        --blame-hang-timeout 5m
+
+    - name: UserManagement integration tests
+      if: always() && steps.composition.conclusion != 'cancelled'
+      run: >-
+        dotnet test tests/Booksy.UserManagement.IntegrationTests
+        --configuration Release --no-build
+        --logger "trx;LogFileName=usermanagement-integration-tests.trx"
+        --results-directory ./TestResults
+        --blame-hang-timeout 5m
+
+    - name: Upload test results
+      if: always()
+      uses: actions/upload-artifact@v4
+      with:
+        name: integration-test-results
+        path: ./TestResults
+        retention-days: 7
 
   # Job 4: Architecture tests.
   #

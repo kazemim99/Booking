@@ -19,7 +19,8 @@ namespace Booksy.Host.CompositionTests;
 /// "exactly one registration, resolving one implementation" — a second registration would silently win at
 /// resolution time and re-split the gateway.</para>
 /// </summary>
-public sealed class SmsNotificationServiceCompositionTests : IClassFixture<HostCompositionFactory>
+[Collection(HostCompositionCollection.Name)]
+public sealed class SmsNotificationServiceCompositionTests
 {
     private readonly HostCompositionFactory _factory;
 

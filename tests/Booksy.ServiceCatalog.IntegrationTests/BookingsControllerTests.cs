@@ -1,6 +1,8 @@
+using Booksy.Core.Application.DTOs;
 using Booksy.Core.Domain.Infrastructure.Middleware;
 using Booksy.Core.Domain.ValueObjects;
 using Booksy.ServiceCatalog.Api.Models.Responses;
+using Booksy.ServiceCatalog.Application.Queries.Booking.GetCustomerBookings;
 using Booksy.ServiceCatalog.Domain.Aggregates.BookingAggregate;
 using Booksy.ServiceCatalog.Domain.Enums;
 using Booksy.ServiceCatalog.Domain.ValueObjects;
@@ -309,7 +311,15 @@ public class BookingsControllerTests : ServiceCatalogIntegrationTestBase
 
     #region Get My Bookings Tests
 
-    [Fact(Skip = "EFCore composite key issue: The property 'Booking.TotalPrice#Price.BookingId' is part of a key and so cannot be modified")]
+    // Both tests here carried [Fact(Skip = "EFCore composite key issue: The property
+    // 'Booking.TotalPrice#Price.BookingId' is part of a key and so cannot be modified")]. That
+    // diagnosis was wrong, and stale twice over: the key problem it names is ADR-005, fixed and now
+    // guarded by EfOwnedEntityKeyConventionTests. What actually failed is the wire shape —
+    // GET my-bookings answers PagedResult<CustomerBookingDto> ({ items, pageNumber, ... }), and these
+    // tests asked Newtonsoft for a bare List<BookingResponse>, so they threw on 'data.items' before
+    // asserting anything. A skipped test states nothing; these two now state what the endpoint returns.
+
+    [Fact]
     public async Task GetMyBookings_ShouldReturnCustomerBookings()
     {
         // Arrange
@@ -325,16 +335,18 @@ public class BookingsControllerTests : ServiceCatalogIntegrationTestBase
         AuthenticateAsUser(customerId, "customer@test.com");
 
         // Act
-        var response = await GetAsync<List<BookingResponse>>("/api/v1/bookings/my-bookings");
+        var response = await GetAsync<PagedResult<CustomerBookingDto>>("/api/v1/bookings/my-bookings");
 
         // Assert
         response.StatusCode.Should().Be(HttpStatusCode.OK);
         response.Data.Should().NotBeNull();
-        response.Data.Should().HaveCount(3);
-        response.Data!.All(b => b.CustomerId == customerId).Should().BeTrue();
+        response.Data!.Items.Should().HaveCount(3);
+        response.Data.TotalCount.Should().Be(3, "the page total is what the client pages on");
+        response.Data.Items.Should().OnlyContain(b => b.CustomerId == customerId,
+            "my-bookings must never leak another customer's appointments");
     }
 
-    [Fact(Skip = "EFCore composite key issue: The property 'Booking.TotalPrice#Price.BookingId' is part of a key and so cannot be modified")]
+    [Fact]
     public async Task GetMyBookings_WithStatusFilter_ShouldReturnFilteredBookings()
     {
         // Arrange
@@ -353,13 +365,13 @@ public class BookingsControllerTests : ServiceCatalogIntegrationTestBase
         AuthenticateAsUser(customerId, "customer@test.com");
 
         // Act
-        var response = await GetAsync<List<BookingResponse>>("/api/v1/bookings/my-bookings?status=Confirmed");
+        var response = await GetAsync<PagedResult<CustomerBookingDto>>("/api/v1/bookings/my-bookings?status=Confirmed");
 
         // Assert
         response.StatusCode.Should().Be(HttpStatusCode.OK);
         response.Data.Should().NotBeNull();
-        response.Data.Should().HaveCount(1);
-        response.Data![0].Status.Should().Be(nameof(BookingStatus.Confirmed));
+        response.Data!.Items.Should().ContainSingle().Which.BookingId.Should().Be(confirmedBooking.Id.Value);
+        response.Data.Items[0].Status.Should().Be(nameof(BookingStatus.Confirmed));
     }
 
     #endregion

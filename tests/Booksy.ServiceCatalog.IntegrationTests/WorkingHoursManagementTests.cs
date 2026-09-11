@@ -16,7 +16,6 @@ namespace Booksy.ServiceCatalog.IntegrationTests;
 /// Integration tests for Working Hours Management APIs
 /// Tests business hours, breaks, holidays, exceptions, and availability calculation
 /// </summary>
-[Collection("Integration Tests")]
 public class WorkingHoursManagementTests : ServiceCatalogIntegrationTestBase
 {
     public WorkingHoursManagementTests(ServiceCatalogTestWebApplicationFactory<Startup> factory)

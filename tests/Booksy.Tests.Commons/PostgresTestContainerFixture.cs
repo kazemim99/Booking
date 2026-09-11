@@ -24,10 +24,11 @@ namespace Booksy.Tests.Common.Fixtures;
 /// rows — the isolation <c>IClassFixture</c> implies is preserved. Creating a database is milliseconds;
 /// starting a container is seconds plus hundreds of megabytes.</para>
 ///
-/// <para>Note the file already contained a <see cref="PostgresTestCollection"/> collection fixture intended
-/// to share the container, but nothing ever used it: the factory bypassed it by newing this type up
-/// directly. Making the container static achieves the same goal without requiring all ~40 test classes to
-/// opt into a collection.</para>
+/// <para>This file also carried a <c>PostgresTestCollection</c> collection fixture intended to share the
+/// container, which nothing ever used — the factory bypassed it by newing this type up directly. It has
+/// been deleted; the static container achieves the same thing without asking every test class to opt in.
+/// Test classes that want the fixture itself (the two raw-<c>DbContext</c> persistence suites) take it as
+/// an <c>IClassFixture</c>.</para>
 /// </summary>
 public sealed class PostgresTestContainerFixture : IAsyncLifetime
 {
@@ -152,16 +153,3 @@ public sealed class PostgresTestContainerFixture : IAsyncLifetime
     }
 }
 
-/// <summary>
-/// xUnit collection fixture that shares a <see cref="PostgresTestContainerFixture"/> across test classes.
-/// </summary>
-/// <remarks>
-/// Retained for tests that want to share one <i>database</i> as well as one server. It is not what keeps
-/// the container count down — the container is process-wide static — so a class that does not join this
-/// collection still gets an isolated database on the same server.
-/// </remarks>
-[CollectionDefinition(nameof(PostgresTestCollection))]
-public class PostgresTestCollection : ICollectionFixture<PostgresTestContainerFixture>
-{
-    // No code. It exists solely to carry [CollectionDefinition] and the ICollectionFixture<> interface.
-}

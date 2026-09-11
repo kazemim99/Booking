@@ -267,16 +267,39 @@ be done together (§4.6), after L11 so it is built once.
 | Phase | Backend-only FULL | With all four apps touched |
 |---|---|---|
 | today | ~12.3 min | 15.5 min |
-| after Phase 1 (L1, L3, L4, L9, L12, L13, quick moves) | ~6–7.5 min | ~9–10.5 min |
+| after Phase 1 (L1, L3, L4, L9, L12, L13, quick moves) — **measured 2026-09-11, see below** | **~5 min** | **12 min (contended) / ~8 min clean** |
 | after Phase 2 serial (L5–L7, L11; no parallelism) | ~3–3.5 min | ~4.5–5.5 min (apps concurrent, L10) |
 | after Phase 2 with L8 (4 collections in parallel) | ~2–2.5 min | ~3.5–4.5 min |
 
 Basis: the measured 36 s of non-boot test time in the SC suite (§2.2), ≈ 9 s per host boot, a per-test
 reset at ~0.1 s, the UM and composition suites shrinking the same way (their boots are the same 9 s),
-plus build (23 s) and units (~12 s after L1/L2). Phase 1's saving is mostly L1/L2 (≈ 135 s) plus
-whatever share of the 9 s boot the seed and duplicate migrate turn out to be — that share was not
-separable in this measurement and should be recorded when 1.3/1.4 land. Do L8 last and only if the
-serial number is not already acceptable on CI.
+plus build (23 s) and units (~12 s after L1/L2). Do L8 last and only if the serial number is not
+already acceptable on CI.
+
+### 2.4a Phase 1, measured (2026-09-11, `openspec/changes/test-architecture-phase-1`)
+
+FULL verify green at **720 s** against the 931.7 s baseline, with 1 444 backend tests and no skips.
+The per-step comparison, and the reason the headline number understates the change:
+
+| step | baseline | after Phase 1 | note |
+|---|---|---|---|
+| build | 22.8 | 66.4 | contended by two peer sessions; unrelated to this work |
+| unit projects (6 → 8) | 61.0 | 36.6 | `--no-build`, plus 105 tests that moved *into* this tier |
+| db:Host.CompositionTests | 75.6 | 33.9 | four host boots → one |
+| db:ServiceCatalog.IntegrationTests | 492.6 | 156.2 contended / **130.7 alone** | 420 tests (93 moved out), 464 s → 121 s of test time |
+| db:UserManagement.IntegrationTests | 66.5 | 105.9 contended / **28.7 alone** | see below |
+| **FULL total** | **931.7** | **720.0** | contended; `flutter analyze` alone was 103 s against 64 s |
+
+Two things are worth keeping from this measurement:
+
+- **Logging cost more than seeding.** The audit assumed the full development seed was the bulk of the
+  9 s per-class boot. It was worth ~1.8 s. The larger share was the 4.57 M lines of host console output
+  a suite run produced: quieting it took the ServiceCatalog suite from 464 s to 141 s of test time, far
+  beyond what removing the seed explains. Boot cost per class is now ~6 s, still dominated by the 26
+  migrations and CAP's schema — which is exactly what Phase 2's template database removes.
+- **Measure a parallel suite alone.** UserManagement is the only suite whose classes run in parallel, so
+  it is the one that degrades under a busy machine: 105.9 s inside the contended FULL run, 28.7 s alone
+  against a 35 s baseline. A single number from a shared developer machine is not evidence on its own.
 
 ---
 

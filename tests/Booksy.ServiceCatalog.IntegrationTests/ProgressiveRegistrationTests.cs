@@ -16,7 +16,6 @@ namespace Booksy.ServiceCatalog.IntegrationTests;
 /// Tests the new draft-based registration pattern where provider is created early
 /// and updated incrementally through the registration steps
 /// </summary>
-[Collection("Integration Tests")]
 public class ProgressiveRegistrationTests : ServiceCatalogIntegrationTestBase
 {
     public ProgressiveRegistrationTests(ServiceCatalogTestWebApplicationFactory<Startup> factory)

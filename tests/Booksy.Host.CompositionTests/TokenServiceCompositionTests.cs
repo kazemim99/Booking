@@ -22,7 +22,8 @@ namespace Booksy.Host.CompositionTests;
 /// host's own auth policy is designed to reject. No other test project builds the composition root,
 /// so this is the only place that can catch it.</para>
 /// </summary>
-public sealed class TokenServiceCompositionTests : IClassFixture<HostCompositionFactory>
+[Collection(HostCompositionCollection.Name)]
+public sealed class TokenServiceCompositionTests
 {
     private readonly HostCompositionFactory _factory;
 

@@ -41,8 +41,23 @@ GitHub Actions deploy it. Migration history: [MONOLITH_MIGRATION_PLAN.md](MONOLI
 
 ## Test suites
 
-- **Backend unit/architecture**: the seven projects `scripts/verify` runs in FAST.
+Which level a test belongs at, and the plan for this architecture:
+[docs/TEST_ARCHITECTURE_AUDIT.md](docs/TEST_ARCHITECTURE_AUDIT.md) (§3 the rule, §9 the roadmap).
+Short version: if it needs Testcontainers, `WebApplicationFactory` or a `DbContext` it is not a unit
+test; everything else belongs in a unit project.
+
+- **Backend unit/architecture**: the eight projects `scripts/verify` runs in FAST — no Docker, ~10 s
+  of test time for ~960 tests. Two of them (`Booksy.ServiceCatalog.Api.UnitTests`,
+  `Booksy.Infrastructure.External.UnitTests`) hold controller, specification, mapping and gateway-adapter
+  tests that used to sit inside the integration project behind Docker.
 - **Integration** (`tests/Booksy.ServiceCatalog.IntegrationTests`, `tests/Booksy.UserManagement.IntegrationTests`, `tests/Booksy.Host.CompositionTests`): real composed host against Testcontainers Postgres, plain xUnit. Reqnroll/Gherkin BDD was retired 2026-09-11 — see `openspec/changes/_inline/retire-reqnroll/tasks.md`.
+- **Test-project conventions**: versions come from `tests/Directory.Packages.props` (one version per
+  package; a `Version=` in a test csproj is a mistake). `tests/BannedSymbols.txt` fails the build's
+  warning bar on `Task.Delay`, `Thread.Sleep`, `DateTime.Now/Today` and unseeded `Random` — a seeded
+  `new Random(seed)` stays legal for property tests. Test hosts run as `ASPNETCORE_ENVIRONMENT=Testing`,
+  which loads `appsettings.Testing.json` (quiet logging, `Database:SeedOnStartup=false`, in-memory cache).
+- **Per-test timings**: every FULL run writes `.verify/trx/*.trx` and `.verify/slowest.txt`. The first
+  test of a class carries that class's fixture, so a 9-second "first test" is a class booting a host.
 - **API keystone smoke test** (`tests/e2e/keystone-booking-flow.sh`): curl script over the full provider→staff→customer→booking flow; CI deploy gate (`e2e-keystone`).
 - **Playwright E2E** (`booksy-frontend/e2e/`, `npm run e2e:pw`) and **Cypress** (`npm run test:e2e`): advisory, not deploy gates.
 - **Flutter**: `flutter analyze` + `flutter test` in each app; policy detail in `AGENTS.md › Mobile App Testing`.

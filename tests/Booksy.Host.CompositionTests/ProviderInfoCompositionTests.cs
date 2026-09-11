@@ -25,7 +25,8 @@ namespace Booksy.Host.CompositionTests;
 /// Neither is visible to the other test projects, which boot per-context Startup classes and
 /// never build the composition root.</para>
 /// </summary>
-public sealed class ProviderInfoCompositionTests : IClassFixture<HostCompositionFactory>
+[Collection(HostCompositionCollection.Name)]
+public sealed class ProviderInfoCompositionTests
 {
     private readonly HostCompositionFactory _factory;
 

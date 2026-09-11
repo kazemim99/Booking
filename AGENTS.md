@@ -207,14 +207,47 @@ Whenever modifying existing code:
 
 ### Test Pyramid & Test Selection
 
-Follow the Test Pyramid. Priority order:
+Ask these three questions in order. The first "yes" is the level.
 
-1. **Unit Tests** — domain logic, use cases, blocs/handlers, validators
-2. **Integration Tests** — interaction between layers (API + DB + events); prefer realistic integration tests over excessive mocking
-3. **Component/Widget Tests** — reusable UI components and screen state rendering
-4. **End-to-End Tests** — only for critical user journeys, cross-screen workflows, and regression protection; avoid E2E where a lower-level test provides equivalent confidence
+1. **Can the behaviour be observed with no I/O** — on a domain object, a handler with its ports
+   substituted, a validator, a specification, a controller with a substituted mediator? → **unit test**.
+   The mechanical form of this rule: *if the test needs Testcontainers, `WebApplicationFactory` or a
+   `DbContext`, it is not a unit test — and if it does not, it does not belong in an integration project.*
+2. **Does correctness depend on something only the real stack provides** — EF mapping and conventions,
+   SQL constraints, transactions and concurrency, the CAP outbox, middleware and the response envelope,
+   auth policy, the composed DI graph, the HTTP contract? → **integration test against `Booksy.Host`**.
+   Write **one per endpoint per outcome class** (success, unauthenticated, forbidden, not found, one
+   representative 400) plus one per business scenario that genuinely spans components. Validation
+   permutations are unit tests of the validator, not fifteen HTTP round-trips.
+3. **Does the value come from the whole deployed stack** — real network, real OTP sandbox, real browser?
+   → **E2E**, and only for the keystone journeys already scripted.
+
+A bug fix's regression test goes at the **lowest level that reproduces it**. Component/widget tests in
+Flutter and Vue follow the same three questions inside their own stacks (see *Mobile App Testing*).
 
 Choose the correct test types per change from: Unit, Integration, API, Widget, Golden (UI consistency), E2E, Regression, Contract, Database/Repository, State Management, Smoke, Performance, Accessibility, Concurrency/Race Condition. If a normally-expected test type is not applicable, state why. Do not generate unnecessary tests — select the minimal set that provides high confidence while keeping the suite maintainable.
+
+### Test Infrastructure Rules
+
+These are enforced mechanically where they can be; the rest are review items. Rationale and the
+remaining roadmap: [docs/TEST_ARCHITECTURE_AUDIT.md](docs/TEST_ARCHITECTURE_AUDIT.md).
+
+- **No sleeping, no wall clock, no unseeded randomness** in test code. `tests/BannedSymbols.txt` turns
+  `Task.Delay`, `Thread.Sleep`, `DateTime.Now/Today` and `Random.Shared` into build warnings; a seeded
+  `new Random(seed)` stays legal because a property test's seeds are part of its contract. To assert
+  that something moved a timestamp, back-date the stored value — do not sleep for the clock.
+- **One version per package.** Test projects take their versions from `tests/Directory.Packages.props`;
+  a `Version=` attribute in a test csproj is a mistake. FluentAssertions stays on the 7.x line: 8.0
+  moved to a commercial licence.
+- **A test that cannot pass is not skipped.** `[Fact(Skip = …)]` states nothing and rots — both skips
+  removed in 2026-09 were still blaming a defect that had been fixed months earlier, while the real
+  cause (the endpoint returns a paged envelope) went unrecorded. Fix it, or record it as a known
+  failure with a measured reason (`tests/known-failures.txt` header).
+- **Test hosts run as `Testing`** and load `appsettings.Testing.json`: no seeding
+  (`Database:SeedOnStartup=false`), quiet logging, in-memory cache. Configuration that shapes the test
+  environment belongs in that file, not in a stack of `UseSetting` calls in a base class.
+- **Every FULL run records per-test timings** (`.verify/trx/`, `.verify/slowest.txt`). The first test of
+  a class carries that class's fixture; a multi-second "first test" means the class boots a host.
 
 ### Mandatory Engineering & Testing Policy
 
@@ -379,7 +412,8 @@ an explicit `Status: DONE` or `Status: STOPPED(...)`.
 
 - **FAST** (after each task): `dotnet build Booksy.sln` + every unit and architecture test
   project. No Docker required. Plus the affected integration test class(es) when the task
-  touched persistence, API, or events.
+  touched persistence, API, or events. The build runs once; every `dotnet test` after it passes
+  `--no-build` (re-evaluating the project graph per project cost ~135 s of every FULL run).
 - **FULL** (at finish): FAST + Host composition + both integration suites (Testcontainers
   Postgres, Docker required) + `type-check`/`lint:check` in each touched Vue app +
   `flutter analyze`/`flutter test` in each touched Flutter app.
@@ -391,6 +425,10 @@ an explicit `Status: DONE` or `Status: STOPPED(...)`.
   (`--no-fatal-warnings --no-fatal-infos`), matching *Mobile App Testing* ("must be error-free").
 - `scripts/verify` writes `.verify/status.json`; a result is only current for the exact
   working tree it ran against. Unrun tests are not a finish. A red run is reported red.
+- **Per-test timings.** A FULL run also writes `.verify/trx/*.trx` and `.verify/slowest.txt` (the 20
+  slowest tests). The first test of a class carries that class's fixture, so a multi-second first
+  test is a class booting a host, not a slow test. `--blame-hang-timeout 5m` turns a hung
+  concurrency test into a dump with a stack instead of a silent wait.
 
 ### Reporting
 

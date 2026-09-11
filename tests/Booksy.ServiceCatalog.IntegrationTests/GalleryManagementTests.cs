@@ -19,7 +19,6 @@ namespace Booksy.ServiceCatalog.IntegrationTests;
 /// Integration tests for Gallery Management APIs
 /// Tests image upload, retrieval, metadata updates, reordering, and deletion
 /// </summary>
-[Collection("Integration Tests")]
 public class GalleryManagementTests : ServiceCatalogIntegrationTestBase
 {
     public GalleryManagementTests(ServiceCatalogTestWebApplicationFactory<Startup> factory)
@@ -737,10 +736,18 @@ public class GalleryManagementTests : ServiceCatalogIntegrationTestBase
         AuthenticateAsProviderOwner(provider);
 
         var images = await GetGalleryImagesAsync(provider.Id.Value);
-        var originalTimestamp = provider.Profile.LastUpdatedAt;
 
-        // Wait a bit to ensure timestamp difference
-        await Task.Delay(100);
+        // Back-date the stored timestamp instead of sleeping for the clock to move. The request below
+        // writes DateTime.UtcNow, and two writes inside the same millisecond would make this assertion
+        // depend on how fast the machine is; an hour of separation makes "did this request touch the
+        // profile?" the only question the test can fail on.
+        await DbContext.Database.ExecuteSqlRawAsync(
+            @"UPDATE ""ServiceCatalog"".""Providers""
+                 SET ""BusinessProfileLastUpdatedAt"" = now() - interval '1 hour'
+               WHERE ""Id"" = {0}",
+            provider.Id.Value);
+
+        var originalTimestamp = (await FindProviderAsync(provider.Id.Value))!.Profile.LastUpdatedAt;
 
         // Act
         await PutAsJsonAsync($"/api/v1/providers/{provider.Id.Value}/gallery/{images[0].Id}/set-primary", new { });
