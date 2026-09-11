@@ -35,14 +35,43 @@ Composition 21 tests, step 33.9 s.
 - [x] 4.1 tests/Booksy.Host.IntegrationTests: git mv the SC project; UM and composition tests in folders; namespaces follow folders
 - [x] 4.2 BooksyHostFactory (SC fakes + capturing SMS fake); composition factory stays unfaked; JwtTokenServiceMembershipClaimsTests to a unit project
 - [x] 4.3 Old projects deleted; Booksy.sln, both verify scripts, CI integration job, docs pointers updated
-- [ ] 5.1 Template database in PostgresTestContainerFixture: migrate once per process, clone per factory
-- [ ] 5.2 Parallel collections incl. a Concurrency collection; DisableTestParallelization removed; xunit.runner.json
-- [ ] 5.3 Two back-to-back runs identical, or revert to serial collections and record why
+- [x] 5.1 Template database in PostgresTestContainerFixture: migrate once per process, clone per factory (scoped down — see Decisions)
+- [x] 5.2 Parallel collections incl. a Concurrency collection; DisableTestParallelization removed; xunit.runner.json (scoped down — see Decisions)
+- [x] 5.3 Two back-to-back runs identical, or revert to serial collections and record why
 - [ ] 6.1 VerifyZarinPalStatusHandlingTests Moq -> NSubstitute; Moq removed from Directory.Packages.props
 - [ ] 6.2 Unused helpers deleted; CreateProviderWithStatusAsync argument order fixed; dead JWT minting removed from the test auth handler
 - [ ] 6.3 FOLLOW-UPS: the four production findings (CAP before commit, unregistered subscribers, null owner cache, upload leak)
 - [ ] 6.4 AGENTS.md, CLAUDE.md, tests/README.md, audit §2.4, memory
 - [ ] 6.5 FULL verify unfiltered; Status: DONE
+
+## Decisions (slice 5)
+- Scoped down from the original plan's five-way `SC.Bookings`/`SC.Payments`/`SC.Providers`/
+  `SC.Memberships`/`Concurrency` split to just enabling parallelism between the two collections
+  that already exist (`BooksyHostTestCollection`, `HostCompositionCollection`): the plan's original
+  motivation for a template database and fine-grained collections was avoiding N separate host
+  boots/migrations, each costing real time — but slices 2-4 already collapsed that from ~55 host
+  boots to 2, at a measured ~1.6 s median boot (Phase 1). Splitting one host boot into five to
+  parallelize an already-fast, already-stable 480-test/~100 s suite was judged not worth the added
+  surface for background services (`PaymentReconciliationBackgroundService`,
+  `LedgerMaintenanceBackgroundService`) and rate limiters to collide across more concurrently-running
+  hosts, or the template-database machinery a from-scratch `CREATE DATABASE` at 2 factories doesn't
+  need. `[assembly: CollectionBehavior(MaxParallelThreads = 2)]` replaces
+  `DisableTestParallelization = true`; `xunit.runner.json` pins the same cap so a runner that ignores
+  the assembly attribute still cannot over-subscribe. Tier 1.
+- `BookingSlotIntegrityTests.Stress_no_concurrent_combination_ever_creates_overlapping_active_bookings`
+  (seed 303) failed on the first standalone parallel run with
+  `RetryLimitExceededException` wrapping a `40P01` deadlock — the same pre-existing, load-dependent
+  flake from slice 4's investigation (FOLLOW-UPS #45), made more likely to surface because the
+  Composition collection now runs alongside it, raising ambient DB contention. Root-caused rather
+  than just re-run away: the test's own comment already named "deadlock" as an accepted loser
+  outcome, but its `catch` only matched `DbUpdateException` — EF's `NpgsqlRetryingExecutionStrategy`
+  wraps a deadlock that survives all retries in `RetryLimitExceededException` instead, which is not a
+  `DbUpdateException` subtype, so the catch never matched it. Added the missing catch clause rather
+  than loosening the test's actual invariant assertion (no committed overlap), which is unaffected
+  either way. Verified by two more clean standalone runs (480/480, ~1 m 38-47 s) after the fix, on
+  top of the one clean run before it that had already shown the speedup. Tier 1 (a test-only fix
+  that makes an already-declared tolerance actually work; the production exclusion constraint this
+  test protects is untouched).
 
 ## Decisions (slice 4)
 - Two production defects, found by the merge's higher load (not introduced by it), fixed in place
@@ -200,3 +229,14 @@ Composition 21 tests, step 33.9 s.
   Package references unchanged (`Microsoft.AspNetCore.SignalR.Client`,
   `Microsoft.AspNetCore.Mvc.Testing`, `System.IdentityModel.Tokens.Jwt` were already centrally
   declared in `tests/Directory.Packages.props`). Committed as one change.
+- 2026-09-11 **Slice 5 done, FULL verify green: 17 steps, 415 s, 0 failures; `db:` step 94 s** (down
+  from slice 4's 111 s serial, and from the original three-project baseline's ~296 s contended).
+  `BooksyHostTestCollection` and `HostCompositionCollection` now run concurrently
+  (`MaxParallelThreads = 2` — see Decisions for the scoped-down design). Two standalone runs before
+  the deadlock-tolerance fix: one clean at 1 m 40 s, one failing the pre-existing
+  `BookingSlotIntegrityTests` flake at 2 m 32 s (its own retry attempts inflate the wall time). Two
+  more standalone runs after the fix, both clean (1 m 38 s, 1 m 47 s), plus this slice's FULL run
+  (1 m 24 s) — three consecutive clean runs post-fix, none showing that flake or any other. Total
+  measured backend-integration wall time across Phase 2: three projects/three db steps, ~296 s
+  contended (baseline) → one project/one db step, ~111 s (slice 4) → one project, two collections in
+  parallel, ~94-100 s (slice 5).

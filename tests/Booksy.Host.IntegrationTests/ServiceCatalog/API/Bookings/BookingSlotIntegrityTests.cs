@@ -94,6 +94,17 @@ public class BookingSlotIntegrityTests : ServiceCatalogIntegrationTestBase
                 // Expected for losers: exclusion violation / serialization / deadlock.
                 // The point is only that they did NOT commit an overlapping row.
             }
+            catch (Microsoft.EntityFrameworkCore.Storage.RetryLimitExceededException)
+            {
+                // Same "expected loser" outcome as above, just wrapped differently: a deadlock
+                // (40P01) that persists across all of NpgsqlRetryingExecutionStrategy's retries
+                // surfaces as RetryLimitExceededException, not DbUpdateException — this test's own
+                // comment already named "deadlock" as an accepted outcome, the catch just didn't
+                // match the type the retry strategy actually throws (docs/TEST_ARCHITECTURE_AUDIT.md
+                // Phase 2 slice 5: this stress test's contention — and therefore its deadlock rate —
+                // rises once its collection runs alongside another under collection parallelism).
+                // The invariant this test protects (no committed overlap) is unaffected either way.
+            }
         }
 
         // Act — fire them all at once.

@@ -35,4 +35,11 @@
     <Using Include="Xunit" />
   </ItemGroup>
 
+  <ItemGroup>
+    <!-- Read by xunit.runner.visualstudio from the output directory at run time (docs/TEST_ARCHITECTURE_AUDIT.md
+         Phase 2 slice 5): caps collection parallelism at 2, matching the two collections that exist
+         (BooksyHostTestCollection, HostCompositionCollection) — see ServiceCatalog/AssemblyInfo.cs. -->
+    <None Include="xunit.runner.json" CopyToOutputDirectory="PreserveNewest" />
+  </ItemGroup>
+
 </Project>
