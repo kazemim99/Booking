@@ -3,7 +3,7 @@ using Booksy.API.Extensions;
 using FluentAssertions;
 using Xunit;
 
-namespace Booksy.ServiceCatalog.IntegrationTests.Unit;
+namespace Booksy.ServiceCatalog.Api.UnitTests.Extensions;
 
 /// <summary>
 /// Behaviour of the shared <see cref="ControllerExtensions.GetUserId"/> identity lookup (D11).

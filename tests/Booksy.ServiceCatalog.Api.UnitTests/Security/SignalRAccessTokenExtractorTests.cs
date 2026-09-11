@@ -3,7 +3,7 @@ using FluentAssertions;
 using Microsoft.AspNetCore.Http;
 using Xunit;
 
-namespace Booksy.ServiceCatalog.IntegrationTests.API.Notifications;
+namespace Booksy.ServiceCatalog.Api.UnitTests.Security;
 
 /// <summary>
 /// C1 SignalR access-token negotiation. The JWT for a hub connection arrives as a `?access_token=` query-string

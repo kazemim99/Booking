@@ -218,8 +218,11 @@ namespace Booksy.API
             });
 
 
+            // Seeding is opt-out by configuration, not by the environment's NAME — see the same change in
+            // Booksy.Host/Program.cs. Development still seeds by default.
             using var scope = app.ApplicationServices.CreateScope();
-            scope.ServiceProvider.InitializeDatabaseAsync(env.IsDevelopment() || env.EnvironmentName.Contains("Test")).GetAwaiter().GetResult();
+            var seed = Configuration.GetValue("Database:SeedOnStartup", env.IsDevelopment());
+            scope.ServiceProvider.InitializeDatabaseAsync(seed).GetAwaiter().GetResult();
         }
     }
 }

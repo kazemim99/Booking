@@ -52,35 +52,21 @@ public class TestWebApplicationFactory<TStartup, TDbContext>
         // than process-wide, so each factory keeps its own database and test isolation is unaffected.
         builder.UseSetting($"ConnectionStrings:{_contextName}", _postgresFixture.ConnectionString);
         builder.UseSetting("ConnectionStrings:DefaultConnection", _postgresFixture.ConnectionString);
-        builder.UseSetting("Cache:Provider", "InMemory");
 
-        // The Host registers Redis unconditionally. abortConnect=false keeps StackExchange.Redis lazy so
-        // a missing server cannot fail startup — mirroring HostCompositionFactory, which boots the same
-        // Host successfully.
-        builder.UseSetting("ConnectionStrings:Redis", "localhost:6379,abortConnect=false");
-        builder.UseSetting("Cache:RedisConnectionString", "localhost:6379,abortConnect=false");
-
-        // Abuse limits are raised for the suites, deliberately and visibly. A test that signs the
-        // same phone in twice in a row is exercising identity, not asking to be throttled, and the
-        // 60-second production cooldown would make it a sleep. Raising them HERE rather than
-        // compiling them out (which is what `#if !DEBUG` used to do in the OTP handler) keeps the
-        // production path identical to the one under test, minus the numbers.
-        builder.UseSetting("Otp:Protection:MaxSendsPerWindow", "1000");
-        builder.UseSetting("Otp:Protection:ResendCooldown", "00:00:00");
-        builder.UseSetting("RateLimiting:Enabled", "false");
+        // Everything else that used to be a UseSetting call here — the in-memory cache, the lazy Redis
+        // connection string, the raised OTP abuse limits, rate limiting off, and Database:SeedOnStartup
+        // — now lives in the host's own appsettings.Testing.json, loaded because of UseEnvironment
+        // ("Testing") below. A file is visible to anyone reading the host; a stack of UseSetting calls in
+        // a test base class is not. Only the connection string stays here: it is per-container, and its
+        // consumers (CAP's storage initializer among them) read it during service registration, which is
+        // before ConfigureAppConfiguration runs.
 
         builder.ConfigureAppConfiguration((context, config) =>
         {
-            // Add test-specific configuration
             config.AddInMemoryCollection(new Dictionary<string, string>
             {
                 [$"ConnectionStrings:{_contextName}"] = _postgresFixture.ConnectionString,
                 ["ConnectionStrings:DefaultConnection"] = _postgresFixture.ConnectionString,
-                ["DatabaseSettings:EnableSensitiveDataLogging"] = "true",
-                // Tests must not depend on a live Redis: the appsettings
-                // default points at localhost:6379 and the CachingBehavior
-                // times out the whole request pipeline when it is absent.
-                ["Cache:Provider"] = "InMemory"
             }!);
         });
 
@@ -129,19 +115,15 @@ public class TestWebApplicationFactory<TStartup, TDbContext>
             // Allow derived factories to add custom service configuration
             ConfigureTestServices(services);
 
-            // Build service provider and bring the schema up via MIGRATIONS,
-            // not EnsureCreated: the host also runs Migrate() at startup, and
-            // EnsureCreated builds the schema without migration history, so
-            // the subsequent Migrate() re-runs the initial migration and dies
-            // with "relation already exists". Migrate() is idempotent in both
-            // orders.
-            var serviceProvider = services.BuildServiceProvider();
-            using var scope = serviceProvider.CreateScope();
-            var dbContext = scope.ServiceProvider.GetRequiredService<TDbContext>();
-            dbContext.Database.Migrate();
+            // NO Migrate() here, and no BuildServiceProvider() to run it with. The host migrates both
+            // contexts during startup (Program.cs → MigrateAndSeedDatabaseAsync / InitializeDatabaseAsync),
+            // so this was a second, redundant migration of the same fresh database — and it built a whole
+            // throwaway container (ASP0000) to do it, giving those singletons a second, parallel lifetime.
         });
 
-        builder.UseEnvironment("Test");
+        // "Testing", not "Test": the name selects appsettings.Testing.json (see above), and it must NOT
+        // contain the substring the seeders used to gate on.
+        builder.UseEnvironment("Testing");
     }
 
     /// <summary>

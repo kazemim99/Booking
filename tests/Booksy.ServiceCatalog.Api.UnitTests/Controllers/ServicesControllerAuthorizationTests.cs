@@ -13,10 +13,10 @@ using MediatR;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging.Abstractions;
-using Moq;
-using Xunit;
+using NSubstitute;
+using NSubstitute.ExceptionExtensions;
 
-namespace Booksy.ServiceCatalog.IntegrationTests.Unit;
+namespace Booksy.ServiceCatalog.Api.UnitTests.Controllers;
 
 /// <summary>
 /// Regression cover for the service-lifecycle authorization defect (D1).
@@ -31,8 +31,7 @@ namespace Booksy.ServiceCatalog.IntegrationTests.Unit;
 /// provider could have deactivated or archived another business's service. These tests therefore pin both halves:
 /// the owner and admin paths must succeed, and a <i>different</i> provider must still be refused.</para>
 ///
-/// Plain unit test (no database / no fixture), hosted in the integration project because that is the test project
-/// referencing <c>Booksy.ServiceCatalog.Api</c> — matching <see cref="PaymentGatewayFactoryTests"/>.
+/// Plain unit test: the controller is exercised directly with a substituted mediator.
 /// </summary>
 public class ServicesControllerAuthorizationTests
 {
@@ -63,9 +62,9 @@ public class ServicesControllerAuthorizationTests
 
     private static ServicesController BuildController(
         ClaimsPrincipal user,
-        Mock<ISender> mediator)
+        ISender mediator)
     {
-        var controller = new ServicesController(mediator.Object, NullLogger<ServicesController>.Instance)
+        var controller = new ServicesController(mediator, NullLogger<ServicesController>.Instance)
         {
             ControllerContext = new ControllerContext
             {
@@ -80,15 +79,15 @@ public class ServicesControllerAuthorizationTests
     /// Wires the mediator so the service resolves to <paramref name="owningProviderId"/> and every lifecycle command
     /// succeeds. Authorization is therefore the only thing under test.
     /// </summary>
-    private static Mock<ISender> Mediator(
+    private static ISender Mediator(
         Guid? owningProviderId = null,
         Guid? currentProviderStatusId = null)
     {
-        var mediator = new Mock<ISender>();
+        var mediator = Substitute.For<ISender>();
 
         mediator
-            .Setup(m => m.Send(It.IsAny<GetServiceByIdQuery>(), It.IsAny<CancellationToken>()))
-            .ReturnsAsync(owningProviderId is null
+            .Send(Arg.Any<GetServiceByIdQuery>(), Arg.Any<CancellationToken>())
+            .Returns(owningProviderId is null
                 ? null
                 : new ServiceDetailsViewModel { Id = ServiceId, ProviderId = owningProviderId.Value });
 
@@ -96,38 +95,38 @@ public class ServicesControllerAuthorizationTests
         if (currentProviderStatusId is null)
         {
             mediator
-                .Setup(m => m.Send(It.IsAny<GetOwnedProviderStatusQuery>(), It.IsAny<CancellationToken>()))
+                .Send(Arg.Any<GetOwnedProviderStatusQuery>(), Arg.Any<CancellationToken>())
                 .ThrowsAsync(new InvalidOperationException("no provider for this user"));
         }
         else
         {
             mediator
-                .Setup(m => m.Send(It.IsAny<GetOwnedProviderStatusQuery>(), It.IsAny<CancellationToken>()))
-                .ReturnsAsync(new ProviderStatusResult(
+            .Send(Arg.Any<GetOwnedProviderStatusQuery>(), Arg.Any<CancellationToken>())
+            .Returns(new ProviderStatusResult(
                     ProviderId: currentProviderStatusId.Value,
                     Status: ProviderStatus.Active,
                     UserId: UserId));
         }
 
         mediator
-            .Setup(m => m.Send(It.IsAny<ActivateServiceCommand>(), It.IsAny<CancellationToken>()))
-            .ReturnsAsync(new ActivateServiceResult(ServiceId, "Haircut", OwningProviderId, DateTime.UtcNow));
+            .Send(Arg.Any<ActivateServiceCommand>(), Arg.Any<CancellationToken>())
+            .Returns(new ActivateServiceResult(ServiceId, "Haircut", OwningProviderId, DateTime.UtcNow));
 
         mediator
-            .Setup(m => m.Send(It.IsAny<DeactivateServiceCommand>(), It.IsAny<CancellationToken>()))
-            .ReturnsAsync(new DeactivateServiceResult(ServiceId, "Haircut", OwningProviderId, "reason"));
+            .Send(Arg.Any<DeactivateServiceCommand>(), Arg.Any<CancellationToken>())
+            .Returns(new DeactivateServiceResult(ServiceId, "Haircut", OwningProviderId, "reason"));
 
         mediator
-            .Setup(m => m.Send(It.IsAny<ArchiveServiceCommand>(), It.IsAny<CancellationToken>()))
-            .ReturnsAsync(new ArchiveServiceResult(ServiceId, "Haircut", OwningProviderId, "reason"));
+            .Send(Arg.Any<ArchiveServiceCommand>(), Arg.Any<CancellationToken>())
+            .Returns(new ArchiveServiceResult(ServiceId, "Haircut", OwningProviderId, "reason"));
 
         mediator
-            .Setup(m => m.Send(It.IsAny<UpdateProviderServiceCommand>(), It.IsAny<CancellationToken>()))
-            .ReturnsAsync(new UpdateProviderServiceResult(ServiceId, "Haircut", 100m, 30, DateTime.UtcNow));
+            .Send(Arg.Any<UpdateProviderServiceCommand>(), Arg.Any<CancellationToken>())
+            .Returns(new UpdateProviderServiceResult(ServiceId, "Haircut", 100m, 30, DateTime.UtcNow));
 
         mediator
-            .Setup(m => m.Send(It.IsAny<DeleteProviderServiceCommand>(), It.IsAny<CancellationToken>()))
-            .ReturnsAsync(new DeleteProviderServiceResult(ServiceId, true, "Service deleted successfully"));
+            .Send(Arg.Any<DeleteProviderServiceCommand>(), Arg.Any<CancellationToken>())
+            .Returns(new DeleteProviderServiceResult(ServiceId, true, "Service deleted successfully"));
 
         return mediator;
     }
@@ -280,10 +279,8 @@ public class ServicesControllerAuthorizationTests
 
         result.Should().BeOfType<ForbidResult>(
             "cross-tenant service editing must be refused -- this returned 200 before the fix");
-        mediator.Verify(
-            m => m.Send(It.IsAny<UpdateProviderServiceCommand>(), It.IsAny<CancellationToken>()),
-            Times.Never,
-            "authorization must short-circuit before any state change is dispatched");
+        // authorization must short-circuit before any state change is dispatched
+        await mediator.DidNotReceive().Send(Arg.Any<UpdateProviderServiceCommand>(), Arg.Any<CancellationToken>());
     }
 
     [Fact]
@@ -296,10 +293,8 @@ public class ServicesControllerAuthorizationTests
 
         result.Should().BeOfType<ForbidResult>(
             "cross-tenant service deletion must be refused -- this returned 204 before the fix");
-        mediator.Verify(
-            m => m.Send(It.IsAny<DeleteProviderServiceCommand>(), It.IsAny<CancellationToken>()),
-            Times.Never,
-            "authorization must short-circuit before any state change is dispatched");
+        // authorization must short-circuit before any state change is dispatched
+        await mediator.DidNotReceive().Send(Arg.Any<DeleteProviderServiceCommand>(), Arg.Any<CancellationToken>());
     }
 
     [Fact]
@@ -360,9 +355,7 @@ public class ServicesControllerAuthorizationTests
 
         await controller.ArchiveService(ServiceId, request: null);
 
-        mediator.Verify(
-            m => m.Send(It.IsAny<ArchiveServiceCommand>(), It.IsAny<CancellationToken>()),
-            Times.Never,
-            "authorization must short-circuit before any state change is dispatched");
+        // authorization must short-circuit before any state change is dispatched
+        await mediator.DidNotReceive().Send(Arg.Any<ArchiveServiceCommand>(), Arg.Any<CancellationToken>());
     }
 }

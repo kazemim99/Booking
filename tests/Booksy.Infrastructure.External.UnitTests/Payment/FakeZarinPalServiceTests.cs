@@ -3,7 +3,7 @@ using FluentAssertions;
 using Microsoft.Extensions.Logging.Abstractions;
 using Xunit;
 
-namespace Booksy.ServiceCatalog.IntegrationTests.Unit;
+namespace Booksy.Infrastructure.External.UnitTests.Payment;
 
 /// <summary>
 /// The deterministic fake gateway used by tier-T2 end-to-end tests. These tests pin the properties T2 relies on:

@@ -266,7 +266,12 @@ app.MapHub<Booksy.ServiceCatalog.Infrastructure.Hubs.NotificationHub>("/hubs/not
 // ---------------------------------------------------------------------------
 // Database initialization (both contexts) — migrate, then seed in dev/test
 // ---------------------------------------------------------------------------
-var seed = app.Environment.IsDevelopment() || app.Environment.EnvironmentName.Contains("Test");
+// Seeding is opt-out by configuration, not by the environment's NAME. `EnvironmentName.Contains("Test")`
+// meant every WebApplicationFactory-based test class — which runs as "Test" — seeded the full development
+// data set (providers, staff, services, notification templates, provinces, payments, payouts, reviews)
+// into its own throwaway database before its first test ran. Development still seeds by default; the test
+// factories set Database:SeedOnStartup=false in appsettings.Testing.json.
+var seed = builder.Configuration.GetValue("Database:SeedOnStartup", app.Environment.IsDevelopment());
 
 await app.MigrateAndSeedDatabaseAsync<UserManagementDbContext, UserManagementDatabaseSeeder>(seedData: seed);
 

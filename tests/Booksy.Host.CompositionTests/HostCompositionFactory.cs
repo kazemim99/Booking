@@ -10,10 +10,12 @@ namespace Booksy.Host.CompositionTests;
 /// a throwaway PostgreSQL Testcontainer, so assertions are made about the actual composed
 /// service graph rather than a hand-built one.
 ///
-/// <para>The Host migrates BOTH contexts during startup, so a live database is unavoidable
-/// here. The environment is set to Staging deliberately: seeding is gated on
-/// <c>IsDevelopment() || EnvironmentName.Contains("Test")</c>, and this suite only cares about
-/// how services are wired, so skipping the seed keeps startup to migrations alone.</para>
+/// <para>The Host migrates BOTH contexts during startup, so a live database is unavoidable here.
+/// The environment is <c>Testing</c>, which loads the Host's <c>appsettings.Testing.json</c>:
+/// quiet logging, no Redis, and <c>Database:SeedOnStartup=false</c>, so startup is migrations
+/// alone. It used to be <c>Staging</c> for the last of those reasons only — seeding was gated on
+/// the environment's NAME containing "Test", so the one name this suite could not use was the one
+/// that described it.</para>
 /// </summary>
 // TEntryPoint is only used to locate the assembly holding the entry point, and both
 // Booksy.Host and Booksy.UserManagement.API declare a global `Program` (CS0433 if named
@@ -33,8 +35,13 @@ public sealed class HostCompositionFactory
 
     protected override void ConfigureWebHost(IWebHostBuilder builder)
     {
-        builder.UseEnvironment("Staging");
+        builder.UseEnvironment("Testing");
 
+        // Only the connection string: everything else this factory used to set (lazy Redis, quiet
+        // logging, no seeding) is in the Host's appsettings.Testing.json. UseSetting as well as
+        // ConfigureAppConfiguration because registration-time consumers — CAP's storage initializer
+        // among them — read the connection string before the app configuration is built.
+        builder.UseSetting("ConnectionStrings:DefaultConnection", _postgres.ConnectionString);
         builder.ConfigureAppConfiguration((_, config) =>
         {
             config.AddInMemoryCollection(new Dictionary<string, string?>
@@ -42,12 +49,6 @@ public sealed class HostCompositionFactory
                 // Point both contexts at the container instead of the developer's local
                 // Postgres, so a test run can never migrate or seed a real database.
                 ["ConnectionStrings:DefaultConnection"] = _postgres.ConnectionString,
-
-                // No Redis in this suite. Both cache connection strings keep
-                // abortConnect=false so StackExchange.Redis stays lazy and a missing
-                // server cannot fail host startup — nothing here touches the cache.
-                ["ConnectionStrings:Redis"] = "localhost:6379,abortConnect=false",
-                ["Cache:RedisConnectionString"] = "localhost:6379,abortConnect=false",
             });
         });
     }

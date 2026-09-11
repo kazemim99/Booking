@@ -198,8 +198,11 @@ app.MapHealthChecks("/health/live", new HealthCheckOptions
 app.MapControllers();
 
 // Initialize Database (migrations + seeding for dev/test)
+// Seeding is opt-out by configuration, not by the environment's NAME — see the same change in
+// Booksy.Host/Program.cs. Development still seeds by default; the test factories set
+// Database:SeedOnStartup=false in appsettings.Testing.json.
 await app.MigrateAndSeedDatabaseAsync<UserManagementDbContext, UserManagementDatabaseSeeder>(
-    seedData: app.Environment.IsDevelopment() || app.Environment.EnvironmentName.Contains("Test"));
+    seedData: builder.Configuration.GetValue("Database:SeedOnStartup", app.Environment.IsDevelopment()));
 
 app.Run();
 

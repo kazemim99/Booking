@@ -29,11 +29,11 @@ public class UserManagementTestWebApplicationFactory<TStartup>
     {
         base.ConfigureTestServices(services);
 
-        // The base TestWebApplicationFactory sets ASPNETCORE_ENVIRONMENT to "Test", but
-        // Booksy.UserManagement.API only ships appsettings.{Development,Production}.json -- no
-        // appsettings.Test.json -- so this host falls back to the un-suffixed appsettings.json,
-        // which is the PRODUCTION-shaped config (Rahyab:SandboxMode = false, no Sms:SandboxMode
-        // key at all). Any handler that sends a real SMS (PhoneVerification-based OTP flows,
+        // Booksy.UserManagement.API now ships an appsettings.Testing.json (quiet logging, no
+        // seeding, in-memory cache), but it deliberately does NOT configure the SMS gateway: the
+        // un-suffixed appsettings.json is PRODUCTION-shaped (Rahyab:SandboxMode = false, no
+        // Sms:SandboxMode key at all), and a test must not depend on which config file wins.
+        // Any handler that sends a real SMS (PhoneVerification-based OTP flows,
         // e.g. SendVerificationCodeCommandHandler / SendPhoneVerificationCodeCommandHandler)
         // would therefore try a genuine outbound call to a real SMS gateway from inside the test
         // sandbox -- which has no route out -- and fail with an SSL/connection error 90+ seconds

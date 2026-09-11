@@ -1,0 +1,33 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net9.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <IsPackable>false</IsPackable>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="coverlet.collector" Version="6.0.2" />
+    <PackageReference Include="FluentAssertions" Version="6.12.0" />
+    <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.12.0" />
+    <PackageReference Include="NSubstitute" Version="5.1.0" />
+    <PackageReference Include="xunit" Version="2.9.2" />
+    <PackageReference Include="xunit.runner.visualstudio" Version="2.8.2" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- Controllers, request-model extensions and specifications exercised directly, with the
+         mediator substituted. No database, no host: this project runs in the FAST tier. It used
+         to live inside Booksy.ServiceCatalog.IntegrationTests "because that is the test project
+         referencing Booksy.ServiceCatalog.Api", which put ~80 pure unit tests behind Docker. -->
+    <ProjectReference Include="..\..\src\BoundedContexts\ServiceCatalog\Booksy.ServiceCatalog.Api\Booksy.ServiceCatalog.Api.csproj" />
+    <!-- ProviderBuilder for the search-specification tests. -->
+    <ProjectReference Include="..\Booksy.Tests.Commons\Booksy.Tests.Commons.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Using Include="Xunit" />
+  </ItemGroup>
+
+</Project>

@@ -7,10 +7,9 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging.Abstractions;
-using Moq;
-using Xunit;
+using NSubstitute;
 
-namespace Booksy.ServiceCatalog.IntegrationTests.API.Payments;
+namespace Booksy.ServiceCatalog.Api.UnitTests.Controllers;
 
 /// <summary>
 /// C4 Phase 0 / gaps B2 + B3 on <c>POST /payments/zarinpal/verify</c>.
@@ -18,22 +17,22 @@ namespace Booksy.ServiceCatalog.IntegrationTests.API.Payments;
 /// and settled — it must now forward the reported outcome (defaulting to "OK" for existing callers).
 /// <b>B3:</b> the endpoint did not forward the <c>Idempotency-Key</c> header (the four other money endpoints do), so
 /// a client retry was not deduplicated by the C2 §2 reservation — it must now pass the key through.
-/// The controller is exercised directly with a mocked mediator so the exact command it dispatches can be asserted.
+/// The controller is exercised directly with a substituted mediator so the exact command it dispatches can be asserted.
 /// </summary>
 public class VerifyZarinPalEndpointWiringTests
 {
     private static VerifyZarinPalPaymentResult Ok() =>
         new(Guid.NewGuid(), null, IsSuccessful: true, PaymentStatus: "Paid", RefNumber: 12345);
 
-    /// Builds the controller with a mocked mediator, optionally supplying an Idempotency-Key request header.
-    private static (PaymentsController Controller, Mock<IMediator> Mediator) Build(string? idempotencyKey)
+    /// Builds the controller with a substituted mediator, optionally supplying an Idempotency-Key request header.
+    private static (PaymentsController Controller, IMediator Mediator) Build(string? idempotencyKey)
     {
-        var mediator = new Mock<IMediator>();
-        mediator.Setup(m => m.Send(It.IsAny<VerifyZarinPalPaymentCommand>(), It.IsAny<CancellationToken>()))
-                .ReturnsAsync(Ok());
+        var mediator = Substitute.For<IMediator>();
+        mediator.Send(Arg.Any<VerifyZarinPalPaymentCommand>(), Arg.Any<CancellationToken>())
+                .Returns(Ok());
 
         var controller = new PaymentsController(
-            mediator.Object,
+            mediator,
             NullLogger<PaymentsController>.Instance,
             new ConfigurationBuilder().Build());
 
@@ -45,10 +44,10 @@ public class VerifyZarinPalEndpointWiringTests
         return (controller, mediator);
     }
 
-    private static VerifyZarinPalPaymentCommand Captured(Mock<IMediator> mediator)
+    private static VerifyZarinPalPaymentCommand Captured(IMediator mediator)
     {
-        var invocation = mediator.Invocations.Single(i => i.Arguments[0] is VerifyZarinPalPaymentCommand);
-        return (VerifyZarinPalPaymentCommand)invocation.Arguments[0];
+        var call = mediator.ReceivedCalls().Single(c => c.GetArguments()[0] is VerifyZarinPalPaymentCommand);
+        return (VerifyZarinPalPaymentCommand)call.GetArguments()[0]!;
     }
 
     // ---------------------------------------------------------------- B2

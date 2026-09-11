@@ -62,34 +62,73 @@ touched() { # prefix
     base=$(git merge-base HEAD master 2>/dev/null) && git diff --name-only "$base" HEAD; } 2>/dev/null | grep -q "^$1/"
 }
 tree_hash() {
-  local idx="$VERIFY_DIR/index"
+  # Per-run temp index: several sessions share this checkout, and a fixed path let two
+  # overlapping verify runs race for one index.lock, leaving the loser with no hash at all.
+  local idx="$VERIFY_DIR/index-$$"
   GIT_INDEX_FILE="$idx" git read-tree HEAD 2>/dev/null
   GIT_INDEX_FILE="$idx" git -c core.safecrlf=false add -A 2>/dev/null
   GIT_INDEX_FILE="$idx" git write-tree 2>/dev/null
   rm -f "$idx"
 }
 
+slowest() { # trxdir outfile — the 20 slowest tests of this run; a class's first test carries its fixture (host boot)
+  local dir="$1" out="$2" tmp; tmp=$(mktemp)
+  for trx in "$dir"/*.trx; do
+    [ -f "$trx" ] || continue
+    awk '
+      /<UnitTest / { id=""; name=""; m=$0
+        if (match(m,/ id="[^"]*"/)) id=substr(m,RSTART+5,RLENGTH-6)
+        if (match(m,/ name="[^"]*"/)) name=substr(m,RSTART+7,RLENGTH-8)
+        want=id }
+      want!="" && /<TestMethod / { c=$0
+        if (match(c,/className="[^"]*"/)) { cls=substr(c,RSTART+11,RLENGTH-12); n=split(cls,a,"."); cls=a[n] }
+        names[want]=cls "." name; want="" }
+      /<UnitTestResult / { r=$0; tid=""; d=""; o=""
+        if (match(r,/testId="[^"]*"/)) tid=substr(r,RSTART+8,RLENGTH-9)
+        if (match(r,/duration="[^"]*"/)) d=substr(r,RSTART+10,RLENGTH-11)
+        if (match(r,/outcome="[^"]*"/)) o=substr(r,RSTART+9,RLENGTH-10)
+        if (d!="") { split(d,t,":"); s=t[1]*3600+t[2]*60+t[3]; printf "%10.2f  %s  [%s]\n", s, names[tid], o } }
+    ' "$trx" >>"$tmp"
+  done
+  [ -s "$tmp" ] || { rm -f "$tmp"; return; }
+  { echo "# slowest 20 of $(wc -l <"$tmp") tests, $(date -u +%Y-%m-%dT%H:%M:%SZ). First test of a class includes its fixture (host boot)."
+    sort -rn "$tmp" | head -20
+    echo "# total test time $(awk '{s+=$1} END {printf "%.1f", s}' "$tmp")s"; } >"$out"
+  rm -f "$tmp"; echo "   slowest tests: $out"
+}
+
 echo "verify  tier=$TIER  root=$ROOT"
 [ $SKIP_BUILD -eq 0 ] && step build "$ROOT" dotnet build Booksy.sln --nologo -v q
 
+# The solution was just built; without --no-build every `dotnet test` re-evaluates the project graph
+# (5-16 s per unit project, ~30 s per integration project, ~135 s per FULL run). With --skip-build the
+# caller vouched for the build, so each step keeps its own incremental build.
+NOBUILD=(); [ $SKIP_BUILD -eq 0 ] && NOBUILD=(--no-build)
+
 for p in tests/Booksy.Core.Domain.UnitTests tests/Booksy.Infrastructure.Core.UnitTests \
          tests/Booksy.ServiceCatalog.Domain.UnitTests tests/Booksy.ServiceCatalog.Application.UnitTests \
-         tests/Booksy.ServiceCatalog.UnitTests tests/Booksy.UserManagement.Application.UnitTests \
+         tests/Booksy.ServiceCatalog.Api.UnitTests tests/Booksy.Infrastructure.External.UnitTests \
+         tests/Booksy.UserManagement.Application.UnitTests \
          tests/Booksy.ArchitectureTests; do
-  ls "$p"/*.csproj >/dev/null 2>&1 || continue   # skip dirs without a project
-  step "unit:$(basename "$p")" "$ROOT" dotnet test "$p" --nologo -v q
+  step "unit:$(basename "$p")" "$ROOT" dotnet test "$p" ${NOBUILD[@]+"${NOBUILD[@]}"} --nologo -v q
 done
 
 if [ "$TIER" = full ]; then
   if docker info >/dev/null 2>&1; then DOCKER=1; else DOCKER=0; fi
+  # Clear the previous run, including the GUID folders the blame collector leaves behind.
+  TRX_DIR="$VERIFY_DIR/trx"; mkdir -p "$TRX_DIR"; rm -rf "${TRX_DIR:?}"/*
   for p in tests/Booksy.Host.CompositionTests tests/Booksy.ServiceCatalog.IntegrationTests tests/Booksy.UserManagement.IntegrationTests; do
     n="db:$(basename "$p")"
     if [ $DOCKER -eq 0 ]; then blocked "$n" "Docker is not running; Testcontainers cannot start Postgres"; continue; fi
     clauses=""
     if [ -n "$FILTER" ] && [[ "$p" == *IntegrationTests ]]; then clauses="${clauses:+$clauses&}($FILTER)"; fi
-    if [ -n "$clauses" ]; then step "$n" "$ROOT" dotnet test "$p" --nologo -v q --filter "$clauses"
-    else step "$n" "$ROOT" dotnet test "$p" --nologo -v q; fi
+    # trx per project for per-test timings (slowest.txt); --blame-hang-timeout turns a hung
+    # concurrency test into a dump with a stack instead of a silent ten-minute wait.
+    logger=(--logger "trx;LogFileName=$(basename "$p").trx" --results-directory "$TRX_DIR" --blame-hang-timeout 5m)
+    if [ -n "$clauses" ]; then step "$n" "$ROOT" dotnet test "$p" ${NOBUILD[@]+"${NOBUILD[@]}"} --nologo -v q "${logger[@]}" --filter "$clauses"
+    else step "$n" "$ROOT" dotnet test "$p" ${NOBUILD[@]+"${NOBUILD[@]}"} --nologo -v q "${logger[@]}"; fi
   done
+  slowest "$TRX_DIR" "$VERIFY_DIR/slowest.txt"
   for app in booksy-frontend booksy-admin; do
     touched "$app" || continue
     [ -d "$app/node_modules" ] || { blocked "vue:$app" "no node_modules; run 'npm ci' in $app"; continue; }

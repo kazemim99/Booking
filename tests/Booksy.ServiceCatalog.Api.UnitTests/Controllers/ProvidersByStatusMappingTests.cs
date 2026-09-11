@@ -1,4 +1,5 @@
 using Booksy.ServiceCatalog.API.Controllers.V1;
+using Booksy.ServiceCatalog.API.Models.Responses;
 using Booksy.ServiceCatalog.Application.Queries.Provider.GetProvidersByStatus;
 using Booksy.ServiceCatalog.Application.Services;
 using Booksy.ServiceCatalog.Domain.Enums;
@@ -6,10 +7,9 @@ using FluentAssertions;
 using MediatR;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging.Abstractions;
-using Moq;
-using Xunit;
+using NSubstitute;
 
-namespace Booksy.ServiceCatalog.IntegrationTests.Unit;
+namespace Booksy.ServiceCatalog.Api.UnitTests.Controllers;
 
 /// <summary>
 /// Regression cover for the admin provider-queue defect: <c>GET /Providers/by-status/{status}</c> answered
@@ -27,12 +27,12 @@ namespace Booksy.ServiceCatalog.IntegrationTests.Unit;
 /// </summary>
 public class ProvidersByStatusMappingTests
 {
-    private static ProvidersController BuildController(Mock<ISender> mediator) =>
+    private static ProvidersController BuildController(ISender mediator) =>
         new(
-            mediator.Object,
+            mediator,
             NullLogger<ProvidersController>.Instance,
-            Mock.Of<IImageStorageService>(),
-            Mock.Of<Booksy.ServiceCatalog.Application.Services.Interfaces.ITokenService>());
+            Substitute.For<IImageStorageService>(),
+            Substitute.For<Booksy.ServiceCatalog.Application.Services.Interfaces.ITokenService>());
 
     private static ProviderListViewModel ViewModel(
         ProviderStatus status = ProviderStatus.PendingVerification,
@@ -56,13 +56,13 @@ public class ProvidersByStatusMappingTests
             RegisteredAt = new DateTime(2026, 8, 11, 16, 45, 55, DateTimeKind.Utc),
         };
 
-    private static Mock<ISender> Mediator(params ProviderListViewModel[] rows)
+    private static ISender Mediator(params ProviderListViewModel[] rows)
     {
-        var mediator = new Mock<ISender>();
+        var mediator = Substitute.For<ISender>();
 
         mediator
-            .Setup(m => m.Send(It.IsAny<GetProvidersByStatusQuery>(), It.IsAny<CancellationToken>()))
-            .ReturnsAsync((IReadOnlyList<ProviderListViewModel>)rows.ToList());
+            .Send(Arg.Any<GetProvidersByStatusQuery>(), Arg.Any<CancellationToken>())
+            .Returns((IReadOnlyList<ProviderListViewModel>)rows.ToList());
 
         return mediator;
     }
@@ -156,11 +156,9 @@ public class ProvidersByStatusMappingTests
 
         await controller.GetProvidersByStatus(ProviderStatus.Suspended);
 
-        mediator.Verify(
-            m => m.Send(
-                It.Is<GetProvidersByStatusQuery>(q => q.Status == ProviderStatus.Suspended),
-                It.IsAny<CancellationToken>()),
-            Times.Once,
-            "each admin tab requests one status; forwarding the wrong one shows the wrong providers");
+        // Each admin tab requests one status; forwarding the wrong one shows the wrong providers.
+        await mediator.Received(1).Send(
+            Arg.Is<GetProvidersByStatusQuery>(q => q.Status == ProviderStatus.Suspended),
+            Arg.Any<CancellationToken>());
     }
 }

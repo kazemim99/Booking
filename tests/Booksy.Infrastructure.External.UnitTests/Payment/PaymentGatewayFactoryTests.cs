@@ -6,7 +6,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging.Abstractions;
 using Xunit;
 
-namespace Booksy.ServiceCatalog.IntegrationTests.Unit;
+namespace Booksy.Infrastructure.External.UnitTests.Payment;
 
 /// <summary>
 /// C2 money-safety: the factory must fail closed for non-functional stub gateways (Behpardakht returns mock

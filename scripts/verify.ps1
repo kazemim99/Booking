@@ -91,13 +91,22 @@ function Get-TouchedPaths {
 function Get-TreeHash {
     # Hash of the working tree (tracked + untracked, .gitignore respected) without touching
     # the real index. The stop hook computes the same value to detect edits after this run.
-    $tmpIndex = Join-Path $verifyDir 'index'
+    #
+    # The temp index is per-run. Several assistant sessions share this checkout (AGENTS.md >
+    # Protected operations), and a fixed path meant two overlapping verify runs raced for one
+    # index.lock: the loser's `git add -A` failed, `git write-tree` printed nothing, and the
+    # $null.Trim() that followed took the whole status file down with it — a green run that
+    # recorded nothing, which the Stop hook then reports as "no verification has been recorded".
+    $tmpIndex = Join-Path $verifyDir ("index-" + [guid]::NewGuid().ToString('N'))
     $old = $env:GIT_INDEX_FILE
+    $tree = ''
     try {
         $env:GIT_INDEX_FILE = $tmpIndex
         cmd /c "git read-tree HEAD 2>nul" | Out-Null
         cmd /c "git -c core.safecrlf=false add -A 2>nul" | Out-Null
-        $tree = (cmd /c "git write-tree 2>nul").Trim()
+        $out = cmd /c "git write-tree 2>nul"
+        if ($out) { $tree = ([string]$out).Trim() }
+        if (-not $tree) { Write-Host "   NOTE: could not compute the working-tree hash; the Stop hook will treat this run as stale." -ForegroundColor Yellow }
     }
     finally {
         if ($null -eq $old) { Remove-Item Env:GIT_INDEX_FILE -ErrorAction SilentlyContinue } else { $env:GIT_INDEX_FILE = $old }
@@ -136,6 +145,33 @@ function Resolve-KnownFailures([string]$StepName) {
     Write-Host ("   PASS with {0} known-baseline failure(s) (all listed in tests/known-failures.txt)" -f $known.Count) -ForegroundColor Yellow
 }
 
+function Write-SlowestTests([string]$TrxDir, [string]$OutFile, [int]$Top = 20) {
+    # The 20 slowest tests across every trx of this run. The first test of each class carries its
+    # fixture's construction (host boot, database), so a class with a 9 s "first test" is a class
+    # that boots a host; that is the number the test-architecture work is measured by.
+    $rows = @()
+    foreach ($trx in Get-ChildItem $TrxDir -Filter *.trx -ErrorAction SilentlyContinue) {
+        try { [xml]$doc = Get-Content $trx.FullName -Raw } catch { continue }
+        $ns = New-Object System.Xml.XmlNamespaceManager($doc.NameTable)
+        $ns.AddNamespace('t', 'http://microsoft.com/schemas/VisualStudio/TeamTest/2010')
+        $names = @{}
+        foreach ($ut in $doc.SelectNodes('//t:UnitTest', $ns)) {
+            $tm = $ut.SelectSingleNode('t:TestMethod', $ns)
+            $names[$ut.id] = ($tm.className -split '\.')[-1] + '.' + $tm.name
+        }
+        foreach ($r in $doc.SelectNodes('//t:UnitTestResult', $ns)) {
+            if (-not $r.duration) { continue }
+            $rows += [pscustomobject]@{ seconds = [TimeSpan]::Parse($r.duration).TotalSeconds; test = $names[$r.testId]; outcome = $r.outcome }
+        }
+    }
+    if (-not $rows.Count) { return }
+    $lines = @("# slowest $Top of $($rows.Count) tests, $(Get-Date -Format s). First test of a class includes its fixture (host boot).")
+    $lines += $rows | Sort-Object seconds -Descending | Select-Object -First $Top | ForEach-Object { '{0,8:n2}s  {1}  [{2}]' -f $_.seconds, $_.test, $_.outcome }
+    $lines += ('# total test time {0:n1}s' -f ($rows | Measure-Object seconds -Sum).Sum)
+    [System.IO.File]::WriteAllLines($OutFile, $lines)
+    Write-Host "   slowest tests: $OutFile" -ForegroundColor DarkGray
+}
+
 $testShow = @('^\s*Failed ', 'Passed!', 'Failed!', 'error [A-Z]+[0-9]+', 'Total tests', 'No test is available')
 $buildShow = @('error [A-Z]+[0-9]+', 'Build succeeded', 'Build FAILED')
 
@@ -154,19 +190,25 @@ if (-not $SkipBuild) {
     Invoke-Step -Name 'build' -Dir $root -Command 'dotnet build Booksy.sln --nologo -v q' -ShowPattern $buildShow -NoTail
 }
 
+# The solution was just built (or the caller vouched for it with -SkipBuild, in which case the
+# projects may be stale and each test step keeps its own incremental build). Without --no-build
+# every `dotnet test` re-evaluates the whole project graph: measured at 5-16 s per unit project and
+# ~30 s per integration project, ~135 s per FULL run, for builds that never change anything.
+$noBuild = if ($SkipBuild) { '' } else { '--no-build' }
+
 $unitProjects = @(
     'tests/Booksy.Core.Domain.UnitTests',
     'tests/Booksy.Infrastructure.Core.UnitTests',
     'tests/Booksy.ServiceCatalog.Domain.UnitTests',
     'tests/Booksy.ServiceCatalog.Application.UnitTests',
-    'tests/Booksy.ServiceCatalog.UnitTests',
+    'tests/Booksy.ServiceCatalog.Api.UnitTests',
+    'tests/Booksy.Infrastructure.External.UnitTests',
     'tests/Booksy.UserManagement.Application.UnitTests',
     'tests/Booksy.ArchitectureTests'
 )
 foreach ($p in $unitProjects) {
-    if (-not (Test-Path (Join-Path $root "$p/*.csproj"))) { continue }   # skip dirs without a project
     $name = Split-Path $p -Leaf
-    Invoke-Step -Name "unit:$name" -Dir $root -Command "dotnet test $p --nologo -v q" -ShowPattern $testShow
+    Invoke-Step -Name "unit:$name" -Dir $root -Command "dotnet test $p $noBuild --nologo -v q" -ShowPattern $testShow
 }
 
 # ---------------------------------------------------------------- FULL
@@ -179,16 +221,26 @@ if ($Tier -eq 'full') {
         'tests/Booksy.ServiceCatalog.IntegrationTests',
         'tests/Booksy.UserManagement.IntegrationTests'
     )
+    # Per-test timings go to a trx per project so the slowest tests of every run are visible
+    # (.verify/slowest.txt below); --blame-hang-timeout turns a hung concurrency test into a dump
+    # with a stack instead of a silent ten-minute wait.
+    $trxDir = Join-Path $verifyDir 'trx'
+    New-Item -ItemType Directory -Force $trxDir | Out-Null
+    # Clear the previous run, including the GUID folders the blame collector leaves behind.
+    Get-ChildItem $trxDir -ErrorAction SilentlyContinue | Remove-Item -Recurse -Force
+
     foreach ($p in $dbProjects) {
         $name = Split-Path $p -Leaf
         if (-not $dockerOk) { Add-Blocked "db:$name" 'Docker is not running; Testcontainers cannot start Postgres'; continue }
-        $cmd = "dotnet test $p --nologo -v q"
+        $cmd = "dotnet test $p $noBuild --nologo -v q --logger `"trx;LogFileName=$name.trx`" --results-directory `"$trxDir`" --blame-hang-timeout 5m"
         $clauses = @()
         if ($Filter -and $p -like '*IntegrationTests') { $clauses += "($Filter)" }
         if ($clauses.Count) { $cmd += " --filter `"$($clauses -join '&')`"" }
         Invoke-Step -Name "db:$name" -Dir $root -Command $cmd -ShowPattern $testShow
         Resolve-KnownFailures -StepName "db:$name"
     }
+
+    Write-SlowestTests -TrxDir $trxDir -OutFile (Join-Path $verifyDir 'slowest.txt')
 
     $touched = Get-TouchedPaths
     function Touched($prefix) { $All -or (($touched | Where-Object { $_ -like "$prefix/*" }).Count -gt 0) }

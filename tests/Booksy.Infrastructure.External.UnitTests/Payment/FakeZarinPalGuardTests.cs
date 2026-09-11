@@ -3,7 +3,7 @@ using FluentAssertions;
 using Microsoft.Extensions.Configuration;
 using Xunit;
 
-namespace Booksy.ServiceCatalog.IntegrationTests.Unit;
+namespace Booksy.Infrastructure.External.UnitTests.Payment;
 
 /// <summary>
 /// Safeguards on the test-only fake ZarinPal gateway. A fake payment gateway is the last thing that should ever be

@@ -6,7 +6,7 @@ using Booksy.Tests.Common.Builders;
 using FluentAssertions;
 using Xunit;
 
-namespace Booksy.ServiceCatalog.IntegrationTests.Unit;
+namespace Booksy.ServiceCatalog.Api.UnitTests.Specifications;
 
 /// <summary>
 /// Provider search is the core of discovery — it is how a customer finds anyone at all — and two of its filters

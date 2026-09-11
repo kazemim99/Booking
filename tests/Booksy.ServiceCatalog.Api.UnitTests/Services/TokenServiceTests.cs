@@ -6,10 +6,9 @@ using Booksy.ServiceCatalog.Infrastructure.Services.Application;
 using FluentAssertions;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Logging.Abstractions;
-using Moq;
-using Xunit;
+using NSubstitute;
 
-namespace Booksy.ServiceCatalog.IntegrationTests.Unit;
+namespace Booksy.ServiceCatalog.Api.UnitTests.Services;
 
 /// <summary>
 /// Regression cover for provider registration's final step failing with
@@ -17,37 +16,31 @@ namespace Booksy.ServiceCatalog.IntegrationTests.Unit;
 /// the same code path that only became visible once the first was fixed and the call actually started
 /// returning data.
 ///
+/// <para><b>Scope note (2026-09-11).</b> <see cref="TokenService"/> is the HTTP loopback adapter. The composed
+/// monolith (<c>Booksy.Host</c>) replaces it with <c>InProcessTokenService</c>, so in production this class no
+/// longer runs; it is still the registered <see cref="ITokenService"/> of the retired per-service host. These
+/// tests move with the adapter: when the adapter is deleted, delete this file with it
+/// (docs/TEST_ARCHITECTURE_AUDIT.md §3.2).</para>
+///
 /// <para><b>Defect 1 — no credentials on the internal call.</b> <see cref="TokenService"/> calls UserManagement's
-/// <c>POST /api/v1/auth/generate-token</c> over HTTP — a loopback call within the same single-host modular
-/// monolith, not a call to a separate service. That endpoint has no <c>[AllowAnonymous]</c>, so it falls under
+/// <c>POST /api/v1/auth/generate-token</c> over HTTP. That endpoint has no <c>[AllowAnonymous]</c>, so it falls under
 /// the host's global <c>FallbackPolicy.RequireAuthenticatedUser()</c>. The <c>UserManagementAPI</c> HTTP client
 /// only attaches an <c>X-API-Key</c> header when <c>Services:UserManagement:ApiKey</c> is configured — it is
 /// empty by default — and no API-key authentication scheme is registered on the receiving side regardless, only
 /// JWT Bearer. So the call went out with no credentials at all and always 401'd.
-/// <b>Fix:</b> re-present the current request's OWN bearer token. This method only ever runs inside an
-/// already-authenticated request, and <c>GenerateToken</c> does not check the caller matches the target user
-/// id, so forwarding the caller's own token is sufficient and grants nothing beyond what that caller already
-/// had.</para>
+/// <b>Fix:</b> re-present the current request's OWN bearer token.</para>
 ///
 /// <para><b>Defect 2 — the response envelope was never unwrapped.</b> Every controller response on this host is
-/// wrapped by <c>ApiResponseMiddleware</c> into <c>{ success, statusCode, message, data, metadata }</c> — this
-/// is true of every endpoint in the whole API, verified against a live call. The actual token fields live at
-/// <c>.data</c>, but <see cref="TokenService"/> deserialized the response body straight into
+/// wrapped by <c>ApiResponseMiddleware</c> into <c>{ success, statusCode, message, data, metadata }</c>. The actual
+/// token fields live at <c>.data</c>, but <see cref="TokenService"/> deserialized the response body straight into
 /// <see cref="TokenResponse"/>, which matches nothing at the envelope's root. System.Text.Json does not throw
-/// for unmatched properties — it just leaves the record at its defaults — so this "succeeded" with a non-null
-/// <see cref="TokenResponse"/> whose <c>AccessToken</c> was always <c>string.Empty</c>. Provider registration's
-/// final step therefore returned <c>HTTP 200</c> with a blank <c>accessToken</c>: registration genuinely
-/// succeeded, but the provider never received the fresh, provider-claim-bearing session the call exists to
-/// produce. <b>Fix:</b> deserialize into a small envelope type and read its <c>.Data</c>; additionally guard on
-/// an empty <c>AccessToken</c> so a similarly-shaped failure throws instead of returning quietly-wrong data.</para>
+/// for unmatched properties, so this "succeeded" with a <see cref="TokenResponse"/> whose <c>AccessToken</c> was
+/// always <c>string.Empty</c>. <b>Fix:</b> deserialize into a small envelope type and read its <c>.Data</c>;
+/// additionally guard on an empty <c>AccessToken</c>.</para>
 ///
-/// <para>An earlier version of both this fix and this test file misdiagnosed defect 2 as a camelCase/PascalCase
-/// casing mismatch. That was wrong — this project's <c>ReadFromJsonAsync</c> calls already bind camelCase JSON
-/// to PascalCase properties without extra options — and was only caught by replaying the real request against
-/// the running host and reading the actual response bytes rather than trusting the theory. The fake HTTP
-/// response below is therefore built as the REAL envelope shape (captured from that live call), not a bare
-/// <see cref="TokenResponse"/> — using the bare shape, as the first version of this file did, would pass
-/// regardless of whether the unwrapping fix is correct.</para>
+/// <para>The fake HTTP response below is built as the REAL envelope shape (captured from a live call), not a bare
+/// <see cref="TokenResponse"/> — using the bare shape would pass regardless of whether the unwrapping fix is
+/// correct.</para>
 /// </summary>
 public class TokenServiceTests
 {
@@ -93,8 +86,8 @@ public class TokenServiceTests
         var handler = new CapturingHandler();
         var httpClient = new HttpClient(handler) { BaseAddress = new Uri("http://localhost/api/") };
 
-        var factory = new Mock<IHttpClientFactory>();
-        factory.Setup(f => f.CreateClient("UserManagementAPI")).Returns(httpClient);
+        var factory = Substitute.For<IHttpClientFactory>();
+        factory.CreateClient("UserManagementAPI").Returns(httpClient);
 
         HttpContext? httpContext = null;
         if (inboundAuthHeader != null)
@@ -104,10 +97,10 @@ public class TokenServiceTests
             httpContext = ctx;
         }
 
-        var contextAccessor = new Mock<IHttpContextAccessor>();
-        contextAccessor.Setup(a => a.HttpContext).Returns(httpContext);
+        var contextAccessor = Substitute.For<IHttpContextAccessor>();
+        contextAccessor.HttpContext.Returns(httpContext);
 
-        var service = new TokenService(factory.Object, contextAccessor.Object, NullLogger<TokenService>.Instance);
+        var service = new TokenService(factory, contextAccessor, NullLogger<TokenService>.Instance);
         return (service, handler);
     }
 
@@ -163,9 +156,7 @@ public class TokenServiceTests
     {
         // Pins the belt-and-braces guard added alongside the envelope-unwrapping fix: even a well-formed,
         // successful (HTTP 200) response must be rejected if AccessToken comes back empty, rather than handed
-        // back to the caller as if it were a real token. This is exactly what used to happen silently when the
-        // envelope was never unwrapped -- a non-null TokenResponse with every field at its default -- and the
-        // guard now catches that shape regardless of what causes it.
+        // back to the caller as if it were a real token.
         var (service, handler) = BuildService(inboundAuthHeader: "Bearer caller-own-token");
         handler.ResponseData = new TokenResponse { AccessToken = "", RefreshToken = "refresh", ExpiresIn = 900 };
 
