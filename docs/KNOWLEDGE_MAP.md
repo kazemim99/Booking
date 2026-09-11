@@ -67,7 +67,7 @@ Two known traps:
 | What are the rules for working here? | [`AGENTS.md`]AGENTS.md) — test-first standard + testing policy |
 | Where does knowledge live, and which copy wins? | [`docs/KNOWLEDGE.md`]docs/KNOWLEDGE.md) |
 | How do I run / deploy / debug it? | [`CLAUDE.md`]CLAUDE.md) — commands, Docker, health checks, troubleshooting |
-| How do I write or run tests? | `AGENTS.md` (policy) · `docs/REQNROLL_TESTING.md` (BDD) · `CLAUDE.md` `## Test Suites` |
+| How do I write or run tests? | `AGENTS.md` (policy) · `CLAUDE.md` `## Test Suites` |
 | How do we archive an OpenSpec change? | skill `openspec-change-lifecycle` |
 | How do I confirm a claim is true? | skill `verify-before-claiming` |
 
@@ -148,7 +148,6 @@ Four 2026 files; the other 32 predate 2026. Treat pre-2026 entries as *why*, nev
 |---|---|---|
 | 2026-08-19 | `KNOWLEDGE.md` | **The knowledge contract** — where each kind of knowledge lives, which copy wins. |
 | 2026-08-19 | `SERVICE_CATEGORY_MODEL.md` | Provider/service category model. |
-| 2026-07-12 | `REQNROLL_TESTING.md` | Writing and running the Gherkin BDD integration tests. |
 | 2026-07-12 | `DOCS_SITE_DEPLOYMENT.md` | Deploying the Docusaurus site — *not* about deploying Booksy. |
 | 2025-12-18 | `INDEX.md` | **Broken** — 10 dead links. Do not use as a directory. |
 | 2025-12-18 | `BOOKING_API_REFERENCE.md`, `BOOKING_MIGRATION_CHECKLIST.md` | Booking API and migration checklist, pre-monolith. |
@@ -161,9 +160,9 @@ Four 2026 files; the other 32 predate 2026. Treat pre-2026 entries as *why*, nev
 | 2025-11-08 | `ZarinPal-Sandbox-Testing-Guide.md` | ZarinPal sandbox testing. Relevant to `checkout-release-gates`. |
 | 2025-11-01 | `api-design-notes.md` | Early API design notes. |
 
-`docs/archive/` (22 files) is explicitly historical — auth flow, booking cancellation/reschedule,
-provider search, real-time availability, the Reqnroll migration, the original business proposal.
-Useful for *why*; never cite as current.
+`docs/archive/` (23 files) is explicitly historical — auth flow, booking cancellation/reschedule,
+provider search, real-time availability, the Reqnroll migration and its 2026-09-11 retirement, the
+original business proposal. Useful for *why*; never cite as current.
 
 ## `docs-site/` — do not trust
 

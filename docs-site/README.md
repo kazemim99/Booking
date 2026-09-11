@@ -61,7 +61,6 @@ docs/
 │
 ├── testing/                 # Testing documentation
 │   ├── integration-testing.md
-│   ├── reqnroll-quickstart.md
 │   ├── test-coverage.md
 │   └── quick-guide.md
 │

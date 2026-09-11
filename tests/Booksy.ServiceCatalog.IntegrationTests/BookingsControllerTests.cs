@@ -171,6 +171,84 @@ public class BookingsControllerTests : ServiceCatalogIntegrationTestBase
         response.StatusCode.Should().Be(HttpStatusCode.NotFound);
     }
 
+    /// <summary>
+    /// Ported from Reqnroll's <c>Bookings/CreateBooking.feature</c> ("Provider-created walk-in is
+    /// born Confirmed") when Reqnroll was retired. A booking the provider enters on their own
+    /// calendar must not wait in their own pending queue: <c>CreateBookingCommandHandler</c> reads
+    /// the caller's identity from the JWT — never a client-supplied flag, which a customer could
+    /// spoof — and mints it already <c>Confirmed</c> when the caller owns the provider.
+    /// </summary>
+    [Fact]
+    public async Task CreateBooking_AsProviderOwner_IsBornConfirmed()
+    {
+        var provider = await CreateTestProviderWithServicesAsync();
+        var service = await GetFirstServiceForProviderAsync(provider.Id.Value);
+
+        AuthenticateAsProviderOwner(provider);
+
+        var request = new CreateBookingRequest
+        {
+            ProviderId = provider.Id.Value,
+            ServiceId = service.Id.Value,
+            StaffId = provider.Id.Value,
+            StartTime = NextWeekdayAtHour(DateTime.UtcNow.Date.AddDays(2), 10),
+            CustomerNotes = "Walk-in client"
+        };
+
+        var response = await PostAsJsonAsync<CreateBookingRequest, BookingResponse>("/api/v1/bookings", request);
+
+        response.StatusCode.Should().Be(HttpStatusCode.Created,
+            response.Error is { } e ? $"{e.Code}: {e.Message}" : "no error payload");
+        response.Data.Should().NotBeNull();
+        response.Data!.Status.Should().Be(nameof(BookingStatus.Confirmed),
+            "the provider IS the approver: their own booking must never wait in their own pending queue");
+    }
+
+    /// <summary>
+    /// Ported from Reqnroll's <c>Bookings/CreateBooking.feature</c> ("Multi-service visit sums
+    /// duration and price") when Reqnroll was retired.
+    /// </summary>
+    [Fact]
+    public async Task CreateBooking_WithMultipleServices_SumsDurationAndPrice()
+    {
+        var provider = await CreateTestProviderWithServicesAsync();
+        var haircut = await GetFirstServiceForProviderAsync(provider.Id.Value);
+        var staff = provider;
+        var customerId = Guid.NewGuid();
+
+        var hairColor = await CreateServiceForProviderAsync(provider, "Hair color", 120.00m, 90);
+        var membershipId = await GetBookableMemberIdAsync(provider);
+        hairColor.AddQualifiedStaff(membershipId);
+        if (hairColor.Status != ServiceStatus.Active) hairColor.Activate();
+        await UpdateEntityAsync(hairColor);
+
+        AuthenticateAsUser(customerId, "customer@test.com");
+
+        var request = new CreateBookingRequest
+        {
+            ProviderId = provider.Id.Value,
+            ServiceIds = new List<Guid> { haircut.Id.Value, hairColor.Id.Value },
+            StaffId = staff.Id,
+            StartTime = NextWeekdayAtHour(DateTime.UtcNow.Date.AddDays(2), 10)
+        };
+
+        var response = await PostAsJsonAsync<CreateBookingRequest, BookingResponse>("/api/v1/bookings", request);
+
+        response.StatusCode.Should().Be(HttpStatusCode.Created,
+            response.Error is { } e ? $"{e.Code}: {e.Message}" : "no error payload");
+        response.Data.Should().NotBeNull();
+
+        // Asserted against the stored row, not the response DTO: CreateBookingResult.DurationMinutes
+        // is never assigned by CreateBookingCommandHandler (always 0 in the response, for every
+        // booking, not just multi-service ones) — a pre-existing defect, out of scope here, recorded
+        // separately. This is what the original Reqnroll scenario checked too.
+        var stored = await DbContext.Bookings.FirstAsync(b => b.Id == BookingId.From(response.Data!.Id));
+        stored.Services.Should().HaveCount(2, "every bundled service becomes one persisted line item");
+        stored.Duration.Value.Should().Be(60 + 90, "the visit occupies the combined duration of every bundled service");
+        stored.TotalPrice.Amount.Should().Be(haircut.BasePrice.Amount + 120.00m,
+            "the bill is the sum over the service lines");
+    }
+
     #endregion
 
     #region Get Booking Tests

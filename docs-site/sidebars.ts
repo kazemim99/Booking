@@ -92,7 +92,6 @@ const sidebars: SidebarsConfig = {
       label: 'Testing',
       items: [
         'testing/integration-testing',
-        'testing/reqnroll-quickstart',
         'testing/test-coverage',
         'testing/quick-guide',
       ],

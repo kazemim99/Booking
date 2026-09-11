@@ -18,9 +18,6 @@
                      e.g. -Filter "FullyQualifiedName~AvailabilityStaffIsolation".
 .PARAMETER All       Run the frontend/Flutter steps even when git shows them untouched.
 .PARAMETER SkipBuild Skip the solution build (use when you just built).
-.PARAMETER IncludeFeatures Also run the Reqnroll Gherkin features in ServiceCatalog.IntegrationTests.
-                     Excluded by default: REQNROLL-COVERAGE-GAP.md documents them as a spec backlog
-                     (unbound steps) and FOLLOW-UPS #31 as credentials-blocked, so they fail by design.
 
 .EXAMPLE
   scripts/verify.ps1                       # FAST
@@ -32,8 +29,7 @@ param(
     [ValidateSet('fast', 'full')] [string]$Tier = 'fast',
     [string]$Filter = '',
     [switch]$All,
-    [switch]$SkipBuild,
-    [switch]$IncludeFeatures
+    [switch]$SkipBuild
 )
 
 $ErrorActionPreference = 'Continue'
@@ -188,14 +184,6 @@ if ($Tier -eq 'full') {
         if (-not $dockerOk) { Add-Blocked "db:$name" 'Docker is not running; Testcontainers cannot start Postgres'; continue }
         $cmd = "dotnet test $p --nologo -v q"
         $clauses = @()
-        if ($p -like '*ServiceCatalog.IntegrationTests' -and -not $IncludeFeatures) {
-            # The Reqnroll Gherkin features under Features/ are a specification backlog, not a
-            # test suite: openspec/changes/REQNROLL-COVERAGE-GAP.md records 707 of 739 scenarios
-            # blocked by unbound steps, and FOLLOW-UPS #31 records the payment scenarios as
-            # credentials-blocked. They fail by design, so they are not a definition-of-done gate.
-            # Run them deliberately with -IncludeFeatures (or -Filter "FullyQualifiedName~Features").
-            $clauses += 'FullyQualifiedName!~IntegrationTests.Features'
-        }
         if ($Filter -and $p -like '*IntegrationTests') { $clauses += "($Filter)" }
         if ($clauses.Count) { $cmd += " --filter `"$($clauses -join '&')`"" }
         Invoke-Step -Name "db:$name" -Dir $root -Command $cmd -ShowPattern $testShow

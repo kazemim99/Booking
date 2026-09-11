@@ -42,7 +42,7 @@ GitHub Actions deploy it. Migration history: [MONOLITH_MIGRATION_PLAN.md](MONOLI
 ## Test suites
 
 - **Backend unit/architecture**: the seven projects `scripts/verify` runs in FAST.
-- **Integration** (`tests/Booksy.ServiceCatalog.IntegrationTests`, `tests/Booksy.UserManagement.IntegrationTests`, `tests/Booksy.Host.CompositionTests`): real composed host against Testcontainers Postgres; Reqnroll Gherkin features live in the ServiceCatalog project — see [docs/REQNROLL_TESTING.md](docs/REQNROLL_TESTING.md).
+- **Integration** (`tests/Booksy.ServiceCatalog.IntegrationTests`, `tests/Booksy.UserManagement.IntegrationTests`, `tests/Booksy.Host.CompositionTests`): real composed host against Testcontainers Postgres, plain xUnit. Reqnroll/Gherkin BDD was retired 2026-09-11 — see `openspec/changes/_inline/retire-reqnroll/tasks.md`.
 - **API keystone smoke test** (`tests/e2e/keystone-booking-flow.sh`): curl script over the full provider→staff→customer→booking flow; CI deploy gate (`e2e-keystone`).
 - **Playwright E2E** (`booksy-frontend/e2e/`, `npm run e2e:pw`) and **Cypress** (`npm run test:e2e`): advisory, not deploy gates.
 - **Flutter**: `flutter analyze` + `flutter test` in each app; policy detail in `AGENTS.md › Mobile App Testing`.

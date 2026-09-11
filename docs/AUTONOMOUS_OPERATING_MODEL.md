@@ -239,9 +239,7 @@ scripts/verify.sh  fast|full [--filter ..] [--all] [--skip-build]
 - FULL: FAST, then Host composition + both integration projects (Testcontainers starts its own
   Postgres; no compose file needed), `type-check`/`lint:check` in each touched Vue app,
   `flutter analyze`/`flutter test` in each touched Flutter app. Without Docker the DB steps are
-  reported `blocked`, and the overall result is `blocked`, never `pass`. The Reqnroll Gherkin
-  features are excluded by default (`-IncludeFeatures` to run them): the repository documents
-  them as a specification backlog and credentials-blocked, so they cannot be a gate.
+  reported `blocked`, and the overall result is `blocked`, never `pass`.
 - `tests/known-failures.txt` is the recorded baseline of integration tests that were already
   red before a change (measured on the committed HEAD in a clean worktree). A db step passes
   when all of its failures are on the list and fails on any that is not, so the gate enforces

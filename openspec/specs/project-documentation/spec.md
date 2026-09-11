@@ -27,4 +27,4 @@ The repository SHALL organize its markdown documentation into three tiers so a r
 
 #### Scenario: Testing section present
 - **WHEN** a reader (human or AI assistant) opens `CLAUDE.md` to learn how to test the app
-- **THEN** it finds a section covering the Playwright E2E suite (`booksy-frontend/e2e/`) and the Reqnroll BDD integration tests (`tests/Booksy.ServiceCatalog.IntegrationTests/`)
+- **THEN** it finds a section covering the Playwright E2E suite (`booksy-frontend/e2e/`) and the xUnit integration tests against the composed host (`tests/Booksy.ServiceCatalog.IntegrationTests/`)

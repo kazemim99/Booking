@@ -1,4 +1,5 @@
 using Booksy.Core.Domain.ValueObjects;
+using Booksy.Infrastructure.Core.Caching;
 using Booksy.ServiceCatalog.Api.Models.Responses;
 using Booksy.ServiceCatalog.Application.Commands.Booking.CreateBooking;
 using Booksy.ServiceCatalog.Domain.Aggregates.BookingAggregate;
@@ -6,6 +7,7 @@ using Booksy.ServiceCatalog.Domain.Entities;
 using Booksy.ServiceCatalog.Domain.Enums;
 using Booksy.ServiceCatalog.Domain.ValueObjects;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.DependencyInjection;
 using Xunit;
 
 namespace Booksy.ServiceCatalog.IntegrationTests.API.Bookings;
@@ -137,6 +139,65 @@ public class AvailabilityControllerTests : ServiceCatalogIntegrationTestBase
                 .All(s => s.AvailableStaffId == staff.Id)
                 .Should().BeTrue("All slots should be for the specified staff member");
         }
+    }
+
+    /// <summary>
+    /// Ported from Reqnroll's <c>Availability/Availability.feature</c> ("No availability on
+    /// holidays") when Reqnroll was retired. <c>AvailabilityService.GetAvailableTimeSlotsAsync</c>
+    /// checks <c>IsHoliday</c> before generating any slot for the day.
+    /// </summary>
+    [Fact]
+    public async Task GetAvailableSlots_OnAHoliday_ReturnsNoSlots()
+    {
+        var provider = await CreateTestProviderWithServicesAsync();
+        var service = await GetFirstServiceForProviderAsync(provider.Id.Value);
+        var futureDate = DateTime.UtcNow.AddDays(3).Date;
+
+        // MakeBookableAsync (inside CreateTestProviderWithServicesAsync) clears the change
+        // tracker at the end, so the returned `provider` is DETACHED — mutating it and saving
+        // does nothing. Re-fetch a tracked instance first.
+        var tracked = await DbContext.Providers.FirstAsync(p => p.Id == provider.Id);
+        tracked.AddHoliday(DateOnly.FromDateTime(futureDate), "Public holiday");
+        await DbContext.SaveChangesAsync();
+        await InvalidateProviderCacheAsync(provider);
+
+        var response = await GetAsync<AvailableSlotsResponse>(
+            $"/api/v1/availability/slots?ProviderId={provider.Id.Value}&ServiceId={service.Id.Value}&Date={futureDate:yyyy-MM-dd}");
+
+        response.StatusCode.Should().Be(HttpStatusCode.OK);
+        response.Data.Should().NotBeNull();
+        response.Data!.Slots.Should().BeEmpty("the salon is closed for the holiday");
+    }
+
+    /// <summary>
+    /// Ported from Reqnroll's <c>Availability/Availability.feature</c> ("Exception hours override
+    /// regular business hours") when Reqnroll was retired. An exception schedule's open/close
+    /// times replace the day's regular business hours for slot generation.
+    /// </summary>
+    [Fact]
+    public async Task GetAvailableSlots_WithAnExceptionSchedule_OnlyOffersSlotsWithinItsHours()
+    {
+        var provider = await CreateTestProviderWithServicesAsync();
+        var service = await GetFirstServiceForProviderAsync(provider.Id.Value);
+        var futureDate = DateTime.UtcNow.AddDays(3).Date;
+
+        // Regular hours are 09:00-17:00 (CreateTestProviderWithServicesAsync); this narrows the
+        // day to 14:00-18:00 only. Re-fetch a tracked instance — see the holiday test above for why.
+        var tracked = await DbContext.Providers.FirstAsync(p => p.Id == provider.Id);
+        tracked.AddException(
+            DateOnly.FromDateTime(futureDate), new TimeOnly(14, 0), new TimeOnly(18, 0), "Late opening");
+        await DbContext.SaveChangesAsync();
+        await InvalidateProviderCacheAsync(provider);
+
+        var response = await GetAsync<AvailableSlotsResponse>(
+            $"/api/v1/availability/slots?ProviderId={provider.Id.Value}&ServiceId={service.Id.Value}&Date={futureDate:yyyy-MM-dd}");
+
+        response.StatusCode.Should().Be(HttpStatusCode.OK);
+        response.Data.Should().NotBeNull();
+        response.Data!.Slots.Should().NotBeEmpty("the exception still leaves a four-hour window open");
+        response.Data.Slots.Should().OnlyContain(
+            s => s.StartTime.TimeOfDay >= new TimeSpan(14, 0, 0) && s.EndTime.TimeOfDay <= new TimeSpan(18, 0, 0),
+            "the exception hours replace the regular 09:00-17:00 business hours for this date");
     }
 
     #endregion
@@ -287,6 +348,20 @@ public class AvailabilityControllerTests : ServiceCatalogIntegrationTestBase
     #endregion
 
     #region Helper Methods
+
+    /// <summary>
+    /// The read side (<c>IProviderReadRepository</c>) is decorated by a cache. Mutating a
+    /// provider through the test's own <see cref="ServiceCatalogIntegrationTestBase.DbContext"/> —
+    /// as <c>AddHoliday</c>/<c>AddException</c> do here — never goes through the unit of work that
+    /// invalidates it in production, so a request made right after would still see the salon as it
+    /// was before the mutation. See <c>MakeBookableAsync</c>, which hits the same trap.
+    /// </summary>
+    private async Task InvalidateProviderCacheAsync(Domain.Aggregates.Provider provider)
+    {
+        var cache = Scope.ServiceProvider.GetRequiredService<ICacheService>();
+        await cache.RemoveAsync($"Provider:{provider.Id.Value}");
+        await cache.RemoveAsync($"Provider:owner:{provider.OwnerId.Value}");
+    }
 
     private async Task<Booking> CreateBookingForCustomerAsync(
         Guid customerId,

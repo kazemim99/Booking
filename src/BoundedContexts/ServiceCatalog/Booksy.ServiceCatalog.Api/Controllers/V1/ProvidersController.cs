@@ -743,9 +743,9 @@ public class ProvidersController : ControllerBase
     /// POST creates a membership, PUT/photo delegate to <c>UpdateMembershipCommand</c>, DELETE
     /// terminates the membership — and no client calls it any more (Vue, both Flutter apps and
     /// the admin all use <c>/hierarchy/members</c> and <c>/memberships/*</c>). It stays because
-    /// the keystone deploy gate (<c>tests/e2e/keystone-booking-flow.sh</c> steps 1–5) and the
-    /// Reqnroll <c>StaffManagement</c> feature still exercise this shape. Retiring it means
-    /// moving those suites to the membership endpoints first; until then these are thin shims.
+    /// the keystone deploy gate (<c>tests/e2e/keystone-booking-flow.sh</c> steps 1–5) still
+    /// exercises this shape. Retiring it means moving that script to the membership endpoints
+    /// first; until then these are thin shims.
     /// </remarks>
     /// <param name="id">Provider ID</param>
     /// <param name="activeOnly">Return only active staff members</param>

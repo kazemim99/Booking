@@ -80,7 +80,7 @@ Examples:
 - State machine transitions.
 - Notification triggering.
 
-In this repository, acceptance scenarios for ServiceCatalog behavior belong in the Reqnroll Gherkin features under `tests/Booksy.ServiceCatalog.IntegrationTests/` — see [docs/REQNROLL_TESTING.md](docs/REQNROLL_TESTING.md).
+In this repository, acceptance scenarios for ServiceCatalog behavior are xUnit integration tests under `tests/Booksy.ServiceCatalog.IntegrationTests/` — one test class per business area, named for the scenario it proves. Reqnroll/Gherkin BDD was retired 2026-09-11: 95% of its scenarios had never run (unbound steps), and the rest were duplicated by, or ported into, xUnit tests — see `openspec/changes/_inline/retire-reqnroll/tasks.md`.
 
 #### Unit Tests are preferred for:
 
@@ -382,11 +382,7 @@ an explicit `Status: DONE` or `Status: STOPPED(...)`.
   touched persistence, API, or events.
 - **FULL** (at finish): FAST + Host composition + both integration suites (Testcontainers
   Postgres, Docker required) + `type-check`/`lint:check` in each touched Vue app +
-  `flutter analyze`/`flutter test` in each touched Flutter app. The Reqnroll Gherkin features
-  in `ServiceCatalog.IntegrationTests/Features` are excluded from the gate: the repository
-  records them as a specification backlog (`openspec/changes/REQNROLL-COVERAGE-GAP.md`, 707 of
-  739 scenarios with unbound steps) and the payment ones as credentials-blocked (FOLLOW-UPS
-  #31), so they fail by design. Run them on purpose with `-IncludeFeatures` / `--features`.
+  `flutter analyze`/`flutter test` in each touched Flutter app.
 - **Known-failure baseline.** `tests/known-failures.txt` lists integration tests that were
   already red on the committed baseline before a change (83 on 2026-09-09, measured in a clean
   worktree). A db step passes when every failure is on that list and fails on any failure off

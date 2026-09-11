@@ -1,5 +1,10 @@
 # Reqnroll specification-coverage gap
 
+> **RETIRED 2026-09-11.** Reqnroll/SpecFlow BDD was removed from the repository entirely: real
+> coverage was ported to xUnit first (see `openspec/changes/_inline/retire-reqnroll/tasks.md`),
+> confirming this document's own finding — 707 of 739 scenarios had never run. Kept here as the
+> historical record of that audit; do not use it to plan new work.
+
 > Generated 2026-08-24 during the feature audit. **Not a defect list.** These scenarios do not fail
 > because the product is broken — they fail because their step definitions were never implemented,
 > so Reqnroll reports them inconclusive. Treat this as a specification-coverage backlog.

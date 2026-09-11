@@ -209,10 +209,10 @@ Infrastructure. Background work uses `BackgroundService` — **there is no Hangf
 **Backend** — xUnit **2.9.2**
 - Assertions: FluentAssertions; mocking: **NSubstitute 5.1.0 and Moq 4.20.72** (both present);
   data: AutoFixture, Bogus; snapshots: Verify; coverage: coverlet; perf: BenchmarkDotNet
-- **BDD**: **Reqnroll 2.4.0** (`Reqnroll.xUnit`) — **40 `.feature` files** in
-  `tests/Booksy.ServiceCatalog.IntegrationTests/Features/` covering bookings, availability,
-  payments, payouts, notifications, registration, authorization, and concurrency edge cases
-- **Testcontainers.PostgreSql** for real-database integration tests
+- **Testcontainers.PostgreSql** for real-database integration tests. Reqnroll/Gherkin BDD (40
+  `.feature` files) was retired 2026-09-11 — 95% of its scenarios had never run (unbound steps)
+  and the payment ones made real outbound gateway calls that always failed; real coverage was
+  ported to xUnit first. See `openspec/changes/_inline/retire-reqnroll/tasks.md`
 - Unit test projects by size: ServiceCatalog.Domain (25 files), ServiceCatalog.Application (17),
   UserManagement.Application (6), Host.CompositionTests (2), Core.Domain (1), Infrastructure.Core (1)
 - `Booksy.ArchitectureTests` exists but is an **empty stub** — see "Explicitly not present"

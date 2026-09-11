@@ -28,6 +28,15 @@ namespace Booksy.ServiceCatalog.Infrastructure.Persistence.Repositories
                 .Include(p => p.BusinessHours)
                 .Include(p => p.Services)
                 .Include(p => p.Profile)
+                // Without these two, a provider loaded through this method always reports zero
+                // holidays and zero exceptions, regardless of what is in the database:
+                // AvailabilityService.IsHoliday/GetExceptionSchedule read the in-memory collection,
+                // not the table. Both features were completely inert in production — a provider
+                // could mark a holiday and every slot on that day would still show as available.
+                // Found porting the Reqnroll "No availability on holidays" / "Exception hours
+                // override regular business hours" scenarios to xUnit (retire-reqnroll).
+                .Include(p => p.Holidays)
+                .Include(p => p.Exceptions)
                 .FirstOrDefaultAsync(p => p.Id == id, cancellationToken);
         }
 

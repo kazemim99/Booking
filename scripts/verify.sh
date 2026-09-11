@@ -8,14 +8,13 @@
 #       type-check/lint in touched Vue apps + analyze/test in touched Flutter apps.
 # Writes .verify/status.json; `tree` is a hash of the working tree so later edits make it stale.
 set -u
-TIER=fast; FILTER=""; ALL=0; SKIP_BUILD=0; FEATURES=0
+TIER=fast; FILTER=""; ALL=0; SKIP_BUILD=0
 while [ $# -gt 0 ]; do
   case "$1" in
     fast|full) TIER="$1" ;;
     --filter) FILTER="$2"; shift ;;
     --all) ALL=1 ;;
     --skip-build) SKIP_BUILD=1 ;;
-    --features) FEATURES=1 ;;
     *) echo "unknown arg: $1" >&2; exit 2 ;;
   esac; shift
 done
@@ -87,8 +86,6 @@ if [ "$TIER" = full ]; then
     n="db:$(basename "$p")"
     if [ $DOCKER -eq 0 ]; then blocked "$n" "Docker is not running; Testcontainers cannot start Postgres"; continue; fi
     clauses=""
-    # Reqnroll features = spec backlog (REQNROLL-COVERAGE-GAP.md, FOLLOW-UPS #31): excluded unless --features.
-    if [[ "$p" == *ServiceCatalog.IntegrationTests ]] && [ $FEATURES -eq 0 ]; then clauses="FullyQualifiedName!~IntegrationTests.Features"; fi
     if [ -n "$FILTER" ] && [[ "$p" == *IntegrationTests ]]; then clauses="${clauses:+$clauses&}($FILTER)"; fi
     if [ -n "$clauses" ]; then step "$n" "$ROOT" dotnet test "$p" --nologo -v q --filter "$clauses"
     else step "$n" "$ROOT" dotnet test "$p" --nologo -v q; fi
