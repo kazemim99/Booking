@@ -20,9 +20,25 @@ namespace Booksy.UserManagement.Infrastructure.Persistence.Context
         {
             var optionsBuilder = new DbContextOptionsBuilder<UserManagementDbContext>();
 
-            // Use a connection string for migrations (will be replaced at runtime)
-            optionsBuilder.UseNpgsql("Host=localhost;Database=booksy;Username=postgres;Password=postgres",
-                b => b.MigrationsAssembly("Booksy.UserManagement.Infrastructure"));
+            // Honour the same configuration sources the CLI operator expects, instead of a
+            // hardcoded localhost/postgres/postgres string that silently ignored both
+            // appsettings.json and ConnectionStrings__DefaultConnection.
+            var configuration = new ConfigurationBuilder()
+                .SetBasePath(Directory.GetCurrentDirectory())
+                .AddJsonFile("appsettings.json", optional: true)
+                .AddEnvironmentVariables()
+                .Build();
+
+            var connectionString = configuration.GetConnectionString("DefaultConnection")
+                ?? "Host=localhost;Database=booksy;Username=postgres;Password=postgres";
+
+            // Go through the SHARED configuration rather than hand-rolling UseNpgsql here.
+            // This type's own doc comment warns that a hand-rolled builder "silently differs"
+            // from the real one; that is precisely what happened — omitting
+            // MigrationsHistoryTable pointed the EF CLI at the DEFAULT
+            // public.__EFMigrationsHistory instead of user_management's, so the CLI saw an
+            // empty history on a fully migrated database and tried to re-run every migration.
+            UserManagementDbContextOptions.Configure(optionsBuilder, connectionString);
 
             // Create mock services for design-time
             var mockCurrentUserService = new MockCurrentUserService();

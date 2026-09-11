@@ -26,10 +26,25 @@ namespace Booksy.ServiceCatalog.Infrastructure.Persistence.Context
             var connectionString = configuration.GetConnectionString("DefaultConnection")
                 ?? "Server=localhost;Database=BooksyDev;Trusted_Connection=True;TrustServerCertificate=True;";
 
-            // Use SQL Server
             optionsBuilder.UseNpgsql(
                 connectionString,
-                b => b.MigrationsAssembly("Booksy.ServiceCatalog.Infrastructure"));
+                b =>
+                {
+                    b.MigrationsAssembly("Booksy.ServiceCatalog.Infrastructure");
+
+                    // MUST match the runtime registration in
+                    // ServiceCatalogInfrastructureExtensions, which puts the history table in
+                    // the ServiceCatalog schema. Omitting it here made the EF CLI read the
+                    // DEFAULT public.__EFMigrationsHistory — an empty table — so
+                    // `dotnet ef database update` concluded that nothing had ever been applied
+                    // and tried to re-run Init against a fully populated database:
+                    // "42P07: relation \"Bookings\" already exists". The app migrates itself
+                    // correctly at startup, so this only ever bit the CLI, which is exactly
+                    // what the deployment runbook tells an operator to use. It also left a
+                    // stray empty public.__EFMigrationsHistory behind on any database the CLI
+                    // was pointed at.
+                    b.MigrationsHistoryTable("__EFMigrationsHistory", "ServiceCatalog");
+                });
 
             // Create mock services for design-time
             var currentUserService = new DesignTimeCurrentUserService();
