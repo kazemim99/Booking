@@ -47,6 +47,10 @@ public class ServiceCatalogTestWebApplicationFactory<TStartup>
         // application's own behaviour.
         services.RemoveAll<IEmailNotificationService>();
         services.AddSingleton<IEmailNotificationService, FakeEmailNotificationService>();
+        // Registered a second time as IResettableFake, pointing at the same singleton, so
+        // ResetStateAsync can clear its captured subjects between tests without knowing about
+        // IEmailNotificationService specifically.
+        services.AddSingleton<IResettableFake>(sp => (IResettableFake)sp.GetRequiredService<IEmailNotificationService>());
         services.RemoveAll<ISmsNotificationService>();
         services.AddSingleton<ISmsNotificationService, FakeSmsGateway>();
         services.RemoveAll<IPushNotificationService>();

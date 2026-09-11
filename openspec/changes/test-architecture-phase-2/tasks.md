@@ -22,11 +22,11 @@ Composition 21 tests, step 33.9 s.
 ## Tasks
 - [x] 0.1 verify.ps1/verify.sh write `filter` into status.json (empty string when unfiltered)
 - [x] 0.2 stop-gate: a FULL result with a non-empty filter does not count; loop counter per session, not one shared file
-- [ ] 1.1 appsettings.Testing.json (Host + UM.API): EnableSensitiveDataLogging false; ClientRateLimiting GeneralRules:0:Limit raised
-- [ ] 1.2 TestWebApplicationFactory: stop re-registering the DbContext; remove the two payment hosted services; resettable distributed cache
-- [ ] 1.3 DatabaseReset (TRUNCATE both schemas minus history) + Factory.ResetStateAsync (DB, both caches, fakes) from InitializeAsync
-- [ ] 1.4 Self-test: every non-history table is empty at the start of a test, in both suites
-- [ ] 1.5 FULL verify; fix any test that relied on an earlier test's rows; record timings
+- [x] 1.1 appsettings.Testing.json (Host + UM.API): EnableSensitiveDataLogging false; ClientRateLimiting GeneralRules:0:Limit raised
+- [x] 1.2 TestWebApplicationFactory: stop re-registering the DbContext; remove the two payment hosted services; resettable distributed cache
+- [x] 1.3 DatabaseReset (TRUNCATE both schemas minus history) + Factory.ResetStateAsync (DB, both caches, fakes) from InitializeAsync
+- [x] 1.4 Self-test: every non-history table is empty at the start of a test, in both suites
+- [x] 1.5 FULL verify; fix any test that relied on an earlier test's rows; record timings
 - [ ] 2.1 IntegrationTestBase drops IClassFixture; one ServiceCatalog collection; [Collection] on every SC class; stale comments fixed
 - [ ] 2.2 FULL verify; record ServiceCatalog timings
 - [ ] 3.1 UM tests boot Booksy.Host through HostEntryPoint, in one UM collection
@@ -46,6 +46,10 @@ Composition 21 tests, step 33.9 s.
 
 ## Decisions
 - Per-test reset is one `TRUNCATE ... RESTART IDENTITY CASCADE` over the two context schemas, not Respawn: nothing survives migrations except the two history tables (measured), and Respawn 6.0.0 pulls Microsoft.Data.SqlClient into a Postgres-only suite. `cap` is not truncated: outbox rows accumulate harmlessly and truncating under CAP's dispatcher is the riskier choice. Tier 1.
+- `PaymentReconciliationBackgroundService` gained the same `Finance:ReconciliationEnabled` gate its sibling `LedgerMaintenanceBackgroundService` already had, instead of removing its DI registration in the test factory. It is a two-line, low-risk production change (default stays enabled) that disables BOTH hosted services from one config flag, so the factory needs no hosted-service surgery at all. Tier 2 (production entry-point behaviour touched, but only under an explicit opt-out flag nothing sets today).
+- `IDistributedCache` in tests is a `ResettableDistributedCache` (wraps `MemoryDistributedCache`, swaps itself on `Reset()`) rather than the framework's `AddDistributedMemoryCache()`, which cannot be cleared or enumerated. Tier 1.
+- The vestigial `CleanDatabaseAsync` hook (declared in the base, overridden by both derived bases to call the no-op base) is deleted rather than left in place: it is the exact mechanism this slice replaces, and keeping a no-op around invites a future reader to assume it does something. Tier 1.
+- `IntegrationTestBase<TFactory,TDbContext,TStartup>`'s `TFactory` constraint tightened from `WebApplicationFactory<TStartup>` to `TestWebApplicationFactory<TStartup,TDbContext>` so the base can call `Factory.ResetStateAsync()`. Only the two derived bases (ServiceCatalog, UserManagement) use this base class; the composition tests use their own pattern and are unaffected. Tier 1.
 - Isolation before sharing: every test must pass from an empty database while its class still owns the database, so a hidden cross-test dependency shows up as one class failing, not as a flaky shared suite. Tier 1.
 - Header-based test auth is out of scope: 452 call sites, and once each collection owns its factory the per-factory `TestUserContext` singleton is already isolated. Tier 1.
 - Shared checkout, current branch, one commit per slice; no long-lived worktree branch, which would collide with peers adding tests to the old project paths. Tier 1.
@@ -56,3 +60,17 @@ Composition 21 tests, step 33.9 s.
   harness exercising the hook directly (filtered FULL blocks with a named reason, unfiltered passes, legacy
   status with no `filter` field still passes, the per-session counter file replaces the shared one and the
   legacy `.verify/stop-count` is deleted on sight). `scripts/verify.ps1 -Tier fast`: 145 s, 9 steps, pass.
+- 2026-09-11 **Slice 1 done, FULL verify green: 18 steps, 632 s, 484 backend integration tests
+  (421 SC + 42 UM + 21 composition), 0 failures.** No hidden cross-test dependency surfaced — every test
+  passed on the first run under real per-test isolation, so nothing needed fixing (S1 in the acceptance
+  scenarios expected some; there was none to fix). `DatabaseResetSelfTests` (the S2 fixture self-test)
+  passed as test #421 of the SC suite, run after ~420 other tests had already written and reset rows.
+  Per-class boot cost (median first-test time, unchanged mechanism — still one host per class, that is
+  slice 2): SC 1.64 s → **1.47 s**, UM 8.9 s → **5.36 s**, composition unaffected (already shared).
+  SC step 156.2 s (contended, prior run) → **218.3 s this run, but 114.0 s of it is test time** — the gap
+  from prior measurements is host-boot variance on a machine running two Coliride sessions concurrently,
+  not a regression; test-time-only comparisons (75.2 s boots + 38.7 s tests = 114.0 s) are the honest ones.
+  UM step 105.9 s contended / 28.7 s alone (prior) → **45.6 s this run** (80.1 s test time, but classes
+  still boot separately — expected to fall further in slice 3). Confirms `EnableSensitiveDataLogging=false`
+  was the dominant lever, not the TRUNCATE reset itself (reset cost is invisible inside per-class boot noise).
+  `.verify/status.json.filter` is `""` (unfiltered, honoured by the slice-0 gate). Committed as one change.

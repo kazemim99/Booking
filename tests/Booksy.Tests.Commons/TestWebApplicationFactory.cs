@@ -6,6 +6,8 @@ using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Caching.Distributed;
+using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
@@ -25,15 +27,49 @@ public class TestWebApplicationFactory<TStartup, TDbContext>
 {
     private readonly PostgresTestContainerFixture _postgresFixture;
     private readonly string _contextName;
+    private readonly DatabaseReset _databaseReset;
 
     public TestWebApplicationFactory(string contextName)
     {
         _contextName = contextName;
         _postgresFixture = new PostgresTestContainerFixture();
         _postgresFixture.InitializeAsync().GetAwaiter().GetResult();
+        _databaseReset = new DatabaseReset(_postgresFixture.ConnectionString);
     }
 
     public string ConnectionString => _postgresFixture.ConnectionString;
+
+    /// <summary>Exposed for the fixture self-test (docs/TEST_ARCHITECTURE_AUDIT.md Phase 2 slice 1, S2).</summary>
+    public DatabaseReset DatabaseReset => _databaseReset;
+
+    /// <summary>
+    /// Everything a test needs cleared before the next one runs, now that a factory (and the state
+    /// behind it) is shared rather than rebuilt per class: the database, the in-memory aggregate
+    /// cache, the resettable distributed cache, and every registered <see cref="IResettableFake"/>.
+    /// Called from <c>IntegrationTestBase.InitializeAsync</c>, replacing the no-op
+    /// <c>CleanDatabaseAsync</c> the base class used to declare.
+    /// </summary>
+    public async Task ResetStateAsync(CancellationToken cancellationToken = default)
+    {
+        await _databaseReset.ResetAsync(cancellationToken);
+
+        // Both are process-wide singletons; resolving them from the root provider is correct and
+        // matches how ASP.NET Core itself resolves singleton services.
+        if (Services.GetService<IMemoryCache>() is MemoryCache memoryCache)
+        {
+            memoryCache.Clear();
+        }
+
+        if (Services.GetService<IDistributedCache>() is ResettableDistributedCache resettableCache)
+        {
+            resettableCache.Reset();
+        }
+
+        foreach (var fake in Services.GetServices<IResettableFake>())
+        {
+            fake.Reset();
+        }
+    }
 
     protected override void ConfigureWebHost(IWebHostBuilder builder)
     {
@@ -72,22 +108,17 @@ public class TestWebApplicationFactory<TStartup, TDbContext>
 
         builder.ConfigureServices(services =>
         {
-            // Remove existing DbContext registration
-            var descriptor = services.SingleOrDefault(
-                d => d.ServiceType == typeof(DbContextOptions<TDbContext>));
-
-            if (descriptor != null)
-            {
-                services.Remove(descriptor);
-            }
-
-            // Add DbContext with Testcontainers connection string
-            services.AddDbContext<TDbContext>(options =>
-            {
-                options.UseNpgsql(_postgresFixture.ConnectionString);
-                options.EnableSensitiveDataLogging();
-                options.EnableDetailedErrors();
-            });
+            // No DbContext override here any more. It used to remove the production registration
+            // and re-add a bare UseNpgsql(connectionString) — with no MigrationsHistoryTable, no
+            // warning configuration, unconditional EnableSensitiveDataLogging/EnableDetailedErrors —
+            // which is the one place a test's database differed from production's. It is also
+            // redundant: the UseSetting calls above already point ConnectionStrings:{context} and
+            // :DefaultConnection at the container, and every AddXInfrastructure registration reads
+            // its connection string from configuration, so the PRODUCTION registration already
+            // targets this container. Sensitive-data logging is controlled the same way production
+            // controls it: DatabaseSettings:EnableSensitiveDataLogging in configuration
+            // (appsettings.Testing.json sets it false — see docs/TEST_ARCHITECTURE_AUDIT.md Phase 2,
+            // the flag was the largest source of the console flood Phase 1 left behind).
 
             // Replace authentication with test authentication handler
             services.RemoveAll(typeof(IAuthenticationService));
@@ -106,11 +137,12 @@ public class TestWebApplicationFactory<TStartup, TDbContext>
                 "IntegrationTest",
                 options => { });
 
-            // The host registers a Redis-backed IDistributedCache
-            // unconditionally (Program.cs); swap it for the in-memory one so
-            // tests never depend on a live Redis.
-            services.RemoveAll(typeof(Microsoft.Extensions.Caching.Distributed.IDistributedCache));
-            services.AddDistributedMemoryCache();
+            // The host registers a Redis-backed IDistributedCache unconditionally (Program.cs); swap
+            // it for a cache tests never depend on a live Redis for, AND that ResetStateAsync can
+            // empty between tests — plain AddDistributedMemoryCache() has no such capability.
+            services.RemoveAll(typeof(IDistributedCache));
+            services.AddSingleton<ResettableDistributedCache>();
+            services.AddSingleton<IDistributedCache>(sp => sp.GetRequiredService<ResettableDistributedCache>());
 
             // Allow derived factories to add custom service configuration
             ConfigureTestServices(services);

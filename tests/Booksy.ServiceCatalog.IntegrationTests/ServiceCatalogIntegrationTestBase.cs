@@ -30,23 +30,6 @@ public abstract class ServiceCatalogIntegrationTestBase
     }
 
     // ================================================
-    // DATABASE CLEANUP (Service Catalog Specific)
-    // ================================================
-
-    public override async Task CleanDatabaseAsync()
-    {
-        // Clean tables in correct order (respecting foreign keys)
-        //await DbContext.Database.ExecuteSqlRawAsync(@"
-        //    DELETE FROM ""ServiceOptions"";
-        //    DELETE FROM ""ServicePriceTiers"";
-        //    DELETE FROM ""Services"";
-        //    DELETE FROM ""Providers"";
-        //");
-
-        await base.CleanDatabaseAsync();
-    }
-
-    // ================================================
     // SERVICE CATALOG SPECIFIC ENTITY HELPERS
     // ================================================
 

@@ -42,6 +42,10 @@ public class UserManagementTestWebApplicationFactory<TStartup>
         // adding an appsettings.Test.json this factory might not even load consistently.
         services.RemoveAll<ISmsNotificationService>();
         services.AddSingleton<ISmsNotificationService, FakeSmsNotificationService>();
+        // Registered a second time as IResettableFake, pointing at the same singleton, so
+        // ResetStateAsync can clear its captured messages between tests without knowing about
+        // ISmsNotificationService specifically.
+        services.AddSingleton<IResettableFake>(sp => (IResettableFake)sp.GetRequiredService<ISmsNotificationService>());
     }
 }
 
@@ -54,13 +58,15 @@ public class UserManagementTestWebApplicationFactory<TStartup>
 /// the database after the request completes -- as a first version of this fake did -- gets back
 /// a null <c>OtpCode</c>, not the code that was actually sent.
 /// </summary>
-public sealed class FakeSmsNotificationService : ISmsNotificationService
+public sealed class FakeSmsNotificationService : ISmsNotificationService, IResettableFake
 {
     private readonly System.Collections.Concurrent.ConcurrentDictionary<string, string> _lastMessageByPhone = new();
 
     /// <summary>The most recent message sent to this phone number (E.164 or as passed), or null if none.</summary>
     public string? LastMessageTo(string phoneNumber) =>
         _lastMessageByPhone.TryGetValue(phoneNumber, out var message) ? message : null;
+
+    public void Reset() => _lastMessageByPhone.Clear();
 
     public Task<(bool Success, string? MessageId, string? ErrorMessage)> SendSmsAsync(
         string phoneNumber,

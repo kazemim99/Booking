@@ -33,17 +33,6 @@ public abstract class UserManagementIntegrationTestBase
     }
 
     // ================================================
-    // DATABASE CLEANUP (UserManagement Specific)
-    // ================================================
-
-    public override async Task CleanDatabaseAsync()
-    {
-        // Clean tables in correct order (respecting foreign keys)
-        // Override if specific cleanup is needed
-        await base.CleanDatabaseAsync();
-    }
-
-    // ================================================
     // USERMANAGEMENT SPECIFIC ENTITY HELPERS
     // ================================================
 

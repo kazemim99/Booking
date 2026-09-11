@@ -1,4 +1,5 @@
 using Booksy.ServiceCatalog.Application.Services.Notifications;
+using Booksy.Tests.Commons;
 using CoreNotifications = Booksy.Core.Application.Services.Notifications;
 
 namespace Booksy.ServiceCatalog.IntegrationTests.Infrastructure;
@@ -17,13 +18,15 @@ namespace Booksy.ServiceCatalog.IntegrationTests.Infrastructure;
 /// Gateway-specific behaviour (SMTP failures, FCM tokens, SignalR connection state) is not faked
 /// here; it belongs to those adapters' own tests.
 /// </summary>
-public sealed class FakeEmailNotificationService : IEmailNotificationService
+public sealed class FakeEmailNotificationService : IEmailNotificationService, IResettableFake
 {
     private readonly System.Collections.Concurrent.ConcurrentDictionary<string, string> _lastSubjectByRecipient = new();
 
     /// <summary>The subject of the most recent e-mail sent to this address, or null if none.</summary>
     public string? LastSubjectTo(string email) =>
         _lastSubjectByRecipient.TryGetValue(email, out var subject) ? subject : null;
+
+    public void Reset() => _lastSubjectByRecipient.Clear();
 
     public Task<(bool Success, string? MessageId, string? ErrorMessage)> SendEmailAsync(
         string to,

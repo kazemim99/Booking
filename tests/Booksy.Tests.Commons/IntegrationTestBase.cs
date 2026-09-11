@@ -1,4 +1,5 @@
 ﻿using Booksy.Core.Domain.Infrastructure.Middleware;
+using Booksy.Tests.Commons;
 using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
@@ -8,12 +9,17 @@ using System.Net.Http.Json;
 namespace Booksy.Tests.Common.Infrastructure;
 
 /// <summary>
-/// Base class for all integration tests that need full API and database access
+/// Base class for all integration tests that need full API and database access.
+///
+/// <c>TFactory</c> is constrained to <see cref="TestWebApplicationFactory{TStartup,TDbContext}"/>,
+/// not any <c>WebApplicationFactory</c>, so this class can call <c>Factory.ResetStateAsync()</c>.
+/// The composition tests (<c>HostCompositionFactory</c>) do not derive from this base and are
+/// unaffected by the tighter constraint.
 /// </summary>
 public abstract class IntegrationTestBase<TFactory, TDbContext, TStartup>
     : IClassFixture<TFactory>,
       IAsyncLifetime
-    where TFactory : WebApplicationFactory<TStartup>
+    where TFactory : TestWebApplicationFactory<TStartup, TDbContext>
     where TDbContext : DbContext
     where TStartup : class
 {
@@ -54,29 +60,27 @@ public abstract class IntegrationTestBase<TFactory, TDbContext, TStartup>
         _userContext.ClearUser();
         Client.DefaultRequestHeaders.Authorization = null;
 
-        // Clean database before each test
-        await CleanDatabaseAsync();
+        // Reset the database, the caches and every capturing fake before the test body runs. This
+        // used to be CleanDatabaseAsync(), a hook every derived base declared and neither ever
+        // implemented (docs/TEST_ARCHITECTURE_AUDIT.md Phase 2 slice 1) — the database accumulated
+        // rows across a whole class's tests, which is exactly what made a shared host unsafe.
+        await Factory.ResetStateAsync();
     }
 
     /// <summary>
     /// xUnit lifecycle - Cleanup after each test
     /// </summary>
-    public virtual async Task DisposeAsync()
+    public virtual Task DisposeAsync()
     {
-        await CleanDatabaseAsync();
+        // Nothing to do here: the NEXT test's InitializeAsync resets state before it runs, and if
+        // this was the class's last test there is no next test to protect from stale rows.
         Scope?.Dispose();
+        return Task.CompletedTask;
     }
 
     // ================================================
     // DATABASE HELPERS
     // ================================================
-
-    public virtual async Task CleanDatabaseAsync()
-    {
-        // Override in derived classes for specific cleanup logic
-        // Example: await DbContext.Database.ExecuteSqlRawAsync("DELETE FROM Services");
-        await Task.CompletedTask;
-    }
 
     public async Task<T?> FindEntityAsync<T>(Guid id) where T : class
     {
