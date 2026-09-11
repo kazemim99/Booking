@@ -21,6 +21,7 @@ namespace Booksy.ServiceCatalog.IntegrationTests.API.Notifications;
 /// Covers: Notification operations (send, schedule, bulk, cancel, resend, history, status, analytics)
 /// Endpoints: /api/v1/notifications/*
 /// </summary>
+[Collection(ServiceCatalogTestCollection.Name)]
 public class NotificationsControllerTests : ServiceCatalogIntegrationTestBase
 {
     public NotificationsControllerTests(ServiceCatalogTestWebApplicationFactory<Startup> factory) : base(factory)

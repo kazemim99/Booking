@@ -22,6 +22,7 @@ namespace Booksy.ServiceCatalog.IntegrationTests.API.Membership;
 /// <c>CanManageOrganizationQueryHandler</c> cover the rule itself, and neither would have
 /// caught a controller still calling the old owner-only check.</para>
 /// </summary>
+[Collection(ServiceCatalogTestCollection.Name)]
 public class MembershipAuthorizationTests : ServiceCatalogIntegrationTestBase
 {
     public MembershipAuthorizationTests(ServiceCatalogTestWebApplicationFactory<Startup> factory)

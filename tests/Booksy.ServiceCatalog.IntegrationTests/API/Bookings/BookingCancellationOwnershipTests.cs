@@ -21,6 +21,7 @@ namespace Booksy.ServiceCatalog.IntegrationTests.API.Bookings;
 /// no xUnit equivalent; the fourth scenario in that file duplicated
 /// <c>CancelBooking_AsCustomer_ShouldReturn200Ok</c>.</para>
 /// </summary>
+[Collection(ServiceCatalogTestCollection.Name)]
 public class BookingCancellationOwnershipTests : ServiceCatalogIntegrationTestBase
 {
     public BookingCancellationOwnershipTests(ServiceCatalogTestWebApplicationFactory<Startup> factory)

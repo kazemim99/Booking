@@ -13,6 +13,7 @@ namespace Booksy.ServiceCatalog.IntegrationTests.API.Payments;
 /// Pending/Failed re-attempts. Validated at the raw-SQL layer so it isolates the DB
 /// constraint from EF aggregate/owned-entity concerns.
 /// </summary>
+[Collection(ServiceCatalogTestCollection.Name)]
 public class PaymentDedupTests : ServiceCatalogIntegrationTestBase
 {
     public PaymentDedupTests(ServiceCatalogTestWebApplicationFactory<Startup> factory)

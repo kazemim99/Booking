@@ -18,6 +18,7 @@ namespace Booksy.ServiceCatalog.IntegrationTests.API.Payments;
 /// Covers: Payout creation, execution, and provider payout history
 /// Endpoints: /api/v1/payouts/*
 /// </summary>
+[Collection(ServiceCatalogTestCollection.Name)]
 public class PayoutsControllerTests : ServiceCatalogIntegrationTestBase
 {
     public PayoutsControllerTests(ServiceCatalogTestWebApplicationFactory<Startup> factory) : base(factory)

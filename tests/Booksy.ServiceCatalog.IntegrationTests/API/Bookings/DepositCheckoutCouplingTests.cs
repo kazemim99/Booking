@@ -16,6 +16,7 @@ namespace Booksy.ServiceCatalog.IntegrationTests.API.Bookings;
 /// deposit payment is verified, the <c>ConfirmBookingOnDepositVerified</c> handler records the deposit and confirms
 /// the booking. Proves the backend half of the customer-payment-experience on the finalized ledger.
 /// </summary>
+[Collection(ServiceCatalogTestCollection.Name)]
 public class DepositCheckoutCouplingTests : Infrastructure.ServiceCatalogIntegrationTestBase
 {
     public DepositCheckoutCouplingTests(Infrastructure.ServiceCatalogTestWebApplicationFactory<Startup> factory)

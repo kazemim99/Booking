@@ -19,6 +19,7 @@ namespace Booksy.ServiceCatalog.IntegrationTests;
 /// Integration tests for Gallery Management APIs
 /// Tests image upload, retrieval, metadata updates, reordering, and deletion
 /// </summary>
+[Collection(ServiceCatalogTestCollection.Name)]
 public class GalleryManagementTests : ServiceCatalogIntegrationTestBase
 {
     public GalleryManagementTests(ServiceCatalogTestWebApplicationFactory<Startup> factory)

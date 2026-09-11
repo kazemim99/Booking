@@ -16,6 +16,7 @@ namespace Booksy.ServiceCatalog.IntegrationTests.API.Payments;
 /// serialization point: reserve/in-flight/completed transitions, release-for-retry (fault injection), stale reclaim
 /// (crash recovery), and — the key guarantee — exactly one winner under concurrent identical requests.
 /// </summary>
+[Collection(ServiceCatalogTestCollection.Name)]
 public class IdempotencyStoreTests : Infrastructure.ServiceCatalogIntegrationTestBase
 {
     public IdempotencyStoreTests(Infrastructure.ServiceCatalogTestWebApplicationFactory<Startup> factory)

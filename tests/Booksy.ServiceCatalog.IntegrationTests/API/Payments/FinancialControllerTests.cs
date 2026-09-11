@@ -13,6 +13,7 @@ namespace Booksy.ServiceCatalog.IntegrationTests.API.Payments;
 /// Covers: Provider earnings calculations and financial reporting
 /// Endpoints: /api/v1/financial/*
 /// </summary>
+[Collection(ServiceCatalogTestCollection.Name)]
 public class FinancialControllerTests : ServiceCatalogIntegrationTestBase
 {
     public FinancialControllerTests(ServiceCatalogTestWebApplicationFactory<Startup> factory) : base(factory)

@@ -27,6 +27,7 @@ namespace Booksy.ServiceCatalog.IntegrationTests.API.Payments;
 /// The gateway is a programmable fake so no real ZarinPal call is made; the reconciler is constructed with the
 /// real DbContext / repository / unit-of-work from the test scope.
 /// </summary>
+[Collection(ServiceCatalogTestCollection.Name)]
 public class PaymentReconciliationTests : ServiceCatalogIntegrationTestBase
 {
     public PaymentReconciliationTests(ServiceCatalogTestWebApplicationFactory<Startup> factory)
@@ -112,10 +113,13 @@ public class PaymentReconciliationTests : ServiceCatalogIntegrationTestBase
             "a charged-but-unconfirmed payment must be detected so it is re-queried against the gateway and never lost");
     }
 
-    // The shared test DB has no per-test cleanup and classes may run in parallel, so the global sweep can pick up
-    // other tests' stale Pending payments. Each fake is therefore scoped to THIS test's authority — it acts only
-    // on our payment and throws for any other, leaving other tests' payments untouched (Pending). Assertions are
-    // per-authority, never on the global reconciled count.
+    // Updated 2026-09-11: every test now resets the database before it runs (Phase 2 slice 1), so
+    // by the time this test calls the reconciler, the ONLY Pending rows in the table are the ones
+    // this test just seeded — cross-test contamination within the 100-oldest window is no longer
+    // possible. The per-authority scoping stays anyway: the sweep is still a database-wide query by
+    // design (it exists to find whatever is stale, not just what one test created), and scoping the
+    // fake to this test's own authority is what lets these assertions stay per-authority rather than
+    // on a global reconciled count — cheap insurance, not a workaround for missing isolation.
     private static Func<string, decimal, ZarinPalVerifyResult> OnlyFor(string authority, ZarinPalVerifyResult result)
         => (auth, _) => auth == authority ? result : throw new TaskCanceledException("not this test's payment");
 

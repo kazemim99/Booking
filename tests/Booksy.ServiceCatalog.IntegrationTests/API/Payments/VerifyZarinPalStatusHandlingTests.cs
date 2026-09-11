@@ -21,6 +21,7 @@ namespace Booksy.ServiceCatalog.IntegrationTests.API.Payments;
 /// and — critically for money safety — an already-<c>Paid</c> payment must never be flipped to Failed by a later or
 /// malicious "NOK".
 /// </summary>
+[Collection(ServiceCatalogTestCollection.Name)]
 public class VerifyZarinPalStatusHandlingTests : Infrastructure.ServiceCatalogIntegrationTestBase
 {
     public VerifyZarinPalStatusHandlingTests(Infrastructure.ServiceCatalogTestWebApplicationFactory<Startup> factory)

@@ -26,6 +26,7 @@ namespace Booksy.ServiceCatalog.IntegrationTests.API.Memberships;
 /// "Prevent self-invitation", "Self-invite is refused", "Invite a phone that already has an
 /// account", "Existing user accepts".
 /// </summary>
+[Collection(ServiceCatalogTestCollection.Name)]
 public class InvitationBoundaryTests : ServiceCatalogIntegrationTestBase
 {
     public InvitationBoundaryTests(ServiceCatalogTestWebApplicationFactory<Startup> factory)

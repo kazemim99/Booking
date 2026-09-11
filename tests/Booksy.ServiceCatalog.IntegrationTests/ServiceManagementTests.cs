@@ -14,6 +14,7 @@ namespace Booksy.ServiceCatalog.IntegrationTests.API.Services;
 /// Covers: CRUD operations for provider services
 /// Endpoints: GET/POST/PUT/DELETE /api/v1/providers/{id}/services
 /// </summary>
+[Collection(ServiceCatalogTestCollection.Name)]
 public class ServiceManagementTests : ServiceCatalogIntegrationTestBase
 {
     public ServiceManagementTests(ServiceCatalogTestWebApplicationFactory<Startup> factory) : base(factory)

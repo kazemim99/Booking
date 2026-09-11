@@ -20,6 +20,7 @@ namespace Booksy.ServiceCatalog.IntegrationTests.API.Memberships;
 /// by ServiceCatalog's own repository, using the same host boot (both schemas present) that
 /// the rest of this project already relies on.
 /// </summary>
+[Collection(ServiceCatalogTestCollection.Name)]
 public class MembershipInfoServiceCrossContextTests : ServiceCatalogIntegrationTestBase
 {
     public MembershipInfoServiceCrossContextTests(ServiceCatalogTestWebApplicationFactory<Startup> factory)

@@ -22,6 +22,7 @@ namespace Booksy.ServiceCatalog.IntegrationTests.API.Bookings;
 /// (A randomized concurrency invariant is the right tool here; FsCheck's pure
 /// synchronous model does not fit concurrent async DB side-effects.)
 /// </summary>
+[Collection(ServiceCatalogTestCollection.Name)]
 public class BookingSlotIntegrityTests : ServiceCatalogIntegrationTestBase
 {
     public BookingSlotIntegrityTests(ServiceCatalogTestWebApplicationFactory<Startup> factory)

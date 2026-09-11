@@ -21,6 +21,7 @@ namespace Booksy.ServiceCatalog.IntegrationTests.API.Memberships;
 /// index directly before this — these tests do, by racing the DB itself rather than the application
 /// pre-check, which a concurrent request can always lose.
 /// </summary>
+[Collection(ServiceCatalogTestCollection.Name)]
 public class MembershipUniquenessPersistenceTests : ServiceCatalogIntegrationTestBase
 {
     public MembershipUniquenessPersistenceTests(ServiceCatalogTestWebApplicationFactory<Startup> factory)

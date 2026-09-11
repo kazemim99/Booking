@@ -24,6 +24,7 @@ namespace Booksy.ServiceCatalog.IntegrationTests.API.Bookings;
 /// <c>OrganizationMembership.CreateUnclaimed</c>, there being no other kind of resource left to
 /// build.</para>
 /// </summary>
+[Collection(ServiceCatalogTestCollection.Name)]
 public class RescheduleResourceResolutionTests : ServiceCatalogIntegrationTestBase
 {
     public RescheduleResourceResolutionTests(ServiceCatalogTestWebApplicationFactory<Startup> factory)

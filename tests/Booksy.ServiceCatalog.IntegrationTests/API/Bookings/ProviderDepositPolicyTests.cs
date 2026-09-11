@@ -23,6 +23,7 @@ namespace Booksy.ServiceCatalog.IntegrationTests.API.Bookings;
 /// (validation, ownership marker, domain validation, audit event, persistence) and then follow the consequence all
 /// the way to a confirmed, paid booking — for both percentage and fixed-amount deposits.
 /// </summary>
+[Collection(ServiceCatalogTestCollection.Name)]
 public class ProviderDepositPolicyTests : Infrastructure.ServiceCatalogIntegrationTestBase
 {
     public ProviderDepositPolicyTests(Infrastructure.ServiceCatalogTestWebApplicationFactory<Startup> factory)

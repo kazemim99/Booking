@@ -27,8 +27,8 @@ Composition 21 tests, step 33.9 s.
 - [x] 1.3 DatabaseReset (TRUNCATE both schemas minus history) + Factory.ResetStateAsync (DB, both caches, fakes) from InitializeAsync
 - [x] 1.4 Self-test: every non-history table is empty at the start of a test, in both suites
 - [x] 1.5 FULL verify; fix any test that relied on an earlier test's rows; record timings
-- [ ] 2.1 IntegrationTestBase drops IClassFixture; one ServiceCatalog collection; [Collection] on every SC class; stale comments fixed
-- [ ] 2.2 FULL verify; record ServiceCatalog timings
+- [x] 2.1 IntegrationTestBase drops IClassFixture; one ServiceCatalog collection; [Collection] on every SC class; stale comments fixed
+- [x] 2.2 FULL verify; record ServiceCatalog timings
 - [ ] 3.1 UM tests boot Booksy.Host through HostEntryPoint, in one UM collection
 - [ ] 3.2 UserRepositorySaveTests + PersonProvisioningConcurrencyTests take their context from the host's DI scope; EnsureCreated goes
 - [ ] 3.3 FULL verify; record every UM failure with cause and resolution
@@ -43,6 +43,23 @@ Composition 21 tests, step 33.9 s.
 - [ ] 6.3 FOLLOW-UPS: the four production findings (CAP before commit, unregistered subscribers, null owner cache, upload leak)
 - [ ] 6.4 AGENTS.md, CLAUDE.md, tests/README.md, audit §2.4, memory
 - [ ] 6.5 FULL verify unfiltered; Status: DONE
+
+## Decisions (slice 2)
+- `IClassFixture<TFactory>` moved off the generic `IntegrationTestBase` and onto the UserManagement
+  base explicitly, rather than making the generic base collection-aware: the generic base cannot know
+  whether a given suite has moved to a collection yet, and a suite that has not (UM, until slice 3)
+  needs the class-fixture behaviour preserved exactly. Tier 1.
+- 11 of the 44 SC leaf classes derive from `Infrastructure.ServiceCatalogIntegrationTestBase` (the
+  namespace-qualified form) rather than the unqualified name used everywhere else in the project — an
+  existing inconsistency, not something this slice introduced. The first automated pass over the 33
+  unqualified classes missed these 11 outright (a fixture-mismatch failure on the very next FULL run
+  caught it immediately); left the qualification as-is rather than normalising it, since unifying
+  naming conventions across the suite is out of scope for this slice. Tier 1.
+- `AssemblyInfo.cs`'s `DisableTestParallelization` stays `true` in this slice even though it is no
+  longer the ONLY thing serialising the 44 collection classes (the shared collection does that on its
+  own): the flag is still load-bearing for the ~8 classes in `Unit/` that carry no `[Collection]` at
+  all and would otherwise get their own default collection each, free to run in parallel with the
+  shared one. Removing it is folded into slice 5 (parallel collections), not done piecemeal here. Tier 1.
 
 ## Decisions
 - Per-test reset is one `TRUNCATE ... RESTART IDENTITY CASCADE` over the two context schemas, not Respawn: nothing survives migrations except the two history tables (measured), and Respawn 6.0.0 pulls Microsoft.Data.SqlClient into a Postgres-only suite. `cap` is not truncated: outbox rows accumulate harmlessly and truncating under CAP's dispatcher is the riskier choice. Tier 1.
@@ -74,3 +91,18 @@ Composition 21 tests, step 33.9 s.
   still boot separately — expected to fall further in slice 3). Confirms `EnableSensitiveDataLogging=false`
   was the dominant lever, not the TRUNCATE reset itself (reset cost is invisible inside per-class boot noise).
   `.verify/status.json.filter` is `""` (unfiltered, honoured by the slice-0 gate). Committed as one change.
+- 2026-09-11 **Slice 2 done, FULL verify green: 18 steps, 799 s (contended — two Coliride sessions ran
+  concurrently throughout), 0 failures.** All 44 ServiceCatalog leaf test classes now share ONE
+  `ServiceCatalogTestWebApplicationFactory` boot via `ServiceCatalogTestCollection`
+  (`ICollectionFixture`), replacing the per-class `IClassFixture<TFactory>` the generic
+  `IntegrationTestBase` used to declare. **Caught and fixed one real bug before it reached FULL
+  verify**: 11 of the 44 leaf classes derive from the namespace-qualified
+  `Infrastructure.ServiceCatalogIntegrationTestBase` rather than the unqualified name every other
+  class uses, so the first automated pass (matching only the unqualified form) inserted `[Collection]`
+  on 33 classes and silently missed those 11 — surfaced immediately as 75 failures
+  ("did not have matching fixture data") on a solo run of the suite, fixed by matching both forms,
+  reverified solo (421/421 pass, twice in a row, 1m25s then 1m33s — the point of running standalone
+  first, before spending a contended FULL run on something already known to be broken). Isolation
+  from slice 1 held under real sharing: no cross-test data dependency needed fixing, confirming S1 had
+  nothing left to catch. Per-class boot median (SC, measured standalone): stays governed by ONE boot
+  now rather than 44 — the whole suite's fixed cost is paid once, not per class.

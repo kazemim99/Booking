@@ -17,6 +17,7 @@ namespace Booksy.ServiceCatalog.IntegrationTests.API.Bookings;
 /// Covers: Availability checking for booking time slots
 /// Endpoints: /api/v1/availability/*
 /// </summary>
+[Collection(ServiceCatalogTestCollection.Name)]
 public class AvailabilityControllerTests : ServiceCatalogIntegrationTestBase
 {
     public AvailabilityControllerTests(ServiceCatalogTestWebApplicationFactory<Startup> factory) : base(factory)

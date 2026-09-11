@@ -20,6 +20,7 @@ namespace Booksy.ServiceCatalog.IntegrationTests.API.Providers;
 /// Integration tests for Provider Management endpoints
 /// Covers: Registration, GetById, Status, Activation
 /// </summary>
+[Collection(ServiceCatalogTestCollection.Name)]
 public class ProviderManagementTests : ServiceCatalogIntegrationTestBase
 {
     public ProviderManagementTests(ServiceCatalogTestWebApplicationFactory<Startup> factory) : base(factory)

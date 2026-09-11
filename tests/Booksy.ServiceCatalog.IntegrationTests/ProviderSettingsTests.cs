@@ -13,6 +13,7 @@ namespace Booksy.ServiceCatalog.IntegrationTests.API.ProviderSettings;
 /// Integration tests for Provider Settings endpoints
 /// Covers: Business Info, Location, Working Hours
 /// </summary>
+[Collection(ServiceCatalogTestCollection.Name)]
 public class ProviderSettingsTests : ServiceCatalogIntegrationTestBase
 {
     public ProviderSettingsTests(ServiceCatalogTestWebApplicationFactory<Startup> factory) : base(factory)

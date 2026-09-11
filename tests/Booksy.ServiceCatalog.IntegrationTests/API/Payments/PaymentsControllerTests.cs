@@ -20,6 +20,7 @@ namespace Booksy.ServiceCatalog.IntegrationTests.API.Payments;
 /// Covers: Payment processing, capture, refund, pricing calculations
 /// Endpoints: /api/v1/payments/*
 /// </summary>
+[Collection(ServiceCatalogTestCollection.Name)]
 public class PaymentsControllerTests : ServiceCatalogIntegrationTestBase
 {
     public PaymentsControllerTests(ServiceCatalogTestWebApplicationFactory<Startup> factory) : base(factory)

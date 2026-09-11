@@ -20,6 +20,7 @@ namespace Booksy.ServiceCatalog.IntegrationTests.API.Memberships;
 /// 401 -- not the 403 every one of these actions' own XML docs promised. Fixed alongside
 /// (now ForbiddenException); these tests pin the corrected status code at the boundary.
 /// </summary>
+[Collection(ServiceCatalogTestCollection.Name)]
 public class MembershipsControllerAuthorizationTests : ServiceCatalogIntegrationTestBase
 {
     public MembershipsControllerAuthorizationTests(ServiceCatalogTestWebApplicationFactory<Startup> factory)

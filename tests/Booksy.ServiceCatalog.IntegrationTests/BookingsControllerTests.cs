@@ -16,6 +16,7 @@ namespace Booksy.ServiceCatalog.IntegrationTests.API.Bookings;
 /// Covers: Booking lifecycle operations (create, confirm, cancel, complete, reschedule, no-show)
 /// Endpoints: /api/v1/bookings/*
 /// </summary>
+[Collection(ServiceCatalogTestCollection.Name)]
 public class BookingsControllerTests : ServiceCatalogIntegrationTestBase
 {
     public BookingsControllerTests(ServiceCatalogTestWebApplicationFactory<Startup> factory) : base(factory)

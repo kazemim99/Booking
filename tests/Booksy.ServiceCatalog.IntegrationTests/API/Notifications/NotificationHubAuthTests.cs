@@ -14,6 +14,7 @@ namespace Booksy.ServiceCatalog.IntegrationTests.API.Notifications;
 /// level by <see cref="SignalRAccessTokenExtractorTests"/>, since the integration harness replaces JWT auth with a
 /// test scheme driven by TestUserContext.)
 /// </summary>
+[Collection(ServiceCatalogTestCollection.Name)]
 public class NotificationHubAuthTests : Infrastructure.ServiceCatalogIntegrationTestBase
 {
     public NotificationHubAuthTests(Infrastructure.ServiceCatalogTestWebApplicationFactory<Startup> factory)

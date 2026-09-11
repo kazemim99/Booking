@@ -20,12 +20,17 @@ namespace Booksy.UserManagement.IntegrationTests;
 /// <summary>
 /// Base class for User Management integration tests
 /// Inherits from generic IntegrationTestBase and provides UserManagement-specific helpers
+///
+/// <c>IClassFixture</c> declared HERE, not on the generic base: this suite has not moved to a
+/// shared collection yet (docs/TEST_ARCHITECTURE_AUDIT.md Phase 2 slice 3 retargets it onto
+/// Booksy.Host first), so every class still needs its own factory instance in the meantime.
 /// </summary>
 public abstract class UserManagementIntegrationTestBase
     : IntegrationTestBase<
         UserManagementTestWebApplicationFactory<Program>, // Use Program as entry point
         UserManagementDbContext,
-        Program>
+        Program>,
+      IClassFixture<UserManagementTestWebApplicationFactory<Program>>
 {
     public UserManagementIntegrationTestBase(UserManagementTestWebApplicationFactory<Program> factory)
         : base(factory)

@@ -29,6 +29,7 @@ namespace Booksy.ServiceCatalog.IntegrationTests.Persistence;
 /// <para>These run against real Postgres because the filter is SQL: an in-memory fake of the
 /// repository would assert the mock, not the query.</para>
 /// </summary>
+[Collection(ServiceCatalogTestCollection.Name)]
 public class AvailabilityStaffIsolationTests : ServiceCatalogIntegrationTestBase
 {
     public AvailabilityStaffIsolationTests(ServiceCatalogTestWebApplicationFactory<Startup> factory)

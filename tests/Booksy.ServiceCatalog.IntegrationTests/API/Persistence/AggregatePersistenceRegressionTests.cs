@@ -25,6 +25,7 @@ namespace Booksy.ServiceCatalog.IntegrationTests.API.Persistence;
 /// <c>UpdateAsync</c> a no-op on already-tracked aggregates. These tests lock in that behaviour for every affected
 /// aggregate: Payment (Transactions), Notification (DeliveryAttempts) and Service (PriceTiers).
 /// </summary>
+[Collection(ServiceCatalogTestCollection.Name)]
 public class AggregatePersistenceRegressionTests : Infrastructure.ServiceCatalogIntegrationTestBase
 {
     public AggregatePersistenceRegressionTests(

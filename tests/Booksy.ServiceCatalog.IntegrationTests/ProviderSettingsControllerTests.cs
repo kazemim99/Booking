@@ -14,6 +14,7 @@ using AddServiceRequest = Booksy.ServiceCatalog.Api.Models.Requests.AddServiceRe
 /// Integration tests for ProviderSettingsController
 /// Tests all endpoints: Business Info (Get/Update), Location (Get/Update), Working Hours (Get/Update), Services (Get/Add/Update/Delete)
 /// </summary>
+[Collection(ServiceCatalogTestCollection.Name)]
 public class ProviderSettingsControllerTests : ServiceCatalogIntegrationTestBase
 {
     public ProviderSettingsControllerTests(ServiceCatalogTestWebApplicationFactory<Startup> factory)

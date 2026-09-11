@@ -15,10 +15,19 @@ namespace Booksy.Tests.Common.Infrastructure;
 /// not any <c>WebApplicationFactory</c>, so this class can call <c>Factory.ResetStateAsync()</c>.
 /// The composition tests (<c>HostCompositionFactory</c>) do not derive from this base and are
 /// unaffected by the tighter constraint.
+///
+/// <para>Deliberately does NOT declare <c>IClassFixture&lt;TFactory&gt;</c> — that would give every
+/// concrete test class its own <c>TFactory</c> instance regardless of which xUnit collection it
+/// joins, which is exactly the per-class host boot docs/TEST_ARCHITECTURE_AUDIT.md Phase 2 slice 2
+/// removes for the ServiceCatalog suite (one <c>[CollectionDefinition]</c> +
+/// <c>ICollectionFixture&lt;TFactory&gt;</c> instead; see <c>ServiceCatalogTestCollection</c>). A
+/// suite that has not moved to a collection yet (UserManagement, until slice 3) must declare
+/// <c>IClassFixture&lt;TFactory&gt;</c> itself on its own non-generic base — xUnit resolves fixture
+/// interfaces from the full inheritance chain, so declaring it one level down works identically to
+/// declaring it here.</para>
 /// </summary>
 public abstract class IntegrationTestBase<TFactory, TDbContext, TStartup>
-    : IClassFixture<TFactory>,
-      IAsyncLifetime
+    : IAsyncLifetime
     where TFactory : TestWebApplicationFactory<TStartup, TDbContext>
     where TDbContext : DbContext
     where TStartup : class

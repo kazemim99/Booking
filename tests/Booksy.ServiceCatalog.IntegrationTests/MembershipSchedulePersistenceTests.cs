@@ -18,6 +18,7 @@ namespace Booksy.ServiceCatalog.IntegrationTests.Persistence;
 /// are the kind of mapping that compiles, passes every in-memory unit test, and then throws
 /// or silently loses data on the first real round trip.
 /// </summary>
+[Collection(ServiceCatalogTestCollection.Name)]
 public class MembershipSchedulePersistenceTests : ServiceCatalogIntegrationTestBase
 {
     public MembershipSchedulePersistenceTests(ServiceCatalogTestWebApplicationFactory<Startup> factory)

@@ -1,17 +1,17 @@
 using Xunit;
 
-// One database, no isolation, so the suite must not race itself.
+// Updated 2026-09-11 for docs/TEST_ARCHITECTURE_AUDIT.md Phase 2. The two problems this comment
+// used to describe are both fixed now: every test resets the database, the caches and every
+// capturing fake before it runs (Booksy.Tests.Commons/DatabaseReset.cs, slice 1 — CleanDatabaseAsync
+// really was a no-op, but it no longer exists), and all 33 host-booting classes here share one
+// factory through ServiceCatalogTestCollection (slice 2), which is itself enough to serialise them
+// against each other — xUnit never runs two classes in the same collection concurrently.
 //
-// Every class in this project talks to the SAME Testcontainers Postgres, and the shared base's
-// CleanDatabaseAsync is a no-op. xUnit runs test classes in parallel by default, so classes were
-// competing for one database and for the connection pool: two full runs on identical code gave 60
-// and 61 failures with a DIFFERENT flaky set each time (FOLLOW-UPS #45), and the FULL verify has
-// twice now failed on an "off-baseline" test that passes in isolation — most recently
-// BookingSlotIntegrityTests' 40-way concurrent-insert stress test, which passes alone for all three
-// seeds.
-//
-// A verification gate that is wrong several tests in either direction cannot tell a regression from
-// a race, which is the one thing it exists to do. Serialising the assembly buys that back. It costs
-// wall-clock time on the db:Booksy.ServiceCatalog.IntegrationTests step; the honest per-class
-// isolation (a schema or database per class) is the real fix and stays open under #45.
+// This flag stays true for a different reason than the one FOLLOW-UPS #45 recorded: the handful of
+// classes with no [Collection] at all — the plain unit tests under Unit/, no host, no database —
+// each get their own default xUnit collection and WOULD run in parallel with the shared
+// ServiceCatalogTestCollection and each other without this. That parallelism would be safe (nothing
+// they touch overlaps), so removing this flag is a slice-5 task once the shared host's own
+// parallelism (splitting ServiceCatalogTestCollection into several database-per-collection groups)
+// is designed, not a one-line change to make today.
 [assembly: CollectionBehavior(DisableTestParallelization = true)]

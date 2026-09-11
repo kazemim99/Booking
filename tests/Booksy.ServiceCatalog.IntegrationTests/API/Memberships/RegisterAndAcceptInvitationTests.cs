@@ -26,6 +26,7 @@ namespace Booksy.ServiceCatalog.IntegrationTests.API.Memberships;
 /// deterministic without ever touching a real gateway. These tests go through the real HTTP
 /// pipeline (anonymous, no auth header) exactly as a genuine invitee would.
 /// </summary>
+[Collection(ServiceCatalogTestCollection.Name)]
 public class RegisterAndAcceptInvitationTests : ServiceCatalogIntegrationTestBase
 {
     private const string SandboxOtpCode = "123456";

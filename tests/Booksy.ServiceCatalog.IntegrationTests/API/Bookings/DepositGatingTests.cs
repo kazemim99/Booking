@@ -19,6 +19,7 @@ namespace Booksy.ServiceCatalog.IntegrationTests.API.Bookings;
 /// <see cref="IDomainEventDispatcher"/> — exactly as production does — so this proves the whole wiring
 /// (DI registration → handler → aggregate gate → persistence), not just the handler in isolation.
 /// </summary>
+[Collection(ServiceCatalogTestCollection.Name)]
 public class DepositGatingTests : Infrastructure.ServiceCatalogIntegrationTestBase
 {
     public DepositGatingTests(Infrastructure.ServiceCatalogTestWebApplicationFactory<Startup> factory)

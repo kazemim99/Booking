@@ -17,6 +17,7 @@ namespace Booksy.ServiceCatalog.IntegrationTests;
 /// Integration tests for step-based progressive provider registration
 /// Tests each registration step independently with proper validation
 /// </summary>
+[Collection(ServiceCatalogTestCollection.Name)]
 public class StepBasedRegistrationTests : ServiceCatalogIntegrationTestBase
 {
     public StepBasedRegistrationTests(ServiceCatalogTestWebApplicationFactory<Startup> factory)

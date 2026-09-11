@@ -11,6 +11,7 @@ namespace Booksy.ServiceCatalog.IntegrationTests.Infrastructure;
 /// if any table here is non-empty, the reset is not doing its job for the WHOLE suite, not just
 /// this class.
 /// </summary>
+[Collection(ServiceCatalogTestCollection.Name)]
 public class DatabaseResetSelfTests : ServiceCatalogIntegrationTestBase
 {
     public DatabaseResetSelfTests(ServiceCatalogTestWebApplicationFactory<Startup> factory)

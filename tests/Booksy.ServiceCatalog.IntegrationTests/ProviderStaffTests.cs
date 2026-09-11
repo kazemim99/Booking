@@ -13,6 +13,7 @@ namespace Booksy.ServiceCatalog.IntegrationTests.API.ProviderStaff;
 /// Covers: CRUD operations for provider staff members
 /// Endpoints: GET/POST/PUT/DELETE /api/v1/providers/{id}/staff
 /// </summary>
+[Collection(ServiceCatalogTestCollection.Name)]
 public class ProviderStaffTests : ServiceCatalogIntegrationTestBase
 {
     public ProviderStaffTests(ServiceCatalogTestWebApplicationFactory<Startup> factory) : base(factory)

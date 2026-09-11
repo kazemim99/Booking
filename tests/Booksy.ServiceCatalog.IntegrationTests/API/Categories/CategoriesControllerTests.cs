@@ -22,6 +22,7 @@ namespace Booksy.ServiceCatalog.IntegrationTests.API.Categories;
 /// hidden, "popular" is the bookable subset ranked by size, and a category page can be reached by
 /// either id or slug.</para>
 /// </summary>
+[Collection(ServiceCatalogTestCollection.Name)]
 public class CategoriesControllerTests : Infrastructure.ServiceCatalogIntegrationTestBase
 {
     public CategoriesControllerTests(

@@ -17,6 +17,7 @@ namespace Booksy.ServiceCatalog.IntegrationTests.API.Bookings;
 /// owner key as ValueGeneratedNever (and the PK ValueGeneratedNever) fixes it. This test proves a booking update
 /// now persists.
 /// </summary>
+[Collection(ServiceCatalogTestCollection.Name)]
 public class BookingUpdatePersistenceTests : Infrastructure.ServiceCatalogIntegrationTestBase
 {
     public BookingUpdatePersistenceTests(Infrastructure.ServiceCatalogTestWebApplicationFactory<Startup> factory)

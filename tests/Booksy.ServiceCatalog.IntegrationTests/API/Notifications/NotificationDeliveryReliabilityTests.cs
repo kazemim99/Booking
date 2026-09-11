@@ -21,6 +21,7 @@ namespace Booksy.ServiceCatalog.IntegrationTests.API.Notifications;
 /// tests drive the real delivery log and the real dispatcher, substituting only the SMS
 /// gateway so a send can be made to fail on demand.</para>
 /// </summary>
+[Collection(ServiceCatalogTestCollection.Name)]
 public class NotificationDeliveryReliabilityTests : ServiceCatalogIntegrationTestBase
 {
     public NotificationDeliveryReliabilityTests(ServiceCatalogTestWebApplicationFactory<Startup> factory)

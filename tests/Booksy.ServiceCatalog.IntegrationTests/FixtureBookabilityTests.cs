@@ -27,6 +27,7 @@ namespace Booksy.ServiceCatalog.IntegrationTests.Infrastructure;
 /// breaks, every test built on it is about to fail for a reason unrelated to its subject, and
 /// this test says so directly instead of leaving fifteen misleading failures.</para>
 /// </summary>
+[Collection(ServiceCatalogTestCollection.Name)]
 public class FixtureBookabilityTests : ServiceCatalogIntegrationTestBase
 {
     public FixtureBookabilityTests(ServiceCatalogTestWebApplicationFactory<Startup> factory)

@@ -21,6 +21,7 @@ namespace Booksy.ServiceCatalog.IntegrationTests.API.Payments;
 /// duplicate-safe posting, and that reconciliation closes any gap left by a partial failure — so every monetary
 /// movement is traceable from payment to ledger without gaps.
 /// </summary>
+[Collection(ServiceCatalogTestCollection.Name)]
 public class LedgerIntegrationTests : Infrastructure.ServiceCatalogIntegrationTestBase
 {
     public LedgerIntegrationTests(Infrastructure.ServiceCatalogTestWebApplicationFactory<Startup> factory)

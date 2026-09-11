@@ -28,6 +28,7 @@ namespace Booksy.ServiceCatalog.IntegrationTests.API.Persistence;
 /// <c>20260815222542_BackfillProviderPrimaryCategory</c> remediates.</description></item>
 /// </list>
 /// </summary>
+[Collection(ServiceCatalogTestCollection.Name)]
 public class ProviderCategoryPersistenceTests : Infrastructure.ServiceCatalogIntegrationTestBase
 {
     public ProviderCategoryPersistenceTests(

@@ -14,6 +14,7 @@ namespace Booksy.ServiceCatalog.IntegrationTests.API.Authorization;
 /// A raw <see cref="Factory"/> client sends no X-Test-UserId header, so the
 /// IntegrationTest auth handler returns NoResult → the request is anonymous.
 /// </summary>
+[Collection(ServiceCatalogTestCollection.Name)]
 public class AuthorizationBoundaryTests : ServiceCatalogIntegrationTestBase
 {
     public AuthorizationBoundaryTests(ServiceCatalogTestWebApplicationFactory<Startup> factory)
