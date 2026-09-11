@@ -1,4 +1,4 @@
-Status: ACTIVE
+Status: DONE
 Verify: FULL
 
 User directive, 2026-09-11: retire Reqnroll/SpecFlow entirely. No hybrid. xUnit integration tests
@@ -67,26 +67,38 @@ properly named xUnit tests, and confirm nothing is lost.
         exception tests exist to catch, so it belongs with them, not filed as a separate follow-up
       - Two of my own test mistakes: mutating a DETACHED `Provider` (`MakeBookableAsync` clears the
         change tracker) and a `.Should().Be()` on exact `DateTime` ticks across a Postgres round-trip
-- [ ] 3 Delete all `.feature` files, `Features/`, `StepDefinitions/`, `Hooks/TestHooks.cs`,
+- [x] 3 Deleted: all `.feature` files, `Features/`, `StepDefinitions/`, `Hooks/TestHooks.cs`,
       `Infrastructure/ServiceCatalogReqnrollTestBase.cs`, `Support/ScenarioContextHelper.cs`,
-      `StepDefinitions/Availability/README.md`, `Features/README.md`. Leave
+      `StepDefinitions/Availability/README.md`, `Features/README.md`, `reqnroll.json` (found during
+      cleanup, not in the original inventory). Left
       `Infrastructure/FakeNotificationGateways.cs`/`FakePaymentGateway.cs` — used by the real
-      xUnit `ServiceCatalogTestWebApplicationFactory`, not Reqnroll-only
-- [ ] 4 Remove `Reqnroll`/`Reqnroll.xUnit`/`Reqnroll.Tools.MsBuild.Generation` package refs from
-      the csproj; delete `Directory.Build.props`/`.targets` in that project (100% Reqnroll
-      workaround config, nothing else); keep Moq (used by real xUnit payment/auth tests)
-- [ ] 5 `scripts/verify.ps1`/`.sh`: drop the `Features` exclusion filter and `-IncludeFeatures`/`--features`
-- [ ] 6 Docs: `AGENTS.md` (testing-policy paragraph + verify-tier note), `CLAUDE.md` (Test Suites),
-      `docs/AUTONOMOUS_OPERATING_MODEL.md`, `docs/KNOWLEDGE_MAP.md` (3 lines), `openspec/project.md`
-      (Testing Strategy). Delete `docs/REQNROLL_TESTING.md`. Move
-      `openspec/changes/REQNROLL-COVERAGE-GAP.md` to `docs/archive/` with a closing note (matches
-      the existing `docs/archive/REQNROLL_MIGRATION_PLAN.md` precedent — historical, not deleted).
-      `docs-site/docs/testing/reqnroll-quickstart.md` + its sidebar entry + README.md reference:
-      delete (the site is otherwise explicitly "do not trust" per `KNOWLEDGE_MAP.md` and out of
-      scope beyond this)
-- [ ] 7 `git grep -i` for `reqnroll|specflow|gherkin` returns nothing outside `docs/archive/` and
-      openspec change archives
-- [ ] 8 FULL verify green
+      xUnit `ServiceCatalogTestWebApplicationFactory`, confirmed by grep, not Reqnroll-only
+- [x] 4 `Reqnroll`/`Reqnroll.xUnit`/`Reqnroll.Tools.MsBuild.Generation` removed from the csproj;
+      `Directory.Build.props`/`.targets` deleted (100% Reqnroll workaround config). Moq kept —
+      confirmed used by `VerifyZarinPal*Tests`, `ProvidersByStatusMappingTests`,
+      `ServicesControllerAuthorizationTests`, `TokenServiceTests`
+- [x] 5 `scripts/verify.ps1`/`.sh`: dropped the `Features` exclusion filter and
+      `-IncludeFeatures`/`--features`
+- [x] 6 Docs updated: `AGENTS.md` (testing-policy paragraph + verify-tier note), `CLAUDE.md` (Test
+      Suites), `docs/AUTONOMOUS_OPERATING_MODEL.md`, `docs/KNOWLEDGE_MAP.md` (3 lines),
+      `openspec/project.md` (Testing Strategy), `openspec/specs/project-documentation/spec.md` (a
+      live acceptance scenario named Reqnroll — found while auditing, not in the original list),
+      `ProvidersController.cs`'s own doc comment (referenced a Reqnroll feature that, per the
+      binding audit, could never have passed anyway — found while auditing). Deleted
+      `docs/REQNROLL_TESTING.md`. Moved `openspec/changes/REQNROLL-COVERAGE-GAP.md` to
+      `docs/archive/` with a closing note (matches `docs/archive/REQNROLL_MIGRATION_PLAN.md`
+      precedent). Deleted `docs-site/docs/testing/reqnroll-quickstart.md` + its sidebar entry +
+      README.md structure listing. Left `docs-site/docs/testing/test-coverage.md`'s Reqnroll
+      prose alone — that page needs its own rewrite and the whole site is explicitly "do not
+      trust" per `KNOWLEDGE_MAP.md`, out of scope here
+- [x] 7 `git grep -il -E "reqnroll|specflow|gherkin"` outside `.feature`/`docs/archive`/
+      `openspec/changes/archive` returns only: historical progress logs
+      (`COMPLETION_ROADMAP.md`, `OPENSPEC-AUDIT-2026.md`, other inline changes' logs) that
+      describe past work truthfully and are left as history; this change's own tasks.md; the
+      new tests' "ported from Reqnroll" attribution comments; `tests/known-failures.txt`'s
+      dated 2026-09-09 methodology note; `ProviderReadRepository.cs`'s comment explaining what
+      the fix was found doing; and `docs-site/test-coverage.md` (left, see task 6)
+- [x] 8 FULL verify green — 88e8c69a, 932s, all 17 steps pass, 0 known-baseline failures
 
 ## Decisions
 - 2026-09-11 Payment scenarios (Behpardakht + ZarinPal + generic ProcessPayment/RefundPayment) are
