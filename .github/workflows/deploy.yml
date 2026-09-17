@@ -271,7 +271,7 @@ jobs:
       - build-frontend
     environment:
       name: production
-      url: http://production-server
+      url: https://back.nahalkmi.ir
 
     steps:
     - name: Checkout code
@@ -334,27 +334,32 @@ jobs:
           # The .env should always come from the server, not from deployment package
           # cp .env.backup .env  # Only needed if deployment overwrites it
 
-          # Login to GitHub Container Registry
+          # Login to GitHub Container Registry (the repo is public today so this is
+          # not strictly required to pull, but keeps the deploy working unchanged if
+          # the repo — or just the package visibility — ever goes private).
           echo "${{ secrets.GITHUB_TOKEN }}" | docker login ${{ env.REGISTRY }} -u ${{ github.actor }} --password-stdin
 
-          # Pull latest images
-          docker-compose -f docker-compose.prod.yml pull
+          # Pull latest images. docker compose (v2 plugin), not the deprecated
+          # docker-compose v1 binary — the server only has the plugin installed.
+          # No --profile: Seq/pgAdmin stay off by default on this shared box (see
+          # docker-compose.prod.yml's observability-profile comment).
+          docker compose -f docker-compose.prod.yml pull
 
           # Force stop and remove any old booksy containers (including orphans from other deployments)
           echo "Cleaning up old containers..."
           docker ps -a --filter "name=booksy-" --format "{{.Names}}" | xargs -r docker rm -f || true
 
           # Stop old containers
-          docker-compose -f docker-compose.prod.yml down --remove-orphans
+          docker compose -f docker-compose.prod.yml down --remove-orphans
 
           # Start new containers with .env from main directory
-          docker-compose -f docker-compose.prod.yml up -d
+          docker compose -f docker-compose.prod.yml up -d
 
           # Wait for services to be healthy
           sleep 10
 
           # Check service health
-          docker-compose -f docker-compose.prod.yml ps
+          docker compose -f docker-compose.prod.yml ps
 
           # Clean up old images
           docker image prune -af --filter "until=24h"
@@ -365,9 +370,16 @@ jobs:
           echo "Deployment completed successfully!"
 
     - name: Health check
+      env:
+        # Not secret (a public hostname), but kept as one env var so there's a
+        # single place to change if the domain ever moves. This box hosts other
+        # sites too, so the health check must go through the actual domain, not
+        # the bare server IP — an IP request lands on whichever vhost catches
+        # unmatched Host headers, which is a different site here, not Booksy.
+        PUBLIC_DOMAIN: back.nahalkmi.ir
       run: |
         sleep 30
-        response=$(curl -s -o /dev/null -w "%{http_code}" http://${{ secrets.SERVER_HOST }}/health || echo "000")
+        response=$(curl -s -o /dev/null -w "%{http_code}" "https://${PUBLIC_DOMAIN}/health" || echo "000")
         if [ "$response" != "200" ]; then
           echo "Health check failed with status: $response"
           exit 1

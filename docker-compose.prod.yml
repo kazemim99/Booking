@@ -1,5 +1,3 @@
-version: '3.8'
-
 services:
   # Backend — modular monolith (UserManagement + ServiceCatalog in one host).
   # Replaces the former usermanagement-api + servicecatalog-api + gateway services.
@@ -15,27 +13,37 @@ services:
       - ConnectionStrings__Redis=${REDIS_CONNECTION_STRING}
       # CAP runs in-process; no RabbitMQ broker required.
       - EventBus__Provider=InMemory
-      - Seq__ServerUrl=${SEQ_SERVER_URL}
+      # Serilog's Seq sink buffers and retries silently if unreachable — safe to point
+      # at a Seq that isn't running when the observability profile is off (see below).
+      - Seq__ServerUrl=${SEQ_SERVER_URL:-http://seq:5341}
     ports:
-      - "5000:80"
+      # Localhost only: the frontend container reaches this over booksy-network by
+      # container name, and the host nginx vhost never needs to — it proxies to the
+      # frontend container, whose own nginx forwards /api/ internally. This binding
+      # exists only for operator debugging (curl/Swagger from the box itself).
+      - "127.0.0.1:5000:80"
     depends_on:
       postgres:
         condition: service_healthy
       redis:
         condition: service_healthy
-      seq:
-        condition: service_started
+      # No hard dependency on seq: it's off by default on this box (lean profile,
+      # shared with other services on limited RAM — see the observability profile
+      # below). A hard `service_started` dependency would block booksy-api from
+      # starting at all whenever seq isn't deployed.
     networks:
       - booksy-network
     restart: unless-stopped
     deploy:
       resources:
+        # Sized for a shared box (2 vCPU / ~3.8GB RAM total, already running other
+        # services) rather than a dedicated host — see docs/DEPLOYMENT_RUNBOOK.md.
         limits:
-          cpus: '2.0'
-          memory: 2G
+          cpus: '1.0'
+          memory: 768M
         reservations:
-          cpus: '0.5'
-          memory: 512M
+          cpus: '0.25'
+          memory: 256M
     healthcheck:
       test: ["CMD-SHELL", "curl -f http://localhost:80/health || exit 1"]
       interval: 30s
@@ -49,8 +57,11 @@ services:
     env_file:
       - .env
     ports:
-      - "80:80"
-      - "443:443"
+      # Localhost only, no 443: TLS terminates at the HOST's nginx (shared with
+      # other sites on this box), which reverse-proxies to this port. The
+      # container never binds 80/443 directly — those already belong to the
+      # host nginx serving other domains. See deployment/nginx/booksy.conf.
+      - "127.0.0.1:8081:80"
     depends_on:
       booksy-api:
         condition: service_started
@@ -61,10 +72,10 @@ services:
       resources:
         limits:
           cpus: '0.5'
-          memory: 256M
+          memory: 128M
         reservations:
           cpus: '0.1'
-          memory: 64M
+          memory: 32M
     healthcheck:
       test: ["CMD-SHELL", "curl -f http://localhost:80/health || exit 1"]
       interval: 30s
@@ -93,11 +104,11 @@ services:
     deploy:
       resources:
         limits:
-          cpus: '2.0'
-          memory: 2G
+          cpus: '1.0'
+          memory: 640M
         reservations:
-          cpus: '0.5'
-          memory: 512M
+          cpus: '0.25'
+          memory: 256M
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}"]
       interval: 10s
@@ -110,7 +121,7 @@ services:
     container_name: booksy-redis
     env_file:
       - .env
-    command: redis-server --requirepass ${REDIS_PASSWORD} --maxmemory 512mb --maxmemory-policy allkeys-lru
+    command: redis-server --requirepass ${REDIS_PASSWORD} --maxmemory 192mb --maxmemory-policy allkeys-lru
     ports:
       - "127.0.0.1:6379:6379"  # Only bind to localhost for security
     volumes:
@@ -121,11 +132,11 @@ services:
     deploy:
       resources:
         limits:
-          cpus: '0.5'
-          memory: 512M
+          cpus: '0.25'
+          memory: 256M
         reservations:
           cpus: '0.1'
-          memory: 128M
+          memory: 64M
     healthcheck:
       test: ["CMD", "redis-cli", "ping"]
       interval: 10s
@@ -135,9 +146,15 @@ services:
 
   # RabbitMQ removed: CAP runs on its in-memory transport inside the monolith host.
 
+  # Seq and pgAdmin are OFF by default on this box: it's shared with other services on
+  # limited RAM (~3.8GB total), and neither is required for the app to run — Serilog's
+  # Seq sink degrades gracefully when unreachable, and Postgres can be inspected over
+  # an SSH tunnel with a local pgAdmin/DBeaver instead. Start them explicitly with
+  # `docker compose --profile observability up -d` if there's headroom later.
   seq:
     image: datalust/seq:latest
     container_name: booksy-seq
+    profiles: ["observability"]
     env_file:
       - .env
     environment:
@@ -145,8 +162,8 @@ services:
       - SEQ_FIRSTRUN_ADMINUSERNAME=${SEQ_ADMIN_USER}
       - SEQ_FIRSTRUN_ADMINPASSWORD=${SEQ_ADMIN_PASSWORD}
     ports:
-      - "5341:80"       # Seq UI
-      - "5342:5341"     # Seq ingestion
+      - "127.0.0.1:5341:80"       # Seq UI — reach it via an SSH tunnel, never public
+      - "127.0.0.1:5342:5341"     # Seq ingestion (booksy-api reaches it over booksy-network directly; this port is for external shippers only)
     volumes:
       - seq_data:/data
     networks:
@@ -168,10 +185,11 @@ services:
     #   retries: 3
     #   start_period: 20s
 
-  # pgAdmin for database management
+  # pgAdmin for database management — see the observability-profile note above seq.
   pgadmin:
     image: dpage/pgadmin4
     container_name: booksy-pgadmin
+    profiles: ["observability"]
     env_file:
       - .env
     environment:
@@ -180,7 +198,7 @@ services:
       - PGADMIN_CONFIG_SERVER_MODE=False
       - PGADMIN_CONFIG_MASTER_PASSWORD_REQUIRED=False
     ports:
-      - "5050:80"
+      - "127.0.0.1:5050:80"  # Localhost only — reach it via an SSH tunnel, never public
     depends_on:
       postgres:
         condition: service_healthy

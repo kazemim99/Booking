@@ -20,52 +20,52 @@ echo "Updating system packages..."
 apt-get update
 apt-get upgrade -y
 
-# Install Docker
+# Install Docker (the convenience script also installs docker-compose-plugin, i.e.
+# the `docker compose` v2 subcommand — this script never installs the deprecated
+# standalone v1 `docker-compose` binary; docker-compose.prod.yml and deploy.yml both
+# assume v2's `docker compose` syntax).
 echo "Installing Docker..."
 if ! command -v docker &> /dev/null; then
     curl -fsSL https://get.docker.com -o get-docker.sh
     sh get-docker.sh
     rm get-docker.sh
-
-    # Add current user to docker group
-    usermod -aG docker $SUDO_USER || true
     echo "Docker installed successfully"
 else
     echo "Docker is already installed"
 fi
 
-# Install Docker Compose
-echo "Installing Docker Compose..."
-if ! command -v docker-compose &> /dev/null; then
-    DOCKER_COMPOSE_VERSION=$(curl -s https://api.github.com/repos/docker/compose/releases/latest | grep 'tag_name' | cut -d\" -f4)
-    curl -L "https://github.com/docker/compose/releases/download/${DOCKER_COMPOSE_VERSION}/docker-compose-$(uname -s)-$(uname -m)" -o /usr/local/bin/docker-compose
-    chmod +x /usr/local/bin/docker-compose
-    echo "Docker Compose installed successfully"
-else
-    echo "Docker Compose is already installed"
+# Dedicated, unprivileged deploy user (not the invoking sudo user, and not root):
+# CI's SSH key only needs docker-group membership, never root or sudo, to run
+# `docker compose` in $DEPLOY_PATH.
+echo "Creating dedicated deploy user 'booksy'..."
+if ! id booksy &> /dev/null; then
+    useradd -m -s /bin/bash booksy
 fi
+usermod -aG docker booksy
 
 # Install additional utilities
 echo "Installing additional utilities..."
-apt-get install -y curl git htop net-tools ufw
+apt-get install -y curl git htop net-tools
 
-# Configure UFW firewall
-echo "Configuring firewall..."
-ufw --force enable
-ufw allow 22/tcp        # SSH
-ufw allow 80/tcp        # HTTP
-ufw allow 443/tcp       # HTTPS
-ufw allow 5000/tcp      # Booksy API (modular monolith)
-ufw allow 5341/tcp      # Seq
-echo "Firewall configured"
+# Firewall: SKIPPED by default. This script must not blindly `ufw enable` — on a
+# server that already runs other services (a VPN/proxy panel, another site, custom
+# tunnel ports, etc.), enabling a firewall with only Booksy's ports allow-listed
+# would silently cut off everything else already reachable. If this IS a fresh,
+# single-purpose box and you want a firewall, configure it yourself with the full
+# port list for EVERYTHING this box runs — not just Booksy's — for example:
+#   ufw allow 22/tcp && ufw allow 80/tcp && ufw allow 443/tcp && ufw --force enable
+# Booksy itself needs only 80 and 443 open publicly (host nginx terminates TLS and
+# reverse-proxies to the containers, which bind 127.0.0.1 only); nothing else it
+# runs needs to be reachable from outside this box.
+echo "Firewall: not configured by this script — see the comment above before enabling one yourself."
 
-# Create deployment directory
+# Create deployment directory, owned by the deploy user (not root, not $SUDO_USER)
 DEPLOY_PATH="/opt/booksy"
 echo "Creating deployment directory at $DEPLOY_PATH..."
 mkdir -p $DEPLOY_PATH
 mkdir -p $DEPLOY_PATH/logs
 mkdir -p $DEPLOY_PATH/backups
-chown -R $SUDO_USER:$SUDO_USER $DEPLOY_PATH
+chown -R booksy:booksy $DEPLOY_PATH
 
 # Create environment file
 echo "Creating environment file template..."
@@ -98,10 +98,10 @@ SEQ_SERVER_URL=http://seq:5341
 # SERVICE_CATALOG_URL=http://booksy-api:80
 
 # Frontend Configuration
-API_BASE_URL=http://YOUR_SERVER_IP:5000
+API_BASE_URL=https://YOUR_DOMAIN  # e.g. https://back.yourdomain.ir — reverse-proxied by host nginx; see setup-ssl.sh
 EOF
 
-chown $SUDO_USER:$SUDO_USER $DEPLOY_PATH/.env
+chown booksy:booksy $DEPLOY_PATH/.env
 chmod 600 $DEPLOY_PATH/.env
 
 # Create backup script
@@ -127,7 +127,7 @@ echo "Backup completed: $TIMESTAMP"
 EOF
 
 chmod +x $DEPLOY_PATH/scripts/backup.sh
-chown -R $SUDO_USER:$SUDO_USER $DEPLOY_PATH/scripts
+chown -R booksy:booksy $DEPLOY_PATH/scripts
 
 # Create log rotation config
 echo "Configuring log rotation..."
@@ -158,14 +158,17 @@ echo "========================================="
 echo "Installation Complete!"
 echo "========================================="
 echo "Docker version: $(docker --version)"
-echo "Docker Compose version: $(docker-compose --version)"
+echo "Docker Compose version: $(docker compose version)"
 echo ""
 echo "Deployment directory: $DEPLOY_PATH"
 echo ""
 echo "IMPORTANT: Please complete the following steps:"
 echo "1. Edit $DEPLOY_PATH/.env and update all passwords and configuration"
-echo "2. Verify firewall rules: sudo ufw status"
-echo "3. Configure your GitHub repository secrets"
-echo "4. Test SSH access from GitHub Actions"
+echo "2. Run setup-ssl.sh for your domain (installs nginx + certbot if needed)"
+echo "3. Generate a dedicated SSH keypair for CI and add its public half to"
+echo "   /home/booksy/.ssh/authorized_keys (never reuse a personal key)"
+echo "4. Add SERVER_HOST, SERVER_USER=booksy, SERVER_SSH_KEY (the CI private key),"
+echo "   SERVER_DEPLOY_PATH=$DEPLOY_PATH as GitHub Actions repo secrets"
+echo "5. Push to master (or run the Deploy workflow manually) to trigger the first deploy"
 echo ""
 echo "========================================="

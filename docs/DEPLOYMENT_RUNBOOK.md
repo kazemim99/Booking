@@ -9,15 +9,24 @@ routing document; nothing here changed in the move. For what the system *is*, se
 
 Booksy is a **modular monolith**: a single backend host composes multiple bounded contexts in-process.
 
+The reference production deployment (`back.nahalkmi.ir`, 194.1.155.230) is a box **shared with other,
+unrelated services** — it is not a dedicated Booksy host. Two consequences that shape everything
+below: (1) all container ports bind to `127.0.0.1` only, never `0.0.0.0` — the box's existing
+host-level nginx (already serving other domains) is the only thing that ever binds `80`/`443`
+publicly, with a Booksy-only vhost (`deployment/nginx/booksy.conf`, one `server_name`) added
+alongside the others, never replacing them; (2) there is no `ufw`/firewall automation in
+`deployment/scripts/server-setup.sh` — see the caution comment there before ever enabling one on a
+shared box. CI deploys over SSH as a dedicated, unprivileged `booksy` user (docker-group member,
+no sudo), never root.
+
 ### Application Services
-- **Booksy.Host** (`booksy-api`, Port 5000 → internal 80): Single ASP.NET Core host that composes both bounded contexts (UserManagement and ServiceCatalog) in-process and serves all of their controllers under `/api/v1/...`. (A Booking context exists only as empty scaffolding and is not built.) Database migrations run at host startup.
-- **Frontend** (Ports 80/443): Web application frontend served via Nginx; its nginx config proxies `/api` to `booksy-api:80`.
+- **Booksy.Host** (`booksy-api`, `127.0.0.1:5000` → internal `80`): Single ASP.NET Core host that composes both bounded contexts (UserManagement and ServiceCatalog) in-process and serves all of their controllers under `/api/v1/...`. (A Booking context exists only as empty scaffolding and is not built.) Database migrations run at host startup. The host port binding is for operator debugging only — the frontend container reaches it over `booksy-network` by container name, never through this port.
+- **Frontend** (`127.0.0.1:8081` → internal `80`): Web application frontend served via Nginx inside the container; its nginx config proxies `/api` to `booksy-api:80` over the Docker network. The host's own nginx (outside Docker) is what the public internet actually reaches, terminating TLS and reverse-proxying to this port — see `deployment/nginx/booksy.conf`.
 
 ### Infrastructure Services
-- **PostgreSQL** (Port 5432): Single primary database (`booksy`) with schema-per-context (schemas: `user_management`, `ServiceCatalog`, `cap`). One connection string (`DefaultConnection`).
-- **Redis** (Port 6379): Caching layer with LRU eviction policy (512MB limit)
-- **Seq** (Ports 5341, 5342): Centralized structured logging platform
-- **pgAdmin** (Port 5050): Database management interface
+- **PostgreSQL** (`127.0.0.1:5432`): Single primary database (`booksy`) with schema-per-context (schemas: `user_management`, `ServiceCatalog`, `cap`). One connection string (`DefaultConnection`).
+- **Redis** (`127.0.0.1:6379`): Caching layer with LRU eviction policy (192MB limit on the shared reference box; raise it in `docker-compose.prod.yml` if you have more headroom)
+- **Seq** (`127.0.0.1:5341`, `127.0.0.1:5342`) and **pgAdmin** (`127.0.0.1:5050`): OFF by default (Compose `profiles: ["observability"]`) — optional, RAM-hungry admin tools that aren't required for the app to run. Start them with `docker compose --profile observability up -d` if the box has headroom; otherwise use an SSH tunnel + a local pgAdmin/DBeaver, and rely on Serilog's own log output (it degrades gracefully when Seq isn't reachable).
 
 ### Service Communication
 - All containers connect via a Docker bridge network (`booksy-network`, subnet 172.25.0.0/16)
@@ -29,43 +38,41 @@ Booksy is a **modular monolith**: a single backend host composes multiple bounde
 
 ### Deployment
 ```bash
-# Full deployment (pulls latest images and restarts all services)
-cd /root/booksy && ./scripts/deploy.sh
-
-# Manual deployment steps
-cd /root/booksy
-docker-compose -f docker-compose.prod.yml pull
+# Every push to master runs this automatically (.github/workflows/deploy.yml).
+# To do the same thing by hand:
+cd /opt/booksy
+docker compose -f docker-compose.prod.yml pull
 
 # Clean up orphaned containers (prevents network removal errors)
 docker ps -a --filter "name=booksy-" --format "{{.Names}}" | xargs -r docker rm -f || true
 
-docker-compose -f docker-compose.prod.yml down --remove-orphans
-docker-compose -f docker-compose.prod.yml up -d
+docker compose -f docker-compose.prod.yml down --remove-orphans
+docker compose -f docker-compose.prod.yml up -d
 
 # View all service status
-docker-compose -f docker-compose.prod.yml ps
+docker compose -f docker-compose.prod.yml ps
 
 # View logs for specific service
-docker-compose -f docker-compose.prod.yml logs -f [service-name]
-# Example: docker-compose -f docker-compose.prod.yml logs -f booksy-api
+docker compose -f docker-compose.prod.yml logs -f [service-name]
+# Example: docker compose -f docker-compose.prod.yml logs -f booksy-api
 
 # View logs for all services
-docker-compose -f docker-compose.prod.yml logs -f
+docker compose -f docker-compose.prod.yml logs -f
 ```
 
 ### Service Management
 ```bash
 # Start all services
-docker-compose -f docker-compose.prod.yml up -d
+docker compose -f docker-compose.prod.yml up -d
 
 # Stop all services
-docker-compose -f docker-compose.prod.yml down
+docker compose -f docker-compose.prod.yml down
 
 # Restart a specific service
-docker-compose -f docker-compose.prod.yml restart [service-name]
+docker compose -f docker-compose.prod.yml restart [service-name]
 
 # Scale a service (if supported)
-docker-compose -f docker-compose.prod.yml up -d --scale booksy-api=3
+docker compose -f docker-compose.prod.yml up -d --scale booksy-api=3
 ```
 
 ### Database Operations
@@ -108,7 +115,7 @@ Cross-context integration events run in-process via CAP on its in-memory transpo
 docker stats
 
 # Check health status of all services
-docker-compose -f docker-compose.prod.yml ps
+docker compose -f docker-compose.prod.yml ps
 
 # View specific service health
 docker inspect --format='{{.State.Health.Status}}' booksy-[service-name]
@@ -138,30 +145,26 @@ docker system df
 docker ps -a --filter "name=booksy-" --format "{{.Names}}" | xargs -r docker rm -f
 
 # Clean up old backups (manual)
-cd /root/booksy/backups && ls -lt | tail -n +10 | awk '{print $9}' | xargs rm -f
+cd /opt/booksy/backups && ls -lt | tail -n +10 | awk '{print $9}' | xargs rm -f
 ```
 
 ## GitHub Actions Workflows
 
-### Build and Push (`build-and-push.yml`)
-- Triggers on: Push to main/develop, PRs, or manual dispatch
-- Builds Docker images for the backend host (`booksy-api`) and the Frontend
-- Pushes images to GitHub Container Registry (ghcr.io)
-- Uses Docker layer caching for faster builds
-- Tags images with branch name, PR number, commit SHA, and 'latest' for main branch
+### Deploy to Production (`deploy.yml`)
+One workflow does the whole thing on every push to `master` (or manual `workflow_dispatch`):
+- `test`: unit tests against ephemeral Postgres/Redis service containers
+- `e2e-keystone`: boots the real host and runs the keystone booking-flow smoke test
+- `build-api` / `build-frontend`: build and push Docker images to GHCR (`ghcr.io/kazemim99/booksy-api`, `-frontend`), tagged `latest` and the commit SHA — run in parallel once tests pass
+- `deploy`: SCPs `docker-compose.prod.yml` to the server, SSHes in as the dedicated `booksy` user, pulls the new images, and runs `docker compose up -d` (no `--profile observability` — Seq/pgAdmin stay off)
+- A final `Health check` step curls `https://back.nahalkmi.ir/health` (through the box's own nginx, not the bare server IP — see the Architecture note above on why that matters on a shared box) and fails the run if it's not `200`
 
-### Deploy (`deploy.yml`)
-- Triggers automatically when build-and-push completes successfully on main branch
-- Can also be manually triggered via workflow_dispatch
-- Uses SSH to connect to production server
-- Pulls latest Docker images from GHCR
-- **Forcibly removes orphaned containers** before docker-compose down to prevent network errors
-- Performs zero-downtime deployment by stopping old containers and starting new ones
-- Includes automatic cleanup of old Docker images
+Required repo secrets (Settings → Secrets and variables → Actions): `SERVER_HOST`, `SERVER_USER`
+(`booksy`), `SERVER_SSH_KEY` (the CI-only deploy key's private half — never a personal key),
+`SERVER_DEPLOY_PATH` (`/opt/booksy`).
 
 ## Environment Configuration
 
-All environment variables are stored in `/root/booksy/.env`. Key variables include:
+All environment variables are stored in `/opt/booksy/.env`. Key variables include:
 
 - **Database**: `POSTGRES_USER`, `POSTGRES_PASSWORD`, `POSTGRES_DB`
 - **Redis**: `REDIS_PASSWORD`
@@ -217,10 +220,10 @@ Common issues and solutions:
 
 ### Other Common Issues
 
-1. **Service won't start**: Check logs with `docker-compose logs [service]` (e.g., `booksy-api`) and verify health check status
+1. **Service won't start**: Check logs with `docker compose logs [service]` (e.g., `booksy-api`) and verify health check status
 2. **Database connection errors**: Ensure PostgreSQL is healthy and connection string in `.env` is correct
 3. **Out of memory**: Check `docker stats` and adjust resource limits in docker-compose.prod.yml
 4. **Image pull failures**: Verify GHCR authentication with `docker login ghcr.io`
-5. **Port conflicts**: Ensure no other services are using the required ports (5000, 80, 443, 5341, 5050)
+5. **Port conflicts**: all container ports bind `127.0.0.1` only (5000, 5432, 6379, 8081, and 5341/5342/5050 if the observability profile is running) — check with `ss -tlnp` on the host for anything else already bound to those before deploying to a new box. `80`/`443` belong to the host's own nginx, shared with whatever else it serves; Booksy's vhost is one `server_name` block among others (`deployment/nginx/booksy.conf`) — never delete or overwrite the others
 6. **Swagger not accessible**: Verify `booksy-api` is healthy with `docker ps`. An unhealthy host cannot serve Swagger UI.
 
