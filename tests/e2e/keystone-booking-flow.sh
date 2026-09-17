@@ -97,7 +97,13 @@ SVC=""; code=$(http GET "/api/v1/Services/provider/$PROV" "$CTOK" - /tmp/k_svc.j
 SVC=$(jget /tmp/k_svc.json id)
 
 say "5) Customer books, and it shows in my-bookings"
-START="2026-09-01T10:00:00Z"
+# Computed at run time, three days out. This was a hardcoded "2026-09-01T10:00:00Z" — a date
+# that was in the future when it was written and silently became a PAST date on 2026-09-01,
+# after which every run of this script failed here with "Cannot create a booking in the past".
+# DAY (step 10) and MSTART (step 11) both derive from this, so the one stale literal broke the
+# direct booking, the member slot lookup and the member booking together. Business hours are
+# registered as 09:00-18:00 for all seven days above, so 10:00/11:00 always fall inside them.
+START="$(date -u -d '+3 days' +%Y-%m-%d)T10:00:00Z"
 [ -n "$SVC" ] || SVC=$(jget /tmp/k_reg.json serviceId)
 BODY="{\"providerId\":\"$PROV\",\"serviceId\":\"$SVC\",\"staffProviderId\":\"$STAFF\",\"startTime\":\"$START\",\"customerNotes\":\"keystone e2e\"}"
 code=$(http POST "/api/v1/Bookings" "$CTOK" "$BODY" /tmp/k_book.json)
@@ -182,7 +188,11 @@ say "13) Owning a salon does not make you bookable; opting in does (S1/S2)"
 # toggle below, the owner must NOT appear as bookable staff on the roster.
 code=$(http GET "/api/v1/providers/$PROV/hierarchy/members" "$PTOK" - /tmp/k_own0.json)
 [ "$code" = "200" ] && ok "roster 200" || fail "roster (HTTP $code)"
-grep -q '"isOwner":true' /tmp/k_own0.json && ok "owner has a membership from registration alone" \
+# Tolerate optional whitespace after the colon: the host pretty-prints JSON when
+# ASPNETCORE_ENVIRONMENT=Development (which is exactly how CI runs this script), so the
+# response actually reads `"isOwner": true`. The old compact-only pattern never matched
+# there, failing this assertion against a response that plainly contains the owner.
+grep -qE '"isOwner": *true' /tmp/k_own0.json && ok "owner has a membership from registration alone" \
   || fail "register-full did not create an owner membership: $(cat /tmp/k_own0.json)"
 
 code=$(http POST "/api/v1/registration/owner-provides-services" "$PTOK" '{"providesServices":true}' /tmp/k_ops.json)

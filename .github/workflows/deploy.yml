@@ -149,8 +149,26 @@ jobs:
         EventBus__Provider: "InMemory"
         OTP_SANDBOX_CODE: "123456"
         Sms__SandboxMode: "true"
+        # Program.cs defaults Database:SeedOnStartup to IsDevelopment() when unset, and this job
+        # sets ASPNETCORE_ENVIRONMENT=Development -- so without this override the host reseeds
+        # the full province/city reference dataset (thousands of rows) into a brand-new ephemeral
+        # Postgres container on every run, which alone takes longer than the 240s health-check
+        # window below. keystone-booking-flow.sh never reads that data (it posts plain city/state
+        # strings, not seeded IDs), so there is nothing to lose by skipping it here.
+        Database__SeedOnStartup: "false"
+        # Same reason appsettings.Testing.json turns this off for the integration suite: the named
+        # "otp"/"phone-verification" policies allow 5 requests per 300s, partitioned by caller IP —
+        # and every call in CI comes from 127.0.0.1, so they all share one bucket. A clean run
+        # spends 3 of those 5 on OTP logins; one retry would exhaust it and fail the job on a
+        # 429 that has nothing to do with the booking flow this smoke test exists to prove.
+        RateLimiting__Enabled: "false"
       run: |
-        dotnet run --project src/Host/Booksy.Host/Booksy.Host.csproj --configuration Release > host.log 2>&1 &
+        # --no-launch-profile is load-bearing: Properties/launchSettings.json pins
+        # applicationUrl to http://localhost:5000, and `dotnet run` applies that launch profile
+        # by default, overriding the ASPNETCORE_URLS=5050 set above. Without this flag the host
+        # listens on 5000 while the health check below polls 5050, so the wait loop could never
+        # succeed and this job always timed out after its full 240s.
+        dotnet run --project src/Host/Booksy.Host/Booksy.Host.csproj --configuration Release --no-launch-profile > host.log 2>&1 &
         echo $! > host.pid
 
     - name: Wait for host to become healthy
