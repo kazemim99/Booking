@@ -51,6 +51,18 @@ public sealed class PhoneNumberChangeTests
 
         _smsService.SendSmsAsync(Arg.Any<string>(), Arg.Any<string>(), Arg.Any<Dictionary<string, object>?>(), Arg.Any<CancellationToken>())
             .Returns((true, "msg-id", (string?)null));
+
+        // SendPhoneVerificationCodeCommandHandler's rate-limit gate is `#if !DEBUG` (left out of
+        // Debug builds so repeated local/CI-Debug test runs don't go flaky on it) — but `dotnet test
+        // --configuration Release` (what deploy.yml's "Run Unit Tests" step actually runs) DOES
+        // compile it in, and an unstubbed NSubstitute call here returns null, not an empty list —
+        // unlike the real EF repository (PhoneVerificationRepository.GetRecentVerificationsByPhoneAsync
+        // wraps ToListAsync, which never returns null). Stubbing "no recent verifications" as the
+        // default keeps every test in this class correct under both configurations; found when this
+        // NullReferenceException broke the Release-config CI run for the first time.
+        _verificationRepository.GetRecentVerificationsByPhoneAsync(
+                Arg.Any<string>(), Arg.Any<TimeSpan>(), Arg.Any<CancellationToken>())
+            .Returns(new List<PhoneVerification>());
     }
 
     private static User NewUser(string phone)
