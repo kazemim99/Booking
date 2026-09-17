@@ -6,8 +6,16 @@ import 'package:flutter/foundation.dart'
 class ApiConstants {
   ApiConstants._();
 
+  /// Build-time override, e.g. a web/release build against the deployed API:
+  ///   flutter build web --dart-define=API_BASE_URL=https://back.nahalkmi.ir
+  /// Empty (the default) keeps the local-development behaviour below untouched,
+  /// so nothing changes for anyone running the app against a local host.
+  static const String _apiBaseUrlOverride =
+      String.fromEnvironment('API_BASE_URL');
+
   /// Base host. Android emulator uses the 10.0.2.2 host alias.
   static String get baseUrl {
+    if (_apiBaseUrlOverride.isNotEmpty) return _apiBaseUrlOverride;
     if (kIsWeb) return 'http://localhost:5000';
     if (defaultTargetPlatform == TargetPlatform.android) {
       return 'http://10.0.2.2:5000';

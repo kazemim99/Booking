@@ -1,0 +1,259 @@
+/**
+ * Design Tokens
+ *
+ * Modern design system tokens using CSS custom properties.
+ * These tokens provide a consistent foundation for colors, spacing, typography, and more.
+ *
+ * Usage: var(--token-name)
+ * Example: color: var(--color-primary-500);
+ */
+
+:root {
+  /* ============================================
+     Color Palette - Modern, Professional
+     ============================================ */
+
+  /* Primary - Coliride Blue (buttons, app chrome, links) */
+  --color-primary-50: #eef4fb;
+  --color-primary-100: #d8e6f6;
+  --color-primary-200: #b3cdec;
+  --color-primary-300: #84aedf;
+  --color-primary-400: #5790cf;
+  --color-primary-500: #3777bf;   /* brand primary (Coliride normalButtonBackground) */
+  --color-primary-600: #3777c0;   /* chrome: app bar / bottom nav */
+  --color-primary-700: #2f63a0;
+  --color-primary-800: #274f80;
+  --color-primary-900: #1f3e64;
+
+  /* Success - Coliride Green (success, chips, checks, accents) */
+  --color-success-50: #e6faf2;
+  --color-success-100: #c2f2dd;
+  --color-success-200: #8ae7bf;
+  --color-success-300: #4fd79e;
+  --color-success-400: #22c585;
+  --color-success-500: #0ac075;   /* brand green */
+  --color-success-600: #09a866;
+  --color-success-700: #088654;
+  --color-success-800: #066842;
+  --color-success-900: #044d31;
+
+  /* Warning - Amber (Pending items, attention) */
+  --color-warning-50: #fffbeb;
+  --color-warning-100: #fef3c7;
+  --color-warning-200: #fde68a;
+  --color-warning-300: #fcd34d;
+  --color-warning-400: #fbbf24;
+  --color-warning-500: #f59e0b;
+  --color-warning-600: #d97706;
+  --color-warning-700: #b45309;
+  --color-warning-800: #92400e;
+  --color-warning-900: #78350f;
+
+  /* Danger - Coliride Red (errors, critical items) */
+  --color-danger-50: #ffeef0;
+  --color-danger-100: #ffd6db;
+  --color-danger-200: #ffb0ba;
+  --color-danger-300: #ff8a98;
+  --color-danger-400: #ff6171;   /* brand error */
+  --color-danger-500: #f0495b;
+  --color-danger-600: #e74a3b;   /* input error border */
+  --color-danger-700: #c63a2f;
+  --color-danger-800: #9e2d24;
+  --color-danger-900: #76211b;
+
+  /* Warning / gold (star ratings, attention) — Coliride #FFCB33 */
+  --color-warning-400: #ffd75c;
+  --color-warning-500: #ffcb33;
+
+  /* Info - reuse Coliride blue chrome */
+  --color-info-50: #eef4fb;
+  --color-info-100: #d8e6f6;
+  --color-info-200: #b3cdec;
+  --color-info-300: #84aedf;
+  --color-info-400: #5790cf;
+  --color-info-500: #3777bf;
+  --color-info-600: #3777c0;
+  --color-info-700: #2f63a0;
+  --color-info-800: #274f80;
+  --color-info-900: #1f3e64;
+
+  /* Neutrals - Coliride navy/grey scale */
+  --color-gray-50: #fafafa;
+  --color-gray-100: #f5f5f5;
+  --color-gray-200: #ebeef3;   /* grey1 - fills, chip bg */
+  --color-gray-300: #e5e9f2;   /* divider */
+  --color-gray-400: #d2dbeb;   /* field icons, inactive */
+  --color-gray-500: #c3cad9;   /* grey2 - outline, hint */
+  --color-gray-600: #96a0b3;   /* secondary text */
+  --color-gray-700: #6b7689;
+  --color-gray-800: #4d5e80;   /* navy - primary ink */
+  --color-gray-900: #3a4763;
+
+  /* Brand semantic aliases (Coliride) */
+  --color-navy: #4d5e80;          /* dominant ink */
+  --color-chrome: #3777c0;        /* app bar / bottom nav */
+  --color-accent: #0ac075;        /* green accent */
+  --color-map-pin: #1fa96e;       /* map location pin / markers */
+  --color-gold: #ffcb33;          /* star rating */
+
+  /* Semantic colors */
+  --color-background: #ffffff;
+  --color-background-secondary: #f5f5f5;
+  --color-background-tertiary: #fafafa;
+
+  --color-text-primary: #4d5e80;    /* navy ink */
+  --color-text-secondary: #96a0b3;
+  --color-text-tertiary: #c3cad9;
+  --color-text-inverse: #ffffff;
+
+  --color-border: #e5e9f2;
+  --color-border-light: #ebeef3;
+  --color-border-dark: #c3cad9;
+
+  /* ============================================
+     Spacing Scale
+     ============================================ */
+
+  --spacing-xs: 0.5rem;    /* 8px */
+  --spacing-sm: 0.75rem;   /* 12px */
+  --spacing-md: 1rem;      /* 16px */
+  --spacing-lg: 1.5rem;    /* 24px */
+  --spacing-xl: 2rem;      /* 32px */
+  --spacing-2xl: 2.5rem;   /* 40px */
+  --spacing-3xl: 3rem;     /* 48px */
+  --spacing-4xl: 4rem;     /* 64px */
+
+  /* ============================================
+     Typography
+     ============================================ */
+
+  /* Font sizes */
+  --font-size-xs: 0.75rem;    /* 12px */
+  --font-size-sm: 0.875rem;   /* 14px */
+  --font-size-base: 1rem;     /* 16px */
+  --font-size-lg: 1.125rem;   /* 18px */
+  --font-size-xl: 1.25rem;    /* 20px */
+  --font-size-2xl: 1.5rem;    /* 24px */
+  --font-size-3xl: 1.875rem;  /* 30px */
+  --font-size-4xl: 2.25rem;   /* 36px */
+
+  /* Font weights — Coliride brand face ships 400/700 only; 500/600 alias to 700 emphasis */
+  --font-weight-normal: 400;
+  --font-weight-medium: 500;
+  --font-weight-semibold: 600;
+  --font-weight-bold: 700;
+
+  /* Font families — Persian (Vazir, already self-hosted) + geometric Latin fallback.
+     A self-hosted geometric Latin face (e.g. Poppins/Manrope woff2) can be added later to
+     evoke Coliride's GT Eesti Pro; kept offline-safe (no external CDN) for now. */
+  --font-family-base: 'Vazirmatn', 'Vazir', 'Poppins', system-ui, -apple-system, 'Segoe UI', sans-serif;
+  --font-family-heading: var(--font-family-base);
+
+  /* Line heights */
+  --line-height-tight: 1.25;
+  --line-height-normal: 1.5;
+  --line-height-relaxed: 1.75;
+
+  /* ============================================
+     Shadows - Modern, Subtle
+     ============================================ */
+
+  /* Coliride is deliberately flat — depth comes from borders + light fills, not shadows.
+     Shadows are kept very subtle and navy-tinted; modals/popovers retain a soft lift. */
+  --shadow-xs: 0 1px 2px 0 rgba(77, 94, 128, 0.04);
+  --shadow-sm: 0 1px 2px 0 rgba(77, 94, 128, 0.06);
+  --shadow-md: 0 2px 8px 0 rgba(77, 94, 128, 0.08);
+  --shadow-lg: 0 6px 20px -4px rgba(77, 94, 128, 0.10);
+  --shadow-xl: 0 10px 30px -6px rgba(77, 94, 128, 0.12);
+  --shadow-2xl: 0 16px 40px -10px rgba(77, 94, 128, 0.16);
+
+  /* Colored shadows for emphasis (brand-tinted, restrained) */
+  --shadow-primary: 0 4px 14px 0 rgba(55, 119, 191, 0.18);
+  --shadow-success: 0 4px 14px 0 rgba(10, 192, 117, 0.18);
+  --shadow-warning: 0 4px 14px 0 rgba(255, 203, 51, 0.20);
+  --shadow-danger: 0 4px 14px 0 rgba(255, 97, 113, 0.18);
+
+  /* ============================================
+     Border Radius
+     ============================================ */
+
+  /* Coliride signature: soft 10–16px corners */
+  --radius-sm: 0.5rem;     /* 8px  - chips, small controls */
+  --radius-md: 0.625rem;   /* 10px - buttons */
+  --radius-lg: 0.75rem;    /* 12px - inputs, card tags */
+  --radius-xl: 0.875rem;   /* 14px - bottom sheets */
+  --radius-2xl: 1rem;      /* 16px - cards, panels, modals */
+  --radius-full: 9999px;   /* Fully rounded */
+
+  /* ============================================
+     Z-Index Scale
+     ============================================ */
+
+  --z-index-dropdown: 1000;
+  --z-index-sticky: 1020;
+  --z-index-fixed: 1030;
+  --z-index-modal-backdrop: 1040;
+  --z-index-modal: 1050;
+  --z-index-popover: 1060;
+  --z-index-tooltip: 1070;
+
+  /* ============================================
+     Transitions
+     ============================================ */
+
+  --transition-fast: 150ms ease;
+  --transition-base: 200ms ease;
+  --transition-slow: 300ms ease;
+  --transition-slower: 500ms ease;
+
+  /* ============================================
+     Layout Dimensions
+     ============================================ */
+
+  --sidebar-width-expanded: 260px;
+  --sidebar-width-collapsed: 80px;
+  --header-height: 64px;
+  --container-max-width: 1400px;
+
+  /* ============================================
+     Gradients
+     ============================================ */
+
+  /* Coliride has no gradients — these resolve to flat brand solids so any component still
+     referencing a gradient token renders flat without needing per-component edits. */
+  --gradient-primary: linear-gradient(135deg, var(--color-primary-500) 0%, var(--color-primary-500) 100%);
+  --gradient-success: linear-gradient(135deg, var(--color-success-500) 0%, var(--color-success-500) 100%);
+  --gradient-warning: linear-gradient(135deg, var(--color-warning-500) 0%, var(--color-warning-500) 100%);
+  --gradient-danger: linear-gradient(135deg, var(--color-danger-500) 0%, var(--color-danger-500) 100%);
+
+  /* Glassmorphism */
+  --glass-background: rgba(255, 255, 255, 0.7);
+  --glass-border: rgba(255, 255, 255, 0.18);
+  --glass-blur: blur(10px);
+}
+
+/**
+ * RTL Support
+ * Reset directional properties for RTL languages
+ */
+[dir="rtl"] {
+  /* RTL-specific overrides if needed */
+}
+
+/**
+ * Dark Mode Disabled
+ * This project uses light mode only
+ */
+
+/**
+ * Reduced Motion
+ * Respect user's motion preferences
+ */
+@media (prefers-reduced-motion: reduce) {
+  :root {
+    --transition-fast: 0ms;
+    --transition-base: 0ms;
+    --transition-slow: 0ms;
+    --transition-slower: 0ms;
+  }
+}

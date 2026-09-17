@@ -200,6 +200,15 @@ PublishScripts/
 **/[Pp]ackages/*
 # except build/, which is used as an MSBuild target.
 !**/[Pp]ackages/build/
+# ...and except design-tokens/, which is SOURCE, not restored NuGet output: it holds
+# the shared brand stylesheet that booksy-frontend/src/main.ts imports directly
+# (`../../packages/design-tokens/tokens.css`). This rule comes from the stock Visual
+# Studio template and was silently swallowing it, so the file lived only on developer
+# machines and never in the repo -- meaning the frontend could not be built from a
+# clean clone at all. CI failed on exactly that:
+#   Could not resolve "../../packages/design-tokens/tokens.css" from "src/main.ts"
+!**/[Pp]ackages/design-tokens/
+!**/[Pp]ackages/design-tokens/**
 # Uncomment if necessary however generally it will be regenerated when needed
 #!**/[Pp]ackages/repositories.config
 # NuGet v3's project.json files produces more ignorable files
