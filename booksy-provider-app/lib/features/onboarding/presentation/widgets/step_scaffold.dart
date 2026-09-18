@@ -1,7 +1,10 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../../../config/theme/app_tokens.dart';
 import '../../../../core/constants/app_strings.dart';
 import '../../../../core/widgets/app_button.dart';
+import '../cubit/onboarding_cubit.dart';
+import '../cubit/onboarding_state.dart';
 
 /// Shared chrome for a wizard step: title, subtitle, scrollable body, and a
 /// back/next action row.
@@ -28,6 +31,12 @@ class StepScaffold extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    // A save/server error for this step (field validation is shown inline in the
+    // step itself). Rendered here, directly ABOVE the action row, so it can never
+    // cover the Next button the way a SnackBar floating over the body did.
+    final error = context.select<OnboardingCubit, String?>(
+      (c) => c.state.phase == OnboardingPhase.error ? c.state.errorMessage : null,
+    );
     return Column(
       children: [
         Expanded(
@@ -45,6 +54,35 @@ class StepScaffold extends StatelessWidget {
             ),
           ),
         ),
+        if (error != null)
+          Padding(
+            padding: const EdgeInsets.fromLTRB(
+                AppSpacing.lg, AppSpacing.sm, AppSpacing.lg, 0),
+            child: Container(
+              key: const Key('step-error-banner'),
+              width: double.infinity,
+              padding: const EdgeInsets.all(AppSpacing.md),
+              decoration: BoxDecoration(
+                color: theme.colorScheme.errorContainer,
+                borderRadius: BorderRadius.circular(AppRadius.md),
+              ),
+              child: Row(
+                children: [
+                  Icon(Icons.error_outline,
+                      color: theme.colorScheme.onErrorContainer),
+                  const SizedBox(width: AppSpacing.sm),
+                  Expanded(
+                    child: Text(
+                      error,
+                      style: theme.textTheme.bodyMedium?.copyWith(
+                        color: theme.colorScheme.onErrorContainer,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
         SafeArea(
           top: false,
           child: Padding(

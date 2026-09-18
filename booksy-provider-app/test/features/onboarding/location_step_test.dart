@@ -5,9 +5,11 @@ import 'package:booksy_provider_app/core/constants/app_strings.dart';
 import 'package:booksy_provider_app/core/di/injection.dart';
 import 'package:booksy_provider_app/core/widgets/app_error_state.dart';
 import 'package:booksy_provider_app/core/widgets/app_loading.dart';
+import 'package:booksy_provider_app/features/onboarding/data/datasources/device_location_service.dart';
 import 'package:booksy_provider_app/features/onboarding/data/datasources/geocoding_service.dart';
 import 'package:booksy_provider_app/features/onboarding/data/datasources/location_api_service.dart';
 import 'package:booksy_provider_app/features/onboarding/data/models/location_models.dart';
+import 'package:booksy_provider_app/features/onboarding/domain/entities/onboarding_data.dart';
 import 'package:booksy_provider_app/features/onboarding/domain/repositories/onboarding_repository.dart';
 import 'package:booksy_provider_app/features/onboarding/presentation/cubit/onboarding_cubit.dart';
 import 'package:booksy_provider_app/features/onboarding/presentation/steps/location_step.dart';
@@ -15,6 +17,7 @@ import 'package:dartz/dartz.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:latlong2/latlong.dart';
 import 'package:mocktail/mocktail.dart';
 
 class _MockRepo extends Mock implements OnboardingRepository {}
@@ -23,10 +26,13 @@ class _MockLocationApi extends Mock implements LocationApiService {}
 
 class _MockGeocoding extends Mock implements GeocodingService {}
 
+class _MockDeviceLocation extends Mock implements DeviceLocationService {}
+
 void main() {
   late _MockRepo repo;
   late _MockLocationApi locationApi;
   late _MockGeocoding geocoding;
+  late _MockDeviceLocation deviceLocation;
 
   const cities = [
     CityOption(id: 12, name: 'تهران', provinceName: 'تهران'),
@@ -37,25 +43,34 @@ void main() {
     repo = _MockRepo();
     locationApi = _MockLocationApi();
     geocoding = _MockGeocoding();
+    deviceLocation = _MockDeviceLocation();
+    // Default: no device fix (permission denied / unavailable).
+    when(() => deviceLocation.current()).thenAnswer((_) async => null);
     when(() => locationApi.getAllCities()).thenAnswer((_) async => cities);
     // Selecting a city forward-geocodes to recenter the map; keep it inert here.
     when(() => geocoding.geocode(any())).thenAnswer((_) async => null);
-    when(() => geocoding.reverseGeocode(any(), any()))
-        .thenAnswer((_) async => null);
+    when(
+      () => geocoding.reverseGeocode(any(), any()),
+    ).thenAnswer((_) async => null);
 
     // reset() is async — await it, or its continuation wipes the fresh
     // registrations a few microtasks into the test body.
     await getIt.reset();
     getIt.registerSingleton<LocationApiService>(locationApi);
     getIt.registerSingleton<GeocodingService>(geocoding);
+    getIt.registerSingleton<DeviceLocationService>(deviceLocation);
   });
 
   tearDown(() async => getIt.reset());
 
-  Future<OnboardingCubit> pumpStep(WidgetTester tester) async {
+  Future<OnboardingCubit> pumpStep(
+    WidgetTester tester, {
+    OnboardingAddress? address,
+  }) async {
     when(() => repo.getDraft()).thenAnswer((_) async => const Right(null));
     final cubit = OnboardingCubit(repo);
     await cubit.init(phoneNumber: '09120000000');
+    if (address != null) cubit.updateAddress(address);
 
     await tester.pumpWidget(
       MaterialApp(
@@ -75,8 +90,87 @@ void main() {
     return cubit;
   }
 
-  testWidgets('shows a city dropdown and a map, but no province field',
+  group('device location default (S12)', () {
+    const here = LatLng(39.6482, 47.9174); // Parsabad
+
+    testWidgets(
+      'no saved pin: pins the device location and fills the address',
       (tester) async {
+        when(() => deviceLocation.current()).thenAnswer((_) async => here);
+        when(
+          () => geocoding.reverseGeocode(here.latitude, here.longitude),
+        ).thenAnswer(
+          (_) async => const ReverseGeocodeResult(
+            formattedAddress: 'پارس‌آباد، خیابان امام',
+          ),
+        );
+
+        final cubit = await pumpStep(tester);
+        await tester.pump();
+
+        final address = cubit.state.data.address;
+        expect(address.latitude, here.latitude);
+        expect(address.longitude, here.longitude);
+        expect(address.addressLine1, 'پارس‌آباد، خیابان امام');
+      },
+    );
+
+    testWidgets('no device fix: no pin, nothing committed (Iran-center view)', (
+      tester,
+    ) async {
+      final cubit = await pumpStep(tester);
+      await tester.pump();
+
+      verify(() => deviceLocation.current()).called(1);
+      expect(cubit.state.data.address.latitude, isNull);
+      verifyNever(() => geocoding.reverseGeocode(any(), any()));
+    });
+
+    testWidgets('a saved pin wins: the device location is never requested', (
+      tester,
+    ) async {
+      final cubit = await pumpStep(
+        tester,
+        address: const OnboardingAddress(
+          addressLine1: 'نشانی ذخیره‌شده',
+          latitude: 35.7,
+          longitude: 51.4,
+        ),
+      );
+      await tester.pump();
+
+      verifyNever(() => deviceLocation.current());
+      expect(cubit.state.data.address.latitude, 35.7);
+      expect(cubit.state.data.address.addressLine1, 'نشانی ذخیره‌شده');
+    });
+
+    testWidgets('a typed address is never overwritten by the device fix', (
+      tester,
+    ) async {
+      final fix = Completer<LatLng?>();
+      when(() => deviceLocation.current()).thenAnswer((_) => fix.future);
+      when(() => geocoding.reverseGeocode(any(), any())).thenAnswer(
+        (_) async =>
+            const ReverseGeocodeResult(formattedAddress: 'نشانی از نقشه'),
+      );
+
+      final cubit = await pumpStep(tester);
+      await tester.enterText(
+        find.byKey(const Key('onboarding-address-line1')),
+        'نشانی دستی',
+      );
+      fix.complete(here);
+      await tester.pump();
+      await tester.pump();
+
+      expect(cubit.state.data.address.latitude, here.latitude);
+      expect(cubit.state.data.address.addressLine1, 'نشانی دستی');
+    });
+  });
+
+  testWidgets('shows a city dropdown and a map, but no province field', (
+    tester,
+  ) async {
     await pumpStep(tester);
 
     expect(find.byKey(const Key('onboarding-city')), findsOneWidget);
@@ -85,8 +179,9 @@ void main() {
     expect(find.byKey(const Key('onboarding-province')), findsNothing);
   });
 
-  testWidgets('selecting a city commits the city AND its derived province',
-      (tester) async {
+  testWidgets('selecting a city commits the city AND its derived province', (
+    tester,
+  ) async {
     final cubit = await pumpStep(tester);
 
     // Type to reveal the inline results list.
@@ -106,30 +201,32 @@ void main() {
   });
 
   testWidgets(
-      'the city chevron rotates 180° when the inline list opens and closes',
-      (tester) async {
-    await pumpStep(tester);
+    'the city chevron rotates 180° when the inline list opens and closes',
+    (tester) async {
+      await pumpStep(tester);
 
-    AnimatedRotation chevron() => tester.widget<AnimatedRotation>(
-          find.byKey(const Key('onboarding-city-chevron')),
-        );
+      AnimatedRotation chevron() => tester.widget<AnimatedRotation>(
+        find.byKey(const Key('onboarding-city-chevron')),
+      );
 
-    expect(chevron().turns, 0);
+      expect(chevron().turns, 0);
 
-    await tester.enterText(find.byKey(const Key('onboarding-city')), 'کاشان');
-    await tester.pump();
-    expect(find.byKey(const Key('onboarding-city-results')), findsOneWidget);
-    expect(chevron().turns, 0.5);
-    expect(chevron().duration, AppMotion.fast);
+      await tester.enterText(find.byKey(const Key('onboarding-city')), 'کاشان');
+      await tester.pump();
+      expect(find.byKey(const Key('onboarding-city-results')), findsOneWidget);
+      expect(chevron().turns, 0.5);
+      expect(chevron().duration, AppMotion.fast);
 
-    await tester.tap(find.text('کاشان (اصفهان)').last);
-    await tester.pump();
-    expect(find.byKey(const Key('onboarding-city-results')), findsNothing);
-    expect(chevron().turns, 0);
-  });
+      await tester.tap(find.text('کاشان (اصفهان)').last);
+      await tester.pump();
+      expect(find.byKey(const Key('onboarding-city-results')), findsNothing);
+      expect(chevron().turns, 0);
+    },
+  );
 
-  testWidgets('city search matches across kaf variants (mobile-keyboard bug)',
-      (tester) async {
+  testWidgets('city search matches across kaf variants (mobile-keyboard bug)', (
+    tester,
+  ) async {
     await pumpStep(tester);
 
     // Data stores Persian kaf (کاشان); type Arabic kaf (كاشان) as a phone
@@ -141,8 +238,9 @@ void main() {
   });
 
   group('city list screen states (spec: feedback-states)', () {
-    testWidgets('shows AppLoading while the city list is fetching',
-        (tester) async {
+    testWidgets('shows AppLoading while the city list is fetching', (
+      tester,
+    ) async {
       // Hold the fetch open so the loading state stays visible.
       final gate = Completer<List<CityOption>>();
       when(() => locationApi.getAllCities()).thenAnswer((_) => gate.future);
@@ -157,8 +255,9 @@ void main() {
       await tester.pump();
     });
 
-    testWidgets('failure shows AppErrorState and retry reloads the list',
-        (tester) async {
+    testWidgets('failure shows AppErrorState and retry reloads the list', (
+      tester,
+    ) async {
       var calls = 0;
       when(() => locationApi.getAllCities()).thenAnswer((_) async {
         calls++;
@@ -183,8 +282,9 @@ void main() {
       expect(find.byKey(const Key('onboarding-city')), findsOneWidget);
     });
 
-    testWidgets('loaded state renders the searchable city field',
-        (tester) async {
+    testWidgets('loaded state renders the searchable city field', (
+      tester,
+    ) async {
       await pumpStep(tester);
 
       expect(find.byType(AppLoading), findsNothing);

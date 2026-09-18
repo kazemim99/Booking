@@ -273,11 +273,17 @@ app.MapHub<Booksy.ServiceCatalog.Infrastructure.Hubs.NotificationHub>("/hubs/not
 // factories set Database:SeedOnStartup=false in appsettings.Testing.json.
 var seed = builder.Configuration.GetValue("Database:SeedOnStartup", app.Environment.IsDevelopment());
 
+// Reference data (Iran's province/city hierarchy, notification templates) is a separate switch that
+// defaults to ON everywhere, production included. It used to ride on SeedOnStartup above, which is
+// off outside Development — so production shipped with an empty ProvinceCities table and the provider
+// onboarding city picker could never find a city. Test hosts set it false purely for startup speed.
+var seedReferenceData = builder.Configuration.GetValue("Database:SeedReferenceData", true);
+
 await app.MigrateAndSeedDatabaseAsync<UserManagementDbContext, UserManagementDatabaseSeeder>(seedData: seed);
 
 using (var scope = app.Services.CreateScope())
 {
-    await scope.ServiceProvider.InitializeDatabaseAsync(seed);
+    await scope.ServiceProvider.InitializeDatabaseAsync(seedDemoData: seed, seedReferenceData: seedReferenceData);
 }
 
 app.Run();

@@ -10,6 +10,7 @@ import '../../../../core/utils/persian_text.dart';
 import '../../../../core/widgets/app_error_state.dart';
 import '../../../../core/widgets/app_loading.dart';
 import '../../../../core/widgets/app_text_field.dart';
+import '../../data/datasources/device_location_service.dart';
 import '../../data/datasources/geocoding_service.dart';
 import '../../data/datasources/location_api_service.dart';
 import '../../data/models/location_models.dart';
@@ -56,6 +57,7 @@ class _LocationStepState extends State<LocationStep> {
 
   final LocationApiService _locationApi = getIt<LocationApiService>();
   final GeocodingService _geocoding = getIt<GeocodingService>();
+  final DeviceLocationService _deviceLocation = getIt<DeviceLocationService>();
 
   List<CityOption> _cities = const [];
   bool _loadingCities = true;
@@ -66,6 +68,9 @@ class _LocationStepState extends State<LocationStep> {
   CityOption? _selectedCity;
   LatLng? _pin;
   bool _isGeocoding = false;
+
+  /// `MapController.move` throws until the map has laid out once.
+  bool _mapReady = false;
 
   /// The inline results list is visible whenever the user is searching, i.e.
   /// there is query text and no city has been committed for it yet.
@@ -82,11 +87,27 @@ class _LocationStepState extends State<LocationStep> {
     _cityCtrl = TextEditingController();
     _cityFocus = FocusNode();
     _mapController = MapController();
-    if (a.latitude != null && a.longitude != null &&
+    if (a.latitude != null &&
+        a.longitude != null &&
         (a.latitude != 0 || a.longitude != 0)) {
       _pin = LatLng(a.latitude!, a.longitude!);
+    } else {
+      _centerOnDevice();
     }
     _loadCities(restoreCity: a.city);
+  }
+
+  /// With no saved pin, start where the provider most likely is: the device's
+  /// own location. Best effort — without a fix the map keeps the Iran view.
+  Future<void> _centerOnDevice() async {
+    final here = await _deviceLocation.current();
+    // Ignore a late fix once the user has placed a pin (map tap or city pick).
+    if (here == null || !mounted || _pin != null) return;
+    await _placePin(
+      here,
+      zoom: _streetZoom,
+      fillAddress: _line1.text.trim().isEmpty,
+    );
   }
 
   @override
@@ -137,9 +158,9 @@ class _LocationStepState extends State<LocationStep> {
       _cityMatches = query.isEmpty
           ? const []
           : _cities
-              .where((c) => PersianText.contains(c.label, query))
-              .take(_maxOptions)
-              .toList();
+                .where((c) => PersianText.contains(c.label, query))
+                .take(_maxOptions)
+                .toList();
     });
     _commit();
   }
@@ -167,7 +188,9 @@ class _LocationStepState extends State<LocationStep> {
     // Recenter the map on the picked city (parity with the Vue watcher). Use
     // "city, province" for better disambiguation, and only move the pin if the
     // user hasn't already dropped one manually.
-    final coords = await _geocoding.geocode('${city.name}, ${city.provinceName}');
+    final coords = await _geocoding.geocode(
+      '${city.name}, ${city.provinceName}',
+    );
     if (!mounted) return;
     setState(() {
       if (coords != null) {
@@ -189,14 +212,28 @@ class _LocationStepState extends State<LocationStep> {
     final zoom = _mapController.camera.zoom < _streetZoom
         ? _streetZoom
         : _mapController.camera.zoom;
+    await _placePin(point, zoom: zoom, fillAddress: true);
+  }
+
+  /// Drops the pin at [point], centers the map there and, when [fillAddress],
+  /// fills the address field from reverse geocoding.
+  Future<void> _placePin(
+    LatLng point, {
+    required double zoom,
+    required bool fillAddress,
+  }) async {
     setState(() {
       _pin = point;
-      _isGeocoding = true;
+      _isGeocoding = fillAddress;
     });
-    _mapController.move(point, zoom);
+    if (_mapReady) _mapController.move(point, zoom);
     _commit();
+    if (!fillAddress) return;
 
-    final result = await _geocoding.reverseGeocode(point.latitude, point.longitude);
+    final result = await _geocoding.reverseGeocode(
+      point.latitude,
+      point.longitude,
+    );
     if (!mounted) return;
     if (result != null) {
       // Only overwrite the address when the geocode actually returned one —
@@ -209,21 +246,23 @@ class _LocationStepState extends State<LocationStep> {
 
   void _commit() {
     context.read<OnboardingCubit>().updateAddress(
-          OnboardingAddress(
-            addressLine1: _line1.text.trim(),
-            city: _selectedCity?.name ?? '',
-            // Province is derived from the picked city, never entered by hand.
-            province: _selectedCity?.provinceName ?? '',
-            latitude: _pin?.latitude,
-            longitude: _pin?.longitude,
-          ),
-        );
+      OnboardingAddress(
+        addressLine1: _line1.text.trim(),
+        city: _selectedCity?.name ?? '',
+        // Province is derived from the picked city, never entered by hand.
+        province: _selectedCity?.provinceName ?? '',
+        latitude: _pin?.latitude,
+        longitude: _pin?.longitude,
+      ),
+    );
   }
 
   @override
   Widget build(BuildContext context) {
     final cubit = context.read<OnboardingCubit>();
-    final saving = context.select<OnboardingCubit, bool>((c) => c.state.isSaving);
+    final saving = context.select<OnboardingCubit, bool>(
+      (c) => c.state.isSaving,
+    );
     return StepScaffold(
       title: AppStrings.locationTitle,
       subtitle: AppStrings.locationSubtitle,
@@ -341,14 +380,16 @@ class _LocationStepState extends State<LocationStep> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        Text(AppStrings.mapLabel,
-            style: Theme.of(context).textTheme.bodyMedium),
+        Text(
+          AppStrings.mapLabel,
+          style: Theme.of(context).textTheme.bodyMedium,
+        ),
         const SizedBox(height: AppSpacing.xs),
         Text(
           AppStrings.mapHint,
           style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                color: Theme.of(context).colorScheme.onSurfaceVariant,
-              ),
+            color: Theme.of(context).colorScheme.onSurfaceVariant,
+          ),
         ),
         const SizedBox(height: AppSpacing.sm),
         ClipRRect(
@@ -368,6 +409,11 @@ class _LocationStepState extends State<LocationStep> {
                     minZoom: 4,
                     maxZoom: 18,
                     onTap: (_, point) => _onMapTap(point),
+                    onMapReady: () {
+                      _mapReady = true;
+                      // A device fix that arrived before layout: center on it now.
+                      if (_pin != null) _mapController.move(_pin!, _streetZoom);
+                    },
                   ),
                   children: [
                     TileLayer(

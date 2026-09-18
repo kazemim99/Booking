@@ -154,16 +154,27 @@ void main() {
           timeout: const Duration(seconds: 40),
           reason: 'onboarding step 1 (new provider must land here)');
 
-      // Validation: required fields.
+      // Validation: required-field errors appear INLINE under each field, not
+      // as a snackbar — a snackbar used to cover the Next button itself
+      // (openspec/changes/provider-onboarding-ux S8/S9).
       await _tap(tester, find.widgetWithText(FilledButton, AppStrings.next));
-      await _pumpUntil(tester, find.byType(SnackBar),
-          reason: 'step 1 validation error');
-      await _waitForSnackbarToClear(tester);
+      await _pumpUntil(tester, find.text(AppStrings.fieldRequired),
+          reason: 'step 1 inline required-field errors');
+      expect(find.byType(SnackBar), findsNothing,
+          reason: 'field validation must never raise a snackbar over Next');
 
       await _fill(tester, const Key('onboarding-business-name'), 'سالن رابط کاربری');
-      await _fill(tester, const Key('onboarding-owner-first-name'), 'رضا');
-      await _fill(tester, const Key('onboarding-owner-last-name'), 'محمدی');
-      await _fill(tester, const Key('onboarding-phone'), phone);
+      // One full-name field; split into first/last before it is sent (S4).
+      await _fill(tester, const Key('onboarding-owner-full-name'), 'رضا محمدی');
+      // The mobile number was verified at sign-in: pre-filled and read-only (S6).
+      final phoneField = tester.widget<TextField>(find.descendant(
+        of: find.byKey(const Key('onboarding-phone')),
+        matching: find.byType(TextField),
+      ));
+      expect(phoneField.controller?.text, isNotEmpty,
+          reason: 'the signed-in phone number must be pre-filled');
+      expect(phoneField.readOnly, isTrue,
+          reason: 'the verified phone number must not be editable');
       await _fill(tester, const Key('onboarding-email'), 'ui@booksy.test');
       // Required by the backend validator (BusinessDescription .NotEmpty).
       await _fill(tester, const Key('onboarding-description'), 'سالن اصلاح مردانه');

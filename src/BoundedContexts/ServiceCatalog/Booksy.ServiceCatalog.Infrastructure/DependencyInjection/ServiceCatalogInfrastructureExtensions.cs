@@ -76,6 +76,7 @@ namespace Booksy.ServiceCatalog.Infrastructure.DependencyInjection
             // Register ServiceCatalogDbContext as DbContext for OutboxProcessor
             services.AddScoped<DbContext>(provider => provider.GetRequiredService<ServiceCatalogDbContext>());
 
+            services.AddScoped<ServiceCatalogDatabaseSeederOrchestrator>();
             services.AddScoped<ISeeder, ServiceCatalogDatabaseSeederOrchestrator>();
             // Unit of Work
             services.AddScoped<IUnitOfWork>(provider =>
@@ -222,29 +223,31 @@ namespace Booksy.ServiceCatalog.Infrastructure.DependencyInjection
             return services;
         }
 
-        public static async Task InitializeDatabaseAsync(this IServiceProvider serviceProvider,bool isDev)
+        /// <param name="seedDemoData">Fake providers/staff/services/bookings for local development.
+        /// Never true in production.</param>
+        /// <param name="seedReferenceData">Province/city hierarchy and notification templates — needed
+        /// in every environment. Idempotent. Test hosts turn it off only to keep startup fast.</param>
+        public static async Task InitializeDatabaseAsync(
+            this IServiceProvider serviceProvider, bool seedDemoData, bool seedReferenceData = true)
         {
-            try
+            using var scope = serviceProvider.CreateScope();
+            var context = scope.ServiceProvider.GetRequiredService<ServiceCatalogDbContext>();
+
+            // Resolve the concrete orchestrator, not ISeeder: UserManagement registers its own ISeeder
+            // too, so resolving the interface returns whichever bounded context registered last.
+            var seeder = scope.ServiceProvider.GetRequiredService<ServiceCatalogDatabaseSeederOrchestrator>();
+
+            await context.Database.MigrateAsync();
+
+            if (seedReferenceData)
             {
-
-
-                using var scope = serviceProvider.CreateScope();
-                var context = scope.ServiceProvider.GetRequiredService<ServiceCatalogDbContext>();
-                var seeder = scope.ServiceProvider.GetRequiredService<ISeeder>();
-
-                // Apply migrations
-                await context.Database.MigrateAsync();
-                if (isDev)
-                {
-
-                    await seeder.SeedAsync();
-                }
-
+                await seeder.SeedReferenceDataAsync();
             }
-            catch (Exception ex)
-            {
 
-                throw;
+            if (seedDemoData)
+            {
+                // Also re-runs the two reference seeders, which is harmless: both are idempotent.
+                await seeder.SeedAsync();
             }
         }
 

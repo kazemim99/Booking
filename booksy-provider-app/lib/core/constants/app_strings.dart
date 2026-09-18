@@ -98,6 +98,14 @@ class AppStrings {
   static const String businessName = 'نام کسب‌و‌کار';
   static const String ownerFirstName = 'نام مالک';
   static const String ownerLastName = 'نام خانوادگی مالک';
+  // One field for the owner's full name (split into first/last before sending —
+  // see core/utils/person_name.dart).
+  static const String ownerFullName = 'نام و نام خانوادگی مالک';
+  static const String ownerFullNameHint = 'مثلاً علی رضایی';
+  static const String fieldRequired = 'این فیلد الزامی است';
+  static const String fullNameNeedsBoth = 'لطفاً نام و نام خانوادگی را کامل وارد کنید';
+  static const String businessPhoneFromAccount =
+      'این شماره هنگام ورود تأیید شده و قابل تغییر نیست';
   static const String emailOptional = 'ایمیل (اختیاری)';
   static const String businessPhone = 'شماره تماس';
   // Required by the backend validator (BusinessDescription .NotEmpty) — must

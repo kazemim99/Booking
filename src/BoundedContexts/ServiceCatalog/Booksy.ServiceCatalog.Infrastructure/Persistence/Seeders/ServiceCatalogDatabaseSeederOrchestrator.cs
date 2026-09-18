@@ -90,6 +90,46 @@ namespace Booksy.ServiceCatalog.Infrastructure.Persistence.Seeders
             };
         }
 
+        /// <summary>
+        /// Seeds ONLY the reference data the app needs in every environment, production included:
+        /// Iran's province/city hierarchy (read by GET /api/v1/Locations/hierarchy and the provider
+        /// app's onboarding city picker) and the global notification templates that
+        /// INotificationTemplateService renders. Both seeders are idempotent — each returns early once
+        /// any row exists — so this is safe to run on every startup.
+        /// <para>
+        /// Deliberately separate from <see cref="SeedAsync"/>, which additionally runs ProviderSeeder,
+        /// StaffSeeder, ServiceSeeder, AvailabilitySeeder, ReviewSeeder and more: fake demo data that
+        /// must never reach a production database. Before this split both kinds sat behind the single
+        /// Database:SeedOnStartup gate (default: IsDevelopment()), so production got neither — the
+        /// ProvinceCities table was empty and the onboarding city picker could never match anything.
+        /// </para>
+        /// </summary>
+        public async Task SeedReferenceDataAsync(CancellationToken cancellationToken = default)
+        {
+            var referenceSeeders = new ISeeder[]
+            {
+                new ProvinceCitiesSeeder(_context,
+                    Microsoft.Extensions.Logging.Abstractions.NullLogger<ProvinceCitiesSeeder>.Instance),
+                new NotificationTemplateSeeder(_context,
+                    Microsoft.Extensions.Logging.Abstractions.NullLogger<NotificationTemplateSeeder>.Instance),
+            };
+
+            foreach (var seeder in referenceSeeders)
+            {
+                try
+                {
+                    await seeder.SeedAsync(cancellationToken);
+                }
+                catch (Exception ex)
+                {
+                    // Logged at Error rather than rethrown: a missing reference table degrades one
+                    // feature, whereas failing startup would take the whole API down on a shared box.
+                    // It must still be loud — a silent empty table is exactly how this went unnoticed.
+                    _logger.LogError(ex, "Reference data seeding failed: {Seeder}", seeder.GetType().Name);
+                }
+            }
+        }
+
         public async Task SeedAsync(CancellationToken cancellationToken = default)
         {
             try

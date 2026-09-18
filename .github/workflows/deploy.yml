@@ -156,6 +156,10 @@ jobs:
         # window below. keystone-booking-flow.sh never reads that data (it posts plain city/state
         # strings, not seeded IDs), so there is nothing to lose by skipping it here.
         Database__SeedOnStartup: "false"
+        # Province/city reference data has its own switch (default true, for production).
+        # SeedOnStartup=false no longer covers it, so it must be turned off explicitly here or
+        # this job goes back to reseeding thousands of rows before the health window closes.
+        Database__SeedReferenceData: "false"
         # Same reason appsettings.Testing.json turns this off for the integration suite: the named
         # "otp"/"phone-verification" policies allow 5 requests per 300s, partitioned by caller IP —
         # and every call in CI comes from 127.0.0.1, so they all share one bucket. A clean run

@@ -45,7 +45,12 @@ class _OnboardingWizardView extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return BlocConsumer<OnboardingCubit, OnboardingState>(
+      // Steps 1-7 render errors in StepScaffold's banner directly above the
+      // action row. A SnackBar here floated OVER that row and covered the Next
+      // button (openspec/changes/provider-onboarding-ux S9). Only the completion
+      // step (8) has no StepScaffold, so it alone still uses a SnackBar.
       listenWhen: (prev, next) =>
+          next.step == 8 &&
           next.phase == OnboardingPhase.error &&
           next.errorMessage != prev.errorMessage,
       listener: (context, state) {

@@ -21,6 +21,7 @@ import '../../features/home/presentation/cubit/clients_cubit.dart';
 import '../../features/home/presentation/cubit/composer_cubit.dart';
 import '../../features/home/presentation/cubit/more_cubits.dart';
 import '../../features/home/presentation/cubit/home_cubit.dart';
+import '../../features/onboarding/data/datasources/device_location_service.dart';
 import '../../features/onboarding/data/datasources/geocoding_service.dart';
 import '../../features/onboarding/data/datasources/location_api_service.dart';
 import '../../features/onboarding/data/datasources/onboarding_api_service.dart';
@@ -189,5 +190,8 @@ Future<void> configureDependencies() async {
   // Geocoding (OSM/Nominatim) uses a plain Dio — no auth header, no app baseUrl.
   getIt.registerLazySingleton<GeocodingService>(
     () => GeocodingService(Dio()),
+  );
+  getIt.registerLazySingleton<DeviceLocationService>(
+    () => DeviceLocationService(),
   );
 }
