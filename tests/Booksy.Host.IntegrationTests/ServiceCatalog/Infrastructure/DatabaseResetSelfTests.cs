@@ -22,6 +22,12 @@ public class DatabaseResetSelfTests : ServiceCatalogIntegrationTestBase
     [Fact]
     public async Task Every_managed_table_is_empty_at_the_start_of_a_test()
     {
+        // Without this the check below passes vacuously: an empty table list has no non-empty tables.
+        // That is exactly how a reset that truncated nothing went unnoticed.
+        var managed = await Factory.DatabaseReset.GetManagedTablesAsync();
+        managed.Should().Contain("\"ServiceCatalog\".\"Providers\"",
+            "the reset must know about the tables it is supposed to empty");
+
         var nonEmpty = await Factory.DatabaseReset.GetNonEmptyTablesAsync();
 
         nonEmpty.Should().BeEmpty(

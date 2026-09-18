@@ -68,11 +68,21 @@ Provider app (Flutter web):
 ```bash
 cd booksy-provider-app
 flutter build web --release --dart-define=API_BASE_URL=https://back.nahalkmi.ir
-tar -czf /tmp/provider-web.tar.gz -C build/web .
-scp -i <deploy-key> /tmp/provider-web.tar.gz booksy@194.1.155.230:/tmp/
-ssh -i <deploy-key> booksy@194.1.155.230 \
-  'rm -rf /var/www/booksy-provider/* && tar -xzf /tmp/provider-web.tar.gz -C /var/www/booksy-provider/ && rm /tmp/provider-web.tar.gz'
+tar --force-local -czf provider-web.tar.gz -C build/web .   # --force-local: Git Bash reads "C:" as a host
+scp -i <deploy-key> provider-web.tar.gz booksy@194.1.155.230:provider-web.tar.gz   # home dir, not /tmp
+ssh -i <deploy-key> booksy@194.1.155.230 'set -e
+  test -s ~/provider-web.tar.gz
+  rm -rf ~/provider-web.new && mkdir ~/provider-web.new
+  tar -xzf ~/provider-web.tar.gz -C ~/provider-web.new
+  test -f ~/provider-web.new/index.html
+  rm -rf /var/www/booksy-provider/* && cp -a ~/provider-web.new/. /var/www/booksy-provider/
+  rm -rf ~/provider-web.new ~/provider-web.tar.gz'
 ```
+
+Never `rm` the live directory before the new bundle is verified on the server: on 2026-09-18 an
+scp to `/tmp` reported success but the file was not there for the ssh session (`/tmp` is not a
+reliable hand-off on this host), the old one-liner deleted the site first, and provider.nahalkmi.ir
+served 403 for about a minute.
 
 Verify the API URL was actually compiled in: `grep -c back.nahalkmi.ir build/web/main.dart.js`
 should be ≥1 and `grep -c localhost:5000 build/web/main.dart.js` should be 0. Without the

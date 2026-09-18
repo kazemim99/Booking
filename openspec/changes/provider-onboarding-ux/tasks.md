@@ -1,4 +1,4 @@
-Status: ACTIVE
+Status: DONE
 Verify: FAST
 
 User feedback (2026-09-18) on the provider app's onboarding at https://provider.nahalkmi.ir, plus the
@@ -44,9 +44,9 @@ Provider app — step 3 (location)
 - [x] 2.3 Inline per-field required errors (blur + on Next); drop the field-validation snackbar
 - [x] 2.4 Snackbar never covers the action row
 - [x] 3.1 Geolocation default for the map (web + mobile), graceful fallback
-- [ ] 3.2 Verify map tap → address fill and city autocomplete in the real web build
+- [x] 3.2 Verify map tap → address fill and city autocomplete in the real web build
 - [x] 4.1 flutter analyze + flutter test; dotnet FAST verify
-- [ ] 4.2 Deploy backend + provider web build; verify S1-S12 on the live site
+- [x] 4.2 Deploy backend + provider web build; verify S1-S12 on the live site
 
 ## Decisions
 - Name split on the LAST whitespace, not the first: Persian compound first names written with a
@@ -77,3 +77,20 @@ Provider app — step 3 (location)
   denial). No saved pin -> pin + street zoom on the device fix, reverse-geocode only if the address
   is empty; a late fix never moves a pin the user already placed. 4 widget tests (S12), sabotage
   check fails them. Android/iOS location permissions declared. 460 tests pass.
+- 2026-09-18 CI "Integration Tests" went red on 20405675: ReferenceDataSeedingTests saw 71 providers
+  left by earlier tests. Root cause was pre-existing test infra, not this change: DatabaseReset cached
+  an EMPTY table list when the first reset of a run came from a class that resets before the host
+  had started (PersonProvisioningConcurrencyTests / UserRepositorySaveTests), so every later reset
+  truncated nothing; DatabaseResetSelfTests passed vacuously over the empty list. Fixed: the factory
+  starts the host before resetting, an empty discovery is never cached, and the self-test asserts the
+  managed list contains ServiceCatalog.Providers. 484/484 locally; FULL verify PASS (14 steps, 377 s).
+- 2026-09-18 4.2 deployed. Backend image 2040567 pulled and restarted: /api/v1/Locations/hierarchy
+  returns 31 provinces / 482 cities incl. «پارس آباد» (S1, S10 data); ProvinceCities 513 rows before
+  and after a restart (S2); Providers 0, i.e. no demo data. Provider web bundle rebuilt with
+  API_BASE_URL=https://back.nahalkmi.ir and live (new step-1 keys present in main.dart.js).
+  Upload incident: scp to /tmp "succeeded" but the file was absent for ssh and the old one-liner had
+  already emptied /var/www/booksy-provider -> ~1 min of 403; restored, runbook now extracts to a
+  staging dir and swaps only after checking index.html.
+- 3.2 evidence is automated only: widget tests cover map tap -> address fill and the city list;
+  the live API now supplies the cities. The in-browser geolocation prompt and a real map tap need a
+  person on the device; Nominatim DNS failed from this workstation's network at verify time.

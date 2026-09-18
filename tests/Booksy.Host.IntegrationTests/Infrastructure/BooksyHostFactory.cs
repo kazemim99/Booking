@@ -64,6 +64,11 @@ public sealed class BooksyHostFactory : WebApplicationFactory<Startup>
     /// </summary>
     public async Task ResetStateAsync(CancellationToken cancellationToken = default)
     {
+        // Start the host (and so run its migrations) before the reset discovers tables. Some classes
+        // reset from InitializeAsync without having created a client; when one of them ran first, the
+        // reset found no tables, cached that, and silently truncated nothing for the rest of the run.
+        _ = Services;
+
         await _databaseReset.ResetAsync(cancellationToken);
 
         // Both are process-wide singletons; resolving them from the root provider is correct and

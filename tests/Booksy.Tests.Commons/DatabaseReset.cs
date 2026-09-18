@@ -32,8 +32,8 @@ public sealed class DatabaseReset
     /// <summary>Deletes every row from every table this reset knows about (all but the history tables).</summary>
     public async Task ResetAsync(CancellationToken cancellationToken = default)
     {
-        var tables = await GetTablesAsync(cancellationToken);
-        if (tables.Length == 0)
+        var tables = await GetManagedTablesAsync(cancellationToken);
+        if (tables.Count == 0)
         {
             return;
         }
@@ -55,7 +55,7 @@ public sealed class DatabaseReset
     /// </summary>
     public async Task<IReadOnlyList<string>> GetNonEmptyTablesAsync(CancellationToken cancellationToken = default)
     {
-        var tables = await GetTablesAsync(cancellationToken);
+        var tables = await GetManagedTablesAsync(cancellationToken);
         var nonEmpty = new List<string>();
 
         await using var connection = new NpgsqlConnection(_connectionString);
@@ -81,7 +81,11 @@ public sealed class DatabaseReset
     /// docs/TEST_ARCHITECTURE_AUDIT.md Phase 2 slice 3 retargets it), so the set is whatever is
     /// actually present rather than a hard-coded pair of schema names.
     /// </summary>
-    private async Task<string[]> GetTablesAsync(CancellationToken cancellationToken)
+    /// <remarks>
+    /// An empty result is never cached: it means the host has not migrated yet, and caching it made
+    /// every later reset in the run a silent no-op.
+    /// </remarks>
+    public async Task<IReadOnlyList<string>> GetManagedTablesAsync(CancellationToken cancellationToken = default)
     {
         if (_tables is not null)
         {
@@ -106,7 +110,11 @@ public sealed class DatabaseReset
             tables.Add($"\"{reader.GetString(0)}\".\"{reader.GetString(1)}\"");
         }
 
-        _tables = tables.ToArray();
-        return _tables;
+        if (tables.Count > 0)
+        {
+            _tables = tables.ToArray();
+        }
+
+        return tables;
     }
 }
