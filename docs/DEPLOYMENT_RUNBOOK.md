@@ -44,15 +44,40 @@ the provider app's OTP input is 6 boxes, so the code must be 6 digits.)
 
 ### CI/CD status
 
-`.github/workflows/deploy.yml` (push to `master`): **test, keystone E2E, and both image builds are
-green** (first green run: #66). The **`deploy` job still fails** at "Copy deployment files to server"
-(`appleboy/scp-action`) — the first step that actually authenticates with the repo secrets. Until
-that is fixed, deploys are manual (below). Tracked as FOLLOW-UPS #59. Next step: read
-`/var/log/auth.log` on the server around a CI run to see why the runner's key/user is refused.
+`.github/workflows/deploy.yml` (push to `master`): test -> keystone E2E -> build API image,
+build frontend image, **build provider web app** (analyze + test + `flutter build web`) -> **deploy**.
 
-The provider app is **not** in CI yet — it is built and uploaded by hand (below).
+The `deploy` job runs on a **self-hosted runner on the production box** (labels `self-hosted`,
+`booksy-prod`; runs as `booksy`; installed in `/home/booksy/actions-runner` as a systemd service
+`actions.runner.kazemim99-Booking.booksy-prod-1`). It copies `docker-compose.prod.yml` to
+`/opt/booksy`, pulls `booksy-api` + `frontend`, `up -d`, waits for `booksy-api` to be healthy,
+publishes the provider bundle to `/var/www/booksy-provider` (verified before the old one is
+removed), and checks both public URLs.
 
-### Manual deploy (what was actually done; use until CI deploy is fixed)
+Why self-hosted (FOLLOW-UPS #59): GitHub-hosted runners cannot reach this server's SSH at all --
+`/var/log/auth.log` shows sshd connections from Iranian address ranges only, never a runner, so
+the old `appleboy/scp-action` deploy could not work whatever the secrets said. The runner makes
+outbound connections only.
+
+Runner operations (as root):
+
+```bash
+systemctl status 'actions.runner.*'                       # is it online?
+journalctl -u 'actions.runner.*' -n 100                   # its log
+cd /home/booksy/actions-runner && ./svc.sh stop|start     # restart it
+```
+
+Re-registering (e.g. after removing it in GitHub): get a token from repo Settings -> Actions ->
+Runners -> New self-hosted runner, then as `booksy` in `~/actions-runner`:
+`./config.sh --unattended --replace --url https://github.com/kazemim99/Booking --token <TOKEN> --name booksy-prod-1 --labels booksy-prod`
+and as root `./svc.sh install booksy && ./svc.sh start`.
+
+Security: the repo is public, so a fork's pull request could otherwise edit a workflow to run on
+this box. Settings -> Actions -> General -> "Fork pull request workflows from outside
+collaborators" must be **"Require approval for all outside collaborators"**. No workflow triggered
+by `pull_request` may use `runs-on: [self-hosted, ...]`.
+
+### Manual deploy (fallback when the runner is down)
 
 Backend (after CI has pushed new images):
 

@@ -287,129 +287,151 @@ jobs:
         cache-from: type=gha
         cache-to: type=gha,mode=max
 
-  # Deploy to Ubuntu server (waits for ALL build jobs)
-  deploy:
-    name: Deploy to Production Server
+  # Provider app (Flutter web), served by host nginx from /var/www/booksy-provider on the box.
+  # Built here on a GitHub-hosted runner; the deploy job below publishes the artifact.
+  build-provider-web:
+    name: Build Provider App (web)
     runs-on: ubuntu-latest
-    needs:
-      - build-api
-      - build-frontend
-    environment:
-      name: production
-      url: https://back.nahalkmi.ir
+    defaults:
+      run:
+        working-directory: booksy-provider-app
 
     steps:
     - name: Checkout code
       uses: actions/checkout@v4
 
-    - name: Create deployment package
-      run: |
-        mkdir -p deployment-package
-        cp docker-compose.prod.yml deployment-package/
-        cp -r deployment/scripts deployment-package/
-        tar -czf deployment.tar.gz deployment-package/
-
-    - name: Test SSH connectivity
-      run: |
-        echo "Testing connection to server..."
-        timeout 30 nc -zv ${{ secrets.SERVER_HOST }} 22 || echo "Port 22 not reachable"
-
-    - name: Copy deployment files to server
-      uses: appleboy/scp-action@v0.1.7
+    - name: Setup Flutter
+      uses: subosito/flutter-action@v2
       with:
-        host: ${{ secrets.SERVER_HOST }}
-        username: ${{ secrets.SERVER_USER }}
-        key: ${{ secrets.SERVER_SSH_KEY }}
-        port: 22
-        source: "deployment.tar.gz"
-        target: ${{ secrets.SERVER_DEPLOY_PATH }}
-        timeout: 60s
-        command_timeout: 10m
+        # Keep in step with the version the app is developed and verified on.
+        flutter-version: '3.44.2'
+        channel: stable
+        cache: true
 
-    - name: Deploy application on server
-      uses: appleboy/ssh-action@v1.0.3
-      with:
-        host: ${{ secrets.SERVER_HOST }}
-        username: ${{ secrets.SERVER_USER }}
-        key: ${{ secrets.SERVER_SSH_KEY }}
-        port: 22
-        script: |
-          set -e
+    - name: Install dependencies
+      run: flutter pub get
 
-          # Navigate to deployment directory
-          cd ${{ secrets.SERVER_DEPLOY_PATH }}
+    - name: Analyze
+      run: flutter analyze
 
-          # Check if .env file exists
-          if [ ! -f .env ]; then
-            echo "ERROR: .env file not found at ${{ secrets.SERVER_DEPLOY_PATH }}/.env"
-            echo "Please create the .env file following the deployment setup guide"
-            exit 1
-          fi
+    - name: Test
+      run: flutter test
 
-          # Backup existing .env file (in case deployment fails)
-          cp .env .env.backup
+    - name: Build web bundle
+      run: flutter build web --release --dart-define=API_BASE_URL=https://back.nahalkmi.ir
 
-          # Extract deployment files
-          tar -xzf deployment.tar.gz
-
-          # Copy docker-compose.prod.yml to main directory (but NOT .env)
-          cp deployment-package/docker-compose.prod.yml .
-
-          # Restore .env file (ensure it's not overwritten)
-          # The .env should always come from the server, not from deployment package
-          # cp .env.backup .env  # Only needed if deployment overwrites it
-
-          # Login to GitHub Container Registry (the repo is public today so this is
-          # not strictly required to pull, but keeps the deploy working unchanged if
-          # the repo — or just the package visibility — ever goes private).
-          echo "${{ secrets.GITHUB_TOKEN }}" | docker login ${{ env.REGISTRY }} -u ${{ github.actor }} --password-stdin
-
-          # Pull latest images. docker compose (v2 plugin), not the deprecated
-          # docker-compose v1 binary — the server only has the plugin installed.
-          # No --profile: Seq/pgAdmin stay off by default on this shared box (see
-          # docker-compose.prod.yml's observability-profile comment).
-          docker compose -f docker-compose.prod.yml pull
-
-          # Force stop and remove any old booksy containers (including orphans from other deployments)
-          echo "Cleaning up old containers..."
-          docker ps -a --filter "name=booksy-" --format "{{.Names}}" | xargs -r docker rm -f || true
-
-          # Stop old containers
-          docker compose -f docker-compose.prod.yml down --remove-orphans
-
-          # Start new containers with .env from main directory
-          docker compose -f docker-compose.prod.yml up -d
-
-          # Wait for services to be healthy
-          sleep 10
-
-          # Check service health
-          docker compose -f docker-compose.prod.yml ps
-
-          # Clean up old images
-          docker image prune -af --filter "until=24h"
-
-          # Clean up backup file
-          rm -f .env.backup
-
-          echo "Deployment completed successfully!"
-
-    - name: Health check
-      env:
-        # Not secret (a public hostname), but kept as one env var so there's a
-        # single place to change if the domain ever moves. This box hosts other
-        # sites too, so the health check must go through the actual domain, not
-        # the bare server IP — an IP request lands on whichever vhost catches
-        # unmatched Host headers, which is a different site here, not Booksy.
-        PUBLIC_DOMAIN: back.nahalkmi.ir
+    - name: Verify the production API URL was compiled in
+      # Without the --dart-define the bundle silently points at http://localhost:5000
+      # (lib/core/api/config/api_constants.dart) and every request fails in the browser.
       run: |
-        sleep 30
-        response=$(curl -s -o /dev/null -w "%{http_code}" "https://${PUBLIC_DOMAIN}/health" || echo "000")
-        if [ "$response" != "200" ]; then
-          echo "Health check failed with status: $response"
+        grep -q 'back.nahalkmi.ir' build/web/main.dart.js
+        ! grep -q 'localhost:5000' build/web/main.dart.js
+
+    - name: Upload web bundle
+      uses: actions/upload-artifact@v4
+      with:
+        name: provider-web
+        path: booksy-provider-app/build/web
+        retention-days: 7
+
+  # Deploy on the production box itself, through a self-hosted runner installed there
+  # (labels: self-hosted, booksy-prod; runs as the `booksy` user). GitHub-hosted runners cannot
+  # reach this server's SSH at all -- its auth.log shows no connection from any of them --
+  # so the old scp/ssh deploy could never work (openspec/changes/FOLLOW-UPS.md #59). The
+  # runner only makes outbound connections to GitHub, which the box can do.
+  #
+  # This box is SHARED with unrelated services: touch only /opt/booksy, the booksy-* containers
+  # and /var/www/booksy-provider. Never `docker image prune -a` or `docker system prune`.
+  deploy:
+    name: Deploy to Production Server
+    runs-on: [self-hosted, booksy-prod]
+    needs:
+      - build-api
+      - build-frontend
+      - build-provider-web
+    # Two pushes in quick succession must not interleave their compose operations.
+    concurrency:
+      group: production-deploy
+      cancel-in-progress: false
+    environment:
+      name: production
+      url: https://back.nahalkmi.ir
+    env:
+      DEPLOY_PATH: /opt/booksy
+      PROVIDER_WEB_ROOT: /var/www/booksy-provider
+
+    steps:
+    - name: Checkout compose file
+      uses: actions/checkout@v4
+      with:
+        sparse-checkout: docker-compose.prod.yml
+        sparse-checkout-cone-mode: false
+
+    - name: Install compose file
+      run: |
+        # .env lives only on the server (secrets); it is never shipped from the repo.
+        if [ ! -f "$DEPLOY_PATH/.env" ]; then
+          echo "::error::$DEPLOY_PATH/.env not found -- create it per docs/DEPLOYMENT_RUNBOOK.md"
           exit 1
         fi
-        echo "Health check passed!"
+        cp "$DEPLOY_PATH/docker-compose.prod.yml" "$DEPLOY_PATH/docker-compose.prod.yml.previous" 2>/dev/null || true
+        cp docker-compose.prod.yml "$DEPLOY_PATH/docker-compose.prod.yml"
+
+    - name: Pull images and start the backend
+      working-directory: /opt/booksy
+      run: |
+        # Only the two images CI just pushed; postgres/redis keep their pinned tags.
+        # No --profile: Seq/pgAdmin stay off on this shared box.
+        docker compose -f docker-compose.prod.yml pull booksy-api frontend
+        # `up -d` recreates only containers whose image or config changed, so the
+        # database and Redis keep running across a deploy.
+        docker compose -f docker-compose.prod.yml up -d
+
+    - name: Wait for the API container to become healthy
+      run: |
+        for i in $(seq 1 60); do
+          status=$(docker inspect -f '{{.State.Health.Status}}' booksy-api 2>/dev/null || echo missing)
+          if [ "$status" = "healthy" ]; then echo "booksy-api healthy after ~$((i*5))s"; exit 0; fi
+          sleep 5
+        done
+        echo "::error::booksy-api did not become healthy (last status: $status)"
+        docker logs --tail 200 booksy-api
+        exit 1
+
+    - name: Download provider web bundle
+      uses: actions/download-artifact@v4
+      with:
+        name: provider-web
+        path: provider-web
+
+    - name: Publish provider web app
+      run: |
+        # Verify the new bundle BEFORE touching the live directory: an earlier manual deploy
+        # emptied the site first and served 403 when the new files turned out to be missing.
+        test -f provider-web/index.html
+        test -f provider-web/main.dart.js
+        rm -rf "${PROVIDER_WEB_ROOT:?}"/*
+        cp -a provider-web/. "$PROVIDER_WEB_ROOT"/
+
+    - name: Health check (public URLs)
+      run: |
+        # Through the real domains: this box hosts other sites, and a request to the bare IP
+        # lands on whichever vhost catches unmatched Host headers.
+        check() {
+          for i in $(seq 1 12); do
+            code=$(curl -s -o /dev/null -w '%{http_code}' "$1" || echo 000)
+            if [ "$code" = "200" ]; then echo "$1 -> 200"; return 0; fi
+            sleep 5
+          done
+          echo "::error::$1 returned $code"; return 1
+        }
+        check https://back.nahalkmi.ir/health
+        check https://provider.nahalkmi.ir/
+
+    - name: Remove dangling images
+      if: always()
+      # Dangling layers only (the images each deploy replaces). Never -a on a shared box.
+      run: docker image prune -f
 
   # Notify deployment status
   notify:
