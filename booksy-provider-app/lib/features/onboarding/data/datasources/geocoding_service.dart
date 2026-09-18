@@ -36,10 +36,10 @@ class GeocodingService {
   GeocodingService(this._dio);
 
   Options get _options => Options(
-        headers: {'User-Agent': _userAgent},
-        // Nominatim returns JSON; make sure Dio parses it as a Map/List.
-        responseType: ResponseType.json,
-      );
+    headers: {'User-Agent': _userAgent},
+    // Nominatim returns JSON; make sure Dio parses it as a Map/List.
+    responseType: ResponseType.json,
+  );
 
   /// Forward geocode: resolve a place name (e.g. `"کاشان, اصفهان"`) to
   /// coordinates so the map can recenter when a city is picked.
@@ -92,14 +92,13 @@ class GeocodingService {
       // Iranian postal codes are 10 digits; Nominatim may return "13187-95656".
       final rawPostal = (addr['postcode'] ?? '').toString();
       final postal = rawPostal.replaceAll(RegExp(r'[^0-9]'), '');
-      final city =
-          (addr['city'] ?? addr['town'] ?? addr['village'] ?? '').toString();
+      final city = (addr['city'] ?? addr['town'] ?? addr['village'] ?? '')
+          .toString();
       final state = (addr['state'] ?? '').toString();
       return ReverseGeocodeResult(
-        // Nominatim's `display_name` is very long (down to province + country).
-        // Keep only the local, human-relevant parts.
-        formattedAddress: shortenAddress(
-          (data['display_name'] ?? '').toString(),
+        formattedAddress: formatAddress(
+          addr,
+          displayName: (data['display_name'] ?? '').toString(),
           city: city,
           state: state,
         ),
@@ -110,6 +109,63 @@ class GeocodingService {
     } catch (_) {
       return null;
     }
+  }
+
+  /// The address line in Iranian order, general to specific: area
+  /// (neighbourhood), street/alley, plate, then the place's own name — e.g.
+  /// «محله طالقانی، کوچه ۵ سهند». Built from Nominatim's structured `address`
+  /// fields, because `display_name` runs the other way (alley first). The city
+  /// and everything above it are left out: the city has its own field.
+  ///
+  /// Falls back to [shortenAddress] on `display_name`, reversed into the same
+  /// general-to-specific order, when no structured part is usable.
+  static String formatAddress(
+    Map<dynamic, dynamic> addr, {
+    String displayName = '',
+    String city = '',
+    String state = '',
+  }) {
+    String field(List<String> keys) {
+      for (final key in keys) {
+        final value = (addr[key] ?? '').toString().trim();
+        if (value.isNotEmpty) return value;
+      }
+      return '';
+    }
+
+    final cityNames = {
+      city,
+      for (final k in const ['city', 'town', 'village'])
+        (addr[k] ?? '').toString().trim(),
+    }..removeWhere((c) => c.isEmpty);
+
+    final area = field(const ['neighbourhood', 'quarter', 'suburb']);
+    final street = field(const ['road', 'pedestrian', 'footway', 'path']);
+    final plate = field(const ['house_number']);
+    final place = field(const [
+      'amenity',
+      'shop',
+      'office',
+      'tourism',
+      'building',
+    ]);
+
+    final parts = <String>[];
+    void add(String part) {
+      if (part.isEmpty || cityNames.contains(part) || parts.contains(part)) {
+        return;
+      }
+      parts.add(part);
+    }
+
+    add(area);
+    add(street);
+    if (plate.isNotEmpty) add(plate.startsWith('پلاک') ? plate : 'پلاک $plate');
+    add(place);
+
+    if (parts.isNotEmpty) return parts.join('، ');
+    final fallback = shortenAddress(displayName, city: city, state: state);
+    return fallback.split('، ').reversed.join('، ');
   }
 
   /// Trims Nominatim's `display_name` down to the local, readable parts —
