@@ -5,6 +5,97 @@ Moved verbatim out of `CLAUDE.md` on 2026-09-08 so the assistant instruction fil
 routing document; nothing here changed in the move. For what the system *is*, see
 [openspec/project.md](../openspec/project.md); for CI, see `.github/workflows/`.
 
+## Current production state (as of 2026-09-18)
+
+**Live and verified end to end** (health 200, API 200, CORS preflight 204, sandbox OTP login issued a token):
+
+| URL | What | Served by |
+|---|---|---|
+| `https://back.nahalkmi.ir` | Vue web app + `/api/*` | host nginx → `booksy-frontend` container (`127.0.0.1:8081`), whose own nginx proxies `/api/` → `booksy-api` |
+| `https://provider.nahalkmi.ir` | Provider app (Flutter **web** build) | host nginx, static files from `/var/www/booksy-provider` |
+
+- **Server:** `194.1.155.230`, Ubuntu 24.04, 2 vCPU / ~3.8 GB RAM, **shared** with unrelated services
+  (see Architecture below). DNS A records for `nahalkmi.ir`, `back.`, `provider.` all point here.
+- **Deploy user:** `booksy` (docker group, **no sudo, no root**). Deploy dir `/opt/booksy`
+  (`.env` + `docker-compose.prod.yml`). Root SSH is used only for host-level nginx/certbot work.
+- **Running containers:** `booksy-api`, `booksy-frontend`, `booksy-postgres`, `booksy-redis`.
+  Seq and pgAdmin are **not** running (Compose `observability` profile, off by default).
+- **Images:** `ghcr.io/kazemim99/booksy-api:latest`, `ghcr.io/kazemim99/booksy-frontend:latest`
+  (repo is public, so pulls need no auth).
+- **TLS:** Let's Encrypt via certbot (auto-renew), one cert per subdomain.
+- **nginx vhosts:** `deployment/nginx/booksy.conf` and `deployment/nginx/booksy-provider.conf` are
+  **copies of what is live** in `/etc/nginx/sites-available/`. Edit the server, then re-sync the repo
+  copy (certbot rewrites these files, so the server is authoritative).
+
+### ⚠️ Active security debt — sandbox OTP is ON in production
+
+`/opt/booksy/.env` currently contains:
+
+```
+OTP_SANDBOX_CODE=222222
+Sms__SandboxMode=true
+```
+
+That makes **`222222` a valid OTP for any phone number** on the public host, and suppresses real SMS.
+It was enabled deliberately for testing the first deployment. **Remove both lines and
+`docker compose -f docker-compose.prod.yml up -d` before any real user signs up.** Tracked as
+FOLLOW-UPS #58. (`OtpCode.Generate()` reads `OTP_SANDBOX_CODE` straight from the process environment;
+the provider app's OTP input is 6 boxes, so the code must be 6 digits.)
+
+### CI/CD status
+
+`.github/workflows/deploy.yml` (push to `master`): **test, keystone E2E, and both image builds are
+green** (first green run: #66). The **`deploy` job still fails** at "Copy deployment files to server"
+(`appleboy/scp-action`) — the first step that actually authenticates with the repo secrets. Until
+that is fixed, deploys are manual (below). Tracked as FOLLOW-UPS #59. Next step: read
+`/var/log/auth.log` on the server around a CI run to see why the runner's key/user is refused.
+
+The provider app is **not** in CI yet — it is built and uploaded by hand (below).
+
+### Manual deploy (what was actually done; use until CI deploy is fixed)
+
+Backend (after CI has pushed new images):
+
+```bash
+scp -i <deploy-key> docker-compose.prod.yml booksy@194.1.155.230:/opt/booksy/
+ssh -i <deploy-key> booksy@194.1.155.230 \
+  'cd /opt/booksy && docker compose -f docker-compose.prod.yml pull && docker compose -f docker-compose.prod.yml up -d'
+curl -s -o /dev/null -w '%{http_code}\n' https://back.nahalkmi.ir/health   # expect 200
+```
+
+Provider app (Flutter web):
+
+```bash
+cd booksy-provider-app
+flutter build web --release --dart-define=API_BASE_URL=https://back.nahalkmi.ir
+tar -czf /tmp/provider-web.tar.gz -C build/web .
+scp -i <deploy-key> /tmp/provider-web.tar.gz booksy@194.1.155.230:/tmp/
+ssh -i <deploy-key> booksy@194.1.155.230 \
+  'rm -rf /var/www/booksy-provider/* && tar -xzf /tmp/provider-web.tar.gz -C /var/www/booksy-provider/ && rm /tmp/provider-web.tar.gz'
+```
+
+Verify the API URL was actually compiled in: `grep -c back.nahalkmi.ir build/web/main.dart.js`
+should be ≥1 and `grep -c localhost:5000 build/web/main.dart.js` should be 0. Without the
+`--dart-define`, the bundle silently points at `http://localhost:5000` (see
+`booksy-provider-app/lib/core/api/config/api_constants.dart`).
+
+### Gotchas learned the hard way
+
+- **fail2ban bans the operator.** Many SSH connections in a short time got the working IP banned
+  (port 22 timed out while 80/443 and ping still worked). Unban from the VPS provider's web console:
+  `fail2ban-client set sshd unbanip <ip>` and `fail2ban-client set sshd addignoreip <ip>`.
+- **The operator's VPN exit IP changes.** When it switched, the server became unreachable on *every*
+  port from that route while an external probe still saw it healthy. Check `curl https://api.ipify.org`
+  before assuming the server is down.
+- **nginx here is 1.24.** It does not accept the standalone `http2 on;` directive — use
+  `listen 443 ssl http2;`. A failed `nginx -t`/reload keeps the running config, so the other sites on
+  the box stay up; always `nginx -t` before `systemctl reload nginx`.
+- **certbot turns a placeholder into a redirect loop.** Issuing a cert against a vhost whose only
+  `location /` is a `return 301` copies that redirect into the new 443 block (HTTPS → HTTPS forever).
+  Write the real 443 server block after issuance.
+- **Never enable `ufw`** on this box without allow-listing every service it runs (VPN, proxy panel,
+  tunnel ports) — see `deployment/scripts/server-setup.sh`.
+
 ## Architecture
 
 Booksy is a **modular monolith**: a single backend host composes multiple bounded contexts in-process.

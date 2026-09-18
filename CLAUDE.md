@@ -65,7 +65,7 @@ test; everything else belongs in a unit project.
 ## Where the documents are
 
 - Root (living): [API_ENDPOINTS.md](API_ENDPOINTS.md), [DTO_MAPPING.md](DTO_MAPPING.md), [TECHNICAL_DOCUMENTATION.md](TECHNICAL_DOCUMENTATION.md), [COMPLETION_ROADMAP.md](COMPLETION_ROADMAP.md), [ARCHITECTURAL_DECISIONS.md](ARCHITECTURAL_DECISIONS.md), [GEOLOCATION_GUIDE.md](GEOLOCATION_GUIDE.md), [VISUAL_STUDIO_DEBUGGING.md](VISUAL_STUDIO_DEBUGGING.md).
-- Operations: [docs/DEPLOYMENT_RUNBOOK.md](docs/DEPLOYMENT_RUNBOOK.md) — compose commands, health checks, resource limits, environment variables, troubleshooting (moved out of this file 2026-09-08).
+- Operations: [docs/DEPLOYMENT_RUNBOOK.md](docs/DEPLOYMENT_RUNBOOK.md) — compose commands, health checks, resource limits, environment variables, troubleshooting (moved out of this file 2026-09-08). **Production is live** (`https://back.nahalkmi.ir`, `https://provider.nahalkmi.ir` on shared VPS 194.1.155.230) — read its "Current production state" section first: it has the manual deploy procedure, the shared-box gotchas, and two open items (sandbox OTP left **on** in prod, FOLLOW-UPS #58; CI deploy job still failing at `scp`, #59).
 - Navigation and staleness: [docs/KNOWLEDGE_MAP.md](docs/KNOWLEDGE_MAP.md). `docs/archive/` and `docs-site/` are historical.
 - Apps: [booksy-customer-app/PROJECT_SUMMARY.md](booksy-customer-app/PROJECT_SUMMARY.md), [booksy-customer-app/FLUTTER_BACKEND_CONNECTION.md](booksy-customer-app/FLUTTER_BACKEND_CONNECTION.md).
 - Procedures: `.hermes/skills/` (`implementation-loop`, `openspec-change-lifecycle`, `verify-before-claiming`).
