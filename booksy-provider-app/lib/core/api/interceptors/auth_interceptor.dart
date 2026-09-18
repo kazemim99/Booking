@@ -14,11 +14,7 @@ class AuthInterceptor extends Interceptor {
   final Dio _refreshDio;
   final void Function()? onSessionExpired;
 
-  AuthInterceptor(
-    this._storage,
-    this._refreshDio, {
-    this.onSessionExpired,
-  });
+  AuthInterceptor(this._storage, this._refreshDio, {this.onSessionExpired});
 
   Future<String>? _refreshFuture;
 
@@ -46,18 +42,30 @@ class AuthInterceptor extends Interceptor {
       return handler.next(err);
     }
 
+    final String newToken;
     try {
-      final newToken = await _coalescedRefresh();
-      // Retry the original request once with the new token.
-      final opts = err.requestOptions
-        ..headers['Authorization'] = 'Bearer $newToken'
-        ..extra['__retried__'] = true;
-      final response = await _refreshDio.fetch(opts);
-      return handler.resolve(response);
+      newToken = await _coalescedRefresh();
     } catch (_) {
+      // Only a failed REFRESH means the session is over.
       await _storage.clearSession();
       onSessionExpired?.call();
-      return handler.reject(err);
+      // next(), not reject(): reject() skips the interceptors after this one,
+      // so ErrorInterceptor never turned the error into a Persian message and
+      // the user saw Dio's English explanation of the status code.
+      return handler.next(err);
+    }
+
+    // Retry the original request once with the new token. If the retry fails,
+    // the session is still valid (the refresh just worked), so surface the
+    // retry's own error and keep the user signed in. Clearing here once turned
+    // a server fault into a silent sign-out.
+    final opts = err.requestOptions
+      ..headers['Authorization'] = 'Bearer $newToken'
+      ..extra['__retried__'] = true;
+    try {
+      return handler.resolve(await _refreshDio.fetch(opts));
+    } on DioException catch (retryError) {
+      return handler.next(retryError);
     }
   }
 

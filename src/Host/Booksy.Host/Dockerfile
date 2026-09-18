@@ -24,4 +24,11 @@ RUN dotnet publish "src/Host/Booksy.Host/Booksy.Host.csproj" \
 FROM base AS final
 WORKDIR /app
 COPY --from=build /app/publish .
+# The app runs as $APP_UID, but COPY leaves wwwroot owned by root, so creating the uploads folder
+# threw UnauthorizedAccessException on every /Providers call in production (2026-09-19).
+# docker-compose.prod.yml mounts a named volume at wwwroot/uploads; a new volume copies this
+# directory's ownership on first mount.
+USER root
+RUN mkdir -p /app/wwwroot/uploads && chown -R $APP_UID /app/wwwroot
+USER $APP_UID
 ENTRYPOINT ["dotnet", "Booksy.Host.dll"]

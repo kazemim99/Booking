@@ -194,7 +194,10 @@ public partial class ExceptionHandlingMiddleware
                 };
                 break;
 
-            case UnauthorizedAccessException:
+            // Handlers throw UnauthorizedAccessException for "no authenticated user", but the runtime throws the
+            // same type for a file-system permission error (an IOException inside). That one is a server fault:
+            // answering 401 made clients refresh, retry and sign the user out. It falls through to the 500 below.
+            case UnauthorizedAccessException when exception.InnerException is not IOException:
                 response.StatusCode = (int)HttpStatusCode.Unauthorized;
                 errorResponse = new ApiErrorResult("Unauthorized", "UNAUTHORIZED");
                 break;

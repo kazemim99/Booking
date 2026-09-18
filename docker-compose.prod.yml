@@ -31,6 +31,10 @@ services:
       # shared with other services on limited RAM — see the observability profile
       # below). A hard `service_started` dependency would block booksy-api from
       # starting at all whenever seq isn't deployed.
+    volumes:
+      # Provider gallery/profile images. Without a volume they lived in the container's
+      # writable layer and every deploy (a new container) deleted them.
+      - uploads_data:/app/wwwroot/uploads
     networks:
       - booksy-network
     restart: unless-stopped
@@ -217,6 +221,8 @@ services:
           memory: 128M
 
 volumes:
+  uploads_data:
+    driver: local
   postgres_data:
     driver: local
   redis_data:
