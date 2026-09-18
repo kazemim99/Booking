@@ -1,8 +1,16 @@
 name: Deploy to Production
 
 on:
+  # Every push to master deploys (tests -> images -> self-hosted deploy on the box).
+  # Feature branches never deploy: merge or push to master to go live.
   push:
     branches: [ "master" ]
+    # A documentation-only push changes nothing that runs on the server, so it does not
+    # redeploy. A push that touches any other file (code, config, this workflow) does.
+    paths-ignore:
+      - '**.md'
+      - 'docs/**'
+      - 'openspec/**'
   workflow_dispatch:
 
 env:
