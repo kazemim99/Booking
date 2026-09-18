@@ -14,6 +14,16 @@
 **/azds.yaml
 **/bin
 **/charts
+# ...but NOT application source that happens to live in a directory called charts/.
+# The rule above is the stock template's Helm-chart exclusion; booksy-frontend has real
+# Vue chart components at src/shared/components/charts/ and
+# src/modules/provider/components/charts/ (imported as '@/shared/components/charts'),
+# and stripping them from the build context broke every frontend image build with
+#   error TS2307: Cannot find module '@/shared/components/charts'
+# even though the files are committed -- the workflow's own `npm run build` step sees
+# them, only the Docker build did not.
+!**/src/**/charts
+!**/src/**/charts/**
 **/docker-compose*
 **/Dockerfile*
 **/node_modules

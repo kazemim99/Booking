@@ -248,7 +248,10 @@ jobs:
     - name: Build and push Frontend
       uses: docker/build-push-action@v5
       with:
-        context: ./booksy-frontend
+        # Repo root, not booksy-frontend/: src/main.ts imports the shared token sheet
+        # at ../../packages/design-tokens/tokens.css, which is outside that directory.
+        # A narrower context leaves it out and the image build cannot resolve the import.
+        context: .
         file: ./booksy-frontend/Dockerfile
         push: true
         tags: |
