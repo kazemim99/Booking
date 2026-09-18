@@ -12,6 +12,19 @@
 	</PropertyGroup>
 
 	<ItemGroup>
+		<!-- Retired per-service host: referenced by Booksy.Host only so the modular
+		     monolith can compose its controllers in-process. Its appsettings*.json must
+		     not flow into the referencing Host's publish output — publish flattens all
+		     projects' content into one directory, where this project's files collide
+		     with Booksy.ServiceCatalog.Api's and Booksy.Host's own and fail the publish
+		     (NETSDK1152). See the matching comment in Booksy.ServiceCatalog.Api.csproj.
+		     CopyToOutputDirectory is untouched, so local `dotnet run` still works. -->
+		<Content Update="appsettings*.json">
+			<CopyToPublishDirectory>Never</CopyToPublishDirectory>
+		</Content>
+	</ItemGroup>
+
+	<ItemGroup>
 
 		<PackageReference Include="Microsoft.EntityFrameworkCore.Design" Version="9.0.19">
 			<IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>

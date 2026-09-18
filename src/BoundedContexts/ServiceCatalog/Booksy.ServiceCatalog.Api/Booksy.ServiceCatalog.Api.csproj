@@ -8,6 +8,26 @@
     <DockerDefaultTargetOS>Linux</DockerDefaultTargetOS>
     <DockerfileContext>..\..\..\..</DockerfileContext>
   </PropertyGroup>
+
+  <ItemGroup>
+    <!-- This is a RETIRED per-service host. Booksy.Host references it only so the
+         modular monolith can compose its controllers in-process; nothing publishes
+         it standalone any more. Its appsettings*.json must therefore not flow into
+         the referencing Host's publish output: publish flattens every project's
+         content into one directory, where this project's appsettings.json,
+         Booksy.UserManagement.API's and Booksy.Host's own all land on the same
+         relative paths and fail the publish outright:
+           error NETSDK1152: Found multiple publish output files with the same
+           relative path: .../appsettings.json, .../appsettings.json, ...
+         `dotnet build` never hit this (it keeps each project's output separate),
+         which is why CI's build/test jobs passed for months while the Docker image
+         build — the only step that runs `dotnet publish` — could never succeed.
+         The composed Host owns runtime configuration; these files stay for local
+         `dotnet run` of this project (CopyToOutputDirectory is untouched). -->
+    <Content Update="appsettings*.json">
+      <CopyToPublishDirectory>Never</CopyToPublishDirectory>
+    </Content>
+  </ItemGroup>
 	<ItemGroup>
 
 		<PackageReference Include="Microsoft.EntityFrameworkCore.Design" Version="9.0.19">
