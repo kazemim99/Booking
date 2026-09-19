@@ -31,6 +31,7 @@ namespace Booksy.ServiceCatalog.Application.Commands.Booking.CreateBooking
         private readonly IProviderAvailabilityWriteRepository _availabilityWriteRepository;
         private readonly IAvailabilityService _availabilityService;
         private readonly IServiceCatalogUnitOfWork _unitOfWork;
+        private readonly IProviderCustomerRepository _providerCustomers;
         private readonly ILogger<CreateBookingCommandHandler> _logger;
 
         public CreateBookingCommandHandler(
@@ -42,6 +43,7 @@ namespace Booksy.ServiceCatalog.Application.Commands.Booking.CreateBooking
             IProviderAvailabilityWriteRepository availabilityWriteRepository,
             IAvailabilityService availabilityService,
             IServiceCatalogUnitOfWork unitOfWork,
+            IProviderCustomerRepository providerCustomers,
             ILogger<CreateBookingCommandHandler> logger)
         {
             _bookingWriteRepository = bookingWriteRepository;
@@ -52,6 +54,7 @@ namespace Booksy.ServiceCatalog.Application.Commands.Booking.CreateBooking
             _availabilityWriteRepository = availabilityWriteRepository;
             _availabilityService = availabilityService;
             _unitOfWork = unitOfWork;
+            _providerCustomers = providerCustomers;
             _logger = logger;
         }
 
@@ -195,6 +198,18 @@ namespace Booksy.ServiceCatalog.Application.Commands.Booking.CreateBooking
                     policy: bookingPolicy,
                     customerNotes: request.CustomerNotes,
                     services: lineItems);
+
+            // A booking made from the salon's customer book records which entry it is for. Only the
+            // salon may name one of its own entries; a customer booking online never does.
+            if (request.ProviderCustomerId is { } providerCustomerId)
+            {
+                if (!isProviderCreated)
+                    throw new ForbiddenException("Only the salon can book for a customer in its customer book");
+
+                var entry = await _providerCustomers.GetAsync(provider.Id, providerCustomerId, cancellationToken)
+                    ?? throw new NotFoundException("مشتری در فهرست مشتریان این سالن پیدا نشد");
+                booking.RecordForProviderCustomer(entry.Id);
+            }
 
             // Save booking
             await _bookingWriteRepository.SaveBookingAsync(booking, cancellationToken);

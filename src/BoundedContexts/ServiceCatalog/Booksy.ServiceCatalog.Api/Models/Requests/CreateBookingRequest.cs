@@ -45,6 +45,11 @@ public class CreateBookingRequest
     public string? CustomerNotes { get; set; }
 
     /// <summary>
+    /// Optional, provider-side only: the salon's customer-book entry this booking is for.
+    /// </summary>
+    public Guid? ProviderCustomerId { get; set; }
+
+    /// <summary>
     /// Alias for StaffProviderId (backward compatibility)
     /// </summary>
     [Required]

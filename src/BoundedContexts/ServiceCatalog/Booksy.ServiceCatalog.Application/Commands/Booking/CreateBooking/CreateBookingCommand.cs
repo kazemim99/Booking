@@ -11,6 +11,8 @@ namespace Booksy.ServiceCatalog.Application.Commands.Booking.CreateBooking
     /// <param name="ServiceIds">All services bundled in the visit. When
     /// provided it supersedes <paramref name="ServiceId"/> (which remains for
     /// caller compatibility); duration and price are summed over the set.</param>
+    /// <param name="ProviderCustomerId">Provider-entered bookings only: the salon's customer-book
+    /// entry the booking is for. Must belong to <paramref name="ProviderId"/>.</param>
     public sealed record CreateBookingCommand(
         Guid CustomerId,
         Guid ProviderId,
@@ -19,5 +21,6 @@ namespace Booksy.ServiceCatalog.Application.Commands.Booking.CreateBooking
         DateTime StartTime,
         string? CustomerNotes = null,
         Guid? IdempotencyKey = null,
-        IReadOnlyList<Guid>? ServiceIds = null) : ICommand<CreateBookingResult>;
+        IReadOnlyList<Guid>? ServiceIds = null,
+        Guid? ProviderCustomerId = null) : ICommand<CreateBookingResult>;
 }

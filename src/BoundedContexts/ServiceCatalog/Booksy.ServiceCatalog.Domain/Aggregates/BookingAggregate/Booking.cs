@@ -34,6 +34,12 @@ namespace Booksy.ServiceCatalog.Domain.Aggregates.BookingAggregate
         /// </summary>
         public ProviderId? IndividualProviderId { get; private set; }
 
+        /// <summary>
+        /// The salon's own customer-book entry this booking was made for, when the provider booked a
+        /// customer from their book (ProviderCustomer). Null for online bookings and plain walk-ins.
+        /// </summary>
+        public Guid? ProviderCustomerId { get; private set; }
+
         // Booking Details
         public TimeSlot TimeSlot { get; private set; }
         public Duration Duration { get; private set; }
@@ -596,6 +602,17 @@ namespace Booksy.ServiceCatalog.Domain.Aggregates.BookingAggregate
         // ========================================
         // HELPER METHODS
         // ========================================
+
+        /// <summary>
+        /// Records which entry of the salon's customer book this booking is for. The caller checks the
+        /// entry belongs to this booking's salon.
+        /// </summary>
+        public void RecordForProviderCustomer(Guid providerCustomerId)
+        {
+            if (providerCustomerId == Guid.Empty)
+                throw new DomainValidationException(nameof(ProviderCustomerId), "مشتری نامعتبر است");
+            ProviderCustomerId = providerCustomerId;
+        }
 
         /// <summary>
         /// Add customer notes

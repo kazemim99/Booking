@@ -51,6 +51,7 @@ namespace Booksy.ServiceCatalog.Infrastructure.Persistence.Context
         public DbSet<ProviderAvailability> ProviderAvailability => Set<ProviderAvailability>();
         public DbSet<Review> Reviews => Set<Review>();
         public DbSet<ProviderInvitation> ProviderInvitations => Set<ProviderInvitation>();
+        public DbSet<ProviderCustomer> ProviderCustomers => Set<ProviderCustomer>();
         public DbSet<OrganizationMembership> OrganizationMemberships => Set<OrganizationMembership>();
         public DbSet<MembershipAuditEntry> MembershipAuditEntries => Set<MembershipAuditEntry>();
 

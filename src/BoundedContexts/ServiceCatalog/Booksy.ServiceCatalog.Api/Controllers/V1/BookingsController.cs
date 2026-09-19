@@ -83,7 +83,8 @@ public class BookingsController : ControllerBase
             CustomerNotes: request.CustomerNotes,
             ServiceIds: request.ServiceIds is { Count: > 0 }
                 ? request.ServiceIds
-                : null);
+                : null,
+            ProviderCustomerId: request.ProviderCustomerId);
 
         var result = await _mediator.Send(command, cancellationToken);
 

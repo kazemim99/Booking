@@ -70,6 +70,11 @@ namespace Booksy.ServiceCatalog.Infrastructure.Persistence.Configurations
                     value => value.HasValue ? ProviderId.From(value.Value) : null)
                 .HasColumnName("IndividualProviderId");
 
+            // The salon's customer-book entry (ProviderCustomer) this booking was made for; no FK, so
+            // removing a customer from the book never touches their past bookings.
+            builder.Property(b => b.ProviderCustomerId)
+                .HasColumnName("ProviderCustomerId");
+
             // TimeSlot (Owned Value Object)
             builder.OwnsOne(b => b.TimeSlot, timeSlot =>
             {
@@ -369,6 +374,9 @@ namespace Booksy.ServiceCatalog.Infrastructure.Persistence.Configurations
 
             builder.HasIndex(b => b.ProviderId)
                 .HasDatabaseName("IX_Bookings_ProviderId");
+
+            builder.HasIndex(b => b.ProviderCustomerId)
+                .HasDatabaseName("IX_Bookings_ProviderCustomerId");
 
             builder.HasIndex(b => b.ServiceId)
                 .HasDatabaseName("IX_Bookings_ServiceId");

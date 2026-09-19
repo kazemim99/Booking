@@ -137,6 +137,7 @@ namespace Booksy.ServiceCatalog.Infrastructure.DependencyInjection
             // Provider Hierarchy Repositories (Invitations & Join Requests)
             services.AddScoped<IProviderInvitationReadRepository, ProviderInvitationReadRepository>();
             services.AddScoped<IProviderInvitationWriteRepository, ProviderInvitationWriteRepository>();
+            services.AddScoped<IProviderCustomerRepository, ProviderCustomerRepository>();
 
             // Organization Membership (Person ↔ Organization link; supersedes ParentProviderId staff)
             services.AddScoped<IOrganizationMembershipRepository, OrganizationMembershipRepository>();
