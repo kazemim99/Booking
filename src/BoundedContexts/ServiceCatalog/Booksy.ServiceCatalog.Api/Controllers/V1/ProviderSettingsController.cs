@@ -1,3 +1,4 @@
+using System.Security.Claims;
 using Booksy.API.Extensions;
 using Booksy.Core.Domain.Exceptions;
 using Booksy.ServiceCatalog.Api.Models.Requests;
@@ -867,7 +868,12 @@ public class ProviderSettingsController : ControllerBase
 
     private string? GetCurrentUserId()
     {
-        return User.FindFirst("sub")?.Value ?? User.FindFirst("userId")?.Value;
+        // The production JWT carries the identity as the standard nameidentifier claim (ASP.NET
+        // maps "sub" onto it), so reading "sub"/"userId" alone found nothing and every caller was
+        // treated as somebody else — a person could not even edit their own profile.
+        return User.FindFirstValue(ClaimTypes.NameIdentifier)
+            ?? User.FindFirst("sub")?.Value
+            ?? User.FindFirst("userId")?.Value;
     }
 
     private string? GetCurrentUserProviderId()

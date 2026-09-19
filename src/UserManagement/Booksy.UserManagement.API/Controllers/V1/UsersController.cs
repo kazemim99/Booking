@@ -1,4 +1,5 @@
 ﻿using Booksy.Core.Application.DTOs;
+using System.Security.Claims;
 using Booksy.UserManagement.API.Models.Requests;
 using Booksy.UserManagement.API.Models.Responses;
 using MediatR;
@@ -483,7 +484,12 @@ public class UsersController : ControllerBase
 
     private string? GetCurrentUserId()
     {
-        return User.FindFirst("sub")?.Value ?? User.FindFirst("userId")?.Value;
+        // The production JWT carries the identity as the standard nameidentifier claim (ASP.NET
+        // maps "sub" onto it), so reading "sub"/"userId" alone found nothing and every caller was
+        // treated as somebody else — a person could not even edit their own profile.
+        return User.FindFirstValue(ClaimTypes.NameIdentifier)
+            ?? User.FindFirst("sub")?.Value
+            ?? User.FindFirst("userId")?.Value;
     }
 
     private async Task<bool> CanAccessUserProfile(Guid userId)

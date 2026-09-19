@@ -158,7 +158,9 @@ using System.Text.Encodings.Web;
                 new Claim(ClaimTypes.NameIdentifier, UserId),
                 new Claim(ClaimTypes.Email, Email),
                 new Claim(ClaimTypes.Name, Name),
-                new Claim("userId", UserId),
+                // NO "userId" claim: the production JWT does not issue one, and minting it here
+                // let controllers that read only "sub"/"userId" pass their tests while returning
+                // 403 to every real caller (measured on production, 2026-09-20).
                 new Claim("email", Email)
             };
 

@@ -1,3 +1,4 @@
+using System.Security.Claims;
 using Booksy.ServiceCatalog.Api.Models.Requests;
 using Booksy.ServiceCatalog.Api.Models.Responses;
 using Booksy.ServiceCatalog.API.Models.Requests;
@@ -176,7 +177,10 @@ public class ReviewsController : ControllerBase
         CancellationToken cancellationToken = default)
     {
         // Get customer ID from authenticated user
-        var customerIdClaim = User.FindFirst("sub")?.Value ?? User.FindFirst("userId")?.Value;
+        // See UsersController: production tokens carry the identity as nameidentifier.
+        var customerIdClaim = User.FindFirstValue(ClaimTypes.NameIdentifier)
+            ?? User.FindFirst("sub")?.Value
+            ?? User.FindFirst("userId")?.Value;
         if (string.IsNullOrEmpty(customerIdClaim) || !Guid.TryParse(customerIdClaim, out var customerId))
         {
             _logger.LogWarning("Invalid or missing customer ID in token");
