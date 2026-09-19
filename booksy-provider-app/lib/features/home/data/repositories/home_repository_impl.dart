@@ -831,9 +831,7 @@ class HomeRepositoryImpl implements HomeRepository {
         );
         return const Right(null);
       } on DioException catch (e) {
-        final code = HomeApiService.errorCode(e.response?.data);
-        final mapped = code == null ? null : _errorCodeMessages[code];
-        return Left(ServerFailure(mapped ?? 'ثبت نوبت ناموفق بود'));
+        return Left(ServerFailure(_failureReason(e, 'ثبت نوبت ناموفق بود')));
       }
     });
   }
@@ -898,10 +896,27 @@ class HomeRepositoryImpl implements HomeRepository {
       await call();
       return const Right(null);
     } on DioException catch (e) {
-      final code = HomeApiService.errorCode(e.response?.data);
-      final mapped = code == null ? null : _errorCodeMessages[code];
-      return Left(ServerFailure(mapped ?? failureMessage));
+      return Left(ServerFailure(_failureReason(e, failureMessage)));
     }
+  }
+
+  /// What to tell the provider when an action fails: our Persian text for a code we know,
+  /// otherwise [what] plus the server's own reason. Dropping the reason left a provider with a
+  /// bare "ثبت نوبت ناموفق بود" and no idea what to change (2026-09-19).
+  static String _failureReason(DioException e, String what) {
+    final data = e.response?.data;
+    final code = HomeApiService.errorCode(data);
+    final known = code == null ? null : _errorCodeMessages[code];
+    if (known != null) return known;
+
+    String? reason;
+    if (data is Map) {
+      final error = data['error'];
+      if (error is Map && error['message'] is String) reason = error['message'] as String;
+      reason ??= data['message'] is String ? data['message'] as String : null;
+    }
+    reason = reason?.trim();
+    return (reason == null || reason.isEmpty) ? what : '$what: $reason';
   }
 
   /// Maturity signals from the statistics endpoint; on failure, synthesized

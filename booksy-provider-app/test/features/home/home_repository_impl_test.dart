@@ -765,4 +765,61 @@ void main() {
       expect(snap.identity.completenessPct, 0);
     });
   });
+
+  group('a failed booking says why', () {
+    // A provider's booking failed with a bare "ثبت نوبت ناموفق بود" (2026-09-19): any error code
+    // the app did not know was thrown away along with the server's own explanation.
+    DioException rejected(Map<String, dynamic> body, {int status = 400}) =>
+        DioException(
+          requestOptions: RequestOptions(path: '/v1/Bookings'),
+          response: Response(
+            requestOptions: RequestOptions(path: '/v1/Bookings'),
+            statusCode: status,
+            data: body,
+          ),
+          type: DioExceptionType.badResponse,
+        );
+
+    Future<String> failureFor(Map<String, dynamic> body) async {
+      when(() => api.createBooking(
+            providerId: any(named: 'providerId'),
+            serviceId: any(named: 'serviceId'),
+            staffProviderId: any(named: 'staffProviderId'),
+            startTime: any(named: 'startTime'),
+            customerNotes: any(named: 'customerNotes'),
+            serviceIds: any(named: 'serviceIds'),
+          )).thenThrow(rejected(body));
+
+      final result = await build().createBooking(
+        serviceId: 's-1',
+        staffId: 'm-1',
+        startTime: DateTime(2026, 9, 20, 10),
+      );
+      return result.fold((f) => f.message, (_) => 'succeeded');
+    }
+
+    test("an unknown error shows the server's own reason", () async {
+      final message = await failureFor({
+        'success': false,
+        'message': 'The requested time slot is no longer available',
+        'error': {'code': 'SLOT_UNAVAILABLE', 'message': 'The requested time slot is no longer available'},
+      });
+
+      expect(message, contains('ثبت نوبت ناموفق بود'));
+      expect(message, contains('The requested time slot is no longer available'));
+    });
+
+    test('a known error code still gets its Persian text', () async {
+      final message = await failureFor({
+        'success': false,
+        'error': {'code': 'BOOKING_DEPOSIT_NOT_PAID', 'message': 'deposit'},
+      });
+
+      expect(message, contains('پیش‌پرداخت'));
+    });
+
+    test('no reason from the server falls back to the plain message', () async {
+      expect(await failureFor({'success': false}), 'ثبت نوبت ناموفق بود');
+    });
+  });
 }
