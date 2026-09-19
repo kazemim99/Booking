@@ -6,7 +6,9 @@ using Booksy.Core.Application.Abstractions.Persistence;
 using Booksy.Core.Application.Exceptions;
 using Booksy.Core.Domain.Exceptions;
 using Booksy.Core.Domain.ValueObjects;
+using Booksy.Core.Application.Services.Notifications;
 using Booksy.ServiceCatalog.Application.Services;
+using Booksy.ServiceCatalog.Application.Services.Notifications;
 using Booksy.ServiceCatalog.Domain.Aggregates.BookingAggregate;
 using Booksy.ServiceCatalog.Domain.Aggregates.BookingAggregate.Entities;
 using Booksy.ServiceCatalog.Domain.DomainServices;
@@ -32,6 +34,7 @@ namespace Booksy.ServiceCatalog.Application.Commands.Booking.CreateBooking
         private readonly IAvailabilityService _availabilityService;
         private readonly IServiceCatalogUnitOfWork _unitOfWork;
         private readonly IProviderCustomerRepository _providerCustomers;
+        private readonly ISmsNotificationService _sms;
         private readonly ILogger<CreateBookingCommandHandler> _logger;
 
         public CreateBookingCommandHandler(
@@ -44,6 +47,7 @@ namespace Booksy.ServiceCatalog.Application.Commands.Booking.CreateBooking
             IAvailabilityService availabilityService,
             IServiceCatalogUnitOfWork unitOfWork,
             IProviderCustomerRepository providerCustomers,
+            ISmsNotificationService sms,
             ILogger<CreateBookingCommandHandler> logger)
         {
             _bookingWriteRepository = bookingWriteRepository;
@@ -55,6 +59,7 @@ namespace Booksy.ServiceCatalog.Application.Commands.Booking.CreateBooking
             _availabilityService = availabilityService;
             _unitOfWork = unitOfWork;
             _providerCustomers = providerCustomers;
+            _sms = sms;
             _logger = logger;
         }
 
@@ -199,16 +204,18 @@ namespace Booksy.ServiceCatalog.Application.Commands.Booking.CreateBooking
                     customerNotes: request.CustomerNotes,
                     services: lineItems);
 
-            // A booking made from the salon's customer book records which entry it is for. Only the
-            // salon may name one of its own entries; a customer booking online never does.
-            if (request.ProviderCustomerId is { } providerCustomerId)
+            // Who the salon is booking for. A salon-entered booking always names its customer:
+            // picked from the book, or typed in — and typing them in puts them in the book, so the
+            // same person is one entry with one number however they were booked.
+            Domain.Aggregates.ProviderCustomer? bookedFor = null;
+            if (isProviderCreated)
             {
-                if (!isProviderCreated)
-                    throw new ForbiddenException("Only the salon can book for a customer in its customer book");
-
-                var entry = await _providerCustomers.GetAsync(provider.Id, providerCustomerId, cancellationToken)
-                    ?? throw new NotFoundException("مشتری در فهرست مشتریان این سالن پیدا نشد");
-                booking.RecordForProviderCustomer(entry.Id);
+                bookedFor = await ResolveProviderCustomerAsync(provider.Id, request, cancellationToken);
+                booking.RecordForProviderCustomer(bookedFor.Id, request.NotifyCustomer);
+            }
+            else if (request.ProviderCustomerId is not null)
+            {
+                throw new ForbiddenException("Only the salon can book for a customer in its customer book");
             }
 
             // Save booking
@@ -228,6 +235,14 @@ namespace Booksy.ServiceCatalog.Application.Commands.Booking.CreateBooking
                 cancellationToken);
 
 
+            // The customer hears about the appointment the salon just made for them. Last, after
+            // every check and write has succeeded, and never fatal: the appointment is real whether
+            // or not the message gets out.
+            if (bookedFor is not null && request.NotifyCustomer)
+            {
+                await NotifyCustomerAsync(bookedFor, provider, service, request.StartTime, booking.Id.Value, cancellationToken);
+            }
+
             _logger.LogInformation("Booking {BookingId} created successfully and availability slot marked as booked", booking.Id);
             Telemetry.BookingMetrics.BookingCreated();
 
@@ -245,6 +260,79 @@ namespace Booksy.ServiceCatalog.Application.Commands.Booking.CreateBooking
                 RequiresDeposit: booking.Policy.RequireDeposit,
                 Status: booking.Status.ToString(),
                 RequestedAt: booking.RequestedAt);
+        }
+
+        private async Task NotifyCustomerAsync(
+            Domain.Aggregates.ProviderCustomer customer,
+            ProviderAggregate provider,
+            Domain.Aggregates.Service service,
+            DateTime startTime,
+            Guid bookingId,
+            CancellationToken cancellationToken)
+        {
+            try
+            {
+                var (success, _, error) = await _sms.SendSmsAsync(
+                    customer.PhoneNumber.Value,
+                    BookingSmsText.Confirmed(
+                        customer.FirstName, provider.Profile.BusinessName, service.Name, startTime),
+                    new Dictionary<string, object> { ["bookingId"] = bookingId },
+                    cancellationToken);
+
+                if (!success)
+                    _logger.LogWarning("Booking SMS to {BookingId}'s customer failed: {Error}", bookingId, error);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Could not send the booking SMS for booking {BookingId}", bookingId);
+            }
+        }
+
+        /// <summary>
+        /// The customer-book entry a salon-entered booking is for: the one picked from the book, or
+        /// the one the number belongs to — saved now if the salon has never booked them before.
+        /// A saved name is never overwritten by what was typed this time.
+        /// </summary>
+        private async Task<Domain.Aggregates.ProviderCustomer> ResolveProviderCustomerAsync(
+            ProviderId providerId,
+            CreateBookingCommand request,
+            CancellationToken cancellationToken)
+        {
+            if (request.ProviderCustomerId is { } pickedId)
+            {
+                return await _providerCustomers.GetAsync(providerId, pickedId, cancellationToken)
+                    ?? throw new NotFoundException("مشتری در فهرست مشتریان این سالن پیدا نشد");
+            }
+
+            if (string.IsNullOrWhiteSpace(request.WalkInPhone))
+                throw new DomainValidationException("WalkInPhone", "شماره موبایل مشتری الزامی است");
+
+            Core.Domain.ValueObjects.PhoneNumber phone;
+            try
+            {
+                phone = Core.Domain.ValueObjects.PhoneNumber.From(request.WalkInPhone!);
+            }
+            catch (ArgumentException)
+            {
+                throw new DomainValidationException("WalkInPhone", "شماره موبایل مشتری معتبر نیست");
+            }
+
+            var existing = await _providerCustomers.GetByPhoneAsync(providerId, phone, cancellationToken);
+            if (existing != null)
+                return existing;
+
+            if (string.IsNullOrWhiteSpace(request.WalkInFirstName))
+                throw new DomainValidationException("WalkInFirstName", "نام مشتری الزامی است");
+
+            var customer = Domain.Aggregates.ProviderCustomer.Create(
+                providerId,
+                request.WalkInFirstName!,
+                request.WalkInLastName,
+                phone,
+                notes: null,
+                Domain.Enums.CustomerSource.Booking);
+            await _providerCustomers.AddAsync(customer, cancellationToken);
+            return customer;
         }
 
         /// <summary>

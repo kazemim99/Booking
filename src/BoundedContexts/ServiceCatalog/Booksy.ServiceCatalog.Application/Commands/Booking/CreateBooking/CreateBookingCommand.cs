@@ -22,5 +22,9 @@ namespace Booksy.ServiceCatalog.Application.Commands.Booking.CreateBooking
         string? CustomerNotes = null,
         Guid? IdempotencyKey = null,
         IReadOnlyList<Guid>? ServiceIds = null,
-        Guid? ProviderCustomerId = null) : ICommand<CreateBookingResult>;
+        Guid? ProviderCustomerId = null,
+        string? WalkInFirstName = null,
+        string? WalkInLastName = null,
+        string? WalkInPhone = null,
+        bool NotifyCustomer = true) : ICommand<CreateBookingResult>;
 }

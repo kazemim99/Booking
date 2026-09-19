@@ -236,6 +236,7 @@ class ComposerCubit extends Cubit<ComposerState> {
     String? clientPhone,
     String? notes,
     String? providerCustomerId,
+    bool notifyCustomer = true,
   }) async {
     if (!state.canSubmit) return;
     emit(state.copyWith(submitting: true, error: () => null));
@@ -248,6 +249,7 @@ class ComposerCubit extends Cubit<ComposerState> {
       clientPhone: clientPhone,
       notes: notes,
       providerCustomerId: providerCustomerId,
+      notifyCustomer: notifyCustomer,
     );
     if (isClosed) return;
     result.fold(

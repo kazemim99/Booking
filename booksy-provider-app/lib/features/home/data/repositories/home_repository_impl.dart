@@ -2,6 +2,7 @@ import 'package:dartz/dartz.dart';
 import 'package:dio/dio.dart';
 
 import '../../../../core/errors/failures.dart';
+import '../../../../core/utils/phone_number.dart';
 import '../../../auth/domain/entities/provider_status.dart';
 import '../../../auth/domain/repositories/auth_repository.dart';
 import '../../../onboarding/domain/entities/onboarding_data.dart'
@@ -900,11 +901,21 @@ class HomeRepositoryImpl implements HomeRepository {
     String? notes,
     List<String> serviceIds = const [],
     String? providerCustomerId,
+    bool notifyCustomer = true,
   }) async {
     return _withProviderId((providerId) async {
       try {
+        // The customer the salon is booking: picked from the book, or the name and
+        // number typed in — which the server saves into the book (spec:
+        // _inline/walk-in-customer-name-sms).
+        final name = (clientName ?? '').trim();
+        final space = name.indexOf(' ');
         await _api.createBooking(
           providerCustomerId: providerCustomerId,
+          walkInFirstName: space < 0 ? name : name.substring(0, space),
+          walkInLastName: space < 0 ? '' : name.substring(space + 1),
+          walkInPhone: PhoneNumber.normalize(clientPhone ?? ''),
+          notifyCustomer: notifyCustomer,
           providerId: providerId,
           serviceId: serviceId,
           staffProviderId: staffId,

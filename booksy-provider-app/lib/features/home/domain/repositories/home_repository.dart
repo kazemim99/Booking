@@ -236,5 +236,6 @@ abstract class HomeRepository {
     String? notes,
     List<String> serviceIds = const [],
     String? providerCustomerId,
+    bool notifyCustomer = true,
   });
 }

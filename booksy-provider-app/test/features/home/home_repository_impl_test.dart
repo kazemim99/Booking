@@ -651,22 +651,36 @@ void main() {
             staffProviderId: any(named: 'staffProviderId'),
             startTime: any(named: 'startTime'),
             customerNotes: any(named: 'customerNotes'),
+            walkInFirstName: any(named: 'walkInFirstName'),
+            walkInLastName: any(named: 'walkInLastName'),
+            walkInPhone: any(named: 'walkInPhone'),
+            notifyCustomer: any(named: 'notifyCustomer'),
+            providerCustomerId: any(named: 'providerCustomerId'),
           )).thenAnswer((_) async {});
 
       final result = await build().createBooking(
         serviceId: 's1',
         staffId: 'st1',
         startTime: DateTime(2026, 7, 15, 10),
-        clientName: 'رضا',
+        clientName: 'رضا کریمی',
+        clientPhone: '0912 313 5143',
       );
 
       expect(result.isRight(), isTrue);
+      // The notes keep the readable line the calendar shows; the structured
+      // fields are what puts this customer in the salon's book
+      // (spec: _inline/walk-in-customer-name-sms).
       verify(() => api.createBooking(
             providerId: any(named: 'providerId'),
             serviceId: 's1',
             staffProviderId: 'st1',
             startTime: DateTime(2026, 7, 15, 10),
-            customerNotes: 'مشتری حضوری: رضا',
+            customerNotes: 'مشتری حضوری: رضا کریمی — 0912 313 5143',
+            walkInFirstName: 'رضا',
+            walkInLastName: 'کریمی',
+            walkInPhone: '09123135143',
+            notifyCustomer: true,
+            providerCustomerId: null,
           )).called(1);
     });
   });
@@ -787,6 +801,11 @@ void main() {
             staffProviderId: any(named: 'staffProviderId'),
             startTime: any(named: 'startTime'),
             customerNotes: any(named: 'customerNotes'),
+            walkInFirstName: any(named: 'walkInFirstName'),
+            walkInLastName: any(named: 'walkInLastName'),
+            walkInPhone: any(named: 'walkInPhone'),
+            notifyCustomer: any(named: 'notifyCustomer'),
+            providerCustomerId: any(named: 'providerCustomerId'),
             serviceIds: any(named: 'serviceIds'),
           )).thenThrow(rejected(body));
 

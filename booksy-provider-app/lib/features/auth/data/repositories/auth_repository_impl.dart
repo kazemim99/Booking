@@ -215,6 +215,32 @@ class AuthRepositoryImpl implements AuthRepository {
   }
 
   @override
+  Future<Either<Failure, void>> updateMyName({
+    required String firstName,
+    required String lastName,
+  }) async {
+    final sessionOr = await getCurrentSession();
+    return sessionOr.fold(Left.new, (session) async {
+      if (session == null) {
+        return const Left<Failure, void>(AuthFailure('نشست معتبر یافت نشد'));
+      }
+      try {
+        await _api.updateProfileName(session.user.id, firstName, lastName);
+        // The name lives in the token too: re-mint it so this device shows the
+        // new name instead of the placeholder until the next sign-in.
+        await refreshToken();
+        return const Right<Failure, void>(null);
+      } on DioException catch (e) {
+        final data = e.response?.data;
+        final error = data is Map ? data['error'] : null;
+        final reason = error is Map ? error['message'] : null;
+        return Left<Failure, void>(ServerFailure(
+            reason is String && reason.isNotEmpty ? reason : 'ذخیره نام ناموفق بود'));
+      }
+    });
+  }
+
+  @override
   Future<Either<Failure, ProviderSession>> refreshProviderStatus() async {
     try {
       final result = await _api.getCurrentProviderStatus();

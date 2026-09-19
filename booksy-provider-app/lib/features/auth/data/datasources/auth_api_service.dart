@@ -13,6 +13,17 @@ class AuthApiService {
 
   AuthApiService(this._authDio, this._authedDio);
 
+  /// PUT /v1/Users/{id}/profile — the person's own name.
+  Future<void> updateProfileName(
+    String userId,
+    String firstName,
+    String lastName,
+  ) =>
+      _authedDio.put(
+        ApiConstants.userProfile(userId),
+        data: {'firstName': firstName, 'lastName': lastName},
+      );
+
   Future<ApiResponse<SendVerificationCodeResponse>> sendVerificationCode(
     SendVerificationCodeRequest request,
   ) async {

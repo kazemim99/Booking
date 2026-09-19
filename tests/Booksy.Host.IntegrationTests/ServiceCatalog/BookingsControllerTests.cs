@@ -195,7 +195,12 @@ public class BookingsControllerTests : ServiceCatalogIntegrationTestBase
             ServiceId = service.Id.Value,
             StaffId = provider.Id.Value,
             StartTime = NextWeekdayAtHour(DateTime.UtcNow.Date.AddDays(2), 10),
-            CustomerNotes = "Walk-in client"
+            CustomerNotes = "Walk-in client",
+            // A salon-entered booking names its customer (openspec/changes/_inline/
+            // walk-in-customer-name-sms): they join the salon's customer book.
+            WalkInFirstName = "مرتضی",
+            WalkInLastName = "کاظمی",
+            WalkInPhone = "09123135143",
         };
 
         var response = await PostAsJsonAsync<CreateBookingRequest, BookingResponse>("/api/v1/bookings", request);

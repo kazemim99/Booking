@@ -44,6 +44,8 @@ void main() {
           clientPhone: any(named: 'clientPhone'),
           notes: any(named: 'notes'),
           serviceIds: any(named: 'serviceIds'),
+          providerCustomerId: any(named: 'providerCustomerId'),
+          notifyCustomer: any(named: 'notifyCustomer'),
         )).thenAnswer((_) async => const Right(null));
   });
 
@@ -116,9 +118,12 @@ void main() {
     await tester.pumpAndSettle();
     expect(button().onPressed, isNotNull);
 
-    // Fill the walk-in client and submit.
+    // Fill the customer — name and number are both required now
+    // (spec: _inline/walk-in-customer-name-sms) — and submit.
     await tester.enterText(
         find.byKey(const Key('composer-client-name')), 'رضا کریمی');
+    await tester.enterText(
+        find.byKey(const Key('composer-client-phone')), '09123135143');
     await tester.tap(find.byKey(const Key('composer-submit')));
     await tester.pumpAndSettle();
 
@@ -130,6 +135,8 @@ void main() {
           clientPhone: any(named: 'clientPhone'),
           notes: any(named: 'notes'),
           serviceIds: any(named: 'serviceIds'),
+          providerCustomerId: any(named: 'providerCustomerId'),
+          notifyCustomer: any(named: 'notifyCustomer'),
         )).called(1);
     expect(result(), isTrue); // popped with true → Home refreshes
   });
@@ -210,12 +217,20 @@ void main() {
           clientPhone: any(named: 'clientPhone'),
           notes: any(named: 'notes'),
           serviceIds: any(named: 'serviceIds'),
+          providerCustomerId: any(named: 'providerCustomerId'),
+          notifyCustomer: any(named: 'notifyCustomer'),
         )).thenAnswer(
             (_) async => const Left(ServerFailure('ثبت نوبت ناموفق بود')));
 
+    await tester.binding.setSurfaceSize(const Size(1080, 2400));
+    addTearDown(() => tester.binding.setSurfaceSize(null));
     final result = await pumpComposer(tester);
     await tester.tap(find.byKey(const Key('slot-1000')));
     await tester.pumpAndSettle();
+    await tester.enterText(
+        find.byKey(const Key('composer-client-name')), 'رضا کریمی');
+    await tester.enterText(
+        find.byKey(const Key('composer-client-phone')), '09123135143');
     await tester.tap(find.byKey(const Key('composer-submit')));
     await tester.pumpAndSettle();
 
@@ -283,6 +298,7 @@ void main() {
             notes: any(named: 'notes'),
             serviceIds: any(named: 'serviceIds'),
             providerCustomerId: any(named: 'providerCustomerId'),
+            notifyCustomer: any(named: 'notifyCustomer'),
           )).thenAnswer((_) async => const Right(null));
     });
 
@@ -325,6 +341,7 @@ void main() {
           notes: any(named: 'notes'),
           serviceIds: any(named: 'serviceIds'),
           providerCustomerId: captureAny(named: 'providerCustomerId'),
+          notifyCustomer: any(named: 'notifyCustomer'),
         )).captured.single as String?;
 
     testWidgets('picking a saved customer fills both fields and books for them',
@@ -382,6 +399,111 @@ void main() {
 
       await submit(tester);
       expect(bookedFor(), 'k1');
+    });
+  });
+
+  group('the customer a booking belongs to (spec: _inline/walk-in-customer-name-sms)',
+      () {
+    setUp(() {
+      when(() => repository.fetchSavedCustomers())
+          .thenAnswer((_) async => const Right([]));
+      when(() => repository.createBooking(
+            serviceId: any(named: 'serviceId'),
+            staffId: any(named: 'staffId'),
+            startTime: any(named: 'startTime'),
+            clientName: any(named: 'clientName'),
+            clientPhone: any(named: 'clientPhone'),
+            notes: any(named: 'notes'),
+            serviceIds: any(named: 'serviceIds'),
+            providerCustomerId: any(named: 'providerCustomerId'),
+            notifyCustomer: any(named: 'notifyCustomer'),
+          )).thenAnswer((_) async => const Right(null));
+    });
+
+    Future<void> pumpTall(WidgetTester tester) async {
+      await tester.binding.setSurfaceSize(const Size(1080, 2400));
+      addTearDown(() => tester.binding.setSurfaceSize(null));
+      final cubit = ComposerCubit(repository, now: () => day);
+      addTearDown(cubit.close);
+      await tester.pumpWidget(
+        MaterialApp(
+          theme: AppTheme.light,
+          home: Directionality(
+            textDirection: TextDirection.rtl,
+            child: BlocProvider.value(
+              value: cubit..load(),
+              child: ComposerView(
+                contactPicker: FakeContactPicker(isSupported: false),
+              ),
+            ),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+      await tester.tap(find.byKey(const Key('slot-1000')));
+      await tester.pumpAndSettle();
+    }
+
+    testWidgets('a booking without a name and number is refused inline',
+        (tester) async {
+      await pumpTall(tester);
+
+      await tester.tap(find.byKey(const Key('composer-submit')));
+      await tester.pumpAndSettle();
+
+      expect(find.text(AppStrings.fieldRequired), findsNWidgets(2));
+      verifyNever(() => repository.createBooking(
+            serviceId: any(named: 'serviceId'),
+            staffId: any(named: 'staffId'),
+            startTime: any(named: 'startTime'),
+            clientName: any(named: 'clientName'),
+            clientPhone: any(named: 'clientPhone'),
+            notes: any(named: 'notes'),
+            serviceIds: any(named: 'serviceIds'),
+            providerCustomerId: any(named: 'providerCustomerId'),
+            notifyCustomer: any(named: 'notifyCustomer'),
+          ));
+    });
+
+    testWidgets('a number that is not a mobile is named as the problem',
+        (tester) async {
+      await pumpTall(tester);
+
+      await tester.enterText(
+          find.byKey(const Key('composer-client-name')), 'رضا کریمی');
+      await tester.enterText(
+          find.byKey(const Key('composer-client-phone')), '0912');
+      await tester.tap(find.byKey(const Key('composer-submit')));
+      await tester.pumpAndSettle();
+
+      expect(find.text(AppStrings.customerPhoneInvalid), findsOneWidget);
+    });
+
+    testWidgets('the salon can book someone without texting them',
+        (tester) async {
+      await pumpTall(tester);
+
+      await tester.enterText(
+          find.byKey(const Key('composer-client-name')), 'رضا کریمی');
+      await tester.enterText(
+          find.byKey(const Key('composer-client-phone')), '09123135143');
+      await tester.tap(find.byKey(const Key('composer-notify-customer')));
+      await tester.pumpAndSettle();
+      await tester.tap(find.byKey(const Key('composer-submit')));
+      await tester.pumpAndSettle();
+
+      final notify = verify(() => repository.createBooking(
+            serviceId: any(named: 'serviceId'),
+            staffId: any(named: 'staffId'),
+            startTime: any(named: 'startTime'),
+            clientName: any(named: 'clientName'),
+            clientPhone: any(named: 'clientPhone'),
+            notes: any(named: 'notes'),
+            serviceIds: any(named: 'serviceIds'),
+            providerCustomerId: any(named: 'providerCustomerId'),
+            notifyCustomer: captureAny(named: 'notifyCustomer'),
+          )).captured.single as bool;
+      expect(notify, isFalse, reason: 'the salon unticked the SMS');
     });
   });
 }

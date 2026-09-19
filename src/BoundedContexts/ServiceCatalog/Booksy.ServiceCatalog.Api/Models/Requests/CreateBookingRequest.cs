@@ -50,6 +50,26 @@ public class CreateBookingRequest
     public Guid? ProviderCustomerId { get; set; }
 
     /// <summary>
+    /// Provider-side only: the customer being booked, when they are not picked from the book.
+    /// A salon-entered booking must name its customer — either <see cref="ProviderCustomerId"/>
+    /// or these — and the number joins the salon's customer book.
+    /// </summary>
+    [MaxLength(100)]
+    public string? WalkInFirstName { get; set; }
+
+    [MaxLength(100)]
+    public string? WalkInLastName { get; set; }
+
+    [MaxLength(20)]
+    public string? WalkInPhone { get; set; }
+
+    /// <summary>
+    /// Provider-side only: send the customer the confirmation SMS. On by default; the salon turns
+    /// it off for someone standing at the counter.
+    /// </summary>
+    public bool? NotifyCustomer { get; set; }
+
+    /// <summary>
     /// Alias for StaffProviderId (backward compatibility)
     /// </summary>
     [Required]

@@ -381,8 +381,9 @@ class AppStrings {
   static const String composerNoStaffBody =
       'برای ثبت نوبت باید حداقل یک کارمند داشته باشید؛ تا آن زمان هیچ زمان خالی نمایش داده نمی‌شود.';
   static const String composerNoStaffCta = 'افزودن کارمند';
-  static const String composerClientName = 'نام مشتری (اختیاری)';
-  static const String composerClientPhone = 'شماره مشتری (اختیاری)';
+  static const String composerClientName = 'نام مشتری';
+  static const String composerClientPhone = 'شماره موبایل مشتری';
+  static const String composerNotifyCustomer = 'ارسال پیامک تأیید برای مشتری';
   static const String composerNotes = 'یادداشت (اختیاری)';
   static const String composerSubmit = 'ثبت نوبت';
   static const String composerCreated = 'نوبت با موفقیت ثبت شد';
@@ -415,6 +416,14 @@ class AppStrings {
   static const String phoneCopied = 'شماره کپی شد';
 
   // ==================== Customer book ====================
+  /// The name phone sign-in hands out until the person names themselves.
+  static const String providerPlaceholderName = 'ارائه‌دهنده';
+  static const String moreMyName = 'نام شما';
+  static const String myNameTitle = 'نام و نام خانوادگی شما';
+  static const String myNameHint =
+      'این نامی است که همکاران و مشتریان شما می‌بینند';
+  static const String myNameSaved = 'نام شما ذخیره شد';
+
   static const String customerAdd = 'افزودن مشتری';
   static const String customerEdit = 'ویرایش مشتری';
   static const String customerFirstName = 'نام';

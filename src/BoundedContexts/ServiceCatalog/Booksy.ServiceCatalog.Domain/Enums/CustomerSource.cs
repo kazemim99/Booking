@@ -8,4 +8,7 @@ public enum CustomerSource
 
     /// <summary>Picked from the provider's phone contacts (only the ones they ticked).</summary>
     Contacts = 1,
+
+    /// <summary>Typed on the booking screen: booking someone also saves them.</summary>
+    Booking = 2,
 }

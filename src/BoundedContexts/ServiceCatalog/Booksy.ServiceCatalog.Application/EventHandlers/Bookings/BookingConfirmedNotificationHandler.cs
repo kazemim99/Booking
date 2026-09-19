@@ -5,6 +5,7 @@ using Booksy.Core.Application.Abstractions.Events;
 using Booksy.ServiceCatalog.Application.Commands.Notifications.SendNotification;
 using Booksy.ServiceCatalog.Domain.Enums;
 using Booksy.ServiceCatalog.Domain.Events;
+using Booksy.ServiceCatalog.Domain.Repositories;
 using MediatR;
 using Microsoft.Extensions.Logging;
 
@@ -16,13 +17,16 @@ namespace Booksy.ServiceCatalog.Application.EventHandlers.Bookings
     public sealed class BookingConfirmedNotificationHandler : IDomainEventHandler<BookingConfirmedEvent>
     {
         private readonly ISender _mediator;
+        private readonly IBookingReadRepository _bookings;
         private readonly ILogger<BookingConfirmedNotificationHandler> _logger;
 
         public BookingConfirmedNotificationHandler(
             ISender mediator,
+            IBookingReadRepository bookings,
             ILogger<BookingConfirmedNotificationHandler> logger)
         {
             _mediator = mediator;
+            _bookings = bookings;
             _logger = logger;
         }
 
@@ -32,8 +36,15 @@ namespace Booksy.ServiceCatalog.Application.EventHandlers.Bookings
 
             try
             {
-                // Send notification to customer
-                await SendCustomerNotificationAsync(notification, cancellationToken);
+                // Send notification to customer. A booking the salon entered belongs to someone in
+                // ITS customer book, and the aggregate's "customer" is then the salon's own owner —
+                // notifying them would tell the salon about its own work. That customer is told by
+                // ProviderCustomerBookingSmsHandler instead, in their language, on their phone.
+                var booking = await _bookings.GetByIdAsync(notification.BookingId, cancellationToken);
+                if (booking?.ProviderCustomerId is null)
+                {
+                    await SendCustomerNotificationAsync(notification, cancellationToken);
+                }
 
                 // Send notification to provider
                 await SendProviderNotificationAsync(notification, cancellationToken);

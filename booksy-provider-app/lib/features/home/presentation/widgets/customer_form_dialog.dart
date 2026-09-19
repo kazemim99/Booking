@@ -14,10 +14,17 @@ Future<CustomerDraft?> showCustomerForm(
   BuildContext context, {
   CustomerDraft? initial,
   String title = AppStrings.customerAdd,
+  bool askPhone = true,
+  String? hint,
 }) {
   return showDialog<CustomerDraft>(
     context: context,
-    builder: (_) => CustomerFormDialog(initial: initial, title: title),
+    builder: (_) => CustomerFormDialog(
+      initial: initial,
+      title: title,
+      askPhone: askPhone,
+      hint: hint,
+    ),
   );
 }
 
@@ -25,10 +32,16 @@ class CustomerFormDialog extends StatefulWidget {
   final CustomerDraft? initial;
   final String title;
 
+  /// False when the form is only about a name (a person naming themselves).
+  final bool askPhone;
+  final String? hint;
+
   const CustomerFormDialog({
     super.key,
     this.initial,
     this.title = AppStrings.customerAdd,
+    this.askPhone = true,
+    this.hint,
   });
 
   @override
@@ -61,6 +74,7 @@ class _CustomerFormDialogState extends State<CustomerFormDialog> {
   String? _validate(String field) => switch (field) {
         'firstName' =>
           _firstName.text.trim().isEmpty ? AppStrings.fieldRequired : null,
+        'phone' when !widget.askPhone => null,
         'phone' => _phone.text.trim().isEmpty
             ? AppStrings.fieldRequired
             : PhoneNumber.isValid(_phone.text)
@@ -80,7 +94,7 @@ class _CustomerFormDialogState extends State<CustomerFormDialog> {
     Navigator.of(context).pop(CustomerDraft(
       firstName: _firstName.text.trim(),
       lastName: _lastName.text.trim(),
-      phone: PhoneNumber.normalize(_phone.text),
+      phone: widget.askPhone ? PhoneNumber.normalize(_phone.text) : '',
       notes: _notes.text.trim().isEmpty ? null : _notes.text.trim(),
     ));
   }
@@ -93,6 +107,11 @@ class _CustomerFormDialogState extends State<CustomerFormDialog> {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
+            if (widget.hint != null) ...[
+              Text(widget.hint!,
+                  style: const TextStyle(fontSize: 13, color: AppColors.muted)),
+              const SizedBox(height: AppSpacing.sm),
+            ],
             AppTextField(
               key: const Key('customer-first-name'),
               controller: _firstName,
@@ -108,6 +127,7 @@ class _CustomerFormDialogState extends State<CustomerFormDialog> {
               controller: _lastName,
               label: AppStrings.customerLastName,
             ),
+            if (widget.askPhone) ...[
             const SizedBox(height: AppSpacing.sm),
             AppTextField(
               key: const Key('customer-phone'),
@@ -130,6 +150,7 @@ class _CustomerFormDialogState extends State<CustomerFormDialog> {
               label: AppStrings.customerNotes,
               maxLines: 2,
             ),
+            ],
           ],
         ),
       ),

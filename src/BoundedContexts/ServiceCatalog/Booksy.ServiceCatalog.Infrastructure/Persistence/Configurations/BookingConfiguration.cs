@@ -75,6 +75,12 @@ namespace Booksy.ServiceCatalog.Infrastructure.Persistence.Configurations
             builder.Property(b => b.ProviderCustomerId)
                 .HasColumnName("ProviderCustomerId");
 
+            // Whether that customer is told by SMS; true for every booking made before the salon
+            // could choose, which is what those bookings meant.
+            builder.Property(b => b.NotifyCustomer)
+                .HasColumnName("NotifyCustomer")
+                .HasDefaultValue(true);
+
             // TimeSlot (Owned Value Object)
             builder.OwnsOne(b => b.TimeSlot, timeSlot =>
             {

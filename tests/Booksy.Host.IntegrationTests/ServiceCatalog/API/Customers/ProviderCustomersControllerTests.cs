@@ -178,6 +178,87 @@ public class ProviderCustomersControllerTests : ServiceCatalogIntegrationTestBas
         listed["lastBookingAt"]!.Type.Should().NotBe(JTokenType.Null);
     }
 
+    private async Task<HttpResponseMessage> BookWalkIn(
+        Guid providerId, Guid serviceId, object? firstName, object? lastName, object? phone) =>
+        await Client.PostAsJsonAsync("/api/v1/bookings", new
+        {
+            providerId,
+            serviceId,
+            staffProviderId = providerId,
+            startTime = NextWeekdayAtHour(DateTime.UtcNow.Date.AddDays(2), 10),
+            walkInFirstName = firstName,
+            walkInLastName = lastName,
+            walkInPhone = phone,
+        });
+
+    [Fact]
+    public async Task A_customer_typed_on_the_booking_screen_joins_the_book_and_is_booked_for()
+    {
+        var provider = await CreateTestProviderWithServicesAsync();
+        var service = await GetFirstServiceForProviderAsync(provider.Id.Value);
+        AuthenticateAsProviderOwner(provider);
+
+        var booking = await BookWalkIn(
+            provider.Id.Value, service.Id.Value, "مرتضی", "کاظمی", "0912 313 5143");
+        booking.StatusCode.Should().Be(HttpStatusCode.Created, await booking.Content.ReadAsStringAsync());
+
+        var listed = (await List(provider.Id.Value)).Single();
+        listed["firstName"]!.Value<string>().Should().Be("مرتضی");
+        listed["phoneNumber"]!.Value<string>().Should().Be("+989123135143");
+        listed["source"]!.Value<string>().Should().Be("Booking");
+        ((int)listed["totalBookings"]!).Should().Be(1, "the booking is recorded for them");
+    }
+
+    [Fact]
+    public async Task A_number_already_in_the_book_is_booked_for_that_customer_not_added_again()
+    {
+        var provider = await CreateTestProviderWithServicesAsync();
+        var service = await GetFirstServiceForProviderAsync(provider.Id.Value);
+        AuthenticateAsProviderOwner(provider);
+        await Client.PostAsJsonAsync(Url(provider.Id.Value),
+            new { firstName = "مرتضی", lastName = "کاظمی", phoneNumber = "09123135143" });
+
+        var booking = await BookWalkIn(
+            provider.Id.Value, service.Id.Value, "مرتضي", "ک", "+98 912 313 5143");
+        booking.StatusCode.Should().Be(HttpStatusCode.Created, await booking.Content.ReadAsStringAsync());
+
+        var list = await List(provider.Id.Value);
+        list.Should().ContainSingle("the same number is one customer, whatever its spelling");
+        list[0]["lastName"]!.Value<string>().Should().Be("کاظمی", "a saved name is never overwritten");
+        ((int)list[0]["totalBookings"]!).Should().Be(1);
+    }
+
+    [Fact]
+    public async Task A_salon_booking_needs_the_customers_name_and_number()
+    {
+        var provider = await CreateTestProviderWithServicesAsync();
+        var service = await GetFirstServiceForProviderAsync(provider.Id.Value);
+        AuthenticateAsProviderOwner(provider);
+
+        (await BookWalkIn(provider.Id.Value, service.Id.Value, null, null, null))
+            .StatusCode.Should().Be(HttpStatusCode.BadRequest);
+        (await BookWalkIn(provider.Id.Value, service.Id.Value, "مرتضی", "کاظمی", null))
+            .StatusCode.Should().Be(HttpStatusCode.BadRequest);
+        (await BookWalkIn(provider.Id.Value, service.Id.Value, "مرتضی", "کاظمی", "12"))
+            .StatusCode.Should().Be(HttpStatusCode.BadRequest);
+        (await BookWalkIn(provider.Id.Value, service.Id.Value, "", "", "09123135143"))
+            .StatusCode.Should().Be(HttpStatusCode.BadRequest);
+        (await List(provider.Id.Value)).Should().BeEmpty("a refused booking saves nobody");
+    }
+
+    [Fact]
+    public async Task A_customer_booking_online_needs_no_walk_in_details()
+    {
+        var provider = await CreateTestProviderWithServicesAsync();
+        var service = await GetFirstServiceForProviderAsync(provider.Id.Value);
+        AuthenticateAsUser(Guid.NewGuid(), "customer@test.com");
+
+        var booking = await BookWalkIn(
+            provider.Id.Value, service.Id.Value, null, null, null);
+
+        booking.StatusCode.Should().Be(HttpStatusCode.Created, await booking.Content.ReadAsStringAsync());
+    }
+
     [Fact]
     public async Task K5_A_booking_cannot_name_another_salons_customer()
     {

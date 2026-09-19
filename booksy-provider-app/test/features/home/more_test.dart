@@ -2,6 +2,7 @@ import 'package:bloc_test/bloc_test.dart';
 import 'package:booksy_provider_app/config/theme/app_theme.dart';
 import 'package:booksy_provider_app/core/constants/app_strings.dart';
 import 'package:booksy_provider_app/config/theme/app_tokens.dart';
+import 'package:booksy_provider_app/core/di/injection.dart';
 import 'package:booksy_provider_app/core/errors/failures.dart';
 import 'package:booksy_provider_app/core/widgets/profile_header.dart';
 import 'package:booksy_provider_app/features/auth/domain/entities/provider_session.dart';
@@ -34,6 +35,8 @@ class _MockAuthRepo extends Mock implements AuthRepository {}
 
 class _MockAuthBloc extends MockBloc<AuthEvent, AuthState>
     implements AuthBloc {}
+
+class _MockAuthRepository extends Mock implements AuthRepository {}
 
 ProviderSession get _session => ProviderSession(
       accessToken: 'a',
@@ -1554,6 +1557,94 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(find.byKey(const Key('service-row-s1')), findsOneWidget);
+    });
+  });
+
+  /// Naming yourself (spec: _inline/walk-in-customer-name-sms): phone sign-in
+  /// hands out «ارائه‌دهنده ۹۱۲…», which is what staff pickers and bookings show.
+  group('MorePage — your own name', () {
+    late _MockAuthBloc authBloc;
+    late _MockAuthRepository authRepository;
+
+    setUp(() {
+      authBloc = _MockAuthBloc();
+      whenListen(
+        authBloc,
+        const Stream<AuthState>.empty(),
+        initialState: Authenticated(_session),
+      );
+      authRepository = _MockAuthRepository();
+      if (getIt.isRegistered<AuthRepository>()) {
+        getIt.unregister<AuthRepository>();
+      }
+      getIt.registerSingleton<AuthRepository>(authRepository);
+    });
+
+    tearDown(() => getIt.unregister<AuthRepository>());
+
+    Future<void> pump(WidgetTester tester) async {
+      await tester.pumpWidget(
+        MaterialApp(
+          theme: AppTheme.light,
+          builder: (context, child) => Directionality(
+            textDirection: TextDirection.rtl,
+            child: child ?? const SizedBox.shrink(),
+          ),
+          home: BlocProvider<AuthBloc>.value(
+            value: authBloc,
+            child: const MorePage(),
+          ),
+        ),
+      );
+      await tester.pump();
+    }
+
+    testWidgets('the account card offers the name, and saving sends it',
+        (tester) async {
+      when(() => authRepository.updateMyName(
+            firstName: any(named: 'firstName'),
+            lastName: any(named: 'lastName'),
+          )).thenAnswer((_) async => const Right(null));
+      await pump(tester);
+
+      await tester.scrollUntilVisible(
+          find.byKey(const Key('more-my-name')), 200,
+          scrollable: find.byType(Scrollable).last);
+      await tester.tap(find.byKey(const Key('more-my-name')));
+      await tester.pumpAndSettle();
+      // A name is not a customer: the form asks for no phone number here.
+      expect(find.byKey(const Key('customer-phone')), findsNothing);
+
+      await tester.enterText(
+          find.byKey(const Key('customer-first-name')), 'مصطفی');
+      await tester.enterText(
+          find.byKey(const Key('customer-last-name')), 'کاظمی');
+      await tester.tap(find.byKey(const Key('customer-save')));
+      await tester.pumpAndSettle();
+
+      verify(() => authRepository.updateMyName(
+          firstName: 'مصطفی', lastName: 'کاظمی')).called(1);
+      expect(find.text(AppStrings.myNameSaved), findsOneWidget);
+    });
+
+    testWidgets('an empty name is refused inline, and nothing is sent',
+        (tester) async {
+      await pump(tester);
+
+      await tester.scrollUntilVisible(
+          find.byKey(const Key('more-my-name')), 200,
+          scrollable: find.byType(Scrollable).last);
+      await tester.tap(find.byKey(const Key('more-my-name')));
+      await tester.pumpAndSettle();
+      // The form opens on the name the session carries; emptying it must not
+      // leave the person nameless.
+      await tester.enterText(find.byKey(const Key('customer-first-name')), '');
+      await tester.tap(find.byKey(const Key('customer-save')));
+      await tester.pumpAndSettle();
+
+      expect(find.text(AppStrings.fieldRequired), findsOneWidget);
+      verifyNever(() => authRepository.updateMyName(
+          firstName: any(named: 'firstName'), lastName: any(named: 'lastName')));
     });
   });
 }

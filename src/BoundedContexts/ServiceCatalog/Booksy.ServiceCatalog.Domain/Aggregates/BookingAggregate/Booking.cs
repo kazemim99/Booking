@@ -40,6 +40,12 @@ namespace Booksy.ServiceCatalog.Domain.Aggregates.BookingAggregate
         /// </summary>
         public Guid? ProviderCustomerId { get; private set; }
 
+        /// <summary>
+        /// Whether the salon wants this booking's customer told by SMS. The salon decides per
+        /// booking (some customers are standing next to them as they enter it).
+        /// </summary>
+        public bool NotifyCustomer { get; private set; } = true;
+
         // Booking Details
         public TimeSlot TimeSlot { get; private set; }
         public Duration Duration { get; private set; }
@@ -607,11 +613,12 @@ namespace Booksy.ServiceCatalog.Domain.Aggregates.BookingAggregate
         /// Records which entry of the salon's customer book this booking is for. The caller checks the
         /// entry belongs to this booking's salon.
         /// </summary>
-        public void RecordForProviderCustomer(Guid providerCustomerId)
+        public void RecordForProviderCustomer(Guid providerCustomerId, bool notifyCustomer = true)
         {
             if (providerCustomerId == Guid.Empty)
                 throw new DomainValidationException(nameof(ProviderCustomerId), "مشتری نامعتبر است");
             ProviderCustomerId = providerCustomerId;
+            NotifyCustomer = notifyCustomer;
         }
 
         /// <summary>

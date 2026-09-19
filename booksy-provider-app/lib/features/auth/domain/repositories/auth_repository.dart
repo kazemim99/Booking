@@ -43,4 +43,11 @@ abstract class AuthRepository {
   /// the updated session. Call after onboarding completes — the cached JWT
   /// still carries the stale "Drafted" status.
   Future<Either<Failure, ProviderSession>> refreshProviderStatus();
+
+  /// Renames the signed-in person. Phone sign-in gives every account a placeholder
+  /// («ارائه‌دهنده ۹۱۲…»), which is the name colleagues and customers see.
+  Future<Either<Failure, void>> updateMyName({
+    required String firstName,
+    required String lastName,
+  });
 }

@@ -178,6 +178,10 @@ class HomeApiService {
     String? customerNotes,
     List<String> serviceIds = const [],
     String? providerCustomerId,
+    String? walkInFirstName,
+    String? walkInLastName,
+    String? walkInPhone,
+    bool notifyCustomer = true,
   }) =>
       _dio.post(
         ApiConstants.bookings,
@@ -195,6 +199,13 @@ class HomeApiService {
             'customerNotes': customerNotes,
           // Booked from the salon's customer book: the server links the booking to it.
           'providerCustomerId': ?providerCustomerId,
+          // Or typed in: the server finds this number in the book, or saves it.
+          if (providerCustomerId == null) ...{
+            'walkInFirstName': walkInFirstName,
+            'walkInLastName': walkInLastName,
+            'walkInPhone': walkInPhone,
+          },
+          'notifyCustomer': notifyCustomer,
         },
       );
 

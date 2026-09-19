@@ -7,6 +7,7 @@ import '../../../../config/theme/app_tokens.dart';
 import '../../../../core/constants/app_strings.dart';
 import '../../../../core/contacts/contact_picker.dart';
 import '../../../../core/di/injection.dart';
+import '../../../../core/utils/persian_digits.dart';
 import '../../../../core/utils/phone_number.dart';
 import '../../../../core/widgets/app_button.dart';
 import '../../../../core/widgets/app_error_state.dart';
@@ -83,6 +84,40 @@ class _ComposerViewState extends State<ComposerView> {
   final _notes = TextEditingController();
   late final ContactPicker _contacts =
       widget.contactPicker ?? ContactPicker.platform();
+
+  /// The customer is who the appointment belongs to, so both fields are required
+  /// (spec: _inline/walk-in-customer-name-sms); a number the salon has not booked
+  /// before joins its customer book server-side.
+  final Set<String> _touched = {};
+  bool _submitted = false;
+  bool _notifyCustomer = true;
+
+  String? _validate(String field) => switch (field) {
+        'name' => _clientName.text.trim().isEmpty ? AppStrings.fieldRequired : null,
+        'phone' => _clientPhone.text.trim().isEmpty
+            ? AppStrings.fieldRequired
+            : PhoneNumber.isValid(_clientPhone.text)
+                ? null
+                : AppStrings.customerPhoneInvalid,
+        _ => null,
+      };
+
+  String? _errorFor(String field) =>
+      (_submitted || _touched.contains(field)) ? _validate(field) : null;
+
+  void _submit(ComposerCubit cubit) {
+    if (['name', 'phone'].any((f) => _validate(f) != null)) {
+      setState(() => _submitted = true);
+      return;
+    }
+    cubit.submit(
+      clientName: _clientName.text,
+      clientPhone: _clientPhone.text,
+      notes: _notes.text,
+      providerCustomerId: _linkedCustomerId,
+      notifyCustomer: _notifyCustomer,
+    );
+  }
 
   /// The customer-book entry the booking is for, and the number it was picked
   /// with: typing a different number books someone else, so the link drops.
@@ -169,14 +204,7 @@ class _ComposerViewState extends State<ComposerView> {
                       key: const Key('composer-submit'),
                       label: AppStrings.composerSubmit,
                       loading: state.submitting,
-                      onPressed: state.canSubmit
-                          ? () => cubit.submit(
-                                clientName: _clientName.text,
-                                clientPhone: _clientPhone.text,
-                                notes: _notes.text,
-                                providerCustomerId: _linkedCustomerId,
-                              )
-                          : null,
+                      onPressed: state.canSubmit ? () => _submit(cubit) : null,
                     ),
                   ),
                 )
@@ -264,6 +292,10 @@ class _ComposerViewState extends State<ComposerView> {
           key: const Key('composer-client-name'),
           controller: _clientName,
           label: AppStrings.composerClientName,
+          isRequired: true,
+          errorText: _errorFor('name'),
+          onBlur: () => setState(() => _touched.add('name')),
+          onChanged: (_) => setState(() {}),
         ),
         const SizedBox(height: AppSpacing.md),
         AppTextField(
@@ -271,7 +303,25 @@ class _ComposerViewState extends State<ComposerView> {
           controller: _clientPhone,
           label: AppStrings.composerClientPhone,
           keyboardType: TextInputType.phone,
+          contentDirection: TextDirection.ltr,
+          inputFormatters: const [DigitsOnlyInputFormatter()],
+          maxLength: 11,
+          isRequired: true,
+          errorText: _errorFor('phone'),
+          onBlur: () => setState(() => _touched.add('phone')),
           onChanged: (_) => setState(() {}),
+        ),
+        // The salon decides: someone standing at the counter needs no text message.
+        CheckboxListTile(
+          key: const Key('composer-notify-customer'),
+          value: _notifyCustomer,
+          onChanged: (v) => setState(() => _notifyCustomer = v ?? true),
+          controlAffinity: ListTileControlAffinity.leading,
+          contentPadding: EdgeInsets.zero,
+          title: const Text(
+            AppStrings.composerNotifyCustomer,
+            style: TextStyle(fontSize: 14, color: AppColors.ink),
+          ),
         ),
         const SizedBox(height: AppSpacing.md),
         AppTextField(

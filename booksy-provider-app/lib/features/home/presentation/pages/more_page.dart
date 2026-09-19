@@ -7,11 +7,16 @@ import '../../../../config/routes/app_router.dart';
 import '../../../../config/theme/app_tokens.dart';
 import '../../../../core/api/config/api_constants.dart';
 import '../../../../core/constants/app_strings.dart';
+import '../../../../core/di/injection.dart';
 import '../../../../core/widgets/app_snackbar.dart';
 import '../../../../core/widgets/profile_header.dart';
 import '../../../auth/presentation/bloc/auth_bloc.dart';
 import '../../../auth/presentation/bloc/auth_event.dart';
+import '../../../auth/domain/entities/provider_session.dart';
+import '../../../auth/domain/repositories/auth_repository.dart';
 import '../../../auth/presentation/bloc/auth_state.dart';
+import '../../domain/entities/saved_customer.dart';
+import '../widgets/customer_form_dialog.dart';
 import '../widgets/provider_nav_bar.dart';
 
 /// The More (بیشتر) hub — configuration & reflection, one level down
@@ -147,6 +152,13 @@ class MorePage extends StatelessWidget {
                     _card([
                       _row(
                         context,
+                        key: 'more-my-name',
+                        icon: Icons.badge_outlined,
+                        label: AppStrings.moreMyName,
+                        onTap: () => _editMyName(context, session),
+                      ),
+                      _row(
+                        context,
                         key: 'more-logout',
                         icon: Icons.logout,
                         label: AppStrings.logout,
@@ -165,6 +177,40 @@ class MorePage extends StatelessWidget {
         ],
       ),
       bottomNavigationBar: const ProviderNavBar(active: NavTab.more),
+    );
+  }
+
+  /// Lets the person replace the placeholder name phone sign-in gave them
+  /// («ارائه‌دهنده ۹۱۲…») — the name their colleagues and customers see.
+  Future<void> _editMyName(BuildContext context, ProviderSession? session) async {
+    final names = (session?.user.fullName ?? '').trim();
+    final space = names.indexOf(' ');
+    final placeholder = names.isEmpty || names.startsWith(AppStrings.providerPlaceholderName);
+    final draft = await showCustomerForm(
+      context,
+      title: AppStrings.myNameTitle,
+      askPhone: false,
+      hint: AppStrings.myNameHint,
+      initial: placeholder
+          ? null
+          : CustomerDraft(
+              firstName: space < 0 ? names : names.substring(0, space),
+              lastName: space < 0 ? '' : names.substring(space + 1),
+              phone: '',
+            ),
+    );
+    if (draft == null || !context.mounted) return;
+
+    final result = await getIt<AuthRepository>()
+        .updateMyName(firstName: draft.firstName, lastName: draft.lastName);
+    if (!context.mounted) return;
+    result.fold(
+      (failure) => AppSnackbar.error(context, failure.message),
+      (_) {
+        AppSnackbar.success(context, AppStrings.myNameSaved);
+        // Re-read the session so the header shows the new name at once.
+        context.read<AuthBloc>().add(const ProviderStatusRefreshRequested());
+      },
     );
   }
 
@@ -216,6 +262,7 @@ class MorePage extends StatelessWidget {
     VoidCallback? onTap,
     bool enabled = true,
     Color? color,
+    String? trailing,
   }) {
     final effectiveColor = enabled
         ? (color ?? AppColors.ink)
@@ -246,6 +293,13 @@ class MorePage extends StatelessWidget {
                 style: TextStyle(fontSize: 15, color: effectiveColor),
               ),
             ),
+            if (trailing != null) ...[
+              Text(
+                trailing,
+                style: const TextStyle(fontSize: 13, color: AppColors.muted),
+              ),
+              const SizedBox(width: AppSpacing.xs),
+            ],
             // Chevron sits in a muted disc (§5.2): the affordance column is
             // decoration, so it never competes with the row label.
             if (enabled && color == null)
