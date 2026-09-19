@@ -1,4 +1,4 @@
-Status: ACTIVE
+Status: DONE
 Verify: FAST
 
 User report (2026-09-19), on the live admin panel, about the provider «سالن نهال» (09123135143):
@@ -39,3 +39,4 @@ though it entered several, and none of its 3 gallery photos load.
   05:30Z, and the server refused it ("زمان رزرو باید بین 09:00 و 18:00 باشد"); the listed value
   unchanged booked fine (test booking cancelled at once). Fixed client-side (wallClockIso, 2 tests);
   failures now show the server's reason (3 tests). Timezone model recorded as FOLLOW-UPS #63.
+- 2026-09-19 verify FULL PASS (17 steps, 396 s) on 0e79e227.
