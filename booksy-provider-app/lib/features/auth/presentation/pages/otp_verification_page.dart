@@ -109,8 +109,10 @@ class _OtpVerificationPageState extends State<OtpVerificationPage> {
             if (state is Authenticated ||
                 state is NeedsOnboarding ||
                 state is AccountBlocked) {
-              // Router redirect handles navigation.
-              AppSnackbar.success(context, AppStrings.loginSuccess);
+              // No snackbar: the router redirects straight to the next screen,
+              // which is the confirmation. The success message used to linger
+              // over the onboarding wizard and cover its "بعدی" button.
+
             } else if (state is OtpResent) {
               AppSnackbar.info(context, AppStrings.otpResent);
               _startCountdown();

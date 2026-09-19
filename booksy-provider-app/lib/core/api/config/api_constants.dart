@@ -171,9 +171,12 @@ class ApiConstants {
 
   // ==================== Onboarding (ServiceCatalog) ====================
 
-  /// POST — create the organization draft (onboarding step 3).
-  static const String registerOrganization =
-      '/$apiVersion/Providers/organizations';
+  /// POST — create (or resume) the provider draft, onboarding step 3.
+  ///
+  /// NOT /Providers/organizations: that endpoint was removed with the provider
+  /// hierarchy (there is one kind of provider now), and the server answered 405
+  /// to every onboarding submission until this was corrected.
+  static const String registerOrganization = '/$apiVersion/Providers/draft';
 
   /// GET — current registration progress (draft restore).
   static const String registrationProgress = '/$apiVersion/Registration/progress';
