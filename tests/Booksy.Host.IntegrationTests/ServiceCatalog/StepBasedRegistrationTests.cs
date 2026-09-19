@@ -375,6 +375,102 @@ public class StepBasedRegistrationTests : ServiceCatalogIntegrationTestBase
         return buffer.ToArray();
     }
 
+    /// <summary>
+    /// A closing time before the opening time, and a break that ends before it starts, are nonsense
+    /// schedules: they would make the salon bookable at hours it is shut. The provider app blocks
+    /// both, but the API is the contract every client shares, so it must refuse them itself
+    /// (user report, 2026-09-19 — the picker allowed an end earlier than the start).
+    /// </summary>
+    [Theory]
+    [InlineData(18, 0, 9, 0)]   // closes before it opens
+    [InlineData(9, 0, 9, 0)]    // opens and closes at the same minute
+    public async Task Step6_RefusesADayThatClosesBeforeItOpens(
+        int openHour, int openMinute, int closeHour, int closeMinute)
+    {
+        var providerId = await CreateDraftProviderAsync($"hours-{openHour}-{closeHour}@test.com");
+
+        var response = await Client.PostAsJsonAsync("/api/v1/registration/step-6/working-hours", new
+        {
+            ProviderId = providerId,
+            BusinessHours = new[]
+            {
+                new
+                {
+                    DayOfWeek = 1,
+                    IsOpen = true,
+                    OpenTime = new { Hours = openHour, Minutes = openMinute },
+                    CloseTime = new { Hours = closeHour, Minutes = closeMinute },
+                    Breaks = new object[] { }
+                }
+            }
+        });
+
+        response.StatusCode.Should().Be(HttpStatusCode.BadRequest);
+    }
+
+    [Fact]
+    public async Task Step6_RefusesABreakThatEndsBeforeItStarts()
+    {
+        var providerId = await CreateDraftProviderAsync("break-reversed@test.com");
+
+        var response = await Client.PostAsJsonAsync("/api/v1/registration/step-6/working-hours", new
+        {
+            ProviderId = providerId,
+            BusinessHours = new[]
+            {
+                new
+                {
+                    DayOfWeek = 1,
+                    IsOpen = true,
+                    OpenTime = new { Hours = 9, Minutes = 0 },
+                    CloseTime = new { Hours = 18, Minutes = 0 },
+                    Breaks = new object[]
+                    {
+                        new
+                        {
+                            Start = new { Hours = 13, Minutes = 0 },
+                            End = new { Hours = 12, Minutes = 0 }
+                        }
+                    }
+                }
+            }
+        });
+
+        response.StatusCode.Should().Be(HttpStatusCode.BadRequest);
+    }
+
+    [Fact]
+    public async Task Step6_RefusesABreakOutsideTheDays_Hours()
+    {
+        var providerId = await CreateDraftProviderAsync("break-outside@test.com");
+
+        var response = await Client.PostAsJsonAsync("/api/v1/registration/step-6/working-hours", new
+        {
+            ProviderId = providerId,
+            BusinessHours = new[]
+            {
+                new
+                {
+                    DayOfWeek = 1,
+                    IsOpen = true,
+                    OpenTime = new { Hours = 9, Minutes = 0 },
+                    CloseTime = new { Hours = 18, Minutes = 0 },
+                    Breaks = new object[]
+                    {
+                        // 20:00-21:00, hours after closing: a break nobody can take.
+                        new
+                        {
+                            Start = new { Hours = 20, Minutes = 0 },
+                            End = new { Hours = 21, Minutes = 0 }
+                        }
+                    }
+                }
+            }
+        });
+
+        response.StatusCode.Should().Be(HttpStatusCode.BadRequest);
+    }
+
     private async Task<Guid> CreateDraftProviderAsync(string email)
     {
         await CreateAndAuthenticateAsRealUserAsync(email);

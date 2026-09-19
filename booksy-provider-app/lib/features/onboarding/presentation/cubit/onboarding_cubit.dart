@@ -20,12 +20,14 @@ class OnboardingCubit extends Cubit<OnboardingState> {
   /// any server-side draft — rehydrating every saved field and jumping to the
   /// step after the last one the backend recorded.
   Future<void> init({String? phoneNumber}) async {
-    emit(OnboardingState(
-      data: OnboardingData(
-        businessInfo: BusinessInfo(phone: phoneNumber ?? ''),
-        businessHours: _defaultHours(),
+    emit(
+      OnboardingState(
+        data: OnboardingData(
+          businessInfo: BusinessInfo(phone: phoneNumber ?? ''),
+          businessHours: _defaultHours(),
+        ),
       ),
-    ));
+    );
 
     final result = await _repository.getDraft();
     result.fold(
@@ -42,29 +44,33 @@ class OnboardingCubit extends Cubit<OnboardingState> {
         // fresh submit would show, which re-checks the auth session and lets
         // the router move the provider on to the dashboard.
         if (draft.isFullyComplete) {
-          emit(state.copyWith(
-            draftProviderId: draft.providerId,
-            step: OnboardingState.totalSteps,
-            phase: OnboardingPhase.completed,
-          ));
+          emit(
+            state.copyWith(
+              draftProviderId: draft.providerId,
+              step: OnboardingState.totalSteps,
+              phase: OnboardingPhase.completed,
+            ),
+          );
           return;
         }
 
         final restored = draft.data;
-        emit(state.copyWith(
-          draftProviderId: draft.providerId,
-          step: draft.resumeStep,
-          data: restored.copyWith(
-            // Keep the authenticated phone if the draft has none.
-            businessInfo: restored.businessInfo.phone.isEmpty
-                ? restored.businessInfo.copyWith(phone: phoneNumber ?? '')
-                : restored.businessInfo,
-            // A draft saved before the hours step has none — keep the defaults.
-            businessHours: restored.businessHours.isEmpty
-                ? state.data.businessHours
-                : restored.businessHours,
+        emit(
+          state.copyWith(
+            draftProviderId: draft.providerId,
+            step: draft.resumeStep,
+            data: restored.copyWith(
+              // Keep the authenticated phone if the draft has none.
+              businessInfo: restored.businessInfo.phone.isEmpty
+                  ? restored.businessInfo.copyWith(phone: phoneNumber ?? '')
+                  : restored.businessInfo,
+              // A draft saved before the hours step has none — keep the defaults.
+              businessHours: restored.businessHours.isEmpty
+                  ? state.data.businessHours
+                  : restored.businessHours,
+            ),
           ),
-        ));
+        );
       },
     );
   }
@@ -86,12 +92,17 @@ class OnboardingCubit extends Cubit<OnboardingState> {
 
   /// Onboarding branch (set on the preview step): does the owner personally
   /// provide services? Submitted at [complete].
-  void setOwnerProvidesServices(bool providesServices) => emit(state.copyWith(
-      data: state.data.copyWith(ownerProvidesServices: providesServices)));
+  void setOwnerProvidesServices(bool providesServices) => emit(
+    state.copyWith(
+      data: state.data.copyWith(ownerProvidesServices: providesServices),
+    ),
+  );
 
   void back() {
     if (state.step > 1) {
-      emit(state.copyWith(step: state.step - 1, phase: OnboardingPhase.editing));
+      emit(
+        state.copyWith(step: state.step - 1, phase: OnboardingPhase.editing),
+      );
     }
   }
 
@@ -112,25 +123,34 @@ class OnboardingCubit extends Cubit<OnboardingState> {
 
     switch (state.step) {
       case 3:
-        await _run(() => _repository.createDraft(state.data), onOk: (providerId) {
-          emit(state.copyWith(
-            draftProviderId: providerId,
-            step: 4,
-            phase: OnboardingPhase.editing,
-          ));
-        });
+        await _run(
+          () => _repository.createDraft(state.data),
+          onOk: (providerId) {
+            emit(
+              state.copyWith(
+                draftProviderId: providerId,
+                step: 4,
+                phase: OnboardingPhase.editing,
+              ),
+            );
+          },
+        );
         break;
       case 4:
-        await _requireDraft((id) => _run(
-              () => _repository.saveServices(id, state.data.services),
-              onOk: (_) => _advance(),
-            ));
+        await _requireDraft(
+          (id) => _run(
+            () => _repository.saveServices(id, state.data.services),
+            onOk: (_) => _advance(),
+          ),
+        );
         break;
       case 5:
-        await _requireDraft((id) => _run(
-              () => _repository.saveWorkingHours(id, state.data.businessHours),
-              onOk: (_) => _advance(),
-            ));
+        await _requireDraft(
+          (id) => _run(
+            () => _repository.saveWorkingHours(id, state.data.businessHours),
+            onOk: (_) => _advance(),
+          ),
+        );
         break;
       default:
         // Steps 1, 2, 6 (gallery optional): no backend save; just advance.
@@ -145,10 +165,12 @@ class OnboardingCubit extends Cubit<OnboardingState> {
       _advance();
       return;
     }
-    await _requireDraft((id) => _run(
-          () => _repository.uploadGallery(id, images),
-          onOk: (_) => _advance(),
-        ));
+    await _requireDraft(
+      (id) => _run(
+        () => _repository.uploadGallery(id, images),
+        onOk: (_) => _advance(),
+      ),
+    );
   }
 
   /// Final submit from the preview step (step 7) → complete → step 8.
@@ -158,33 +180,38 @@ class OnboardingCubit extends Cubit<OnboardingState> {
   /// change it later from settings — so its result is intentionally not awaited for
   /// success/failure gating.
   Future<void> complete() async {
-    await _requireDraft((id) => _run(
-          () => _repository.complete(id),
-          onOk: (_) {
-            _repository.setOwnerProvidesServices(state.data.ownerProvidesServices);
-            emit(state.copyWith(
-              step: 8,
-              phase: OnboardingPhase.completed,
-            ));
-          },
-        ));
+    await _requireDraft(
+      (id) => _run(
+        () => _repository.complete(id),
+        onOk: (_) {
+          _repository.setOwnerProvidesServices(
+            state.data.ownerProvidesServices,
+          );
+          emit(state.copyWith(step: 8, phase: OnboardingPhase.completed));
+        },
+      ),
+    );
   }
 
   // ---- helpers ----
 
   void _advance() {
     if (state.step < OnboardingState.totalSteps) {
-      emit(state.copyWith(step: state.step + 1, phase: OnboardingPhase.editing));
+      emit(
+        state.copyWith(step: state.step + 1, phase: OnboardingPhase.editing),
+      );
     }
   }
 
   Future<void> _requireDraft(Future<void> Function(String id) op) async {
     final id = state.draftProviderId;
     if (id == null) {
-      emit(state.copyWith(
-        phase: OnboardingPhase.error,
-        errorMessage: 'خطا: شناسه کسب‌وکار یافت نشد',
-      ));
+      emit(
+        state.copyWith(
+          phase: OnboardingPhase.error,
+          errorMessage: 'خطا: شناسه کسب‌وکار یافت نشد',
+        ),
+      );
       return;
     }
     await op(id);
@@ -197,10 +224,12 @@ class OnboardingCubit extends Cubit<OnboardingState> {
     emit(state.copyWith(phase: OnboardingPhase.saving));
     final result = await op();
     result.fold(
-      (failure) => emit(state.copyWith(
-        phase: OnboardingPhase.error,
-        errorMessage: failure.message,
-      )),
+      (failure) => emit(
+        state.copyWith(
+          phase: OnboardingPhase.error,
+          errorMessage: failure.message,
+        ),
+      ),
       onOk,
     );
   }
@@ -208,17 +237,29 @@ class OnboardingCubit extends Cubit<OnboardingState> {
   String? _validateCurrent() {
     switch (state.step) {
       case 1:
-        return state.data.businessInfo.isComplete
-            ? null
-            : 'لطفاً تمام فیلدهای الزامی را تکمیل کنید';
+        // Name what is missing. Step 1 also marks each empty field inline; this
+        // is the banner above the action row, and "fill in all the fields" left
+        // the user hunting for which one it meant.
+        final info = state.data.businessInfo;
+        return _missing([
+          if (info.businessName.trim().isEmpty) AppStrings.businessName,
+          if (info.ownerFirstName.trim().isEmpty ||
+              info.ownerLastName.trim().isEmpty)
+            AppStrings.ownerFullName,
+          if (info.phone.trim().isEmpty) AppStrings.businessPhone,
+          if (info.description.trim().isEmpty) AppStrings.businessDescription,
+        ]);
       case 2:
         return (state.data.categoryId?.isNotEmpty ?? false)
             ? null
             : 'لطفاً دسته‌بندی را انتخاب کنید';
       case 3:
-        return state.data.address.isComplete
-            ? null
-            : 'لطفاً آدرس و شهر را وارد کنید';
+        final address = state.data.address;
+        return _missing([
+          if (address.city.trim().isEmpty || address.province.trim().isEmpty)
+            AppStrings.city,
+          if (address.addressLine1.trim().isEmpty) AppStrings.addressLine1,
+        ]);
       case 4:
         return state.data.services.isNotEmpty
             ? null
@@ -229,6 +270,11 @@ class OnboardingCubit extends Cubit<OnboardingState> {
         return null;
     }
   }
+
+  /// The banner for a step whose required fields are not filled in, naming them.
+  /// Null when nothing is missing.
+  String? _missing(List<String> fields) =>
+      fields.isEmpty ? null : AppStrings.completeTheseFields(fields);
 
   /// Step-5 rules (parity with the Vue WorkingHoursStep): at least one open day;
   /// every open day has a valid close-after-open range; and every break sits

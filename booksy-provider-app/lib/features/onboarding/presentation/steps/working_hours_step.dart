@@ -88,14 +88,16 @@ class WorkingHoursStep extends StatelessWidget {
   void _copyToAllDays(BuildContext context, DayHours source) {
     final cubit = context.read<OnboardingCubit>();
     final hours = cubit.state.data.businessHours
-        .map((d) => d.dayOfWeek == source.dayOfWeek
-            ? d
-            : d.copyWith(
-                isOpen: source.isOpen,
-                openTime: source.openTime,
-                closeTime: source.closeTime,
-                breaks: [...source.breaks],
-              ))
+        .map(
+          (d) => d.dayOfWeek == source.dayOfWeek
+              ? d
+              : d.copyWith(
+                  isOpen: source.isOpen,
+                  openTime: source.openTime,
+                  closeTime: source.closeTime,
+                  breaks: [...source.breaks],
+                ),
+        )
         .toList();
     cubit.setBusinessHours(hours);
     ScaffoldMessenger.of(context)
@@ -116,13 +118,34 @@ class WorkingHoursStep extends StatelessWidget {
           onBack: cubit.back,
           onNext: cubit.next,
           child: Column(
-            children: [
-              for (final day in hours) _dayCard(context, day),
-            ],
+            children: [for (final day in hours) _dayCard(context, day)],
           ),
         );
       },
     );
+  }
+
+  /// What is wrong with [day]'s times, or null. Mirrors the cubit's step-5
+  /// rules (and the server's), shown per row instead of once at the bottom.
+  static String? _dayError(DayHours day) {
+    if (!day.isOpen) return null;
+    final name = AppStrings.weekDays[day.dayOfWeek];
+    int mins(ClockTime t) => t.hours * 60 + t.minutes;
+
+    final open = day.openTime;
+    final close = day.closeTime;
+    if (open == null || close == null || mins(close) <= mins(open)) {
+      return AppStrings.closeAfterOpenError(name);
+    }
+    for (final br in day.breaks) {
+      if (mins(br.end) <= mins(br.start)) {
+        return AppStrings.breakEndAfterStartError(name);
+      }
+      if (mins(br.start) < mins(open) || mins(br.end) > mins(close)) {
+        return AppStrings.breakWithinHoursError(name);
+      }
+    }
+    return null;
   }
 
   Widget _dayCard(BuildContext context, DayHours day) {
@@ -146,8 +169,10 @@ class WorkingHoursStep extends StatelessWidget {
                     style: theme.textTheme.titleMedium,
                   ),
                 ),
-                Text(day.isOpen ? AppStrings.openLabel : AppStrings.closedLabel,
-                    style: theme.textTheme.bodySmall),
+                Text(
+                  day.isOpen ? AppStrings.openLabel : AppStrings.closedLabel,
+                  style: theme.textTheme.bodySmall,
+                ),
                 Switch(
                   key: Key('day-toggle-${day.dayOfWeek}'),
                   value: day.isOpen,
@@ -180,6 +205,21 @@ class WorkingHoursStep extends StatelessWidget {
                   ),
                 ],
               ),
+              // Flagged here, under the row that is wrong, the moment it is
+              // wrong: pressing Next scrolls the offending day out of sight.
+              // The API refuses such a schedule too (step-6 returns 400).
+              if (_dayError(day) != null)
+                Padding(
+                  key: Key('day-error-${day.dayOfWeek}'),
+                  padding: const EdgeInsets.only(top: AppSpacing.xs),
+                  child: Text(
+                    _dayError(day)!,
+                    textAlign: TextAlign.center,
+                    style: theme.textTheme.bodySmall?.copyWith(
+                      color: theme.colorScheme.error,
+                    ),
+                  ),
+                ),
               const Divider(height: AppSpacing.lg),
               _breaksSection(context, day),
               Align(
@@ -206,8 +246,10 @@ class WorkingHoursStep extends StatelessWidget {
         Row(
           children: [
             Expanded(
-              child: Text(AppStrings.breaksLabel,
-                  style: theme.textTheme.bodyMedium),
+              child: Text(
+                AppStrings.breaksLabel,
+                style: theme.textTheme.bodyMedium,
+              ),
             ),
             TextButton.icon(
               key: Key('add-break-${day.dayOfWeek}'),
@@ -222,8 +264,9 @@ class WorkingHoursStep extends StatelessWidget {
             alignment: Alignment.centerRight,
             child: Text(
               AppStrings.noBreaks,
-              style: theme.textTheme.bodySmall
-                  ?.copyWith(color: theme.colorScheme.onSurfaceVariant),
+              style: theme.textTheme.bodySmall?.copyWith(
+                color: theme.colorScheme.onSurfaceVariant,
+              ),
             ),
           )
         else
@@ -236,8 +279,7 @@ class WorkingHoursStep extends StatelessWidget {
                   _timeChip(
                     context,
                     label: day.breaks[i].start.label,
-                    onTap: () =>
-                        _pickBreakTime(context, day, i, isStart: true),
+                    onTap: () => _pickBreakTime(context, day, i, isStart: true),
                   ),
                   const Padding(
                     padding: EdgeInsets.symmetric(horizontal: AppSpacing.xs),
@@ -256,8 +298,10 @@ class WorkingHoursStep extends StatelessWidget {
                     visualDensity: VisualDensity.compact,
                     constraints: const BoxConstraints(),
                     padding: const EdgeInsets.all(AppSpacing.xs),
-                    icon: Icon(Icons.delete_outline,
-                        color: theme.colorScheme.error),
+                    icon: Icon(
+                      Icons.delete_outline,
+                      color: theme.colorScheme.error,
+                    ),
                     onPressed: () => _removeBreak(context, day, i),
                   ),
                 ],

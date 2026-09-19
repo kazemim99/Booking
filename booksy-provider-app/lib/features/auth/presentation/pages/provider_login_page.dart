@@ -94,6 +94,7 @@ class _ProviderLoginPageState extends State<ProviderLoginPage> {
                     controller: _phoneController,
                     focusNode: _phoneFocus,
                     label: AppStrings.phoneLabel,
+                    isRequired: true,
                     hint: AppStrings.phoneHint,
                     errorText: _inlineError,
                     prefixIcon: Icons.phone_outlined,

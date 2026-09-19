@@ -94,7 +94,8 @@ class AppStrings {
 
   // Step 1 — business info
   static const String businessInfoTitle = 'اطلاعات کسب‌و‌کار';
-  static const String businessInfoSubtitle = 'اطلاعات کسب‌و‌کار خود را وارد کنید';
+  static const String businessInfoSubtitle =
+      'اطلاعات کسب‌و‌کار خود را وارد کنید';
   static const String businessName = 'نام کسب‌و‌کار';
   static const String ownerFirstName = 'نام مالک';
   static const String ownerLastName = 'نام خانوادگی مالک';
@@ -102,8 +103,14 @@ class AppStrings {
   // see core/utils/person_name.dart).
   static const String ownerFullName = 'نام و نام خانوادگی مالک';
   static const String ownerFullNameHint = 'مثلاً علی رضایی';
+
+  /// Names the still-empty required fields, so the user never has to hunt.
+  static String completeTheseFields(List<String> fields) =>
+      'این فیلدها را کامل کنید: ${fields.join('، ')}';
+
   static const String fieldRequired = 'این فیلد الزامی است';
-  static const String fullNameNeedsBoth = 'لطفاً نام و نام خانوادگی را کامل وارد کنید';
+  static const String fullNameNeedsBoth =
+      'لطفاً نام و نام خانوادگی را کامل وارد کنید';
   static const String businessPhoneFromAccount =
       'این شماره هنگام ورود تأیید شده و قابل تغییر نیست';
   static const String emailOptional = 'ایمیل (اختیاری)';
@@ -126,18 +133,31 @@ class AppStrings {
   // (the backend validator still requires it). Kept only as a preview label.
   static const String province = 'استان';
   static const String mapLabel = 'موقعیت روی نقشه';
-  static const String mapHint = 'روی نقشه بزنید تا موقعیت دقیق کسب‌وکار مشخص شود';
+  static const String mapHint =
+      'روی نقشه بزنید تا موقعیت دقیق کسب‌وکار مشخص شود';
   static const String cityLoadError = 'بارگذاری فهرست شهرها ناموفق بود';
   static const String citiesLoading = 'در حال بارگذاری شهرها...';
 
   // Step 4 — services
   static const String servicesTitle = 'خدمات';
-  static const String servicesSubtitle = 'خدماتی که ارائه می‌دهید را اضافه کنید';
+  static const String servicesSubtitle =
+      'خدماتی که ارائه می‌دهید را اضافه کنید';
   static const String addService = 'افزودن خدمت';
   static const String serviceName = 'نام خدمت';
   static const String serviceDuration = 'مدت زمان (دقیقه)';
   static const String servicePrice = 'قیمت (تومان)';
   static const String noServicesYet = 'هنوز خدمتی اضافه نشده است';
+
+  // Suggested-services catalogue (onboarding step 4).
+  static const String searchServices = 'جستجوی خدمت';
+  static const String searchServicesHint = 'مثلاً کراتینه';
+  static const String suggestedPrice = 'قیمت پیشنهادی';
+  static const String toman = 'تومان';
+  static const String customServices = 'خدمات دلخواه';
+  static const String servicesPickHint =
+      'خدمات خود را از فهرست زیر انتخاب کنید و در صورت نیاز قیمت را تغییر دهید';
+  static String servicesSelectedCount(int count) =>
+      '$count خدمت انتخاب شده است';
   static const String save = 'ذخیره';
   static const String cancel = 'انصراف';
 
@@ -200,8 +220,7 @@ class AppStrings {
   static const String providesServicesHint =
       'اگر بله، شما به عنوان اولین عضو تیم اضافه می‌شوید و می‌توانید نوبت بگیرید.';
   static const String providesServicesYes = 'بله، خودم خدمات ارائه می‌دهم';
-  static const String providesServicesNo =
-      'خیر، فقط کسب‌وکار را مدیریت می‌کنم';
+  static const String providesServicesNo = 'خیر، فقط کسب‌وکار را مدیریت می‌کنم';
 
   // Step 8 — completion
   static const String completionTitle = 'ثبت‌نام تکمیل شد!';
@@ -224,8 +243,7 @@ class AppStrings {
   static const String homeGreetingEvening = 'عصر بخیر';
 
   // Banners
-  static const String homePendingBannerTitle =
-      'کسب‌وکار شما در حال بررسی است';
+  static const String homePendingBannerTitle = 'کسب‌وکار شما در حال بررسی است';
   static const String homePendingBannerBody =
       'تا زمان تأیید، برای مشتریان قابل‌رزرو نیست؛ می‌توانید همچنان پروفایل خود را کامل کنید.';
   static const String homeOfflineBanner = 'اتصال اینترنت برقرار نیست';
@@ -249,8 +267,7 @@ class AppStrings {
   /// Growth-zone copy while the business is still awaiting approval. It must
   /// not claim the business is "ready": customers cannot book it yet, and the
   /// pending banner sits directly above this card.
-  static const String homeDiscoverPendingTitle =
-      'پروفایل شما کامل است';
+  static const String homeDiscoverPendingTitle = 'پروفایل شما کامل است';
   static const String homeDiscoverPendingBody =
       'پس از تأیید کسب‌وکار، می‌توانید لینک رزرو را به‌اشتراک بگذارید.';
   static const String homeDiscoverBody =
@@ -461,7 +478,8 @@ class AppStrings {
 
   // Accept-invitation screen (from an SMS link)
   static const String acceptInvitationTitle = 'پذیرش دعوت';
-  static const String acceptInvitationNotFound = 'دعوت‌نامه یافت نشد یا منقضی شده است';
+  static const String acceptInvitationNotFound =
+      'دعوت‌نامه یافت نشد یا منقضی شده است';
   static String acceptInvitationInvitedTo(String org) =>
       'شما به «$org» دعوت شده‌اید';
   static const String acceptInvitationAccept = 'پذیرش و پیوستن';
@@ -533,8 +551,7 @@ class AppStrings {
   static const String galleryRemove = 'حذف تصویر';
   static const String galleryRemoved = 'تصویر حذف شد';
   static const String galleryRemoveConfirmTitle = 'حذف تصویر';
-  static const String galleryRemoveConfirmBody =
-      'این تصویر از گالری حذف شود؟';
+  static const String galleryRemoveConfirmBody = 'این تصویر از گالری حذف شود؟';
 
   // ==================== Block time (availability exceptions) ====================
   static const String blockTimeTitle = 'مسدود کردن زمان';

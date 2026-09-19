@@ -1,4 +1,6 @@
 import 'package:booksy_provider_app/config/theme/app_theme.dart';
+import 'package:booksy_provider_app/core/constants/app_strings.dart';
+import 'package:booksy_provider_app/features/onboarding/domain/entities/onboarding_data.dart';
 import 'package:booksy_provider_app/features/onboarding/domain/repositories/onboarding_repository.dart';
 import 'package:booksy_provider_app/features/onboarding/presentation/cubit/onboarding_cubit.dart';
 import 'package:booksy_provider_app/features/onboarding/presentation/steps/working_hours_step.dart';
@@ -102,5 +104,85 @@ void main() {
     final hours = cubit.state.data.businessHours;
     expect(hours.every((d) => d.breaks.length == 1), isTrue);
     expect(hours.every((d) => d.isOpen), isTrue);
+  });
+
+  group('a range that ends before it starts is flagged where it is made', () {
+    // The picker let a day close before it opened and only complained when the
+    // user pressed Next, by which point the offending day was scrolled away
+    // (user report, 2026-09-19). The API refuses such a schedule too.
+    testWidgets('the day says so under its own row', (tester) async {
+      final cubit = await pumpStep(tester);
+      // init() seeds 7 days asynchronously; let that finish or it overwrites this.
+      await tester.pumpAndSettle();
+      cubit.setBusinessHours([
+        for (final day in cubit.state.data.businessHours)
+          if (day.dayOfWeek != 1)
+            day
+          else
+            day.copyWith(
+              isOpen: true,
+              openTime: const ClockTime(18, 0),
+              closeTime: const ClockTime(9, 0),
+              breaks: const [],
+            ),
+      ]);
+
+      // Two frames: the cubit's emit reaches the builder on the next one.
+      await tester.pumpAndSettle();
+
+      expect(find.byKey(const Key('day-error-1')), findsOneWidget);
+      expect(
+        find.text(AppStrings.closeAfterOpenError(AppStrings.weekDays[1])),
+        findsOneWidget,
+      );
+    });
+
+    testWidgets('a break that ends before it starts says so too', (
+      tester,
+    ) async {
+      final cubit = await pumpStep(tester);
+      // init() seeds 7 days asynchronously; let that finish or it overwrites this.
+      await tester.pumpAndSettle();
+      cubit.setBusinessHours([
+        for (final day in cubit.state.data.businessHours)
+          if (day.dayOfWeek != 1)
+            day
+          else
+            day.copyWith(
+              isOpen: true,
+              openTime: const ClockTime(9, 0),
+              closeTime: const ClockTime(18, 0),
+              breaks: const [BreakTime(ClockTime(13, 0), ClockTime(12, 0))],
+            ),
+      ]);
+
+      // Two frames: the cubit's emit reaches the builder on the next one.
+      await tester.pumpAndSettle();
+
+      expect(find.byKey(const Key('day-error-1')), findsOneWidget);
+    });
+
+    testWidgets('a sound day shows no error', (tester) async {
+      final cubit = await pumpStep(tester);
+      // init() seeds 7 days asynchronously; let that finish or it overwrites this.
+      await tester.pumpAndSettle();
+      cubit.setBusinessHours([
+        for (final day in cubit.state.data.businessHours)
+          if (day.dayOfWeek != 1)
+            day
+          else
+            day.copyWith(
+              isOpen: true,
+              openTime: const ClockTime(9, 0),
+              closeTime: const ClockTime(18, 0),
+              breaks: const [BreakTime(ClockTime(12, 0), ClockTime(13, 0))],
+            ),
+      ]);
+
+      // Two frames: the cubit's emit reaches the builder on the next one.
+      await tester.pumpAndSettle();
+
+      expect(find.byKey(const Key('day-error-1')), findsNothing);
+    });
   });
 }

@@ -40,6 +40,11 @@ class RegisterAndAcceptView extends StatefulWidget {
 }
 
 class _RegisterAndAcceptViewState extends State<RegisterAndAcceptView> {
+  /// Required fields to flag: those the user has left, plus every empty one
+  /// once they press the button. A snackbar saying "fill in the fields" did not
+  /// tell them WHICH.
+  final Set<String> _flagged = {};
+
   final _firstNameCtrl = TextEditingController();
   final _lastNameCtrl = TextEditingController();
   final _emailCtrl = TextEditingController();
@@ -55,12 +60,18 @@ class _RegisterAndAcceptViewState extends State<RegisterAndAcceptView> {
   }
 
   void _submitInfo(RegisterAndAcceptCubit cubit) {
-    if (_firstNameCtrl.text.trim().isEmpty || _lastNameCtrl.text.trim().isEmpty) {
-      AppSnackbar.error(context, AppStrings.registerAcceptFieldsRequired);
+    if (_firstNameCtrl.text.trim().isEmpty ||
+        _lastNameCtrl.text.trim().isEmpty) {
+      setState(() => _flagged.addAll(['firstName', 'lastName']));
       return;
     }
     cubit.sendOtp();
   }
+
+  String? _requiredError(String field, TextEditingController controller) =>
+      _flagged.contains(field) && controller.text.trim().isEmpty
+      ? AppStrings.fieldRequired
+      : null;
 
   void _submitOtp(RegisterAndAcceptCubit cubit, String code) {
     cubit.register(
@@ -112,6 +123,9 @@ class _RegisterAndAcceptViewState extends State<RegisterAndAcceptView> {
                 firstNameCtrl: _firstNameCtrl,
                 lastNameCtrl: _lastNameCtrl,
                 emailCtrl: _emailCtrl,
+                firstNameError: _requiredError('firstName', _firstNameCtrl),
+                lastNameError: _requiredError('lastName', _lastNameCtrl),
+                onFieldBlur: (field) => setState(() => _flagged.add(field)),
                 onSubmit: () => _submitInfo(cubit),
               );
           }
@@ -126,6 +140,9 @@ class _InfoBody extends StatelessWidget {
   final TextEditingController firstNameCtrl;
   final TextEditingController lastNameCtrl;
   final TextEditingController emailCtrl;
+  final String? firstNameError;
+  final String? lastNameError;
+  final void Function(String field) onFieldBlur;
   final VoidCallback onSubmit;
 
   const _InfoBody({
@@ -133,6 +150,9 @@ class _InfoBody extends StatelessWidget {
     required this.firstNameCtrl,
     required this.lastNameCtrl,
     required this.emailCtrl,
+    required this.firstNameError,
+    required this.lastNameError,
+    required this.onFieldBlur,
     required this.onSubmit,
   });
 
@@ -158,12 +178,18 @@ class _InfoBody extends StatelessWidget {
               key: const Key('register-accept-first-name'),
               controller: firstNameCtrl,
               label: AppStrings.registerAcceptFirstName,
+              isRequired: true,
+              errorText: firstNameError,
+              onBlur: () => onFieldBlur('firstName'),
             ),
             const SizedBox(height: AppSpacing.sm),
             AppTextField(
               key: const Key('register-accept-last-name'),
               controller: lastNameCtrl,
               label: AppStrings.registerAcceptLastName,
+              isRequired: true,
+              errorText: lastNameError,
+              onBlur: () => onFieldBlur('lastName'),
             ),
             const SizedBox(height: AppSpacing.sm),
             AppTextField(

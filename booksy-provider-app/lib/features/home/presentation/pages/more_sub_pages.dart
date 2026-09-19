@@ -6,6 +6,7 @@ import '../../../../config/routes/app_router.dart';
 
 import '../../../../config/theme/app_tokens.dart';
 import '../../../../core/constants/app_strings.dart';
+import '../../../../core/utils/persian_digits.dart';
 import '../../../../core/di/injection.dart';
 import '../../../../core/widgets/app_button.dart';
 import '../../../../core/widgets/app_card.dart';
@@ -37,15 +38,19 @@ class _AddLinkRow extends StatelessWidget {
       alignment: AlignmentDirectional.centerStart,
       child: TextButton.icon(
         onPressed: onTap,
-        icon: const Icon(Icons.add_circle,
-            size: AppIconSize.action, color: AppColors.success),
+        icon: const Icon(
+          Icons.add_circle,
+          size: AppIconSize.action,
+          color: AppColors.success,
+        ),
         label: Text(label),
         style: TextButton.styleFrom(
           foregroundColor: AppColors.success,
           padding: const EdgeInsets.symmetric(
-              horizontal: AppSpacing.xs, vertical: AppSpacing.sm),
-          textStyle:
-              const TextStyle(fontSize: 14, fontWeight: FontWeight.bold),
+            horizontal: AppSpacing.xs,
+            vertical: AppSpacing.sm,
+          ),
+          textStyle: const TextStyle(fontSize: 14, fontWeight: FontWeight.bold),
         ),
       ),
     );
@@ -53,8 +58,9 @@ class _AddLinkRow extends StatelessWidget {
 }
 
 String _formatMoney(double amount, String currency) {
-  final rounded =
-      amount == amount.roundToDouble() ? '${amount.round()}' : '$amount';
+  final rounded = amount == amount.roundToDouble()
+      ? '${amount.round()}'
+      : '$amount';
   return currency.isEmpty ? rounded : '$rounded $currency';
 }
 
@@ -84,9 +90,9 @@ class _MoreSubScaffold<T> extends StatelessWidget {
       body: switch (state.status) {
         MoreStatus.loading => const AppLoading.page(),
         MoreStatus.failed => AppErrorState(
-            message: state.error ?? AppStrings.homeLoadError,
-            onRetry: onRetry,
-          ),
+          message: state.error ?? AppStrings.homeLoadError,
+          onRetry: onRetry,
+        ),
         MoreStatus.ready => bodyBuilder(context, state.data as T),
       },
     );
@@ -131,19 +137,26 @@ class InsightsView extends StatelessWidget {
             const SizedBox(height: AppSpacing.sm),
             Row(
               children: [
-                _tile(AppStrings.insightsTotal, '${insights.totalBookings}',
-                    key: 'insights-total'),
+                _tile(
+                  AppStrings.insightsTotal,
+                  '${insights.totalBookings}',
+                  key: 'insights-total',
+                ),
                 const SizedBox(width: AppSpacing.sm),
-                _tile(AppStrings.insightsCompleted,
-                    '${insights.completedBookings}',
-                    color: AppColors.success),
+                _tile(
+                  AppStrings.insightsCompleted,
+                  '${insights.completedBookings}',
+                  color: AppColors.success,
+                ),
               ],
             ),
             const SizedBox(height: AppSpacing.sm),
             Row(
               children: [
-                _tile(AppStrings.insightsCancelled,
-                    '${insights.cancelledBookings}'),
+                _tile(
+                  AppStrings.insightsCancelled,
+                  '${insights.cancelledBookings}',
+                ),
                 const SizedBox(width: AppSpacing.sm),
                 _tile(AppStrings.insightsNoShow, '${insights.noShowBookings}'),
               ],
@@ -170,9 +183,11 @@ class InsightsView extends StatelessWidget {
             const SizedBox(height: AppSpacing.sm),
             Row(
               children: [
-                _tile(AppStrings.insightsTotal,
-                    '${insights.bookingsTrailing30d}',
-                    key: 'insights-30d'),
+                _tile(
+                  AppStrings.insightsTotal,
+                  '${insights.bookingsTrailing30d}',
+                  key: 'insights-30d',
+                ),
                 const Expanded(child: SizedBox()),
               ],
             ),
@@ -264,8 +279,8 @@ class ServicesView extends StatelessWidget {
             // pattern): "add" reads as the positive accent, not brand blue,
             // which would vanish against the blue header.
             icon: const Icon(Icons.add_circle, color: AppColors.success),
-            onPressed: () => _ServiceFormSheet.show(
-                context, context.read<ServicesCubit>()),
+            onPressed: () =>
+                _ServiceFormSheet.show(context, context.read<ServicesCubit>()),
           ),
         ],
         bodyBuilder: (context, services) => services.isEmpty
@@ -274,7 +289,9 @@ class ServicesView extends StatelessWidget {
                 message: AppStrings.servicesEmpty,
                 actionLabel: '+ ${AppStrings.serviceAdd}',
                 onAction: () => _ServiceFormSheet.show(
-                    context, context.read<ServicesCubit>()),
+                  context,
+                  context.read<ServicesCubit>(),
+                ),
               )
             : ListView.separated(
                 padding: const EdgeInsets.all(AppSpacing.md),
@@ -287,7 +304,9 @@ class ServicesView extends StatelessWidget {
                       key: const Key('service-add-row'),
                       label: AppStrings.serviceAdd,
                       onTap: () => _ServiceFormSheet.show(
-                          context, context.read<ServicesCubit>()),
+                        context,
+                        context.read<ServicesCubit>(),
+                      ),
                     );
                   }
                   final s = services[i - 1];
@@ -295,25 +314,39 @@ class ServicesView extends StatelessWidget {
                     key: Key('service-row-${s.id}'),
                     contentPadding: EdgeInsets.zero,
                     onTap: () => _ServiceFormSheet.show(
-                        context, context.read<ServicesCubit>(),
-                        initial: s),
+                      context,
+                      context.read<ServicesCubit>(),
+                      initial: s,
+                    ),
                     title: Text(
                       s.name,
-                      style:
-                          const TextStyle(fontSize: 15, color: AppColors.ink),
+                      style: const TextStyle(
+                        fontSize: 15,
+                        color: AppColors.ink,
+                      ),
                     ),
                     subtitle: Text(
                       AppStrings.serviceMeta(
-                          s.durationMinutes, _formatMoney(s.price, '')),
+                        s.durationMinutes,
+                        _formatMoney(s.price, ''),
+                      ),
                       style: const TextStyle(
-                          fontSize: 12, color: AppColors.muted),
+                        fontSize: 12,
+                        color: AppColors.muted,
+                      ),
                     ),
                     trailing: IconButton(
                       key: Key('service-remove-${s.id}'),
-                      icon: const Icon(Icons.delete_outline,
-                          size: AppIconSize.action, color: AppColors.danger),
+                      icon: const Icon(
+                        Icons.delete_outline,
+                        size: AppIconSize.action,
+                        color: AppColors.danger,
+                      ),
                       onPressed: () => _confirmRemoveService(
-                          context, context.read<ServicesCubit>(), s),
+                        context,
+                        context.read<ServicesCubit>(),
+                        s,
+                      ),
                     ),
                   );
                 },
@@ -365,8 +398,11 @@ class _ServiceFormSheet extends StatefulWidget {
 
   const _ServiceFormSheet({required this.cubit, this.initial});
 
-  static Future<void> show(BuildContext context, ServicesCubit cubit,
-      {ComposerService? initial}) {
+  static Future<void> show(
+    BuildContext context,
+    ServicesCubit cubit, {
+    ComposerService? initial,
+  }) {
     return showModalBottomSheet<void>(
       context: context,
       isScrollControlled: true,
@@ -376,8 +412,9 @@ class _ServiceFormSheet extends StatefulWidget {
         ),
       ),
       builder: (_) => Padding(
-        padding:
-            EdgeInsets.only(bottom: MediaQuery.of(context).viewInsets.bottom),
+        padding: EdgeInsets.only(
+          bottom: MediaQuery.of(context).viewInsets.bottom,
+        ),
         child: _ServiceFormSheet(cubit: cubit, initial: initial),
       ),
     );
@@ -388,15 +425,28 @@ class _ServiceFormSheet extends StatefulWidget {
 }
 
 class _ServiceFormSheetState extends State<_ServiceFormSheet> {
+  /// Required fields the user has left, so the message appears once they have
+  /// had their chance at the field (app-wide rule: mark it, then name it).
+  final Set<String> _touched = {};
+
+  String? _requiredError(String field, String value) =>
+      _touched.contains(field) && value.trim().isEmpty
+      ? AppStrings.fieldRequired
+      : null;
+
   late final _name = TextEditingController(text: widget.initial?.name ?? '');
   late final _duration = TextEditingController(
-      text: widget.initial == null ? '' : '${widget.initial!.durationMinutes}');
+    text: widget.initial == null ? '' : '${widget.initial!.durationMinutes}',
+  );
   late final _price = TextEditingController(
-      text: widget.initial == null
-          ? ''
-          : widget.initial!.price.toStringAsFixed(0));
-  late final _description =
-      TextEditingController(text: widget.initial?.description ?? '');
+    text: widget.initial == null
+        ? ''
+        // Grouped, like the field shows it while typing.
+        : PriceText.format(widget.initial!.price),
+  );
+  late final _description = TextEditingController(
+    text: widget.initial?.description ?? '',
+  );
   bool _submitting = false;
 
   @override
@@ -409,7 +459,8 @@ class _ServiceFormSheetState extends State<_ServiceFormSheet> {
   }
 
   int get _minutes => int.tryParse(_duration.text.trim()) ?? 0;
-  double get _priceValue => double.tryParse(_price.text.trim()) ?? 0;
+  // The field groups digits as they are typed, so parse past the separators.
+  double get _priceValue => PriceText.parse(_price.text) ?? 0;
 
   bool get _canSubmit =>
       _name.text.trim().isNotEmpty &&
@@ -438,10 +489,11 @@ class _ServiceFormSheetState extends State<_ServiceFormSheet> {
     if (failure == null) {
       Navigator.pop(context);
       AppSnackbar.success(
-          context,
-          widget.initial == null
-              ? AppStrings.serviceAdded
-              : AppStrings.serviceUpdated);
+        context,
+        widget.initial == null
+            ? AppStrings.serviceAdded
+            : AppStrings.serviceUpdated,
+      );
     } else {
       // Failure preserves the form's input (spec).
       setState(() => _submitting = false);
@@ -473,6 +525,9 @@ class _ServiceFormSheetState extends State<_ServiceFormSheet> {
               key: const Key('service-name'),
               controller: _name,
               label: AppStrings.serviceName,
+              isRequired: true,
+              errorText: _requiredError('name', _name.text),
+              onBlur: () => setState(() => _touched.add('name')),
               onChanged: (_) => setState(() {}),
             ),
             const SizedBox(height: AppSpacing.sm),
@@ -483,7 +538,15 @@ class _ServiceFormSheetState extends State<_ServiceFormSheet> {
                     key: const Key('service-duration'),
                     controller: _duration,
                     label: AppStrings.serviceDuration,
+                    isRequired: true,
                     keyboardType: TextInputType.number,
+                    errorText: _minutes > 0
+                        ? null
+                        : _requiredError(
+                            'duration',
+                            _duration.text.isEmpty ? '' : ' ',
+                          ),
+                    onBlur: () => setState(() => _touched.add('duration')),
                     onChanged: (_) => setState(() {}),
                   ),
                 ),
@@ -493,7 +556,16 @@ class _ServiceFormSheetState extends State<_ServiceFormSheet> {
                     key: const Key('service-price'),
                     controller: _price,
                     label: AppStrings.servicePrice,
+                    isRequired: true,
                     keyboardType: TextInputType.number,
+                    inputFormatters: const [ThousandsSeparatorInputFormatter()],
+                    errorText: _priceValue > 0
+                        ? null
+                        : _requiredError(
+                            'price',
+                            _price.text.isEmpty ? '' : ' ',
+                          ),
+                    onBlur: () => setState(() => _touched.add('price')),
                     onChanged: (_) => setState(() {}),
                   ),
                 ),
@@ -541,8 +613,7 @@ class MyMembershipsView extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return BlocBuilder<MembershipsCubit, MoreState<List<ProviderMembership>>>(
-      builder: (context, state) =>
-          _MoreSubScaffold<List<ProviderMembership>>(
+      builder: (context, state) => _MoreSubScaffold<List<ProviderMembership>>(
         title: AppStrings.moreMemberships,
         state: state,
         onRetry: context.read<MembershipsCubit>().load,
@@ -600,12 +671,17 @@ class MyMembershipsView extends StatelessWidget {
                           AppStrings.membershipProvidesServices,
                         if (!m.isActive) m.status,
                       ].join(' · '),
-                      style:
-                          const TextStyle(fontSize: 12, color: AppColors.muted),
+                      style: const TextStyle(
+                        fontSize: 12,
+                        color: AppColors.muted,
+                      ),
                     ),
                     trailing: canSwitch
-                        ? const Icon(Icons.swap_horiz,
-                            size: AppIconSize.action, color: AppColors.primary)
+                        ? const Icon(
+                            Icons.swap_horiz,
+                            size: AppIconSize.action,
+                            color: AppColors.primary,
+                          )
                         : null,
                   );
                 },
@@ -621,7 +697,10 @@ class MyMembershipsView extends StatelessWidget {
     final failure = await cubit.switchTo(m.organizationId);
     if (!context.mounted) return;
     if (failure == null) {
-      AppSnackbar.success(context, AppStrings.membershipSwitched(m.organizationName));
+      AppSnackbar.success(
+        context,
+        AppStrings.membershipSwitched(m.organizationName),
+      );
       context.go(Routes.dashboard);
     } else {
       AppSnackbar.error(context, failure.message);
@@ -638,7 +717,8 @@ class StaffPage extends StatelessWidget {
       providers: [
         BlocProvider<StaffCubit>(create: (_) => getIt<StaffCubit>()..load()),
         BlocProvider<PendingInvitationsCubit>(
-            create: (_) => getIt<PendingInvitationsCubit>()..load()),
+          create: (_) => getIt<PendingInvitationsCubit>()..load(),
+        ),
       ],
       child: const StaffView(),
     );
@@ -675,125 +755,152 @@ class StaffView extends StatelessWidget {
             onPressed: () => _invite(context),
           ),
         ],
-        bodyBuilder: (context, members) => BlocBuilder<PendingInvitationsCubit,
-            MoreState<List<PendingInvitation>>>(
-          builder: (context, pendingState) {
-            // A failed invitations read must not blank the roster: fall back to
-            // "no pending" and let the members render.
-            final pending = pendingState.data ?? const <PendingInvitation>[];
-            if (members.isEmpty && pending.isEmpty) {
-              return AppEmptyState.add(
-                icon: Icons.people_outline,
-                message: AppStrings.staffEmpty,
-                actionLabel: '+ ${AppStrings.staffInvite}',
-                onAction: () => _invite(context),
-              );
-            }
-            // Row layout: add row, then the pending section (a header + one
-            // row per invitation), then the members.
-            final pendingRows = pending.isEmpty ? 0 : pending.length + 1;
-            return ListView.separated(
-              padding: const EdgeInsets.all(AppSpacing.md),
-              // +1 for the leading add row, as Services and Holidays do.
-              itemCount: 1 + pendingRows + members.length,
-              separatorBuilder: (_, _) =>
-                  const Divider(color: AppColors.divider, height: 1),
-              itemBuilder: (context, i) {
-                // The discoverable path to inviting someone. The chrome icon
-                // stays for muscle memory, but the spec ruling after visual
-                // QA was that the tiny header icon is easy to miss on first
-                // use — which is exactly how this screen read while the icon
-                // was also painted brand-blue on the blue header.
-                if (i == 0) {
-                  return _AddLinkRow(
-                    key: const Key('staff-invite-row'),
-                    label: AppStrings.staffInvite,
-                    onTap: () => _invite(context),
+        bodyBuilder: (context, members) =>
+            BlocBuilder<
+              PendingInvitationsCubit,
+              MoreState<List<PendingInvitation>>
+            >(
+              builder: (context, pendingState) {
+                // A failed invitations read must not blank the roster: fall back to
+                // "no pending" and let the members render.
+                final pending =
+                    pendingState.data ?? const <PendingInvitation>[];
+                if (members.isEmpty && pending.isEmpty) {
+                  return AppEmptyState.add(
+                    icon: Icons.people_outline,
+                    message: AppStrings.staffEmpty,
+                    actionLabel: '+ ${AppStrings.staffInvite}',
+                    onAction: () => _invite(context),
                   );
                 }
-                if (i <= pendingRows) {
-                  if (i == 1) {
-                    return const Padding(
-                      key: Key('pending-invitations-header'),
-                      padding: EdgeInsets.symmetric(vertical: AppSpacing.sm),
-                      child: Text(
-                        AppStrings.staffPendingInvitations,
+                // Row layout: add row, then the pending section (a header + one
+                // row per invitation), then the members.
+                final pendingRows = pending.isEmpty ? 0 : pending.length + 1;
+                return ListView.separated(
+                  padding: const EdgeInsets.all(AppSpacing.md),
+                  // +1 for the leading add row, as Services and Holidays do.
+                  itemCount: 1 + pendingRows + members.length,
+                  separatorBuilder: (_, _) =>
+                      const Divider(color: AppColors.divider, height: 1),
+                  itemBuilder: (context, i) {
+                    // The discoverable path to inviting someone. The chrome icon
+                    // stays for muscle memory, but the spec ruling after visual
+                    // QA was that the tiny header icon is easy to miss on first
+                    // use — which is exactly how this screen read while the icon
+                    // was also painted brand-blue on the blue header.
+                    if (i == 0) {
+                      return _AddLinkRow(
+                        key: const Key('staff-invite-row'),
+                        label: AppStrings.staffInvite,
+                        onTap: () => _invite(context),
+                      );
+                    }
+                    if (i <= pendingRows) {
+                      if (i == 1) {
+                        return const Padding(
+                          key: Key('pending-invitations-header'),
+                          padding: EdgeInsets.symmetric(
+                            vertical: AppSpacing.sm,
+                          ),
+                          child: Text(
+                            AppStrings.staffPendingInvitations,
+                            style: TextStyle(
+                              fontSize: 13,
+                              fontWeight: FontWeight.w700,
+                              color: AppColors.muted,
+                            ),
+                          ),
+                        );
+                      }
+                      final inv = pending[i - 2];
+                      return ListTile(
+                        key: Key('invitation-row-${inv.invitationId}'),
+                        contentPadding: EdgeInsets.zero,
+                        leading: const CircleAvatar(
+                          backgroundColor: AppColors.primarySoft,
+                          child: Icon(
+                            Icons.mail_outline,
+                            size: AppIconSize.action,
+                            color: AppColors.primary,
+                          ),
+                        ),
+                        title: Text(
+                          inv.displayName,
+                          style: const TextStyle(
+                            fontSize: 15,
+                            color: AppColors.muted,
+                          ),
+                        ),
+                        subtitle: Text(
+                          inv.inviteeName == null
+                              ? AppStrings.staffInvitePending
+                              : '${inv.phone} · ${AppStrings.staffInvitePending}',
+                          style: const TextStyle(
+                            fontSize: 12,
+                            color: AppColors.muted,
+                          ),
+                        ),
+                        trailing: IconButton(
+                          key: Key('invitation-cancel-${inv.invitationId}'),
+                          tooltip: AppStrings.staffInvitationCancel,
+                          icon: const Icon(
+                            Icons.cancel_schedule_send_outlined,
+                            size: AppIconSize.action,
+                            color: AppColors.danger,
+                          ),
+                          onPressed: () =>
+                              _confirmCancelInvitation(context, inv),
+                        ),
+                      );
+                    }
+                    final m = members[i - 1 - pendingRows];
+                    final display = m.name.isNotEmpty
+                        ? m.name
+                        : (m.phone ?? '؟');
+                    return ListTile(
+                      key: Key('member-row-${m.membershipId}'),
+                      contentPadding: EdgeInsets.zero,
+                      leading: CircleAvatar(
+                        backgroundColor: AppColors.primarySoft,
+                        child: Text(
+                          display.isNotEmpty ? display.characters.first : '؟',
+                          style: const TextStyle(
+                            color: AppColors.primary,
+                            fontWeight: FontWeight.w700,
+                          ),
+                        ),
+                      ),
+                      title: Text(
+                        display,
                         style: TextStyle(
-                          fontSize: 13,
-                          fontWeight: FontWeight.w700,
+                          fontSize: 15,
+                          color: m.isActive ? AppColors.ink : AppColors.muted,
+                        ),
+                      ),
+                      subtitle: Text(
+                        _subtitle(m),
+                        style: const TextStyle(
+                          fontSize: 12,
                           color: AppColors.muted,
                         ),
                       ),
+                      trailing: m.isOwner
+                          ? const _OwnerBadge()
+                          : IconButton(
+                              key: Key('member-remove-${m.membershipId}'),
+                              tooltip: AppStrings.staffRemove,
+                              icon: const Icon(
+                                Icons.person_remove_outlined,
+                                size: AppIconSize.action,
+                                color: AppColors.danger,
+                              ),
+                              onPressed: () => _confirmRemove(context, m),
+                            ),
                     );
-                  }
-                  final inv = pending[i - 2];
-                  return ListTile(
-                    key: Key('invitation-row-${inv.invitationId}'),
-                    contentPadding: EdgeInsets.zero,
-                    leading: const CircleAvatar(
-                      backgroundColor: AppColors.primarySoft,
-                      child: Icon(Icons.mail_outline,
-                          size: AppIconSize.action, color: AppColors.primary),
-                    ),
-                    title: Text(
-                      inv.displayName,
-                      style: const TextStyle(fontSize: 15, color: AppColors.muted),
-                    ),
-                    subtitle: Text(
-                      inv.inviteeName == null
-                          ? AppStrings.staffInvitePending
-                          : '${inv.phone} · ${AppStrings.staffInvitePending}',
-                      style: const TextStyle(fontSize: 12, color: AppColors.muted),
-                    ),
-                    trailing: IconButton(
-                      key: Key('invitation-cancel-${inv.invitationId}'),
-                      tooltip: AppStrings.staffInvitationCancel,
-                      icon: const Icon(Icons.cancel_schedule_send_outlined,
-                          size: AppIconSize.action, color: AppColors.danger),
-                      onPressed: () => _confirmCancelInvitation(context, inv),
-                    ),
-                  );
-                }
-                final m = members[i - 1 - pendingRows];
-                  final display = m.name.isNotEmpty ? m.name : (m.phone ?? '؟');
-                  return ListTile(
-                    key: Key('member-row-${m.membershipId}'),
-                    contentPadding: EdgeInsets.zero,
-                    leading: CircleAvatar(
-                      backgroundColor: AppColors.primarySoft,
-                      child: Text(
-                        display.isNotEmpty ? display.characters.first : '؟',
-                        style: const TextStyle(
-                          color: AppColors.primary,
-                          fontWeight: FontWeight.w700,
-                        ),
-                      ),
-                    ),
-                    title: Text(
-                      display,
-                      style: TextStyle(
-                        fontSize: 15,
-                        color: m.isActive ? AppColors.ink : AppColors.muted,
-                      ),
-                    ),
-                    subtitle: Text(
-                      _subtitle(m),
-                      style: const TextStyle(fontSize: 12, color: AppColors.muted),
-                    ),
-                    trailing: m.isOwner
-                        ? const _OwnerBadge()
-                        : IconButton(
-                            key: Key('member-remove-${m.membershipId}'),
-                            tooltip: AppStrings.staffRemove,
-                            icon: const Icon(Icons.person_remove_outlined,
-                                size: AppIconSize.action, color: AppColors.danger),
-                            onPressed: () => _confirmRemove(context, m),
-                          ),
-                  );
-                },
-              );
-          },
-        ),
+                  },
+                );
+              },
+            ),
       ),
     );
   }
@@ -807,13 +914,17 @@ class StaffView extends StatelessWidget {
   }
 
   Future<void> _confirmCancelInvitation(
-      BuildContext context, PendingInvitation inv) async {
+    BuildContext context,
+    PendingInvitation inv,
+  ) async {
     final cubit = context.read<PendingInvitationsCubit>();
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (dialogContext) => AlertDialog(
         title: const Text(AppStrings.staffInvitationCancelConfirmTitle),
-        content: Text(AppStrings.staffInvitationCancelConfirmBody(inv.displayName)),
+        content: Text(
+          AppStrings.staffInvitationCancelConfirmBody(inv.displayName),
+        ),
         actions: [
           TextButton(
             key: const Key('invitation-cancel-cancel'),
@@ -901,7 +1012,10 @@ class _OwnerBadge extends StatelessWidget {
       child: const Text(
         AppStrings.membershipOwner,
         style: TextStyle(
-            fontSize: 11, color: AppColors.primary, fontWeight: FontWeight.w600),
+          fontSize: 11,
+          color: AppColors.primary,
+          fontWeight: FontWeight.w600,
+        ),
       ),
     );
   }
@@ -956,7 +1070,9 @@ class _BusinessHoursViewState extends State<BusinessHoursView> {
     final picked = await showTimePicker(
       context: context,
       initialTime: TimeOfDay(
-          hour: current?.hours ?? 9, minute: current?.minutes ?? 0),
+        hour: current?.hours ?? 9,
+        minute: current?.minutes ?? 0,
+      ),
     );
     if (picked != null) onPicked(ClockTime(picked.hour, picked.minute));
   }
@@ -964,7 +1080,10 @@ class _BusinessHoursViewState extends State<BusinessHoursView> {
   /// Two sequential pickers (start, then end) append a break to [day]
   /// (spec: provider-break-editing); end must follow start.
   Future<void> _addBreak(
-      BuildContext context, BusinessHoursCubit cubit, DayHours day) async {
+    BuildContext context,
+    BusinessHoursCubit cubit,
+    DayHours day,
+  ) async {
     final start = await showTimePicker(
       context: context,
       initialTime: const TimeOfDay(hour: 13, minute: 0),
@@ -1022,8 +1141,7 @@ class _BusinessHoursViewState extends State<BusinessHoursView> {
     );
   }
 
-  Widget _dayRow(
-      BuildContext context, BusinessHoursCubit cubit, DayHours day) {
+  Widget _dayRow(BuildContext context, BusinessHoursCubit cubit, DayHours day) {
     return Container(
       margin: const EdgeInsets.only(bottom: AppSpacing.sm),
       padding: const EdgeInsets.symmetric(
@@ -1071,8 +1189,7 @@ class _BusinessHoursViewState extends State<BusinessHoursView> {
                   ),
                   child: Text(day.openTime?.label ?? '—'),
                 ),
-                const Text('–',
-                    style: TextStyle(color: AppColors.muted)),
+                const Text('–', style: TextStyle(color: AppColors.muted)),
                 TextButton(
                   key: Key('hours-close-${day.dayOfWeek}'),
                   onPressed: () => _pickTime(
@@ -1097,13 +1214,13 @@ class _BusinessHoursViewState extends State<BusinessHoursView> {
                     for (var i = 0; i < day.breaks.length; i++)
                       Chip(
                         key: Key(
-                            'hours-break-${day.dayOfWeek}-${day.breaks[i].start.label}'),
+                          'hours-break-${day.dayOfWeek}-${day.breaks[i].start.label}',
+                        ),
                         label: Text(
                           '${AppStrings.hoursBreak} ${day.breaks[i].start.label}–${day.breaks[i].end.label}',
                           style: const TextStyle(fontSize: 11),
                         ),
-                        onDeleted: () =>
-                            cubit.removeBreak(day.dayOfWeek, i),
+                        onDeleted: () => cubit.removeBreak(day.dayOfWeek, i),
                         deleteIconColor: AppColors.muted,
                         deleteButtonTooltipMessage: AppStrings.cancel,
                         backgroundColor: AppColors.surfaceSoft,
@@ -1112,12 +1229,17 @@ class _BusinessHoursViewState extends State<BusinessHoursView> {
                       ),
                     ActionChip(
                       key: Key('hours-add-break-${day.dayOfWeek}'),
-                      avatar: const Icon(Icons.add,
-                          size: AppIconSize.sm, color: AppColors.primary),
+                      avatar: const Icon(
+                        Icons.add,
+                        size: AppIconSize.sm,
+                        color: AppColors.primary,
+                      ),
                       label: Text(
                         AppStrings.hoursAddBreak,
                         style: const TextStyle(
-                            fontSize: 11, color: AppColors.primary),
+                          fontSize: 11,
+                          color: AppColors.primary,
+                        ),
                       ),
                       onPressed: () => _addBreak(context, cubit, day),
                       backgroundColor: Colors.white,
@@ -1163,8 +1285,7 @@ class HolidaysView extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return BlocBuilder<HolidaysCubit, MoreState<List<ProviderHoliday>>>(
-      builder: (context, state) =>
-          _MoreSubScaffold<List<ProviderHoliday>>(
+      builder: (context, state) => _MoreSubScaffold<List<ProviderHoliday>>(
         title: AppStrings.moreHolidays,
         state: state,
         onRetry: context.read<HolidaysCubit>().load,
@@ -1191,7 +1312,9 @@ class HolidaysView extends StatelessWidget {
                   message: AppStrings.holidaysEmpty,
                   actionLabel: '+ ${AppStrings.holidayAdd}',
                   onAction: () => _HolidayFormSheet.show(
-                      context, context.read<HolidaysCubit>()),
+                    context,
+                    context.read<HolidaysCubit>(),
+                  ),
                 ),
               )
             else ...[
@@ -1199,7 +1322,9 @@ class HolidaysView extends StatelessWidget {
                 key: const Key('holiday-add-row'),
                 label: AppStrings.holidayAdd,
                 onTap: () => _HolidayFormSheet.show(
-                    context, context.read<HolidaysCubit>()),
+                  context,
+                  context.read<HolidaysCubit>(),
+                ),
               ),
               for (final h in holidays) ...[
                 _holidayTile(context, h),
@@ -1215,33 +1340,35 @@ class HolidaysView extends StatelessWidget {
   }
 
   Widget _holidayTile(BuildContext context, ProviderHoliday h) => ListTile(
-                    key: Key('holiday-row-${h.id}'),
-                    contentPadding: EdgeInsets.zero,
-                    leading: const Icon(Icons.event_busy_outlined,
-                        color: AppColors.primary),
-                    title: Text(
-                      h.reason,
-                      style: const TextStyle(
-                          fontSize: 15, color: AppColors.ink),
-                    ),
-                    subtitle: Text(
-                      [
-                        _dm(h.date),
-                        if (h.isRecurring) AppStrings.holidayRecurringBadge,
-                      ].join(' · '),
-                      style: const TextStyle(
-                          fontSize: 12, color: AppColors.muted),
-                    ),
-                    trailing: IconButton(
-                      key: Key('holiday-remove-${h.id}'),
-                      icon: const Icon(Icons.delete_outline,
-                          size: AppIconSize.action, color: AppColors.danger),
-                      onPressed: () => _confirmRemove(context, h),
-                    ),
-                  );
+    key: Key('holiday-row-${h.id}'),
+    contentPadding: EdgeInsets.zero,
+    leading: const Icon(Icons.event_busy_outlined, color: AppColors.primary),
+    title: Text(
+      h.reason,
+      style: const TextStyle(fontSize: 15, color: AppColors.ink),
+    ),
+    subtitle: Text(
+      [
+        _dm(h.date),
+        if (h.isRecurring) AppStrings.holidayRecurringBadge,
+      ].join(' · '),
+      style: const TextStyle(fontSize: 12, color: AppColors.muted),
+    ),
+    trailing: IconButton(
+      key: Key('holiday-remove-${h.id}'),
+      icon: const Icon(
+        Icons.delete_outline,
+        size: AppIconSize.action,
+        color: AppColors.danger,
+      ),
+      onPressed: () => _confirmRemove(context, h),
+    ),
+  );
 
   Future<void> _confirmRemove(
-      BuildContext context, ProviderHoliday holiday) async {
+    BuildContext context,
+    ProviderHoliday holiday,
+  ) async {
     final cubit = context.read<HolidaysCubit>();
     final confirmed = await showDialog<bool>(
       context: context,
@@ -1281,8 +1408,7 @@ class _ExceptionsSection extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return BlocBuilder<ExceptionsCubit,
-        MoreState<List<AvailabilityException>>>(
+    return BlocBuilder<ExceptionsCubit, MoreState<List<AvailabilityException>>>(
       builder: (context, state) {
         final cubit = context.read<ExceptionsCubit>();
         final exceptions = state.data ?? const [];
@@ -1303,59 +1429,69 @@ class _ExceptionsSection extends StatelessWidget {
             const SizedBox(height: AppSpacing.xs),
             switch (state.status) {
               MoreStatus.loading => const Padding(
-                  padding: EdgeInsets.all(AppSpacing.sm),
-                  child: AppLoading(size: 20, centered: true),
-                ),
+                padding: EdgeInsets.all(AppSpacing.sm),
+                child: AppLoading(size: 20, centered: true),
+              ),
               MoreStatus.failed => Row(
-                  children: [
-                    Expanded(
-                      child: Text(
-                        state.error ?? AppStrings.homeLoadError,
-                        style: const TextStyle(
-                            fontSize: 13, color: AppColors.muted),
+                children: [
+                  Expanded(
+                    child: Text(
+                      state.error ?? AppStrings.homeLoadError,
+                      style: const TextStyle(
+                        fontSize: 13,
+                        color: AppColors.muted,
                       ),
                     ),
-                    TextButton(
-                      key: const Key('exceptions-retry'),
-                      onPressed: cubit.load,
-                      child: const Text(AppStrings.retry),
-                    ),
-                  ],
-                ),
+                  ),
+                  TextButton(
+                    key: const Key('exceptions-retry'),
+                    onPressed: cubit.load,
+                    child: const Text(AppStrings.retry),
+                  ),
+                ],
+              ),
               MoreStatus.ready => Column(
-                  children: [
-                    for (final e in exceptions)
-                      ListTile(
-                        key: Key('exception-row-${e.id}'),
-                        contentPadding: EdgeInsets.zero,
-                        leading: const Icon(Icons.block_outlined,
-                            color: AppColors.primary),
-                        title: Text(
-                          e.reason,
-                          style: const TextStyle(
-                              fontSize: 15, color: AppColors.ink),
-                        ),
-                        subtitle: Text(
-                          [
-                            '${e.date.day}/${e.date.month}/${e.date.year}',
-                            if (e.isClosed)
-                              AppStrings.exceptionClosedAllDay
-                            else
-                              '${e.openTime ?? ''}–${e.closeTime ?? ''}',
-                          ].join(' · '),
-                          style: const TextStyle(
-                              fontSize: 12, color: AppColors.muted),
-                        ),
-                        trailing: IconButton(
-                          key: Key('exception-remove-${e.id}'),
-                          icon: const Icon(Icons.delete_outline,
-                              size: AppIconSize.action,
-                              color: AppColors.danger),
-                          onPressed: () => _confirmRemove(context, cubit, e),
+                children: [
+                  for (final e in exceptions)
+                    ListTile(
+                      key: Key('exception-row-${e.id}'),
+                      contentPadding: EdgeInsets.zero,
+                      leading: const Icon(
+                        Icons.block_outlined,
+                        color: AppColors.primary,
+                      ),
+                      title: Text(
+                        e.reason,
+                        style: const TextStyle(
+                          fontSize: 15,
+                          color: AppColors.ink,
                         ),
                       ),
-                  ],
-                ),
+                      subtitle: Text(
+                        [
+                          '${e.date.day}/${e.date.month}/${e.date.year}',
+                          if (e.isClosed)
+                            AppStrings.exceptionClosedAllDay
+                          else
+                            '${e.openTime ?? ''}–${e.closeTime ?? ''}',
+                        ].join(' · '),
+                        style: const TextStyle(
+                          fontSize: 12,
+                          color: AppColors.muted,
+                        ),
+                      ),
+                      trailing: IconButton(
+                        key: Key('exception-remove-${e.id}'),
+                        icon: const Icon(
+                          Icons.delete_outline,
+                          size: AppIconSize.action,
+                          color: AppColors.danger,
+                        ),
+                        onPressed: () => _confirmRemove(context, cubit, e),
+                      ),
+                    ),
+                ],
+              ),
             },
           ],
         );
@@ -1372,8 +1508,11 @@ class _ExceptionsSection extends StatelessWidget {
       context: context,
       builder: (dialogContext) => AlertDialog(
         title: const Text(AppStrings.exceptionRemoveConfirmTitle),
-        content: Text(AppStrings.exceptionRemoveConfirmBody(
-            '${exception.date.day}/${exception.date.month}')),
+        content: Text(
+          AppStrings.exceptionRemoveConfirmBody(
+            '${exception.date.day}/${exception.date.month}',
+          ),
+        ),
         actions: [
           TextButton(
             key: const Key('exception-remove-cancel'),
@@ -1416,8 +1555,9 @@ class _HolidayFormSheet extends StatefulWidget {
         ),
       ),
       builder: (_) => Padding(
-        padding:
-            EdgeInsets.only(bottom: MediaQuery.of(context).viewInsets.bottom),
+        padding: EdgeInsets.only(
+          bottom: MediaQuery.of(context).viewInsets.bottom,
+        ),
         child: _HolidayFormSheet(cubit: cubit),
       ),
     );
@@ -1428,6 +1568,15 @@ class _HolidayFormSheet extends StatefulWidget {
 }
 
 class _HolidayFormSheetState extends State<_HolidayFormSheet> {
+  /// Required fields the user has left, so the message appears once they have
+  /// had their chance at the field (app-wide rule: mark it, then name it).
+  final Set<String> _touched = {};
+
+  String? _requiredError(String field, String value) =>
+      _touched.contains(field) && value.trim().isEmpty
+      ? AppStrings.fieldRequired
+      : null;
+
   final _reason = TextEditingController();
   DateTime _date = DateTime.now().add(const Duration(days: 1));
   bool _recurring = false;
@@ -1488,8 +1637,7 @@ class _HolidayFormSheetState extends State<_HolidayFormSheet> {
             OutlinedButton.icon(
               key: const Key('holiday-date'),
               onPressed: _pickDate,
-              icon: const Icon(Icons.event_outlined,
-                  size: AppIconSize.action),
+              icon: const Icon(Icons.event_outlined, size: AppIconSize.action),
               label: Text(HolidaysView._dm(_date)),
             ),
             const SizedBox(height: AppSpacing.sm),
@@ -1497,6 +1645,9 @@ class _HolidayFormSheetState extends State<_HolidayFormSheet> {
               key: const Key('holiday-reason'),
               controller: _reason,
               label: AppStrings.holidayReason,
+              isRequired: true,
+              errorText: _requiredError('reason', _reason.text),
+              onBlur: () => setState(() => _touched.add('reason')),
               onChanged: (_) => setState(() {}),
             ),
             SwitchListTile(
@@ -1568,10 +1719,19 @@ class _BusinessProfileForm extends StatefulWidget {
 }
 
 class _BusinessProfileFormState extends State<_BusinessProfileForm> {
-  late final _name =
-      TextEditingController(text: widget.profile.businessName);
-  late final _description =
-      TextEditingController(text: widget.profile.description);
+  /// Required fields the user has left, so the message appears once they have
+  /// had their chance at the field (app-wide rule: mark it, then name it).
+  final Set<String> _touched = {};
+
+  String? _requiredError(String field, String value) =>
+      _touched.contains(field) && value.trim().isEmpty
+      ? AppStrings.fieldRequired
+      : null;
+
+  late final _name = TextEditingController(text: widget.profile.businessName);
+  late final _description = TextEditingController(
+    text: widget.profile.description,
+  );
   bool _saving = false;
 
   @override
@@ -1607,6 +1767,9 @@ class _BusinessProfileFormState extends State<_BusinessProfileForm> {
           key: const Key('business-name'),
           controller: _name,
           label: AppStrings.businessProfileName,
+          isRequired: true,
+          errorText: _requiredError('name', _name.text),
+          onBlur: () => setState(() => _touched.add('name')),
           onChanged: (_) => setState(() {}),
         ),
         const SizedBox(height: AppSpacing.md),
@@ -1646,8 +1809,9 @@ class InviteStaffSheet extends StatefulWidget {
         ),
       ),
       builder: (_) => Padding(
-        padding:
-            EdgeInsets.only(bottom: MediaQuery.of(context).viewInsets.bottom),
+        padding: EdgeInsets.only(
+          bottom: MediaQuery.of(context).viewInsets.bottom,
+        ),
         child: InviteStaffSheet(cubit: cubit),
       ),
     );
@@ -1658,6 +1822,15 @@ class InviteStaffSheet extends StatefulWidget {
 }
 
 class _InviteStaffSheetState extends State<InviteStaffSheet> {
+  /// Required fields the user has left, so the message appears once they have
+  /// had their chance at the field (app-wide rule: mark it, then name it).
+  final Set<String> _touched = {};
+
+  String? _requiredError(String field, String value) =>
+      _touched.contains(field) && value.trim().isEmpty
+      ? AppStrings.fieldRequired
+      : null;
+
   final _phone = TextEditingController();
   final _name = TextEditingController();
   bool _submitting = false;
@@ -1716,6 +1889,9 @@ class _InviteStaffSheetState extends State<InviteStaffSheet> {
               key: const Key('invite-phone'),
               controller: _phone,
               label: AppStrings.staffPhone,
+              isRequired: true,
+              errorText: _requiredError('phone', _phone.text),
+              onBlur: () => setState(() => _touched.add('phone')),
               keyboardType: TextInputType.phone,
               onChanged: (_) => setState(() {}),
             ),

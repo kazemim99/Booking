@@ -53,6 +53,10 @@ class BlockTimeSheet extends StatefulWidget {
 }
 
 class _BlockTimeSheetState extends State<BlockTimeSheet> {
+  /// Fields the user has left, so "required" is only shown once they have had
+  /// their chance at it.
+  final Set<String> _touched = {};
+
   final _reason = TextEditingController();
   late DateTime _date = widget.initialDate;
   bool _allDay = true;
@@ -172,6 +176,11 @@ class _BlockTimeSheetState extends State<BlockTimeSheet> {
               key: const Key('block-reason'),
               controller: _reason,
               label: AppStrings.blockTimeReason,
+              isRequired: true,
+              errorText: _touched.contains('reason') && _reason.text.trim().isEmpty
+                  ? AppStrings.fieldRequired
+                  : null,
+              onBlur: () => setState(() => _touched.add('reason')),
               onChanged: (_) => setState(() {}),
             ),
             const SizedBox(height: AppSpacing.md),
