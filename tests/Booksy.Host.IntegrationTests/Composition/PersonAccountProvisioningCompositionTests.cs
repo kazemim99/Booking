@@ -130,4 +130,42 @@ public sealed class PersonAccountProvisioningCompositionTests
 
         deleted.Should().BeFalse();
     }
+
+    // A provider who signs in by phone gets a placeholder name («ارائه‌دهنده 9123135143»), and
+    // onboarding stored the real owner name only on the salon — so the staff picker listed the owner
+    // under the placeholder (2026-09-19). The onboarding name replaces a placeholder, never a real name.
+    [Fact]
+    public async Task AdoptNameIfPlaceholder_Replaces_The_Phone_Sign_In_Placeholder()
+    {
+        using var scope = _factory.Services.CreateScope();
+        var sut = scope.ServiceProvider.GetRequiredService<IPersonAccountProvisioningService>();
+        var phone = $"+9891{Random.Shared.Next(10000000, 99999999)}";
+        var created = await sut.CreateWithPhoneAsync(phone, null, null, null, CancellationToken.None);
+
+        var changed = await sut.AdoptNameIfPlaceholderAsync(created.PersonId, "مصطفی", "کاظمی", CancellationToken.None);
+
+        changed.Should().BeTrue();
+        using var readScope = _factory.Services.CreateScope();
+        var person = await readScope.ServiceProvider.GetRequiredService<IUserRepository>()
+            .GetByIdAsync(UserId.From(created.PersonId), CancellationToken.None);
+        person!.Profile.FirstName.Should().Be("مصطفی");
+        person.Profile.LastName.Should().Be("کاظمی");
+    }
+
+    [Fact]
+    public async Task AdoptNameIfPlaceholder_Never_Overwrites_A_Name_The_Person_Has()
+    {
+        using var scope = _factory.Services.CreateScope();
+        var sut = scope.ServiceProvider.GetRequiredService<IPersonAccountProvisioningService>();
+        var phone = $"+9891{Random.Shared.Next(10000000, 99999999)}";
+        var created = await sut.CreateWithPhoneAsync(phone, "مرتضی", "کاظمی", null, CancellationToken.None);
+
+        var changed = await sut.AdoptNameIfPlaceholderAsync(created.PersonId, "نام", "دیگر", CancellationToken.None);
+
+        changed.Should().BeFalse();
+        using var readScope = _factory.Services.CreateScope();
+        var person = await readScope.ServiceProvider.GetRequiredService<IUserRepository>()
+            .GetByIdAsync(UserId.From(created.PersonId), CancellationToken.None);
+        person!.Profile.FirstName.Should().Be("مرتضی");
+    }
 }

@@ -120,4 +120,50 @@ public sealed class InProcessPersonAccountProvisioningService : IPersonAccountPr
             return false;
         }
     }
+
+    /// <summary>The first names phone sign-in generates when it has no name to use.</summary>
+    private static readonly string[] PlaceholderFirstNames = { "ارائه‌دهنده", "مشتری" };
+
+    public async Task<bool> AdoptNameIfPlaceholderAsync(
+        Guid personId,
+        string firstName,
+        string lastName,
+        CancellationToken cancellationToken = default)
+    {
+        if (string.IsNullOrWhiteSpace(firstName) || string.IsNullOrWhiteSpace(lastName))
+        {
+            return false;
+        }
+
+        try
+        {
+            var user = await _userRepository.GetByIdAsync(UserId.From(personId), cancellationToken);
+            if (user?.Profile is null)
+            {
+                return false;
+            }
+
+            // A placeholder is exactly what PersonProvisioningService writes: a generic first name
+            // and the phone's national number as the last name. Anything else was chosen by a person.
+            var isPlaceholder = PlaceholderFirstNames.Contains(user.Profile.FirstName)
+                && !string.IsNullOrEmpty(user.Profile.LastName)
+                && user.Profile.LastName.All(char.IsDigit);
+            if (!isPlaceholder)
+            {
+                return false;
+            }
+
+            user.Profile.UpdateName(firstName.Trim(), lastName.Trim(), middleName: null);
+            await _userRepository.UpdateAsync(user, cancellationToken);
+            await _unitOfWork.SaveAndPublishEventsAsync(cancellationToken);
+
+            _logger.LogInformation("Person {PersonId} took their real name in place of the placeholder", personId);
+            return true;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex, "Could not replace the placeholder name of person {PersonId}", personId);
+            return false;
+        }
+    }
 }

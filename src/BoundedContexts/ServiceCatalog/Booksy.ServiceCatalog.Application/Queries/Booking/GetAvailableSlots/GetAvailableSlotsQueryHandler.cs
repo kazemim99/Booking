@@ -133,7 +133,12 @@ namespace Booksy.ServiceCatalog.Application.Queries.Booking.GetAvailableSlots
                     // sub-provider rows; a salon with no service-providing member is also
                     // bookable as itself (CanAcceptDirectBookings), so an empty result here
                     // is about qualification and open hours rather than headcount.
-                    validationMessages.Add("متأسفانه هیچ کارمند واجد شرایطی برای این سرویس در دسترس نیست.");
+                    // Name the reason the provider can act on: a day shorter than the service used
+                    // to be reported as "no qualified staff" (2026-09-19).
+                    var dayHours = provider.BusinessHours.FirstOrDefault(
+                        h => (int)h.DayOfWeek == (int)request.Date.DayOfWeek);
+                    validationMessages.Add(EmptyDayReason.Describe(
+                        dayHours?.OpenTime, dayHours?.CloseTime, totalDuration.Value));
 
                     _logger.LogInformation(
                         "No slots available: {Reason}",

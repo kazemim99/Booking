@@ -6,6 +6,7 @@ using Booksy.Core.Domain.Exceptions;
 using Booksy.Core.Domain.ValueObjects;
 using Booksy.ServiceCatalog.Domain.Aggregates;
 using Booksy.ServiceCatalog.Application.Common;
+using Booksy.ServiceCatalog.Application.Services.Interfaces;
 using Booksy.ServiceCatalog.Domain.Enums;
 using Booksy.ServiceCatalog.Domain.Repositories;
 using Booksy.ServiceCatalog.Domain.ValueObjects;
@@ -18,16 +19,27 @@ public sealed class CreateProviderDraftCommandHandler
     private readonly IProviderWriteRepository _providerRepository;
     private readonly IServiceCatalogUnitOfWork _unitOfWork;
     private readonly ICurrentUserService _currentUserService;
+    private readonly IPersonAccountProvisioningService _personAccounts;
 
     public CreateProviderDraftCommandHandler(
         IProviderWriteRepository providerRepository,
         IServiceCatalogUnitOfWork unitOfWork,
-        ICurrentUserService currentUserService)
+        ICurrentUserService currentUserService,
+        IPersonAccountProvisioningService personAccounts)
     {
         _providerRepository = providerRepository;
         _unitOfWork = unitOfWork;
         _currentUserService = currentUserService;
+        _personAccounts = personAccounts;
     }
+
+    /// <summary>
+    /// The owner's account keeps the placeholder phone sign-in gave it («ارائه‌دهنده 9123135143»)
+    /// unless someone replaces it — and this is where the real name first arrives. Without it the
+    /// staff picker listed the owner under the placeholder (2026-09-19). Best effort by contract.
+    /// </summary>
+    private Task AdoptOwnerNameAsync(UserId owner, CreateProviderDraftCommand request, CancellationToken ct) =>
+        _personAccounts.AdoptNameIfPlaceholderAsync(owner.Value, request.OwnerFirstName, request.OwnerLastName, ct);
 
     public async Task<CreateProviderDraftResult> Handle(
         CreateProviderDraftCommand request,
@@ -95,6 +107,7 @@ public sealed class CreateProviderDraftCommandHandler
             provider = existingProvider;
             await _providerRepository.UpdateProviderAsync(provider, cancellationToken);
             await _unitOfWork.CommitAsync(cancellationToken);
+            await AdoptOwnerNameAsync(userId, request, cancellationToken);
 
             return new CreateProviderDraftResult(
                 provider.Id.Value,
@@ -119,6 +132,7 @@ public sealed class CreateProviderDraftCommandHandler
         // 6. Save
         await _providerRepository.SaveProviderAsync(provider, cancellationToken);
         await _unitOfWork.CommitAsync(cancellationToken);
+        await AdoptOwnerNameAsync(userId, request, cancellationToken);
 
         return new CreateProviderDraftResult(
             provider.Id.Value,

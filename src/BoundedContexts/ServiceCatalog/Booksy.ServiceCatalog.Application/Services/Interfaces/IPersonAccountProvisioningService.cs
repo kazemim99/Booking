@@ -42,4 +42,16 @@ public interface IPersonAccountProvisioningService
         Guid personId,
         string reason,
         CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Gives a person their real name when their account still carries the placeholder that phone
+    /// sign-in generates («ارائه‌دهنده 9123135143»). Never overwrites a name the person has: returns
+    /// false and changes nothing in that case, or when the person does not exist. Best effort — a
+    /// failure is logged, never thrown, so it cannot break the flow that learned the name.
+    /// </summary>
+    Task<bool> AdoptNameIfPlaceholderAsync(
+        Guid personId,
+        string firstName,
+        string lastName,
+        CancellationToken cancellationToken = default);
 }
