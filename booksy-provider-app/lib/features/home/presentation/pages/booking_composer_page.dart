@@ -5,7 +5,9 @@ import 'package:go_router/go_router.dart';
 import '../../../../config/routes/app_router.dart';
 import '../../../../config/theme/app_tokens.dart';
 import '../../../../core/constants/app_strings.dart';
+import '../../../../core/contacts/contact_picker.dart';
 import '../../../../core/di/injection.dart';
+import '../../../../core/utils/phone_number.dart';
 import '../../../../core/widgets/app_button.dart';
 import '../../../../core/widgets/app_error_state.dart';
 import '../../../../core/widgets/app_loading.dart';
@@ -13,7 +15,9 @@ import '../../../../core/widgets/app_page_scaffold.dart';
 import '../../../../core/widgets/app_snackbar.dart';
 import '../../../../core/widgets/app_text_field.dart';
 import '../../domain/entities/composer_models.dart';
+import '../../domain/entities/saved_customer.dart';
 import '../cubit/composer_cubit.dart';
+import '../widgets/customer_picker_sheet.dart';
 
 /// One-screen booking composer (spec: provider-booking-composer):
 /// service → staff → date → available slot → optional walk-in client + notes.
@@ -26,11 +30,15 @@ class BookingComposerPage extends StatelessWidget {
   final String? initialClientName;
   final String? initialClientPhone;
 
+  /// The customer-book entry being booked again, if any.
+  final String? initialCustomerId;
+
   const BookingComposerPage({
     super.key,
     this.initialDate,
     this.initialClientName,
     this.initialClientPhone,
+    this.initialCustomerId,
   });
 
   @override
@@ -40,6 +48,7 @@ class BookingComposerPage extends StatelessWidget {
       child: ComposerView(
         initialClientName: initialClientName,
         initialClientPhone: initialClientPhone,
+        initialCustomerId: initialCustomerId,
       ),
     );
   }
@@ -49,11 +58,17 @@ class BookingComposerPage extends StatelessWidget {
 class ComposerView extends StatefulWidget {
   final String? initialClientName;
   final String? initialClientPhone;
+  final String? initialCustomerId;
+
+  /// The phone's contact picker; the platform's when null (tests pass a fake).
+  final ContactPicker? contactPicker;
 
   const ComposerView({
     super.key,
     this.initialClientName,
     this.initialClientPhone,
+    this.initialCustomerId,
+    this.contactPicker,
   });
 
   @override
@@ -66,6 +81,52 @@ class _ComposerViewState extends State<ComposerView> {
   late final _clientPhone =
       TextEditingController(text: widget.initialClientPhone ?? '');
   final _notes = TextEditingController();
+  late final ContactPicker _contacts =
+      widget.contactPicker ?? ContactPicker.platform();
+
+  /// The customer-book entry the booking is for, and the number it was picked
+  /// with: typing a different number books someone else, so the link drops.
+  late String? _customerId = widget.initialCustomerId;
+  late String? _customerPhone = widget.initialCustomerId == null
+      ? null
+      : PhoneNumber.normalize(widget.initialClientPhone ?? '');
+
+  String? get _linkedCustomerId =>
+      _customerId != null &&
+              PhoneNumber.normalize(_clientPhone.text) == _customerPhone
+          ? _customerId
+          : null;
+
+  void _useCustomer(SavedCustomer c) {
+    setState(() {
+      _clientName.text = c.fullName;
+      _clientPhone.text = PhoneNumber.normalize(c.phone);
+      _customerId = c.id;
+      _customerPhone = PhoneNumber.normalize(c.phone);
+    });
+  }
+
+  Future<void> _pickSaved(ComposerCubit cubit) async {
+    final picked = await showCustomerPicker(context, cubit.savedCustomers);
+    if (picked != null && mounted) _useCustomer(picked);
+  }
+
+  Future<void> _pickContact(ComposerCubit cubit) async {
+    final picked = await _contacts.pick(multiple: false);
+    if (!mounted) return;
+    if (picked.isEmpty) {
+      AppSnackbar.info(context, AppStrings.customerContactsNothing);
+      return;
+    }
+    final contact = picked.first;
+    // Filled at once; the book entry follows when saving succeeds.
+    setState(() {
+      _clientName.text = contact.fullName;
+      _clientPhone.text = contact.phone;
+    });
+    final saved = await cubit.saveContact(contact);
+    if (saved != null && mounted) _useCustomer(saved);
+  }
 
   @override
   void dispose() {
@@ -113,6 +174,7 @@ class _ComposerViewState extends State<ComposerView> {
                                 clientName: _clientName.text,
                                 clientPhone: _clientPhone.text,
                                 notes: _notes.text,
+                                providerCustomerId: _linkedCustomerId,
                               )
                           : null,
                     ),
@@ -169,6 +231,35 @@ class _ComposerViewState extends State<ComposerView> {
         _sectionLabel(AppStrings.composerSlotsLabel),
         _slots(state, cubit),
         const SizedBox(height: AppSpacing.lg),
+        // Next to the customer's name and number: fill both from the salon's
+        // book or from the phone's contacts. Expanded: this app's themed
+        // buttons are infinite-width and crash a bare Row.
+        Row(
+          children: [
+            Expanded(
+              child: OutlinedButton.icon(
+                key: const Key('composer-pick-customer'),
+                onPressed: () => _pickSaved(cubit),
+                icon: const Icon(Icons.people_outline,
+                    size: AppIconSize.action),
+                label: const Text(AppStrings.customerPickSaved),
+              ),
+            ),
+            if (_contacts.isSupported) ...[
+              const SizedBox(width: AppSpacing.sm),
+              Expanded(
+                child: OutlinedButton.icon(
+                  key: const Key('composer-pick-contact'),
+                  onPressed: () => _pickContact(cubit),
+                  icon: const Icon(Icons.contact_phone_outlined,
+                      size: AppIconSize.action),
+                  label: const Text(AppStrings.customerFromContacts),
+                ),
+              ),
+            ],
+          ],
+        ),
+        const SizedBox(height: AppSpacing.md),
         AppTextField(
           key: const Key('composer-client-name'),
           controller: _clientName,
@@ -180,6 +271,7 @@ class _ComposerViewState extends State<ComposerView> {
           controller: _clientPhone,
           label: AppStrings.composerClientPhone,
           keyboardType: TextInputType.phone,
+          onChanged: (_) => setState(() {}),
         ),
         const SizedBox(height: AppSpacing.md),
         AppTextField(

@@ -6,7 +6,9 @@ import 'package:go_router/go_router.dart';
 import '../../../../config/routes/app_router.dart';
 import '../../../../config/theme/app_tokens.dart';
 import '../../../../core/constants/app_strings.dart';
+import '../../../../core/contacts/contact_picker.dart';
 import '../../../../core/di/injection.dart';
+import '../../../../core/utils/phone_number.dart';
 import '../../../../core/widgets/app_empty_state.dart';
 import '../../../../core/widgets/app_error_state.dart';
 import '../../../../core/widgets/app_loading.dart';
@@ -14,11 +16,15 @@ import '../../../../core/widgets/app_page_scaffold.dart';
 import '../../../../core/widgets/app_snackbar.dart';
 import '../../../../core/widgets/app_text_field.dart';
 import '../../domain/entities/provider_client.dart';
+import '../../domain/entities/saved_customer.dart';
 import '../cubit/clients_cubit.dart';
+import '../widgets/customer_form_dialog.dart';
 import '../widgets/provider_nav_bar.dart';
 
-/// The Clients tab (spec: provider-clients): the provider's client book with
-/// Persian-normalized search and a client action sheet (call, book again).
+/// The Clients tab (specs: provider-clients, provider-customer-book): the
+/// salon's customer book — customers it saved or picked from the phone's
+/// contacts, plus everyone who booked online — with Persian-normalized search
+/// and a client action sheet (book again, call, edit, remove, save).
 class ClientsPage extends StatelessWidget {
   const ClientsPage({super.key});
 
@@ -31,12 +37,16 @@ class ClientsPage extends StatelessWidget {
   }
 }
 
-/// Separated from [ClientsPage] so tests can pump it with a fake cubit.
+/// Separated from [ClientsPage] so tests can pump it with a fake cubit and a
+/// fake contact picker.
 class ClientsView extends StatelessWidget {
-  const ClientsView({super.key});
+  final ContactPicker? contactPicker;
+
+  const ClientsView({super.key, this.contactPicker});
 
   @override
   Widget build(BuildContext context) {
+    final picker = contactPicker ?? ContactPicker.platform();
     return BlocBuilder<ClientsCubit, ClientsState>(
       builder: (context, state) {
         final cubit = context.read<ClientsCubit>();
@@ -63,6 +73,26 @@ class ClientsView extends StatelessWidget {
                 ),
             ],
           ),
+          actions: [
+            // Only where the phone offers its own picker (Chrome on Android
+            // today); elsewhere customers are typed in.
+            if (picker.isSupported)
+              IconButton(
+                key: const Key('clients-import'),
+                tooltip: AppStrings.customerImportContacts,
+                icon: const Icon(Icons.contact_phone_outlined,
+                    color: Colors.white),
+                onPressed: () => _importContacts(context, picker),
+              ),
+          ],
+          floatingActionButton: state.status == ClientsStatus.ready
+              ? FloatingActionButton.extended(
+                  key: const Key('clients-add'),
+                  onPressed: () => _addCustomer(context),
+                  icon: const Icon(Icons.person_add_alt_1_outlined),
+                  label: const Text(AppStrings.customerAdd),
+                )
+              : null,
           body: switch (state.status) {
             ClientsStatus.loading => const AppLoading.page(),
             ClientsStatus.failed => AppErrorState(
@@ -111,13 +141,47 @@ class ClientsView extends StatelessWidget {
       onRefresh: () => context.read<ClientsCubit>().refresh(),
       child: ListView.separated(
         key: const Key('clients-list'),
-        padding: const EdgeInsets.all(AppSpacing.md),
+        // Bottom room so the last row is never under the add button.
+        padding: const EdgeInsets.fromLTRB(
+            AppSpacing.md, AppSpacing.md, AppSpacing.md, 88),
         itemCount: clients.length,
         separatorBuilder: (_, _) =>
             const Divider(color: AppColors.divider, height: 1),
         itemBuilder: (context, i) => _ClientRow(client: clients[i]),
       ),
     );
+  }
+
+  Future<void> _addCustomer(BuildContext context) async {
+    final cubit = context.read<ClientsCubit>();
+    final draft = await showCustomerForm(context);
+    if (draft == null || !context.mounted) return;
+    final failure = await cubit.add(draft);
+    if (!context.mounted) return;
+    failure == null
+        ? AppSnackbar.success(context, AppStrings.customerSaved)
+        : AppSnackbar.error(context, failure);
+  }
+
+  Future<void> _importContacts(
+      BuildContext context, ContactPicker picker) async {
+    final cubit = context.read<ClientsCubit>();
+    final picked = await picker.pick();
+    if (!context.mounted) return;
+    if (picked.isEmpty) {
+      AppSnackbar.info(context, AppStrings.customerContactsNothing);
+      return;
+    }
+    final (summary, failure) = await cubit.importContacts(picked);
+    if (!context.mounted) return;
+    if (summary == null) {
+      AppSnackbar.error(context, failure ?? AppStrings.homeLoadError);
+      return;
+    }
+    AppSnackbar.success(
+        context,
+        AppStrings.customerImportResult(
+            summary.added, summary.alreadySaved, summary.invalid));
   }
 }
 
@@ -128,6 +192,8 @@ class _ClientRow extends StatelessWidget {
 
   String get _displayName =>
       client.name.isEmpty ? AppStrings.clientUnknownName : client.name;
+
+  String get _phone => PhoneNumber.display(client.phone);
 
   @override
   Widget build(BuildContext context) {
@@ -166,10 +232,11 @@ class _ClientRow extends StatelessWidget {
                   const SizedBox(height: 2),
                   Text(
                     [
-                      if (client.phone.isNotEmpty) client.phone,
+                      if (client.phone.isNotEmpty) _phone,
                       AppStrings.clientBookings(
                           client.totalBookings, client.upcomingBookings),
                     ].join(' · '),
+                    textDirection: TextDirection.rtl,
                     style: const TextStyle(
                         fontSize: 12, color: AppColors.muted),
                   ),
@@ -185,6 +252,8 @@ class _ClientRow extends StatelessWidget {
   }
 
   void _showClientSheet(BuildContext context) {
+    final cubit = context.read<ClientsCubit>();
+    final saved = client.saved;
     showModalBottomSheet<void>(
       context: context,
       shape: const RoundedRectangleBorder(
@@ -210,7 +279,7 @@ class _ClientRow extends StatelessWidget {
               const SizedBox(height: AppSpacing.xs),
               Text(
                 [
-                  if (client.phone.isNotEmpty) client.phone,
+                  if (client.phone.isNotEmpty) _phone,
                   AppStrings.clientBookings(
                       client.totalBookings, client.upcomingBookings),
                   if (client.lastVisitAt != null)
@@ -219,6 +288,11 @@ class _ClientRow extends StatelessWidget {
                 ].join(' · '),
                 style: const TextStyle(fontSize: 13, color: AppColors.muted),
               ),
+              if (saved?.notes case final notes? when notes.isNotEmpty) ...[
+                const SizedBox(height: AppSpacing.xs),
+                Text(notes,
+                    style: const TextStyle(fontSize: 13, color: AppColors.ink)),
+              ],
               const SizedBox(height: AppSpacing.md),
               Row(
                 children: [
@@ -233,6 +307,7 @@ class _ClientRow extends StatelessWidget {
                               ? ''
                               : client.name,
                           phone: client.phone,
+                          customerId: saved?.id,
                         ));
                       },
                       icon: const Icon(Icons.event_outlined,
@@ -261,10 +336,129 @@ class _ClientRow extends StatelessWidget {
                 ],
               ),
               const SizedBox(height: AppSpacing.sm),
+              if (saved != null)
+                Row(
+                  children: [
+                    Expanded(
+                      child: OutlinedButton.icon(
+                        key: const Key('client-edit'),
+                        onPressed: () {
+                          Navigator.pop(sheetContext);
+                          _edit(context, cubit, saved);
+                        },
+                        icon: const Icon(Icons.edit_outlined,
+                            size: AppIconSize.action),
+                        label: const Text(AppStrings.customerEdit),
+                      ),
+                    ),
+                    const SizedBox(width: AppSpacing.sm),
+                    Expanded(
+                      child: OutlinedButton.icon(
+                        key: const Key('client-remove'),
+                        style: OutlinedButton.styleFrom(
+                            foregroundColor: AppColors.danger),
+                        onPressed: () {
+                          Navigator.pop(sheetContext);
+                          _remove(context, cubit, saved);
+                        },
+                        icon: const Icon(Icons.delete_outline,
+                            size: AppIconSize.action),
+                        label: const Text(AppStrings.customerRemove),
+                      ),
+                    ),
+                  ],
+                )
+              else if (client.phone.isNotEmpty)
+                Row(
+                  children: [
+                    Expanded(
+                      child: OutlinedButton.icon(
+                        key: const Key('client-save'),
+                        onPressed: () {
+                          Navigator.pop(sheetContext);
+                          _saveToBook(context, cubit);
+                        },
+                        icon: const Icon(Icons.bookmark_add_outlined,
+                            size: AppIconSize.action),
+                        label: const Text(AppStrings.customerSaveToBook),
+                      ),
+                    ),
+                  ],
+                ),
+              const SizedBox(height: AppSpacing.sm),
             ],
           ),
         ),
       ),
     );
+  }
+
+  Future<void> _edit(
+      BuildContext context, ClientsCubit cubit, SavedCustomer saved) async {
+    final draft = await showCustomerForm(
+      context,
+      title: AppStrings.customerEdit,
+      initial: CustomerDraft(
+        firstName: saved.firstName,
+        lastName: saved.lastName,
+        phone: saved.phone,
+        notes: saved.notes,
+      ),
+    );
+    if (draft == null || !context.mounted) return;
+    final failure = await cubit.update(saved.id, draft);
+    if (!context.mounted) return;
+    failure == null
+        ? AppSnackbar.success(context, AppStrings.customerSaved)
+        : AppSnackbar.error(context, failure);
+  }
+
+  Future<void> _remove(
+      BuildContext context, ClientsCubit cubit, SavedCustomer saved) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: Text(saved.fullName),
+        content: const Text(AppStrings.customerRemoveConfirm),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(dialogContext, false),
+            child: const Text(AppStrings.cancel),
+          ),
+          TextButton(
+            key: const Key('client-remove-confirm'),
+            onPressed: () => Navigator.pop(dialogContext, true),
+            style: TextButton.styleFrom(foregroundColor: AppColors.danger),
+            child: const Text(AppStrings.customerRemove),
+          ),
+        ],
+      ),
+    );
+    if (confirmed != true || !context.mounted) return;
+    final failure = await cubit.remove(saved.id);
+    if (!context.mounted) return;
+    failure == null
+        ? AppSnackbar.success(context, AppStrings.customerRemoved)
+        : AppSnackbar.error(context, failure);
+  }
+
+  /// An online client into the book, name split on the first space.
+  Future<void> _saveToBook(BuildContext context, ClientsCubit cubit) async {
+    final name = client.name.trim();
+    final space = name.indexOf(' ');
+    final draft = await showCustomerForm(
+      context,
+      initial: CustomerDraft(
+        firstName: space < 0 ? name : name.substring(0, space),
+        lastName: space < 0 ? '' : name.substring(space + 1),
+        phone: client.phone,
+      ),
+    );
+    if (draft == null || !context.mounted) return;
+    final failure = await cubit.add(draft);
+    if (!context.mounted) return;
+    failure == null
+        ? AppSnackbar.success(context, AppStrings.customerSaved)
+        : AppSnackbar.error(context, failure);
   }
 }

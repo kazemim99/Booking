@@ -3,6 +3,7 @@ import 'package:dio/dio.dart' show CancelToken, ProgressCallback;
 import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../../../core/constants/app_strings.dart';
 import '../../../../core/errors/failures.dart';
+import '../../../home/domain/entities/saved_customer.dart';
 import '../../domain/entities/onboarding_data.dart';
 import '../../domain/repositories/onboarding_repository.dart';
 import 'onboarding_state.dart';
@@ -210,6 +211,25 @@ class OnboardingCubit extends Cubit<OnboardingState> {
         },
       ),
     );
+  }
+
+  // ---- optional: the salon's first customers (spec: provider-customer-book K6) ----
+
+  /// Saves one customer to the new salon's book: the failure's message, or null.
+  /// Never changes the wizard's phase — this step is optional and never blocks.
+  Future<String?> addCustomer(CustomerDraft customer) async {
+    final id = state.draftProviderId;
+    if (id == null) return 'خطا: شناسه کسب‌وکار یافت نشد';
+    final result = await _repository.addCustomer(id, customer);
+    return result.fold((f) => f.message, (_) => null);
+  }
+
+  /// Saves the contacts the owner ticked: how many were added, or the failure's message.
+  Future<(int, String?)> importCustomers(List<CustomerDraft> contacts) async {
+    final id = state.draftProviderId;
+    if (id == null) return (0, 'خطا: شناسه کسب‌وکار یافت نشد');
+    final result = await _repository.importCustomers(id, contacts);
+    return result.fold((f) => (0, f.message), (added) => (added, null));
   }
 
   // ---- helpers ----

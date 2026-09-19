@@ -98,6 +98,24 @@ class OnboardingApiService {
     }
   }
 
+  /// POST /providers/{id}/customers — one customer into the new salon's book.
+  Future<void> addCustomer(String providerId, Map<String, dynamic> body) =>
+      _dio.post(ApiConstants.providerCustomers(providerId), data: body);
+
+  /// POST /providers/{id}/customers/import — the contacts the owner ticked.
+  /// Returns how many were added.
+  Future<int> importCustomers(
+      String providerId, List<Map<String, dynamic>> customers) async {
+    final res = await _dio.post(
+      '${ApiConstants.providerCustomers(providerId)}/import',
+      data: {'customers': customers},
+    );
+    final body = res.data;
+    final data = (body is Map && body['data'] is Map) ? body['data'] : body;
+    final added = data is Map ? data['added'] : null;
+    return added is int ? added : 0;
+  }
+
   String? _providerId(Object? body) {
     final data = (body is Map && body['data'] is Map) ? body['data'] : body;
     if (data is Map) return data['providerId']?.toString();

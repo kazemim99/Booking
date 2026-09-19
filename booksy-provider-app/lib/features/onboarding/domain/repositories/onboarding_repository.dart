@@ -3,6 +3,7 @@ import 'package:dio/dio.dart' show CancelToken, ProgressCallback;
 import '../../../../core/errors/failures.dart';
 import '../entities/onboarding_data.dart';
 import '../entities/onboarding_draft.dart';
+import '../../../home/domain/entities/saved_customer.dart';
 
 /// Provider onboarding repository contract.
 abstract class OnboardingRepository {
@@ -42,6 +43,14 @@ abstract class OnboardingRepository {
 
   /// Records whether the owner personally provides services (onboarding branch).
   Future<Either<Failure, void>> setOwnerProvidesServices(bool providesServices);
+
+  /// Optional last step: saves one customer to the new salon's book.
+  Future<Either<Failure, void>> addCustomer(
+      String providerId, CustomerDraft customer);
+
+  /// Optional last step: saves the contacts the owner ticked; how many were added.
+  Future<Either<Failure, int>> importCustomers(
+      String providerId, List<CustomerDraft> contacts);
 
   /// Returns the in-progress draft (with every saved field rehydrated), or null.
   Future<Either<Failure, OnboardingDraft?>> getDraft();

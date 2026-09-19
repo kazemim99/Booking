@@ -110,6 +110,10 @@ class ApiConstants {
   static String providerClients(String providerId) =>
       '/$apiVersion/Providers/$providerId/clients';
 
+  /// GET/POST — the salon's own customer book; `/{id}` PUT/DELETE; `/import` POST.
+  static String providerCustomers(String providerId) =>
+      '/$apiVersion/providers/$providerId/customers';
+
   /// GET — the provider's staff members.
   static String providerStaff(String providerId) =>
       '/$apiVersion/Providers/$providerId/staff';

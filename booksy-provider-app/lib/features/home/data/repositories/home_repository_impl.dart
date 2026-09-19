@@ -13,6 +13,7 @@ import '../../domain/entities/home_inputs.dart';
 import '../../domain/entities/home_snapshot.dart';
 import '../../domain/entities/more_models.dart';
 import '../../domain/entities/provider_client.dart';
+import '../../domain/entities/saved_customer.dart';
 import '../../domain/repositories/home_repository.dart';
 import '../datasources/home_api_service.dart';
 
@@ -740,6 +741,90 @@ class HomeRepositoryImpl implements HomeRepository {
     });
   }
 
+  // ==================== customer book ====================
+
+  static SavedCustomer parseCustomer(Map<String, dynamic> c) {
+    final last = c['lastBookingAt'];
+    return SavedCustomer(
+      id: HomeApiService.readString(c, const ['id']),
+      firstName: HomeApiService.readString(c, const ['firstName']),
+      lastName: HomeApiService.readString(c, const ['lastName']),
+      phone: HomeApiService.readString(c, const ['phoneNumber', 'phone']),
+      notes: c['notes'] is String ? c['notes'] as String : null,
+      source: HomeApiService.readString(c, const ['source'],
+          fallback: 'Manual'),
+      totalBookings: HomeApiService.readInt(c, const ['totalBookings']),
+      upcomingBookings: HomeApiService.readInt(c, const ['upcomingBookings']),
+      lastBookingAt: last is String ? DateTime.tryParse(last) : null,
+    );
+  }
+
+  @override
+  Future<Either<Failure, List<SavedCustomer>>> fetchSavedCustomers() {
+    return _withProviderId((providerId) async {
+      try {
+        final raw = await _api.getCustomers(providerId);
+        return Right(raw
+            .map(parseCustomer)
+            .where((c) => c.id.isNotEmpty)
+            .toList());
+      } on DioException catch (e) {
+        return Left(ServerFailure(
+            _failureReason(e, 'دریافت فهرست مشتریان ناموفق بود')));
+      }
+    });
+  }
+
+  @override
+  Future<Either<Failure, SavedCustomer>> addCustomer(CustomerDraft draft) {
+    return _withProviderId((providerId) async {
+      try {
+        return Right(parseCustomer(
+            await _api.addCustomer(providerId, draft.toJson())));
+      } on DioException catch (e) {
+        return Left(ServerFailure(_failureReason(e, 'ذخیره مشتری ناموفق بود')));
+      }
+    });
+  }
+
+  @override
+  Future<Either<Failure, SavedCustomer>> updateCustomer(
+      String id, CustomerDraft draft) {
+    return _withProviderId((providerId) async {
+      try {
+        return Right(parseCustomer(
+            await _api.updateCustomer(providerId, id, draft.toJson())));
+      } on DioException catch (e) {
+        return Left(ServerFailure(_failureReason(e, 'ذخیره مشتری ناموفق بود')));
+      }
+    });
+  }
+
+  @override
+  Future<Either<Failure, void>> removeCustomer(String id) {
+    return _withProviderId((providerId) => _action(
+        () => _api.removeCustomer(providerId, id), 'حذف مشتری ناموفق بود'));
+  }
+
+  @override
+  Future<Either<Failure, CustomerImportSummary>> importCustomers(
+      List<CustomerDraft> contacts) {
+    return _withProviderId((providerId) async {
+      try {
+        final r = await _api.importCustomers(
+            providerId, contacts.map((c) => c.toJson()).toList());
+        return Right(CustomerImportSummary(
+          added: HomeApiService.readInt(r, const ['added']),
+          alreadySaved: HomeApiService.readInt(r, const ['alreadySaved']),
+          invalid: HomeApiService.readInt(r, const ['invalid']),
+        ));
+      } on DioException catch (e) {
+        return Left(ServerFailure(
+            _failureReason(e, 'افزودن مخاطبین ناموفق بود')));
+      }
+    });
+  }
+
   // ==================== booking composer ====================
 
   @override
@@ -814,10 +899,12 @@ class HomeRepositoryImpl implements HomeRepository {
     String? clientPhone,
     String? notes,
     List<String> serviceIds = const [],
+    String? providerCustomerId,
   }) async {
     return _withProviderId((providerId) async {
       try {
         await _api.createBooking(
+          providerCustomerId: providerCustomerId,
           providerId: providerId,
           serviceId: serviceId,
           staffProviderId: staffId,

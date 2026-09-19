@@ -1,7 +1,9 @@
 import 'package:equatable/equatable.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
+import '../../../../core/utils/phone_number.dart';
 import '../../domain/entities/composer_models.dart';
+import '../../domain/entities/saved_customer.dart';
 import '../../domain/repositories/home_repository.dart';
 
 /// Catalog load lifecycle.
@@ -211,10 +213,29 @@ class ComposerCubit extends Cubit<ComposerState> {
 
   Future<void> retrySlots() => _refreshSlots();
 
+  /// The salon's customer book for the composer's picker; empty when it
+  /// cannot be loaded (the customer can still be typed in).
+  Future<List<SavedCustomer>> savedCustomers() async =>
+      (await _repository.fetchSavedCustomers()).getOrElse(() => const []);
+
+  /// A contact picked from the phone: saved to the book (an already-saved
+  /// number is left as it is) and returned as its book entry, so the booking
+  /// is recorded for that customer. Null when it could not be saved.
+  Future<SavedCustomer?> saveContact(CustomerDraft contact) async {
+    final imported = await _repository.importCustomers([contact]);
+    if (imported.isLeft()) return null;
+    final phone = PhoneNumber.normalize(contact.phone);
+    for (final c in await savedCustomers()) {
+      if (PhoneNumber.normalize(c.phone) == phone) return c;
+    }
+    return null;
+  }
+
   Future<void> submit({
     String? clientName,
     String? clientPhone,
     String? notes,
+    String? providerCustomerId,
   }) async {
     if (!state.canSubmit) return;
     emit(state.copyWith(submitting: true, error: () => null));
@@ -226,6 +247,7 @@ class ComposerCubit extends Cubit<ComposerState> {
       clientName: clientName,
       clientPhone: clientPhone,
       notes: notes,
+      providerCustomerId: providerCustomerId,
     );
     if (isClosed) return;
     result.fold(

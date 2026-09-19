@@ -44,10 +44,15 @@ class Routes {
   static const String newBooking = '/booking/new';
 
   /// Composer route pre-filled with a client's identity (book-again).
-  static String newBookingFor({required String client, required String phone}) =>
+  static String newBookingFor({
+    required String client,
+    required String phone,
+    String? customerId,
+  }) =>
       Uri(path: newBooking, queryParameters: {
         if (client.isNotEmpty) 'client': client,
         if (phone.isNotEmpty) 'phone': phone,
+        'customer': ?customerId,
       }).toString();
 
   /// Composer route pre-set to [date] (spec: calendar-initiated creation).
@@ -269,6 +274,7 @@ class AppRouter {
                 DateTime.tryParse(state.uri.queryParameters['date'] ?? ''),
             initialClientName: state.uri.queryParameters['client'],
             initialClientPhone: state.uri.queryParameters['phone'],
+            initialCustomerId: state.uri.queryParameters['customer'],
           ),
         ),
         GoRoute(

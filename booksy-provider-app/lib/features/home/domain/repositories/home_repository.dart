@@ -9,6 +9,7 @@ import '../entities/home_booking.dart';
 import '../entities/home_snapshot.dart';
 import '../entities/more_models.dart';
 import '../entities/provider_client.dart';
+import '../entities/saved_customer.dart';
 
 /// Supplies the backend-derived Home inputs (resolver spec §2).
 ///
@@ -195,6 +196,21 @@ abstract class HomeRepository {
   /// The provider's client book, most-recent activity first.
   Future<Either<Failure, List<ProviderClient>>> fetchClients();
 
+  /// The salon's own customer book (spec: provider-customer-book).
+  Future<Either<Failure, List<SavedCustomer>>> fetchSavedCustomers();
+
+  /// Saves one customer; a number already in the book fails with the server's reason.
+  Future<Either<Failure, SavedCustomer>> addCustomer(CustomerDraft draft);
+
+  Future<Either<Failure, SavedCustomer>> updateCustomer(
+      String id, CustomerDraft draft);
+
+  Future<Either<Failure, void>> removeCustomer(String id);
+
+  /// Saves the contacts the provider ticked; saved numbers are left as they are.
+  Future<Either<Failure, CustomerImportSummary>> importCustomers(
+      List<CustomerDraft> contacts);
+
   // ---- Booking composer (spec: provider-booking-composer) ----
 
   /// The composer's pickable catalog: the provider's services and staff.
@@ -219,5 +235,6 @@ abstract class HomeRepository {
     String? clientPhone,
     String? notes,
     List<String> serviceIds = const [],
+    String? providerCustomerId,
   });
 }

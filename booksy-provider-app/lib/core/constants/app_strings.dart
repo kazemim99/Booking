@@ -405,7 +405,7 @@ class AppStrings {
   static const String clientsSearchHint = 'جستجوی نام یا شماره';
   static const String clientsEmptyTitle = 'هنوز مشتری‌ای ثبت نشده';
   static const String clientsEmptyBody =
-      'با ثبت و دریافت نوبت، فهرست مشتریان شما ساخته می‌شود';
+      'مشتریان ثابت خود را اضافه کنید یا از مخاطبین گوشی انتخاب کنید؛ مشتریانی که آنلاین نوبت می‌گیرند هم اینجا می‌آیند';
   static const String clientsSearchEmpty = 'مشتری‌ای مطابق جستجو یافت نشد';
   static const String clientUnknownName = 'مشتری';
   static String clientBookings(int total, int upcoming) =>
@@ -413,6 +413,39 @@ class AppStrings {
   static String clientLastVisit(String date) => 'آخرین مراجعه: $date';
   static const String clientBookAgain = 'ثبت نوبت';
   static const String phoneCopied = 'شماره کپی شد';
+
+  // ==================== Customer book ====================
+  static const String customerAdd = 'افزودن مشتری';
+  static const String customerEdit = 'ویرایش مشتری';
+  static const String customerFirstName = 'نام';
+  static const String customerLastName = 'نام خانوادگی';
+  static const String customerPhone = 'شماره موبایل';
+  static const String customerNotes = 'یادداشت';
+  static const String customerPhoneInvalid = 'شماره موبایل معتبر نیست';
+  static const String customerSaved = 'مشتری ذخیره شد';
+  static const String customerRemoved = 'مشتری حذف شد';
+  static const String customerRemove = 'حذف';
+  static const String customerRemoveConfirm =
+      'این مشتری از فهرست شما حذف شود؟ نوبت‌های گذشته‌اش باقی می‌ماند.';
+  static const String customerSaveToBook = 'ذخیره در فهرست مشتریان';
+  static const String customerImportContacts = 'از مخاطبین گوشی';
+  static const String customerPickSaved = 'انتخاب از مشتریان';
+  static const String customerPickContact = 'انتخاب از مخاطبین';
+  static const String customerPickerTitle = 'انتخاب مشتری';
+  static const String customerFromContacts = 'از مخاطبین';
+  static String customerImportResult(int added, int alreadySaved, int invalid) => [
+        '$added مشتری اضافه شد',
+        if (alreadySaved > 0) '$alreadySaved مورد از قبل در فهرست بود',
+        if (invalid > 0) '$invalid مورد شماره معتبر نداشت',
+      ].join(' · ');
+  static const String customerContactsNothing =
+      'مخاطبی با شماره موبایل انتخاب نشد';
+
+  // Onboarding: optional customers step
+  static const String onboardingCustomersTitle = 'مشتریان شما';
+  static const String onboardingCustomersBody =
+      'اگر مشتری ثابت دارید، همین حالا اضافه‌شان کنید تا ثبت نوبت برایشان سریع باشد. این مرحله اختیاری است.';
+  static String onboardingCustomersAdded(int n) => '$n مشتری اضافه شد';
 
   // ==================== More hub ====================
   static const String moreTitle = 'بیشتر';

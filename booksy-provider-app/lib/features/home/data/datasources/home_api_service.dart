@@ -71,6 +71,41 @@ class HomeApiService {
     return clients.whereType<Map<String, dynamic>>().toList();
   }
 
+  // ==================== customer book ====================
+
+  /// GET /v1/providers/{id}/customers — the salon's saved customers (enveloped list).
+  Future<List<Map<String, dynamic>>> getCustomers(String providerId) async {
+    final res = await _dio.get(ApiConstants.providerCustomers(providerId));
+    return unwrapList(res.data);
+  }
+
+  Future<Map<String, dynamic>> addCustomer(
+      String providerId, Map<String, dynamic> body) async {
+    final res =
+        await _dio.post(ApiConstants.providerCustomers(providerId), data: body);
+    return unwrapMap(res.data);
+  }
+
+  Future<Map<String, dynamic>> updateCustomer(
+      String providerId, String customerId, Map<String, dynamic> body) async {
+    final res = await _dio.put(
+        '${ApiConstants.providerCustomers(providerId)}/$customerId',
+        data: body);
+    return unwrapMap(res.data);
+  }
+
+  Future<void> removeCustomer(String providerId, String customerId) =>
+      _dio.delete('${ApiConstants.providerCustomers(providerId)}/$customerId');
+
+  /// POST /import — only the contacts the provider ticked.
+  Future<Map<String, dynamic>> importCustomers(
+      String providerId, List<Map<String, dynamic>> customers) async {
+    final res = await _dio.post(
+        '${ApiConstants.providerCustomers(providerId)}/import',
+        data: {'customers': customers});
+    return unwrapMap(res.data);
+  }
+
   // ==================== booking composer ====================
 
   /// GET /v1/Providers/{id}/staff — the provider's staff as raw maps.
@@ -142,6 +177,7 @@ class HomeApiService {
     required DateTime startTime,
     String? customerNotes,
     List<String> serviceIds = const [],
+    String? providerCustomerId,
   }) =>
       _dio.post(
         ApiConstants.bookings,
@@ -157,6 +193,8 @@ class HomeApiService {
           if (serviceIds.length > 1) 'serviceIds': serviceIds,
           if (customerNotes != null && customerNotes.isNotEmpty)
             'customerNotes': customerNotes,
+          // Booked from the salon's customer book: the server links the booking to it.
+          'providerCustomerId': ?providerCustomerId,
         },
       );
 

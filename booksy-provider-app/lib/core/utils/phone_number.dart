@@ -66,6 +66,14 @@ class PhoneNumber {
   String get masked =>
       '${value.substring(0, 4)}***${value.substring(value.length - 4)}';
 
+  /// Grouped for reading, e.g. `0912 313 5143`; any other input comes back
+  /// unchanged (a landline, a foreign number).
+  static String display(String raw) {
+    final n = normalize(raw);
+    if (!_canonical.hasMatch(n)) return raw;
+    return '${n.substring(0, 4)} ${n.substring(4, 7)} ${n.substring(7)}';
+  }
+
   /// Persian-glyph display form.
   String get displayFa => PersianDigits.toPersian(value);
 

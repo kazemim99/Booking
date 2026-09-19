@@ -3,6 +3,7 @@ import 'package:dio/dio.dart';
 import '../../../../core/errors/failures.dart';
 import '../../domain/entities/onboarding_data.dart';
 import '../../domain/entities/onboarding_draft.dart';
+import '../../../home/domain/entities/saved_customer.dart';
 import '../../domain/repositories/onboarding_repository.dart';
 import '../datasources/onboarding_api_service.dart';
 import '../models/onboarding_models.dart';
@@ -70,6 +71,30 @@ class OnboardingRepositoryImpl implements OnboardingRepository {
   @override
   Future<Either<Failure, OnboardingDraft?>> getDraft() {
     return _guard(() => _api.getDraft());
+  }
+
+  @override
+  Future<Either<Failure, void>> addCustomer(
+      String providerId, CustomerDraft customer) async {
+    try {
+      await _api.addCustomer(providerId, customer.toJson());
+      return const Right(null);
+    } on DioException catch (e) {
+      // The server says why (e.g. «این شماره قبلاً برای … ثبت شده است»).
+      final data = e.response?.data;
+      final error = data is Map ? data['error'] : null;
+      final reason = error is Map ? error['message'] : null;
+      return Left(reason is String && reason.isNotEmpty
+          ? ServerFailure(reason)
+          : _mapDioError(e));
+    }
+  }
+
+  @override
+  Future<Either<Failure, int>> importCustomers(
+      String providerId, List<CustomerDraft> contacts) {
+    return _guard(() => _api.importCustomers(
+        providerId, contacts.map((c) => c.toJson()).toList()));
   }
 
   Future<Either<Failure, T>> _guard<T>(Future<T> Function() op) async {

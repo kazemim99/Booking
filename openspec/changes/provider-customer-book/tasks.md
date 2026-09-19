@@ -38,12 +38,12 @@ contact and fills both in.
       table + migration, uniqueness (provider, phone)
 - [x] 1.2 Backend: endpoints — list/search, add, update, remove, bulk import with per-row results;
       authorization to the salon's members; integration tests (K1-K4, K7)
-- [ ] 1.3 App: Customers tab — list, search, add/edit/remove (required-field rule applies)
-- [ ] 1.4 App: contact import via the browser Contact Picker API where supported (feature-detected;
+- [x] 1.3 App: Customers tab — list, search, add/edit/remove (required-field rule applies)
+- [x] 1.4 App: contact import via the browser Contact Picker API where supported (feature-detected;
       hidden elsewhere); tests with a fake picker
-- [ ] 1.5 Booking: pick a saved customer or a contact in the composer; the booking is linked to the
+- [x] 1.5 Booking: pick a saved customer or a contact in the composer; the booking is linked to the
       customer (backend + app) (K5)
-- [ ] 1.6 Onboarding: optional customers step (K6)
+- [x] 1.6 Onboarding: optional customers step (K6)
 - [ ] 1.7 Verify, deploy, confirm live
 
 ## Log
@@ -52,3 +52,14 @@ contact and fills both in.
   (/providers/{id}/customers: list/search, add 201/409, update, delete 204, import with per-row
   Added/AlreadySaved/Invalid; never overwrites a saved entry); access = admin, providerId claim, or
   ManageBookings member. 7 integration tests (K1-K4, K7) green.
+- 2026-09-19 K5 backend: Booking.ProviderCustomerId (nullable, indexed, no FK) set only on a
+  salon-created booking that names one of ITS customers (else 403/404); the customer list carries
+  totalBookings/upcomingBookings/lastBookingAt. 2 more integration tests; 22 green with Bookings.
+- 1.3 Clients tab = saved customers + online clients merged by phone (one row, both counts); add
+  (FAB), edit/remove on saved rows, "save to book" on online rows; form: first name + mobile
+  required (inline rule). 1.4 ContactPicker (browser Contact Picker API via js_interop, conditional
+  import; stub elsewhere -> buttons hidden); only ticked contacts reach the app. 1.5 composer: pick
+  from book / from contacts beside the name+phone fields; the booking carries providerCustomerId
+  while the number is unchanged; a picked contact is saved to the book first. 1.6 optional
+  customers section on the completion step (draft id; skipping unchanged). App: 548 tests pass
+  (+ contact parsing, clients, composer, completion tests); analyze clean.
