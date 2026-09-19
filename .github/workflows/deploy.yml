@@ -348,6 +348,49 @@ jobs:
         path: booksy-provider-app/build/web
         retention-days: 7
 
+  # Admin panel (Vue), served by host nginx from /var/www/booksy-admin on admin.nahalkmi.ir.
+  build-admin-web:
+    name: Build Admin Panel (web)
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: booksy-admin
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '20'
+        cache: 'npm'
+        cache-dependency-path: booksy-admin/package-lock.json
+
+    - name: Install dependencies
+      run: npm ci
+
+    - name: Unit tests
+      run: npm run test:unit
+
+    - name: Build
+      env:
+        VITE_API_BASE_URL: https://back.nahalkmi.ir/api/v1
+      run: npm run build
+
+    - name: Verify the production API URL was compiled in
+      run: |
+        grep -rq 'back.nahalkmi.ir' dist/assets
+        ! grep -rq 'localhost:5000' dist/assets
+        test -f dist/index.html
+
+    - name: Upload web bundle
+      uses: actions/upload-artifact@v4
+      with:
+        name: admin-web
+        path: booksy-admin/dist
+        retention-days: 7
+
   # Deploy on the production box itself, through a self-hosted runner installed there
   # (labels: self-hosted, booksy-prod; runs as the `booksy` user). GitHub-hosted runners cannot
   # reach this server's SSH at all -- its auth.log shows no connection from any of them --
@@ -363,6 +406,7 @@ jobs:
       - build-api
       - build-frontend
       - build-provider-web
+      - build-admin-web
     # Two pushes in quick succession must not interleave their compose operations.
     concurrency:
       group: production-deploy
@@ -373,6 +417,7 @@ jobs:
     env:
       DEPLOY_PATH: /opt/booksy
       PROVIDER_WEB_ROOT: /var/www/booksy-provider
+      ADMIN_WEB_ROOT: /var/www/booksy-admin
 
     steps:
     - name: Checkout compose file
@@ -430,6 +475,20 @@ jobs:
         rm -rf "${PROVIDER_WEB_ROOT:?}"/*
         cp -a provider-web/. "$PROVIDER_WEB_ROOT"/
 
+    - name: Download admin web bundle
+      uses: actions/download-artifact@v4
+      with:
+        name: admin-web
+        path: admin-web
+
+    - name: Publish admin panel
+      run: |
+        # Same rule as the provider app: verify the new bundle before touching the live copy.
+        test -f admin-web/index.html
+        test -d admin-web/assets
+        rm -rf "${ADMIN_WEB_ROOT:?}"/*
+        cp -a admin-web/. "$ADMIN_WEB_ROOT"/
+
     - name: Health check (public URLs)
       run: |
         # Through the real domains: this box hosts other sites, and a request to the bare IP
@@ -444,6 +503,7 @@ jobs:
         }
         check https://back.nahalkmi.ir/health
         check https://provider.nahalkmi.ir/
+        check https://admin.nahalkmi.ir/
 
     - name: Remove dangling images
       if: always()

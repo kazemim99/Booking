@@ -47,7 +47,8 @@
     "welcomeBack": "خوش آمدید",
     "invalidCredentials": "ایمیل یا رمز عبور نادرست است",
     "loginSuccess": "ورود با موفقیت انجام شد",
-    "logoutSuccess": "خروج با موفقیت انجام شد"
+    "logoutSuccess": "خروج با موفقیت انجام شد",
+    "emailOrUsername": "ایمیل یا نام کاربری"
   },
   "navigation": {
     "dashboard": "داشبورد",

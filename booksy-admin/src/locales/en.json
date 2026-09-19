@@ -47,7 +47,8 @@
     "welcomeBack": "Welcome back",
     "invalidCredentials": "Invalid email or password",
     "loginSuccess": "Logged in successfully",
-    "logoutSuccess": "Logged out successfully"
+    "logoutSuccess": "Logged out successfully",
+    "emailOrUsername": "Email or username"
   },
   "navigation": {
     "dashboard": "Dashboard",

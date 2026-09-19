@@ -5,8 +5,10 @@
         <language-switcher />
       </template>
       <a-form :model="formData" @finish="handleLogin" layout="vertical">
-        <a-form-item :label="$t('auth.email')" name="email" :rules="[{ required: true, type: 'email', message: $t('validation.email') }]">
-          <a-input v-model:value="formData.email" size="large" placeholder="admin@booksy.com">
+        <!-- Email OR a plain username: "kazemi.mst" signs in as kazemi.mst@nahalkmi.ir
+             (utils/login-identifier.ts), so the field no longer insists on an email format. -->
+        <a-form-item :label="$t('auth.emailOrUsername')" name="email" :rules="[{ required: true, message: $t('validation.required') }]">
+          <a-input v-model:value="formData.email" size="large" placeholder="kazemi.mst" autocomplete="username">
             <template #prefix><mail-outlined /></template>
           </a-input>
         </a-form-item>

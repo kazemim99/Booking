@@ -1,3 +1,4 @@
+import { toLoginEmail } from '../utils/login-identifier'
 import apiClient from '../utils/axios'
 
 export interface LoginRequest {
@@ -26,7 +27,8 @@ export interface RefreshTokenRequest {
 export const authApi = {
   login: async (credentials: LoginRequest): Promise<LoginResponse> => {
     const response = await apiClient.post<LoginResponse>('/Auth/login', {
-      email: credentials.email,
+      // A bare username ("kazemi.mst") means that account's email on our domain.
+      email: toLoginEmail(credentials.email),
       password: credentials.password,
       rememberMe: credentials.rememberMe || false
     })
