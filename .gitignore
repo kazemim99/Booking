@@ -32,6 +32,9 @@ bld/
 [Oo]ut/
 [Ll]og/
 [Ll]ogs/
+# ...but not source folders that happen to be called logs: the admin panel's Logs page
+# was never committed because of the rule above, and CI could not build the app (2026-09-19).
+!booksy-admin/src/views/logs/
 
 # Visual Studio 2015/2017 cache/options directory
 .vs/
