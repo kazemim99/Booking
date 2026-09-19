@@ -1,4 +1,4 @@
-Status: ACTIVE
+Status: DONE
 Verify: FAST
 
 User request (2026-09-19): a provider keeps its own list of customers — first name, last name, phone —
@@ -44,7 +44,7 @@ contact and fills both in.
 - [x] 1.5 Booking: pick a saved customer or a contact in the composer; the booking is linked to the
       customer (backend + app) (K5)
 - [x] 1.6 Onboarding: optional customers step (K6)
-- [ ] 1.7 Verify, deploy, confirm live
+- [x] 1.7 Verify, deploy, confirm live
 
 ## Log
 - 2026-09-19 1.1 ProviderCustomer aggregate + provider_customers table (migration AddProviderCustomers:
@@ -63,3 +63,10 @@ contact and fills both in.
   while the number is unchanged; a picked contact is saved to the book first. 1.6 optional
   customers section on the completion step (draft id; skipping unchanged). App: 548 tests pass
   (+ contact parsing, clients, composer, completion tests); analyze clean.
+- 2026-09-19 verify FULL PASS (17 steps, 1283 s) on a39da124; pushed to master, auto-deployed.
+  Live on back.nahalkmi.ir as «سالن نهال»: add 201 (+989350001122), same number again 409 with the
+  saved name, import 1 added / 1 already saved / 1 invalid, a booking with providerCustomerId 201
+  and the customer's history shows 1 upcoming; test booking cancelled and both test customers
+  removed (book back to 0). provider.nahalkmi.ir serves the new bundle (main.dart.2f9074ed….js).
+  The contact button appears only in Chrome on Android (Contact Picker API); not exercised on a
+  real phone from here.
