@@ -21,7 +21,7 @@ though it entered several, and none of its 3 gallery photos load.
 - [x] 1.3 Provider list/detail report the provider's real services; test
 - [x] 1.4 Admin: phone shown in the local format (0912 313 5143); dates rendered left-to-right inside
       the RTL layout; tests
-- [ ] 1.5 Verify, deploy, confirm on the live site with the admin token
+- [x] 1.5 Verify, deploy, confirm on the live site with the admin token
 
 ## Log
 - 2026-09-19 1.1 web container nginx: `location ^~ /uploads/` -> booksy-api (^~ beats the image
@@ -33,3 +33,9 @@ though it entered several, and none of its 3 gallery photos load.
   tests reproduced 0 before the fix.
 - 1.4 formatPhone (+98/0098/98/0 -> «0912 313 5143», LTR-isolated; 5 tests) in provider details and
   the users table; dates first-strong isolated (1 test). 54 admin tests pass; verify FAST PASS.
+- 2026-09-19 Deployed (e899b0aa). Live with the admin token: Salon Nahal serviceCount 8; gallery URLs
+  are https://back.nahalkmi.ir/uploads/... and fetch as 200 image/webp.
+- 2026-09-19 Provider booking failure (same session): the app sent the slot as .toUtc(), 09:00 Tehran ->
+  05:30Z, and the server refused it ("زمان رزرو باید بین 09:00 و 18:00 باشد"); the listed value
+  unchanged booked fine (test booking cancelled at once). Fixed client-side (wallClockIso, 2 tests);
+  failures now show the server's reason (3 tests). Timezone model recorded as FOLLOW-UPS #63.

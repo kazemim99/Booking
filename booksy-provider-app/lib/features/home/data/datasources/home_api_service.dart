@@ -149,13 +149,24 @@ class HomeApiService {
           'providerId': providerId,
           'serviceId': serviceId,
           'staffProviderId': staffProviderId,
-          'startTime': startTime.toUtc().toIso8601String(),
+          // Salon wall-clock time, exactly as /available-slots listed it. Converting to UTC
+          // turned a 09:00 slot into 05:30Z, which the server refused as outside business
+          // hours (production, 2026-09-19).
+          'startTime': wallClockIso(startTime),
           // Multi-service visit: all lines, priced/lengthed server-side.
           if (serviceIds.length > 1) 'serviceIds': serviceIds,
           if (customerNotes != null && customerNotes.isNotEmpty)
             'customerNotes': customerNotes,
         },
       );
+
+  /// A booking time as the server reads it: salon wall-clock, no zone, never shifted by the
+  /// device timezone («2026-09-21T09:00:00»).
+  static String wallClockIso(DateTime t) {
+    String two(int v) => v.toString().padLeft(2, '0');
+    return '${t.year.toString().padLeft(4, '0')}-${two(t.month)}-${two(t.day)}'
+        'T${two(t.hour)}:${two(t.minute)}:${two(t.second)}';
+  }
 
   // ==================== business profile ====================
 
