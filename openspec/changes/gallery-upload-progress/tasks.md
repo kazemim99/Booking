@@ -1,4 +1,4 @@
-Status: STOPPED(awaiting production deploy of 703e2cd2 and a live check; code, tests and verify FAST are done)
+Status: DONE
 Verify: FAST
 
 Uploading gallery photos sent every picked image in ONE multipart request with no progress, and the
@@ -21,7 +21,7 @@ cancel, and a footer with overall progress and "cancel all").
 - [x] 1.2 Upload tile + summary footer widgets; widget tests (U1-U5)
 - [x] 1.3 Gallery page: pick -> queue; the grid refreshes as each photo lands
 - [x] 1.4 Onboarding gallery step: upload on Next through the queue with the same tiles
-- [ ] 1.5 Verify FAST + flutter, deploy, confirm on the live site
+- [x] 1.5 Verify FAST + flutter, deploy, confirm on the live site
 
 ## Decisions
 - One request per photo, sent one after another rather than in parallel. The server adds each photo
@@ -43,3 +43,6 @@ cancel, and a footer with overall progress and "cancel all").
   per photo, never the batch call, done state shown, grid re-read). Onboarding step: Next queues the
   photos cover-first, shows the tiles, advances only once every photo landed; picker made injectable
   for the test that proves order and advance. 522 app tests pass; verify FAST PASS.
+- 2026-09-19 Deployed (703e2cd2, Deploy to Production green). Live: the bootstrap names
+  main.dart.365be33abe82501d.js and that bundle carries the upload panel (upload-cancel-all key).
+  The upload experience itself needs a person picking photos in a browser.
