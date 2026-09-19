@@ -335,6 +335,12 @@ jobs:
         grep -q 'back.nahalkmi.ir' build/web/main.dart.js
         ! grep -q 'localhost:5000' build/web/main.dart.js
 
+    - name: Give the entry file a content-hashed name
+      # Flutter names the whole app main.dart.js on every build, so a browser that cached it kept
+      # running the old app after a deploy (production served it for 30 days). A new name per
+      # build, referenced from the no-store bootstrap, reaches every browser at once.
+      run: bash tool/cache_bust_web.sh build/web
+
     - name: Upload web bundle
       uses: actions/upload-artifact@v4
       with:
@@ -417,7 +423,10 @@ jobs:
         # Verify the new bundle BEFORE touching the live directory: an earlier manual deploy
         # emptied the site first and served 403 when the new files turned out to be missing.
         test -f provider-web/index.html
-        test -f provider-web/main.dart.js
+        # The entry file is content-hashed (tool/cache_bust_web.sh); the bootstrap must name it.
+        entry=$(ls provider-web/main.dart.*.js | head -1)
+        test -n "$entry"
+        grep -q "\"mainJsPath\":\"$(basename "$entry")\"" provider-web/flutter_bootstrap.js
         rm -rf "${PROVIDER_WEB_ROOT:?}"/*
         cp -a provider-web/. "$PROVIDER_WEB_ROOT"/
 

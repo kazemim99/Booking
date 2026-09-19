@@ -114,6 +114,23 @@ should be ≥1 and `grep -c localhost:5000 build/web/main.dart.js` should be 0. 
 `--dart-define`, the bundle silently points at `http://localhost:5000` (see
 `booksy-provider-app/lib/core/api/config/api_constants.dart`).
 
+### Provider app caching (why a deploy reaches every browser)
+
+Flutter names the whole app `main.dart.js` on every build. Until 2026-09-19 the vhost cached it for
+30 days (`public, max-age=2592000`) on the false belief that Flutter hashes its file names, so
+browsers kept running an old build after each deploy — a user saw last week's services screen in an
+incognito window. Now:
+
+- CI renames the entry file to `main.dart.<sha256-16>.js` and rewrites `mainJsPath` in
+  `flutter_bootstrap.js` (`booksy-provider-app/tool/cache_bust_web.sh`); the deploy job refuses a
+  bundle whose bootstrap does not name that file.
+- nginx caches that hashed file for a year (`immutable`: a new build is a new name), revalidates
+  every other app file (`no-cache`, ETag -> 304), and never caches `index.html`,
+  `flutter_bootstrap.js` or the service worker.
+
+A manual web build must run `bash tool/cache_bust_web.sh build/web` before upload, or the site
+references `main.dart.js` through a bootstrap that still works but caches nothing specially.
+
 ### Outbound services the API depends on
 
 - **Nominatim** (`nominatim.openstreetmap.org`) — place search and reverse geocoding for the map
