@@ -1,4 +1,5 @@
 import 'package:dartz/dartz.dart';
+import 'package:dio/dio.dart' show CancelToken, ProgressCallback;
 import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../../../core/constants/app_strings.dart';
 import '../../../../core/errors/failures.dart';
@@ -171,6 +172,24 @@ class OnboardingCubit extends Cubit<OnboardingState> {
         onOk: (_) => _advance(),
       ),
     );
+  }
+
+  /// Uploads ONE gallery photo to the draft, for the step's upload queue. Throws
+  /// on failure — the queue marks that photo failed and offers a retry.
+  Future<void> uploadGalleryPhoto(
+    GalleryImageUpload image, {
+    required ProgressCallback onProgress,
+    required CancelToken cancelToken,
+  }) async {
+    final id = state.draftProviderId;
+    if (id == null) throw StateError('No draft to upload the gallery to');
+    final result = await _repository.uploadGalleryImage(
+      id,
+      image,
+      onProgress: onProgress,
+      cancelToken: cancelToken,
+    );
+    result.fold((failure) => throw Exception(failure.message), (_) {});
   }
 
   /// Final submit from the preview step (step 7) → complete → step 8.

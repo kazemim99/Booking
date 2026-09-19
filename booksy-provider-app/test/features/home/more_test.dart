@@ -22,6 +22,7 @@ import 'package:booksy_provider_app/features/home/presentation/widgets/block_tim
 import 'package:booksy_provider_app/features/home/presentation/pages/more_page.dart';
 import 'package:booksy_provider_app/features/home/presentation/pages/more_sub_pages.dart';
 import 'package:dartz/dartz.dart';
+import 'package:dio/dio.dart' show CancelToken;
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -57,6 +58,12 @@ AuthRepository _authRepo() {
 }
 
 void main() {
+  setUpAll(() {
+    // mocktail needs a sample value for `any()` on these parameter types.
+    registerFallbackValue(const GalleryImageUpload(name: 'x.jpg', bytes: []));
+    registerFallbackValue(CancelToken());
+  });
+
   late MockHomeRepository repository;
 
   setUp(() {
@@ -572,6 +579,11 @@ void main() {
           .thenAnswer((_) async => const Right([primary, secondary]));
       when(() => repository.uploadGalleryImages(any()))
           .thenAnswer((_) async => const Right(null));
+      when(() => repository.uploadGalleryImage(
+            any(),
+            onProgress: any(named: 'onProgress'),
+            cancelToken: any(named: 'cancelToken'),
+          )).thenAnswer((_) async => const Right(null));
       when(() => repository.setPrimaryGalleryImage(any()))
           .thenAnswer((_) async => const Right(null));
       when(() => repository.removeGalleryImage(any()))
@@ -664,19 +676,27 @@ void main() {
       verify(() => repository.removeGalleryImage('g1')).called(1);
     });
 
-    testWidgets('upload flows picked images to the repository',
+    testWidgets(
+        'upload sends each picked photo on its own, shows it, and refreshes the grid',
         (tester) async {
       await pumpGallery(tester);
+      clearInteractions(repository);
 
       await tester.tap(find.byKey(const Key('gallery-upload')));
       await tester.pumpAndSettle();
 
-      final sent =
-          verify(() => repository.uploadGalleryImages(captureAny()))
-              .captured
-              .single as List<GalleryImageUpload>;
-      expect(sent.single.name, 'a.jpg');
-      expect(find.text(AppStrings.galleryUploaded), findsOneWidget);
+      // One request per photo (with progress), not one batch with none.
+      final sent = verify(() => repository.uploadGalleryImage(
+            captureAny(),
+            onProgress: any(named: 'onProgress'),
+            cancelToken: any(named: 'cancelToken'),
+          )).captured.single as GalleryImageUpload;
+      expect(sent.name, 'a.jpg');
+      verifyNever(() => repository.uploadGalleryImages(any()));
+
+      // The photo shows as uploaded, and the grid re-read the gallery for it.
+      expect(find.text(AppStrings.uploadAllDone), findsOneWidget);
+      verify(() => repository.fetchGallery()).called(1);
     });
 
     testWidgets('empty gallery invites upload', (tester) async {

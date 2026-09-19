@@ -1,4 +1,5 @@
 import 'package:dartz/dartz.dart';
+import 'package:dio/dio.dart' show CancelToken, ProgressCallback;
 import '../../../../core/errors/failures.dart';
 import '../entities/onboarding_data.dart';
 import '../entities/onboarding_draft.dart';
@@ -27,6 +28,14 @@ abstract class OnboardingRepository {
     String providerId,
     List<GalleryImageUpload> images,
   );
+
+  /// One gallery photo, with byte progress and cancellation (UploadQueue).
+  Future<Either<Failure, void>> uploadGalleryImage(
+    String providerId,
+    GalleryImageUpload image, {
+    ProgressCallback? onProgress,
+    CancelToken? cancelToken,
+  });
 
   /// Completes registration for [providerId] (step 9).
   Future<Either<Failure, void>> complete(String providerId);

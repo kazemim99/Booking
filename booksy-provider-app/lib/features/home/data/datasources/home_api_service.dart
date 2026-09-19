@@ -392,6 +392,28 @@ class HomeApiService {
     await _dio.post(ApiConstants.providerGallery(providerId), data: form);
   }
 
+  /// POST /v1/Providers/{id}/gallery with ONE photo, reporting bytes sent.
+  /// The server appends each photo, so a batch goes as one call per photo and
+  /// every photo gets its own progress (see UploadQueue).
+  Future<void> uploadGalleryImage(
+    String providerId,
+    GalleryImageUpload image, {
+    ProgressCallback? onSendProgress,
+    CancelToken? cancelToken,
+  }) async {
+    final form = FormData()
+      ..files.add(MapEntry(
+        'files',
+        MultipartFile.fromBytes(image.bytes, filename: image.name),
+      ));
+    await _dio.post(
+      ApiConstants.providerGallery(providerId),
+      data: form,
+      onSendProgress: onSendProgress,
+      cancelToken: cancelToken,
+    );
+  }
+
   /// PUT /v1/Providers/{id}/gallery/{imageId}/set-primary.
   Future<void> setPrimaryGalleryImage(String providerId, String imageId) =>
       _dio.put(

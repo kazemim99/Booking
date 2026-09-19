@@ -1,4 +1,5 @@
 import 'package:dartz/dartz.dart';
+import 'package:dio/dio.dart' show CancelToken, ProgressCallback;
 
 import '../../../../core/errors/failures.dart';
 import '../../../onboarding/domain/entities/onboarding_data.dart'
@@ -173,6 +174,13 @@ abstract class HomeRepository {
   Future<Either<Failure, List<GalleryImage>>> fetchGallery();
 
   /// Uploads picked images (multipart).
+  /// One photo, with byte progress and cancellation (UploadQueue drives it).
+  Future<Either<Failure, void>> uploadGalleryImage(
+    GalleryImageUpload image, {
+    ProgressCallback? onProgress,
+    CancelToken? cancelToken,
+  });
+
   Future<Either<Failure, void>> uploadGalleryImages(
       List<GalleryImageUpload> images);
 

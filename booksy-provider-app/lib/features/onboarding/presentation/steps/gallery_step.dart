@@ -4,6 +4,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:image_picker/image_picker.dart';
 
+import '../../../../core/uploads/upload_queue.dart';
+import '../../../../core/uploads/upload_progress_widgets.dart';
 import '../../../../config/theme/app_tokens.dart';
 import '../../../../core/constants/app_strings.dart';
 import '../../../../core/widgets/app_empty_state.dart';
@@ -15,8 +17,22 @@ import '../widgets/step_scaffold.dart';
 /// Step 6 — gallery (optional). Pick multiple images, preview/remove them, and
 /// upload on "next" (multipart → the draft). Mirrors the Vue GalleryStep.
 /// Skippable: advancing with no images just moves on.
+/// Picks photos. Injectable so tests can supply photos without a platform picker.
+typedef PickPhotos = Future<List<GalleryImageUpload>> Function(int max);
+
+Future<List<GalleryImageUpload>> _pickWithImagePicker(int max) async {
+  final picked = await ImagePicker().pickMultiImage(imageQuality: 80);
+  final result = <GalleryImageUpload>[];
+  for (final x in picked.take(max)) {
+    result.add(GalleryImageUpload(name: x.name, bytes: await x.readAsBytes()));
+  }
+  return result;
+}
+
 class GalleryStep extends StatefulWidget {
-  const GalleryStep({super.key});
+  final PickPhotos pickPhotos;
+
+  const GalleryStep({super.key, this.pickPhotos = _pickWithImagePicker});
 
   /// Returns [items] reordered so the element at [mainIndex] comes first,
   /// preserving the relative order of the rest. The picked "main" image uploads
@@ -37,8 +53,71 @@ class GalleryStep extends StatefulWidget {
 class _GalleryStepState extends State<GalleryStep> {
   static const int _maxImages = 20;
 
-  final ImagePicker _picker = ImagePicker();
   final List<_PickedImage> _images = [];
+
+  /// Photos go up one request each on Next, each with its own progress, instead
+  /// of one silent batch that looked like a frozen app on a slow connection.
+  late final UploadQueue _uploads = UploadQueue(
+    (image, {required onProgress, required cancelToken}) =>
+        context.read<OnboardingCubit>().uploadGalleryPhoto(
+          image,
+          onProgress: onProgress,
+          cancelToken: cancelToken,
+        ),
+  );
+
+  @override
+  void initState() {
+    super.initState();
+    // Rebuild as photos progress: the tiles, and Next (disabled while busy).
+    _uploads.addListener(_onQueueChanged);
+  }
+
+  void _onQueueChanged() {
+    if (mounted) setState(() {});
+  }
+
+  @override
+  void dispose() {
+    _uploads.removeListener(_onQueueChanged);
+    _uploads.dispose();
+    super.dispose();
+  }
+
+  /// Next: send the photos (the chosen cover first, so it is numbered first),
+  /// wait for them, and advance only when every one has landed. A failed photo
+  /// stays on screen with a retry; pressing Next again retries it.
+  Future<void> _onNext() async {
+    final cubit = context.read<OnboardingCubit>();
+    if (_images.isEmpty) {
+      cubit.uploadGalleryAndAdvance(const []);
+      return;
+    }
+    if (_uploads.items.isEmpty) {
+      _uploads.add(
+        GalleryStep.mainFirst(
+          _images
+              .map((i) => GalleryImageUpload(name: i.name, bytes: i.bytes))
+              .toList(),
+          _mainIndex,
+        ),
+      );
+    } else {
+      for (final item in _uploads.items) {
+        if (item.status == UploadStatus.failed) _uploads.retry(item.id);
+      }
+    }
+    await _uploads.whenIdle();
+    if (!mounted) return;
+    final allLanded =
+        _uploads.items.isNotEmpty &&
+        _uploads.items.every((i) => i.status == UploadStatus.done);
+    if (allLanded) {
+      cubit.uploadGalleryAndAdvance(const []);
+    } else if (_uploads.items.isEmpty) {
+      setState(() {}); // cancelled: back to the picker
+    }
+  }
 
   /// Index of the "main" image. It is uploaded first so it gets DisplayOrder 0,
   /// which the backend uses as the provider's cover image.
@@ -50,15 +129,13 @@ class _GalleryStepState extends State<GalleryStep> {
       _snack(AppStrings.galleryLimit(_maxImages));
       return;
     }
-    final picked = await _picker.pickMultiImage(imageQuality: 80);
+    final picked = await widget.pickPhotos(remaining + 1);
     if (picked.isEmpty || !mounted) return;
 
-    final toAdd = picked.take(remaining);
-    final loaded = <_PickedImage>[];
-    for (final x in toAdd) {
-      loaded.add(_PickedImage(name: x.name, bytes: await x.readAsBytes()));
-    }
-    if (!mounted) return;
+    final loaded = [
+      for (final x in picked.take(remaining))
+        _PickedImage(name: x.name, bytes: Uint8List.fromList(x.bytes)),
+    ];
     setState(() => _images.addAll(loaded));
     if (picked.length > remaining) _snack(AppStrings.galleryLimit(_maxImages));
   }
@@ -95,56 +172,50 @@ class _GalleryStepState extends State<GalleryStep> {
       },
       builder: (context, state) {
         final hasImages = _images.isNotEmpty;
+        final uploading = _uploads.items.isNotEmpty;
         return StepScaffold(
           title: AppStrings.galleryTitle,
           subtitle: AppStrings.gallerySubtitle,
           loading: state.isSaving,
           onBack: cubit.back,
-          // Same handler for both: empty list skips, non-empty uploads. The
-          // main image goes first so it becomes the cover (DisplayOrder 0).
-          onNext: () => cubit.uploadGalleryAndAdvance(
-            GalleryStep.mainFirst(
-              _images
-                  .map((i) => GalleryImageUpload(name: i.name, bytes: i.bytes))
-                  .toList(),
-              _mainIndex,
-            ),
-          ),
+          onNext: _uploads.isBusy ? null : _onNext,
           nextLabel: hasImages ? AppStrings.next : AppStrings.skip,
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              OutlinedButton.icon(
-                key: const Key('gallery-add'),
-                onPressed: state.isSaving ? null : _pick,
-                icon: const Icon(Icons.add_photo_alternate_outlined),
-                label: Text(
-                  hasImages
-                      ? '${AppStrings.addPhotos} (${AppStrings.galleryCount(_images.length)})'
-                      : AppStrings.addPhotos,
-                ),
-              ),
-              const SizedBox(height: AppSpacing.md),
-              if (hasImages) ...[
-                Text(
-                  AppStrings.mainImageHint,
-                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                        color: Theme.of(context).colorScheme.onSurfaceVariant,
+          child: uploading
+              ? UploadProgressPanel(queue: _uploads)
+              : Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    OutlinedButton.icon(
+                      key: const Key('gallery-add'),
+                      onPressed: state.isSaving ? null : _pick,
+                      icon: const Icon(Icons.add_photo_alternate_outlined),
+                      label: Text(
+                        hasImages
+                            ? '${AppStrings.addPhotos} (${AppStrings.galleryCount(_images.length)})'
+                            : AppStrings.addPhotos,
                       ),
+                    ),
+                    const SizedBox(height: AppSpacing.md),
+                    if (hasImages) ...[
+                      Text(
+                        AppStrings.mainImageHint,
+                        style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                          color: Theme.of(context).colorScheme.onSurfaceVariant,
+                        ),
+                      ),
+                      const SizedBox(height: AppSpacing.sm),
+                      _grid(),
+                    ] else
+                      const Padding(
+                        padding: EdgeInsets.symmetric(vertical: AppSpacing.lg),
+                        child: AppEmptyState(
+                          icon: Icons.photo_library_outlined,
+                          message: AppStrings.galleryEmptyCaption,
+                          description: AppStrings.gallerySubtitle,
+                        ),
+                      ),
+                  ],
                 ),
-                const SizedBox(height: AppSpacing.sm),
-                _grid(),
-              ] else
-                const Padding(
-                  padding: EdgeInsets.symmetric(vertical: AppSpacing.lg),
-                  child: AppEmptyState(
-                    icon: Icons.photo_library_outlined,
-                    message: AppStrings.galleryEmptyCaption,
-                    description: AppStrings.gallerySubtitle,
-                  ),
-                ),
-            ],
-          ),
         );
       },
     );
@@ -181,7 +252,13 @@ class _GalleryStepState extends State<GalleryStep> {
         child: Stack(
           fit: StackFit.expand,
           children: [
-            Image.memory(_images[i].bytes, fit: BoxFit.cover),
+            Image.memory(
+              _images[i].bytes,
+              fit: BoxFit.cover,
+              // An undecodable file shows a blank tile rather than an error.
+              errorBuilder: (context, error, stack) =>
+                  const ColoredBox(color: Colors.black12),
+            ),
             // Remove (top-left in the visual layout).
             Positioned(
               top: 2,
@@ -230,8 +307,9 @@ class _GalleryStepState extends State<GalleryStep> {
                   child: Text(
                     AppStrings.mainImage,
                     textAlign: TextAlign.center,
-                    style: theme.textTheme.labelSmall
-                        ?.copyWith(color: theme.colorScheme.onPrimary),
+                    style: theme.textTheme.labelSmall?.copyWith(
+                      color: theme.colorScheme.onPrimary,
+                    ),
                   ),
                 ),
               ),

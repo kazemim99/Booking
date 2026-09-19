@@ -45,6 +45,27 @@ class OnboardingApiService {
     await _dio.post(ApiConstants.registrationGallery, data: form);
   }
 
+  /// ONE photo to the draft's gallery, reporting bytes sent. The server appends
+  /// each photo in arrival order, so a batch goes one call per photo and each
+  /// photo gets its own progress (UploadQueue).
+  Future<void> uploadGalleryImage(
+    GalleryImageUpload image, {
+    ProgressCallback? onSendProgress,
+    CancelToken? cancelToken,
+  }) async {
+    final form = FormData()
+      ..files.add(MapEntry(
+        'files',
+        MultipartFile.fromBytes(image.bytes, filename: image.name),
+      ));
+    await _dio.post(
+      ApiConstants.registrationGallery,
+      data: form,
+      onSendProgress: onSendProgress,
+      cancelToken: cancelToken,
+    );
+  }
+
   Future<void> complete(String providerId) async {
     await _dio.post(
       ApiConstants.registrationComplete,

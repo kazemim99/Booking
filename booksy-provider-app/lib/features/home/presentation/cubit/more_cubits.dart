@@ -1,8 +1,10 @@
 import 'package:dartz/dartz.dart';
+import 'package:dio/dio.dart' show CancelToken, ProgressCallback;
 import 'package:equatable/equatable.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
 import '../../../../core/errors/failures.dart';
+import '../../../../core/uploads/upload_queue.dart';
 import '../../../onboarding/domain/entities/onboarding_data.dart'
     show BreakTime, ClockTime, DayHours, GalleryImageUpload;
 import '../../domain/entities/composer_models.dart';
@@ -239,6 +241,46 @@ class ExceptionsCubit extends _MoreLoadCubit<List<AvailabilityException>> {
 class GalleryCubit extends _MoreLoadCubit<List<GalleryImage>> {
   final HomeRepository _repository;
   GalleryCubit(this._repository);
+
+  /// Photos on their way up, one request each, each with its own progress. As
+  /// each one lands the grid refreshes quietly, so the provider sees it without
+  /// waiting for the rest of the batch.
+  late final UploadQueue uploads = UploadQueue(
+    _uploadOne,
+    onUploaded: (_) => refresh(),
+  );
+
+  void addUploads(List<GalleryImageUpload> images) => uploads.add(images);
+
+  Future<void> _uploadOne(
+    GalleryImageUpload image, {
+    required ProgressCallback onProgress,
+    required CancelToken cancelToken,
+  }) async {
+    final result = await _repository.uploadGalleryImage(
+      image,
+      onProgress: onProgress,
+      cancelToken: cancelToken,
+    );
+    result.fold((failure) => throw Exception(failure.message), (_) {});
+  }
+
+  /// Re-reads the gallery WITHOUT the full-page loading state, so a photo
+  /// landing mid-batch does not blank the screen.
+  Future<void> refresh() async {
+    final result = await fetch();
+    if (isClosed) return;
+    result.fold(
+      (_) {}, // keep what is shown; the next landing or a manual reload retries
+      (data) => emit(MoreState(status: MoreStatus.ready, data: data)),
+    );
+  }
+
+  @override
+  Future<void> close() {
+    uploads.dispose();
+    return super.close();
+  }
 
   @override
   Future<Either<Failure, List<GalleryImage>>> fetch() =>

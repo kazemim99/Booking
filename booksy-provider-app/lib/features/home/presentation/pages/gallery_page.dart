@@ -9,6 +9,7 @@ import '../../../../core/widgets/app_empty_state.dart';
 import '../../../../core/widgets/app_error_state.dart';
 import '../../../../core/widgets/app_loading.dart';
 import '../../../../core/widgets/app_page_scaffold.dart';
+import '../../../../core/uploads/upload_progress_widgets.dart';
 import '../../../../core/widgets/app_snackbar.dart';
 import '../../../onboarding/domain/entities/onboarding_data.dart'
     show GalleryImageUpload;
@@ -59,58 +60,84 @@ class GalleryView extends StatelessWidget {
               key: const Key('gallery-upload'),
               tooltip: AppStrings.galleryUpload,
               // Green add affordance: brand blue would vanish on the chrome.
-              icon: const Icon(Icons.add_photo_alternate,
-                  color: AppColors.success),
+              icon: const Icon(
+                Icons.add_photo_alternate,
+                color: AppColors.success,
+              ),
               onPressed: () => _upload(context, cubit),
             ),
           ],
           body: switch (state.status) {
             MoreStatus.loading => const AppLoading.page(),
             MoreStatus.failed => AppErrorState(
-                message: state.error ?? AppStrings.homeLoadError,
-                onRetry: cubit.load,
-              ),
-            MoreStatus.ready => (state.data ?? const []).isEmpty
-                ? AppEmptyState(
-                    icon: Icons.photo_library_outlined,
-                    message: AppStrings.galleryEmpty,
-                    description: AppStrings.galleryEmptyBody,
-                    actionLabel: '+ ${AppStrings.galleryUpload}',
-                    onAction: () => _upload(context, cubit),
-                  )
-                : GridView.builder(
-                    key: const Key('gallery-grid'),
-                    padding: const EdgeInsets.all(AppSpacing.md),
-                    gridDelegate:
-                        const SliverGridDelegateWithFixedCrossAxisCount(
-                      crossAxisCount: 3,
-                      mainAxisSpacing: AppSpacing.sm,
-                      crossAxisSpacing: AppSpacing.sm,
-                    ),
-                    itemCount: state.data!.length,
-                    itemBuilder: (context, i) =>
-                        _tile(context, cubit, state.data![i]),
-                  ),
+              message: state.error ?? AppStrings.homeLoadError,
+              onRetry: cubit.load,
+            ),
+            MoreStatus.ready => _readyBody(
+              context,
+              cubit,
+              state.data ?? const [],
+            ),
           },
         );
       },
     );
   }
 
+  /// Photos being uploaded (each with its own progress) above the gallery.
+  Widget _readyBody(
+    BuildContext context,
+    GalleryCubit cubit,
+    List<GalleryImage> images,
+  ) {
+    return ListenableBuilder(
+      listenable: cubit.uploads,
+      builder: (context, _) {
+        final uploading = cubit.uploads.items.isNotEmpty;
+        if (images.isEmpty && !uploading) {
+          return AppEmptyState(
+            icon: Icons.photo_library_outlined,
+            message: AppStrings.galleryEmpty,
+            description: AppStrings.galleryEmptyBody,
+            actionLabel: '+ ${AppStrings.galleryUpload}',
+            onAction: () => _upload(context, cubit),
+          );
+        }
+        return ListView(
+          padding: const EdgeInsets.all(AppSpacing.md),
+          children: [
+            if (uploading) ...[
+              UploadProgressPanel(queue: cubit.uploads),
+              const SizedBox(height: AppSpacing.lg),
+            ],
+            GridView.builder(
+              key: const Key('gallery-grid'),
+              shrinkWrap: true,
+              physics: const NeverScrollableScrollPhysics(),
+              gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                crossAxisCount: 3,
+                mainAxisSpacing: AppSpacing.sm,
+                crossAxisSpacing: AppSpacing.sm,
+              ),
+              itemCount: images.length,
+              itemBuilder: (context, i) => _tile(context, cubit, images[i]),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  /// Picked photos show at once, each with its own progress; nothing waits
+  /// for the whole batch (the panel above the grid reports success or failure
+  /// per photo, so no snackbar is needed).
   Future<void> _upload(BuildContext context, GalleryCubit cubit) async {
     final images = await pickImages();
     if (images.isEmpty || !context.mounted) return;
-    final failure = await cubit.uploadImages(images);
-    if (!context.mounted) return;
-    if (failure == null) {
-      AppSnackbar.success(context, AppStrings.galleryUploaded);
-    } else {
-      AppSnackbar.error(context, failure.message);
-    }
+    cubit.addUploads(images);
   }
 
-  Widget _tile(
-      BuildContext context, GalleryCubit cubit, GalleryImage image) {
+  Widget _tile(BuildContext context, GalleryCubit cubit, GalleryImage image) {
     return InkWell(
       key: Key('gallery-image-${image.id}'),
       onTap: () => _showImageSheet(context, cubit, image),
@@ -137,7 +164,9 @@ class GalleryView extends StatelessWidget {
               child: Container(
                 key: Key('gallery-primary-${image.id}'),
                 padding: const EdgeInsets.symmetric(
-                    horizontal: AppSpacing.xs, vertical: 2),
+                  horizontal: AppSpacing.xs,
+                  vertical: 2,
+                ),
                 decoration: BoxDecoration(
                   color: AppColors.success,
                   borderRadius: BorderRadius.circular(AppRadius.sm),
@@ -154,13 +183,19 @@ class GalleryView extends StatelessWidget {
   }
 
   Widget _placeholder() => Container(
-        color: AppColors.surfaceSoft,
-        child: const Icon(Icons.image_outlined,
-            color: AppColors.icon, size: AppIconSize.md),
-      );
+    color: AppColors.surfaceSoft,
+    child: const Icon(
+      Icons.image_outlined,
+      color: AppColors.icon,
+      size: AppIconSize.md,
+    ),
+  );
 
   void _showImageSheet(
-      BuildContext context, GalleryCubit cubit, GalleryImage image) {
+    BuildContext context,
+    GalleryCubit cubit,
+    GalleryImage image,
+  ) {
     showModalBottomSheet<void>(
       context: context,
       shape: const RoundedRectangleBorder(
@@ -175,8 +210,10 @@ class GalleryView extends StatelessWidget {
             if (!image.isPrimary)
               ListTile(
                 key: const Key('gallery-set-primary'),
-                leading:
-                    const Icon(Icons.star_outline, color: AppColors.primary),
+                leading: const Icon(
+                  Icons.star_outline,
+                  color: AppColors.primary,
+                ),
                 title: const Text(AppStrings.gallerySetPrimary),
                 onTap: () async {
                   Navigator.pop(sheetContext);
@@ -184,14 +221,18 @@ class GalleryView extends StatelessWidget {
                   if (!context.mounted) return;
                   failure == null
                       ? AppSnackbar.success(
-                          context, AppStrings.galleryPrimarySet)
+                          context,
+                          AppStrings.galleryPrimarySet,
+                        )
                       : AppSnackbar.error(context, failure.message);
                 },
               ),
             ListTile(
               key: const Key('gallery-delete'),
-              leading:
-                  const Icon(Icons.delete_outline, color: AppColors.danger),
+              leading: const Icon(
+                Icons.delete_outline,
+                color: AppColors.danger,
+              ),
               title: const Text(
                 AppStrings.galleryRemove,
                 style: TextStyle(color: AppColors.danger),
@@ -209,7 +250,10 @@ class GalleryView extends StatelessWidget {
   }
 
   Future<void> _confirmRemove(
-      BuildContext context, GalleryCubit cubit, GalleryImage image) async {
+    BuildContext context,
+    GalleryCubit cubit,
+    GalleryImage image,
+  ) async {
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (dialogContext) => AlertDialog(

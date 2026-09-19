@@ -148,6 +148,15 @@ class AppStrings {
   static const String servicePrice = 'قیمت (تومان)';
   static const String noServicesYet = 'هنوز خدمتی اضافه نشده است';
 
+  // Photo upload progress (gallery).
+  static const String uploadQueued = 'در صف';
+  static const String uploadFailed = 'آپلود نشد';
+  static const String uploadRetry = 'تلاش دوباره';
+  static const String uploadCancelAll = 'لغو همه';
+  static const String uploadAllDone = 'همه‌ی عکس‌ها آپلود شد';
+  static String uploadRemaining(int remaining, int total) =>
+      '$remaining از $total عکس در حال آپلود…';
+
   // Suggested-services catalogue (onboarding step 4).
   static const String searchServices = 'جستجوی خدمت';
   static const String searchServicesHint = 'مثلاً کراتینه';

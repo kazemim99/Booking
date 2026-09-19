@@ -447,6 +447,23 @@ class HomeRepositoryImpl implements HomeRepository {
   }
 
   @override
+  Future<Either<Failure, void>> uploadGalleryImage(
+    GalleryImageUpload image, {
+    ProgressCallback? onProgress,
+    CancelToken? cancelToken,
+  }) {
+    return _withProviderId((providerId) => _action(
+          () => _api.uploadGalleryImage(
+            providerId,
+            image,
+            onSendProgress: onProgress,
+            cancelToken: cancelToken,
+          ),
+          'بارگذاری تصویر ناموفق بود',
+        ));
+  }
+
+  @override
   Future<Either<Failure, void>> setPrimaryGalleryImage(String imageId) {
     return _withProviderId((providerId) => _action(
           () => _api.setPrimaryGalleryImage(providerId, imageId),

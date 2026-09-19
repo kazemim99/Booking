@@ -44,6 +44,20 @@ class OnboardingRepositoryImpl implements OnboardingRepository {
   }
 
   @override
+  Future<Either<Failure, void>> uploadGalleryImage(
+    String providerId,
+    GalleryImageUpload image, {
+    ProgressCallback? onProgress,
+    CancelToken? cancelToken,
+  }) {
+    return _guard(() => _api.uploadGalleryImage(
+          image,
+          onSendProgress: onProgress,
+          cancelToken: cancelToken,
+        ));
+  }
+
+  @override
   Future<Either<Failure, void>> complete(String providerId) {
     return _guard(() => _api.complete(providerId));
   }
