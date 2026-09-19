@@ -13,6 +13,7 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 
+using Booksy.ServiceCatalog.Application.Services;
 namespace Booksy.Host.IntegrationTests.Infrastructure;
 
 /// <summary>
@@ -133,6 +134,11 @@ public sealed class BooksyHostFactory : WebApplicationFactory<Startup>
             // the application's payment behaviour, not the gateway's.
             services.RemoveAll<IPaymentGateway>();
             services.AddSingleton<IPaymentGateway, FakePaymentGateway>();
+
+            // Geocoding talks to OpenStreetMap over the network; a test suite must not depend on a
+            // third-party service being reachable. The fake keeps our own contract under test.
+            services.RemoveAll<IGeocodingProvider>();
+            services.AddSingleton<IGeocodingProvider, FakeGeocodingProvider>();
 
             // Every notification channel talks to the outside world (SMTP, an SMS gateway, Firebase,
             // SignalR) and none of them can reach it from the test sandbox. Fakes here let a test

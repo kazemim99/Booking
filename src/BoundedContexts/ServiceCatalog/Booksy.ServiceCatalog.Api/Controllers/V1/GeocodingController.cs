@@ -1,3 +1,4 @@
+using System.Text.Json.Nodes;
 using Booksy.ServiceCatalog.Application.Services;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -11,8 +12,13 @@ namespace Booksy.ServiceCatalog.Api.Controllers.V1;
 /// <para>Anonymous on purpose: onboarding picks a location before any provider exists. Rate-limited per
 /// caller, because the upstream budget is shared by everyone using this deployment.</para>
 ///
-/// <para>Answers the upstream's JSON as-is (clients already parse that shape), and 503 when the lookup
-/// is unavailable — callers treat that as "no result" and keep whatever the user typed.</para>
+/// <para>Answers the upstream's JSON as the payload of the host's standard envelope (clients read
+/// `data`), and 503 when the lookup is unavailable — callers treat that as "no result" and keep
+/// whatever the user typed.</para>
+///
+/// <para>The parsed JSON is returned as an object rather than a <c>ContentResult</c>: a ContentResult
+/// sets Content-Length for the raw upstream body, the envelope middleware then writes a longer body
+/// over it, and Kestrel fails the request with 500 (production, 2026-09-19).</para>
 /// </summary>
 [ApiController]
 [Route("api/v1/[controller]")]
@@ -40,7 +46,7 @@ public sealed class GeocodingController : ControllerBase
         }
 
         var json = await _geocoding.SearchAsync(q, limit, cancellationToken);
-        return json is null ? StatusCode(StatusCodes.Status503ServiceUnavailable) : Content(json, "application/json");
+        return json is null ? StatusCode(StatusCodes.Status503ServiceUnavailable) : Ok(JsonNode.Parse(json));
     }
 
     /// <summary>Coordinates to an address, for a tap on the map.</summary>
@@ -59,6 +65,6 @@ public sealed class GeocodingController : ControllerBase
         }
 
         var json = await _geocoding.ReverseAsync(lat, lon, cancellationToken);
-        return json is null ? StatusCode(StatusCodes.Status503ServiceUnavailable) : Content(json, "application/json");
+        return json is null ? StatusCode(StatusCodes.Status503ServiceUnavailable) : Ok(JsonNode.Parse(json));
     }
 }

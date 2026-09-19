@@ -145,6 +145,20 @@ void main() {
       expect(req.queryParameters['lon'], 47.897);
     });
 
+    test('reads the payload out of our API envelope', () async {
+      // The server answers {success, data: <upstream json>, metadata}.
+      final envelope = Dio(BaseOptions(baseUrl: 'https://back.example.ir/api'))
+        ..httpClientAdapter = _EnvelopeAdapter();
+
+      final point = await GeocodingService(envelope).geocode('پارس آباد');
+      expect(point?.lat, 39.6461735);
+
+      final address = await GeocodingService(
+        envelope,
+      ).reverseGeocode(39.6, 47.9);
+      expect(address?.formattedAddress, 'محله طالقانی، کوچه ۵ سهند');
+    });
+
     test(
       'an unavailable lookup yields null, so the form keeps what was typed',
       () async {
@@ -174,6 +188,30 @@ class _RecordingAdapter implements HttpClientAdapter {
     return ResponseBody.fromString(
       options.path.endsWith('search') ? '[]' : '{}',
       status,
+      headers: {
+        Headers.contentTypeHeader: ['application/json'],
+      },
+    );
+  }
+
+  @override
+  void close({bool force = false}) {}
+}
+
+/// Answers the way our API does: payload wrapped in a success envelope.
+class _EnvelopeAdapter implements HttpClientAdapter {
+  @override
+  Future<ResponseBody> fetch(
+    RequestOptions options,
+    Stream<Uint8List>? requestStream,
+    Future<void>? cancelFuture,
+  ) async {
+    final data = options.path.endsWith('search')
+        ? '[{"lat":"39.6461735","lon":"47.9185510"}]'
+        : '{"display_name":"x","address":{"road":"کوچه ۵ سهند","neighbourhood":"محله طالقانی"}}';
+    return ResponseBody.fromString(
+      '{"success":true,"statusCode":200,"data":$data}',
+      200,
       headers: {
         Headers.contentTypeHeader: ['application/json'],
       },

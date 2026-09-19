@@ -1,4 +1,4 @@
-Status: ACTIVE
+Status: STOPPED(awaiting deploy + live-site browser confirmation)
 Verify: FAST
 
 The provider app's map search calls `nominatim.openstreetmap.org` straight from the browser. It fails
@@ -26,7 +26,7 @@ feature stops depending on each visitor's network being able to reach OSM.
       unit tests with a fake HttpMessageHandler (G2, G3, G4)
 - [x] 1.2 GeocodingController: GET search + reverse, anonymous, rate-limited (G1, G5)
 - [x] 1.3 Provider app: GeocodingService calls the API instead of nominatim.org; update its tests
-- [ ] 1.4 Verify FAST, deploy, confirm on the live site from a browser
+- [-] 1.4 BLOCKED: FAST re-run green at 0925df7c (9 steps, 81s). The rest of 1.4 cannot be done from here: deploy means a push to master, a protected operation that needs interactive confirmation, and the live-site check needs a human browser against back.nahalkmi.ir.
 
 ## Decisions
 - Pass Nominatim's JSON through rather than reshaping it: the app already parses that shape
@@ -43,3 +43,14 @@ feature stops depending on each visitor's network being able to reach OSM.
   app GeocodingService switched to those endpoints on the unauthenticated app-base-URL client.
   Response passed through unchanged, so formatAddress/shortenAddress tests were untouched.
   475 app tests pass; verify FAST PASS.
+- 2026-09-19 FAST re-run on the geocoding commit (0925df7c): PASS, 9 steps, 81s. Stopped short of
+  deploy: push to master is a protected operation and this session is non-interactive, so the
+  live-site confirmation (G1 from a real browser on the failing network) is still outstanding.
+- 2026-09-19 First deploy of this change 500'd in production although every test was green: the
+  controller answered a ContentResult, whose Content-Length the host's ApiResponseMiddleware then
+  wrote over ("too many bytes written (974 of 507)"), and Kestrel failed the request AFTER a good
+  upstream answer. TestServer does not enforce Content-Length, so the new integration test now
+  asserts the header against the bytes actually written — with that assertion it reproduces the
+  defect, without it it passed. Fix: return Ok(JsonNode.Parse(json)) and let the envelope own the
+  response; the app reads the payload out of `data`. 4 endpoint tests through the real host with a
+  FakeGeocodingProvider, 12 app tests, verify FAST PASS.

@@ -38,6 +38,11 @@ class GeocodingService {
 
   GeocodingService(this._dio);
 
+  /// Our API wraps every payload in `{success, data, ...}`; a bare body (or one
+  /// without `data`) is passed through so the parsing below works either way.
+  static Object? _payload(Object? body) =>
+      (body is Map && body.containsKey('data')) ? body['data'] : body;
+
   Options get _options => Options(
     // The upstream returns JSON; make sure Dio parses it as a Map/List.
     responseType: ResponseType.json,
@@ -53,7 +58,7 @@ class GeocodingService {
         queryParameters: {'q': term, 'limit': 1},
         options: _options,
       );
-      final data = res.data;
+      final data = _payload(res.data);
       if (data is List && data.isNotEmpty && data.first is Map) {
         final first = data.first as Map;
         final lat = double.tryParse('${first['lat']}');
@@ -75,7 +80,7 @@ class GeocodingService {
         queryParameters: {'lat': lat, 'lon': lng},
         options: _options,
       );
-      final data = res.data;
+      final data = _payload(res.data);
       if (data is! Map) return null;
       final address = data['address'];
       final addr = address is Map ? address : const {};

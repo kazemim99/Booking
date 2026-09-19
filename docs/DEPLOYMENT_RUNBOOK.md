@@ -114,6 +114,17 @@ should be ≥1 and `grep -c localhost:5000 build/web/main.dart.js` should be 0. 
 `--dart-define`, the bundle silently points at `http://localhost:5000` (see
 `booksy-provider-app/lib/core/api/config/api_constants.dart`).
 
+### Outbound services the API depends on
+
+- **Nominatim** (`nominatim.openstreetmap.org`) — place search and reverse geocoding for the map
+  picker, via `GET /api/v1/Geocoding/search|reverse`. The SERVER makes this call (2026-09-19): from
+  a browser it fails on networks that cannot reach that host, and the usage policy does not allow a
+  crowd of unidentified clients. Answers are cached 24 h in memory; a restart empties that cache.
+  `Geocoding:BaseUrl` overrides the host. Check it from the box with
+  `curl -s -o /dev/null -w '%{http_code}' -A 'BooksyProvider/1.0' 'https://nominatim.openstreetmap.org/search?q=tehran&format=jsonv2&limit=1'`.
+  A 503 from our endpoint means the upstream failed; the app then keeps whatever the user typed.
+- **tile.openstreetmap.org** — map tiles, fetched by the browser directly (no server involvement).
+
 ### Gotchas learned the hard way
 
 - **fail2ban bans the operator.** Many SSH connections in a short time got the working IP banned
