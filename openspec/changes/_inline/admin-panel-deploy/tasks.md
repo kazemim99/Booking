@@ -1,4 +1,4 @@
-Status: ACTIVE
+Status: DONE
 Verify: FAST
 
 User request (2026-09-19): deploy the admin panel at admin.nahalkmi.ir, with a login "kazemi.mst" and
@@ -25,7 +25,7 @@ providers.
 - [x] 1.5b AdminOnly accepted only Administrator/SysAdmin, so the real admin (role Admin) got 403 on
       the provider pages; now also Admin (integration test with the production role only)
 - [x] 1.5c Admin lands on the providers list: the dashboard's /analytics/* endpoints do not exist
-- [ ] 1.6 Push dc8f1343; deploy; log in at admin.nahalkmi.ir; probe the admin endpoints WITH the
+- [x] 1.6 Push dc8f1343; deploy; log in at admin.nahalkmi.ir; probe the admin endpoints WITH the
       admin token (an unauthenticated probe is inconclusive: the host's fallback policy answers
       401 for routes that do not exist too)
 
@@ -43,3 +43,10 @@ providers.
   name, fixed); /analytics/* (8), /Users/me, PUT /Users/{id}, PATCH /Users/{id}/toggle-status and
   POST /Users/{id}/reset-password do not exist in the backend (FOLLOW-UPS #62). Provider list,
   details, approval and gallery are backed.
+- 2026-09-19 First deploy failed at the admin unit tests: src/views/logs/LogsView.vue had never been
+  committed — booksy-admin/.gitignore "logs" and the root "[Ll]ogs/" ignore every folder named logs.
+  Reproduced in a clean node:20 container from the committed tree; fixed (anchored /logs + one narrow
+  root exception); the container then passed 48 tests and built with the live API URL.
+- 2026-09-19 Deployed (8b54fd66, all jobs green). Live: admin.nahalkmi.ir serves the app (index.html
+  no-store); the admin logs in and GET /Providers/by-status/{Verified,PendingVerification,Drafted}
+  answers 200 with the admin token (was 403). verify FULL PASS (15 steps, 436 s).
