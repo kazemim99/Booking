@@ -1,4 +1,4 @@
-Status: ACTIVE
+Status: DONE
 Verify: FAST
 
 Onboarding step 4 makes every provider type each service by hand, one dialog at a time: name,
@@ -56,7 +56,7 @@ Required fields — a rule for EVERY form in the app (user, 2026-09-19)
 - [x] 1.5 Required-field rule in the remaining forms: login, booking composer, clients, block time,
       business profile and the other More forms, invitation register-and-accept (R1-R3)
 - [x] 1.6 A test that fails if a generic "fill in all fields" message comes back anywhere (R3)
-- [ ] 1.7 Verify FAST + flutter, deploy, confirm on the live site
+- [x] 1.7 Verify FAST + flutter, deploy, confirm on the live site
 
 ## Decisions
 - Prices are **suggestions**, stored per preset, and the provider edits them. Not fetched from the
@@ -85,3 +85,9 @@ Required fields — a rule for EVERY form in the app (user, 2026-09-19)
   through PriceText, so the separators never reach the API.
 - 2026-09-19 User supplied the catalogue (men + women, market prices شهریور ۱۴۰۵) and asked for
   checkbox selection with inline editing, plus thousands separators in the price field.
+- 2026-09-19 Closed. verify FULL PASS (14 steps, 303 s) on da08d30a; both production deploys green
+  (4b824d42 catalogue + required-field rule, da08d30a map zoom). Live checks: the published bundle
+  carries the catalogue (search box and preset rows present), provider.nahalkmi.ir and the API health
+  endpoint both 200, and the bundle changed again with the map deploy. The ctrl+wheel gesture itself
+  needs a human at a browser — the handler is unit-tested and the wiring is pinned by a widget test,
+  but nothing here drives a real browser.
