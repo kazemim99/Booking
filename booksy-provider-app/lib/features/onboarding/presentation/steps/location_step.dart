@@ -1,3 +1,6 @@
+import 'dart:math' as math;
+
+import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_map/flutter_map.dart';
@@ -28,6 +31,32 @@ import '../widgets/step_scaffold.dart';
 /// optional (the backend defaults lat/lng to 0).
 ///
 /// Advancing from this step creates the organization draft on the server.
+/// Zoom levels and the arithmetic behind a pinch/ctrl-wheel gesture.
+class MapZoom {
+  MapZoom._();
+
+  /// The opening view when nothing is known yet — one step closer than the
+  /// bare country view it used to be.
+  static const double country = 6;
+
+  /// A picked city: the whole city in view, to orient and refine.
+  static const double city = 13;
+
+  /// A precise pin (restored draft, map tap, device location).
+  static const double street = 17;
+
+  static const double min = 4;
+  static const double max = 18;
+
+  /// The zoom after a scale gesture: a browser reports ctrl+wheel as a pinch,
+  /// where doubling the scale is exactly one zoom level.
+  static double afterScale(double current, double scale) {
+    if (scale <= 0) return current;
+    final next = current + (math.log(scale) / math.ln2);
+    return next.clamp(min, max);
+  }
+}
+
 class LocationStep extends StatefulWidget {
   const LocationStep({super.key});
 
@@ -39,13 +68,6 @@ class _LocationStepState extends State<LocationStep> {
   /// Geographic center of Iran — the neutral initial focus before the user has
   /// picked anything (no Tehran bias).
   static const LatLng _iranCenter = LatLng(32.4279, 53.6880);
-
-  /// Semantic zoom levels (OSM scale). The map opens country-wide (there is no
-  /// location yet), flies to city level once a city is picked, and sits at
-  /// street level whenever a precise pin is known (restored draft / map tap).
-  static const double _countryZoom = 5;
-  static const double _cityZoom = 12;
-  static const double _streetZoom = 16;
 
   /// Cap the dropdown options so a ~5k-city list stays responsive.
   static const int _maxOptions = 50;
@@ -105,7 +127,7 @@ class _LocationStepState extends State<LocationStep> {
     if (here == null || !mounted || _pin != null) return;
     await _placePin(
       here,
-      zoom: _streetZoom,
+      zoom: MapZoom.street,
       fillAddress: _line1.text.trim().isEmpty,
     );
   }
@@ -196,7 +218,7 @@ class _LocationStepState extends State<LocationStep> {
       if (coords != null) {
         final target = LatLng(coords.lat, coords.lng);
         // Fly to city level so the whole city is visible to orient and refine.
-        _mapController.move(target, _cityZoom);
+        _mapController.move(target, MapZoom.city);
         // Drop a pin at the city center; the user can tap to refine it.
         _pin = target;
       }
@@ -209,8 +231,8 @@ class _LocationStepState extends State<LocationStep> {
     // Center on the tapped point. Zoom in to street level on the first tap from
     // a wider view so the choice is precise; leave the zoom alone once the user
     // is already close so repeated taps only fine-tune the pin.
-    final zoom = _mapController.camera.zoom < _streetZoom
-        ? _streetZoom
+    final zoom = _mapController.camera.zoom < MapZoom.street
+        ? MapZoom.street
         : _mapController.camera.zoom;
     await _placePin(point, zoom: zoom, fillAddress: true);
   }
@@ -398,47 +420,68 @@ class _LocationStepState extends State<LocationStep> {
             height: 260,
             child: Stack(
               children: [
-                FlutterMap(
-                  key: const Key('onboarding-map'),
-                  mapController: _mapController,
-                  options: MapOptions(
-                    // A known pin (restored draft) opens at street level;
-                    // otherwise show all of Iran to invite navigation.
-                    initialCenter: _pin ?? _iranCenter,
-                    initialZoom: _pin != null ? _streetZoom : _countryZoom,
-                    minZoom: 4,
-                    maxZoom: 18,
-                    onTap: (_, point) => _onMapTap(point),
-                    onMapReady: () {
-                      _mapReady = true;
-                      // A device fix that arrived before layout: center on it now.
-                      if (_pin != null) _mapController.move(_pin!, _streetZoom);
-                    },
-                  ),
-                  children: [
-                    TileLayer(
-                      urlTemplate:
-                          'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
-                      userAgentPackageName: 'com.booksy.provider',
+                Listener(
+                  // Flutter turns a browser's ctrl+wheel into a SCALE (pinch)
+                  // event, which flutter_map ignores — so ctrl+scroll did
+                  // nothing on the web build. Plain wheel scrolling is still
+                  // flutter_map's own.
+                  onPointerSignal: (event) {
+                    if (event is PointerScaleEvent && _mapReady) {
+                      _mapController.move(
+                        _mapController.camera.center,
+                        MapZoom.afterScale(
+                          _mapController.camera.zoom,
+                          event.scale,
+                        ),
+                      );
+                    }
+                  },
+                  child: FlutterMap(
+                    key: const Key('onboarding-map'),
+                    mapController: _mapController,
+                    options: MapOptions(
+                      // A known pin (restored draft) opens at street level;
+                      // otherwise show all of Iran to invite navigation.
+                      initialCenter: _pin ?? _iranCenter,
+                      initialZoom: _pin != null
+                          ? MapZoom.street
+                          : MapZoom.country,
+                      minZoom: MapZoom.min,
+                      maxZoom: MapZoom.max,
+                      onTap: (_, point) => _onMapTap(point),
+                      onMapReady: () {
+                        _mapReady = true;
+                        // A device fix that arrived before layout: center on it now.
+                        if (_pin != null) {
+                          _mapController.move(_pin!, MapZoom.street);
+                        }
+                      },
                     ),
-                    if (_pin != null)
-                      MarkerLayer(
-                        markers: [
-                          Marker(
-                            point: _pin!,
-                            width: 40,
-                            height: 40,
-                            alignment: Alignment.topCenter,
-                            child: const Icon(
-                              Icons.location_on,
-                              // Coliride map-pin green.
-                              color: AppColors.mapGreen,
-                              size: 40,
-                            ),
-                          ),
-                        ],
+                    children: [
+                      TileLayer(
+                        urlTemplate:
+                            'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
+                        userAgentPackageName: 'com.booksy.provider',
                       ),
-                  ],
+                      if (_pin != null)
+                        MarkerLayer(
+                          markers: [
+                            Marker(
+                              point: _pin!,
+                              width: 40,
+                              height: 40,
+                              alignment: Alignment.topCenter,
+                              child: const Icon(
+                                Icons.location_on,
+                                // Coliride map-pin green.
+                                color: AppColors.mapGreen,
+                                size: 40,
+                              ),
+                            ),
+                          ],
+                        ),
+                    ],
+                  ),
                 ),
                 if (_isGeocoding)
                   const Positioned(

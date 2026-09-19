@@ -65,6 +65,11 @@ Required fields — a rule for EVERY form in the app (user, 2026-09-19)
 - Toman, matching what the step already displays.
 
 ## Log
+- 2026-09-19 Map: ctrl+wheel did nothing on the web build because a browser reports it as a SCALE
+  (pinch) event, which flutter_map ignores; the step now handles that event itself (plain wheel
+  scrolling stays flutter_map's). Zoom levels moved one step in (country 5->6, city 12->13,
+  street 16->17) as asked. MapZoom.afterScale is unit-tested (doubling the scale = one level,
+  clamped to the map's range) and the opening-zoom test fails if the level drifts back.
 - 2026-09-19 Working hours: a day could close before it opened and only the Next button complained,
   by which point the offending day had scrolled away (user, with a screenshot). The API already
   refuses such a schedule — now pinned by three tests (reversed day, reversed break, break outside

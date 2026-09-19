@@ -13,6 +13,7 @@ import 'package:booksy_provider_app/features/onboarding/domain/entities/onboardi
 import 'package:booksy_provider_app/features/onboarding/domain/repositories/onboarding_repository.dart';
 import 'package:booksy_provider_app/features/onboarding/presentation/cubit/onboarding_cubit.dart';
 import 'package:booksy_provider_app/features/onboarding/presentation/steps/location_step.dart';
+import 'package:flutter_map/flutter_map.dart';
 import 'package:dartz/dartz.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -290,6 +291,49 @@ void main() {
       expect(find.byType(AppLoading), findsNothing);
       expect(find.byType(AppErrorState), findsNothing);
       expect(find.byKey(const Key('onboarding-city')), findsOneWidget);
+    });
+  });
+
+  group('map zoom', () {
+    testWidgets('opens one step closer than it used to', (tester) async {
+      await pumpStep(tester);
+
+      final map = tester.widget<FlutterMap>(
+        find.byKey(const Key('onboarding-map')),
+      );
+      expect(map.options.initialZoom, MapZoom.country);
+      expect(
+        MapZoom.country,
+        6,
+        reason: 'was 5; the user asked for one step in',
+      );
+    });
+
+    testWidgets('a ctrl+wheel zoom gesture reaches the map', (tester) async {
+      // On web the browser turns ctrl+wheel into a scale (pinch) event, which
+      // flutter_map does not act on — so ctrl+scroll did nothing on the live
+      // site. The step handles that event itself.
+      await pumpStep(tester);
+
+      // Specifically the listener wrapping the map: a scroll view has one too.
+      final listener = find.byWidgetPredicate(
+        (w) =>
+            w is Listener && w.onPointerSignal != null && w.child is FlutterMap,
+      );
+      expect(listener, findsOneWidget);
+    });
+  });
+
+  group('MapZoom.afterScale', () {
+    test('pinching out zooms in, pinching in zooms out', () {
+      expect(MapZoom.afterScale(10, 2.0), 11, reason: 'doubling is one level');
+      expect(MapZoom.afterScale(10, 0.5), 9);
+      expect(MapZoom.afterScale(10, 1.0), 10, reason: 'no gesture, no change');
+    });
+
+    test('never leaves the range the map allows', () {
+      expect(MapZoom.afterScale(MapZoom.max, 8), MapZoom.max);
+      expect(MapZoom.afterScale(MapZoom.min, 0.01), MapZoom.min);
     });
   });
 }
