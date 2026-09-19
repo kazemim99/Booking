@@ -30,8 +30,14 @@ public static class PolicyAuthorizationExtensions
                 .Build();
 
             // Admin policies
+            // "Admin" is the role production grants an administrator and the one the
+            // [Authorize(Roles = "Admin,...")] endpoints check. Without it here, the real admin got
+            // 403 on every AdminOnly endpoint (the admin panel's provider pages, 2026-09-19); tests
+            // missed it because the test admin carries all three names. The vocabulary itself is
+            // FOLLOW-UPS #46. No code path grants any of these three roles: registration gives
+            // Customer/Provider only, so widening this opens no self-service route.
             options.AddPolicy("AdminOnly", policy =>
-                policy.RequireRole("Administrator", "SysAdmin"));
+                policy.RequireRole("Admin", "Administrator", "SysAdmin"));
 
             options.AddPolicy("SysAdminOnly", policy =>
                 policy.RequireRole("SysAdmin"));

@@ -1,7 +1,7 @@
 import { createRouter, createWebHistory, type RouteRecordRaw } from 'vue-router'
 import { useAuthStore } from '../stores/auth.store'
 
-const routes: RouteRecordRaw[] = [
+export const routes: RouteRecordRaw[] = [
   {
     path: '/login',
     name: 'Login',
@@ -15,7 +15,9 @@ const routes: RouteRecordRaw[] = [
     children: [
       {
         path: '',
-        redirect: '/dashboard',
+        // Providers, not the dashboard: the dashboard's /analytics/* endpoints do not exist in
+        // the backend yet, so landing there showed an admin nothing but errors (2026-09-19).
+        redirect: '/providers',
       },
       {
         path: 'dashboard',

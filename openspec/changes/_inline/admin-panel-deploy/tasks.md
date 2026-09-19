@@ -1,4 +1,4 @@
-Status: STOPPED(needs a route to the server's SSH: from this workstation's current foreign egress IP the connection opens and is then reset upstream, the same filtering that blocks GitHub-hosted runners, #59)
+Status: ACTIVE
 Verify: FAST
 
 User request (2026-09-19): deploy the admin panel at admin.nahalkmi.ir, with a login "kazemi.mst" and
@@ -18,10 +18,13 @@ providers.
       the publish step would fail the whole deploy until 1.5 exists)
 - [x] 1.4 Account registered through the public API (kazemi.mst@nahalkmi.ir, id
       a68c3c56-75de-4572-b723-4e726c1cb06a) — status still Pending
-- [-] 1.5 BLOCKED: server setup as root, one session (script prepared): activate the account and
+- [x] 1.5 Server setup as root, one session (script prepared): activate the account and
       grant Admin (SQL, scoped to that id, idempotent); /var/www/booksy-admin owned by booksy;
       HTTP vhost -> certbot --webroot -> full vhost (deployment/nginx/booksy-admin.conf), nginx -t
       guarded
+- [x] 1.5b AdminOnly accepted only Administrator/SysAdmin, so the real admin (role Admin) got 403 on
+      the provider pages; now also Admin (integration test with the production role only)
+- [x] 1.5c Admin lands on the providers list: the dashboard's /analytics/* endpoints do not exist
 - [ ] 1.6 Push dc8f1343; deploy; log in at admin.nahalkmi.ir; probe the admin endpoints WITH the
       admin token (an unauthenticated probe is inconclusive: the host's fallback policy answers
       401 for routes that do not exist too)
@@ -33,3 +36,10 @@ providers.
   can register and self-activate without proving they own the email. Recorded as FOLLOW-UPS #61.
 - 2026-09-19 SSH: TCP to :22 opens, then "Connection reset" / timeouts. Egress IP 168.222.49.236
   (foreign); every earlier successful session came from an Iranian address.
+- 2026-09-19 SSH back (same foreign egress IP; the resets were intermittent). One root session:
+  account Active + Admin role, /var/www/booksy-admin owned by booksy, cert issued (valid to
+  2026-12-18), full vhost live behind nginx -t. Login as the admin returns roles [Admin, Customer].
+- 2026-09-19 Probed every admin-panel endpoint WITH the admin token: by-status/activate were 403 (role
+  name, fixed); /analytics/* (8), /Users/me, PUT /Users/{id}, PATCH /Users/{id}/toggle-status and
+  POST /Users/{id}/reset-password do not exist in the backend (FOLLOW-UPS #62). Provider list,
+  details, approval and gallery are backed.
