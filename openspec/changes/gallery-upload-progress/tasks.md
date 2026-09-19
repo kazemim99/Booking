@@ -1,4 +1,4 @@
-Status: ACTIVE
+Status: STOPPED(awaiting production deploy of 703e2cd2 and a live check; code, tests and verify FAST are done)
 Verify: FAST
 
 Uploading gallery photos sent every picked image in ONE multipart request with no progress, and the
