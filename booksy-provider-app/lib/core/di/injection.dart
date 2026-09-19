@@ -61,17 +61,17 @@ Future<void> configureDependencies() async {
     authDio,
   );
   final authedDio = DioFactory.createAuthenticatedDio([authInterceptor]);
-  getIt.registerLazySingleton<Dio>(
-    () => authedDio,
-    instanceName: 'authedDio',
-  );
+  getIt.registerLazySingleton<Dio>(() => authedDio, instanceName: 'authedDio');
 
   // ---- Auth feature ----
   getIt.registerLazySingleton<AuthApiService>(
     () => AuthApiService(authDio, authedDio),
   );
   getIt.registerLazySingleton<AuthRepository>(
-    () => AuthRepositoryImpl(getIt<AuthApiService>(), getIt<SecureStorageService>()),
+    () => AuthRepositoryImpl(
+      getIt<AuthApiService>(),
+      getIt<SecureStorageService>(),
+    ),
   );
   getIt.registerLazySingleton<SendVerificationCodeUseCase>(
     () => SendVerificationCodeUseCase(getIt<AuthRepository>()),
@@ -120,9 +120,7 @@ Future<void> configureDependencies() async {
   );
 
   // ---- Home (Today workspace) ----
-  getIt.registerLazySingleton<HomeApiService>(
-    () => HomeApiService(authedDio),
-  );
+  getIt.registerLazySingleton<HomeApiService>(() => HomeApiService(authedDio));
   getIt.registerLazySingleton<HomeRepository>(
     () => HomeRepositoryImpl(getIt<HomeApiService>(), getIt<AuthRepository>()),
   );
@@ -156,9 +154,7 @@ Future<void> configureDependencies() async {
   getIt.registerFactory<ServicesCubit>(
     () => ServicesCubit(getIt<HomeRepository>()),
   );
-  getIt.registerFactory<StaffCubit>(
-    () => StaffCubit(getIt<HomeRepository>()),
-  );
+  getIt.registerFactory<StaffCubit>(() => StaffCubit(getIt<HomeRepository>()));
   getIt.registerFactory<PendingInvitationsCubit>(
     () => PendingInvitationsCubit(getIt<HomeRepository>()),
   );
@@ -187,9 +183,11 @@ Future<void> configureDependencies() async {
   getIt.registerLazySingleton<LocationApiService>(
     () => LocationApiService(authedDio),
   );
-  // Geocoding (OSM/Nominatim) uses a plain Dio — no auth header, no app baseUrl.
+  // Geocoding goes through our own API (the server calls OpenStreetMap), so it
+  // needs the app base URL. The endpoints are anonymous — onboarding picks a
+  // location before a provider exists — so the unauthenticated client is right.
   getIt.registerLazySingleton<GeocodingService>(
-    () => GeocodingService(Dio()),
+    () => GeocodingService(authDio),
   );
   getIt.registerLazySingleton<DeviceLocationService>(
     () => DeviceLocationService(),

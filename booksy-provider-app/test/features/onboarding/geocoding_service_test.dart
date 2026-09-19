@@ -1,3 +1,6 @@
+import 'dart:typed_data';
+
+import 'package:dio/dio.dart';
 import 'package:booksy_provider_app/features/onboarding/data/datasources/geocoding_service.dart';
 import 'package:flutter_test/flutter_test.dart';
 
@@ -109,4 +112,74 @@ void main() {
       );
     },
   );
+
+  group('goes through our API, never the geocoder directly', () {
+    // The browser call to nominatim.openstreetmap.org failed on the user's network
+    // (2026-09-19) while the server reached it fine, and it made every visitor an
+    // unidentified client of a shared free service. The server does the lookup now.
+    late List<RequestOptions> sent;
+    late Dio dio;
+
+    setUp(() {
+      sent = [];
+      dio = Dio(BaseOptions(baseUrl: 'https://back.example.ir/api'))
+        ..httpClientAdapter = _RecordingAdapter(sent);
+    });
+
+    test('forward lookup asks our geocoding endpoint', () async {
+      await GeocodingService(dio).geocode('پارس آباد, اردبیل');
+
+      final req = sent.single;
+      expect(req.path, '/v1/Geocoding/search');
+      expect(req.uri.host, 'back.example.ir');
+      expect(req.queryParameters['q'], 'پارس آباد, اردبیل');
+    });
+
+    test('reverse lookup asks our geocoding endpoint', () async {
+      await GeocodingService(dio).reverseGeocode(39.643, 47.897);
+
+      final req = sent.single;
+      expect(req.path, '/v1/Geocoding/reverse');
+      expect(req.uri.host, 'back.example.ir');
+      expect(req.queryParameters['lat'], 39.643);
+      expect(req.queryParameters['lon'], 47.897);
+    });
+
+    test(
+      'an unavailable lookup yields null, so the form keeps what was typed',
+      () async {
+        final failing = Dio(BaseOptions(baseUrl: 'https://back.example.ir/api'))
+          ..httpClientAdapter = _RecordingAdapter([], status: 503);
+
+        expect(await GeocodingService(failing).geocode('تهران'), isNull);
+        expect(await GeocodingService(failing).reverseGeocode(1, 2), isNull);
+      },
+    );
+  });
+}
+
+/// Records outgoing requests and answers with an empty result.
+class _RecordingAdapter implements HttpClientAdapter {
+  final List<RequestOptions> sent;
+  final int status;
+  _RecordingAdapter(this.sent, {this.status = 200});
+
+  @override
+  Future<ResponseBody> fetch(
+    RequestOptions options,
+    Stream<Uint8List>? requestStream,
+    Future<void>? cancelFuture,
+  ) async {
+    sent.add(options);
+    return ResponseBody.fromString(
+      options.path.endsWith('search') ? '[]' : '{}',
+      status,
+      headers: {
+        Headers.contentTypeHeader: ['application/json'],
+      },
+    );
+  }
+
+  @override
+  void close({bool force = false}) {}
 }

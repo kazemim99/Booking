@@ -36,6 +36,8 @@ using Booksy.ServiceCatalog.Infrastructure.Services;
 using Booksy.Infrastructure.External.OTP;
 using Booksy.Infrastructure.External.Notifications.Sms;
 
+using Booksy.ServiceCatalog.Application.Services;
+using Booksy.ServiceCatalog.Infrastructure.Services.Geocoding;
 namespace Booksy.ServiceCatalog.Infrastructure.DependencyInjection
 {
     public static class ServiceCatalogInfrastructureExtensions
@@ -181,6 +183,18 @@ namespace Booksy.ServiceCatalog.Infrastructure.DependencyInjection
 
             // CAP Event Bus with Outbox Pattern
             services.AddCapEventBus<ServiceCatalogDbContext>(configuration, "ServiceCatalog");
+
+            // Geocoding for the map picker. Clients call OUR API and the server calls Nominatim:
+            // a browser-side call fails wherever the user's network cannot reach the host, and would
+            // make every visitor an unidentified client of a shared free service.
+            services.AddHttpClient<IGeocodingProvider, NominatimGeocodingProvider>(client =>
+            {
+                client.BaseAddress = new Uri(
+                    configuration["Geocoding:BaseUrl"] ?? "https://nominatim.openstreetmap.org");
+                client.Timeout = TimeSpan.FromSeconds(10);
+                client.DefaultRequestHeaders.TryAddWithoutValidation(
+                    "User-Agent", NominatimGeocodingProvider.UserAgent);
+            });
 
             // HTTP Client for UserManagement API
             services.AddHttpClient("UserManagementAPI", client =>

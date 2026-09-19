@@ -1,5 +1,7 @@
 import 'package:dio/dio.dart';
 
+import '../../../../core/api/config/api_constants.dart';
+
 import '../../../../core/utils/persian_digits.dart';
 
 /// Result of a reverse-geocode lookup (coordinates → address).
@@ -19,25 +21,25 @@ class ReverseGeocodeResult {
   bool get hasAddress => formattedAddress.trim().isNotEmpty;
 }
 
-/// Geocoding via OpenStreetMap's Nominatim service — keyless and consistent with
-/// the OSM tiles used by the map picker. (The previous Neshan demo key was rate-
-/// limited: `code 481 "API Key limit exceeded"`.) Persian output via
-/// `accept-language=fa`; results biased to Iran. Best-effort: any error returns
-/// null so the user keeps whatever they typed.
+/// Geocoding through OUR API (`/v1/Geocoding/*`), which calls OpenStreetMap's
+/// Nominatim server-side and caches the answers.
 ///
-/// Nominatim's usage policy requires an identifying User-Agent and a light
-/// request rate — fine for the occasional taps on an onboarding form.
+/// The app used to call nominatim.openstreetmap.org from the browser. That fails
+/// wherever the user's network cannot reach that host — as it did in production
+/// on 2026-09-19, while the server reached it in under a second — and it made
+/// every visitor an unidentified client of a shared free service, which its
+/// usage policy does not allow.
+///
+/// The response shape is Nominatim's, passed through unchanged, so the parsing
+/// and address formatting below are untouched. Best-effort: any error returns
+/// null so the user keeps whatever they typed.
 class GeocodingService {
   final Dio _dio;
-
-  static const String _base = 'https://nominatim.openstreetmap.org';
-  static const String _userAgent = 'BooksyProviderApp/1.0 (onboarding)';
 
   GeocodingService(this._dio);
 
   Options get _options => Options(
-    headers: {'User-Agent': _userAgent},
-    // Nominatim returns JSON; make sure Dio parses it as a Map/List.
+    // The upstream returns JSON; make sure Dio parses it as a Map/List.
     responseType: ResponseType.json,
   );
 
@@ -47,14 +49,8 @@ class GeocodingService {
     if (term.trim().isEmpty) return null;
     try {
       final res = await _dio.get(
-        '$_base/search',
-        queryParameters: {
-          'q': term,
-          'format': 'jsonv2',
-          'accept-language': 'fa',
-          'countrycodes': 'ir',
-          'limit': 1,
-        },
+        ApiConstants.geocodingSearch,
+        queryParameters: {'q': term, 'limit': 1},
         options: _options,
       );
       final data = res.data;
@@ -75,14 +71,8 @@ class GeocodingService {
   Future<ReverseGeocodeResult?> reverseGeocode(double lat, double lng) async {
     try {
       final res = await _dio.get(
-        '$_base/reverse',
-        queryParameters: {
-          'lat': lat,
-          'lon': lng,
-          'format': 'jsonv2',
-          'accept-language': 'fa',
-          'addressdetails': 1,
-        },
+        ApiConstants.geocodingReverse,
+        queryParameters: {'lat': lat, 'lon': lng},
         options: _options,
       );
       final data = res.data;

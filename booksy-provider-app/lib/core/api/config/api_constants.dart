@@ -10,8 +10,9 @@ class ApiConstants {
   ///   flutter build web --dart-define=API_BASE_URL=https://back.nahalkmi.ir
   /// Empty (the default) keeps the local-development behaviour below untouched,
   /// so nothing changes for anyone running the app against a local host.
-  static const String _apiBaseUrlOverride =
-      String.fromEnvironment('API_BASE_URL');
+  static const String _apiBaseUrlOverride = String.fromEnvironment(
+    'API_BASE_URL',
+  );
 
   /// Base host. Android emulator uses the 10.0.2.2 host alias.
   static String get baseUrl {
@@ -157,7 +158,8 @@ class ApiConstants {
   static const String bookings = '/$apiVersion/Bookings';
 
   /// POST — provider confirms a pending booking request.
-  static String bookingConfirm(String id) => '/$apiVersion/Bookings/$id/confirm';
+  static String bookingConfirm(String id) =>
+      '/$apiVersion/Bookings/$id/confirm';
 
   /// POST — cancel/decline a booking (body: reason/cancelledBy).
   static String bookingCancel(String id) => '/$apiVersion/Bookings/$id/cancel';
@@ -169,6 +171,16 @@ class ApiConstants {
   /// POST — mark a booking as a client no-show.
   static String bookingNoShow(String id) => '/$apiVersion/Bookings/$id/no-show';
 
+  // ==================== Geocoding (ServiceCatalog) ====================
+
+  /// GET — place name to coordinates. The server calls OpenStreetMap and caches;
+  /// calling the geocoder from the browser failed on some networks and broke the
+  /// map picker entirely.
+  static const String geocodingSearch = '/$apiVersion/Geocoding/search';
+
+  /// GET — coordinates to an address, for a tap on the map.
+  static const String geocodingReverse = '/$apiVersion/Geocoding/reverse';
+
   // ==================== Onboarding (ServiceCatalog) ====================
 
   /// POST — create (or resume) the provider draft, onboarding step 3.
@@ -179,7 +191,8 @@ class ApiConstants {
   static const String registerOrganization = '/$apiVersion/Providers/draft';
 
   /// GET — current registration progress (draft restore).
-  static const String registrationProgress = '/$apiVersion/Registration/progress';
+  static const String registrationProgress =
+      '/$apiVersion/Registration/progress';
 
   /// POST — save services (onboarding step 4).
   static const String registrationServices =
