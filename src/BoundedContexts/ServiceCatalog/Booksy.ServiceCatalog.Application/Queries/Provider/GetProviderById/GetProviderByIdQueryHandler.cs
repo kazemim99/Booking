@@ -92,7 +92,9 @@ namespace Booksy.ServiceCatalog.Application.Queries.Provider.GetProviderById
                 IsVerified = provider.VerifiedAt.HasValue,
                 AverageRating = provider.AverageRating,
                 TotalReviews = 0,
-                ServiceCount = provider.Services.Count,
+                // From the services table: provider.Services is a stale, always-empty collection.
+                ServiceCount = await _serviceRepository.CountByProviderAsync(
+                    provider.Id, cancellationToken: cancellationToken),
                 YearsInBusiness = provider.RegisteredAt.Year > 0
                     ? DateTime.UtcNow.Year - provider.RegisteredAt.Year
                     : 0,

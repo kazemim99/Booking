@@ -23,7 +23,11 @@ const format = (date: string | Date | undefined | null, options: Intl.DateTimeFo
   if (Number.isNaN(parsed.getTime())) return ''
 
   const useJalali = useLocaleStore().dateFormat === DateFormat.Jalaali
-  return new Intl.DateTimeFormat(useJalali ? JALALI_LOCALE : GREGORIAN_LOCALE, options).format(parsed)
+  const text = new Intl.DateTimeFormat(useJalali ? JALALI_LOCALE : GREGORIAN_LOCALE, options).format(parsed)
+  // First-strong isolate ... pop: the date keeps its own direction (Jalali right-to-left, Gregorian
+  // left-to-right) wherever it sits. Unisolated, the bidi algorithm reordered date parts against
+  // the surrounding right-to-left text in the admin tables (2026-09-19).
+  return `⁨${text}⁩`
 }
 
 /** Calendar date in the active locale — Jalali under Persian, Gregorian under English. */

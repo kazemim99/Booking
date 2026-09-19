@@ -68,4 +68,13 @@ describe('date formatting', () => {
 
     expect(useLocaleStore().dateFormat).toBe(DateFormat.Jalaali)
   })
+
+  it('isolates the date so it keeps its own direction inside the right-to-left layout', () => {
+    // Without isolation the bidi algorithm reordered date parts against the surrounding text
+    // in the admin tables (2026-09-19). First-strong isolation lets a Jalali date read
+    // right-to-left and a Gregorian one left-to-right, whatever the container.
+    const shown = formatDate(registeredAt)
+    expect(shown.startsWith('⁨')).toBe(true)
+    expect(shown.endsWith('⁩')).toBe(true)
+  })
 })

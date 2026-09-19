@@ -43,7 +43,7 @@
                 {{ provider?.contactInfo?.email || t('provider.notAvailable') }}
               </a-descriptions-item>
               <a-descriptions-item :label="t('provider.phone')">
-                {{ provider?.contactInfo?.primaryPhone || t('provider.notAvailable') }}
+                {{ formatPhone(provider?.contactInfo?.primaryPhone) || t('provider.notAvailable') }}
               </a-descriptions-item>
               <a-descriptions-item :label="t('provider.rating')" :span="2">
                 <a-rate :value="provider?.averageRating || 0" disabled allow-half />
@@ -143,6 +143,7 @@ import { providersApi } from '../../api/providers.api'
 import { galleryApi, type GalleryImage } from '../../api/gallery.api'
 import { getStatusColor, statusLabelKey, type ProviderStatus } from '../../constants/provider-status'
 import { formatDate } from '../../utils/date'
+import { formatPhone } from '../../utils/phone'
 import type { ProviderDetails } from '../../types'
 
 const { t } = useI18n()

@@ -73,6 +73,9 @@
             </div>
           </template>
 
+          <template v-if="column.key === 'phoneNumber'">
+            {{ formatPhone(record.phoneNumber) }}
+          </template>
           <template v-if="column.key === 'role'">
             <a-tag :color="getRoleColor(record.role)">
               {{ record.role }}
@@ -165,6 +168,7 @@
 import { ref, reactive, onMounted, computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { message } from 'ant-design-vue'
+import { formatPhone } from '../../utils/phone'
 import dayjs from 'dayjs'
 import relativeTime from 'dayjs/plugin/relativeTime'
 import {

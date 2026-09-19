@@ -16,6 +16,9 @@ services:
       # Serilog's Seq sink buffers and retries silently if unreachable — safe to point
       # at a Seq that isn't running when the observability profile is off (see below).
       - Seq__ServerUrl=${SEQ_SERVER_URL:-http://seq:5341}
+      # The address browsers reach the API at. TLS ends in the host nginx, so the API itself only
+      # ever sees http:// requests; image URLs built from those were blocked by HTTPS pages.
+      - App__PublicBaseUrl=${PUBLIC_BASE_URL:-https://back.nahalkmi.ir}
     ports:
       # Localhost only: the frontend container reaches this over booksy-network by
       # container name, and the host nginx vhost never needs to — it proxies to the

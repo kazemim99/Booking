@@ -7,13 +7,16 @@ namespace Booksy.ServiceCatalog.Application.Queries.Provider.GetProvidersByStatu
     public sealed class GetProvidersByStatusQueryHandler : IQueryHandler<GetProvidersByStatusQuery, IReadOnlyList<ProviderListViewModel>>
     {
         private readonly IProviderReadRepository _providerRepository;
+        private readonly IServiceReadRepository _serviceRepository;
         private readonly ILogger<GetProvidersByStatusQueryHandler> _logger;
 
         public GetProvidersByStatusQueryHandler(
             IProviderReadRepository providerRepository,
+            IServiceReadRepository serviceRepository,
             ILogger<GetProvidersByStatusQueryHandler> logger)
         {
             _providerRepository = providerRepository;
+            _serviceRepository = serviceRepository;
             _logger = logger;
         }
 
@@ -25,8 +28,20 @@ namespace Booksy.ServiceCatalog.Application.Queries.Provider.GetProvidersByStatu
 
             var providers = await _providerRepository.GetByStatusAsync(request.Status, cancellationToken);
 
-            var result = providers
-                .Take(request.MaxResults ?? int.MaxValue)
+            var page = providers.Take(request.MaxResults ?? int.MaxValue).ToList();
+
+            // Services are their own aggregate: count them in the services table. provider.Services
+            // is a stale collection that is always empty, which showed every provider in the admin
+            // panel with zero services (2026-09-19). One count per row: this list is the admin's,
+            // tens of providers at most.
+            var serviceCounts = new Dictionary<Guid, int>();
+            foreach (var provider in page)
+            {
+                serviceCounts[provider.Id.Value] =
+                    await _serviceRepository.CountByProviderAsync(provider.Id, cancellationToken: cancellationToken);
+            }
+
+            var result = page
                 .Select(provider => new ProviderListViewModel
                 {
                     Id = provider.Id.Value,
@@ -46,7 +61,7 @@ namespace Booksy.ServiceCatalog.Application.Queries.Provider.GetProvidersByStatu
                     IsVerified = provider.VerifiedAt.HasValue,
                     AverageRating = provider.AverageRating,
                     TotalReviews = 0, // TODO: Add review count when reviews are implemented
-                    ServiceCount = provider.Services.Count,
+                    ServiceCount = serviceCounts[provider.Id.Value],
                     RegisteredAt = provider.RegisteredAt,
                     LastActiveAt = provider.LastActiveAt
                 })
