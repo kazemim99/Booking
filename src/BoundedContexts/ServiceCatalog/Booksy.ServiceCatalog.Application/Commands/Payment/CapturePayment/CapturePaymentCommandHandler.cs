@@ -1,6 +1,7 @@
-// ========================================
+﻿// ========================================
 // Booksy.ServiceCatalog.Application/Commands/Payment/CapturePayment/CapturePaymentCommandHandler.cs
 // ========================================
+using Booksy.ServiceCatalog.Application.Services.Notifications;
 using Booksy.Core.Application.Abstractions;
 using Booksy.Core.Application.Exceptions;
 using Booksy.Core.Domain.Exceptions;
@@ -18,15 +19,18 @@ namespace Booksy.ServiceCatalog.Application.Commands.Payment.CapturePayment
     {
         private readonly IPaymentWriteRepository _paymentRepository;
         private readonly IServiceCatalogUnitOfWork _unitOfWork;
+        private readonly INotificationRaiser _notifications;
         private readonly ILogger<CapturePaymentCommandHandler> _logger;
 
         public CapturePaymentCommandHandler(
             IPaymentWriteRepository paymentRepository,
             IServiceCatalogUnitOfWork unitOfWork,
+            INotificationRaiser notifications,
             ILogger<CapturePaymentCommandHandler> logger)
         {
             _paymentRepository = paymentRepository ?? throw new ArgumentNullException(nameof(paymentRepository));
             _unitOfWork = unitOfWork ?? throw new ArgumentNullException(nameof(unitOfWork));
+            _notifications = notifications;
             _logger = logger ?? throw new ArgumentNullException(nameof(logger));
         }
 
@@ -68,6 +72,20 @@ namespace Booksy.ServiceCatalog.Application.Commands.Payment.CapturePayment
             // Persist. This command is INonTransactionalCommand (money-moving): commit our own single, retry-safe
             // unit so the capture is never re-executed by a transient-fault retry.
             await _paymentRepository.UpdateAsync(payment, cancellationToken);
+
+            // The customer is entitled to the record of money leaving their account. Recorded before the
+            // commit so the same CommitAsync writes both.
+            await _notifications.RaiseAsync(
+                Domain.Enums.NotificationEventCode.PaymentReceived,
+                payment.CustomerId.Value,
+                dedupKey: payment.Id.Value,
+                parameters: new Dictionary<string, string>
+                {
+                    [NotificationParameter.Amount] = payment.PaidAmount.Amount.ToString("N0"),
+                },
+                subjectType: "Payment",
+                subjectId: payment.Id.Value,
+                cancellationToken: cancellationToken);
             await _unitOfWork.CommitAsync(cancellationToken);
 
             _logger.LogInformation("Payment {PaymentId} captured successfully, status: {Status}",

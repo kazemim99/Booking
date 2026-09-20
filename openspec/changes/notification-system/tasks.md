@@ -88,10 +88,14 @@ the structural work — each is a row's timing, not a shape.
       Cancellation notifies the party who did NOT cancel, and **the actor is inferred from the
       authenticated caller, not from a request field**: the controller never set `ByProvider` anyway, and a
       client should not be able to claim it cancelled as the salon. Reschedule still to do (7.7).
-- [~] 7.2 REFUND is done: `RefundProcessed` raised to the customer from `RefundPaymentCommandHandler`,
+- [~] 7.2 REFUND and CAPTURE done: `RefundProcessed` and `PaymentReceived` raised to the customer, each
       recorded before the commit so the money move and the notice of it are written by the same
-      `CommitAsync`. Still to raise: payment taken, payment failed, payout completed, payout failed/on-hold
-      — and each must delete its legacy handler at the same time (see the correction below).
+      `CommitAsync`, and each with its legacy handler deleted in the SAME step.
+      Still to raise: payment failed, payout completed, payout failed/on-hold.
+      **PaymentFailed is blocked from being written test-first**: `FakePaymentGateway` always succeeds, so
+      a failure cannot be provoked through the API and there is no way to write the failing test first.
+      Either the fake grows a failure mode, or that notification is raised where a gateway is not involved.
+      Not guessing at it — see 7.8.
 - [ ] 7.3 Raise for membership and verification: invitation accepted, join request approved, staff assigned
       to a booking, provider verification status changed, provider activated/deactivated.
 - [ ] 7.4 Remove each superseded notification event handler only after its outbox coverage is in place and
@@ -125,6 +129,9 @@ the structural work — each is a row's timing, not a shape.
       caller exactly as cancellation does. Filed against the NEW booking — rescheduling closes one booking
       and opens another, and everything attached to the closed one has just been withdrawn, so a notice
       left there would be cancelled before it could go out. 4 integration tests.
+
+- [ ] 7.8 Give `FakePaymentGateway` an opt-in failure mode, so `PaymentFailed` can be written test-first.
+      Blocking 7.2's remaining payment-failure notification.
 
 ## 8. `NotificationType` repair (BREAKING)
 
@@ -437,3 +444,12 @@ test-first.
   Arrange note: build a Payment through `Payment.CreateForBooking` + `ProcessCharge`, never raw SQL. A
   hand-written INSERT produced a row the refund path could not load and failed as an opaque 500.
 - 2026-09-21 598 integration tests pass; verify FAST PASS (10 steps, 99s).
+- 2026-09-21 7.2 (capture). `PaymentReceived` raised from `CapturePaymentCommandHandler`;
+  `PaymentProcessedNotificationHandler` deleted in the same commit, which is the rule the previous entry
+  established after the refund near-miss. 2 tests, one of them asserting exactly ONE notification and no
+  non-outbox row — that assertion is the whole guard against the duplicate coming back.
+  Arrange note: capture needs an AUTHORISED payment, not merely a pending one (`Authorize` then capture);
+  a pending-only payment is refused with "has not been authorized".
+  PaymentFailed deliberately NOT built: the fake gateway cannot fail, so the test cannot be written first.
+  Raised as 7.8 rather than building it blind.
+- 2026-09-21 600 integration tests pass; verify FAST PASS (10 steps, 70s).
