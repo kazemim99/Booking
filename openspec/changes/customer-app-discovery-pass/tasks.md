@@ -1,4 +1,4 @@
-Status: ACTIVE
+Status: DONE
 Verify: FAST
 
 User report (2026-09-20, customer app at customer.nahalkmi.ir, with screenshots). Nine points, all
@@ -35,7 +35,7 @@ on what a customer sees while choosing a salon.
 - [x] 1.6 Provider card shows rating and how many free times it has
 - [x] 1.7 Ratings and comments: read them on the profile, leave one after a visit
 - [x] 1.8 Search suggests cities/villages/provinces as you type
-- [ ] 1.9 Verify, deploy, confirm live
+- [x] 1.9 Verify, deploy, confirm live
 
 ## Log
 - 2026-09-20 1.1 Toman everywhere: PlatformCurrency.Code ("IRT") replaces the "USD"/"IRR" literals
@@ -86,3 +86,16 @@ on what a customer sees while choosing a salon.
   and reports a radius of tens of kilometres. A fix coarser than 20 km is now refused — the map
   stays where it is and says the VPN may be the reason. The hamburger menu is gone: every
   destination it held is on the bottom bar.
+- 2026-09-20 verify FULL PASS (17 steps, 597 s). Deployed after two CI failures that were not
+  code: Docker Hub reset the connection pulling moby/buildkit, so the API image never built and the
+  deploy was skipped; the buildx step now retries once. An empty commit does not re-trigger this
+  workflow (paths filter), which is worth remembering.
+  Live on production: 2 of 3 salons show their chosen photo and the profile carries all 3; the
+  address reads «شهرک پناهی (اجاق اوغلو)، کوچه بلور ۳» with coordinates for the map; every service
+  price is IRT; only the one category that has a salon is offered; availability-summary answers 13
+  free times on 2026-09-21; the reviews endpoint answers 200 (nobody has reviewed yet); place
+  search returns suggestions.
+- 2026-09-20 App bundle confirmed live (main.dart.19df31e1…): it carries the availability-summary,
+  geocoding and both review endpoints. Worth knowing for the next deploy watch: the job updates the
+  API container BEFORE it publishes the web bundles, so for a few minutes production runs the new
+  API with the previous app — which is exactly what it looked like when I first checked.
