@@ -30,6 +30,9 @@ import '../location/geocoding_service.dart';
 import '../location/location_service.dart';
 import '../network/connectivity_service.dart';
 import 'injection.config.dart';
+import '../../features/reviews/domain/repositories/review_repository.dart';
+import '../../features/reviews/data/repositories/review_repository_impl.dart';
+import '../../features/reviews/data/datasources/review_remote_datasource.dart';
 
 final getIt = GetIt.instance;
 
@@ -49,6 +52,14 @@ Future<void> configureDependencies() async {
 
   // Awaited once here so consumers can resolve it synchronously (the checkout attempt store needs it).
   getIt.registerSingleton<SharedPreferences>(await SharedPreferences.getInstance());
+  getIt.registerLazySingleton<ReviewRemoteDataSource>(
+    () => ReviewRemoteDataSource(
+      serviceCatalogDio: getIt<Dio>(instanceName: 'serviceCatalogDio'),
+    ),
+  );
+  getIt.registerLazySingleton<ReviewRepository>(
+    () => ReviewRepositoryImpl(remoteDataSource: getIt()),
+  );
   getIt.registerLazySingleton<SearchRemoteDataSource>(
     () => SearchRemoteDataSource(
       serviceCatalogDio: getIt<Dio>(instanceName: 'serviceCatalogDio'),
@@ -61,7 +72,7 @@ Future<void> configureDependencies() async {
     () => const GeolocatorLocationService(),
   );
   getIt.registerLazySingleton<GeocodingService>(
-    () => NominatimGeocodingService(),
+    () => NominatimGeocodingService(getIt<Dio>(instanceName: 'serviceCatalogDio')),
   );
   getIt.registerFactory<SearchBloc>(() => SearchBloc(getIt()));
   getIt.registerFactory<NearbyProvidersCubit>(
@@ -94,7 +105,7 @@ Future<void> configureDependencies() async {
   // round-trip at the confirmation gate (see BookingStarted).
   getIt.registerLazySingleton<BookingBloc>(() => BookingBloc(getIt()));
   getIt.registerFactory<ProviderDetailCubit>(
-    () => ProviderDetailCubit(getIt()),
+    () => ProviderDetailCubit(getIt(), reviewRepository: getIt<ReviewRepository>()),
   );
 
   // ---- Checkout (deposit payment via the external-browser gateway flow) ----

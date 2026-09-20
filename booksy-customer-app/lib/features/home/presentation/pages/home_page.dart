@@ -15,7 +15,6 @@ import '../bloc/home_event.dart';
 import '../bloc/home_state.dart';
 import '../widgets/featured_provider_card.dart';
 import '../widgets/home_category_row.dart';
-import '../widgets/home_menu_drawer.dart';
 import '../widgets/nearby_provider_card.dart';
 import '../widgets/upcoming_booking_card.dart';
 
@@ -83,14 +82,6 @@ class _HomePageState extends State<HomePage> {
     return Scaffold(
       appBar: AppBar(
         title: const Text(AppStrings.homeTitle),
-        leading: Builder(
-          builder: (context) => IconButton(
-            key: const Key('home-menu-button'),
-            icon: const Icon(Icons.menu),
-            tooltip: AppStrings.homeMenu,
-            onPressed: Scaffold.of(context).openDrawer,
-          ),
-        ),
         actions: [
           Padding(
             padding: const EdgeInsetsDirectional.only(end: AppSpacing.xs),
@@ -103,7 +94,6 @@ class _HomePageState extends State<HomePage> {
           ),
         ],
       ),
-      drawer: const HomeMenuDrawer(),
       body: Column(
         children: [
           const _SearchPill(),

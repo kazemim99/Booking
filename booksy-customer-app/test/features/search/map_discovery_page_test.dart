@@ -45,6 +45,9 @@ class _UnusedGeocodingService implements GeocodingService {
   @override
   Future<GeoCoordinates?> geocode(String term) async =>
       throw UnimplementedError('geocoding is not resolved in this test');
+
+  @override
+  Future<List<PlaceSuggestion>> suggest(String term) async => const [];
 }
 
 /// Every tile resolves to a 1x1 transparent PNG straight from memory, so the
@@ -203,7 +206,7 @@ void main() {
       await tester.pump(const Duration(milliseconds: 50));
 
       expect(find.text(AppStrings.mapTitle), findsOneWidget);
-      expect(find.byKey(const Key('map-menu-button')), findsOneWidget);
+      expect(find.byKey(const Key('map-menu-button')), findsNothing);
       expect(find.byKey(const Key('map-canvas')), findsOneWidget);
       expect(find.byKey(const Key('map-area-search-field')), findsOneWidget);
       expect(find.text(AppStrings.mapDefaultAreaLabel), findsOneWidget);

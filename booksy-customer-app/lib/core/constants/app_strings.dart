@@ -1,3 +1,5 @@
+import '../utils/persian_formatter.dart';
+
 /// All user-facing strings in one place so a future localization pass
 /// is mechanical. Widgets must reference these by name, never inline text.
 class AppStrings {
@@ -208,7 +210,6 @@ class AppStrings {
   // Home — redesigned discovery surface
   // ---------------------------------------------------------------------
   static const String homeTitle = 'بوکسی';
-  static const String homeMenu = 'منو';
   static const String homeSearchHint = 'جستجوی آرایشگاه، سالن، اسپا…';
   static const String mapSearch = 'جستجو روی نقشه';
   static const String nearestTitle = 'نزدیک‌ترین‌ها';
@@ -233,6 +234,23 @@ class AppStrings {
   static const String closedDay = 'تعطیل';
   static const String contactAndLocationTitle = 'تماس و موقعیت';
   static const String breakTimeLabel = 'استراحت';
+  static const String mapLocationImpreciseNotice =
+      'موقعیت دقیق شما به دست نیامد (اگر VPN روشن است، موقعیت کشور دیگری خوانده می‌شود). نام شهر یا محله را جستجو کنید.';
+  static const String reviewsTitle = 'نظرها';
+  static const String reviewsEmpty = 'هنوز نظری ثبت نشده است';
+  static const String reviewAnonymous = 'مشتری';
+  static const String reviewProviderReply = 'پاسخ سالن';
+  static const String reviewWriteAction = 'ثبت نظر';
+  static const String reviewDialogTitle = 'نظر شما دربارهٔ این سالن';
+  static const String reviewRatingLabel = 'امتیاز شما';
+  static const String reviewCommentLabel = 'نظر شما (اختیاری)';
+  static const String reviewRatingRequired = 'لطفاً امتیاز را انتخاب کنید';
+  static const String reviewCommentTooShort = 'نظر باید حداقل ۱۰ حرف باشد';
+  static const String reviewSaved = 'نظر شما ثبت شد. ممنون!';
+  static const String today = 'امروز';
+  static const String tomorrow = 'فردا';
+  static String freeSlotsOn(String when, int count) =>
+      '$when ${PersianFormatter.formatNumber(count)} وقت خالی';
   static const String locationOnMapTitle = 'موقعیت روی نقشه';
   static const String directionsAction = 'مسیریابی';
   static const String directionsSheetTitle = 'با کدام برنامه مسیریابی شود؟';

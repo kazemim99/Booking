@@ -32,9 +32,9 @@ on what a customer sees while choosing a salon.
 - [x] 1.3 Categories with no providers are not offered
 - [x] 1.4 Profile shows the street address, not only the city, and a map that opens a navigation app
 - [x] 1.5 Working hours grouped: identical days on one row, the odd day on its own, breaks shown
-- [ ] 1.6 Provider card shows rating and how many free times it has
-- [ ] 1.7 Ratings and comments: read them on the profile, leave one after a visit
-- [ ] 1.8 Search suggests cities/villages/provinces as you type
+- [x] 1.6 Provider card shows rating and how many free times it has
+- [x] 1.7 Ratings and comments: read them on the profile, leave one after a visit
+- [x] 1.8 Search suggests cities/villages/provinces as you type
 - [ ] 1.9 Verify, deploy, confirm live
 
 ## Log
@@ -67,3 +67,22 @@ on what a customer sees while choosing a salon.
   «شنبه، دوشنبه تا جمعه», and mid-day breaks are parsed and shown under their row. 4 grouping tests.
 - (also) The profile header is a swipeable gallery of the salon's photos, chosen photo first,
   falling back to the single hero image when there is only one. 3 tests.
+- 2026-09-20 1.6 GET /providers/availability-summary answers a whole results page in one request:
+  per salon, the first day with free times, how many, and the earliest — computed on the salon's
+  SHORTEST active service, cached two minutes, capped at 20 salons, rate-limited, and a salon that
+  cannot be booked reports zero instead of failing the list. 4 integration tests. The card shows
+  «امروز ۵ وقت خالی»; the rating was already wired and hides itself until someone rates.
+  (Peer booking-aa flagged the 20x7 sequential-computation risk — hence the cache and the cap.)
+- 1.7 Reviews: read them on the profile (average, what people wrote, the salon's reply) and leave
+  one from a finished appointment. The app's review URLs were both wrong — `/Reviews/provider/{id}`
+  (singular) 404s and the POST route was `/Reviews` — which is why no review ever loaded or saved.
+  4 widget tests.
+- 1.8 Typing a city, village or province suggests places, debounced, and picking one moves the map
+  without a second lookup. The lookup now goes through our own /Geocoding/search: the browser
+  cannot set the User-Agent Nominatim's policy requires, which is what broke the provider app's
+  direct calls in production. 3 tests.
+- 2026-09-20 (user, same session) My-location put the customer in Dubai while they stood in
+  پارس‌آباد: a browser behind a VPN has no GPS or Wi-Fi data, so it falls back to the IP address
+  and reports a radius of tens of kilometres. A fix coarser than 20 km is now refused — the map
+  stays where it is and says the VPN may be the reason. The hamburger menu is gone: every
+  destination it held is on the bottom bar.

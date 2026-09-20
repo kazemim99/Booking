@@ -101,6 +101,14 @@ class ApiConstants {
   /// POST /api/v1/Providers/search
   static const String searchProviders = '/$apiVersion/Providers/search';
 
+  /// Place-name search, proxied by our API so the browser never calls
+  /// Nominatim directly (it cannot set the User-Agent that policy requires).
+  static const String geocodingSearch = '/$apiVersion/Geocoding/search';
+
+  /// How soon a list of salons can be booked (one call for a screenful).
+  static const String providerAvailabilitySummary =
+      '/$apiVersion/Providers/availability-summary';
+
   /// Providers near a point, WITH coordinates and a computed distance.
   ///
   /// The only endpoint that returns either: `/Providers/search` can order by distance but its response
@@ -178,14 +186,17 @@ class ApiConstants {
 
   // ==================== Review Endpoints ====================
 
-  /// Get provider reviews
-  /// GET /api/v1/Reviews/provider/{providerId}
+  /// A salon's reviews. The path is `providers` (plural) — the singular form
+  /// this once held answers 404, which is why no review ever loaded.
+  /// GET /api/v1/Reviews/providers/{providerId}
   static String providerReviews(String providerId) =>
-      '/$apiVersion/Reviews/provider/$providerId';
+      '/$apiVersion/Reviews/providers/$providerId';
 
-  /// Create review
-  /// POST /api/v1/Reviews
-  static const String createReview = '/$apiVersion/Reviews';
+  /// Leaving a review: it belongs to the booking you actually went to, so the
+  /// server can tell a customer from a stranger.
+  /// POST /api/v1/Reviews/bookings/{bookingId}
+  static String bookingReview(String bookingId) =>
+      '/$apiVersion/Reviews/bookings/$bookingId';
 
   // ==================== Location Endpoints ====================
 

@@ -14,6 +14,8 @@ import '../widgets/services_grid.dart';
 import '../widgets/working_hours_section.dart';
 import '../widgets/provider_gallery.dart';
 import '../widgets/provider_location_card.dart';
+import '../../../reviews/presentation/widgets/provider_reviews_section.dart';
+import '../../../reviews/domain/entities/review.dart';
 
 /// Provider profile (deep-linkable at `/providers/:id`).
 ///
@@ -96,7 +98,12 @@ class ProviderDetailPage extends StatelessWidget {
                 ),
               ),
               contentBuilder: (context) =>
-                  _ProviderContent(provider: state.provider!, now: now),
+                  _ProviderContent(
+                    provider: state.provider!,
+                    now: now,
+                    reviews: state.reviews,
+                    reviewsLoading: state.reviewsLoading,
+                  ),
             ),
           );
         },
@@ -108,8 +115,15 @@ class ProviderDetailPage extends StatelessWidget {
 class _ProviderContent extends StatelessWidget {
   final ProviderDetail provider;
   final DateTime? now;
+  final ProviderReviews? reviews;
+  final bool reviewsLoading;
 
-  const _ProviderContent({required this.provider, this.now});
+  const _ProviderContent({
+    required this.provider,
+    this.now,
+    this.reviews,
+    this.reviewsLoading = false,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -174,6 +188,11 @@ class _ProviderContent extends StatelessWidget {
               if (contact.hasContent) ...[
                 const SizedBox(height: AppSpacing.lg),
                 contact,
+              const SizedBox(height: AppSpacing.lg),
+              ProviderReviewsSection(
+                reviews: reviews,
+                loading: reviewsLoading,
+              ),
               if (provider.latitude != null && provider.longitude != null) ...[
                 const SizedBox(height: AppSpacing.lg),
                 ProviderLocationCard(

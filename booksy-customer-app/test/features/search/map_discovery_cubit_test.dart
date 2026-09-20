@@ -403,11 +403,19 @@ class _FakeLocationService implements LocationService {
 
 class _FakeGeocodingService implements GeocodingService {
   GeoCoordinates? result;
+  List<PlaceSuggestion> suggestions = const [];
   int calls = 0;
+  int suggestCalls = 0;
 
   @override
   Future<GeoCoordinates?> geocode(String term) async {
     calls++;
     return result;
+  }
+
+  @override
+  Future<List<PlaceSuggestion>> suggest(String term) async {
+    suggestCalls++;
+    return suggestions;
   }
 }

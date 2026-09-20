@@ -25,6 +25,15 @@ class ProviderMetaLine extends StatelessWidget {
   /// Distance in kilometres, when the response provided one.
   final double? distanceKm;
 
+  /// How soon the salon can be booked: the day of its first free times and how
+  /// many there are. Both come from the availability summary; without it the
+  /// part is dropped like every other unknown.
+  final DateTime? nextFreeDate;
+  final int freeSlotCount;
+
+  /// Today, for reading [nextFreeDate] as "امروز"/"فردا". Injected by tests.
+  final DateTime? now;
+
   const ProviderMetaLine({
     super.key,
     this.category,
@@ -32,14 +41,32 @@ class ProviderMetaLine extends StatelessWidget {
     this.reviewCount,
     this.priceBand,
     this.distanceKm,
+    this.nextFreeDate,
+    this.freeSlotCount = 0,
+    this.now,
   });
+
+  /// «امروز ۵ وقت خالی» — or the weekday, when it is further out.
+  static String? freeSlotsLabel(DateTime? date, int count, DateTime today) {
+    if (date == null || count <= 0) return null;
+    final days = DateTime(date.year, date.month, date.day)
+        .difference(DateTime(today.year, today.month, today.day))
+        .inDays;
+    final when = switch (days) {
+      <= 0 => AppStrings.today,
+      1 => AppStrings.tomorrow,
+      _ => JalaliFormatter.weekday(date),
+    };
+    return AppStrings.freeSlotsOn(when, count);
+  }
 
   /// Whether this configuration would render anything at all.
   bool get hasContent =>
       (category != null && category!.isNotEmpty) ||
       ProviderRating.hasRating(rating ?? 0, reviewCount) ||
       priceBand != null ||
-      distanceKm != null;
+      distanceKm != null ||
+      freeSlotsLabel(nextFreeDate, freeSlotCount, now ?? DateTime.now()) != null;
 
   @override
   Widget build(BuildContext context) {
@@ -54,6 +81,32 @@ class ProviderMetaLine extends StatelessWidget {
     }
     if (priceBand != null) {
       parts.add(PriceBandLabel(band: priceBand!));
+    }
+    final freeSlots =
+        freeSlotsLabel(nextFreeDate, freeSlotCount, now ?? DateTime.now());
+    if (freeSlots != null) {
+      parts.add(
+        Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(
+              Icons.event_available_outlined,
+              size: AppIconSize.sm,
+              color: theme.colorScheme.primary,
+            ),
+            const SizedBox(width: AppSpacing.xxs),
+            Flexible(
+              child: Text(
+                freeSlots,
+                key: const Key('provider-free-slots'),
+                style: theme.textTheme.bodySmall
+                    ?.copyWith(color: theme.colorScheme.primary),
+                overflow: TextOverflow.ellipsis,
+              ),
+            ),
+          ],
+        ),
+      );
     }
     if (distanceKm != null) {
       parts.add(

@@ -18,6 +18,11 @@ abstract class HomeRepository {
   /// Get top providers (recommended)
   Future<Either<Failure, List<ProviderSummary>>> getTopProviders({int limit = 10});
 
+  /// The same salons, each carrying how soon it can be booked. Returns them
+  /// unchanged when the availability call fails — a card without free times is
+  /// still a card.
+  Future<List<ProviderSummary>> withAvailability(List<ProviderSummary> providers);
+
   /// Get active promotions
   Future<Either<Failure, List<Promotion>>> getPromotions();
 

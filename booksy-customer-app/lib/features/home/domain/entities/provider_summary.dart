@@ -22,6 +22,11 @@ class ProviderSummary extends Equatable {
   /// label. Used to pick a pin glyph and to echo the active filter.
   final String? category;
 
+  /// How soon this salon can be booked, when the availability summary has been
+  /// fetched for it: the day with the first free times and how many there are.
+  final DateTime? nextFreeDate;
+  final int freeSlotCount;
+
   /// City / street line, when the payload carried an address.
   final String? addressLine;
 
@@ -39,10 +44,31 @@ class ProviderSummary extends Equatable {
     this.longitude,
     this.category,
     this.addressLine,
+      this.nextFreeDate,
+    this.freeSlotCount = 0,
   });
 
   /// True when this summary can be drawn on a map.
   bool get hasCoordinates => latitude != null && longitude != null;
+
+  /// The same salon, with what the availability summary said about it.
+  ProviderSummary withAvailability(DateTime? date, int count) => ProviderSummary(
+        id: id,
+        name: name,
+        imageUrl: imageUrl,
+        rating: rating,
+        reviewCount: reviewCount,
+        distance: distance,
+        startingPrice: startingPrice,
+        isOpen: isOpen,
+        closingTime: closingTime,
+        latitude: latitude,
+        longitude: longitude,
+        category: category,
+        addressLine: addressLine,
+        nextFreeDate: date,
+        freeSlotCount: count,
+      );
 
   @override
   List<Object?> get props => [
@@ -59,5 +85,7 @@ class ProviderSummary extends Equatable {
         longitude,
         category,
         addressLine,
+              nextFreeDate,
+        freeSlotCount,
       ];
 }

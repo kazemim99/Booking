@@ -34,6 +34,7 @@ using System.Security.Claims;
 using BreakTimeDto = Booksy.ServiceCatalog.Application.Commands.Provider.Registration.BreakTimeDto;
 using ServiceDto = Booksy.ServiceCatalog.Application.Commands.Provider.RegisterProviderFull.ServiceDto;
 using TimeSlotDto = Booksy.ServiceCatalog.Application.Commands.Provider.Registration.TimeSlotDto;
+using Booksy.ServiceCatalog.Application.Queries.Provider.GetProviderAvailabilitySummary;
 
 namespace Booksy.ServiceCatalog.API.Controllers.V1;
 
@@ -550,6 +551,38 @@ public class ProvidersController : ControllerBase
     /// <returns>Paginated search results</returns>
     /// <response code="200">Providers found successfully</response>
     /// <response code="400">Invalid search parameters</response>
+    /// <summary>
+    /// How soon, and how many times, each of these salons can be booked.
+    /// </summary>
+    /// <remarks>
+    /// For the cards in a results list: one request covers every salon on screen, and each answer
+    /// names the first day that has free times, so "fully booked today, free tomorrow" still reads
+    /// as bookable.
+    /// </remarks>
+    [HttpGet("availability-summary")]
+    [AllowAnonymous]
+    [EnableRateLimiting("public-api")]
+    [ProducesResponseType(typeof(IReadOnlyList<ProviderAvailabilitySummary>), StatusCodes.Status200OK)]
+    public async Task<IActionResult> GetAvailabilitySummary(
+        [FromQuery] Guid[]? providerIds,
+        [FromQuery] int daysAhead = 7,
+        CancellationToken cancellationToken = default)
+    {
+        if (providerIds is null || providerIds.Length == 0)
+            return Ok(Array.Empty<ProviderAvailabilitySummary>());
+
+        // A results page shows a screenful, not a catalogue: the cap keeps one request from
+        // walking every salon's calendar.
+        const int maxProviders = 20;
+        var result = await _mediator.Send(
+            new GetProviderAvailabilitySummaryQuery(
+                providerIds.Take(maxProviders).ToList(),
+                Math.Clamp(daysAhead, 1, 30)),
+            cancellationToken);
+
+        return Ok(result);
+    }
+
     [HttpGet("search")]
     [AllowAnonymous]
     [ProducesResponseType(typeof(PagedResult<ProviderSearchResponse>), StatusCodes.Status200OK)]

@@ -83,12 +83,17 @@ class GetHomeData {
         );
       }
 
+      // The cards say how soon each salon can be booked; one call covers them all,
+      // and a failure there leaves the cards as they were.
+      final topProviders = await repository.withAvailability(
+        results[2].getOrElse(() => <ProviderSummary>[]) as List<ProviderSummary>,
+      );
+
       return Right(HomeData(
         categories: results[0].getOrElse(() => <Category>[]) as List<Category>,
         upcomingBookings: results[1].getOrElse(() => <UpcomingBooking>[])
             as List<UpcomingBooking>,
-        topProviders: results[2].getOrElse(() => <ProviderSummary>[])
-            as List<ProviderSummary>,
+        topProviders: topProviders,
         promotions:
             results[3].getOrElse(() => <Promotion>[]) as List<Promotion>,
         recentlyVisitedProviders: isAuthenticated

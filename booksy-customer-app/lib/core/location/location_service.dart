@@ -10,7 +10,14 @@ sealed class LocationResult {
 class LocationSuccess extends LocationResult {
   final double latitude;
   final double longitude;
-  const LocationSuccess(this.latitude, this.longitude);
+
+  /// How far off the fix may be, in metres. A browser with no GPS or Wi-Fi
+  /// data falls back to the IP address — which, behind a VPN, is the exit
+  /// country — and reports a radius of tens of kilometres. Callers use this to
+  /// tell a real position from a guess.
+  final double? accuracyMeters;
+
+  const LocationSuccess(this.latitude, this.longitude, {this.accuracyMeters});
 }
 
 /// Permission denied (this run or forever) — the caller should fall back to
@@ -56,8 +63,14 @@ class GeolocatorLocationService implements LocationService {
         return const LocationPermissionDenied();
       }
 
-      final position = await Geolocator.getCurrentPosition();
-      return LocationSuccess(position.latitude, position.longitude);
+      final position = await Geolocator.getCurrentPosition(
+        desiredAccuracy: LocationAccuracy.high,
+      );
+      return LocationSuccess(
+        position.latitude,
+        position.longitude,
+        accuracyMeters: position.accuracy,
+      );
     } catch (e) {
       return LocationError(e.toString());
     }

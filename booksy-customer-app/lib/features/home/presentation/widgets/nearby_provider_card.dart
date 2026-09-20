@@ -39,6 +39,8 @@ class NearbyProviderCard extends StatelessWidget {
       reviewCount: provider.reviewCount,
       priceBand: PriceBand.fromPrices([provider.startingPrice.toDouble()]),
       distanceKm: provider.distance,
+      nextFreeDate: provider.nextFreeDate,
+      freeSlotCount: provider.freeSlotCount,
     );
 
     return AppCard(

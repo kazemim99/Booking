@@ -92,6 +92,21 @@ class HomeRemoteDataSource {
     );
   }
 
+  /// How soon each of these salons can be booked — one call for the whole list.
+  Future<List<Map<String, dynamic>>> getAvailabilitySummary(
+      List<String> providerIds) async {
+    if (providerIds.isEmpty) return const [];
+    final response = await serviceCatalogDio.get(
+      ApiConstants.providerAvailabilitySummary,
+      queryParameters: {'providerIds': providerIds},
+    );
+    final data = response.data is Map<String, dynamic>
+        ? (response.data as Map<String, dynamic>)['data']
+        : response.data;
+    if (data is! List) return const [];
+    return data.whereType<Map<String, dynamic>>().toList();
+  }
+
   /// Fetch top providers (recommended)
   Future<List<ProviderDto>> getTopProviders({int limit = 10}) async {
     final response = await serviceCatalogDio.get(

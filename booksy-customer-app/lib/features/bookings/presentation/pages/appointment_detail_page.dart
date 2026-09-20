@@ -12,6 +12,8 @@ import '../../../../core/widgets/widgets.dart';
 import '../../domain/entities/booking_summary.dart';
 import '../../domain/repositories/bookings_repository.dart';
 import '../../../../core/utils/price_formatter.dart';
+import '../../../reviews/presentation/widgets/write_review_dialog.dart';
+import '../../../reviews/domain/repositories/review_repository.dart';
 
 enum _DetailStatus { loading, loaded, error }
 
@@ -105,6 +107,25 @@ class _DetailContent extends StatelessWidget {
 
   const _DetailContent({required this.booking});
 
+  Future<void> _writeReview(BuildContext context) async {
+    final draft = await showWriteReviewDialog(context);
+    if (draft == null || !context.mounted) return;
+
+    final repository = getIt<ReviewRepository>();
+    final result = await repository.createReview(
+      bookingId: booking.id,
+      rating: draft.rating,
+      comment: draft.comment,
+    );
+    if (!context.mounted) return;
+    result.fold(
+      (failure) => ScaffoldMessenger.of(context)
+          .showSnackBar(SnackBar(content: Text(failure.message))),
+      (_) => ScaffoldMessenger.of(context)
+          .showSnackBar(const SnackBar(content: Text(AppStrings.reviewSaved))),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
@@ -177,6 +198,17 @@ class _DetailContent extends StatelessWidget {
           ),
         ),
         const SizedBox(height: AppSpacing.md),
+        // Only a visit that happened can be reviewed — the server checks the
+        // same thing, and offering it earlier would only earn a rejection.
+        if (StatusBadge.tryParse(booking.status) == BookingStatus.completed) ...[
+          AppButton(
+            key: const Key('appointment-write-review'),
+            label: AppStrings.reviewWriteAction,
+            icon: Icons.star_outline,
+            onPressed: () => _writeReview(context),
+          ),
+          const SizedBox(height: AppSpacing.sm),
+        ],
         AppButton.secondary(
           label: AppStrings.bookingProvider,
           icon: Icons.storefront_outlined,

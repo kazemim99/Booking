@@ -23,6 +23,10 @@ enum MapNotice {
   /// The device could not produce a position at all.
   locationUnavailable,
 
+  /// A position came back, but too coarse to be anyone's actual location —
+  /// a browser behind a VPN reports its exit country this way.
+  locationImprecise,
+
   /// The typed city/area could not be geocoded; the map did not move.
   areaNotFound,
 }
@@ -213,6 +217,29 @@ class MapDiscoveryCubit extends Cubit<MapDiscoveryState> {
         moveCamera: false,
       );
 
+  /// Places matching what has been typed, for the search suggestions. Empty
+  /// while the term is too short, and on any failure — suggestions never block
+  /// typing a name and pressing search.
+  Future<List<PlaceSuggestion>> suggestPlaces(String term) =>
+      geocodingService.suggest(term);
+
+  /// A place the customer picked from the suggestions: no second lookup, the
+  /// coordinates came with it.
+  Future<void> goToPlace(PlaceSuggestion place) async {
+    emit(state.copyWith(
+      status: MapDiscoveryStatus.loading,
+      notice: MapNotice.none,
+      areaLabel: place.label,
+    ));
+    await _load(
+      latitude: place.coordinates.latitude,
+      longitude: place.coordinates.longitude,
+      radiusKm: state.radiusKm,
+      notice: MapNotice.none,
+      moveCamera: true,
+    );
+  }
+
   /// City / area name submitted in the search field. Geocoded through the
   /// shared keyless Nominatim service — this screen does not geocode itself.
   Future<void> searchArea(String term) async {
@@ -248,10 +275,21 @@ class MapDiscoveryCubit extends Cubit<MapDiscoveryState> {
   }
 
   /// Re-centre on the device position (the map's floating action button).
+  /// Beyond this, a fix is a network guess rather than a place someone is
+  /// standing: GPS and Wi-Fi fixes land well inside it, IP fixes do not.
+  static const double maxTrustedAccuracyMeters = 20000;
+
   Future<void> useMyLocation() async {
     final location = await locationService.currentPosition();
     switch (location) {
-      case LocationSuccess(:final latitude, :final longitude):
+      case LocationSuccess(:final latitude, :final longitude, :final accuracyMeters):
+        // A fix this coarse is the network's guess, not the customer's street:
+        // moving the map to it lands them in another city (measured: a VPN in
+        // Dubai while standing in پارس‌آباد). The map stays put and says why.
+        if (accuracyMeters != null && accuracyMeters > maxTrustedAccuracyMeters) {
+          emit(state.copyWith(notice: MapNotice.locationImprecise));
+          return;
+        }
         await _load(
           latitude: latitude,
           longitude: longitude,

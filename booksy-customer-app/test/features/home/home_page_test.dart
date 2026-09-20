@@ -204,15 +204,17 @@ void main() {
       await tester.pump();
 
       expect(find.text(AppStrings.homeTitle), findsOneWidget);
-      expect(find.byKey(const Key('home-menu-button')), findsOneWidget);
+      // No hamburger: every destination it held is on the bottom bar
+      // (openspec/changes/customer-app-discovery-pass).
+      expect(find.byKey(const Key('home-menu-button')), findsNothing);
       expect(find.byKey(const Key('home-map-search-button')), findsOneWidget);
       expect(find.byKey(const Key('home-search-pill')), findsOneWidget);
       expect(find.text(AppStrings.homeSearchHint), findsOneWidget);
 
-      // Five category tiles plus the "more" tile.
+      // With no catalogue counts in this fixture, the whole row is offered:
+      // five category tiles plus the "more" tile.
       expect(find.byType(HomeCategoryRow), findsOneWidget);
-      for (final category
-          in kServiceCategories.take(kHomeCategoryTileCount)) {
+      for (final category in kServiceCategories.take(kHomeCategoryTileCount)) {
         expect(
           find.byKey(Key('home-category-${category.apiValue}')),
           findsOneWidget,
@@ -280,24 +282,6 @@ void main() {
       expect(nav.visited.last, '/explore?category=Barbershop');
     });
 
-    testWidgets('the hamburger opens a menu of real destinations',
-        (tester) async {
-      await tester.pumpWidget(_app(
-        bloc: loadedBloc(),
-        nearby: _StubNearbyCubit(const NearbyState(status: NearbyStatus.empty)),
-        nav: nav,
-      ));
-      await tester.pump();
-
-      await tester.tap(find.byKey(const Key('home-menu-button')));
-      await tester.pumpAndSettle();
-
-      expect(find.byKey(const Key('home-menu-nearby')), findsOneWidget);
-      await tester.tap(find.byKey(const Key('home-menu-nearby')));
-      await tester.pumpAndSettle();
-
-      expect(find.text('map'), findsOneWidget);
-    });
   });
 
   group('featured rail', () {

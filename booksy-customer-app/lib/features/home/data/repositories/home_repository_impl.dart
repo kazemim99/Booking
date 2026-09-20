@@ -64,6 +64,31 @@ class HomeRepositoryImpl implements HomeRepository {
   }
 
   @override
+  Future<List<ProviderSummary>> withAvailability(
+      List<ProviderSummary> providers) async {
+    if (providers.isEmpty) return providers;
+    try {
+      final rows = await remoteDataSource
+          .getAvailabilitySummary(providers.map((p) => p.id).toList());
+      final byId = {
+        for (final row in rows) row['providerId']?.toString(): row,
+      };
+      return providers.map((p) {
+        final row = byId[p.id];
+        if (row == null) return p;
+        final date = row['date'] as String?;
+        return p.withAvailability(
+          date == null ? null : DateTime.tryParse(date),
+          (row['freeSlotCount'] as num?)?.toInt() ?? 0,
+        );
+      }).toList();
+    } catch (_) {
+      // Free times are a nicety on a card; their absence must not empty the list.
+      return providers;
+    }
+  }
+
+  @override
   Future<Either<Failure, List<Promotion>>> getPromotions() async {
     try {
       final data = await remoteDataSource.getPromotions();

@@ -11,12 +11,12 @@ import '../../../../core/constants/app_strings.dart';
 import '../../../../core/di/injection.dart';
 import '../../../../core/widgets/widgets.dart';
 import '../../../home/domain/entities/provider_summary.dart';
-import '../../../home/presentation/widgets/home_menu_drawer.dart';
 import '../bloc/map_discovery_cubit.dart';
 import '../widgets/category_filter_row.dart';
 import '../widgets/map_clustering.dart';
 import '../widgets/map_pin.dart';
 import '../widgets/map_provider_card.dart';
+import '../../../../core/location/geocoding_service.dart';
 
 /// Map + list discovery.
 ///
@@ -74,6 +74,12 @@ class _MapDiscoveryPageState extends State<MapDiscoveryPage> {
   double _settledRadiusKm = MapDiscoveryCubit.defaultRadiusKm;
   bool _searchAreaOffered = false;
 
+  /// Place suggestions for what is being typed, and the timer that keeps the
+  /// app from asking on every keystroke.
+  List<PlaceSuggestion> _suggestions = const [];
+  Timer? _suggestTimer;
+  static const Duration _suggestDelay = Duration(milliseconds: 350);
+
   bool _mapReady = false;
   int _appliedCameraRevision = 0;
 
@@ -91,6 +97,7 @@ class _MapDiscoveryPageState extends State<MapDiscoveryPage> {
   @override
   void dispose() {
     _panSettleTimer?.cancel();
+    _suggestTimer?.cancel();
     _searchController.dispose();
     _pageController.dispose();
     _mapController.dispose();
@@ -211,6 +218,20 @@ class _MapDiscoveryPageState extends State<MapDiscoveryPage> {
 
   // ------------------------------------------------------------ build
 
+  /// Suggestions follow the typing, one request per pause rather than per key.
+  void _onSearchChanged(String term) {
+    _suggestTimer?.cancel();
+    if (term.trim().length < 2) {
+      if (_suggestions.isNotEmpty) setState(() => _suggestions = const []);
+      return;
+    }
+    _suggestTimer = Timer(_suggestDelay, () async {
+      final places = await _cubit.suggestPlaces(term);
+      if (!mounted) return;
+      setState(() => _suggestions = places);
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
     return BlocProvider.value(
@@ -219,16 +240,7 @@ class _MapDiscoveryPageState extends State<MapDiscoveryPage> {
         appBar: AppBar(
           centerTitle: true,
           title: const Text(AppStrings.mapTitle),
-          leading: Builder(
-            builder: (context) => IconButton(
-              key: const Key('map-menu-button'),
-              icon: const Icon(Icons.menu),
-              tooltip: AppStrings.homeMenu,
-              onPressed: Scaffold.of(context).openDrawer,
-            ),
-          ),
         ),
-        drawer: const HomeMenuDrawer(),
         body: MultiBlocListener(
           listeners: [
             BlocListener<MapDiscoveryCubit, MapDiscoveryState>(
@@ -261,8 +273,17 @@ class _MapDiscoveryPageState extends State<MapDiscoveryPage> {
               children: [
                 _AreaSearchField(
                   controller: _searchController,
+                  suggestions: _suggestions,
+                  onChanged: _onSearchChanged,
+                  onSuggestionSelected: (place) {
+                    FocusScope.of(context).unfocus();
+                    setState(() => _suggestions = const []);
+                    _searchController.text = place.label;
+                    _cubit.goToPlace(place);
+                  },
                   onSubmitted: (value) {
                     FocusScope.of(context).unfocus();
+                    setState(() => _suggestions = const []);
                     _cubit.searchArea(value);
                   },
                 ),
@@ -304,18 +325,29 @@ class _MapDiscoveryPageState extends State<MapDiscoveryPage> {
   }
 }
 
-/// Rounded pill search field. The customer types a city or an area name; the
-/// cubit geocodes it and re-centres the map.
+/// Rounded pill search field. The customer types a city, village or province
+/// and picks from what the catalogue's place search suggests; the cubit
+/// re-centres the map on it.
 class _AreaSearchField extends StatelessWidget {
   final TextEditingController controller;
   final ValueChanged<String> onSubmitted;
+  final ValueChanged<String> onChanged;
+  final List<PlaceSuggestion> suggestions;
+  final ValueChanged<PlaceSuggestion> onSuggestionSelected;
 
-  const _AreaSearchField({required this.controller, required this.onSubmitted});
+  const _AreaSearchField({
+    required this.controller,
+    required this.onSubmitted,
+    required this.onChanged,
+    required this.onSuggestionSelected,
+    this.suggestions = const [],
+  });
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    return Padding(
+    return Column(children: [
+    Padding(
       padding: const EdgeInsets.fromLTRB(
         AppSpacing.md,
         AppSpacing.sm,
@@ -345,6 +377,7 @@ class _AreaSearchField extends StatelessWidget {
                   controller: controller,
                   textInputAction: TextInputAction.search,
                   onSubmitted: onSubmitted,
+                  onChanged: onChanged,
                   style: theme.textTheme.bodyMedium,
                   decoration: const InputDecoration(
                     hintText: AppStrings.mapAreaSearchHint,
@@ -359,7 +392,40 @@ class _AreaSearchField extends StatelessWidget {
           ),
         ),
       ),
-    );
+    ),
+    if (suggestions.isNotEmpty)
+      Padding(
+        padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md),
+        child: Material(
+          color: theme.colorScheme.surface,
+          elevation: 2,
+          borderRadius: BorderRadius.circular(AppRadius.md),
+          child: Column(
+            key: const Key('map-area-suggestions'),
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              for (final place in suggestions)
+                ListTile(
+                  key: Key('map-area-suggestion-${place.label}'),
+                  dense: true,
+                  leading: Icon(
+                    Icons.place_outlined,
+                    size: AppIconSize.action,
+                    color: theme.colorScheme.onSurfaceVariant,
+                  ),
+                  title: Text(
+                    place.label,
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                    style: theme.textTheme.bodySmall,
+                  ),
+                  onTap: () => onSuggestionSelected(place),
+                ),
+            ],
+          ),
+        ),
+      ),
+    ]);
   }
 }
 
@@ -654,6 +720,7 @@ class _MapNoticeBar extends StatelessWidget {
       MapNotice.permissionDenied => AppStrings.locationPermissionNeeded,
       MapNotice.serviceDisabled => AppStrings.locationServiceDisabled,
       MapNotice.locationUnavailable => AppStrings.mapLocationFallbackNotice,
+      MapNotice.locationImprecise => AppStrings.mapLocationImpreciseNotice,
       MapNotice.areaNotFound => AppStrings.mapAreaNotFound,
     };
 
