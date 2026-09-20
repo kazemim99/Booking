@@ -1,4 +1,4 @@
-Status: ACTIVE
+Status: DONE
 Verify: FAST
 
 User report (2026-09-19, provider app, booking screen):
@@ -38,7 +38,7 @@ User report (2026-09-19, provider app, booking screen):
 - [x] 1.4 App: composer sends walk-in fields + SMS checkbox; phone valid / name required when a
       phone is given (inline); tests
 - [x] 1.5 App: More -> "نام شما" edit; tests
-- [ ] 1.6 Verify, deploy, confirm live
+- [x] 1.6 Verify, deploy, confirm live
 
 ## Log
 - 2026-09-19 1.1 UpdateUserProfileCommandHandler: name only, empty name 400, a different phone 400
@@ -58,3 +58,17 @@ User report (2026-09-19, provider app, booking screen):
 - 1.5 More -> «نام شما»: the same form without a phone (the sign-in number is not editable there),
   PUT /Users/{id}/profile, then the token is re-minted so this device shows the new name. 2 tests.
   App: 553 tests pass, analyze clean.
+- 2026-09-20 verify FULL PASS (17 steps, 467 s). Deployed (6cfe7e7d).
+  Live check on back.nahalkmi.ir as «سالن نهال»: a booking with no customer -> 400 «شماره موبایل
+  مشتری الزامی است»; «12» -> 400 «معتبر نیست»; name + mobile -> 201 and the customer appears in the
+  book as source Booking with 1 booking. Test booking cancelled, test customer removed; the salon's
+  own three customers untouched.
+- 2026-09-20 DEFECT found by the live check, fixed and deployed (0a72040c): UsersController,
+  ProviderSettingsController and ReviewsController read the caller from "sub"/"userId", but the
+  production JWT carries nameidentifier — so renaming yourself answered 403 for every real user.
+  The test auth handler minted a "userId" claim the real token never issues, which is why the
+  tests were green; that claim is gone. 521 integration tests pass. Naming yourself now returns
+  201 on production.
+- Note: production still runs SMS in sandbox mode with no gateway credentials, so the booking SMS
+  is composed and dispatched but reaches no phone until an SMS provider is configured (FOLLOW-UPS
+  #58 covers the same switch).
