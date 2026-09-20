@@ -34,7 +34,7 @@ public class BookingReminderWiringTests : ServiceCatalogIntegrationTestBase
     [Fact]
     public async Task Cancelling_a_booking_through_the_api_withdraws_its_reminders()
     {
-        var (customerId, booking) = await ArrangeBookingWithRemindersAsync();
+        var (customerId, booking, _) = await ArrangeBookingWithRemindersAsync();
 
         (await RemindersFor(booking)).Should().NotBeEmpty("the booking must start with reminders to withdraw");
 
@@ -57,7 +57,7 @@ public class BookingReminderWiringTests : ServiceCatalogIntegrationTestBase
     {
         // The specific regression: the handler runs, the booking is cancelled, and nobody touched the
         // outbox — so the reminders sit there Pending and fire on schedule.
-        var (customerId, booking) = await ArrangeBookingWithRemindersAsync();
+        var (customerId, booking, _) = await ArrangeBookingWithRemindersAsync();
 
         AuthenticateAsUser(customerId, "customer@test.com");
         await PostAsJsonAsync<CancelBookingRequest, BookingMessagePayload>(
@@ -73,8 +73,8 @@ public class BookingReminderWiringTests : ServiceCatalogIntegrationTestBase
     {
         // Withdrawal is scoped by subject id. If it were not, cancelling one appointment would silence
         // every other customer's reminders too.
-        var (customerId, cancelled) = await ArrangeBookingWithRemindersAsync();
-        var (_, untouched) = await ArrangeBookingWithRemindersAsync();
+        var (customerId, cancelled, _) = await ArrangeBookingWithRemindersAsync();
+        var (_, untouched, _) = await ArrangeBookingWithRemindersAsync();
 
         AuthenticateAsUser(customerId, "customer@test.com");
         await PostAsJsonAsync<CancelBookingRequest, BookingMessagePayload>(
@@ -85,9 +85,77 @@ public class BookingReminderWiringTests : ServiceCatalogIntegrationTestBase
             .Should().OnlyContain(s => s == NotificationOutboxState.Pending);
     }
 
+    [Fact]
+    public async Task Completing_a_booking_withdraws_its_remaining_reminders()
+    {
+        // The appointment happened. A "your appointment is in 2 hours" afterwards is noise at best.
+        // Complete is legal from fifteen minutes before the start.
+        var (booking, provider) = await ArrangeImminentBookingWithAPendingReminderAsync(TimeSpan.FromMinutes(5));
+
+        AuthenticateAsProviderOwner(provider);
+        var response = await PostAsJsonAsync<CompleteBookingRequest, BookingMessagePayload>(
+            $"/api/v1/bookings/{booking.Id.Value}/complete",
+            new CompleteBookingRequest { CompletionNotes = "انجام شد" });
+
+        response.StatusCode.Should().Be(HttpStatusCode.OK);
+        (await ReminderStatesAsync(booking.Id.Value))
+            .Should().OnlyContain(s => s == NotificationOutboxState.Cancelled);
+    }
+
+    [Fact]
+    public async Task Marking_a_no_show_withdraws_its_remaining_reminders()
+    {
+        // No-show is only legal once the appointment is over, so this one is in the past.
+        var (booking, provider) = await ArrangeImminentBookingWithAPendingReminderAsync(TimeSpan.FromHours(-3));
+
+        AuthenticateAsProviderOwner(provider);
+        var response = await PostAsJsonAsync<MarkNoShowRequest, BookingMessagePayload>(
+            $"/api/v1/bookings/{booking.Id.Value}/no-show",
+            new MarkNoShowRequest { Notes = "مراجعه نشد" });
+
+        response.StatusCode.Should().Be(HttpStatusCode.OK);
+        (await ReminderStatesAsync(booking.Id.Value))
+            .Should().OnlyContain(s => s == NotificationOutboxState.Cancelled);
+    }
+
+    /// <summary>
+    /// A booking that is about to start, carrying one still-unsent notification about it.
+    /// </summary>
+    /// <remarks>
+    /// Complete and no-show are only legal within fifteen minutes of the start time, and by then every
+    /// reminder offset has elapsed — so the scheduler would correctly create nothing. The row is therefore
+    /// seeded directly: what is under test is the handler's withdrawal call, not how the row got there.
+    /// </remarks>
+    private async Task<(Booking Booking, Domain.Aggregates.Provider Provider)>
+        ArrangeImminentBookingWithAPendingReminderAsync(TimeSpan startsIn)
+    {
+        var (_, booking, provider) = await ArrangeBookingWithRemindersAsync(
+            confirmed: true, startsIn: startsIn, scheduleReminders: false);
+
+        using var scope = Factory.Services.CreateScope();
+        var context = scope.ServiceProvider.GetRequiredService<ServiceCatalogDbContext>();
+        var raiser = scope.ServiceProvider.GetRequiredService<INotificationRaiser>();
+
+        await raiser.RaiseAsync(
+            Domain.Enums.NotificationEventCode.BookingReminder2h,
+            booking.CustomerId.Value,
+            dedupKey: booking.Id.Value,
+            parameters: new Dictionary<string, string> { ["businessName"] = "سالن نهال" },
+            subjectType: BookingReminderScheduler.BookingSubject,
+            subjectId: booking.Id.Value,
+            scheduledFor: DateTime.UtcNow.AddHours(1));
+
+        await context.SaveChangesAsync();
+
+        return (booking, provider);
+    }
+
     // ── arrange ──
 
-    private async Task<(Guid CustomerId, Booking Booking)> ArrangeBookingWithRemindersAsync()
+    private async Task<(Guid CustomerId, Booking Booking, Domain.Aggregates.Provider Provider)> ArrangeBookingWithRemindersAsync(
+        bool confirmed = false,
+        TimeSpan? startsIn = null,
+        bool scheduleReminders = true)
     {
         var provider = await CreateTestProviderWithServicesAsync();
         var service = (await DbContext.Services
@@ -97,29 +165,46 @@ public class BookingReminderWiringTests : ServiceCatalogIntegrationTestBase
         var customerId = Guid.NewGuid();
         var staffId = await GetBookableMemberIdAsync(provider);
 
-        var booking = Booking.CreateBookingRequest(
-            Core.Domain.ValueObjects.UserId.From(customerId),
-            provider.Id,
-            service.Id,
-            staffId,
-            DateTime.UtcNow.AddDays(3),
-            service.Duration,
-            service.BasePrice,
-            service.BookingPolicy ?? BookingPolicy.Default,
-            "reminder wiring");
+        var startTime = DateTime.UtcNow.Add(startsIn ?? TimeSpan.FromDays(3));
+
+        // A salon-entered booking is confirmed on creation, which is the only way to get a Confirmed
+        // booking that starts soon: Confirm() requires two hours' notice, and Complete() requires the start
+        // to be within fifteen minutes. Nothing can satisfy both through the request-then-confirm path.
+        var booking = confirmed
+            ? Booking.CreateConfirmedByProvider(
+                Core.Domain.ValueObjects.UserId.From(customerId),
+                provider.Id,
+                service.Id,
+                staffId,
+                startTime,
+                service.Duration,
+                service.BasePrice,
+                service.BookingPolicy ?? BookingPolicy.Default,
+                "reminder wiring")
+            : Booking.CreateBookingRequest(
+                Core.Domain.ValueObjects.UserId.From(customerId),
+                provider.Id,
+                service.Id,
+                staffId,
+                startTime,
+                service.Duration,
+                service.BasePrice,
+                service.BookingPolicy ?? BookingPolicy.Default,
+                "reminder wiring");
 
         DbContext.Bookings.Add(booking);
         await DbContext.SaveChangesAsync();
 
-        using (var scope = Factory.Services.CreateScope())
+        if (scheduleReminders)
         {
+            using var scope = Factory.Services.CreateScope();
             var context = scope.ServiceProvider.GetRequiredService<ServiceCatalogDbContext>();
             var reminders = scope.ServiceProvider.GetRequiredService<IBookingReminderScheduler>();
             await reminders.ScheduleAsync(booking);
             await context.SaveChangesAsync();
         }
 
-        return (customerId, booking);
+        return (customerId, booking, provider);
     }
 
     private async Task<List<string>> ReminderStatesAsync(Guid bookingId)

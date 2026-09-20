@@ -111,13 +111,15 @@ test-first.
 - [x] 10.1 `DeviceTokenRegistryTests` (integration, real Postgres): register, re-register refreshes rather
       than duplicating, a re-used handset moves to its new owner, revoke is scoped to the caller, a
       gateway-retired token stops being used. **This code is committed with zero tests** — worst gap.
-- [ ] 10.2 `DeviceTokensController` scoping: register/revoke act only on the caller's own devices.
-- [~] 10.3 Reminder wiring THROUGH the real commands. CANCEL is now covered (3 tests via the API,
-      including that withdrawal is scoped by subject so one cancellation cannot silence another booking).
-      Complete, no-show and reschedule call sites are still unproven — same pattern, still to write.
+- [x] 10.2 `DeviceTokensController` scoping: register/revoke act only on the caller's own devices.
+- [x] 10.3 Reminder wiring THROUGH the real commands: cancel, complete and no-show all covered via the
+      API (5 tests), including that withdrawal is scoped by subject so one cancellation cannot silence
+      another booking's reminders. Reschedule is exercised by the existing RescheduleResourceResolution
+      tests but has no reminder-specific assertion yet — noted in 10.7.
 - [x] 10.4 Dispatcher treats a no-device / not-configured push as a SKIP, not a failure — an explicit spec
       claim with no test today.
 - [ ] 10.5 Delivery log records a rejected send as failed and an accepted one as delivered.
+- [ ] 10.7 Reschedule: assert reminders move to the new booking (the handler does it; no test asserts it).
 - [ ] 10.6 End-to-end: a real API booking through confirm → outbox → sweep → notification → delivery.
 
 ## 9. Verification
@@ -300,3 +302,13 @@ test-first.
   reminder tests called the scheduler directly and proved nothing about the five handlers I changed.
   Still open: 10.2 (controller scoping), the rest of 10.3, 10.5, 10.6.
 - 2026-09-20 verify FAST PASS (10 steps, 85s; 1045 unit tests).
+- 2026-09-20 (cont.) 10.2 `DeviceTokensControllerTests` — 6 tests. Identity comes from the token, never the
+  request: registering cannot attach a device to another account, revoke cannot silence another person's
+  phone, and revoke answers 204 either way so it cannot be used to discover whether a token exists.
+  10.3 finished. Complete and no-show needed real thought about booking state rather than a copied fixture:
+  `Confirm()` demands two hours' notice, `Complete()` demands the start be within fifteen minutes, and
+  `MarkAsNoShow()` demands the appointment be over — no single fixture satisfies them. Complete/no-show
+  therefore use `CreateConfirmedByProvider` (the salon path, which is confirmed on creation) at +5min and
+  -3h respectively, with the pending reminder seeded directly, because by then every reminder offset has
+  correctly elapsed. The point under test is the handler's withdrawal call, not how the row arrived.
+- 2026-09-20 verify FAST PASS (10 steps, 150s).
