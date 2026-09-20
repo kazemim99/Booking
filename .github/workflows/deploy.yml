@@ -213,6 +213,15 @@ jobs:
       uses: actions/checkout@v4
 
     - name: Set up Docker Buildx
+      id: buildx
+      continue-on-error: true
+      uses: docker/setup-buildx-action@v3
+
+    - name: Set up Docker Buildx (second attempt)
+      # Pulling moby/buildkit from Docker Hub is the flakiest step in this
+      # pipeline: a reset connection there once cost a whole deploy while every
+      # test was green (2026-09-20). One retry costs seconds and covers it.
+      if: steps.buildx.outcome == 'failure'
       uses: docker/setup-buildx-action@v3
 
     - name: Log in to GitHub Container Registry
@@ -267,6 +276,15 @@ jobs:
       run: npm run build
 
     - name: Set up Docker Buildx
+      id: buildx
+      continue-on-error: true
+      uses: docker/setup-buildx-action@v3
+
+    - name: Set up Docker Buildx (second attempt)
+      # Pulling moby/buildkit from Docker Hub is the flakiest step in this
+      # pipeline: a reset connection there once cost a whole deploy while every
+      # test was green (2026-09-20). One retry costs seconds and covers it.
+      if: steps.buildx.outcome == 'failure'
       uses: docker/setup-buildx-action@v3
 
     - name: Log in to GitHub Container Registry
