@@ -15,7 +15,13 @@ class ApiConstants {
   // Alternatives:
   // - Physical Device: Use 'http://192.168.1.x:5000' (replace with your PC's IP)
   // - Production: Use 'http://napstar.ir'
+  /// Build-time override, e.g. a web/release build against the deployed API:
+  ///   flutter build web --dart-define=API_BASE_URL=https://back.nahalkmi.ir
+  /// Empty (the default) keeps the local-development behaviour below untouched.
+  static const String _apiBaseUrlOverride = String.fromEnvironment('API_BASE_URL');
+
   static String get baseUrl {
+    if (_apiBaseUrlOverride.isNotEmpty) return _apiBaseUrlOverride;
     if (kIsWeb) return 'http://localhost:5000';
     if (defaultTargetPlatform == TargetPlatform.android) return 'http://10.0.2.2:5000';
     return 'http://localhost:5000';

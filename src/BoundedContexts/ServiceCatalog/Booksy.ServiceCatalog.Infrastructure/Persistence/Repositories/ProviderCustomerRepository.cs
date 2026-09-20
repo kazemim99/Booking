@@ -43,6 +43,13 @@ namespace Booksy.ServiceCatalog.Infrastructure.Persistence.Repositories
 
         public void Remove(ProviderCustomer customer) => _context.ProviderCustomers.Remove(customer);
 
+        public async Task<IReadOnlyList<Guid>> IdsByPhoneAsync(
+            PhoneNumber phoneNumber, CancellationToken cancellationToken = default) =>
+            await _context.ProviderCustomers.AsNoTracking()
+                .Where(c => c.PhoneNumber == phoneNumber)
+                .Select(c => c.Id)
+                .ToListAsync(cancellationToken);
+
         public async Task<IReadOnlyDictionary<Guid, ProviderCustomerBookingStats>> BookingStatsAsync(
             ProviderId providerId, DateTime nowUtc, CancellationToken cancellationToken = default)
         {

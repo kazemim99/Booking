@@ -20,6 +20,13 @@ namespace Booksy.ServiceCatalog.Domain.Repositories
 
         void Remove(ProviderCustomer customer);
 
+        /// <summary>
+        /// Every salon's entry for this number. Deliberately NOT scoped to one salon: it answers
+        /// "which customer-book entries are this person?", which is how someone sees the
+        /// appointments salons made for their number.
+        /// </summary>
+        Task<IReadOnlyList<Guid>> IdsByPhoneAsync(PhoneNumber phoneNumber, CancellationToken cancellationToken = default);
+
         /// <summary>Per customer: the salon's bookings made for them (cancelled ones not counted).</summary>
         Task<IReadOnlyDictionary<Guid, ProviderCustomerBookingStats>> BookingStatsAsync(
             ProviderId providerId, DateTime nowUtc, CancellationToken cancellationToken = default);

@@ -190,9 +190,18 @@ namespace Booksy.ServiceCatalog.Infrastructure.Persistence.Repositories
             BookingStatus? status = null,
             DateTime? fromDate = null,
             DateTime? toDate = null,
+            IReadOnlyCollection<Guid>? alsoForProviderCustomerIds = null,
             CancellationToken cancellationToken = default)
         {
-            var query = DbSet.Where(b => b.CustomerId == customerId);
+            // Theirs to see: what they booked themselves, plus what a salon booked for their
+            // number (the salon's booking is stored against the salon's owner).
+            var mine = alsoForProviderCustomerIds is { Count: > 0 }
+                ? alsoForProviderCustomerIds.ToList()
+                : null;
+            var query = mine == null
+                ? DbSet.Where(b => b.CustomerId == customerId)
+                : DbSet.Where(b => b.CustomerId == customerId
+                    || (b.ProviderCustomerId != null && mine.Contains(b.ProviderCustomerId.Value)));
 
             if (status.HasValue)
             {

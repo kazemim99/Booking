@@ -4,6 +4,8 @@
 using Booksy.Core.Application.Abstractions.CQRS;
 using Booksy.Core.Application.DTOs;
 using Booksy.Core.Domain.ValueObjects;
+using Booksy.Core.Domain.ValueObjects;
+using Booksy.ServiceCatalog.Application.Abstractions.Identity;
 using Booksy.ServiceCatalog.Domain.Enums;
 using Booksy.ServiceCatalog.Domain.Repositories;
 using Microsoft.Extensions.Logging;
@@ -19,18 +21,47 @@ namespace Booksy.ServiceCatalog.Application.Queries.Booking.GetCustomerBookings
         private readonly IBookingReadRepository _bookingRepository;
         private readonly IProviderReadRepository _providerRepository;
         private readonly IServiceReadRepository _serviceRepository;
+        private readonly IProviderCustomerRepository _providerCustomers;
+        private readonly IPersonDirectory _people;
         private readonly ILogger<GetCustomerBookingsQueryHandler> _logger;
 
         public GetCustomerBookingsQueryHandler(
             IBookingReadRepository bookingRepository,
             IProviderReadRepository providerRepository,
             IServiceReadRepository serviceRepository,
+            IProviderCustomerRepository providerCustomers,
+            IPersonDirectory people,
             ILogger<GetCustomerBookingsQueryHandler> logger)
         {
             _bookingRepository = bookingRepository;
             _providerRepository = providerRepository;
             _serviceRepository = serviceRepository;
+            _providerCustomers = providerCustomers;
+            _people = people;
             _logger = logger;
+        }
+
+        /// <summary>
+        /// The customer-book entries that are this same person: a salon books someone by mobile
+        /// number, before or after they ever open the app, and sign-in proves that number is
+        /// theirs. Empty when we cannot read their number.
+        /// </summary>
+        private async Task<IReadOnlyCollection<Guid>> TheirCustomerBookEntriesAsync(
+            Guid personId, CancellationToken cancellationToken)
+        {
+            var people = await _people.FindByIdsAsync(new[] { personId }, cancellationToken);
+            if (!people.TryGetValue(personId, out var person) || string.IsNullOrWhiteSpace(person.PhoneNumber))
+                return Array.Empty<Guid>();
+
+            try
+            {
+                return await _providerCustomers.IdsByPhoneAsync(
+                    PhoneNumber.From(person.PhoneNumber!), cancellationToken);
+            }
+            catch (ArgumentException)
+            {
+                return Array.Empty<Guid>();
+            }
         }
 
         public async Task<PagedResult<CustomerBookingDto>> Handle(GetCustomerBookingsQuery request, CancellationToken cancellationToken)
@@ -53,13 +84,16 @@ namespace Booksy.ServiceCatalog.Application.Queries.Booking.GetCustomerBookings
                 }
             }
 
-            // Get bookings from repository with pagination and filters
+            // Get bookings from repository with pagination and filters — theirs, and the ones a
+            // salon entered for their number.
+            var theirEntries = await TheirCustomerBookEntriesAsync(request.CustomerId, cancellationToken);
             var pagedResult = await _bookingRepository.GetCustomerBookingHistoryAsync(
                 UserId.From(request.CustomerId.ToString()),
                 request.Pagination,
                 status,
                 request.FromDate,
                 request.ToDate,
+                theirEntries,
                 cancellationToken);
 
             // Map to enriched DTOs with provider, service, and staff details

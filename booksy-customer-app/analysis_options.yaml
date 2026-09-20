@@ -9,6 +9,14 @@
 # packages, and plugins designed to encourage good coding practices.
 include: package:flutter_lints/flutter.yaml
 
+analyzer:
+  exclude:
+    # Retrofit/json_serializable output. We do not edit it, so its warnings
+    # (unused generated parameters) are noise that fails `flutter analyze` — and
+    # with it the CI job that builds this app for customer.nahalkmi.ir.
+    - "**/*.g.dart"
+    - "**/*.freezed.dart"
+
 linter:
   # The lint rules applied to this project can be customized in the
   # section below to disable rules from the `package:flutter_lints/flutter.yaml`

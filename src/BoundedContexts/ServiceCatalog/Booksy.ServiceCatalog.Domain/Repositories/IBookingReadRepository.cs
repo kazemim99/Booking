@@ -113,14 +113,20 @@ namespace Booksy.ServiceCatalog.Domain.Repositories
         Task<int> GetNoShowCountAsync(UserId customerId, CancellationToken cancellationToken = default);
 
         /// <summary>
-        /// Get customer's booking history with pagination
+        /// Get customer's booking history with pagination.
         /// </summary>
+        /// <param name="alsoForProviderCustomerIds">
+        /// The salons' customer-book entries that are this same person, matched by their verified
+        /// mobile. A booking a salon entered is stored against the salon owner, so without these
+        /// the person it was actually made for would never see it.
+        /// </param>
         Task<PagedResult<Booking>> GetCustomerBookingHistoryAsync(
             UserId customerId,
             PaginationRequest pagination,
             BookingStatus? status = null,
             DateTime? fromDate = null,
             DateTime? toDate = null,
+            IReadOnlyCollection<Guid>? alsoForProviderCustomerIds = null,
             CancellationToken cancellationToken = default);
 
         /// <summary>

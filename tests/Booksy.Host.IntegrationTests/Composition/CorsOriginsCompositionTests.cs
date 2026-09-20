@@ -21,6 +21,7 @@ public sealed class CorsOriginsCompositionTests
     [Theory]
     [InlineData("https://back.nahalkmi.ir")]      // Vue web app, same origin as the API
     [InlineData("https://provider.nahalkmi.ir")]  // provider app (Flutter web)
+    [InlineData("https://customer.nahalkmi.ir")]  // customer app (Flutter web)
     [InlineData("https://admin.nahalkmi.ir")]     // admin panel
     public async Task A_deployed_client_origin_may_call_the_api(string origin)
     {

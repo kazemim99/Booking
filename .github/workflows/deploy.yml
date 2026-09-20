@@ -348,6 +348,56 @@ jobs:
         path: booksy-provider-app/build/web
         retention-days: 7
 
+  # Customer app (Flutter web), served by host nginx from /var/www/booksy-customer
+  # on customer.nahalkmi.ir.
+  build-customer-web:
+    name: Build Customer App (web)
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: booksy-customer-app
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Setup Flutter
+      uses: subosito/flutter-action@v2
+      with:
+        # Keep in step with the version the app is developed and verified on.
+        flutter-version: '3.44.2'
+        channel: stable
+        cache: true
+
+    - name: Install dependencies
+      run: flutter pub get
+
+    - name: Analyze
+      run: flutter analyze
+
+    - name: Test
+      run: flutter test
+
+    - name: Build web bundle
+      run: flutter build web --release --dart-define=API_BASE_URL=https://back.nahalkmi.ir
+
+    - name: Verify the production API URL was compiled in
+      # Without the --dart-define the bundle silently points at http://localhost:5000
+      # (lib/core/api/config/api_constants.dart) and every request fails in the browser.
+      run: |
+        grep -q 'back.nahalkmi.ir' build/web/main.dart.js
+        ! grep -q 'localhost:5000' build/web/main.dart.js
+
+    - name: Give the entry file a content-hashed name
+      run: bash tool/cache_bust_web.sh build/web
+
+    - name: Upload web bundle
+      uses: actions/upload-artifact@v4
+      with:
+        name: customer-web
+        path: booksy-customer-app/build/web
+        retention-days: 7
+
   # Admin panel (Vue), served by host nginx from /var/www/booksy-admin on admin.nahalkmi.ir.
   build-admin-web:
     name: Build Admin Panel (web)
@@ -406,6 +456,7 @@ jobs:
       - build-api
       - build-frontend
       - build-provider-web
+      - build-customer-web
       - build-admin-web
     # Two pushes in quick succession must not interleave their compose operations.
     concurrency:
@@ -417,6 +468,7 @@ jobs:
     env:
       DEPLOY_PATH: /opt/booksy
       PROVIDER_WEB_ROOT: /var/www/booksy-provider
+      CUSTOMER_WEB_ROOT: /var/www/booksy-customer
       ADMIN_WEB_ROOT: /var/www/booksy-admin
 
     steps:
@@ -475,6 +527,23 @@ jobs:
         rm -rf "${PROVIDER_WEB_ROOT:?}"/*
         cp -a provider-web/. "$PROVIDER_WEB_ROOT"/
 
+    - name: Download customer web bundle
+      uses: actions/download-artifact@v4
+      with:
+        name: customer-web
+        path: customer-web
+
+    - name: Publish customer app
+      run: |
+        # Same rule as the provider app: verify the new bundle before touching the live copy.
+        test -f customer-web/index.html
+        entry=$(ls customer-web/main.dart.*.js | head -1)
+        test -n "$entry"
+        grep -q "\"mainJsPath\":\"$(basename "$entry")\"" customer-web/flutter_bootstrap.js
+        mkdir -p "${CUSTOMER_WEB_ROOT:?}"
+        rm -rf "${CUSTOMER_WEB_ROOT:?}"/*
+        cp -a customer-web/. "$CUSTOMER_WEB_ROOT"/
+
     - name: Download admin web bundle
       uses: actions/download-artifact@v4
       with:
@@ -503,6 +572,7 @@ jobs:
         }
         check https://back.nahalkmi.ir/health
         check https://provider.nahalkmi.ir/
+        check https://customer.nahalkmi.ir/
         check https://admin.nahalkmi.ir/
 
     - name: Remove dangling images
