@@ -15,6 +15,8 @@ namespace Booksy.ServiceCatalog.Application.Commands.Booking.CompleteBooking
     {
         private readonly IBookingWriteRepository _bookingRepository;
         private readonly IBookingReminderScheduler _reminders;
+        private readonly INotificationRaiser _notifications;
+        private readonly Domain.Repositories.IProviderReadRepository _providers;
         private readonly IServiceCatalogUnitOfWork _unitOfWork;
         private readonly ILogger<CompleteBookingCommandHandler> _logger;
 
@@ -22,12 +24,16 @@ namespace Booksy.ServiceCatalog.Application.Commands.Booking.CompleteBooking
             IBookingWriteRepository bookingRepository,
             IServiceCatalogUnitOfWork unitOfWork,
             ILogger<CompleteBookingCommandHandler> logger,
-            IBookingReminderScheduler reminders)
+            IBookingReminderScheduler reminders,
+            INotificationRaiser notifications,
+            Domain.Repositories.IProviderReadRepository providers)
         {
             _bookingRepository = bookingRepository;
             _unitOfWork = unitOfWork;
             _logger = logger;
             _reminders = reminders;
+            _notifications = notifications;
+            _providers = providers;
         }
 
         public async Task<CompleteBookingResult> Handle(CompleteBookingCommand request, CancellationToken cancellationToken)
@@ -50,6 +56,36 @@ namespace Booksy.ServiceCatalog.Application.Commands.Booking.CompleteBooking
 
             // The appointment is no longer going to happen, so its unsent reminders must not go out.
             await _reminders.WithdrawAsync(booking.Id.Value, cancellationToken);
+
+            // Thank the customer, and ask for a review LATER — asking the moment somebody walks out of the
+            // salon is worse than not asking. The 3-day follow-up is withdrawn the moment a review is
+            // submitted (tasks 7.6), including one still sitting in moderation.
+            var completedProvider = await _providers.GetByIdAsync(booking.ProviderId, cancellationToken);
+            var completionParameters = new Dictionary<string, string>
+            {
+                [NotificationParameter.BusinessName] = completedProvider?.Profile.BusinessName ?? "سالن",
+                [NotificationParameter.StartTime] = booking.TimeSlot.StartTime.ToString("o"),
+            };
+
+            await _notifications.RaiseAsync(
+                Domain.Enums.NotificationEventCode.BookingCompleted,
+                booking.CustomerId.Value,
+                dedupKey: booking.Id.Value,
+                parameters: completionParameters,
+                subjectType: BookingReminderScheduler.BookingSubject,
+                subjectId: booking.Id.Value,
+                cancellationToken: cancellationToken);
+
+            await _notifications.RaiseAsync(
+                Domain.Enums.NotificationEventCode.ReviewRequest,
+                booking.CustomerId.Value,
+                dedupKey: booking.Id.Value,
+                parameters: completionParameters,
+                subjectType: BookingReminderScheduler.BookingSubject,
+                subjectId: booking.Id.Value,
+                scheduledFor: DateTime.UtcNow.AddHours(2),
+                cancellationToken: cancellationToken);
+
 
 
             _logger.LogInformation("Booking {BookingId} completed successfully", booking.Id);

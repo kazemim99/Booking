@@ -2,6 +2,7 @@ using System.Net;
 using Booksy.ServiceCatalog.Application.Services.Notifications;
 using Booksy.ServiceCatalog.IntegrationTests.API.Bookings;
 using Booksy.ServiceCatalog.Domain.Aggregates.BookingAggregate;
+using Booksy.ServiceCatalog.Domain.Enums;
 using Booksy.ServiceCatalog.Domain.Policies;
 using Booksy.ServiceCatalog.Domain.ValueObjects;
 using Booksy.ServiceCatalog.Infrastructure.Persistence.Context;
@@ -207,13 +208,30 @@ public class BookingReminderWiringTests : ServiceCatalogIntegrationTestBase
         return (customerId, booking, provider);
     }
 
+    /// <summary>
+    /// The states of the REMINDER rows for a booking.
+    /// </summary>
+    /// <remarks>
+    /// Filtered by code on purpose. The handlers raise a fresh notification about the cancellation or
+    /// completion itself, filed under the same booking subject, and that row is legitimately Pending — so
+    /// "every row for this booking is Cancelled" would be asserting something false.
+    /// </remarks>
+    private static readonly NotificationEventCode[] ReminderCodes =
+    {
+        NotificationEventCode.BookingReminder24h,
+        NotificationEventCode.BookingReminder2h,
+        NotificationEventCode.NextAppointmentReminder,
+    };
+
     private async Task<List<string>> ReminderStatesAsync(Guid bookingId)
     {
         using var scope = Factory.Services.CreateScope();
         var context = scope.ServiceProvider.GetRequiredService<ServiceCatalogDbContext>();
         return await context.NotificationOutbox
             .AsNoTracking()
-            .Where(e => e.SubjectType == BookingReminderScheduler.BookingSubject && e.SubjectId == bookingId)
+            .Where(e => e.SubjectType == BookingReminderScheduler.BookingSubject
+                        && e.SubjectId == bookingId
+                        && ReminderCodes.Contains(e.EventCode))
             .Select(e => e.State)
             .ToListAsync();
     }

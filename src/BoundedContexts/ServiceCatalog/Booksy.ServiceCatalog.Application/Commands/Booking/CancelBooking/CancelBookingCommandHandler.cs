@@ -11,6 +11,8 @@ namespace Booksy.ServiceCatalog.Application.Commands.Booking.CancelBooking
     {
         private readonly IBookingWriteRepository _bookingRepository;
         private readonly IBookingReminderScheduler _reminders;
+        private readonly INotificationRaiser _notifications;
+        private readonly Domain.Repositories.IProviderReadRepository _providers;
         private readonly IProviderAvailabilityWriteRepository _availabilityWriteRepository;
         private readonly IPaymentGateway _paymentGateway;
         private readonly IServiceCatalogUnitOfWork _unitOfWork;
@@ -22,7 +24,9 @@ namespace Booksy.ServiceCatalog.Application.Commands.Booking.CancelBooking
             IPaymentGateway paymentGateway,
             IServiceCatalogUnitOfWork unitOfWork,
             ILogger<CancelBookingCommandHandler> logger,
-            IBookingReminderScheduler reminders)
+            IBookingReminderScheduler reminders,
+            INotificationRaiser notifications,
+            Domain.Repositories.IProviderReadRepository providers)
         {
             _bookingRepository = bookingRepository;
             _availabilityWriteRepository = availabilityWriteRepository;
@@ -30,6 +34,8 @@ namespace Booksy.ServiceCatalog.Application.Commands.Booking.CancelBooking
             _unitOfWork = unitOfWork;
             _logger = logger;
             _reminders = reminders;
+            _notifications = notifications;
+            _providers = providers;
         }
 
         public async Task<CancelBookingResult> Handle(CancelBookingCommand request, CancellationToken cancellationToken)
@@ -117,6 +123,56 @@ namespace Booksy.ServiceCatalog.Application.Commands.Booking.CancelBooking
 
             // The appointment is off, so its unsent reminders must not go out.
             await _reminders.WithdrawAsync(booking.Id.Value, cancellationToken);
+
+            // Tell the party who did NOT cancel. Whether the salon cancelled is decided from the
+            // authenticated caller, not from a request field a client could set for itself.
+            var cancellingProvider = await _providers.GetByIdAsync(booking.ProviderId, cancellationToken);
+            var salonCancelled = cancellingProvider is not null
+                                 && cancellingProvider.OwnerId.Value == request.ActingUserId;
+
+            var cancelParameters = new Dictionary<string, string>
+            {
+                [NotificationParameter.BusinessName] = cancellingProvider?.Profile.BusinessName ?? "سالن",
+                [NotificationParameter.StartTime] = booking.TimeSlot.StartTime.ToString("o"),
+                [NotificationParameter.Reason] = request.Reason,
+            };
+
+            if (salonCancelled)
+            {
+                await _notifications.RaiseAsync(
+                    Domain.Enums.NotificationEventCode.BookingCancelledByProvider,
+                    booking.CustomerId.Value,
+                    dedupKey: booking.Id.Value,
+                    parameters: cancelParameters,
+                    subjectType: BookingReminderScheduler.BookingSubject,
+                    subjectId: booking.Id.Value,
+                    cancellationToken: cancellationToken);
+            }
+            else
+            {
+                // Their own action, echoed back as a receipt — and the salon, whose day now has a hole.
+                await _notifications.RaiseAsync(
+                    Domain.Enums.NotificationEventCode.BookingCancelledAck,
+                    booking.CustomerId.Value,
+                    dedupKey: booking.Id.Value,
+                    parameters: cancelParameters,
+                    subjectType: BookingReminderScheduler.BookingSubject,
+                    subjectId: booking.Id.Value,
+                    cancellationToken: cancellationToken);
+
+                if (cancellingProvider is not null)
+                {
+                    await _notifications.RaiseAsync(
+                        Domain.Enums.NotificationEventCode.BookingCancelledByCustomer,
+                        cancellingProvider.OwnerId.Value,
+                        dedupKey: booking.Id.Value,
+                        parameters: cancelParameters,
+                        subjectType: BookingReminderScheduler.BookingSubject,
+                        subjectId: booking.Id.Value,
+                        cancellationToken: cancellationToken);
+                }
+            }
+
 
             // Commit transaction and publish events
             await _unitOfWork.CommitAndPublishEventsAsync(cancellationToken);

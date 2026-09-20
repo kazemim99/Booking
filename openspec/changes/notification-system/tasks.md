@@ -81,11 +81,13 @@ the structural work — each is a row's timing, not a shape.
 
 ## 7. Provider and customer coverage
 
-- [~] 7.1 CREATE is done: an online booking raises BookingRequested to the customer and NewBookingRequest
-      to the salon; a salon-entered one raises BookingConfirmed / NewBookingConfirmed and schedules
-      reminders. A walk-in customer is deliberately NOT notified here — the aggregate's customer is the
-      salon owner, and that person is reached by the Persian SMS instead. Still to raise: rescheduled,
-      cancelled (distinguishing the actor), completed, no-show.
+- [x] 7.1 Create, cancel, complete and no-show all raise. An online booking raises BookingRequested to the
+      customer and NewBookingRequest to the salon; a salon-entered one raises BookingConfirmed /
+      NewBookingConfirmed and schedules reminders. A walk-in customer is deliberately NOT notified here —
+      the aggregate's customer is then the salon owner, and that person is reached by the Persian SMS.
+      Cancellation notifies the party who did NOT cancel, and **the actor is inferred from the
+      authenticated caller, not from a request field**: the controller never set `ByProvider` anyway, and a
+      client should not be able to claim it cancelled as the salon. Reschedule still to do (7.7).
 - [ ] 7.2 Raise from the payment/payout handlers: payment taken, payment failed, refund, payout completed,
       payout failed/on-hold.
 - [ ] 7.3 Raise for membership and verification: invitation accepted, join request approved, staff assigned
@@ -101,6 +103,24 @@ the structural work — each is a row's timing, not a shape.
       only if no review was left by then. Two scheduled intents; the 3-day one is withdrawn as soon as a
       review arrives, so it must be filed under a subject the review flow can withdraw by. Never more than
       two in total.
+      **Withdraw on SUBMISSION, not on publication** (booking-d2, 2026-09-21): reviews are
+      admin-moderated, so a review can exist while still invisible. Keying the withdrawal off anything
+      publication-shaped would nag the one group who must never be nagged — people who did leave a review
+      and are waiting on moderation. The hook is
+      `WithdrawPendingForSubjectAsync("Booking", bookingId)` at the moment the review is accepted into the
+      queue.
+      **Consequence: a REJECTED review means the customer is never asked again.** The reminder was
+      withdrawn at submission, and nothing re-raises it. Building it that way, because the alternative is
+      worse: the notification system cannot see WHY a review was rejected, so re-asking would either invite
+      the same refused content back or read as "we ignored you, try again". Flag if you want the opposite.
+      Separate gap, not mine: nobody tells a customer their review was rejected. That belongs to the review
+      flow, not to 7.6, but it is the reason the silence above is tolerable rather than rude.
+      Eligibility is settled on the other side (booking-d2, 2026-09-21): completed-booking-only, one review
+      per booking, written as a requirement rather than an implementation detail — so every review carries a
+      booking id and this subject key cannot drift.
+
+- [ ] 7.7 Reschedule raising: tell the party who did not move it, distinguishing the actor the same way
+      cancellation does.
 
 ## 8. `NotificationType` repair (BREAKING)
 
@@ -342,3 +362,24 @@ test-first.
   through the outbox rather than being sent inline by the request — the design claim, asserted.
   82 notification integration tests pass.
 - 2026-09-20 verify FAST PASS (10 steps, 200s).
+- 2026-09-21 Cross-session constraint from booking-d2 (provider-reviews-and-ratings): reviews are
+  admin-moderated. Recorded on 7.6 — the 3-day reminder must be withdrawn on submission, not publication.
+  Their side raises two notifications I do not: provider on a newly published review, customer on a
+  provider reply. They will come to me before wiring either.
+- 2026-09-21 7.1 finished, test-first. `BookingLifecycleNotificationTests` (7) written RED first; all seven
+  failed, then the handlers were built to satisfy them.
+  The addressing rule they hold: a notification goes to the party who did NOT act. A customer who cancels
+  already knows; it is the salon whose day has a hole. One test asserts no notification is ever addressed
+  to a ProviderId — that bug has already happened once, in the reminder scheduler.
+  DESIGN CALL: the cancelling actor is derived from `ActingUserId == provider.OwnerId`, not from the
+  request's `ByProvider` flag. The controller never populated that flag (it always defaulted false, so the
+  domain has never recorded a provider cancellation), and a client-supplied "I am the salon" is not
+  something to trust for addressing.
+  Review request is raised on completion, SCHEDULED +2h rather than sent immediately — asking as somebody
+  walks out of the salon is worse than not asking.
+  REGRESSION CAUGHT BY THE FULL SUITE: the four `BookingReminderWiringTests` began failing, correctly. The
+  handlers now raise a NEW notification after withdrawing the reminders, filed under the same booking
+  subject and legitimately Pending — so "every row for this booking is Cancelled" was asserting something
+  false. Assertions now name the reminder codes. This is the blunt-instrument property of
+  `WithdrawPendingForSubjectAsync` that I warned booking-d2 about, showing up in my own tests.
+- 2026-09-21 588 integration tests pass; verify FAST PASS (10 steps, 107s).

@@ -18,6 +18,8 @@ namespace Booksy.ServiceCatalog.Application.Commands.Booking.MarkNoShow
     {
         private readonly IBookingWriteRepository _bookingRepository;
         private readonly IBookingReminderScheduler _reminders;
+        private readonly INotificationRaiser _notifications;
+        private readonly Domain.Repositories.IProviderReadRepository _providers;
         private readonly IServiceCatalogUnitOfWork _unitOfWork;
         private readonly ILogger<MarkNoShowCommandHandler> _logger;
 
@@ -25,12 +27,16 @@ namespace Booksy.ServiceCatalog.Application.Commands.Booking.MarkNoShow
             IBookingWriteRepository bookingRepository,
             IServiceCatalogUnitOfWork unitOfWork,
             ILogger<MarkNoShowCommandHandler> logger,
-            IBookingReminderScheduler reminders)
+            IBookingReminderScheduler reminders,
+            INotificationRaiser notifications,
+            Domain.Repositories.IProviderReadRepository providers)
         {
             _bookingRepository = bookingRepository;
             _unitOfWork = unitOfWork;
             _logger = logger;
             _reminders = reminders;
+            _notifications = notifications;
+            _providers = providers;
         }
 
         public async Task<MarkNoShowResult> Handle(MarkNoShowCommand request, CancellationToken cancellationToken)
@@ -53,6 +59,37 @@ namespace Booksy.ServiceCatalog.Application.Commands.Booking.MarkNoShow
 
             // The appointment is no longer going to happen, so its unsent reminders must not go out.
             await _reminders.WithdrawAsync(booking.Id.Value, cancellationToken);
+
+            // Both sides: the customer so the record is not a silent mark against them, and the salon
+            // because it is their loss to act on.
+            var noShowProvider = await _providers.GetByIdAsync(booking.ProviderId, cancellationToken);
+            var noShowParameters = new Dictionary<string, string>
+            {
+                [NotificationParameter.BusinessName] = noShowProvider?.Profile.BusinessName ?? "سالن",
+                [NotificationParameter.StartTime] = booking.TimeSlot.StartTime.ToString("o"),
+            };
+
+            await _notifications.RaiseAsync(
+                Domain.Enums.NotificationEventCode.BookingNoShow,
+                booking.CustomerId.Value,
+                dedupKey: booking.Id.Value,
+                parameters: noShowParameters,
+                subjectType: BookingReminderScheduler.BookingSubject,
+                subjectId: booking.Id.Value,
+                cancellationToken: cancellationToken);
+
+            if (noShowProvider is not null)
+            {
+                await _notifications.RaiseAsync(
+                    Domain.Enums.NotificationEventCode.CustomerNoShow,
+                    noShowProvider.OwnerId.Value,
+                    dedupKey: booking.Id.Value,
+                    parameters: noShowParameters,
+                    subjectType: BookingReminderScheduler.BookingSubject,
+                    subjectId: booking.Id.Value,
+                    cancellationToken: cancellationToken);
+            }
+
 
             // Commit transaction and publish events
             await _unitOfWork.CommitAndPublishEventsAsync(cancellationToken);
