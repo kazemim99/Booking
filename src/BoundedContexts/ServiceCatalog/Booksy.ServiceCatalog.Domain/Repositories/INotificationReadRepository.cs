@@ -1,4 +1,4 @@
-// ========================================
+﻿// ========================================
 // Booksy.ServiceCatalog.Domain/Repositories/INotificationReadRepository.cs
 // ========================================
 using Booksy.Core.Application.Abstractions.Persistence;
@@ -71,5 +71,15 @@ namespace Booksy.ServiceCatalog.Domain.Repositories
         /// Returns notifications with status Queued and ScheduledFor <= UtcNow
         /// </summary>
         Task<List<Notification>> GetScheduledNotificationsDueAsync(CancellationToken cancellationToken = default);
+
+        /// <summary>
+        /// How many of a person's notifications they have not opened — the badge on the app icon.
+        /// </summary>
+        /// <remarks>
+        /// Counts only notifications that actually reached them. A queued or failed notification is not
+        /// "unread": showing a badge for something the person was never shown would send them looking for a
+        /// message that does not exist.
+        /// </remarks>
+        Task<int> GetUnreadCountAsync(UserId recipientId, CancellationToken cancellationToken = default);
     }
 }

@@ -1,4 +1,4 @@
-// ========================================
+﻿// ========================================
 // Booksy.ServiceCatalog.Application/Queries/Notifications/GetDeliveryStatus/GetDeliveryStatusQueryHandler.cs
 // ========================================
 using Booksy.Core.Application.Abstractions.CQRS;
@@ -35,6 +35,17 @@ namespace Booksy.ServiceCatalog.Application.Queries.Notifications.GetDeliverySta
             if (notification == null)
             {
                 _logger.LogWarning("Notification not found: {NotificationId}", request.NotificationId);
+                return null;
+            }
+
+
+            // Not theirs: answered as if it does not exist, so the endpoint cannot be used to discover
+            // which notification ids are real.
+            if (notification.RecipientId.Value != request.RequestedBy)
+            {
+                _logger.LogWarning(
+                    "Delivery status for {NotificationId} refused: not the caller's notification",
+                    request.NotificationId);
                 return null;
             }
 

@@ -1,7 +1,8 @@
-// ========================================
+﻿// ========================================
 // Booksy.ServiceCatalog.Application/Commands/Booking/RescheduleBooking/RescheduleBookingCommandHandler.cs
 // ========================================
 using Booksy.Core.Application.Abstractions.CQRS;
+using Booksy.ServiceCatalog.Application.Services.Notifications;
 using Booksy.Core.Application.Abstractions.Persistence;
 using Booksy.Core.Application.Exceptions;
 using Booksy.ServiceCatalog.Application.Services;
@@ -21,6 +22,7 @@ namespace Booksy.ServiceCatalog.Application.Commands.Booking.RescheduleBooking
     public sealed class RescheduleBookingCommandHandler : ICommandHandler<RescheduleBookingCommand, RescheduleBookingResult>
     {
         private readonly IBookingWriteRepository _bookingWriteRepository;
+        private readonly IBookingReminderScheduler _reminders;
         private readonly IBookingReadRepository _bookingReadRepository;
         private readonly IProviderReadRepository _providerRepository;
         private readonly IBookableResourceResolver _resourceResolver;
@@ -42,7 +44,8 @@ namespace Booksy.ServiceCatalog.Application.Commands.Booking.RescheduleBooking
             IProviderAvailabilityWriteRepository availabilityWriteRepository,
             IAvailabilityService availabilityService,
             IServiceCatalogUnitOfWork unitOfWork,
-            ILogger<RescheduleBookingCommandHandler> logger)
+            ILogger<RescheduleBookingCommandHandler> logger,
+            IBookingReminderScheduler reminders)
         {
             _bookingWriteRepository = bookingWriteRepository;
             _bookingReadRepository = bookingReadRepository;
@@ -52,6 +55,7 @@ namespace Booksy.ServiceCatalog.Application.Commands.Booking.RescheduleBooking
             _availabilityWriteRepository = availabilityWriteRepository;
             _availabilityService = availabilityService;
             _unitOfWork = unitOfWork;
+            _reminders = reminders;
             _logger = logger;
         }
 
@@ -138,6 +142,12 @@ namespace Booksy.ServiceCatalog.Application.Commands.Booking.RescheduleBooking
 
             // Save new booking
             await _bookingWriteRepository.SaveBookingAsync(newBooking, cancellationToken);
+
+            // Rescheduling closes the old booking and opens a new one, so the reminders move with it.
+            // Leaving the old ones would tell the customer to turn up at an hour that is no longer
+            // their appointment.
+            await _reminders.WithdrawAsync(existingBooking.Id.Value, cancellationToken);
+            await _reminders.ScheduleAsync(newBooking, cancellationToken);
 
             // ========================================
             // ATOMIC AVAILABILITY SLOT MANAGEMENT

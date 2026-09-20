@@ -1,8 +1,23 @@
-// ========================================
+﻿// ========================================
 // Booksy.ServiceCatalog.Application/Services/Notifications/IPushNotificationService.cs
 // ========================================
 namespace Booksy.ServiceCatalog.Application.Services.Notifications
 {
+    /// <summary>
+    /// The reasons a push cannot be delivered that are NOT delivery failures.
+    /// </summary>
+    /// <remarks>
+    /// A recipient with no device, or an environment with no push credentials, will not improve by being
+    /// retried. The dispatcher treats these as skips so they do not consume a notification's retry budget and
+    /// eventually dead-letter it while its other channels were working. They live on the contract so the
+    /// sender and the dispatcher cannot drift apart on the exact wording.
+    /// </remarks>
+    public static class PushUnavailable
+    {
+        public const string NotConfigured = "Push is not configured on this environment";
+        public const string NoDevice = "The recipient has no registered device";
+    }
+
     /// <summary>
     /// Service for sending push notifications (FCM/APNS)
     /// </summary>

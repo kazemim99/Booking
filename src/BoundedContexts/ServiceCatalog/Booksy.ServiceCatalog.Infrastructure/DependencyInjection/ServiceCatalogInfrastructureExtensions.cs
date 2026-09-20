@@ -296,6 +296,30 @@ namespace Booksy.ServiceCatalog.Infrastructure.DependencyInjection
             });
             services.AddScoped<INotificationDeliveryLog, Persistence.Notifications.NotificationDeliveryLog>();
             services.AddScoped<INotificationDispatcher, NotificationDispatcher>();
+
+            // The outbox: business code records an intent (INotificationRaiser) on its own unit of work, and
+            // the sweep turns claimed rows into notifications for the dispatcher above. See FOLLOW-UPS #66
+            // for why this does not go through domain event handlers.
+            services.AddScoped<Persistence.Notifications.INotificationOutboxStore,
+                Persistence.Notifications.NotificationOutboxStore>();
+            services.AddScoped<Booksy.ServiceCatalog.Application.Services.Notifications.INotificationRaiser,
+                Notifications.NotificationRaiser>();
+            services.AddSingleton<Booksy.ServiceCatalog.Application.Services.Notifications.INotificationCopyWriter,
+                Booksy.ServiceCatalog.Application.Services.Notifications.PersianNotificationCopyWriter>();
+            services.AddScoped<BackgroundJobs.ProcessNotificationOutboxJob>();
+            services.AddHostedService<BackgroundJobs.NotificationOutboxService>();
+
+            // Push: the registry is the address book, the gateway is the boundary with Firebase. The gateway
+            // is a singleton because FirebaseApp is process-wide and refuses to be created twice.
+            services.AddScoped<Persistence.Notifications.IDeviceTokenRegistry,
+                Persistence.Notifications.DeviceTokenRegistry>();
+            services.AddSingleton<Notifications.Push.IFirebaseMessagingGateway,
+                Notifications.Push.FirebaseMessagingGateway>();
+
+            // Recomputes a notification's tap target when the inbox is read, so history stays immutable
+            // while links never go stale.
+            services.AddScoped<Booksy.ServiceCatalog.Application.Services.Notifications.INotificationDestinationResolver,
+                Notifications.NotificationDestinationResolver>();
             services.AddTransient<EventHandlers.NotificationRetrySubscriber>();
 
             // HTTP Clients for notification services

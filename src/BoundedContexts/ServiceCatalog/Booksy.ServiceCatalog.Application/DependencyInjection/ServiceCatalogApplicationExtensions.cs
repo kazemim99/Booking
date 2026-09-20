@@ -37,6 +37,11 @@ namespace Booksy.ServiceCatalog.Application.DependencyInjection
                 IResourceOwnershipResolver<Commands.Provider.UpdateBookingPreferences.UpdateBookingPreferencesCommand>,
                 ProviderOwnershipResolver<Commands.Provider.UpdateBookingPreferences.UpdateBookingPreferencesCommand>>();
 
+            // Reminders ride the notification outbox, so they commit with the booking change that
+            // caused them. Registered here rather than in AddNotificationBackgroundServices, which
+            // nothing calls — see the note on that method.
+            services.AddScoped<Services.Notifications.IBookingReminderScheduler, Services.Notifications.BookingReminderScheduler>();
+
             // Register domain event handlers explicitly (NO MediatR!)
             RegisterDomainEventHandlers(services, assembly);
 
@@ -48,6 +53,12 @@ namespace Booksy.ServiceCatalog.Application.DependencyInjection
 
         /// <summary>
         /// Adds background services for notification processing
+        /// </summary>
+        /// <summary>
+        /// <b>Never called.</b> Nothing in the host invokes this, so the three hosted services below
+        /// have never run — which is also why <c>ProcessScheduledNotificationsJob</c> has no caller.
+        /// Left as-is rather than wired up blind: turning on three background services that have
+        /// never executed is its own change, with its own testing. FOLLOW-UPS has the detail.
         /// </summary>
         public static IServiceCollection AddNotificationBackgroundServices(this IServiceCollection services)
         {

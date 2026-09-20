@@ -1,4 +1,4 @@
-<#
+﻿<#
 .SYNOPSIS
   The checkable definition of done. Runs the verification tier and records the result.
 
@@ -202,6 +202,7 @@ $unitProjects = @(
     'tests/Booksy.ServiceCatalog.Domain.UnitTests',
     'tests/Booksy.ServiceCatalog.Application.UnitTests',
     'tests/Booksy.ServiceCatalog.Api.UnitTests',
+    'tests/Booksy.ServiceCatalog.Infrastructure.UnitTests',
     'tests/Booksy.Infrastructure.External.UnitTests',
     'tests/Booksy.UserManagement.Application.UnitTests',
     'tests/Booksy.ArchitectureTests'

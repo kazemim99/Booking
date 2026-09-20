@@ -1,4 +1,5 @@
-using Booksy.Core.Application.Abstractions.CQRS;
+﻿using Booksy.Core.Application.Abstractions.CQRS;
+using Booksy.ServiceCatalog.Application.Services.Notifications;
 using Booksy.Core.Application.Abstractions.Persistence;
 using Booksy.Core.Application.Exceptions;
 using Booksy.ServiceCatalog.Domain.Repositories;
@@ -9,6 +10,7 @@ namespace Booksy.ServiceCatalog.Application.Commands.Booking.CancelBooking
     public sealed class CancelBookingCommandHandler : ICommandHandler<CancelBookingCommand, CancelBookingResult>
     {
         private readonly IBookingWriteRepository _bookingRepository;
+        private readonly IBookingReminderScheduler _reminders;
         private readonly IProviderAvailabilityWriteRepository _availabilityWriteRepository;
         private readonly IPaymentGateway _paymentGateway;
         private readonly IServiceCatalogUnitOfWork _unitOfWork;
@@ -19,13 +21,15 @@ namespace Booksy.ServiceCatalog.Application.Commands.Booking.CancelBooking
             IProviderAvailabilityWriteRepository availabilityWriteRepository,
             IPaymentGateway paymentGateway,
             IServiceCatalogUnitOfWork unitOfWork,
-            ILogger<CancelBookingCommandHandler> logger)
+            ILogger<CancelBookingCommandHandler> logger,
+            IBookingReminderScheduler reminders)
         {
             _bookingRepository = bookingRepository;
             _availabilityWriteRepository = availabilityWriteRepository;
             _paymentGateway = paymentGateway;
             _unitOfWork = unitOfWork;
             _logger = logger;
+            _reminders = reminders;
         }
 
         public async Task<CancelBookingResult> Handle(CancelBookingCommand request, CancellationToken cancellationToken)
@@ -110,6 +114,9 @@ namespace Booksy.ServiceCatalog.Application.Commands.Booking.CancelBooking
 
             // Update booking
             await _bookingRepository.UpdateBookingAsync(booking, cancellationToken);
+
+            // The appointment is off, so its unsent reminders must not go out.
+            await _reminders.WithdrawAsync(booking.Id.Value, cancellationToken);
 
             // Commit transaction and publish events
             await _unitOfWork.CommitAndPublishEventsAsync(cancellationToken);

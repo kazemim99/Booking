@@ -47,6 +47,10 @@ namespace Booksy.ServiceCatalog.Infrastructure.Persistence.Context
         public DbSet<Booksy.ServiceCatalog.Infrastructure.Persistence.Notifications.NotificationDelivery> NotificationDeliveries
             => Set<Booksy.ServiceCatalog.Infrastructure.Persistence.Notifications.NotificationDelivery>();
         public DbSet<NotificationTemplate> NotificationTemplates => Set<NotificationTemplate>();
+        public DbSet<Booksy.ServiceCatalog.Infrastructure.Persistence.Notifications.NotificationOutboxEntry> NotificationOutbox
+            => Set<Booksy.ServiceCatalog.Infrastructure.Persistence.Notifications.NotificationOutboxEntry>();
+        public DbSet<Booksy.ServiceCatalog.Infrastructure.Persistence.Notifications.DeviceToken> DeviceTokens
+            => Set<Booksy.ServiceCatalog.Infrastructure.Persistence.Notifications.DeviceToken>();
         public DbSet<UserNotificationPreferences> UserNotificationPreferences => Set<UserNotificationPreferences>();
         public DbSet<ProviderAvailability> ProviderAvailability => Set<ProviderAvailability>();
         public DbSet<Review> Reviews => Set<Review>();

@@ -1,4 +1,4 @@
-// ========================================
+﻿// ========================================
 // Booksy.ServiceCatalog.Infrastructure/Persistence/Configurations/NotificationConfiguration.cs
 // ========================================
 using Booksy.ServiceCatalog.Domain.Aggregates.NotificationAggregate;
@@ -23,6 +23,12 @@ namespace Booksy.ServiceCatalog.Infrastructure.Persistence.Configurations
             builder.HasKey(n => n.Id);
 
             // Configure ID
+            // Stored by name: a notification row outlives deployments, and an ordinal would silently change
+            // meaning if the enum were ever reordered.
+            builder.Property(n => n.EventCode)
+                .HasConversion<string>()
+                .HasMaxLength(64);
+
             builder.Property(n => n.Id)
                 .HasConversion(
                     id => id.Value,

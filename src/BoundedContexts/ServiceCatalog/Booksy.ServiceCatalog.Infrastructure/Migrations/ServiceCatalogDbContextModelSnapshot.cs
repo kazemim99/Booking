@@ -450,6 +450,10 @@ namespace Booksy.ServiceCatalog.Infrastructure.Migrations
                         .HasMaxLength(1000)
                         .HasColumnType("character varying(1000)");
 
+                    b.Property<string>("EventCode")
+                        .HasMaxLength(64)
+                        .HasColumnType("character varying(64)");
+
                     b.Property<DateTime?>("ExpiresAt")
                         .HasColumnType("timestamp with time zone");
 
@@ -1915,6 +1919,45 @@ namespace Booksy.ServiceCatalog.Infrastructure.Migrations
                     b.ToTable("IdempotencyReservations", "ServiceCatalog");
                 });
 
+            modelBuilder.Entity("Booksy.ServiceCatalog.Infrastructure.Persistence.Notifications.DeviceToken", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime>("LastSeenAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("Platform")
+                        .IsRequired()
+                        .HasMaxLength(16)
+                        .HasColumnType("character varying(16)");
+
+                    b.Property<DateTime>("RegisteredAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<DateTime?>("RevokedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("Token")
+                        .IsRequired()
+                        .HasMaxLength(512)
+                        .HasColumnType("character varying(512)");
+
+                    b.Property<Guid>("UserId")
+                        .HasColumnType("uuid");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("Token")
+                        .IsUnique()
+                        .HasDatabaseName("UX_DeviceTokens_Token");
+
+                    b.HasIndex("UserId", "RevokedAt")
+                        .HasDatabaseName("IX_DeviceTokens_User");
+
+                    b.ToTable("DeviceTokens", "ServiceCatalog");
+                });
+
             modelBuilder.Entity("Booksy.ServiceCatalog.Infrastructure.Persistence.Notifications.NotificationDelivery", b =>
                 {
                     b.Property<Guid>("EventId")
@@ -1962,6 +2005,73 @@ namespace Booksy.ServiceCatalog.Infrastructure.Migrations
                         .HasDatabaseName("IX_NotificationDeliveries_NotificationId");
 
                     b.ToTable("NotificationDeliveries", "ServiceCatalog");
+                });
+
+            modelBuilder.Entity("Booksy.ServiceCatalog.Infrastructure.Persistence.Notifications.NotificationOutboxEntry", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .HasColumnType("uuid");
+
+                    b.Property<int>("AttemptCount")
+                        .HasColumnType("integer");
+
+                    b.Property<DateTime?>("ClaimedUntil")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<Guid>("DedupKey")
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("EventCode")
+                        .IsRequired()
+                        .HasMaxLength(64)
+                        .HasColumnType("character varying(64)");
+
+                    b.Property<string>("LastError")
+                        .HasMaxLength(2000)
+                        .HasColumnType("character varying(2000)");
+
+                    b.Property<string>("ParametersJson")
+                        .IsRequired()
+                        .HasColumnType("jsonb");
+
+                    b.Property<Guid>("RecipientId")
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime?>("ScheduledFor")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("State")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("character varying(20)");
+
+                    b.Property<Guid?>("SubjectId")
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("SubjectType")
+                        .HasMaxLength(64)
+                        .HasColumnType("character varying(64)");
+
+                    b.Property<DateTime>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("State", "ScheduledFor")
+                        .HasDatabaseName("IX_NotificationOutbox_Due")
+                        .HasFilter("\"State\" IN ('Pending', 'Claimed')");
+
+                    b.HasIndex("SubjectType", "SubjectId")
+                        .HasDatabaseName("IX_NotificationOutbox_Subject");
+
+                    b.HasIndex("DedupKey", "EventCode", "RecipientId")
+                        .IsUnique()
+                        .HasDatabaseName("UX_NotificationOutbox_Dedup");
+
+                    b.ToTable("NotificationOutbox", "ServiceCatalog");
                 });
 
             modelBuilder.Entity("Booksy.Core.Domain.Domain.Entities.ProvinceCities", b =>

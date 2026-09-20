@@ -1,4 +1,4 @@
-// ========================================
+﻿// ========================================
 // Booksy.ServiceCatalog.Domain/Aggregates/NotificationAggregate/Notification.cs
 // ========================================
 using Booksy.Core.Domain.Base;
@@ -69,6 +69,23 @@ namespace Booksy.ServiceCatalog.Domain.Aggregates.NotificationAggregate
         /// <see cref="DedupKey"/>'s notification-id scope.
         /// </remarks>
         public Guid? SourceEventId { get; private set; }
+
+        /// <summary>
+        /// Which notification this is, in the catalogue's terms.
+        /// </summary>
+        /// <remarks>
+        /// <para>Set for anything raised through the notification outbox. It is what lets the send path ask
+        /// the catalogue whether the recipient is allowed to suppress this — <see cref="Type"/> is too coarse
+        /// for that, since one type covers several notifications with different answers (a cancellation by
+        /// the salon and the customer's own cancellation receipt share a type but not a criticality).</para>
+        ///
+        /// <para>It is also what a client selects its presentation from, so the app never has to pattern-match
+        /// translated copy to decide what a notification looks like.</para>
+        ///
+        /// <para>Null for notifications created before the catalogue existed, or raised directly through the
+        /// API. Those keep the older, type-based behaviour.</para>
+        /// </remarks>
+        public NotificationEventCode? EventCode { get; private set; }
 
         /// <summary>
         /// The de-duplication scope for this notification: the originating event when known, otherwise the
@@ -254,6 +271,17 @@ namespace Booksy.ServiceCatalog.Domain.Aggregates.NotificationAggregate
             SourceEventId = sourceEventId;
         }
 
+        /// <summary>
+        /// Records which catalogued notification this is.
+        /// </summary>
+        public void SetEventCode(NotificationEventCode code)
+        {
+            if (code == NotificationEventCode.None)
+                throw new ArgumentException("A notification must name which notification it is.", nameof(code));
+
+            EventCode = code;
+        }
+
         public void SetCampaign(string? campaignId, string? batchId)
         {
             CampaignId = campaignId;
@@ -339,9 +367,24 @@ namespace Booksy.ServiceCatalog.Domain.Aggregates.NotificationAggregate
                 DeliveredAt.Value));
         }
 
+        /// <summary>
+        /// Records that the recipient opened this notification.
+        /// </summary>
+        /// <remarks>
+        /// <para>Accepts <see cref="NotificationStatus.Sent"/> as well as Delivered. Reading is something the
+        /// recipient did; it is not a claim about what a gateway reported. An in-app notification sits at Sent
+        /// — no gateway ever confirms it — so requiring Delivered made the inbox unable to mark its own rows
+        /// read, which is the state most inbox rows are in.</para>
+        ///
+        /// <para>Still refused from states where the notification never reached anybody (queued, failed,
+        /// cancelled, expired, dead-lettered): marking one of those read would assert something untrue.</para>
+        ///
+        /// <para>Idempotent — <see cref="ReadAt"/> keeps the first time it was opened, while
+        /// <see cref="OpenCount"/> counts every open.</para>
+        /// </remarks>
         public void MarkAsRead(string? openedFrom = null)
         {
-            if (Status != NotificationStatus.Delivered && Status != NotificationStatus.Read)
+            if (Status is not (NotificationStatus.Sent or NotificationStatus.Delivered or NotificationStatus.Read))
             {
                 throw new InvalidOperationException($"Cannot mark notification as read from {Status} status");
             }

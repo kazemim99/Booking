@@ -1,4 +1,4 @@
-// ========================================
+﻿// ========================================
 // Booksy.ServiceCatalog.Application/Commands/Notifications/SendNotification/SendNotificationCommand.cs
 // ========================================
 using Booksy.Core.Application.Abstractions.CQRS;
@@ -26,5 +26,11 @@ namespace Booksy.ServiceCatalog.Application.Commands.Notifications.SendNotificat
         Guid? PaymentId = null,
         Guid? ProviderId = null,
         Dictionary<string, string>? Metadata = null,
-        Guid? IdempotencyKey = null) : ICommand<SendNotificationResult>;
+        Guid? IdempotencyKey = null,
+
+        /// <summary>
+        /// Which catalogued notification this is. Set by the outbox sweep; null for direct API sends, which
+        /// keep the older type-based suppression behaviour.
+        /// </summary>
+        NotificationEventCode? EventCode = null) : ICommand<SendNotificationResult>;
 }

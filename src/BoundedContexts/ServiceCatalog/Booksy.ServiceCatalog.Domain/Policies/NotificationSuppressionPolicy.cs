@@ -1,4 +1,4 @@
-// ========================================
+﻿// ========================================
 // Booksy.ServiceCatalog.Domain/Policies/NotificationSuppressionPolicy.cs
 // ========================================
 using Booksy.ServiceCatalog.Domain.Aggregates.UserNotificationPreferencesAggregate;
@@ -66,8 +66,22 @@ namespace Booksy.ServiceCatalog.Domain.Policies
         public static bool ShouldSend(
             UserNotificationPreferences? preferences,
             NotificationChannel channel,
-            NotificationType type)
+            NotificationType type,
+            NotificationEventCode? eventCode = null)
         {
+            // The catalogue is the authority when the notification came through the outbox and therefore
+            // knows which notification it is. NotificationType is too coarse to answer this on its own: one
+            // type covers several notifications whose criticality differs — a cancellation by the salon and
+            // the customer's own cancellation receipt share a type, and only one of them is unsuppressable.
+            if (eventCode is { } code && code != NotificationEventCode.None
+                && NotificationEventCatalog.TryDescribe(code, out var descriptor))
+            {
+                if (!descriptor!.IsSuppressible)
+                    return true;
+
+                return preferences is null || preferences.Preferences.IsChannelEnabled(channel);
+            }
+
             if (!IsSuppressible(type))
                 return true;
 

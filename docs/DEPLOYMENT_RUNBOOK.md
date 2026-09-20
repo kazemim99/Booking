@@ -141,6 +141,19 @@ references `main.dart.js` through a bootstrap that still works but caches nothin
   `curl -s -o /dev/null -w '%{http_code}' -A 'BooksyProvider/1.0' 'https://nominatim.openstreetmap.org/search?q=tehran&format=jsonv2&limit=1'`.
   A 503 from our endpoint means the upstream failed; the app then keeps whatever the user typed.
 - **tile.openstreetmap.org** — map tiles, fetched by the browser directly (no server involvement).
+- **Firebase Cloud Messaging** (`fcm.googleapis.com`) — push notifications, sent by the server. Configured
+  by `Notifications:Firebase:CredentialsPath` (a mounted service-account JSON) **or**
+  `Notifications:Firebase:CredentialsJson` (its contents, for a secret env var); the JSON form wins if both
+  are set. **Both blank is a supported state:** the host starts, logs
+  `Firebase is not configured; push notifications will be skipped`, and every push is recorded as *skipped*.
+  It is never recorded as delivered — that distinction matters, because this service previously returned a
+  fabricated success and the delivery log claimed messages that were never sent. A misconfigured credential
+  degrades the same way rather than failing startup.
+  To check which state a running host is in: `docker logs booksy-api 2>&1 | grep -i firebase`. Expect either
+  `Firebase messaging initialised` or the "not configured" warning.
+  Note that push also needs registered devices — `POST /api/v1/DeviceTokens` from the apps. With no
+  registered device a push is skipped with "The recipient has no registered device", which is not a failure
+  and does not consume the notification's retry budget.
 
 ### Gotchas learned the hard way
 

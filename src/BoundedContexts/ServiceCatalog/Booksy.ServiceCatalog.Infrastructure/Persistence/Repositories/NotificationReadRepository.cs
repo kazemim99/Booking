@@ -1,4 +1,4 @@
-// ========================================
+﻿// ========================================
 // Booksy.ServiceCatalog.Infrastructure/Persistence/Repositories/NotificationReadRepository.cs
 // ========================================
 using Booksy.Core.Domain.ValueObjects;
@@ -180,6 +180,22 @@ namespace Booksy.ServiceCatalog.Infrastructure.Persistence.Repositories
                 .OrderBy(n => n.ScheduledFor)
                 .Take(100) // Process max 100 notifications per run
                 .ToListAsync(cancellationToken);
+        }
+
+        public async Task<int> GetUnreadCountAsync(
+            UserId recipientId,
+            CancellationToken cancellationToken = default)
+        {
+            // Sent and Delivered only. A Queued notification has not been shown to anyone yet and a Failed
+            // one never will be, so counting either would put a badge on the app for a message the person
+            // cannot find.
+            return await DbSet
+                .AsNoTracking()
+                .CountAsync(
+                    n => n.RecipientId == recipientId
+                         && n.ReadAt == null
+                         && (n.Status == NotificationStatus.Sent || n.Status == NotificationStatus.Delivered),
+                    cancellationToken);
         }
     }
 }

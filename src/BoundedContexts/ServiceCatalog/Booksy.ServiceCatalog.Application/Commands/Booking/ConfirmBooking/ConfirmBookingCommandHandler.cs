@@ -1,7 +1,8 @@
-// ========================================
+﻿// ========================================
 // Booksy.ServiceCatalog.Application/Commands/Booking/ConfirmBooking/ConfirmBookingCommandHandler.cs
 // ========================================
 using Booksy.Core.Application.Abstractions.CQRS;
+using Booksy.ServiceCatalog.Application.Services.Notifications;
 using Booksy.Core.Application.Abstractions.Persistence;
 using Booksy.Core.Application.Exceptions;
 using Booksy.ServiceCatalog.Domain.Repositories;
@@ -13,17 +14,20 @@ namespace Booksy.ServiceCatalog.Application.Commands.Booking.ConfirmBooking
     public sealed class ConfirmBookingCommandHandler : ICommandHandler<ConfirmBookingCommand, ConfirmBookingResult>
     {
         private readonly IBookingWriteRepository _bookingRepository;
+        private readonly IBookingReminderScheduler _reminders;
         private readonly IServiceCatalogUnitOfWork _unitOfWork;
         private readonly ILogger<ConfirmBookingCommandHandler> _logger;
 
         public ConfirmBookingCommandHandler(
             IBookingWriteRepository bookingRepository,
             IServiceCatalogUnitOfWork unitOfWork,
-            ILogger<ConfirmBookingCommandHandler> logger)
+            ILogger<ConfirmBookingCommandHandler> logger,
+            IBookingReminderScheduler reminders)
         {
             _bookingRepository = bookingRepository;
             _unitOfWork = unitOfWork;
             _logger = logger;
+            _reminders = reminders;
         }
 
         public async Task<ConfirmBookingResult> Handle(ConfirmBookingCommand request, CancellationToken cancellationToken)
@@ -49,6 +53,10 @@ namespace Booksy.ServiceCatalog.Application.Commands.Booking.ConfirmBooking
 
             // Update booking
             await _bookingRepository.UpdateBookingAsync(booking, cancellationToken);
+
+            // The appointment is now real, so its reminders are scheduled. Raised on this unit of
+            // work, so they commit with the confirmation or not at all.
+            await _reminders.ScheduleAsync(booking, cancellationToken);
 
 
             _logger.LogInformation("Booking {BookingId} confirmed successfully", booking.Id);

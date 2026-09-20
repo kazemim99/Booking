@@ -108,6 +108,7 @@ NOBUILD=(); [ $SKIP_BUILD -eq 0 ] && NOBUILD=(--no-build)
 for p in tests/Booksy.Core.Domain.UnitTests tests/Booksy.Infrastructure.Core.UnitTests \
          tests/Booksy.ServiceCatalog.Domain.UnitTests tests/Booksy.ServiceCatalog.Application.UnitTests \
          tests/Booksy.ServiceCatalog.Api.UnitTests tests/Booksy.Infrastructure.External.UnitTests \
+         tests/Booksy.ServiceCatalog.Infrastructure.UnitTests \
          tests/Booksy.UserManagement.Application.UnitTests \
          tests/Booksy.ArchitectureTests; do
   step "unit:$(basename "$p")" "$ROOT" dotnet test "$p" ${NOBUILD[@]+"${NOBUILD[@]}"} --nologo -v q

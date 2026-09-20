@@ -122,7 +122,7 @@ namespace Booksy.ServiceCatalog.Application.Services.Notifications
                 }
 
                 if (_reliableDispatch &&
-                    !NotificationSuppressionPolicy.ShouldSend(preferences, channel, notification.Type))
+                    !NotificationSuppressionPolicy.ShouldSend(preferences, channel, notification.Type, notification.EventCode))
                 {
                     _logger.LogInformation(
                         "Notification {NotificationId} ({Type}) suppressed on {Channel} by recipient {RecipientId}'s preferences",
@@ -174,6 +174,19 @@ namespace Booksy.ServiceCatalog.Application.Services.Notifications
                 {
                     await _deliveryLog.RecordOutcomeAsync(
                         notification.DedupKey, channel, recipient, success, messageId, error, cancellationToken);
+                }
+
+                if (!success && IsUnreachable(error))
+                {
+                    // Not a delivery failure: the recipient has no device, or this environment has no push
+                    // credentials. Neither improves by trying again, and counting them as failures would
+                    // burn the retry budget and eventually dead-letter a notification whose other channels
+                    // were fine.
+                    skipped++;
+                    _logger.LogInformation(
+                        "Notification {NotificationId}: {Channel} unavailable ({Error}); skipping",
+                        notification.Id.Value, channel, error);
+                    continue;
                 }
 
                 if (success)
@@ -291,6 +304,19 @@ namespace Booksy.ServiceCatalog.Application.Services.Notifications
         };
 
         private static string? Blank(string? value) => string.IsNullOrWhiteSpace(value) ? null : value;
+
+        /// <summary>
+        /// Whether a failure means "there is nothing to deliver to" rather than "delivery went wrong".
+        /// </summary>
+        /// <remarks>
+        /// Matched on the sentinel strings the push service returns rather than on an exception type, because
+        /// the channel services report outcomes as tuples. Keep these two in step with
+        /// <c>FirebasePushNotificationService</c>.
+        /// </remarks>
+        private static bool IsUnreachable(string? error) =>
+            error is not null
+            && (error.Equals(PushUnavailable.NoDevice, StringComparison.Ordinal)
+                || error.Equals(PushUnavailable.NotConfigured, StringComparison.Ordinal));
 
         private static bool IsTerminal(NotificationStatus status) =>
             status is NotificationStatus.Delivered

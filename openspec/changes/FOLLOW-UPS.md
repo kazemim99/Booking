@@ -118,6 +118,27 @@ The generated `*.g.dart` files are therefore tracked in git (2026-09-20) so CI c
 and deploy. Upgrade retrofit_generator (or pin an SDK it supports) and then decide whether to go
 back to generating them in CI.
 
+## #67 The notification background services are registered in a method nobody calls
+
+`ServiceCatalogApplicationExtensions.AddNotificationBackgroundServices` registers
+`NotificationProcessorService`, `ScheduledNotificationService` and `NotificationCleanupService` as hosted
+services — and nothing in the host ever calls that method (grep for callers returns only the declaration).
+So none of those three has ever run in any environment. This is also why
+`ProcessScheduledNotificationsJob` has no caller: the service that would have driven it is itself dead.
+
+Found 2026-09-20 while wiring the notification outbox, when a scoped service registered in the same method
+failed to resolve at runtime.
+
+Consequences today: queued notifications are never swept by `NotificationProcessorService`, scheduled ones
+are never swept by `ScheduledNotificationService`, and nothing is ever cleaned up. The
+`notification-system` change does not depend on any of them — its own `NotificationOutboxService` is
+registered in the Infrastructure extension, which the host does call — so this is a pre-existing gap, not a
+regression.
+
+Do not simply call the method: it would start three services that have never executed against real data,
+one of which deletes notifications. Each needs to be reviewed and tested on its own, and two of them may
+turn out to be superseded by the outbox sweep.
+
 ## #66 Domain events are dispatched BEFORE the save, so a handler cannot read what triggered it
 
 Corrected 2026-09-20 (this entry first claimed, and was then widened to claim, that ServiceCatalog

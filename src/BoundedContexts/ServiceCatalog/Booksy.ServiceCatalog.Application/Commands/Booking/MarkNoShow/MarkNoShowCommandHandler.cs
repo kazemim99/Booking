@@ -1,7 +1,8 @@
-// ========================================
+﻿// ========================================
 // Booksy.ServiceCatalog.Application/Commands/Booking/MarkNoShow/MarkNoShowCommandHandler.cs
 // ========================================
 using Booksy.Core.Application.Abstractions.CQRS;
+using Booksy.ServiceCatalog.Application.Services.Notifications;
 using Booksy.Core.Application.Abstractions.Persistence;
 using Booksy.Core.Application.Exceptions;
 using Booksy.ServiceCatalog.Domain.Repositories;
@@ -16,17 +17,20 @@ namespace Booksy.ServiceCatalog.Application.Commands.Booking.MarkNoShow
     public sealed class MarkNoShowCommandHandler : ICommandHandler<MarkNoShowCommand, MarkNoShowResult>
     {
         private readonly IBookingWriteRepository _bookingRepository;
+        private readonly IBookingReminderScheduler _reminders;
         private readonly IServiceCatalogUnitOfWork _unitOfWork;
         private readonly ILogger<MarkNoShowCommandHandler> _logger;
 
         public MarkNoShowCommandHandler(
             IBookingWriteRepository bookingRepository,
             IServiceCatalogUnitOfWork unitOfWork,
-            ILogger<MarkNoShowCommandHandler> logger)
+            ILogger<MarkNoShowCommandHandler> logger,
+            IBookingReminderScheduler reminders)
         {
             _bookingRepository = bookingRepository;
             _unitOfWork = unitOfWork;
             _logger = logger;
+            _reminders = reminders;
         }
 
         public async Task<MarkNoShowResult> Handle(MarkNoShowCommand request, CancellationToken cancellationToken)
@@ -46,6 +50,9 @@ namespace Booksy.ServiceCatalog.Application.Commands.Booking.MarkNoShow
 
             // Update booking
             await _bookingRepository.UpdateBookingAsync(booking, cancellationToken);
+
+            // The appointment is no longer going to happen, so its unsent reminders must not go out.
+            await _reminders.WithdrawAsync(booking.Id.Value, cancellationToken);
 
             // Commit transaction and publish events
             await _unitOfWork.CommitAndPublishEventsAsync(cancellationToken);

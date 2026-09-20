@@ -1,4 +1,4 @@
-// ========================================
+﻿// ========================================
 // Booksy.ServiceCatalog.Application/Commands/Notifications/SendNotification/SendNotificationCommandHandler.cs
 // ========================================
 using Booksy.Core.Application.Abstractions.CQRS;
@@ -55,6 +55,13 @@ namespace Booksy.ServiceCatalog.Application.Commands.Notifications.SendNotificat
                 command.RecipientEmail,
                 command.RecipientPhone,
                 command.RecipientName);
+
+            // Which notification this is, when the caller came through the outbox. It is what lets the
+            // dispatcher ask the catalogue about suppression instead of inferring from the coarser Type.
+            if (command.EventCode is { } eventCode && eventCode != NotificationEventCode.None)
+            {
+                notification.SetEventCode(eventCode);
+            }
 
             // The originating event, when the caller knows it. It fixes the de-duplication scope, so a lifecycle
             // event delivered twice produces at most one notification per channel instead of two.

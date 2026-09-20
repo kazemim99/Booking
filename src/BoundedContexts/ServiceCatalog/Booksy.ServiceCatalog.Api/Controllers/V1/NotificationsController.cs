@@ -1,11 +1,13 @@
-using Booksy.API.Extensions;
+﻿using Booksy.API.Extensions;
 using Booksy.Core.Application.DTOs;
 using Booksy.ServiceCatalog.Application.Commands.Notifications.CancelNotification;
 using Booksy.ServiceCatalog.Application.Commands.Notifications.ResendNotification;
 using Booksy.ServiceCatalog.Application.Commands.Notifications.ScheduleNotification;
 using Booksy.ServiceCatalog.Application.Commands.Notifications.SendBulkNotification;
 using Booksy.ServiceCatalog.Application.Commands.Notifications.SendNotification;
+using Booksy.ServiceCatalog.Application.Commands.Notifications.MarkRead;
 using Booksy.ServiceCatalog.Application.Queries.Notifications.GetDeliveryStatus;
+using Booksy.ServiceCatalog.Application.Queries.Notifications.GetInbox;
 using Booksy.ServiceCatalog.Application.Queries.Notifications.GetNotificationAnalytics;
 using Booksy.ServiceCatalog.Application.Queries.Notifications.GetNotificationHistory;
 using Booksy.ServiceCatalog.Domain.Enums;
@@ -184,7 +186,7 @@ public class NotificationsController : ControllerBase
         Guid notificationId,
         CancellationToken cancellationToken)
     {
-        var query = new GetDeliveryStatusQuery(notificationId);
+        var query = new GetDeliveryStatusQuery(notificationId, User.GetUserId());
         var result = await _mediator.Send(query, cancellationToken);
 
         if (result == null)
@@ -209,6 +211,62 @@ public class NotificationsController : ControllerBase
 
         return Ok(result);
     }
+
+    /// <summary>
+    /// The caller's own notifications, newest first.
+    /// </summary>
+    /// <remarks>
+    /// Each row carries its event code, so the app picks its icon and layout from that rather than from
+    /// translated text, plus an isActionable flag recomputed for this read — a notification about a booking
+    /// that has since been deleted still displays, but must not be tappable.
+    /// </remarks>
+    [HttpGet("inbox")]
+    [ProducesResponseType(typeof(InboxPage), StatusCodes.Status200OK)]
+    public async Task<IActionResult> GetInbox(
+        [FromQuery] int pageNumber = 1,
+        [FromQuery] int pageSize = 20,
+        [FromQuery] bool unreadOnly = false,
+        CancellationToken cancellationToken = default)
+    {
+        var result = await _mediator.Send(
+            new GetInboxQuery(User.GetUserId(), pageNumber, pageSize, unreadOnly),
+            cancellationToken);
+
+        return Ok(result);
+    }
+
+    /// <summary>How many notifications the caller has not opened — the badge count.</summary>
+    [HttpGet("unread-count")]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    public async Task<IActionResult> GetUnreadCount(CancellationToken cancellationToken)
+    {
+        var count = await _mediator.Send(new GetUnreadCountQuery(User.GetUserId()), cancellationToken);
+        return Ok(new { unreadCount = count });
+    }
+
+    /// <summary>Marks one notification read. Idempotent.</summary>
+    [HttpPost("{notificationId}/read")]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> MarkRead(Guid notificationId, CancellationToken cancellationToken)
+    {
+        var marked = await _mediator.Send(
+            new MarkNotificationReadCommand(notificationId, User.GetUserId()),
+            cancellationToken);
+
+        // Someone else's notification answers as not-found, so this cannot be used to probe which ids exist.
+        return marked ? NoContent() : NotFound();
+    }
+
+    /// <summary>Marks everything the caller has as read.</summary>
+    [HttpPost("read-all")]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    public async Task<IActionResult> MarkAllRead(CancellationToken cancellationToken)
+    {
+        var count = await _mediator.Send(new MarkAllNotificationsReadCommand(User.GetUserId()), cancellationToken);
+        return Ok(new { markedRead = count });
+    }
+
 }
 
 // Request DTOs
