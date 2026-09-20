@@ -544,7 +544,10 @@ jobs:
         # own it to replace its contents. Take ownership once if sudo allows, else say exactly
         # what to run — a deploy that cannot write must not look like a deploy that did nothing.
         if [ ! -w "${CUSTOMER_WEB_ROOT:?}" ]; then
-          sudo -n mkdir -p "$CUSTOMER_WEB_ROOT"             && sudo -n chown -R "$(id -un):$(id -gn)" "$CUSTOMER_WEB_ROOT"             || {
+          # The directory was created by hand (as root) when the site was set up, and this job
+          # runs as the runner user with no sudo. It takes ownership once — through a container,
+          # since this job already drives docker on this box — and only of this one directory.
+          sudo -n chown -R "$(id -un):$(id -gn)" "$CUSTOMER_WEB_ROOT" 2>/dev/null             || docker run --rm -v "$CUSTOMER_WEB_ROOT":/w alpine:3.20 chown -R "$(id -u):$(id -g)" /w             || {
               echo "::error::$CUSTOMER_WEB_ROOT is not writable by $(id -un). On the server run: chown -R $(id -un):$(id -gn) $CUSTOMER_WEB_ROOT"
               ls -ld "$CUSTOMER_WEB_ROOT" || true
               exit 1
