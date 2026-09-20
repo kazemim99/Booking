@@ -203,22 +203,28 @@ booking, not just review reminders. Among outbox rows the sets do not overlap �
 already withdrawn at completion, and a review request only exists after completion. That remains safe by
 circumstance rather than by design, so the wiring task re-verifies it rather than inheriting this sentence.
 
-**But there are two stores, and withdrawal only reaches one.** `BookingCompletedNotificationHandler` is
-auto-registered by assembly scan and, on every completion, schedules a *second* review request — a legacy
-`Notification` row with an English HTML "How was your experience?" body — while `CompleteBookingCommandHandler`
-already raises the outbox `ReviewRequest`. `CancelPendingForSubjectAsync` issues an `ExecuteUpdate` against
-`NotificationOutbox` only. And that legacy row is not dormant: the inbox history query filters on recipient
-with no status and no scheduled-for filter, so it is already being returned by `GET /notifications/inbox`.
+**There used to be a second store, and withdrawal could not reach it — now resolved.**
+`BookingCompletedNotificationHandler` was auto-registered by assembly scan and scheduled a *second* review
+request on every completion — a legacy `Notification` row with an English HTML "How was your experience?"
+body — while `CompleteBookingCommandHandler` already raised the outbox `ReviewRequest`.
+`CancelPendingForSubjectAsync` only ever touched `NotificationOutbox`, so withdrawal could not have reached
+it.
 
-Two consequences. Withdrawal must cover both stores — outbox rows under `SubjectType = "Booking"` *and*
-legacy `Notification` rows for that booking. And the real fix is to delete `BookingCompletedNotificationHandler`,
-which is the `notification-system` change's own "remove each superseded handler once its outbox coverage is
-in place" — the coverage is in place. That deletion is in the other session's file, so it is a **blocking
-handoff**, not something this change does unilaterally.
+The blast radius was narrower than it first looked: that row was **visible but never sent**.
+`ScheduledNotificationService`, which would have dispatched it, is registered inside
+`AddNotificationBackgroundServices`, and nothing calls that method — the code says so in its own doc
+comment, and it is FOLLOW-UPS #67. So a customer could see an English review request in their inbox and
+never receive one by SMS, email or push.
 
-Because asserting on the outbox table alone would pass while the user-visible duplicate survives, the test
-for this lives at the inbox boundary: complete a booking, submit the review, assert `GET /notifications/inbox`
-returns no review-request item for that booking.
+Both halves are fixed, by the `notification-system` session on 2026-09-21: the handler is deleted (its own
+task 7.4, "remove each superseded handler once its outbox coverage is in place"), and the inbox now filters
+to Sent/Delivered/Read with a test asserting the list and the unread badge agree. There is no second store
+for review requests any more, so withdrawal against the outbox alone is sufficient.
+
+The test for this still belongs at the inbox boundary rather than on the outbox table: complete a booking,
+submit the review, assert `GET /notifications/inbox` returns no review-request item for that booking. An
+outbox-table assertion would pass while a user-visible duplicate survived, which is exactly how this one
+lived so long.
 
 ### D11. Authorisation follows the existing shapes
 Moderation: `[Authorize(Policy = "AdminOnly")]` — never a raw `Roles = …` list, for the incident reason in

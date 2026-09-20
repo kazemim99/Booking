@@ -88,8 +88,10 @@ the structural work — each is a row's timing, not a shape.
       Cancellation notifies the party who did NOT cancel, and **the actor is inferred from the
       authenticated caller, not from a request field**: the controller never set `ByProvider` anyway, and a
       client should not be able to claim it cancelled as the salon. Reschedule still to do (7.7).
-- [ ] 7.2 Raise from the payment/payout handlers: payment taken, payment failed, refund, payout completed,
-      payout failed/on-hold.
+- [~] 7.2 REFUND is done: `RefundProcessed` raised to the customer from `RefundPaymentCommandHandler`,
+      recorded before the commit so the money move and the notice of it are written by the same
+      `CommitAsync`. Still to raise: payment taken, payment failed, payout completed, payout failed/on-hold
+      — and each must delete its legacy handler at the same time (see the correction below).
 - [ ] 7.3 Raise for membership and verification: invitation accepted, join request approved, staff assigned
       to a booking, provider verification status changed, provider activated/deactivated.
 - [ ] 7.4 Remove each superseded notification event handler only after its outbox coverage is in place and
@@ -411,3 +413,27 @@ test-first.
   is precisely the sort of thing that survives when two mechanisms coexist.
   3 new inbox tests, including one asserting the list and the badge agree.
 - 2026-09-21 595 integration tests pass; verify FAST PASS (10 steps, 81s).
+- 2026-09-21 7.2 (refund) — and a CORRECTION to something I had written down as fact twice.
+  I recorded that payment domain events are never dispatched, reasoning that payment commands are
+  `INonTransactionalCommand` (so TransactionBehavior skips them) and commit with `CommitAsync` (which my
+  earlier mapping showed had no dispatch). **Both premises were right and the conclusion was wrong.**
+  `CommitAsync` is a one-line delegate to `SaveChangesAsync`, which DOES dispatch — its own comment says
+  "Delegate to SaveChangesAsync which dispatches events". My mapping had searched for direct
+  `DispatchDomainEventsAsync` calls and never followed the `CommitAsync -> SaveChangesAsync` hop. Same
+  class of error as the original dispatch misreading: tracing one level and stopping.
+  The only reason I know is that I wrote the assertion as an EMPIRICAL test — "the legacy handlers produce
+  nothing" — instead of asserting my reading. It failed, and the row it found had Subject "Refund
+  Processed", the legacy handler's English text.
+  Consequence had I trusted the trace: every refunded customer would have received TWO notices, one
+  Persian from the outbox and one English from the legacy handler.
+  `PaymentRefundedNotificationHandler` deleted. The other three (Processed, Failed, PayoutCompleted) are
+  LEFT IN PLACE deliberately — 7.4's rule is to remove a handler only once its outbox coverage exists, and
+  theirs does not yet. Whoever does the rest of 7.2 must delete each one in the same commit that replaces
+  it, or ship a duplicate.
+  Test rewritten around the real risk: a refund produces exactly ONE notification, and nothing outside the
+  outbox notifies about refunds.
+  Test-infra note: the outbox sweep hosted service runs every 15s INSIDE the test host, so a slow test sees
+  its own swept rows. Distinguish by EventCode — outbox notifications carry one, legacy ones cannot.
+  Arrange note: build a Payment through `Payment.CreateForBooking` + `ProcessCharge`, never raw SQL. A
+  hand-written INSERT produced a row the refund path could not load and failed as an opaque 500.
+- 2026-09-21 598 integration tests pass; verify FAST PASS (10 steps, 99s).

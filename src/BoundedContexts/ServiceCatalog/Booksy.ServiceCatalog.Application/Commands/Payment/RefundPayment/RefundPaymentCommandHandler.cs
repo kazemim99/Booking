@@ -1,6 +1,7 @@
-// ========================================
+﻿// ========================================
 // Booksy.ServiceCatalog.Application/Commands/Payment/RefundPayment/RefundPaymentCommandHandler.cs
 // ========================================
+using Booksy.ServiceCatalog.Application.Services.Notifications;
 using Booksy.Core.Application.Abstractions;
 using Booksy.Core.Application.Exceptions;
 using Booksy.Core.Domain.Exceptions;
@@ -18,17 +19,20 @@ namespace Booksy.ServiceCatalog.Application.Commands.Payment.RefundPayment
         private readonly IPaymentWriteRepository _paymentRepository;
         private readonly IPaymentGateway _paymentGateway;
         private readonly IServiceCatalogUnitOfWork _unitOfWork;
+        private readonly INotificationRaiser _notifications;
         private readonly ILogger<RefundPaymentCommandHandler> _logger;
 
         public RefundPaymentCommandHandler(
             IPaymentWriteRepository paymentRepository,
             IPaymentGateway paymentGateway,
             IServiceCatalogUnitOfWork unitOfWork,
+            INotificationRaiser notifications,
             ILogger<RefundPaymentCommandHandler> logger)
         {
             _paymentRepository = paymentRepository ?? throw new ArgumentNullException(nameof(paymentRepository));
             _paymentGateway = paymentGateway ?? throw new ArgumentNullException(nameof(paymentGateway));
             _unitOfWork = unitOfWork ?? throw new ArgumentNullException(nameof(unitOfWork));
+            _notifications = notifications ?? throw new ArgumentNullException(nameof(notifications));
             _logger = logger ?? throw new ArgumentNullException(nameof(logger));
         }
 
@@ -89,6 +93,21 @@ namespace Booksy.ServiceCatalog.Application.Commands.Payment.RefundPayment
             // any retried transaction, and this single CommitAsync is a retry-safe unit — so a transient DB fault
             // can never re-invoke the gateway and double-refund.
             await _paymentRepository.UpdateAsync(payment, cancellationToken);
+
+            // The customer is entitled to this record — a refund they are never told about is, from their
+            // side, indistinguishable from one that never happened. Recorded BEFORE the commit so the same
+            // CommitAsync writes it: the money move and the notice of it land together or neither does.
+            await _notifications.RaiseAsync(
+                Domain.Enums.NotificationEventCode.RefundProcessed,
+                payment.CustomerId.Value,
+                dedupKey: payment.Id.Value,
+                parameters: new Dictionary<string, string>
+                {
+                    [NotificationParameter.Amount] = refundAmount.Amount.ToString("N0"),
+                },
+                subjectType: "Payment",
+                subjectId: payment.Id.Value,
+                cancellationToken: cancellationToken);
             await _unitOfWork.CommitAsync(cancellationToken);
 
             _logger.LogInformation("Payment {PaymentId} refunded successfully, refund ID {RefundId}",

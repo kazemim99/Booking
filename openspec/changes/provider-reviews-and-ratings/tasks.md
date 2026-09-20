@@ -198,16 +198,17 @@ the session that owns `notification-system`. None of the three blocks structural
 - [ ] 7.1 RED: integration test at the INBOX boundary — complete a booking, submit the review, assert
       `GET /notifications/inbox` returns no review-request item for that booking. Asserting on the outbox
       table alone passes while the user-visible duplicate survives.
-- [ ] 7.2 BLOCKING HANDOFF to the `notification-system` session: `BookingCompletedNotificationHandler` is
-      auto-registered by assembly scan and schedules a SECOND review request on every completion — a legacy
-      `Notification` row with an English HTML "How was your experience?" body — while
-      `CompleteBookingCommandHandler` already raises the outbox `ReviewRequest`. That row is not dormant: the
-      inbox history query filters on recipient with no status and no scheduled-for filter, so it is already
-      being served. Its removal is that change's own "remove each superseded handler once its outbox
-      coverage is in place", and the coverage is in place. Do not delete it unilaterally.
+- [x] 7.2 CLOSED 2026-09-21 by the `notification-system` session. `BookingCompletedNotificationHandler`
+      scheduled a SECOND review request on every completion — a legacy `Notification` row with an English
+      HTML body — outside the outbox that withdrawal can reach. It is now deleted (their task 7.4), with no
+      remaining references, and the inbox filters to Sent/Delivered/Read with a test asserting the list and
+      the unread badge agree. Recorded rather than dropped because it changes 7.3: there is no second store
+      for review requests any more. Blast radius, for the record: that row was visible in the inbox but
+      never sent — `ScheduledNotificationService` is registered in `AddNotificationBackgroundServices`,
+      which nothing calls (FOLLOW-UPS #67).
 - [ ] 7.3 Call `INotificationRaiser.WithdrawPendingForSubjectAsync("Booking", bookingId)` from the
-      create-review handler in the same unit of work, covering BOTH stores: outbox rows under
-      `SubjectType = "Booking"` and any legacy `Notification` rows for that booking that survive 7.2.
+      create-review handler in the same unit of work. The outbox is now the only store for review requests
+      (7.2), so this is sufficient — re-verify that is still true at wiring time rather than inheriting it.
       Withdrawal fires on SUBMISSION, not publication, or a review held in the moderation queue still gets
       the 3-day "you have not reviewed yet" reminder.
 - [ ] 7.4 Agree the two new `NotificationEventCode` entries with the `notification-system` owner — that file
@@ -218,11 +219,12 @@ the session that owns `notification-system`. None of the three blocks structural
       preference-category mapping (`NotificationType.NewReview` and `ReviewResponse` already exist), and
       **Persian copy**. Both are in-app/push, non-critical, suppressible; neither may name SMS, which is
       reserved for critical notifications and fails the catalogue self-validation test.
-- [ ] 7.5 Decide and record the tap destination. `GetInboxQueryHandler.TargetOf` returns null for any kind
-      other than Booking/Payment/Provider AND requires the persisted notification to carry the matching
-      related-entity id. There is no review id on the notification row, so a review-shaped destination is an
-      entity-level change, not just a resolver case. State which destination these two use, and whether the
-      inbox item is tappable at all.
+- [x] 7.5 DECIDED 2026-09-21 with the `notification-system` owner: both notifications point at the
+      **booking**, not at a review. The notification row already carries `BookingId` so no entity change is
+      needed; `NotificationDestinationResolver` already checks booking ownership, so a tap cannot open
+      someone else's; and a review is only ever reachable in the context of its booking anyway. A
+      review-shaped destination would have meant an entity change plus a resolver case plus a new ownership
+      rule, to land somewhere the booking screen already reaches.
 - [ ] 7.6 Raise the provider notification when a review is published — distinguishing a re-publication after
       an edit from a first publication, or the provider cannot tell a changed review from a new one — and
       the customer notification when a provider reply is published. Tested through the publishing path.
