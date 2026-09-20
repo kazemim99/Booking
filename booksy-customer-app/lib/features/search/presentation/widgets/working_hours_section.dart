@@ -112,30 +112,77 @@ class WorkingHoursSection extends StatelessWidget {
           ],
         ),
         const SizedBox(height: AppSpacing.xs),
-        for (final hour in hours)
+        for (final entry in group(hours))
           Padding(
             padding: const EdgeInsets.symmetric(vertical: AppSpacing.xxs),
-            child: Row(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Expanded(
-                  child: Text(
-                    hour.dayOfWeek,
-                    style: theme.textTheme.bodyMedium,
-                  ),
+                Row(
+                  children: [
+                    Expanded(
+                      child: Text(
+                        entry.label,
+                        style: theme.textTheme.bodyMedium,
+                      ),
+                    ),
+                    Text(
+                      _rangeLabel(entry.hours),
+                      style: theme.textTheme.bodyMedium?.copyWith(
+                        color: entry.hours.isClosed
+                            ? theme.colorScheme.onSurfaceVariant
+                            : theme.colorScheme.onSurface,
+                      ),
+                    ),
+                  ],
                 ),
-                Text(
-                  _rangeLabel(hour),
-                  style: theme.textTheme.bodyMedium?.copyWith(
-                    color: hour.isClosed
-                        ? theme.colorScheme.onSurfaceVariant
-                        : theme.colorScheme.onSurface,
+                for (final rest in entry.hours.breaks)
+                  Padding(
+                    padding: const EdgeInsets.only(top: AppSpacing.xxs),
+                    child: Row(
+                      children: [
+                        Expanded(
+                          child: Text(
+                            AppStrings.breakTimeLabel,
+                            style: theme.textTheme.bodySmall?.copyWith(
+                              color: theme.colorScheme.onSurfaceVariant,
+                            ),
+                          ),
+                        ),
+                        Text(
+                          JalaliFormatter.toPersianDigits(
+                              '${rest.startTime} – ${rest.endTime}'),
+                          style: theme.textTheme.bodySmall?.copyWith(
+                            color: theme.colorScheme.onSurfaceVariant,
+                          ),
+                        ),
+                      ],
+                    ),
                   ),
-                ),
               ],
             ),
           ),
       ],
     );
+  }
+
+  /// Days that keep the same hours, breaks included, gathered into one row: a
+  /// run of neighbouring days reads as «شنبه تا چهارشنبه», scattered days as a
+  /// list. The week's order is whatever the repository parsed, so Saturday
+  /// stays first and nothing is re-derived here.
+  @visibleForTesting
+  static List<HoursGroup> group(List<BusinessHour> hours) {
+    final groups = <HoursGroup>[];
+    for (var i = 0; i < hours.length; i++) {
+      final hour = hours[i];
+      final existing = groups.indexWhere((g) => g.sameHoursAs(hour));
+      if (existing >= 0) {
+        groups[existing].days.add(DayAt(i, hour.dayOfWeek));
+      } else {
+        groups.add(HoursGroup(hours: hour, days: [DayAt(i, hour.dayOfWeek)]));
+      }
+    }
+    return groups;
   }
 
   static String _rangeLabel(BusinessHour hour) {
@@ -187,4 +234,46 @@ class _OpenNowBadge extends StatelessWidget {
       ),
     );
   }
+}
+
+/// One row of the hours table: the days that share these hours, and the hours.
+class HoursGroup {
+  final BusinessHour hours;
+  final List<DayAt> days;
+
+  HoursGroup({required this.hours, required this.days});
+
+  bool sameHoursAs(BusinessHour other) =>
+      hours.isClosed == other.isClosed &&
+      hours.openTime == other.openTime &&
+      hours.closeTime == other.closeTime &&
+      hours.breaks.length == other.breaks.length &&
+      List.generate(hours.breaks.length, (i) => i)
+          .every((i) => hours.breaks[i] == other.breaks[i]);
+
+  /// Neighbouring days read as a range and the rest are listed, so a salon
+  /// closed on Sunday shows «شنبه، دوشنبه تا جمعه» rather than six names.
+  String get label {
+    final runs = <List<DayAt>>[];
+    for (final day in days) {
+      if (runs.isNotEmpty && day.position == runs.last.last.position + 1) {
+        runs.last.add(day);
+      } else {
+        runs.add([day]);
+      }
+    }
+    return runs
+        .map((run) =>
+            run.length == 1 ? run.single.name : '${run.first.name} تا ${run.last.name}')
+        .join('، ');
+  }
+}
+
+/// A day and where it sits in the week, so neighbouring days can be told apart
+/// from scattered ones.
+class DayAt {
+  final int position;
+  final String name;
+
+  const DayAt(this.position, this.name);
 }

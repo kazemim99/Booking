@@ -5,6 +5,7 @@ import '../../../../config/routes/app_router.dart';
 import '../../../../config/theme/app_tokens.dart';
 import '../../../../core/constants/app_strings.dart';
 import '../../../search/presentation/widgets/service_categories.dart';
+import '../../domain/entities/category.dart';
 
 /// Horizontal row of category tiles: a rounded square holding a line icon with
 /// the Persian label underneath, ending in a "more" tile.
@@ -14,15 +15,46 @@ import '../../../search/presentation/widgets/service_categories.dart';
 /// unfiltered so every remaining category is one tap away. The categories come
 /// from [kServiceCategories], the same list explore filters with, so a tile can
 /// never point at a filter explore would reject.
+///
+/// [available] is what the catalogue reports, with its provider counts: a tile
+/// for a category no salon offers only leads to an empty page, so those are
+/// left out. When the catalogue says nothing yet — still loading, or the call
+/// failed — the full row is shown, because an empty strip reads as "this app
+/// has no categories".
 class HomeCategoryRow extends StatelessWidget {
-  const HomeCategoryRow({super.key});
+  final List<Category> available;
+
+  const HomeCategoryRow({super.key, this.available = const []});
+
+  /// The catalogue's slug for a `ServiceCategory` name: `NailSalon` -> `nail-salon`.
+  static String slugOf(String apiValue) {
+    final buffer = StringBuffer();
+    for (var i = 0; i < apiValue.length; i++) {
+      final char = apiValue[i];
+      final isUpper = char.toUpperCase() == char && char.toLowerCase() != char;
+      if (isUpper && i > 0) buffer.write('-');
+      buffer.write(char.toLowerCase());
+    }
+    return buffer.toString();
+  }
 
   static const double _tileSize = 60;
   static const double _itemWidth = 76;
 
   @override
   Widget build(BuildContext context) {
-    final categories = kServiceCategories.take(kHomeCategoryTileCount).toList();
+    final offered = available
+        .where((c) => c.providerCount > 0)
+        .map((c) => c.id.toLowerCase())
+        .toSet();
+    final bookable = offered.isEmpty
+        ? kServiceCategories
+        : kServiceCategories
+            .where((c) => offered.contains(slugOf(c.apiValue)))
+            .toList();
+    final categories = (bookable.isEmpty ? kServiceCategories : bookable)
+        .take(kHomeCategoryTileCount)
+        .toList();
 
     return SingleChildScrollView(
       scrollDirection: Axis.horizontal,

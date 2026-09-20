@@ -131,7 +131,7 @@ class _HomePageState extends State<HomePage> {
                         padding: const EdgeInsets.only(bottom: AppSpacing.lg),
                         children: [
                           const SizedBox(height: AppSpacing.md),
-                          const HomeCategoryRow(),
+                          HomeCategoryRow(available: loaded.categories),
                           _Section(
                             section: HomeSection.upcomingBookings,
                             failed: loaded.failedSections,

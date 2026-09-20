@@ -12,6 +12,8 @@ import '../bloc/provider_detail_cubit.dart';
 import '../widgets/contact_location_section.dart';
 import '../widgets/services_grid.dart';
 import '../widgets/working_hours_section.dart';
+import '../widgets/provider_gallery.dart';
+import '../widgets/provider_location_card.dart';
 
 /// Provider profile (deep-linkable at `/providers/:id`).
 ///
@@ -135,12 +137,9 @@ class _ProviderContent extends StatelessWidget {
     return ListView(
       padding: const EdgeInsets.only(bottom: AppSpacing.lg),
       children: [
-        ProviderImage(
-          key: const Key('provider-hero-image'),
-          imageUrl: provider.profileImageUrl ?? provider.logoUrl,
-          width: double.infinity,
-          height: 200,
-          placeholderIconSize: AppIconSize.hero,
+        ProviderGallery(
+          images: provider.images,
+          fallbackImageUrl: provider.profileImageUrl ?? provider.logoUrl,
         ),
         Padding(
           padding: const EdgeInsets.all(AppSpacing.md),
@@ -175,6 +174,15 @@ class _ProviderContent extends StatelessWidget {
               if (contact.hasContent) ...[
                 const SizedBox(height: AppSpacing.lg),
                 contact,
+              if (provider.latitude != null && provider.longitude != null) ...[
+                const SizedBox(height: AppSpacing.lg),
+                ProviderLocationCard(
+                  businessName: provider.businessName,
+                  address: address.isEmpty ? null : address,
+                  latitude: provider.latitude,
+                  longitude: provider.longitude,
+                ),
+              ],
               ],
             ],
           ),

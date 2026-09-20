@@ -15,6 +15,14 @@ class ProviderDetail extends Equatable {
   final List<ServiceItem> services;
   final List<StaffMember> staff;
 
+  /// Where the salon is, when the catalogue knows: used for the map on the
+  /// profile and for handing the point to a navigation app.
+  final double? latitude;
+  final double? longitude;
+
+  /// The salon's photos, the one it chose first (medium size, for the slider).
+  final List<String> images;
+
   const ProviderDetail({
     required this.id,
     required this.businessName,
@@ -28,6 +36,9 @@ class ProviderDetail extends Equatable {
     required this.businessHours,
     required this.services,
     required this.staff,
+      this.latitude,
+    this.longitude,
+    this.images = const [],
   });
 
   /// Staff eligible for booking (active only).
@@ -48,6 +59,9 @@ class ProviderDetail extends Equatable {
         businessHours,
         services,
         staff,
+              latitude,
+        longitude,
+        images,
       ];
 }
 
@@ -57,15 +71,20 @@ class BusinessHour extends Equatable {
   final String? closeTime;
   final bool isClosed;
 
+  /// When the salon shuts mid-day, as `HH:mm` pairs — a customer who turns up
+  /// during one finds the door locked, so it belongs on the profile.
+  final List<BusinessBreak> breaks;
+
   const BusinessHour({
     required this.dayOfWeek,
     this.openTime,
     this.closeTime,
     required this.isClosed,
+    this.breaks = const [],
   });
 
   @override
-  List<Object?> get props => [dayOfWeek, openTime, closeTime, isClosed];
+  List<Object?> get props => [dayOfWeek, openTime, closeTime, isClosed, breaks];
 }
 
 class ServiceItem extends Equatable {
@@ -131,4 +150,15 @@ class TimeSlot extends Equatable {
   @override
   List<Object?> get props =>
       [startTime, endTime, durationMinutes, isAvailable, staffId, staffName];
+}
+
+/// A mid-day closure, as the profile shows it.
+class BusinessBreak extends Equatable {
+  final String startTime;
+  final String endTime;
+
+  const BusinessBreak({required this.startTime, required this.endTime});
+
+  @override
+  List<Object?> get props => [startTime, endTime];
 }

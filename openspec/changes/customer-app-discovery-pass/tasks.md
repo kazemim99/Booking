@@ -29,9 +29,9 @@ on what a customer sees while choosing a salon.
 - [x] 1.1 Prices in Toman everywhere, grouped in threes, never "USD" (source default + app)
 - [x] 1.2 The provider's photos reach the customer: primary image on cards/profile, gallery as a
       slider on the profile
-- [ ] 1.3 Categories with no providers are not offered
-- [ ] 1.4 Profile shows the street address, not only the city, and a map that opens a navigation app
-- [ ] 1.5 Working hours grouped: identical days on one row, the odd day on its own, breaks shown
+- [x] 1.3 Categories with no providers are not offered
+- [x] 1.4 Profile shows the street address, not only the city, and a map that opens a navigation app
+- [x] 1.5 Working hours grouped: identical days on one row, the odd day on its own, breaks shown
 - [ ] 1.6 Provider card shows rating and how many free times it has
 - [ ] 1.7 Ratings and comments: read them on the profile, leave one after a visit
 - [ ] 1.8 Search suggests cities/villages/provinces as you type
@@ -56,3 +56,14 @@ on what a customer sees while choosing a salon.
   search returns logoUrl, /uploads answers 200 with the right CORS headers). ProviderImage now uses
   the browser's own Image.network on web and keeps the cached loader elsewhere; the home promo strip
   and the search result card were rendering their own copies and now share it.
+- 2026-09-20 1.3 The home category row now takes the catalogue's counts and drops what no salon
+  offers (the API already answered with one category; the row was a hard-coded list of six). With
+  nothing known yet — still loading, or the call failed — the full row shows, because an empty strip
+  reads as "no categories". 3 widget tests.
+- 1.4 The profile parsed `address.street`, which this API never sends, so every salon showed its
+  city and nothing else; it now reads `formattedAddress` plus the coordinates, and a location card
+  puts the salon on a small map with one tap to hand the point to نشان / بلد / گوگل مپ. 3 tests.
+- 1.5 Working hours: days that keep the same hours share a row, neighbouring ones reading as
+  «شنبه، دوشنبه تا جمعه», and mid-day breaks are parsed and shown under their row. 4 grouping tests.
+- (also) The profile header is a swipeable gallery of the salon's photos, chosen photo first,
+  falling back to the single hero image when there is only one. 3 tests.

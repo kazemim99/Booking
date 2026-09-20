@@ -95,8 +95,20 @@ class BookingRepositoryImpl implements BookingRepository {
       businessName: json['businessName'] as String? ?? '',
       description: json['description'] as String?,
       city: address?['city'] as String?,
-      addressLine: address?['street'] as String? ??
+      // The catalogue sends `formattedAddress` — the street line the provider
+      // entered. Reading only `street`/`addressLine1` left every profile
+      // showing its city and nothing else.
+      addressLine: address?['formattedAddress'] as String? ??
+          address?['street'] as String? ??
           address?['addressLine1'] as String?,
+      latitude: (address?['latitude'] as num?)?.toDouble(),
+      longitude: (address?['longitude'] as num?)?.toDouble(),
+      images: (json['images'] as List<dynamic>? ?? [])
+          .whereType<Map<String, dynamic>>()
+          .map((i) => (i['mediumUrl'] ?? i['thumbnailUrl'] ?? i['originalUrl']) as String?)
+          .whereType<String>()
+          .where((url) => url.isNotEmpty)
+          .toList(),
       logoUrl: json['logoUrl'] as String?,
       profileImageUrl: json['profileImageUrl'] as String?,
       averageRating: (json['averageRating'] as num?)?.toDouble() ?? 0,
@@ -210,6 +222,18 @@ class BookingRepositoryImpl implements BookingRepository {
         openTime: _time(h['openTimeHours'], h['openTimeMinutes']),
         closeTime: _time(h['closeTimeHours'], h['closeTimeMinutes']),
         isClosed: !isOpen,
+        breaks: (h['breaks'] as List<dynamic>? ?? [])
+            .whereType<Map<String, dynamic>>()
+            .map((b) => BusinessBreak(
+                  startTime: _time(b['startTimeHours'], b['startTimeMinutes']) ??
+                      b['startTime']?.toString() ??
+                      '',
+                  endTime: _time(b['endTimeHours'], b['endTimeMinutes']) ??
+                      b['endTime']?.toString() ??
+                      '',
+                ))
+            .where((b) => b.startTime.isNotEmpty && b.endTime.isNotEmpty)
+            .toList(),
       );
     }).toList();
   }

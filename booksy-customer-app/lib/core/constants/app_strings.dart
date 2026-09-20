@@ -232,6 +232,13 @@ class AppStrings {
   static const String openNow = 'باز است';
   static const String closedDay = 'تعطیل';
   static const String contactAndLocationTitle = 'تماس و موقعیت';
+  static const String breakTimeLabel = 'استراحت';
+  static const String locationOnMapTitle = 'موقعیت روی نقشه';
+  static const String directionsAction = 'مسیریابی';
+  static const String directionsSheetTitle = 'با کدام برنامه مسیریابی شود؟';
+  static const String directionsNeshan = 'نشان';
+  static const String directionsBalad = 'بلد';
+  static const String directionsGoogleMaps = 'گوگل مپ';
   static const String providerPhoneLabel = 'تلفن تماس';
   static const String providerAddressLabel = 'نشانی';
   static const String noServicesYet = 'خدمتی برای این سالن ثبت نشده است';
