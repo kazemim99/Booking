@@ -44,8 +44,12 @@ app.*.map.json
 /android/app/release
 
 # Generated files
-*.g.dart
-*.freezed.dart
+# Generated code IS tracked here. retrofit_generator does not compile on the Dart SDK this app
+# is pinned to (build_runner fails in `lib/src/generator.dart`), so CI cannot regenerate it — and
+# a checkout without these files does not analyze, build, or deploy. Regenerate deliberately when
+# their sources change, on an SDK where the generator works, and commit the result.
+#*.g.dart
+#*.freezed.dart
 *.config.dart
 *.gr.dart
 
