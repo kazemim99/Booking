@@ -64,10 +64,14 @@ A review MAY carry a comment. When present it SHALL be between 10 and 2000 chara
 - **THEN** the review is accepted with no comment
 
 ### Requirement: The author may edit a review within a bounded window
-The author SHALL be able to edit their own review's ratings and comment for 7 days after it was created. After that window the review SHALL be immutable to its author. An edited review SHALL return to the pending moderation state. Only the author SHALL be able to edit their review.
+The author SHALL be able to edit their own review's ratings and comment for 7 days after it was created. After that window the review SHALL be immutable to its author. Only the author SHALL be able to edit their review.
+
+Only a review in the Pending or Published state SHALL be editable. A Rejected review SHALL NOT be editable, because it is permanently invisible to the public and an edit would otherwise be a route back to publication that moderation has already refused. A Hidden review SHALL NOT be editable, because an edit would otherwise let the author undo an administrator's decision.
+
+An edit to a Published review SHALL return it to Pending. An edit to a Pending review SHALL leave it Pending.
 
 #### Scenario: Author edits inside the window
-- **WHEN** the author edits their review 2 days after creating it
+- **WHEN** the author edits their published review 2 days after creating it
 - **THEN** the ratings and comment are updated and the review returns to pending moderation
 
 #### Scenario: Author edits after the window
@@ -77,6 +81,14 @@ The author SHALL be able to edit their own review's ratings and comment for 7 da
 #### Scenario: A different user attempts to edit
 - **WHEN** an authenticated user who is not the author edits the review
 - **THEN** the request is rejected as forbidden
+
+#### Scenario: Author attempts to edit a rejected review
+- **WHEN** the author edits their review that an administrator rejected, inside the 7-day window
+- **THEN** the request is rejected, the review stays Rejected, and it does not return to the moderation queue
+
+#### Scenario: Author attempts to edit a hidden review
+- **WHEN** the author edits their review that an administrator hid, inside the 7-day window
+- **THEN** the request is rejected and the review stays Hidden
 
 ### Requirement: The provider may reply to a review about them
 The owning provider SHALL be able to add exactly one reply to a review of their business, and SHALL be able to edit or remove that reply. A reply SHALL be between 1 and 1000 characters after trimming. No user other than the owning provider SHALL be able to reply, including platform administrators and the review's author. A reply SHALL be subject to moderation on the same path as a review.

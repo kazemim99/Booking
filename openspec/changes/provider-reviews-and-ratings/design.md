@@ -6,17 +6,28 @@ repositories, three endpoints and a seeder. It has no tests. Production holds re
 
 Three things about the current state shape every decision below:
 
-1. **`Provider.AverageRating` is written by nothing.** It is `internal set`, and the only assignment in the
-   repository is inside `ReviewSeeder`. `SearchProvidersQueryHandler` sorts by it. Every rating on every
-   card in production is therefore either seed data or zero.
+1. **`Provider.AverageRating` is written by nothing, anywhere.** It is `internal set`, the Domain project
+   declares no `InternalsVisibleTo`, and the aggregate exposes no mutator. A repo-wide search for
+   assignments finds only DTO mapping, a migration column, and `ReviewSeeder.cs:275` — which is a field of
+   an anonymous `statistics` object inside `LogReviewStatistics` that is logged and discarded, never a
+   `Provider` write. `ProviderStatisticsSeeder.cs:61` holds the intended write commented out behind a TODO.
+   `SearchProvidersQueryHandler` sorts by it. Every provider row in every environment reads `0.0m` — not
+   "seed data or zero", just zero.
 2. **`HelpfulCount`/`NotHelpfulCount` have no provenance.** They were incremented by an `[AllowAnonymous]`
    endpoint with no per-user record, so there is no way to reconstruct who voted.
 3. **`notification-system` is in flight in a parallel session** and owns `NotificationEventCode.ReviewRequest`
    and its 2h/3-day reminder pair (its task 7.6). This change must call into that surface, not rebuild it.
 
 Constraints: one PostgreSQL database, schema-per-context; ServiceCatalog owns both `Provider` and `Review`,
-so this is intra-context and needs no CAP integration event. Admin authorisation in this codebase is
-`[Authorize(Roles = "Admin,SysAdmin")]` / `Policy = "ProviderOrAdmin"`, as `BookingsController` uses.
+so this is intra-context and needs no CAP integration event.
+
+Admin authorisation is `[Authorize(Policy = "AdminOnly")]`, as `ProvidersController.cs:697` uses — **not**
+a raw `Roles = "Admin,SysAdmin"` list. `AdminOnly` requires any of `Admin`, `Administrator` or `SysAdmin`
+(`PolicyAuthorizationExtensions.cs:39-40`), and its comment records a real 2026-09-19 incident: the
+production administrator carries only one of those names and got 403 on every admin endpoint, which the
+tests missed because the test admin carries all three. The vocabulary drift is FOLLOW-UPS #46. A raw role
+list here would reproduce that incident. `Policy = "ProviderOrAdmin"`, which `BookingsController` uses, is
+a `user_type` claim check on a different axis and is not the moderation gate.
 
 ## Goals / Non-Goals
 
@@ -88,23 +99,60 @@ aggregate, and it avoids the owned-collection key hazard from D1.
 Denormalised `HelpfulVoteCount`/`NotHelpfulVoteCount` live on `Reviews`, written in the same transaction as
 the vote, so listing reviews stays one query.
 
+*The concurrency hazard here is a lost update, not a version conflict.* `AggregateRoot.Version` is bumped
+only inside `RaiseDomainEvent`, so a read-modify-write of the denormalised counters is not protected by the
+concurrency token. The vote path must either issue an atomic SQL increment (`ExecuteUpdate`) or re-derive
+the counts from `ReviewVotes` inside the same transaction. The implementation must record which.
+
 ### D5. Legacy counters are frozen as a baseline, not converted into votes
-Migration renames the existing `HelpfulCount`/`NotHelpfulCount` to `LegacyHelpfulCount`/`LegacyNotHelpfulCount`
-and leaves them immutable forever. Displayed count = legacy + live vote count.
+The existing `HelpfulCount`/`NotHelpfulCount` are frozen and never written again. Displayed count =
+legacy + live vote count.
+
+**The CLR properties are renamed to `LegacyHelpfulCount`/`LegacyNotHelpfulCount`; the database columns are
+not.** Both are pinned with `.HasColumnName("HelpfulCount")` / `.HasColumnName("NotHelpfulCount")`, exactly
+as `ReviewConfiguration` already pins `Id` to `"ReviewId"`. This produces no schema operation at all, which
+is what makes a rolling deploy safe — see the Migration Plan. Freezing is then enforced by there being no
+writer: `Review.MarkAsHelpful()` and `MarkAsNotHelpful()` are **deleted** when `CastReviewVoteCommand` lands.
+
+**legacy + live is a domain rule, not a display rule.** `Review.GetHelpfulnessRatio()` and
+`IsConsideredHelpful()` read the raw counters today and are surfaced per review in the API response, and
+`ReviewReadRepository` orders `sortBy="helpful"` on the raw column. If only the display adds the two
+together, every review created after the migration has a legacy baseline of 0/0 and can therefore never be
+"considered helpful" however many live votes it collects, while the helpful sort freezes at the deploy-day
+ordering. Both derivations and the ORDER BY move to `(Legacy + Live)`; if the sort must stay indexable, a
+persisted computed column. Dropping the ratio fields from the response contract is an acceptable
+alternative. Leaving them silently frozen is not.
 
 *Why:* those numbers have no users behind them. Inventing synthetic vote rows to back them would fabricate a
 record of who voted, and dropping them would silently delete visible product state. Freezing is the only
 option that neither lies nor destroys. It also makes "withdrawing a vote cannot take the count below the
 baseline" fall out arithmetically instead of needing a floor check.
 
-### D6. Aggregates are recomputed, not incremented
-On publish / unpublish / hide / edit-approval / removal, a domain event handler runs a grouped query over that
-provider's published reviews and overwrites the stored aggregates.
+### D6. Aggregates are recomputed, not incremented — inside the command's own transaction
+On publish / unpublish / hide / restore / edit-approval / removal, a grouped query over that provider's
+published reviews overwrites the stored aggregates.
+
+**Each moderation command handler calls the recompute service directly, after the state change and before
+commit, on the command's own `DbContext`.** A domain event handler cannot be used: `EfCoreUnitOfWork`
+dispatches domain events *before* it saves, and `SimpleDomainEventDispatcher` opens a fresh DI scope per
+event, so the handler would run on a different connection, outside the command's transaction, against a
+row that has not been written yet. Approving a 4.0★ review would write an average that excludes it — every
+aggregate permanently one action stale. Switching to `SaveAndPublishEventsAsync` does not fix it either:
+under `TransactionBehavior` the ambient transaction is still uncommitted when the handler runs. Calling it
+inline also means a rolled-back moderation rolls back the aggregate with it.
+
+The `ReviewPublishedEvent`/`ReviewUnpublishedEvent` domain events still exist, for notifications and
+auditing. They are simply not the recompute trigger.
 
 *Why:* incremental deltas drift, and there is no reconciliation job here to catch the drift. Hiding, unhiding
 and editing all mutate the set, so every one of them needs a correct inverse — five chances to be subtly
-wrong versus one query that is right by construction. Moderation actions are rare and per-provider; the cost
-is one indexed `GROUP BY` on an action a human just took.
+wrong versus one query that is right. Moderation actions are per-provider and rare; the cost is one indexed
+`GROUP BY`.
+
+*But the trigger is not always a moderator.* An author editing a published review unpublishes it, which
+recomputes — and that is an ordinary customer, repeatable for the whole 7-day window. The edit endpoint
+therefore needs a tight per-caller rate limit (D12), and a maximum-edits-per-review invariant is worth
+considering in the domain.
 
 *Alternative:* incremental counters with a nightly reconciliation job — more moving parts, and it means the
 number is knowingly wrong between runs.
@@ -127,10 +175,20 @@ and the count has to exist anyway. The API contract is what clients read, and th
 *Trade-off accepted:* the stored column will read 0.0 for an unrated provider. Nothing may read it without
 also reading the count. This is a real footgun and is why the sort in D9 is specified explicitly.
 
-### D9. Rating sort orders rated providers; unrated are not zero
-`ORDER BY` puts `PublishedReviewCount = 0` providers in their own band rather than interleaving them at 0.0.
+### D9. Rating sort orders rated providers; unrated are a band, in both directions
+`ORDER BY` puts `PublishedReviewCount = 0` providers in their own band. **Unrated providers sort last
+whichever direction is requested** — below the worst-rated on descending, and below the best-rated on
+ascending too. "Not interleaved as zero" alone is not implementable; the direction has to be stated.
 
-*Why:* without this, D8's stored zero silently makes every new salon the worst-rated business on the platform.
+*Why:* without this, D8's stored zero silently makes every new salon the worst-rated business on the
+platform — and a naive `ASC` would make them the *best*, which is worse.
+
+**This is server-side work, not a client fix.** Ordering happens in `SearchProvidersQueryHandler`, in both
+the `"rating"` branch and the no-coordinates `"distance"` fallback; every client only passes `sortBy`. The
+review count is server-side too: `ProviderSearchResponse.TotalReviews` is declared but never assigned —
+its source property on `ProviderSearchItem` is commented out — so it ships as a permanent `0`. That
+collapses the Flutter `ProviderRating.hasRating(rating, reviewCount)` guard to `rating > 0`, which is
+precisely D8's stored zero. `PublishedReviewCount` must be projected through it.
 
 ### D10. Withdrawal fires on submission, via the existing raiser
 The create-review handler calls
@@ -141,14 +199,48 @@ interface, not assumed — inside the same unit of work as the review write.
 has already written. Waiting for approval would send them "you haven't reviewed yet" while they wait.
 
 *Known bluntness, per the notification-system owner:* that method withdraws **everything** unsent for the
-booking, not just review reminders. Today the sets do not overlap — appointment reminders are already
-withdrawn at completion, and a review request only exists after completion — so this is safe. It is safe by
-circumstance rather than by design, so the wiring task must re-verify it rather than inherit this sentence.
+booking, not just review reminders. Among outbox rows the sets do not overlap — appointment reminders are
+already withdrawn at completion, and a review request only exists after completion. That remains safe by
+circumstance rather than by design, so the wiring task re-verifies it rather than inheriting this sentence.
+
+**But there are two stores, and withdrawal only reaches one.** `BookingCompletedNotificationHandler` is
+auto-registered by assembly scan and, on every completion, schedules a *second* review request — a legacy
+`Notification` row with an English HTML "How was your experience?" body — while `CompleteBookingCommandHandler`
+already raises the outbox `ReviewRequest`. `CancelPendingForSubjectAsync` issues an `ExecuteUpdate` against
+`NotificationOutbox` only. And that legacy row is not dormant: the inbox history query filters on recipient
+with no status and no scheduled-for filter, so it is already being returned by `GET /notifications/inbox`.
+
+Two consequences. Withdrawal must cover both stores — outbox rows under `SubjectType = "Booking"` *and*
+legacy `Notification` rows for that booking. And the real fix is to delete `BookingCompletedNotificationHandler`,
+which is the `notification-system` change's own "remove each superseded handler once its outbox coverage is
+in place" — the coverage is in place. That deletion is in the other session's file, so it is a **blocking
+handoff**, not something this change does unilaterally.
+
+Because asserting on the outbox table alone would pass while the user-visible duplicate survives, the test
+for this lives at the inbox boundary: complete a booking, submit the review, assert `GET /notifications/inbox`
+returns no review-request item for that booking.
 
 ### D11. Authorisation follows the existing shapes
-Moderation: `[Authorize(Roles = "Admin,SysAdmin")]`. Reply: authenticated, plus a resource check that the
-caller's provider owns the reviewed business — administrators explicitly may **not** reply, since a reply is
-published speech attributed to the business. Vote and report: authenticated.
+Moderation: `[Authorize(Policy = "AdminOnly")]` — never a raw `Roles = …` list, for the incident reason in
+Context. Reply: authenticated, plus a resource check that the caller's provider owns the reviewed business,
+gated the way `BookingsController.CanManageProvider` already does it — administrators explicitly may **not**
+reply, since a reply is published speech attributed to the business. The owner-scoped review listing uses
+that same check. Vote and report: authenticated.
+
+The admin-only test must not use the shared `TestUser.Admin`: it carries all three role spellings and
+would pass against any of them, which is exactly how the 2026-09-19 incident escaped. Follow
+`AdminRoleNameTests` and assert reachability with a token carrying only `"Admin"` *and* one carrying only
+`"Administrator"`.
+
+### D12. Every new write path gets a named rate-limit policy
+Vote, report, edit, reply add/edit/remove and each moderation action get their own policy name alongside
+the existing `create-review` / `mark-review-helpful` / `provider-reviews`. Edit gets the tightest ceiling,
+because D6 makes it a customer-triggered unpublish plus a full per-provider `GROUP BY`.
+
+*Mechanism, easy to get wrong:* each new name must also be added to `RateLimitingOptions.Defaults` —
+`RateLimitingRegistration` registers exactly that table, and `[EnableRateLimiting]` naming an unregistered
+policy throws at request time. It throws in the test host too, where `Enabled=false` still registers each
+name as a no-op limiter. Without this the failure is a 500 on first call, not a missing limit.
 
 Claims are read as `ClaimTypes.NameIdentifier` first. Production tokens carry the identity as
 `nameidentifier`, not `sub`/`userId`; `ReviewsController` already does this and the pattern must not regress.
@@ -164,7 +256,13 @@ Claims are read as `ClaimTypes.NameIdentifier` first. Production tokens carry th
   401. → Audit the three clients before deploy; the Vue service already routes through the authenticated
   client, the Flutter datasource does not currently call it at all.
 - **Recompute on a provider with thousands of published reviews.** → Indexed on `(ProviderId, ModerationStatus)`;
-  triggered only by a human moderation action, never on read.
+  never on read. Not only moderators trigger it, though — an author's edit does too, so the edit endpoint
+  carries the tightest rate limit in D12.
+- **`ReviewStatistics` currently averages every review regardless of state.** The read repository loads the
+  provider's whole review set and builds the average, the star distribution and the verified count off it,
+  and that block is returned on the public listing. Filtering the review *list* without filtering the
+  statistics block would leave the public payload reporting an average that includes pending, rejected and
+  hidden reviews — contradicting the moderation spec directly. → Filtered in the same task as the listing.
 - **`AverageRating` reading 0.0 for unrated providers (D8).** → Every consumer must pair it with the count.
   This is the weakest point of the design and the one most likely to be got wrong later.
 - **Two sessions editing ServiceCatalog concurrently.** → `notification-system` owns
@@ -173,17 +271,39 @@ Claims are read as `ClaimTypes.NameIdentifier` first. Production tokens carry th
 
 ## Migration Plan
 
-1. **Schema, additive only.** Add dimension columns, moderation columns, `ReviewVotes`, `ReviewReports`,
-   `ProviderRatingSummary`, `Provider.PublishedReviewCount`. Rename the two counter columns to their `Legacy*`
-   names. No drops.
+The host migrates forward-only at startup, the published image is runtime-only (no SDK, so no
+`dotnet ef database update` in the container), and the compose healthcheck is `curl /health`, which never
+touches `Reviews`. Anything that breaks the *previous* image's SQL therefore fails silently behind a green
+container. That shapes every step below.
+
+1. **Schema, additive only — no renames, no drops.** Add dimension columns, moderation columns,
+   `ReviewVotes`, `ReviewReports`, `ProviderRatingSummary`, `Provider.PublishedReviewCount`. The counter
+   columns keep their physical names `HelpfulCount`/`NotHelpfulCount`; only the CLR properties are renamed,
+   pinned via `HasColumnName` (D5). A physical rename would make the prior image's mapping throw
+   `42703 undefined_column` on every review read, while the healthcheck stayed green and rollback was
+   impossible.
+1b. **Every new NOT NULL column on an existing table carries a database-level DEFAULT** —
+   `Reviews.ModerationStatus`, `ReplyModerationStatus`, `HelpfulVoteCount`, `NotHelpfulVoteCount`,
+   `Providers.PublishedReviewCount`. The prior image's INSERTs omit them and would otherwise fail
+   `23502 not_null_violation`.
 2. **Backfill.** Every existing review → `ModerationStatus = Published`; every existing reply → published.
    Dimension columns stay NULL, which is correct: those customers were never asked.
 3. **Recompute once.** Run the D6 aggregation across all providers so `AverageRating` becomes true for the
    first time, and `PublishedReviewCount` is populated.
 4. **Deploy backend, then clients.** The read path is backward-compatible for a client that ignores the new
    fields. The vote endpoint is the only breaking call.
-5. **Rollback.** Steps 1–3 are additive apart from the counter rename, so rollback is a redeploy of the prior
-   image plus reversing that rename. No data is destroyed at any step, which is the point of D5.
+5. **Rollback.** With step 1 fully additive and step 1b's defaults in place, the prior image runs unchanged
+   against the new schema — rollback is a redeploy, with no schema reversal at all. That is the entire
+   reason the rename is logical rather than physical. No data is destroyed at any step, which is the point
+   of D5.
+
+   Mechanically, rollback is not yet a documented procedure: the production compose file pins `:latest`, so
+   rolling back means editing it to the `-api:${sha_short}` tag and re-running `up -d`.
+   `docs/DEPLOYMENT_RUNBOOK.md` has no rollback section today and gains one here.
+
+6. **Post-deploy smoke.** Assert `GET /api/v1/reviews/providers/{id}` still returns published reviews, in
+   the deploy job, shaped like the existing `tests/e2e/keystone-booking-flow.sh` gate. The healthcheck
+   cannot see this and the backfill is the step most likely to be silently wrong.
 
 Migrations are applied against shared databases through the repository's protected-operation prompt, never
 silently.

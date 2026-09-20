@@ -1,4 +1,4 @@
-using Booksy.Core.Application.Abstractions.CQRS;
+﻿using Booksy.Core.Application.Abstractions.CQRS;
 using Booksy.Core.Domain.ValueObjects;
 using Booksy.ServiceCatalog.Application.Services.Notifications;
 using Booksy.ServiceCatalog.Domain.Aggregates.NotificationAggregate;
@@ -37,9 +37,19 @@ namespace Booksy.ServiceCatalog.Application.Queries.Notifications.GetInbox
                 pageSize: query.PageSize,
                 cancellationToken);
 
+            // Only what actually reached this person. The history query returns every row for a recipient,
+            // including ones still Queued for a future time and ones that failed — putting either in an
+            // inbox shows somebody a message no channel has delivered. This is also what keeps the list and
+            // the unread badge in agreement, since the count is filtered the same way.
+            var delivered = notifications
+                .Where(n => n.Status is NotificationStatus.Sent
+                                     or NotificationStatus.Delivered
+                                     or NotificationStatus.Read)
+                .ToList();
+
             var visible = query.UnreadOnly
-                ? notifications.Where(n => n.ReadAt is null).ToList()
-                : notifications;
+                ? delivered.Where(n => n.ReadAt is null).ToList()
+                : delivered;
 
             var targets = visible
                 .Select(TargetOf)

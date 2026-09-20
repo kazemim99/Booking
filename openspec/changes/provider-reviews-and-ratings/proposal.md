@@ -5,8 +5,9 @@ with convincing Persian data, and every client renders a rating — but in produ
 `Provider.AverageRating` is never written by any code path, so every provider card, every "sort by
 rating" result and every profile header shows a number that means nothing. Around it: the provider can
 never reply (the domain method exists with no caller), anyone on the internet can inflate a review's
-helpful count without logging in and without limit, the web app's edit-review dialog calls an endpoint
-that returns 404, and not one test covers any of it.
+helpful count without logging in and without limit, the web app's reviews tab renders six hardcoded
+Persian reviews and a hardcoded 4.8/127 rather than anything the API returned, its edit dialog PATCHes a
+UserManagement route that does not exist, and not one test covers any of it.
 
 At the same time the product needs more than one star. A salon is not good or bad as a single scalar:
 customers choose on hygiene, on whether the result was skilled, on whether their time was respected and
@@ -46,7 +47,10 @@ the provider's overall average, per-dimension averages and review count. This is
 honest for the first time.
 
 **Review editing gets a backend.** A bounded edit window for the author; an edited review re-enters
-moderation. This closes the 404 the web client already ships against.
+moderation, and a Rejected or Hidden review is not editable at all. The web client's edit dialog is
+repointed onto it: today it PATCHes `/api/v1/customers/{id}/reviews/{id}` on UserManagement, a route
+`CustomersController` does not define, and the one frontend service that does call the ServiceCatalog
+reviews routes is imported by nothing.
 
 **Eligibility is unchanged and deliberate**: only the customer of a `Completed` booking may review, one
 review per booking. Kept as-is because it is what makes every review verified by construction and what
@@ -67,8 +71,14 @@ keeps competitor and bot reviews out.
 ### Modified Capabilities
 
 - `customer-discovery-journey`: the requirement that result cards show a rating currently resolves to a
-  value no code writes. It changes to require a rating derived from published reviews, with an explicit
-  "no reviews yet" state rather than a rating of zero standing in for absence.
+  value no code writes, beside a review count the search API declares but never assigns. It changes to
+  require a rating and count derived from published reviews, an explicit "no reviews yet" state rather
+  than a rating of zero standing in for absence, and a stated position for unrated providers in both
+  sort directions.
+- `customer-profile`: its "Review Management" requirement specifies a 500-character limit, a plain 1–5
+  star rating, and a `PATCH /api/v1/customers/reviews/{id}` route — all three contradict this change
+  (10–2000 characters, half-star increments plus dimensions, a ServiceCatalog route), and it has no
+  notion of a review being held for approval. Without the delta the two capabilities ship disagreeing.
 
 ## Impact
 
@@ -79,9 +89,11 @@ provider rating aggregates written on publish/unpublish. EF migrations against t
 reviews already exist in production, so the migration must backfill existing rows into a defensible
 moderation state rather than hide them all.
 
-**API** — new: provider reply, edit review, report review, moderation queue and decisions. Changed:
-`PUT /reviews/{id}/helpful` becomes authenticated and idempotent per user; `GET
-/reviews/providers/{id}` returns published only and gains dimension breakdowns.
+**API** — new: provider reply, edit review, report review, the author's own review list, an
+owner-scoped provider review list, the moderation queue, the reported-review list, and the moderation
+decisions. Changed: `PUT /reviews/{id}/helpful` becomes authenticated and idempotent per user; `GET
+/reviews/providers/{id}` returns published only to the public caller and gains dimension breakdowns —
+and its statistics block, which today averages every review regardless of state, is filtered with it.
 
 **Clients**: `booksy-frontend` (write/edit review with dimensions, vote state, provider reply display),
 `booksy-admin` (the moderation queue — new surface, pulled in by the approval decision),

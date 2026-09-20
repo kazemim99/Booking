@@ -79,3 +79,18 @@ The helpful and not-helpful counters that exist before per-user voting was intro
 #### Scenario: Withdrawing a vote cannot erode the baseline
 - **WHEN** a user withdraws their helpful vote on a review carrying a baseline of 7 helpful
 - **THEN** the review displays 7 helpful and never fewer
+
+### Requirement: Everything derived from vote counts is derived from baseline plus live votes
+The helpfulness ratio, the "considered helpful" determination, and any ordering by helpfulness SHALL all be computed over the sum of the legacy baseline and the live votes. A review created after the baseline was frozen SHALL be able to become helpful, and helpfulness ordering SHALL respond to votes cast after the freeze.
+
+#### Scenario: A review created after the freeze can become helpful
+- **WHEN** a review with no legacy baseline receives enough live helpful votes to meet the helpful threshold
+- **THEN** it is reported as considered helpful
+
+#### Scenario: The helpfulness ratio reflects live votes
+- **WHEN** a review carrying a baseline of 7 helpful and 2 not helpful receives one live not-helpful vote
+- **THEN** its reported ratio is computed over 7 helpful and 3 not helpful
+
+#### Scenario: Sorting by helpfulness responds to new votes
+- **WHEN** reviews are listed sorted by helpfulness and a review with no baseline collects more live votes than one with a baseline
+- **THEN** it is ordered above it

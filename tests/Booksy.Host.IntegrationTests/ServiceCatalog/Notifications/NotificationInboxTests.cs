@@ -158,6 +158,48 @@ public class NotificationInboxTests : ServiceCatalogIntegrationTestBase
         item["subject"]!.Value<string>().Should().NotBeNullOrWhiteSpace();
     }
 
+    [Fact]
+    public async Task An_outbox_intent_scheduled_for_the_future_is_not_in_my_inbox_yet()
+    {
+        // Safe by construction: a scheduled intent does not become a Notification until it is due.
+        var me = Guid.NewGuid();
+        await RaiseAsync(NotificationEventCode.BookingReminder24h, me, scheduledFor: DateTime.UtcNow.AddDays(1));
+        await SweepOnceAsync();
+
+        AuthenticateAsUser(me);
+        (await GetInboxAsync())["items"]!.Should().BeEmpty();
+    }
+
+    [Fact]
+    public async Task A_queued_notification_that_has_not_been_sent_is_not_in_my_inbox()
+    {
+        // The legacy path (ScheduleNotificationCommand) writes a Notification row immediately, Queued, with
+        // a future ScheduledFor. The inbox must not show it: nothing has reached this person yet, and
+        // showing it would put a message in their list that no channel has delivered.
+        var me = Guid.NewGuid();
+        await QueueLegacyNotificationAsync(me, DateTime.UtcNow.AddHours(2));
+
+        AuthenticateAsUser(me);
+        (await GetInboxAsync())["items"]!.Should().BeEmpty();
+    }
+
+    [Fact]
+    public async Task The_inbox_and_the_unread_count_agree()
+    {
+        // They read from different queries. If one filters on delivery state and the other does not, the
+        // badge says 1 and the list shows 3 — and nobody can tell which is lying.
+        var me = Guid.NewGuid();
+        await RaiseAndSweepAsync(NotificationEventCode.BookingConfirmed, me);
+        await QueueLegacyNotificationAsync(me, DateTime.UtcNow.AddHours(2));
+
+        AuthenticateAsUser(me);
+
+        var listed = (await GetInboxAsync())["items"]!.Children().Count();
+        var unread = await GetUnreadCountAsync();
+
+        listed.Should().Be(unread);
+    }
+
     // ── helpers ──
 
     /// <summary>
@@ -170,6 +212,47 @@ public class NotificationInboxTests : ServiceCatalogIntegrationTestBase
     /// <summary>Signs in as a specific user id, which is what every scoping assertion here turns on.</summary>
     private void AuthenticateAsUser(Guid userId) =>
         AuthenticateAs(TestUser.Customer(userId: userId));
+
+    private async Task RaiseAsync(
+        NotificationEventCode code,
+        Guid recipientId,
+        DateTime? scheduledFor = null)
+    {
+        using var scope = Factory.Services.CreateScope();
+        var context = scope.ServiceProvider.GetRequiredService<ServiceCatalogDbContext>();
+        var raiser = scope.ServiceProvider.GetRequiredService<INotificationRaiser>();
+
+        await raiser.RaiseAsync(
+            code,
+            recipientId,
+            Guid.NewGuid(),
+            new Dictionary<string, string> { ["businessName"] = "سالن نهال" },
+            scheduledFor: scheduledFor);
+
+        await context.SaveChangesAsync();
+    }
+
+    /// <summary>Writes a Queued, future-dated notification the way the legacy schedule command does.</summary>
+    private async Task QueueLegacyNotificationAsync(Guid recipientId, DateTime scheduledFor)
+    {
+        using var scope = Factory.Services.CreateScope();
+        var mediator = scope.ServiceProvider.GetRequiredService<MediatR.ISender>();
+
+        await mediator.Send(new Application.Commands.Notifications.ScheduleNotification.ScheduleNotificationCommand(
+            RecipientId: recipientId,
+            Type: NotificationType.ReviewRequest,
+            Channel: NotificationChannel.InApp,
+            Subject: "How was your experience?",
+            Body: "<p>legacy</p>",
+            ScheduledFor: scheduledFor));
+    }
+
+    private async Task SweepOnceAsync()
+    {
+        using var scope = Factory.Services.CreateScope();
+        var job = scope.ServiceProvider.GetRequiredService<ProcessNotificationOutboxJob>();
+        await job.ExecuteAsync();
+    }
 
     private async Task RaiseAndSweepAsync(
         NotificationEventCode code,

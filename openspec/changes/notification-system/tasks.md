@@ -394,3 +394,20 @@ test-first.
   Reused the `provider` already loaded and validated by the handler rather than fetching it again — the
   booking cannot change salon, so a second lookup would only be a second chance to disagree with itself.
 - 2026-09-21 592 integration tests pass; verify FAST PASS (10 steps, 94s).
+- 2026-09-21 DEFECT found by booking-d2, verified here, fixed test-first. Two separate bugs, one of them
+  mine and worse than the one reported.
+  (a) DUPLICATE REVIEW REQUEST: `BookingCompletedNotificationHandler` scheduled its OWN review request at
+  CompletedAt+2h with hardcoded English HTML and an `href='#'` button, while `CompleteBookingCommandHandler`
+  already raises the outbox ReviewRequest for the same booking. Handler DELETED — this is exactly 7.4's
+  "remove each superseded handler once its outbox coverage is in place", and the coverage is in place.
+  Verified no other references before deleting.
+  (b) MINE, AND WORSE: the inbox showed notifications that had not been delivered. `GetInbox` used
+  `GetUserNotificationHistoryAsync`, which filters on recipient ALONE — no status, no scheduled-for — so a
+  Queued, future-dated legacy row appeared in the list as if it had arrived, while `GetUnreadCountAsync`
+  correctly counted only Sent/Delivered. The list and the badge disagreed, and nobody could tell which was
+  lying. Inbox now filters to Sent/Delivered/Read, matching the count.
+  Note the outbox path was never affected: a scheduled INTENT does not become a Notification until it is
+  due, so it cannot appear early. The bug was reachable only through the legacy schedule command — which
+  is precisely the sort of thing that survives when two mechanisms coexist.
+  3 new inbox tests, including one asserting the list and the badge agree.
+- 2026-09-21 595 integration tests pass; verify FAST PASS (10 steps, 81s).
