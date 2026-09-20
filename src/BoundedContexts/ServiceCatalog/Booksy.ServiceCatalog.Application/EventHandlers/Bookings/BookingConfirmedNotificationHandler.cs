@@ -17,16 +17,16 @@ namespace Booksy.ServiceCatalog.Application.EventHandlers.Bookings
     public sealed class BookingConfirmedNotificationHandler : IDomainEventHandler<BookingConfirmedEvent>
     {
         private readonly ISender _mediator;
-        private readonly IBookingReadRepository _bookings;
+        private readonly IProviderReadRepository _providers;
         private readonly ILogger<BookingConfirmedNotificationHandler> _logger;
 
         public BookingConfirmedNotificationHandler(
             ISender mediator,
-            IBookingReadRepository bookings,
+            IProviderReadRepository providers,
             ILogger<BookingConfirmedNotificationHandler> logger)
         {
             _mediator = mediator;
-            _bookings = bookings;
+            _providers = providers;
             _logger = logger;
         }
 
@@ -36,12 +36,16 @@ namespace Booksy.ServiceCatalog.Application.EventHandlers.Bookings
 
             try
             {
-                // Send notification to customer. A booking the salon entered belongs to someone in
-                // ITS customer book, and the aggregate's "customer" is then the salon's own owner —
-                // notifying them would tell the salon about its own work. That customer is told by
-                // ProviderCustomerBookingSmsHandler instead, in their language, on their phone.
-                var booking = await _bookings.GetByIdAsync(notification.BookingId, cancellationToken);
-                if (booking?.ProviderCustomerId is null)
+                // Send notification to customer — unless the salon entered this booking itself, in
+                // which case the aggregate's "customer" IS the salon's owner and this notice would
+                // tell them about their own work. Their customer is told separately, by SMS.
+                //
+                // Decided from the provider, never by re-reading the booking: on the transactional
+                // path events are dispatched BEFORE SaveChangesAsync, so the booking is not in the
+                // database yet and a read returns null (measured 2026-09-20).
+                var provider = await _providers.GetByIdAsync(notification.ProviderId, cancellationToken);
+                var enteredBySalon = provider is not null && provider.OwnerId.Equals(notification.CustomerId);
+                if (!enteredBySalon)
                 {
                     await SendCustomerNotificationAsync(notification, cancellationToken);
                 }

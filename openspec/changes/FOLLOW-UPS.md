@@ -118,9 +118,38 @@ The generated `*.g.dart` files are therefore tracked in git (2026-09-20) so CI c
 and deploy. Upgrade retrofit_generator (or pin an SDK it supports) and then decide whether to go
 back to generating them in CI.
 
-## #66 Booking domain events are raised but never dispatched
-`Booking.CreateConfirmedByProvider` raises `BookingConfirmedEvent`, and the
-`Booking*NotificationHandler`s exist, but nothing dispatches them on the create path: a handler
-added there never runs (measured 2026-09-20 while adding the customer booking SMS, which is sent
-from the command handler instead). Either wire the dispatcher into the booking write path or
-delete the handlers — today they read as working code that is never reached.
+## #66 Domain events are dispatched BEFORE the save, so a handler cannot read what triggered it
+
+Corrected 2026-09-20 (this entry first claimed, and was then widened to claim, that ServiceCatalog
+domain events are never dispatched; **both were wrong** — measured, not traced):
+
+- A `POST /api/v1/bookings` creates two rows in `ServiceCatalog."Notifications"` (integration probe,
+  0 -> 2), which only `BookingConfirmedNotificationHandler` writes. Handlers on the booking create
+  path DO run.
+- `TransactionBehavior` wraps commands in `ExecuteInTransactionAsync<T>` (EfCoreUnitOfWork:225),
+  which calls `CommitAndPublishEventsAsync` (:242). The non-generic overload (:298) calls
+  `SaveChangesAsync` (:317). Both dispatch.
+
+The real defect is the ORDER. `CommitAndPublishEventsAsync` dispatches and only then calls
+`SaveChangesAsync`, so when a handler runs, the aggregate that raised the event is **not yet in the
+database**. Any handler that re-reads it by id gets null and silently does nothing — which is
+exactly what happened to a booking SMS handler and to the guard that was supposed to stop the salon
+owner being notified about their own walk-in (fixed 2026-09-20 by deciding from the event plus the
+provider, which was committed earlier). `SaveAndPublishEventsAsync` (:368) has the opposite order — save, then
+dispatch — and is called directly by roughly 35 handlers: membership, staff, provider-customer and
+every UserManagement command. Those are safe. The commands that rely on `TransactionBehavior`
+alone, booking and payment among them, get the defective order.
+
+Consequences to keep in mind:
+- A handler must take what it needs from the event, or read only entities committed before this
+  transaction. Re-reading the subject of the event is a silent no-op.
+- Dispatch before commit also means a handler's side effect (SMS, email) can escape for work that
+  is then rolled back. Same family as the CAP-publishes-before-commit note.
+- **UserManagement behaves differently:** `UserManagementDbContext.SaveChangesAsync` (:74) collects
+  and dispatches on save (`CollectDomainEvents`, :126). The two contexts do not share an order.
+
+Do not "fix" this by flipping the order globally: handlers have been running against pre-save state
+for as long as they have existed, and some of them (ledger posting) move money. Change it
+per-handler, with a test that proves what that handler now sees.
+`openspec/changes/notification-system/design.md` chooses a transactional outbox, which sidesteps the
+ordering entirely.

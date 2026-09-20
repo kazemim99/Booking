@@ -47,8 +47,8 @@ User report (2026-09-19, provider app, booking screen):
   is then found-or-saved (source Booking) and linked, in the booking's own transaction. Invalid or
   missing number 400; a saved name is never overwritten. 4 tests + the older walk-in test updated.
 - 1.3 BookingSmsText (Persian, Jalali, salon wall-clock; 4 unit tests) sent from the booking handler
-  — Booking's domain events are never dispatched in this codebase (no publisher), so an event
-  handler would have been dead code; the send is last, after every write, and never fatal.
+  — an event handler could not do it: events are dispatched BEFORE the save, so a handler that
+  re-reads the booking finds nothing (corrected 2026-09-20, FOLLOW-UPS #66); the send is last, after every write, and never fatal.
   Booking.NotifyCustomer (migration AddBookingNotifyCustomer, default true) carries the salon's
   opt-out. The owner no longer gets the English "your booking is confirmed" notice for their own
   walk-ins. 2 integration tests with the capturing SMS fake.
@@ -72,3 +72,9 @@ User report (2026-09-19, provider app, booking screen):
 - Note: production still runs SMS in sandbox mode with no gateway credentials, so the booking SMS
   is composed and dispatched but reaches no phone until an SMS provider is configured (FOLLOW-UPS
   #58 covers the same switch).
+- 2026-09-20 CORRECTION, found by probing rather than reading: ServiceCatalog domain events ARE
+  dispatched (a booking POST writes 2 Notifications rows) — but BEFORE SaveChangesAsync, so the
+  guard shipped here, which re-read the booking to see whether the salon entered it, never fired:
+  the owner kept getting the English "your booking is confirmed" notice. It now decides from the
+  event and the provider (committed earlier), with a test that fails on the old behaviour.
+  FOLLOW-UPS #66 rewritten with the measurement.
