@@ -49,3 +49,10 @@ on what a customer sees while choosing a salon.
   feeds every customer-facing projection — search, map, featured, by-status, detail — so the cards
   stop showing a placeholder while the salon's photos sit on the server; the detail response
   carries the whole gallery, chosen first, for the profile slider. 2 integration tests.
+- 2026-09-20 The photos still did not appear after 1.2 shipped, and the reason was in the app, not
+  the data: every salon photo went through `cached_network_image`, whose cache manager stores files
+  through dart:io — which a browser build does not have — so each one fell through to the
+  placeholder while the URLs were served correctly (verified anonymously against production:
+  search returns logoUrl, /uploads answers 200 with the right CORS headers). ProviderImage now uses
+  the browser's own Image.network on web and keeps the cached loader elsewhere; the home promo strip
+  and the search result card were rendering their own copies and now share it.

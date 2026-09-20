@@ -1,4 +1,5 @@
 import 'package:cached_network_image/cached_network_image.dart';
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 
 import '../../config/theme/app_tokens.dart';
@@ -35,22 +36,30 @@ class ProviderImage extends StatelessWidget {
       height: height,
       child: url == null || url.isEmpty
           ? _placeholder(context)
-          : CachedNetworkImage(
-              imageUrl: url,
-              fit: BoxFit.cover,
-              width: width,
-              height: height,
-              placeholder: (_, __) => SkeletonLoader(
-                child: SkeletonLoader.box(
+          : kIsWeb
+              ? Image.network(
+                  url,
+                  fit: BoxFit.cover,
                   width: width,
-                  height: height ?? 96,
-                  radius: 0,
+                  height: height,
+                  loadingBuilder: (context, child, progress) =>
+                      progress == null ? child : _loading(),
+                  errorBuilder: (_, __, ___) => _placeholder(context),
+                )
+              : CachedNetworkImage(
+                  imageUrl: url,
+                  fit: BoxFit.cover,
+                  width: width,
+                  height: height,
+                  placeholder: (_, __) => _loading(),
+                  errorWidget: (_, __, ___) => _placeholder(context),
                 ),
-              ),
-              errorWidget: (_, __, ___) => _placeholder(context),
-            ),
     );
   }
+
+  Widget _loading() => SkeletonLoader(
+        child: SkeletonLoader.box(width: width, height: height ?? 96, radius: 0),
+      );
 
   Widget _placeholder(BuildContext context) {
     final theme = Theme.of(context);

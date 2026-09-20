@@ -1,4 +1,3 @@
-import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
@@ -27,16 +26,13 @@ class ProviderResultCard extends StatelessWidget {
           SizedBox(
             width: 96,
             height: 96,
-            child: provider.imageUrl != null
-                ? CachedNetworkImage(
-                    imageUrl: provider.imageUrl!,
-                    fit: BoxFit.cover,
-                    placeholder: (_, __) => SkeletonLoader(
-                      child: SkeletonLoader.box(height: 96, radius: 0),
-                    ),
-                    errorWidget: (_, __, ___) => _placeholder(theme),
-                  )
-                : _placeholder(theme),
+            // One widget owns how a salon photo loads (it uses the browser's own
+            // image loading on web, where the cache manager cannot work).
+            child: ProviderImage(
+              imageUrl: provider.imageUrl,
+              width: 96,
+              height: 96,
+            ),
           ),
           Expanded(
             child: Padding(
@@ -92,12 +88,4 @@ class ProviderResultCard extends StatelessWidget {
     );
   }
 
-  Widget _placeholder(ThemeData theme) => Container(
-        color: theme.colorScheme.surfaceContainerHighest,
-        child: Icon(
-          Icons.storefront_outlined,
-          size: 28,
-          color: theme.colorScheme.onSurfaceVariant,
-        ),
-      );
 }
