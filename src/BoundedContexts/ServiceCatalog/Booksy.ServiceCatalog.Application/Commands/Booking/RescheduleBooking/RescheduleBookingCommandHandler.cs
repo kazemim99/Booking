@@ -23,6 +23,7 @@ namespace Booksy.ServiceCatalog.Application.Commands.Booking.RescheduleBooking
     {
         private readonly IBookingWriteRepository _bookingWriteRepository;
         private readonly IBookingReminderScheduler _reminders;
+        private readonly INotificationRaiser _notifications;
         private readonly IBookingReadRepository _bookingReadRepository;
         private readonly IProviderReadRepository _providerRepository;
         private readonly IBookableResourceResolver _resourceResolver;
@@ -45,7 +46,8 @@ namespace Booksy.ServiceCatalog.Application.Commands.Booking.RescheduleBooking
             IAvailabilityService availabilityService,
             IServiceCatalogUnitOfWork unitOfWork,
             ILogger<RescheduleBookingCommandHandler> logger,
-            IBookingReminderScheduler reminders)
+            IBookingReminderScheduler reminders,
+            INotificationRaiser notifications)
         {
             _bookingWriteRepository = bookingWriteRepository;
             _bookingReadRepository = bookingReadRepository;
@@ -56,6 +58,7 @@ namespace Booksy.ServiceCatalog.Application.Commands.Booking.RescheduleBooking
             _availabilityService = availabilityService;
             _unitOfWork = unitOfWork;
             _reminders = reminders;
+            _notifications = notifications;
             _logger = logger;
         }
 
@@ -148,6 +151,31 @@ namespace Booksy.ServiceCatalog.Application.Commands.Booking.RescheduleBooking
             // their appointment.
             await _reminders.WithdrawAsync(existingBooking.Id.Value, cancellationToken);
             await _reminders.ScheduleAsync(newBooking, cancellationToken);
+
+            // Tell whoever did not move it. Filed against the NEW booking: the old one is closed and
+            // everything attached to it has just been withdrawn, so a notice left there would be
+            // cancelled before it could ever go out.
+            //
+            // `provider` is already loaded and validated above, and the booking cannot change salon,
+            // so it is reused rather than fetched again.
+            var movedByProvider = provider.OwnerId.Value == request.ActingUserId;
+            var rescheduleParameters = new Dictionary<string, string>
+            {
+                [NotificationParameter.BusinessName] = provider.Profile.BusinessName,
+                [NotificationParameter.StartTime] = newBooking.TimeSlot.StartTime.ToString("o"),
+            };
+
+            await _notifications.RaiseAsync(
+                movedByProvider
+                    ? Domain.Enums.NotificationEventCode.BookingRescheduled
+                    : Domain.Enums.NotificationEventCode.BookingRescheduledByCustomer,
+                movedByProvider ? newBooking.CustomerId.Value : provider.OwnerId.Value,
+                dedupKey: newBooking.Id.Value,
+                parameters: rescheduleParameters,
+                subjectType: BookingReminderScheduler.BookingSubject,
+                subjectId: newBooking.Id.Value,
+                cancellationToken: cancellationToken);
+
 
             // ========================================
             // ATOMIC AVAILABILITY SLOT MANAGEMENT

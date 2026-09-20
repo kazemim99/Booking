@@ -119,8 +119,10 @@ the structural work — each is a row's timing, not a shape.
       per booking, written as a requirement rather than an implementation detail — so every review carries a
       booking id and this subject key cannot drift.
 
-- [ ] 7.7 Reschedule raising: tell the party who did not move it, distinguishing the actor the same way
-      cancellation does.
+- [x] 7.7 Reschedule raising: the party who did not move it is told, actor inferred from the authenticated
+      caller exactly as cancellation does. Filed against the NEW booking — rescheduling closes one booking
+      and opens another, and everything attached to the closed one has just been withdrawn, so a notice
+      left there would be cancelled before it could go out. 4 integration tests.
 
 ## 8. `NotificationType` repair (BREAKING)
 
@@ -383,3 +385,12 @@ test-first.
   false. Assertions now name the reminder codes. This is the blunt-instrument property of
   `WithdrawPendingForSubjectAsync` that I warned booking-d2 about, showing up in my own tests.
 - 2026-09-21 588 integration tests pass; verify FAST PASS (10 steps, 107s).
+- 2026-09-21 7.7 done, test-first (4 red, then green).
+  Two arrange lessons worth recording, both cost a cycle:
+  * A reschedule needs a DIRECT booking (staffId == provider id). Using a bookable member id needs
+    availability rows this fixture does not create, so the reschedule is refused with 400 long before any
+    notification is reached — the test fails for a reason that has nothing to do with what it tests.
+  * `Booksy.ServiceCatalog.Domain.Enums.DayOfWeek` shadows `System.DayOfWeek` in these files. Qualify it.
+  Reused the `provider` already loaded and validated by the handler rather than fetching it again — the
+  booking cannot change salon, so a second lookup would only be a second chance to disagree with itself.
+- 2026-09-21 592 integration tests pass; verify FAST PASS (10 steps, 94s).
