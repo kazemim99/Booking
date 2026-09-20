@@ -1,4 +1,4 @@
-// ========================================
+﻿// ========================================
 // Booksy.ServiceCatalog.Application/Commands/Booking/CreateBooking/CreateBookingCommandHandler.cs
 // ========================================
 using Booksy.Core.Application.Abstractions.CQRS;
@@ -35,6 +35,8 @@ namespace Booksy.ServiceCatalog.Application.Commands.Booking.CreateBooking
         private readonly IServiceCatalogUnitOfWork _unitOfWork;
         private readonly IProviderCustomerRepository _providerCustomers;
         private readonly ISmsNotificationService _sms;
+        private readonly INotificationRaiser _notifications;
+        private readonly IBookingReminderScheduler _reminders;
         private readonly ILogger<CreateBookingCommandHandler> _logger;
 
         public CreateBookingCommandHandler(
@@ -48,6 +50,8 @@ namespace Booksy.ServiceCatalog.Application.Commands.Booking.CreateBooking
             IServiceCatalogUnitOfWork unitOfWork,
             IProviderCustomerRepository providerCustomers,
             ISmsNotificationService sms,
+            INotificationRaiser notifications,
+            IBookingReminderScheduler reminders,
             ILogger<CreateBookingCommandHandler> logger)
         {
             _bookingWriteRepository = bookingWriteRepository;
@@ -60,6 +64,8 @@ namespace Booksy.ServiceCatalog.Application.Commands.Booking.CreateBooking
             _unitOfWork = unitOfWork;
             _providerCustomers = providerCustomers;
             _sms = sms;
+            _notifications = notifications;
+            _reminders = reminders;
             _logger = logger;
         }
 
@@ -235,6 +241,10 @@ namespace Booksy.ServiceCatalog.Application.Commands.Booking.CreateBooking
                 cancellationToken);
 
 
+            // Tell the people this booking concerns. Recorded on this unit of work, so the notifications
+            // commit with the booking or vanish with it; nothing is sent from inside the request.
+            await RaiseBookingNotificationsAsync(booking, provider, bookedFor is not null, cancellationToken);
+
             // The customer hears about the appointment the salon just made for them. Last, after
             // every check and write has succeeded, and never fatal: the appointment is real whether
             // or not the message gets out.
@@ -260,6 +270,63 @@ namespace Booksy.ServiceCatalog.Application.Commands.Booking.CreateBooking
                 RequiresDeposit: booking.Policy.RequireDeposit,
                 Status: booking.Status.ToString(),
                 RequestedAt: booking.RequestedAt);
+        }
+
+        /// <summary>
+        /// Records the notifications a new booking causes: one for the customer, one for the salon.
+        /// </summary>
+        /// <remarks>
+        /// <para>A salon-entered booking and a customer's own booking are different events and get different
+        /// codes. An online booking arrives as a request awaiting the salon's decision; a salon-entered one is
+        /// already confirmed.</para>
+        ///
+        /// <para><b>A walk-in customer is not notified here.</b> When the salon books for someone in its own
+        /// customer book, the aggregate's customer is the salon owner — notifying them would tell the salon
+        /// about its own work. That person is told by the Persian SMS below, on their own phone.</para>
+        /// </remarks>
+        private async Task RaiseBookingNotificationsAsync(
+            Domain.Aggregates.BookingAggregate.Booking booking,
+            Domain.Aggregates.Provider provider,
+            bool isForProviderCustomer,
+            CancellationToken cancellationToken)
+        {
+            var confirmed = booking.Status == Domain.Enums.BookingStatus.Confirmed;
+            var parameters = new Dictionary<string, string>
+            {
+                [NotificationParameter.BusinessName] = provider.Profile.BusinessName,
+                [NotificationParameter.StartTime] = booking.TimeSlot.StartTime.ToString("o"),
+            };
+        
+            if (!isForProviderCustomer)
+            {
+                await _notifications.RaiseAsync(
+                    confirmed
+                        ? Domain.Enums.NotificationEventCode.BookingConfirmed
+                        : Domain.Enums.NotificationEventCode.BookingRequested,
+                    booking.CustomerId.Value,
+                    dedupKey: booking.Id.Value,
+                    parameters: parameters,
+                    subjectType: BookingReminderScheduler.BookingSubject,
+                    subjectId: booking.Id.Value,
+                    cancellationToken: cancellationToken);
+            }
+        
+            // The salon is a person too: notifications are addressed to the owner's user id, never to a
+            // provider id, because the inbox and preferences are keyed by user.
+            await _notifications.RaiseAsync(
+                confirmed
+                    ? Domain.Enums.NotificationEventCode.NewBookingConfirmed
+                    : Domain.Enums.NotificationEventCode.NewBookingRequest,
+                provider.OwnerId.Value,
+                dedupKey: booking.Id.Value,
+                parameters: parameters,
+                subjectType: BookingReminderScheduler.BookingSubject,
+                subjectId: booking.Id.Value,
+                cancellationToken: cancellationToken);
+        
+            // Reminders only make sense once the appointment is actually happening.
+            if (confirmed)
+                await _reminders.ScheduleAsync(booking, cancellationToken);
         }
 
         private async Task NotifyCustomerAsync(

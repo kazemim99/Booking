@@ -81,8 +81,11 @@ the structural work — each is a row's timing, not a shape.
 
 ## 7. Provider and customer coverage
 
-- [ ] 7.1 Raise from the booking command handlers: requested (→ provider), confirmed, rescheduled, cancelled
-      **distinguishing the actor**, completed, no-show. Supersedes the existing event handlers path by path.
+- [~] 7.1 CREATE is done: an online booking raises BookingRequested to the customer and NewBookingRequest
+      to the salon; a salon-entered one raises BookingConfirmed / NewBookingConfirmed and schedules
+      reminders. A walk-in customer is deliberately NOT notified here — the aggregate's customer is the
+      salon owner, and that person is reached by the Persian SMS instead. Still to raise: rescheduled,
+      cancelled (distinguishing the actor), completed, no-show.
 - [ ] 7.2 Raise from the payment/payout handlers: payment taken, payment failed, refund, payout completed,
       payout failed/on-hold.
 - [ ] 7.3 Raise for membership and verification: invitation accepted, join request approved, staff assigned
@@ -90,8 +93,14 @@ the structural work — each is a row's timing, not a shape.
 - [ ] 7.4 Remove each superseded notification event handler only after its outbox coverage is in place and
       tested, so no notification has a window with neither. FOLLOW-UPS #66 (dispatch ordering) stays open as
       its own change.
-- [ ] 7.5 `[?] DECISION:` daily provider digest — send it at all, and at what salon-local hour?
-- [ ] 7.6 `[?] DECISION:` review requests — how long after completion, and how many times?
+- [ ] 7.5 Daily provider digest — DECIDED 2026-09-20: yes, 08:00 salon-local, push + in-app, no SMS.
+      One scheduled intent per provider per day; skip the send when the day has no bookings rather than
+      sending "you have 0 appointments". Salon-local means the provider's wall-clock (FOLLOW-UPS #63), not
+      UTC 08:00.
+- [ ] 7.6 Review request — DECIDED 2026-09-20: 2 hours after completion, plus ONE reminder 3 days later
+      only if no review was left by then. Two scheduled intents; the 3-day one is withdrawn as soon as a
+      review arrives, so it must be filed under a subject the review flow can withdraw by. Never more than
+      two in total.
 
 ## 8. `NotificationType` repair (BREAKING)
 
@@ -120,7 +129,7 @@ test-first.
       claim with no test today.
 - [ ] 10.5 Delivery log records a rejected send as failed and an accepted one as delivered.
 - [ ] 10.7 Reschedule: assert reminders move to the new booking (the handler does it; no test asserts it).
-- [ ] 10.6 End-to-end: a real API booking through confirm → outbox → sweep → notification → delivery.
+- [x] 10.6 End-to-end: a real API booking through confirm → outbox → sweep → notification → delivery.
 
 ## 9. Verification
 
@@ -312,3 +321,24 @@ test-first.
   -3h respectively, with the pending reminder seeded directly, because by then every reminder offset has
   correctly elapsed. The point under test is the handler's withdrawal call, not how the row arrived.
 - 2026-09-20 verify FAST PASS (10 steps, 150s).
+- 2026-09-20 DECISIONS from the user, all three answered together:
+  * Daily digest: YES, 08:00 salon-local. (I had flagged doubt — the salon already sees this on its Today
+    screen — and the user overrode that; building it.)
+  * Review request: 2h after completion + one 3-day reminder if still no review. The reminder needs a
+    withdrawal hook on the review flow, otherwise it nags people who already reviewed.
+  * Push: NOT yet. Commits stay local until sections 7-9 are done, then push once.
+- 2026-09-20 10.6 + 7.1, written test-first and it paid for itself immediately.
+  `NotificationEndToEndTests` (6) starts at POST /api/v1/bookings and ends at the customer's inbox. It was
+  RED when written — a real booking produced no notification at all, because nothing raised one. That is
+  what made it the failing test for 7.1 rather than a gap discovered later.
+  **BUG FOUND BY WRITING IT**: `BookingReminderScheduler` addressed the salon's reminder to
+  `booking.ProviderId` — a ProviderId, where the inbox, preferences and device registry are all keyed by
+  USER id. That reminder could never have been seen by anyone. Now resolved to `provider.OwnerId`, and
+  skipped entirely when there is no owner to tell.
+  That fix then correctly broke `BookingReminderTests`, which had been fabricating `ProviderId.New()`. The
+  test was asserting against a fiction; it now creates a real provider. This is the test-first rule paying
+  out twice in one task.
+  Also of note: `Nothing_is_delivered_before_the_sweep_runs` proves the notification really does travel
+  through the outbox rather than being sent inline by the request — the design claim, asserted.
+  82 notification integration tests pass.
+- 2026-09-20 verify FAST PASS (10 steps, 200s).

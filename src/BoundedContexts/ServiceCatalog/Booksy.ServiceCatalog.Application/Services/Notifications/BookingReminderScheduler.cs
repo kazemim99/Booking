@@ -75,6 +75,12 @@ namespace Booksy.ServiceCatalog.Application.Services.Notifications
             var service = await _services.GetByIdAsync(booking.ServiceId, cancellationToken);
 
             var businessName = provider?.Profile.BusinessName ?? "سالن";
+
+            // The salon's notifications go to the OWNER'S user id, not to the provider id. A notification
+            // is addressed to a person: the inbox, the preference lookup and the device registry are all
+            // keyed by user, so a provider id here would address nobody and the reminder would simply never
+            // be seen. Without an owner there is nobody to tell, so that reminder is skipped.
+            var providerRecipientId = provider?.OwnerId.Value;
             var serviceName = service?.Name;
             string? customerName = null;
 
@@ -102,9 +108,13 @@ namespace Booksy.ServiceCatalog.Application.Services.Notifications
                 if (due <= now)
                     continue;
 
+                var recipientId = toCustomer ? booking.CustomerId.Value : providerRecipientId;
+                if (recipientId is null)
+                    continue;
+
                 await _raiser.RaiseAsync(
                     code,
-                    recipientId: toCustomer ? booking.CustomerId.Value : booking.ProviderId.Value,
+                    recipientId: recipientId.Value,
 
                     // Keyed on the booking and the code, not on an event id: reminders are not caused by an
                     // event, and this is what makes re-confirming a booking idempotent.

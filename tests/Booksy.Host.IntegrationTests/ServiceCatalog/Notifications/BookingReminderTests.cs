@@ -102,25 +102,34 @@ public class BookingReminderTests : ServiceCatalogIntegrationTestBase
 
     private async Task<Booking> GivenConfirmedBookingAsync(TimeSpan startsIn)
     {
-        var booking = BookingFor(DateTime.UtcNow.Add(startsIn));
+        var booking = await BookingForAsync(DateTime.UtcNow.Add(startsIn));
         await ScheduleAsync(booking);
         return booking;
     }
 
     /// <summary>
-    /// Builds a booking aggregate in memory. The reminders are what is under test, not the booking flow, so
-    /// this deliberately does not go through the whole create-and-confirm pipeline.
+    /// Builds a booking against a REAL provider. The booking flow itself is not under test, but the
+    /// provider has to exist: the salon's reminder is addressed to its owner's user id, and a fabricated
+    /// provider id has no owner to address — so inventing one would silently drop that reminder and the
+    /// test would be asserting against a fiction.
     /// </summary>
-    private static Booking BookingFor(DateTime startTime) =>
-        Booking.CreateConfirmedByProvider(
+    private async Task<Booking> BookingForAsync(DateTime startTime)
+    {
+        var provider = await CreateTestProviderWithServicesAsync();
+        var service = (await DbContext.Services
+            .Where(s => s.ProviderId == provider.Id)
+            .ToListAsync()).First();
+
+        return Booking.CreateConfirmedByProvider(
             UserId.From(Guid.NewGuid()),
-            ProviderId.New(),
-            ServiceId.New(),
+            provider.Id,
+            service.Id,
             staffId: Guid.NewGuid(),
             startTime: startTime,
             duration: Duration.FromMinutes(60),
             totalPrice: Price.Create(100, "IRR"),
             policy: BookingPolicy.Default);
+    }
 
     private async Task ScheduleAsync(Booking booking)
     {
