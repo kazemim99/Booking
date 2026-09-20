@@ -25,6 +25,11 @@ public sealed class ProviderDetailsResult
     public AddressInfo Address { get; init; }
     public IEnumerable<BusinessHoursData> BusinessHours { get; init; }
     public string? LogoUrl { get; init; }
+
+    /// <summary>
+    /// Every photo the salon shows, the chosen one first, so a profile can page through them.
+    /// </summary>
+    public IReadOnlyList<ProviderImageItem> Images { get; init; } = Array.Empty<ProviderImageItem>();
     public string? ProfileImageUrl { get; init; }
     public string? WebsiteUrl { get; init; }
     public bool AllowOnlineBooking { get; init; }
@@ -67,3 +72,13 @@ public sealed class StaffProviderInfo
     public decimal AverageRating { get; init; }
     public int ServiceCount { get; init; }
 }
+
+/// <summary>One photo of the salon, in the three sizes the gallery stores.</summary>
+public sealed record ProviderImageItem(
+    Guid Id,
+    string ThumbnailUrl,
+    string MediumUrl,
+    string OriginalUrl,
+    bool IsPrimary,
+    int DisplayOrder);
+

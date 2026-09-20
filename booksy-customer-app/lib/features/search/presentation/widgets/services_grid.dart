@@ -5,6 +5,7 @@ import '../../../../config/theme/app_tokens.dart';
 import '../../../../core/constants/app_strings.dart';
 import '../../../../core/utils/jalali_formatter.dart';
 import '../../../booking/domain/entities/booking_entities.dart';
+import '../../../../core/utils/price_formatter.dart';
 
 /// "خدمات": the provider's services laid out in a compact two-column grid of
 /// name + price, so a salon with a dozen services reads at a glance instead of
@@ -67,7 +68,7 @@ class _ServiceCell extends StatelessWidget {
     final theme = Theme.of(context);
     final hasPrice = service.price > 0;
     final price = JalaliFormatter.toPersianDigits(
-      '${service.price.toStringAsFixed(0)} ${service.currency}'.trim(),
+      PriceFormatter.format(service.price.round()),
     );
     final duration = JalaliFormatter.toPersianDigits(
       '${service.durationMinutes} دقیقه',

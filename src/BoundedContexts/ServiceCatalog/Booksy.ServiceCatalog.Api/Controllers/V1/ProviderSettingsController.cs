@@ -26,6 +26,7 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using BreakTimeDto = Booksy.ServiceCatalog.Application.Commands.Provider.Registration.BreakTimeDto;
 using TimeSlotDto = Booksy.ServiceCatalog.Application.Commands.Provider.Registration.TimeSlotDto;
+using Booksy.Core.Domain.ValueObjects;
 
 namespace Booksy.ServiceCatalog.API.Controllers.V1;
 
@@ -687,7 +688,7 @@ public class ProviderSettingsController : ControllerBase
             request.DurationHours,
             request.DurationMinutes,
             request.Price,
-            request.Currency ?? "IRR",
+            request.Currency ?? PlatformCurrency.Code,
             request.Category,
             request.IsMobileService);
 
@@ -735,7 +736,7 @@ public class ProviderSettingsController : ControllerBase
             request.DurationHours,
             request.DurationMinutes,
             request.Price,
-            request.Currency ?? "IRR",
+            request.Currency ?? PlatformCurrency.Code,
             request.Category,
             request.IsMobileService);
 
@@ -930,7 +931,7 @@ public sealed class ServiceDetailResponse
     public string? Description { get; set; }
     public int DurationMinutes { get; set; }
     public decimal Price { get; set; }
-    public string Currency { get; set; } = "IRR";
+    public string Currency { get; set; } = PlatformCurrency.Code;
     public string? Category { get; set; }
     public string? Type { get; set; }
     public string? Status { get; set; }

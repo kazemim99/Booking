@@ -1,3 +1,4 @@
+using Booksy.Core.Domain.ValueObjects;
 ﻿// ========================================
 // Booksy.ServiceCatalog.Application/Specifications/Service/BookableServiceSpecification.cs
 // ========================================
@@ -11,7 +12,7 @@ namespace Booksy.ServiceCatalog.Application.Specifications.Service
         public ServiceInPriceRangeSpecification(
             decimal? minPrice = null,
             decimal? maxPrice = null,
-            string currency = "USD",
+            string currency = PlatformCurrency.Code,
             bool activeOnly = true,
             bool includePriceTiers = false)
         {
@@ -43,7 +44,7 @@ namespace Booksy.ServiceCatalog.Application.Specifications.Service
 
         }
 
-        public static ServiceInPriceRangeSpecification CreateAffordableServices(decimal budget, string currency = "USD")
+        public static ServiceInPriceRangeSpecification CreateAffordableServices(decimal budget, string currency = PlatformCurrency.Code)
         {
             var spec = new ServiceInPriceRangeSpecification(maxPrice: budget, currency: currency);
 
@@ -55,7 +56,7 @@ namespace Booksy.ServiceCatalog.Application.Specifications.Service
             return spec;
         }
 
-        public static ServiceInPriceRangeSpecification CreatePremiumServices(decimal threshold, string currency = "USD")
+        public static ServiceInPriceRangeSpecification CreatePremiumServices(decimal threshold, string currency = PlatformCurrency.Code)
         {
             var spec = new ServiceInPriceRangeSpecification(minPrice: threshold, currency: currency);
 

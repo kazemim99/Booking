@@ -17,6 +17,9 @@ public class ProviderDetailsResponse
     public bool AllowOnlineBooking { get; set; }
     public bool OffersMobileServices { get; set; }
     public string? LogoUrl { get; set; }
+
+    /// <summary>Every photo the salon shows, the one it chose first.</summary>
+    public IReadOnlyList<ProviderImageResponse> Images { get; set; } = Array.Empty<ProviderImageResponse>();
     public List<string>? Tags { get; set; }
     public DateTime RegisteredAt { get; set; }
     public DateTime? LastActiveAt { get; set; }
@@ -32,4 +35,15 @@ public class ProviderDetailsResponse
     public List<StaffMemberResponse>? Staff { get; internal set; }
     public string? ProfileImageUrl { get;  set; }
 
+}
+
+/// <summary>One salon photo, in the sizes the gallery stores.</summary>
+public class ProviderImageResponse
+{
+    public Guid Id { get; set; }
+    public string ThumbnailUrl { get; set; } = string.Empty;
+    public string MediumUrl { get; set; } = string.Empty;
+    public string OriginalUrl { get; set; } = string.Empty;
+    public bool IsPrimary { get; set; }
+    public int DisplayOrder { get; set; }
 }

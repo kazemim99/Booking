@@ -91,7 +91,7 @@ namespace Booksy.ServiceCatalog.Application.Queries.Provider.GetProviderProfile
                 ProviderId = provider.Id.Value,
                 BusinessName = provider.Profile.BusinessName,
                 Description = provider.Profile.BusinessDescription,
-                LogoUrl = provider.Profile.LogoUrl,
+                LogoUrl = provider.Profile.DisplayImageUrl,
                 ProfileImageUrl = provider.Profile.ProfileImageUrl,
                 PrimaryCategory = provider.PrimaryCategory,
                 Status = provider.Status,

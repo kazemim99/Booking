@@ -2,36 +2,37 @@
 
 ## Why
 
-Booksy tells its users almost nothing. A survey of the domain event surface turns up **37 notifications a
-customer or provider needs. Two of them actually reach a human.**
+Booksy's notification subsystem is more built than it looks and less trustworthy than it reads. The
+dispatcher, delivery log, de-duplication, retry, templates and preferences are real and tested. What sits on
+top of them is not.
 
-Those two are the OTP SMS and the Persian booking SMS added by `walk-in-customer-name-sms`, both sent
-directly from a command handler. Everything else is dead, and not for the reason it looks like: **ServiceCatalog
-domain events are never dispatched.** `TransactionBehavior` commits every command through
-`EfCoreUnitOfWork.ExecuteInTransactionAsync`, which does not dispatch, while the four methods that do
-dispatch are called only by five gallery-image handlers. UserManagement does not share the defect — its
-`DbContext.SaveChangesAsync` dispatches — so the two contexts behave differently. The result is that all ten
-notification event handlers (five booking, four payment, one invitation) have never executed. `design.md`
-has the full trace.
+**One channel lies.** `FirebasePushNotificationService` logs a warning and returns
+`(true, Guid.NewGuid(), null)` without sending. Every push is recorded in the delivery log as delivered, and
+the falsehood is undetectable from the data — the log is worthless exactly where it is meant to be evidence.
+There is no device-token registry to push to anyway.
 
-On top of that dead plumbing sit the ordinary gaps: a provider is never told a booking request arrived, and
-nobody is ever reminded of an appointment — the `BookingReminder` type, its seeded template and the
-`ProcessScheduledNotificationsJob` sweep all exist, and nothing ever creates the scheduled row.
+**Notifications are raised from a handler that runs before the commit.** `TransactionBehavior` routes every
+booking and payment command through `EfCoreUnitOfWork.ExecuteInTransactionAsync<T>`, which calls
+`CommitAndPublishEventsAsync` — that dispatches domain events and only *then* saves. So a notification
+handler fires while the booking that triggered it is not yet in the database. Two consequences, both live
+today: a handler that re-reads its subject by id gets null and silently does nothing, and a notification can
+escape for work that is subsequently rolled back. Membership, staff and all UserManagement commands use
+`SaveAndPublishEventsAsync` and get the opposite, correct order — so the ordering is inconsistent per
+command, which is worse than being uniformly wrong. Recorded as FOLLOW-UPS #66.
 
-Worse than the gaps, one path lies. `FirebasePushNotificationService` logs a warning and returns
-`(true, Guid.NewGuid(), null)` — so every push is recorded in the delivery log as delivered, and the
-falsehood is undetectable from the data. There is no device-token registry to push to and no persisted
-inbox to read on app open; in-app notification is fire-and-forget SignalR with a throwaway id.
+**Nobody is ever reminded of an appointment.** The `BookingReminder` type, its seeded template and the
+`ProcessScheduledNotificationsJob` sweep all exist; nothing ever creates the scheduled row.
 
-And the ten dead handlers were all written to send English HTML, assembled inline, with Gregorian dates —
-to an Iranian audience reached over Kavenegar/Rahyab SMS. Reviving them as-is would ship that; the copy has
-to move into templates as part of bringing them back.
+**A provider is never told a booking request arrived.** `BookingRequestedEvent` has no handler, so the moment
+a salon turns on `Provider.RequiresApproval`, requests expire in silence.
 
-The delivery *mechanics* are sound — `NotificationDispatcher` already enforces preference gating,
-per-(event, channel, recipient) de-duplication, retry with backoff and dead-lettering, all covered by the
-existing `notification-delivery` spec. It is correct, tested machinery that **nothing feeds**. What is
-missing is the layer above it: something that raises notifications reliably, and a statement of **what gets
-sent, to whom, on which channel, and how urgently**.
+**Nothing can be read back.** In-app notification is fire-and-forget SignalR with a throwaway id: no
+persistence, no read-state, no unread count. A client that was offline when it fired never learns of it.
+
+**And there is no statement of what the product sends.** Audience, channel, urgency and suppressibility are
+scattered across handlers, discoverable only by grep. A survey of the domain-event surface turns up **37
+notifications a customer or provider needs**; the copy that exists is English HTML with Gregorian dates,
+assembled inline, for an Iranian audience reached over Kavenegar/Rahyab SMS.
 
 ## What Changes
 

@@ -39,7 +39,7 @@ namespace Booksy.ServiceCatalog.Application.Queries.Payment.GetProviderEarnings
                     0,
                     0,
                     0,
-                    "USD",
+                    PlatformCurrency.Code,
                     0,
                     0,
                     0,

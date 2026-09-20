@@ -153,3 +153,11 @@ for as long as they have existed, and some of them (ledger posting) move money. 
 per-handler, with a test that proves what that handler now sees.
 `openspec/changes/notification-system/design.md` chooses a transactional outbox, which sidesteps the
 ordering entirely.
+
+## #67 Toman prices and Rial payments have never been reconciled
+Catalogue prices are Toman (`PlatformCurrency.Code = "IRT"`, 2026-09-20). The payment gateways
+settle in Rial: `CreateZarinPalPaymentCommandValidator` requires `"IRR"`, and Behpardakht defaults
+to it. A Toman price is ten Rial, so a deposit taken as `price` in IRR charges a tenth of what the
+salon asked. Nothing is live (no gateway credentials), so no money has moved the wrong way — but
+before the first real payment, someone must decide where the ×10 happens and prove it with a test.
+Money semantics: not for an agent to pick.

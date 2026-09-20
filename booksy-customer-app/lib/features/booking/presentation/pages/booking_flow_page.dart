@@ -14,6 +14,7 @@ import '../../../auth/presentation/bloc/auth_state.dart';
 import '../bloc/booking_bloc.dart';
 import '../widgets/service_selection_step.dart';
 import '../widgets/slot_picker.dart';
+import '../../../../core/utils/price_formatter.dart';
 
 /// Stepped booking flow: service → staff (auto-skipped for single-staff
 /// providers) → Jalali date/slot picker → confirmation. The bloc is an
@@ -270,7 +271,7 @@ class _ConfirmStep extends StatelessWidget {
       (
         AppStrings.bookingPrice,
         JalaliFormatter.toPersianDigits(
-          '${state.totalPrice.toStringAsFixed(0)} ${state.currency}'.trim(),
+          PriceFormatter.format(state.totalPrice.round()),
         ),
       ),
     ];

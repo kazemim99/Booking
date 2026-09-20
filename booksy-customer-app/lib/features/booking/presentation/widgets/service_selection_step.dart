@@ -7,6 +7,7 @@ import '../../../../core/utils/jalali_formatter.dart';
 import '../../../../core/widgets/widgets.dart';
 import '../../domain/entities/booking_entities.dart';
 import '../bloc/booking_bloc.dart';
+import '../../../../core/utils/price_formatter.dart';
 
 /// The booking flow's first step: pick the services for one visit.
 ///
@@ -93,7 +94,7 @@ class SelectableServiceTile extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final price = JalaliFormatter.toPersianDigits(
-      '${service.price.toStringAsFixed(0)} ${service.currency}'.trim(),
+      PriceFormatter.format(service.price.round()),
     );
     final duration = JalaliFormatter.toPersianDigits(
       '${service.durationMinutes} دقیقه',
@@ -170,7 +171,7 @@ class ServiceSelectionSummary extends StatelessWidget {
       '${state.totalDurationMinutes} دقیقه',
     );
     final priceLabel = JalaliFormatter.toPersianDigits(
-      '${state.totalPrice.toStringAsFixed(0)} ${state.currency}'.trim(),
+      PriceFormatter.format(state.totalPrice.round()),
     );
 
     return Material(

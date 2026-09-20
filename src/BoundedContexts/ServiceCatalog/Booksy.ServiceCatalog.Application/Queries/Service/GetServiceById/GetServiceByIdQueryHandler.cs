@@ -112,7 +112,7 @@ namespace Booksy.ServiceCatalog.Application.Queries.Service.GetServiceById
                         BusinessName = provider.Profile.BusinessName,
                         Description = provider.Profile.BusinessDescription,
                         Type = provider.PrimaryCategory,
-                        LogoUrl = provider.Profile.LogoUrl,
+                        LogoUrl = provider.Profile.DisplayImageUrl,
                         City = provider.Address.City,
                         State = provider.Address.State,
                         AllowOnlineBooking = provider.AllowOnlineBooking,

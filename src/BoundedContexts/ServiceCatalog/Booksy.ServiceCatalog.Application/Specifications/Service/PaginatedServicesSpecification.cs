@@ -1,3 +1,4 @@
+using Booksy.Core.Domain.ValueObjects;
 ﻿// ========================================
 // Booksy.ServiceCatalog.Application/Specifications/Service/BookableServiceSpecification.cs
 // ========================================
@@ -14,7 +15,7 @@ namespace Booksy.ServiceCatalog.Application.Specifications.Service
             Guid? providerId = null,
             decimal? minPrice = null,
             decimal? maxPrice = null,
-            string? currency = "USD",
+            string? currency = PlatformCurrency.Code,
             string? searchTerm = null,
             bool? availableAsMobile = null,
             bool? requiresDeposit = null,

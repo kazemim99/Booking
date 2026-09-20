@@ -53,7 +53,7 @@ namespace Booksy.ServiceCatalog.Application.Commands.Payout.CreatePayout
             }
 
             // Currency: use the provider's ledger currency (fall back to request/USD). Single-currency per provider today.
-            var currency = "USD";
+            var currency = PlatformCurrency.Code;
             var grossAmount = Money.Create(owed, currency);
 
             _logger.LogInformation("Ledger payable balance for provider {ProviderId}: {Amount} {Currency}",

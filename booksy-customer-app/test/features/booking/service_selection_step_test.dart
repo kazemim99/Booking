@@ -211,15 +211,16 @@ void main() {
 
       await tester.tap(_tile(_cut));
       await _settle(tester);
-      // ۴۵ دقیقه / ۲۵۰۰۰۰ تومان, rendered with Persian digits.
+      // ۴۵ دقیقه / ۲۵۰٬۰۰۰ تومان — grouped in threes, as money is written
+      // (openspec/changes/customer-app-discovery-pass).
       expect(_textOf(tester, _durationKey), contains('۴۵'));
-      expect(_textOf(tester, _priceKey), contains('۲۵۰۰۰۰'));
+      expect(_textOf(tester, _priceKey), contains('۲۵۰٬۰۰۰ تومان'));
 
       await tester.tap(_tile(_colour));
       await _settle(tester);
       expect(_textOf(tester, _durationKey), contains('۱۳۵'),
           reason: '45 + 90 minutes');
-      expect(_textOf(tester, _priceKey), contains('۷۵۰۰۰۰'),
+      expect(_textOf(tester, _priceKey), contains('۷۵۰٬۰۰۰ تومان'),
           reason: '250000 + 500000');
       expect(_textOf(tester, _countKey), contains('۲'));
 
@@ -227,7 +228,7 @@ void main() {
       await tester.tap(_tile(_colour));
       await _settle(tester);
       expect(_textOf(tester, _durationKey), contains('۴۵'));
-      expect(_textOf(tester, _priceKey), contains('۲۵۰۰۰۰'));
+      expect(_textOf(tester, _priceKey), contains('۲۵۰٬۰۰۰ تومان'));
     });
 
     testWidgets('deselecting everything disables continue again',

@@ -1,3 +1,4 @@
+using Booksy.Core.Domain.ValueObjects;
 ﻿// ========================================
 // Booksy.ServiceCatalog.Application/Queries/Provider/GetProviderStatistics/ProviderStatisticsViewModel.cs
 // ========================================
@@ -11,7 +12,7 @@ namespace Booksy.ServiceCatalog.Application.Queries.Provider.GetProviderStatisti
         public int ActiveServices { get; set; }
         public int TotalBookings { get; set; }
         public decimal TotalRevenue { get; set; }
-        public string Currency { get; set; } = "USD";
+        public string Currency { get; set; } = PlatformCurrency.Code;
         public decimal AverageRating { get; set; }
         public DateTime RegisteredAt { get; set; }
         public DateTime? LastActiveAt { get; set; }

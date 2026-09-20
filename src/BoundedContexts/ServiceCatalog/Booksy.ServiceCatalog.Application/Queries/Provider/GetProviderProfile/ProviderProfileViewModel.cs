@@ -3,6 +3,7 @@
 // ========================================
 using Booksy.ServiceCatalog.Application.DTOs.Provider;
 using Booksy.ServiceCatalog.Domain.Enums;
+using Booksy.Core.Domain.ValueObjects;
 
 namespace Booksy.ServiceCatalog.Application.Queries.Provider.GetProviderProfile
 {
@@ -83,7 +84,7 @@ namespace Booksy.ServiceCatalog.Application.Queries.Provider.GetProviderProfile
         public string Description { get; set; } = string.Empty;
         public string Category { get; set; } = string.Empty;
         public decimal Price { get; set; }
-        public string Currency { get; set; } = "USD";
+        public string Currency { get; set; } = PlatformCurrency.Code;
         public int DurationMinutes { get; set; }
         public bool IsPopular { get; set; }
     }

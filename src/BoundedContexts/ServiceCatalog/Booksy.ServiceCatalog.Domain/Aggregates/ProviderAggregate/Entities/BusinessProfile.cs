@@ -18,6 +18,22 @@ namespace Booksy.ServiceCatalog.Domain.Entities
         public string BusinessDescription { get; private set; }
         public string? Website { get; private set; }
         public string? LogoUrl { get; private set; }
+
+        /// <summary>
+        /// The one photo that represents this salon to a customer: the gallery image it marked as
+        /// primary, else its first photo, else whatever logo or profile image it uploaded. The
+        /// provider app only ever fills the gallery, so reading LogoUrl alone showed customers a
+        /// placeholder while the salon's photos sat on the server.
+        /// </summary>
+        public string? DisplayImageUrl =>
+            _galleryImages
+                .Where(i => i.IsActive)
+                .OrderByDescending(i => i.IsPrimary)
+                .ThenBy(i => i.DisplayOrder)
+                .Select(i => i.MediumUrl)
+                .FirstOrDefault()
+            ?? LogoUrl
+            ?? ProfileImageUrl;
         public string? ProfileImageUrl { get; private set; }
         public Dictionary<string, string> SocialMedia { get; private set; } = new();
         public List<string> Tags { get; private set; } = new();

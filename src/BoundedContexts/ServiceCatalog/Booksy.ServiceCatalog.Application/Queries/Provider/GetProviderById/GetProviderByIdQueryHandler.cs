@@ -51,8 +51,15 @@ namespace Booksy.ServiceCatalog.Application.Queries.Provider.GetProviderById
                 OwnerId = provider.OwnerId.Value,
                 BusinessName = provider.Profile.BusinessName,
                 Description = provider.Profile.BusinessDescription,
-                LogoUrl = provider.Profile.LogoUrl,
+                LogoUrl = provider.Profile.DisplayImageUrl,
                 ProfileImageUrl = provider.Profile.ProfileImageUrl,
+                Images = provider.Profile.GalleryImages
+                    .Where(i => i.IsActive)
+                    .OrderByDescending(i => i.IsPrimary)
+                    .ThenBy(i => i.DisplayOrder)
+                    .Select(i => new ProviderImageItem(
+                        i.Id, i.ThumbnailUrl, i.MediumUrl, i.ImageUrl, i.IsPrimary, i.DisplayOrder))
+                    .ToList(),
                 Status = provider.Status,
                 PrimaryCategory = provider.PrimaryCategory,
                 ContactInfo = new DTOs.Provider.ContactInfo(

@@ -22,7 +22,7 @@ namespace Booksy.ServiceCatalog.Application.Mappings
                 Description = provider.Profile.BusinessDescription,
                 Status = provider.Status,
                 PrimaryCategory = provider.PrimaryCategory,
-                LogoUrl = provider.Profile.LogoUrl,
+                LogoUrl = provider.Profile.DisplayImageUrl,
                 City = provider.Address.City,
                 State = provider.Address.State,
                 Country = provider.Address.Country,

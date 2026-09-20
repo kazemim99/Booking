@@ -6,6 +6,7 @@ using Booksy.ServiceCatalog.Domain.Enums.Extensions;
 using Booksy.ServiceCatalog.Domain.Repositories;
 using Booksy.ServiceCatalog.Domain.ValueObjects;
 using Microsoft.Extensions.Logging;
+using Booksy.Core.Domain.ValueObjects;
 
 namespace Booksy.ServiceCatalog.Application.Queries.Provider.GetProviderStatistics
 {
@@ -57,7 +58,7 @@ namespace Booksy.ServiceCatalog.Application.Queries.Provider.GetProviderStatisti
                 ActiveServices = activeServices,
                 TotalBookings = totalBookings,
                 TotalRevenue = totalRevenue,
-                Currency = "USD", // Default currency
+                Currency = PlatformCurrency.Code,
                 AverageRating = averageRating,
                 RegisteredAt = provider.RegisteredAt,
                 LastActiveAt = provider.LastActiveAt,

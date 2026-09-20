@@ -54,7 +54,7 @@ namespace Booksy.ServiceCatalog.Application.Queries.Provider.GetProvidersByStatu
                     Country = provider.Address.Country,
                     Email = provider.ContactInfo.Email?.Value ?? string.Empty,
                     PrimaryPhone = provider.ContactInfo.PrimaryPhone?.Value ?? string.Empty,
-                    LogoUrl = provider.Profile.LogoUrl,
+                    LogoUrl = provider.Profile.DisplayImageUrl,
                     ProfileImageUrl = provider.Profile.ProfileImageUrl,
                     AllowOnlineBooking = provider.AllowOnlineBooking,
                     OffersMobileServices = provider.OffersMobileServices,

@@ -1,66 +1,63 @@
 # Design — notification system
 
-## The finding that reshapes this change
+## The finding that shapes this change
 
-A peer session finishing `walk-in-customer-name-sms` left this in its log:
+**Corrected 2026-09-20.** An earlier draft of this document claimed ServiceCatalog domain events are never
+dispatched, and built the case for an outbox on that. **That was wrong, twice over**, and the record of how
+matters more than the conclusion — which survives.
 
-> Booking's domain events are never dispatched in this codebase (no publisher), so an event handler would
-> have been dead code.
+I grepped for direct `DispatchDomainEventsAsync` call sites, mapped them to their enclosing methods, then
+checked whether those methods had callers by searching for `_unitOfWork.<name>`. That search could not find
+`CommitAndPublishEventsAsync`, which is called *internally* in the same file, and I never grepped
+`SaveAndPublishEventsAsync` by name at all — it has about 35 callers. A peer session settled it empirically:
+a `POST /api/v1/bookings` takes `ServiceCatalog."Notifications"` from 0 to 2 rows, which only
+`BookingConfirmedNotificationHandler` writes. The handlers run.
 
-That is correct, and the real scope is wider and more precise than "no publisher". There *are* three
-dispatcher classes and a registered `IDomainEventDispatcher`. The break is that **the save paths the code
-actually uses are not the save paths that dispatch.**
+### What is actually true
 
-`EfCoreUnitOfWork` dispatches in exactly four methods
-(`src/Infrastructure/Booksy.Infrastructure.Core/Persistence/Base/EfCoreUnitOfWork.cs`):
+Domain events **are** dispatched, and the order differs per command:
 
-| Method | Line | Dispatches | Who calls it |
-|---|---|---|---|
-| `SaveChangesAsync` | 36 | **yes** (41) | 5 gallery-image command handlers — nothing else |
-| `CommitAndPublishEventsAsync` | 344 | **yes** (349) | nobody |
-| `SaveAndPublishEventsAsync` | 368 | **yes** (378) | nobody |
-| `PublishEventsAsync` | 390 | **yes** (394) | nobody |
-| `CommitAsync` | 210 | no | every payment and provider-registration handler |
-| `ExecuteInTransactionAsync` | 225, 298 | no | `TransactionBehavior` — i.e. **every command** |
-| `CommitTransactionAsync` | 75 | no | — |
+| Path | Route | Order |
+|---|---|---|
+| Booking, payment — every command via `TransactionBehavior` | `ExecuteInTransactionAsync<T>` (225) → `CommitAndPublishEventsAsync` (344) | **dispatch, then save** |
+| Non-generic overload | `ExecuteInTransactionAsync` (298) → `SaveChangesAsync` (36) | **dispatch, then save** |
+| Membership, staff, provider-customer, all UserManagement | `SaveAndPublishEventsAsync` (368), called directly | save, then dispatch |
+| UserManagement generally | `UserManagementDbContext.SaveChangesAsync` (74) → `CollectDomainEvents` (126) | save, then dispatch |
 
-`TransactionBehavior` wraps every non-query command in `ExecuteInTransactionAsync`, which commits without
-dispatching. Booking handlers additionally persist through `BookingWriteRepository`, whose `SaveBookingAsync`
-is a bare `DbSet.AddAsync`, and `ServiceCatalogDbContext.SaveChangesAsync` is a pass-through to `base`.
+So the defect is not absence, it is **ordering, applied inconsistently**. On the booking and payment paths a
+handler runs while the aggregate that raised the event is not yet in the database.
 
-**The two contexts differ, and that asymmetry is the whole story:**
+### Why that is the hazard this change must design around
 
-- **UserManagement dispatches.** `UserManagementDbContext.SaveChangesAsync` (line 74) calls
-  `CollectDomainEvents` (126), which dispatches and clears. Its domain events reach their handlers.
-- **ServiceCatalog does not.** No equivalent hook, and the UnitOfWork methods in use don't dispatch.
+Two failures follow from dispatch-before-save, and both are live:
 
-### Consequence
+1. **A handler that re-reads its subject gets null and silently does nothing.** This has already bitten
+   twice in this codebase: the booking SMS (which is why it is sent from the command handler instead) and the
+   guard meant to stop a salon owner being notified about their own walk-in, which shipped broken.
+2. **A side effect can escape for work that is then rolled back.** The handler sends before the transaction
+   commits, so a failed booking can still produce a delivered SMS. This is the same family as publishing an
+   integration event before commit.
 
-Every `IDomainEventHandler` in ServiceCatalog is dead code unless its event happens to be raised inside one
-of the five gallery commands. That includes **all ten notification handlers**: the five under
-`EventHandlers/Bookings/`, the four under `EventHandlers/Payments/`, and `InvitationSentNotificationHandler`.
+A notification system built on these handlers would inherit both. That — not a dead dispatcher — is the
+reason it must not be built on them.
 
-So the earlier catalogue's "~15 wired" was wrong. What actually reaches a human today is:
-
-1. The OTP SMS, sent directly from a UserManagement command handler.
-2. The Persian booking SMS that `walk-in-customer-name-sms` just added, sent directly from
-   `CreateBookingCommandHandler` — deliberately not via an event handler, for exactly this reason.
-
-Everything else in the notification subsystem — dispatcher, delivery log, de-duplication, retry, templates,
-preferences — is correct, tested machinery that **nothing ever feeds**.
+Recorded as FOLLOW-UPS #66. Fixing the order globally is explicitly *not* this change's business: handlers
+have run against pre-save state for as long as they have existed, and some of them post to the ledger.
 
 ## Decision 1 — how notifications get raised
 
 Three options:
 
-**(a) Turn on ServiceCatalog dispatch globally.** Add a `CollectDomainEvents` hook to
-`ServiceCatalogDbContext` mirroring UserManagement's, or make `ExecuteInTransactionAsync` dispatch.
-One small change; everything lights up.
+**(a) Keep raising from domain event handlers, and fix the ordering.** Flip the booking/payment path to
+save-then-dispatch, as `SaveAndPublishEventsAsync` already does for membership and UserManagement.
 
-*Rejected.* It would wake 29 handlers simultaneously — cache invalidation, ledger posting, provider
-activation, staff changes — none of which has ever executed in production. Their correctness is unknown and
-untested under real dispatch. Ledger posting in particular moves money. A notification feature must not be
-the thing that discovers whether `LedgerPostingEventHandlers` is safe to run.
+*Rejected for this change.* The flip is one line and its blast radius is the whole context. Every
+ServiceCatalog handler has run against **pre-save** state for as long as it has existed, and some were
+written — knowingly or not — around that. Changing what they observe is a behavioural change to cache
+invalidation, provider activation, staff management and `LedgerPostingEventHandlers`, which posts to the
+ledger. That is a real change worth doing, per-handler, with a test per handler proving what it now sees. It
+is not a notification feature's business, and a notification feature must not be the thing that discovers
+whether ledger posting survives the flip.
 
 **(b) Send inline from command handlers**, as the walk-in change does.
 
@@ -77,19 +74,22 @@ background sweep turns intents into `Notification` aggregates and dispatches the
 `INotificationDispatcher`.
 
 Why this one:
-- **Atomic.** No notification for a rolled-back booking; no lost notification after a successful one. Neither
-  (a) nor (b) gives both.
+- **It is immune to the ordering defect.** The sweep runs after the transaction has committed, by
+  construction. It does not matter whether the handler that raised the intent ran before or after the save,
+  and it will keep working unchanged when someone does fix the ordering.
+- **Nothing escapes for rolled-back work.** The intent dies with the transaction. Raising from a pre-save
+  handler cannot give that: the send has already left.
+- **A handler need not re-read its subject.** The intent carries its parameters, so the null-on-re-read trap
+  that broke the booking SMS and the walk-in owner guard cannot recur.
 - **Off the request path.** A slow gateway cannot slow down or fail a booking.
-- **Feeds the machinery that already exists.** `ProcessScheduledNotificationsJob` already sweeps due
+- **Feeds machinery that already exists.** `ProcessScheduledNotificationsJob` already sweeps due
   notifications through the dispatcher with preference gating, de-duplication, retry and dead-lettering. The
   outbox gives it something to sweep.
-- **Independent of the dead event plumbing.** It neither depends on dispatch being fixed nor prevents fixing
-  it later.
 - **Reminders fall out of it.** A scheduled reminder is an intent with a future `ScheduledFor` — the same
   row shape, no second mechanism.
 
-The dispatch defect is documented and left alone. It is a real bug worth its own change, with its own
-per-handler testing; it is not this change's to fix, and this change must not depend on it.
+The ordering defect is documented as FOLLOW-UPS #66 and left alone. This change neither depends on it being
+fixed nor is disturbed when it is.
 
 ## Decision 2 — the catalogue is the contract
 
@@ -158,9 +158,10 @@ two marked NEW.
 
 ## What this change deliberately does not do
 
-- Fix the ServiceCatalog domain-event dispatch defect. Documented here, raised as a follow-up, not depended on.
-- Wake the ten dead notification handlers. They stay dead; the outbox supersedes them. Deleting them is
-  cleanup for the follow-up that fixes dispatch, since that is when their fate is actually decided.
+- Fix the dispatch-ordering defect. Documented here and in FOLLOW-UPS #66, not depended on either way.
+- Retire the existing notification event handlers wholesale. They currently work, after a fashion, and the
+  outbox supersedes them path by path: each is removed only once its coverage is replaced and tested, so the
+  product never has a window with neither.
 - Wire the Flutter apps.
 - Replace CAP or change the integration-event path.
 

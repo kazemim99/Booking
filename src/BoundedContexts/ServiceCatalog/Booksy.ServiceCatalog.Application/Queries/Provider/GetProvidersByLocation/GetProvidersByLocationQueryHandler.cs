@@ -66,7 +66,7 @@ namespace Booksy.ServiceCatalog.Application.Queries.Provider.GetProvidersByLocat
                         CalculateDistance(
                             request.Latitude, request.Longitude,
                             provider.Address.Latitude.Value, provider.Address.Longitude.Value),
-                         provider.Profile.LogoUrl,
+                         provider.Profile.DisplayImageUrl,
                       provider.AllowOnlineBooking,
                         provider.OffersMobileServices,
                         provider.AverageRating,

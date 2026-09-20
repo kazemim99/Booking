@@ -1168,6 +1168,15 @@ public class ProvidersController : ControllerBase
             OwnerId = result.OwnerId,
             BusinessName = result.BusinessName,
             ProfileImageUrl = result.ProfileImageUrl,
+            Images = result.Images.Select(i => new ProviderImageResponse
+            {
+                Id = i.Id,
+                ThumbnailUrl = i.ThumbnailUrl,
+                MediumUrl = i.MediumUrl,
+                OriginalUrl = i.OriginalUrl,
+                IsPrimary = i.IsPrimary,
+                DisplayOrder = i.DisplayOrder,
+            }).ToList(),
             Description = result.Description,
             Type = result.PrimaryCategory.ToString(),
             Status = result.Status.ToString(),

@@ -7,6 +7,7 @@ using Booksy.ServiceCatalog.Infrastructure.Persistence.Context;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 using System.Text.Json;
+using Booksy.Core.Domain.ValueObjects;
 
 namespace Booksy.ServiceCatalog.Infrastructure.Persistence.Seeders
 {
@@ -273,7 +274,7 @@ namespace Booksy.ServiceCatalog.Infrastructure.Persistence.Seeders
 
             foreach (var (name, description, price, duration) in baseServices)
             {
-                var priceValue = Price.Create(price, "USD");
+                var priceValue = Price.Create(price, PlatformCurrency.Code);
                 var durationValue = Duration.FromMinutes(duration);
 
                 var service = Service.Create(

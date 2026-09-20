@@ -72,7 +72,7 @@ public sealed class SaveStep4ServicesCommandHandler
             var duration = Duration.FromMinutes(totalMinutes);
 
             // Default currency - could be made configurable
-            var price = Price.Create(serviceDto.Price, "USD");
+            var price = Price.Create(serviceDto.Price, PlatformCurrency.Code);
 
             // Determine service type based on price type
             var serviceType = serviceDto.PriceType.ToLower() == "fixed"

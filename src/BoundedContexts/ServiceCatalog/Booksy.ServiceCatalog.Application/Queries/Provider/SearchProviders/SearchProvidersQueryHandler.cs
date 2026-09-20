@@ -83,7 +83,7 @@ namespace Booksy.ServiceCatalog.Application.Queries.Provider.SearchProviders
                             provider.Address.City,
                         provider.Address.State,
                         provider.Address.Country,
-                        provider.Profile.LogoUrl,
+                        provider.Profile.DisplayImageUrl,
                         provider.AllowOnlineBooking,
                         provider.OffersMobileServices,
                         provider.AverageRating,

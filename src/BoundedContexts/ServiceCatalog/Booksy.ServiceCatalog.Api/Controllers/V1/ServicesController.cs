@@ -22,6 +22,7 @@ using Booksy.ServiceCatalog.Application.Queries.Service.GetQualifiedStaff;
 using Booksy.ServiceCatalog.Application.Queries.Provider.GetOwnedProviderStatus;
 using Microsoft.AspNetCore.RateLimiting;
 using System.Security.Claims;
+using Booksy.Core.Domain.ValueObjects;
 
 namespace Booksy.ServiceCatalog.API.Controllers.V1;
 
@@ -80,7 +81,7 @@ public class ServicesController : ControllerBase
             request.DurationHours,
             request.DurationMinutes,
             request.Price,
-            request.Currency ?? "IRR",
+            request.Currency ?? PlatformCurrency.Code,
             request.Category,
             request.IsMobileService);
 
@@ -155,7 +156,7 @@ public class ServicesController : ControllerBase
             request.DurationHours,
             request.DurationMinutes,
             request.Price,
-            request.Currency ?? "IRR",
+            request.Currency ?? PlatformCurrency.Code,
             request.Category);
 
         var result = await _mediator.Send(command, cancellationToken);

@@ -11,6 +11,7 @@ import '../../../../core/utils/jalali_formatter.dart';
 import '../../../../core/widgets/widgets.dart';
 import '../../domain/entities/booking_summary.dart';
 import '../../domain/repositories/bookings_repository.dart';
+import '../../../../core/utils/price_formatter.dart';
 
 enum _DetailStatus { loading, loaded, error }
 
@@ -129,7 +130,7 @@ class _DetailContent extends StatelessWidget {
         (
           AppStrings.bookingPrice,
           JalaliFormatter.toPersianDigits(
-            '${booking.price.toStringAsFixed(0)} ${booking.currency}'.trim(),
+            PriceFormatter.format(booking.price.round()),
           ),
         ),
     ];

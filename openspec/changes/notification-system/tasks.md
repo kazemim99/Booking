@@ -40,8 +40,8 @@ the structural work — each is a row's timing, not a shape.
 
 - [ ] 3.1 Extend `BookingSmsText` (landed by walk-in-customer-name-sms) into the general copy seam, or a
       sibling that shares its Jalali/wall-clock rendering. Do not duplicate that logic.
-- [ ] 3.2 Move booking + payment copy out of the ten dead handlers into templates keyed by event code.
-      Seed them. Render via the existing `ITemplateEngine`.
+- [ ] 3.2 Move booking + payment copy out of the existing notification event handlers into templates keyed
+      by event code. Seed them. Render via the existing `ITemplateEngine`.
 - [ ] 3.3 Unit tests per template: Persian text, Jalali date, salon wall-clock, parameter substitution,
       missing-parameter behaviour.
 - [ ] 3.4 `[?] DECISION:` reminder offsets. T-24h and T-2h (customer) and T-30m (provider) are assumptions.
@@ -83,13 +83,14 @@ the structural work — each is a row's timing, not a shape.
 ## 7. Provider and customer coverage
 
 - [ ] 7.1 Raise from the booking command handlers: requested (→ provider), confirmed, rescheduled, cancelled
-      **distinguishing the actor**, completed, no-show. Replaces the dead handlers.
+      **distinguishing the actor**, completed, no-show. Supersedes the existing event handlers path by path.
 - [ ] 7.2 Raise from the payment/payout handlers: payment taken, payment failed, refund, payout completed,
       payout failed/on-hold.
 - [ ] 7.3 Raise for membership and verification: invitation accepted, join request approved, staff assigned
       to a booking, provider verification status changed, provider activated/deactivated.
-- [ ] 7.4 Delete the ten dead notification event handlers once their coverage is replaced, and record in
-      FOLLOW-UPS that ServiceCatalog domain-event dispatch remains broken (see design.md) as its own change.
+- [ ] 7.4 Remove each superseded notification event handler only after its outbox coverage is in place and
+      tested, so no notification has a window with neither. FOLLOW-UPS #66 (dispatch ordering) stays open as
+      its own change.
 - [ ] 7.5 `[?] DECISION:` daily provider digest — send it at all, and at what salon-local hour?
 - [ ] 7.6 `[?] DECISION:` review requests — how long after completion, and how many times?
 
