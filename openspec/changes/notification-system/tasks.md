@@ -101,6 +101,25 @@ the structural work — each is a row's timing, not a shape.
 - [ ] 8.3 Data migration rewriting persisted preference masks; tested in both directions on a seeded database.
 - [ ] 8.4 Replace every `HasFlag`/bitwise membership test on the old type with exact membership.
 
+## 10. Test coverage gaps (found 2026-09-20 by mapping spec scenarios to tests)
+
+The user restated the standing rule: every feature is test-covered and the test comes BEFORE the code.
+These are the places where this change broke it — code was written first and the gaps stayed invisible
+until the scenarios were counted (51 spec scenarios, 21 integration tests). Everything below is written
+test-first.
+
+- [x] 10.1 `DeviceTokenRegistryTests` (integration, real Postgres): register, re-register refreshes rather
+      than duplicating, a re-used handset moves to its new owner, revoke is scoped to the caller, a
+      gateway-retired token stops being used. **This code is committed with zero tests** — worst gap.
+- [ ] 10.2 `DeviceTokensController` scoping: register/revoke act only on the caller's own devices.
+- [~] 10.3 Reminder wiring THROUGH the real commands. CANCEL is now covered (3 tests via the API,
+      including that withdrawal is scoped by subject so one cancellation cannot silence another booking).
+      Complete, no-show and reschedule call sites are still unproven — same pattern, still to write.
+- [x] 10.4 Dispatcher treats a no-device / not-configured push as a SKIP, not a failure — an explicit spec
+      claim with no test today.
+- [ ] 10.5 Delivery log records a rejected send as failed and an accepted one as delivered.
+- [ ] 10.6 End-to-end: a real API booking through confirm → outbox → sweep → notification → delivery.
+
 ## 9. Verification
 
 - [ ] 9.1 `scripts/verify.ps1 -Tier fast` green.
@@ -265,3 +284,19 @@ the structural work — each is a row's timing, not a shape.
   Deliberately NOT fixed by calling the method: that would start three never-executed services, one of
   which deletes notifications.
 - 2026-09-20 verify FAST PASS (10 steps, 72s).
+- 2026-09-20 TEST-FIRST correction. The user restated the standing rule — every feature test-covered, test
+  BEFORE code — after I answered honestly that coverage was incomplete. Mapping the specs to tests found
+  51 scenarios against 21 integration tests, and three gaps already committed.
+  Closed so far, written test-first:
+  10.1 `DeviceTokenRegistryTests` — 11 integration tests on real Postgres. All passed on the first run,
+  which is luck rather than process: the code had been committed unproven. Covers register, refresh not
+  duplicate, a handset changing hands moving to its new owner (the unique index makes a second row
+  impossible), revoke scoped to the caller, revoke idempotent, gateway-retire, and a returning device.
+  10.4 `NotificationDispatcherSkipTests` — 4 unit tests. Had to be unit, not integration: the integration
+  push fake always succeeds, so the skip path is unreachable there. Pins that no-device and not-configured
+  are SKIPS, that a genuine failure still burns the budget, and that a skipped push does not mark a
+  notification failed when its SMS went out.
+  10.3 `BookingReminderWiringTests` — 3 tests through the real cancel endpoint, because the previous
+  reminder tests called the scheduler directly and proved nothing about the five handlers I changed.
+  Still open: 10.2 (controller scoping), the rest of 10.3, 10.5, 10.6.
+- 2026-09-20 verify FAST PASS (10 steps, 85s; 1045 unit tests).
