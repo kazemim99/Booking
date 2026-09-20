@@ -110,3 +110,17 @@
 
 Both are already in `PRODUCTION_READINESS_AUDIT.md` §Deployment checklist; repeated here so they survive the
 archiving of their source changes.
+
+## #65 The customer app's generated code cannot be regenerated on the pinned SDK
+`dart run build_runner build` fails in booksy-customer-app: retrofit_generator 8.2.1 does not
+compile on Dart 3.12 (`lib/src/generator.dart`: "Final variable 'mapperCode' must be assigned").
+The generated `*.g.dart` files are therefore tracked in git (2026-09-20) so CI can analyze, build
+and deploy. Upgrade retrofit_generator (or pin an SDK it supports) and then decide whether to go
+back to generating them in CI.
+
+## #66 Booking domain events are raised but never dispatched
+`Booking.CreateConfirmedByProvider` raises `BookingConfirmedEvent`, and the
+`Booking*NotificationHandler`s exist, but nothing dispatches them on the create path: a handler
+added there never runs (measured 2026-09-20 while adding the customer booking SMS, which is sent
+from the command handler instead). Either wire the dispatcher into the booking write path or
+delete the handlers — today they read as working code that is never reached.
