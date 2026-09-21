@@ -197,3 +197,13 @@ field optional, or only process a deposit when the policy asks for one — but w
 booking decision, not a notification one, so it was not taken there. Deleting that test's workaround policy
 is the check that it is fixed.
 
+
+## #68 Push on a real phone waits for the Firebase config files
+Both Flutter apps register their device for push and route a tapped notification (add-notification-clients),
+and the backend sends through FCM. What is missing is the account-specific native config: `google-services.json`
+(Android, plus the `com.google.gms.google-services` Gradle plugin) and `GoogleService-Info.plist` (iOS) from the
+Firebase console, for both `booksy-customer-app` and `booksy-provider-app`. Without them `Firebase.initializeApp()`
+fails, the apps fall back to "no push" by design, and the backend records push as `NoDevice` rather than as a
+delivery (checked on production 2026-09-21). add-notification-clients stays STOPPED(blocked) on 2.6 and 4.3
+until the files arrive and a build on a real device shows a notification. Android also cannot be built on this
+workstation (Google Maven unreachable), so that check needs a machine or CI runner that can.
