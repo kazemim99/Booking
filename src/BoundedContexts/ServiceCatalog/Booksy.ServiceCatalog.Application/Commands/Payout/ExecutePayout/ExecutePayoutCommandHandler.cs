@@ -1,6 +1,7 @@
-// ========================================
+﻿// ========================================
 // Booksy.ServiceCatalog.Application/Commands/Payout/ExecutePayout/ExecutePayoutCommandHandler.cs
 // ========================================
+using Booksy.ServiceCatalog.Application.Services.Notifications;
 using Booksy.Core.Application.Abstractions;
 using Booksy.Core.Application.Exceptions;
 using Booksy.Core.Domain.Exceptions;
@@ -20,17 +21,23 @@ namespace Booksy.ServiceCatalog.Application.Commands.Payout.ExecutePayout
         private readonly IPayoutWriteRepository _payoutRepository;
         private readonly IPaymentGateway _paymentGateway;
         private readonly IServiceCatalogUnitOfWork _unitOfWork;
+        private readonly INotificationRaiser _notifications;
+        private readonly Domain.Repositories.IProviderReadRepository _providers;
         private readonly ILogger<ExecutePayoutCommandHandler> _logger;
 
         public ExecutePayoutCommandHandler(
             IPayoutWriteRepository payoutRepository,
             IPaymentGateway paymentGateway,
             IServiceCatalogUnitOfWork unitOfWork,
+            INotificationRaiser notifications,
+            Domain.Repositories.IProviderReadRepository providers,
             ILogger<ExecutePayoutCommandHandler> logger)
         {
             _payoutRepository = payoutRepository ?? throw new ArgumentNullException(nameof(payoutRepository));
             _paymentGateway = paymentGateway ?? throw new ArgumentNullException(nameof(paymentGateway));
             _unitOfWork = unitOfWork ?? throw new ArgumentNullException(nameof(unitOfWork));
+            _notifications = notifications;
+            _providers = providers;
             _logger = logger ?? throw new ArgumentNullException(nameof(logger));
         }
 
@@ -121,6 +128,27 @@ namespace Booksy.ServiceCatalog.Application.Commands.Payout.ExecutePayout
             // the record is recoverable from the gateway's truth (the same reconciliation posture the
             // payment path takes), whereas committing first could mark a payout Completed that never left.
             await _payoutRepository.UpdateAsync(payout, cancellationToken);
+
+            // The salon is entitled to know its money arrived. Addressed to the OWNER's user id, never
+            // to the provider id: the inbox, preferences and device registry are all keyed by user, so a
+            // provider id would address nobody. Recorded before the commit below so the same call writes
+            // the payout and the notice of it.
+            var paidProvider = await _providers.GetByIdAsync(payout.ProviderId, cancellationToken);
+            if (paidProvider is not null)
+            {
+                await _notifications.RaiseAsync(
+                    Domain.Enums.NotificationEventCode.PayoutCompleted,
+                    paidProvider.OwnerId.Value,
+                    dedupKey: payout.Id.Value,
+                    parameters: new Dictionary<string, string>
+                    {
+                        [NotificationParameter.BusinessName] = paidProvider.Profile.BusinessName,
+                        [NotificationParameter.Amount] = payout.NetAmount.Amount.ToString("N0"),
+                    },
+                    subjectType: "Payout",
+                    subjectId: payout.Id.Value,
+                    cancellationToken: cancellationToken);
+            }
             await _unitOfWork.CommitAndPublishEventsAsync(cancellationToken);
 
             return new ExecutePayoutResult(

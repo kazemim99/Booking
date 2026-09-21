@@ -91,7 +91,8 @@ the structural work — each is a row's timing, not a shape.
 - [~] 7.2 REFUND and CAPTURE done: `RefundProcessed` and `PaymentReceived` raised to the customer, each
       recorded before the commit so the money move and the notice of it are written by the same
       `CommitAsync`, and each with its legacy handler deleted in the SAME step.
-      Still to raise: payment failed, payout completed, payout failed/on-hold.
+      PAYOUT COMPLETED done the same way, with `PayoutCompletedNotificationHandler` deleted alongside.
+      Still to raise: payment failed (blocked, see 7.8), payout failed/on-hold.
       **PaymentFailed is blocked from being written test-first**: `FakePaymentGateway` always succeeds, so
       a failure cannot be provoked through the API and there is no way to write the failing test first.
       Either the fake grows a failure mode, or that notification is raised where a gateway is not involved.
@@ -453,3 +454,11 @@ test-first.
   PaymentFailed deliberately NOT built: the fake gateway cannot fail, so the test cannot be written first.
   Raised as 7.8 rather than building it blind.
 - 2026-09-21 600 integration tests pass; verify FAST PASS (10 steps, 70s).
+- 2026-09-21 7.2 (payout). `PayoutCompleted` raised from `ExecutePayoutCommandHandler` before its commit;
+  legacy handler deleted in the same step. 3 tests, one of which asserts the notice goes to the OWNER and
+  that NOTHING is addressed to the provider id — the third place in this change where that mistake would
+  have produced a notification nobody could ever see, so it is now asserted rather than remembered.
+  Note this handler commits with `CommitAndPublishEventsAsync`, unlike capture and refund which use
+  `CommitAsync`. Three different commit calls across the money paths, all of which dispatch; the outbox
+  row rides whichever one the handler uses because it is written to the same context.
+- 2026-09-21 603 integration tests pass; verify FAST PASS (10 steps, 73s).
