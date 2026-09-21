@@ -88,15 +88,14 @@ the structural work — each is a row's timing, not a shape.
       Cancellation notifies the party who did NOT cancel, and **the actor is inferred from the
       authenticated caller, not from a request field**: the controller never set `ByProvider` anyway, and a
       client should not be able to claim it cancelled as the salon. Reschedule still to do (7.7).
-- [~] 7.2 REFUND and CAPTURE done: `RefundProcessed` and `PaymentReceived` raised to the customer, each
+- [x] 7.2 REFUND and CAPTURE done: `RefundProcessed` and `PaymentReceived` raised to the customer, each
       recorded before the commit so the money move and the notice of it are written by the same
       `CommitAsync`, and each with its legacy handler deleted in the SAME step.
       PAYOUT COMPLETED done the same way, with `PayoutCompletedNotificationHandler` deleted alongside.
-      Still to raise: payment failed (blocked, see 7.8), payout failed/on-hold.
-      **PaymentFailed is blocked from being written test-first**: `FakePaymentGateway` always succeeds, so
-      a failure cannot be provoked through the API and there is no way to write the failing test first.
-      Either the fake grows a failure mode, or that notification is raised where a gateway is not involved.
-      Not guessing at it — see 7.8.
+      PAYMENT FAILED now done too, once 7.8 unblocked it, with `PaymentFailedNotificationHandler` deleted
+      in the same step. Still to raise: payout failed/on-hold, which have no reachable flow the way
+      ProviderDeactivated does not — a payout is only ever executed, never failed or held, by any code
+      path that exists. Recorded with 7.10 rather than guessed at.
 - [~] 7.3 STAFF ASSIGNED, INVITATION ACCEPTED and PROVIDER ACTIVATED done. Join request approved was
       REMOVED (no flow). Verification-changed and provider-deactivated are NOT BUILDABLE today — see 7.10.
 - [ ] 7.4 Remove each superseded notification event handler only after its outbox coverage is in place and
@@ -132,15 +131,18 @@ the structural work — each is a row's timing, not a shape.
       and opens another, and everything attached to the closed one has just been withdrawn, so a notice
       left there would be cancelled before it could go out. 4 integration tests.
 
-- [ ] 7.8 Give `FakePaymentGateway` an opt-in failure mode, so `PaymentFailed` can be written test-first.
-      Blocking 7.2's remaining payment-failure notification.
+- [x] 7.8 `FakePaymentGateway` grew an opt-in decline, requested per payment through the request's own
+      metadata (`fakeGateway: decline`) rather than by a flag on the shared fake — two collections run
+      against one host in parallel, so a "fail the next call" switch would decline somebody else's payment.
+      The sentinel rides the real stack (API request → command → gateway request), so a test provokes the
+      failure the way a caller would instead of reaching past the seams it means to exercise.
 
 - [ ] 7.9 Emitter audit follow-through. 18 catalogued codes currently have no raise site. They are NOT one
       problem and must not be pruned as a batch:
-      * **Wiring pending, flow exists** — PaymentFailed (blocked on 7.8),
-        StaffAdded, StaffRemoved, PayoutFailed, PayoutOnHold, InvoiceGenerated.
-        Ordinary remaining work. DailyScheduleDigest (7.5) and ProviderActivated (7.3) are now wired;
-        ProviderVerificationChanged and ProviderDeactivated moved to 7.10, which is a different problem.
+      * **Wiring pending, flow exists** — StaffAdded, StaffRemoved, InvoiceGenerated. Ordinary remaining
+        work. PaymentFailed (7.2/7.8), DailyScheduleDigest (7.5), ReviewReminder (7.6) and
+        ProviderActivated (7.3) are now wired; ProviderVerificationChanged, ProviderDeactivated,
+        PayoutFailed and PayoutOnHold moved to 7.10, which is a different problem.
       * **Sent today, but NOT through the outbox** — PhoneVerification (the OTP SMS, sent directly from a
         UserManagement command), Welcome, PasswordReset, SecurityAlert. These reach people already; the
         question is whether to route them through the outbox at all, which is a separate decision from
@@ -158,7 +160,11 @@ the structural work — each is a row's timing, not a shape.
         endpoint, nothing. The command is as orphaned as the join-request event was.
       * `ProviderDeactivated` — there is no provider-deactivation endpoint at all. Only
         `DeactivateProviderStaff` exists, which is a different thing (a staff member, not the salon).
-      Both are in the same category as the removed JoinRequestApproved. They are NOT removed yet because,
+      * `PayoutFailed` / `PayoutOnHold` — found while finishing 7.2. `ExecutePayoutCommandHandler` is the
+        only thing that touches a payout, and it only ever completes one: nothing marks a payout failed or
+        puts one on hold, so neither notification has a moment to be raised at. Same shape as the two
+        above — the aggregate HAS those states, and nothing can reach them.
+      All four are in the same category as the removed JoinRequestApproved. They are NOT removed yet because,
       unlike a join request, the surrounding feature plainly exists — a provider HAS a verification status
       and an active/inactive status, both persisted and both read. What is missing is the way to change
       them. Decide: build the endpoints, or drop the two codes.
@@ -573,3 +579,20 @@ test-first.
   Review aggregate yet (booking-d2 is building it), so today submission is the only event there is — but the
   hook is already in the place that stays correct once moderation lands, which is the whole point of the
   cross-session agreement.
+- 2026-09-21 7.8 then 7.2's last piece, in that order, which is the whole point of 7.8 existing.
+  7.8: the fake gateway declines when THE PAYMENT asks it to, via metadata, not when a flag is set on the
+  fake. Two test collections share one host in parallel, so a "fail the next call" switch would have
+  declined another test's payment and the flake would have read as a defect in the payment code. The
+  sentinel also rides the real stack — API request, command, gateway request — so the failure is provoked
+  the way a caller would rather than by reaching past the seams under test.
+  7.2 PaymentFailed: raised from the `else` branch that already existed in `ProcessPaymentCommandHandler`,
+  before its CommitAsync, so the failed payment and the notice of it are written together.
+  `PaymentFailedNotificationHandler` deleted in the same commit — the rule the refund near-miss established.
+  Two mutations, both bit: restoring the legacy handler failed the "exactly one" test (so the duplicate
+  would NOT have shipped silently), and making the fake always decline failed the two success tests.
+  `ProcessPaymentCommandHandlerTests` needed two substitutes; left as substitutes deliberately, same
+  reasoning as `RegisterAndAcceptInvitationConcurrencyTests` — that class tests unit-of-work commit, and a
+  notification raised against a stubbed provider lookup asserts nothing.
+  FOUND WHILE HERE, recorded on 7.10: `PayoutFailed` and `PayoutOnHold` have no reachable flow either.
+  `ExecutePayoutCommandHandler` is the only code that touches a payout and it only ever completes one.
+  Four codes now sit in that category, all the same shape: the aggregate has the state, nothing can reach it.

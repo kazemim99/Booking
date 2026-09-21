@@ -1,11 +1,13 @@
 // ========================================
 // Booksy.ServiceCatalog.Application/Commands/Payment/ProcessPayment/ProcessPaymentCommandHandler.cs
 // ========================================
+using System.Globalization;
 using Booksy.Core.Application.Abstractions;
 using Booksy.Core.Domain.Enums;
 using Booksy.Core.Domain.ValueObjects;
 using Booksy.Infrastructure.External.Payment;
 using Booksy.ServiceCatalog.Application.Abstractions.Persistence;
+using Booksy.ServiceCatalog.Application.Services.Notifications;
 using Booksy.ServiceCatalog.Domain.Aggregates.PaymentAggregate;
 using Booksy.ServiceCatalog.Domain.Repositories;
 using Booksy.ServiceCatalog.Domain.ValueObjects;
@@ -15,20 +17,29 @@ namespace Booksy.ServiceCatalog.Application.Commands.Payment.ProcessPayment
 {
     public sealed class ProcessPaymentCommandHandler : ICommandHandler<ProcessPaymentCommand, ProcessPaymentResult>
     {
+        /// <summary>What a payment notification is about, for the inbox's tap target.</summary>
+        private const string PaymentSubject = "Payment";
+
         private readonly IPaymentWriteRepository _paymentRepository;
         private readonly IPaymentGateway _paymentGateway;
         private readonly IServiceCatalogUnitOfWork _unitOfWork;
+        private readonly INotificationRaiser _notifications;
+        private readonly IProviderReadRepository _providers;
         private readonly ILogger<ProcessPaymentCommandHandler> _logger;
 
         public ProcessPaymentCommandHandler(
             IPaymentWriteRepository paymentRepository,
             IPaymentGateway paymentGateway,
             IServiceCatalogUnitOfWork unitOfWork,
+            INotificationRaiser notifications,
+            IProviderReadRepository providers,
             ILogger<ProcessPaymentCommandHandler> logger)
         {
             _paymentRepository = paymentRepository ?? throw new ArgumentNullException(nameof(paymentRepository));
             _paymentGateway = paymentGateway ?? throw new ArgumentNullException(nameof(paymentGateway));
             _unitOfWork = unitOfWork ?? throw new ArgumentNullException(nameof(unitOfWork));
+            _notifications = notifications ?? throw new ArgumentNullException(nameof(notifications));
+            _providers = providers ?? throw new ArgumentNullException(nameof(providers));
             _logger = logger ?? throw new ArgumentNullException(nameof(logger));
         }
 
@@ -84,6 +95,26 @@ namespace Booksy.ServiceCatalog.Application.Commands.Payment.ProcessPayment
                 // Mark payment as failed
                 payment.MarkAsFailed(result.ErrorMessage ?? "Unknown error");
                 _logger.LogWarning("Payment processing failed: {Error}", result.ErrorMessage);
+
+                // Told before the commit below, so the failed payment and the notice of it are written by
+                // the same CommitAsync. A customer whose card was declined and who is never told simply
+                // believes they have paid — which is the worst of the three outcomes available here.
+                var salon = await _providers.GetByIdAsync(
+                    ProviderId.From(request.ProviderId), cancellationToken);
+
+                await _notifications.RaiseAsync(
+                    Domain.Enums.NotificationEventCode.PaymentFailed,
+                    recipientId: request.CustomerId,
+                    dedupKey: payment.Id.Value,
+                    parameters: new Dictionary<string, string>
+                    {
+                        [NotificationParameter.BusinessName] = salon?.Profile.BusinessName ?? "سالن",
+                        [NotificationParameter.Amount] = request.Amount.ToString("0.##", CultureInfo.InvariantCulture),
+                        [NotificationParameter.Reason] = result.ErrorMessage ?? string.Empty,
+                    },
+                    subjectType: PaymentSubject,
+                    subjectId: payment.Id.Value,
+                    cancellationToken: cancellationToken);
             }
 
             // Persist. This command is INonTransactionalCommand (money-moving): the gateway charge above ran

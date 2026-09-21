@@ -2,6 +2,7 @@ using Booksy.Core.Domain.ValueObjects;
 using Booksy.Infrastructure.External.Payment;
 using Booksy.ServiceCatalog.Application.Abstractions.Persistence;
 using Booksy.ServiceCatalog.Application.Commands.Payment.ProcessPayment;
+using Booksy.ServiceCatalog.Application.Services.Notifications;
 using Booksy.ServiceCatalog.Domain.Aggregates.PaymentAggregate;
 using Booksy.ServiceCatalog.Domain.Enums;
 using Booksy.ServiceCatalog.Domain.Repositories;
@@ -26,7 +27,18 @@ public class ProcessPaymentCommandHandlerTests
         _paymentGateway = Substitute.For<IPaymentGateway>();
         _unitOfWork = Substitute.For<IServiceCatalogUnitOfWork>();
         _logger = Substitute.For<ILogger<ProcessPaymentCommandHandler>>();
-        _handler = new ProcessPaymentCommandHandler(_paymentRepository, _paymentGateway, _unitOfWork, _logger);
+
+        // Substitutes on purpose. This class tests that the handler commits its own unit of work, and a
+        // notification raised against a stubbed provider lookup would assert nothing; the customer actually
+        // being told about a declined payment is covered where it can be — PaymentFailureNotificationTests,
+        // against a real gateway seam and a real database.
+        _handler = new ProcessPaymentCommandHandler(
+            _paymentRepository,
+            _paymentGateway,
+            _unitOfWork,
+            Substitute.For<INotificationRaiser>(),
+            Substitute.For<IProviderReadRepository>(),
+            _logger);
     }
 
     [Fact]
