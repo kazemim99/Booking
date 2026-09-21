@@ -130,6 +130,21 @@ class ApiConstants {
   /// GET /api/v1/Bookings/my-bookings
   static const String myBookings = '/$apiVersion/Bookings/my-bookings';
 
+  // ==================== Notifications (ServiceCatalog) ====================
+  // All four are scoped to the caller by the backend: there is no way to read somebody else's inbox.
+
+  /// GET — the caller's inbox, newest first (query: pageNumber/pageSize).
+  static const String notificationsInbox = '/$apiVersion/Notifications/inbox';
+
+  /// GET — `{ unreadCount }`, for the bell without loading a page.
+  static const String notificationsUnreadCount = '/$apiVersion/Notifications/unread-count';
+
+  /// POST — mark one read. Answers 204, or 404 for a notification that is not the caller's.
+  static String notificationMarkRead(String id) => '/$apiVersion/Notifications/$id/read';
+
+  /// POST — mark all read. Idempotent.
+  static const String notificationsMarkAllRead = '/$apiVersion/Notifications/read-all';
+
   /// Create booking
   /// POST /api/v1/Bookings
   static const String createBooking = '/$apiVersion/Bookings';

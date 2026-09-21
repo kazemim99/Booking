@@ -1,3 +1,4 @@
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'dart:async';
 
 import 'package:flutter/material.dart';
@@ -18,6 +19,8 @@ import '../../features/booking/presentation/pages/booking_flow_page.dart';
 import '../../features/bookings/presentation/pages/appointment_detail_page.dart';
 import '../../features/bookings/presentation/pages/appointments_page.dart';
 import '../../features/home/presentation/pages/home_page.dart';
+import '../../features/notifications/presentation/inbox_cubit.dart';
+import '../../features/notifications/presentation/inbox_page.dart';
 import '../../features/profile/presentation/pages/profile_tab_page.dart';
 import '../../features/search/presentation/pages/explore_page.dart';
 import '../../features/search/presentation/pages/map_discovery_page.dart';
@@ -32,6 +35,7 @@ class Routes {
   static const String otp = '/otp';
 
   static const String home = '/home';
+  static const String notifications = '/home/notifications';
   static const String explore = '/explore';
 
   /// Map + carousel discovery. Replaces the former `/explore/nearby` and
@@ -104,6 +108,8 @@ class AppRouter {
   /// guest login prompt in place instead.
   static bool _requiresAuth(String location) {
     if (location.startsWith('${Routes.appointments}/')) return true;
+    // The inbox is the signed-in person's own; a guest has none, and the server answers 401.
+    if (location.startsWith(Routes.notifications)) return true;
     if (location.contains('/book/confirm')) return true;
     // Paying for a booking is inherently a signed-in action; return-to-intent brings the customer back here.
     if (location.startsWith('${Routes.checkout}/')) return true;
@@ -189,6 +195,16 @@ class AppRouter {
               GoRoute(
                 path: Routes.home,
                 builder: (context, state) => const HomePage(),
+                routes: [
+                  GoRoute(
+                    path: 'notifications',
+                    // The same singleton the bell reads, so the badge and this list agree.
+                    builder: (context, state) => BlocProvider<InboxCubit>.value(
+                      value: getIt<InboxCubit>(),
+                      child: const InboxPage(),
+                    ),
+                  ),
+                ],
               ),
               GoRoute(
                 path: '/providers/:id',

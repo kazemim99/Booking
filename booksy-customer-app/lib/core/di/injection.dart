@@ -14,6 +14,10 @@ import '../../features/bookings/data/datasources/bookings_remote_datasource.dart
 import '../../features/bookings/data/repositories/bookings_repository_impl.dart';
 import '../../features/bookings/domain/repositories/bookings_repository.dart';
 import '../../features/bookings/presentation/bloc/appointments_bloc.dart';
+import '../../features/notifications/data/inbox_repository_impl.dart';
+import '../../features/notifications/data/notifications_remote_datasource.dart';
+import '../../features/notifications/domain/inbox_repository.dart';
+import '../../features/notifications/presentation/inbox_cubit.dart';
 import '../../features/booking/data/repositories/booking_repository_impl.dart';
 import '../../features/booking/domain/repositories/booking_repository.dart';
 import '../../features/booking/presentation/bloc/booking_bloc.dart';
@@ -147,6 +151,19 @@ Future<void> configureDependencies() async {
     ),
   );
   getIt.registerFactory<AppointmentsBloc>(() => AppointmentsBloc(getIt()));
+
+  // ---- Notifications inbox ----
+  getIt.registerLazySingleton<NotificationsRemoteDataSource>(
+    () => NotificationsRemoteDataSource(
+      serviceCatalogDio: getIt<Dio>(instanceName: 'serviceCatalogDio'),
+    ),
+  );
+  getIt.registerLazySingleton<InboxRepository>(
+    () => InboxRepositoryImpl(remote: getIt<NotificationsRemoteDataSource>()),
+  );
+  // A SINGLETON, unlike the screen blocs above: the bell and the inbox page must read the same state, or the
+  // badge and the list it opens can disagree.
+  getIt.registerLazySingleton<InboxCubit>(() => InboxCubit(getIt<InboxRepository>()));
   getIt.registerLazySingleton<ProfileRemoteDataSource>(
     () => ProfileRemoteDataSource(
       userManagementDio: getIt<Dio>(instanceName: 'userManagementDio'),

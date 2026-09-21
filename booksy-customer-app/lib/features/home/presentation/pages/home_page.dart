@@ -1,4 +1,8 @@
 import 'package:flutter/material.dart';
+import '../../../notifications/presentation/inbox_bell.dart';
+import '../../../notifications/presentation/inbox_cubit.dart';
+import '../../../auth/presentation/bloc/auth_bloc.dart';
+import '../../../auth/presentation/bloc/auth_state.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 
@@ -34,7 +38,11 @@ class HomePage extends StatefulWidget {
   /// Nearest-providers cubit. Injected in tests; resolved from DI in the app.
   final NearbyProvidersCubit? nearbyCubit;
 
-  const HomePage({super.key, this.nearbyCubit});
+  /// The inbox the header bell reads. Injected in tests; resolved from DI in the app, where it is a singleton
+  /// shared with the inbox page so the badge and the list agree.
+  final InboxCubit? inboxCubit;
+
+  const HomePage({super.key, this.nearbyCubit, this.inboxCubit});
 
   @override
   State<HomePage> createState() => _HomePageState();
@@ -83,6 +91,19 @@ class _HomePageState extends State<HomePage> {
       appBar: AppBar(
         title: const Text(AppStrings.homeTitle),
         actions: [
+          // Only a signed-in customer has an inbox; for a guest the bell would only ever earn a 401.
+          BlocBuilder<AuthBloc, AuthState>(
+            buildWhen: (a, b) => (a is Authenticated) != (b is Authenticated),
+            builder: (context, auth) => auth is Authenticated
+                ? Padding(
+                    padding: const EdgeInsetsDirectional.only(end: AppSpacing.xs),
+                    child: BlocProvider<InboxCubit>.value(
+                      value: widget.inboxCubit ?? getIt<InboxCubit>(),
+                      child: const InboxBell(),
+                    ),
+                  )
+                : const SizedBox.shrink(),
+          ),
           Padding(
             padding: const EdgeInsetsDirectional.only(end: AppSpacing.xs),
             child: AppCircleIconButton(

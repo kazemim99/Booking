@@ -73,6 +73,30 @@ void main() {
       );
     });
 
+    test('a guest opening notifications is sent to login and brought back', () {
+      // The inbox is the signed-in person's own; a guest has none, and asking the server for one answers 401.
+      final result = AppRouter.redirectFor(
+        location: Routes.notifications,
+        uri: Uri.parse(Routes.notifications),
+        sessionResolved: true,
+        isAuthenticated: false,
+      );
+      expect(result, startsWith('${Routes.login}?redirect='));
+      expect(Uri.decodeComponent(result!.split('redirect=').last), Routes.notifications);
+    });
+
+    test('a signed-in customer opens notifications without a detour', () {
+      expect(
+        AppRouter.redirectFor(
+          location: Routes.notifications,
+          uri: Uri.parse(Routes.notifications),
+          sessionResolved: true,
+          isAuthenticated: true,
+        ),
+        isNull,
+      );
+    });
+
     test('guest at booking confirmation is gated, earlier steps are not', () {
       expect(
         AppRouter.redirectFor(

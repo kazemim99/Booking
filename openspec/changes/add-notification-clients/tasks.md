@@ -64,12 +64,12 @@ REWRITTEN 2026-09-21 after reading the code — the first draft targeted a dead 
       it does not show a spinner forever or a blank panel.
 - [x] 3.4 REVISED — see log. `booksy-admin`: the same, plus the `/notifications` ROUTE that `AdminUserMenu.vue` already links
       to and which does not exist — a dead link in a shipped menu.
-- [~] 3.5 booksy-provider-app DONE; booksy-customer-app pending. Both Flutter apps: a notifications list, unread badge and mark-read. The provider app's home
+- [x] 3.5 Both Flutter apps done. Both Flutter apps: a notifications list, unread badge and mark-read. The provider app's home
       screen already has a bell whose own comment calls it "a placeholder until notifications ship"; this is
       what it was waiting for.
-- [ ] 3.6 Assert the badge and the list agree. They disagreed once already on the server side (the inbox
+- [x] 3.6 Assert the badge and the list agree. They disagreed once already on the server side (the inbox
       returned undelivered rows while the count did not) and the symptom was invisible until asserted.
-- [ ] 3.7 Tests per client: the list shows only the caller's notifications, reading one decrements the
+- [x] 3.7 Tests per client: the list shows only the caller's notifications, reading one decrements the
       count, mark-all-read twice is harmless.
 
 ## 4. Verification
@@ -207,3 +207,18 @@ REWRITTEN 2026-09-21 after reading the code — the first draft targeted a dead 
   `FUNCTIONAL_GAPS.md`, whose "Notifications — NOT IMPLEMENTED" entry is now updated. The old placeholder
   bell's own comment is worth quoting, because it is the standard the rest of this change had to meet: "it
   must not pretend to have unread counts".
+- 2026-09-21 3.5 booksy-customer-app done — slice 3 complete across all four clients.
+  Same domain and cubit as the provider app, in this app's own conventions (`Unit` for void, the shared
+  `mapDioFailure`, hand-written fakes instead of mocktail, manual get_it registration — only core infra uses
+  injectable, so no build_runner). 19 tests: 10 cubit, 4 page, 2 router, 3 home bell.
+  Three things differ from the provider app, each for a reason:
+  * A booking notice opens THAT appointment (`/appointments/:id`) — this app has the screen.
+  * GUESTS use home. A bell for a guest would only ever earn a 401, so it renders for `Authenticated` only,
+    and `/home/notifications` joins the redirect gate (return-to-intent, like `/appointments/:id`). The gate
+    is a pure function with its own unit tests; two were added, red first.
+  * `home_page_test` composed `HomePage` with no `AuthBloc` — in the app it comes from the root. Home now
+    genuinely depends on auth state, so the harness provides one: a guest by default, which keeps every
+    existing assertion true, plus a `FakeAuthBloc.signIn()` for the new bell tests. The fake lives in
+    `test/helpers/` rather than being copied; the older private copy in `otp_return_to_intent_test.dart` was
+    left alone as unrelated.
+  283 → 287 tests, analyze clean.

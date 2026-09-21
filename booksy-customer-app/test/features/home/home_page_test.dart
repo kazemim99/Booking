@@ -16,6 +16,12 @@ import 'package:booksy_customer_app/features/home/domain/usecases/get_home_data.
 import 'package:booksy_customer_app/features/home/presentation/bloc/home_bloc.dart';
 import 'package:booksy_customer_app/features/home/presentation/bloc/home_state.dart';
 import 'package:booksy_customer_app/features/home/presentation/pages/home_page.dart';
+import 'package:booksy_customer_app/features/auth/presentation/bloc/auth_bloc.dart';
+import 'package:booksy_customer_app/features/notifications/domain/inbox_item.dart';
+import 'package:booksy_customer_app/features/notifications/domain/inbox_repository.dart';
+import 'package:booksy_customer_app/features/notifications/presentation/inbox_cubit.dart';
+
+import '../../helpers/fake_auth_bloc.dart';
 import 'package:booksy_customer_app/features/home/presentation/widgets/featured_provider_card.dart';
 import 'package:booksy_customer_app/features/home/presentation/widgets/home_category_row.dart';
 import 'package:booksy_customer_app/features/home/presentation/widgets/nearby_provider_card.dart';
@@ -133,7 +139,12 @@ Widget _app({
   required NearbyProvidersCubit nearby,
   required _Nav nav,
   double textScale = 1.0,
+  AuthBloc? auth,
+  InboxCubit? inbox,
 }) {
+  // Home now reads auth state: the inbox bell is for a signed-in customer only. Default is a guest, which keeps
+  // the header exactly as every existing test here expects it.
+  final authBloc = auth ?? FakeAuthBloc();
   Widget stub(String label) => Scaffold(body: Text(label));
 
   final router = GoRouter(
@@ -146,9 +157,12 @@ Widget _app({
     routes: [
       GoRoute(
         path: '/home',
-        builder: (context, state) => BlocProvider<HomeBloc>.value(
-          value: bloc,
-          child: HomePage(nearbyCubit: nearby),
+        builder: (context, state) => MultiBlocProvider(
+          providers: [
+            BlocProvider<HomeBloc>.value(value: bloc),
+            BlocProvider<AuthBloc>.value(value: authBloc),
+          ],
+          child: HomePage(nearbyCubit: nearby, inboxCubit: inbox),
         ),
       ),
       GoRoute(
@@ -171,6 +185,7 @@ Widget _app({
         builder: (context, state) => stub('appointments'),
       ),
       GoRoute(path: '/profile', builder: (context, state) => stub('profile')),
+      GoRoute(path: '/home/notifications', builder: (context, state) => stub('notifications')),
     ],
   );
 
@@ -192,6 +207,54 @@ void main() {
 
   HomeBloc loadedBloc({List<ProviderSummary> topProviders = const []}) =>
       _StubHomeBloc(HomeLoaded.fromData(_homeData(topProviders: topProviders)));
+
+  group('notifications bell', () {
+    testWidgets('a guest sees no bell — they have no inbox to open', (tester) async {
+      await tester.pumpWidget(_app(
+        bloc: loadedBloc(),
+        nearby: _StubNearbyCubit(const NearbyState(status: NearbyStatus.loaded)),
+        nav: nav,
+      ));
+      await tester.pumpAndSettle();
+
+      expect(find.byKey(const Key('home-bell')), findsNothing);
+    });
+
+    testWidgets('a signed-in customer sees the bell with the count the server reports', (tester) async {
+      final auth = FakeAuthBloc()..signIn();
+      final inbox = InboxCubit(_CountingInbox(3));
+
+      await tester.pumpWidget(_app(
+        bloc: loadedBloc(),
+        nearby: _StubNearbyCubit(const NearbyState(status: NearbyStatus.loaded)),
+        nav: nav,
+        auth: auth,
+        inbox: inbox,
+      ));
+      await tester.pumpAndSettle();
+
+      expect(find.byKey(const Key('home-bell')), findsOneWidget);
+      expect(tester.widget<Badge>(find.byKey(const Key('home-bell-badge'))).isLabelVisible, isTrue);
+      expect(find.text('3'), findsOneWidget);
+    });
+
+    testWidgets('the bell opens the inbox', (tester) async {
+      final auth = FakeAuthBloc()..signIn();
+
+      await tester.pumpWidget(_app(
+        bloc: loadedBloc(),
+        nearby: _StubNearbyCubit(const NearbyState(status: NearbyStatus.loaded)),
+        nav: nav,
+        auth: auth,
+        inbox: InboxCubit(_CountingInbox(0)),
+      ));
+      await tester.pumpAndSettle();
+      await tester.tap(find.byKey(const Key('home-bell')));
+      await tester.pumpAndSettle();
+
+      expect(nav.visited, contains('/home/notifications'));
+    });
+  });
 
   group('chrome', () {
     testWidgets('renders the app bar, search pill and category tiles',
@@ -476,4 +539,23 @@ void main() {
       expect(tester.takeException(), isNull);
     });
   });
+}
+
+/// An inbox that only knows its unread count — all the home header ever asks for.
+class _CountingInbox implements InboxRepository {
+  final int count;
+  _CountingInbox(this.count);
+
+  @override
+  Future<Either<Failure, int>> unreadCount() async => Right(count);
+
+  @override
+  Future<Either<Failure, InboxResult>> fetchPage({int pageNumber = 1, int pageSize = 20}) async =>
+      const Right(InboxResult(items: [], totalCount: 0, unreadCount: 0));
+
+  @override
+  Future<Either<Failure, Unit>> markRead(String id) async => const Right(unit);
+
+  @override
+  Future<Either<Failure, Unit>> markAllRead() async => const Right(unit);
 }

@@ -212,6 +212,14 @@ class AppStrings {
   static const String homeTitle = 'بوکسی';
   static const String homeSearchHint = 'جستجوی آرایشگاه، سالن، اسپا…';
   static const String mapSearch = 'جستجو روی نقشه';
+
+  // Notifications inbox
+  static const String notificationsTitle = 'اعلان‌ها';
+  static const String notificationsEmpty = 'هنوز اعلانی ندارید.';
+  static const String notificationsLoadFailed = 'اعلان‌ها بارگذاری نشد.';
+  static const String notificationsRetry = 'تلاش دوباره';
+  static const String notificationsMarkAllRead = 'خواندن همه';
+  static const String notificationsMarkFailed = 'علامت‌گذاری اعلان انجام نشد.';
   static const String nearestTitle = 'نزدیک‌ترین‌ها';
   static const String bookNowShort = 'رزرو';
   static const String viewProfile = 'مشاهده پروفایل';
