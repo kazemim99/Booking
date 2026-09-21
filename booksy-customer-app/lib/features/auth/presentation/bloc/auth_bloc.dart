@@ -1,5 +1,10 @@
+import 'dart:async';
+
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:injectable/injectable.dart';
+
+import '../../../../core/push/push_registration.dart';
+import '../../domain/entities/user.dart';
 import '../../domain/repositories/auth_repository.dart';
 import '../../domain/usecases/complete_authentication_usecase.dart';
 import '../../domain/usecases/send_verification_code_usecase.dart';
@@ -14,11 +19,20 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
   final CompleteAuthenticationUseCase _completeAuthenticationUseCase;
   final AuthRepository _authRepository;
 
+  /// Push registration rides the auth flow: register once a session exists, revoke before it is cleared.
+  /// Optional with a no-op default so the generated DI (injection.config.dart) still compiles unchanged;
+  /// `injection.dart` re-registers the bloc with the real one after `getIt.init()`.
+  final PushLifecycle _push;
+
   AuthBloc(
     this._sendVerificationCodeUseCase,
     this._completeAuthenticationUseCase,
-    this._authRepository,
-  ) : super(const AuthInitial()) {
+    this._authRepository, {
+    // A named parameter cannot be a private initializing formal (`this._push`), whatever the lint suggests.
+    // ignore: prefer_initializing_formals
+    PushLifecycle push = const NoPush(),
+  })  : _push = push,
+        super(const AuthInitial()) {
     on<SendVerificationCodeEvent>(_onSendVerificationCode);
     on<VerifyCodeEvent>(_onVerifyCode);
     on<ResendOtpEvent>(_onResendOtp);
@@ -65,7 +79,7 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
 
     result.fold(
       (failure) => emit(AuthError(failure.message)),
-      (session) => emit(Authenticated(session)),
+      (session) => _signedIn(session, emit),
     );
   }
 
@@ -114,7 +128,7 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
           (failure) => emit(const Unauthenticated()),
           (session) {
             if (session != null) {
-              emit(Authenticated(session));
+              _signedIn(session, emit);
             } else {
               emit(const Unauthenticated());
             }
@@ -134,6 +148,9 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
     Emitter<AuthState> emit,
   ) async {
     emit(const AuthLoading());
+
+    // Before the session goes: revoking the device is an authenticated call, and afterwards it would be 401.
+    await _push.onSigningOut();
 
     final result = await _authRepository.logout();
 
@@ -155,7 +172,14 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
         // If refresh fails, logout the user
         emit(const Unauthenticated());
       },
-      (session) => emit(Authenticated(session)),
+      (session) => _signedIn(session, emit),
     );
+  }
+
+  /// A session exists on this device. Push registration is started but not awaited: it must never delay, or
+  /// fail, signing in.
+  void _signedIn(AuthSession session, Emitter<AuthState> emit) {
+    emit(Authenticated(session));
+    unawaited(_push.onSignedIn());
   }
 }

@@ -145,6 +145,9 @@ class ApiConstants {
   /// POST — mark all read. Idempotent.
   static const String notificationsMarkAllRead = '/$apiVersion/Notifications/read-all';
 
+  /// POST `{ token, platform }` registers this device; DELETE `?token=` revokes it. Both caller-scoped.
+  static const String deviceTokens = '/$apiVersion/DeviceTokens';
+
   /// Create booking
   /// POST /api/v1/Bookings
   static const String createBooking = '/$apiVersion/Bookings';

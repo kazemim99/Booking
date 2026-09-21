@@ -4,6 +4,9 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:go_router/go_router.dart';
 import 'config/routes/app_router.dart';
+import 'core/push/firebase_push_token_source.dart';
+import 'core/push/push_message_router.dart';
+import 'features/notifications/presentation/inbox_cubit.dart';
 import 'config/theme/app_theme.dart';
 import 'core/di/injection.dart';
 import 'features/auth/presentation/bloc/auth_bloc.dart';
@@ -32,6 +35,17 @@ class BooksyCustomerApp extends StatefulWidget {
 
 class _BooksyCustomerAppState extends State<BooksyCustomerApp> {
   late final GoRouter _router = AppRouter.create(widget.authBloc);
+
+  @override
+  void initState() {
+    super.initState();
+    // Taps on push notifications route through the same router. A no-op on web and on builds without Firebase.
+    PushMessageRouter.attach(
+      source: getIt<FirebasePushTokenSource>(),
+      router: _router,
+      inbox: getIt<InboxCubit>(),
+    );
+  }
 
   @override
   void dispose() {

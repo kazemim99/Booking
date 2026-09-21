@@ -5,6 +5,13 @@ import 'package:injectable/injectable.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../../features/checkout/data/datasources/checkout_attempt_store.dart';
+import '../push/dio_device_token_api.dart';
+import '../push/firebase_push_token_source.dart';
+import '../push/push_registration.dart';
+import '../../features/auth/presentation/bloc/auth_bloc.dart';
+import '../../features/auth/domain/repositories/auth_repository.dart';
+import '../../features/auth/domain/usecases/send_verification_code_usecase.dart';
+import '../../features/auth/domain/usecases/complete_authentication_usecase.dart';
 import '../../features/checkout/data/datasources/checkout_remote_datasource.dart';
 import '../../features/checkout/data/repositories/checkout_repository_impl.dart';
 import '../../features/checkout/domain/repositories/checkout_repository.dart';
@@ -47,6 +54,29 @@ final getIt = GetIt.instance;
 )
 Future<void> configureDependencies() async {
   getIt.init();
+
+  // ---- Push (device registration) ----
+  // The Firebase source degrades to "unavailable" on a build without Firebase configuration, and on web.
+  getIt.registerLazySingleton<FirebasePushTokenSource>(() => FirebasePushTokenSource());
+  getIt.registerLazySingleton<PushRegistration>(
+    () => PushRegistration(
+      getIt<FirebasePushTokenSource>(),
+      DioDeviceTokenApi(serviceCatalogDio: getIt<Dio>(instanceName: 'serviceCatalogDio')),
+    ),
+  );
+
+  // AuthBloc is registered by the GENERATED config, which cannot know about push. Re-registered here rather
+  // than hand-editing injection.config.dart: an edit there is silently lost on the next regeneration, and push
+  // would stop working with nothing to say so.
+  getIt.unregister<AuthBloc>();
+  getIt.registerFactory<AuthBloc>(
+    () => AuthBloc(
+      getIt<SendVerificationCodeUseCase>(),
+      getIt<CompleteAuthenticationUseCase>(),
+      getIt<AuthRepository>(),
+      push: getIt<PushRegistration>(),
+    ),
+  );
 
   // Registered manually: build_runner codegen is currently broken by a
   // retrofit_generator/SDK incompatibility, so these can't use @injectable.

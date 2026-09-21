@@ -37,19 +37,19 @@ REWRITTEN 2026-09-21 after reading the code — the first draft targeted a dead 
 
 ## 2. Devices register for push (booksy-customer-app, booksy-provider-app)
 
-- [ ] 2.1 Add `firebase_core` + `firebase_messaging` to both apps. Platform config
+- [x] 2.1 Add `firebase_core` + `firebase_messaging` to both apps. Platform config
       (`google-services.json`, `GoogleService-Info.plist`) is account-specific and must come from whoever
       owns the Firebase project — it is not in the repository.
-- [ ] 2.2 A `PushRegistrationService` per app behind an interface, so the token source and the API call can
+- [x] 2.2 A `PushRegistrationService` per app behind an interface, so the token source and the API call can
       both be faked. Unit tests for: register on sign-in, re-register on refresh, revoke on sign-out,
       permission declined is a no-op, API failure does not throw into the sign-in path.
-- [ ] 2.3 Wire it into the real auth flow: register after a successful sign-in, revoke before clearing the
+- [x] 2.3 Wire it into the real auth flow: register after a successful sign-in, revoke before clearing the
       session on sign-out. Tested through the auth flow, not just the service — a service nobody calls is
       the failure mode this whole change exists to fix.
-- [ ] 2.4 Foreground and background message handlers. Tapping opens the notification's subject; a subject
+- [x] 2.4 Foreground and background message handlers. Tapping opens the notification's subject; a subject
       that is gone or no longer theirs opens the list instead of an error.
-- [ ] 2.5 `flutter analyze` clean and `flutter test` green in both apps.
-- [ ] 2.6 **CANNOT BE VERIFIED HERE.** `flutter build apk` fails in this environment because Google Maven
+- [x] 2.5 `flutter analyze` clean and `flutter test` green in both apps.
+- [-] 2.6 BLOCKED: no device build possible here, and no Firebase project config in the repo. **CANNOT BE VERIFIED HERE.** `flutter build apk` fails in this environment because Google Maven
       404s (see the Android build note in the team's notes). A real end-to-end push must be confirmed on a
       machine with working Maven access before this slice is called done. Park it rather than claim it.
 
@@ -77,7 +77,7 @@ REWRITTEN 2026-09-21 after reading the code — the first draft targeted a dead 
 - [ ] 4.1 `scripts/verify.ps1 -Tier fast` green.
 - [ ] 4.2 `scripts/verify.ps1 -Tier full` green — it already runs both Vue apps' type-check and lint and
       both Flutter apps' analyze and test, so all four clients are covered by the existing gate.
-- [ ] 4.3 On a device: sign in, receive a push, tap it, land on the right screen. Blocked on 2.6.
+- [-] 4.3 BLOCKED on 2.6. On a device: sign in, receive a push, tap it, land on the right screen.
 
 ## Log
 - 2026-09-21 Scoped after the user asked whether the clients were done. They were not, and nothing had been
@@ -246,3 +246,18 @@ REWRITTEN 2026-09-21 after reading the code — the first draft targeted a dead 
   (and the `com.google.gms.google-services` Gradle plugin) or `GoogleService-Info.plist`, which are not in the
   repository. Until someone adds them, the guard keeps push off and the app works exactly as before.
   591 tests pass, analyze clean.
+- 2026-09-21 Slice 2, booksy-customer-app — same design as the provider app, and one DI trap avoided.
+  `AuthBloc` here is `@injectable`, registered by the GENERATED `injection.config.dart`, and this repo notes
+  that codegen is unavailable. Hand-editing the generated file to pass `push:` would work until the next
+  regeneration and then silently drop push with nothing to say so. Instead the bloc takes an optional named
+  `push` (default no-op, so the generated call still compiles) and `injection.dart` re-registers it after
+  `getIt.init()`. Every `Authenticated` emission — OTP, restored session, token refresh — goes through one
+  `_signedIn` helper, so none can skip registration; re-registering is a server-side refresh.
+  A booking push opens THAT appointment (this app has the screen). Web is unsupported by the Firebase source
+  — the app runs in Chrome too, and browser push is a separate decision.
+  20 new tests, red first (11 registration, 5 auth-flow including logout ordering, 4 tap routing).
+  307 pass, analyze clean.
+  2.6 / 4.3 BLOCKED, not claimed: there is no Firebase project configuration in the repository
+  (google-services.json / GoogleService-Info.plist are account-specific), and Android cannot be built here
+  (Google Maven 404s). Until the config is added the guard keeps push off and both apps behave exactly as
+  before. End-to-end push on a real device is the remaining acceptance check.
