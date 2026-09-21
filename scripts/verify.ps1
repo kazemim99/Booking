@@ -250,6 +250,10 @@ if ($Tier -eq 'full') {
         if (-not (Touched $app)) { continue }
         if (-not (Test-Path (Join-Path $root "$app/node_modules"))) { Add-Blocked "vue:$app" "no node_modules; run 'npm ci' in $app"; continue }
         Invoke-Step -Name "vue:${app}:type-check" -Dir (Join-Path $root $app) -Command 'npm run --silent type-check' -ShowPattern @('error TS', 'Found [0-9]+ error')
+        if ($app -eq 'booksy-admin') {
+            # booksy-admin had 54 vitest tests that no gate ran. Same defect as the frontend's, fixed the same way.
+            Invoke-Step -Name "vue:${app}:unit" -Dir (Join-Path $root $app) -Command 'npx vitest run' -ShowPattern @('Test Files', 'Tests ', 'FAIL')
+        }
         if ($app -eq 'booksy-frontend') {
             Invoke-Step -Name "vue:${app}:lint" -Dir (Join-Path $root $app) -Command 'npm run --silent lint:check' -ShowPattern @('error', 'problems')
             # Unit tests, which this gate did not run at all until add-notification-clients: type-check and

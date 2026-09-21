@@ -126,6 +126,7 @@ import { useRouter, useRoute } from 'vue-router'
 import { useAuthStore } from '../stores/auth.store'
 import { useLocaleStore } from '../stores/locale.store'
 import LanguageSwitcher from '../components/common/LanguageSwitcher.vue'
+import { useUnreadCount } from '../composables/useUnreadCount'
 import {
   MenuUnfoldOutlined,
   MenuFoldOutlined,
@@ -152,7 +153,9 @@ const authStore = useAuthStore()
 
 const collapsed = ref(false)
 const selectedKeys = ref<string[]>([])
-const notifications = ref(5)
+// Was `ref(5)`: a number every administrator saw and nothing produced. Now the server's count — which is zero
+// today, because nothing in the notification catalogue is addressed to an administrator, so the badge hides.
+const { count: notifications } = useUnreadCount()
 
 watch(
   () => route.path,

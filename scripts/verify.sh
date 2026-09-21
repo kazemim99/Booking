@@ -136,6 +136,8 @@ if [ "$TIER" = full ]; then
     touched "$app" || continue
     [ -d "$app/node_modules" ] || { blocked "vue:$app" "no node_modules; run 'npm ci' in $app"; continue; }
     step "vue:$app:type-check" "$ROOT/$app" npm run --silent type-check
+    # booksy-admin's vitest suite was never run by any gate — see verify.ps1.
+    [ "$app" = booksy-admin ] && step "vue:$app:unit" "$ROOT/$app" npx vitest run
     [ "$app" = booksy-frontend ] && step "vue:$app:lint" "$ROOT/$app" npm run --silent lint:check
     # Unit tests — see verify.ps1 for why, and for the two excluded EMPTY placeholder specs.
     [ "$app" = booksy-frontend ] && step "vue:$app:unit" "$ROOT/$app" npx vitest run src --exclude src/modules/auth/__tests__/auth.api.spec.ts --exclude src/modules/auth/__tests__/LoginForm.spec.ts

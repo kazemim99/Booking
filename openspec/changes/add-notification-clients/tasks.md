@@ -58,11 +58,11 @@ REWRITTEN 2026-09-21 after reading the code — the first draft targeted a dead 
 - [x] 3.1 Fix the wrong endpoint constants in `booksy-frontend/src/core/api/config/api-config.ts`:
       `list` is `/Notifications/inbox`, `unread` is `/Notifications/unread-count`. Add a caller in the same
       commit, because an unexercised constant is how they became wrong in the first place.
-- [~] 3.2 booksy-frontend DONE; booksy-admin pending. A notification service + store per web client: list (paged, newest first), unread count,
+- [x] 3.2 booksy-frontend and booksy-admin done (admin: count only, see 3.4). A notification service + store per web client: list (paged, newest first), unread count,
       mark-read, mark-all-read. Against the real API shape — responses are wrapped in a `data` envelope.
 - [x] 3.3 `booksy-frontend`: a notifications screen and an unread badge. Empty state says there is nothing;
       it does not show a spinner forever or a blank panel.
-- [ ] 3.4 `booksy-admin`: the same, plus the `/notifications` ROUTE that `AdminUserMenu.vue` already links
+- [x] 3.4 REVISED — see log. `booksy-admin`: the same, plus the `/notifications` ROUTE that `AdminUserMenu.vue` already links
       to and which does not exist — a dead link in a shipped menu.
 - [ ] 3.5 Both Flutter apps: a notifications list, unread badge and mark-read. The provider app's home
       screen already has a bell whose own comment calls it "a placeholder until notifications ship"; this is
@@ -172,3 +172,19 @@ REWRITTEN 2026-09-21 after reading the code — the first draft targeted a dead 
   old "add dashboard" commit, and vitest counts an empty file as a failed suite. I tried to delete them and
   the permission layer refused (test-file removal); the exclusion is the transparent alternative, and deleting
   them is left to a human. 11 files, 98 tests, green.
+- 2026-09-21 booksy-admin (3.4), revised rather than built as written.
+  The proposal asked for an inbox page and a missing /notifications route here. Neither is what was there:
+  * The dead `/notifications` link was in booksy-FRONTEND's admin module, and the new route already fixed it.
+  * booksy-admin's real defect was a HARDCODED `const notifications = ref(5)` on its live layout — five unread
+    notifications shown to every administrator, produced by nothing.
+  * And no notification in the catalogue is addressed to an administrator (audiences: 19 Customer,
+    10 Provider, 4 StaffMember). An admin inbox page would be permanently empty.
+  So: the badge now reads the real caller-scoped count through `notificationsApi.unreadCount` and a
+  `useUnreadCount` composable the layout actually calls (5 tests, red first). In practice it reads zero and
+  the badge hides, which is the truthful state. No inbox page — raised at the end in case you want one anyway.
+  A test-authoring bug of mine worth recording because it looks like a product bug: `beforeEach(() =>
+  mock.mockReset())` RETURNS the mock, and vitest treats a function returned from beforeEach as a cleanup
+  callback and calls it — invoking the mock and awaiting whatever the test configured it to return. It
+  produced an "unhandled rejection" in one test and a 10-second hook timeout in the next. Braces fix it.
+  Also: booksy-admin had 54 vitest tests that no gate ran — the same hole as the frontend's. Added its unit
+  step to both verify scripts; 10 files, 59 tests, green.
