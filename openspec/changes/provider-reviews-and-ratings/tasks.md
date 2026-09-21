@@ -237,8 +237,21 @@ the session that owns `notification-system`. None of the three blocks structural
 
 ## 8. Clients
 
-Per-client slices, each with its covering tests named before the implementation task.
+Four apps, all four in scope: `booksy-frontend` (customer web), `booksy-admin` (the panel CI deploys to
+admin.nahalkmi.ir — NOT `booksy-frontend/src/modules/admin/`, which is a second, unrouted admin),
+`booksy-customer-app` and `booksy-provider-app`. Per-client slices, each with its covering tests named
+before the implementation task.
 
+- [ ] 8.0 DECIDE FIRST, because it determines where every other `booksy-frontend` task lands. There are
+      already THREE review surfaces in that app and this change must end with one:
+      (a) `components/profile/ProfileReviews.vue` — the mounted provider reviews tab, entirely fabricated;
+      (b) `modules/customer/components/modals/{ReviewsModal,EditReviewModal,ReviewCard}.vue` — wired to
+      UserManagement routes that do not exist;
+      (c) `modules/reviews/` — an empty scaffold: `review.api.ts`, `review.store.ts` and `useReview.ts` are
+      **0 lines**, the five components and `ReviewsView.vue` are 16-line stubs, `ReviewsView` is routed from
+      nowhere — but `review.types.ts` is a real 261-line type set.
+      Either make `modules/reviews/` the single home and point (a) and (b) at it, or delete it and keep the
+      types. Not deciding means an implementer builds a fourth surface beside the other three.
 - [ ] 8.1 RED: Vue component tests for `booksy-frontend` — the dimension disclosure in the write/edit form,
       vote state rendered from the caller's own vote, provider reply rendering, and the "no reviews yet"
       treatment. FULL does not run Vue unit tests (see 9.4), so these need their own invocation.
@@ -254,21 +267,39 @@ Per-client slices, each with its covering tests named before the implementation 
       file that already targets those routes, `reviews.service.ts`, is imported by nothing: wire it in or
       delete it. Also fix `ProviderDetailView.vue`, which discards `rating`, `reviewCount` and `reviews`
       after the API call, and the landing-page `|| 5.0` fallback in `FeaturedProviders.vue`.
-- [ ] 8.4 `booksy-admin`: the moderation queue — list, approve, reject with reason, hide with reason, restore,
-      and the reported-reviews view, against the endpoints named in 6.5. New surface.
-- [ ] 8.5 RED: Flutter widget/bloc tests for `booksy-customer-app` — dimensions in the write dialog, reply and
-      breakdown rendering, the vote control, and the "no reviews yet" treatment in `provider_rating.dart` and
-      the provider cards.
-- [ ] 8.6 `booksy-customer-app`: extend `features/reviews/` and the rating widgets accordingly. Its
-      `hasRating(rating, reviewCount)` guard currently collapses to `rating > 0` because the API's review
-      count is a constant zero — 4.6 fixes that server side, and this task stops the client compensating.
-- [ ] 8.7 RED: Flutter widget tests for `booksy-provider-app`, including a themed button inside a `Row`
+- [ ] 8.4 RED: `booksy-admin` tests for the moderation views — the queue renders pending items oldest first,
+      each action posts the right call, reject and hide require a reason, and a non-admin is refused. The app
+      already has a `src/**/__tests__` convention to follow.
+- [ ] 8.5 `booksy-admin`: the moderation surface — a new `src/views/reviews/` beside the existing
+      `providers`/`services`/`users` views, plus its router entry and sidebar item: the pending queue,
+      approve, reject with reason, hide with reason, restore, and the reported-reviews view, against the
+      endpoints named in 6.5. There is no reviews surface in this app today. Add the Persian and English
+      strings to `src/locales/fa.json` and `en.json` — this app is fully localised and an untranslated view
+      is a visible regression, not a detail.
+- [ ] 8.6 `booksy-admin`: `views/providers/ProviderDetails.vue` already renders `provider.totalReviews`,
+      which is a constant 0 until 4.6 lands. Once it is real, show the rating beside it and give the
+      unrated case the same "no reviews yet" treatment as the other clients.
+- [ ] 8.7 RED: Flutter widget/bloc tests for `booksy-customer-app` — dimensions in the write dialog, reply and
+      breakdown rendering, the vote control, the author's own-reviews list showing moderation state and
+      rejection reason, and the "no reviews yet" treatment in `provider_rating.dart` and the provider cards.
+- [ ] 8.8 `booksy-customer-app`: extend `features/reviews/` — today it holds only a remote datasource, a
+      repository, one entity and two widgets, and the datasource has no vote, edit or own-list call. Add
+      those, plus the moderation-state display. Its `hasRating(rating, reviewCount)` guard currently
+      collapses to `rating > 0` because the API's review count is a constant zero — 4.6 fixes that server
+      side, and this task stops the client compensating for it.
+- [ ] 8.9 RED: Flutter widget tests for `booksy-provider-app`, including a themed button inside a `Row`
       against the real `AppTheme` — its buttons are infinite-width via `Size.fromHeight` and blank the page
       otherwise, which only a real-theme widget test catches.
-- [ ] 8.8 `booksy-provider-app`: net-new reviews feature — read reviews of your business against the
-      owner-scoped listing from 5.15 (not the public one, which by then returns published rows only), see
-      dimension breakdowns, reply.
-- [ ] 8.9 [?] DECISION: should an overall rating of 3 or below prompt for dimensions? That is where dimension
+- [ ] 8.10 `booksy-provider-app`: net-new reviews feature. This app has four features today (auth, home,
+      invitations, onboarding) and nothing review-shaped at all, so this is a whole feature module plus its
+      DI registration, route and navigation entry — not a screen bolted onto an existing one. Read reviews of
+      your business against the owner-scoped listing from 5.15 (not the public one, which by then returns
+      published rows only), see dimension breakdowns, reply, and see a reply's own moderation state so a
+      provider knows their answer is not live yet.
+- [ ] 8.11 `booksy-provider-app` home: surface the business's rating and published review count, and the
+      count of reviews awaiting the provider's reply. The Home workspace is the app's designed entry point;
+      a reviews feature that can only be reached from a menu will not be seen.
+- [ ] 8.12 [?] DECISION: should an overall rating of 3 or below prompt for dimensions? That is where dimension
       data is most valuable and least often volunteered, at a completion-rate cost. UX call; default to not
       prompting until it lands.
 

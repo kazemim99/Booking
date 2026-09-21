@@ -42,7 +42,11 @@ namespace Booksy.ServiceCatalog.Application.Commands.Provider.DeactivateProvider
         private readonly IProviderWriteRepository _providerWriteRepository;
         private readonly IServiceCatalogUnitOfWork _unitOfWork;
         private readonly IHttpContextAccessor _httpContextAccessor;
+        private readonly Services.Notifications.INotificationRaiser _notifications;
         private readonly ILogger<DeactivateProviderStaffCommandHandler> _logger;
+
+        /// <summary>A membership change is about the salon, for the inbox's tap target.</summary>
+        private const string ProviderSubject = "Provider";
 
         public DeactivateProviderStaffCommandHandler(
             IOrganizationMembershipRepository membershipRepository,
@@ -51,6 +55,7 @@ namespace Booksy.ServiceCatalog.Application.Commands.Provider.DeactivateProvider
             IProviderWriteRepository providerWriteRepository,
             IServiceCatalogUnitOfWork unitOfWork,
             IHttpContextAccessor httpContextAccessor,
+            Services.Notifications.INotificationRaiser notifications,
             ILogger<DeactivateProviderStaffCommandHandler> logger)
         {
             _membershipRepository = membershipRepository;
@@ -59,6 +64,7 @@ namespace Booksy.ServiceCatalog.Application.Commands.Provider.DeactivateProvider
             _providerWriteRepository = providerWriteRepository;
             _unitOfWork = unitOfWork;
             _httpContextAccessor = httpContextAccessor;
+            _notifications = notifications;
             _logger = logger;
         }
 
@@ -153,6 +159,29 @@ namespace Booksy.ServiceCatalog.Application.Commands.Provider.DeactivateProvider
                     roles: membership.Roles,
                     reason: request.Reason),
                 cancellationToken);
+
+            // Tell the person who no longer belongs to the salon — for them this is the only notice their
+            // access has ended. Skipped when they removed themselves (they know) and when the membership
+            // was unclaimed, because then there is no account to address.
+            if (membership.PersonId is not null && !callerIsSelf)
+            {
+                var salon = await _providerReadRepository.GetByIdAsync(
+                    membership.OrganizationId, cancellationToken);
+
+                await _notifications.RaiseAsync(
+                    Domain.Enums.NotificationEventCode.StaffRemoved,
+                    recipientId: membership.PersonId.Value,
+                    dedupKey: membership.Id,
+                    parameters: new Dictionary<string, string>
+                    {
+                        [Services.Notifications.NotificationParameter.BusinessName] =
+                            salon?.Profile.BusinessName ?? "سالن",
+                        [Services.Notifications.NotificationParameter.Reason] = request.Reason ?? string.Empty,
+                    },
+                    subjectType: ProviderSubject,
+                    subjectId: membership.OrganizationId.Value,
+                    cancellationToken: cancellationToken);
+            }
 
             await _unitOfWork.SaveAndPublishEventsAsync(cancellationToken);
 

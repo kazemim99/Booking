@@ -157,13 +157,16 @@ namespace Booksy.ServiceCatalog.Application.Services.Notifications
                     $"{Coalesce(staff, customer)} دعوت همکاری در {business} را پذیرفت."),
 
 
+                // Second person, because these go to the member — see StaffMembershipNotificationTests.
+                // Written in the third person they read as a leak from the owner's inbox.
                 NotificationEventCode.StaffAdded => Copy(
-                    "همکار جدید",
-                    $"{Coalesce(staff, customer)} به {business} اضافه شد."),
+                    "به تیم خوش آمدید",
+                    $"شما به تیم {business} اضافه شدید."),
 
                 NotificationEventCode.StaffRemoved => Copy(
                     "پایان همکاری",
-                    $"همکاری {Coalesce(staff, customer)} با {business} پایان یافت."),
+                    $"همکاری شما با {business} پایان یافت"
+                    + (reason is null ? "." : $": {reason}")),
 
                 NotificationEventCode.StaffAssignedToBooking => Copy(
                     "نوبت جدید برای شما",
@@ -174,10 +177,6 @@ namespace Booksy.ServiceCatalog.Application.Services.Notifications
                     "تسویه انجام شد",
                     $"مبلغ{Money(amount)} به حساب {business} واریز شد."),
 
-
-                NotificationEventCode.InvoiceGenerated => Copy(
-                    "صورت‌حساب جدید",
-                    $"صورت‌حساب جدید برای {business} صادر شد."),
 
 
                 NotificationEventCode.ProviderActivated => Copy(

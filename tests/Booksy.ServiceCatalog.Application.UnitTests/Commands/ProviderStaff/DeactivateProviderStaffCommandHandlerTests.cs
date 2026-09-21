@@ -57,6 +57,11 @@ public class DeactivateProviderStaffCommandHandlerTests
             _providerWriteRepository,
             _unitOfWork,
             accessor,
+
+            // A substitute on purpose: this class tests the removal's authorization invariants, and a
+            // notification raised against a stubbed salon lookup would assert nothing. The member actually
+            // being told is covered by StaffMembershipNotificationTests, against a real database.
+            Substitute.For<Booksy.ServiceCatalog.Application.Services.Notifications.INotificationRaiser>(),
             Substitute.For<ILogger<DeactivateProviderStaffCommandHandler>>());
     }
 

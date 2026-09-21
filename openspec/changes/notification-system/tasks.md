@@ -142,7 +142,7 @@ the structural work — each is a row's timing, not a shape.
       The sentinel rides the real stack (API request → command → gateway request), so a test provokes the
       failure the way a caller would instead of reaching past the seams it means to exercise.
 
-- [ ] 7.9 Emitter audit follow-through. 18 catalogued codes currently have no raise site. They are NOT one
+- [x] 7.9 Emitter audit follow-through — closed 2026-09-21, see the log. Every catalogued code now has an emitter. 18 catalogued codes currently have no raise site. They are NOT one
       problem and must not be pruned as a batch:
       * **Wiring pending, flow exists** — StaffAdded, StaffRemoved, InvoiceGenerated. Ordinary remaining
         work. PaymentFailed (7.2/7.8), DailyScheduleDigest (7.5), ReviewReminder (7.6) and
@@ -160,7 +160,7 @@ the structural work — each is a row's timing, not a shape.
         approval path is half-built and a reject completes it rather than inventing it. If that stays
         unbuilt, this code should go the same way.
 
-- [ ] 7.10 Two provider-account notifications have no reachable flow, found while wiring 7.3:
+- [x] 7.10 CLOSED — all four codes removed by user decision 2026-09-21. Original text follows:
       * `ProviderVerificationChanged` — `UpdateProviderVerificationCommand` exists and has NO caller: no
         endpoint, nothing. The command is as orphaned as the join-request event was.
       * `ProviderDeactivated` — there is no provider-deactivation endpoint at all. Only
@@ -225,8 +225,9 @@ test-first.
 
 ## 9. Verification
 
-- [ ] 9.1 `scripts/verify.ps1 -Tier fast` green.
-- [ ] 9.2 `scripts/verify.ps1 -Tier full` green (Testcontainers; coordinate build time with peer sessions —
+- [x] 9.1 `scripts/verify.ps1 -Tier fast` green.
+- [x] 9.2 GREEN 2026-09-21: 18 steps, 1,337s — both integration suites on Testcontainers, Host
+      composition, both Vue apps and both Flutter apps. (Testcontainers; coordinate build time with peers —
       see ListAgents).
 - [ ] 9.3 Confirm on staging that a real booking produces a real notification end to end, and that the
       delivery log contains no delivery that did not happen.
@@ -738,3 +739,28 @@ test-first.
   So the legacy handler stays, and the catalogue comment that predicted exactly this ("the invitee is often
   not a user yet, so SMS is the only way to reach them") was right. Moving it needs the outbox to be able to
   address a phone number with no account behind it — a real feature, not a refactor, and its own change.
+- 2026-09-21 The remaining items, done in one pass.
+  BOOKING REJECTION — and there was no flow to build. The task list assumed a rejection needed inventing;
+  the investigation says otherwise. A `Requested` booking is already cancellable, and the cancel endpoint
+  already infers the actor from the authenticated caller, so a salon declining a request is a transition the
+  domain performs today. The ONLY thing missing was that the customer was told the wrong thing about it.
+  The distinction is the STARTING state, not the destination: both land on Cancelled, but a request the
+  salon never accepted is a rejection (the customer never had an appointment) while a confirmed booking
+  called off is a cancellation (they did, and it was taken away). Captured before `Cancel()` mutates it.
+  4 tests; the two rejection ones were red, the two control ones green, which is what says the condition
+  discriminates rather than the code merely changing.
+  STAFF ADDED / REMOVED — wired, and re-pointed at the MEMBER. The catalogue had both as Provider audience
+  with third-person copy ("X was added to Y"), which only makes sense read by the salon; but the owner
+  performs the change and already knows, and for a removal this is the only notice the member gets that
+  their access has ended. Audience is now StaffMember and the copy is second person — a message about you,
+  written about you in the third person, reads as a leak from somebody else's inbox.
+  A member with NO account is skipped, and cannot be anything else: the outbox is keyed by user id and a
+  salon may add someone with no app account at all. Same constraint that keeps InvitationSent out.
+  Self-removal is skipped too — they know.
+  INVOICE GENERATED — REMOVED, and this corrects something I told the user. I listed it as "flow exists,
+  ordinary wiring". It does not: there is NO invoice code anywhere in the product, only a seeded template
+  and the code itself. Same category as the six removed earlier today, so the same treatment.
+  Test-arrange notes, both cost a cycle: a GUID's hex is not a phone number (digits only, and `Random` is
+  banned here so the digits come from a GUID's hash); and read the new membership's id from the database
+  rather than the response body — the endpoint's field names are not what an addressing test is about.
+  651 integration tests pass; FAST green.

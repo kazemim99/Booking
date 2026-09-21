@@ -1,4 +1,4 @@
-﻿using Booksy.Core.Application.Abstractions.CQRS;
+using Booksy.Core.Application.Abstractions.CQRS;
 using Booksy.ServiceCatalog.Application.Services.Notifications;
 using Booksy.Core.Application.Abstractions.Persistence;
 using Booksy.Core.Application.Exceptions;
@@ -49,6 +49,11 @@ namespace Booksy.ServiceCatalog.Application.Commands.Booking.CancelBooking
 
             if (booking == null)
                 throw new NotFoundException($"Booking with ID {request.BookingId} not found");
+
+            // Captured BEFORE the transition, because both a rejection and a cancellation land on Cancelled
+            // and only the starting state tells them apart: a request the salon never accepted was never an
+            // appointment, so calling it "cancelled" tells the customer they lost something they never had.
+            var wasAwaitingApproval = booking.Status == Domain.Enums.BookingStatus.Requested;
 
             // Cancel booking (business logic handles fee calculation)
             booking.Cancel(request.Reason, request.ByProvider);
@@ -140,7 +145,9 @@ namespace Booksy.ServiceCatalog.Application.Commands.Booking.CancelBooking
             if (salonCancelled)
             {
                 await _notifications.RaiseAsync(
-                    Domain.Enums.NotificationEventCode.BookingCancelledByProvider,
+                    wasAwaitingApproval
+                        ? Domain.Enums.NotificationEventCode.BookingRejected
+                        : Domain.Enums.NotificationEventCode.BookingCancelledByProvider,
                     booking.CustomerId.Value,
                     dedupKey: booking.Id.Value,
                     parameters: cancelParameters,

@@ -26,6 +26,8 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Logging;
 using System.Security.Claims;
 
+using Booksy.ServiceCatalog.Application.Services.Notifications;
+
 namespace Booksy.ServiceCatalog.Application.Commands.Provider.AddStaffToProvider;
 
 public sealed class AddStaffToProviderCommandHandler
@@ -38,7 +40,11 @@ public sealed class AddStaffToProviderCommandHandler
     private readonly IMemberBookabilityService _memberBookability;
     private readonly IServiceCatalogUnitOfWork _unitOfWork;
     private readonly IHttpContextAccessor _httpContextAccessor;
+    private readonly Services.Notifications.INotificationRaiser _notifications;
     private readonly ILogger<AddStaffToProviderCommandHandler> _logger;
+
+    /// <summary>A membership change is about the salon, for the inbox's tap target.</summary>
+    private const string ProviderSubject = "Provider";
 
     public AddStaffToProviderCommandHandler(
         IProviderReadRepository providerRepository,
@@ -48,6 +54,7 @@ public sealed class AddStaffToProviderCommandHandler
         IMemberBookabilityService memberBookability,
         IServiceCatalogUnitOfWork unitOfWork,
         IHttpContextAccessor httpContextAccessor,
+        Services.Notifications.INotificationRaiser notifications,
         ILogger<AddStaffToProviderCommandHandler> logger)
     {
         _providerRepository = providerRepository;
@@ -57,6 +64,7 @@ public sealed class AddStaffToProviderCommandHandler
         _memberBookability = memberBookability;
         _unitOfWork = unitOfWork;
         _httpContextAccessor = httpContextAccessor;
+        _notifications = notifications;
         _logger = logger;
     }
 
@@ -150,6 +158,25 @@ public sealed class AddStaffToProviderCommandHandler
         // Qualify for the org's services + generate availability so the member is
         // bookable immediately (the behaviour the old synthetic path provided).
         await _memberBookability.SyncAsync(membership, cancellationToken: cancellationToken);
+
+        // Tell the member, not the owner who just added them. Skipped when the person has no account:
+        // the outbox is keyed by user id and cannot reach a name, so an unclaimed member is a skip rather
+        // than a notification addressed to nobody.
+        if (personId is not null)
+        {
+            await _notifications.RaiseAsync(
+                Domain.Enums.NotificationEventCode.StaffAdded,
+                recipientId: personId.Value,
+                dedupKey: membership.Id,
+                parameters: new Dictionary<string, string>
+                {
+                    [NotificationParameter.BusinessName] = organization.Profile.BusinessName,
+                    [NotificationParameter.StaffName] = displayName,
+                },
+                subjectType: ProviderSubject,
+                subjectId: organization.Id.Value,
+                cancellationToken: cancellationToken);
+        }
 
         await _unitOfWork.SaveAndPublishEventsAsync(cancellationToken);
 

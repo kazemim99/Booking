@@ -181,11 +181,12 @@ namespace Booksy.ServiceCatalog.Domain.Policies
                     new(NotificationAudience.Provider, PushInApp, Standard, NotificationDestinationKind.Invitation),
 
 
+                // Addressed to the member, not the salon: the owner performed the change and already knows.
                 [NotificationEventCode.StaffAdded] =
-                    new(NotificationAudience.Provider, PushInApp, Standard, NotificationDestinationKind.Provider),
+                    new(NotificationAudience.StaffMember, PushInApp, Standard, NotificationDestinationKind.Provider),
 
                 [NotificationEventCode.StaffRemoved] =
-                    new(NotificationAudience.Provider, PushInApp, Standard, NotificationDestinationKind.Provider),
+                    new(NotificationAudience.StaffMember, PushInApp, Standard, NotificationDestinationKind.Provider),
 
                 [NotificationEventCode.StaffAssignedToBooking] =
                     new(NotificationAudience.StaffMember, PushInApp, Standard, NotificationDestinationKind.Booking),
@@ -195,8 +196,6 @@ namespace Booksy.ServiceCatalog.Domain.Policies
                     new(NotificationAudience.Provider, SmsPushInApp, Critical, NotificationDestinationKind.Payout),
 
 
-                [NotificationEventCode.InvoiceGenerated] =
-                    new(NotificationAudience.Provider, NotificationChannel.Email | NotificationChannel.InApp, Critical, NotificationDestinationKind.Payment),
 
 
                 [NotificationEventCode.ProviderActivated] =
@@ -281,7 +280,6 @@ namespace Booksy.ServiceCatalog.Domain.Policies
             NotificationEventCode.StaffAssignedToBooking => NotificationType.StaffAssigned,
 
             NotificationEventCode.PayoutCompleted => NotificationType.PayoutCompleted,
-            NotificationEventCode.InvoiceGenerated => NotificationType.InvoiceGenerated,
             NotificationEventCode.ProviderActivated => NotificationType.AccountUpdate,
 
             _ => throw new KeyNotFoundException(

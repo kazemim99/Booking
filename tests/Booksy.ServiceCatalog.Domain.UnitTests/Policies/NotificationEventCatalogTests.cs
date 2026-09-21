@@ -111,7 +111,6 @@ public class NotificationEventCatalogTests
             NotificationEventCode.BookingCancelledByCustomer,
             NotificationEventCode.InvitationSent,
             NotificationEventCode.PayoutCompleted,
-            NotificationEventCode.InvoiceGenerated,
             NotificationEventCode.ProviderActivated,
         };
 

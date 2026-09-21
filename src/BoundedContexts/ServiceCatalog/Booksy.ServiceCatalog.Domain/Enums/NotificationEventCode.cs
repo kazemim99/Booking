@@ -125,7 +125,9 @@ public enum NotificationEventCode
     // 61 was PayoutFailed and 62 was PayoutOnHold. Removed 2026-09-21 by user decision. `Payout` HAS those
     // states and raises events for them, but `ExecutePayoutCommandHandler` is the only code that touches a
     // payout and it only ever completes one — so neither notification has a moment it could be raised at.
-    InvoiceGenerated = 63,
+    // 63 was InvoiceGenerated. Removed 2026-09-21. I told the user this one merely needed wiring; it does
+    // not — there is NO invoice code anywhere in the product, only a seeded notification template and this
+    // code. Same category as the others removed today, so the same treatment.
 
     // 64 was ProviderVerificationChanged and 66 was ProviderDeactivated. Removed 2026-09-21 by user
     // decision, same shape as the payout pair: a salon HAS a verification status and an active/inactive
