@@ -97,8 +97,8 @@ the structural work — each is a row's timing, not a shape.
       a failure cannot be provoked through the API and there is no way to write the failing test first.
       Either the fake grows a failure mode, or that notification is raised where a gateway is not involved.
       Not guessing at it — see 7.8.
-- [~] 7.3 STAFF ASSIGNED and INVITATION ACCEPTED done. Still to raise: join request approved, provider
-      verification status changed, provider activated/deactivated.
+- [~] 7.3 STAFF ASSIGNED, INVITATION ACCEPTED and PROVIDER ACTIVATED done. Join request approved was
+      REMOVED (no flow). Verification-changed and provider-deactivated are NOT BUILDABLE today — see 7.10.
 - [ ] 7.4 Remove each superseded notification event handler only after its outbox coverage is in place and
       tested, so no notification has a window with neither. FOLLOW-UPS #66 (dispatch ordering) stays open as
       its own change.
@@ -150,6 +150,16 @@ the structural work — each is a row's timing, not a shape.
         kept for now only because `Provider.RequiresApproval` and `BookingStatus.Requested` DO exist, so the
         approval path is half-built and a reject completes it rather than inventing it. If that stays
         unbuilt, this code should go the same way.
+
+- [ ] 7.10 Two provider-account notifications have no reachable flow, found while wiring 7.3:
+      * `ProviderVerificationChanged` — `UpdateProviderVerificationCommand` exists and has NO caller: no
+        endpoint, nothing. The command is as orphaned as the join-request event was.
+      * `ProviderDeactivated` — there is no provider-deactivation endpoint at all. Only
+        `DeactivateProviderStaff` exists, which is a different thing (a staff member, not the salon).
+      Both are in the same category as the removed JoinRequestApproved. They are NOT removed yet because,
+      unlike a join request, the surrounding feature plainly exists — a provider HAS a verification status
+      and an active/inactive status, both persisted and both read. What is missing is the way to change
+      them. Decide: build the endpoints, or drop the two codes.
 
 ## 8. `NotificationType` repair (BREAKING)
 
@@ -511,3 +521,13 @@ test-first.
   reused number would still be the sort of thing that bites during a migration.
   Audit done while there: 18 codes have no emitter, recorded as 7.9 with the categories, because they are
   not one problem and pruning them as a batch would delete work that is merely unfinished.
+- 2026-09-21 7.3 (provider activated). Raised from `ActivateProviderCommandHandler`. 2 tests.
+  ARRANGE LESSON, and a real one: the first version created an active provider and demoted it with raw SQL.
+  That does not work — provider reads are CACHED (which is what `ProviderCacheInvalidationEventHandler` is
+  for), so the UPDATE landed in the table and the handler went on seeing an active provider. The error was
+  "Provider is already active" from a row that said otherwise. Build the aggregate in the state you need
+  (`ProviderBuilder().WithStatus(PendingVerification)`); do not mutate around the cache.
+  Found while here: `UpdateProviderVerificationCommand` has NO caller and there is no provider-deactivation
+  endpoint, so two more catalogued codes are unreachable. Recorded as 7.10 rather than removed — unlike the
+  join request, the surrounding feature exists and only the way to change it is missing.
+- 2026-09-21 610 integration tests pass; verify FAST PASS (10 steps, 74s).
