@@ -1,3 +1,4 @@
+using Booksy.ServiceCatalog.Application.Services.Notifications;
 using Booksy.Core.Domain.ValueObjects;
 using Booksy.ServiceCatalog.Application.Abstractions.Identity;
 using Booksy.ServiceCatalog.Application.Abstractions.Persistence;
@@ -57,6 +58,11 @@ public class RegisterAndAcceptInvitationConcurrencyTests
     private RegisterAndAcceptInvitationCommandHandler CreateHandler() => new(
         _invitationRead, _invitationWrite, _memberships, _audit, _people,
         _registration, _unitOfWork, _bookability,
+        // Accepting an invitation now notifies the organisation's owner. Substituted rather than
+        // exercised: what this class tests is the concurrency of the accept itself, and a notification
+        // raised on a stubbed provider lookup would assert nothing.
+        Substitute.For<INotificationRaiser>(),
+        Substitute.For<IProviderReadRepository>(),
         Substitute.For<ILogger<RegisterAndAcceptInvitationCommandHandler>>());
 
     private RegisterAndAcceptInvitationCommand Command() =>

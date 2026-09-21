@@ -97,7 +97,7 @@ the structural work — each is a row's timing, not a shape.
       a failure cannot be provoked through the API and there is no way to write the failing test first.
       Either the fake grows a failure mode, or that notification is raised where a gateway is not involved.
       Not guessing at it — see 7.8.
-- [~] 7.3 STAFF ASSIGNED done. Still to raise: invitation accepted, join request approved, provider
+- [~] 7.3 STAFF ASSIGNED and INVITATION ACCEPTED done. Still to raise: join request approved, provider
       verification status changed, provider activated/deactivated.
 - [ ] 7.4 Remove each superseded notification event handler only after its outbox coverage is in place and
       tested, so no notification has a window with neither. FOLLOW-UPS #66 (dispatch ordering) stays open as
@@ -475,3 +475,12 @@ test-first.
   Worth keeping in mind for 7.5: several fixtures collapse owner and staff into one person, so any test
   distinguishing "salon" from "practitioner" needs a second member or it is asserting nothing.
 - 2026-09-21 606 integration tests pass; verify FAST PASS (10 steps, 59s).
+- 2026-09-21 7.3 (invitation accepted). Raised from `RegisterAndAcceptInvitationCommandHandler` before its
+  `SaveAndPublishEventsAsync`. Fills a real gap rather than replacing a handler: `InvitationSent` already
+  told the invitee, but the OWNER had no way to learn their invitation was taken up except by looking.
+  Addressed to the owner as a person; a second test asserts nothing is addressed to the organisation id.
+  Touched an existing unit test — `RegisterAndAcceptInvitationConcurrencyTests` constructs the handler
+  directly, so two substitutes were added. Left as substitutes on purpose: that class tests the CONCURRENCY
+  of accepting, and a notification raised against a stubbed provider lookup would assert nothing. The
+  behaviour is covered by the integration tests instead.
+- 2026-09-21 608 integration tests pass; verify FAST PASS (10 steps, 73s).

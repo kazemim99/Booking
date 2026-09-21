@@ -1,3 +1,4 @@
+﻿using Booksy.ServiceCatalog.Application.Services.Notifications;
 using Booksy.Core.Application.Abstractions.CQRS;
 using Booksy.Core.Application.Exceptions;
 using Booksy.Core.Domain.Exceptions;
@@ -24,6 +25,8 @@ public sealed class RegisterAndAcceptInvitationCommandHandler
     private readonly IInvitationRegistrationService _registrationService;
     private readonly IServiceCatalogUnitOfWork _unitOfWork;
     private readonly IMemberBookabilityService _memberBookability;
+    private readonly INotificationRaiser _notifications;
+    private readonly IProviderReadRepository _providers;
     private readonly ILogger<RegisterAndAcceptInvitationCommandHandler> _logger;
 
     public RegisterAndAcceptInvitationCommandHandler(
@@ -35,6 +38,8 @@ public sealed class RegisterAndAcceptInvitationCommandHandler
         IInvitationRegistrationService registrationService,
         IServiceCatalogUnitOfWork unitOfWork,
         IMemberBookabilityService memberBookability,
+        INotificationRaiser notifications,
+        IProviderReadRepository providers,
         ILogger<RegisterAndAcceptInvitationCommandHandler> logger)
     {
         _invitationReadRepository = invitationReadRepository;
@@ -45,6 +50,8 @@ public sealed class RegisterAndAcceptInvitationCommandHandler
         _registrationService = registrationService;
         _unitOfWork = unitOfWork;
         _memberBookability = memberBookability;
+        _notifications = notifications;
+        _providers = providers;
         _logger = logger;
     }
 
@@ -123,6 +130,25 @@ public sealed class RegisterAndAcceptInvitationCommandHandler
 
         // Newly registered member is bookable immediately.
         await _memberBookability.SyncAsync(membership, cancellationToken: cancellationToken);
+
+        // The owner sent this invitation and otherwise has no way to learn it was taken up except by
+        // looking. Addressed to the owner as a PERSON — an organisation id reaches nobody.
+        var organisation = await _providers.GetByIdAsync(invitation.OrganizationId, cancellationToken);
+        if (organisation is not null)
+        {
+            await _notifications.RaiseAsync(
+                NotificationEventCode.InvitationAccepted,
+                organisation.OwnerId.Value,
+                dedupKey: invitation.Id,
+                parameters: new Dictionary<string, string>
+                {
+                    [NotificationParameter.BusinessName] = organisation.Profile.BusinessName,
+                    [NotificationParameter.StaffName] = $"{request.FirstName} {request.LastName}".Trim(),
+                },
+                subjectType: "Provider",
+                subjectId: organisation.Id.Value,
+                cancellationToken: cancellationToken);
+        }
 
         await _unitOfWork.SaveAndPublishEventsAsync(cancellationToken);
 
