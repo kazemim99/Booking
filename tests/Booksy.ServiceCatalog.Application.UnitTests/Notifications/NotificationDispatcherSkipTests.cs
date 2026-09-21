@@ -114,6 +114,50 @@ public class NotificationDispatcherSkipTests
         notification.Status.Should().NotBe(NotificationStatus.Failed);
     }
 
+    [Fact]
+    public async Task A_rejected_send_is_reported_to_the_delivery_log_as_a_failure()
+    {
+        // The log is only as truthful as what the dispatcher tells it. NotificationDeliveryLogTests proves
+        // the table records what it is given; this proves it is given the right thing, which is the other
+        // half of the same claim.
+        GivenPushReturns("the gateway timed out");
+
+        await _dispatcher.DispatchAsync(PushOnlyNotification());
+
+        await _deliveryLog.Received(1).RecordOutcomeAsync(
+            Arg.Any<Guid>(), NotificationChannel.PushNotification, Arg.Any<string>(),
+            success: false, Arg.Any<string?>(), "the gateway timed out", Arg.Any<CancellationToken>());
+    }
+
+    [Fact]
+    public async Task An_accepted_send_is_reported_to_the_delivery_log_as_delivered()
+    {
+        _push.SendPushAsync(
+                Arg.Any<Guid>(), Arg.Any<string>(), Arg.Any<string>(),
+                Arg.Any<Dictionary<string, object>>(), Arg.Any<CancellationToken>())
+            .Returns((true, "push-1", (string?)null));
+
+        await _dispatcher.DispatchAsync(PushOnlyNotification());
+
+        await _deliveryLog.Received(1).RecordOutcomeAsync(
+            Arg.Any<Guid>(), NotificationChannel.PushNotification, Arg.Any<string>(),
+            success: true, "push-1", Arg.Any<string?>(), Arg.Any<CancellationToken>());
+    }
+
+    [Fact]
+    public async Task A_skip_is_not_reported_as_a_delivery()
+    {
+        // A recipient with no device was not delivered to. Recording that as delivered is exactly the lie
+        // the fabricated push stub used to tell (task 4.3), and the delivery log is where it would live on.
+        GivenPushReturns(PushUnavailable.NoDevice);
+
+        await _dispatcher.DispatchAsync(PushOnlyNotification());
+
+        await _deliveryLog.DidNotReceive().RecordOutcomeAsync(
+            Arg.Any<Guid>(), Arg.Any<NotificationChannel>(), Arg.Any<string>(),
+            success: true, Arg.Any<string?>(), Arg.Any<string?>(), Arg.Any<CancellationToken>());
+    }
+
     private void GivenPushReturns(string error) =>
         _push.SendPushAsync(
                 Arg.Any<Guid>(), Arg.Any<string>(), Arg.Any<string>(),

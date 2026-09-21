@@ -76,16 +76,49 @@ public class RescheduleNotificationTests : ServiceCatalogIntegrationTestBase
     }
 
     [Fact]
-    public async Task The_moved_booking_gets_reminders_for_its_new_time()
+    public async Task The_reminders_move_to_the_new_booking()
     {
+        // This replaces an assertion of mine that asked whether ANY pending reminder existed anywhere in the
+        // table, unscoped to this booking. Measured rather than assumed: with the handler's ScheduleAsync
+        // removed, that unscoped assertion DID still fail, so it was not vacuous — the claim that it proved
+        // nothing was wrong. What it could not tell apart is a reminder that moved to the successor from one
+        // that was left on the closed booking, and those are opposite outcomes. Hence the two assertions
+        // below, which name the booking each reminder must be on.
         var b = await ArrangeAsync();
         var newStart = b.StartTime;
 
         AuthenticateAsUser(b.CustomerId, "customer@test.com");
         await RescheduleAsync(b, newStart);
 
-        var reminders = await PendingRemindersAsync();
-        reminders.Should().NotBeEmpty("the appointment still exists, just later");
+        var successorId = await SuccessorOfAsync(b.BookingId);
+        successorId.Should().NotBeNull("rescheduling closes one booking and opens another");
+
+        (await PendingRemindersForAsync(successorId!.Value))
+            .Should().Contain(NotificationEventCode.BookingReminder24h)
+            .And.Contain(NotificationEventCode.BookingReminder2h);
+
+        (await PendingRemindersForAsync(b.BookingId)).Should().BeEmpty(
+            "reminders left on the closed booking would announce an appointment nobody is keeping");
+    }
+
+    [Fact]
+    public async Task The_moved_reminders_are_timed_from_the_new_start()
+    {
+        // Moving the rows without moving the times would be the subtler failure: the customer still gets a
+        // "tomorrow" reminder, just keyed to the appointment they no longer have.
+        var b = await ArrangeAsync();
+        var newStart = b.StartTime;
+
+        AuthenticateAsUser(b.CustomerId, "customer@test.com");
+        await RescheduleAsync(b, newStart);
+
+        var successorId = await SuccessorOfAsync(b.BookingId);
+        var due = await ReminderDueTimesAsync(successorId!.Value);
+
+        due[NotificationEventCode.BookingReminder24h]
+            .Should().BeCloseTo(newStart.AddHours(-24), TimeSpan.FromMinutes(1));
+        due[NotificationEventCode.BookingReminder2h]
+            .Should().BeCloseTo(newStart.AddHours(-2), TimeSpan.FromMinutes(1));
     }
 
     // ── helpers ──
@@ -175,15 +208,48 @@ public class RescheduleNotificationTests : ServiceCatalogIntegrationTestBase
             .Select(e => e.State).ToListAsync();
     }
 
-    private async Task<List<NotificationEventCode>> PendingRemindersAsync()
+    /// <summary>The booking a reschedule opened in place of this one.</summary>
+    private async Task<Guid?> SuccessorOfAsync(Guid bookingId)
+    {
+        using var scope = Factory.Services.CreateScope();
+        var context = scope.ServiceProvider.GetRequiredService<ServiceCatalogDbContext>();
+        var previous = Domain.ValueObjects.BookingId.From(bookingId);
+
+        var successor = await context.Bookings.AsNoTracking()
+            .FirstOrDefaultAsync(b => b.PreviousBookingId == previous);
+
+        return successor?.Id.Value;
+    }
+
+    /// <summary>
+    /// Scoped to one booking, deliberately. Asking the whole table whether a reminder exists proves nothing
+    /// in a collection where every other test leaves reminders lying around.
+    /// </summary>
+    private async Task<List<NotificationEventCode>> PendingRemindersForAsync(Guid bookingId)
     {
         using var scope = Factory.Services.CreateScope();
         var context = scope.ServiceProvider.GetRequiredService<ServiceCatalogDbContext>();
         return await context.NotificationOutbox.AsNoTracking()
-            .Where(e => e.State == NotificationOutboxStateNames.Pending
+            .Where(e => e.SubjectId == bookingId
+                        && e.State == NotificationOutboxStateNames.Pending
                         && (e.EventCode == NotificationEventCode.BookingReminder24h
                             || e.EventCode == NotificationEventCode.BookingReminder2h))
             .Select(e => e.EventCode).ToListAsync();
+    }
+
+    private async Task<Dictionary<NotificationEventCode, DateTime>> ReminderDueTimesAsync(Guid bookingId)
+    {
+        using var scope = Factory.Services.CreateScope();
+        var context = scope.ServiceProvider.GetRequiredService<ServiceCatalogDbContext>();
+
+        var rows = await context.NotificationOutbox.AsNoTracking()
+            .Where(e => e.SubjectId == bookingId && e.ScheduledFor != null)
+            .Select(e => new { e.EventCode, e.ScheduledFor })
+            .ToListAsync();
+
+        return rows
+            .GroupBy(r => r.EventCode)
+            .ToDictionary(g => g.Key, g => g.First().ScheduledFor!.Value);
     }
 
     /// <summary>Local alias so the test reads without pulling the domain policy namespace in twice.</summary>

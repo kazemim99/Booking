@@ -194,8 +194,11 @@ test-first.
       tests but has no reminder-specific assertion yet — noted in 10.7.
 - [x] 10.4 Dispatcher treats a no-device / not-configured push as a SKIP, not a failure — an explicit spec
       claim with no test today.
-- [ ] 10.5 Delivery log records a rejected send as failed and an accepted one as delivered.
-- [ ] 10.7 Reschedule: assert reminders move to the new booking (the handler does it; no test asserts it).
+- [x] 10.5 Delivery log records a rejected send as failed and an accepted one as delivered. Two halves:
+      `NotificationDeliveryLogTests` (5, real Postgres) proves the table records what it is given, and three
+      new dispatcher unit tests prove it is GIVEN the right thing — the log is only as truthful as its caller.
+- [x] 10.7 Reschedule: reminders move to the new booking, and are re-timed from the new start. The old
+      assertion was unscoped — it asked whether ANY pending reminder existed anywhere in the table.
 - [x] 10.6 End-to-end: a real API booking through confirm → outbox → sweep → notification → delivery.
 
 ## 9. Verification
@@ -596,3 +599,23 @@ test-first.
   FOUND WHILE HERE, recorded on 7.10: `PayoutFailed` and `PayoutOnHold` have no reachable flow either.
   `ExecutePayoutCommandHandler` is the only code that touches a payout and it only ever completes one.
   Four codes now sit in that category, all the same shape: the aggregate has the state, nothing can reach it.
+- 2026-09-21 10.7 and 10.5 done. Section 10 is closed.
+  10.7 — AND A CORRECTION TO MYSELF. I replaced my own unscoped reminder assertion and wrote in the new
+  test's comment that the old one "would have passed with the reschedule scheduling nothing at all". Then I
+  measured it instead of leaving the claim standing: with `_reminders.ScheduleAsync` removed from the
+  handler, the OLD unscoped assertion FAILED too. It was weaker, not vacuous, and the comment now says so.
+  What the old one genuinely could not do is tell a reminder that moved to the successor from one left on
+  the closed booking — opposite outcomes, same query result. The two new tests name the booking each
+  reminder must be on, and check the 24h/2h rows are re-timed from the NEW start: moving the rows without
+  moving the times would still remind somebody about an appointment they no longer have.
+  10.5 — deliberately in two halves, because "the delivery log is correct" is two claims.
+  `NotificationDeliveryLogTests` (5, real Postgres, not a substitute): the recording is a raw UPDATE whose
+  null handling has already caused one silent failure, and only a real database catches that class.
+  It also pins the state machine the de-duplication depends on — Failed stays re-claimable (else one
+  transient gateway error becomes a message nobody ever receives), Delivered does not, and recording one
+  recipient's outcome does not touch another's.
+  Three dispatcher unit tests for the other half: a rejection is reported with success:false, an acceptance
+  with success:true and the gateway's id, and a SKIP is never reported as a delivery — that last one is
+  precisely the lie the fabricated push stub used to tell, and the delivery log is where it would have
+  lived on after 4.3 removed the stub.
+  Mutation: forcing the log to always write Delivered failed 2 of the 5, including the retry one.
