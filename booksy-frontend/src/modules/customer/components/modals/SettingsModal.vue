@@ -1,94 +1,14 @@
 <template>
   <ResponsiveModal :is-open="isOpen" @close="handleClose" title="تنظیمات" size="md" mobile-height="auto">
     <div class="settings-content">
-      <!-- Loading State -->
-      <div v-if="loading" class="loading-state">
-        <div class="spinner"></div>
-        <p>در حال بارگذاری...</p>
-      </div>
-
-      <template v-else>
+      <template v-if="isOpen">
         <!-- Notifications Section -->
         <div class="settings-section">
           <h3 class="section-title">اعلان‌ها</h3>
-          <p class="section-description">تنظیمات اعلان‌های خود را مدیریت کنید</p>
-
-          <!-- SMS Notifications Toggle -->
-          <div class="setting-item">
-            <div class="setting-info">
-              <label for="smsEnabled" class="setting-label">
-                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" class="icon">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 18h.01M8 21h8a2 2 0 002-2V5a2 2 0 00-2-2H8a2 2 0 00-2 2v14a2 2 0 002 2z" />
-                </svg>
-                <span>اعلان‌های پیامکی (SMS)</span>
-              </label>
-              <p class="setting-description">دریافت یادآوری و اطلاعیه‌ها از طریق پیامک</p>
-            </div>
-            <label class="toggle">
-              <input
-                id="smsEnabled"
-                v-model="form.smsEnabled"
-                type="checkbox"
-                class="toggle-input"
-                @change="handleAutoSave"
-              />
-              <span class="toggle-slider"></span>
-            </label>
-          </div>
-
-          <!-- Email Notifications Toggle -->
-          <div class="setting-item">
-            <div class="setting-info">
-              <label for="emailEnabled" class="setting-label">
-                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" class="icon">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
-                </svg>
-                <span>اعلان‌های ایمیل</span>
-              </label>
-              <p class="setting-description">دریافت یادآوری و اطلاعیه‌ها از طریق ایمیل</p>
-            </div>
-            <label class="toggle">
-              <input
-                id="emailEnabled"
-                v-model="form.emailEnabled"
-                type="checkbox"
-                class="toggle-input"
-                @change="handleAutoSave"
-              />
-              <span class="toggle-slider"></span>
-            </label>
-          </div>
-
-          <!-- Reminder Timing Dropdown -->
-          <div class="setting-item">
-            <div class="setting-info">
-              <label for="reminderTiming" class="setting-label">
-                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" class="icon">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-                </svg>
-                <span>زمان ارسال یادآوری</span>
-              </label>
-              <p class="setting-description">زمان ارسال یادآوری قبل از نوبت</p>
-            </div>
-            <select
-              id="reminderTiming"
-              v-model="form.reminderTiming"
-              class="select-input"
-              @change="handleAutoSave"
-            >
-              <option value="1h">۱ ساعت قبل</option>
-              <option value="24h">۱ روز قبل</option>
-              <option value="3d">۳ روز قبل</option>
-            </select>
-          </div>
-
-          <!-- Warning if all notifications disabled -->
-          <div v-if="!form.smsEnabled && !form.emailEnabled" class="warning-message">
-            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" class="warning-icon">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
-            </svg>
-            <p>توجه: با غیرفعال کردن همه اعلان‌ها، یادآوری‌های نوبت دریافت نخواهید کرد.</p>
-          </div>
+          <!-- Only what this product can honour. The SMS, email and reminder-timing controls that used to be
+               here saved to fields nothing reads — a customer could switch SMS off, be told it was saved, and
+               keep receiving SMS. -->
+          <NotificationPreferencesPanel audience="customer" />
         </div>
 
         <div class="divider"></div>
@@ -116,100 +36,23 @@
           </div>
         </div>
 
-        <!-- Success Message -->
-        <transition name="fade">
-          <div v-if="showSaveMessage" class="success-message">
-            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor">
-              <path fill-rule="evenodd" d="M2.25 12c0-5.385 4.365-9.75 9.75-9.75s9.75 4.365 9.75 9.75-4.365 9.75-9.75 9.75S2.25 17.385 2.25 12zm13.36-1.814a.75.75 0 10-1.22-.872l-3.236 4.53L9.53 12.22a.75.75 0 00-1.06 1.06l2.25 2.25a.75.75 0 001.14-.094l3.75-5.25z" clip-rule="evenodd" />
-            </svg>
-            <span>تنظیمات ذخیره شد</span>
-          </div>
-        </transition>
       </template>
     </div>
   </ResponsiveModal>
 </template>
 
 <script setup lang="ts">
-import { ref, computed, watch } from 'vue'
-import { useCustomerStore } from '../../stores/customer.store'
-import { useAuthStore } from '@/core/stores/modules/auth.store'
-import { useNotification } from '@/core/composables/useNotification'
 import ResponsiveModal from '@/shared/components/ui/ResponsiveModal.vue'
-import type { ReminderTiming } from '../../types/customer.types'
+import NotificationPreferencesPanel from '@/modules/notifications/components/NotificationPreferencesPanel.vue'
 
 interface Props {
   isOpen: boolean
 }
 
-const props = defineProps<Props>()
+defineProps<Props>()
 const emit = defineEmits<{
   close: []
 }>()
-
-const customerStore = useCustomerStore()
-const authStore = useAuthStore()
-const { showError } = useNotification()
-
-const loading = computed(() => customerStore.loading.preferences)
-const preferences = computed(() => customerStore.preferences)
-
-const form = ref({
-  smsEnabled: true,
-  emailEnabled: true,
-  reminderTiming: '24h' as ReminderTiming
-})
-
-const showSaveMessage = ref(false)
-
-// Load preferences when modal opens
-watch(() => props.isOpen, async (isOpen) => {
-  if (isOpen && authStore.user?.id) {
-    try {
-      await customerStore.fetchPreferences(authStore.user.id)
-
-      if (preferences.value) {
-        form.value.smsEnabled = preferences.value.smsEnabled
-        form.value.emailEnabled = preferences.value.emailEnabled
-        form.value.reminderTiming = preferences.value.reminderTiming
-      }
-    } catch (err) {
-      console.error('[SettingsModal] Error fetching preferences:', err)
-      showError('خطا', 'خطا در بارگذاری تنظیمات')
-    }
-  }
-}, { immediate: true })
-
-let saveTimeout: ReturnType<typeof setTimeout> | null = null
-
-async function handleAutoSave(): Promise<void> {
-  if (!authStore.user?.id) return
-
-  // Clear previous timeout
-  if (saveTimeout) {
-    clearTimeout(saveTimeout)
-  }
-
-  // Debounce save (wait 500ms after last change)
-  saveTimeout = setTimeout(async () => {
-    try {
-      await customerStore.updatePreferences(authStore.user!.id, {
-        smsEnabled: form.value.smsEnabled,
-        emailEnabled: form.value.emailEnabled,
-        reminderTiming: form.value.reminderTiming
-      })
-
-      // Show success message
-      showSaveMessage.value = true
-      setTimeout(() => {
-        showSaveMessage.value = false
-      }, 2000)
-    } catch (err) {
-      console.error('[SettingsModal] Error saving preferences:', err)
-      showError('خطا', 'خطا در ذخیره تنظیمات')
-    }
-  }, 500)
-}
 
 function handleClose(): void {
   emit('close')

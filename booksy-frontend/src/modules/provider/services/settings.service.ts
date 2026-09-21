@@ -5,7 +5,6 @@ import type { ApiResponse } from '@/core/api/client/api-response'
 import type {
   ProviderSettings,
   UpdateBookingPreferencesRequest,
-  UpdateNotificationSettingsRequest,
   UpdateBusinessPoliciesRequest,
   UpdateOperatingPreferencesRequest,
   UpdateIntegrationSettingsRequest,
@@ -74,31 +73,6 @@ class SettingsService {
     }
   }
 
-  /**
-   * Update notification settings
-   * PUT /api/v1/provider-settings/{providerId}/notification-settings
-   */
-  async updateNotificationSettings(
-    data: UpdateNotificationSettingsRequest
-  ): Promise<SettingsUpdateResult> {
-    try {
-      console.log(`[SettingsService] Updating notification settings for provider: ${data.providerId}`)
-
-      const response = await serviceCategoryClient.put<ApiResponse<SettingsUpdateResult>>(
-        `${API_BASE}/${data.providerId}/notification-settings`,
-        data.notificationSettings
-      )
-
-      if (!response.data?.data) {
-        throw new Error('No result data returned from API')
-      }
-
-      return response.data.data
-    } catch (error: any) {
-      console.error('[SettingsService] Error updating notification settings:', error)
-      throw new Error(error.response?.data?.message || 'Failed to update notification settings')
-    }
-  }
 
   /**
    * Update business policies

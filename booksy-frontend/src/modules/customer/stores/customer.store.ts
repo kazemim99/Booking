@@ -17,7 +17,6 @@ import type {
   CustomerReview,
   UpdateReviewRequest,
   NotificationPreferences,
-  UpdatePreferencesRequest,
   CustomerModalType,
   LoadingState,
   ErrorState,
@@ -394,50 +393,7 @@ export const useCustomerStore = defineStore('customer', () => {
   // Preferences Actions
   // ========================================
 
-  async function fetchPreferences(customerId: string): Promise<void> {
-    if (!customerId) {
-      console.warn('[CustomerStore] No customer ID provided')
-      return
-    }
 
-    loading.value.preferences = true
-    errors.value.preferences = null
-
-    try {
-      preferences.value = await customerService.getPreferences(customerId)
-      console.log('[CustomerStore] Preferences fetched')
-    } catch (error) {
-      const message = error instanceof Error ? error.message : 'خطا در دریافت تنظیمات'
-      errors.value.preferences = message
-      console.error('[CustomerStore] Error fetching preferences:', error)
-    } finally {
-      loading.value.preferences = false
-    }
-  }
-
-  async function updatePreferences(
-    customerId: string,
-    request: UpdatePreferencesRequest,
-  ): Promise<void> {
-    if (!customerId) {
-      throw new Error('No customer ID provided')
-    }
-
-    loading.value.preferences = true
-    errors.value.preferences = null
-
-    try {
-      preferences.value = await customerService.updatePreferences(customerId, request)
-      console.log('[CustomerStore] Preferences updated')
-    } catch (error) {
-      const message = error instanceof Error ? error.message : 'خطا در بهروزرسانی تنظیمات'
-      errors.value.preferences = message
-      console.error('[CustomerStore] Error updating preferences:', error)
-      throw error
-    } finally {
-      loading.value.preferences = false
-    }
-  }
 
   // ========================================
   // UI Actions
@@ -517,8 +473,6 @@ export const useCustomerStore = defineStore('customer', () => {
     removeFavorite,
     fetchReviews,
     updateReview,
-    fetchPreferences,
-    updatePreferences,
     openModal,
     closeModal,
     clearErrors,

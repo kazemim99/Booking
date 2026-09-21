@@ -1,4 +1,4 @@
-Status: STOPPED(decision)
+Status: STOPPED(blocked)
 Verify: FAST
 
 <!-- ACTIVE since 2026-09-21: approved by the user, order left to me — 1, then 3, then 2 (push last,
@@ -21,16 +21,16 @@ REWRITTEN 2026-09-21 after reading the code — the first draft targeted a dead 
       unit tests for the channel mapping. The rule the tests pin: a save changes ONLY the channels the screen
       shows and carries every other channel through unchanged. There is no in-app toggle; omitting in-app
       from the PUT would switch it off.
-- [?] 1.3 DECISION (see log 'what a preference screen may promise'). Customer preferences screen reads and writes that client instead of
+- [x] 1.3 DECIDED (option 1, honest screens). (see log 'what a preference screen may promise'). Customer preferences screen reads and writes that client instead of
       `PATCH /customers/{id}/preferences`, whose values nothing reads. Tested: toggling SMS off sends a
       channel set without SMS and with in-app intact.
-- [?] 1.4 DECISION (same). Provider `NotificationSettings.vue` reads and writes that client instead of
+- [x] 1.4 DECIDED (option 1). (same). Provider `NotificationSettings.vue` reads and writes that client instead of
       `PUT /provider-settings/{id}/notification-settings`, a route that does not exist.
-- [?] 1.5 DECISION (same). `ReminderTiming` and any category toggle: the backend does not honour them (reminder offsets are
+- [x] 1.5 DECIDED (option 1) — removed, not relabelled. (same). `ReminderTiming` and any category toggle: the backend does not honour them (reminder offsets are
       fixed; `ShouldSend` ignores `EnabledTypes`). Remove them or mark them not in effect — never leave a
       control that silently does nothing. DEFAULT TAKEN: mark as not in effect, because removing a visible
       control is a UX call and a label is reversible. Raised at the end.
-- [?] 1.6 Follows 1.3/1.4. A failed save shows an error and does not display the attempted values as saved.
+- [x] 1.6 Done in the panel. A failed save shows an error and does not display the attempted values as saved.
 - [x] 1.7 `ProfilePreferences.vue` and the unrouted `views/ProviderProfileView.vue` that renders it: dead
       code, and the component that misled the first draft of this change. Delete, after confirming again
       that nothing imports either.
@@ -266,3 +266,23 @@ REWRITTEN 2026-09-21 after reading the code — the first draft targeted a dead 
   STOPPED(decision): nothing unblocked remains. Open: 1.3–1.6 (what the two live preference screens may
   promise — a product/UX decision, asked concretely at the end), and 2.6/4.3 (on-device push, blocked on
   Firebase project config that is not in the repository and on an Android toolchain that cannot build here).
+- 2026-09-21 DECISION from the user: option 1 — make the preference screens honest. Done.
+  `NotificationPreferencesPanel` (modules/notifications) replaces the notification sections of BOTH live
+  screens — the customer SettingsModal and the provider settings "notifications" tab. It offers the one
+  control this backend can honour, push on/off (applied through `applyToggles`, so in-app and every other
+  channel are carried through), and STATES what always arrives by SMS instead of offering it: for customers
+  confirmation/cancellation/reschedule, the 2-hour reminder, payments and refunds; for salons new booking
+  requests, customer cancellations and payouts. Removed: the SMS and email toggles, reminder timing, quiet
+  hours, and the provider's per-event × channel matrix. Also the customer modal's false warning that
+  disabling everything stops booking reminders.
+  7 tests. Written in the same step as the component, so no red-first run; mutated instead — dropping the
+  failure rollback, rebuilding the mask instead of applying the toggle, and letting a failed load fall
+  through to a guessed toggle each turned their own test red.
+  A failed LOAD shows no toggle at all: showing it on or off would both be guesses.
+  Dead after the swap, and deleted: `NotificationSettings.vue`, the provider store/service
+  `updateNotificationSettings`, and the customer store `fetchPreferences`/`updatePreferences`. Worth naming:
+  the provider STORE method never called its API — "TODO: Replace with actual API call", then a fabricated
+  success result. The same class as the push stub the backend had at the start of this whole feature.
+  Left in place: the UserManagement customer SmsEnabled/EmailEnabled fields and their endpoint (backend, not
+  this change), and `customerService.getPreferences/updatePreferences` which now have no callers.
+  STOPPED(blocked): only 2.6/4.3 remain — on-device push, which needs the Firebase project config.

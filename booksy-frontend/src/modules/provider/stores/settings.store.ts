@@ -12,7 +12,6 @@ import type {
   IntegrationSettings,
   AccountSecurity,
   UpdateBookingPreferencesRequest,
-  UpdateNotificationSettingsRequest,
   UpdateBusinessPoliciesRequest,
   UpdateOperatingPreferencesRequest,
   UpdateIntegrationSettingsRequest,
@@ -159,55 +158,6 @@ export const useSettingsStore = defineStore('settings', () => {
     }
   }
 
-  /**
-   * Update notification settings
-   */
-  async function updateNotificationSettings(
-    data: UpdateNotificationSettingsRequest
-  ): Promise<SettingsUpdateResult> {
-    isSaving.value = true
-    error.value = null
-    successMessage.value = null
-
-    const original = settings.value?.notificationSettings
-      ? { ...settings.value.notificationSettings }
-      : null
-
-    try {
-      if (settings.value) {
-        settings.value.notificationSettings = {
-          ...settings.value.notificationSettings,
-          ...data.notificationSettings,
-        }
-      }
-
-      // TODO: Replace with actual API call
-      const result: SettingsUpdateResult = {
-        success: true,
-        providerId: data.providerId,
-        settingsUpdated: ['notificationSettings'],
-        lastModifiedAt: new Date().toISOString(),
-      }
-
-      successMessage.value = 'Notification settings updated successfully'
-      hasUnsavedChanges.value = false
-      return result
-    } catch (err: unknown) {
-      if (original && settings.value) {
-        settings.value.notificationSettings = original
-      }
-
-      if (err instanceof Error) {
-        error.value = err.message || 'Failed to update notification settings'
-      } else {
-        error.value = 'Failed to update notification settings'
-      }
-      console.error('Update notification settings error:', err)
-      throw err
-    } finally {
-      isSaving.value = false
-    }
-  }
 
   /**
    * Update business policies
@@ -655,7 +605,6 @@ export const useSettingsStore = defineStore('settings', () => {
 
     // Actions - Update
     updateBookingPreferences,
-    updateNotificationSettings,
     updateBusinessPolicies,
     updateOperatingPreferences,
     updateIntegrationSettings,

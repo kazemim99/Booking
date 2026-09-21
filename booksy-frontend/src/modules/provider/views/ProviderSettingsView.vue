@@ -73,7 +73,10 @@
 
           <!-- Notifications -->
           <div v-if="activeTab === 'notifications'" class="tab-panel">
-            <NotificationSettings />
+            <!-- Only what this product can honour. The per-event × channel matrix, reminder timing and quiet
+                 hours that used to be here saved to a route that does not exist, and the backend has no model
+                 for any of them. -->
+            <NotificationPreferencesPanel audience="provider" />
           </div>
 
           <!-- Business Policies -->
@@ -117,7 +120,7 @@ import { useProviderStore } from '../stores/provider.store'
 import { Button, Card, Alert, Spinner } from '@/shared/components'
 import { SettingsSection, type SettingsTab } from '../types/settings.types'
 import BookingPreferencesSettings from '../components/settings/BookingPreferencesSettings.vue'
-import NotificationSettings from '../components/settings/NotificationSettings.vue'
+import NotificationPreferencesPanel from '@/modules/notifications/components/NotificationPreferencesPanel.vue'
 import BusinessPoliciesSettings from '../components/settings/BusinessPoliciesSettings.vue'
 import OperatingPreferences from '../components/settings/OperatingPreferences.vue'
 
@@ -140,7 +143,7 @@ const settingsTabs = computed<SettingsTab[]>(() => [
     id: SettingsSection.Notifications,
     label: 'Notifications',
     icon: '🔔',
-    description: 'Email, SMS, and push notification preferences',
+    description: 'Mobile notifications, and what always arrives by SMS',
   },
   {
     id: SettingsSection.BusinessPolicies,
