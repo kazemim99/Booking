@@ -96,8 +96,10 @@ namespace Booksy.ServiceCatalog.Infrastructure.Notifications
         public Task<int> WithdrawPendingForSubjectAsync(
             string subjectType,
             Guid subjectId,
+            IReadOnlyCollection<NotificationEventCode>? onlyCodes = null,
             CancellationToken cancellationToken = default) =>
-            _outbox.CancelPendingForSubjectAsync(subjectType, subjectId, DateTime.UtcNow, cancellationToken);
+            _outbox.CancelPendingForSubjectAsync(
+                subjectType, subjectId, DateTime.UtcNow, onlyCodes, cancellationToken);
 
         /// <summary>
         /// Looks in this unit of work as well as the table: two raises inside one command would both be

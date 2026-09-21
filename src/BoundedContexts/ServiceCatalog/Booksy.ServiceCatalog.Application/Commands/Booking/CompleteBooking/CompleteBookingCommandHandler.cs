@@ -1,4 +1,4 @@
-﻿// ========================================
+// ========================================
 // Booksy.ServiceCatalog.Application/Commands/Booking/CompleteBooking/CompleteBookingCommandHandler.cs
 // ========================================
 using Booksy.Core.Application.Abstractions.CQRS;
@@ -84,6 +84,20 @@ namespace Booksy.ServiceCatalog.Application.Commands.Booking.CompleteBooking
                 subjectType: BookingReminderScheduler.BookingSubject,
                 subjectId: booking.Id.Value,
                 scheduledFor: DateTime.UtcNow.AddHours(2),
+                cancellationToken: cancellationToken);
+
+            // One follow-up, three days later, and never a third. It is withdrawn the moment a review is
+            // submitted — see CreateReviewCommandHandler — so it only ever reaches somebody who did not
+            // answer. Its own code rather than a second ReviewRequest: the wording differs, and the outbox
+            // de-duplicates on (key, code, recipient), so a repeat under the same code would vanish anyway.
+            await _notifications.RaiseAsync(
+                Domain.Enums.NotificationEventCode.ReviewReminder,
+                booking.CustomerId.Value,
+                dedupKey: booking.Id.Value,
+                parameters: completionParameters,
+                subjectType: BookingReminderScheduler.BookingSubject,
+                subjectId: booking.Id.Value,
+                scheduledFor: DateTime.UtcNow.AddDays(3),
                 cancellationToken: cancellationToken);
 
 

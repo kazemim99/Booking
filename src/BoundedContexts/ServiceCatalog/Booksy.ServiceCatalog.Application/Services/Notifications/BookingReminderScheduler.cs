@@ -127,7 +127,12 @@ namespace Booksy.ServiceCatalog.Application.Services.Notifications
             }
         }
 
+        /// <remarks>
+        /// Names no codes, deliberately: the appointment is off, so nothing still queued about it should go
+        /// out. A narrower withdrawal here would be a list to keep in step with every future notification.
+        /// </remarks>
         public Task WithdrawAsync(Guid bookingId, CancellationToken cancellationToken = default) =>
-            _raiser.WithdrawPendingForSubjectAsync(BookingSubject, bookingId, cancellationToken);
+            _raiser.WithdrawPendingForSubjectAsync(
+                BookingSubject, bookingId, cancellationToken: cancellationToken);
     }
 }

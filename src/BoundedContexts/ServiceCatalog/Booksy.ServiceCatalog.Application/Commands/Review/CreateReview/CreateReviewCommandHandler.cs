@@ -2,6 +2,7 @@ using Booksy.Core.Application.Abstractions.CQRS;
 using Booksy.Core.Application.Abstractions.Persistence;
 using Booksy.Core.Application.Exceptions;
 using Booksy.Core.Domain.ValueObjects;
+using Booksy.ServiceCatalog.Application.Services.Notifications;
 using Booksy.ServiceCatalog.Domain.Enums;
 using Booksy.ServiceCatalog.Domain.Repositories;
 using Microsoft.Extensions.Logging;
@@ -18,19 +19,36 @@ public sealed class CreateReviewCommandHandler : ICommandHandler<CreateReviewCom
     private readonly IReviewReadRepository _reviewReadRepository;
     private readonly IBookingReadRepository _bookingRepository;
     private readonly IServiceCatalogUnitOfWork _unitOfWork;
+    private readonly INotificationRaiser _notifications;
     private readonly ILogger<CreateReviewCommandHandler> _logger;
+
+    /// <summary>
+    /// The notifications that exist only to ask for a review. Once one arrives, both are pointless.
+    /// </summary>
+    /// <remarks>
+    /// Named explicitly rather than withdrawing everything unsent about the booking. That blunt form is
+    /// right when the appointment itself is off; here the booking still happened, and a review says nothing
+    /// about, say, a refund notice queued against the same booking.
+    /// </remarks>
+    private static readonly NotificationEventCode[] TheAsk =
+    {
+        NotificationEventCode.ReviewRequest,
+        NotificationEventCode.ReviewReminder,
+    };
 
     public CreateReviewCommandHandler(
         IReviewWriteRepository reviewWriteRepository,
         IReviewReadRepository reviewReadRepository,
         IBookingReadRepository bookingRepository,
         IServiceCatalogUnitOfWork unitOfWork,
+        INotificationRaiser notifications,
         ILogger<CreateReviewCommandHandler> logger)
     {
         _reviewWriteRepository = reviewWriteRepository;
         _reviewReadRepository = reviewReadRepository;
         _bookingRepository = bookingRepository;
         _unitOfWork = unitOfWork;
+        _notifications = notifications;
         _logger = logger;
     }
 
@@ -92,6 +110,20 @@ public sealed class CreateReviewCommandHandler : ICommandHandler<CreateReviewCom
 
         // 6. Save the review
         await _reviewWriteRepository.SaveAsync(review, cancellationToken);
+
+        // 7. Stop asking. This is keyed on SUBMISSION, not on publication: reviews are admin-moderated, so a
+        // review can exist while still invisible, and a publication-shaped hook would keep nagging the one
+        // group who must never be nagged — people who did leave a review and are waiting on a moderator.
+        //
+        // Accepted consequence: a REJECTED review means this customer is never asked again. Nothing
+        // re-raises the ask. The alternative is worse, because the notification system cannot see WHY a
+        // review was rejected, so re-asking would either invite the same refused content back or read as
+        // "we ignored you, try again".
+        await _notifications.WithdrawPendingForSubjectAsync(
+            BookingReminderScheduler.BookingSubject,
+            request.BookingId,
+            TheAsk,
+            cancellationToken);
 
 
         _logger.LogInformation(

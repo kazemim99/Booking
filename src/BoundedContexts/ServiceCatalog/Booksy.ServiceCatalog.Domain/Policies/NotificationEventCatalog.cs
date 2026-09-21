@@ -112,6 +112,11 @@ namespace Booksy.ServiceCatalog.Domain.Policies
                 [NotificationEventCode.ReviewRequest] =
                     new(NotificationAudience.Customer, PushInApp, Standard, NotificationDestinationKind.Booking),
 
+                // Suppressible, like the ask it follows. Somebody who has switched review prompts off should
+                // not receive the reminder either.
+                [NotificationEventCode.ReviewReminder] =
+                    new(NotificationAudience.Customer, PushInApp, Standard, NotificationDestinationKind.Booking),
+
                 [NotificationEventCode.BookingNoShow] =
                     new(NotificationAudience.Customer, PushInApp, Standard, NotificationDestinationKind.Booking),
 
@@ -261,6 +266,7 @@ namespace Booksy.ServiceCatalog.Domain.Policies
             NotificationEventCode.BookingReminder2h => NotificationType.BookingReminder,
             NotificationEventCode.BookingCompleted => NotificationType.BookingUpdated,
             NotificationEventCode.ReviewRequest => NotificationType.ReviewRequest,
+            NotificationEventCode.ReviewReminder => NotificationType.ReviewRequest,
             NotificationEventCode.BookingNoShow => NotificationType.BookingNoShow,
             NotificationEventCode.DepositRequired => NotificationType.PaymentConfirmed,
             NotificationEventCode.PaymentDeadlineReminder => NotificationType.PaymentConfirmed,

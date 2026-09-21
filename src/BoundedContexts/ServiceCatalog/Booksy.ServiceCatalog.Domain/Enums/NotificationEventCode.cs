@@ -60,6 +60,13 @@ public enum NotificationEventCode
     /// <summary>The deposit window is about to close.</summary>
     PaymentDeadlineReminder = 13,
 
+    /// <summary>
+    /// The single follow-up to <see cref="ReviewRequest"/>, three days later, for a customer who has not
+    /// reviewed. A separate code rather than a second <see cref="ReviewRequest"/> because the wording must
+    /// differ — repeating the first message verbatim reads to the recipient as a bug, not a reminder.
+    /// </summary>
+    ReviewReminder = 14,
+
     // ── Customer: money ──
 
     PaymentReceived = 20,

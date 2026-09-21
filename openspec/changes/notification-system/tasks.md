@@ -107,7 +107,7 @@ the structural work — each is a row's timing, not a shape.
       sending "you have 0 appointments". Salon-local means the provider's wall-clock (FOLLOW-UPS #63), not
       UTC 08:00 — and since no provider timezone exists anywhere in this system, that is 08:00 in the one
       frame bookings already live in. `DailyScheduleDigestJob` + `DailyScheduleDigestService`, 9 tests.
-- [ ] 7.6 Review request — DECIDED 2026-09-20: 2 hours after completion, plus ONE reminder 3 days later
+- [x] 7.6 Review request — DECIDED 2026-09-20: 2 hours after completion, plus ONE reminder 3 days later
       only if no review was left by then. Two scheduled intents; the 3-day one is withdrawn as soon as a
       review arrives, so it must be filed under a subject the review flow can withdraw by. Never more than
       two in total.
@@ -555,3 +555,21 @@ test-first.
   De-duplication is per salon per DAY, via a derived key (SHA-256 of provider id + day number) — the outbox
   key is a Guid, so the day has to be folded into it, or tomorrow's digest would be swallowed as a duplicate
   of today's.
+- 2026-09-21 7.6 review request + 3-day reminder, test-first. 5 integration tests, and again mutated rather
+  than trusted: reverting the withdrawal to its blunt form failed 1, removing it entirely failed 2.
+  TWO DESIGN CALLS, both of which changed the shape of the change.
+  (1) The reminder is its OWN code, `ReviewReminder = 14`, not a second `ReviewRequest`. Two reasons, either
+  sufficient: the outbox de-duplicates on (key, code, recipient), so a repeat under the same code would have
+  been silently swallowed and the feature would have looked built while sending nothing; and the wording
+  must differ, because a recipient who sees the same sentence twice reads it as a bug, not a reminder.
+  (2) Withdrawal is now TARGETED. `WithdrawPendingForSubjectAsync` grew an optional event-code filter, and
+  the review hook names the two review codes. The blunt form — cancel everything unsent about the booking —
+  stays exactly right for cancellation, where the appointment is off and nothing about it should go; it is
+  wrong here, because the booking still happened and a review says nothing about a refund notice queued
+  against it. This is the blunt-instrument hazard I flagged to booking-d2 turning up in my own work, so it
+  is now a test (`Leaving_a_review_does_not_silence_anything_else_about_the_booking`) rather than a caveat.
+  An empty code list means "withdraw nothing", not "no filter" — the opposite reading is a silent disaster.
+  The hook sits in `CreateReviewCommandHandler`, i.e. at SUBMISSION. There is no moderation state on the
+  Review aggregate yet (booking-d2 is building it), so today submission is the only event there is — but the
+  hook is already in the place that stays correct once moderation lands, which is the whole point of the
+  cross-session agreement.

@@ -54,9 +54,16 @@ namespace Booksy.ServiceCatalog.Application.Services.Notifications
         /// Withdraws anything not yet sent about a subject — the reminders of a booking that is no longer
         /// happening. Notifications already sent are not affected; they cannot be recalled.
         /// </summary>
+        /// <param name="onlyCodes">
+        /// Limits the withdrawal to these notifications. Omit it when the subject itself is off, so that
+        /// nothing about it goes out; name the codes when only one conversation about a subject has ended.
+        /// A review, for instance, ends the asking and says nothing about a pending refund notice filed
+        /// under the same booking.
+        /// </param>
         Task<int> WithdrawPendingForSubjectAsync(
             string subjectType,
             Guid subjectId,
+            IReadOnlyCollection<NotificationEventCode>? onlyCodes = null,
             CancellationToken cancellationToken = default);
     }
 }

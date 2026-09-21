@@ -76,6 +76,12 @@ namespace Booksy.ServiceCatalog.Application.Services.Notifications
                     "نظر شما چیست؟",
                     $"{customer} عزیز، لطفاً تجربه‌تان از {business} را ثبت کنید."),
 
+                // Deliberately not a repeat of the wording above: a recipient who sees the same sentence
+                // twice reads it as a bug rather than as a reminder.
+                NotificationEventCode.ReviewReminder => Copy(
+                    "هنوز نظرتان را نشنیده‌ایم",
+                    $"{customer} عزیز، اگر فرصت دارید، تجربه‌تان از {business} را برای ما بنویسید."),
+
                 NotificationEventCode.BookingNoShow => Copy(
                     "نوبت استفاده‌نشده",
                     $"{customer} عزیز، نوبت شما در {business} {when} استفاده نشد."),

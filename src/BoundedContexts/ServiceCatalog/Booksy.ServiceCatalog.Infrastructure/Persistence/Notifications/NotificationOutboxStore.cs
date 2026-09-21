@@ -33,10 +33,16 @@ namespace Booksy.ServiceCatalog.Infrastructure.Persistence.Notifications
         /// Withdraws rows not yet sent for a subject — the reminders of a booking that was cancelled.
         /// Rows already processed are left as they are: that notification has gone out and cannot be recalled.
         /// </summary>
+        /// <param name="onlyCodes">
+        /// When given, only these notifications are withdrawn. Null withdraws everything unsent about the
+        /// subject, which is right when the subject itself is off — a cancelled appointment — and wrong when
+        /// only one conversation about it has ended, as when a review arrives.
+        /// </param>
         Task<int> CancelPendingForSubjectAsync(
             string subjectType,
             Guid subjectId,
             DateTime utcNow,
+            IReadOnlyCollection<NotificationEventCode>? onlyCodes = null,
             CancellationToken cancellationToken = default);
     }
 
@@ -164,15 +170,29 @@ namespace Booksy.ServiceCatalog.Infrastructure.Persistence.Notifications
             string subjectType,
             Guid subjectId,
             DateTime utcNow,
+            IReadOnlyCollection<NotificationEventCode>? onlyCodes = null,
             CancellationToken cancellationToken = default)
         {
             // Claimed rows are cancelled too: a reminder being swept right now is for an appointment that is
             // no longer happening, and the sweep re-checks state before it sends.
-            var cancelled = await _context.NotificationOutbox
+            var rows = _context.NotificationOutbox
                 .Where(e => e.SubjectType == subjectType
                             && e.SubjectId == subjectId
                             && (e.State == NotificationOutboxState.Pending
-                                || e.State == NotificationOutboxState.Claimed))
+                                || e.State == NotificationOutboxState.Claimed));
+
+            // An empty list would otherwise mean "withdraw nothing" while reading like "withdraw these",
+            // so it is treated as the caller having nothing to withdraw rather than as no filter at all.
+            if (onlyCodes is not null)
+            {
+                var codes = onlyCodes.ToList();
+                if (codes.Count == 0)
+                    return 0;
+
+                rows = rows.Where(e => codes.Contains(e.EventCode));
+            }
+
+            var cancelled = await rows
                 .ExecuteUpdateAsync(
                     set => set
                         .SetProperty(e => e.State, NotificationOutboxState.Cancelled)
