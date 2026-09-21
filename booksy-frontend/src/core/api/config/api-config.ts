@@ -83,12 +83,14 @@ export const apiEndpoints = {
     exceptions: (id: string) => `/schedules/${id}/exceptions`,
   },
 
-  // Notification endpoints
+  // Notification endpoints — the caller's own inbox. These were `/notifications` and
+  // `/notifications/unread`: wrong routes AND missing the `v1/` every other constant carries. They survived
+  // because nothing ever used them; notification-inbox.service.ts now does, and its tests pin them.
   notifications: {
-    list: '/notifications',
-    unread: '/notifications/unread',
-    markRead: (id: string) => `/notifications/${id}/read`,
-    markAllRead: '/notifications/read-all',
+    inbox: 'v1/Notifications/inbox',
+    unreadCount: 'v1/Notifications/unread-count',
+    markRead: (id: string) => `v1/Notifications/${id}/read`,
+    markAllRead: 'v1/Notifications/read-all',
   },
 
   // Review endpoints

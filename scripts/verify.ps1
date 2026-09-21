@@ -1,4 +1,4 @@
-﻿<#
+<#
 .SYNOPSIS
   The checkable definition of done. Runs the verification tier and records the result.
 
@@ -252,6 +252,12 @@ if ($Tier -eq 'full') {
         Invoke-Step -Name "vue:${app}:type-check" -Dir (Join-Path $root $app) -Command 'npm run --silent type-check' -ShowPattern @('error TS', 'Found [0-9]+ error')
         if ($app -eq 'booksy-frontend') {
             Invoke-Step -Name "vue:${app}:lint" -Dir (Join-Path $root $app) -Command 'npm run --silent lint:check' -ShowPattern @('error', 'problems')
+            # Unit tests, which this gate did not run at all until add-notification-clients: type-check and
+            # lint passed while vitest was never invoked, so a broken component test protected nothing.
+            # Scoped to src/ — tests/integration needs a live backend. The two excluded files are EMPTY
+            # placeholders (0 bytes, from "add dashboard"); vitest reports an empty file as a failed suite.
+            # Deleting them is the real fix and was left to a human.
+            Invoke-Step -Name "vue:${app}:unit" -Dir (Join-Path $root $app) -Command 'npx vitest run src --exclude src/modules/auth/__tests__/auth.api.spec.ts --exclude src/modules/auth/__tests__/LoginForm.spec.ts' -ShowPattern @('Test Files', 'Tests ', 'FAIL')
         }
     }
 

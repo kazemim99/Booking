@@ -11,6 +11,7 @@ import adminRoutes from './routes/admin.routes'
 import providerRoutes from '@/core/router/routes/provider.routes'
 import customerRoutes from './routes/customer.routes'
 import paymentRoutes from './routes/payment.routes'
+import notificationRoutes from './routes/notification.routes'
 
 /**
  * Exported so tests can build a guard-free router from the exact same list.
@@ -30,6 +31,7 @@ export const routes: RouteRecordRaw[] = [
   ...bookingRoutes,
   // Payment return landing pages for the gateway → backend → browser redirect chain (must be public).
   ...paymentRoutes,
+  ...notificationRoutes,
   ...profileRoutes,
   ...customerRoutes,
   ...providerRoutes,

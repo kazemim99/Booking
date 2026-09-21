@@ -7,6 +7,7 @@
         <button @click="handleNewBooking" class="btn-primary">
           رزرو جدید
         </button>
+        <NotificationBell />
         <div class="user-menu">
           <span>{{ userName }}</span>
         </div>
@@ -19,6 +20,7 @@
 import { computed } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useAuthStore } from '@/core/stores'
+import NotificationBell from '@/modules/notifications/components/NotificationBell.vue'
 
 const route = useRoute()
 const router = useRouter()

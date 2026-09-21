@@ -41,6 +41,7 @@
 
         <!-- User Info -->
         <div class="user-section">
+          <NotificationBell />
           <!-- Role Badge -->
           <div v-if="roleLabel" class="role-badge" :class="roleBadgeClass">
             {{ roleLabel }}
@@ -160,6 +161,7 @@ import { useRouter, useRoute } from 'vue-router'
 import { useProviderStore } from '../../stores/provider.store'
 import { useMembershipStore } from '../../stores/membership.store'
 import { useAuthStore } from '@/core/stores/modules/auth.store'
+import NotificationBell from '@/modules/notifications/components/NotificationBell.vue'
 
 // Icon Components (Simple SVG-based)
 const CalendarIcon = () => h('svg', { class: 'w-5 h-5', fill: 'none', stroke: 'currentColor', viewBox: '0 0 24 24' }, [

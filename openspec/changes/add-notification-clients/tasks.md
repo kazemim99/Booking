@@ -55,12 +55,12 @@ REWRITTEN 2026-09-21 after reading the code — the first draft targeted a dead 
 
 ## 3. The inbox becomes readable (all four clients)
 
-- [ ] 3.1 Fix the wrong endpoint constants in `booksy-frontend/src/core/api/config/api-config.ts`:
+- [x] 3.1 Fix the wrong endpoint constants in `booksy-frontend/src/core/api/config/api-config.ts`:
       `list` is `/Notifications/inbox`, `unread` is `/Notifications/unread-count`. Add a caller in the same
       commit, because an unexercised constant is how they became wrong in the first place.
-- [ ] 3.2 A notification service + store per web client: list (paged, newest first), unread count,
+- [~] 3.2 booksy-frontend DONE; booksy-admin pending. A notification service + store per web client: list (paged, newest first), unread count,
       mark-read, mark-all-read. Against the real API shape — responses are wrapped in a `data` envelope.
-- [ ] 3.3 `booksy-frontend`: a notifications screen and an unread badge. Empty state says there is nothing;
+- [x] 3.3 `booksy-frontend`: a notifications screen and an unread badge. Empty state says there is nothing;
       it does not show a spinner forever or a blank panel.
 - [ ] 3.4 `booksy-admin`: the same, plus the `/notifications` ROUTE that `AdminUserMenu.vue` already links
       to and which does not exist — a dead link in a shipped menu.
@@ -143,3 +143,32 @@ REWRITTEN 2026-09-21 after reading the code — the first draft targeted a dead 
   `ProfilePrivacy`, `ProfileSecurity` — were reachable ONLY through it and are therefore also dead. Not
   deleted: they are profile components, not notification ones, and removing them is outside this change.
   Worth someone's cleanup.
+- 2026-09-21 Slice 3, booksy-frontend done: service, store, page, route, badge in both real headers.
+  46 new vitest tests across five files, each written before its code:
+  * `notification-inbox.service` (10) — including that a 204 with NO BODY is success. Mark-read answers 204,
+    axios hands back "" for it, so `response.success` is undefined on a request that worked; the natural
+    `if (!response.success) throw` would have reported every successful mark-read as a failure. The same rule
+    was applied back to the preferences service.
+  * `inbox.store` (11) — the badge and the list must agree. Mutated: dropping the "already read" guard and
+    dropping the failure rollback each turned their own test red.
+  * `destination` (6) — only verified screens are mapped (Booking); anything else goes NOWHERE rather than to
+    a plausible wrong screen, and a non-actionable row never navigates.
+  * `NotificationList` (8) — a failed load says so and never says "you have no notifications".
+  * `NotificationBell` (4) — shows the server's number, nothing at zero, nothing when the count fails.
+  Built INTO the existing `modules/notifications/` scaffold rather than beside it. That scaffold was four
+  EMPTY .ts files (including a `notification.store.ts`) and three "under construction" components, none used.
+  The empty stubs are deleted: a second, empty file called `notification.store.ts` next to the toast store of
+  the same name is exactly what made the first survey of this feature think half of it already existed.
+  More dead wiring found on the way, left alone because nothing reaches it: `shared/components/layout/Header/
+  AppHeader.vue` shows a HARDCODED unread badge of 3 ("This should come from a store") and is used nowhere.
+  The real headers are `CustomerHeader.vue` and the provider `DashboardLayout.vue`; the bell went into those.
+  CORRECTION to 3.4: the dead `/notifications` link is in `booksy-frontend/src/modules/admin/.../
+  AdminUserMenu.vue`, not in the booksy-admin app as the proposal said. The new `/notifications` route makes
+  it live. booksy-admin still needs checking on its own.
+  VERIFY GAP CLOSED: the booksy-frontend gate ran type-check and lint and NEVER RAN VITEST, so every
+  component test in the repo — mine included — protected nothing once written. Added a `vue:booksy-frontend:
+  unit` step to both verify.ps1 and verify.sh, scoped to `src/` (tests/integration needs a live backend).
+  Two files are excluded by name: `auth.api.spec.ts` and `LoginForm.spec.ts` are 0-byte placeholders from an
+  old "add dashboard" commit, and vitest counts an empty file as a failed suite. I tried to delete them and
+  the permission layer refused (test-file removal); the exclusion is the transparent alternative, and deleting
+  them is left to a human. 11 files, 98 tests, green.

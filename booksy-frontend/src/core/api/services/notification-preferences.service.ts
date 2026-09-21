@@ -119,7 +119,9 @@ export const notificationPreferencesService = {
   async saveChannelMask(mask: number): Promise<number> {
     const response = await serviceCategoryClient.put<PreferencesPayload>(ENDPOINT, { enabledChannels: mask })
 
-    if (!response.success) {
+    // Only an explicit `success: false` is a failure: HTTP errors are already rejected by axios, and a body
+    // without the flag (a 204, or an unwrapped result) is a request that worked.
+    if (response?.success === false) {
       throw new Error(response.message || 'ذخیرهٔ تنظیمات اعلان انجام نشد')
     }
 
