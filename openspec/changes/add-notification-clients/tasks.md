@@ -17,21 +17,21 @@ REWRITTEN 2026-09-21 after reading the code — the first draft targeted a dead 
 - [x] 1.1 BACKEND, test-first: `NotificationPreference.Default` includes `PushNotification`. Failing test
       first: a user whose preferences row is created by saving one unrelated field must still be sent push.
       Today they are not — the row is built from a Default that predates push.
-- [ ] 1.2 A preferences client in booksy-frontend for `GET`/`PUT /api/v1/notifications/preferences`, with
+- [x] 1.2 A preferences client in booksy-frontend for `GET`/`PUT /api/v1/notifications/preferences`, with
       unit tests for the channel mapping. The rule the tests pin: a save changes ONLY the channels the screen
       shows and carries every other channel through unchanged. There is no in-app toggle; omitting in-app
       from the PUT would switch it off.
-- [ ] 1.3 Customer preferences screen reads and writes that client instead of
+- [?] 1.3 DECISION (see log 'what a preference screen may promise'). Customer preferences screen reads and writes that client instead of
       `PATCH /customers/{id}/preferences`, whose values nothing reads. Tested: toggling SMS off sends a
       channel set without SMS and with in-app intact.
-- [ ] 1.4 Provider `NotificationSettings.vue` reads and writes that client instead of
+- [?] 1.4 DECISION (same). Provider `NotificationSettings.vue` reads and writes that client instead of
       `PUT /provider-settings/{id}/notification-settings`, a route that does not exist.
-- [ ] 1.5 `ReminderTiming` and any category toggle: the backend does not honour them (reminder offsets are
+- [?] 1.5 DECISION (same). `ReminderTiming` and any category toggle: the backend does not honour them (reminder offsets are
       fixed; `ShouldSend` ignores `EnabledTypes`). Remove them or mark them not in effect — never leave a
       control that silently does nothing. DEFAULT TAKEN: mark as not in effect, because removing a visible
       control is a UX call and a label is reversible. Raised at the end.
-- [ ] 1.6 A failed save shows an error and does not display the attempted values as saved.
-- [ ] 1.7 `ProfilePreferences.vue` and the unrouted `views/ProviderProfileView.vue` that renders it: dead
+- [?] 1.6 Follows 1.3/1.4. A failed save shows an error and does not display the attempted values as saved.
+- [x] 1.7 `ProfilePreferences.vue` and the unrouted `views/ProviderProfileView.vue` that renders it: dead
       code, and the component that misled the first draft of this change. Delete, after confirming again
       that nothing imports either.
 
@@ -111,3 +111,35 @@ REWRITTEN 2026-09-21 after reading the code — the first draft targeted a dead 
   then the fallback was rewritten to DERIVE from `NotificationPreference.Default` so the two can never drift
   apart again. Both halves had to go before any screen was connected, or connecting a screen would have been
   the thing that broke push.
+- 2026-09-21 WHAT A PREFERENCE SCREEN MAY PROMISE — parked as a decision, because wiring the screens as
+  written would only have built a more elaborate version of the lie this slice exists to remove.
+  Measured against the catalogue and the policy, not assumed:
+  * SMS toggle: NO EFFECT, by design. The user decided 2026-09-19 that SMS is reserved for critical
+    notifications, the catalogue test enforces it, and critical means unsuppressible — so every SMS the
+    product sends ignores preferences. A customer can never turn SMS off.
+  * Email toggle: NO EFFECT. After InvoiceGenerated was removed, no catalogued notification uses email.
+  * Reminder timing (customer 1h/24h/3d; provider hours/minutes): NO EFFECT. Offsets are fixed in
+    `BookingReminderScheduler.Offsets` (T-24h, T-2h customer; T-30m salon).
+  * Quiet hours (provider): stored by the backend, never consulted — only `ShouldSendNotification` reads
+    them, and it has no caller.
+  * The provider's per-event × per-channel matrix: the backend has one GLOBAL channel set per person; there
+    is no per-event model. And the events it lists (new booking request, cancellation by customer) are
+    critical, so the salon could not switch them off anyway.
+  * What DOES have an effect: the Push and In-app channels, on the Standard (suppressible) notifications.
+    Neither screen shows a push toggle.
+  Also a false warning in the customer modal: "disabling all notifications means no booking reminders". The
+  2h reminder is critical SMS and arrives regardless.
+  Unblocked meanwhile: 1.2 (the client service — every option needs it), 1.7 (dead code), and slice 3.
+- 2026-09-21 1.2 and 1.7 done.
+  1.2 `notification-preferences.service.ts`, 13 vitest tests written first (red: module absent). The rule
+  they hold: a save edits the mask it LOADED and changes only the toggled channels, so in-app — which no
+  screen offers — and any channel without a screen survive. Mutated: rebuilding the mask from the toggles
+  alone turned 4 of the 13 red, including "never touches in-app". Also pinned: the GET bypasses the HTTP
+  client's five-minute cache (the client caches every GET by default — a preferences screen read through it
+  shows the value from before the last save), and a failed save THROWS rather than handing back the value it
+  tried to save.
+  1.7 Deleted `ProfilePreferences.vue` and the unrouted `views/ProviderProfileView.vue` after re-confirming
+  nothing imports either; type-check clean. Three siblings of that view — `ProfilePersonalInfo`,
+  `ProfilePrivacy`, `ProfileSecurity` — were reachable ONLY through it and are therefore also dead. Not
+  deleted: they are profile components, not notification ones, and removing them is outside this change.
+  Worth someone's cleanup.
