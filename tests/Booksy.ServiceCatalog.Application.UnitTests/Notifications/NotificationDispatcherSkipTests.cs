@@ -158,6 +158,48 @@ public class NotificationDispatcherSkipTests
             success: true, Arg.Any<string?>(), Arg.Any<string?>(), Arg.Any<CancellationToken>());
     }
 
+    [Fact]
+    public async Task A_push_says_which_notification_it_is_and_what_it_is_about()
+    {
+        // A tapped push has to open something. Before this, the data payload was the notification's free-form
+        // Metadata — which the outbox never fills — so every push arrived with no way to tell what it concerned,
+        // and the app could only ever open a generic screen.
+        Dictionary<string, object>? sent = null;
+        _push.SendPushAsync(
+                Arg.Any<Guid>(), Arg.Any<string>(), Arg.Any<string>(),
+                Arg.Do<Dictionary<string, object>>(d => sent = d), Arg.Any<CancellationToken>())
+            .Returns((true, "push-1", (string?)null));
+
+        var bookingId = Guid.NewGuid();
+        var notification = PushOnlyNotification();
+        notification.SetEventCode(NotificationEventCode.BookingConfirmed);
+        notification.SetRelatedEntities(Domain.ValueObjects.BookingId.From(bookingId), null, null);
+
+        await _dispatcher.DispatchAsync(notification);
+
+        sent.Should().NotBeNull();
+        sent!["notificationId"].Should().Be(notification.Id.Value.ToString());
+        sent["eventCode"].Should().Be(nameof(NotificationEventCode.BookingConfirmed));
+        sent["bookingId"].Should().Be(bookingId.ToString());
+    }
+
+    [Fact]
+    public async Task A_push_about_nothing_in_particular_still_names_itself()
+    {
+        Dictionary<string, object>? sent = null;
+        _push.SendPushAsync(
+                Arg.Any<Guid>(), Arg.Any<string>(), Arg.Any<string>(),
+                Arg.Do<Dictionary<string, object>>(d => sent = d), Arg.Any<CancellationToken>())
+            .Returns((true, "push-1", (string?)null));
+
+        var notification = PushOnlyNotification();
+
+        await _dispatcher.DispatchAsync(notification);
+
+        sent!["notificationId"].Should().Be(notification.Id.Value.ToString());
+        sent.Should().NotContainKey("bookingId", "a key with no value is noise the app would have to guard against");
+    }
+
     private void GivenPushReturns(string error) =>
         _push.SendPushAsync(
                 Arg.Any<Guid>(), Arg.Any<string>(), Arg.Any<string>(),

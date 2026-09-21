@@ -1,5 +1,6 @@
 import 'package:bloc_test/bloc_test.dart';
 import 'package:booksy_provider_app/core/errors/failures.dart';
+import 'package:booksy_provider_app/core/push/push_registration.dart';
 import 'package:booksy_provider_app/features/auth/domain/entities/provider_session.dart';
 import 'package:booksy_provider_app/features/auth/domain/entities/provider_status.dart';
 import 'package:booksy_provider_app/features/auth/domain/repositories/auth_repository.dart';
@@ -213,4 +214,88 @@ void main() {
       expect: () => [const AuthLoading(), const LoggedOut()],
     );
   });
+
+  // Push registration rides the auth flow itself: a registration service that nothing calls is the exact
+  // failure add-notification-clients exists to fix, so these go through the bloc, not the service.
+  group('push registration', () {
+    late _RecordingPush push;
+
+    setUp(() => push = _RecordingPush());
+
+    AuthBloc buildWithPush() => AuthBloc(send, complete, repo, push: push);
+
+    void givenVerifyReturns(ProviderSession session) => when(() => complete(
+          phoneNumber: any(named: 'phoneNumber'),
+          code: any(named: 'code'),
+          firstName: any(named: 'firstName'),
+          lastName: any(named: 'lastName'),
+          email: any(named: 'email'),
+        )).thenAnswer((_) async => Right(session));
+
+    blocTest<AuthBloc, AuthState>(
+      'signing in with an OTP registers this device',
+      setUp: () => givenVerifyReturns(_session(providerId: 'p', status: ProviderStatus.active)),
+      build: buildWithPush,
+      act: (b) => b.add(const VerifyCodeRequested(phoneNumber: '09121234567', code: '123456')),
+      verify: (_) => expect(push.calls, ['signedIn']),
+    );
+
+    blocTest<AuthBloc, AuthState>(
+      'a provider still onboarding is registered too — they are told when their salon is activated',
+      setUp: () => givenVerifyReturns(_session(providerId: 'p', status: ProviderStatus.drafted, isNew: true)),
+      build: buildWithPush,
+      act: (b) => b.add(const VerifyCodeRequested(phoneNumber: '09121234567', code: '123456')),
+      verify: (_) => expect(push.calls, ['signedIn']),
+    );
+
+    blocTest<AuthBloc, AuthState>(
+      'a restored session at app start re-registers, which is how a failed registration is retried',
+      setUp: () {
+        when(() => repo.isLoggedIn()).thenAnswer((_) async => true);
+        when(() => repo.getCurrentSession())
+            .thenAnswer((_) async => Right(_session(providerId: 'p', status: ProviderStatus.active)));
+      },
+      build: buildWithPush,
+      act: (b) => b.add(const AuthStatusChecked()),
+      verify: (_) => expect(push.calls, ['signedIn']),
+    );
+
+    blocTest<AuthBloc, AuthState>(
+      'a failed OTP registers nothing',
+      setUp: () => when(() => complete(
+            phoneNumber: any(named: 'phoneNumber'),
+            code: any(named: 'code'),
+            firstName: any(named: 'firstName'),
+            lastName: any(named: 'lastName'),
+            email: any(named: 'email'),
+          )).thenAnswer((_) async => const Left(ValidationFailure('bad code'))),
+      build: buildWithPush,
+      act: (b) => b.add(const VerifyCodeRequested(phoneNumber: '09121234567', code: '000000')),
+      verify: (_) => expect(push.calls, isEmpty),
+    );
+
+    blocTest<AuthBloc, AuthState>(
+      'signing out revokes the device BEFORE the session is cleared',
+      // Revoking is an authenticated call. After logout it would be answered 401 and the token would stay
+      // attached to the account on a handset that may be handed to someone else.
+      setUp: () => when(() => repo.logout()).thenAnswer((_) async {
+        push.calls.add('sessionCleared');
+        return const Right(null);
+      }),
+      build: buildWithPush,
+      act: (b) => b.add(const LogoutRequested()),
+      verify: (_) => expect(push.calls, ['signingOut', 'sessionCleared']),
+    );
+  });
 }
+
+class _RecordingPush implements PushLifecycle {
+  final calls = <String>[];
+
+  @override
+  Future<void> onSignedIn() async => calls.add('signedIn');
+
+  @override
+  Future<void> onSigningOut() async => calls.add('signingOut');
+}
+

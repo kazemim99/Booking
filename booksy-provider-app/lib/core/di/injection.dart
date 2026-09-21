@@ -4,6 +4,9 @@ import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:get_it/get_it.dart';
 
 import '../api/client/dio_client.dart';
+import '../push/dio_device_token_api.dart';
+import '../push/firebase_push_token_source.dart';
+import '../push/push_registration.dart';
 import '../api/interceptors/auth_interceptor.dart';
 import '../network/connectivity_service.dart';
 import '../storage/secure_storage_service.dart';
@@ -84,12 +87,21 @@ Future<void> configureDependencies() async {
     () => CompleteProviderAuthenticationUseCase(getIt<AuthRepository>()),
   );
 
+  // ---- Push (device registration) ----
+  // The Firebase source degrades to "unavailable" on a build without Firebase configuration, so wiring push
+  // never makes the app depend on a file that is not in the repository.
+  getIt.registerLazySingleton<FirebasePushTokenSource>(() => FirebasePushTokenSource());
+  getIt.registerLazySingleton<PushRegistration>(
+    () => PushRegistration(getIt<FirebasePushTokenSource>(), DioDeviceTokenApi(authedDio)),
+  );
+
   // AuthBloc is a singleton: the router listens to it for session state.
   getIt.registerLazySingleton<AuthBloc>(
     () => AuthBloc(
       getIt<SendVerificationCodeUseCase>(),
       getIt<CompleteProviderAuthenticationUseCase>(),
       getIt<AuthRepository>(),
+      push: getIt<PushRegistration>(),
     ),
   );
 

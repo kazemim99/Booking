@@ -77,6 +77,8 @@ dependencies:
   # Device location — centers the onboarding map on where the provider is
   # (browser Geolocation API on web; needs HTTPS, which production has).
   geolocator: ^13.0.4
+  firebase_core: ^4.15.0
+  firebase_messaging: ^16.7.0
 
 dev_dependencies:
   flutter_test:

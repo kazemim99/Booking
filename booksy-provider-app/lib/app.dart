@@ -6,6 +6,9 @@ import 'config/routes/app_router.dart';
 import 'config/theme/app_theme.dart';
 import 'core/constants/app_strings.dart';
 import 'core/di/injection.dart';
+import 'core/push/firebase_push_token_source.dart';
+import 'core/push/push_message_router.dart';
+import 'features/notifications/presentation/inbox_cubit.dart';
 import 'features/auth/presentation/bloc/auth_bloc.dart';
 import 'features/auth/presentation/bloc/auth_event.dart';
 
@@ -18,6 +21,13 @@ class ProviderApp extends StatelessWidget {
   Widget build(BuildContext context) {
     final authBloc = getIt<AuthBloc>()..add(const AuthStatusChecked());
     final router = AppRouter.create(authBloc);
+
+    // Taps on push notifications route through the same router. A no-op on builds without Firebase.
+    PushMessageRouter.attach(
+      source: getIt<FirebasePushTokenSource>(),
+      router: router,
+      inbox: getIt<InboxCubit>(),
+    );
 
     return BlocProvider<AuthBloc>.value(
       value: authBloc,

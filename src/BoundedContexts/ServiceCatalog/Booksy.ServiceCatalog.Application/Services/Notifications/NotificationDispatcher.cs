@@ -1,4 +1,4 @@
-﻿// ========================================
+// ========================================
 // Booksy.ServiceCatalog.Application/Services/Notifications/NotificationDispatcher.cs
 // ========================================
 using Booksy.Core.Application.Services.Notifications;
@@ -262,7 +262,7 @@ namespace Booksy.ServiceCatalog.Application.Services.Notifications
                             notification.RecipientId.Value,
                             notification.Subject,
                             notification.PlainTextBody ?? notification.Body,
-                            metadata,
+                            PushData(notification, metadata),
                             cancellationToken);
                         return (push.Success, push.MessageId, push.ErrorMessage);
 
@@ -325,5 +325,31 @@ namespace Booksy.ServiceCatalog.Application.Services.Notifications
                 or NotificationStatus.Cancelled
                 or NotificationStatus.Expired
                 or NotificationStatus.DeadLettered;
-    }
+    
+        /// <summary>
+        /// What a push carries besides its text, so a tapped notification can open what it is about.
+        /// </summary>
+        /// <remarks>
+        /// The notification's own free-form metadata is kept, but it is not enough on its own: the outbox never
+        /// fills it, so before this every push arrived with an empty data payload and the app could not tell which
+        /// notification it was, let alone which booking. These keys are set on a COPY and are never persisted —
+        /// they are a delivery detail of one channel, not part of the notification.
+        /// </remarks>
+        private static Dictionary<string, object> PushData(Notification notification, Dictionary<string, object> metadata)
+        {
+            var data = new Dictionary<string, object>(metadata)
+            {
+                ["notificationId"] = notification.Id.Value.ToString(),
+            };
+
+            if (notification.EventCode is { } code)
+                data["eventCode"] = code.ToString();
+
+            // A key is only present when it has a value: an empty id is noise every client would have to guard.
+            if (notification.BookingId is not null)
+                data["bookingId"] = notification.BookingId.Value.ToString();
+
+            return data;
+        }
+}
 }

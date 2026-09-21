@@ -222,3 +222,27 @@ REWRITTEN 2026-09-21 after reading the code — the first draft targeted a dead 
     `test/helpers/` rather than being copied; the older private copy in `otp_return_to_intent_test.dart` was
     left alone as unrelated.
   283 → 287 tests, analyze clean.
+- 2026-09-21 Slice 2, booksy-provider-app — and a backend gap found on the way.
+  BACKEND: a push arrived with an EMPTY data payload. The dispatcher sent the notification's free-form Metadata,
+  which the outbox never fills, so a tapped push could not say which notification it was, let alone which
+  booking. `NotificationDispatcher.PushData` now adds `notificationId`, `eventCode` and (when there is one)
+  `bookingId` — on a copy, never persisted, because they are a detail of one channel. 2 unit tests, red first.
+  CLIENT: `firebase_core` + `firebase_messaging` added (they resolve through the pub mirror). Four pieces:
+  * `PushTokenSource` / `DeviceTokenApi` — interfaces, so the logic is testable and a build WITHOUT Firebase
+    configuration degrades to "no push" instead of crashing at startup, which a bare
+    `Firebase.initializeApp()` does when google-services.json is missing. Web is deliberately unsupported.
+  * `PushRegistration` — 11 tests, red first. Every failure is swallowed: push must never be why signing in or
+    out fails. Sign-out revokes the token this device LAST registered (mutated to keep the first one: caught).
+  * Wired into the REAL auth flow, not left for someone to call: `AuthBloc` takes an optional `PushLifecycle`
+    (default a no-op, so every existing constructor still compiles). Any resolved session registers —
+    including a provider still onboarding, who is exactly the person a "your salon is activated" notice is
+    for. Logout revokes BEFORE `_authRepository.logout()`: revoking is authenticated and would be 401
+    afterwards. 5 auth-flow tests, including the ordering one.
+  * Taps: `pushOpenRoute` decides (4 tests) — a booking push opens the calendar, anything else the inbox.
+    `PushMessageRouter` is thin glue over Firebase's three entry points and is the one piece without a unit
+    test, because it cannot run without Firebase. Foreground messages move the badge only; they never take the
+    screen from under the person.
+  NOT DONE HERE, deliberately: the native config. Push needs the account-specific `google-services.json`
+  (and the `com.google.gms.google-services` Gradle plugin) or `GoogleService-Info.plist`, which are not in the
+  repository. Until someone adds them, the guard keeps push off and the app works exactly as before.
+  591 tests pass, analyze clean.

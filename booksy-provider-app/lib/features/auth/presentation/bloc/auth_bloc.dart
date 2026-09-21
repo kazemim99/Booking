@@ -1,4 +1,8 @@
+import 'dart:async';
+
 import 'package:flutter_bloc/flutter_bloc.dart';
+
+import '../../../../core/push/push_registration.dart';
 import '../../domain/entities/provider_session.dart';
 import '../../domain/entities/provider_status.dart';
 import '../../domain/repositories/auth_repository.dart';
@@ -16,11 +20,18 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
   final CompleteProviderAuthenticationUseCase _completeAuthentication;
   final AuthRepository _authRepository;
 
+  /// Push registration rides the auth flow: register once a session exists, revoke before it is cleared.
+  final PushLifecycle _push;
+
   AuthBloc(
     this._sendVerificationCode,
     this._completeAuthentication,
-    this._authRepository,
-  ) : super(const AuthInitial()) {
+    this._authRepository, {
+    PushLifecycle push = const NoPush(),
+  // A named parameter cannot be a private initializing formal (`this._push`), whatever the lint suggests.
+  // ignore: prefer_initializing_formals
+  })  : _push = push,
+        super(const AuthInitial()) {
     on<SendVerificationCodeRequested>(_onSend);
     on<VerifyCodeRequested>(_onVerify);
     on<ResendCodeRequested>(_onResend);
@@ -108,6 +119,8 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
     Emitter<AuthState> emit,
   ) async {
     emit(const AuthLoading());
+    // Before the session goes: revoking the device is an authenticated call, and afterwards it would be 401.
+    await _push.onSigningOut();
     final result = await _authRepository.logout();
     result.fold(
       (failure) => emit(AuthError(failure.message)),
@@ -126,6 +139,11 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
   /// blocked (suspended/inactive/archived) → onboarding (new/drafted/no
   /// profile) → authenticated.
   AuthState _resolve(ProviderSession session) {
+    // Any resolved session means someone is signed in on this device — including a provider still onboarding
+    // or awaiting verification, who is exactly the person a "your salon is activated" notice is for.
+    // Not awaited: push must never delay, or fail, signing in.
+    unawaited(_push.onSignedIn());
+
     if (session.isBlocked) {
       return AccountBlocked(
         session,
