@@ -1,6 +1,7 @@
-// ========================================
+﻿// ========================================
 // Booksy.ServiceCatalog.Application/Commands/Booking/AssignStaff/AssignStaffToBookingCommandHandler.cs
 // ========================================
+using Booksy.ServiceCatalog.Application.Services.Notifications;
 using Booksy.Core.Application.Abstractions.CQRS;
 using Booksy.Core.Application.Abstractions.Persistence;
 using Booksy.Core.Application.Exceptions;
@@ -14,15 +15,24 @@ namespace Booksy.ServiceCatalog.Application.Commands.Booking.AssignStaff
     {
         private readonly IBookingWriteRepository _bookingRepository;
         private readonly IServiceCatalogUnitOfWork _unitOfWork;
+        private readonly INotificationRaiser _notifications;
+        private readonly Domain.Repositories.IOrganizationMembershipRepository _memberships;
+        private readonly Domain.Repositories.IProviderReadRepository _providers;
         private readonly ILogger<AssignStaffToBookingCommandHandler> _logger;
 
         public AssignStaffToBookingCommandHandler(
             IBookingWriteRepository bookingRepository,
             IServiceCatalogUnitOfWork unitOfWork,
+            INotificationRaiser notifications,
+            Domain.Repositories.IOrganizationMembershipRepository memberships,
+            Domain.Repositories.IProviderReadRepository providers,
             ILogger<AssignStaffToBookingCommandHandler> logger)
         {
             _bookingRepository = bookingRepository;
             _unitOfWork = unitOfWork;
+            _notifications = notifications;
+            _memberships = memberships;
+            _providers = providers;
             _logger = logger;
         }
 
@@ -46,6 +56,30 @@ namespace Booksy.ServiceCatalog.Application.Commands.Booking.AssignStaff
 
             // Update booking
             await _bookingRepository.UpdateBookingAsync(booking, cancellationToken);
+
+            // Tell the person whose day just changed. Not the salon: it made this assignment and is
+            // already looking at the screen it made it on.
+            //
+            // The staff id on a booking is a MEMBERSHIP, not a person, so the recipient has to be
+            // resolved — addressing the membership id would reach nobody, the same way a provider id
+            // would. A membership that cannot be resolved is skipped rather than guessed at.
+            var membership = await _memberships.GetByIdAsync(request.StaffId, cancellationToken);
+            if (membership is not null)
+            {
+                var assigningProvider = await _providers.GetByIdAsync(booking.ProviderId, cancellationToken);
+                await _notifications.RaiseAsync(
+                    Domain.Enums.NotificationEventCode.StaffAssignedToBooking,
+                    membership.PersonId,
+                    dedupKey: booking.Id.Value,
+                    parameters: new Dictionary<string, string>
+                    {
+                        [NotificationParameter.BusinessName] = assigningProvider?.Profile.BusinessName ?? "سالن",
+                        [NotificationParameter.StartTime] = booking.TimeSlot.StartTime.ToString("o"),
+                    },
+                    subjectType: "Booking",
+                    subjectId: booking.Id.Value,
+                    cancellationToken: cancellationToken);
+            }
 
             // Commit and publish the StaffAssignedToBookingEvent (matches Cancel/MarkNoShow).
             await _unitOfWork.CommitAndPublishEventsAsync(cancellationToken);

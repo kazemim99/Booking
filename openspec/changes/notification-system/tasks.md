@@ -97,8 +97,8 @@ the structural work — each is a row's timing, not a shape.
       a failure cannot be provoked through the API and there is no way to write the failing test first.
       Either the fake grows a failure mode, or that notification is raised where a gateway is not involved.
       Not guessing at it — see 7.8.
-- [ ] 7.3 Raise for membership and verification: invitation accepted, join request approved, staff assigned
-      to a booking, provider verification status changed, provider activated/deactivated.
+- [~] 7.3 STAFF ASSIGNED done. Still to raise: invitation accepted, join request approved, provider
+      verification status changed, provider activated/deactivated.
 - [ ] 7.4 Remove each superseded notification event handler only after its outbox coverage is in place and
       tested, so no notification has a window with neither. FOLLOW-UPS #66 (dispatch ordering) stays open as
       its own change.
@@ -462,3 +462,16 @@ test-first.
   `CommitAsync`. Three different commit calls across the money paths, all of which dispatch; the outbox
   row rides whichever one the handler uses because it is written to the same context.
 - 2026-09-21 603 integration tests pass; verify FAST PASS (10 steps, 73s).
+- 2026-09-21 7.3 (staff assignment). `StaffAssignedToBooking` raised from `AssignStaffToBookingCommandHandler`.
+  The recipient needed RESOLVING, unlike every other notification so far: the staff id on a booking is a
+  MEMBERSHIP, not a person, so addressing it directly would have reached nobody — the fourth variant of the
+  same mistake (provider id, membership id, both keyed differently from the inbox). An unresolvable
+  membership is skipped rather than guessed at.
+  A TEST OF MINE WAS WRONG, not the code: I asserted "the salon is not told about its own assignment", and
+  it failed because in this fixture the bookable member IS the owner — a solo salon where the owner does
+  the work. The owner legitimately receives it: that is the practitioner being told about their day, not
+  the organisation being told about its own click. They are the same human. Rewritten to assert the actual
+  rule — the recipient is the PERSON behind the membership, and never the membership id.
+  Worth keeping in mind for 7.5: several fixtures collapse owner and staff into one person, so any test
+  distinguishing "salon" from "practitioner" needs a second member or it is asserting nothing.
+- 2026-09-21 606 integration tests pass; verify FAST PASS (10 steps, 59s).
