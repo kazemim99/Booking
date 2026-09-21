@@ -120,12 +120,6 @@ namespace Booksy.ServiceCatalog.Domain.Policies
                 [NotificationEventCode.BookingNoShow] =
                     new(NotificationAudience.Customer, PushInApp, Standard, NotificationDestinationKind.Booking),
 
-                // Money is owed before the slot is held; suppressing it loses the booking.
-                [NotificationEventCode.DepositRequired] =
-                    new(NotificationAudience.Customer, SmsPushInApp, Critical, NotificationDestinationKind.Payment),
-
-                [NotificationEventCode.PaymentDeadlineReminder] =
-                    new(NotificationAudience.Customer, SmsPush, Critical, NotificationDestinationKind.Payment),
 
                 // ── Customer: money. Records the customer is entitled to. ──
                 [NotificationEventCode.PaymentReceived] =
@@ -200,24 +194,14 @@ namespace Booksy.ServiceCatalog.Domain.Policies
                 [NotificationEventCode.PayoutCompleted] =
                     new(NotificationAudience.Provider, SmsPushInApp, Critical, NotificationDestinationKind.Payout),
 
-                [NotificationEventCode.PayoutFailed] =
-                    new(NotificationAudience.Provider, PushInApp, Critical, NotificationDestinationKind.Payout),
-
-                [NotificationEventCode.PayoutOnHold] =
-                    new(NotificationAudience.Provider, PushInApp, Critical, NotificationDestinationKind.Payout),
 
                 [NotificationEventCode.InvoiceGenerated] =
                     new(NotificationAudience.Provider, NotificationChannel.Email | NotificationChannel.InApp, Critical, NotificationDestinationKind.Payment),
 
-                // Can stop the salon trading, so they do not get to miss it.
-                [NotificationEventCode.ProviderVerificationChanged] =
-                    new(NotificationAudience.Provider, SmsPush, Critical, NotificationDestinationKind.Provider),
 
                 [NotificationEventCode.ProviderActivated] =
                     new(NotificationAudience.Provider, PushInApp, Critical, NotificationDestinationKind.Provider),
 
-                [NotificationEventCode.ProviderDeactivated] =
-                    new(NotificationAudience.Provider, PushInApp, Critical, NotificationDestinationKind.Provider),
             };
 
         /// <summary>Every code that has an entry.</summary>
@@ -272,8 +256,6 @@ namespace Booksy.ServiceCatalog.Domain.Policies
             NotificationEventCode.ReviewRequest => NotificationType.ReviewRequest,
             NotificationEventCode.ReviewReminder => NotificationType.ReviewRequest,
             NotificationEventCode.BookingNoShow => NotificationType.BookingNoShow,
-            NotificationEventCode.DepositRequired => NotificationType.PaymentConfirmed,
-            NotificationEventCode.PaymentDeadlineReminder => NotificationType.PaymentConfirmed,
 
             NotificationEventCode.PaymentReceived => NotificationType.PaymentReceived,
             NotificationEventCode.PaymentFailed => NotificationType.PaymentFailed,
@@ -299,12 +281,8 @@ namespace Booksy.ServiceCatalog.Domain.Policies
             NotificationEventCode.StaffAssignedToBooking => NotificationType.StaffAssigned,
 
             NotificationEventCode.PayoutCompleted => NotificationType.PayoutCompleted,
-            NotificationEventCode.PayoutFailed => NotificationType.PayoutProcessed,
-            NotificationEventCode.PayoutOnHold => NotificationType.PayoutProcessed,
             NotificationEventCode.InvoiceGenerated => NotificationType.InvoiceGenerated,
-            NotificationEventCode.ProviderVerificationChanged => NotificationType.AccountUpdate,
             NotificationEventCode.ProviderActivated => NotificationType.AccountUpdate,
-            NotificationEventCode.ProviderDeactivated => NotificationType.AccountDeactivated,
 
             _ => throw new KeyNotFoundException(
                 $"Notification '{code}' has no stored type. Add one to " +

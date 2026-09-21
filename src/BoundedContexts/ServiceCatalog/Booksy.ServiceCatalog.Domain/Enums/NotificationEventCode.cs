@@ -55,11 +55,11 @@ public enum NotificationEventCode
     ReviewRequest = 10,
     BookingNoShow = 11,
 
-    /// <summary>A deposit is owed before the booking is held.</summary>
-    DepositRequired = 12,
-
-    /// <summary>The deposit window is about to close.</summary>
-    PaymentDeadlineReminder = 13,
+    // 12 was DepositRequired and 13 was PaymentDeadlineReminder. Removed 2026-09-21 by user decision:
+    // nothing asks a customer for a deposit or warns them the window is closing, because the deposit flow
+    // is half-built — confirming a deposit-free booking is itself broken (FOLLOW-UPS #64). Deposits are
+    // their own project; both codes come back with it. Numbers left unused: a code is persisted by name,
+    // but a reused number is the sort of thing that bites during a migration.
 
     /// <summary>
     /// The single follow-up to <see cref="ReviewRequest"/>, three days later, for a customer who has not
@@ -121,10 +121,15 @@ public enum NotificationEventCode
     // ── Provider: money and account ──
 
     PayoutCompleted = 60,
-    PayoutFailed = 61,
-    PayoutOnHold = 62,
+
+    // 61 was PayoutFailed and 62 was PayoutOnHold. Removed 2026-09-21 by user decision. `Payout` HAS those
+    // states and raises events for them, but `ExecutePayoutCommandHandler` is the only code that touches a
+    // payout and it only ever completes one — so neither notification has a moment it could be raised at.
     InvoiceGenerated = 63,
-    ProviderVerificationChanged = 64,
+
+    // 64 was ProviderVerificationChanged and 66 was ProviderDeactivated. Removed 2026-09-21 by user
+    // decision, same shape as the payout pair: a salon HAS a verification status and an active/inactive
+    // status, both persisted and both read, and `Provider.Deactivate` exists — but no endpoint reaches
+    // them, and `UpdateProviderVerificationCommand` has no caller at all.
     ProviderActivated = 65,
-    ProviderDeactivated = 66,
 }

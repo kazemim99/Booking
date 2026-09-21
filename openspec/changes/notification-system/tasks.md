@@ -38,10 +38,15 @@ the structural work — each is a row's timing, not a shape.
 
 - [x] 3.1 Extend `BookingSmsText` (landed by walk-in-customer-name-sms) into the general copy seam, or a
       sibling that shares its Jalali/wall-clock rendering. Do not duplicate that logic.
-- [ ] 3.2 Move booking + payment copy out of the existing notification event handlers into templates keyed
-      by event code. Seed them. Render via the existing `ITemplateEngine`.
-- [ ] 3.3 Unit tests per template: Persian text, Jalali date, salon wall-clock, parameter substitution,
-      missing-parameter behaviour.
+- [~] 3.2 SUPERSEDED BY 3.1, except one handler. This task assumed the copy would move into seeded templates
+      rendered by `ITemplateEngine`; 3.1 built `INotificationCopyWriter` instead, which needs no seeding and
+      cannot silently fall back to an English template row. Every handler whose copy this task meant to move
+      has since been DELETED (7.4), so there is nothing left to move — except
+      `InvitationSentNotificationHandler`, which still holds its own copy and stays until 7.9 decides whether
+      the outbox replaces it. Blocked on 7.9, not on this.
+- [x] 3.3 Done as `PersianNotificationCopyWriterTests`: Persian text, Jalali date, salon wall-clock,
+      parameter substitution and missing-parameter behaviour, plus one test asserting every catalogued code
+      has non-blank wording — the per-template coverage this asked for, against the seam 3.1 chose.
 - [x] 3.4 Reminder offsets DECIDED by the user 2026-09-20: T-24h and T-2h (customer), T-30m (provider),
       as proposed. The T-2h one carries the SMS, so it is one billed message per booking — accepted
       knowingly. Implemented in `BookingReminderScheduler.Offsets`; changing them is a one-line edit.
@@ -98,9 +103,9 @@ the structural work — each is a row's timing, not a shape.
       path that exists. Recorded with 7.10 rather than guessed at.
 - [~] 7.3 STAFF ASSIGNED, INVITATION ACCEPTED and PROVIDER ACTIVATED done. Join request approved was
       REMOVED (no flow). Verification-changed and provider-deactivated are NOT BUILDABLE today — see 7.10.
-- [ ] 7.4 Remove each superseded notification event handler only after its outbox coverage is in place and
-      tested, so no notification has a window with neither. FOLLOW-UPS #66 (dispatch ordering) stays open as
-      its own change.
+- [x] 7.4 Done, and it was NOT bookkeeping — four handlers were live duplicates. Every superseded handler is
+      now deleted, each in the commit that replaced it. `InvitationSentNotificationHandler` deliberately
+      stays: nothing replaces it yet (7.9). FOLLOW-UPS #66 (dispatch ordering) stays open as its own change.
 - [x] 7.5 Daily provider digest — DECIDED 2026-09-20: yes, 08:00 salon-local, push + in-app, no SMS.
       One intent per provider per day; the send is skipped when the day has no bookings rather than
       sending "you have 0 appointments". Salon-local means the provider's wall-clock (FOLLOW-UPS #63), not
@@ -685,3 +690,51 @@ test-first.
   it — checked across booksy-frontend, booksy-admin and both Flutter apps, zero references. Production
   cannot be queried from here (ssh is a protected operation), so this is argued, not counted.
   639 integration + 598 domain tests green; FAST green.
+- 2026-09-21 7.4 finished — and the four remaining booking handlers were sending duplicates RIGHT NOW.
+  `BookingLifecycleDuplicateTests` written first; all four RED. Cancelling, confirming, marking a no-show and
+  rescheduling each produced a second notification outside the outbox — the cancel one reading "Booking
+  Cancelled" in English, beside the Persian one the customer had already been sent. Third time this
+  near-miss has surfaced in this change, and the first time it had actually shipped.
+  The tests count notifications with NO event code, because only the outbox stamps one. Asserting "the
+  outbox row exists" would have passed happily while the customer received two messages.
+  Deleted: BookingCancelled / BookingConfirmed / BookingNoShow / BookingRescheduled NotificationHandler.
+  `InvitationSentNotificationHandler` kept — nothing replaces it (7.9's rule).
+  FOUND WHILE HERE → FOLLOW-UPS #64: `POST /bookings/{id}/confirm` answers 500 for ANY booking requiring no
+  deposit, which is every salon on `BookingPolicy.Default`. PaymentMethodId is `[Required]`, the handler
+  processes a deposit whenever one is supplied, and `WithDepositPaid` throws when the amount is zero. The
+  test builds a deposit-requiring policy purely to get through the endpoint; deleting that workaround is the
+  check that #64 is fixed. Not fixed here — which of the two one-line fixes is right is a booking decision.
+  BOOKKEEPING CORRECTION, mine, worth recording because it nearly corrupted the follow-up log: I read the
+  FOLLOW-UPS table, saw it ended at 63, and concluded my own earlier references to #66 and #67 were dangling.
+  They were not. That file holds PROSE SECTIONS as well as table rows, and both entries were already there —
+  my grep only matched rows. I had already added two duplicate rows and renumbered the live references
+  before checking; all reverted. The new finding went in as a prose section like its neighbours.
+  Genuinely inconsistent and NOT mine: #67 is used twice in that file — the background services and the
+  Toman/Rial reconciliation.
+- 2026-09-21 DECISIONS from the user, all four answered together:
+  * 7.10 — REMOVE all four unreachable codes (ProviderVerificationChanged, ProviderDeactivated,
+    PayoutFailed, PayoutOnHold). Each comes back in the change that builds its flow.
+  * 7.9 account notifications — LEAVE THEM ALONE. PhoneVerification/Welcome/PasswordReset/SecurityAlert keep
+    their current path; routing them through the outbox would add up to 15s of sweep latency to the OTP,
+    which is the product's most latency-sensitive message, for no user-visible gain.
+  * 7.9 flowless codes — BUILD the booking-reject flow (BookingRejected stays and gets wired; it completes
+    the half-built approval path rather than inventing one, and "the salon never answered" is the worst
+    customer experience available). REMOVE DepositRequired and PaymentDeadlineReminder; deposits are their
+    own project and the codes return with it.
+  * InvitationSent — MOVE IT to the outbox and delete the legacy handler in the same commit. It is the last
+    English notification in a Persian product.
+- 2026-09-21 InvitationSent NOT moved to the outbox, and the decision to move it was taken on my bad
+  information. Three things, the third decisive:
+  1. I told the user its copy was "English and hardcoded". It is hardcoded and it is PERSIAN. Wrong.
+  2. It carries the INVITATION LINK (`/provider/invitations/{id}/accept?org=…`), which is the only way the
+     invitee can act on it. The copy writer's `InvitationSent` wording has no link, so moving it as-is would
+     have sent a message that cannot be acted on.
+  3. THE OUTBOX CANNOT ADDRESS THE INVITEE. It is keyed by user id: the sweep resolves contact through
+     `IPersonDirectory.FindByIdsAsync` and passes `person?.PhoneNumber`. An invitee is normally not a user
+     yet — the flow is literally `RegisterAndAcceptInvitation`, i.e. they register by accepting — so there
+     is no Person, the phone comes back null, and the dispatcher SKIPS the SMS. The invitation would simply
+     never arrive, silently. This is the same "recipient must be a real user" constraint that has already
+     produced four addressing bugs in this change, reached from the other side.
+  So the legacy handler stays, and the catalogue comment that predicted exactly this ("the invitee is often
+  not a user yet, so SMS is the only way to reach them") was right. Moving it needs the outbox to be able to
+  address a phone number with no account behind it — a real feature, not a refactor, and its own change.

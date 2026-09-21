@@ -86,14 +86,6 @@ namespace Booksy.ServiceCatalog.Application.Services.Notifications
                     "نوبت استفاده‌نشده",
                     $"{customer} عزیز، نوبت شما در {business} {when} استفاده نشد."),
 
-                NotificationEventCode.DepositRequired => Copy(
-                    "پرداخت بیعانه",
-                    $"{customer} عزیز، برای قطعی‌شدن نوبت {when} در {business}"
-                    + (amount is null ? " لازم است بیعانه پرداخت شود." : $" مبلغ {amount} بیعانه لازم است.")),
-
-                NotificationEventCode.PaymentDeadlineReminder => Copy(
-                    "مهلت پرداخت رو به پایان",
-                    $"{customer} عزیز، مهلت پرداخت بیعانهٔ نوبت {when} در {business} رو به پایان است."),
 
                 // ── Customer: money ──
                 NotificationEventCode.PaymentReceived => Copy(
@@ -182,33 +174,16 @@ namespace Booksy.ServiceCatalog.Application.Services.Notifications
                     "تسویه انجام شد",
                     $"مبلغ{Money(amount)} به حساب {business} واریز شد."),
 
-                NotificationEventCode.PayoutFailed => Copy(
-                    "تسویه ناموفق",
-                    $"واریز{Money(amount)} به حساب {business} انجام نشد"
-                    + (reason is null ? "." : $": {reason}")),
-
-                NotificationEventCode.PayoutOnHold => Copy(
-                    "تسویه در انتظار بررسی",
-                    $"تسویهٔ {business} موقتاً متوقف شده است"
-                    + (reason is null ? "." : $": {reason}")),
 
                 NotificationEventCode.InvoiceGenerated => Copy(
                     "صورت‌حساب جدید",
                     $"صورت‌حساب جدید برای {business} صادر شد."),
 
-                NotificationEventCode.ProviderVerificationChanged => Copy(
-                    "وضعیت احراز هویت",
-                    $"وضعیت احراز هویت {business} تغییر کرد"
-                    + (reason is null ? "." : $": {reason}")),
 
                 NotificationEventCode.ProviderActivated => Copy(
                     "سالن شما فعال شد",
                     $"{business} اکنون فعال است و می‌تواند نوبت بپذیرد."),
 
-                NotificationEventCode.ProviderDeactivated => Copy(
-                    "سالن شما غیرفعال شد",
-                    $"{business} غیرفعال شد و نوبت جدیدی نمی‌پذیرد"
-                    + (reason is null ? "." : $": {reason}")),
 
                 _ => throw new KeyNotFoundException(
                     $"Notification '{code}' has no wording. Add it to {nameof(PersianNotificationCopyWriter)} " +

@@ -101,8 +101,6 @@ public class NotificationEventCatalogTests
             NotificationEventCode.BookingRescheduled,
             NotificationEventCode.BookingCancelledByProvider,
             NotificationEventCode.BookingReminder2h,
-            NotificationEventCode.DepositRequired,
-            NotificationEventCode.PaymentDeadlineReminder,
             NotificationEventCode.PaymentReceived,
             NotificationEventCode.PaymentFailed,
             NotificationEventCode.RefundProcessed,
@@ -113,12 +111,8 @@ public class NotificationEventCatalogTests
             NotificationEventCode.BookingCancelledByCustomer,
             NotificationEventCode.InvitationSent,
             NotificationEventCode.PayoutCompleted,
-            NotificationEventCode.PayoutFailed,
-            NotificationEventCode.PayoutOnHold,
             NotificationEventCode.InvoiceGenerated,
-            NotificationEventCode.ProviderVerificationChanged,
             NotificationEventCode.ProviderActivated,
-            NotificationEventCode.ProviderDeactivated,
         };
 
         var actual = NotificationEventCatalog.AllCodes

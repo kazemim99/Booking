@@ -182,3 +182,18 @@ to it. A Toman price is ten Rial, so a deposit taken as `price` in IRR charges a
 salon asked. Nothing is live (no gateway credentials), so no money has moved the wrong way — but
 before the first real payment, someone must decide where the ×10 happens and prove it with a test.
 Money semantics: not for an agent to pick.
+
+## #64 Confirming a deposit-free booking answers 500
+`POST /api/v1/bookings/{id}/confirm` fails for any booking whose policy requires no deposit — which includes
+every salon on `BookingPolicy.Default`. `ConfirmBookingRequest.PaymentMethodId` is `[Required]`, so a value
+always arrives; `ConfirmBookingCommandHandler` calls `booking.ProcessDepositPayment` whenever one is present;
+`PaymentInfo.WithDepositPaid` throws `InvalidOperationException("No deposit required for this booking")` when
+`DepositAmount.Amount == 0`, and the pipeline turns that into an opaque INTERNAL_ERROR. A booking that DOES
+require a deposit confirms fine, which is why it has gone unnoticed.
+
+Measured while writing `BookingLifecycleDuplicateTests` (notification-system 7.4), which now constructs a
+deposit-requiring policy purely to get through the endpoint. The fix is a one-liner either way — make the
+field optional, or only process a deposit when the policy asks for one — but which of those is right is a
+booking decision, not a notification one, so it was not taken there. Deleting that test's workaround policy
+is the check that it is fixed.
+
