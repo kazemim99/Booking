@@ -181,8 +181,6 @@ namespace Booksy.ServiceCatalog.Domain.Policies
                 [NotificationEventCode.InvitationAccepted] =
                     new(NotificationAudience.Provider, PushInApp, Standard, NotificationDestinationKind.Invitation),
 
-                [NotificationEventCode.JoinRequestApproved] =
-                    new(NotificationAudience.StaffMember, PushInApp, Standard, NotificationDestinationKind.Provider),
 
                 [NotificationEventCode.StaffAdded] =
                     new(NotificationAudience.Provider, PushInApp, Standard, NotificationDestinationKind.Provider),
@@ -286,7 +284,6 @@ namespace Booksy.ServiceCatalog.Domain.Policies
 
             NotificationEventCode.InvitationSent => NotificationType.StaffAssigned,
             NotificationEventCode.InvitationAccepted => NotificationType.StaffAssigned,
-            NotificationEventCode.JoinRequestApproved => NotificationType.StaffAssigned,
             NotificationEventCode.StaffAdded => NotificationType.StaffAssigned,
             NotificationEventCode.StaffRemoved => NotificationType.StaffUnavailable,
             NotificationEventCode.StaffAssignedToBooking => NotificationType.StaffAssigned,

@@ -98,7 +98,12 @@ public enum NotificationEventCode
 
     InvitationSent = 50,
     InvitationAccepted = 51,
-    JoinRequestApproved = 52,
+
+    // 52 was JoinRequestApproved. Removed 2026-09-21: nothing in the codebase creates or approves a join
+    // request — the flow is an orphan event, a status enum and a table from an old migration. A code with
+    // no emitter advertises a notification the product cannot send, which is the one thing this catalogue
+    // exists to prevent. Add it back in the same change that builds the flow; the number is left unused so
+    // an old persisted row cannot silently become a different notification.
     StaffAdded = 53,
     StaffRemoved = 54,
 

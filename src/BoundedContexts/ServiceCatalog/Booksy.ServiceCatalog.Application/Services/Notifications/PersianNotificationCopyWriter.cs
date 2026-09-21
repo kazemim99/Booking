@@ -158,9 +158,6 @@ namespace Booksy.ServiceCatalog.Application.Services.Notifications
                     "دعوت پذیرفته شد",
                     $"{Coalesce(staff, customer)} دعوت همکاری در {business} را پذیرفت."),
 
-                NotificationEventCode.JoinRequestApproved => Copy(
-                    "درخواست عضویت تأیید شد",
-                    $"درخواست عضویت شما در {business} تأیید شد."),
 
                 NotificationEventCode.StaffAdded => Copy(
                     "همکار جدید",

@@ -134,6 +134,23 @@ the structural work — each is a row's timing, not a shape.
 - [ ] 7.8 Give `FakePaymentGateway` an opt-in failure mode, so `PaymentFailed` can be written test-first.
       Blocking 7.2's remaining payment-failure notification.
 
+- [ ] 7.9 Emitter audit follow-through. 18 catalogued codes currently have no raise site. They are NOT one
+      problem and must not be pruned as a batch:
+      * **Wiring pending, flow exists** — PaymentFailed (blocked on 7.8), DailyScheduleDigest (7.5),
+        StaffAdded, StaffRemoved, PayoutFailed, PayoutOnHold, InvoiceGenerated,
+        ProviderVerificationChanged, ProviderActivated, ProviderDeactivated. Ordinary remaining work.
+      * **Sent today, but NOT through the outbox** — PhoneVerification (the OTP SMS, sent directly from a
+        UserManagement command), Welcome, PasswordReset, SecurityAlert. These reach people already; the
+        question is whether to route them through the outbox at all, which is a separate decision from
+        building them.
+      * **Sent today by a LEGACY handler that is still live and correct** — InvitationSent. Do not delete
+        that handler until something replaces it (7.4's rule).
+      * **No flow exists at all** — BookingRejected, DepositRequired, PaymentDeadlineReminder.
+        BookingRejected is the closest relative of the code removed below: nothing rejects a booking. It is
+        kept for now only because `Provider.RequiresApproval` and `BookingStatus.Requested` DO exist, so the
+        approval path is half-built and a reject completes it rather than inventing it. If that stays
+        unbuilt, this code should go the same way.
+
 ## 8. `NotificationType` repair (BREAKING)
 
 - [ ] 8.1 Characterisation tests pinning today's preference behaviour, including the known false positives.
@@ -484,3 +501,13 @@ test-first.
   of accepting, and a notification raised against a stubbed provider lookup would assert nothing. The
   behaviour is covered by the integration tests instead.
 - 2026-09-21 608 integration tests pass; verify FAST PASS (10 steps, 73s).
+- 2026-09-21 REMOVED `NotificationEventCode.JoinRequestApproved`. Nothing in the codebase creates or
+  approves a join request — all that exists is an orphan `JoinRequestApprovedEvent`, a status enum, a
+  response model and a table from a 2025 migration. A code with no possible emitter advertises a
+  notification the product cannot send, which is the single thing this catalogue exists to prevent, and it
+  came with a catalogue entry, a preference mapping and Persian copy that all read as working.
+  Removed from all four places at once because the completeness tests enforce that they move together.
+  Enum value 52 is left UNUSED rather than reassigned: the code is persisted by name in the outbox, but a
+  reused number would still be the sort of thing that bites during a migration.
+  Audit done while there: 18 codes have no emitter, recorded as 7.9 with the categories, because they are
+  not one problem and pruning them as a batch would delete work that is merely unfinished.
