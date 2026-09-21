@@ -171,10 +171,18 @@ the structural work — each is a row's timing, not a shape.
 
 ## 8. `NotificationType` repair (BREAKING)
 
-- [ ] 8.1 Characterisation tests pinning today's preference behaviour, including the known false positives.
+- [x] 8.1 Characterisation tests pinning today's preference behaviour, including the known false positives.
+      13 unit + 5 integration. They FOUND a live user-visible defect and bounded the blast radius — see the
+      log, and read 8.3 again before starting it.
 - [ ] 8.2 Split the type: `NotificationEventCode` (identity, already in 2.1) vs a small, genuinely-flags
       preference category enum. Remove the sequential members from the flags type.
 - [ ] 8.3 Data migration rewriting persisted preference masks; tested in both directions on a seeded database.
+      **LIKELY UNNECESSARY — verify before building.** 8.1 measured it: `EnabledTypes` is persisted with
+      `HasConversion<string>()`, i.e. BY NAME ("All", "BookingReminder, BookingConfirmation,
+      PaymentReceived"), not as a bitmask integer. Renumbering therefore cannot silently re-label existing
+      rows. `NotificationPreferencePersistenceTests.The_column_holds_names_not_a_number` is the guard; if it
+      ever goes red, this task comes back. What DOES need care is any name that 8.2 removes, because a
+      stored string containing it would then fail to parse.
 - [ ] 8.4 Replace every `HasFlag`/bitwise membership test on the old type with exact membership.
 
 ## 10. Test coverage gaps (found 2026-09-20 by mapping spec scenarios to tests)
@@ -619,3 +627,24 @@ test-first.
   precisely the lie the fabricated push stub used to tell, and the delivery log is where it would have
   lived on after 4.3 removed the stub.
   Mutation: forcing the log to always write Delivered failed 2 of the 5, including the retry one.
+- 2026-09-21 8.1 done — and it changed what section 8 is.
+  13 unit characterisation tests + 5 integration. Written as characterisation, not specification: several
+  assert outcomes that are DEFECTS, labelled so, so the repair reads as a diff.
+  TWO FINDINGS, both measured rather than reasoned about.
+  (1) THE BLAST RADIUS IS SMALLER THAN THE TASK ASSUMED. Nothing in the live send path consults
+  `EnabledTypes`. `NotificationSuppressionPolicy.ShouldSend` asks only about channels; the one method that
+  tests type membership, `UserNotificationPreferences.ShouldSendNotification`, HAS NO CALLERS, and neither
+  do the aggregate's `EnableTypes`/`DisableTypes` (the controller's "enable types" endpoint replaces the
+  whole mask instead of OR-ing into it). So today no notification is sent or withheld because of the flags
+  defect. A test now pins that, because 8.2 must not start honouring types by accident.
+  (2) BUT IT IS NOT PURELY LATENT — there is a live, user-visible defect I had not expected. The settings
+  screen renders the mask with `ToString().Split(',')`, and .NET decomposes a flags value greedily, largest
+  first. `AccountDeactivated` is bit24|bit4, and bit4 IS `BookingConfirmation` — so for a mask of
+  `All | ReviewRequest` the rendering OMITS BookingConfirmation (which is enabled) and INVENTS
+  AccountDeactivated (which was never set). Two tests pin exactly that.
+  (3) Consequence for 8.3: the persisted column is a NAME string, not an integer — measured against the raw
+  column in SQL, not through EF. So renumbering cannot rewrite what existing rows mean, and the data
+  migration is probably unnecessary. Marked on 8.3 with the guard test that would prove otherwise.
+  Note for 8.2: the 17 sequential members cannot simply be given distinct bits — 24 existing bit values plus
+  17 more exceeds an int's 32. That is the arithmetic reason 8.2's split is the only available repair: those
+  17 are notification IDENTITIES, which now live in NotificationEventCode, not preference categories.
