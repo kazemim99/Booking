@@ -1,4 +1,4 @@
-Status: ACTIVE
+Status: STOPPED(decision)
 Verify: FAST
 
 <!-- ACTIVE since 2026-09-21: approved by the user, order left to me — 1, then 3, then 2 (push last,
@@ -74,8 +74,8 @@ REWRITTEN 2026-09-21 after reading the code — the first draft targeted a dead 
 
 ## 4. Verification
 
-- [ ] 4.1 `scripts/verify.ps1 -Tier fast` green.
-- [ ] 4.2 `scripts/verify.ps1 -Tier full` green — it already runs both Vue apps' type-check and lint and
+- [x] 4.1 `scripts/verify.ps1 -Tier fast` green.
+- [x] 4.2 `scripts/verify.ps1 -Tier full` green — it already runs both Vue apps' type-check and lint and
       both Flutter apps' analyze and test, so all four clients are covered by the existing gate.
 - [-] 4.3 BLOCKED on 2.6. On a device: sign in, receive a push, tap it, land on the right screen.
 
@@ -261,3 +261,8 @@ REWRITTEN 2026-09-21 after reading the code — the first draft targeted a dead 
   (google-services.json / GoogleService-Info.plist are account-specific), and Android cannot be built here
   (Google Maven 404s). Until the config is added the guard keeps push off and both apps behave exactly as
   before. End-to-end push on a real device is the remaining acceptance check.
+- 2026-09-21 verify FULL: PASS (20 steps, 835s) — the first FULL run that also executes the Vue unit suites
+  (`vue:booksy-frontend:unit`, `vue:booksy-admin:unit`), which no gate ran before this change.
+  STOPPED(decision): nothing unblocked remains. Open: 1.3–1.6 (what the two live preference screens may
+  promise — a product/UX decision, asked concretely at the end), and 2.6/4.3 (on-device push, blocked on
+  Firebase project config that is not in the repository and on an Android toolchain that cannot build here).
