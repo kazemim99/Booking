@@ -68,8 +68,15 @@ namespace Booksy.ServiceCatalog.Domain.ValueObjects
         /// <summary>
         /// Default preferences for new users
         /// </summary>
+        /// <remarks>
+        /// <b>Must include every channel the product sends on.</b> A person with no preferences row is sent on
+        /// all channels; the first time they save ANY setting, a row is created from this default. It used to
+        /// omit push — it was written before push existed — so touching a settings screen switched push off for
+        /// good, without the person ever seeing a push toggle. Pinned by NotificationPreferenceDefaultsTests.
+        /// </remarks>
         public static NotificationPreference Default => new(
-            NotificationChannel.Email | NotificationChannel.SMS | NotificationChannel.InApp,
+            NotificationChannel.Email | NotificationChannel.SMS | NotificationChannel.PushNotification
+                | NotificationChannel.InApp,
             NotificationPreferenceCategory.All,
             null,
             null,

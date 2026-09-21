@@ -24,11 +24,28 @@ critical set, and it is genuinely live.
 - **No client reads the inbox.** `GET /Notifications/inbox`, `/unread-count`, `POST /{id}/read` and
   `/read-all` have no callers. In-app notifications accumulate in the database and are never shown.
 
-**And one piece of the UI is actively false.** `booksy-frontend`'s `ProfilePreferences.vue` renders six
-notification toggles — email, SMS, push, booking reminders, promotions, marketing — with "enable all" and
-"disable all" buttons. `handleSubmit` sends `language`, `timezone`, `currency`, `dateFormat` and
-`timeFormat`, and none of the toggles. A provider switches SMS off, saves, and keeps receiving SMS. That is
-worse than the feature being absent: the product gives a written assurance it does not keep.
+**And the preference screens that people actually use save to places nothing reads.** This is the
+worst part, and the first draft of this proposal located it wrongly — corrected after reading the code:
+
+| Screen | Saves to | Read by the dispatcher? |
+|---|---|---|
+| Customer notification preferences (routed, live) | `PATCH /customers/{id}/preferences` — `SmsEnabled`, `EmailEnabled`, `ReminderTiming` on the UserManagement customer | **No.** Saves succeed; nothing consults them |
+| Provider `NotificationSettings.vue` (via `ProviderSettingsView`) | `PUT /provider-settings/{id}/notification-settings` | **The route does not exist** — every save 404s |
+| `ProfilePreferences.vue` | nothing — `handleSubmit` omits the toggles | Dead code: rendered only by an unrouted, unimported view |
+| — | `PUT /notifications/preferences` → `UserNotificationPreferences` | **Yes — and no client calls it** |
+
+So a customer switches SMS off in the real app, gets a success message, and keeps receiving SMS — because
+the dispatcher reads a different table. The first draft blamed `ProfilePreferences.vue`; that component is
+unreachable, and the real lie is in the two screens people can open.
+
+`ReminderTiming` is the same defect in miniature: the customer picks it, and reminders are fixed at T-24h and
+T-2h in `BookingReminderScheduler.Offsets` regardless.
+
+**One trap the fix would have sprung.** `NotificationPreference.Default` is `Email | SMS | InApp` — without
+`PushNotification`, which was added to the product later. A user with no preferences row is sent everything
+(absent preferences never read as "disabled"), but the moment a row is CREATED it is built from `Default`, so
+the first time anyone saves any preference, push is silently switched off for them. Wiring the screens to the
+real store would have made that happen to every user who touched their settings.
 
 Two smaller defects of the same family:
 
@@ -42,9 +59,11 @@ Two smaller defects of the same family:
 
 Three vertical slices, each one usable on its own.
 
-1. **Preferences actually persist.** Wire the existing toggles to `PUT /notifications/preferences`, mapping
-   the UI's channel and category checkboxes onto `EnabledChannels` and `EnabledTypes`. Includes removing any
-   toggle the backend cannot honour, rather than leaving a control that does nothing.
+1. **Preferences take effect.** Both live screens — customer and provider — read and write the one store the
+   dispatcher consults, `/notifications/preferences`. A save flips only the channels the screen shows and
+   preserves the rest (there is no in-app toggle, so a save must not switch in-app off by omission). Any
+   control the backend cannot honour is removed or marked as not in effect. Fix `Default` to include push
+   first, test-first, so wiring the screens cannot silently disable it.
 2. **Devices register for push.** `firebase_messaging` in both Flutter apps: request permission, obtain the
    FCM token, `POST /DeviceTokens` on sign-in and on token refresh, `DELETE /DeviceTokens` on sign-out.
    Foreground and background message handling that opens the notification's destination.
@@ -57,8 +76,13 @@ Also: correct the wrong endpoint constants, so the first real caller does not ha
 
 - Affected specs: `notification-clients` (new)
 - Affected code: `booksy-frontend/src`, `booksy-admin/src`, `booksy-customer-app/lib`,
-  `booksy-provider-app/lib`. **No backend change is required** — every endpoint this needs already exists,
-  is scoped to the caller, and is covered by integration tests.
+  `booksy-provider-app/lib`, and ONE small backend fix: `NotificationPreference.Default` must include push.
+  The first draft said no backend change was needed; that was true of the endpoints and false of the
+  defaults behind them.
+- Existing customer opt-outs saved through the old screen live in UserManagement and have never had any
+  effect. Switching the screen to the real store shows those customers their ACTUAL settings (all on). Their
+  earlier choice is not carried across unless someone runs a backfill on the production database — a
+  protected operation, raised at the end rather than done here.
 - Twenty-four notifications go from built-but-unreachable to delivered.
 
 ## Risks and constraints

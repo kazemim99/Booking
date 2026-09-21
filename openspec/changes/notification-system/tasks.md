@@ -1,4 +1,4 @@
-Status: ACTIVE
+Status: STOPPED(blocked)
 Verify: FAST
 
 <!-- ACTIVE since 2026-09-20. This is now the repo's gating change for the Stop hook in every session
@@ -38,7 +38,7 @@ the structural work — each is a row's timing, not a shape.
 
 - [x] 3.1 Extend `BookingSmsText` (landed by walk-in-customer-name-sms) into the general copy seam, or a
       sibling that shares its Jalali/wall-clock rendering. Do not duplicate that logic.
-- [~] 3.2 SUPERSEDED BY 3.1, except one handler. This task assumed the copy would move into seeded templates
+- [-] 3.2 SUPERSEDED BY 3.1, except one handler — and that one is deliberately kept (see the InvitationSent log entry). This task assumed the copy would move into seeded templates
       rendered by `ITemplateEngine`; 3.1 built `INotificationCopyWriter` instead, which needs no seeding and
       cannot silently fall back to an English template row. Every handler whose copy this task meant to move
       has since been DELETED (7.4), so there is nothing left to move — except
@@ -229,7 +229,8 @@ test-first.
 - [x] 9.2 GREEN 2026-09-21: 18 steps, 1,337s — both integration suites on Testcontainers, Host
       composition, both Vue apps and both Flutter apps. (Testcontainers; coordinate build time with peers —
       see ListAgents).
-- [ ] 9.3 Confirm on staging that a real booking produces a real notification end to end, and that the
+- [-] 9.3 BLOCKED: needs a staging deploy, which is a protected operation the user has not authorised (push is
+      explicitly held until the work is finished). Confirm on staging that a real booking produces a real notification end to end, and that the
       delivery log contains no delivery that did not happen.
 
 ## Log
@@ -764,3 +765,9 @@ test-first.
   banned here so the digits come from a GUID's hash); and read the new membership's id from the database
   rather than the response body — the endpoint's field names are not what an addressing test is about.
   651 integration tests pass; FAST green.
+- 2026-09-21 STOPPED(blocked). Every task is done or recorded with its reason except 9.3, which needs a
+  staging deploy — a protected operation, and push itself is held by the user until the work is finished.
+  Nothing unblocked remains. The last FULL verify was green (18 steps) but predates the final three commits
+  (the six removals, the staff wiring, the rejection); FAST and the full integration suite (651) were green
+  after each of them. The client half of this feature was never in this change's scope and should have been
+  said so in its proposal — it is now `add-notification-clients`.

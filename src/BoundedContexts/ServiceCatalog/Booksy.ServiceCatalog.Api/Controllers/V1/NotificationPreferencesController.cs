@@ -3,6 +3,7 @@ using Booksy.Core.Application.DTOs;
 using Booksy.ServiceCatalog.Application.Commands.Notifications.UpdatePreferences;
 using Booksy.ServiceCatalog.Application.Queries.Notifications.GetUserPreferences;
 using Booksy.ServiceCatalog.Domain.Enums;
+using Booksy.ServiceCatalog.Domain.ValueObjects;
 using MediatR;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -43,16 +44,19 @@ public class PreferencesController : ControllerBase
 
         if (result == null)
         {
-            // Return default preferences if none exist
+            // Derived from the domain default rather than written out again. The hardcoded list that used
+            // to live here omitted push, so a client that loaded this screen and saved what it loaded switched
+            // push off by round-tripping — the same trap as the stale default, reached from the read side.
+            var defaults = NotificationPreference.Default;
             return Ok(new UserPreferencesViewModel(
                 userId,
-                new List<string> { "Email", "SMS", "InApp" },
-                new List<string> { "All" },
-                null,
-                null,
-                "en",
-                false,
-                50,
+                Names(defaults.EnabledChannels),
+                Names(defaults.EnabledTypes),
+                defaults.QuietHoursStart,
+                defaults.QuietHoursEnd,
+                defaults.PreferredLanguage ?? "en",
+                defaults.MarketingOptIn,
+                defaults.MaxNotificationsPerDay,
                 DateTime.UtcNow,
                 DateTime.UtcNow));
         }
@@ -191,6 +195,14 @@ public class PreferencesController : ControllerBase
         var result = await _mediator.Send(command, cancellationToken);
         return Ok(result);
     }
+
+    /// <summary>The same rendering <c>GetUserPreferencesQueryHandler</c> uses, so both answers look alike.</summary>
+    private static List<string> Names<TEnum>(TEnum value) where TEnum : struct, Enum =>
+        value.ToString()
+            .Split(',')
+            .Select(n => n.Trim())
+            .Where(n => !string.IsNullOrWhiteSpace(n))
+            .ToList();
 }
 
 // Request DTOs

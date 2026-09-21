@@ -1,7 +1,8 @@
-Status: PROPOSED
+Status: ACTIVE
 Verify: FAST
 
-<!-- Not ACTIVE. Awaiting approval; do not start implementing. -->
+<!-- ACTIVE since 2026-09-21: approved by the user, order left to me — 1, then 3, then 2 (push last,
+     because it is the only slice that cannot be verified on a device from this environment). -->
 
 Change: add-notification-clients. Three slices, each shippable on its own, ordered so the cheapest fix to
 the worst lie goes first and the riskiest work is last.
@@ -9,24 +10,30 @@ the worst lie goes first and the riskiest work is last.
 Every slice is written test-first, as the repository standard requires. What "test" means differs per client
 and is stated per task, because a Vue component test and a Flutter widget test protect different things.
 
-## 1. Preferences stop lying (booksy-frontend)
+## 1. Preferences take effect (backend default + booksy-frontend)
 
-The smallest slice and the only one fixing something actively false: six toggles exist, none is sent.
+REWRITTEN 2026-09-21 after reading the code — the first draft targeted a dead component. See the log.
 
-- [ ] 1.1 Characterise today's behaviour first: a component test asserting `handleSubmit` emits an update
-      WITHOUT any notification field. It passes now and fails when 1.2 lands — that is the diff.
-- [ ] 1.2 Extend `UpdatePreferencesRequest` and the submit path to carry channel preferences
-      (`EnabledChannels`) and category preferences (`EnabledTypes`), and wire them to
-      `PUT /api/v1/notifications/preferences`.
-- [ ] 1.3 Map the UI's six toggles onto the backend's model honestly. Email/SMS/push are CHANNELS; booking
-      reminders/promotions/marketing are CATEGORIES (`NotificationPreferenceCategory`). They are not the
-      same axis and must not be flattened into one list.
-- [ ] 1.4 **DECISION NEEDED — see proposal "Risks".** Category toggles persist but change nothing today,
-      because `ShouldSend` consults channels only. Either mark them as not yet in effect, or open a separate
-      change to make the backend honour types. Do not ship a control that silently does nothing; that is the
-      defect this slice exists to remove.
-- [ ] 1.5 Round-trip test: save preferences, re-open the screen, see what was saved.
-- [ ] 1.6 A failed save shows an error and does not leave the screen displaying unsaved values as saved.
+- [x] 1.1 BACKEND, test-first: `NotificationPreference.Default` includes `PushNotification`. Failing test
+      first: a user whose preferences row is created by saving one unrelated field must still be sent push.
+      Today they are not — the row is built from a Default that predates push.
+- [ ] 1.2 A preferences client in booksy-frontend for `GET`/`PUT /api/v1/notifications/preferences`, with
+      unit tests for the channel mapping. The rule the tests pin: a save changes ONLY the channels the screen
+      shows and carries every other channel through unchanged. There is no in-app toggle; omitting in-app
+      from the PUT would switch it off.
+- [ ] 1.3 Customer preferences screen reads and writes that client instead of
+      `PATCH /customers/{id}/preferences`, whose values nothing reads. Tested: toggling SMS off sends a
+      channel set without SMS and with in-app intact.
+- [ ] 1.4 Provider `NotificationSettings.vue` reads and writes that client instead of
+      `PUT /provider-settings/{id}/notification-settings`, a route that does not exist.
+- [ ] 1.5 `ReminderTiming` and any category toggle: the backend does not honour them (reminder offsets are
+      fixed; `ShouldSend` ignores `EnabledTypes`). Remove them or mark them not in effect — never leave a
+      control that silently does nothing. DEFAULT TAKEN: mark as not in effect, because removing a visible
+      control is a UX call and a label is reversible. Raised at the end.
+- [ ] 1.6 A failed save shows an error and does not display the attempted values as saved.
+- [ ] 1.7 `ProfilePreferences.vue` and the unrouted `views/ProviderProfileView.vue` that renders it: dead
+      code, and the component that misled the first draft of this change. Delete, after confirming again
+      that nothing imports either.
 
 ## 2. Devices register for push (booksy-customer-app, booksy-provider-app)
 
@@ -83,3 +90,24 @@ The smallest slice and the only one fixing something actively false: six toggles
   `handleSubmit` does not send.
   Also established, and the reason this is not a total gap: the 13 SMS-carrying notifications reach people
   today with no client involvement, and they are the critical set.
+- 2026-09-21 Slice 1 rewritten before any code, because the first draft was wrong about WHERE the lie was.
+  I had blamed `ProfilePreferences.vue`. Reading the router: it is rendered only by
+  `modules/provider/views/ProviderProfileView.vue`, which nothing routes or imports — the routed profile
+  view is `views/dashboard/ProviderProfileView.vue`, which does not render it. Dead code. (It also saved to
+  `/users/profile/preferences`, served by a `ProfileController` that is commented out in its entirety.)
+  The screens people CAN open are worse: the customer screen saves successfully to UserManagement fields the
+  dispatcher never reads, and the provider screen saves to a route that does not exist. Meanwhile the one
+  store the dispatcher does read has no client.
+  And a trap: `NotificationPreference.Default` omits push. Absent preferences mean "send everything", but a
+  row created from Default disables push — so wiring any screen to the real store would have silently turned
+  push off for every user who saved a setting. Fixed first, test-first, as 1.1.
+- 2026-09-21 1.1 done, test-first — and the trap had a second door. `NotificationPreferenceDefaultsTests`
+  (5): three write-side tests were RED on the real endpoint — saving only `marketingOptIn` left the row at
+  `Email|SMS|InApp`, push gone. The fourth, switching push off on purpose, was green before and after: the fix
+  must not make push impossible to turn off.
+  Then the READ side: `GET /notifications/preferences` answers a person with no row from a HARDCODED list,
+  and that list omitted push too. A client that loads the screen and saves what it loaded would have switched
+  push off by round-tripping — which is exactly what the screens in 1.3/1.4 are about to do. Fifth test, red,
+  then the fallback was rewritten to DERIVE from `NotificationPreference.Default` so the two can never drift
+  apart again. Both halves had to go before any screen was connected, or connecting a screen would have been
+  the thing that broke push.
