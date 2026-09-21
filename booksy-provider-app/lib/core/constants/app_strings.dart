@@ -331,6 +331,14 @@ class AppStrings {
   static const String homeCreateBlockTime = 'مسدود کردن زمان';
   static const String comingSoon = 'به‌زودی در دسترس قرار می‌گیرد';
 
+  // Notifications inbox
+  static const String notificationsTitle = 'اعلان‌ها';
+  static const String notificationsEmpty = 'هنوز اعلانی ندارید.';
+  static const String notificationsLoadFailed = 'اعلان‌ها بارگذاری نشد.';
+  static const String notificationsRetry = 'تلاش دوباره';
+  static const String notificationsMarkAllRead = 'خواندن همه';
+  static const String notificationsMarkFailed = 'علامت‌گذاری اعلان انجام نشد.';
+
   // Account sheet
   static const String homeAccountTitle = 'حساب کسب‌وکار';
   static String providerStatusLabel(String status) {

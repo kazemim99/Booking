@@ -33,6 +33,10 @@ import '../../features/invitations/presentation/accept_invitation_cubit.dart';
 import '../../features/invitations/presentation/register_and_accept_cubit.dart';
 import '../../features/onboarding/domain/repositories/onboarding_repository.dart';
 import '../../features/onboarding/presentation/cubit/onboarding_cubit.dart';
+import '../../features/notifications/data/inbox_repository_impl.dart';
+import '../../features/notifications/data/notification_api_service.dart';
+import '../../features/notifications/domain/inbox_repository.dart';
+import '../../features/notifications/presentation/inbox_cubit.dart';
 
 final getIt = GetIt.instance;
 
@@ -118,6 +122,15 @@ Future<void> configureDependencies() async {
     (invitationId, _) =>
         RegisterAndAcceptCubit(getIt<InvitationRepository>(), invitationId),
   );
+
+  // ---- Notifications inbox ----
+  getIt.registerLazySingleton<NotificationApiService>(() => NotificationApiService(authedDio));
+  getIt.registerLazySingleton<InboxRepository>(
+    () => InboxRepositoryImpl(getIt<NotificationApiService>()),
+  );
+  // A SINGLETON, unlike the screen cubits above: the bell and the inbox page must read the same state, or the
+  // badge and the list it opens can disagree.
+  getIt.registerLazySingleton<InboxCubit>(() => InboxCubit(getIt<InboxRepository>()));
 
   // ---- Home (Today workspace) ----
   getIt.registerLazySingleton<HomeApiService>(() => HomeApiService(authedDio));

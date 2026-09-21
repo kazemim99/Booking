@@ -64,7 +64,7 @@ REWRITTEN 2026-09-21 after reading the code — the first draft targeted a dead 
       it does not show a spinner forever or a blank panel.
 - [x] 3.4 REVISED — see log. `booksy-admin`: the same, plus the `/notifications` ROUTE that `AdminUserMenu.vue` already links
       to and which does not exist — a dead link in a shipped menu.
-- [ ] 3.5 Both Flutter apps: a notifications list, unread badge and mark-read. The provider app's home
+- [~] 3.5 booksy-provider-app DONE; booksy-customer-app pending. Both Flutter apps: a notifications list, unread badge and mark-read. The provider app's home
       screen already has a bell whose own comment calls it "a placeholder until notifications ship"; this is
       what it was waiting for.
 - [ ] 3.6 Assert the badge and the list agree. They disagreed once already on the server side (the inbox
@@ -188,3 +188,22 @@ REWRITTEN 2026-09-21 after reading the code — the first draft targeted a dead 
   produced an "unhandled rejection" in one test and a 10-second hook timeout in the next. Braces fix it.
   Also: booksy-admin had 54 vitest tests that no gate ran — the same hole as the frontend's. Added its unit
   step to both verify scripts; 10 files, 59 tests, green.
+- 2026-09-21 3.5, booksy-provider-app done. `features/notifications/` in the app's own shape (data/domain/
+  presentation, Either<Failure,_>, cubit, get_it, go_router). 18 tests written first: 11 on `InboxCubit`
+  (the same invariants as the web store — already-read is a no-op, failures roll back exactly, a failed load
+  is an error and never "empty", the badge shows nothing rather than a guess) and 7 widget tests on the page
+  and the bell.
+  The bell and the page share ONE `InboxCubit`, registered as a lazy singleton and handed to both with
+  `BlocProvider.value` — `create` would close it when Home leaves the tree, breaking the page opened next.
+  Two things the first attempt got wrong, both caught by the suite:
+  * `InboxPage` named both the data class (a page of results) and the widget; ambiguous in any file importing
+    both. The data class is now `InboxResult`.
+  * Resolving the cubit with `getIt<InboxCubit>()` inside `HomeView` broke 14 existing `home_view_test`
+    tests, which compose the view through `MultiBlocProvider` and never register anything in get_it. That was
+    the tests telling the truth about the architecture: `HomeView` reads everything else from context. Moved
+    the provision up into `HomePage` beside `HomeCubit`, and the test provides a mock inbox cubit the same way
+    it provides the others. 571 tests pass, analyze clean.
+  A booking notice opens the CALENDAR, not that booking: this app has no single-booking screen. Recorded in
+  `FUNCTIONAL_GAPS.md`, whose "Notifications — NOT IMPLEMENTED" entry is now updated. The old placeholder
+  bell's own comment is worth quoting, because it is the standard the rest of this change had to meet: "it
+  must not pretend to have unread counts".

@@ -1,3 +1,4 @@
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'dart:async';
 
 import 'package:flutter/foundation.dart';
@@ -20,7 +21,10 @@ import '../../features/home/presentation/pages/more_page.dart';
 import '../../features/home/presentation/pages/more_sub_pages.dart';
 import '../../features/invitations/presentation/accept_invitation_page.dart';
 import '../../features/invitations/presentation/register_and_accept_page.dart';
+import '../../core/di/injection.dart';
 import '../../features/home/presentation/pages/home_page.dart';
+import '../../features/notifications/presentation/inbox_cubit.dart';
+import '../../features/notifications/presentation/inbox_page.dart';
 
 /// Route paths.
 class Routes {
@@ -32,6 +36,7 @@ class Routes {
   static const String calendar = '/calendar';
   static const String clients = '/clients';
   static const String more = '/more';
+  static const String notifications = '/notifications';
   static const String moreBusiness = '/more/business';
   static const String moreHours = '/more/hours';
   static const String moreHolidays = '/more/holidays';
@@ -222,6 +227,14 @@ class AppRouter {
         GoRoute(
           path: Routes.more,
           builder: (_, _) => const MorePage(),
+        ),
+        GoRoute(
+          path: Routes.notifications,
+          // The same cubit the bell reads, so opening the list and returning leaves the badge in agreement.
+          builder: (_, _) => BlocProvider<InboxCubit>.value(
+            value: getIt<InboxCubit>(),
+            child: const InboxPage(),
+          ),
         ),
         GoRoute(
           path: Routes.moreBusiness,

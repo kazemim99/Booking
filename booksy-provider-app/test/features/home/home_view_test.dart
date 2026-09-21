@@ -1,3 +1,4 @@
+import 'package:booksy_provider_app/features/notifications/presentation/inbox_cubit.dart';
 import 'package:bloc_test/bloc_test.dart';
 import 'package:booksy_provider_app/config/theme/app_theme.dart';
 import 'package:booksy_provider_app/core/constants/app_strings.dart';
@@ -97,13 +98,19 @@ ProviderSession get _session => ProviderSession(
       requiresOnboarding: false,
     );
 
+class _MockInboxCubit extends MockCubit<InboxState> implements InboxCubit {}
+
 void main() {
   late _MockHomeCubit cubit;
   late _MockAuthBloc authBloc;
+  late _MockInboxCubit inbox;
 
   setUp(() {
     cubit = _MockHomeCubit();
     authBloc = _MockAuthBloc();
+    inbox = _MockInboxCubit();
+    whenListen(inbox, const Stream<InboxState>.empty(), initialState: const InboxState());
+    when(() => inbox.refreshCount()).thenAnswer((_) async {});
     whenListen(
       authBloc,
       const Stream<AuthState>.empty(),
@@ -132,6 +139,8 @@ void main() {
           providers: [
             BlocProvider<HomeCubit>.value(value: cubit),
             BlocProvider<AuthBloc>.value(value: authBloc),
+            // HomeView's header now carries the inbox bell, which reads its count from this cubit.
+            BlocProvider<InboxCubit>.value(value: inbox),
           ],
           child: const HomeView(),
         ),

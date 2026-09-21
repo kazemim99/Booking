@@ -10,13 +10,27 @@ shipping it would require. Ordered by user-visible impact.
 
 ---
 
-## 1. Notifications (bell + unread count) — NOT IMPLEMENTED
+## 1. Notifications (bell + unread count) — INBOX DONE; push and two gaps remain
+
+**Update 2026-09-21 (OpenSpec `add-notification-clients`):** the Home bell now
+shows the server's unread count and opens a real inbox (`/notifications`) —
+list, unread markers, mark-read, mark-all-read, empty and error states. The
+bell and the list share one `InboxCubit` singleton so they cannot disagree.
+Still open, and why:
+- **Only the Home header has a bell.** The design puts one on every sub-page
+  header; those were not touched.
+- **A booking notice opens the calendar, not that booking.** This app has no
+  single-booking screen to land on. Once one exists, map `Booking` to it in
+  `inbox_destination.dart`.
+- **Push** is a separate slice of the same change (device-token registration).
+
+The original entry, kept for the record:
 
 **Design shows:** every sub-page header carries a bell in the trailing chrome
 position with a coral (`#FF6171`) count badge — e.g. `3` unread. Tapping it
 presumably opens a notification list.
 
-**We have:** nothing real.
+**We had:** nothing real.
 
 - `home_page.dart` renders a bell (`Key('home-bell')`) that shows a
   "coming soon" snackbar. **It predates this work and shows no count.**

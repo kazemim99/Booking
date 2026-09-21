@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import '../../../notifications/presentation/inbox_bell.dart';
+import '../../../notifications/presentation/inbox_cubit.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
@@ -40,8 +42,13 @@ class HomePage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return BlocProvider<HomeCubit>(
-      create: (_) => getIt<HomeCubit>()..load(),
+    return MultiBlocProvider(
+      providers: [
+        BlocProvider<HomeCubit>(create: (_) => getIt<HomeCubit>()..load()),
+        // .value, not create: the inbox cubit is an app-wide singleton shared with the inbox page, so the badge
+        // and the list agree. Closing it when Home leaves the tree would break the page that is opened next.
+        BlocProvider<InboxCubit>.value(value: getIt<InboxCubit>()),
+      ],
       child: const HomeView(),
     );
   }
@@ -169,16 +176,9 @@ class HomeView extends StatelessWidget {
     );
   }
 
-  /// Chrome actions. The bell is a placeholder until notifications ship —
-  /// see FUNCTIONAL_GAPS.md; it must not pretend to have unread counts.
-  List<Widget> _actions(BuildContext context) => [
-        IconButton(
-          key: const Key('home-bell'),
-          tooltip: AppStrings.homeCreateTitle,
-          icon: const Icon(Icons.notifications_none, color: Colors.white),
-          onPressed: () => AppSnackbar.info(context, AppStrings.comingSoon),
-        ),
-      ];
+  /// Chrome actions. The bell was a placeholder ("coming soon", and deliberately no count) until the inbox
+  /// existed; it now shows the server's unread count and opens the list.
+  List<Widget> _actions(BuildContext context) => const [InboxBell()];
 
   // ==================== zone mapping ====================
 
