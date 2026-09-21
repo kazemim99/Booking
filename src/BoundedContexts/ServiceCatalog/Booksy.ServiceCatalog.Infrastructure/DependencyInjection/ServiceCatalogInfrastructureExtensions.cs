@@ -309,6 +309,11 @@ namespace Booksy.ServiceCatalog.Infrastructure.DependencyInjection
             services.AddScoped<BackgroundJobs.ProcessNotificationOutboxJob>();
             services.AddHostedService<BackgroundJobs.NotificationOutboxService>();
 
+            // The one notification nothing in the business causes: it is caused by the morning arriving, so
+            // a job goes looking for it instead of a handler raising it.
+            services.AddScoped<BackgroundJobs.DailyScheduleDigestJob>();
+            services.AddHostedService<BackgroundJobs.DailyScheduleDigestService>();
+
             // Push: the registry is the address book, the gateway is the boundary with Firebase. The gateway
             // is a singleton because FirebaseApp is process-wide and refuses to be created twice.
             services.AddScoped<Persistence.Notifications.IDeviceTokenRegistry,

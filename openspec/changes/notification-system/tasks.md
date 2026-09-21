@@ -102,10 +102,11 @@ the structural work — each is a row's timing, not a shape.
 - [ ] 7.4 Remove each superseded notification event handler only after its outbox coverage is in place and
       tested, so no notification has a window with neither. FOLLOW-UPS #66 (dispatch ordering) stays open as
       its own change.
-- [ ] 7.5 Daily provider digest — DECIDED 2026-09-20: yes, 08:00 salon-local, push + in-app, no SMS.
-      One scheduled intent per provider per day; skip the send when the day has no bookings rather than
+- [x] 7.5 Daily provider digest — DECIDED 2026-09-20: yes, 08:00 salon-local, push + in-app, no SMS.
+      One intent per provider per day; the send is skipped when the day has no bookings rather than
       sending "you have 0 appointments". Salon-local means the provider's wall-clock (FOLLOW-UPS #63), not
-      UTC 08:00.
+      UTC 08:00 — and since no provider timezone exists anywhere in this system, that is 08:00 in the one
+      frame bookings already live in. `DailyScheduleDigestJob` + `DailyScheduleDigestService`, 9 tests.
 - [ ] 7.6 Review request — DECIDED 2026-09-20: 2 hours after completion, plus ONE reminder 3 days later
       only if no review was left by then. Two scheduled intents; the 3-day one is withdrawn as soon as a
       review arrives, so it must be filed under a subject the review flow can withdraw by. Never more than
@@ -136,9 +137,10 @@ the structural work — each is a row's timing, not a shape.
 
 - [ ] 7.9 Emitter audit follow-through. 18 catalogued codes currently have no raise site. They are NOT one
       problem and must not be pruned as a batch:
-      * **Wiring pending, flow exists** — PaymentFailed (blocked on 7.8), DailyScheduleDigest (7.5),
-        StaffAdded, StaffRemoved, PayoutFailed, PayoutOnHold, InvoiceGenerated,
-        ProviderVerificationChanged, ProviderActivated, ProviderDeactivated. Ordinary remaining work.
+      * **Wiring pending, flow exists** — PaymentFailed (blocked on 7.8),
+        StaffAdded, StaffRemoved, PayoutFailed, PayoutOnHold, InvoiceGenerated.
+        Ordinary remaining work. DailyScheduleDigest (7.5) and ProviderActivated (7.3) are now wired;
+        ProviderVerificationChanged and ProviderDeactivated moved to 7.10, which is a different problem.
       * **Sent today, but NOT through the outbox** — PhoneVerification (the OTP SMS, sent directly from a
         UserManagement command), Welcome, PasswordReset, SecurityAlert. These reach people already; the
         question is whether to route them through the outbox at all, which is a separate decision from
@@ -531,3 +533,25 @@ test-first.
   endpoint, so two more catalogued codes are unreachable. Recorded as 7.10 rather than removed — unlike the
   join request, the surrounding feature exists and only the way to change it is missing.
 - 2026-09-21 610 integration tests pass; verify FAST PASS (10 steps, 74s).
+- 2026-09-21 7.5 daily digest, test-first. 9 integration tests written before the job existed — which in a
+  statically-typed language is the only "red" available, since the test cannot compile until the seam does.
+  Because all nine passed on the first run, and the log above already records that passing first time is
+  luck rather than proof, the job was MUTATED to check the tests discriminate: removing the morning window
+  and counting cancelled/requested bookings turned 4 of the 9 red, each for its own reason. Restored.
+  DESIGN CALL — this is the only notification nothing in the business causes, so it is a job rather than a
+  handler, and the count is taken AT SEND TIME rather than captured at raise time. That looks like a
+  violation of the raiser's "capture the parameters when it happened" rule and is not: for a digest the
+  thing that happens IS the count being taken. Raising on the day's first booking would tell a salon with
+  nine appointments that it has one.
+  "08:00 salon-local" has only one honest reading today: there is NO provider timezone anywhere in this
+  system, and booking times are salon wall-clock values in a single frame (FOLLOW-UPS #63). So the digest
+  fires at 08:00 in that same frame. If #63 is ever resolved with a real per-provider timezone, the job and
+  its tests are where the conversion belongs.
+  Two judgment calls worth flagging rather than burying:
+  * A day is SKIPPED, not announced late, after 12:00. A host restarting at lunchtime would otherwise tell a
+    salon about a schedule it has already worked through, and that reads as current.
+  * `Completed` counts toward the day, `Requested` does not. A request is not an appointment; counting it
+    would tell the salon it has work booked that it has not agreed to do.
+  De-duplication is per salon per DAY, via a derived key (SHA-256 of provider id + day number) — the outbox
+  key is a Guid, so the day has to be folded into it, or tomorrow's digest would be swallowed as a duplicate
+  of today's.
