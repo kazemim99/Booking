@@ -37,18 +37,19 @@ public class NotificationPreferencePersistenceTests : ServiceCatalogIntegrationT
     {
         var userId = UserId.From(Guid.NewGuid());
 
-        await SaveAsync(userId, NotificationType.All);
+        await SaveAsync(userId, NotificationPreferenceCategory.All);
 
-        (await ReloadAsync(userId))!.Preferences.EnabledTypes.Should().Be(NotificationType.All);
+        (await ReloadAsync(userId))!.Preferences.EnabledTypes.Should().Be(NotificationPreferenceCategory.All);
     }
 
     [Fact]
-    public async Task A_mask_holding_a_sequential_member_survives_a_round_trip()
+    public async Task A_multi_bit_mask_survives_a_round_trip()
     {
-        // The interesting case: the value whose rendering is misleading (see the DEFECT tests in
-        // NotificationTypeCharacterisationTests) still comes back as the same value.
+        // Before the section 8 split this test held All | ReviewRequest — the combination whose rendering
+        // dropped a category the user had enabled and invented one they had not. That value cannot be built
+        // any more: a preference category is a real bit, and the sequential members are not categories.
         var userId = UserId.From(Guid.NewGuid());
-        var mask = NotificationType.All | NotificationType.ReviewRequest;
+        var mask = NotificationPreferenceCategory.Promotions | NotificationPreferenceCategory.Newsletter;
 
         await SaveAsync(userId, mask);
 
@@ -56,13 +57,13 @@ public class NotificationPreferencePersistenceTests : ServiceCatalogIntegrationT
     }
 
     [Fact]
-    public async Task A_lone_sequential_member_survives_a_round_trip()
+    public async Task A_single_category_survives_a_round_trip()
     {
         var userId = UserId.From(Guid.NewGuid());
 
-        await SaveAsync(userId, NotificationType.PasswordReset);
+        await SaveAsync(userId, NotificationPreferenceCategory.SecurityAlert);
 
-        (await ReloadAsync(userId))!.Preferences.EnabledTypes.Should().Be(NotificationType.PasswordReset);
+        (await ReloadAsync(userId))!.Preferences.EnabledTypes.Should().Be(NotificationPreferenceCategory.SecurityAlert);
     }
 
     [Fact]
@@ -72,7 +73,7 @@ public class NotificationPreferencePersistenceTests : ServiceCatalogIntegrationT
         // on. If this ever becomes an integer, renumbering the enum starts rewriting what existing rows
         // mean, and section 8 needs a data migration after all.
         var userId = UserId.From(Guid.NewGuid());
-        await SaveAsync(userId, NotificationType.All);
+        await SaveAsync(userId, NotificationPreferenceCategory.All);
 
         var stored = await RawEnabledTypesAsync(userId);
 
@@ -93,7 +94,7 @@ public class NotificationPreferencePersistenceTests : ServiceCatalogIntegrationT
 
     // ── arrange ──
 
-    private async Task SaveAsync(UserId userId, NotificationType types)
+    private async Task SaveAsync(UserId userId, NotificationPreferenceCategory types)
     {
         using var scope = Factory.Services.CreateScope();
         var repo = scope.ServiceProvider.GetRequiredService<IUserNotificationPreferencesRepository>();

@@ -111,7 +111,7 @@ namespace Booksy.ServiceCatalog.Infrastructure.BackgroundJobs
 
             var command = new SendNotificationCommand(
                 RecipientId: row.RecipientId,
-                Type: NotificationEventCatalog.PreferenceCategoryFor(row.EventCode),
+                Type: NotificationEventCatalog.NotificationTypeFor(row.EventCode),
                 Channel: descriptor.Channels,
                 Subject: written.Subject,
                 Body: written.Body,

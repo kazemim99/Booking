@@ -19,7 +19,7 @@ public class NotificationSuppressionPolicyTests
     private static UserNotificationPreferences PreferencesWith(NotificationChannel enabledChannels)
     {
         var prefs = UserNotificationPreferences.CreateDefault(UserId.From(Guid.NewGuid()));
-        prefs.UpdatePreferences(NotificationPreference.Create(enabledChannels, NotificationType.All));
+        prefs.UpdatePreferences(NotificationPreference.Create(enabledChannels, NotificationPreferenceCategory.All));
         return prefs;
     }
 

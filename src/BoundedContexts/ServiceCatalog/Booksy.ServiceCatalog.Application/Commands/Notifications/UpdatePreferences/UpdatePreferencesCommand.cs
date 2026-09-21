@@ -12,7 +12,7 @@ namespace Booksy.ServiceCatalog.Application.Commands.Notifications.UpdatePrefere
     public sealed record UpdatePreferencesCommand(
         Guid UserId,
         NotificationChannel? EnabledChannels = null,
-        NotificationType? EnabledTypes = null,
+        NotificationPreferenceCategory? EnabledTypes = null,
         TimeOnly? QuietHoursStart = null,
         TimeOnly? QuietHoursEnd = null,
         string? PreferredLanguage = null,

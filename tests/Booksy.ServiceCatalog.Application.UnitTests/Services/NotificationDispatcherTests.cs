@@ -62,7 +62,7 @@ public class NotificationDispatcherTests
     private static UserNotificationPreferences PreferencesWith(NotificationChannel enabled)
     {
         var prefs = UserNotificationPreferences.CreateDefault(UserId.From(Guid.NewGuid()));
-        prefs.UpdatePreferences(NotificationPreference.Create(enabled, NotificationType.All));
+        prefs.UpdatePreferences(NotificationPreference.Create(enabled, NotificationPreferenceCategory.All));
         return prefs;
     }
 

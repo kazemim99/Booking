@@ -10,12 +10,13 @@ namespace Booksy.ServiceCatalog.Domain.Enums;
 /// why the values must stay stable across releases — a client that has shipped will keep sending back the
 /// name it was given.</para>
 ///
-/// <para><b>Deliberately not <c>[Flags]</c>.</b> <see cref="NotificationType"/> is declared with that
-/// attribute but its members from 16777216 up are sequential integers rather than distinct bits, so
-/// <c>HasFlag</c> reports false positives between them — <c>RefundIssued</c> "contains"
-/// <c>RefundProcessed</c>. This enum is a plain identity: exactly one value per notification, compared by
-/// equality and never masked. <see cref="NotificationType"/> keeps its narrower job, the coarse category a
-/// user toggles in their preferences.</para>
+/// <para><b>Deliberately not <c>[Flags]</c>.</b> This is a plain identity: exactly one value per
+/// notification, compared by equality and never masked. <see cref="NotificationType"/> used to carry that
+/// attribute while its members from 16777216 up were sequential integers rather than distinct bits — so
+/// <c>HasFlag</c> reported false positives between them and rendering a mask by name dropped categories a
+/// user had enabled. It has since lost the attribute and kept its narrower job, the coarse label a stored
+/// notification carries; the mask a user actually toggles is
+/// <see cref="NotificationPreferenceCategory"/>.</para>
 ///
 /// <para>Only codes the product actually sends belong here. Adding one without a catalogue entry fails the
 /// catalogue's self-validation test, and adding one with no emitter advertises a notification the backend

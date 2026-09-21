@@ -1,9 +1,25 @@
-﻿namespace Booksy.ServiceCatalog.Domain.Enums;
+namespace Booksy.ServiceCatalog.Domain.Enums;
 
 /// <summary>
-/// Types of notifications in the booking system
+/// What kind of notification a stored notification or template is. A discriminator: exactly one value per
+/// row, compared by equality.
 /// </summary>
-[Flags]
+/// <remarks>
+/// <para><b>Deliberately no longer <c>[Flags]</c>.</b> It never was one in fact — the members from 16777216
+/// up are consecutive integers, not distinct bits, so <c>HasFlag</c> reported nonsense between them
+/// (<c>RefundIssued</c> "contained" <c>RefundProcessed</c>) and <c>ToString()</c> decomposed a combination
+/// greedily, dropping names that were set and inventing ones that were not. The attribute was the lie; the
+/// values are fine for what this enum actually is.</para>
+///
+/// <para><b>Nothing here may be renamed or renumbered.</b> This is persisted as TEXT on both
+/// <c>Notifications.Type</c> and <c>NotificationTemplates.Type</c>, and the outbox sweep writes it on every
+/// notification it sends. A removed name is a row that can no longer be read.</para>
+///
+/// <para>The mask a recipient's preferences are stored as moved to
+/// <see cref="NotificationPreferenceCategory"/>, which is a real flags enum. Which notification something is
+/// — its identity — is <see cref="NotificationEventCode"/>. This type is neither of those: it is the coarse
+/// label a row carries.</para>
+/// </remarks>
 public enum NotificationType
 {
     None = 0,
@@ -50,15 +66,11 @@ public enum NotificationType
     BusinessMetrics = 4194304,
     LowInventory = 8388608,
 
-    All = NewBooking | BookingCancelled | BookingRescheduled | BookingReminder | BookingConfirmation |
-          PaymentReceived | PaymentFailed | PaymentRefunded |
-          ScheduleChanged | TimeSlotAvailable | ScheduleConflict |
-          NewReview | ReviewResponse |
-          SystemMaintenance | AccountUpdate | SecurityAlert |
-          Promotions | Newsletter |
-          StaffAssigned | StaffUnavailable |
-          ClientNoShow | ClientLateArrival |
-          BusinessMetrics | LowInventory,
+    // `All` used to sit here. It was a mask over the members above, which is a preferences idea, not a
+    // discriminator one — no notification or template row has ever carried it. It lives on as
+    // NotificationPreferenceCategory.All, with the same name and the same value, so stored preference text
+    // reading "All" parses exactly as before.
+
     ReviewRequest = 16777216,
     RefundProcessed = 16777217,
     BookingCancellation = 16777218,

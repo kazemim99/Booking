@@ -105,7 +105,7 @@ namespace Booksy.ServiceCatalog.Domain.Aggregates.UserNotificationPreferencesAgg
         /// <summary>
         /// Enable specific notification types
         /// </summary>
-        public void EnableTypes(NotificationType types)
+        public void EnableTypes(NotificationPreferenceCategory types)
         {
             var newPreferences = NotificationPreference.Create(
                 Preferences.EnabledChannels,
@@ -122,7 +122,7 @@ namespace Booksy.ServiceCatalog.Domain.Aggregates.UserNotificationPreferencesAgg
         /// <summary>
         /// Disable specific notification types
         /// </summary>
-        public void DisableTypes(NotificationType types)
+        public void DisableTypes(NotificationPreferenceCategory types)
         {
             var newPreferences = NotificationPreference.Create(
                 Preferences.EnabledChannels,
@@ -237,7 +237,7 @@ namespace Booksy.ServiceCatalog.Domain.Aggregates.UserNotificationPreferencesAgg
         /// <summary>
         /// Check if a notification should be sent based on preferences
         /// </summary>
-        public bool ShouldSendNotification(NotificationChannel channel, NotificationType type, DateTime time)
+        public bool ShouldSendNotification(NotificationChannel channel, NotificationPreferenceCategory type, DateTime time)
         {
             // Check if channel is enabled
             if (!Preferences.IsChannelEnabled(channel))

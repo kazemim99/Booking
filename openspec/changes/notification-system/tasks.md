@@ -174,16 +174,25 @@ the structural work — each is a row's timing, not a shape.
 - [x] 8.1 Characterisation tests pinning today's preference behaviour, including the known false positives.
       13 unit + 5 integration. They FOUND a live user-visible defect and bounded the blast radius — see the
       log, and read 8.3 again before starting it.
-- [ ] 8.2 Split the type: `NotificationEventCode` (identity, already in 2.1) vs a small, genuinely-flags
-      preference category enum. Remove the sequential members from the flags type.
-- [ ] 8.3 Data migration rewriting persisted preference masks; tested in both directions on a seeded database.
+- [x] 8.2 Split the type — but NOT the way this line said. The sequential members were NOT removed, and
+      removing them would have been a serious mistake: see the log. `NotificationPreferenceCategory` is the
+      new genuinely-flags enum (24 distinct bits, names and values copied exactly from the bit-valued half,
+      so no stored preference needed rewriting). `NotificationType` kept every name and number and simply
+      stopped claiming to be `[Flags]`. `PreferenceCategoryFor` renamed to `NotificationTypeFor`, which is
+      what it always did.
+- [x] 8.3 NOT NEEDED, and now proven rather than predicted: no name or value changed, so nothing stored
+      changed meaning. `NotificationPreferencePersistenceTests` passes unmodified except for the enum it
+      names. One residual risk is recorded in the log.
+      Original wording, kept for the record: data migration rewriting persisted preference masks.
       **LIKELY UNNECESSARY — verify before building.** 8.1 measured it: `EnabledTypes` is persisted with
       `HasConversion<string>()`, i.e. BY NAME ("All", "BookingReminder, BookingConfirmation,
       PaymentReceived"), not as a bitmask integer. Renumbering therefore cannot silently re-label existing
       rows. `NotificationPreferencePersistenceTests.The_column_holds_names_not_a_number` is the guard; if it
       ever goes red, this task comes back. What DOES need care is any name that 8.2 removes, because a
       stored string containing it would then fail to parse.
-- [ ] 8.4 Replace every `HasFlag`/bitwise membership test on the old type with exact membership.
+- [x] 8.4 Done by construction. Every remaining `HasFlag` in `src/` operates on `NotificationChannel`,
+      `NotificationDays` or `NotificationPreferenceCategory` — all genuine flags enums. None is on
+      `NotificationType`; suppressibility was already exact set membership and stays so.
 
 ## 10. Test coverage gaps (found 2026-09-20 by mapping spec scenarios to tests)
 
@@ -648,3 +657,31 @@ test-first.
   Note for 8.2: the 17 sequential members cannot simply be given distinct bits — 24 existing bit values plus
   17 more exceeds an int's 32. That is the arithmetic reason 8.2's split is the only available repair: those
   17 are notification IDENTITIES, which now live in NotificationEventCode, not preference categories.
+- 2026-09-21 Section 8 done — and the plan in 8.2 was WRONG, which the user's go-ahead was given under.
+  I asked whether I could remove the 17 sequential members, framing the risk as "probably zero, I will count
+  the affected preference rows first". The user said yes. Counting rows was not the point: `Notification.Type`
+  AND `NotificationTemplate.Type` are ALSO persisted with `HasConversion<string>()`, the outbox sweep writes
+  that type on every notification it sends (15 of the catalogue's mappings return a sequential member), and
+  the template seeder seeds 16 of the 17. Removing those names would have broken reading rows the system
+  writes right now, plus every template and all notification history. Said so and took the other route.
+  WHAT WAS ACTUALLY WRONG was never the members' existence — it was one enum doing two incompatible jobs:
+  a persisted discriminator (wants one value per notification, grows forever) and a preference mask (wants
+  distinct bits, capped at 32). Growing the first past 24 bits under a `[Flags]` attribute is the whole
+  defect. So the two jobs were separated instead:
+  * `NotificationPreferenceCategory` — new, real flags, 24 distinct bits. Names AND values copied exactly,
+    which is what makes the split free: preferences are text, so every stored row parses to the set it
+    always meant. `All` now genuinely contains everything, because nothing sits outside the bits any more.
+  * `NotificationType` — every name and number untouched, `[Flags]` removed, `All` moved out (it was a mask
+    idea; no notification or template row ever carried it).
+  * `PreferenceCategoryFor` → `NotificationTypeFor`. The old name was the conflation made official: its
+    result goes to `Notifications.Type` and was never consulted about anyone's preferences.
+  NOTE, measured: removing `[Flags]` does NOT stop `HasFlag` working — that is bit arithmetic and ignores
+  the attribute. `RefundIssued.HasFlag(RefundProcessed)` is still true, and a test says so plainly rather
+  than implying a fix. What the attribute removal DOES fix is `ToString()`, which stops decomposing greedily
+  — and that was the live, user-visible defect (the settings screen dropping a category the user had enabled
+  while naming one they had not).
+  RESIDUAL RISK, stated not hidden: a preference row whose `EnabledTypes` text holds one of the 17 names
+  would now fail to parse. Only the `types/enable` endpoint could ever have written one, and no client calls
+  it — checked across booksy-frontend, booksy-admin and both Flutter apps, zero references. Production
+  cannot be queried from here (ssh is a protected operation), so this is argued, not counted.
+  639 integration + 598 domain tests green; FAST green.

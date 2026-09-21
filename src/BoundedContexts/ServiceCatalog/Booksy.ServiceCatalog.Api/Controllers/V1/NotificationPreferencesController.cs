@@ -196,7 +196,7 @@ public class PreferencesController : ControllerBase
 // Request DTOs
 public record UpdatePreferencesRequest(
     NotificationChannel? EnabledChannels = null,
-    NotificationType? EnabledTypes = null,
+    NotificationPreferenceCategory? EnabledTypes = null,
     TimeOnly? QuietHoursStart = null,
     TimeOnly? QuietHoursEnd = null,
     string? PreferredLanguage = null,
@@ -207,7 +207,7 @@ public record UpdatePreferencesRequest(
 
 public record EnableChannelsRequest(NotificationChannel Channels);
 
-public record EnableTypesRequest(NotificationType Types);
+public record EnableTypesRequest(NotificationPreferenceCategory Types);
 
 public record QuietHoursRequest(TimeOnly? Start, TimeOnly? End);
 

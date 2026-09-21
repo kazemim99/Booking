@@ -26,7 +26,7 @@ public class NotificationSuppressionByEventCodeTests
             UserId.From(Guid.NewGuid()),
             NotificationPreference.Create(
                 NotificationChannel.PushNotification | NotificationChannel.InApp,
-                NotificationType.All));
+                NotificationPreferenceCategory.All));
 
     // ── The catalogue decides, when the code is known ──
 
@@ -156,7 +156,7 @@ public class NotificationSuppressionByEventCodeTests
 
         foreach (var code in NotificationEventCatalog.AllCodes)
         {
-            var type = NotificationEventCatalog.PreferenceCategoryFor(code);
+            var type = NotificationEventCatalog.NotificationTypeFor(code);
             if (!NotificationSuppressionPolicy.NonSuppressible.Contains(type))
                 continue;
 

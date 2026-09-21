@@ -12,7 +12,7 @@ namespace Booksy.ServiceCatalog.Domain.ValueObjects
     public sealed class NotificationPreference : ValueObject
     {
         public NotificationChannel EnabledChannels { get; }
-        public NotificationType EnabledTypes { get; }
+        public NotificationPreferenceCategory EnabledTypes { get; }
         public TimeOnly? QuietHoursStart { get; }
         public TimeOnly? QuietHoursEnd { get; }
         public string? PreferredLanguage { get; }
@@ -21,7 +21,7 @@ namespace Booksy.ServiceCatalog.Domain.ValueObjects
 
         private NotificationPreference(
             NotificationChannel enabledChannels,
-            NotificationType enabledTypes,
+            NotificationPreferenceCategory enabledTypes,
             TimeOnly? quietHoursStart,
             TimeOnly? quietHoursEnd,
             string? preferredLanguage,
@@ -48,7 +48,7 @@ namespace Booksy.ServiceCatalog.Domain.ValueObjects
 
         public static NotificationPreference Create(
             NotificationChannel enabledChannels,
-            NotificationType enabledTypes,
+            NotificationPreferenceCategory enabledTypes,
             TimeOnly? quietHoursStart = null,
             TimeOnly? quietHoursEnd = null,
             string? preferredLanguage = null,
@@ -70,7 +70,7 @@ namespace Booksy.ServiceCatalog.Domain.ValueObjects
         /// </summary>
         public static NotificationPreference Default => new(
             NotificationChannel.Email | NotificationChannel.SMS | NotificationChannel.InApp,
-            NotificationType.All,
+            NotificationPreferenceCategory.All,
             null,
             null,
             "en",
@@ -82,7 +82,7 @@ namespace Booksy.ServiceCatalog.Domain.ValueObjects
         /// </summary>
         public static NotificationPreference Minimal => new(
             NotificationChannel.Email | NotificationChannel.SMS,
-            NotificationType.BookingConfirmation | NotificationType.BookingReminder | NotificationType.PaymentReceived,
+            NotificationPreferenceCategory.BookingConfirmation | NotificationPreferenceCategory.BookingReminder | NotificationPreferenceCategory.PaymentReceived,
             null,
             null,
             "en",
@@ -94,7 +94,7 @@ namespace Booksy.ServiceCatalog.Domain.ValueObjects
             return EnabledChannels.HasFlag(channel);
         }
 
-        public bool IsTypeEnabled(NotificationType type)
+        public bool IsTypeEnabled(NotificationPreferenceCategory type)
         {
             return EnabledTypes.HasFlag(type);
         }

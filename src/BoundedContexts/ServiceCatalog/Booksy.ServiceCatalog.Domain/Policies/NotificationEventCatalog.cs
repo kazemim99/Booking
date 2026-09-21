@@ -241,20 +241,24 @@ namespace Booksy.ServiceCatalog.Domain.Policies
         public static bool IsSuppressible(NotificationEventCode code) => Describe(code).IsSuppressible;
 
         /// <summary>
-        /// The coarse category this notification is toggled under in a recipient's preferences.
+        /// The coarse label a notification carries once it is stored.
         /// </summary>
         /// <remarks>
         /// <para><see cref="NotificationEventCode"/> is the identity — one value per notification.
-        /// <see cref="NotificationType"/> is the far blunter thing a person actually sees in a settings
-        /// screen ("booking reminders", "payments"), and it is what the existing preference rows, templates
-        /// and suppression policy are keyed by. Several codes therefore map to one type, which is correct:
-        /// somebody switching off booking reminders means both the 24-hour and the 2-hour one.</para>
+        /// <see cref="NotificationType"/> is the blunter label that goes onto the row, and it is what
+        /// templates and the suppression policy are keyed by. Several codes map to one type, which is
+        /// correct: the 24-hour and 2-hour reminders are both booking reminders.</para>
+        ///
+        /// <para><b>Renamed from <c>PreferenceCategoryFor</c> 2026-09-21.</b> The old name described a job
+        /// it was not doing: its result is written to <c>Notifications.Type</c> by the outbox sweep, and
+        /// nothing ever consulted it to decide whether a recipient wanted the notification. What a recipient
+        /// toggles is now <see cref="NotificationPreferenceCategory"/>, a separate and genuinely-flags enum.
+        /// Conflating the two is what produced the defect this section exists to repair.</para>
         ///
         /// <para>Mapped here rather than stored on the descriptor because it is a relationship to another
-        /// type, not a property of the notification — and because it is the part expected to change when
-        /// <see cref="NotificationType"/> is repaired.</para>
+        /// type, not a property of the notification.</para>
         /// </remarks>
-        public static NotificationType PreferenceCategoryFor(NotificationEventCode code) => code switch
+        public static NotificationType NotificationTypeFor(NotificationEventCode code) => code switch
         {
             NotificationEventCode.BookingRequested => NotificationType.NewBooking,
             NotificationEventCode.BookingConfirmed => NotificationType.BookingConfirmation,
@@ -303,8 +307,8 @@ namespace Booksy.ServiceCatalog.Domain.Policies
             NotificationEventCode.ProviderDeactivated => NotificationType.AccountDeactivated,
 
             _ => throw new KeyNotFoundException(
-                $"Notification '{code}' has no preference category. Add one to " +
-                $"{nameof(PreferenceCategoryFor)} so a recipient can toggle it."),
+                $"Notification '{code}' has no stored type. Add one to " +
+                $"{nameof(NotificationTypeFor)} before it can be sent."),
         };
     }
 }
