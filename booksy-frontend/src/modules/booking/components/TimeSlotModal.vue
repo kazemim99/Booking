@@ -122,6 +122,7 @@
 import { ref, computed, watch, nextTick } from 'vue'
 import VuePersianDatetimePicker from 'vue3-persian-datetime-picker'
 import { availabilityService } from '@/modules/booking/api/availability.service'
+import { bookingWindowMaxDate } from '../utils/booking-window'
 
 interface Provider {
   id: string
@@ -167,11 +168,13 @@ const minDate = computed(() => {
   return new Date().toISOString().split('T')[0]
 })
 
-const maxDate = computed(() => {
-  const maxDate = new Date()
-  maxDate.setMonth(maxDate.getMonth() + 3)
-  return maxDate.toISOString().split('T')[0]
-})
+// A customer books at most a week out; the server refuses later dates, so the picker must not offer them.
+const maxDate = computed(() =>
+  bookingWindowMaxDate(
+    new Date(),
+    (props.provider as { maxAdvanceBookingDays?: number })?.maxAdvanceBookingDays,
+  ),
+)
 
 // Check if mobile
 const isMobile = computed(() => {

@@ -52,8 +52,8 @@ class _FakeSearchRepository implements SearchRepository {
     return response;
   }
 
-  /// Not exercised by these tests — the map cubit has its own suite. Present so the fake still
-  /// satisfies the SearchRepository contract.
+  bool byLocationCalled = false;
+
   @override
   Future<Either<Failure, List<ProviderSummary>>> providersByLocation({
     required double latitude,
@@ -62,8 +62,13 @@ class _FakeSearchRepository implements SearchRepository {
     String? serviceCategory,
     int pageNumber = 1,
     int pageSize = 50,
-  }) async =>
-      const Right(<ProviderSummary>[]);
+  }) async {
+    byLocationCalled = true;
+    capturedLat = latitude;
+    capturedLng = longitude;
+    capturedRadius = radiusKm;
+    return response;
+  }
 }
 
 void main() {
@@ -84,11 +89,14 @@ void main() {
 
       expect(cubit.state.status, NearbyStatus.loaded);
       expect(cubit.state.providers, hasLength(2));
-      // Confirms the confirmed geo contract is used (distance sort + radius).
+      // /Providers/search drops radiusKm (it has no such parameter) and returns no distance, so the "nearest"
+      // list showed the closest salon in the country and could not say how far it was (QA 2026-09-22). The
+      // by-location endpoint applies the radius server-side and returns distanceKm.
+      expect(repo.byLocationCalled, isTrue);
       expect(repo.capturedLat, 35.7);
       expect(repo.capturedLng, 51.4);
       expect(repo.capturedRadius, 8);
-      expect(repo.capturedSortBy, 'distance');
+      expect(cubit.state.providers.first.distance, 0.5, reason: 'the card shows how far away it is');
     });
 
     test('granted location with no results yields empty', () async {
@@ -143,5 +151,37 @@ void main() {
       expect(cubit.state.status, NearbyStatus.error);
       expect(cubit.state.errorMessage, 'offline');
     });
+  
+    test('a fix too coarse to be a street is not called "nearest"', () async {
+      // A VPN or IP fix puts the customer in another city — measured in پارس‌آباد with a Dubai exit. The map
+      // cubit already refuses these; the nearby list used to search from them anyway.
+      final repo = _FakeSearchRepository(Right([_provider('1', distance: 0.5)]));
+      final cubit = NearbyProvidersCubit(
+        locationService: const _FakeLocationService(
+          LocationSuccess(35.7, 51.4, accuracyMeters: 40000),
+        ),
+        repository: repo,
+      );
+
+      await cubit.load();
+
+      expect(cubit.state.status, NearbyStatus.imprecise);
+      expect(repo.byLocationCalled, isFalse, reason: 'nothing is asked of the server for a guess this coarse');
+    });
+
+    test('a normal GPS fix is trusted', () async {
+      final repo = _FakeSearchRepository(Right([_provider('1', distance: 0.5)]));
+      final cubit = NearbyProvidersCubit(
+        locationService: const _FakeLocationService(
+          LocationSuccess(35.7, 51.4, accuracyMeters: 25),
+        ),
+        repository: repo,
+      );
+
+      await cubit.load();
+
+      expect(cubit.state.status, NearbyStatus.loaded);
+    });
+
   });
 }

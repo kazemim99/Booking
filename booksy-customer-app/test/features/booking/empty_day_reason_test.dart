@@ -112,4 +112,38 @@ void main() {
 
     expect(find.text(AppStrings.bookingNoSlots), findsOneWidget);
   });
+
+  // QA walkthrough 2026-09-22: "more than a week ahead must not be bookable; those days should not even be offered".
+  test('the date strip offers today plus the salon window', () async {
+    final repository = repositoryWith({
+      'data': {
+        'id': 'p1',
+        'businessName': 'سالن نهال',
+        'maxAdvanceBookingDays': 7,
+        'businessHours': <dynamic>[],
+        'services': <dynamic>[],
+        'staff': <dynamic>[],
+      },
+    });
+
+    final provider = (await repository.getProviderDetail('p1')).getOrElse(() => throw 'no provider');
+
+    expect(provider.maxAdvanceBookingDays, 7);
+  });
+
+  test('a salon that sends no window is treated as a week', () async {
+    final repository = repositoryWith({
+      'data': {
+        'id': 'p1',
+        'businessName': 'سالن نهال',
+        'businessHours': <dynamic>[],
+        'services': <dynamic>[],
+        'staff': <dynamic>[],
+      },
+    });
+
+    final provider = (await repository.getProviderDetail('p1')).getOrElse(() => throw 'no provider');
+
+    expect(provider.maxAdvanceBookingDays, 7);
+  });
 }

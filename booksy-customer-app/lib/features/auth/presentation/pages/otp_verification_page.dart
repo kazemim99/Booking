@@ -7,6 +7,7 @@ import 'package:go_router/go_router.dart';
 import '../../../../config/routes/app_router.dart';
 import '../../../../config/theme/app_tokens.dart';
 import '../../../../core/constants/app_strings.dart';
+import '../../../../core/utils/person_name.dart';
 import '../../../../core/widgets/widgets.dart';
 import '../bloc/auth_bloc.dart';
 import '../bloc/auth_event.dart';
@@ -110,6 +111,13 @@ class _OtpVerificationPageState extends State<OtpVerificationPage> {
               // `go` rather than `push`: the auth pages must not stay on the stack behind the destination, or
               // Android back would walk the signed-in customer back into the OTP screen.
               final target = widget.redirect;
+              // Sign-up is a phone number only, so a brand-new account has no name — the salon would see
+              // «مشتری 9384444636» on the booking. Ask once, here, and carry on to wherever they were going.
+              final user = state.session.user;
+              if (isPlaceholderName(user.firstName, user.lastName)) {
+                context.go(Routes.completeNameThen(target));
+                return;
+              }
               context.go(
                 target == null || target.isEmpty
                     ? Routes.home

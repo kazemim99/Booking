@@ -21,6 +21,7 @@ import '../../features/bookings/presentation/pages/appointments_page.dart';
 import '../../features/home/presentation/pages/home_page.dart';
 import '../../features/notifications/presentation/inbox_cubit.dart';
 import '../../features/notifications/presentation/inbox_page.dart';
+import '../../features/profile/presentation/pages/complete_name_page.dart';
 import '../../features/profile/presentation/pages/profile_tab_page.dart';
 import '../../features/reviews/presentation/pages/my_reviews_page.dart';
 import '../../features/search/presentation/pages/explore_page.dart';
@@ -48,6 +49,13 @@ class Routes {
 
   /// The signed-in customer's own reviews, in every moderation state.
   static const String myReviews = '/profile/reviews';
+
+  /// Asking a new customer for their name, once, right after sign-up.
+  static const String completeName = '/profile/name';
+
+  static String completeNameThen(String? redirect) => redirect == null || redirect.isEmpty
+      ? completeName
+      : '$completeName?redirect=${Uri.encodeComponent(redirect)}';
 
   /// Deposit checkout for a booking. Focused (outside the tab shell) and auth-required.
   static const String checkout = '/checkout';
@@ -116,6 +124,7 @@ class AppRouter {
     if (location.startsWith(Routes.notifications)) return true;
     // A guest has no reviews of their own; the server answers 401.
     if (location.startsWith(Routes.myReviews)) return true;
+    if (location.startsWith(Routes.completeName)) return true;
     if (location.contains('/book/confirm')) return true;
     // Paying for a booking is inherently a signed-in action; return-to-intent brings the customer back here.
     if (location.startsWith('${Routes.checkout}/')) return true;
@@ -261,6 +270,12 @@ class AppRouter {
                   GoRoute(
                     path: 'reviews',
                     builder: (context, state) => const MyReviewsPage(),
+                  ),
+                  GoRoute(
+                    path: 'name',
+                    builder: (context, state) => CompleteNamePage(
+                      redirect: state.uri.queryParameters['redirect'],
+                    ),
                   ),
                 ],
               ),

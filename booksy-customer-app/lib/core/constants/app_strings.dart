@@ -244,6 +244,13 @@ class AppStrings {
   static const String breakTimeLabel = 'استراحت';
   static const String mapLocationImpreciseNotice =
       'موقعیت دقیق شما به دست نیامد (اگر VPN روشن است، موقعیت کشور دیگری خوانده می‌شود). نام شهر یا محله را جستجو کنید.';
+  // Asking a new customer for their name (QA walkthrough 2026-09-22): sign-up is a phone number only, so the
+  // account starts as «مشتری <digits>» and the salon sees that on the booking.
+  static const String completeNameTitle = 'نام شما';
+  static const String completeNameSubtitle =
+      'برای اینکه سالن بداند نوبت برای چه کسی است، نام و نام خانوادگی خود را وارد کنید.';
+  static const String completeNameSkip = 'بعداً';
+  static const String firstNameRequired = 'لطفاً نام خود را وارد کنید';
   static const String reviewsTitle = 'نظرها';
   static const String reviewsEmpty = 'هنوز نظری ثبت نشده است';
   static const String reviewAnonymous = 'مشتری';

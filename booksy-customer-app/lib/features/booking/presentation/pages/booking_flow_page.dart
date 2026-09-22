@@ -229,6 +229,8 @@ class _TimeStep extends StatelessWidget {
       onSlotSelected: (slot) => bloc.add(BookingSlotSelected(slot)),
       onRetry: () => bloc.add(BookingDateSelected(selected)),
       emptyReason: state.slotsReason,
+      // Today plus the salon's window: the server refuses later days, so offering them is a dead end.
+      daysToShow: (state.provider?.maxAdvanceBookingDays ?? 7) + 1,
     );
   }
 }

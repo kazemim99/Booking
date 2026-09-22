@@ -70,23 +70,44 @@ final _session = AuthSession(
   user: User(
     id: 'user-1',
     phoneNumber: '+989121234567',
+    // A returning customer HAS a name. Someone signing up for the first time does not, and since
+    // 2026-09-22 they are asked for one on the way through — covered by its own test below.
+    firstName: 'سارا',
+    lastName: 'احمدی',
+    createdAt: DateTime(2026, 1, 1),
+  ),
+  expiresIn: 3600,
+);
+
+/// The same session without a name — what a brand-new account really looks like.
+final _namelessSession = AuthSession(
+  accessToken: 'token',
+  refreshToken: 'refresh',
+  user: User(
+    id: 'user-2',
+    phoneNumber: '+989384444636',
+    firstName: 'مشتری',
+    lastName: '9384444636',
     createdAt: DateTime(2026, 1, 1),
   ),
   expiresIn: 3600,
 );
 
 class _FakeAuthBloc extends AuthBloc {
-  _FakeAuthBloc._(AuthRepository repo)
+  final AuthSession _emitted;
+
+  _FakeAuthBloc._(AuthRepository repo, this._emitted)
       : super(
           SendVerificationCodeUseCase(repo),
           CompleteAuthenticationUseCase(repo),
           repo,
         );
 
-  factory _FakeAuthBloc() => _FakeAuthBloc._(_InertAuthRepository());
+  factory _FakeAuthBloc({AuthSession? session}) =>
+      _FakeAuthBloc._(_InertAuthRepository(), session ?? _session);
 
   /// Drives the exact transition the real flow produces on a correct OTP.
-  void emitAuthenticated() => emit(Authenticated(_session));
+  void emitAuthenticated() => emit(Authenticated(_emitted));
 }
 
 /// `pumpAndSettle` cannot be used on this screen: the resend countdown is a `Timer.periodic`, so the frame
@@ -134,6 +155,14 @@ void main() {
             path: '/home',
             builder: (context, state) =>
                 const Scaffold(body: Center(child: Text('HOME'))),
+          ),
+          GoRoute(
+            path: '/profile/name',
+            builder: (context, state) => Scaffold(
+              body: Center(
+                child: Text('NAME:${state.uri.queryParameters['redirect'] ?? ''}'),
+              ),
+            ),
           ),
         ],
       );
@@ -237,5 +266,26 @@ void main() {
 
     expect(find.text('HOME'), findsOneWidget,
         reason: 'signing in from a bare /otp should still move the customer somewhere');
+  });
+
+  testWidgets('a customer with no name yet is asked for one, still carrying the booking',
+      (tester) async {
+    // Sign-up is a phone number only, so the account starts as «مشتری <digits>» and the salon would see that
+    // on the booking (QA walkthrough 2026-09-22). The name step keeps the return-to-intent target.
+    authBloc = _FakeAuthBloc(session: _namelessSession);
+    final router = buildRouter();
+    await pumpTo(tester, router);
+
+    await tester.tap(find.byKey(const Key('confirm')));
+    await settle(tester);
+    authBloc.emitAuthenticated();
+    await settle(tester);
+
+    expect(find.textContaining('NAME:'), findsOneWidget);
+    expect(
+      find.text('NAME:/book/provider-1'),
+      findsOneWidget,
+      reason: 'the booking is resumed once the name is saved or skipped',
+    );
   });
 }

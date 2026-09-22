@@ -1,3 +1,4 @@
+using Booksy.ServiceCatalog.Domain.Policies;
 ﻿// ========================================
 // Booksy.ServiceCatalog.Application/Commands/Booking/CreateBooking/CreateBookingCommandHandler.cs
 // ========================================
@@ -164,7 +165,10 @@ namespace Booksy.ServiceCatalog.Application.Commands.Booking.CreateBooking
                 throw new ConflictException($"Booking validation failed: {string.Join(", ", validationResult.Errors)}");
 
             // Check for booking conflicts with existing appointments
-            var bookingEndTime = request.StartTime.AddMinutes(totalDuration.Value + 15); // Add 15-min buffer
+            // The same gap the offered slots use (zero today), so the grid and this check cannot disagree: a slot
+            // the customer was offered must not then be refused as a conflict.
+            var bookingEndTime = request.StartTime.AddMinutes(
+                totalDuration.Value + Services.AvailabilityService.BufferTimeMinutes);
             var conflictingBookings = await _bookingReadRepository.GetConflictingBookingsAsync(
                 resourceId,
                 request.StartTime,
@@ -188,6 +192,21 @@ namespace Booksy.ServiceCatalog.Application.Commands.Booking.CreateBooking
             var isProviderCreated =
                 provider.OwnerId == callerId
                 || (resource.PersonId is not null && resource.PersonId.Equals(callerId));
+
+            // How far ahead the PUBLIC may book (QA walkthrough 2026-09-22). Checked here, not in the shared
+            // availability validation, because it applies only to a customer: a salon fills its own book as far
+            // ahead as it likes. The salon's stored policy still says 90 days, so the platform window caps it.
+            if (!isProviderCreated && BookingHorizonPolicy.IsBeyondWindow(
+                    request.StartTime,
+                    DateTime.UtcNow,
+                    service.MaxAdvanceBookingDays,
+                    provider.BookingPolicy?.MaxAdvanceBookingDays))
+            {
+                throw new DomainValidationException(
+                    nameof(request.StartTime),
+                    BookingHorizonPolicy.BeyondWindowMessage(
+                        service.MaxAdvanceBookingDays, provider.BookingPolicy?.MaxAdvanceBookingDays));
+            }
 
             // Create the booking
             var booking = isProviderCreated

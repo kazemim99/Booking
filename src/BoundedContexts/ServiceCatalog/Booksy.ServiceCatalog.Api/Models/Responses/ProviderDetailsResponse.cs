@@ -15,6 +15,9 @@ public class ProviderDetailsResponse
     public AddressResponse Address { get; set; } = new();
     public IEnumerable<BusinessHoursData>? BusinessHours { get; set; }
     public bool AllowOnlineBooking { get; set; }
+
+    /// <summary>The public booking window in days: a date picker offers today plus this many.</summary>
+    public int MaxAdvanceBookingDays { get; set; }
     public bool OffersMobileServices { get; set; }
     public string? LogoUrl { get; set; }
 

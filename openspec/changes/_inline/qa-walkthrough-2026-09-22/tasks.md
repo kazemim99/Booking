@@ -77,17 +77,19 @@ _Root causes land here as they are confirmed, with evidence._
 - [x] 2.2 [10:59] Dates read like "۳ هفته ۴ ساعت ۵ جمعه"; use "سه‌شنبه ۲۸ مهر، ساعت ۱۴:۰۰".
 
 ### Booking flow (B / R)
+- [x] 3.5 B (found by 3.2's test) A booking held against the SALON was invisible to the slot list, which kept
+      offering that time while creating it answered 409.
 - [x] 3.0 B (found while tracing 3.2) The customer app shifted every booked time by the device's UTC offset.
 - [x] 3.1 B [03:53–04:11] A normal open day ("۱ مهر") offers no free time.
-- [ ] 3.2 R [05:08–05:40] Slots after a booking must start when it ends: a 45-minute booking at 14:00 makes the next
+- [x] 3.2 R [05:08–05:40] Slots after a booking must start when it ends: a 45-minute booking at 14:00 makes the next
       slot 14:45, not 14:30.
-- [ ] 3.3 R [04:15–04:44] No booking more than 7 days ahead; the date picker shows/enables only those days.
+- [x] 3.3 R [04:15–04:44] No booking more than 7 days ahead; the date picker shows/enables only those days.
 - [x] 3.4 B [04:50–05:03] The confirmation step labels the person "متخصص" and shows a phone number instead of a name.
 
 ### Customer app (B / U)
 - [x] 4.1 B [00:08–00:13] Salon photos do not load (سالن نهال has 3).
-- [ ] 4.2 B [01:15–01:27] "نزدیک‌ترین‌ها" lists a salon near Tehran for a user in Pars-Abad; show the distance.
-- [ ] 4.3 B [08:00–08:22] A customer registered by OTP is named "ارائه‌دهنده <phone>"; ask for a real name.
+- [x] 4.2 B [01:15–01:27] "نزدیک‌ترین‌ها" lists a salon near Tehran for a user in Pars-Abad; show the distance.
+- [x] 4.3 B [08:00–08:22] A customer registered by OTP is named "ارائه‌دهنده <phone>"; ask for a real name.
 - [x] 4.4 U [07:52] RTL chevrons point the wrong way ("ویرایش پروفایل" and elsewhere).
 - [ ] 4.5 U [07:33–07:44] No visible way to reach notifications outside Home.
 - [ ] 4.6 U [06:23–06:58] OTP success is a plain "ورود موفق" message; use a short animated check.
@@ -105,6 +107,18 @@ _Root causes land here as they are confirmed, with evidence._
 
 ## Decisions
 
+- T2 (3.2) The 15-minute gap after each appointment is now zero, because the tester asked for the next slot to
+  start when the previous booking ends ("14:00 for 45 minutes → 14:45"), and the hidden gap also made the offered
+  grid and the conflict check disagree. A per-salon turnaround time is a product decision, not a constant — open
+  question for the user.
+- T2 (3.3) The 7-day window binds CUSTOMERS only. A salon books its own diary as far ahead as it likes; the rule
+  the tester stated was about "کسی" booking online. A service or salon may set a shorter window; a longer stored
+  one is capped, so the rule holds without a data migration.
+- T2 (3.5) A booking held against the organisation blocks every resource of that salon; a member's booking blocks
+  only that member. Over-blocking a multi-chair salon is possible in theory, but in practice organisation-level
+  bookings are one-person salons (the apps send a member id when members exist), and offering a time that cannot
+  be booked is worse.
+
 - T2 (1.1) "Both" satisfies the provider policies, because the domain already says a Both person can act as a
   provider (`User.CanActAs`); the per-request ownership/membership checks still decide which salon. Chosen over
   issuing the session's capacity in the refresh token, which would need the refresh to know which app asked.
@@ -113,6 +127,32 @@ _Root causes land here as they are confirmed, with evidence._
   as an open question for the user.
 
 ## Log
+
+- 2026-09-22 FULL verify: one run failed on two review tests with Postgres `40P01: deadlock detected` — the two
+  parallel collections deadlocking, not a logic failure (both pass alone, and the re-run was 20/20 PASS, 782
+  integration tests). Second flake of the day in that suite; if it recurs it deserves its own look.
+
+- 2026-09-22 3.3 RED `BookingHorizonTests` (a booking 14 days out was accepted; no window was published) →
+  `BookingHorizonPolicy` (7 days, 7 unit tests): enforced for CUSTOMER bookings only — a salon still writes its own
+  book months ahead — and published on provider detail so the clients bound their pickers. Customer app date strip
+  and Vue `TimeSlotModal` (which allowed three months) now stop at the window; `bookingWindowMaxDate` has its own
+  spec. A salon or service that sets a SHORTER window keeps it; a longer stored one (every salon says 90) is capped.
+- 2026-09-22 3.2 RED unit tests on `EnumerateSlotStartMinutes` → candidate starts now include each booking's end, so
+  a 45-minute booking at 14:00 offers 14:45 instead of the next grid mark at 15:00; starts that would run into a
+  booking, and gaps too short for the visit, are left out. The hidden 15-minute buffer is 0 (see Decisions).
+- 2026-09-22 3.5 found while proving 3.2 end to end: `BackToBackSlotsTests` showed the slot list offering a time
+  that creation then refused with 409. Slots are computed per bookable member, but a salon-made booking is held
+  against the ORGANISATION, so it blocked nothing. An organisation-level booking now blocks that salon's resources.
+- 2026-09-22 4.2 RED `nearby_providers_cubit_test` → "nearest" uses `/Providers/by-location`, which applies the
+  radius server-side and returns each salon's distance; `/Providers/search` has no radius parameter at all, so the
+  10 km was silently dropped and the nearest salon in the country won. A fix coarser than 20 km (an IP/VPN guess)
+  is no longer called "nearest" — the map cubit already refused those.
+- 2026-09-22 4.3 RED `person_name_test` + `complete_name_page_test` → a customer whose account still carries the OTP
+  placeholder is asked for a name once, right after sign-up, carrying their return-to-intent target; skipping is
+  allowed. `otp_return_to_intent_test`'s session fixture was given a real name (it tests return-to-intent, not
+  naming) and a new case covers the nameless path.
+- 2026-09-22 `ReviewModerationTests.A_second_approval_of_the_same_provider_averages_both` failed once in a full
+  parallel run (1 ms) and passed alone and on a full re-run (782/782). Flake, not a regression — worth watching.
 
 - 2026-09-22 3.1 RED (datasource kept the messages; repository dropped them) → `DaySlots{slots, reason}` through
   repository, bloc and `SlotPicker`, so an empty day shows the salon's own answer («مجموعه در این روز تعطیل است»,

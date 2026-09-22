@@ -121,6 +121,7 @@ class BookingRepositoryImpl implements BookingRepository {
       profileImageUrl: json['profileImageUrl'] as String?,
       averageRating: (json['averageRating'] as num?)?.toDouble() ?? 0,
       totalReviews: (json['totalReviews'] as num?)?.toInt() ?? 0,
+      maxAdvanceBookingDays: (json['maxAdvanceBookingDays'] as num?)?.toInt() ?? 7,
       businessHours: parseBusinessHours(json['businessHours']),
       services: (json['services'] as List<dynamic>? ?? [])
           .whereType<Map<String, dynamic>>()

@@ -12,6 +12,9 @@ enum NearbyStatus {
   empty,
   permissionDenied,
   serviceDisabled,
+
+  /// The fix was a network guess (tens of kilometres), not a street: "nearest" from it is another city.
+  imprecise,
   error,
 }
 
@@ -41,14 +44,22 @@ class NearbyState extends Equatable {
   List<Object?> get props => [status, providers, errorMessage];
 }
 
-/// Drives nearby-me discovery: resolve device location, then search providers
-/// sorted by distance via the existing `/Providers/search` contract. When
-/// location permission is denied or the service is off, it emits a fallback
-/// status so the UI can offer manual area/district search instead of blocking.
+/// Drives nearby-me discovery: resolve the device location, then ask `/Providers/by-location`, which applies the
+/// radius server-side and returns each salon's distance.
+///
+/// It used to call `/Providers/search`, which has no radius parameter at all — the 10 km was dropped and every
+/// active salon came back sorted by distance, so "nearest" showed a salon in Tehran to someone in پارس‌آباد, with
+/// no distance on the card (QA walkthrough 2026-09-22).
+///
+/// When permission is denied, the service is off, or the fix is too coarse to be a street, it emits a fallback
+/// status so the UI can offer manual area search instead of blocking.
 class NearbyProvidersCubit extends Cubit<NearbyState> {
   final LocationService locationService;
   final SearchRepository repository;
   final double radiusKm;
+
+  /// Beyond this a fix is a network guess rather than a place someone is standing (the map cubit's own limit).
+  static const double maxTrustedAccuracyMeters = 20000;
 
   NearbyProvidersCubit({
     required this.locationService,
@@ -67,12 +78,17 @@ class NearbyProvidersCubit extends Cubit<NearbyState> {
         emit(state.copyWith(status: NearbyStatus.serviceDisabled));
       case LocationError(:final message):
         emit(state.copyWith(status: NearbyStatus.error, errorMessage: message));
-      case LocationSuccess(:final latitude, :final longitude):
-        final result = await repository.searchProviders(
+      case LocationSuccess(:final latitude, :final longitude, :final accuracyMeters):
+        // A fix this coarse is the network's guess (an IP behind a VPN reports tens of kilometres), so "near me"
+        // from it is meaningless. The map cubit already refuses these.
+        if (accuracyMeters != null && accuracyMeters > maxTrustedAccuracyMeters) {
+          emit(state.copyWith(status: NearbyStatus.imprecise));
+          return;
+        }
+        final result = await repository.providersByLocation(
           latitude: latitude,
           longitude: longitude,
           radiusKm: radiusKm,
-          sortBy: 'distance',
         );
         result.fold(
           (failure) => emit(state.copyWith(

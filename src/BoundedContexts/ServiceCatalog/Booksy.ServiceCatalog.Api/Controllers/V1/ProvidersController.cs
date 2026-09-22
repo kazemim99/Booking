@@ -1240,6 +1240,7 @@ public class ProvidersController : ControllerBase
             LogoUrl = result.LogoUrl,
             WebsiteUrl = result.WebsiteUrl,
             AllowOnlineBooking = result.AllowOnlineBooking,
+            MaxAdvanceBookingDays = result.MaxAdvanceBookingDays,
             OffersMobileServices = result.OffersMobileServices,
             IsVerified = result.IsVerified,
             AverageRating = result.AverageRating,

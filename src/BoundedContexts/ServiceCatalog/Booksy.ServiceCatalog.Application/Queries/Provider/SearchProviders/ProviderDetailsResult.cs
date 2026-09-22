@@ -33,6 +33,9 @@ public sealed class ProviderDetailsResult
     public string? ProfileImageUrl { get; init; }
     public string? WebsiteUrl { get; init; }
     public bool AllowOnlineBooking { get; init; }
+
+    /// <summary>How far ahead a customer may book here, in days — so a client offers only those days.</summary>
+    public int MaxAdvanceBookingDays { get; init; }
     public bool OffersMobileServices { get; init; }
     public bool IsVerified { get; init; }
     public decimal AverageRating { get; init; }

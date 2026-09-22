@@ -1,3 +1,4 @@
+using Booksy.ServiceCatalog.Domain.Policies;
 using Booksy.ServiceCatalog.Application.Abstractions;
 using Booksy.Core.Application.Abstractions.CQRS;
 using Booksy.ServiceCatalog.Application.DTOs.Provider;
@@ -70,6 +71,9 @@ namespace Booksy.ServiceCatalog.Application.Queries.Provider.GetProviderById
                         i.IsPrimary,
                         i.DisplayOrder))
                     .ToList(),
+                // The public window, already capped by the platform rule, so a client can stop offering later days.
+                MaxAdvanceBookingDays = BookingHorizonPolicy.EffectiveMaxAdvanceDays(
+                    providerDays: provider.BookingPolicy?.MaxAdvanceBookingDays),
                 Status = provider.Status,
                 PrimaryCategory = provider.PrimaryCategory,
                 ContactInfo = new DTOs.Provider.ContactInfo(

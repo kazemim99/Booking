@@ -25,7 +25,13 @@ namespace Booksy.ServiceCatalog.Application.Services
 
         // Configuration constants
         private const int DefaultSlotIntervalMinutes = 30;
-        private const int BufferTimeMinutes = 15; // Buffer between appointments
+        /// <summary>
+        /// Gap kept after each appointment. Zero since the QA walkthrough of 2026-09-22: the salon asked for the
+        /// next slot to start the moment the previous booking ends ("14:00 for 45 minutes → 14:45"), and a hidden
+        /// fifteen minutes both moved that to 15:00 and made the grid and the conflict check disagree. A per-salon
+        /// turnaround time is a product decision, not a constant — see the change's Decisions.
+        /// </summary>
+        public const int BufferTimeMinutes = 0;
 
         public AvailabilityService(
             IBookingReadRepository bookingRepository,
@@ -135,6 +141,7 @@ namespace Booksy.ServiceCatalog.Application.Services
                     closeTime,
                     effectiveDuration,
                     resource,
+                    provider.Id.Value,
                     cancellationToken);
 
                 availableSlots.AddRange(staffSlots);
@@ -344,6 +351,7 @@ namespace Booksy.ServiceCatalog.Application.Services
             TimeOnly closeTime,
             Duration serviceDuration,
             BookableResource resource,
+            Guid organizationId,
             CancellationToken cancellationToken)
         {
             var availableSlots = new List<AvailableTimeSlot>();
@@ -359,13 +367,35 @@ namespace Booksy.ServiceCatalog.Application.Services
                 dayEnd,
                 cancellationToken);
 
+            // A booking held against the SALON ITSELF (StaffId = the organization, which is how a salon with no
+            // chosen team member is booked) occupies the salon, so it blocks this resource too. Without this the
+            // slot list and the conflict check disagreed: the time was still offered, and booking it answered 409
+            // (QA walkthrough 2026-09-22). A member's own booking still blocks only that member.
+            if (resource.Id != organizationId)
+            {
+                var organizationBookings = await _bookingRepository.GetStaffBookingsInDateRangeAsync(
+                    organizationId,
+                    dayStart,
+                    dayEnd,
+                    cancellationToken);
+
+                existingBookings = existingBookings.Concat(organizationBookings).ToList();
+            }
+
             // Filter only confirmed bookings
             var confirmedBookings = existingBookings
                 .Where(b => b.Status == BookingStatus.Confirmed || b.Status == BookingStatus.Requested)
                 .ToList();
 
+            // The day's taken windows as minutes-of-day, so the next start can follow a booking's end.
+            var busyWindows = confirmedBookings
+                .Select(b => (
+                    StartMinute: (int)(b.TimeSlot.StartTime - date.Date).TotalMinutes,
+                    EndMinute: (int)(b.TimeSlot.EndTime.AddMinutes(BufferTimeMinutes) - date.Date).TotalMinutes))
+                .ToList();
+
             foreach (var minuteOfDay in EnumerateSlotStartMinutes(
-                openTime, closeTime, (int)serviceDurationMinutes, DefaultSlotIntervalMinutes))
+                openTime, closeTime, (int)serviceDurationMinutes, DefaultSlotIntervalMinutes, busyWindows))
             {
                 var slotStart = date.Date.AddMinutes(minuteOfDay);
                 var slotEnd = slotStart.AddMinutes(serviceDurationMinutes);
@@ -410,21 +440,42 @@ namespace Booksy.ServiceCatalog.Application.Services
         /// 24:00 (e.g. a 00:00–23:59 schedule) the old while-loop condition
         /// stayed true forever and hung the request thread.
         /// </summary>
+        /// <param name="busy">
+        /// Minutes-of-day windows already taken. A booking makes the next start the moment it ENDS — a 45-minute
+        /// booking at 14:00 offers 14:45, not the next grid mark at 15:00, which left that quarter hour unsellable
+        /// (QA walkthrough 2026-09-22). Starts that would run into a taken window are left out.
+        /// </param>
         public static IEnumerable<int> EnumerateSlotStartMinutes(
             TimeOnly openTime,
             TimeOnly closeTime,
             int serviceDurationMinutes,
-            int intervalMinutes)
+            int intervalMinutes,
+            IEnumerable<(int StartMinute, int EndMinute)>? busy = null)
         {
             if (serviceDurationMinutes <= 0 || intervalMinutes <= 0)
                 yield break;
 
+            var openMinutes = (int)openTime.ToTimeSpan().TotalMinutes;
             var closeMinutes = (int)closeTime.ToTimeSpan().TotalMinutes;
-            for (var m = (int)openTime.ToTimeSpan().TotalMinutes;
-                 m + serviceDurationMinutes <= closeMinutes;
-                 m += intervalMinutes)
+            var taken = busy?.ToList() ?? new List<(int StartMinute, int EndMinute)>();
+
+            var candidates = new SortedSet<int>();
+            for (var m = openMinutes; m + serviceDurationMinutes <= closeMinutes; m += intervalMinutes)
+                candidates.Add(m);
+
+            // The moment each booking ends is a start in its own right: that is what makes back-to-back possible.
+            foreach (var window in taken)
             {
-                yield return m;
+                if (window.EndMinute >= openMinutes && window.EndMinute + serviceDurationMinutes <= closeMinutes)
+                    candidates.Add(window.EndMinute);
+            }
+
+            foreach (var start in candidates)
+            {
+                var end = start + serviceDurationMinutes;
+                var overlaps = taken.Any(w => start < w.EndMinute && end > w.StartMinute);
+                if (!overlaps)
+                    yield return start;
             }
         }
 

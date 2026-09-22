@@ -11,6 +11,10 @@ class ProviderDetail extends Equatable {
   final String? profileImageUrl;
   final double averageRating;
   final int totalReviews;
+
+  /// How far ahead this salon takes bookings, in days. The date strip offers today plus these; the server
+  /// refuses anything later (QA walkthrough 2026-09-22 — "nobody should be able to book more than a week out").
+  final int maxAdvanceBookingDays;
   final List<BusinessHour> businessHours;
   final List<ServiceItem> services;
   final List<StaffMember> staff;
@@ -33,6 +37,7 @@ class ProviderDetail extends Equatable {
     this.profileImageUrl,
     required this.averageRating,
     required this.totalReviews,
+    this.maxAdvanceBookingDays = 7,
     required this.businessHours,
     required this.services,
     required this.staff,
@@ -56,6 +61,7 @@ class ProviderDetail extends Equatable {
         profileImageUrl,
         averageRating,
         totalReviews,
+        maxAdvanceBookingDays,
         businessHours,
         services,
         staff,

@@ -376,6 +376,10 @@ class _NearestSection extends StatelessWidget {
               key: Key('home-nearest-service-off'),
               message: AppStrings.locationServiceDisabled,
             ),
+          NearbyStatus.imprecise => const _NearestFallback(
+              key: Key('home-nearest-imprecise'),
+              message: AppStrings.mapLocationImpreciseNotice,
+            ),
           NearbyStatus.error => Padding(
               padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md),
               child: Row(
