@@ -3,6 +3,8 @@
  * API client for customer profile, bookings, reviews, and preferences
  */
 
+import { reviewsApi } from '@/modules/reviews/api/reviews.api'
+import type { MyReview } from '@/modules/reviews/types/reviews.types'
 import { userManagementClient } from '@/core/api/client/http-client'
 import type { ApiResponse } from '@/core/api/client/api-response'
 import type {
@@ -164,21 +166,14 @@ class CustomerService {
   // ========================================
 
   /**
-   * Get customer reviews
-   * GET /api/v1/customers/{customerId}/reviews
+   * The customer's own reviews, every moderation state.
+   * GET /api/v1/reviews/me (ServiceCatalog). This used to call /api/v1/customers/{id}/reviews on UserManagement —
+   * a route that never existed, so "My reviews" could only fail. The caller is identified by their token, so the
+   * customer id is no longer needed; the parameter stays so the store's call sites do not change.
    */
-  async getReviews(customerId: string): Promise<CustomerReview[]> {
+  async getReviews(_customerId: string): Promise<CustomerReview[]> {
     try {
-      console.log('[CustomerService] Fetching reviews:', customerId)
-
-      const response = await userManagementClient.get<ApiResponse<CustomerReview[]>>(
-        `${CUSTOMERS_BASE}/${customerId}/reviews`
-      )
-
-      const reviews = this.extractArray<CustomerReview>(response.data)
-
-      console.log('[CustomerService] Reviews retrieved:', reviews.length)
-      return reviews
+      return (await reviewsApi.mine()).map(toCustomerReview)
     } catch (error) {
       console.error('[CustomerService] Error fetching reviews:', error)
       throw this.handleError(error, 'خطا در دریافت نظرات')
@@ -186,30 +181,23 @@ class CustomerService {
   }
 
   /**
-   * Update review
-   * PATCH /api/v1/customers/{customerId}/reviews/{reviewId}
+   * Edit one of the customer's reviews — PUT /api/v1/reviews/{id}. The edited review returns to moderation, so the
+   * review is re-read and handed back as it now stands (awaiting approval), not as the form last showed it.
    */
   async updateReview(
-    customerId: string,
+    _customerId: string,
     reviewId: string,
     request: UpdateReviewRequest
   ): Promise<CustomerReview> {
     try {
-      console.log('[CustomerService] Updating review:', reviewId, request)
-
-      const response = await userManagementClient.patch<ApiResponse<CustomerReview>>(
-        `${CUSTOMERS_BASE}/${customerId}/reviews/${reviewId}`,
-        request
-      )
-
-      const review = response.data?.data || response.data
-
-      if (!review) {
-        throw new Error('Failed to update review')
-      }
-
-      console.log('[CustomerService] Review updated:', review)
-      return review as CustomerReview
+      await reviewsApi.edit(reviewId, {
+        rating: request.rating,
+        comment: request.text,
+        dimensions: request.dimensions ?? {},
+      })
+      const updated = (await reviewsApi.mine()).find((r) => r.reviewId === reviewId)
+      if (!updated) throw new Error('Failed to update review')
+      return toCustomerReview(updated)
     } catch (error) {
       console.error('[CustomerService] Error updating review:', error)
       throw this.handleError(error, 'خطا در بهروزرسانی نظر')
@@ -324,5 +312,25 @@ class CustomerService {
 }
 
 // Export singleton instance
+/** The reviews API's shape, in the shape the customer profile already renders. */
+function toCustomerReview(r: MyReview): CustomerReview {
+  return {
+    id: r.reviewId,
+    providerId: r.providerId,
+    providerName: r.providerName ?? '',
+    providerLogoUrl: r.providerLogoUrl ?? undefined,
+    serviceId: '',
+    serviceName: r.serviceName ?? '',
+    rating: r.rating,
+    text: r.comment ?? undefined,
+    createdAt: r.createdAt,
+    updatedAt: r.editedAt ?? undefined,
+    canEdit: r.canEdit,
+    moderationStatus: r.moderationStatus,
+    moderationReason: r.moderationReason,
+    dimensions: r.dimensions,
+  }
+}
+
 export const customerService = new CustomerService()
 export default customerService

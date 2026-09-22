@@ -400,6 +400,9 @@ class ProviderService {
       lastActiveAt: response.lastActiveAt,
       createdAt: response.registeredAt,
       lastModifiedAt: response.lastActiveAt,
+      // The detail endpoint returns both; this mapper used to drop them, so every caller saw no rating.
+      averageRating: (response as { averageRating?: number }).averageRating ?? 0,
+      totalReviews: (response as { totalReviews?: number }).totalReviews ?? 0,
     }
   }
 

@@ -9,7 +9,7 @@
         class="provider-logo"
       />
       <div v-else class="provider-logo-placeholder">
-        {{ review.providerName.charAt(0) }}
+        {{ (review.providerName || '؟').charAt(0) }}
       </div>
 
       <div class="provider-info">
@@ -23,6 +23,7 @@
         @click="handleEdit"
         class="edit-button"
         title="ویرایش نظر"
+        data-test="edit-review"
       >
         <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
@@ -46,6 +47,18 @@
       </svg>
     </div>
 
+    <!-- Moderation state: a review awaiting approval must never read as live -->
+    <p class="moderation-status" :class="`moderation-status--${review.moderationStatus.toLowerCase()}`" data-test="moderation-status">
+      {{ statusLabel }}
+    </p>
+    <p v-if="review.moderationReason && (review.moderationStatus === 'Rejected' || review.moderationStatus === 'Hidden')"
+       class="moderation-reason" data-test="moderation-reason">
+      دلیل: {{ review.moderationReason }}
+    </p>
+    <!-- Published or pending but no longer editable: the only reason left is the 7-day window -->
+    <p v-if="!review.canEdit && (review.moderationStatus === 'Published' || review.moderationStatus === 'Pending')"
+       class="moderation-reason" data-test="edit-window-closed">فقط نظرات کمتر از ۷ روز قابل ویرایش هستند</p>
+
     <!-- Review Text -->
     <p v-if="review.text" class="review-text">{{ review.text }}</p>
 
@@ -66,6 +79,13 @@ interface Props {
 }
 
 const props = defineProps<Props>()
+
+const statusLabel = computed(() => ({
+  Pending: 'در انتظار بررسی — هنوز برای دیگران نمایش داده نمی‌شود',
+  Published: 'منتشر شده',
+  Rejected: 'رد شد',
+  Hidden: 'پنهان شد',
+})[props.review.moderationStatus] ?? '')
 
 const emit = defineEmits<{
   edit: [review: CustomerReview]
@@ -194,4 +214,13 @@ function handleEdit(): void {
 .edited-badge {
   font-style: italic;
 }
+.moderation-status {
+  font-size: 0.8rem;
+  margin: 0.25rem 0;
+  color: var(--color-text-secondary, #777);
+}
+.moderation-status--published { color: var(--color-success, #00b894); }
+.moderation-status--rejected,
+.moderation-status--hidden { color: var(--color-danger, #d63031); }
+.moderation-reason { font-size: 0.8rem; margin: 0 0 0.25rem; color: var(--color-text-secondary, #777); }
 </style>

@@ -93,11 +93,14 @@ export const apiEndpoints = {
     markAllRead: 'v1/Notifications/read-all',
   },
 
-  // Review endpoints
+  // Review endpoints (ServiceCatalog). The constants that stood here before named routes the backend never served
+  // and lacked the `v1/` prefix; nothing used them. These are the served routes, pinned by reviews.api.spec.ts.
   reviews: {
-    list: '/reviews',
-    create: '/reviews',
-    byId: (id: string) => `/reviews/${id}`,
-    byService: (serviceId: string) => `/reviews/service/${serviceId}`,
+    forProvider: (providerId: string) => `v1/Reviews/providers/${providerId}`,
+    submit: (bookingId: string) => `v1/Reviews/bookings/${bookingId}`,
+    edit: (reviewId: string) => `v1/Reviews/${reviewId}`,
+    vote: (reviewId: string) => `v1/Reviews/${reviewId}/helpful`,
+    report: (reviewId: string) => `v1/Reviews/${reviewId}/report`,
+    mine: 'v1/Reviews/me',
   },
 }

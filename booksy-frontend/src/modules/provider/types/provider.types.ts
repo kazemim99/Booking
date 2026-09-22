@@ -75,6 +75,11 @@ export interface Provider {
   // Convenience properties
   businessName?: string
   displayName?: string
+
+  // Rating, from published reviews. Read the two together: totalReviews 0 means "no reviews yet", and then
+  // averageRating is 0 — never a real zero.
+  averageRating?: number
+  totalReviews?: number
 }
 
 export interface BusinessProfile {

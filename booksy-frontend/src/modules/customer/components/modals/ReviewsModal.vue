@@ -94,7 +94,8 @@ async function handleSaveReview(reviewId: string, data: UpdateReviewRequest): Pr
 
   try {
     await customerStore.updateReview(authStore.user.id, reviewId, data)
-    showSuccess('موفقیت', 'نظر شما با موفقیت بهروزرسانی شد')
+    // An edit goes back to moderation: say so, or "saved" reads as live.
+    showSuccess('ذخیره شد', 'تغییرات ذخیره شد و نظر شما پس از تأیید دوباره نمایش داده می‌شود')
     editingReview.value = null
   } catch (error) {
     console.error('[ReviewsModal] Error updating review:', error)

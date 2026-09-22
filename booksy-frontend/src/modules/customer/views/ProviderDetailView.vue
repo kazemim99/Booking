@@ -12,8 +12,12 @@
           <div class="provider-details">
             <h1>{{ provider.name }}</h1>
             <p class="provider-type">{{ provider.type }}</p>
-            <div class="provider-rating">
-              ⭐ {{ provider.rating }} ({{ provider.reviewCount }} نظر)
+            <!-- The count decides: 0 means "no reviews yet", never "rated zero". -->
+            <div class="provider-rating" data-test="provider-rating">
+              <template v-if="provider.reviewCount > 0">
+                ⭐ {{ toPersianDigits(provider.rating.toFixed(1)) }} ({{ toPersianDigits(provider.reviewCount) }} نظر)
+              </template>
+              <template v-else>هنوز نظری ثبت نشده</template>
             </div>
             <p class="provider-address">📍 {{ provider.address }}</p>
           </div>
@@ -80,13 +84,7 @@
 
         <div v-if="activeTab === 'reviews'" class="tab-content">
           <h3>نظرات مشتریان</h3>
-          <div v-for="review in provider.reviews" :key="review.id" class="review-item">
-            <div class="review-header">
-              <strong>{{ review.customerName }}</strong>
-              <span class="review-rating">⭐ {{ review.rating }}</span>
-            </div>
-            <p>{{ review.comment }}</p>
-          </div>
+          <ReviewList :provider-id="provider.id" />
         </div>
       </div>
     </div>
@@ -97,6 +95,8 @@
 import { ref, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import FavoriteButton from '../components/favorites/FavoriteButton.vue'
+import ReviewList from '@/modules/reviews/components/ReviewList.vue'
+import { toPersianDigits } from '@/core/utils/persian.service'
 import { providerService } from '@/modules/provider/services/provider.service'
 import { serviceService } from '@/modules/provider/services/service.service'
 
@@ -126,7 +126,6 @@ interface ProviderDetail {
   coverImage: string | null
   services: DetailService[]
   gallery: string[]
-  reviews: Array<{ id: string; customerName: string; rating: number; comment: string }>
 }
 
 const provider = ref<ProviderDetail>({
@@ -141,7 +140,6 @@ const provider = ref<ProviderDetail>({
   coverImage: null,
   services: [],
   gallery: [],
-  reviews: [],
 })
 
 async function loadProvider() {
@@ -157,8 +155,9 @@ async function loadProvider() {
       id: p.id,
       name: p.profile?.businessName ?? '',
       type: '',
-      rating: 0,
-      reviewCount: 0,
+      // What the API returned. These were hardcoded to 0 and discarded the real values.
+      rating: p.averageRating ?? 0,
+      reviewCount: p.totalReviews ?? 0,
       address: p.address?.formattedAddress || p.address?.addressLine1 || '',
       description: p.profile?.description ?? '',
       logo: p.profile?.logoUrl ?? null,
@@ -171,7 +170,6 @@ async function loadProvider() {
         price: s.basePrice,
       })),
       gallery: [],
-      reviews: [],
     }
   } catch (e) {
     console.error('[ProviderDetailView] failed to load provider', e)

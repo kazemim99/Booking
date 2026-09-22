@@ -1,3 +1,4 @@
+import type { Dimension, DimensionRatings, ModerationStatus } from '@/modules/reviews/types/reviews.types'
 /**
  * Customer Profile Types
  * Type definitions for customer profile, bookings, reviews, and preferences
@@ -70,6 +71,7 @@ export type BookingStatus =
 // REVIEWS
 // ============================================================================
 
+/** One of the customer's own reviews, in any moderation state (from `GET /api/v1/reviews/me`). */
 export interface CustomerReview {
   id: string
   providerId: string
@@ -81,12 +83,19 @@ export interface CustomerReview {
   text?: string
   createdAt: string
   updatedAt?: string
-  canEdit: boolean // true if < 7 days old
+  /** Within 7 days AND still pending or published — the server's answer, not a date computed here. */
+  canEdit: boolean
+  /** Not public until "Published". "Rejected" is permanent; "Hidden" was taken down. */
+  moderationStatus: ModerationStatus
+  /** The administrator's reason, when rejected or hidden. */
+  moderationReason: string | null
+  dimensions: DimensionRatings
 }
 
 export interface UpdateReviewRequest {
   rating: number
   text?: string
+  dimensions?: Partial<Record<Dimension, number>>
 }
 
 // ============================================================================
