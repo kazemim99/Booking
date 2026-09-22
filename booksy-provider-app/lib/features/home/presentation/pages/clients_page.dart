@@ -243,7 +243,7 @@ class _ClientRow extends StatelessWidget {
                 ],
               ),
             ),
-            const Icon(Icons.chevron_left,
+            const Icon(Icons.chevron_right,
                 size: AppIconSize.action, color: AppColors.muted),
           ],
         ),

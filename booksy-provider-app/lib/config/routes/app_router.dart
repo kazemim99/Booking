@@ -36,6 +36,10 @@ class Routes {
   static const String otp = '/otp';
   static const String dashboard = '/dashboard';
   static const String calendar = '/calendar';
+
+  /// The calendar opened on one booking (a tapped notification lands here).
+  static String calendarBooking(String bookingId) =>
+      Uri(path: calendar, queryParameters: {'booking': bookingId}).toString();
   static const String clients = '/clients';
   static const String more = '/more';
   static const String notifications = '/notifications';
@@ -221,7 +225,8 @@ class AppRouter {
         ),
         GoRoute(
           path: Routes.calendar,
-          builder: (_, _) => const CalendarPage(),
+          builder: (_, state) =>
+              CalendarPage(focusBookingId: state.uri.queryParameters['booking']),
         ),
         GoRoute(
           path: Routes.clients,

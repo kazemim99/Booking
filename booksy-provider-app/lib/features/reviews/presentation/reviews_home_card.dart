@@ -57,7 +57,8 @@ class ReviewsHomeCard extends StatelessWidget {
                 ],
               ),
             ),
-            Icon(Directionality.of(context) == TextDirection.rtl ? Icons.chevron_left : Icons.chevron_right),
+            // chevron_right mirrors itself in RTL; picking chevron_left by hand flips it twice (QA 2026-09-22).
+            const Icon(Icons.chevron_right),
           ],
         ),
       ),

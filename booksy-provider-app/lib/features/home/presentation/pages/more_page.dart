@@ -318,7 +318,7 @@ class MorePage extends StatelessWidget {
                   shape: BoxShape.circle,
                 ),
                 child: const Icon(
-                  Icons.chevron_left,
+                  Icons.chevron_right,
                   size: AppIconSize.sm,
                   color: Colors.white,
                 ),

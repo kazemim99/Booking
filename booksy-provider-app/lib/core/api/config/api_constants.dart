@@ -171,6 +171,9 @@ class ApiConstants {
   /// POST — cancel/decline a booking (body: reason/cancelledBy).
   static String bookingCancel(String id) => '/$apiVersion/Bookings/$id/cancel';
 
+  /// GET — one booking (the owning salon, its customer or an admin may read it).
+  static String booking(String id) => '/$apiVersion/Bookings/$id';
+
   /// POST — mark a booking completed.
   static String bookingComplete(String id) =>
       '/$apiVersion/Bookings/$id/complete';

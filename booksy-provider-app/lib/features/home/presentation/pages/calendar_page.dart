@@ -21,12 +21,20 @@ import '../widgets/provider_nav_bar.dart';
 /// The Calendar tab (spec: provider-calendar): RTL week strip + selected-day
 /// timeline, booking action sheet, and calendar-initiated creation.
 class CalendarPage extends StatelessWidget {
-  const CalendarPage({super.key});
+  /// A booking to open on arrival — set when a notification about it was tapped.
+  final String? focusBookingId;
+
+  const CalendarPage({super.key, this.focusBookingId});
 
   @override
   Widget build(BuildContext context) {
+    final bookingId = focusBookingId;
     return BlocProvider<CalendarCubit>(
-      create: (_) => getIt<CalendarCubit>()..load(),
+      create: (_) {
+        final cubit = getIt<CalendarCubit>();
+        bookingId == null ? cubit.load() : cubit.openBooking(bookingId);
+        return cubit;
+      },
       child: const CalendarView(),
     );
   }
@@ -38,62 +46,85 @@ class CalendarView extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return BlocBuilder<CalendarCubit, CalendarState>(
-      builder: (context, state) {
+    // A tapped notification's booking opens once its day is on screen, then the focus is cleared so a rebuild
+    // does not open it again.
+    return BlocListener<CalendarCubit, CalendarState>(
+      listenWhen: (a, b) =>
+          b.focusedBookingId != null &&
+          a.focusedBookingId != b.focusedBookingId,
+      listener: (context, state) {
         final cubit = context.read<CalendarCubit>();
-        // Week navigation belongs to the chrome, not the sheet: it stays put
-        // on the blue while the day's timeline scrolls underneath it.
-        final onChrome = state.status == CalendarStatus.ready;
-        return AppPageScaffold(
-          automaticallyImplyLeading: false,
-          title: AppStrings.calendarTitle,
-          actions: [
-            TextButton(
-              key: const Key('calendar-today'),
-              onPressed: cubit.jumpToToday,
-              style: TextButton.styleFrom(foregroundColor: Colors.white),
-              child: const Text(AppStrings.calendarToday),
-            ),
-          ],
-          chromeFooter: onChrome
-              ? Column(
-                  children: [
-                    _WeekHeader(state: state, cubit: cubit),
-                    _WeekStrip(state: state, cubit: cubit),
-                    const SizedBox(height: AppSpacing.sm),
-                  ],
-                )
-              : null,
-          body: switch (state.status) {
-            CalendarStatus.loading => const AppLoading.page(),
-            CalendarStatus.failed => AppErrorState(
+        final id = state.focusedBookingId!;
+        cubit.clearFocus();
+        for (final b in state.selectedDayBookings) {
+          if (b.id == id) {
+            showCalendarBookingSheet(context, cubit, b);
+            return;
+          }
+        }
+      },
+      child: BlocBuilder<CalendarCubit, CalendarState>(
+        builder: (context, state) {
+          final cubit = context.read<CalendarCubit>();
+          // Week navigation belongs to the chrome, not the sheet: it stays put
+          // on the blue while the day's timeline scrolls underneath it.
+          final onChrome = state.status == CalendarStatus.ready;
+          return AppPageScaffold(
+            automaticallyImplyLeading: false,
+            title: AppStrings.calendarTitle,
+            actions: [
+              TextButton(
+                key: const Key('calendar-today'),
+                onPressed: cubit.jumpToToday,
+                style: TextButton.styleFrom(foregroundColor: Colors.white),
+                child: const Text(AppStrings.calendarToday),
+              ),
+            ],
+            chromeFooter: onChrome
+                ? Column(
+                    children: [
+                      _WeekHeader(state: state, cubit: cubit),
+                      _WeekStrip(state: state, cubit: cubit),
+                      const SizedBox(height: AppSpacing.sm),
+                    ],
+                  )
+                : null,
+            body: switch (state.status) {
+              CalendarStatus.loading => const AppLoading.page(),
+              CalendarStatus.failed => AppErrorState(
                 message: state.error ?? AppStrings.homeLoadError,
                 onRetry: cubit.load,
               ),
-            CalendarStatus.ready => Column(
+              CalendarStatus.ready => Column(
                 children: [
                   if (state.stale)
                     Padding(
                       padding: const EdgeInsets.symmetric(
-                          vertical: AppSpacing.xs),
+                        vertical: AppSpacing.xs,
+                      ),
                       child: Text(
                         AppStrings.homeStaleBanner,
                         key: const Key('calendar-stale'),
                         style: const TextStyle(
-                            fontSize: 12, color: AppColors.muted),
+                          fontSize: 12,
+                          color: AppColors.muted,
+                        ),
                       ),
                     ),
-                  Expanded(child: _DayTimeline(state: state, cubit: cubit)),
+                  Expanded(
+                    child: _DayTimeline(state: state, cubit: cubit),
+                  ),
                 ],
               ),
-          },
-          bottomNavigationBar: ProviderNavBar(
-            active: NavTab.calendar,
-            createKey: const Key('calendar-create-action'),
-            onCreate: () => _showCreateSheet(context, state.selectedDay),
-          ),
-        );
-      },
+            },
+            bottomNavigationBar: ProviderNavBar(
+              active: NavTab.calendar,
+              createKey: const Key('calendar-create-action'),
+              onCreate: () => _showCreateSheet(context, state.selectedDay),
+            ),
+          );
+        },
+      ),
     );
   }
 
@@ -114,8 +145,10 @@ class CalendarView extends StatelessWidget {
           children: [
             ListTile(
               key: const Key('create-appointment'),
-              leading:
-                  const Icon(Icons.event_outlined, color: AppColors.primary),
+              leading: const Icon(
+                Icons.event_outlined,
+                color: AppColors.primary,
+              ),
               title: const Text(AppStrings.homeCreateAppointment),
               onTap: () {
                 Navigator.pop(sheetContext);
@@ -124,8 +157,10 @@ class CalendarView extends StatelessWidget {
             ),
             ListTile(
               key: const Key('create-block-time'),
-              leading:
-                  const Icon(Icons.block_outlined, color: AppColors.primary),
+              leading: const Icon(
+                Icons.block_outlined,
+                color: AppColors.primary,
+              ),
               title: const Text(AppStrings.homeCreateBlockTime),
               onTap: () {
                 Navigator.pop(sheetContext);
@@ -172,8 +207,11 @@ class _WeekHeader extends StatelessWidget {
           IconButton(
             key: const Key('calendar-prev-week'),
             tooltip: AppStrings.calendarPrevWeek,
-            icon: const Icon(Icons.chevron_right,
-                size: AppIconSize.md, color: Colors.white),
+            icon: const Icon(
+              Icons.chevron_left,
+              size: AppIconSize.md,
+              color: Colors.white,
+            ),
             onPressed: cubit.previousWeek,
           ),
           Expanded(
@@ -186,8 +224,11 @@ class _WeekHeader extends StatelessWidget {
           IconButton(
             key: const Key('calendar-next-week'),
             tooltip: AppStrings.calendarNextWeek,
-            icon: const Icon(Icons.chevron_left,
-                size: AppIconSize.md, color: Colors.white),
+            icon: const Icon(
+              Icons.chevron_right,
+              size: AppIconSize.md,
+              color: Colors.white,
+            ),
             onPressed: cubit.nextWeek,
           ),
         ],
@@ -258,18 +299,17 @@ class _WeekStrip extends StatelessWidget {
                 height: 14,
                 child: count > 0
                     ? Container(
-                        padding:
-                            const EdgeInsets.symmetric(horizontal: 5),
+                        padding: const EdgeInsets.symmetric(horizontal: 5),
                         decoration: BoxDecoration(
-                          color: selected
-                              ? AppColors.primary
-                              : Colors.white38,
+                          color: selected ? AppColors.primary : Colors.white38,
                           borderRadius: BorderRadius.circular(AppRadius.lg),
                         ),
                         child: Text(
                           '$count',
                           style: const TextStyle(
-                              fontSize: 10, color: Colors.white),
+                            fontSize: 10,
+                            color: Colors.white,
+                          ),
                         ),
                       )
                     : null,
@@ -300,8 +340,7 @@ class _DayTimeline extends StatelessWidget {
         icon: Icons.event_available_outlined,
         message: AppStrings.calendarEmptyDay,
         actionLabel: '+ ${AppStrings.homeAddAppointment}',
-        onAction: () =>
-            CalendarView._openComposer(context, state.selectedDay),
+        onAction: () => CalendarView._openComposer(context, state.selectedDay),
       );
     }
 
@@ -322,161 +361,166 @@ class _DayTimeline extends StatelessWidget {
   }
 
   static String _statusLabel(HomeBookingStatus s) => switch (s) {
-        HomeBookingStatus.pending => AppStrings.homeStatusPending,
-        HomeBookingStatus.completed => AppStrings.homeStatusDone,
-        HomeBookingStatus.noShow => AppStrings.homeStatusNoShow,
-        HomeBookingStatus.cancelled => AppStrings.homeStatusCancelled,
-        HomeBookingStatus.confirmed => AppStrings.homeStatusConfirmed,
-      };
+    HomeBookingStatus.pending => AppStrings.homeStatusPending,
+    HomeBookingStatus.completed => AppStrings.homeStatusDone,
+    HomeBookingStatus.noShow => AppStrings.homeStatusNoShow,
+    HomeBookingStatus.cancelled => AppStrings.homeStatusCancelled,
+    HomeBookingStatus.confirmed => AppStrings.homeStatusConfirmed,
+  };
 
   static Color _statusColor(HomeBookingStatus s) => switch (s) {
-        HomeBookingStatus.pending => AppColors.primary,
-        HomeBookingStatus.completed => AppColors.success,
-        HomeBookingStatus.noShow ||
-        HomeBookingStatus.cancelled =>
-          AppColors.muted,
-        HomeBookingStatus.confirmed => AppColors.ink,
-      };
+    HomeBookingStatus.pending => AppColors.primary,
+    HomeBookingStatus.completed => AppColors.success,
+    HomeBookingStatus.noShow || HomeBookingStatus.cancelled => AppColors.muted,
+    HomeBookingStatus.confirmed => AppColors.ink,
+  };
 
-  void _showBookingSheet(BuildContext context, HomeBooking booking) {
-    final cubit = this.cubit;
-    showModalBottomSheet<void>(
-      context: context,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(
-          top: Radius.circular(AppRadius.bottomSheet),
-        ),
+  void _showBookingSheet(BuildContext context, HomeBooking booking) =>
+      showCalendarBookingSheet(context, cubit, booking);
+}
+
+/// A booking's sheet: its details and the actions its state allows (confirm/decline a request, complete or
+/// mark a no-show). Top-level so the calendar can open it for a booking a notification pointed at.
+void showCalendarBookingSheet(
+  BuildContext context,
+  CalendarCubit cubit,
+  HomeBooking booking,
+) {
+  showModalBottomSheet<void>(
+    context: context,
+    shape: const RoundedRectangleBorder(
+      borderRadius: BorderRadius.vertical(
+        top: Radius.circular(AppRadius.bottomSheet),
       ),
-      builder: (sheetContext) {
-        Future<void> run(
-          Future<Failure?> action,
-          String successMessage,
-        ) async {
-          Navigator.pop(sheetContext);
-          final failure = await action;
-          if (!context.mounted) return;
-          if (failure == null) {
-            AppSnackbar.success(context, successMessage);
-          } else {
-            AppSnackbar.error(context, failure.message);
-          }
+    ),
+    builder: (sheetContext) {
+      Future<void> run(Future<Failure?> action, String successMessage) async {
+        Navigator.pop(sheetContext);
+        final failure = await action;
+        if (!context.mounted) return;
+        if (failure == null) {
+          AppSnackbar.success(context, successMessage);
+        } else {
+          AppSnackbar.error(context, failure.message);
         }
+      }
 
-        return SafeArea(
-          child: Padding(
-            padding: const EdgeInsets.all(AppSpacing.md),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
-                  children: [
-                    const Expanded(
-                      child: Text(
-                        AppStrings.bookingSheetTitle,
-                        style: TextStyle(
-                          fontSize: 16,
-                          fontWeight: FontWeight.w700,
-                          color: AppColors.ink,
-                        ),
-                      ),
-                    ),
-                    Text(
-                      _time(booking.start),
-                      style: const TextStyle(
-                        fontSize: 17,
+      return SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.all(AppSpacing.md),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  const Expanded(
+                    child: Text(
+                      AppStrings.bookingSheetTitle,
+                      style: TextStyle(
+                        fontSize: 16,
                         fontWeight: FontWeight.w700,
                         color: AppColors.ink,
                       ),
                     ),
+                  ),
+                  Text(
+                    _DayTimeline._time(booking.start),
+                    style: const TextStyle(
+                      fontSize: 17,
+                      fontWeight: FontWeight.w700,
+                      color: AppColors.ink,
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: AppSpacing.sm),
+              Text(
+                [
+                  booking.clientName,
+                  booking.serviceName,
+                ].where((s) => s.isNotEmpty).join(' · '),
+                style: const TextStyle(fontSize: 15, color: AppColors.ink),
+              ),
+              const SizedBox(height: AppSpacing.xs),
+              Text(
+                _DayTimeline._statusLabel(booking.status),
+                style: TextStyle(
+                  fontSize: 13,
+                  color: _DayTimeline._statusColor(booking.status),
+                ),
+              ),
+              const SizedBox(height: AppSpacing.md),
+              // Status-appropriate actions; width-constrained (footgun).
+              if (booking.status == HomeBookingStatus.pending)
+                Row(
+                  children: [
+                    Expanded(
+                      child: OutlinedButton(
+                        key: const Key('sheet-decline'),
+                        style: OutlinedButton.styleFrom(
+                          foregroundColor: AppColors.danger,
+                          side: const BorderSide(color: AppColors.danger),
+                        ),
+                        onPressed: () => run(
+                          cubit.declineBooking(
+                            booking.id,
+                            reason: AppStrings.homeDeclineReason,
+                          ),
+                          AppStrings.homeDeclined,
+                        ),
+                        child: const Text(AppStrings.homeDecline),
+                      ),
+                    ),
+                    const SizedBox(width: AppSpacing.sm),
+                    Expanded(
+                      child: FilledButton(
+                        key: const Key('sheet-confirm'),
+                        onPressed: () => run(
+                          cubit.confirmBooking(booking.id),
+                          AppStrings.homeConfirmed,
+                        ),
+                        child: const Text(AppStrings.homeConfirm),
+                      ),
+                    ),
+                  ],
+                )
+              else if (booking.status == HomeBookingStatus.confirmed)
+                Row(
+                  children: [
+                    Expanded(
+                      child: FilledButton.icon(
+                        key: const Key('sheet-complete'),
+                        onPressed: () => run(
+                          cubit.completeBooking(booking.id),
+                          AppStrings.homeCompleted,
+                        ),
+                        icon: const Icon(Icons.check, size: AppIconSize.action),
+                        label: const Text(AppStrings.homeActionComplete),
+                      ),
+                    ),
+                    const SizedBox(width: AppSpacing.sm),
+                    Expanded(
+                      child: OutlinedButton.icon(
+                        key: const Key('sheet-noshow'),
+                        onPressed: () => run(
+                          cubit.markNoShow(booking.id),
+                          AppStrings.homeNoShowMarked,
+                        ),
+                        icon: const Icon(
+                          Icons.person_off,
+                          size: AppIconSize.action,
+                        ),
+                        label: const Text(AppStrings.homeActionNoShow),
+                      ),
+                    ),
                   ],
                 ),
-                const SizedBox(height: AppSpacing.sm),
-                Text(
-                  [booking.clientName, booking.serviceName]
-                      .where((s) => s.isNotEmpty)
-                      .join(' · '),
-                  style:
-                      const TextStyle(fontSize: 15, color: AppColors.ink),
-                ),
-                const SizedBox(height: AppSpacing.xs),
-                Text(
-                  _statusLabel(booking.status),
-                  style: TextStyle(
-                    fontSize: 13,
-                    color: _statusColor(booking.status),
-                  ),
-                ),
-                const SizedBox(height: AppSpacing.md),
-                // Status-appropriate actions; width-constrained (footgun).
-                if (booking.status == HomeBookingStatus.pending)
-                  Row(
-                    children: [
-                      Expanded(
-                        child: OutlinedButton(
-                          key: const Key('sheet-decline'),
-                          style: OutlinedButton.styleFrom(
-                            foregroundColor: AppColors.danger,
-                            side:
-                                const BorderSide(color: AppColors.danger),
-                          ),
-                          onPressed: () => run(
-                            cubit.declineBooking(booking.id,
-                                reason: AppStrings.homeDeclineReason),
-                            AppStrings.homeDeclined,
-                          ),
-                          child: const Text(AppStrings.homeDecline),
-                        ),
-                      ),
-                      const SizedBox(width: AppSpacing.sm),
-                      Expanded(
-                        child: FilledButton(
-                          key: const Key('sheet-confirm'),
-                          onPressed: () => run(
-                            cubit.confirmBooking(booking.id),
-                            AppStrings.homeConfirmed,
-                          ),
-                          child: const Text(AppStrings.homeConfirm),
-                        ),
-                      ),
-                    ],
-                  )
-                else if (booking.status == HomeBookingStatus.confirmed)
-                  Row(
-                    children: [
-                      Expanded(
-                        child: FilledButton.icon(
-                          key: const Key('sheet-complete'),
-                          onPressed: () => run(
-                            cubit.completeBooking(booking.id),
-                            AppStrings.homeCompleted,
-                          ),
-                          icon: const Icon(Icons.check,
-                              size: AppIconSize.action),
-                          label: const Text(AppStrings.homeActionComplete),
-                        ),
-                      ),
-                      const SizedBox(width: AppSpacing.sm),
-                      Expanded(
-                        child: OutlinedButton.icon(
-                          key: const Key('sheet-noshow'),
-                          onPressed: () => run(
-                            cubit.markNoShow(booking.id),
-                            AppStrings.homeNoShowMarked,
-                          ),
-                          icon: const Icon(Icons.person_off,
-                              size: AppIconSize.action),
-                          label: const Text(AppStrings.homeActionNoShow),
-                        ),
-                      ),
-                    ],
-                  ),
-                const SizedBox(height: AppSpacing.sm),
-              ],
-            ),
+              const SizedBox(height: AppSpacing.sm),
+            ],
           ),
-        );
-      },
-    );
-  }
+        ),
+      );
+    },
+  );
 }

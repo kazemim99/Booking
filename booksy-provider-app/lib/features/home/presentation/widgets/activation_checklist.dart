@@ -127,7 +127,7 @@ class ActivationChecklist extends StatelessWidget {
                       )
                     else
                       const Icon(
-                        Icons.chevron_left,
+                        Icons.chevron_right,
                         size: AppIconSize.action,
                         color: AppColors.muted,
                       ),

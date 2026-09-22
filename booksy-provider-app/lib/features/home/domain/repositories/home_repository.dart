@@ -45,6 +45,9 @@ abstract class HomeRepository {
     required DateTime to,
   });
 
+  /// One booking by id — how a notification finds the day its booking is on.
+  Future<Either<Failure, HomeBooking>> fetchBooking(String id);
+
   // ---- More hub (spec: provider-more-hub) ----
 
   /// The provider's services (read surface; reuses the composer model).

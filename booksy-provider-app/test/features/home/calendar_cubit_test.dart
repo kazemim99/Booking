@@ -232,4 +232,39 @@ void main() {
         from: any(named: 'from'), to: any(named: 'to'))).called(1);
     await cubit.close();
   });
+
+  // QA walkthrough 2026-09-22: tapping a "new booking request" notification must land on that booking, so the
+  // salon can confirm or decline it — not on today's calendar, where a booking three days out is not even shown.
+  group('opening one booking from a notification', () {
+    test('jumps to the week and day of that booking and marks it to open', () async {
+      final friday = DateTime(2026, 7, 24, 14); // the week after `now`
+      when(() => repository.fetchBooking('b9'))
+          .thenAnswer((_) async => Right(booking('b9', friday, HomeBookingStatus.pending)));
+      when(() => repository.fetchBookings(from: any(named: 'from'), to: any(named: 'to')))
+          .thenAnswer((_) async => Right([booking('b9', friday, HomeBookingStatus.pending)]));
+      final cubit = build();
+
+      await cubit.openBooking('b9');
+
+      expect(cubit.state.weekStart, DateTime(2026, 7, 18));
+      expect(cubit.state.selectedDay, DateTime(2026, 7, 24));
+      expect(cubit.state.focusedBookingId, 'b9');
+      cubit.clearFocus();
+      expect(cubit.state.focusedBookingId, isNull, reason: 'the sheet opens once, not on every rebuild');
+      await cubit.close();
+    });
+
+    test('a booking that cannot be read leaves the calendar on today and says so', () async {
+      when(() => repository.fetchBooking('gone'))
+          .thenAnswer((_) async => const Left(NotFoundFailure('نوبت پیدا نشد')));
+      final cubit = build();
+
+      await cubit.openBooking('gone');
+
+      expect(cubit.state.selectedDay, DateTime(2026, 7, 15));
+      expect(cubit.state.focusedBookingId, isNull);
+      expect(cubit.state.error, isNotNull);
+      await cubit.close();
+    });
+  });
 }

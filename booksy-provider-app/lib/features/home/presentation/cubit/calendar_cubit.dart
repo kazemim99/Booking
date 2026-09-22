@@ -26,6 +26,10 @@ class CalendarState extends Equatable {
   final bool stale;
   final String? error;
 
+  /// A booking to open as soon as its day is on screen — set when a notification is tapped, cleared once the
+  /// sheet has opened so it opens exactly once.
+  final String? focusedBookingId;
+
   const CalendarState({
     required this.status,
     required this.weekStart,
@@ -33,6 +37,7 @@ class CalendarState extends Equatable {
     this.bookingsByDay = const {},
     this.stale = false,
     this.error,
+    this.focusedBookingId,
   });
 
   List<HomeBooking> get selectedDayBookings =>
@@ -48,6 +53,7 @@ class CalendarState extends Equatable {
     Map<DateTime, List<HomeBooking>>? bookingsByDay,
     bool? stale,
     String? Function()? error,
+    String? Function()? focusedBookingId,
   }) {
     return CalendarState(
       status: status ?? this.status,
@@ -56,12 +62,14 @@ class CalendarState extends Equatable {
       bookingsByDay: bookingsByDay ?? this.bookingsByDay,
       stale: stale ?? this.stale,
       error: error != null ? error() : this.error,
+      focusedBookingId:
+          focusedBookingId != null ? focusedBookingId() : this.focusedBookingId,
     );
   }
 
   @override
   List<Object?> get props =>
-      [status, weekStart, selectedDay, bookingsByDay, stale, error];
+      [status, weekStart, selectedDay, bookingsByDay, stale, error, focusedBookingId];
 }
 
 /// State for the Calendar tab (spec: provider-calendar): one fetch per
@@ -121,6 +129,27 @@ class CalendarCubit extends Cubit<CalendarState> {
   }
 
   Future<void> refresh() => _fetchWeek(state.weekStart, keepData: true);
+
+  /// Opens one booking — the landing for a tapped notification (QA 2026-09-22): its week is fetched, its day
+  /// selected, and the view opens its sheet. A booking that cannot be read leaves the calendar where it is.
+  Future<void> openBooking(String bookingId) async {
+    final result = await _repository.fetchBooking(bookingId);
+    if (isClosed) return;
+    final start = result.fold((_) => null, (b) => b.start);
+    if (start == null) {
+      emit(state.copyWith(
+        error: () => result.fold((f) => f.message, (_) => 'نوبت پیدا نشد'),
+      ));
+      return;
+    }
+    final day = dateOnly(start);
+    final weekStart = weekStartOf(day);
+    emit(state.copyWith(weekStart: weekStart, selectedDay: day));
+    await _fetchWeek(weekStart);
+    if (!isClosed) emit(state.copyWith(focusedBookingId: () => bookingId));
+  }
+
+  void clearFocus() => emit(state.copyWith(focusedBookingId: () => null));
 
   Future<void> _fetchWeek(DateTime weekStart, {bool keepData = false}) async {
     final seq = ++_fetchSeq;

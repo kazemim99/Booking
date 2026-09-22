@@ -170,4 +170,35 @@ void main() {
     expect(find.byKey(const Key('calendar-today')), findsOneWidget);
     expect(find.byKey(const Key('calendar-create-action')), findsOneWidget);
   });
+
+  // QA walkthrough 2026-09-22: a tapped "new booking request" lands on that booking with its actions open.
+  testWidgets('opening a booking from a notification shows its sheet, once', (tester) async {
+    when(() => repository.fetchBooking('b3'))
+        .thenAnswer((_) async => Right(booking('b3', DateTime(2026, 7, 16, 11), HomeBookingStatus.confirmed)));
+    final cubit = await pump(tester);
+
+    await cubit.openBooking('b3');
+    await tester.pumpAndSettle();
+
+    expect(tester.takeException(), isNull);
+    expect(cubit.state.selectedDay, DateTime(2026, 7, 16));
+    expect(find.byType(BottomSheet), findsOneWidget);
+    expect(cubit.state.focusedBookingId, isNull, reason: 'cleared, so a rebuild does not reopen it');
+  });
+
+  // QA walkthrough 2026-09-22: "the arrow points right where it should point left; it is like that everywhere".
+  // Both icons mirror themselves in RTL (matchTextDirection), so the icon NAME is the LTR meaning: in Persian the
+  // week runs right→left, so "previous" points right (chevron_left) and "next" points left (chevron_right).
+  testWidgets('the week arrows point the way the week runs', (tester) async {
+    await pump(tester);
+
+    final previous = tester.widget<Icon>(find.descendant(
+        of: find.byKey(const Key('calendar-prev-week')), matching: find.byType(Icon)));
+    final next = tester.widget<Icon>(find.descendant(
+        of: find.byKey(const Key('calendar-next-week')), matching: find.byType(Icon)));
+
+    expect(previous.icon, Icons.chevron_left);
+    expect(next.icon, Icons.chevron_right);
+    expect(previous.icon!.matchTextDirection, isTrue);
+  });
 }

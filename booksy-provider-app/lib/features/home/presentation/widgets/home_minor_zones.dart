@@ -76,7 +76,7 @@ class ComingUpPeek extends StatelessWidget {
                   style: const TextStyle(fontSize: 14, color: AppColors.ink),
                 ),
               ),
-              const Icon(Icons.chevron_left,
+              const Icon(Icons.chevron_right,
                   size: AppIconSize.action, color: AppColors.muted),
             ],
           ),

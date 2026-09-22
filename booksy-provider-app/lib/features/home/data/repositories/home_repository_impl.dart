@@ -127,6 +127,21 @@ class HomeRepositoryImpl implements HomeRepository {
     });
   }
 
+  @override
+  Future<Either<Failure, HomeBooking>> fetchBooking(String id) async {
+    try {
+      final booking = HomeApiService.toHomeBooking(await _api.getBooking(id));
+      if (booking.id.isEmpty || booking.start == null) {
+        return const Left(NotFoundFailure('نوبت پیدا نشد'));
+      }
+      return Right(booking);
+    } on DioException catch (e) {
+      return Left(e.response?.statusCode == 404
+          ? const NotFoundFailure('نوبت پیدا نشد')
+          : const ServerFailure('دریافت نوبت ناموفق بود'));
+    }
+  }
+
   /// Raw range fetch + service-name enrichment (booking rows carry only ids
   /// for service/customer, verified live; customer names need a backend
   /// cross-context enrichment, tracked).

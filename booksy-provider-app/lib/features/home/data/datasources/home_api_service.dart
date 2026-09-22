@@ -30,6 +30,14 @@ class HomeApiService {
     return unwrapList(res.data);
   }
 
+  /// GET /v1/Bookings/{id} — one booking as a raw map, unwrapped from the envelope.
+  Future<Map<String, dynamic>> getBooking(String id) async {
+    final res = await _dio.get(ApiConstants.booking(id));
+    final body = res.data;
+    final data = body is Map && body['data'] is Map ? body['data'] : body;
+    return data is Map ? Map<String, dynamic>.from(data) : <String, dynamic>{};
+  }
+
   /// GET /v1/Bookings/statistics?providerId[&startDate&endDate] — the stats
   /// object, unwrapped from the `{success, data: {...}}` envelope (verified
   /// live 2026-07-15). Returns {} when the response has no usable body.
