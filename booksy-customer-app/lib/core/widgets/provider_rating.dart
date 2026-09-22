@@ -7,10 +7,11 @@ import '../utils/jalali_formatter.dart';
 
 /// Star + rating (+ optional review count) for a provider.
 ///
-/// Every seeded provider currently has `averageRating == 0` and
-/// `totalReviews == 0`. Showing "★ 0.0 (0 نظر)" reads as a *bad* salon rather
-/// than an unrated one, so [hasRating] is the single gate every surface uses:
-/// when there is no rating yet, nothing is rendered at all.
+/// The count is the provider's *published* review count
+/// (openspec/changes/provider-reviews-and-ratings), so it decides whether there
+/// is a rating at all: "★ 0.0 (0 نظر)" reads as a bad salon, not an unrated
+/// one. [hasRating] is the single gate every surface uses, and a known zero is
+/// shown as [NoReviewsYetLabel] instead.
 class ProviderRating extends StatelessWidget {
   final double rating;
   final int? reviewCount;
@@ -25,9 +26,14 @@ class ProviderRating extends StatelessWidget {
     this.iconSize = AppIconSize.sm,
   });
 
-  /// True only when the provider has a real rating to show.
+  /// True only when the provider has a real rating to show. A known count
+  /// decides; the rating stands in only where no count was sent.
   static bool hasRating(double rating, [int? reviewCount]) =>
-      rating > 0 || (reviewCount ?? 0) > 0;
+      reviewCount != null ? reviewCount > 0 : rating > 0;
+
+  /// True when the count says nobody has reviewed this provider yet. An
+  /// unknown count is not "no reviews" — it is simply not shown.
+  static bool isUnrated(int? reviewCount) => reviewCount == 0;
 
   @override
   Widget build(BuildContext context) {
@@ -59,6 +65,25 @@ class ProviderRating extends StatelessWidget {
           ),
         ],
       ],
+    );
+  }
+}
+
+/// "هنوز نظری ندارد": what a provider with no published reviews shows where a
+/// rating would be. Words, never a zero-star row.
+class NoReviewsYetLabel extends StatelessWidget {
+  const NoReviewsYetLabel({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return Text(
+      AppStrings.noReviewsYet,
+      key: const Key('provider-no-reviews'),
+      style: theme.textTheme.bodySmall
+          ?.copyWith(color: theme.colorScheme.onSurfaceVariant),
+      maxLines: 1,
+      overflow: TextOverflow.ellipsis,
     );
   }
 }

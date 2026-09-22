@@ -22,6 +22,7 @@ import '../../features/home/presentation/pages/home_page.dart';
 import '../../features/notifications/presentation/inbox_cubit.dart';
 import '../../features/notifications/presentation/inbox_page.dart';
 import '../../features/profile/presentation/pages/profile_tab_page.dart';
+import '../../features/reviews/presentation/pages/my_reviews_page.dart';
 import '../../features/search/presentation/pages/explore_page.dart';
 import '../../features/search/presentation/pages/map_discovery_page.dart';
 import '../../features/search/presentation/pages/provider_detail_page.dart';
@@ -44,6 +45,9 @@ class Routes {
   static const String exploreMap = '/explore/map';
   static const String appointments = '/appointments';
   static const String profile = '/profile';
+
+  /// The signed-in customer's own reviews, in every moderation state.
+  static const String myReviews = '/profile/reviews';
 
   /// Deposit checkout for a booking. Focused (outside the tab shell) and auth-required.
   static const String checkout = '/checkout';
@@ -110,6 +114,8 @@ class AppRouter {
     if (location.startsWith('${Routes.appointments}/')) return true;
     // The inbox is the signed-in person's own; a guest has none, and the server answers 401.
     if (location.startsWith(Routes.notifications)) return true;
+    // A guest has no reviews of their own; the server answers 401.
+    if (location.startsWith(Routes.myReviews)) return true;
     if (location.contains('/book/confirm')) return true;
     // Paying for a booking is inherently a signed-in action; return-to-intent brings the customer back here.
     if (location.startsWith('${Routes.checkout}/')) return true;
@@ -251,6 +257,12 @@ class AppRouter {
               GoRoute(
                 path: Routes.profile,
                 builder: (context, state) => const ProfileTabPage(),
+                routes: [
+                  GoRoute(
+                    path: 'reviews',
+                    builder: (context, state) => const MyReviewsPage(),
+                  ),
+                ],
               ),
             ]),
           ],

@@ -116,6 +116,7 @@ class _DetailContent extends StatelessWidget {
       bookingId: booking.id,
       rating: draft.rating,
       comment: draft.comment,
+      dimensions: draft.dimensions,
     );
     if (!context.mounted) return;
     result.fold(

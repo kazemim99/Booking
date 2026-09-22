@@ -71,4 +71,29 @@ class ProviderDetailCubit extends Cubit<ProviderDetailState> {
       reviewsLoading: false,
     ));
   }
+
+  /// A signed-in reader's vote on one review. The server's tally is adopted as
+  /// it comes back — the client never counts for itself, so a withdrawn or
+  /// moved vote cannot drift. Returns the reason when the vote was refused.
+  Future<String?> vote(String reviewId, bool isHelpful) async {
+    final reviews = reviewRepository;
+    if (reviews == null) return null;
+    final result = await reviews.vote(reviewId, isHelpful);
+    if (isClosed) return null;
+    return result.fold((failure) => failure.message, (tally) {
+      final current = state.reviews;
+      if (current != null) {
+        emit(ProviderDetailState(
+          status: state.status,
+          provider: state.provider,
+          errorMessage: state.errorMessage,
+          reviews: current.withItems([
+            for (final r in current.items) r.id == reviewId ? r.withVote(tally) : r,
+          ]),
+          reviewsLoading: state.reviewsLoading,
+        ));
+      }
+      return null;
+    });
+  }
 }

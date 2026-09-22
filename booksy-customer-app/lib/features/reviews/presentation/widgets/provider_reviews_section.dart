@@ -17,10 +17,15 @@ class ProviderReviewsSection extends StatelessWidget {
   /// Null while they are still loading.
   final bool loading;
 
+  /// A reader's helpful / not-helpful vote. Null leaves the counts visible but
+  /// nothing tappable; the page decides what a guest's tap means.
+  final void Function(Review review, bool helpful)? onVote;
+
   const ProviderReviewsSection({
     super.key,
     this.reviews,
     this.loading = false,
+    this.onVote,
   });
 
   @override
@@ -44,6 +49,37 @@ class ProviderReviewsSection extends StatelessWidget {
               ),
           ],
         ),
+        if (data != null && data.dimensions.isNotEmpty) ...[
+          const SizedBox(height: AppSpacing.xs),
+          // Only the dimensions somebody rated: a zero bar would read as a bad score.
+          for (final entry in data.dimensions.entries)
+            Padding(
+              key: Key('review-breakdown-${entry.key.name}'),
+              padding: const EdgeInsets.only(bottom: AppSpacing.xxs),
+              child: Row(
+                children: [
+                  Expanded(
+                    flex: 2,
+                    child: Text(entry.key.label, style: theme.textTheme.bodySmall),
+                  ),
+                  Expanded(
+                    flex: 3,
+                    child: LinearProgressIndicator(
+                      value: (entry.value.average / 5).clamp(0, 1),
+                      minHeight: 6,
+                      borderRadius: BorderRadius.circular(AppRadius.sm),
+                    ),
+                  ),
+                  const SizedBox(width: AppSpacing.xs),
+                  Text(
+                    JalaliFormatter.toPersianDigits(
+                        entry.value.average.toStringAsFixed(1)),
+                    style: theme.textTheme.bodySmall,
+                  ),
+                ],
+              ),
+            ),
+        ],
         const SizedBox(height: AppSpacing.sm),
         if (loading)
           const Padding(
@@ -88,6 +124,7 @@ class ProviderReviewsSection extends StatelessWidget {
                     const SizedBox(height: AppSpacing.xxs),
                     Text(review.comment!, style: theme.textTheme.bodyMedium),
                   ],
+                  _VoteRow(review: review, onVote: onVote),
                   if (review.providerResponse != null &&
                       review.providerResponse!.isNotEmpty) ...[
                     const SizedBox(height: AppSpacing.xs),
@@ -116,6 +153,49 @@ class ProviderReviewsSection extends StatelessWidget {
               ),
             ),
       ],
+    );
+  }
+}
+
+/// "مفید بود / مفید نبود" with the counts, the reader's own vote filled in.
+class _VoteRow extends StatelessWidget {
+  final Review review;
+  final void Function(Review review, bool helpful)? onVote;
+
+  const _VoteRow({required this.review, this.onVote});
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final vote = onVote;
+    Widget control(bool helpful) {
+      final mine = review.myVote ==
+          (helpful ? ReviewVote.helpful : ReviewVote.notHelpful);
+      final count = helpful ? review.helpfulCount : review.notHelpfulCount;
+      return Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          IconButton(
+            key: Key('review-${review.id}-${helpful ? 'helpful' : 'not-helpful'}'),
+            tooltip: helpful ? AppStrings.reviewHelpful : AppStrings.reviewNotHelpful,
+            visualDensity: VisualDensity.compact,
+            onPressed: vote == null ? null : () => vote(review, helpful),
+            icon: Icon(
+              helpful
+                  ? (mine ? Icons.thumb_up : Icons.thumb_up_outlined)
+                  : (mine ? Icons.thumb_down : Icons.thumb_down_outlined),
+              size: AppIconSize.sm,
+              color: mine ? theme.colorScheme.primary : null,
+            ),
+          ),
+          Text(JalaliFormatter.toPersianDigits('$count'),
+              style: theme.textTheme.bodySmall),
+        ],
+      );
+    }
+
+    return Row(
+      children: [control(true), const SizedBox(width: AppSpacing.sm), control(false)],
     );
   }
 }

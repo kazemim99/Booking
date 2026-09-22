@@ -10,8 +10,9 @@ import 'provider_rating.dart';
 /// category · rating (review count) · price band · distance.
 ///
 /// Every part is optional because the backend does not yet publish all of them
-/// (there is no price-band field, ratings/review counts are zero for seeded
-/// providers, and the search payload carries no distance). A part that has no
+/// (there is no price-band field and the search payload carries no distance).
+/// The rating is the exception: a known zero review count is shown as "no
+/// reviews yet" rather than dropped, because the spec asks for it. A part that has no
 /// value is dropped along with its separator, and when nothing at all can be
 /// shown the widget collapses to zero height rather than leaving a row of
 /// placeholders or fabricated numbers.
@@ -64,6 +65,7 @@ class ProviderMetaLine extends StatelessWidget {
   bool get hasContent =>
       (category != null && category!.isNotEmpty) ||
       ProviderRating.hasRating(rating ?? 0, reviewCount) ||
+      ProviderRating.isUnrated(reviewCount) ||
       priceBand != null ||
       distanceKm != null ||
       freeSlotsLabel(nextFreeDate, freeSlotCount, now ?? DateTime.now()) != null;
@@ -77,7 +79,9 @@ class ProviderMetaLine extends StatelessWidget {
       parts.add(Text(category!, style: theme.textTheme.bodySmall));
     }
     if (ProviderRating.hasRating(rating ?? 0, reviewCount)) {
-      parts.add(ProviderRating(rating: rating!, reviewCount: reviewCount));
+      parts.add(ProviderRating(rating: rating ?? 0, reviewCount: reviewCount));
+    } else if (ProviderRating.isUnrated(reviewCount)) {
+      parts.add(const NoReviewsYetLabel());
     }
     if (priceBand != null) {
       parts.add(PriceBandLabel(band: priceBand!));

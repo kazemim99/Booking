@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:go_router/go_router.dart';
+import '../../../../config/routes/app_router.dart';
 
 import '../../../../config/theme/app_tokens.dart';
 import '../../../../core/constants/app_strings.dart';
@@ -206,6 +208,18 @@ class _ProfileView extends StatelessWidget {
                       onTap: state.editStatus == ProfileEditStatus.saving
                           ? null
                           : () => _editProfile(context),
+                    ),
+                    const Divider(),
+                    ListTile(
+                      key: const Key('profile-my-reviews'),
+                      leading: const Icon(Icons.rate_review_outlined),
+                      title: const Text(AppStrings.myReviewsTitle),
+                      trailing: Icon(
+                        Directionality.of(context) == TextDirection.rtl
+                            ? Icons.chevron_left
+                            : Icons.chevron_right,
+                      ),
+                      onTap: () => context.push(Routes.myReviews),
                     ),
                     const Divider(),
                     ListTile(

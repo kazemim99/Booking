@@ -254,7 +254,27 @@ class AppStrings {
   static const String reviewCommentLabel = 'نظر شما (اختیاری)';
   static const String reviewRatingRequired = 'لطفاً امتیاز را انتخاب کنید';
   static const String reviewCommentTooShort = 'نظر باید حداقل ۱۰ حرف باشد';
-  static const String reviewSaved = 'نظر شما ثبت شد. ممنون!';
+  static const String reviewSaved =
+      'نظر شما ثبت شد و پس از تأیید نمایش داده می‌شود. ممنون!';
+  static const String reviewEdited =
+      'تغییرات ذخیره شد و پس از تأیید دوباره نمایش داده می‌شود';
+  static const String reviewEditTitle = 'ویرایش نظر';
+  static const String reviewEditNotice =
+      'نظر ویرایش‌شده تا تأیید دوباره نمایش داده نمی‌شود';
+  static const String reviewSaveAction = 'ذخیره';
+  static const String reviewDimensionsToggle = 'امتیاز جزئی‌تر (اختیاری)';
+  static const String reviewHelpful = 'مفید بود';
+  static const String reviewNotHelpful = 'مفید نبود';
+  static const String noReviewsYet = 'هنوز نظری ندارد';
+  static const String myReviewsTitle = 'نظرهای من';
+  static const String myReviewsEmpty = 'شما هنوز نظری ثبت نکرده‌اید';
+  static const String reviewStatusPending = 'در انتظار تأیید';
+  static const String reviewStatusPublished = 'منتشر شده';
+  static const String reviewStatusRejected = 'رد شده';
+  static const String reviewStatusHidden = 'پنهان شده';
+  static const String reviewEditedLabel = '(ویرایش شده)';
+  static const String reviewEditAction = 'ویرایش';
+  static String reviewModerationReason(String reason) => 'دلیل: $reason';
   static const String today = 'امروز';
   static const String tomorrow = 'فردا';
   static String freeSlotsOn(String when, int count) =>

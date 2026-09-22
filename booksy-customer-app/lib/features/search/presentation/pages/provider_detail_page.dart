@@ -7,6 +7,8 @@ import '../../../../config/theme/app_tokens.dart';
 import '../../../../core/constants/app_strings.dart';
 import '../../../../core/di/injection.dart';
 import '../../../../core/widgets/widgets.dart';
+import '../../../auth/presentation/bloc/auth_bloc.dart';
+import '../../../auth/presentation/bloc/auth_state.dart';
 import '../../../booking/domain/entities/booking_entities.dart';
 import '../bloc/provider_detail_cubit.dart';
 import '../widgets/contact_location_section.dart';
@@ -125,6 +127,22 @@ class _ProviderContent extends StatelessWidget {
     this.reviewsLoading = false,
   });
 
+  /// Voting is for signed-in readers: a guest is sent to sign in and brought
+  /// back here. A refused vote (the author's own review, say) is said aloud.
+  Future<void> _vote(BuildContext context, Review review, bool helpful) async {
+    if (context.read<AuthBloc>().state is! Authenticated) {
+      final target = Uri.encodeComponent(Routes.providerDetail(provider.id));
+      context.push('${Routes.login}?redirect=$target');
+      return;
+    }
+    final error =
+        await context.read<ProviderDetailCubit>().vote(review.id, helpful);
+    if (error != null && context.mounted) {
+      ScaffoldMessenger.of(context)
+          .showSnackBar(SnackBar(content: Text(error)));
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
@@ -192,6 +210,7 @@ class _ProviderContent extends StatelessWidget {
               ProviderReviewsSection(
                 reviews: reviews,
                 loading: reviewsLoading,
+                onVote: (review, helpful) => _vote(context, review, helpful),
               ),
               if (provider.latitude != null && provider.longitude != null) ...[
                 const SizedBox(height: AppSpacing.lg),

@@ -216,6 +216,19 @@ class ApiConstants {
   static String bookingReview(String bookingId) =>
       '/$apiVersion/Reviews/bookings/$bookingId';
 
+  /// The author's edit of their own review.
+  /// PUT /api/v1/Reviews/{reviewId}
+  static String review(String reviewId) => '/$apiVersion/Reviews/$reviewId';
+
+  /// A signed-in reader's helpful / not-helpful vote.
+  /// PUT /api/v1/Reviews/{reviewId}/helpful
+  static String reviewVote(String reviewId) =>
+      '/$apiVersion/Reviews/$reviewId/helpful';
+
+  /// The signed-in customer's own reviews, in every moderation state.
+  /// GET /api/v1/Reviews/me
+  static const String myReviews = '/$apiVersion/Reviews/me';
+
   // ==================== Location Endpoints ====================
 
   /// Search locations

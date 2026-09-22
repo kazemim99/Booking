@@ -253,11 +253,31 @@ void main() {
   });
 
   group('ProviderRating', () {
-    test('hasRating gates the zero-data case', () {
+    // provider-reviews-and-ratings: the count is now the published review count,
+    // so it decides. It used to be a constant zero, which is why `rating > 0`
+    // alone once had to count as rated — `(4.5, 0)` was true until the count
+    // became real. Only where no count travels does the rating decide.
+    test('hasRating: a known count decides, the rating only stands in for a missing one', () {
       expect(ProviderRating.hasRating(0, 0), isFalse);
       expect(ProviderRating.hasRating(0, null), isFalse);
-      expect(ProviderRating.hasRating(4.5, 0), isTrue);
+      expect(ProviderRating.hasRating(4.5, 0), isFalse,
+          reason: 'no published review means no rating, whatever number rode along');
       expect(ProviderRating.hasRating(0, 3), isTrue);
+      expect(ProviderRating.hasRating(4.5, null), isTrue);
+    });
+
+    test('isUnrated only when the count says so — an unknown count is not "no reviews"', () {
+      expect(ProviderRating.isUnrated(0), isTrue);
+      expect(ProviderRating.isUnrated(null), isFalse);
+      expect(ProviderRating.isUnrated(3), isFalse);
+    });
+
+    testWidgets('the "no reviews yet" label is words, never a zero star row',
+        (tester) async {
+      await tester.pumpWidget(_wrap(const NoReviewsYetLabel()));
+      expect(find.text(AppStrings.noReviewsYet), findsOneWidget);
+      expect(find.byIcon(Icons.star_rounded), findsNothing);
+      expect(find.text('۰.۰'), findsNothing);
     });
 
     testWidgets('shows the rating and review count in Persian digits',
@@ -280,7 +300,8 @@ void main() {
 
   group('ProviderMetaLine', () {
     testWidgets('collapses to nothing when no part has data', (tester) async {
-      const meta = ProviderMetaLine(rating: 0, reviewCount: 0);
+      // No count at all is unknown, not "no reviews" — that one still says nothing.
+      const meta = ProviderMetaLine(rating: 0);
       expect(meta.hasContent, isFalse);
 
       await tester.pumpWidget(_wrap(meta));
@@ -293,7 +314,6 @@ void main() {
         _wrap(const ProviderMetaLine(
           category: 'پارس‌آباد',
           rating: 0,
-          reviewCount: 0,
           priceBand: PriceBand.mid,
           distanceKm: 1.5,
         )),
@@ -305,6 +325,28 @@ void main() {
       // Rating absent → no star, and two separators for three parts.
       expect(find.byIcon(Icons.star_rounded), findsNothing);
       expect(find.text('·'), findsNWidgets(2));
+    });
+
+    testWidgets('a provider with no published reviews says so instead of a zero',
+        (tester) async {
+      const meta = ProviderMetaLine(category: 'پارس‌آباد', rating: 0, reviewCount: 0);
+      expect(meta.hasContent, isTrue);
+
+      await tester.pumpWidget(_wrap(meta));
+
+      expect(find.byKey(const Key('provider-no-reviews')), findsOneWidget);
+      expect(find.text(AppStrings.noReviewsYet), findsOneWidget);
+      expect(find.byIcon(Icons.star_rounded), findsNothing);
+    });
+
+    testWidgets('a rated provider shows its average and published count',
+        (tester) async {
+      await tester.pumpWidget(
+        _wrap(const ProviderMetaLine(rating: 4.2, reviewCount: 7)),
+      );
+      expect(find.text('۴.۲'), findsOneWidget);
+      expect(find.text(AppStrings.reviewCountLabel('۷')), findsOneWidget);
+      expect(find.byKey(const Key('provider-no-reviews')), findsNothing);
     });
   });
 

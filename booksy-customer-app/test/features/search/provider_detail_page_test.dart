@@ -225,11 +225,13 @@ void main() {
       expect(find.byKey(const Key('provider-hero-image')), findsOneWidget);
       expect(find.byIcon(Icons.storefront_outlined), findsOneWidget);
 
-      // A zero rating reads as a bad salon, so nothing is shown at all.
+      // A zero rating reads as a bad salon, so no star is shown — and since
+      // provider-reviews-and-ratings the header says "no reviews yet" in words
+      // instead of vanishing (the count is real now, so zero means zero).
       expect(find.byType(ProviderRating), findsNothing);
       expect(find.textContaining('۰.۰'), findsNothing);
       expect(find.byType(PriceBandLabel), findsNothing);
-      expect(find.byType(ProviderMetaLine), findsNothing);
+      expect(find.byKey(const Key('provider-no-reviews')), findsOneWidget);
     });
 
     testWidgets('hides the hours, about and contact sections entirely',
