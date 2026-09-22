@@ -40,6 +40,11 @@ export const routes: RouteRecordRaw[] = [
         component: () => import('../views/providers/ProviderDetails.vue'),
       },
       {
+        path: 'reviews',
+        name: 'Reviews',
+        component: () => import('../views/reviews/ReviewModeration.vue'),
+      },
+      {
         path: 'gallery',
         name: 'Gallery',
         component: () => import('../views/gallery/GalleryManagement.vue'),

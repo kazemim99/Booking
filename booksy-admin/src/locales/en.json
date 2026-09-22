@@ -54,6 +54,7 @@
     "dashboard": "Dashboard",
     "users": "Users",
     "providers": "Providers",
+    "reviews": "Reviews",
     "gallery": "Image Gallery",
     "services": "Services",
     "analytics": "Analytics",
@@ -226,7 +227,8 @@
     "primaryImage": "Primary Image",
     "caption": "Caption",
     "confirmActivate": "Activate this provider?",
-    "confirmDeleteImage": "Delete this image?"
+    "confirmDeleteImage": "Delete this image?",
+    "noReviewsYet": "No reviews yet"
   },
   "service": {
     "title": "Services",
@@ -404,5 +406,51 @@
     "unavailableTitle": "Platform-wide image moderation is unavailable",
     "unavailableDescription": "The backend cannot yet list or moderate images across providers. Each provider's images are viewable and manageable from that provider's details page.",
     "browseProviders": "Browse providers"
+  },
+  "reviews": {
+    "title": "Review moderation",
+    "subtitle": "Nothing a customer writes is public until you approve it",
+    "tabs": {
+      "pending": "Awaiting review",
+      "reported": "Reported",
+      "hidden": "Hidden"
+    },
+    "empty": {
+      "pending": "Nothing is awaiting review",
+      "reported": "No reported reviews",
+      "hidden": "No hidden reviews"
+    },
+    "loadFailed": "Could not load the moderation queue",
+    "retry": "Retry",
+    "rating": "Overall rating",
+    "noComment": "No text",
+    "edited": "Edited — was published before",
+    "firstSubmission": "First submission",
+    "replyAwaiting": "Salon reply awaiting review",
+    "providerReply": "Salon reply",
+    "reports": "Reports",
+    "reason": "Reason",
+    "reasonRequired": "A reason is required",
+    "reasonPlaceholder": "Write the reason; the author will see it",
+    "dimensions": {
+      "cleanliness": "Cleanliness & hygiene",
+      "skill": "Skill & quality",
+      "punctuality": "Punctuality",
+      "conduct": "Conduct & manner"
+    },
+    "actions": {
+      "approve": "Approve & publish",
+      "reject": "Reject",
+      "hide": "Hide",
+      "restore": "Restore",
+      "approveReply": "Approve reply",
+      "rejectReply": "Reject reply"
+    },
+    "rejectPermanent": "Rejection is permanent; this review will never be published.",
+    "done": "Saved",
+    "reasonSeenBy": {
+      "customer": "This reason is sent to the customer who wrote the review.",
+      "provider": "This reason is shown to the salon in their app."
+    }
   }
 }

@@ -46,11 +46,15 @@
                 {{ formatPhone(provider?.contactInfo?.primaryPhone) || t('provider.notAvailable') }}
               </a-descriptions-item>
               <a-descriptions-item :label="t('provider.rating')" :span="2">
-                <a-rate :value="provider?.averageRating || 0" disabled allow-half />
-                <span style="margin-left: 8px">
-                  {{ provider?.averageRating?.toFixed(2) ?? '—' }}
-                  ({{ provider?.totalReviews ?? 0 }})
-                </span>
+                <!-- The count decides: 0 published reviews is "no reviews yet", never a rating of 0. -->
+                <template v-if="(provider?.totalReviews ?? 0) > 0">
+                  <a-rate :value="provider?.averageRating ?? 0" disabled allow-half />
+                  <span style="margin-left: 8px">
+                    {{ provider?.averageRating?.toFixed(2) }}
+                    ({{ provider?.totalReviews }})
+                  </span>
+                </template>
+                <span v-else>{{ t('provider.noReviewsYet') }}</span>
               </a-descriptions-item>
               <a-descriptions-item :label="t('provider.description')" :span="2">
                 {{ provider?.description || t('provider.noDescriptionProvided') }}

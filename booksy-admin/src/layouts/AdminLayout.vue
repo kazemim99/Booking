@@ -27,6 +27,11 @@
           <span>{{ $t('navigation.providers') }}</span>
         </a-menu-item>
 
+        <a-menu-item key="reviews">
+          <message-outlined />
+          <span>{{ $t('navigation.reviews') }}</span>
+        </a-menu-item>
+
         <a-menu-item key="gallery">
           <picture-outlined />
           <span>{{ $t('navigation.gallery') }}</span>
@@ -134,6 +139,7 @@ import {
   UserOutlined,
   ShopOutlined,
   PictureOutlined,
+  MessageOutlined,
   AppstoreOutlined,
   BarChartOutlined,
   DollarOutlined,
