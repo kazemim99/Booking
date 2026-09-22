@@ -1154,6 +1154,11 @@ namespace Booksy.ServiceCatalog.Infrastructure.Migrations
                         .HasColumnType("integer")
                         .HasColumnName("PrimaryCategory");
 
+                    b.Property<int>("PublishedReviewCount")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer")
+                        .HasDefaultValue(0);
+
                     b.Property<DateTime>("RegisteredAt")
                         .HasColumnType("timestamp with time zone");
 
@@ -1443,10 +1448,20 @@ namespace Booksy.ServiceCatalog.Infrastructure.Migrations
                         .HasColumnType("uuid")
                         .HasColumnName("BookingId");
 
+                    b.Property<decimal?>("CleanlinessRating")
+                        .HasPrecision(3, 1)
+                        .HasColumnType("numeric(3,1)")
+                        .HasColumnName("CleanlinessRating");
+
                     b.Property<string>("Comment")
                         .HasMaxLength(2000)
                         .HasColumnType("character varying(2000)")
                         .HasColumnName("Comment");
+
+                    b.Property<decimal?>("ConductRating")
+                        .HasPrecision(3, 1)
+                        .HasColumnType("numeric(3,1)")
+                        .HasColumnName("ConductRating");
 
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("timestamp with time zone")
@@ -1461,11 +1476,19 @@ namespace Booksy.ServiceCatalog.Infrastructure.Migrations
                         .HasColumnType("uuid")
                         .HasColumnName("CustomerId");
 
-                    b.Property<int>("HelpfulCount")
+                    b.Property<DateTime?>("EditedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("EditedAt");
+
+                    b.Property<DateTime?>("FirstPublishedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("FirstPublishedAt");
+
+                    b.Property<int>("HelpfulVoteCount")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("integer")
                         .HasDefaultValue(0)
-                        .HasColumnName("HelpfulCount");
+                        .HasColumnName("HelpfulVoteCount");
 
                     b.Property<bool>("IsDeleted")
                         .HasColumnType("boolean");
@@ -1485,11 +1508,45 @@ namespace Booksy.ServiceCatalog.Infrastructure.Migrations
                         .HasColumnType("character varying(100)")
                         .HasColumnName("LastModifiedBy");
 
-                    b.Property<int>("NotHelpfulCount")
+                    b.Property<int>("LegacyHelpfulCount")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer")
+                        .HasDefaultValue(0)
+                        .HasColumnName("HelpfulCount");
+
+                    b.Property<int>("LegacyNotHelpfulCount")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("integer")
                         .HasDefaultValue(0)
                         .HasColumnName("NotHelpfulCount");
+
+                    b.Property<DateTime?>("ModeratedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("ModeratedAt");
+
+                    b.Property<string>("ModeratedBy")
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)")
+                        .HasColumnName("ModeratedBy");
+
+                    b.Property<string>("ModerationReason")
+                        .HasMaxLength(500)
+                        .HasColumnType("character varying(500)")
+                        .HasColumnName("ModerationReason");
+
+                    b.Property<string>("ModerationStatus")
+                        .IsRequired()
+                        .ValueGeneratedOnAdd()
+                        .HasMaxLength(20)
+                        .HasColumnType("character varying(20)")
+                        .HasDefaultValue("Pending")
+                        .HasColumnName("ModerationStatus");
+
+                    b.Property<int>("NotHelpfulVoteCount")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer")
+                        .HasDefaultValue(0)
+                        .HasColumnName("NotHelpfulVoteCount");
 
                     b.Property<Guid>("ProviderId")
                         .HasColumnType("uuid")
@@ -1504,10 +1561,30 @@ namespace Booksy.ServiceCatalog.Infrastructure.Migrations
                         .HasColumnType("timestamp with time zone")
                         .HasColumnName("ProviderResponseAt");
 
+                    b.Property<decimal?>("PunctualityRating")
+                        .HasPrecision(3, 1)
+                        .HasColumnType("numeric(3,1)")
+                        .HasColumnName("PunctualityRating");
+
                     b.Property<decimal>("RatingValue")
                         .HasPrecision(3, 1)
                         .HasColumnType("decimal(3,1)")
                         .HasColumnName("RatingValue");
+
+                    b.Property<string>("ReplyModerationReason")
+                        .HasMaxLength(500)
+                        .HasColumnType("character varying(500)")
+                        .HasColumnName("ReplyModerationReason");
+
+                    b.Property<string>("ReplyModerationStatus")
+                        .HasMaxLength(20)
+                        .HasColumnType("character varying(20)")
+                        .HasColumnName("ReplyModerationStatus");
+
+                    b.Property<decimal?>("SkillRating")
+                        .HasPrecision(3, 1)
+                        .HasColumnType("numeric(3,1)")
+                        .HasColumnName("SkillRating");
 
                     b.Property<int>("Version")
                         .IsConcurrencyToken()
@@ -1531,13 +1608,122 @@ namespace Booksy.ServiceCatalog.Infrastructure.Migrations
                     b.HasIndex("IsVerified", "CreatedAt")
                         .HasDatabaseName("IX_Reviews_Verified_CreatedAt");
 
+                    b.HasIndex("ModerationStatus", "CreatedAt")
+                        .HasDatabaseName("IX_Reviews_ModerationStatus_CreatedAt");
+
                     b.HasIndex("ProviderId", "CreatedAt")
                         .HasDatabaseName("IX_Reviews_Provider_CreatedAt");
+
+                    b.HasIndex("ProviderId", "ModerationStatus")
+                        .HasDatabaseName("IX_Reviews_Provider_ModerationStatus");
 
                     b.HasIndex("ProviderId", "RatingValue")
                         .HasDatabaseName("IX_Reviews_Provider_Rating");
 
                     b.ToTable("Reviews", "ServiceCatalog");
+                });
+
+            modelBuilder.Entity("Booksy.ServiceCatalog.Domain.Aggregates.ReviewReport", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .HasColumnType("uuid")
+                        .HasColumnName("ReviewReportId");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("CreatedAt");
+
+                    b.Property<string>("CreatedBy")
+                        .HasColumnType("text");
+
+                    b.Property<bool>("IsDeleted")
+                        .HasColumnType("boolean");
+
+                    b.Property<DateTime?>("LastModifiedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("LastModifiedBy")
+                        .HasColumnType("text");
+
+                    b.Property<string>("Reason")
+                        .IsRequired()
+                        .HasMaxLength(500)
+                        .HasColumnType("character varying(500)")
+                        .HasColumnName("Reason");
+
+                    b.Property<Guid>("ReportedByUserId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("ReportedByUserId");
+
+                    b.Property<Guid>("ReviewId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("ReviewId");
+
+                    b.Property<int>("Version")
+                        .IsConcurrencyToken()
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer")
+                        .HasDefaultValue(0)
+                        .HasColumnName("Version");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("ReviewId", "ReportedByUserId")
+                        .IsUnique()
+                        .HasDatabaseName("UX_ReviewReports_Review_Reporter");
+
+                    b.ToTable("ReviewReports", "ServiceCatalog");
+                });
+
+            modelBuilder.Entity("Booksy.ServiceCatalog.Domain.Aggregates.ReviewVote", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .HasColumnType("uuid")
+                        .HasColumnName("ReviewVoteId");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("CreatedAt");
+
+                    b.Property<string>("CreatedBy")
+                        .HasColumnType("text");
+
+                    b.Property<bool>("IsDeleted")
+                        .HasColumnType("boolean");
+
+                    b.Property<bool>("IsHelpful")
+                        .HasColumnType("boolean")
+                        .HasColumnName("IsHelpful");
+
+                    b.Property<DateTime?>("LastModifiedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("LastModifiedAt");
+
+                    b.Property<string>("LastModifiedBy")
+                        .HasColumnType("text");
+
+                    b.Property<Guid>("ReviewId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("ReviewId");
+
+                    b.Property<Guid>("UserId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("UserId");
+
+                    b.Property<int>("Version")
+                        .IsConcurrencyToken()
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer")
+                        .HasDefaultValue(0)
+                        .HasColumnName("Version");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("ReviewId", "UserId")
+                        .IsUnique()
+                        .HasDatabaseName("UX_ReviewVotes_Review_User");
+
+                    b.ToTable("ReviewVotes", "ServiceCatalog");
                 });
 
             modelBuilder.Entity("Booksy.ServiceCatalog.Domain.Aggregates.Service", b =>
@@ -2072,6 +2258,65 @@ namespace Booksy.ServiceCatalog.Infrastructure.Migrations
                         .HasDatabaseName("UX_NotificationOutbox_Dedup");
 
                     b.ToTable("NotificationOutbox", "ServiceCatalog");
+                });
+
+            modelBuilder.Entity("Booksy.ServiceCatalog.Infrastructure.Persistence.Reviews.ProviderRatingSummary", b =>
+                {
+                    b.Property<Guid>("ProviderId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("ProviderId");
+
+                    b.Property<decimal?>("CleanlinessAverage")
+                        .HasPrecision(4, 2)
+                        .HasColumnType("numeric(4,2)")
+                        .HasColumnName("CleanlinessAverage");
+
+                    b.Property<int>("CleanlinessCount")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer")
+                        .HasDefaultValue(0)
+                        .HasColumnName("CleanlinessCount");
+
+                    b.Property<decimal?>("ConductAverage")
+                        .HasPrecision(4, 2)
+                        .HasColumnType("numeric(4,2)")
+                        .HasColumnName("ConductAverage");
+
+                    b.Property<int>("ConductCount")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer")
+                        .HasDefaultValue(0)
+                        .HasColumnName("ConductCount");
+
+                    b.Property<decimal?>("PunctualityAverage")
+                        .HasPrecision(4, 2)
+                        .HasColumnType("numeric(4,2)")
+                        .HasColumnName("PunctualityAverage");
+
+                    b.Property<int>("PunctualityCount")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer")
+                        .HasDefaultValue(0)
+                        .HasColumnName("PunctualityCount");
+
+                    b.Property<decimal?>("SkillAverage")
+                        .HasPrecision(4, 2)
+                        .HasColumnType("numeric(4,2)")
+                        .HasColumnName("SkillAverage");
+
+                    b.Property<int>("SkillCount")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer")
+                        .HasDefaultValue(0)
+                        .HasColumnName("SkillCount");
+
+                    b.Property<DateTime>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("UpdatedAt");
+
+                    b.HasKey("ProviderId");
+
+                    b.ToTable("ProviderRatingSummaries", "ServiceCatalog");
                 });
 
             modelBuilder.Entity("Booksy.Core.Domain.Domain.Entities.ProvinceCities", b =>
@@ -3301,6 +3546,24 @@ namespace Booksy.ServiceCatalog.Infrastructure.Migrations
                         });
 
                     b.Navigation("PhoneNumber")
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("Booksy.ServiceCatalog.Domain.Aggregates.ReviewReport", b =>
+                {
+                    b.HasOne("Booksy.ServiceCatalog.Domain.Aggregates.Review", null)
+                        .WithMany()
+                        .HasForeignKey("ReviewId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("Booksy.ServiceCatalog.Domain.Aggregates.ReviewVote", b =>
+                {
+                    b.HasOne("Booksy.ServiceCatalog.Domain.Aggregates.Review", null)
+                        .WithMany()
+                        .HasForeignKey("ReviewId")
+                        .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
                 });
 

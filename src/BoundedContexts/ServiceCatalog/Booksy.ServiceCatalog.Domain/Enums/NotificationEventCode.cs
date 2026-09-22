@@ -134,4 +134,25 @@ public enum NotificationEventCode
     // status, both persisted and both read, and `Provider.Deactivate` exists — but no endpoint reaches
     // them, and `UpdateProviderVerificationCommand` has no caller at all.
     ProviderActivated = 65,
+
+    // ── Reviews ──
+    // Raised inline by the moderation command, in its transaction, at the moment an administrator makes something
+    // public — never at submission (a submitted review is not yet anything the salon can see publicly).
+
+    /// <summary>A review of the salon was published for the first time. Addressed to the salon's owner.</summary>
+    ReviewPublished = 70,
+
+    /// <summary>A review the salon had already seen was published again — after its author edited it, or after
+    /// an administrator restored it. A separate code because the salon must be able to tell a changed review from
+    /// a new one: a reply they wrote may now sit under different words.</summary>
+    ReviewRepublished = 71,
+
+    /// <summary>The salon's reply to the customer's review was published. Addressed to the review's author.</summary>
+    ReviewReplyPublished = 72,
+
+    /// <summary>An administrator rejected the customer's review. Addressed to its author, carrying the reason they
+    /// recorded. Rejection is permanent and the review request was withdrawn when the review was submitted, so
+    /// without this the review simply vanishes and nothing ever asks again (task 7.7, decided 2026-09-22). Hiding
+    /// is deliberately NOT announced: it is usually the outcome of someone else's report and it can be undone.</summary>
+    ReviewRejected = 73,
 }

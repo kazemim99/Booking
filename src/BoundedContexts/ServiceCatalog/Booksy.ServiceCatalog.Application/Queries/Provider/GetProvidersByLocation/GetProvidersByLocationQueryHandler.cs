@@ -70,7 +70,8 @@ namespace Booksy.ServiceCatalog.Application.Queries.Provider.GetProvidersByLocat
                       provider.AllowOnlineBooking,
                         provider.OffersMobileServices,
                         provider.AverageRating,
-                         provider.Services.Count),
+                         provider.Services.Count,
+                        provider.PublishedReviewCount),
                     cancellationToken);
 
                 _logger.LogInformation("Location search completed. Found {TotalCount} providers within {RadiusKm}km",

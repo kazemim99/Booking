@@ -3,6 +3,7 @@
 // ========================================
 using Booksy.Core.Domain.ValueObjects;
 using Booksy.ServiceCatalog.Domain.Aggregates;
+using Booksy.ServiceCatalog.Domain.Enums;
 using Booksy.ServiceCatalog.Domain.ValueObjects;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
@@ -80,16 +81,76 @@ namespace Booksy.ServiceCatalog.Infrastructure.Persistence.Configurations
                 .HasColumnName("ProviderResponseAt")
                 .HasColumnType("timestamp with time zone");
 
-            // Helpfulness Counts
-            builder.Property(r => r.HelpfulCount)
+            // Helpfulness — legacy baseline.
+            // The CLR properties are renamed; the COLUMNS are not. A physical rename would make the previous image
+            // throw 42703 on every review read during a rolling deploy, behind a green /health, and would make
+            // rollback a schema reversal instead of a redeploy. Same technique as Id → "ReviewId" above.
+            builder.Property(r => r.LegacyHelpfulCount)
                 .IsRequired()
                 .HasColumnName("HelpfulCount")
                 .HasDefaultValue(0);
 
-            builder.Property(r => r.NotHelpfulCount)
+            builder.Property(r => r.LegacyNotHelpfulCount)
                 .IsRequired()
                 .HasColumnName("NotHelpfulCount")
                 .HasDefaultValue(0);
+
+            // Helpfulness — live per-user tallies, kept in step with ReviewVotes.
+            builder.Property(r => r.HelpfulVoteCount)
+                .IsRequired()
+                .HasColumnName("HelpfulVoteCount")
+                .HasDefaultValue(0);
+
+            builder.Property(r => r.NotHelpfulVoteCount)
+                .IsRequired()
+                .HasColumnName("NotHelpfulVoteCount")
+                .HasDefaultValue(0);
+
+            // Dimension ratings — each optional; null means "not rated", never zero.
+            builder.Property(r => r.CleanlinessRating).HasColumnName("CleanlinessRating").HasPrecision(3, 1);
+            builder.Property(r => r.SkillRating).HasColumnName("SkillRating").HasPrecision(3, 1);
+            builder.Property(r => r.PunctualityRating).HasColumnName("PunctualityRating").HasPrecision(3, 1);
+            builder.Property(r => r.ConductRating).HasColumnName("ConductRating").HasPrecision(3, 1);
+
+            // Moderation — independent of IsVerified.
+            // Default 'Pending': a row inserted by code that predates moderation waits for a moderator
+            // instead of going straight to the public.
+            builder.Property(r => r.ModerationStatus)
+                .IsRequired()
+                .HasConversion<string>()
+                .HasMaxLength(20)
+                .HasColumnName("ModerationStatus")
+                .HasDefaultValue(ReviewModerationStatus.Pending);
+
+            builder.Property(r => r.ModeratedAt)
+                .HasColumnName("ModeratedAt")
+                .HasColumnType("timestamp with time zone");
+
+            builder.Property(r => r.ModeratedBy)
+                .HasColumnName("ModeratedBy")
+                .HasMaxLength(100);
+
+            builder.Property(r => r.ModerationReason)
+                .HasColumnName("ModerationReason")
+                .HasMaxLength(500);
+
+            builder.Property(r => r.FirstPublishedAt)
+                .HasColumnName("FirstPublishedAt")
+                .HasColumnType("timestamp with time zone");
+
+            builder.Property(r => r.EditedAt)
+                .HasColumnName("EditedAt")
+                .HasColumnType("timestamp with time zone");
+
+            // Reply moderation — null means there is no reply.
+            builder.Property(r => r.ReplyModerationStatus)
+                .HasConversion<string>()
+                .HasMaxLength(20)
+                .HasColumnName("ReplyModerationStatus");
+
+            builder.Property(r => r.ReplyModerationReason)
+                .HasColumnName("ReplyModerationReason")
+                .HasMaxLength(500);
 
             // Audit Properties
             builder.Property(r => r.CreatedAt)
@@ -131,6 +192,14 @@ namespace Booksy.ServiceCatalog.Infrastructure.Persistence.Configurations
 
             builder.HasIndex(r => new { r.IsVerified, r.CreatedAt })
                 .HasDatabaseName("IX_Reviews_Verified_CreatedAt");
+
+            // The public listing and the rating recompute both filter a provider's reviews by moderation state.
+            builder.HasIndex(r => new { r.ProviderId, r.ModerationStatus })
+                .HasDatabaseName("IX_Reviews_Provider_ModerationStatus");
+
+            // The moderation queue: pending items, oldest first.
+            builder.HasIndex(r => new { r.ModerationStatus, r.CreatedAt })
+                .HasDatabaseName("IX_Reviews_ModerationStatus_CreatedAt");
         }
     }
 }

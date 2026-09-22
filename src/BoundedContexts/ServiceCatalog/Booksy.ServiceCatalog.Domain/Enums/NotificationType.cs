@@ -87,5 +87,8 @@ public enum NotificationType
     BookingUpdated = 16777229,
     BookingConfirmed = 16777230,
     AccountVerification = 16777231,
-    AccountDeactivated = 16777232
+    AccountDeactivated = 16777232,
+
+    /// <summary>A customer's own review was refused by moderation. Stored as its name, so no migration.</summary>
+    ReviewRejected = 16777233
 }

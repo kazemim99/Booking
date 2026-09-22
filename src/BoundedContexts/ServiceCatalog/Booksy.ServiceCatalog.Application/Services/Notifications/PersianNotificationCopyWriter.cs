@@ -183,6 +183,28 @@ namespace Booksy.ServiceCatalog.Application.Services.Notifications
                     "سالن شما فعال شد",
                     $"{business} اکنون فعال است و می‌تواند نوبت بپذیرد."),
 
+                // ── Reviews ──
+                NotificationEventCode.ReviewPublished => Copy(
+                    "نظر جدید",
+                    $"یک مشتری به {business} امتیاز {Stars(parameters)} داد. می‌توانید آن را ببینید و پاسخ دهید."),
+
+                // Worded as a change, not a new review: a reply the salon already wrote may now sit under
+                // different words, and the salon needs to know to look.
+                NotificationEventCode.ReviewRepublished => Copy(
+                    "نظر ویرایش شد",
+                    $"یکی از نظرهای {business} تغییر کرد؛ امتیاز فعلی {Stars(parameters)} است. نگاهی بیندازید."),
+
+                NotificationEventCode.ReviewReplyPublished => Copy(
+                    "پاسخ به نظر شما",
+                    $"{customer} عزیز، {business} به نظر شما پاسخ داد."),
+
+                // Says what happened and why, without blaming the reader: the reason is the moderator's, and the
+                // author cannot resubmit (rejection is permanent), so the wording does not invite a retry.
+                NotificationEventCode.ReviewRejected => Copy(
+                    "نظر شما منتشر نشد",
+                    $"{customer} عزیز، نظر شما دربارهٔ {business} پس از بررسی منتشر نشد"
+                    + (reason is null ? "." : $": {reason}")),
+
 
                 _ => throw new KeyNotFoundException(
                     $"Notification '{code}' has no wording. Add it to {nameof(PersianNotificationCopyWriter)} " +
@@ -202,6 +224,20 @@ namespace Booksy.ServiceCatalog.Application.Services.Notifications
         private static string Coalesce(string? first, string second) => first ?? second;
 
         private static string Money(string? amount) => amount is null ? string.Empty : $" {amount}";
+
+        /// <summary>"۴٫۵ از ۵" — Persian digits and decimal separator — or a neutral phrase if none was captured.</summary>
+        private static string Stars(IReadOnlyDictionary<string, string> p)
+        {
+            var raw = Value(p, NotificationParameter.Rating);
+            if (raw is null || !decimal.TryParse(raw, NumberStyles.Number, CultureInfo.InvariantCulture, out var rating))
+                return "جدیدی";
+
+            var text = rating.ToString("0.#", CultureInfo.InvariantCulture)
+                .Replace('.', '٫')
+                .Select(c => c is >= '0' and <= '9' ? (char)('۰' + (c - '0')) : c)
+                .ToArray();
+            return $"{new string(text)} از ۵";
+        }
 
         /// <summary>
         /// "جمعه ۱۴۰۵/۰۷/۰۱ ساعت ۱۴:۳۰", or a neutral phrase when the raise site captured no time — better

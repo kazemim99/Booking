@@ -60,7 +60,7 @@ namespace Booksy.ServiceCatalog.Application.Queries.Provider.GetProvidersByStatu
                     OffersMobileServices = provider.OffersMobileServices,
                     IsVerified = provider.VerifiedAt.HasValue,
                     AverageRating = provider.AverageRating,
-                    TotalReviews = 0, // TODO: Add review count when reviews are implemented
+                    TotalReviews = provider.PublishedReviewCount,
                     ServiceCount = serviceCounts[provider.Id.Value],
                     RegisteredAt = provider.RegisteredAt,
                     LastActiveAt = provider.LastActiveAt

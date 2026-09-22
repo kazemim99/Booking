@@ -98,7 +98,7 @@ namespace Booksy.ServiceCatalog.Application.Queries.Provider.GetProviderById
                 OffersMobileServices = provider.OffersMobileServices,
                 IsVerified = provider.VerifiedAt.HasValue,
                 AverageRating = provider.AverageRating,
-                TotalReviews = 0,
+                TotalReviews = provider.PublishedReviewCount,
                 // From the services table: provider.Services is a stale, always-empty collection.
                 ServiceCount = await _serviceRepository.CountByProviderAsync(
                     provider.Id, cancellationToken: cancellationToken),

@@ -67,7 +67,39 @@ namespace Booksy.ServiceCatalog.Domain.Aggregates
         public string? CreatedBy { get; set; }
         public DateTime? LastModifiedAt { get; set; }
         public string? LastModifiedBy { get; set; }
-        public decimal AverageRating { get; internal set; }
+        /// <summary>
+        /// Average overall rating across published reviews. Meaningless on its own: an unrated provider stores
+        /// 0, so read it together with <see cref="PublishedReviewCount"/> (or <see cref="HasRating"/>).
+        /// </summary>
+        public decimal AverageRating { get; private set; }
+
+        /// <summary>How many published reviews <see cref="AverageRating"/> is computed over.</summary>
+        public int PublishedReviewCount { get; private set; }
+
+        /// <summary>False means "no reviews yet" — never "rated zero".</summary>
+        public bool HasRating => PublishedReviewCount > 0;
+
+        /// <summary>
+        /// Overwrites the provider's rating with a freshly computed one. Both values are set together, always,
+        /// because the count is the only thing that tells an unrated provider apart from a zero.
+        /// </summary>
+        /// <remarks>
+        /// Called by the recompute after every change to the set of published reviews; never incremented.
+        /// </remarks>
+        public void SetRatingAggregates(decimal averageRating, int publishedReviewCount)
+        {
+            if (publishedReviewCount < 0)
+                throw new DomainValidationException(nameof(PublishedReviewCount), "Published review count cannot be negative");
+
+            if (publishedReviewCount == 0 && averageRating != 0m)
+                throw new DomainValidationException(nameof(AverageRating), "A provider with no published reviews has no average");
+
+            if (publishedReviewCount > 0 && (averageRating < 1.0m || averageRating > 5.0m))
+                throw new DomainValidationException(nameof(AverageRating), "Average rating must be between 1.0 and 5.0");
+
+            AverageRating = averageRating;
+            PublishedReviewCount = publishedReviewCount;
+        }
 
         // Private constructor for EF Core
         private Provider() : base() { }

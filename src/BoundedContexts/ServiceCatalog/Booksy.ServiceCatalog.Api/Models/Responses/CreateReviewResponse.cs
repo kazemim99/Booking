@@ -13,4 +13,12 @@ public class CreateReviewResponse
     public string? Comment { get; set; }
     public bool IsVerified { get; set; }
     public DateTime CreatedAt { get; set; }
+
+    /// <summary>"Pending" on creation: not public until an administrator approves it.</summary>
+    public string ModerationStatus { get; set; } = string.Empty;
+
+    public decimal? CleanlinessRating { get; set; }
+    public decimal? SkillRating { get; set; }
+    public decimal? PunctualityRating { get; set; }
+    public decimal? ConductRating { get; set; }
 }

@@ -156,6 +156,15 @@ public partial class ExceptionHandlingMiddleware
                     "The item was just modified by another request. Please refresh and try again.", "CONCURRENCY_CONFLICT");
                 break;
 
+            // A unique index refusing a row is a lost race or a duplicate — a conflict, not a server error. This is
+            // how "one vote per user per review" holds under concurrency: the second insert fails here. Matched by
+            // type name and SqlState so this shared middleware takes no dependency on EF Core or Npgsql.
+            case Exception duplicateEx when IsUniqueViolation(duplicateEx):
+                response.StatusCode = (int)HttpStatusCode.Conflict;
+                errorResponse = new ApiErrorResult(
+                    "That was already recorded by another request. Please refresh and try again.", "DUPLICATE_CONFLICT");
+                break;
+
             case ExternalServiceException externalEx:
                 response.StatusCode = externalEx.StatusCode ?? (int)HttpStatusCode.ServiceUnavailable;
                 errorResponse = new ApiErrorResult(externalEx.Message, externalEx.ErrorCode);
@@ -281,5 +290,19 @@ public partial class ExceptionHandlingMiddleware
         });
 
         await response.WriteAsync(jsonResponse);
+    }
+
+    /// <summary>
+    /// A PostgreSQL unique_violation (23505) anywhere in the chain — EF wraps it in DbUpdateException.
+    /// </summary>
+    private static bool IsUniqueViolation(Exception exception)
+    {
+        for (var e = exception; e is not null; e = e.InnerException)
+        {
+            if (e.GetType().Name == "PostgresException"
+                && e.GetType().GetProperty("SqlState")?.GetValue(e) as string == "23505")
+                return true;
+        }
+        return false;
     }
 }

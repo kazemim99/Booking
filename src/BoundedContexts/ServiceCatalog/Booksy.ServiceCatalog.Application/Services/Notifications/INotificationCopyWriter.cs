@@ -38,5 +38,8 @@ namespace Booksy.ServiceCatalog.Application.Services.Notifications
         public const string Reason = "reason";
         public const string Code = "code";
         public const string Count = "count";
+
+        /// <summary>A star rating, invariant culture ("4.5").</summary>
+        public const string Rating = "rating";
     }
 }

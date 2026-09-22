@@ -22,4 +22,12 @@ public class ReviewResponse
     public DateTime CreatedAt { get; set; }
     public int AgeInDays { get; set; }
     public bool IsRecent { get; set; }
+
+    public decimal? CleanlinessRating { get; set; }
+    public decimal? SkillRating { get; set; }
+    public decimal? PunctualityRating { get; set; }
+    public decimal? ConductRating { get; set; }
+
+    /// <summary>The signed-in reader's own vote: "helpful", "notHelpful", or absent.</summary>
+    public string? MyVote { get; set; }
 }

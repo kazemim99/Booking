@@ -3,8 +3,12 @@ using Booksy.ServiceCatalog.Api.Models.Requests;
 using Booksy.ServiceCatalog.Api.Models.Responses;
 using Booksy.ServiceCatalog.API.Models.Requests;
 using Booksy.ServiceCatalog.Application.Commands.Review.CreateReview;
-using Booksy.ServiceCatalog.Application.Commands.Review.MarkReviewHelpful;
+using Booksy.ServiceCatalog.Application.Commands.Review.EditReview;
+using Booksy.ServiceCatalog.Application.Commands.Review.ManageReply;
+using Booksy.ServiceCatalog.Application.Commands.Review.ReportReview;
+using Booksy.ServiceCatalog.Application.Commands.Review.CastReviewVote;
 using Booksy.ServiceCatalog.Application.Queries.Review.GetProviderReviews;
+using Booksy.ServiceCatalog.Application.Queries.Review.ManagedReviews;
 using MediatR;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
@@ -99,7 +103,9 @@ public class ReviewsController : ControllerBase
             MaxRating: request.MaxRating,
             VerifiedOnly: request.VerifiedOnly,
             SortBy: request.SortBy,
-            SortDescending: request.SortDescending);
+            SortDescending: request.SortDescending,
+            // Anonymous is fine; a signed-in reader is also told their own vote on each review.
+            CallerId: CallerId());
 
         try
         {
@@ -207,7 +213,9 @@ public class ReviewsController : ControllerBase
             BookingId: bookingId,
             CustomerId: customerId,
             Rating: request.Rating,
-            Comment: request.Comment);
+            Comment: request.Comment,
+            Dimensions: new Domain.ValueObjects.ReviewDimensionRatings(
+                request.CleanlinessRating, request.SkillRating, request.PunctualityRating, request.ConductRating));
 
         try
         {
@@ -260,78 +268,206 @@ public class ReviewsController : ControllerBase
     }
 
     /// <summary>
-    /// Mark a review as helpful or not helpful
+    /// Vote a published review helpful or not helpful — one vote per signed-in user.
     /// </summary>
-    /// <param name="reviewId">Review ID</param>
-    /// <param name="request">Helpfulness indicator</param>
-    /// <param name="cancellationToken">Cancellation token</param>
-    /// <returns>Updated helpfulness metrics</returns>
     /// <remarks>
-    /// Allows users to vote on whether a review is helpful or not.
+    /// **BREAKING (provider-reviews-and-ratings):** this used to be anonymous and a bare counter increment, so anyone
+    /// could inflate a review without limit. It now needs a signed-in user and holds one vote per user per review:
+    /// a first vote adds, repeating the vote you hold withdraws it, and the opposite vote moves it. The response
+    /// reports the caller's vote after the request as `myVote` ("helpful" | "notHelpful" | null).
     ///
-    /// Features:
-    /// - Increments either HelpfulCount or NotHelpfulCount
-    /// - Returns updated helpfulness ratio
-    /// - No authentication required (allows anonymous feedback)
-    /// - Rate limited to prevent abuse
-    ///
-    /// Sample request:
-    ///
-    ///     PUT /api/v1/reviews/123e4567-e89b-12d3-a456-426614174000/helpful
-    ///     {
-    ///       "isHelpful": true
-    ///     }
-    ///
+    ///     PUT /api/v1/reviews/{reviewId}/helpful
+    ///     { "isHelpful": true }
     /// </remarks>
-    /// <response code="200">Helpfulness recorded successfully</response>
-    /// <response code="400">Invalid request data</response>
+    /// <response code="200">Vote recorded, moved, or withdrawn</response>
+    /// <response code="400">The review is not published</response>
+    /// <response code="401">Not signed in</response>
+    /// <response code="403">The review's own author</response>
     /// <response code="404">Review not found</response>
     [HttpPut("{reviewId}/helpful")]
-    [AllowAnonymous]
+    [Authorize]
     [EnableRateLimiting("mark-review-helpful")]
     [ProducesResponseType(typeof(MarkReviewHelpfulResponse), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ApiErrorResponse), StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
     [ProducesResponseType(typeof(ApiErrorResponse), StatusCodes.Status404NotFound)]
     public async Task<IActionResult> MarkReviewHelpful(
         [FromRoute] Guid reviewId,
         [FromBody] MarkReviewHelpfulRequest request,
         CancellationToken cancellationToken = default)
     {
-        _logger.LogInformation(
-            "Marking review {ReviewId} as {Helpful}",
+        if (CallerId() is not { } voterId)
+            return Unauthorized(new ApiErrorResponse("ERR_UNAUTHORIZED", "Invalid authentication token"));
+
+        var result = await _mediator.Send(
+            new CastReviewVoteCommand(reviewId, voterId, request.IsHelpful), cancellationToken);
+
+        return Ok(new MarkReviewHelpfulResponse
+        {
+            ReviewId = result.ReviewId,
+            HelpfulCount = result.HelpfulCount,
+            NotHelpfulCount = result.NotHelpfulCount,
+            HelpfulnessRatio = result.HelpfulnessRatio,
+            IsConsideredHelpful = result.IsConsideredHelpful,
+            MyVote = VoteName(result.MyVote),
+        });
+    }
+
+    /// <summary>The wire form of a user's vote.</summary>
+    internal static string? VoteName(bool? vote) => vote switch
+    {
+        true => "helpful",
+        false => "notHelpful",
+        null => null,
+    };
+
+    /// <summary>
+    /// The author edits their review.
+    /// </summary>
+    /// <remarks>
+    /// Allowed within 7 days of writing it, while it is pending or published. A published review goes back to the
+    /// moderation queue and leaves the provider's rating until it is approved again. A rejected or hidden review
+    /// cannot be edited. Same body as creating a review.
+    /// </remarks>
+    /// <response code="200">Edited; now awaiting approval</response>
+    /// <response code="400">Invalid ratings or comment, edit window closed, or the review is rejected/hidden</response>
+    /// <response code="403">Not the review's author</response>
+    /// <response code="404">Review not found</response>
+    [HttpPut("{reviewId:guid}")]
+    [Authorize]
+    [EnableRateLimiting("edit-review")]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> EditReview(
+        [FromRoute] Guid reviewId,
+        [FromBody] CreateReviewRequest request,
+        CancellationToken cancellationToken = default)
+    {
+        if (CallerId() is not { } editorId)
+            return Unauthorized(new ApiErrorResponse("ERR_UNAUTHORIZED", "Invalid authentication token"));
+
+        var result = await _mediator.Send(new EditReviewCommand(
             reviewId,
-            request.IsHelpful ? "helpful" : "not helpful");
+            editorId,
+            request.Rating,
+            request.Comment,
+            new Domain.ValueObjects.ReviewDimensionRatings(
+                request.CleanlinessRating, request.SkillRating, request.PunctualityRating, request.ConductRating)),
+            cancellationToken);
 
-        var command = new MarkReviewHelpfulCommand(
-            ReviewId: reviewId,
-            IsHelpful: request.IsHelpful);
-
-        try
+        return Ok(new
         {
-            var result = await _mediator.Send(command, cancellationToken);
-            var response = MapToMarkReviewHelpfulResponse(result);
+            result.ReviewId,
+            ModerationStatus = result.ModerationStatus.ToString(),
+            result.EditedAt,
+        });
+    }
 
-            _logger.LogInformation(
-                "Review {ReviewId} marked as {Helpful}. New counts: {HelpfulCount} helpful, {NotHelpfulCount} not helpful",
-                reviewId,
-                request.IsHelpful ? "helpful" : "not helpful",
-                result.HelpfulCount,
-                result.NotHelpfulCount);
+    /// <summary>The reviewed business replies. Owner or manager only; never an administrator. Goes to moderation.</summary>
+    /// <response code="409">The review already has a reply — edit it instead</response>
+    [HttpPost("{reviewId:guid}/reply")]
+    [Authorize]
+    [EnableRateLimiting("reply-review")]
+    public Task<IActionResult> AddReply(Guid reviewId, [FromBody] ReplyRequest body, CancellationToken ct) =>
+        ReplyAsync(reviewId, ReplyAction.Add, body.Text, ct);
 
-            return Ok(response);
-        }
-        catch (Core.Application.Exceptions.NotFoundException ex)
+    /// <summary>The business rewrites its reply. It goes back to moderation.</summary>
+    [HttpPut("{reviewId:guid}/reply")]
+    [Authorize]
+    [EnableRateLimiting("reply-review")]
+    public Task<IActionResult> EditReply(Guid reviewId, [FromBody] ReplyRequest body, CancellationToken ct) =>
+        ReplyAsync(reviewId, ReplyAction.Edit, body.Text, ct);
+
+    /// <summary>The business withdraws its reply.</summary>
+    [HttpDelete("{reviewId:guid}/reply")]
+    [Authorize]
+    [EnableRateLimiting("reply-review")]
+    public Task<IActionResult> RemoveReply(Guid reviewId, CancellationToken ct) =>
+        ReplyAsync(reviewId, ReplyAction.Remove, null, ct);
+
+    private async Task<IActionResult> ReplyAsync(Guid reviewId, ReplyAction action, string? text, CancellationToken ct)
+    {
+        if (CallerId() is not { } callerId)
+            return Unauthorized(new ApiErrorResponse("ERR_UNAUTHORIZED", "Invalid authentication token"));
+
+        var result = await _mediator.Send(new ManageReplyCommand(reviewId, action, text, $"Provider:{callerId}"), ct);
+        return Ok(new
         {
-            _logger.LogWarning(ex, "Review {ReviewId} not found", reviewId);
-            return NotFound(new ApiErrorResponse(
-                "ERR_NOT_FOUND",
-                ex.Message));
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Error marking review {ReviewId} as helpful", reviewId);
-            throw;
-        }
+            result.ReviewId,
+            result.ProviderResponse,
+            ReplyModerationStatus = result.ReplyModerationStatus?.ToString(),
+        });
+    }
+
+    /// <summary>
+    /// Report a published review, with a reason. Any signed-in user may — including the reviewed provider. The
+    /// review stays public until an administrator acts.
+    /// </summary>
+    /// <response code="400">No reason, or the review is not public</response>
+    /// <response code="409">You have already reported this review</response>
+    [HttpPost("{reviewId:guid}/report")]
+    [Authorize]
+    [EnableRateLimiting("report-review")]
+    public async Task<IActionResult> ReportReview(
+        Guid reviewId, [FromBody] ReportReviewRequest body, CancellationToken cancellationToken = default)
+    {
+        if (CallerId() is not { } reporterId)
+            return Unauthorized(new ApiErrorResponse("ERR_UNAUTHORIZED", "Invalid authentication token"));
+
+        var result = await _mediator.Send(new ReportReviewCommand(reviewId, reporterId, body.Reason), cancellationToken);
+        return Ok(result);
+    }
+
+    /// <summary>
+    /// The signed-in customer's own reviews, in every state — each with its moderation state, the administrator's
+    /// reason where there is one, and whether it can still be edited.
+    /// </summary>
+    [HttpGet("me")]
+    [Authorize]
+    [ProducesResponseType(typeof(ManagedReviewsViewModel), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    public async Task<IActionResult> GetMyReviews(
+        [FromQuery] int pageNumber = 1, [FromQuery] int pageSize = 20, CancellationToken cancellationToken = default)
+    {
+        if (CallerId() is not { } customerId)
+            return Unauthorized(new ApiErrorResponse("ERR_UNAUTHORIZED", "Invalid authentication token"));
+
+        return Ok(await _mediator.Send(new GetMyReviewsQuery(customerId, pageNumber, pageSize), cancellationToken));
+    }
+
+    /// <summary>
+    /// Every review of a business, in every state — its owner and managers only. The public listing stays
+    /// published-only for everyone, the owner included; this is the separate surface where pending reviews live.
+    /// </summary>
+    [HttpGet("providers/{providerId:guid}/inbox")]
+    [Authorize]
+    [ProducesResponseType(typeof(ManagedReviewsViewModel), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
+    public async Task<IActionResult> GetProviderReviewInbox(
+        Guid providerId,
+        [FromQuery] int pageNumber = 1,
+        [FromQuery] int pageSize = 20,
+        CancellationToken cancellationToken = default) =>
+        Ok(await _mediator.Send(new GetProviderReviewInboxQuery(providerId, pageNumber, pageSize), cancellationToken));
+
+    private static DimensionStatisticResponse Dimension(Domain.Policies.DimensionRating rating) =>
+        new() { Average = rating.Average, Count = rating.Count };
+
+    /// <summary>
+    /// The signed-in user's id. Production tokens carry it as nameidentifier, not sub/userId — reading sub first
+    /// is how every real user once got a 403 the test tokens never showed.
+    /// </summary>
+    private Guid? CallerId()
+    {
+        var claim = User.FindFirstValue(ClaimTypes.NameIdentifier)
+                    ?? User.FindFirst("sub")?.Value
+                    ?? User.FindFirst("userId")?.Value;
+        return Guid.TryParse(claim, out var id) ? id : null;
     }
 
     #region Mapping Methods
@@ -362,7 +498,11 @@ public class ReviewsController : ControllerBase
                 ReviewsWithComments = viewModel.Statistics.ReviewsWithComments,
                 ReviewsWithProviderResponse = viewModel.Statistics.ReviewsWithProviderResponse,
                 MostRecentReviewDate = viewModel.Statistics.MostRecentReviewDate,
-                OldestReviewDate = viewModel.Statistics.OldestReviewDate
+                OldestReviewDate = viewModel.Statistics.OldestReviewDate,
+                Cleanliness = Dimension(viewModel.Statistics.Cleanliness),
+                Skill = Dimension(viewModel.Statistics.Skill),
+                Punctuality = Dimension(viewModel.Statistics.Punctuality),
+                Conduct = Dimension(viewModel.Statistics.Conduct)
             },
             Reviews = new PaginatedReviewsResponse
             {
@@ -397,7 +537,12 @@ public class ReviewsController : ControllerBase
             IsConsideredHelpful = item.IsConsideredHelpful,
             CreatedAt = item.CreatedAt,
             AgeInDays = item.AgeInDays,
-            IsRecent = item.IsRecent
+            IsRecent = item.IsRecent,
+            CleanlinessRating = item.CleanlinessRating,
+            SkillRating = item.SkillRating,
+            PunctualityRating = item.PunctualityRating,
+            ConductRating = item.ConductRating,
+            MyVote = VoteName(item.MyVote)
         };
     }
 
@@ -412,21 +557,27 @@ public class ReviewsController : ControllerBase
             Rating = result.Rating,
             Comment = result.Comment,
             IsVerified = result.IsVerified,
-            CreatedAt = result.CreatedAt
+            CreatedAt = result.CreatedAt,
+            ModerationStatus = result.ModerationStatus.ToString(),
+            CleanlinessRating = result.Dimensions.Cleanliness,
+            SkillRating = result.Dimensions.Skill,
+            PunctualityRating = result.Dimensions.Punctuality,
+            ConductRating = result.Dimensions.Conduct
         };
     }
 
-    private MarkReviewHelpfulResponse MapToMarkReviewHelpfulResponse(MarkReviewHelpfulResult result)
-    {
-        return new MarkReviewHelpfulResponse
-        {
-            ReviewId = result.ReviewId,
-            HelpfulCount = result.HelpfulCount,
-            NotHelpfulCount = result.NotHelpfulCount,
-            HelpfulnessRatio = result.HelpfulnessRatio,
-            IsConsideredHelpful = result.IsConsideredHelpful
-        };
-    }
 
     #endregion
+}
+
+/// <summary>A provider's reply to a review: 1–1000 characters after trimming.</summary>
+public sealed class ReplyRequest
+{
+    public string? Text { get; set; }
+}
+
+/// <summary>Why a review should not be public. Required, at most 500 characters.</summary>
+public sealed class ReportReviewRequest
+{
+    public string? Reason { get; set; }
 }

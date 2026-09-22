@@ -1,3 +1,4 @@
+using Booksy.Core.Domain.ValueObjects;
 using Booksy.Infrastructure.Core.Persistence.Base;
 using Booksy.ServiceCatalog.Domain.Aggregates;
 using Booksy.ServiceCatalog.Domain.Repositories;
@@ -87,4 +88,28 @@ public sealed class ReviewWriteRepository
         return await DbSet
             .AnyAsync(r => r.BookingId == bookingId, cancellationToken);
     }
+
+    public Task<ReviewVote?> GetVoteAsync(Guid reviewId, UserId userId, CancellationToken cancellationToken = default) =>
+        Context.ReviewVotes.FirstOrDefaultAsync(v => v.ReviewId == reviewId && v.UserId == userId, cancellationToken);
+
+    public async Task AddVoteAsync(ReviewVote vote, CancellationToken cancellationToken = default) =>
+        await Context.ReviewVotes.AddAsync(vote, cancellationToken);
+
+    public void RemoveVote(ReviewVote vote) => Context.ReviewVotes.Remove(vote);
+
+    public Task AdjustVoteTalliesAsync(
+        Guid reviewId, int helpfulDelta, int notHelpfulDelta, CancellationToken cancellationToken = default) =>
+        // One UPDATE ... SET x = x + @delta: the row lock it takes serialises concurrent voters on this review,
+        // and the unique (ReviewId, UserId) index turns a racing duplicate vote into a rolled-back transaction —
+        // its delta with it.
+        DbSet.Where(r => r.Id == reviewId).ExecuteUpdateAsync(s => s
+                .SetProperty(r => r.HelpfulVoteCount, r => r.HelpfulVoteCount + helpfulDelta)
+                .SetProperty(r => r.NotHelpfulVoteCount, r => r.NotHelpfulVoteCount + notHelpfulDelta),
+            cancellationToken);
+
+    public Task<bool> HasReportedAsync(Guid reviewId, UserId reporter, CancellationToken cancellationToken = default) =>
+        Context.ReviewReports.AnyAsync(r => r.ReviewId == reviewId && r.ReportedByUserId == reporter, cancellationToken);
+
+    public async Task AddReportAsync(ReviewReport report, CancellationToken cancellationToken = default) =>
+        await Context.ReviewReports.AddAsync(report, cancellationToken);
 }

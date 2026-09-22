@@ -1,4 +1,6 @@
 using Booksy.Core.Application.Abstractions.CQRS;
+using Booksy.ServiceCatalog.Domain.Enums;
+using Booksy.ServiceCatalog.Domain.ValueObjects;
 
 namespace Booksy.ServiceCatalog.Application.Commands.Review.CreateReview;
 
@@ -9,7 +11,8 @@ public sealed record CreateReviewCommand(
     Guid BookingId,
     Guid CustomerId,
     decimal Rating,
-    string? Comment = null) : ICommand<CreateReviewResult>
+    string? Comment = null,
+    ReviewDimensionRatings? Dimensions = null) : ICommand<CreateReviewResult>
 {
     public Guid? IdempotencyKey { get; init; }
 }
@@ -25,4 +28,6 @@ public sealed record CreateReviewResult(
     decimal Rating,
     string? Comment,
     bool IsVerified,
-    DateTime CreatedAt);
+    DateTime CreatedAt,
+    ReviewModerationStatus ModerationStatus,
+    ReviewDimensionRatings Dimensions);

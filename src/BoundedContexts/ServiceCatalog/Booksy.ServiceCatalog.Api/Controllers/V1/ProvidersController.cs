@@ -613,6 +613,9 @@ public class ProvidersController : ControllerBase
             AllowOnlineBooking = searchResult.AllowOnlineBooking,
             OffersMobileServices = searchResult.OffersMobileServices,
             AverageRating = searchResult.AverageRating,
+            // Declared on the response but never assigned before, so it shipped as a constant 0 and the customer
+            // app's hasRating(rating, reviewCount) guard could only ever look at the (always-zero) average.
+            TotalReviews = searchResult.TotalReviews,
             ServiceCount = searchResult.ServiceCount,
             YearsInBusiness = searchResult.YearsInBusiness,
             IsVerified = searchResult.IsVerified,
@@ -677,6 +680,8 @@ public class ProvidersController : ControllerBase
             AllowOnlineBooking = locationResult.AllowOnlineBooking,
             OffersMobileServices = locationResult.OffersMobileServices,
             AverageRating = locationResult.AverageRating,
+            // Never assigned before: a dynamic left unset serialises as null.
+            TotalReviews = locationResult.TotalReviews,
             ServiceCount = locationResult.ServiceCount
         });
 

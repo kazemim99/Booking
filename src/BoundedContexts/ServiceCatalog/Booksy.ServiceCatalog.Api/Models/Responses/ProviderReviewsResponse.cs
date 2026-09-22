@@ -23,6 +23,12 @@ public class ReviewStatisticsResponse
     public int ReviewsWithProviderResponse { get; set; }
     public DateTime? MostRecentReviewDate { get; set; }
     public DateTime? OldestReviewDate { get; set; }
+
+    // Per-dimension averages over the published reviews that rated each one. Count 0 means nobody has yet.
+    public DimensionStatisticResponse Cleanliness { get; set; } = new();
+    public DimensionStatisticResponse Skill { get; set; } = new();
+    public DimensionStatisticResponse Punctuality { get; set; } = new();
+    public DimensionStatisticResponse Conduct { get; set; } = new();
 }
 
 /// <summary>
@@ -54,4 +60,11 @@ public class PaginatedReviewsResponse
     public int TotalPages { get; set; }
     public bool HasNextPage { get; set; }
     public bool HasPreviousPage { get; set; }
+}
+
+/// <summary>One dimension's average and how many published reviews rated it. A null average means none have.</summary>
+public class DimensionStatisticResponse
+{
+    public decimal? Average { get; set; }
+    public int Count { get; set; }
 }

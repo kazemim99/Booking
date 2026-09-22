@@ -11,7 +11,7 @@ namespace Booksy.ServiceCatalog.Infrastructure.Persistence.Seeders
     /// - 60% of completed bookings receive reviews (industry standard)
     /// - Persian language comments with cultural authenticity
     /// - Rating distribution: 50% excellent, 25% good, 15% average, 10% poor
-    /// - Includes helpful votes and provider responses
+    /// - Includes provider responses (published). No helpful votes: a vote is a row per real user now.
     /// </summary>
     public sealed class ReviewSeeder : ISeeder
     {
@@ -176,24 +176,12 @@ namespace Booksy.ServiceCatalog.Infrastructure.Persistence.Seeders
                     isVerified: true, // Verified because tied to actual booking
                     createdBy: "ReviewSeeder");
 
-                // Add helpful votes (older reviews have more votes)
-                var daysSinceBooking = booking.CompletedAt.HasValue ? (DateTime.UtcNow - booking.CompletedAt.Value).Days : 0;
-                var voteCount = Math.Min(daysSinceBooking / 2, 20); // Max 20 votes
+                // Seeded reviews stand in for reviews that already exist, which the moderation migration
+                // publishes. A pending seed would also refuse the provider reply added below.
+                review.Publish("ReviewSeeder");
 
-                for (int i = 0; i < voteCount; i++)
-                {
-                    // Higher rated reviews get more helpful votes
-                    var helpfulProbability = rating >= 4.0m ? 80 : (rating >= 3.0m ? 50 : 30);
-
-                    if (_random.Next(100) < helpfulProbability)
-                    {
-                        review.MarkAsHelpful();
-                    }
-                    else
-                    {
-                        review.MarkAsNotHelpful();
-                    }
-                }
+                // No helpful votes are seeded. A vote is now a row per real user (ReviewVotes); inventing voters
+                // for seed data would be exactly the fabrication the frozen legacy baseline exists to avoid.
 
                 // Add provider response (30% of reviews, higher for negative reviews)
                 var responseChance = rating < 3.0m ? 70 : 30;
@@ -201,6 +189,7 @@ namespace Booksy.ServiceCatalog.Infrastructure.Persistence.Seeders
                 {
                     var response = GetRandomProviderResponse();
                     review.AddProviderResponse(response, "ReviewSeeder");
+                    review.ApproveReply("ReviewSeeder");
                 }
 
                 return review;

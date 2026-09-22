@@ -170,6 +170,25 @@ namespace Booksy.ServiceCatalog.Domain.Policies
                 [NotificationEventCode.DailyScheduleDigest] =
                     new(NotificationAudience.Provider, PushInApp, Standard, NotificationDestinationKind.None),
 
+                // ── Reviews ──
+                // In-app and push, standard, suppressible: news, not an emergency. No SMS — SMS is reserved for
+                // critical notifications. The tap lands on the booking the review is about: the notification row
+                // already carries it, the destination resolver already checks booking ownership, and a review is
+                // only ever reached through its booking anyway.
+                [NotificationEventCode.ReviewPublished] =
+                    new(NotificationAudience.Provider, PushInApp, Standard, NotificationDestinationKind.Booking),
+
+                [NotificationEventCode.ReviewRepublished] =
+                    new(NotificationAudience.Provider, PushInApp, Standard, NotificationDestinationKind.Booking),
+
+                [NotificationEventCode.ReviewReplyPublished] =
+                    new(NotificationAudience.Customer, PushInApp, Standard, NotificationDestinationKind.Booking),
+
+                // The author's own review was refused. Suppressible like the rest of the review family, and
+                // pointed at the booking: "my reviews" is reached through it, and the reason is shown there too.
+                [NotificationEventCode.ReviewRejected] =
+                    new(NotificationAudience.Customer, PushInApp, Standard, NotificationDestinationKind.Booking),
+
                 // ── Provider: staff and organisation ──
 
                 // The invitee is often not a user yet, so SMS is the only way to reach them and they have no
@@ -278,6 +297,11 @@ namespace Booksy.ServiceCatalog.Domain.Policies
             NotificationEventCode.StaffAdded => NotificationType.StaffAssigned,
             NotificationEventCode.StaffRemoved => NotificationType.StaffUnavailable,
             NotificationEventCode.StaffAssignedToBooking => NotificationType.StaffAssigned,
+
+            NotificationEventCode.ReviewPublished => NotificationType.NewReview,
+            NotificationEventCode.ReviewRepublished => NotificationType.NewReview,
+            NotificationEventCode.ReviewReplyPublished => NotificationType.ReviewResponse,
+            NotificationEventCode.ReviewRejected => NotificationType.ReviewRejected,
 
             NotificationEventCode.PayoutCompleted => NotificationType.PayoutCompleted,
             NotificationEventCode.ProviderActivated => NotificationType.AccountUpdate,

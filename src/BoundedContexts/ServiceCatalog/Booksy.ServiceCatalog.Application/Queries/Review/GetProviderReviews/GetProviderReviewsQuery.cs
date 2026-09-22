@@ -1,4 +1,5 @@
 using Booksy.Core.Application.Abstractions.CQRS;
+using Booksy.ServiceCatalog.Domain.Policies;
 
 namespace Booksy.ServiceCatalog.Application.Queries.Review.GetProviderReviews;
 
@@ -13,7 +14,8 @@ public sealed record GetProviderReviewsQuery(
     decimal? MaxRating = null,
     bool? VerifiedOnly = null,
     string SortBy = "date",
-    bool SortDescending = true) : IQuery<GetProviderReviewsViewModel>;
+    bool SortDescending = true,
+    Guid? CallerId = null) : IQuery<GetProviderReviewsViewModel>;
 
 /// <summary>
 /// View model for provider reviews response
@@ -34,7 +36,11 @@ public sealed record ReviewStatisticsViewModel(
     int ReviewsWithComments,
     int ReviewsWithProviderResponse,
     DateTime? MostRecentReviewDate,
-    DateTime? OldestReviewDate);
+    DateTime? OldestReviewDate,
+    DimensionRating Cleanliness,
+    DimensionRating Skill,
+    DimensionRating Punctuality,
+    DimensionRating Conduct);
 
 /// <summary>
 /// Distribution of ratings by star count
@@ -83,4 +89,9 @@ public sealed record ReviewItemViewModel(
     bool IsConsideredHelpful,
     DateTime CreatedAt,
     int AgeInDays,
-    bool IsRecent);
+    bool IsRecent,
+    decimal? CleanlinessRating = null,
+    decimal? SkillRating = null,
+    decimal? PunctualityRating = null,
+    decimal? ConductRating = null,
+    bool? MyVote = null);

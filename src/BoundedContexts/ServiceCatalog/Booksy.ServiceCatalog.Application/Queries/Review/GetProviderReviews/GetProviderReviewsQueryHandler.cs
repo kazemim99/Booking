@@ -60,7 +60,16 @@ public sealed class GetProviderReviewsQueryHandler
             verifiedOnly: request.VerifiedOnly,
             sortBy: request.SortBy,
             sortDescending: request.SortDescending,
-            cancellationToken: cancellationToken);
+            cancellationToken: cancellationToken,
+            publishedOnly: true);
+
+        // The caller's own vote on each listed review, when someone is signed in.
+        var myVotes = request.CallerId is { } callerId
+            ? await _reviewRepository.GetVotesByUserAsync(
+                Core.Domain.ValueObjects.UserId.From(callerId),
+                paginatedReviews.Reviews.Select(r => r.Id).ToList(),
+                cancellationToken)
+            : new Dictionary<Guid, bool>();
 
         _logger.LogInformation(
             "Retrieved {Count} reviews for Provider {ProviderId} (Page {Page}/{TotalPages})",
@@ -69,13 +78,14 @@ public sealed class GetProviderReviewsQueryHandler
             paginatedReviews.PageNumber,
             paginatedReviews.TotalPages);
 
-        return MapToViewModel(request.ProviderId, statistics, paginatedReviews);
+        return MapToViewModel(request.ProviderId, statistics, paginatedReviews, myVotes);
     }
 
     private GetProviderReviewsViewModel MapToViewModel(
         Guid providerId,
         Domain.Repositories.ReviewStatistics statistics,
-        Domain.Repositories.PaginatedReviews paginatedReviews)
+        Domain.Repositories.PaginatedReviews paginatedReviews,
+        IReadOnlyDictionary<Guid, bool> myVotes)
     {
         // Calculate percentages for rating distribution
         var totalReviews = statistics.TotalReviews;
@@ -103,7 +113,11 @@ public sealed class GetProviderReviewsQueryHandler
             ReviewsWithComments: statistics.ReviewsWithComments,
             ReviewsWithProviderResponse: statistics.ReviewsWithProviderResponse,
             MostRecentReviewDate: statistics.MostRecentReviewDate,
-            OldestReviewDate: statistics.OldestReviewDate);
+            OldestReviewDate: statistics.OldestReviewDate,
+            Cleanliness: statistics.Cleanliness,
+            Skill: statistics.Skill,
+            Punctuality: statistics.Punctuality,
+            Conduct: statistics.Conduct);
 
         var reviewItems = paginatedReviews.Reviews.Select(r => new ReviewItemViewModel(
             ReviewId: r.Id,
@@ -114,15 +128,21 @@ public sealed class GetProviderReviewsQueryHandler
             Rating: r.RatingValue,
             Comment: r.Comment,
             IsVerified: r.IsVerified,
-            ProviderResponse: r.ProviderResponse,
-            ProviderResponseAt: r.ProviderResponseAt,
+            // A reply is public only once approved; a pending or rejected one is not shown here.
+            ProviderResponse: r.IsReplyPubliclyVisible ? r.ProviderResponse : null,
+            ProviderResponseAt: r.IsReplyPubliclyVisible ? r.ProviderResponseAt : null,
             HelpfulCount: r.HelpfulCount,
             NotHelpfulCount: r.NotHelpfulCount,
             HelpfulnessRatio: r.GetHelpfulnessRatio(),
             IsConsideredHelpful: r.IsConsideredHelpful(),
             CreatedAt: r.CreatedAt,
             AgeInDays: r.GetAgeInDays(),
-            IsRecent: r.IsRecent())).ToList();
+            IsRecent: r.IsRecent(),
+            CleanlinessRating: r.CleanlinessRating,
+            SkillRating: r.SkillRating,
+            PunctualityRating: r.PunctualityRating,
+            ConductRating: r.ConductRating,
+            MyVote: myVotes.TryGetValue(r.Id, out var vote) ? vote : null)).ToList();
 
         var reviewsViewModel = new PaginatedReviewsViewModel(
             Items: reviewItems,

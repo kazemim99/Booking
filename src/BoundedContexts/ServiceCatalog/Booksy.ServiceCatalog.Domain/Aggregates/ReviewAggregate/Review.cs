@@ -4,6 +4,9 @@
 using Booksy.Core.Domain.Abstractions.Entities;
 using Booksy.Core.Domain.Base;
 using Booksy.Core.Domain.Exceptions;
+using Booksy.ServiceCatalog.Domain.Enums;
+using Booksy.ServiceCatalog.Domain.Events;
+using Booksy.ServiceCatalog.Domain.Policies;
 using Booksy.ServiceCatalog.Domain.ValueObjects;
 
 namespace Booksy.ServiceCatalog.Domain.Aggregates
@@ -19,22 +22,65 @@ namespace Booksy.ServiceCatalog.Domain.Aggregates
         public UserId CustomerId { get; private set; }
         public Guid BookingId { get; private set; }
         
-        // Rating (1.0 - 5.0)
+        // Overall rating (1.0 - 5.0) — the customer's own verdict, never computed from the dimensions
         public decimal RatingValue { get; private set; }
-        
+
+        // Optional dimension ratings (1.0 - 5.0 each). Null means "not rated", never zero.
+        public decimal? CleanlinessRating { get; private set; }
+        public decimal? SkillRating { get; private set; }
+        public decimal? PunctualityRating { get; private set; }
+        public decimal? ConductRating { get; private set; }
+
         // Comment (Persian and/or English)
         public string? Comment { get; private set; }
         
-        // Verification
+        // Verification — "came from a completed booking". Never changed by moderation.
         public bool IsVerified { get; private set; }
-        
-        // Provider Response
+
+        // Moderation — "an administrator cleared it for display". A separate axis from IsVerified.
+        public ReviewModerationStatus ModerationStatus { get; private set; }
+        public DateTime? ModeratedAt { get; private set; }
+        public string? ModeratedBy { get; private set; }
+        public string? ModerationReason { get; private set; }
+
+        /// <summary>First time this review went public. Set once; how a re-publication is told apart.</summary>
+        public DateTime? FirstPublishedAt { get; private set; }
+
+        /// <summary>Last time the author edited it. Null if never edited.</summary>
+        public DateTime? EditedAt { get; private set; }
+
+        /// <summary>Public, and counted toward the provider's rating. True only when published.</summary>
+        public bool IsPubliclyVisible => ModerationStatus == ReviewModerationStatus.Published;
+
+        // Provider Response — exactly one, moderated independently of the review
         public string? ProviderResponse { get; private set; }
         public DateTime? ProviderResponseAt { get; private set; }
-        
-        // Helpfulness (votes from other users)
-        public int HelpfulCount { get; private set; }
-        public int NotHelpfulCount { get; private set; }
+
+        /// <summary>Null when there is no reply. Rejected is not terminal for a reply: the provider may rewrite it.</summary>
+        public ReviewModerationStatus? ReplyModerationStatus { get; private set; }
+        public string? ReplyModerationReason { get; private set; }
+
+        /// <summary>A reply is public only when it is published AND the review it answers is public.</summary>
+        public bool IsReplyPubliclyVisible =>
+            ReplyModerationStatus == ReviewModerationStatus.Published && IsPubliclyVisible;
+
+        // Helpfulness.
+        // Legacy* are the counters from before per-user voting: bare totals with no record of who voted, so they
+        // cannot become votes. Frozen forever — nothing writes them — and stored in the original HelpfulCount /
+        // NotHelpfulCount columns (renamed only here, in the model, so a rolling deploy never breaks the old image).
+        public int LegacyHelpfulCount { get; private set; }
+        public int LegacyNotHelpfulCount { get; private set; }
+
+        // Live tallies of ReviewVotes rows. No domain method writes them: the vote command moves them by an atomic
+        // SQL delta in its own transaction, because a read-modify-write here would lose updates under concurrency.
+        public int HelpfulVoteCount { get; private set; }
+        public int NotHelpfulVoteCount { get; private set; }
+
+        /// <summary>What is displayed and judged: the legacy baseline plus live votes. Not mapped.</summary>
+        public int HelpfulCount => LegacyHelpfulCount + HelpfulVoteCount;
+
+        /// <summary>See <see cref="HelpfulCount"/>.</summary>
+        public int NotHelpfulCount => LegacyNotHelpfulCount + NotHelpfulVoteCount;
         
         // Audit Properties
         public DateTime CreatedAt { get; set; }
@@ -55,15 +101,15 @@ namespace Booksy.ServiceCatalog.Domain.Aggregates
             decimal ratingValue,
             string? comment = null,
             bool isVerified = true,
-            string? createdBy = null)
+            string? createdBy = null,
+            ReviewDimensionRatings? dimensions = null)
         {
             ValidateRating(ratingValue);
-            
-            if (!string.IsNullOrWhiteSpace(comment))
-            {
-                ValidateComment(comment);
-            }
-            
+            dimensions ??= ReviewDimensionRatings.None;
+            ValidateDimensions(dimensions);
+
+            comment = NormalizeComment(comment);
+
             return new Review
             {
                 Id = Guid.NewGuid(),
@@ -71,105 +117,264 @@ namespace Booksy.ServiceCatalog.Domain.Aggregates
                 CustomerId = customerId,
                 BookingId = bookingId,
                 RatingValue = ratingValue,
-                Comment = comment?.Trim(),
+                CleanlinessRating = dimensions.Cleanliness,
+                SkillRating = dimensions.Skill,
+                PunctualityRating = dimensions.Punctuality,
+                ConductRating = dimensions.Conduct,
+                Comment = comment,
                 IsVerified = isVerified, // True if from actual booking
-                HelpfulCount = 0,
-                NotHelpfulCount = 0,
+                ModerationStatus = ReviewModerationStatus.Pending, // Not public until an administrator approves it
+                LegacyHelpfulCount = 0,
+                LegacyNotHelpfulCount = 0,
+                HelpfulVoteCount = 0,
+                NotHelpfulVoteCount = 0,
                 CreatedAt = DateTime.UtcNow,
                 CreatedBy = createdBy
             };
         }
         
         /// <summary>
-        /// Updates the review comment
-        /// </summary>
-        public void UpdateComment(string comment, string? modifiedBy = null)
-        {
-            ValidateComment(comment);
-            
-            Comment = comment.Trim();
-            LastModifiedAt = DateTime.UtcNow;
-            LastModifiedBy = modifiedBy;
-        }
-        
-        /// <summary>
-        /// Updates the rating
-        /// </summary>
-        public void UpdateRating(decimal ratingValue, string? modifiedBy = null)
-        {
-            ValidateRating(ratingValue);
-            
-            RatingValue = ratingValue;
-            LastModifiedAt = DateTime.UtcNow;
-            LastModifiedBy = modifiedBy;
-        }
-        
-        /// <summary>
-        /// Provider responds to the review
+        /// The provider's reply. Exactly one per review, only to a published review, and not public until an
+        /// administrator approves it. Who may call this (the owning provider only) is enforced by the caller.
         /// </summary>
         public void AddProviderResponse(string response, string? modifiedBy = null)
         {
-            if (string.IsNullOrWhiteSpace(response))
-                throw new DomainValidationException("Provider response cannot be empty");
-            
-            if (response.Length > 1000)
-                throw new DomainValidationException("Provider response cannot exceed 1000 characters");
-            
-            ProviderResponse = response.Trim();
-            ProviderResponseAt = DateTime.UtcNow;
-            LastModifiedAt = DateTime.UtcNow;
-            LastModifiedBy = modifiedBy;
+            if (ProviderResponse is not null)
+                throw new InvalidAggregateStateException(typeof(Review), nameof(AddProviderResponse), "HasReply");
+
+            // A reply answers what the public can see. Replying to a pending review that may yet be rejected
+            // would be moderation work spent on nothing.
+            RequireModerationState(ReviewModerationStatus.Published, nameof(AddProviderResponse));
+
+            SetReply(ValidateReply(response), modifiedBy);
         }
-        
+
         /// <summary>
-        /// Updates provider response
+        /// The provider rewrites their reply. It goes back to the moderation queue whatever state it was in —
+        /// including Rejected, which for a reply is a chance to rephrase rather than a final word.
         /// </summary>
         public void UpdateProviderResponse(string response, string? modifiedBy = null)
         {
-            if (string.IsNullOrWhiteSpace(ProviderResponse))
-                throw new DomainValidationException("Cannot update response that doesn't exist. Use AddProviderResponse first.");
-            
-            if (string.IsNullOrWhiteSpace(response))
-                throw new DomainValidationException("Provider response cannot be empty");
-            
-            if (response.Length > 1000)
-                throw new DomainValidationException("Provider response cannot exceed 1000 characters");
-            
-            ProviderResponse = response.Trim();
-            ProviderResponseAt = DateTime.UtcNow;
-            LastModifiedAt = DateTime.UtcNow;
-            LastModifiedBy = modifiedBy;
+            if (ProviderResponse is null)
+                throw new InvalidAggregateStateException(typeof(Review), nameof(UpdateProviderResponse), "NoReply");
+
+            SetReply(ValidateReply(response), modifiedBy);
         }
-        
+
         /// <summary>
-        /// Removes provider response
+        /// The provider withdraws their reply.
         /// </summary>
         public void RemoveProviderResponse(string? modifiedBy = null)
         {
+            if (ProviderResponse is null)
+                throw new InvalidAggregateStateException(typeof(Review), nameof(RemoveProviderResponse), "NoReply");
+
             ProviderResponse = null;
             ProviderResponseAt = null;
+            ReplyModerationStatus = null;
+            ReplyModerationReason = null;
             LastModifiedAt = DateTime.UtcNow;
             LastModifiedBy = modifiedBy;
         }
-        
+
         /// <summary>
-        /// Marks review as helpful
+        /// An administrator clears the provider's pending reply for display.
         /// </summary>
-        public void MarkAsHelpful()
+        public void ApproveReply(string moderatedBy)
         {
-            HelpfulCount++;
+            RequireReplyState(ReviewModerationStatus.Pending, nameof(ApproveReply));
+            ReplyModerationStatus = ReviewModerationStatus.Published;
+            ReplyModerationReason = null;
             LastModifiedAt = DateTime.UtcNow;
+            LastModifiedBy = moderatedBy;
+        }
+
+        /// <summary>
+        /// An administrator refuses the provider's pending reply. The review it answers is unaffected.
+        /// </summary>
+        public void RejectReply(string reason, string moderatedBy)
+        {
+            var trimmed = RequireReason(reason);
+            RequireReplyState(ReviewModerationStatus.Pending, nameof(RejectReply));
+            ReplyModerationStatus = ReviewModerationStatus.Rejected;
+            ReplyModerationReason = trimmed;
+            LastModifiedAt = DateTime.UtcNow;
+            LastModifiedBy = moderatedBy;
+        }
+
+        private void RequireReplyState(ReviewModerationStatus required, string operation)
+        {
+            if (ReplyModerationStatus != required)
+                throw new InvalidAggregateStateException(
+                    typeof(Review), operation, ReplyModerationStatus?.ToString() ?? "NoReply");
+        }
+
+        private static string ValidateReply(string response)
+        {
+            if (string.IsNullOrWhiteSpace(response))
+                throw new DomainValidationException(nameof(ProviderResponse), "Provider response cannot be empty");
+
+            var trimmed = response.Trim();
+            if (trimmed.Length > 1000)
+                throw new DomainValidationException(nameof(ProviderResponse), "Provider response cannot exceed 1000 characters");
+
+            return trimmed;
+        }
+
+        private void SetReply(string text, string? modifiedBy)
+        {
+            ProviderResponse = text;
+            ProviderResponseAt = DateTime.UtcNow;
+            ReplyModerationStatus = ReviewModerationStatus.Pending;
+            ReplyModerationReason = null;
+            LastModifiedAt = ProviderResponseAt;
+            LastModifiedBy = modifiedBy;
         }
         
-        /// <summary>
-        /// Marks review as not helpful
-        /// </summary>
-        public void MarkAsNotHelpful()
-        {
-            NotHelpfulCount++;
-            LastModifiedAt = DateTime.UtcNow;
-        }
         
+        // ── Moderation ──
+        // Each transition is legal from exactly one state. Rejected is terminal; Hidden comes back only
+        // through Restore, a separate and deliberate act. None of them touches IsVerified.
+
+        /// <summary>
+        /// An administrator clears a pending review for public display.
+        /// </summary>
+        public void Publish(string moderatedBy)
+        {
+            RequireModerationState(ReviewModerationStatus.Pending, nameof(Publish));
+            SetModeration(ReviewModerationStatus.Published, moderatedBy, reason: null);
+            RaisePublished();
+        }
+
+        /// <summary>
+        /// An administrator brings a hidden review back. Its votes and counts are untouched. A rejected review
+        /// cannot be restored: rejection is permanent.
+        /// </summary>
+        public void Restore(string moderatedBy)
+        {
+            RequireModerationState(ReviewModerationStatus.Hidden, nameof(Restore));
+            SetModeration(ReviewModerationStatus.Published, moderatedBy, reason: null);
+            RaisePublished();
+        }
+
+        private void RaisePublished()
+        {
+            var isRepublication = FirstPublishedAt is not null;
+            FirstPublishedAt ??= ModeratedAt;
+            RaiseDomainEvent(new ReviewPublishedEvent(Id, ProviderId, CustomerId, BookingId, isRepublication));
+        }
+
+        private void RaiseUnpublished() =>
+            RaiseDomainEvent(new ReviewUnpublishedEvent(Id, ProviderId, CustomerId, BookingId));
+
+        /// <summary>
+        /// An administrator refuses a pending review. Permanent: it will never be public.
+        /// </summary>
+        public void Reject(string reason, string moderatedBy)
+        {
+            var trimmed = RequireReason(reason);
+            RequireModerationState(ReviewModerationStatus.Pending, nameof(Reject));
+            SetModeration(ReviewModerationStatus.Rejected, moderatedBy, trimmed);
+        }
+
+        /// <summary>
+        /// An administrator takes a published review down. Reversible.
+        /// </summary>
+        public void Hide(string reason, string moderatedBy)
+        {
+            var trimmed = RequireReason(reason);
+            RequireModerationState(ReviewModerationStatus.Published, nameof(Hide));
+            SetModeration(ReviewModerationStatus.Hidden, moderatedBy, trimmed);
+            RaiseUnpublished();
+        }
+
+        // ── Author edit ──
+
+        /// <summary>Whether this user wrote the review. The handler asks; the aggregate does not authorise.</summary>
+        public bool IsAuthoredBy(UserId userId) => CustomerId == userId;
+
+        /// <summary>
+        /// The author changes their ratings and comment, inside the edit window, while the review is Pending or
+        /// Published. A published review goes back to the queue, and so does a published reply attached to it —
+        /// provider words are never shown under text the provider did not see.
+        /// </summary>
+        /// <remarks>
+        /// Rejected and Hidden are not editable: an edit would otherwise be a route back to publication that
+        /// moderation refused, or a way to undo an administrator's hide.
+        /// </remarks>
+        public void EditByAuthor(
+            decimal ratingValue,
+            ReviewDimensionRatings? dimensions,
+            string? comment,
+            string modifiedBy,
+            DateTime utcNow)
+        {
+            if (ModerationStatus is not (ReviewModerationStatus.Pending or ReviewModerationStatus.Published))
+                throw new InvalidAggregateStateException(typeof(Review), nameof(EditByAuthor), ModerationStatus.ToString());
+
+            if (!ReviewEditPolicy.IsInsideWindow(CreatedAt, utcNow))
+                throw new BusinessRuleViolationException(
+                    "ReviewEditWindow",
+                    $"A review can only be edited within {ReviewEditPolicy.WindowDays} days of being written",
+                    "REVIEW_EDIT_WINDOW_CLOSED");
+
+            // Validate everything before changing anything, so a refused edit leaves the review as it was.
+            ValidateRating(ratingValue);
+            dimensions ??= ReviewDimensionRatings.None;
+            ValidateDimensions(dimensions);
+            comment = NormalizeComment(comment);
+
+            var wasPublic = IsPubliclyVisible;
+
+            RatingValue = ratingValue;
+            CleanlinessRating = dimensions.Cleanliness;
+            SkillRating = dimensions.Skill;
+            PunctualityRating = dimensions.Punctuality;
+            ConductRating = dimensions.Conduct;
+            Comment = comment;
+            EditedAt = utcNow;
+            LastModifiedAt = utcNow;
+            LastModifiedBy = modifiedBy;
+
+            if (wasPublic)
+            {
+                ModerationStatus = ReviewModerationStatus.Pending;
+                ModerationReason = null;
+                RaiseUnpublished();
+            }
+
+            if (ReplyModerationStatus == ReviewModerationStatus.Published)
+                ReplyModerationStatus = ReviewModerationStatus.Pending;
+        }
+
+        private void RequireModerationState(ReviewModerationStatus required, string operation)
+        {
+            if (ModerationStatus != required)
+                throw new InvalidAggregateStateException(typeof(Review), operation, ModerationStatus.ToString());
+        }
+
+        private static string RequireReason(string reason)
+        {
+            if (string.IsNullOrWhiteSpace(reason))
+                throw new DomainValidationException(nameof(ModerationReason), "A moderation reason is required");
+
+            var trimmed = reason.Trim();
+            if (trimmed.Length > 500)
+                throw new DomainValidationException(nameof(ModerationReason), "A moderation reason cannot exceed 500 characters");
+
+            return trimmed;
+        }
+
+        private void SetModeration(ReviewModerationStatus status, string moderatedBy, string? reason)
+        {
+            ModerationStatus = status;
+            ModeratedAt = DateTime.UtcNow;
+            ModeratedBy = moderatedBy;
+            ModerationReason = reason;
+            LastModifiedAt = ModeratedAt;
+            LastModifiedBy = moderatedBy;
+        }
+
         /// <summary>
         /// Verifies the review (admin action or automatic verification)
         /// </summary>
@@ -191,24 +396,15 @@ namespace Booksy.ServiceCatalog.Domain.Aggregates
         }
         
         /// <summary>
-        /// Gets the helpfulness ratio (helpful / total votes)
+        /// Share of helpful votes, over baseline plus live votes.
         /// </summary>
-        public decimal GetHelpfulnessRatio()
-        {
-            var totalVotes = HelpfulCount + NotHelpfulCount;
-            if (totalVotes == 0) return 0;
-            
-            return (decimal)HelpfulCount / totalVotes;
-        }
-        
+        public decimal GetHelpfulnessRatio() => ReviewHelpfulnessPolicy.Ratio(HelpfulCount, NotHelpfulCount);
+
         /// <summary>
-        /// Checks if review is considered helpful (>60% helpful ratio with minimum 5 votes)
+        /// Helpful with at least 5 votes and a 60% helpful share — over baseline plus live votes, never either
+        /// half alone. See <see cref="ReviewHelpfulnessPolicy"/>.
         /// </summary>
-        public bool IsConsideredHelpful()
-        {
-            var totalVotes = HelpfulCount + NotHelpfulCount;
-            return totalVotes >= 5 && GetHelpfulnessRatio() >= 0.6m;
-        }
+        public bool IsConsideredHelpful() => ReviewHelpfulnessPolicy.IsConsideredHelpful(HelpfulCount, NotHelpfulCount);
         
         /// <summary>
         /// Gets age of review in days
@@ -229,24 +425,44 @@ namespace Booksy.ServiceCatalog.Domain.Aggregates
         /// <summary>
         /// Validates rating value
         /// </summary>
-        private static void ValidateRating(decimal ratingValue)
+        private static void ValidateRating(decimal ratingValue) => ValidateStarValue(ratingValue, "Rating");
+
+        /// <summary>
+        /// Validates each dimension that was given. Keyed by the request field name, so a client can tell the
+        /// customer which of the four it was.
+        /// </summary>
+        private static void ValidateDimensions(ReviewDimensionRatings dimensions)
         {
-            if (ratingValue < 1.0m || ratingValue > 5.0m)
-                throw new DomainValidationException("Rating must be between 1.0 and 5.0");
-            
+            if (dimensions.Cleanliness is { } cleanliness) ValidateStarValue(cleanliness, nameof(CleanlinessRating));
+            if (dimensions.Skill is { } skill) ValidateStarValue(skill, nameof(SkillRating));
+            if (dimensions.Punctuality is { } punctuality) ValidateStarValue(punctuality, nameof(PunctualityRating));
+            if (dimensions.Conduct is { } conduct) ValidateStarValue(conduct, nameof(ConductRating));
+        }
+
+        private static void ValidateStarValue(decimal value, string field)
+        {
+            if (value < 1.0m || value > 5.0m)
+                throw new DomainValidationException(field, $"{field} must be between 1.0 and 5.0");
+
             // Allow only 0.5 increments (1.0, 1.5, 2.0, 2.5, etc.)
-            if (ratingValue % 0.5m != 0)
-                throw new DomainValidationException("Rating must be in 0.5 increments (e.g., 3.5, 4.0, 4.5)");
+            if (value % 0.5m != 0)
+                throw new DomainValidationException(field, $"{field} must be in 0.5 increments (e.g., 3.5, 4.0, 4.5)");
         }
         
         /// <summary>
-        /// Validates comment
+        /// A comment is optional: no words at all is no comment. When there are words, the 10–2000 limits apply to
+        /// the trimmed text — the length that counts is the one that is stored.
         /// </summary>
+        private static string? NormalizeComment(string? comment)
+        {
+            if (string.IsNullOrWhiteSpace(comment)) return null;
+            var trimmed = comment.Trim();
+            ValidateComment(trimmed);
+            return trimmed;
+        }
+
         private static void ValidateComment(string comment)
         {
-            if (string.IsNullOrWhiteSpace(comment))
-                throw new DomainValidationException("Review comment cannot be empty");
-            
             if (comment.Length < 10)
                 throw new DomainValidationException("Review comment must be at least 10 characters");
             

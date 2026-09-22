@@ -93,7 +93,8 @@ namespace Booksy.ServiceCatalog.Application.Queries.Provider.SearchProviders
                        //OperatingHours: GetFormattedOperatingHours(provider.BusinessHours),
                        provider.RegisteredAt,
                         provider.LastActiveAt,
-                        0),
+                        0,
+                        provider.PublishedReviewCount),
                     cancellationToken);
 
                 _logger.LogInformation("Provider search completed. Found {TotalCount} providers, returning page {PageNumber} of {PageSize}. Sort: {SortBy} {Direction}",
@@ -121,10 +122,14 @@ namespace Booksy.ServiceCatalog.Application.Queries.Provider.SearchProviders
             switch (sortBy.ToLowerInvariant())
             {
                 case "rating":
+                    // Unrated providers store AverageRating 0, so ordering on the average alone would put every
+                    // new salon at the bottom of "highest first" and at the TOP of "lowest first". They are a band
+                    // after every rated provider, whichever direction is asked for (design D9).
+                    specification.AddOrderBy(p => p.PublishedReviewCount == 0);
                     if (sortDescending)
-                        specification.AddOrderByDescending(p => p.AverageRating);
+                        specification.AddThenByDescending(p => p.AverageRating);
                     else
-                        specification.AddOrderBy(p => p.AverageRating);
+                        specification.AddThenBy(p => p.AverageRating);
                     specification.AddThenBy(p => p.Profile.BusinessName);
                     break;
 
@@ -168,8 +173,10 @@ namespace Booksy.ServiceCatalog.Application.Queries.Provider.SearchProviders
                     else
                     {
                         // Without a reference point there is no distance to sort by; fall back to rating, as
-                        // before, but only in the case where that is genuinely the best available ordering.
-                        specification.AddOrderByDescending(p => p.AverageRating);
+                        // before, but only in the case where that is genuinely the best available ordering —
+                        // with unrated providers banded last, as in the "rating" branch.
+                        specification.AddOrderBy(p => p.PublishedReviewCount == 0);
+                        specification.AddThenByDescending(p => p.AverageRating);
                         specification.AddThenBy(p => p.Profile.BusinessName);
                     }
                     break;

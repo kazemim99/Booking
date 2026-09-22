@@ -1,5 +1,7 @@
 using Booksy.Core.Application.Abstractions.Persistence;
+using Booksy.Core.Domain.ValueObjects;
 using Booksy.ServiceCatalog.Domain.Aggregates;
+using Booksy.ServiceCatalog.Domain.Policies;
 using Booksy.ServiceCatalog.Domain.ValueObjects;
 
 namespace Booksy.ServiceCatalog.Domain.Repositories;
@@ -40,6 +42,22 @@ public interface IReviewReadRepository : IReadRepository<Review, Guid>
         bool? verifiedOnly = null,
         string sortBy = "date",
         bool sortDescending = true,
+        CancellationToken cancellationToken = default,
+        bool publishedOnly = true);
+
+    /// <summary>
+    /// Which way this user voted on each of these reviews (true helpful, false not). Reviews they have not voted on
+    /// are absent.
+    /// </summary>
+    /// <summary>
+    /// How many of a provider's published reviews still wait on the business: no reply yet, or a reply an
+    /// administrator refused. Counted over every review, so it does not depend on which page a client read.
+    /// </summary>
+    Task<int> CountAwaitingReplyAsync(ProviderId providerId, CancellationToken cancellationToken = default);
+
+    Task<IReadOnlyDictionary<Guid, bool>> GetVotesByUserAsync(
+        UserId userId,
+        IReadOnlyCollection<Guid> reviewIds,
         CancellationToken cancellationToken = default);
 
     /// <summary>
@@ -52,7 +70,8 @@ public interface IReviewReadRepository : IReadRepository<Review, Guid>
         CancellationToken cancellationToken = default);
 
     /// <summary>
-    /// Get review statistics for a provider
+    /// Review statistics for a provider — over PUBLISHED reviews only. Pending, rejected and hidden reviews
+    /// contribute to nothing here, including the verified count and the distribution.
     /// </summary>
     Task<ReviewStatistics> GetReviewStatisticsAsync(
         ProviderId providerId,
@@ -64,12 +83,48 @@ public interface IReviewReadRepository : IReadRepository<Review, Guid>
     Task<bool> HasReviewAsync(Guid bookingId, CancellationToken cancellationToken = default);
 
     /// <summary>
+    /// The administrator's moderation queue. <see cref="ReviewModerationFilter.Pending"/> holds every review or
+    /// provider reply awaiting a decision, oldest first; <see cref="ReviewModerationFilter.Hidden"/> is where
+    /// hidden reviews are found, since they are no longer pending; <see cref="ReviewModerationFilter.Reported"/>
+    /// holds published reviews someone has reported.
+    /// </summary>
+    Task<PaginatedReviews> GetModerationQueueAsync(
+        ReviewModerationFilter filter,
+        int pageNumber = 1,
+        int pageSize = 20,
+        CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// The salon and service each review is about, for lists shown to the reviews' author. Batched: one query per
+    /// table, however many reviews.
+    /// </summary>
+    Task<IReadOnlyDictionary<Guid, ReviewContext>> GetReviewContextsAsync(
+        IReadOnlyCollection<Review> reviews,
+        CancellationToken cancellationToken = default);
+
+    /// <summary>Every report filed against these reviews, oldest first.</summary>
+    Task<IReadOnlyList<ReviewReport>> GetReportsAsync(
+        IReadOnlyCollection<Guid> reviewIds,
+        CancellationToken cancellationToken = default);
+
+    /// <summary>
     /// Get recent reviews across all providers (for homepage/feed)
     /// </summary>
     Task<IReadOnlyList<Review>> GetRecentReviewsAsync(
         int count = 10,
         bool verifiedOnly = true,
         CancellationToken cancellationToken = default);
+}
+
+/// <summary>What a review is about, by name.</summary>
+public sealed record ReviewContext(string ProviderName, string? ProviderLogoUrl, string? ServiceName);
+
+/// <summary>Which slice of the moderation queue to list.</summary>
+public enum ReviewModerationFilter
+{
+    Pending,
+    Hidden,
+    Reported,
 }
 
 /// <summary>
@@ -97,4 +152,8 @@ public record ReviewStatistics(
     int ReviewsWithComments,
     int ReviewsWithProviderResponse,
     DateTime? MostRecentReviewDate,
-    DateTime? OldestReviewDate);
+    DateTime? OldestReviewDate,
+    DimensionRating Cleanliness,
+    DimensionRating Skill,
+    DimensionRating Punctuality,
+    DimensionRating Conduct);

@@ -1,4 +1,5 @@
 using Booksy.Core.Application.Abstractions.Persistence;
+using Booksy.Core.Domain.ValueObjects;
 using Booksy.ServiceCatalog.Domain.Aggregates;
 using Booksy.ServiceCatalog.Domain.ValueObjects;
 
@@ -39,4 +40,26 @@ public interface IReviewWriteRepository : IWriteRepository<Review, Guid>
     /// Check if a booking already has a review
     /// </summary>
     Task<bool> HasReviewAsync(Guid bookingId, CancellationToken cancellationToken = default);
+
+    // ── Votes ──
+
+    /// <summary>The vote this user holds on this review, tracked, or null.</summary>
+    Task<ReviewVote?> GetVoteAsync(Guid reviewId, UserId userId, CancellationToken cancellationToken = default);
+
+    Task AddVoteAsync(ReviewVote vote, CancellationToken cancellationToken = default);
+
+    void RemoveVote(ReviewVote vote);
+
+    /// <summary>
+    /// Moves the review's live tallies by these deltas in ONE atomic SQL statement, immediately, on the current
+    /// transaction. Atomic because a read-modify-write of the counters loses updates under concurrency, and the
+    /// review's Version token does not protect them (it only moves when a domain event is raised).
+    /// </summary>
+    Task AdjustVoteTalliesAsync(Guid reviewId, int helpfulDelta, int notHelpfulDelta, CancellationToken cancellationToken = default);
+
+    // ── Reports ──
+
+    Task<bool> HasReportedAsync(Guid reviewId, UserId reporter, CancellationToken cancellationToken = default);
+
+    Task AddReportAsync(ReviewReport report, CancellationToken cancellationToken = default);
 }

@@ -121,7 +121,7 @@ namespace Booksy.ServiceCatalog.Application.Queries.Provider.GetProviderProfile
 
                 // Rating & Social Proof
                 AverageRating = provider.AverageRating,
-                TotalReviews = reviews.TotalCount,
+                TotalReviews = provider.PublishedReviewCount, // same source as AverageRating; the reviews page counts every state
                 RecentReviews = reviews.Reviews.Take(request.ReviewsLimit).Select(r => new ReviewSummaryViewModel
                 {
                     ReviewId = r.Id,

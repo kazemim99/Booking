@@ -14,8 +14,11 @@ public sealed class ProviderSearchItem
     public string? LogoUrl { get; init; }
     public bool AllowOnlineBooking { get; init; }
     public bool OffersMobileServices { get; init; }
+    /// <summary>0 when <see cref="TotalReviews"/> is 0 — read the two together.</summary>
     public decimal AverageRating { get; init; }
-    // public int TotalReviews { get; init; }   // commented in record
+
+    /// <summary>Published reviews behind <see cref="AverageRating"/>. 0 means "no reviews yet", not "rated zero".</summary>
+    public int TotalReviews { get; init; }
     public int ServiceCount { get; init; }
     public int YearsInBusiness { get; init; }
     public bool IsVerified { get; init; }
@@ -45,7 +48,8 @@ public sealed class ProviderSearchItem
         bool isVerified,
         DateTime registeredAt,
         DateTime? lastActiveAt,
-        int staffMemberCount = 0)
+        int staffMemberCount = 0,
+        int totalReviews = 0)
     {
         Id = id;
         BusinessName = businessName;
@@ -66,5 +70,6 @@ public sealed class ProviderSearchItem
         RegisteredAt = registeredAt;
         LastActiveAt = lastActiveAt;
         StaffMemberCount = staffMemberCount;
+        TotalReviews = totalReviews;
     }
 }

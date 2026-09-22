@@ -54,6 +54,10 @@ namespace Booksy.ServiceCatalog.Infrastructure.Persistence.Context
         public DbSet<UserNotificationPreferences> UserNotificationPreferences => Set<UserNotificationPreferences>();
         public DbSet<ProviderAvailability> ProviderAvailability => Set<ProviderAvailability>();
         public DbSet<Review> Reviews => Set<Review>();
+        public DbSet<ReviewVote> ReviewVotes => Set<ReviewVote>();
+        public DbSet<ReviewReport> ReviewReports => Set<ReviewReport>();
+        public DbSet<Booksy.ServiceCatalog.Infrastructure.Persistence.Reviews.ProviderRatingSummary> ProviderRatingSummaries
+            => Set<Booksy.ServiceCatalog.Infrastructure.Persistence.Reviews.ProviderRatingSummary>();
         public DbSet<ProviderInvitation> ProviderInvitations => Set<ProviderInvitation>();
         public DbSet<ProviderCustomer> ProviderCustomers => Set<ProviderCustomer>();
         public DbSet<OrganizationMembership> OrganizationMemberships => Set<OrganizationMembership>();

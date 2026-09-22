@@ -113,6 +113,10 @@ namespace Booksy.ServiceCatalog.Infrastructure.DependencyInjection
             services.AddScoped<IProviderAvailabilityWriteRepository, ProviderAvailabilityWriteRepository>();
             services.AddScoped<IReviewReadRepository, ReviewReadRepository>();
             services.AddScoped<IReviewWriteRepository, ReviewWriteRepository>();
+            // Called inline by review commands, on the command's own DbContext (design D6) — scoped for that reason.
+            services.AddScoped<
+                Application.Services.Reviews.IProviderRatingRecomputer,
+                Reviews.ProviderRatingRecomputer>();
 
             // Payment and Payout Repositories
             services.AddScoped<IPaymentReadRepository, PaymentReadRepository>();

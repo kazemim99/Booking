@@ -10,4 +10,7 @@ public class MarkReviewHelpfulResponse
     public int NotHelpfulCount { get; set; }
     public decimal HelpfulnessRatio { get; set; }
     public bool IsConsideredHelpful { get; set; }
+
+    /// <summary>The caller's vote after this request: "helpful", "notHelpful", or null for none.</summary>
+    public string? MyVote { get; set; }
 }

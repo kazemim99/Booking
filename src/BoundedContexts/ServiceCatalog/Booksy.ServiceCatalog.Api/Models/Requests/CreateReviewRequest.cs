@@ -21,4 +21,18 @@ public class CreateReviewRequest
     [StringLength(2000, MinimumLength = 10,
         ErrorMessage = "Comment must be between 10 and 2000 characters")]
     public string? Comment { get; set; }
+
+    // Optional dimension ratings. Each may be left out; half-star increments are enforced by the domain,
+    // which names the offending field in its error.
+    [Range(1.0, 5.0, ErrorMessage = "CleanlinessRating must be between 1.0 and 5.0")]
+    public decimal? CleanlinessRating { get; set; }
+
+    [Range(1.0, 5.0, ErrorMessage = "SkillRating must be between 1.0 and 5.0")]
+    public decimal? SkillRating { get; set; }
+
+    [Range(1.0, 5.0, ErrorMessage = "PunctualityRating must be between 1.0 and 5.0")]
+    public decimal? PunctualityRating { get; set; }
+
+    [Range(1.0, 5.0, ErrorMessage = "ConductRating must be between 1.0 and 5.0")]
+    public decimal? ConductRating { get; set; }
 }

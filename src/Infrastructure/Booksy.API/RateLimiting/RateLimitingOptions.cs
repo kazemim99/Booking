@@ -46,6 +46,13 @@ public sealed class RateLimitingOptions
             ["provider-reviews"] = new(PermitLimit: 120, WindowSeconds: 60),
             ["create-review"] = new(PermitLimit: 20, WindowSeconds: 3600),
             ["mark-review-helpful"] = new(PermitLimit: 60, WindowSeconds: 3600),
+            // An edit unpublishes a review and forces a full per-provider rating recompute, triggered by an
+            // ordinary customer for seven days — hence the tightest ceiling of the review write paths.
+            ["edit-review"] = new(PermitLimit: 10, WindowSeconds: 3600),
+            ["report-review"] = new(PermitLimit: 20, WindowSeconds: 3600),
+            ["reply-review"] = new(PermitLimit: 60, WindowSeconds: 3600),
+            // Administrators working the queue: generous, but not unbounded.
+            ["moderate-review"] = new(PermitLimit: 600, WindowSeconds: 3600),
         };
 }
 

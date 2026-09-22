@@ -349,6 +349,13 @@ namespace Booksy.ServiceCatalog.Infrastructure.Persistence.Configurations
             builder.Property(p => p.VerifiedAt);
             builder.Property(p => p.LastActiveAt);
 
+            // Rating — derived from published reviews and overwritten together by the recompute. The count is the
+            // only thing that tells an unrated provider (AverageRating 0) from a real zero, and search sorts on
+            // both, which is why they live here rather than beside the per-dimension averages.
+            builder.Property(p => p.PublishedReviewCount)
+                .IsRequired()
+                .HasDefaultValue(0);
+
             // Audit Properties
             builder.Property(p => p.CreatedAt)
                 .IsRequired();

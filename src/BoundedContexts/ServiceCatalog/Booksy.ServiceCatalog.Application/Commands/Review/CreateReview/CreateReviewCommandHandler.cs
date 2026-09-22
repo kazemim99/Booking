@@ -106,7 +106,8 @@ public sealed class CreateReviewCommandHandler : ICommandHandler<CreateReviewCom
             ratingValue: request.Rating,
             comment: request.Comment,
             isVerified: true, // Auto-verify reviews from actual bookings
-            createdBy: $"Customer:{request.CustomerId}");
+            createdBy: $"Customer:{request.CustomerId}",
+            dimensions: request.Dimensions);
 
         // 6. Save the review
         await _reviewWriteRepository.SaveAsync(review, cancellationToken);
@@ -141,6 +142,9 @@ public sealed class CreateReviewCommandHandler : ICommandHandler<CreateReviewCom
             Rating: review.RatingValue,
             Comment: review.Comment,
             IsVerified: review.IsVerified,
-            CreatedAt: review.CreatedAt);
+            CreatedAt: review.CreatedAt,
+            ModerationStatus: review.ModerationStatus,
+            Dimensions: new Domain.ValueObjects.ReviewDimensionRatings(
+                review.CleanlinessRating, review.SkillRating, review.PunctualityRating, review.ConductRating));
     }
 }
