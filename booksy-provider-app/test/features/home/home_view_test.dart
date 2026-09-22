@@ -124,7 +124,7 @@ void main() {
     when(() => cubit.markNoShow(any())).thenAnswer((_) async => null);
   });
 
-  Future<void> pump(WidgetTester tester, HomeContext state) async {
+  Future<void> pump(WidgetTester tester, HomeContext state, {Widget? trailing}) async {
     whenListen(cubit, const Stream<HomeContext>.empty(), initialState: state);
     await tester.pumpWidget(
       MaterialApp(
@@ -142,11 +142,24 @@ void main() {
             // HomeView's header now carries the inbox bell, which reads its count from this cubit.
             BlocProvider<InboxCubit>.value(value: inbox),
           ],
-          child: const HomeView(),
+          child: HomeView(trailing: trailing),
         ),
       ),
     );
   }
+
+  group('the reviews card slot (provider-reviews-and-ratings)', () {
+    testWidgets('a working Home shows it after the zones', (tester) async {
+      await pump(tester, ctx(), trailing: const SizedBox(key: Key('trailing-probe'), height: 10));
+      expect(find.byKey(const Key('trailing-probe')), findsOneWidget);
+    });
+
+    testWidgets('a failed Home does not', (tester) async {
+      await pump(tester, ctx(system: SystemState.error),
+          trailing: const SizedBox(key: Key('trailing-probe'), height: 10));
+      expect(find.byKey(const Key('trailing-probe')), findsNothing);
+    });
+  });
 
   group('system chrome', () {
     testWidgets('LOADING renders the skeleton, no zone list', (tester) async {

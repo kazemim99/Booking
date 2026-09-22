@@ -1,3 +1,5 @@
+import '../utils/persian_digits.dart';
+
 /// Centralized Persian (fa-IR) strings for the Provider app.
 /// Strings mirror the Vue provider auth screens where equivalents exist.
 class AppStrings {
@@ -168,6 +170,33 @@ class AppStrings {
   static String servicesSelectedCount(int count) =>
       '$count خدمت انتخاب شده است';
   static const String save = 'ذخیره';
+
+  // ---- Reviews (provider-reviews-and-ratings) ----
+  static const String reviewsTitle = 'نظرهای مشتریان';
+  static const String reviewsNoneYet = 'هنوز نظری ندارد';
+  static const String reviewsEmpty = 'هنوز نظری برای کسب‌وکار شما ثبت نشده است';
+  static const String reviewsLoadFailed = 'دریافت نظرها ناموفق بود';
+  static String reviewsPublishedCount(int count) => '${PersianDigits.toPersian('$count')} نظر منتشرشده';
+  static String reviewsAwaitingReply(int count) => '${PersianDigits.toPersian('$count')} نظر منتظر پاسخ شما';
+  static const String reviewStatusPending = 'در انتظار تأیید';
+  static const String reviewStatusPublished = 'منتشر شده';
+  static const String reviewStatusRejected = 'رد شده';
+  static const String reviewStatusHidden = 'پنهان شده';
+  static const String reviewPendingNoReply =
+      'پس از تأیید این نظر می‌توانید به آن پاسخ دهید';
+  static const String replyAction = 'پاسخ';
+  static const String replyEditAction = 'ویرایش پاسخ';
+  static const String replyRemoveAction = 'حذف پاسخ';
+  static const String yourReply = 'پاسخ شما';
+  static const String replyStatusPending = 'پاسخ شما در انتظار تأیید است و هنوز نمایش داده نمی‌شود';
+  static const String replyStatusPublished = 'پاسخ شما منتشر شده است';
+  static String replyStatusRejected(String reason) => 'پاسخ شما رد شد: $reason — می‌توانید آن را بازنویسی کنید';
+  static const String replyDialogTitle = 'پاسخ به نظر';
+  static const String replyHint = 'پاسخ شما (حداکثر ۱۰۰۰ حرف)';
+  static const String replyRequired = 'متن پاسخ را بنویسید';
+  static const String replySend = 'ارسال پاسخ';
+  static const String replySent = 'پاسخ ارسال شد و پس از تأیید نمایش داده می‌شود';
+  static const String replyRemoved = 'پاسخ حذف شد';
   static const String cancel = 'انصراف';
 
   // Step 5 — working hours

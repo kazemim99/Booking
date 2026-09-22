@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../../../notifications/presentation/inbox_bell.dart';
 import '../../../notifications/presentation/inbox_cubit.dart';
+import '../../../reviews/presentation/reviews_home_card.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
@@ -49,7 +50,8 @@ class HomePage extends StatelessWidget {
         // and the list agree. Closing it when Home leaves the tree would break the page that is opened next.
         BlocProvider<InboxCubit>.value(value: getIt<InboxCubit>()),
       ],
-      child: const HomeView(),
+      // The reviews card has its own data (not HomeContext), so it rides after the registry's zones.
+      child: const HomeView(trailing: ReviewsHomeEntry()),
     );
   }
 }
@@ -58,7 +60,10 @@ class HomePage extends StatelessWidget {
 class HomeView extends StatelessWidget {
   final HomeWidgetRegistry registry;
 
-  const HomeView({super.key, this.registry = const HomeWidgetRegistry()});
+  /// Shown after the zones on a working Home — the business's reviews summary in the app.
+  final Widget? trailing;
+
+  const HomeView({super.key, this.registry = const HomeWidgetRegistry(), this.trailing});
 
   @override
   Widget build(BuildContext context) {
@@ -86,6 +91,7 @@ class HomeView extends StatelessWidget {
                             const EdgeInsets.only(bottom: AppSpacing.md),
                         child: _zone(context, ctx, id),
                       ),
+                    ?trailing,
                     // Clearance for the docked create action.
                     const SizedBox(height: AppSpacing.xl),
                   ],

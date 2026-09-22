@@ -225,6 +225,17 @@ class ApiConstants {
   // ==================== Notifications (ServiceCatalog) ====================
   // All four are scoped to the caller by the backend: there is no way to read somebody else's inbox.
 
+  // ==================== Reviews (provider-reviews-and-ratings) ====================
+
+  /// GET — every review of the business in every state, owner/manager only, with `awaitingReplyCount`.
+  static String reviewInbox(String providerId) => '/$apiVersion/Reviews/providers/$providerId/inbox';
+
+  /// GET — the public listing; only its `statistics` are read here (published reviews, as customers see them).
+  static String providerReviews(String providerId) => '/$apiVersion/Reviews/providers/$providerId';
+
+  /// POST (first reply) / PUT (rewrite) / DELETE (withdraw). Every reply goes to moderation before it is public.
+  static String reviewReply(String reviewId) => '/$apiVersion/Reviews/$reviewId/reply';
+
   /// GET — the caller's inbox, newest first (query: pageNumber/pageSize).
   static const String notificationsInbox = '/$apiVersion/Notifications/inbox';
 

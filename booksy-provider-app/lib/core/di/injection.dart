@@ -40,6 +40,10 @@ import '../../features/notifications/data/inbox_repository_impl.dart';
 import '../../features/notifications/data/notification_api_service.dart';
 import '../../features/notifications/domain/inbox_repository.dart';
 import '../../features/notifications/presentation/inbox_cubit.dart';
+import '../../features/reviews/data/reviews_api_service.dart';
+import '../../features/reviews/data/reviews_repository_impl.dart';
+import '../../features/reviews/domain/reviews_repository.dart';
+import '../../features/reviews/presentation/reviews_cubit.dart';
 
 final getIt = GetIt.instance;
 
@@ -143,6 +147,14 @@ Future<void> configureDependencies() async {
   // A SINGLETON, unlike the screen cubits above: the bell and the inbox page must read the same state, or the
   // badge and the list it opens can disagree.
   getIt.registerLazySingleton<InboxCubit>(() => InboxCubit(getIt<InboxRepository>()));
+
+  // ---- Reviews (provider-reviews-and-ratings) ----
+  getIt.registerLazySingleton<ReviewsApiService>(() => ReviewsApiService(authedDio));
+  getIt.registerLazySingleton<ReviewsRepository>(
+    () => ReviewsRepositoryImpl(getIt<ReviewsApiService>(), getIt<AuthRepository>()),
+  );
+  // Factory: the Home card and the reviews page each own one; the page's replies are re-read on return.
+  getIt.registerFactory<ReviewsCubit>(() => ReviewsCubit(getIt<ReviewsRepository>()));
 
   // ---- Home (Today workspace) ----
   getIt.registerLazySingleton<HomeApiService>(() => HomeApiService(authedDio));

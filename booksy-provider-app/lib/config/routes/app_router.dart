@@ -25,6 +25,8 @@ import '../../core/di/injection.dart';
 import '../../features/home/presentation/pages/home_page.dart';
 import '../../features/notifications/presentation/inbox_cubit.dart';
 import '../../features/notifications/presentation/inbox_page.dart';
+import '../../features/reviews/presentation/reviews_cubit.dart';
+import '../../features/reviews/presentation/reviews_page.dart';
 
 /// Route paths.
 class Routes {
@@ -37,6 +39,7 @@ class Routes {
   static const String clients = '/clients';
   static const String more = '/more';
   static const String notifications = '/notifications';
+  static const String reviews = '/reviews';
   static const String moreBusiness = '/more/business';
   static const String moreHours = '/more/hours';
   static const String moreHolidays = '/more/holidays';
@@ -234,6 +237,13 @@ class AppRouter {
           builder: (_, _) => BlocProvider<InboxCubit>.value(
             value: getIt<InboxCubit>(),
             child: const InboxPage(),
+          ),
+        ),
+        GoRoute(
+          path: Routes.reviews,
+          builder: (_, _) => BlocProvider<ReviewsCubit>(
+            create: (_) => getIt<ReviewsCubit>()..load(),
+            child: const ReviewsPage(),
           ),
         ),
         GoRoute(

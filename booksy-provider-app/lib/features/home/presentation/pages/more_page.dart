@@ -146,6 +146,13 @@ class MorePage extends StatelessWidget {
                         label: AppStrings.moreGallery,
                         onTap: () => context.push(Routes.moreGallery),
                       ),
+                      _row(
+                        context,
+                        key: 'more-reviews',
+                        icon: Icons.rate_review_outlined,
+                        label: AppStrings.reviewsTitle,
+                        onTap: () => context.push(Routes.reviews),
+                      ),
                     ]),
                     const SizedBox(height: AppSpacing.lg),
                     _sectionHeader(AppStrings.moreAccountSection),
