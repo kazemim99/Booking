@@ -18,6 +18,8 @@ namespace Booksy.ServiceCatalog.Application.Commands.Booking.CancelBooking
         private readonly IServiceCatalogUnitOfWork _unitOfWork;
         private readonly ILogger<CancelBookingCommandHandler> _logger;
 
+        private readonly IBookingNotificationParameters _bookingParameters;
+
         public CancelBookingCommandHandler(
             IBookingWriteRepository bookingRepository,
             IProviderAvailabilityWriteRepository availabilityWriteRepository,
@@ -26,8 +28,10 @@ namespace Booksy.ServiceCatalog.Application.Commands.Booking.CancelBooking
             ILogger<CancelBookingCommandHandler> logger,
             IBookingReminderScheduler reminders,
             INotificationRaiser notifications,
-            Domain.Repositories.IProviderReadRepository providers)
+            Domain.Repositories.IProviderReadRepository providers,
+            IBookingNotificationParameters bookingParameters)
         {
+            _bookingParameters = bookingParameters;
             _bookingRepository = bookingRepository;
             _availabilityWriteRepository = availabilityWriteRepository;
             _paymentGateway = paymentGateway;
@@ -135,12 +139,9 @@ namespace Booksy.ServiceCatalog.Application.Commands.Booking.CancelBooking
             var salonCancelled = cancellingProvider is not null
                                  && cancellingProvider.OwnerId.Value == request.ActingUserId;
 
-            var cancelParameters = new Dictionary<string, string>
-            {
-                [NotificationParameter.BusinessName] = cancellingProvider?.Profile.BusinessName ?? "سالن",
-                [NotificationParameter.StartTime] = booking.TimeSlot.StartTime.ToString("o"),
-                [NotificationParameter.Reason] = request.Reason,
-            };
+            var cancelParameters = await _bookingParameters.ForAsync(
+                booking, cancellingProvider?.Profile.BusinessName, cancellationToken);
+            cancelParameters[NotificationParameter.Reason] = request.Reason;
 
             if (salonCancelled)
             {

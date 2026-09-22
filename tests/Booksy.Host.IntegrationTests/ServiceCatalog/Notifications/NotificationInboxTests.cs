@@ -206,6 +206,50 @@ public class NotificationInboxTests : ServiceCatalogIntegrationTestBase
     /// The id of the first inbox row. Read as a string and parsed: the id serialises as a JSON string, so
     /// asking Json.NET for a Guid directly throws an InvalidCastException.
     /// </summary>
+    // QA walkthrough 2026-09-22: a salon's inbox showed "<h2>Your booking has been cancelled</h2>". Those rows were
+    // written by the English HTML handlers deleted in f9502127; they carry no event code. They stay in the database
+    // and simply stop being shown (and counted) — nothing current writes an HTML body.
+    [Fact]
+    public async Task A_legacy_english_html_notification_is_neither_shown_nor_counted()
+    {
+        var me = Guid.NewGuid();
+        await WriteDeliveredLegacyRowAsync(me, "Booking Cancelled", "<h2>Your booking has been cancelled</h2><p>…</p>");
+
+        AuthenticateAsUser(me);
+
+        ((JArray)(await GetInboxAsync())["items"]!).Should().BeEmpty();
+        (await GetUnreadCountAsync()).Should().Be(0);
+    }
+
+    [Fact]
+    public async Task A_legacy_plain_text_notification_is_still_shown()
+    {
+        // Not a blanket purge of pre-outbox rows: only the HTML templates are unreadable.
+        var me = Guid.NewGuid();
+        await WriteDeliveredLegacyRowAsync(me, "اطلاعیه", "سالن فردا تعطیل است.");
+
+        AuthenticateAsUser(me);
+
+        ((JArray)(await GetInboxAsync())["items"]!).Should().ContainSingle();
+        (await GetUnreadCountAsync()).Should().Be(1);
+    }
+
+    private async Task WriteDeliveredLegacyRowAsync(Guid recipientId, string subject, string body)
+    {
+        using var scope = Factory.Services.CreateScope();
+        var context = scope.ServiceProvider.GetRequiredService<ServiceCatalogDbContext>();
+        var row = Domain.Aggregates.NotificationAggregate.Notification.Create(
+            Booksy.Core.Domain.ValueObjects.UserId.From(recipientId),
+            NotificationType.BookingCancelled,
+            NotificationChannel.InApp,
+            subject,
+            body);
+        row.Queue();
+        row.MarkAsSent();
+        context.Notifications.Add(row);
+        await context.SaveChangesAsync();
+    }
+
     private static Guid FirstNotificationIdAsync(JObject inbox) =>
         Guid.Parse(inbox["items"]![0]!["id"]!.Value<string>()!);
 

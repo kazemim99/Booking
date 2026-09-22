@@ -75,9 +75,33 @@ public class PersianNotificationCopyWriterTests
     {
         var copy = _writer.Write(NotificationEventCode.BookingConfirmed, FullParameters());
 
-        // 2026-09-23 is 1405/07/01 in the Persian calendar.
-        copy.Body.Should().Contain("1405/07/01");
-        copy.Body.Should().Contain("14:30");
+        // 2026-09-23 is Wednesday 1 Mehr 1405.
+        copy.Body.Should().Contain("چهارشنبه ۱ مهر، ساعت ۱۴:۳۰");
+    }
+
+    [Theory]
+    [InlineData(NotificationEventCode.NewBookingRequest)]
+    [InlineData(NotificationEventCode.NewBookingConfirmed)]
+    [InlineData(NotificationEventCode.BookingCancelledByCustomer)]
+    public void A_salon_notice_without_a_customer_name_says_a_customer_not_dear_customer(NotificationEventCode code)
+    {
+        // «درخواست نوبت جدید از مشتری گرامی» addresses the salon as if it were the customer (QA 2026-09-22).
+        var parameters = FullParameters();
+        parameters.Remove(NotificationParameter.CustomerName);
+
+        var copy = _writer.Write(code, parameters);
+
+        copy.Body.Should().Contain("یک مشتری");
+        copy.Body.Should().NotContain("مشتری گرامی");
+    }
+
+    [Fact]
+    public void A_salon_notice_names_the_customer_when_it_has_the_name()
+    {
+        var parameters = FullParameters();
+        parameters[NotificationParameter.CustomerName] = "سارا احمدی";
+
+        _writer.Write(NotificationEventCode.NewBookingRequest, parameters).Body.Should().Contain("سارا احمدی");
     }
 
     [Fact]

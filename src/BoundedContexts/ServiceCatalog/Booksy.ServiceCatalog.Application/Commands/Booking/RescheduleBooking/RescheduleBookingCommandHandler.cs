@@ -36,6 +36,8 @@ namespace Booksy.ServiceCatalog.Application.Commands.Booking.RescheduleBooking
         /// <summary>Gap kept after an appointment, matching booking creation.</summary>
         private const int BufferMinutes = 15;
 
+        private readonly IBookingNotificationParameters _bookingParameters;
+
         public RescheduleBookingCommandHandler(
             IBookingWriteRepository bookingWriteRepository,
             IBookingReadRepository bookingReadRepository,
@@ -47,8 +49,10 @@ namespace Booksy.ServiceCatalog.Application.Commands.Booking.RescheduleBooking
             IServiceCatalogUnitOfWork unitOfWork,
             ILogger<RescheduleBookingCommandHandler> logger,
             IBookingReminderScheduler reminders,
-            INotificationRaiser notifications)
+            INotificationRaiser notifications,
+            IBookingNotificationParameters bookingParameters)
         {
+            _bookingParameters = bookingParameters;
             _bookingWriteRepository = bookingWriteRepository;
             _bookingReadRepository = bookingReadRepository;
             _providerRepository = providerRepository;
@@ -151,7 +155,8 @@ namespace Booksy.ServiceCatalog.Application.Commands.Booking.RescheduleBooking
             // their appointment.
             await _reminders.WithdrawAsync(existingBooking.Id.Value, cancellationToken);
             await _reminders.ScheduleAsync(newBooking, cancellationToken);
-
+
+
             // Tell whoever did not move it. Filed against the NEW booking: the old one is closed and
             // everything attached to it has just been withdrawn, so a notice left there would be
             // cancelled before it could ever go out.
@@ -159,11 +164,8 @@ namespace Booksy.ServiceCatalog.Application.Commands.Booking.RescheduleBooking
             // `provider` is already loaded and validated above, and the booking cannot change salon,
             // so it is reused rather than fetched again.
             var movedByProvider = provider.OwnerId.Value == request.ActingUserId;
-            var rescheduleParameters = new Dictionary<string, string>
-            {
-                [NotificationParameter.BusinessName] = provider.Profile.BusinessName,
-                [NotificationParameter.StartTime] = newBooking.TimeSlot.StartTime.ToString("o"),
-            };
+            var rescheduleParameters = await _bookingParameters.ForAsync(
+                newBooking, provider.Profile.BusinessName, cancellationToken);
 
             await _notifications.RaiseAsync(
                 movedByProvider

@@ -1,3 +1,4 @@
+using Booksy.ServiceCatalog.Application.Abstractions;
 // ========================================
 // Booksy.ServiceCatalog.Application/Queries/Provider/GetProviderProfile/GetProviderProfileQueryHandler.cs
 // ========================================
@@ -25,14 +26,18 @@ namespace Booksy.ServiceCatalog.Application.Queries.Provider.GetProviderProfile
         private readonly IProviderAvailabilityReadRepository _availabilityRepository;
         private readonly ILogger<GetProviderProfileQueryHandler> _logger;
 
+        private readonly IUrlService _urlService;
+
         public GetProviderProfileQueryHandler(
             IProviderReadRepository providerRepository,
             IServiceReadRepository serviceRepository,
             IReviewReadRepository reviewRepository,
             IBookingReadRepository bookingRepository,
             IProviderAvailabilityReadRepository availabilityRepository,
-            ILogger<GetProviderProfileQueryHandler> logger)
+            ILogger<GetProviderProfileQueryHandler> logger,
+            IUrlService urlService)
         {
+            _urlService = urlService;
             _providerRepository = providerRepository;
             _serviceRepository = serviceRepository;
             _reviewRepository = reviewRepository;
@@ -91,8 +96,8 @@ namespace Booksy.ServiceCatalog.Application.Queries.Provider.GetProviderProfile
                 ProviderId = provider.Id.Value,
                 BusinessName = provider.Profile.BusinessName,
                 Description = provider.Profile.BusinessDescription,
-                LogoUrl = provider.Profile.DisplayImageUrl,
-                ProfileImageUrl = provider.Profile.ProfileImageUrl,
+                LogoUrl = _urlService.AbsoluteOrNull(provider.Profile.DisplayImageUrl),
+                ProfileImageUrl = _urlService.AbsoluteOrNull(provider.Profile.ProfileImageUrl),
                 PrimaryCategory = provider.PrimaryCategory,
                 Status = provider.Status,
                 PriceRange = provider.PriceRange,
@@ -153,7 +158,7 @@ namespace Booksy.ServiceCatalog.Application.Queries.Provider.GetProviderProfile
                     .OrderBy(g => g.DisplayOrder)
                     .Select(g => new GalleryImageViewModel
                     {
-                        ImageUrl = g.ImageUrl,
+                        ImageUrl = _urlService.ToAbsoluteUrl(g.ImageUrl),
                         Caption = g.Caption,
                         IsPrimary = g.IsPrimary,
                         DisplayOrder = g.DisplayOrder

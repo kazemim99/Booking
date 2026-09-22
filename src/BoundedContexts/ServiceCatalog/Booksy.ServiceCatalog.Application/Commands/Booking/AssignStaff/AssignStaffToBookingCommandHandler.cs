@@ -20,14 +20,18 @@ namespace Booksy.ServiceCatalog.Application.Commands.Booking.AssignStaff
         private readonly Domain.Repositories.IProviderReadRepository _providers;
         private readonly ILogger<AssignStaffToBookingCommandHandler> _logger;
 
+        private readonly IBookingNotificationParameters _bookingParameters;
+
         public AssignStaffToBookingCommandHandler(
             IBookingWriteRepository bookingRepository,
             IServiceCatalogUnitOfWork unitOfWork,
             INotificationRaiser notifications,
             Domain.Repositories.IOrganizationMembershipRepository memberships,
             Domain.Repositories.IProviderReadRepository providers,
-            ILogger<AssignStaffToBookingCommandHandler> logger)
+            ILogger<AssignStaffToBookingCommandHandler> logger,
+            IBookingNotificationParameters bookingParameters)
         {
+            _bookingParameters = bookingParameters;
             _bookingRepository = bookingRepository;
             _unitOfWork = unitOfWork;
             _notifications = notifications;
@@ -71,11 +75,8 @@ namespace Booksy.ServiceCatalog.Application.Commands.Booking.AssignStaff
                     Domain.Enums.NotificationEventCode.StaffAssignedToBooking,
                     membership.PersonId,
                     dedupKey: booking.Id.Value,
-                    parameters: new Dictionary<string, string>
-                    {
-                        [NotificationParameter.BusinessName] = assigningProvider?.Profile.BusinessName ?? "سالن",
-                        [NotificationParameter.StartTime] = booking.TimeSlot.StartTime.ToString("o"),
-                    },
+                    parameters: await _bookingParameters.ForAsync(
+                        booking, assigningProvider?.Profile.BusinessName, cancellationToken),
                     subjectType: "Booking",
                     subjectId: booking.Id.Value,
                     cancellationToken: cancellationToken);

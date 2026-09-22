@@ -60,7 +60,7 @@ public class BookingCustomerSmsTests : ServiceCatalogIntegrationTestBase
         var message = Sms.LastMessageTo("+989123135143");
         message.Should().NotBeNull("the salon's customer is told about the booking by SMS");
         message.Should().Contain("مرتضی").And.Contain(provider.Profile.BusinessName);
-        message.Should().Contain("ساعت 10:00", "the salon's wall-clock time, never shifted");
+        message.Should().Contain("ساعت ۱۰:۰۰", "the salon's wall-clock time, never shifted");
     }
 
     [Fact]

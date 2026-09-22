@@ -1,3 +1,4 @@
+using Booksy.ServiceCatalog.Application.Abstractions;
 using Booksy.Core.Application.Abstractions.CQRS;
 using Booksy.Core.Application.Exceptions;
 using Booksy.Core.Domain.ValueObjects;
@@ -75,8 +76,13 @@ public sealed record GetMyReviewsQuery(Guid CustomerId, int PageNumber = 1, int 
 public sealed class GetMyReviewsQueryHandler : IQueryHandler<GetMyReviewsQuery, ManagedReviewsViewModel>
 {
     private readonly IReviewReadRepository _reviews;
+    private readonly IUrlService _urls;
 
-    public GetMyReviewsQueryHandler(IReviewReadRepository reviews) => _reviews = reviews;
+    public GetMyReviewsQueryHandler(IReviewReadRepository reviews, IUrlService urls)
+    {
+        _reviews = reviews;
+        _urls = urls;
+    }
 
     public async Task<ManagedReviewsViewModel> Handle(GetMyReviewsQuery request, CancellationToken cancellationToken)
     {
@@ -90,7 +96,7 @@ public sealed class GetMyReviewsQueryHandler : IQueryHandler<GetMyReviewsQuery, 
             {
                 var item = ManagedReviewMapping.ToItem(r, now);
                 return contexts.TryGetValue(r.Id, out var c)
-                    ? item with { ProviderName = c.ProviderName, ProviderLogoUrl = c.ProviderLogoUrl, ServiceName = c.ServiceName }
+                    ? item with { ProviderName = c.ProviderName, ProviderLogoUrl = _urls.AbsoluteOrNull(c.ProviderLogoUrl), ServiceName = c.ServiceName }
                     : item;
             }).ToList(),
             reviews.Count);

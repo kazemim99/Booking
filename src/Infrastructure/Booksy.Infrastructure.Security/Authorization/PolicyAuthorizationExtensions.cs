@@ -46,18 +46,22 @@ public static class PolicyAuthorizationExtensions
             options.AddPolicy("ClientOnly", policy =>
                 policy.RequireClaim("user_type", "Client"));
 
+            // "Both" is a person who is a salon side AND a customer (one person per phone number, UserType.Both).
+            // A refreshed token carries it as user_type, so every policy that admits a provider must admit it too,
+            // or the salon's own app 403s on every provider route after the first silent refresh (QA 2026-09-22).
+            // Which salon they may act for is still decided per request by the ownership/membership checks.
             options.AddPolicy("ProviderOnly", policy =>
-                policy.RequireClaim("user_type", "Provider"));
+                policy.RequireClaim("user_type", "Provider", "Both"));
 
             options.AddPolicy("ClientOrProvider", policy =>
                 policy.RequireAssertion(context =>
                     context.User.HasClaim(c => c.Type == "user_type" &&
-                        (c.Value == "Client" || c.Value == "Provider"))));   
-            
-            options.AddPolicy("ProviderOrAdmin", policy => 
+                        (c.Value == "Client" || c.Value == "Provider" || c.Value == "Both"))));
+
+            options.AddPolicy("ProviderOrAdmin", policy =>
                 policy.RequireAssertion(context =>
                     context.User.HasClaim(c => c.Type == "user_type" &&
-                        (c.Value == "Admin" || c.Value == "Provider"))));
+                        (c.Value == "Admin" || c.Value == "Provider" || c.Value == "Both"))));
 
             // Feature-based policies
             options.AddPolicy("CanManageUsers", policy =>

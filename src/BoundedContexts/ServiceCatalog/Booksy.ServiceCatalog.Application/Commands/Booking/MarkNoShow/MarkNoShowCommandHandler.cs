@@ -23,14 +23,18 @@ namespace Booksy.ServiceCatalog.Application.Commands.Booking.MarkNoShow
         private readonly IServiceCatalogUnitOfWork _unitOfWork;
         private readonly ILogger<MarkNoShowCommandHandler> _logger;
 
+        private readonly IBookingNotificationParameters _bookingParameters;
+
         public MarkNoShowCommandHandler(
             IBookingWriteRepository bookingRepository,
             IServiceCatalogUnitOfWork unitOfWork,
             ILogger<MarkNoShowCommandHandler> logger,
             IBookingReminderScheduler reminders,
             INotificationRaiser notifications,
-            Domain.Repositories.IProviderReadRepository providers)
+            Domain.Repositories.IProviderReadRepository providers,
+            IBookingNotificationParameters bookingParameters)
         {
+            _bookingParameters = bookingParameters;
             _bookingRepository = bookingRepository;
             _unitOfWork = unitOfWork;
             _logger = logger;
@@ -63,11 +67,8 @@ namespace Booksy.ServiceCatalog.Application.Commands.Booking.MarkNoShow
             // Both sides: the customer so the record is not a silent mark against them, and the salon
             // because it is their loss to act on.
             var noShowProvider = await _providers.GetByIdAsync(booking.ProviderId, cancellationToken);
-            var noShowParameters = new Dictionary<string, string>
-            {
-                [NotificationParameter.BusinessName] = noShowProvider?.Profile.BusinessName ?? "سالن",
-                [NotificationParameter.StartTime] = booking.TimeSlot.StartTime.ToString("o"),
-            };
+            var noShowParameters = await _bookingParameters.ForAsync(
+                booking, noShowProvider?.Profile.BusinessName, cancellationToken);
 
             await _notifications.RaiseAsync(
                 Domain.Enums.NotificationEventCode.BookingNoShow,

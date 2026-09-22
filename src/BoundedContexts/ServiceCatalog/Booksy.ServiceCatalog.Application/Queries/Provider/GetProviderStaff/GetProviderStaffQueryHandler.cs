@@ -68,10 +68,12 @@ namespace Booksy.ServiceCatalog.Application.Queries.Provider.GetProviderStaff
                     phone = person.PhoneNumber ?? string.Empty;
                 }
 
-                // Unclaimed member: the salon-provided display name is the identity.
-                var fullName = $"{first} {last}".Trim();
-                if (string.IsNullOrEmpty(fullName))
-                    fullName = member.StaffProfile?.DisplayName ?? string.Empty;
+                // Unclaimed member, or one whose account still carries the OTP placeholder «ارائه‌دهنده <digits>»:
+                // the salon-provided display name is the identity. Showing the placeholder put a phone number
+                // where the customer's booking summary names the person (QA walkthrough 2026-09-22).
+                var fullName = PersonName.RealOrNull(first, last)
+                               ?? member.StaffProfile?.DisplayName
+                               ?? string.Empty;
 
                 staffDtos.Add(new StaffDto(
                     member.Id,                       // the bookable resource id

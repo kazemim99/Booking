@@ -194,7 +194,9 @@ namespace Booksy.ServiceCatalog.Infrastructure.Persistence.Repositories
                 .CountAsync(
                     n => n.RecipientId == recipientId
                          && n.ReadAt == null
-                         && (n.Status == NotificationStatus.Sent || n.Status == NotificationStatus.Delivered),
+                         && (n.Status == NotificationStatus.Sent || n.Status == NotificationStatus.Delivered)
+                         // Same rule as the inbox list (GetInboxQueryHandler.IsLegacyHtml), in SQL.
+                         && !(n.EventCode == null && n.Body.Contains("<")),
                     cancellationToken);
         }
     }

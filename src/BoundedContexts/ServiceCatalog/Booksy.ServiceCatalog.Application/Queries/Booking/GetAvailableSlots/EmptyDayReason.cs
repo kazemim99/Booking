@@ -25,8 +25,10 @@ public static class EmptyDayReason
         var dayMinutes = (close.Value - open.Value).TotalMinutes;
         if (dayMinutes < serviceMinutes)
         {
+            // Both sides read this: the salon in its own app and, since 2026-09-22, the customer in the empty day.
+            // So it says what is true, and asks for nothing only a salon could do.
             return $"ساعات کاری این روز ({open.Value.ToString("HH:mm")} تا {close.Value.ToString("HH:mm")}) برای این خدمت " +
-                   $"({serviceMinutes} دقیقه) کافی نیست. ساعات کاری را در تنظیمات بیشتر کنید یا روز دیگری را انتخاب کنید.";
+                   $"({serviceMinutes} دقیقه) کافی نیست. لطفاً روز دیگری را انتخاب کنید.";
         }
 
         return NoQualifiedStaff;

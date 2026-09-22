@@ -41,6 +41,7 @@ namespace Booksy.ServiceCatalog.Application.DependencyInjection
             // caused them. Registered here rather than in AddNotificationBackgroundServices, which
             // nothing calls — see the note on that method.
             services.AddScoped<Services.Notifications.IBookingReminderScheduler, Services.Notifications.BookingReminderScheduler>();
+            services.AddScoped<Services.Notifications.IBookingNotificationParameters, Services.Notifications.BookingNotificationParameters>();
 
             // Register domain event handlers explicitly (NO MediatR!)
             RegisterDomainEventHandlers(services, assembly);

@@ -1,3 +1,4 @@
+using Booksy.ServiceCatalog.Application.Abstractions;
 // ========================================
 // Booksy.ServiceCatalog.Application/Queries/Service/GetServiceById/GetServiceByIdQueryHandler.cs
 // ========================================
@@ -14,11 +15,15 @@ namespace Booksy.ServiceCatalog.Application.Queries.Service.GetServiceById
         private readonly IProviderReadRepository _providerRepository;
         private readonly ILogger<GetServiceByIdQueryHandler> _logger;
 
+        private readonly IUrlService _urlService;
+
         public GetServiceByIdQueryHandler(
             IServiceReadRepository serviceRepository,
             IProviderReadRepository providerRepository,
-            ILogger<GetServiceByIdQueryHandler> logger)
+            ILogger<GetServiceByIdQueryHandler> logger,
+            IUrlService urlService)
         {
+            _urlService = urlService;
             _serviceRepository = serviceRepository;
             _providerRepository = providerRepository;
             _logger = logger;
@@ -112,7 +117,7 @@ namespace Booksy.ServiceCatalog.Application.Queries.Service.GetServiceById
                         BusinessName = provider.Profile.BusinessName,
                         Description = provider.Profile.BusinessDescription,
                         Type = provider.PrimaryCategory,
-                        LogoUrl = provider.Profile.DisplayImageUrl,
+                        LogoUrl = _urlService.AbsoluteOrNull(provider.Profile.DisplayImageUrl),
                         City = provider.Address.City,
                         State = provider.Address.State,
                         AllowOnlineBooking = provider.AllowOnlineBooking,

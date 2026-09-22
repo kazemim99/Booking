@@ -1,3 +1,4 @@
+using Booksy.ServiceCatalog.Application.Abstractions;
 ﻿using Booksy.Core.Application.Abstractions.CQRS;
 using Booksy.ServiceCatalog.Domain.Repositories;
 using Microsoft.Extensions.Logging;
@@ -10,11 +11,15 @@ namespace Booksy.ServiceCatalog.Application.Queries.Provider.GetProvidersByStatu
         private readonly IServiceReadRepository _serviceRepository;
         private readonly ILogger<GetProvidersByStatusQueryHandler> _logger;
 
+        private readonly IUrlService _urlService;
+
         public GetProvidersByStatusQueryHandler(
             IProviderReadRepository providerRepository,
             IServiceReadRepository serviceRepository,
-            ILogger<GetProvidersByStatusQueryHandler> logger)
+            ILogger<GetProvidersByStatusQueryHandler> logger,
+            IUrlService urlService)
         {
+            _urlService = urlService;
             _providerRepository = providerRepository;
             _serviceRepository = serviceRepository;
             _logger = logger;
@@ -54,8 +59,8 @@ namespace Booksy.ServiceCatalog.Application.Queries.Provider.GetProvidersByStatu
                     Country = provider.Address.Country,
                     Email = provider.ContactInfo.Email?.Value ?? string.Empty,
                     PrimaryPhone = provider.ContactInfo.PrimaryPhone?.Value ?? string.Empty,
-                    LogoUrl = provider.Profile.DisplayImageUrl,
-                    ProfileImageUrl = provider.Profile.ProfileImageUrl,
+                    LogoUrl = _urlService.AbsoluteOrNull(provider.Profile.DisplayImageUrl),
+                    ProfileImageUrl = _urlService.AbsoluteOrNull(provider.Profile.ProfileImageUrl),
                     AllowOnlineBooking = provider.AllowOnlineBooking,
                     OffersMobileServices = provider.OffersMobileServices,
                     IsVerified = provider.VerifiedAt.HasValue,

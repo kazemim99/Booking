@@ -23,6 +23,8 @@ namespace Booksy.ServiceCatalog.Application.Services.Notifications
             ArgumentNullException.ThrowIfNull(parameters);
 
             var customer = Name(parameters, NotificationParameter.CustomerName, "مشتری گرامی");
+            // The salon reads about a customer in the third person; «مشتری گرامی» there reads as if addressed to it.
+            var aCustomer = Name(parameters, NotificationParameter.CustomerName, "یک مشتری");
             var business = Value(parameters, NotificationParameter.BusinessName) ?? "سالن";
             var service = Value(parameters, NotificationParameter.ServiceName);
             var staff = Value(parameters, NotificationParameter.StaffName);
@@ -121,27 +123,27 @@ namespace Booksy.ServiceCatalog.Application.Services.Notifications
                 // ── Provider: booking ──
                 NotificationEventCode.NewBookingRequest => Copy(
                     "درخواست نوبت جدید",
-                    $"درخواست نوبت جدید از {customer}{forService} {when} در انتظار تأیید شماست."),
+                    $"درخواست نوبت جدید از {aCustomer}{forService} {when} در انتظار تأیید شماست."),
 
                 NotificationEventCode.NewBookingConfirmed => Copy(
                     "نوبت جدید",
-                    $"نوبت جدید برای {customer}{forService} {when} ثبت شد."),
+                    $"نوبت جدید برای {aCustomer}{forService} {when} ثبت شد."),
 
                 NotificationEventCode.BookingCancelledByCustomer => Copy(
                     "لغو نوبت از سوی مشتری",
-                    $"{customer} نوبت {when}{forService} را لغو کرد."),
+                    $"{aCustomer} نوبت {when}{forService} را لغو کرد."),
 
                 NotificationEventCode.BookingRescheduledByCustomer => Copy(
                     "تغییر زمان از سوی مشتری",
-                    $"{customer} زمان نوبت خود را به {when} تغییر داد."),
+                    $"{aCustomer} زمان نوبت خود را به {when} تغییر داد."),
 
                 NotificationEventCode.CustomerNoShow => Copy(
                     "عدم مراجعهٔ مشتری",
-                    $"{customer} در نوبت {when} مراجعه نکرد."),
+                    $"{aCustomer} در نوبت {when} مراجعه نکرد."),
 
                 NotificationEventCode.NextAppointmentReminder => Copy(
                     "نوبت بعدی شما",
-                    $"نوبت بعدی شما {when}{forService} با {customer} است."),
+                    $"نوبت بعدی شما {when}{forService} با {aCustomer} است."),
 
                 NotificationEventCode.DailyScheduleDigest => Copy(
                     "برنامهٔ امروز",
@@ -170,7 +172,7 @@ namespace Booksy.ServiceCatalog.Application.Services.Notifications
 
                 NotificationEventCode.StaffAssignedToBooking => Copy(
                     "نوبت جدید برای شما",
-                    $"نوبت {when}{forService} با {customer} به شما سپرده شد."),
+                    $"نوبت {when}{forService} با {aCustomer} به شما سپرده شد."),
 
                 // ── Provider: money and account ──
                 NotificationEventCode.PayoutCompleted => Copy(
@@ -253,7 +255,7 @@ namespace Booksy.ServiceCatalog.Application.Services.Notifications
                     raw, CultureInfo.InvariantCulture, DateTimeStyles.RoundtripKind, out var when))
                 return "در زمان تعیین‌شده";
 
-            return $"{BookingSmsText.PersianDate(when)} ساعت {when:HH:mm}";
+            return BookingSmsText.PersianDateTime(when);
         }
     }
 }

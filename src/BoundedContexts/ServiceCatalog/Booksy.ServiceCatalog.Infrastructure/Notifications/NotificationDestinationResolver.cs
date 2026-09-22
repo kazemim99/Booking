@@ -1,4 +1,6 @@
+using Booksy.Core.Domain.ValueObjects;
 using Booksy.ServiceCatalog.Application.Services.Notifications;
+using Booksy.ServiceCatalog.Domain.Enums;
 using Booksy.ServiceCatalog.Domain.Policies;
 using Booksy.ServiceCatalog.Domain.ValueObjects;
 using Booksy.ServiceCatalog.Infrastructure.Persistence.Context;
@@ -35,8 +37,8 @@ namespace Booksy.ServiceCatalog.Infrastructure.Notifications
         }
 
         /// <summary>
-        /// A booking opens only if it still exists AND the reader is party to it — its customer, the salon
-        /// that owns it, or the customer it was entered for.
+        /// A booking opens only if it still exists AND the reader is party to it — its customer, or someone who acts
+        /// for the salon that owns it (its owner, or an active member).
         /// </summary>
         /// <remarks>
         /// Ownership is part of validity, not a separate permission check bolted on afterwards: a row whose
@@ -65,9 +67,28 @@ namespace Booksy.ServiceCatalog.Infrastructure.Notifications
                 .Select(b => new { b.Id, b.CustomerId, b.ProviderId })
                 .ToListAsync(cancellationToken);
 
+            // The salon side reads with a USER id, while a booking belongs to the ORGANISATION: comparing the two
+            // never matched, so no salon notification was ever tappable (QA 2026-09-22). The reader acts for a salon
+            // it owns or holds an active membership in — the same rule as managing its bookings.
+            var salonIds = readable.Select(b => b.ProviderId).Distinct().ToList();
+            var reader = UserId.From(readerId);
+            var ownedSalons = await _context.Providers
+                .AsNoTracking()
+                .Where(p => salonIds.Contains(p.Id) && p.OwnerId == reader)
+                .Select(p => p.Id)
+                .ToListAsync(cancellationToken);
+            var memberSalons = await _context.OrganizationMemberships
+                .AsNoTracking()
+                .Where(m => salonIds.Contains(m.OrganizationId)
+                            && m.PersonId == reader
+                            && m.Status != MembershipStatus.Terminated)
+                .Select(m => m.OrganizationId)
+                .ToListAsync(cancellationToken);
+            var actsFor = ownedSalons.Concat(memberSalons).ToHashSet();
+
             foreach (var booking in readable)
             {
-                if (booking.CustomerId.Value == readerId || booking.ProviderId.Value == readerId)
+                if (booking.CustomerId.Value == readerId || actsFor.Contains(booking.ProviderId))
                 {
                     actionable.Add(new NotificationTarget(
                         nameof(NotificationDestinationKind.Booking), booking.Id.Value));

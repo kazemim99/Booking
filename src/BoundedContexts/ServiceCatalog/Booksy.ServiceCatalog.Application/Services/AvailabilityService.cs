@@ -472,11 +472,10 @@ namespace Booksy.ServiceCatalog.Application.Services
                     // Prefer the person's real name; fall back to the salon-provided
                     // display name for an unclaimed member; then the business name.
                     var name = member.StaffProfile?.DisplayName ?? provider.Profile.BusinessName;
-                    if (member.PersonId is not null && people.TryGetValue(member.PersonId.Value, out var person))
+                    if (member.PersonId is not null && people.TryGetValue(member.PersonId.Value, out var person)
+                        && PersonName.RealOrNull(person.FirstName, person.LastName) is { } full)
                     {
-                        var full = $"{person.FirstName} {person.LastName}".Trim();
-                        if (!string.IsNullOrEmpty(full))
-                            name = full;
+                        name = full;
                     }
 
                     resources.Add(new BookableResource(member.Id, name));

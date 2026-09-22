@@ -45,6 +45,7 @@ namespace Booksy.ServiceCatalog.Application.Queries.Notifications.GetInbox
                 .Where(n => n.Status is NotificationStatus.Sent
                                      or NotificationStatus.Delivered
                                      or NotificationStatus.Read)
+                .Where(n => !IsLegacyHtml(n.EventCode, n.Body))
                 .ToList();
 
             var visible = query.UnreadOnly
@@ -90,6 +91,14 @@ namespace Booksy.ServiceCatalog.Application.Queries.Notifications.GetInbox
         /// What a notification points at, taken from the catalogue's destination kind and the related entity
         /// the notification already carries.
         /// </summary>
+        /// <summary>
+        /// A row written by the English HTML handlers deleted in f9502127 ("<h2>Your booking has been cancelled</h2>"):
+        /// no event code, markup for a body. Kept in the database, never shown — nothing current writes HTML, and
+        /// the unread count applies the same rule (QA walkthrough 2026-09-22).
+        /// </summary>
+        public static bool IsLegacyHtml(NotificationEventCode? eventCode, string? body) =>
+            eventCode is null && body is not null && body.Contains('<');
+
         private static NotificationTarget? TargetOf(Notification notification)
         {
             if (notification.EventCode is not { } code

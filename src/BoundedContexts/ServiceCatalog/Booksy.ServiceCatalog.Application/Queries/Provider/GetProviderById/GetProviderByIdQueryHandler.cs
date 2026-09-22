@@ -1,3 +1,4 @@
+using Booksy.ServiceCatalog.Application.Abstractions;
 using Booksy.Core.Application.Abstractions.CQRS;
 using Booksy.ServiceCatalog.Application.DTOs.Provider;
 using Booksy.ServiceCatalog.Application.Queries.Provider.GetRegistrationProgress;
@@ -18,12 +19,16 @@ namespace Booksy.ServiceCatalog.Application.Queries.Provider.GetProviderById
         private readonly ISender _mediator;
         private readonly ILogger<GetProviderByIdQueryHandler> _logger;
 
+        private readonly IUrlService _urlService;
+
         public GetProviderByIdQueryHandler(
             IProviderReadRepository providerRepository,
             IServiceReadRepository serviceRepository,
             ISender mediator,
-            ILogger<GetProviderByIdQueryHandler> logger)
+            ILogger<GetProviderByIdQueryHandler> logger,
+            IUrlService urlService)
         {
+            _urlService = urlService;
             _providerRepository = providerRepository;
             _serviceRepository = serviceRepository;
             _mediator = mediator;
@@ -51,14 +56,19 @@ namespace Booksy.ServiceCatalog.Application.Queries.Provider.GetProviderById
                 OwnerId = provider.OwnerId.Value,
                 BusinessName = provider.Profile.BusinessName,
                 Description = provider.Profile.BusinessDescription,
-                LogoUrl = provider.Profile.DisplayImageUrl,
-                ProfileImageUrl = provider.Profile.ProfileImageUrl,
+                LogoUrl = _urlService.AbsoluteOrNull(provider.Profile.DisplayImageUrl),
+                ProfileImageUrl = _urlService.AbsoluteOrNull(provider.Profile.ProfileImageUrl),
                 Images = provider.Profile.GalleryImages
                     .Where(i => i.IsActive)
                     .OrderByDescending(i => i.IsPrimary)
                     .ThenBy(i => i.DisplayOrder)
                     .Select(i => new ProviderImageItem(
-                        i.Id, i.ThumbnailUrl, i.MediumUrl, i.ImageUrl, i.IsPrimary, i.DisplayOrder))
+                        i.Id,
+                        _urlService.ToAbsoluteUrl(i.ThumbnailUrl),
+                        _urlService.ToAbsoluteUrl(i.MediumUrl),
+                        _urlService.ToAbsoluteUrl(i.ImageUrl),
+                        i.IsPrimary,
+                        i.DisplayOrder))
                     .ToList(),
                 Status = provider.Status,
                 PrimaryCategory = provider.PrimaryCategory,

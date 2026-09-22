@@ -50,15 +50,18 @@ namespace Booksy.ServiceCatalog.Application.Services.Notifications
         private readonly INotificationRaiser _raiser;
         private readonly IProviderReadRepository _providers;
         private readonly IServiceReadRepository _services;
+        private readonly IBookingNotificationParameters _bookingParameters;
 
         public BookingReminderScheduler(
             INotificationRaiser raiser,
             IProviderReadRepository providers,
-            IServiceReadRepository services)
+            IServiceReadRepository services,
+            IBookingNotificationParameters bookingParameters)
         {
             _raiser = raiser;
             _providers = providers;
             _services = services;
+            _bookingParameters = bookingParameters;
         }
 
         /// <remarks>
@@ -72,7 +75,6 @@ namespace Booksy.ServiceCatalog.Application.Services.Notifications
             ArgumentNullException.ThrowIfNull(booking);
 
             var provider = await _providers.GetByIdAsync(booking.ProviderId, cancellationToken);
-            var service = await _services.GetByIdAsync(booking.ServiceId, cancellationToken);
 
             var businessName = provider?.Profile.BusinessName ?? "سالن";
 
@@ -81,23 +83,11 @@ namespace Booksy.ServiceCatalog.Application.Services.Notifications
             // keyed by user, so a provider id here would address nobody and the reminder would simply never
             // be seen. Without an owner there is nobody to tell, so that reminder is skipped.
             var providerRecipientId = provider?.OwnerId.Value;
-            var serviceName = service?.Name;
-            string? customerName = null;
-
             var start = booking.TimeSlot.StartTime;
             var now = DateTime.UtcNow;
 
-            var parameters = new Dictionary<string, string>
-            {
-                [NotificationParameter.BusinessName] = businessName,
-                [NotificationParameter.StartTime] = start.ToString("o"),
-            };
-
-            if (!string.IsNullOrWhiteSpace(serviceName))
-                parameters[NotificationParameter.ServiceName] = serviceName;
-
-            if (!string.IsNullOrWhiteSpace(customerName))
-                parameters[NotificationParameter.CustomerName] = customerName;
+            // Salon, time, service and the customer's real name — the same inputs every booking notification uses.
+            var parameters = await _bookingParameters.ForAsync(booking, businessName, cancellationToken);
 
             foreach (var (code, before, toCustomer) in Offsets)
             {

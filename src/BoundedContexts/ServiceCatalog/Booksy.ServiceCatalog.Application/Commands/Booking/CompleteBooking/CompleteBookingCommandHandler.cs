@@ -20,14 +20,18 @@ namespace Booksy.ServiceCatalog.Application.Commands.Booking.CompleteBooking
         private readonly IServiceCatalogUnitOfWork _unitOfWork;
         private readonly ILogger<CompleteBookingCommandHandler> _logger;
 
+        private readonly IBookingNotificationParameters _bookingParameters;
+
         public CompleteBookingCommandHandler(
             IBookingWriteRepository bookingRepository,
             IServiceCatalogUnitOfWork unitOfWork,
             ILogger<CompleteBookingCommandHandler> logger,
             IBookingReminderScheduler reminders,
             INotificationRaiser notifications,
-            Domain.Repositories.IProviderReadRepository providers)
+            Domain.Repositories.IProviderReadRepository providers,
+            IBookingNotificationParameters bookingParameters)
         {
+            _bookingParameters = bookingParameters;
             _bookingRepository = bookingRepository;
             _unitOfWork = unitOfWork;
             _logger = logger;
@@ -61,11 +65,8 @@ namespace Booksy.ServiceCatalog.Application.Commands.Booking.CompleteBooking
             // salon is worse than not asking. The 3-day follow-up is withdrawn the moment a review is
             // submitted (tasks 7.6), including one still sitting in moderation.
             var completedProvider = await _providers.GetByIdAsync(booking.ProviderId, cancellationToken);
-            var completionParameters = new Dictionary<string, string>
-            {
-                [NotificationParameter.BusinessName] = completedProvider?.Profile.BusinessName ?? "سالن",
-                [NotificationParameter.StartTime] = booking.TimeSlot.StartTime.ToString("o"),
-            };
+            var completionParameters = await _bookingParameters.ForAsync(
+                booking, completedProvider?.Profile.BusinessName, cancellationToken);
 
             await _notifications.RaiseAsync(
                 Domain.Enums.NotificationEventCode.BookingCompleted,

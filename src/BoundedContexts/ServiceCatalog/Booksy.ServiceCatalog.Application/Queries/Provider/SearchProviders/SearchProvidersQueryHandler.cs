@@ -1,3 +1,4 @@
+using Booksy.ServiceCatalog.Application.Abstractions;
 ﻿
 using Booksy.Core.Application.Abstractions.CQRS;
 using Booksy.Core.Application.DTOs;
@@ -16,10 +17,14 @@ namespace Booksy.ServiceCatalog.Application.Queries.Provider.SearchProviders
         private readonly IProviderReadRepository _providerRepository;
         private readonly ILogger<SearchProvidersQueryHandler> _logger;
 
+        private readonly IUrlService _urlService;
+
         public SearchProvidersQueryHandler(
             IProviderReadRepository providerRepository,
-            ILogger<SearchProvidersQueryHandler> logger)
+            ILogger<SearchProvidersQueryHandler> logger,
+            IUrlService urlService)
         {
+            _urlService = urlService;
             _providerRepository = providerRepository;
             _logger = logger;
         }
@@ -77,13 +82,13 @@ namespace Booksy.ServiceCatalog.Application.Queries.Provider.SearchProviders
                          provider.Id.Value,
                          provider.Profile.BusinessName,
                         provider.Profile.BusinessDescription,
-                        provider.Profile.ProfileImageUrl,
+                        _urlService.AbsoluteOrNull(provider.Profile.ProfileImageUrl),
                          provider.PrimaryCategory,
                         provider.Status,
                             provider.Address.City,
                         provider.Address.State,
                         provider.Address.Country,
-                        provider.Profile.DisplayImageUrl,
+                        _urlService.AbsoluteOrNull(provider.Profile.DisplayImageUrl),
                         provider.AllowOnlineBooking,
                         provider.OffersMobileServices,
                         provider.AverageRating,

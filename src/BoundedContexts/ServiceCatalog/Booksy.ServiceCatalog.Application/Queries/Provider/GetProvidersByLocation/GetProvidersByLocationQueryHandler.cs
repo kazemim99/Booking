@@ -1,3 +1,4 @@
+using Booksy.ServiceCatalog.Application.Abstractions;
 ﻿
 
 using Booksy.Core.Application.Abstractions.CQRS;
@@ -14,10 +15,14 @@ namespace Booksy.ServiceCatalog.Application.Queries.Provider.GetProvidersByLocat
         private readonly IProviderReadRepository _providerRepository;
         private readonly ILogger<GetProvidersByLocationQueryHandler> _logger;
 
+        private readonly IUrlService _urlService;
+
         public GetProvidersByLocationQueryHandler(
             IProviderReadRepository providerRepository,
-            ILogger<GetProvidersByLocationQueryHandler> logger)
+            ILogger<GetProvidersByLocationQueryHandler> logger,
+            IUrlService urlService)
         {
+            _urlService = urlService;
             _providerRepository = providerRepository;
             _logger = logger;
         }
@@ -66,7 +71,7 @@ namespace Booksy.ServiceCatalog.Application.Queries.Provider.GetProvidersByLocat
                         CalculateDistance(
                             request.Latitude, request.Longitude,
                             provider.Address.Latitude.Value, provider.Address.Longitude.Value),
-                         provider.Profile.DisplayImageUrl,
+                         _urlService.AbsoluteOrNull(provider.Profile.DisplayImageUrl),
                       provider.AllowOnlineBooking,
                         provider.OffersMobileServices,
                         provider.AverageRating,

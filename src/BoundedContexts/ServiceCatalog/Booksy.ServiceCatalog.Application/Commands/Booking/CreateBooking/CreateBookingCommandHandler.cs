@@ -39,6 +39,8 @@ namespace Booksy.ServiceCatalog.Application.Commands.Booking.CreateBooking
         private readonly IBookingReminderScheduler _reminders;
         private readonly ILogger<CreateBookingCommandHandler> _logger;
 
+        private readonly IBookingNotificationParameters _bookingParameters;
+
         public CreateBookingCommandHandler(
             IBookingWriteRepository bookingWriteRepository,
             IBookingReadRepository bookingReadRepository,
@@ -52,8 +54,10 @@ namespace Booksy.ServiceCatalog.Application.Commands.Booking.CreateBooking
             ISmsNotificationService sms,
             INotificationRaiser notifications,
             IBookingReminderScheduler reminders,
-            ILogger<CreateBookingCommandHandler> logger)
+            ILogger<CreateBookingCommandHandler> logger,
+            IBookingNotificationParameters bookingParameters)
         {
+            _bookingParameters = bookingParameters;
             _bookingWriteRepository = bookingWriteRepository;
             _bookingReadRepository = bookingReadRepository;
             _providerRepository = providerRepository;
@@ -243,7 +247,7 @@ namespace Booksy.ServiceCatalog.Application.Commands.Booking.CreateBooking
 
             // Tell the people this booking concerns. Recorded on this unit of work, so the notifications
             // commit with the booking or vanish with it; nothing is sent from inside the request.
-            await RaiseBookingNotificationsAsync(booking, provider, bookedFor is not null, cancellationToken);
+            await RaiseBookingNotificationsAsync(booking, provider, bookedFor, cancellationToken);
 
             // The customer hears about the appointment the salon just made for them. Last, after
             // every check and write has succeeded, and never fatal: the appointment is real whether
@@ -287,15 +291,13 @@ namespace Booksy.ServiceCatalog.Application.Commands.Booking.CreateBooking
         private async Task RaiseBookingNotificationsAsync(
             Domain.Aggregates.BookingAggregate.Booking booking,
             Domain.Aggregates.Provider provider,
-            bool isForProviderCustomer,
+            Domain.Aggregates.ProviderCustomer? bookedFor,
             CancellationToken cancellationToken)
         {
+            var isForProviderCustomer = bookedFor is not null;
             var confirmed = booking.Status == Domain.Enums.BookingStatus.Confirmed;
-            var parameters = new Dictionary<string, string>
-            {
-                [NotificationParameter.BusinessName] = provider.Profile.BusinessName,
-                [NotificationParameter.StartTime] = booking.TimeSlot.StartTime.ToString("o"),
-            };
+            var parameters = await _bookingParameters.ForAsync(
+                booking, provider.Profile.BusinessName, cancellationToken, bookedFor);
         
             if (!isForProviderCustomer)
             {

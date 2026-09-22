@@ -1,3 +1,4 @@
+using Booksy.ServiceCatalog.Application.Abstractions;
 ﻿using Booksy.Core.Application.Abstractions.CQRS;
 using Booksy.ServiceCatalog.Application.DTOs.Provider;
 using Booksy.ServiceCatalog.Application.Queries.Provider.GetRegistrationProgress;
@@ -14,11 +15,15 @@ namespace Booksy.ServiceCatalog.Application.Queries.Provider.GetProviderByOwnerI
         private readonly IServiceReadRepository _serviceRepository;
         private readonly ILogger<GetProviderByOwnerIdQuery> _logger;
 
+        private readonly IUrlService _urlService;
+
         public GetProviderByOwnerIdQueryHandler(
             IProviderReadRepository providerRepository,
             IServiceReadRepository serviceRepository,
-            ILogger<GetProviderByOwnerIdQuery> logger)
+            ILogger<GetProviderByOwnerIdQuery> logger,
+            IUrlService urlService)
         {
+            _urlService = urlService;
             _providerRepository = providerRepository;
             _serviceRepository = serviceRepository;
             _logger = logger;
@@ -46,8 +51,8 @@ namespace Booksy.ServiceCatalog.Application.Queries.Provider.GetProviderByOwnerI
                 OwnerId = provider.OwnerId.Value,
                 BusinessName = provider.Profile.BusinessName,
                 Description = provider.Profile.BusinessDescription,
-                LogoUrl = provider.Profile.DisplayImageUrl,
-                ProfileImageUrl = provider.Profile.ProfileImageUrl,
+                LogoUrl = _urlService.AbsoluteOrNull(provider.Profile.DisplayImageUrl),
+                ProfileImageUrl = _urlService.AbsoluteOrNull(provider.Profile.ProfileImageUrl),
                 Status = provider.Status,
                 PrimaryCategory = provider.PrimaryCategory,
                 ContactInfo = new DTOs.Provider.ContactInfo(
