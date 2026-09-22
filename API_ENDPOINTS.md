@@ -15,6 +15,8 @@ Complete reference for all API endpoints across the Booksy platform. All endpoin
   - [Categories](#categories)
   - [Providers](#providers)
   - [Bookings](#bookings)
+  - [Reviews](#reviews)
+  - [Review Moderation (Admin)](#review-moderation-admin)
 - [Host & Routing (Port 5000)](#host--routing-port-5000)
 
 ---
@@ -795,6 +797,145 @@ GET /api/v1/Bookings/statistics
 
 ---
 
+### Reviews
+
+Customer reviews of providers (OpenSpec change `provider-reviews-and-ratings`). One review per **completed**
+booking, by that booking's customer. A review carries a required overall star and four **optional** dimensions;
+every rating is 1.0–5.0 in 0.5 steps. Reviews and provider replies are **admin-moderated**: nothing is public
+until an administrator approves it. Identity is always read from the `nameidentifier` claim.
+
+#### Submit a Review
+```http
+POST /api/v1/reviews/bookings/{bookingId}
+```
+**Auth**: Required (the booking's customer) · **Rate limit**: `create-review`
+**Request**:
+```json
+{
+  "rating": 4.5,
+  "comment": "string? (10–2000 chars)",
+  "cleanlinessRating": 5.0,
+  "skillRating": null,
+  "punctualityRating": 3.0,
+  "conductRating": null
+}
+```
+**Response 201**: `{ reviewId, providerId, customerId, bookingId, rating, comment, isVerified, createdAt,
+moderationStatus: "Pending", cleanlinessRating, skillRating, punctualityRating, conductRating }`
+**Errors**: 400 invalid rating (the error names the field, e.g. `SkillRating`) · 401 · 403 not the booking's
+customer · 409 booking not completed, or already reviewed.
+Submitting withdraws the pending review-request reminders for the booking.
+
+#### Edit Own Review
+```http
+PUT /api/v1/reviews/{reviewId}
+```
+**Auth**: Required (the author) · **Rate limit**: `edit-review` (10/hour — an edit unpublishes and recomputes)
+**Request**: same body as submit.
+**Rules**: within 7 days of writing it, and only while Pending or Published. A Published review returns to Pending
+and leaves the provider's rating until approved again; a published reply attached to it returns to Pending too.
+**Errors**: 400 window closed / Rejected / Hidden / invalid · 403 not the author · 404.
+
+#### Get a Provider's Reviews (public)
+```http
+GET /api/v1/reviews/providers/{providerId}?pageNumber=1&pageSize=20&sortBy=date|rating|helpful&sortDescending=true
+```
+**Auth**: None. **Published reviews only — to everyone, including the provider's own token.**
+Statistics are computed over published reviews only and include per-dimension `{ average, count }`
+(`cleanliness`, `skill`, `punctuality`, `conduct`; `average: null` when nobody rated it). A reply is included only
+once approved. A signed-in reader also gets `myVote` (`"helpful"` | `"notHelpful"` | absent) on each review.
+
+#### Vote Helpful / Not Helpful
+```http
+PUT /api/v1/reviews/{reviewId}/helpful
+```
+**Auth**: Required — **BREAKING: this was anonymous before.** · **Rate limit**: `mark-review-helpful`
+**Request**: `{ "isHelpful": true }` — one vote per user per review: a first vote adds, repeating the vote you
+hold withdraws it, the opposite vote moves it.
+**Response 200**: `{ reviewId, helpfulCount, notHelpfulCount, helpfulnessRatio, isConsideredHelpful, myVote }` —
+counts are the frozen pre-voting baseline plus live votes.
+**Errors**: 400 review not published · 403 own review · 404 · 409 a racing duplicate vote.
+
+#### Report a Review
+```http
+POST /api/v1/reviews/{reviewId}/report
+```
+**Auth**: Required (any user, including the reviewed provider) · **Rate limit**: `report-review`
+**Request**: `{ "reason": "string (1–500 chars)" }` · **Response 200**: `{ reportId, reviewId }`
+A report never hides anything by itself. **Errors**: 400 no reason / review not published · 409 already reported.
+
+#### Provider Reply
+```http
+POST   /api/v1/reviews/{reviewId}/reply     { "text": "string (1–1000)" }
+PUT    /api/v1/reviews/{reviewId}/reply     { "text": "string (1–1000)" }
+DELETE /api/v1/reviews/{reviewId}/reply
+```
+**Auth**: Required — the reviewed business's owner or a manager (`ManageOrganization`). **Administrators cannot
+reply.** · **Rate limit**: `reply-review`
+Every add or edit returns the reply to moderation; the review itself is untouched.
+**Errors**: 400 review not published · 403 · 409 a reply already exists (edit it instead).
+
+#### My Reviews
+```http
+GET /api/v1/reviews/me?pageNumber=1&pageSize=20
+```
+**Auth**: Required. The caller's own reviews in **every** state: `moderationStatus`, `moderationReason` (when
+rejected/hidden), the reply and its `replyModerationStatus`, and `canEdit`.
+
+#### Provider Review Inbox
+```http
+GET /api/v1/reviews/providers/{providerId}/inbox?pageNumber=1&pageSize=20
+```
+**Auth**: Required — owner or manager of that provider. Every review in every state, same item shape as My Reviews.
+**Response 200**: `{ items[], totalCount, awaitingReplyCount }`. `awaitingReplyCount` counts, over every review (not the
+page), the published reviews still waiting on the business: no reply yet, or a reply an administrator rejected. The
+provider app's Home shows it.
+
+---
+
+### Review Moderation (Admin)
+
+**Auth**: `AdminOnly` policy — any of `Admin`, `Administrator`, `SysAdmin` (never a narrower role list; see
+FOLLOW-UPS #46). **Rate limit** on every decision: `moderate-review`.
+
+#### Moderation Queue
+```http
+GET /api/v1/admin/reviews/queue?filter=pending|hidden|reported&pageNumber=1&pageSize=20
+```
+- `pending` (default): reviews AND replies awaiting a decision, oldest first, with `reviewPending`,
+  `replyPending` and `wasPublishedBefore` (an edited review vs a first submission).
+- `hidden`: reviews taken down, with `moderationReason`.
+- `reported`: published reviews with reports, most reported first, with `reportCount` and
+  `reports[] { reason, reportedByUserId, createdAt }`.
+
+#### Decisions
+```http
+POST /api/v1/admin/reviews/{reviewId}/approve
+POST /api/v1/admin/reviews/{reviewId}/reject        { "reason": "required" }
+POST /api/v1/admin/reviews/{reviewId}/hide          { "reason": "required" }
+POST /api/v1/admin/reviews/{reviewId}/restore
+POST /api/v1/admin/reviews/{reviewId}/reply/approve
+POST /api/v1/admin/reviews/{reviewId}/reply/reject  { "reason": "required" }
+```
+**Response 200**: `{ reviewId, moderationStatus, replyModerationStatus }`. Approve/reject apply to Pending,
+hide to Published, restore to Hidden; **Rejected is permanent**. Illegal transitions are 400; unknown review 404.
+Publishing notifies the salon's owner (`ReviewPublished`, or `ReviewRepublished` for an edit or a restore);
+approving a reply notifies the review's author. The provider's rating is recomputed in the same transaction.
+
+#### Recompute All Ratings (post-deploy backfill)
+```http
+POST /api/v1/admin/reviews/recompute-ratings
+```
+Recomputes every provider's `averageRating` and `totalReviews` from its published reviews. Run once after
+deploying the review-moderation migration; re-runnable. **Response 200**: `{ providersRecomputed }`.
+
+**Rating fields on provider responses**: `averageRating` stays numeric (0 when unrated) and `totalReviews` is the
+real published count on search, by-location, detail, by-owner and the admin list. Read them together:
+`totalReviews == 0` means "no reviews yet", never "rated zero". Sorting by rating puts unrated providers after all
+rated ones in both directions.
+
+---
+
 ## Host & Routing (Port 5000)
 
 All endpoints are served by a single ASP.NET Core host (`booksy-api`) on `:5000` (internal port 80). There is no separate API gateway; ASP.NET Core routing dispatches requests to the controllers of whichever bounded context owns them. All requests reach the host via `http://napstar.ir/api` (the frontend's nginx proxies `/api` → `booksy-api:80`).
@@ -857,6 +998,9 @@ The platform uses rate limiting policies:
 - `registration`: For user/provider registration
 - `provider-registration`: For provider registration steps
 - `public-api`: For public endpoints
+- `provider-reviews`, `create-review`, `mark-review-helpful`, `edit-review` (10/h), `report-review`,
+  `reply-review`, `moderate-review`: review endpoints. Every name must also exist in
+  `RateLimitingOptions.Defaults` or the endpoint throws at request time (pinned by `ReviewRateLimitingTests`).
 
 ---
 

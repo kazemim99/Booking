@@ -147,6 +147,25 @@ A provider reply SHALL enter a pending state on being added or edited, SHALL NOT
 - **WHEN** an administrator rejects a provider reply
 - **THEN** the reply never becomes public and the review it answers remains published
 
+### Requirement: A rejected review's author is told why
+When an administrator rejects a review, its author SHALL be notified, and the notification SHALL carry the reason the
+administrator recorded. Rejection is permanent and the review request for that booking was withdrawn at submission, so
+without this the review disappears in silence and nothing ever asks again. Hiding a published review SHALL NOT notify
+the author: it is usually the outcome of someone else's report and it can be undone by restoring the review.
+The notification SHALL be addressed to the author and never to the reviewed business.
+
+#### Scenario: A review is rejected
+- **WHEN** an administrator rejects a review with a reason
+- **THEN** its author is notified, the notification carries that reason, and the business is not notified
+
+#### Scenario: A published review is hidden
+- **WHEN** an administrator hides a published review with a reason
+- **THEN** the author is not notified of the hiding
+
+#### Scenario: The moderator knows who reads the reason
+- **WHEN** an administrator is asked for a reason before rejecting a review
+- **THEN** the form states that the reason will be sent to the customer who wrote it
+
 ### Requirement: Anyone may report a published review
 Any authenticated user SHALL be able to report a published review with a reason, and the owning provider SHALL be able to report a review of their business. A reported review SHALL remain public until an administrator acts on it. The same user SHALL NOT be able to report the same review more than once.
 

@@ -18,6 +18,7 @@ This document maps Data Transfer Objects (DTOs) across all three layers of the B
 - [Category DTOs](#category-dtos)
 - [Booking DTOs](#booking-dtos)
 - [Service DTOs](#service-dtos)
+- [Review DTOs](#review-dtos)
 - [Common/Shared DTOs](#commonshared-dtos)
 
 ---
@@ -784,6 +785,29 @@ class StaffDto {
   final String? specialization;
 }
 ```
+
+---
+
+## Review DTOs
+
+Added by `provider-reviews-and-ratings`. Field names on the wire are camelCase; nulls are **omitted** by the
+host's serializer, so treat an absent field as null.
+
+| Backend C# | Wire (JSON) | Notes |
+|------------|-------------|-------|
+| `CreateReviewRequest` | `{ rating, comment?, cleanlinessRating?, skillRating?, punctualityRating?, conductRating? }` | Also the body of `PUT /reviews/{id}` (edit). Half-star steps, 1.0–5.0. |
+| `CreateReviewResponse` | `{ reviewId, …, moderationStatus, cleanlinessRating?, … }` | `moderationStatus` is `"Pending"` on creation. |
+| `ReviewResponse` (public listing item) | `{ reviewId, rating, comment?, providerResponse?, helpfulCount, notHelpfulCount, helpfulnessRatio, isConsideredHelpful, cleanlinessRating?, skillRating?, punctualityRating?, conductRating?, myVote? }` | `providerResponse` only once the reply is approved. `myVote` = `"helpful"` \| `"notHelpful"` for a signed-in reader. |
+| `ReviewStatisticsResponse` | `{ totalReviews, verifiedReviews, averageRating, ratingDistribution, cleanliness, skill, punctuality, conduct, … }` | Published reviews only. Each dimension is `{ average?, count }`. |
+| `MarkReviewHelpfulResponse` | `{ reviewId, helpfulCount, notHelpfulCount, helpfulnessRatio, isConsideredHelpful, myVote? }` | Counts are legacy baseline + live votes. |
+| `ManagedReviewItem` (`/reviews/me`, provider inbox) | `{ reviewId, providerId, bookingId, rating, …dimensions, comment?, moderationStatus, moderationReason?, providerResponse?, replyModerationStatus?, replyModerationReason?, helpfulCount, notHelpfulCount, createdAt, editedAt?, canEdit }` | Every moderation state. The inbox's envelope adds `awaitingReplyCount` (`/reviews/me` leaves it null). |
+| `ModerationQueueItem` (admin) | `{ reviewId, …, moderationStatus, moderationReason?, reviewPending, wasPublishedBefore, providerResponse?, replyModerationStatus?, replyPending, reportCount, reports[] }` | `reports[]` = `{ reason, reportedByUserId, createdAt }`. |
+
+**Moderation status values** (`ReviewModerationStatus`, persisted by name): `Pending`, `Published`, `Rejected`
+(permanent), `Hidden` (reversible). Independent of `isVerified`, which only means "came from a completed booking".
+
+**Provider rating on provider DTOs**: `averageRating` (number, 0 when unrated) + `totalReviews` (the published
+count). Always read them together — `totalReviews === 0` is "no reviews yet".
 
 ---
 

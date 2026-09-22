@@ -195,6 +195,9 @@ jobs:
     - name: Run keystone booking flow
       run: BASE=http://localhost:5050 bash tests/e2e/keystone-booking-flow.sh
 
+    - name: Review read smoke (the same script the deploy runs against production)
+      run: BASE=http://localhost:5050 bash tests/e2e/review-read-smoke.sh
+
     - name: Dump host log on failure
       if: failure()
       run: tail -n 300 host.log || true
@@ -493,7 +496,9 @@ jobs:
     - name: Checkout compose file
       uses: actions/checkout@v4
       with:
-        sparse-checkout: docker-compose.prod.yml
+        sparse-checkout: |
+          docker-compose.prod.yml
+          tests/e2e/review-read-smoke.sh
         sparse-checkout-cone-mode: false
 
     - name: Install compose file
@@ -604,6 +609,12 @@ jobs:
         check https://provider.nahalkmi.ir/
         check https://customer.nahalkmi.ir/
         check https://admin.nahalkmi.ir/
+
+    - name: Review read smoke (public)
+      # /health cannot see a broken review read (a half-applied review migration answers 500 on
+      # the listing while /health stays 200). Anonymous and read-only. The script is sparse-
+      # checked-out alongside the compose file.
+      run: BASE=https://back.nahalkmi.ir bash tests/e2e/review-read-smoke.sh
 
     - name: Remove dangling images
       if: always()

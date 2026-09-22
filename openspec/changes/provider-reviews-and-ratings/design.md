@@ -166,8 +166,15 @@ counts go in a companion `ProviderRatingSummary` table read only by the profile 
 trade.
 
 ### D8. "No rating" is signalled by the count, not by a nullable average
-`AverageRating` stays non-nullable at the database level; `PublishedReviewCount == 0` is the discriminator,
-and the API returns `rating: null` in that case.
+`AverageRating` stays non-nullable at the database level **and on the wire**; `PublishedReviewCount == 0` is
+the discriminator, returned to clients as the real `totalReviews` count.
+
+*Revised during implementation (2026-09-22).* This first said the API would return `rating: null` for an
+unrated provider. Checking the shipped clients killed that: the deployed Vue app calls `rating.toFixed(1)`
+unguarded in several places (`ProviderSelection.vue`, `FavoriteProviderCard.vue`, `favorites.types.ts`,
+`platform.service.ts`), so a null would throw in production. Populating the count instead is additive — old
+clients keep working, and the Flutter customer app's existing `hasRating(rating, reviewCount)` guard becomes
+correct with no client change at all.
 
 *Why:* making a non-nullable column on a live, hot table nullable is a heavier migration than this is worth,
 and the count has to exist anyway. The API contract is what clients read, and that contract is honest.

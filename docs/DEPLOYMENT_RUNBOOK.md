@@ -114,6 +114,74 @@ should be ≥1 and `grep -c localhost:5000 build/web/main.dart.js` should be 0. 
 `--dart-define`, the bundle silently points at `http://localhost:5000` (see
 `booksy-provider-app/lib/core/api/config/api_constants.dart`).
 
+### Rolling back the API
+
+Production compose pins `booksy-api:latest`, so "the previous version" is not something compose
+remembers. Every CI build also pushes `booksy-api:<sha_short>` (the short commit hash; see the
+`build-api` job), and that tag is what a rollback points at.
+
+```bash
+# On the box, as booksy. <sha> = the short hash of the last good master commit (git log --oneline).
+cd /opt/booksy
+cp docker-compose.prod.yml docker-compose.prod.yml.rollback-backup
+sed -i 's#booksy-api:latest#booksy-api:<sha>#' docker-compose.prod.yml
+docker compose -f docker-compose.prod.yml pull booksy-api
+docker compose -f docker-compose.prod.yml up -d booksy-api
+docker inspect -f '{{.Config.Image}} {{.State.Health.Status}}' booksy-api   # expect :<sha> healthy
+curl -s -o /dev/null -w '%{http_code}
+' https://back.nahalkmi.ir/health        # expect 200
+# and from any checkout: BASE=https://back.nahalkmi.ir bash tests/e2e/review-read-smoke.sh
+```
+
+The next push to `master` copies the repository's compose file over this one and goes back to
+`:latest`, so a rollback lasts until then: land the revert (or the fix) on `master` before anything
+else is pushed. The deploy job also leaves the compose file it replaced as
+`docker-compose.prod.yml.previous`.
+
+Migrations run at host startup and a rollback does **not** undo them. That is only safe when the
+migration is backward compatible — the older image must run on the newer schema. Say so, per
+migration, in the section that introduces it (as below). `dotnet ef database update <previous>`
+against production is a protected operation and a last resort: it drops what `Down` drops.
+
+### Deploying provider-reviews-and-ratings (migration `AddReviewModerationAndVoting`)
+
+What changes: reviews are moderated (nothing new is public until an administrator approves it),
+votes are one per signed-in user, providers can reply (also moderated), and a provider's rating is
+computed from published reviews only.
+
+1. **Back up first.** `docker exec booksy-postgres pg_dump -U "$POSTGRES_USER" -d "$POSTGRES_DB" -Fc > ~/pre-reviews-$(date +%F).dump`
+   (values from `/opt/booksy/.env`; the migration backfills existing rows, and a dump is the only undo for data).
+2. **Deploy as usual** (push to `master`, or the manual steps above). The migration applies at
+   startup. It is **additive only** — new columns with defaults, three new tables
+   (`ReviewVotes`, `ReviewReports`, `ProviderRatingSummaries`), indexes, and an idempotent backfill
+   that marks every pre-existing review and reply **Published** and keeps the old helpful counts as a
+   frozen baseline. Nothing is dropped or renamed on the way up.
+3. **Recompute every provider's rating, once.** Before this change nothing ever wrote a provider's
+   rating, so every provider still reads 0 until this runs. It needs an administrator token
+   (Admin, Administrator or SysAdmin) and is safe to repeat:
+   ```bash
+   curl -s -X POST https://back.nahalkmi.ir/api/v1/admin/reviews/recompute-ratings \
+     -H "Authorization: Bearer <admin access token>"
+   # → { "providersRecomputed": N }; a second run changes nothing
+   ```
+4. **Smoke.** The deploy job now runs `tests/e2e/review-read-smoke.sh` against the public API after
+   the health checks: it reads one provider's public review listing and fails the deploy on anything
+   but a 200 with a numeric `statistics.totalReviews`. `/health` alone cannot see a broken review read.
+   By hand: `BASE=https://back.nahalkmi.ir bash tests/e2e/review-read-smoke.sh`.
+5. **Check the moderation queue is reachable** in the admin panel (Reviews). New reviews wait there;
+   an empty queue right after deploy is normal, because existing reviews were published by the backfill.
+
+Rollback: the image rollback above is safe for this migration. The older image runs on the new
+schema — an old-code review insert lands as `Pending` through the column default (pinned by
+`ReviewModerationMigrationTests.A_row_written_by_pre_moderation_code_after_the_migration_lands_in_the_queue`),
+and the new tables are simply unused. What the older image loses is the behaviour itself: its
+listings show pending reviews again, and anonymous voting comes back. Roll back only for an outage,
+not for a behaviour complaint, and do not run the migration's `Down` — it drops every vote, report
+and moderation decision made since the deploy.
+
+Client note: anonymous voting is gone (401). No client depends on it (audited in the change's
+`tasks.md` 9.1); the web app sends a guest to login and the customer app asks before calling.
+
 ### Provider app caching (why a deploy reaches every browser)
 
 Flutter names the whole app `main.dart.js` on every build. Until 2026-09-19 the vhost cached it for
