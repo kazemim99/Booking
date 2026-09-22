@@ -112,6 +112,9 @@ class BookingState extends Equatable {
   final DateTime? date;
   final List<TimeSlot> slots;
   final SlotsStatus slotsStatus;
+
+  /// Why the chosen day has no times, as the salon's own answer (null while there are times).
+  final String? slotsReason;
   final TimeSlot? slot;
 
   final SubmitStatus submitStatus;
@@ -130,6 +133,7 @@ class BookingState extends Equatable {
     this.date,
     this.slots = const [],
     this.slotsStatus = SlotsStatus.initial,
+    this.slotsReason,
     this.slot,
     this.submitStatus = SubmitStatus.idle,
     this.submitError,
@@ -185,6 +189,7 @@ class BookingState extends Equatable {
     DateTime? date,
     List<TimeSlot>? slots,
     SlotsStatus? slotsStatus,
+    String? Function()? slotsReason,
     TimeSlot? Function()? slot,
     SubmitStatus? submitStatus,
     String? submitError,
@@ -202,6 +207,7 @@ class BookingState extends Equatable {
       date: date ?? this.date,
       slots: slots ?? this.slots,
       slotsStatus: slotsStatus ?? this.slotsStatus,
+      slotsReason: slotsReason != null ? slotsReason() : this.slotsReason,
       slot: slot != null ? slot() : this.slot,
       submitStatus: submitStatus ?? this.submitStatus,
       submitError: submitError,
@@ -222,6 +228,7 @@ class BookingState extends Equatable {
         date,
         slots,
         slotsStatus,
+        slotsReason,
         slot,
         submitStatus,
         submitError,
@@ -354,6 +361,7 @@ class BookingBloc extends Bloc<BookingEvent, BookingState> {
       date: event.date,
       slots: const [],
       slotsStatus: SlotsStatus.loading,
+      slotsReason: () => null,
       slot: () => null,
     ));
 
@@ -374,9 +382,10 @@ class BookingBloc extends Bloc<BookingEvent, BookingState> {
 
     result.fold(
       (failure) => emit(state.copyWith(slotsStatus: SlotsStatus.error)),
-      (slots) => emit(state.copyWith(
-        slots: slots,
+      (day) => emit(state.copyWith(
+        slots: day.slots,
         slotsStatus: SlotsStatus.loaded,
+        slotsReason: () => day.reason,
       )),
     );
   }

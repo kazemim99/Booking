@@ -119,7 +119,7 @@ class AppStrings {
   static const String bookingTotalDuration = 'مدت کل';
   static const String bookingTotalPrice = 'مجموع';
   static const String bookingContinue = 'ادامه';
-  static const String bookingSelectStaff = 'انتخاب متخصص';
+  static const String bookingSelectStaff = 'انتخاب ارائه‌دهنده';
   static const String bookingSelectTime = 'انتخاب زمان';
   static const String bookingConfirmTitle = 'تایید نوبت';
   static const String bookingConfirmCta = 'تایید و رزرو نوبت';
@@ -135,7 +135,7 @@ class AppStrings {
   static const String bookingPrice = 'قیمت';
   static const String bookingDate = 'تاریخ';
   static const String bookingTime = 'ساعت';
-  static const String bookingStaff = 'متخصص';
+  static const String bookingStaff = 'ارائه‌دهنده';
   static const String bookingService = 'خدمت';
   static const String bookingProvider = 'سالن';
 

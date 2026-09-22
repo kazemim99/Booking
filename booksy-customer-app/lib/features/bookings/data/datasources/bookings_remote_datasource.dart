@@ -1,5 +1,6 @@
 import 'package:dio/dio.dart';
 import '../../../../core/api/config/api_constants.dart';
+import '../../../../core/utils/wall_clock.dart';
 
 /// Remote data source for the customer's bookings (list, cancel,
 /// reschedule). Manual JSON handling — codegen is unavailable.
@@ -79,7 +80,7 @@ class BookingsRemoteDataSource {
     final response = await serviceCatalogDio.post(
       ApiConstants.rescheduleBooking(bookingId),
       data: {
-        'newStartTime': newStartTime.toUtc().toIso8601String(),
+        'newStartTime': wallClockIso(newStartTime),
         if (newStaffId != null) 'newStaffId': newStaffId,
       },
     );

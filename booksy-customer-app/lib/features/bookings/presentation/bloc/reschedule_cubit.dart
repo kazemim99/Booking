@@ -93,9 +93,9 @@ class RescheduleCubit extends Cubit<RescheduleState> {
         status: RescheduleStatus.slotsError,
         errorMessage: failure.message,
       )),
-      (slots) => emit(state.copyWith(
+      (day) => emit(state.copyWith(
         status: RescheduleStatus.pickingSlots,
-        slots: slots,
+        slots: day.slots,
       )),
     );
   }

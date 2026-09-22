@@ -162,3 +162,17 @@ class BusinessBreak extends Equatable {
   @override
   List<Object?> get props => [startTime, endTime];
 }
+
+/// One day's bookable times, with the salon's reason when there are none.
+///
+/// The server explains an empty day (closed that weekday, the day is shorter than the visit, nobody qualified);
+/// showing "no free time for this day" instead leaves the customer guessing (QA walkthrough 2026-09-22).
+class DaySlots extends Equatable {
+  final List<TimeSlot> slots;
+  final String? reason;
+
+  const DaySlots({this.slots = const [], this.reason});
+
+  @override
+  List<Object?> get props => [slots, reason];
+}

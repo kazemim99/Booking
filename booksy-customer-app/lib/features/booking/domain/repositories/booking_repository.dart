@@ -17,7 +17,7 @@ abstract class BookingRepository {
   /// two-service visit yields fewer, longer slots than either service alone.
   /// [serviceId] stays required because the backend contract still marks it so;
   /// pass the first of [serviceIds]. Omit [serviceIds] for a single service.
-  Future<Either<Failure, List<TimeSlot>>> getAvailableSlots({
+  Future<Either<Failure, DaySlots>> getAvailableSlots({
     required String providerId,
     required String serviceId,
     required DateTime date,

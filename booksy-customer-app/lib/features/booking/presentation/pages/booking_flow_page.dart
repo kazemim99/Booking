@@ -228,6 +228,7 @@ class _TimeStep extends StatelessWidget {
       selectedSlot: state.slot,
       onSlotSelected: (slot) => bloc.add(BookingSlotSelected(slot)),
       onRetry: () => bloc.add(BookingDateSelected(selected)),
+      emptyReason: state.slotsReason,
     );
   }
 }

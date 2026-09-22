@@ -6,6 +6,7 @@ import '../../../../config/routes/app_router.dart';
 import '../../../../config/theme/app_tokens.dart';
 import '../../../../core/constants/app_strings.dart';
 import '../../../../core/di/injection.dart';
+import '../../../../core/widgets/forward_chevron.dart';
 import '../../../../core/widgets/widgets.dart';
 import '../../../auth/domain/entities/user.dart';
 import '../../../auth/presentation/bloc/auth_bloc.dart';
@@ -199,12 +200,7 @@ class _ProfileView extends StatelessWidget {
                               child:
                                   CircularProgressIndicator(strokeWidth: 2),
                             )
-                          // Direction-aware: points "forward" in RTL and LTR.
-                          : Icon(
-                              Directionality.of(context) == TextDirection.rtl
-                                  ? Icons.chevron_left
-                                  : Icons.chevron_right,
-                            ),
+                          : const ForwardChevron(),
                       onTap: state.editStatus == ProfileEditStatus.saving
                           ? null
                           : () => _editProfile(context),
@@ -214,11 +210,7 @@ class _ProfileView extends StatelessWidget {
                       key: const Key('profile-my-reviews'),
                       leading: const Icon(Icons.rate_review_outlined),
                       title: const Text(AppStrings.myReviewsTitle),
-                      trailing: Icon(
-                        Directionality.of(context) == TextDirection.rtl
-                            ? Icons.chevron_left
-                            : Icons.chevron_right,
-                      ),
+                      trailing: const ForwardChevron(),
                       onTap: () => context.push(Routes.myReviews),
                     ),
                     const Divider(),

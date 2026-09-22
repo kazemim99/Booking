@@ -1,5 +1,6 @@
 import 'package:dio/dio.dart';
 import '../../../../core/api/config/api_constants.dart';
+import '../../../../core/utils/wall_clock.dart';
 
 /// Remote data source for provider detail, availability, and booking
 /// creation. Parses JSON manually (codegen is unavailable) and tolerates
@@ -85,7 +86,7 @@ class BookingRemoteDataSource {
         'providerId': providerId,
         'serviceId': serviceId,
         'staffProviderId': staffProviderId,
-        'startTime': startTime.toUtc().toIso8601String(),
+        'startTime': wallClockIso(startTime),
         if (serviceIds != null && serviceIds.isNotEmpty)
           'serviceIds': serviceIds,
       },

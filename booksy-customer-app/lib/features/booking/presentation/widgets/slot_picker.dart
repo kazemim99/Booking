@@ -21,6 +21,9 @@ class SlotPicker extends StatelessWidget {
   final VoidCallback onRetry;
   final int daysToShow;
 
+  /// The salon's own answer for an empty day; the generic line is used when there is none.
+  final String? emptyReason;
+
   const SlotPicker({
     super.key,
     required this.selectedDate,
@@ -31,6 +34,7 @@ class SlotPicker extends StatelessWidget {
     required this.onSlotSelected,
     required this.onRetry,
     this.daysToShow = 14,
+    this.emptyReason,
   });
 
   @override
@@ -129,9 +133,9 @@ class SlotPicker extends StatelessWidget {
               ),
             SlotPickerStatus.error => ErrorState(onRetry: onRetry),
             SlotPickerStatus.loaded => slots.isEmpty
-                ? const EmptyState(
+                ? EmptyState(
                     icon: Icons.event_busy_outlined,
-                    title: AppStrings.bookingNoSlots,
+                    title: emptyReason ?? AppStrings.bookingNoSlots,
                   )
                 : SingleChildScrollView(
                     padding: const EdgeInsets.all(AppSpacing.md),

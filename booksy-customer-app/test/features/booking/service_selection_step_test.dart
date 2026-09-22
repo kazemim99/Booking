@@ -54,14 +54,14 @@ class _FakeRepo implements BookingRepository {
       ));
 
   @override
-  Future<Either<Failure, List<TimeSlot>>> getAvailableSlots({
+  Future<Either<Failure, DaySlots>> getAvailableSlots({
     required String providerId,
     required String serviceId,
     required DateTime date,
     String? staffId,
     List<String>? serviceIds,
   }) async =>
-      const Right([]);
+      const Right(DaySlots());
 
   @override
   Future<Either<Failure, String>> createBooking({

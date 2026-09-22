@@ -31,7 +31,7 @@ class BookingRepositoryImpl implements BookingRepository {
   }
 
   @override
-  Future<Either<Failure, List<TimeSlot>>> getAvailableSlots({
+  Future<Either<Failure, DaySlots>> getAvailableSlots({
     required String providerId,
     required String serviceId,
     required DateTime date,
@@ -51,7 +51,15 @@ class BookingRepositoryImpl implements BookingRepository {
           .map(_parseSlot)
           .where((s) => s.isAvailable)
           .toList();
-      return Right(slots);
+      // The server says WHY a day is empty; without it the customer only sees "no free time".
+      final messages = (json['validationMessages'] as List<dynamic>? ?? const [])
+          .map((m) => m?.toString().trim() ?? '')
+          .where((m) => m.isNotEmpty)
+          .toList();
+      return Right(DaySlots(
+        slots: slots,
+        reason: slots.isEmpty && messages.isNotEmpty ? messages.first : null,
+      ));
     } on DioException catch (e) {
       return Left(mapDioFailure(e));
     } catch (e) {

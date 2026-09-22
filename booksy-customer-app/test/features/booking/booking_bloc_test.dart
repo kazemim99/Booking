@@ -51,7 +51,7 @@ ProviderDetail _provider({
 
 class FakeBookingRepository implements BookingRepository {
   ProviderDetail provider;
-  Either<Failure, List<TimeSlot>> slotsResult;
+  Either<Failure, DaySlots> slotsResult;
   List<Either<Failure, String>> createResults;
   int createCalls = 0;
   int slotsCalls = 0;
@@ -75,7 +75,7 @@ class FakeBookingRepository implements BookingRepository {
       Right(provider);
 
   @override
-  Future<Either<Failure, List<TimeSlot>>> getAvailableSlots({
+  Future<Either<Failure, DaySlots>> getAvailableSlots({
     required String providerId,
     required String serviceId,
     required DateTime date,
@@ -125,7 +125,7 @@ void main() {
         () async {
       final repo = FakeBookingRepository(
         provider: _provider(),
-        slotsResult: Right([_slot(10), _slot(11)]),
+        slotsResult: Right(DaySlots(slots: [_slot(10), _slot(11)])),
         createResults: [const Right('b1')],
       );
       final bloc = BookingBloc(repo);
@@ -150,7 +150,7 @@ void main() {
         () async {
       final repo = FakeBookingRepository(
         provider: _provider(staff: const [_staffA]),
-        slotsResult: Right([_slot(10)]),
+        slotsResult: Right(DaySlots(slots: [_slot(10)])),
         createResults: [const Right('b1')],
       );
       final bloc = BookingBloc(repo);
@@ -168,7 +168,7 @@ void main() {
     test('multi-staff provider shows the staff step', () async {
       final repo = FakeBookingRepository(
         provider: _provider(staff: const [_staffA, _staffB]),
-        slotsResult: Right([_slot(10)]),
+        slotsResult: Right(DaySlots(slots: [_slot(10)])),
         createResults: [const Right('b1')],
       );
       final bloc = BookingBloc(repo);
@@ -185,7 +185,7 @@ void main() {
     test('back navigation preserves earlier selections', () async {
       final repo = FakeBookingRepository(
         provider: _provider(staff: const [_staffA, _staffB]),
-        slotsResult: Right([_slot(10)]),
+        slotsResult: Right(DaySlots(slots: [_slot(10)])),
         createResults: [const Right('b1')],
       );
       final bloc = BookingBloc(repo);
@@ -214,7 +214,7 @@ void main() {
         'and keeps selections', () async {
       final repo = FakeBookingRepository(
         provider: _provider(),
-        slotsResult: Right([_slot(10), _slot(11)]),
+        slotsResult: Right(DaySlots(slots: [_slot(10), _slot(11)])),
         createResults: [
           const Left(SlotTakenFailure('گرفته شد')),
           const Right('b2'),
@@ -249,7 +249,7 @@ void main() {
     test('"any staff" uses the slot\'s assigned staff id on create', () async {
       final repo = FakeBookingRepository(
         provider: _provider(staff: const [_staffA, _staffB]),
-        slotsResult: Right([_slot(10, staffId: 'st2')]),
+        slotsResult: Right(DaySlots(slots: [_slot(10, staffId: 'st2')])),
         createResults: [const Right('b1')],
       );
       final bloc = BookingBloc(repo);
@@ -272,7 +272,7 @@ void main() {
         () async {
       final repo = FakeBookingRepository(
         provider: _provider(),
-        slotsResult: Right([_slot(10)]),
+        slotsResult: Right(DaySlots(slots: [_slot(10)])),
         createResults: [const Right('b1')],
       );
       final bloc = BookingBloc(repo);
@@ -303,7 +303,7 @@ void main() {
     Future<BookingBloc> started() async {
       repo = FakeBookingRepository(
         provider: _provider(),
-        slotsResult: Right([_slot(10), _slot(11)]),
+        slotsResult: Right(DaySlots(slots: [_slot(10), _slot(11)])),
         createResults: [const Right('b1')],
       );
       bloc = BookingBloc(repo);
