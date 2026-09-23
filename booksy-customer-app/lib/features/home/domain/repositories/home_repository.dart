@@ -34,4 +34,14 @@ abstract class HomeRepository {
 
   /// Record a provider visit
   Future<Either<Failure, void>> recordProviderVisit(String customerId, String providerId, {String? viewSource});
+
+  /// The ids of the customer's favourite salons.
+  Future<Either<Failure, Set<String>>> getFavoriteProviderIds(String customerId);
+
+  /// Make the salon one of the customer's favourites. Already being one is
+  /// success: the customer's wish holds either way.
+  Future<Either<Failure, Unit>> addFavoriteProvider(String customerId, String providerId);
+
+  /// Take the salon out of the customer's favourites. Not being one is success.
+  Future<Either<Failure, Unit>> removeFavoriteProvider(String customerId, String providerId);
 }

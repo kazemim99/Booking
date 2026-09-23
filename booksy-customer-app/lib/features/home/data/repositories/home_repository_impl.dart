@@ -1,6 +1,7 @@
 import 'package:dartz/dartz.dart';
 import 'package:dio/dio.dart';
 import 'package:injectable/injectable.dart';
+import '../../../../core/constants/app_strings.dart';
 import '../../../../core/errors/failures.dart';
 import '../../domain/entities/category.dart';
 import '../../domain/entities/upcoming_booking.dart';
@@ -177,6 +178,48 @@ class HomeRepositoryImpl implements HomeRepository {
       return Left(_handleDioError(e));
     } catch (e) {
       return Left(ServerFailure('خطا در ثبت بازدید: ${e.toString()}'));
+    }
+  }
+
+  @override
+  Future<Either<Failure, Set<String>>> getFavoriteProviderIds(String customerId) async {
+    try {
+      return Right(await remoteDataSource.getFavoriteProviderIds(customerId));
+    } on DioException catch (e) {
+      return Left(_handleDioError(e));
+    } catch (_) {
+      return const Left(ServerFailure(AppStrings.genericError));
+    }
+  }
+
+  @override
+  Future<Either<Failure, Unit>> addFavoriteProvider(String customerId, String providerId) =>
+      _favoriteChange(
+        () => remoteDataSource.addFavoriteProvider(customerId, providerId),
+        // 409: it already is a favourite — the state the customer asked for.
+        alreadyDone: 409,
+      );
+
+  @override
+  Future<Either<Failure, Unit>> removeFavoriteProvider(String customerId, String providerId) =>
+      _favoriteChange(
+        () => remoteDataSource.removeFavoriteProvider(customerId, providerId),
+        // 404: it was not a favourite — again the state the customer asked for.
+        alreadyDone: 404,
+      );
+
+  Future<Either<Failure, Unit>> _favoriteChange(
+    Future<void> Function() call, {
+    required int alreadyDone,
+  }) async {
+    try {
+      await call();
+      return const Right(unit);
+    } on DioException catch (e) {
+      if (e.response?.statusCode == alreadyDone) return const Right(unit);
+      return Left(_handleDioError(e));
+    } catch (_) {
+      return const Left(ServerFailure(AppStrings.genericError));
     }
   }
 

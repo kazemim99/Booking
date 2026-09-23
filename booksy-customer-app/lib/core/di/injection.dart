@@ -34,10 +34,13 @@ import '../../features/search/data/repositories/search_repository_impl.dart';
 import '../../features/search/domain/repositories/search_repository.dart';
 import '../../features/search/presentation/bloc/map_discovery_cubit.dart';
 import '../../features/search/presentation/bloc/nearby_providers_cubit.dart';
+import '../../features/home/domain/repositories/home_repository.dart';
+import '../../features/search/presentation/bloc/provider_customer_cubit.dart';
 import '../../features/search/presentation/bloc/provider_detail_cubit.dart';
 import '../../features/search/presentation/bloc/search_bloc.dart';
 import '../constants/app_strings.dart';
 import '../location/geocoding_service.dart';
+import '../storage/secure_storage_service.dart';
 import '../location/location_service.dart';
 import '../network/connectivity_service.dart';
 import 'injection.config.dart';
@@ -140,6 +143,14 @@ Future<void> configureDependencies() async {
   getIt.registerLazySingleton<BookingBloc>(() => BookingBloc(getIt()));
   getIt.registerFactory<ProviderDetailCubit>(
     () => ProviderDetailCubit(getIt(), reviewRepository: getIt<ReviewRepository>()),
+  );
+  // One per salon profile: the signed-in customer's visit and favourite.
+  getIt.registerFactoryParam<ProviderCustomerCubit, String, void>(
+    (providerId, _) => ProviderCustomerCubit(
+      providerId: providerId,
+      repository: getIt<HomeRepository>(),
+      customerId: getIt<SecureStorageService>().getCustomerId,
+    ),
   );
 
   // ---- Checkout (deposit payment via the external-browser gateway flow) ----

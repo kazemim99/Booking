@@ -244,6 +244,40 @@ class HomeRemoteDataSource {
     );
   }
 
+  /// The ids of the customer's favourite salons.
+  ///
+  /// Parsed by hand from `FavoriteProviderViewModel`, which carries only
+  /// `providerId`, `notes` and `addedAt` — [getFavoriteProviders]'s generated
+  /// parser also demands a `providerName` the server never sends.
+  Future<Set<String>> getFavoriteProviderIds(String customerId) async {
+    final response = await userManagementDio.get(
+      ApiConstants.customerFavorites(customerId),
+    );
+    final body = response.data;
+    final rows = body is Map<String, dynamic> ? body['data'] : body;
+    if (rows is! List) return const {};
+    return {
+      for (final row in rows.whereType<Map<String, dynamic>>())
+        if (row['providerId'] is String) row['providerId'] as String,
+    };
+  }
+
+  /// Add a salon to the customer's favourites (AddFavoriteProviderRequest).
+  Future<void> addFavoriteProvider(String customerId, String providerId) async {
+    await userManagementDio.post(
+      ApiConstants.customerFavorites(customerId),
+      data: {'providerId': providerId},
+    );
+  }
+
+  /// Remove a salon from the customer's favourites.
+  Future<void> removeFavoriteProvider(
+      String customerId, String providerId) async {
+    await userManagementDio.delete(
+      ApiConstants.customerFavorite(customerId, providerId),
+    );
+  }
+
   /// Record a provider visit
   Future<void> recordProviderVisit(String customerId, String providerId, {String? viewSource}) async {
     final response = await userManagementDio.post(

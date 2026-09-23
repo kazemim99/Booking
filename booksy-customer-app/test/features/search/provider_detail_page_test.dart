@@ -1,14 +1,27 @@
+import 'package:dartz/dartz.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/rendering.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
 
 import 'package:booksy_customer_app/config/theme/app_theme.dart';
 import 'package:booksy_customer_app/core/constants/app_strings.dart';
+import 'package:booksy_customer_app/core/errors/failures.dart';
+import 'package:booksy_customer_app/core/utils/jalali_formatter.dart';
+import 'package:booksy_customer_app/core/utils/price_formatter.dart';
 import 'package:booksy_customer_app/core/widgets/widgets.dart';
+import 'package:booksy_customer_app/features/auth/presentation/bloc/auth_bloc.dart';
+import 'package:booksy_customer_app/features/auth/presentation/bloc/auth_state.dart';
 import 'package:booksy_customer_app/features/booking/domain/entities/booking_entities.dart';
 import 'package:booksy_customer_app/features/booking/domain/repositories/booking_repository.dart';
+import 'package:booksy_customer_app/features/home/domain/repositories/home_repository.dart';
+import 'package:booksy_customer_app/features/search/presentation/bloc/provider_customer_cubit.dart';
 import 'package:booksy_customer_app/features/search/presentation/bloc/provider_detail_cubit.dart';
 import 'package:booksy_customer_app/features/search/presentation/pages/provider_detail_page.dart';
+import 'package:booksy_customer_app/features/reviews/domain/entities/review.dart';
+
+import '../../helpers/fake_auth_bloc.dart';
 
 /// Widget tests for the redesigned provider profile.
 ///
@@ -39,7 +52,61 @@ class _StubProviderDetailCubit extends ProviderDetailCubit {
   Future<void> load(String providerId) async {
     loadCalls++;
   }
+
+  /// A later state of the same page (e.g. its reviews arriving).
+  void show(ProviderDetailState next) => emit(next);
 }
+
+/// The customer's side of the salon (visit + favourite) on the wire.
+class _FakeCustomerRepository implements HomeRepository {
+  final visits = <String>[];
+  final added = <String>[];
+  final removed = <String>[];
+  Set<String> favorites = {};
+  Either<Failure, Unit> changeResult = const Right(unit);
+
+  @override
+  Future<Either<Failure, void>> recordProviderVisit(
+      String customerId, String providerId,
+      {String? viewSource}) async {
+    visits.add(providerId);
+    return const Right(null);
+  }
+
+  @override
+  Future<Either<Failure, Set<String>>> getFavoriteProviderIds(
+          String customerId) async =>
+      Right(favorites);
+
+  @override
+  Future<Either<Failure, Unit>> addFavoriteProvider(
+      String customerId, String providerId) async {
+    added.add(providerId);
+    return changeResult;
+  }
+
+  @override
+  Future<Either<Failure, Unit>> removeFavoriteProvider(
+      String customerId, String providerId) async {
+    removed.add(providerId);
+    return changeResult;
+  }
+
+  @override
+  dynamic noSuchMethod(Invocation invocation) =>
+      throw UnimplementedError('${invocation.memberName} is not used here');
+}
+
+/// A customer cubit whose id follows the fake session: null for a guest.
+ProviderCustomerCubit _customerCubit(
+  _FakeCustomerRepository repo,
+  FakeAuthBloc auth,
+) =>
+    ProviderCustomerCubit(
+      providerId: 'p1',
+      repository: repo,
+      customerId: () async => auth.state is Authenticated ? 'c1' : null,
+    );
 
 // ---------------------------------------------------------------- fixtures
 
@@ -96,28 +163,92 @@ ProviderDetail _bareProvider() => const ProviderDetail(
       staff: [],
     );
 
+/// A salon the catalogue knows only by its pin: no city, no street address,
+/// but coordinates and reviews (#12 of the 2026-09-23 review).
+ProviderDetail _addresslessProvider() => const ProviderDetail(
+      id: 'p3',
+      businessName: 'سالن بی‌نشانی',
+      averageRating: 4,
+      totalReviews: 1,
+      latitude: 39.643089,
+      longitude: 47.897802,
+      businessHours: [],
+      services: [],
+      staff: [],
+    );
+
+const _oneReview = ProviderReviews(
+  averageRating: 4,
+  totalReviews: 1,
+  items: [
+    Review(id: 'r1', customerName: 'مریم', rating: 4, comment: 'خوب بود')
+  ],
+);
+
+/// A price long enough to be cut off in a half-width cell.
+ProviderDetail _expensiveProvider() => const ProviderDetail(
+      id: 'p4',
+      businessName: 'سالن گران',
+      averageRating: 0,
+      totalReviews: 0,
+      businessHours: [],
+      services: [
+        ServiceItem(
+          id: 's9',
+          name: 'کراتین',
+          price: 2500000,
+          currency: 'تومان',
+          durationMinutes: 180,
+        ),
+        ServiceItem(
+          id: 's10',
+          name: 'رنگ و مش',
+          price: 12500000,
+          currency: 'تومان',
+          durationMinutes: 240,
+        ),
+      ],
+      staff: [],
+    );
+
 // ---------------------------------------------------------------- harness
 
 Widget _app(
   _StubProviderDetailCubit cubit, {
   DateTime? now,
   double textScale = 1.0,
+  FakeAuthBloc? auth,
+  _FakeCustomerRepository? customerRepository,
 }) {
+  final session = auth ?? FakeAuthBloc();
+  final customers = customerRepository ?? _FakeCustomerRepository();
   final router = GoRouter(
     initialLocation: '/providers/p1',
     routes: [
+      GoRoute(
+        path: '/login',
+        builder: (context, state) => Scaffold(
+          body: Text('login redirect=${state.uri.queryParameters['redirect']}'),
+        ),
+      ),
       GoRoute(
         path: '/providers/:id',
         builder: (context, state) => ProviderDetailPage(
           providerId: state.pathParameters['id']!,
           cubit: cubit,
+          customerCubit: _customerCubit(customers, session),
           now: now,
         ),
         routes: [
           GoRoute(
             path: 'book',
-            builder: (context, state) => const Scaffold(
-              body: Text('booking-flow'),
+            builder: (context, state) => Scaffold(
+              body: Column(
+                children: [
+                  const Text('booking-flow'),
+                  Text('service=${state.uri.queryParameters['service'] ?? ''}'),
+                ],
+              ),
             ),
           ),
         ],
@@ -125,28 +256,41 @@ Widget _app(
     ],
   );
 
-  return MaterialApp.router(
-    theme: AppTheme.light,
-    routerConfig: router,
-    builder: (context, child) => MediaQuery(
-      data: MediaQuery.of(context)
-          .copyWith(textScaler: TextScaler.linear(textScale)),
-      // The app is Persian-first: every state must lay out right-to-left.
-      child: Directionality(textDirection: TextDirection.rtl, child: child!),
+  return BlocProvider<AuthBloc>.value(
+    value: session,
+    child: MaterialApp.router(
+      theme: AppTheme.light,
+      routerConfig: router,
+      builder: (context, child) => MediaQuery(
+        data: MediaQuery.of(context)
+            .copyWith(textScaler: TextScaler.linear(textScale)),
+        // The app is Persian-first: every state must lay out right-to-left.
+        child: Directionality(textDirection: TextDirection.rtl, child: child!),
+      ),
     ),
   );
 }
 
-_StubProviderDetailCubit _loaded(ProviderDetail provider) =>
+_StubProviderDetailCubit _loaded(ProviderDetail provider,
+        {ProviderReviews? reviews}) =>
     _StubProviderDetailCubit(ProviderDetailState(
       status: ProviderDetailStatus.loaded,
       provider: provider,
+      reviews: reviews,
     ));
+
+/// A phone-sized surface, so layout findings match what a customer sees.
+void _phone(WidgetTester tester, {double width = 360, double height = 640}) {
+  tester.view.physicalSize = Size(width, height);
+  tester.view.devicePixelRatio = 1;
+  addTearDown(tester.view.reset);
+}
 
 void main() {
   group('full provider', () {
     testWidgets('renders every section of the design', (tester) async {
-      await tester.pumpWidget(_app(_loaded(_fullProvider()), now: _tuesdayNoon));
+      await tester
+          .pumpWidget(_app(_loaded(_fullProvider()), now: _tuesdayNoon));
       await tester.pumpAndSettle();
 
       // Hero + heading.
@@ -178,7 +322,8 @@ void main() {
 
     testWidgets('derives the price band from this provider\'s own services',
         (tester) async {
-      await tester.pumpWidget(_app(_loaded(_fullProvider()), now: _tuesdayNoon));
+      await tester
+          .pumpWidget(_app(_loaded(_fullProvider()), now: _tuesdayNoon));
       await tester.pumpAndSettle();
 
       // Median of 250k / 850k lands in the middle band — never invented.
@@ -187,7 +332,8 @@ void main() {
     });
 
     testWidgets('lays out right-to-left', (tester) async {
-      await tester.pumpWidget(_app(_loaded(_fullProvider()), now: _tuesdayNoon));
+      await tester
+          .pumpWidget(_app(_loaded(_fullProvider()), now: _tuesdayNoon));
       await tester.pumpAndSettle();
 
       final direction = Directionality.of(
@@ -206,7 +352,8 @@ void main() {
     });
 
     testWidgets('the book CTA navigates into the booking flow', (tester) async {
-      await tester.pumpWidget(_app(_loaded(_fullProvider()), now: _tuesdayNoon));
+      await tester
+          .pumpWidget(_app(_loaded(_fullProvider()), now: _tuesdayNoon));
       await tester.pumpAndSettle();
 
       await tester.tap(find.byKey(const Key('provider-book-cta')));
@@ -263,6 +410,193 @@ void main() {
       await tester.tap(cta);
       await tester.pumpAndSettle();
       expect(find.text('booking-flow'), findsOneWidget);
+    });
+  });
+
+  group('services open the booking flow (C.2)', () {
+    testWidgets('tapping a service starts booking with that service chosen',
+        (tester) async {
+      await tester
+          .pumpWidget(_app(_loaded(_fullProvider()), now: _tuesdayNoon));
+      await tester.pumpAndSettle();
+
+      final service = find.byKey(const Key('provider-service-s2'));
+      await tester.ensureVisible(service);
+      await tester.pumpAndSettle();
+      await tester.tap(service);
+      await tester.pumpAndSettle();
+
+      expect(find.text('booking-flow'), findsOneWidget);
+      expect(find.text('service=s2'), findsOneWidget);
+    });
+
+    testWidgets('each service is a named button of at least 48 dp',
+        (tester) async {
+      final semantics = tester.ensureSemantics();
+      await tester
+          .pumpWidget(_app(_loaded(_fullProvider()), now: _tuesdayNoon));
+      await tester.pumpAndSettle();
+
+      final cell = find.byKey(const Key('provider-service-s1'));
+      expect(tester.getSize(cell).height, greaterThanOrEqualTo(48));
+      expect(tester.getSize(cell).width, greaterThanOrEqualTo(48));
+
+      final node = tester.getSemantics(cell);
+      expect(node, isSemantics(isButton: true, hasTapAction: true));
+      expect(node.label, contains('کوتاهی مو'));
+      expect(node.label, contains(PriceFormatter.format(250000)));
+      expect(node.label, contains(JalaliFormatter.toPersianDigits('45')));
+      expect(node.label, contains(AppStrings.serviceBookAction));
+      // The affordance is visible too, not only announced.
+      expect(
+        find.descendant(
+            of: cell, matching: find.text(AppStrings.serviceBookAction)),
+        findsOneWidget,
+      );
+      semantics.dispose();
+    });
+  });
+
+  group('salon without an address (C.1)', () {
+    testWidgets('still shows its reviews and its map', (tester) async {
+      await tester.pumpWidget(
+        _app(_loaded(_addresslessProvider(), reviews: _oneReview)),
+      );
+      await tester.pumpAndSettle();
+
+      expect(find.byKey(const Key('provider-reviews-section')), findsOneWidget);
+      expect(find.byKey(const Key('review-r1')), findsOneWidget);
+      expect(find.byKey(const Key('provider-location-card')), findsOneWidget);
+      // Nothing to put under "contact": the section itself stays hidden.
+      expect(find.text(AppStrings.contactAndLocationTitle), findsNothing);
+    });
+  });
+
+  group('service prices (C.3)', () {
+    for (final scale in [1.0, 1.3]) {
+      testWidgets('are never cut off at 360 px and ${scale}x text',
+          (tester) async {
+        _phone(tester);
+        await tester.pumpWidget(
+          _app(_loaded(_expensiveProvider()), textScale: scale),
+        );
+        await tester.pumpAndSettle();
+
+        expect(tester.takeException(), isNull);
+        for (final amount in [2500000, 12500000]) {
+          final price = find.text(PriceFormatter.format(amount));
+          expect(price, findsOneWidget);
+          final paragraph = tester.renderObject<RenderParagraph>(price);
+          expect(paragraph.didExceedMaxLines, isFalse,
+              reason: 'the currency must never be lost to an ellipsis');
+        }
+      });
+    }
+  });
+
+  group('the signed-in customer (C.4, C.5)', () {
+    Finder heart() => find.byKey(const Key('provider-favorite-toggle'));
+
+    testWidgets(
+        'a guest visit is not recorded; the heart sends them to '
+        'sign in and back here', (tester) async {
+      final repo = _FakeCustomerRepository();
+      await tester
+          .pumpWidget(_app(_loaded(_fullProvider()), customerRepository: repo));
+      await tester.pumpAndSettle();
+
+      expect(repo.visits, isEmpty);
+      await tester.tap(heart());
+      await tester.pumpAndSettle();
+
+      expect(find.text('login redirect=/providers/p1'), findsOneWidget);
+      expect(repo.added, isEmpty);
+    });
+
+    testWidgets('a signed-in customer visit is recorded once', (tester) async {
+      final auth = FakeAuthBloc()..signIn();
+      final repo = _FakeCustomerRepository();
+      final detail = _loaded(_fullProvider());
+      await tester
+          .pumpWidget(_app(detail, auth: auth, customerRepository: repo));
+      await tester.pumpAndSettle();
+      // The page rebuilding (its reviews arriving) is not a second opening.
+      detail.show(ProviderDetailState(
+        status: ProviderDetailStatus.loaded,
+        provider: _fullProvider(),
+        reviews: _oneReview,
+      ));
+      await tester.pumpAndSettle();
+
+      expect(repo.visits, ['p1']);
+    });
+
+    testWidgets(
+        'signing in while the page is open records the visit and '
+        'loads the heart', (tester) async {
+      final auth = FakeAuthBloc();
+      final repo = _FakeCustomerRepository()..favorites = {'p1'};
+      await tester.pumpWidget(
+          _app(_loaded(_fullProvider()), auth: auth, customerRepository: repo));
+      await tester.pumpAndSettle();
+      expect(repo.visits, isEmpty);
+
+      auth.signIn();
+      await tester.pumpAndSettle();
+
+      expect(repo.visits, ['p1']);
+      expect(find.byIcon(Icons.favorite), findsOneWidget);
+    });
+
+    testWidgets('the heart is a white, labelled, 48 dp button on the bar',
+        (tester) async {
+      final semantics = tester.ensureSemantics();
+      await tester.pumpWidget(
+          _app(_loaded(_fullProvider()), auth: FakeAuthBloc()..signIn()));
+      await tester.pumpAndSettle();
+
+      final size = tester.getSize(heart());
+      expect(size.width, greaterThanOrEqualTo(48));
+      expect(size.height, greaterThanOrEqualTo(48));
+      expect(
+        tester.getSemantics(heart()),
+        isSemantics(
+            label: AppStrings.favoriteAdd, isButton: true, hasTapAction: true),
+      );
+      final icon = tester.widget<Icon>(
+          find.descendant(of: heart(), matching: find.byType(Icon)));
+      expect(icon.color, Colors.white);
+      semantics.dispose();
+    });
+
+    testWidgets('a favourite starts filled, and a tap removes it',
+        (tester) async {
+      final repo = _FakeCustomerRepository()..favorites = {'p1'};
+      await tester.pumpWidget(_app(_loaded(_fullProvider()),
+          auth: FakeAuthBloc()..signIn(), customerRepository: repo));
+      await tester.pumpAndSettle();
+
+      expect(find.byIcon(Icons.favorite), findsOneWidget);
+      await tester.tap(heart());
+      await tester.pumpAndSettle();
+
+      expect(repo.removed, ['p1']);
+      expect(find.byIcon(Icons.favorite_border), findsOneWidget);
+    });
+
+    testWidgets('a refused add goes back to empty and says so', (tester) async {
+      final repo = _FakeCustomerRepository()
+        ..changeResult = const Left(ServerFailure('boom'));
+      await tester.pumpWidget(_app(_loaded(_fullProvider()),
+          auth: FakeAuthBloc()..signIn(), customerRepository: repo));
+      await tester.pumpAndSettle();
+
+      await tester.tap(heart());
+      await tester.pumpAndSettle();
+
+      expect(repo.added, ['p1']);
+      expect(find.byIcon(Icons.favorite_border), findsOneWidget);
+      expect(find.text(AppStrings.favoriteAddFailed), findsOneWidget);
     });
   });
 

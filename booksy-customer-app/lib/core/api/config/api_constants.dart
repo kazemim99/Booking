@@ -255,4 +255,9 @@ class ApiConstants {
   /// GET /api/v1/Customers/{customerId}/favorites
   static String customerFavorites(String customerId) =>
       '/$apiVersion/Customers/$customerId/favorites';
+
+  /// Remove one salon from the customer's favorites
+  /// DELETE /api/v1/Customers/{customerId}/favorites/{providerId}
+  static String customerFavorite(String customerId, String providerId) =>
+      '/$apiVersion/Customers/$customerId/favorites/$providerId';
 }

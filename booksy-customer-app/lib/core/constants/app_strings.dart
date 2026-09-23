@@ -344,6 +344,15 @@ class AppStrings {
   // --- end of slice B ---
 
   // --- slice C: salon profile ---
+  /// On a service cell of the salon profile: tapping it books that service.
+  static const String serviceBookAction = 'رزرو این خدمت';
+  static String serviceDurationMinutes(String minutes) => '$minutes دقیقه';
+  static const String favoriteAdd = 'افزودن به علاقه‌مندی‌ها';
+  static const String favoriteRemove = 'حذف از علاقه‌مندی‌ها';
+  static const String favoriteAddFailed =
+      'این سالن به علاقه‌مندی‌ها اضافه نشد. دوباره تلاش کنید.';
+  static const String favoriteRemoveFailed =
+      'این سالن از علاقه‌مندی‌ها حذف نشد. دوباره تلاش کنید.';
   // --- end of slice C ---
 
   // --- slice D: booking wizard ---
