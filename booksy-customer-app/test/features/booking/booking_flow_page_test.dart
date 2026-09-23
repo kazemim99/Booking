@@ -358,6 +358,14 @@ void main() {
       expect(find.text(AppStrings.bookingSuccessAwaiting), findsOneWidget);
     });
 
+    // Review of the merged branch: the hero check was the green accent (2.38:1 on white).
+    testWidgets('the success check is visible on white (3:1)', (tester) async {
+      await submitted(tester);
+
+      final check = tester.widget<Icon>(find.byIcon(Icons.check_circle_outline));
+      expect(_contrast(check.color!, AppColors.surface), greaterThanOrEqualTo(3));
+    });
+
     testWidgets('view appointments resets the flow and goes to appointments',
         (tester) async {
       final bloc = await submitted(tester);

@@ -222,6 +222,22 @@ void main() {
     });
   });
 
+  // Review of the merged branch: filled stars were the yellow warning fill (#FFCB33, 1.52:1 on white) — a rating
+  // a customer cannot see. One star colour, used by every star, that is a graphic at 3:1 and still reads as gold.
+  group('Contrast guard — the star colour', () {
+    test('a filled star is at least 3:1 on white and on the soft fill', () {
+      expect(_contrast(AppColors.star, AppColors.surface), greaterThanOrEqualTo(kAaNonText));
+      expect(_contrast(AppColors.star, AppColors.surfaceSoft), greaterThanOrEqualTo(kAaNonText));
+    });
+
+    test('it is a warm gold, not the yellow fill or a red', () {
+      final hsl = HSLColor.fromColor(AppColors.star);
+      expect(AppColors.star, isNot(AppColors.warning));
+      expect(hsl.hue, inInclusiveRange(30, 50), reason: 'amber/gold hues');
+      expect(hsl.saturation, greaterThan(0.6));
+    });
+  });
+
   // The destructive button and the floating nav pill draw their own colours; pump them and read
   // what they paint.
   group('Contrast guard — components that paint their own colours', () {
@@ -241,6 +257,22 @@ void main() {
       final fg = style.foregroundColor!.resolve({})!;
       expect(bg, AppColors.errorText);
       expect(contrastRatio(fg, bg), greaterThanOrEqualTo(kAaText));
+    });
+
+    // Review of the merged branch: the count badge was white on the coral (2.92:1), which app_colors.dart itself
+    // reserves for fills that carry no text.
+    testWidgets('bottom navigation count badge: its number is 4.5:1 on the badge', (tester) async {
+      await tester.pumpWidget(host(const AppBottomBar(activeIndex: 0, items: [
+        AppBottomBarItem(
+          icon: Icons.home_outlined,
+          selectedIcon: Icons.home,
+          semanticLabel: AppStrings.tabHome,
+          badgeCount: 3,
+        ),
+      ])));
+
+      final badge = tester.widget<Badge>(find.byType(Badge));
+      expect(contrastRatio(badge.textColor!, badge.backgroundColor!), greaterThanOrEqualTo(kAaText));
     });
 
     testWidgets('bottom navigation: labels 4.5:1, icons 3:1 on the bar', (tester) async {

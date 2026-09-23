@@ -119,7 +119,8 @@ void main() {
     await tester.pumpWidget(_app(MapProviderCard(provider: _provider(), now: _today)));
 
     final star = tester.widget<Icon>(find.byIcon(Icons.star_rounded));
-    expect(star.color, AppColors.warning);
+    // Was AppColors.warning (1.52:1 on white); the one star colour is now AppColors.star (>= 3:1).
+    expect(star.color, AppColors.star);
   });
 
   testWidgets('fits within the carousel band height at 1.3x text',

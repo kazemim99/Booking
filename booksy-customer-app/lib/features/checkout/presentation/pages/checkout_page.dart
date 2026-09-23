@@ -3,6 +3,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../../config/routes/app_router.dart';
+import '../../../../config/theme/app_colors.dart';
 import '../../../../config/theme/app_tokens.dart';
 import '../../../../core/constants/app_strings.dart';
 import '../../../../core/utils/price_formatter.dart';
@@ -228,7 +229,8 @@ class _CheckoutPaid extends StatelessWidget {
     return _CheckoutMessage(
       key: const Key('checkout-paid'),
       icon: Icons.check_circle_outline,
-      iconColor: theme.colorScheme.secondary,
+      // The AA green: the accent (colorScheme.secondary) is 2.38:1 on white.
+      iconColor: AppColors.accentStrong,
       title: AppStrings.checkoutPaidTitle,
       body: AppStrings.checkoutPaidBody,
       extra: state.refNumber == null

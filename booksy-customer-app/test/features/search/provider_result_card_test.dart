@@ -82,7 +82,8 @@ void main() {
           _wrap(ProviderResultCard(provider: _provider(), now: _today)));
 
       final star = tester.widget<Icon>(find.byIcon(Icons.star_rounded));
-      expect(star.color, AppColors.warning);
+      // Was AppColors.warning (1.52:1 on white); the one star colour is now AppColors.star (>= 3:1).
+      expect(star.color, AppColors.star);
       expect(
         tester.widgetList<Icon>(find.byType(Icon)).where(
               (icon) => icon.color == Colors.amber,

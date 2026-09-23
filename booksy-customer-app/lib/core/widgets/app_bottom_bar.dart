@@ -89,7 +89,8 @@ class AppBottomBar extends StatelessWidget {
     );
     if (item.badgeCount > 0) {
       icon = Badge(
-        backgroundColor: AppColors.error,
+        // The AA red: the coral [AppColors.error] carries no text (white on it is 2.92:1).
+        backgroundColor: AppColors.errorText,
         textColor: Colors.white,
         label: Text(
           item.badgeCount > 99 ? '۹۹+' : '${item.badgeCount}'.toPersianDigits(),

@@ -43,7 +43,7 @@ class ProviderRating extends StatelessWidget {
     return Row(
       mainAxisSize: MainAxisSize.min,
       children: [
-        Icon(Icons.star_rounded, size: iconSize, color: AppColors.warning),
+        Icon(Icons.star_rounded, size: iconSize, color: AppColors.star),
         const SizedBox(width: AppSpacing.xxs),
         Text(
           JalaliFormatter.toPersianDigits(rating.toStringAsFixed(1)),

@@ -529,10 +529,11 @@ class _SuccessView extends StatelessWidget {
                 mainAxisAlignment: MainAxisAlignment.center,
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
-                  Icon(
+                  const Icon(
                     Icons.check_circle_outline,
                     size: AppIconSize.hero,
-                    color: theme.colorScheme.secondary,
+                    // The AA green: the accent (colorScheme.secondary) is 2.38:1 on white.
+                    color: AppColors.accentStrong,
                   ),
                   const SizedBox(height: AppSpacing.md),
                   Text(

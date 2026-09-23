@@ -56,6 +56,10 @@ class AppColors {
   // Semantic Colors — base tones for icons / fills / badges (white text on top)
   static const Color success = Color(0xFF0AC075); // Green - booking confirmed
   static const Color warning = Color(0xFFFFCB33); // Amber/yellow accent - fills only
+
+  /// Every filled rating star, display and input alike. A dark gold at 3.33:1 on white (3.19:1 on [surfaceSoft]):
+  /// a star is a graphic that carries the rating, and the yellow [warning] fill was 1.52:1.
+  static const Color star = Color(0xFFB98300);
   /// Coral — badges and fills only. White on it is 2.92:1, so it never carries text or backs a
   /// button: `colorScheme.error` and destructive buttons use [errorText].
   static const Color error = Color(0xFFFF6171);

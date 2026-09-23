@@ -2,12 +2,15 @@ import 'package:dartz/dartz.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
+import 'package:booksy_customer_app/config/theme/app_colors.dart';
 import 'package:booksy_customer_app/config/theme/app_theme.dart';
 import 'package:booksy_customer_app/core/errors/failures.dart';
 import 'package:booksy_customer_app/features/checkout/domain/entities/checkout_entities.dart';
 import 'package:booksy_customer_app/features/checkout/domain/repositories/checkout_repository.dart';
 import 'package:booksy_customer_app/features/checkout/presentation/bloc/checkout_bloc.dart';
 import 'package:booksy_customer_app/features/checkout/presentation/pages/checkout_page.dart';
+
+import '../../helpers/contrast.dart';
 
 /// Widget tests for every checkout state a customer can land in.
 ///
@@ -181,6 +184,15 @@ void main() {
       expect(find.byKey(const Key('checkout-paid')), findsOneWidget);
       expect(find.byKey(const Key('checkout-pay-button')), findsNothing,
           reason: 'a settled deposit must never offer to pay again');
+    });
+
+    // Review of the merged branch: the paid check was the green accent (2.38:1 on white).
+    testWidgets('the paid check is visible on white (3:1)', (tester) async {
+      repo.booking = _snapshot(paid: 200000, status: 'Confirmed');
+      await pump(tester);
+
+      final check = tester.widget<Icon>(find.byIcon(Icons.check_circle_outline));
+      expect(contrastRatio(check.color!, AppColors.surface), greaterThanOrEqualTo(kAaNonText));
     });
   });
 

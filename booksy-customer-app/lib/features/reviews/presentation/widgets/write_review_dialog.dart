@@ -251,7 +251,7 @@ class _StarButton extends StatelessWidget {
       icon: Icon(
         filled ? Icons.star : Icons.star_border,
         color: filled
-            ? AppColors.warning
+            ? AppColors.star
             : Theme.of(context).colorScheme.onSurfaceVariant,
         size: iconSize,
       ),

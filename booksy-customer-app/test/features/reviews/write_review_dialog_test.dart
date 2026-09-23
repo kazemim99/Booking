@@ -116,7 +116,7 @@ void main() {
     semantics.dispose();
   });
 
-  testWidgets('filled stars are amber, empty ones the muted ink', (tester) async {
+  testWidgets('filled stars are the one star colour, empty ones the muted ink', (tester) async {
     await open(tester)();
     await tester.tap(find.byKey(const Key('review-star-2')));
     await tester.pumpAndSettle();
@@ -126,7 +126,8 @@ void main() {
     final scheme = AppTheme.light.colorScheme;
 
     expect(icon('review-star-2').icon, Icons.star);
-    expect(icon('review-star-2').color, AppColors.warning);
+    // Was AppColors.warning (1.52:1 on white); the star colour is now the AA-graphic AppColors.star.
+    expect(icon('review-star-2').color, AppColors.star);
     expect(icon('review-star-3').icon, Icons.star_border);
     expect(icon('review-star-3').color, scheme.onSurfaceVariant);
   });
