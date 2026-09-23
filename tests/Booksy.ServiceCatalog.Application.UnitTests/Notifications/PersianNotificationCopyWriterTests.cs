@@ -80,6 +80,23 @@ public class PersianNotificationCopyWriterTests
     }
 
     [Theory]
+    [InlineData(NotificationEventCode.BookingConfirmed)]
+    [InlineData(NotificationEventCode.BookingRejected)]
+    [InlineData(NotificationEventCode.BookingCancelledByProvider)]
+    [InlineData(NotificationEventCode.BookingRescheduled)]
+    public void A_salon_decision_tells_the_customer_which_appointment_it_is_about(NotificationEventCode code)
+    {
+        // The customer did not act, so the notice is all they have to go on: which salon, which service, which
+        // day and which wall-clock time (QA recording 2026-09-23 — «نوبت شما در سالن نهال برای … ساعت … تأیید شد»).
+        var copy = _writer.Write(code, FullParameters());
+
+        copy.Body.Should().StartWith("مریم عزیز،");
+        copy.Body.Should().Contain("سالن نهال");
+        copy.Body.Should().Contain("کوتاهی مو", $"{code} should name the service");
+        copy.Body.Should().Contain("چهارشنبه ۱ مهر، ساعت ۱۴:۳۰");
+    }
+
+    [Theory]
     [InlineData(NotificationEventCode.NewBookingRequest)]
     [InlineData(NotificationEventCode.NewBookingConfirmed)]
     [InlineData(NotificationEventCode.BookingCancelledByCustomer)]

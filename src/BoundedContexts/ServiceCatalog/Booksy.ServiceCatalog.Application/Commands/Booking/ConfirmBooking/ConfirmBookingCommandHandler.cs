@@ -15,6 +15,8 @@ namespace Booksy.ServiceCatalog.Application.Commands.Booking.ConfirmBooking
     {
         private readonly IBookingWriteRepository _bookingRepository;
         private readonly IBookingReminderScheduler _reminders;
+        private readonly INotificationRaiser _notifications;
+        private readonly IBookingNotificationParameters _bookingParameters;
         private readonly IServiceCatalogUnitOfWork _unitOfWork;
         private readonly ILogger<ConfirmBookingCommandHandler> _logger;
 
@@ -22,12 +24,16 @@ namespace Booksy.ServiceCatalog.Application.Commands.Booking.ConfirmBooking
             IBookingWriteRepository bookingRepository,
             IServiceCatalogUnitOfWork unitOfWork,
             ILogger<ConfirmBookingCommandHandler> logger,
-            IBookingReminderScheduler reminders)
+            IBookingReminderScheduler reminders,
+            INotificationRaiser notifications,
+            IBookingNotificationParameters bookingParameters)
         {
             _bookingRepository = bookingRepository;
             _unitOfWork = unitOfWork;
             _logger = logger;
             _reminders = reminders;
+            _notifications = notifications;
+            _bookingParameters = bookingParameters;
         }
 
         public async Task<ConfirmBookingResult> Handle(ConfirmBookingCommand request, CancellationToken cancellationToken)
@@ -58,6 +64,19 @@ namespace Booksy.ServiceCatalog.Application.Commands.Booking.ConfirmBooking
             // work, so they commit with the confirmation or not at all.
             await _reminders.ScheduleAsync(booking, cancellationToken);
 
+            // The salon accepted the customer's request, and the customer is the one who did not act — without
+            // this they learn it only by reopening the booking (QA recording 2026-09-23: the booking turned
+            // «تایید شده» while the inbox still held only «درخواست نوبت ثبت شد»). Only a request can be
+            // confirmed, and a request is always the customer's own booking — a walk-in is born Confirmed — so
+            // the aggregate's customer is the person to tell. Same unit of work: it commits with the confirmation.
+            await _notifications.RaiseAsync(
+                Domain.Enums.NotificationEventCode.BookingConfirmed,
+                booking.CustomerId.Value,
+                dedupKey: booking.Id.Value,
+                parameters: await _bookingParameters.ForAsync(booking, cancellationToken: cancellationToken),
+                subjectType: BookingReminderScheduler.BookingSubject,
+                subjectId: booking.Id.Value,
+                cancellationToken: cancellationToken);
 
             _logger.LogInformation("Booking {BookingId} confirmed successfully", booking.Id);
             Telemetry.BookingMetrics.BookingConfirmed();

@@ -46,16 +46,16 @@ namespace Booksy.ServiceCatalog.Application.Services.Notifications
 
                 NotificationEventCode.BookingRejected => Copy(
                     "درخواست نوبت تأیید نشد",
-                    $"{customer} عزیز، متأسفانه {business} نتوانست نوبت {when} را تأیید کند"
+                    $"{customer} عزیز، متأسفانه {business} نتوانست نوبت شما{forService} {when} را تأیید کند"
                     + (reason is null ? "." : $": {reason}")),
 
                 NotificationEventCode.BookingRescheduled => Copy(
                     "زمان نوبت تغییر کرد",
-                    $"{customer} عزیز، زمان نوبت شما در {business} به {when} تغییر کرد."),
+                    $"{customer} عزیز، زمان نوبت شما در {business}{forService} به {when} تغییر کرد."),
 
                 NotificationEventCode.BookingCancelledByProvider => Copy(
                     "نوبت شما لغو شد",
-                    $"{customer} عزیز، نوبت شما در {business} {when} از سوی سالن لغو شد"
+                    $"{customer} عزیز، نوبت شما در {business}{forService} {when} از سوی سالن لغو شد"
                     + (reason is null ? "." : $": {reason}")),
 
                 NotificationEventCode.BookingCancelledAck => Copy(
