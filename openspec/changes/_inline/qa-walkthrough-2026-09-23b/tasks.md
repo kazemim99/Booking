@@ -20,8 +20,8 @@ required at booking confirmation (the login stays phone-only). Each surface — 
 
 - [x] 1 P0: booking times read back as zone-less wall clock (TimeSlot converter); every booking API returns "10:30:00"
 - [x] 2 P0: both Flutter apps read booking times as wall-clock digits whatever zone suffix arrives (no .toLocal())
-- [ ] 3 A person's phone number is never shown as their name (confirm step «ارائه‌دهنده 9123135143», salon app header)
-- [ ] 4 The salon app asks an owner/member whose name is the OTP placeholder for a real name, once
+- [x] 3 A person's phone number is never shown as their name (confirm step «ارائه‌دهنده 9123135143», salon app header)
+- [x] 4 The salon app asks an owner/member whose name is the OTP placeholder for a real name, once
 - [x] 5 After the salon confirms (or declines) a booking, the customer gets an inbox notice
 - [ ] 6 Web push: customer and salon web apps register for push and show notifications on Android Chrome
 - [x] 7 Salon profile: one «تماس و موقعیت» section holding address + map; «موقعیت روی نقشه» duplicate removed
@@ -29,6 +29,8 @@ required at booking confirmation (the login stays phone-only). Each surface — 
 - [x] 9 A customer without a real name must enter it before a booking can be confirmed (no skip there)
 - [x] 10 Salon profile says reviews can be written after a completed visit, from the appointment
 - [x] 12 Only the salon (owner / booking-managing member / admin) can confirm, complete, no-show or staff its bookings
+- [?] 13 DECISION: GET /providers/{id}/hierarchy/members only requires sign-in — any signed-in user can read any
+      salon's member list WITH phone numbers. Restrict to the salon (CanManageProvider) and drop phones for others?
 - [ ] 11 FULL verify green; deploy after the user's go
 
 ## Decisions
@@ -42,6 +44,13 @@ required at booking confirmation (the login stays phone-only). Each surface — 
   at booking confirmation, not at login.
 
 ## Log
+
+- 2026-09-23 3-4 done by an agent (4084ccef.. cherry-picked; two agents' overlapping name helpers merged into one
+  rule: realFullNameOrNull delegates to personNameOrNull). Root cause of the confirm step's «ارائه‌دهنده 9123135143»:
+  3.4 made the owner's FullName "" (no display name), and GET /Providers/{id} rebuilt the placeholder from the raw
+  FirstName/LastName; single-staff booking reads that name, not the slot's. Fixed in backend, customer app, salon app
+  (asks for a real name after OTP, never shows the phone as a name), Vue web header/staff and admin users list.
+  Stored placeholders are not rewritten; every screen hides them. Customer 726 / salon 647 tests green.
 
 - 2026-09-23 7-10 done by an agent (c76f9e6f.. cherry-picked), plus f3e304b4: booking requires first AND last name
   (the agent's check accepted a first name alone). Customers signed in before this build have no stored name and are
