@@ -3,6 +3,7 @@ import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/foundation.dart';
 
 import 'push_token_source.dart';
+import 'web_push_config.dart';
 
 /// The only class in the app that touches Firebase.
 ///
@@ -11,23 +12,57 @@ import 'push_token_source.dart';
 /// (`google-services.json` / `GoogleService-Info.plist`) is absent, and that file is account-specific and not
 /// in the repository; without this guard every build lacking it would die at startup.
 ///
-/// Web is deliberately unsupported: browser push needs its own service worker and VAPID key, and nobody has
-/// decided the salon app should prompt for notifications in a browser.
+/// **Web** (the production app is Flutter web on Android Chrome): available only when the build was given the
+/// Firebase Web app's config and VAPID key ([WebPushConfig]); without them it is off, exactly as before web push
+/// existed. The Firebase JS SDK is fetched from www.gstatic.com and an unreachable host would hang initialisation
+/// forever, so it is bounded — push is then off for the session and the app is unaffected.
 class FirebasePushTokenSource implements PushTokenSource {
+  /// The Firebase Web app's config this build was given (none, unless CI passed it).
+  final WebPushConfig web;
+
+  /// Whether this is the browser build.
+  final bool isWeb;
+
   bool? _available;
+
+  /// A browser can only delete a token through the service worker registration that `getToken` sets up in this
+  /// page's session; deleting without one makes Firebase try to register a default worker this app does not serve.
+  bool _webTokenFetched = false;
+
+  static const _initTimeout = Duration(seconds: 20);
+
+  FirebasePushTokenSource({this.web = WebPushConfig.fromEnvironment, this.isWeb = kIsWeb});
 
   @override
   Future<bool> isAvailable() async {
     if (_available != null) return _available!;
-    if (kIsWeb) return _available = false;
+    if (isWeb && !web.isComplete) return _available = false;
 
     try {
-      if (Firebase.apps.isEmpty) await Firebase.initializeApp();
+      if (Firebase.apps.isEmpty) {
+        await (isWeb ? Firebase.initializeApp(options: web.toFirebaseOptions()) : Firebase.initializeApp())
+            .timeout(_initTimeout);
+      }
+      // Browsers without the Push API (Safari outside an installed web app, some in-app browsers).
+      if (isWeb && !await FirebaseMessaging.instance.isSupported()) return _available = false;
       return _available = true;
     } catch (e) {
-      debugPrint('[Push] Firebase not configured on this build; push disabled: $e');
+      debugPrint('[Push] Firebase not available on this build; push disabled: $e');
       return _available = false;
     }
+  }
+
+  @override
+  bool get promptNeedsUserAction => isWeb;
+
+  @override
+  Future<PushPermission> permissionStatus() async {
+    final settings = await FirebaseMessaging.instance.getNotificationSettings();
+    return switch (settings.authorizationStatus) {
+      AuthorizationStatus.authorized || AuthorizationStatus.provisional => PushPermission.granted,
+      AuthorizationStatus.denied || AuthorizationStatus.deniedPermanently => PushPermission.denied,
+      AuthorizationStatus.notDetermined => PushPermission.notDetermined,
+    };
   }
 
   @override
@@ -38,16 +73,31 @@ class FirebasePushTokenSource implements PushTokenSource {
   }
 
   @override
-  Future<String?> getToken() => FirebaseMessaging.instance.getToken();
+  Future<String?> getToken() async {
+    if (!isWeb) return FirebaseMessaging.instance.getToken();
+
+    final token = await FirebaseMessaging.instance.getToken(
+      vapidKey: web.vapidKey,
+      serviceWorkerScriptPath: web.serviceWorkerPath,
+    );
+    _webTokenFetched = true;
+    return token;
+  }
 
   @override
   Stream<String> get onTokenRefresh => FirebaseMessaging.instance.onTokenRefresh;
 
   @override
   Future<void> deleteToken() async {
-    if (await isAvailable()) await FirebaseMessaging.instance.deleteToken();
+    if (!await isAvailable()) return;
+    if (isWeb && !_webTokenFetched) return;
+    await FirebaseMessaging.instance.deleteToken();
+    _webTokenFetched = false;
   }
 
   @override
-  String get platform => defaultTargetPlatform == TargetPlatform.iOS ? 'Ios' : 'Android';
+  String get platform {
+    if (isWeb) return 'Web';
+    return defaultTargetPlatform == TargetPlatform.iOS ? 'Ios' : 'Android';
+  }
 }

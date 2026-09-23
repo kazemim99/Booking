@@ -124,7 +124,7 @@ void main() {
     when(() => cubit.markNoShow(any())).thenAnswer((_) async => null);
   });
 
-  Future<void> pump(WidgetTester tester, HomeContext state, {Widget? trailing}) async {
+  Future<void> pump(WidgetTester tester, HomeContext state, {Widget? trailing, Widget? leading}) async {
     whenListen(cubit, const Stream<HomeContext>.empty(), initialState: state);
     await tester.pumpWidget(
       MaterialApp(
@@ -142,7 +142,7 @@ void main() {
             // HomeView's header now carries the inbox bell, which reads its count from this cubit.
             BlocProvider<InboxCubit>.value(value: inbox),
           ],
-          child: HomeView(trailing: trailing),
+          child: HomeView(trailing: trailing, leading: leading),
         ),
       ),
     );
@@ -158,6 +158,23 @@ void main() {
       await pump(tester, ctx(system: SystemState.error),
           trailing: const SizedBox(key: Key('trailing-probe'), height: 10));
       expect(find.byKey(const Key('trailing-probe')), findsNothing);
+    });
+  });
+
+  // The one-time notifications card (web push, QA 2026-09-23) rides here: above the zones, where it is seen.
+  group('the leading slot', () {
+    testWidgets('a working Home shows it before the zones', (tester) async {
+      await pump(tester, ctx(), leading: const SizedBox(key: Key('leading-probe'), height: 10));
+
+      final list = tester.widget<ListView>(find.byKey(const Key('home-zone-list')));
+      final children = (list.childrenDelegate as SliverChildListDelegate).children;
+      expect(children.first.key, const Key('leading-probe'));
+    });
+
+    testWidgets('a failed Home does not', (tester) async {
+      await pump(tester, ctx(system: SystemState.error),
+          leading: const SizedBox(key: Key('leading-probe'), height: 10));
+      expect(find.byKey(const Key('leading-probe')), findsNothing);
     });
   });
 

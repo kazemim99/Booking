@@ -368,6 +368,22 @@ class AppStrings {
   static const String notificationsMarkAllRead = 'خواندن همه';
   static const String notificationsMarkFailed = 'علامت‌گذاری اعلان انجام نشد.';
 
+  // Push on this device (the More row and the one-time card on Home)
+  static const String pushEnableAction = 'فعال‌سازی اعلان‌ها';
+  static const String pushEnableSubtitle = 'نوبت‌های جدید و لغو نوبت‌ها را روی همین دستگاه خبر می‌دهیم.';
+  static const String pushEnabledTitle = 'اعلان‌ها روی این دستگاه فعال است';
+  static const String pushEnabledSnack = 'اعلان‌ها فعال شد.';
+  static const String pushBlockedTitle = 'اعلان‌ها روی این دستگاه مسدود است';
+  static const String pushBlockedHint =
+      'برای دریافت اعلان، از تنظیمات مرورگر یا گوشی اجازهٔ اعلان را برای پنل بوکسی بدهید.';
+  static const String pushPromptTitle = 'از نوبت‌های جدید باخبر شوید';
+  static const String pushPromptBody =
+      'وقتی مشتری نوبت رزرو کرد، روی همین دستگاه خبرتان می‌کنیم تا زود تأییدش کنید.';
+  static const String pushPromptLater = 'بعداً';
+
+  /// The action on a push that arrives while the app is open.
+  static const String pushNoticeOpen = 'مشاهده';
+
   // Account sheet
   static const String homeAccountTitle = 'حساب کسب‌وکار';
   static String providerStatusLabel(String status) {

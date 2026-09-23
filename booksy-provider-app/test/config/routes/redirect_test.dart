@@ -15,6 +15,50 @@ String? redirect(String location, AuthFlowStatus status, {String? query}) {
 
 void main() {
   group('AppRouter.redirectFor', () {
+    /// A notification tapped while the app is closed opens it at /push-open with the push's data (the web service
+    /// worker builds that address: web/push/firebase-messaging-sw.js). Every cold start holds on splash, and splash
+    /// used to continue to the dashboard — the tap's booking was lost on the one path a closed app has.
+    group('a tapped notification that opens the app', () {
+      const tapped = '/push-open?bookingId=b1&notificationId=n1';
+      final waiting = 'redirect=${Uri.encodeComponent(tapped)}';
+
+      test('waits on splash WITH its target', () {
+        expect(
+          redirect(Routes.pushOpen, AuthFlowStatus.unresolved, query: 'bookingId=b1&notificationId=n1'),
+          '${Routes.splash}?$waiting',
+        );
+      });
+
+      test('continues to its target once the salon is signed in', () {
+        expect(redirect(Routes.splash, AuthFlowStatus.authenticated, query: waiting), tapped);
+      });
+
+      test('opens the calendar on the booking it is about', () {
+        expect(
+          redirect(Routes.pushOpen, AuthFlowStatus.authenticated, query: 'bookingId=b1&notificationId=n1'),
+          Routes.calendarBooking('b1'),
+        );
+      });
+
+      test('signed out: signs in first and keeps the target', () {
+        expect(
+          redirect(Routes.splash, AuthFlowStatus.unauthenticated, query: waiting),
+          '${Routes.login}?redirect=${Uri.encodeComponent(tapped)}',
+        );
+      });
+
+      test('a salon still onboarding or blocked goes where it always did', () {
+        expect(redirect(Routes.splash, AuthFlowStatus.needsOnboarding, query: waiting), Routes.onboarding);
+        expect(redirect(Routes.splash, AuthFlowStatus.blocked, query: waiting), Routes.blocked);
+      });
+
+      test('other cold starts are unchanged', () {
+        expect(redirect('/calendar', AuthFlowStatus.unresolved), Routes.splash);
+        expect(redirect(Routes.splash, AuthFlowStatus.authenticated), Routes.dashboard);
+        expect(redirect(Routes.splash, AuthFlowStatus.unauthenticated), Routes.login);
+      });
+    });
+
     group('unresolved (cold start)', () {
       test('holds on splash', () {
         expect(redirect('/splash', AuthFlowStatus.unresolved), isNull);

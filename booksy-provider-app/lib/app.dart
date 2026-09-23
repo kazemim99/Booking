@@ -17,21 +17,27 @@ import 'features/auth/presentation/bloc/auth_event.dart';
 class ProviderApp extends StatelessWidget {
   const ProviderApp({super.key});
 
+  /// Lets a push that arrives while the app is on screen show a snackbar from outside the widget tree.
+  static final _messenger = GlobalKey<ScaffoldMessengerState>();
+
   @override
   Widget build(BuildContext context) {
     final authBloc = getIt<AuthBloc>()..add(const AuthStatusChecked());
     final router = AppRouter.create(authBloc);
 
-    // Taps on push notifications route through the same router. A no-op on builds without Firebase.
+    // Taps on push notifications route through the same router. A no-op on builds without Firebase (on the web:
+    // without the Firebase Web app's dart-defines).
     PushMessageRouter.attach(
       source: getIt<FirebasePushTokenSource>(),
       router: router,
       inbox: getIt<InboxCubit>(),
+      messenger: _messenger,
     );
 
     return BlocProvider<AuthBloc>.value(
       value: authBloc,
       child: MaterialApp.router(
+        scaffoldMessengerKey: _messenger,
         title: AppStrings.appName,
         debugShowCheckedModeBanner: false,
         theme: AppTheme.light,

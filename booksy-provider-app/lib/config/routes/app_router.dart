@@ -28,6 +28,7 @@ import '../../features/notifications/presentation/inbox_cubit.dart';
 import '../../features/notifications/presentation/inbox_page.dart';
 import '../../features/reviews/presentation/reviews_cubit.dart';
 import '../../features/reviews/presentation/reviews_page.dart';
+import '../../core/push/push_open_route.dart';
 
 /// Route paths.
 class Routes {
@@ -72,6 +73,10 @@ class Routes {
   static String newBookingOn(DateTime date) =>
       '$newBooking?date=${date.year}-${date.month.toString().padLeft(2, '0')}-${date.day.toString().padLeft(2, '0')}';
   static const String onboarding = '/onboarding';
+
+  /// Where a tapped notification opens the app, with the push's data as query parameters
+  /// (web/push/firebase-messaging-sw.js builds it). Never shown: the redirect sends it on to [pushOpenRoute].
+  static const String pushOpen = '/push-open';
   static const String blocked = '/blocked';
 
   /// Asked once, right after OTP, when the account has no real name.
@@ -167,14 +172,24 @@ class AppRouter {
   }) {
     // Hold on splash until the stored session resolves.
     if (status == AuthFlowStatus.unresolved) {
-      return location == Routes.splash ? null : Routes.splash;
+      if (location == Routes.splash) return null;
+      // A tapped notification is the one cold start that must keep its target through splash: it is the only way a
+      // closed app is opened on a booking. Other deep links still start where they always have.
+      if (location == Routes.pushOpen) return '${Routes.splash}?redirect=${Uri.encodeComponent(uri.toString())}';
+      return Routes.splash;
     }
+
+    // Set only by a tapped notification that waited on splash (above).
+    final waiting = location == Routes.splash ? uri.queryParameters['redirect'] : null;
+    final hasWaiting = waiting != null && waiting.isNotEmpty;
 
     switch (status) {
       case AuthFlowStatus.unauthenticated:
         if (_isAuthScreen(location)) return null;
         // Bounce to login, preserving return-to-intent for non-auth targets.
-        if (location == Routes.splash) return Routes.login;
+        if (location == Routes.splash) {
+          return hasWaiting ? '${Routes.login}?redirect=${Uri.encodeComponent(waiting)}' : Routes.login;
+        }
         final target = Uri.encodeComponent(uri.toString());
         return '${Routes.login}?redirect=$target';
 
@@ -185,11 +200,14 @@ class AppRouter {
         return location == Routes.onboarding ? null : Routes.onboarding;
 
       case AuthFlowStatus.authenticated:
+        if (hasWaiting) return waiting;
         if (location == Routes.splash ||
             location == Routes.onboarding ||
             location == Routes.blocked) {
           return Routes.dashboard;
         }
+        // The same mapping a tapped push uses on Android.
+        if (location == Routes.pushOpen) return pushOpenRoute(uri.queryParameters);
         if (_isAuthScreen(location)) {
           final target = uri.queryParameters['redirect'];
           final destination = (target != null && target.isNotEmpty)
@@ -222,6 +240,11 @@ class AppRouter {
         GoRoute(
           path: Routes.splash,
           builder: (_, _) => const SplashPage(),
+        ),
+        // Matched so a tapped notification's address is a known location; [redirectFor] moves it on.
+        GoRoute(
+          path: Routes.pushOpen,
+          redirect: (_, state) => pushOpenRoute(state.uri.queryParameters),
         ),
         GoRoute(
           path: Routes.login,

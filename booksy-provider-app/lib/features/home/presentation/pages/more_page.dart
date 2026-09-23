@@ -15,6 +15,7 @@ import '../../../auth/presentation/bloc/auth_event.dart';
 import '../../../auth/domain/entities/provider_session.dart';
 import '../../../auth/domain/repositories/auth_repository.dart';
 import '../../../auth/presentation/bloc/auth_state.dart';
+import '../../../notifications/presentation/push_enable_tile.dart';
 import '../../domain/entities/saved_customer.dart';
 import '../widgets/customer_form_dialog.dart';
 import '../widgets/provider_nav_bar.dart';
@@ -159,6 +160,18 @@ class MorePage extends StatelessWidget {
                       ),
                     ]),
                     const SizedBox(height: AppSpacing.lg),
+                    // Notifications on this device. In a browser the permission prompt may only come from a tap, and
+                    // this row is the one always within reach. No section at all on builds without push.
+                    PushEnableTile(
+                      frame: (context, row) => Column(
+                        crossAxisAlignment: CrossAxisAlignment.stretch,
+                        children: [
+                          _sectionHeader(AppStrings.notificationsTitle),
+                          _card([row]),
+                          const SizedBox(height: AppSpacing.lg),
+                        ],
+                      ),
+                    ),
                     _sectionHeader(AppStrings.moreAccountSection),
                     _card([
                       _row(

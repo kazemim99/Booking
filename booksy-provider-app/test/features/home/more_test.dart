@@ -4,6 +4,8 @@ import 'package:booksy_provider_app/core/constants/app_strings.dart';
 import 'package:booksy_provider_app/config/theme/app_tokens.dart';
 import 'package:booksy_provider_app/core/di/injection.dart';
 import 'package:booksy_provider_app/core/errors/failures.dart';
+import 'package:booksy_provider_app/core/push/push_registration.dart';
+import 'package:booksy_provider_app/features/notifications/presentation/push_permission_cubit.dart';
 import 'package:booksy_provider_app/core/widgets/profile_header.dart';
 import 'package:booksy_provider_app/features/auth/domain/entities/provider_session.dart';
 import 'package:booksy_provider_app/features/auth/domain/repositories/auth_repository.dart';
@@ -30,6 +32,22 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 
 class MockHomeRepository extends Mock implements HomeRepository {}
+
+class _NeverAskedPush implements PushSettings {
+  @override
+  Future<PushStatus> status() async => PushStatus.notAsked;
+
+  @override
+  Future<PushStatus> enable() async => PushStatus.enabled;
+}
+
+class _NoPromptMemory implements PushPromptMemory {
+  @override
+  Future<bool> wasDismissed() async => false;
+
+  @override
+  Future<void> dismiss() async {}
+}
 
 class _MockAuthRepo extends Mock implements AuthRepository {}
 
@@ -219,6 +237,26 @@ void main() {
       for (final d in tester.widgetList<Divider>(dividers)) {
         expect(d.color, AppColors.menuBorder);
       }
+    });
+
+    // QA 2026-09-23: the salon expects a phone notification when a customer books. In a browser the permission
+    // prompt may only follow a tap, and this row is where that tap lives.
+    testWidgets('offers notifications on this device, in their own section', (tester) async {
+      getIt.registerSingleton<PushPermissionCubit>(PushPermissionCubit(_NeverAskedPush(), _NoPromptMemory()));
+      addTearDown(() => getIt.unregister<PushPermissionCubit>());
+
+      await pump(tester);
+      await tester.scrollUntilVisible(find.byKey(const Key('push-enable-tile')), 200);
+
+      expect(find.text(AppStrings.pushEnableAction), findsOneWidget);
+      expect(find.text(AppStrings.notificationsTitle), findsOneWidget);
+    });
+
+    testWidgets('a build without push shows no notifications section', (tester) async {
+      await pump(tester);
+
+      expect(find.byKey(const Key('push-enable-tile')), findsNothing);
+      expect(find.text(AppStrings.notificationsTitle), findsNothing);
     });
 
     testWidgets('logout dispatches LogoutRequested', (tester) async {

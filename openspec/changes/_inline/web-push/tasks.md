@@ -51,7 +51,7 @@ salon confirms. Push was a deliberate no-op on web. User decision: web push NOW.
 - [x] Customer: /push-open route survives cold start via splash (router tests)
 - [x] Customer: tap while open (SW message bridge) + foreground snackbar (tests)
 - [x] Customer: profile row + one-time card on booking success (cubit + widget tests)
-- [ ] Provider: mirror all of the above (More row, Home card); push opens the calendar ON the booking
+- [x] Provider: mirror all of the above (More row, Home card); push opens the calendar ON the booking
 - [ ] CI: pass FIREBASE_WEB_* dart-defines from vars/secrets; builds without them unchanged
 - [ ] Runbook: what the user must create (Firebase Web app, VAPID key, GitHub vars) + reachability
 - [ ] flutter analyze + flutter test in both apps; dotnet build + affected tests
@@ -72,6 +72,10 @@ salon confirms. Push was a deliberate no-op on web. User decision: web push NOW.
   take the screen, which was the reason for badge-only.
 - Tier 2: cold start through a tapped notification keeps its target through splash (`/push-open` →
   `/splash?redirect=` → target). Only `/push-open` does this; other cold-start deep links still go home.
+- Tier 2: provider push for a booking now opens `Routes.calendarBooking(id)` (calendar ON the booking, sheet open),
+  matching the inbox since QA 2026-09-22; it opened the plain calendar. Test updated to the new destination.
+- Tier 1: provider Home gets a `leading` slot (before the zones) for the card; More gets a notifications section
+  only when push is available. The dismissal is kept in secure storage (the app has no other key-value store).
 - Tier 1: service-worker behaviour is tested in Node (`tool/push_sw_test.mjs`, node:test + vm) — no JS test infra
   exists in the Flutter apps; it also guards the tap-message literal shared with Dart.
 ## Log

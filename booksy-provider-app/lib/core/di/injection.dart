@@ -40,6 +40,7 @@ import '../../features/notifications/data/inbox_repository_impl.dart';
 import '../../features/notifications/data/notification_api_service.dart';
 import '../../features/notifications/domain/inbox_repository.dart';
 import '../../features/notifications/presentation/inbox_cubit.dart';
+import '../../features/notifications/presentation/push_permission_cubit.dart';
 import '../../features/reviews/data/reviews_api_service.dart';
 import '../../features/reviews/data/reviews_repository_impl.dart';
 import '../../features/reviews/domain/reviews_repository.dart';
@@ -97,6 +98,10 @@ Future<void> configureDependencies() async {
   getIt.registerLazySingleton<FirebasePushTokenSource>(() => FirebasePushTokenSource());
   getIt.registerLazySingleton<PushRegistration>(
     () => PushRegistration(getIt<FirebasePushTokenSource>(), DioDeviceTokenApi(authedDio)),
+  );
+  // One shared instance, so turning notifications on from the More row hides the Home card and vice versa.
+  getIt.registerLazySingleton<PushPermissionCubit>(
+    () => PushPermissionCubit(getIt<PushRegistration>(), SecureStoragePushPromptMemory(secureStorage)),
   );
 
   // AuthBloc is a singleton: the router listens to it for session state.

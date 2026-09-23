@@ -13,7 +13,17 @@ import 'package:flutter_test/flutter_test.dart';
 /// notices.
 class _FakeSource implements PushTokenSource {
   bool available = true;
+
+  /// What the person answers when asked.
   bool permission = true;
+
+  /// What the platform reports without asking.
+  PushPermission current = PushPermission.notDetermined;
+
+  /// A browser: the prompt may only follow a tap.
+  bool browser = false;
+
+  int prompts = 0;
   String? token = 'token-1';
   int deleted = 0;
   final refreshes = StreamController<String>.broadcast();
@@ -22,7 +32,17 @@ class _FakeSource implements PushTokenSource {
   Future<bool> isAvailable() async => available;
 
   @override
-  Future<bool> requestPermission() async => permission;
+  bool get promptNeedsUserAction => browser;
+
+  @override
+  Future<PushPermission> permissionStatus() async => current;
+
+  @override
+  Future<bool> requestPermission() async {
+    prompts++;
+    current = permission ? PushPermission.granted : PushPermission.denied;
+    return permission;
+  }
 
   @override
   Future<String?> getToken() async => token;
@@ -34,7 +54,7 @@ class _FakeSource implements PushTokenSource {
   Future<void> deleteToken() async => deleted++;
 
   @override
-  String get platform => 'Android';
+  String get platform => browser ? 'Web' : 'Android';
 }
 
 class _FakeApi implements DeviceTokenApi {
@@ -159,5 +179,134 @@ void main() {
     await Future<void>.delayed(Duration.zero);
 
     expect(api.registered.where((r) => r.startsWith('token-3')), isEmpty);
+  });
+
+  /// In a browser the permission prompt may only follow a tap: Firefox refuses it otherwise and Chrome buries it
+  /// behind a quiet icon. Signing in is not a tap on "notify me", so it never asks — the person asks, from the
+  /// More row or the one-time card on Home, and that is what registers the browser.
+  group('in a browser', () {
+    setUp(() => source.browser = true);
+
+    test('signing in never shows the permission prompt', () async {
+      await push.onSignedIn();
+
+      expect(source.prompts, 0);
+      expect(api.registered, isEmpty);
+    });
+
+    test('signing in registers a browser that was allowed earlier, without asking again', () async {
+      source.current = PushPermission.granted;
+
+      await push.onSignedIn();
+
+      expect(source.prompts, 0);
+      expect(api.registered, ['token-1@Web']);
+    });
+
+    test('a browser that blocked notifications registers nothing', () async {
+      source.current = PushPermission.denied;
+
+      await push.onSignedIn();
+
+      expect(api.registered, isEmpty);
+    });
+
+    test('turning notifications on while signed in asks, then registers at once', () async {
+      await push.onSignedIn();
+
+      final status = await push.enable();
+
+      expect(source.prompts, 1);
+      expect(status, PushStatus.enabled);
+      expect(api.registered, ['token-1@Web']);
+    });
+
+    test('turning them on and then declining registers nothing and reports blocked', () async {
+      source.permission = false;
+      await push.onSignedIn();
+
+      final status = await push.enable();
+
+      expect(status, PushStatus.blocked);
+      expect(api.registered, isEmpty);
+    });
+
+    test('turning them on while signed out asks, and registers once someone signs in', () async {
+      final status = await push.enable();
+
+      expect(status, PushStatus.enabled);
+      expect(api.registered, isEmpty, reason: 'registering is an authenticated call');
+
+      await push.onSignedIn();
+
+      expect(api.registered, ['token-1@Web']);
+    });
+
+    test('after signing out, turning them on registers nothing for the previous account', () async {
+      await push.onSignedIn();
+      await push.onSigningOut();
+
+      await push.enable();
+
+      expect(api.registered, isEmpty);
+    });
+
+    test('a refresh after turning them on is registered too', () async {
+      await push.onSignedIn();
+      await push.enable();
+
+      source.refreshes.add('token-2');
+      await Future<void>.delayed(Duration.zero);
+
+      expect(api.registered, ['token-1@Web', 'token-2@Web']);
+    });
+
+    test('a failure while turning them on is reported, never thrown at the button', () async {
+      await push.onSignedIn();
+      api.failWith = Exception('offline');
+
+      await expectLater(push.enable(), completes);
+    });
+  });
+
+  group('status, for the notifications row', () {
+    test('a build without push says so, and turning it on does nothing', () async {
+      source.available = false;
+
+      expect(await push.status(), PushStatus.unavailable);
+      expect(await push.enable(), PushStatus.unavailable);
+      expect(source.prompts, 0);
+    });
+
+    test('never asked', () async {
+      expect(await push.status(), PushStatus.notAsked);
+    });
+
+    test('allowed', () async {
+      source.current = PushPermission.granted;
+
+      expect(await push.status(), PushStatus.enabled);
+    });
+
+    test('blocked', () async {
+      source.current = PushPermission.denied;
+
+      expect(await push.status(), PushStatus.blocked);
+    });
+
+    test('asking the status never prompts', () async {
+      source.browser = true;
+
+      await push.status();
+
+      expect(source.prompts, 0);
+    });
+  });
+
+  test('NoPush reports push as unavailable, so no row or card is ever offered', () async {
+    const none = NoPush();
+
+    expect(await none.status(), PushStatus.unavailable);
+    expect(await none.enable(), PushStatus.unavailable);
   });
 }

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../../../notifications/presentation/inbox_bell.dart';
 import '../../../notifications/presentation/inbox_cubit.dart';
+import '../../../notifications/presentation/push_soft_prompt.dart';
 import '../../../reviews/presentation/reviews_home_card.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -50,8 +51,10 @@ class HomePage extends StatelessWidget {
         // and the list agree. Closing it when Home leaves the tree would break the page that is opened next.
         BlocProvider<InboxCubit>.value(value: getIt<InboxCubit>()),
       ],
-      // The reviews card has its own data (not HomeContext), so it rides after the registry's zones.
-      child: const HomeView(trailing: ReviewsHomeEntry()),
+      // The reviews card has its own data (not HomeContext), so it rides after the registry's zones. The one-time
+      // notifications card rides before them: a salon gets no SMS for a new booking request, so push is its only way
+      // to hear about one while the app is closed.
+      child: const HomeView(leading: PushSoftPrompt(), trailing: ReviewsHomeEntry()),
     );
   }
 }
@@ -63,7 +66,10 @@ class HomeView extends StatelessWidget {
   /// Shown after the zones on a working Home — the business's reviews summary in the app.
   final Widget? trailing;
 
-  const HomeView({super.key, this.registry = const HomeWidgetRegistry(), this.trailing});
+  /// Shown before the zones on a working Home — the one-time notifications card.
+  final Widget? leading;
+
+  const HomeView({super.key, this.registry = const HomeWidgetRegistry(), this.trailing, this.leading});
 
   @override
   Widget build(BuildContext context) {
@@ -85,6 +91,7 @@ class HomeView extends StatelessWidget {
                   key: const Key('home-zone-list'),
                   padding: const EdgeInsets.all(AppSpacing.md),
                   children: [
+                    ?leading,
                     for (final id in registry.compose(ctx))
                       Padding(
                         padding:
