@@ -7,6 +7,7 @@ import 'package:go_router/go_router.dart';
 import '../../../../config/routes/app_router.dart';
 import '../../../../config/theme/app_tokens.dart';
 import '../../../../core/constants/app_strings.dart';
+import '../../../../core/utils/persian_formatter.dart';
 import '../../../../core/utils/person_name.dart';
 import '../../../../core/widgets/success_check.dart';
 import '../../../../core/widgets/widgets.dart';
@@ -192,7 +193,8 @@ class _OtpVerificationPageState extends State<OtpVerificationPage> {
                   const SizedBox(height: AppSpacing.md),
                   _secondsLeft > 0
                       ? Text(
-                          AppStrings.resendCountdown('$_secondsLeft'),
+                          AppStrings.resendCountdown(
+                              PersianFormatter.toPersianDigits('$_secondsLeft')),
                           style: theme.textTheme.bodySmall,
                           textAlign: TextAlign.center,
                         )

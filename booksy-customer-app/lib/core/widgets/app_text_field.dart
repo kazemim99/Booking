@@ -22,6 +22,9 @@ class AppTextField extends StatelessWidget {
   final int? maxLength;
   final FocusNode? focusNode;
 
+  /// Lines the field shows: one unless a caller wants room to write.
+  final int? maxLines;
+
   const AppTextField({
     super.key,
     this.controller,
@@ -40,6 +43,7 @@ class AppTextField extends StatelessWidget {
     this.autofocus = false,
     this.maxLength,
     this.focusNode,
+    this.maxLines = 1,
   });
 
   @override
@@ -57,6 +61,7 @@ class AppTextField extends StatelessWidget {
       validator: validator,
       autofillHints: autofillHints,
       maxLength: maxLength,
+      maxLines: maxLines,
       decoration: InputDecoration(
         labelText: label,
         hintText: hint,

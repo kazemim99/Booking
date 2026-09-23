@@ -387,5 +387,14 @@ class AppStrings {
   // --- end of slice F ---
 
   // --- slice G: reviews, inbox, profile, auth ---
+  static const String relativeTimeNow = 'همین حالا';
+  static String relativeMinutesAgo(String minutes) => '$minutes دقیقه پیش';
+  static String relativeHoursAgo(String hours) => '$hours ساعت پیش';
+  static const String relativeYesterday = 'دیروز';
+  static String reviewStarLabel(String count) => '$count ستاره';
+  static String reviewDimensionStarLabel(String dimension, String count) =>
+      '$dimension، $count ستاره';
+  static const String completeNameSaveFailed =
+      'نام ذخیره نشد. دوباره تلاش کنید.';
   // --- end of slice G ---
 }

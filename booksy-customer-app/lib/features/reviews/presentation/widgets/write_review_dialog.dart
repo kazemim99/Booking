@@ -1,7 +1,11 @@
 import 'package:flutter/material.dart';
 
+import '../../../../config/theme/app_colors.dart';
 import '../../../../config/theme/app_tokens.dart';
 import '../../../../core/constants/app_strings.dart';
+import '../../../../core/utils/persian_formatter.dart';
+import '../../../../core/widgets/app_button.dart';
+import '../../../../core/widgets/app_text_field.dart';
 import '../../domain/entities/review.dart';
 
 /// What the customer is leaving: stars, optionally what they want to say, and
@@ -88,6 +92,10 @@ class _WriteReviewDialogState extends State<WriteReviewDialog> {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     return AlertDialog(
+      // A narrower inset than Material's 40 dp, so five 48 dp stars fit the
+      // content on a 360 dp phone.
+      insetPadding: const EdgeInsets.symmetric(
+          horizontal: AppSpacing.md, vertical: AppSpacing.lg),
       title: Text(
           _editing ? AppStrings.reviewEditTitle : AppStrings.reviewDialogTitle),
       content: SingleChildScrollView(
@@ -102,17 +110,16 @@ class _WriteReviewDialogState extends State<WriteReviewDialog> {
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
                 for (var star = 1; star <= 5; star++)
-                  IconButton(
+                  _StarButton(
                     key: Key('review-star-$star'),
+                    label: AppStrings.reviewStarLabel(_digits(star)),
+                    filled: star <= _rating,
+                    selected: star == _rating,
+                    iconSize: 32,
                     onPressed: () => setState(() {
                       _rating = star.toDouble();
                       _error = null;
                     }),
-                    icon: Icon(
-                      star <= _rating ? Icons.star : Icons.star_border,
-                      color: theme.colorScheme.primary,
-                      size: 32,
-                    ),
                   ),
               ],
             ),
@@ -126,16 +133,26 @@ class _WriteReviewDialogState extends State<WriteReviewDialog> {
               title: Text(AppStrings.reviewDimensionsToggle,
                   style: theme.textTheme.bodyMedium),
               children: [
-                for (final d in ReviewDimension.values)
+                // Each label sits above its own row, so the five 48 dp stars
+                // have the dialog's whole width, not what a label beside
+                // them would leave.
+                for (final d in ReviewDimension.values) ...[
+                  Align(
+                    alignment: AlignmentDirectional.centerStart,
+                    child: Text(d.label, style: theme.textTheme.bodySmall),
+                  ),
                   Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      Expanded(
-                          child:
-                              Text(d.label, style: theme.textTheme.bodySmall)),
                       for (var star = 1; star <= 5; star++)
-                        InkResponse(
+                        _StarButton(
                           key: Key('review-dim-${d.name}-$star'),
-                          onTap: () => setState(() {
+                          label: AppStrings.reviewDimensionStarLabel(
+                              d.label, _digits(star)),
+                          filled: star <= (_dimensions[d] ?? 0),
+                          selected: _dimensions[d] == star,
+                          iconSize: 24,
+                          onPressed: () => setState(() {
                             // The same star again clears it: "not rated" must stay reachable.
                             if (_dimensions[d] == star) {
                               _dimensions.remove(d);
@@ -143,31 +160,19 @@ class _WriteReviewDialogState extends State<WriteReviewDialog> {
                               _dimensions[d] = star.toDouble();
                             }
                           }),
-                          child: Padding(
-                            padding: const EdgeInsets.all(AppSpacing.xxs),
-                            child: Icon(
-                              star <= (_dimensions[d] ?? 0)
-                                  ? Icons.star
-                                  : Icons.star_border,
-                              color: theme.colorScheme.primary,
-                              size: 22,
-                            ),
-                          ),
                         ),
                     ],
                   ),
+                ],
               ],
             ),
             const SizedBox(height: AppSpacing.sm),
-            TextField(
+            AppTextField(
               key: const Key('review-comment'),
               controller: _comment,
+              label: AppStrings.reviewCommentLabel,
               maxLines: 3,
               maxLength: 2000,
-              decoration: const InputDecoration(
-                labelText: AppStrings.reviewCommentLabel,
-                border: OutlineInputBorder(),
-              ),
             ),
             if (_editing)
               Text(
@@ -189,24 +194,66 @@ class _WriteReviewDialogState extends State<WriteReviewDialog> {
         Row(
           children: [
             Expanded(
-              child: OutlinedButton(
+              child: AppButton.secondary(
+                label: AppStrings.cancel,
                 onPressed: () => Navigator.of(context).pop(),
-                child: const Text(AppStrings.cancel),
               ),
             ),
             const SizedBox(width: AppSpacing.md),
             Expanded(
-              child: FilledButton(
+              child: AppButton(
                 key: const Key('review-submit'),
-                onPressed: _submit,
-                child: Text(_editing
+                label: _editing
                     ? AppStrings.reviewSaveAction
-                    : AppStrings.reviewWriteAction),
+                    : AppStrings.reviewWriteAction,
+                onPressed: _submit,
               ),
             ),
           ],
         ),
       ],
+    );
+  }
+}
+
+String _digits(int n) => PersianFormatter.toPersianDigits('$n');
+
+/// One star: a 48 dp target whose tooltip (and so its spoken name) says how
+/// many stars it is, carrying the selected state on the current choice.
+class _StarButton extends StatelessWidget {
+  final String label;
+  final bool filled;
+  final bool selected;
+  final double iconSize;
+  final VoidCallback onPressed;
+
+  const _StarButton({
+    super.key,
+    required this.label,
+    required this.filled,
+    required this.selected,
+    required this.iconSize,
+    required this.onPressed,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return IconButton(
+      tooltip: label,
+      isSelected: selected,
+      onPressed: onPressed,
+      padding: EdgeInsets.zero,
+      constraints: const BoxConstraints(
+        minWidth: AppTouchTarget.min,
+        minHeight: AppTouchTarget.min,
+      ),
+      icon: Icon(
+        filled ? Icons.star : Icons.star_border,
+        color: filled
+            ? AppColors.warning
+            : Theme.of(context).colorScheme.onSurfaceVariant,
+        size: iconSize,
+      ),
     );
   }
 }

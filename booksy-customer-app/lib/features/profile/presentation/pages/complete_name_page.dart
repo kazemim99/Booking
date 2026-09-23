@@ -32,10 +32,21 @@ class CompleteNamePage extends StatefulWidget {
 class _CompleteNamePageState extends State<CompleteNamePage> {
   final _first = TextEditingController();
   final _last = TextEditingController();
+  late final ProfileCubit _cubit;
   String? _error;
+  bool _saving = false;
+
+  @override
+  void initState() {
+    super.initState();
+    // Made once, not per build: a rebuild while saving must not swap the cubit out from under the save.
+    _cubit = widget.cubit ??
+        ProfileCubit(remoteDataSource: getIt(), storageService: getIt());
+  }
 
   @override
   void dispose() {
+    if (widget.cubit == null) _cubit.close();
     _first.dispose();
     _last.dispose();
     super.dispose();
@@ -48,24 +59,36 @@ class _CompleteNamePageState extends State<CompleteNamePage> {
     context.go(destination);
   }
 
-  void _save(ProfileCubit cubit) {
+  /// Leaves only once the name is saved. A failure is said here, with what they typed still in the fields —
+  /// moving on regardless would drop the name without a word (UX review 2026-09-23, G.4).
+  Future<void> _save() async {
     final first = _first.text.trim();
     final last = _last.text.trim();
     if (first.isEmpty) {
       setState(() => _error = AppStrings.firstNameRequired);
       return;
     }
-    cubit.saveProfile(firstName: first, lastName: last);
-    _continue();
+    setState(() {
+      _error = null;
+      _saving = true;
+    });
+    await _cubit.saveProfile(firstName: first, lastName: last);
+    if (!mounted) return;
+    if (_cubit.state.editStatus == ProfileEditStatus.success) {
+      _continue();
+      return;
+    }
+    setState(() {
+      _saving = false;
+      _error = AppStrings.completeNameSaveFailed;
+    });
   }
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final cubit = widget.cubit ??
-        ProfileCubit(remoteDataSource: getIt(), storageService: getIt());
     return BlocProvider<ProfileCubit>.value(
-      value: cubit,
+      value: _cubit,
       child: Scaffold(
         appBar: AppBar(
           title: const Text(AppStrings.completeNameTitle),
@@ -73,6 +96,11 @@ class _CompleteNamePageState extends State<CompleteNamePage> {
             TextButton(
               key: const Key('complete-name-skip'),
               onPressed: _continue,
+              // The theme's text-button ink is navy, which reads at 1.41:1 on the blue bar; this is the only
+              // way to skip, so it takes the bar's own foreground.
+              style: TextButton.styleFrom(
+                foregroundColor: theme.appBarTheme.foregroundColor ?? theme.colorScheme.onPrimary,
+              ),
               child: const Text(AppStrings.completeNameSkip),
             ),
           ],
@@ -110,7 +138,8 @@ class _CompleteNamePageState extends State<CompleteNamePage> {
                 AppButton(
                   key: const Key('complete-name-save'),
                   label: AppStrings.save,
-                  onPressed: () => _save(cubit),
+                  loading: _saving,
+                  onPressed: _save,
                 ),
               ],
             ),

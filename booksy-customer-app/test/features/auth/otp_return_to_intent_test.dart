@@ -1,4 +1,6 @@
+import 'package:booksy_customer_app/core/constants/app_strings.dart';
 import 'package:booksy_customer_app/core/errors/failures.dart';
+import 'package:booksy_customer_app/core/utils/persian_formatter.dart';
 import 'package:booksy_customer_app/features/auth/domain/entities/user.dart';
 import 'package:booksy_customer_app/features/auth/domain/repositories/auth_repository.dart';
 import 'package:booksy_customer_app/features/auth/domain/usecases/complete_authentication_usecase.dart';
@@ -287,5 +289,24 @@ void main() {
       findsOneWidget,
       reason: 'the booking is resumed once the name is saved or skipped',
     );
+  });
+
+  testWidgets('the resend countdown counts in Persian digits', (tester) async {
+    final router = GoRouter(
+      initialLocation: '/otp?phone=%2B989121234567',
+      routes: [
+        GoRoute(
+          path: '/otp',
+          builder: (context, state) => OtpVerificationPage(
+            phoneNumber: state.uri.queryParameters['phone'] ?? '',
+          ),
+        ),
+      ],
+    );
+    await pumpTo(tester, router);
+
+    // `settle` has let a second go by: 60 became 59.
+    expect(find.text(AppStrings.resendCountdown(PersianFormatter.toPersianDigits('59'))), findsOneWidget);
+    expect(find.textContaining('59'), findsNothing, reason: 'no Latin digits in a Persian sentence');
   });
 }

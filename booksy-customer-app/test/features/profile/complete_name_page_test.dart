@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:booksy_customer_app/config/theme/app_theme.dart';
 import 'package:booksy_customer_app/core/constants/app_strings.dart';
 import 'package:booksy_customer_app/core/storage/secure_storage_service.dart';
@@ -15,6 +17,12 @@ class _RecordingDataSource implements ProfileRemoteDataSource {
   String? lastName;
   var calls = 0;
 
+  /// When set, the save fails with this.
+  Object? failWith;
+
+  /// When set, the save waits for it.
+  Completer<void>? gate;
+
   @override
   Future<void> updateProfile({
     required String customerId,
@@ -22,6 +30,8 @@ class _RecordingDataSource implements ProfileRemoteDataSource {
     required String lastName,
   }) async {
     calls++;
+    if (gate != null) await gate!.future;
+    if (failWith != null) throw failWith!;
     this.firstName = firstName;
     this.lastName = lastName;
   }
@@ -112,5 +122,60 @@ void main() {
     expect(find.text(AppStrings.firstNameRequired), findsOneWidget);
     expect(remote.calls, 0);
     expect(landedOn, '');
+  });
+
+  testWidgets('"later" is white on the blue app bar, not navy (1.41:1) — it is the only way to skip',
+      (tester) async {
+    await pump(tester);
+
+    final label = tester.widget<RichText>(find.descendant(
+      of: find.byKey(const Key('complete-name-skip')),
+      matching: find.byType(RichText),
+    ));
+    expect(label.text.style?.color, AppTheme.light.appBarTheme.foregroundColor);
+    expect(label.text.style?.color, Colors.white);
+  });
+
+  testWidgets('it waits for the save, showing it is busy, before moving on', (tester) async {
+    remote.gate = Completer<void>();
+    await pump(tester, redirect: Uri.encodeComponent('/providers/p1/book'));
+
+    await tester.enterText(find.byKey(const Key('complete-name-first')), 'سارا');
+    await tester.tap(find.byKey(const Key('complete-name-save')));
+    await tester.pump();
+
+    expect(landedOn, '', reason: 'nothing is known yet — the name may not be saved');
+    expect(
+      find.descendant(
+          of: find.byKey(const Key('complete-name-save')),
+          matching: find.byType(CircularProgressIndicator)),
+      findsOneWidget,
+    );
+
+    remote.gate!.complete();
+    await tester.pumpAndSettle();
+    expect(landedOn, '/providers/p1/book');
+  });
+
+  testWidgets('a failed save is said in place and keeps what they typed', (tester) async {
+    remote.failWith = Exception('offline');
+    await pump(tester, redirect: Uri.encodeComponent('/providers/p1/book'));
+
+    await tester.enterText(find.byKey(const Key('complete-name-first')), 'سارا');
+    await tester.enterText(find.byKey(const Key('complete-name-last')), 'احمدی');
+    await tester.tap(find.byKey(const Key('complete-name-save')));
+    await tester.pumpAndSettle();
+
+    expect(landedOn, '', reason: 'leaving would lose the name without a word');
+    expect(find.byType(CompleteNamePage), findsOneWidget);
+    expect(find.text(AppStrings.completeNameSaveFailed), findsOneWidget);
+    expect(find.text('سارا'), findsOneWidget);
+    expect(find.text('احمدی'), findsOneWidget);
+
+    // And trying again, once it works, carries on.
+    remote.failWith = null;
+    await tester.tap(find.byKey(const Key('complete-name-save')));
+    await tester.pumpAndSettle();
+    expect(landedOn, '/providers/p1/book');
   });
 }
