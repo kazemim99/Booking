@@ -23,7 +23,9 @@ required at booking confirmation (the login stays phone-only). Each surface — 
 - [x] 3 A person's phone number is never shown as their name (confirm step «ارائه‌دهنده 9123135143», salon app header)
 - [x] 4 The salon app asks an owner/member whose name is the OTP placeholder for a real name, once
 - [x] 5 After the salon confirms (or declines) a booking, the customer gets an inbox notice
-- [ ] 6 Web push: customer and salon web apps register for push and show notifications on Android Chrome
+- [x] 6a Web push code: both web apps register (platform Web), prompt from a tap, route taps; backend sends webpush
+- [-] 6b Web push live — BLOCKED: needs the user's Firebase Web app config + VAPID public key (5 GitHub vars) and the
+      service-account JSON in /opt/booksy/.env; reachability from Iran unmeasured (runbook › Web push)
 - [x] 7 Salon profile: one «تماس و موقعیت» section holding address + map; «موقعیت روی نقشه» duplicate removed
 - [x] 8 Appointment detail shows the staff member's name and what «در انتظار تأیید» means
 - [x] 9 A customer without a real name must enter it before a booking can be confirmed (no skip there)
@@ -44,6 +46,10 @@ required at booking confirmation (the login stays phone-only). Each surface — 
   at booking confirmation, not at login.
 
 ## Log
+
+- 2026-09-23 6a done by an agent (c2f9900f.. cherry-picked): builds without the dart-defines are unchanged. Every hop of
+  web push goes through Google (gstatic, googleapis, fcm) — often unreachable from Iran; the box itself may not reach
+  FCM (#59). Alternatives documented, not built. Customer 792 / salon 715 tests green after the merge.
 
 - 2026-09-23 3-4 done by an agent (4084ccef.. cherry-picked; two agents' overlapping name helpers merged into one
   rule: realFullNameOrNull delegates to personNameOrNull). Root cause of the confirm step's «ارائه‌دهنده 9123135143»:
