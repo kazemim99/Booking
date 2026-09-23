@@ -55,6 +55,17 @@ class ProviderCustomerCubit extends Cubit<ProviderCustomerState> {
   final Future<String?> Function() customerId;
 
   String? _customerId;
+
+  /// The customer lookup still on its way, if any: a heart tap made before
+  /// it answers waits for it instead of failing.
+  Future<void>? _signingIn;
+
+  /// Bumped on every sign-out, so a lookup that answers after one is dropped
+  /// rather than acting for a customer who has already left.
+  int _session = 0;
+
+  /// Per customer, not per page: the next customer to use this still-open
+  /// page has a visit of their own.
   bool _visitRecorded = false;
 
   /// Set once the customer has tapped the heart: from then on their choice,
@@ -69,34 +80,48 @@ class ProviderCustomerCubit extends Cubit<ProviderCustomerState> {
 
   /// The page opened with a session, or one began while it was open (the
   /// login round-trip can come back to this very page).
-  Future<void> customerSignedIn() async {
-    final id = await customerId();
-    if (isClosed || id == null || id.isEmpty) return;
-    _customerId = id;
-    emit(state.copyWith(signedIn: true));
+  Future<void> customerSignedIn() {
+    final session = _session;
+    final lookup = customerId();
+    final signingIn = lookup.then((id) {
+      if (isClosed || session != _session || id == null || id.isEmpty) {
+        return null;
+      }
+      _customerId = id;
+      emit(state.copyWith(signedIn: true));
+      return id;
+    });
+    _signingIn = signingIn;
+    return signingIn.then((id) async {
+      if (identical(_signingIn, signingIn)) _signingIn = null;
+      if (id == null) return;
 
-    if (!_visitRecorded) {
-      _visitRecorded = true;
-      // Not awaited, and its result dropped: a lost visit costs the customer
-      // nothing, a stalled or failed page would.
-      unawaited(repository
-          .recordProviderVisit(id, providerId, viewSource: viewSource)
-          .then((_) {}, onError: (Object _) {}));
-    }
+      if (!_visitRecorded) {
+        _visitRecorded = true;
+        // Not awaited, and its result dropped: a lost visit costs the
+        // customer nothing, a stalled or failed page would.
+        unawaited(repository
+            .recordProviderVisit(id, providerId, viewSource: viewSource)
+            .then((_) {}, onError: (Object _) {}));
+      }
 
-    final favorites = await repository.getFavoriteProviderIds(id);
-    if (isClosed || _customerId != id || _customerChose) return;
-    favorites.fold(
-      // Unknown stays "not a favourite"; adding one that already is, is
-      // harmless (the repository treats it as done).
-      (_) {},
-      (ids) => emit(state.copyWith(isFavorite: ids.contains(providerId))),
-    );
+      final favorites = await repository.getFavoriteProviderIds(id);
+      if (isClosed || _customerId != id || _customerChose) return;
+      favorites.fold(
+        // Unknown stays "not a favourite"; adding one that already is, is
+        // harmless (the repository treats it as done).
+        (_) {},
+        (ids) => emit(state.copyWith(isFavorite: ids.contains(providerId))),
+      );
+    });
   }
 
   void customerSignedOut() {
+    _session++;
+    _signingIn = null;
     _customerId = null;
     _customerChose = false;
+    _visitRecorded = false;
     if (!isClosed) emit(const ProviderCustomerState());
   }
 
@@ -104,6 +129,11 @@ class ProviderCustomerCubit extends Cubit<ProviderCustomerState> {
   /// change did not happen (refused, offline, or nobody signed in) — the heart
   /// is back where it was and the page says so.
   Future<bool> toggleFavorite() async {
+    // A tap right after opening can come before the customer lookup answers:
+    // wait for it rather than calling that a failure.
+    final signingIn = _signingIn;
+    if (_customerId == null && signingIn != null) await signingIn;
+    if (isClosed) return true; // the page is gone; there is nobody to tell
     final id = _customerId;
     if (id == null) return false;
     if (state.saving) return true; // one change at a time; this tap is noise

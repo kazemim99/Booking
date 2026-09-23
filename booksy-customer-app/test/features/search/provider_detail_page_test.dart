@@ -12,6 +12,7 @@ import 'package:booksy_customer_app/core/utils/jalali_formatter.dart';
 import 'package:booksy_customer_app/core/utils/price_formatter.dart';
 import 'package:booksy_customer_app/core/widgets/widgets.dart';
 import 'package:booksy_customer_app/features/auth/presentation/bloc/auth_bloc.dart';
+import 'package:booksy_customer_app/features/auth/presentation/bloc/auth_event.dart';
 import 'package:booksy_customer_app/features/auth/presentation/bloc/auth_state.dart';
 import 'package:booksy_customer_app/features/booking/domain/entities/booking_entities.dart';
 import 'package:booksy_customer_app/features/booking/domain/repositories/booking_repository.dart';
@@ -599,6 +600,34 @@ void main() {
       expect(repo.added, ['p1']);
       expect(find.byIcon(Icons.favorite_border), findsOneWidget);
       expect(find.text(AppStrings.favoriteAddFailed), findsOneWidget);
+    });
+
+    testWidgets(
+        'logging out empties the heart, and the next customer to sign in '
+        'here has a visit of their own', (tester) async {
+      // /providers/:id stays mounted in the home tab's stack across a logout,
+      // which ends in LoggedOut (not Unauthenticated).
+      final auth = FakeAuthBloc()..signIn();
+      final repo = _FakeCustomerRepository()..favorites = {'p1'};
+      await tester.pumpWidget(
+          _app(_loaded(_fullProvider()), auth: auth, customerRepository: repo));
+      await tester.pumpAndSettle();
+      expect(find.byIcon(Icons.favorite), findsOneWidget);
+      expect(repo.visits, ['p1']);
+
+      auth.add(const LogoutEvent());
+      await tester.pumpAndSettle();
+
+      expect(auth.state, isA<LoggedOut>());
+      expect(find.byIcon(Icons.favorite), findsNothing);
+      expect(find.byIcon(Icons.favorite_border), findsOneWidget);
+
+      repo.favorites = {};
+      auth.signIn();
+      await tester.pumpAndSettle();
+
+      expect(repo.visits, ['p1', 'p1']);
+      expect(find.byIcon(Icons.favorite_border), findsOneWidget);
     });
   });
 

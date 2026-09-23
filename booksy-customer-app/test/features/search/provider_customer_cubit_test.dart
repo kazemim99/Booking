@@ -227,6 +227,73 @@ void main() {
       expect(cubit.state.signedIn, isFalse);
       expect(cubit.state.isFavorite, isFalse);
     });
+
+    test('a tap before the customer lookup answers waits for it, and is '
+        'not reported as a failure', () async {
+      final lookup = Completer<String?>();
+      final repo = _FakeHomeRepository();
+      final cubit = ProviderCustomerCubit(
+        providerId: 'p1',
+        repository: repo,
+        customerId: () => lookup.future,
+      );
+
+      final started = cubit.customerSignedIn();
+      final toggled = cubit.toggleFavorite(); // the page has only just opened
+      await pumpEventQueue();
+      expect(repo.added, isEmpty, reason: 'nobody known yet');
+
+      lookup.complete('c1');
+      await started;
+
+      expect(await toggled, isTrue);
+      expect(repo.added, [('c1', 'p1')]);
+      expect(cubit.state.isFavorite, isTrue);
+    });
+  });
+
+  group('signing out (P2 review)', () {
+    test("the next customer's opening of the same page is a visit too",
+        () async {
+      var who = 'c1';
+      final repo = _FakeHomeRepository();
+      final cubit = ProviderCustomerCubit(
+        providerId: 'p1',
+        repository: repo,
+        customerId: () async => who,
+      );
+      await cubit.customerSignedIn();
+
+      cubit.customerSignedOut();
+      who = 'c2';
+      await cubit.customerSignedIn();
+
+      expect(repo.visits, [
+        ('c1', 'p1', ProviderCustomerCubit.viewSource),
+        ('c2', 'p1', ProviderCustomerCubit.viewSource),
+      ]);
+    });
+
+    test('a lookup that answers after signing out records nothing and '
+        "shows nobody's favourite", () async {
+      final lookup = Completer<String?>();
+      final repo = _FakeHomeRepository()
+        ..favorites = () async => const Right({'p1'});
+      final cubit = ProviderCustomerCubit(
+        providerId: 'p1',
+        repository: repo,
+        customerId: () => lookup.future,
+      );
+
+      final started = cubit.customerSignedIn();
+      cubit.customerSignedOut();
+      lookup.complete('c1');
+      await started;
+
+      expect(repo.visits, isEmpty);
+      expect(cubit.state.signedIn, isFalse);
+      expect(cubit.state.isFavorite, isFalse);
+    });
   });
 }
 

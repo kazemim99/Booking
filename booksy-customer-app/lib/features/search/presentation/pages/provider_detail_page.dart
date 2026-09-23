@@ -48,6 +48,11 @@ class ProviderDetailPage extends StatelessWidget {
     this.now,
   });
 
+  /// No session any more: it expired or was refused (Unauthenticated), or the
+  /// customer logged out (LoggedOut).
+  static bool _signedOut(AuthState state) =>
+      state is Unauthenticated || state is LoggedOut;
+
   @override
   Widget build(BuildContext context) {
     return MultiBlocProvider(
@@ -70,11 +75,13 @@ class ProviderDetailPage extends StatelessWidget {
         ),
       ],
       // A sign-in can bring the customer back to this very page (the heart's
-      // login round-trip), so the session is followed, not read once.
+      // login round-trip), so the session is followed, not read once. The page
+      // stays mounted in the home tab's stack across a logout, which ends in
+      // LoggedOut, so that is a sign-out here as much as Unauthenticated is.
       child: BlocListener<AuthBloc, AuthState>(
         listenWhen: (previous, current) =>
             (current is Authenticated && previous is! Authenticated) ||
-            (current is Unauthenticated && previous is! Unauthenticated),
+            (_signedOut(current) && !_signedOut(previous)),
         listener: (context, auth) {
           final customer = context.read<ProviderCustomerCubit>();
           if (auth is Authenticated) {
