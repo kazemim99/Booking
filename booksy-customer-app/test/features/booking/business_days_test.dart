@@ -32,12 +32,25 @@ void main() {
     expect(BusinessDays.closedWeekdays([day('6'), day('')]), isEmpty);
   });
 
-  test('every name the repository produces is understood', () {
-    // The parser turns the server's DayOfWeek number (0 = Sunday … 6 = Saturday) into the name the UI shows.
-    final hours = BookingRepositoryImpl.parseBusinessHours([
-      for (var i = 0; i < 7; i++) {'dayOfWeek': i, 'isOpen': false},
-    ]);
+  // The parser turns the server's DayOfWeek number (0 = Sunday … 6 = Saturday) into the name the UI shows. Each
+  // index is closed on its own, so a shifted or swapped mapping (Saturday read as Sunday, say) greys out the wrong
+  // day instead of hiding behind a set that holds all seven.
+  const serverDayToWeekday = {
+    0: DateTime.sunday,
+    1: DateTime.monday,
+    2: DateTime.tuesday,
+    3: DateTime.wednesday,
+    4: DateTime.thursday,
+    5: DateTime.friday,
+    6: DateTime.saturday,
+  };
+  for (final MapEntry(key: serverDay, value: weekday) in serverDayToWeekday.entries) {
+    test('the server closing day $serverDay closes DateTime weekday $weekday and no other', () {
+      final hours = BookingRepositoryImpl.parseBusinessHours([
+        for (var i = 0; i < 7; i++) {'dayOfWeek': i, 'isOpen': i != serverDay},
+      ]);
 
-    expect(BusinessDays.closedWeekdays(hours), {1, 2, 3, 4, 5, 6, 7});
-  });
+      expect(BusinessDays.closedWeekdays(hours), {weekday});
+    });
+  }
 }
