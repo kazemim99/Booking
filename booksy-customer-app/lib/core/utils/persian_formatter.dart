@@ -46,7 +46,10 @@ class PersianFormatter {
       parts.insert(0, numStr);
     }
 
-    final formatted = parts.join('٬'); // Persian comma
+    // U+066C ARABIC THOUSANDS SEPARATOR, not a Latin comma (U+002C) or the Arabic comma (U+060C).
+    // Vazir draws it low on the baseline, so on screen it can pass for a comma; the code point is
+    // pinned in test/core/utils/persian_formatter_test.dart.
+    final formatted = parts.join('٬');
     return toPersianDigits(formatted);
   }
 }

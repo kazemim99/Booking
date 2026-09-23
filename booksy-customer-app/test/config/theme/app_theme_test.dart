@@ -1,30 +1,16 @@
-import 'dart:math' as math;
-
 import 'package:booksy_customer_app/config/theme/app_colors.dart';
 import 'package:booksy_customer_app/config/theme/app_theme.dart';
 import 'package:booksy_customer_app/config/theme/app_tokens.dart';
+import 'package:booksy_customer_app/core/constants/app_strings.dart';
+import 'package:booksy_customer_app/core/widgets/app_bottom_bar.dart';
+import 'package:booksy_customer_app/core/widgets/app_button.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/rendering.dart';
 import 'package:flutter_test/flutter_test.dart';
 
-/// Relative luminance (WCAG 2.x) for a fully opaque color.
-double _luminance(Color c) {
-  double channel(double v) {
-    final s = v / 255.0;
-    return s <= 0.03928 ? s / 12.92 : math.pow((s + 0.055) / 1.055, 2.4) as double;
-  }
+import '../../helpers/contrast.dart';
 
-  return 0.2126 * channel((c.r * 255).roundToDouble()) +
-      0.7152 * channel((c.g * 255).roundToDouble()) +
-      0.0722 * channel((c.b * 255).roundToDouble());
-}
-
-double _contrast(Color a, Color b) {
-  final la = _luminance(a);
-  final lb = _luminance(b);
-  final hi = math.max(la, lb);
-  final lo = math.min(la, lb);
-  return (hi + 0.05) / (lo + 0.05);
-}
+double _contrast(Color a, Color b) => contrastRatio(a, b);
 
 void main() {
   final theme = AppTheme.light;
@@ -124,6 +110,168 @@ void main() {
       ]) {
         expect(_contrast(c, Colors.white), greaterThanOrEqualTo(4.5));
       }
+    });
+  });
+
+  // customer-app-ux-review-fixes A.1–A.4: every colour pair the theme defines is guarded here, so a
+  // palette tweak that drops a pair below WCAG AA fails a test instead of shipping. Text needs 4.5:1,
+  // icons and other UI parts 3:1. Values are read from the theme (or the widget that draws them), not
+  // from AppColors, so the guard follows what reaches the screen.
+  group('Contrast guard — every text/icon pair the theme defines', () {
+    final cs = theme.colorScheme;
+    final input = theme.inputDecorationTheme;
+
+    void aa(Color fg, Color bg, String what) => expect(
+          contrastRatio(fg, bg),
+          greaterThanOrEqualTo(kAaText),
+          reason: '$what: text needs 4.5:1',
+        );
+    void ui(Color fg, Color bg, String what) => expect(
+          contrastRatio(fg, bg),
+          greaterThanOrEqualTo(kAaNonText),
+          reason: '$what: icons/UI need 3:1',
+        );
+
+    test('colour scheme text pairs', () {
+      aa(cs.onPrimary, cs.primary, 'onPrimary on primary');
+      aa(cs.onSurface, cs.surface, 'onSurface on surface');
+      aa(cs.onSurfaceVariant, cs.surface, 'onSurfaceVariant on surface');
+      aa(cs.error, cs.surface, 'error text on surface');
+      aa(cs.onError, cs.error, 'onError on error');
+      aa(cs.onSecondaryContainer, cs.secondaryContainer,
+          'onSecondaryContainer on secondaryContainer');
+    });
+
+    test('secondaryContainer is its own light tint, never the green accent', () {
+      // Flutter falls back to `secondary` when secondaryContainer is unset, which painted the
+      // selected segment and the map notice in the green accent (white-on-green is 2.38:1).
+      expect(cs.secondaryContainer, isNot(cs.secondary));
+      expect(relativeLuminance(cs.secondaryContainer),
+          greaterThan(relativeLuminance(cs.onSecondaryContainer)),
+          reason: 'a light container with dark text');
+      expect(cs.onSecondaryContainer, isNot(cs.onSecondary));
+    });
+
+    test('the error colour is an AA red; the coral stays for fills, the field border keeps its own', () {
+      expect(cs.error, AppColors.errorText);
+      expect(AppColors.error, const Color(0xFFFF6171));
+      expect((input.errorBorder! as OutlineInputBorder).borderSide.color,
+          AppColors.inputErrorBorder);
+    });
+
+    test('input hint text and field icons on white and on the soft pill fill', () {
+      for (final bg in [cs.surface, AppColors.surfaceSoft]) {
+        aa(input.hintStyle!.color!, bg, 'hint on $bg');
+        ui(input.prefixIconColor!, bg, 'prefix icon on $bg');
+        ui(input.suffixIconColor!, bg, 'suffix icon on $bg');
+        ui(input.iconColor!, bg, 'field icon on $bg');
+      }
+      aa(input.labelStyle!.color!, cs.surface, 'field label');
+      aa(input.errorStyle!.color!, cs.surface, 'field error text');
+    });
+
+    test('app bar foreground on the app bar', () {
+      final bar = theme.appBarTheme;
+      aa(bar.foregroundColor!, bar.backgroundColor!, 'app bar foreground');
+      aa(bar.titleTextStyle!.color!, bar.backgroundColor!, 'app bar title');
+      ui(bar.iconTheme!.color!, bar.backgroundColor!, 'app bar icons');
+      ui(bar.actionsIconTheme!.color!, bar.backgroundColor!, 'app bar actions');
+    });
+
+    test('snack bar content and action on the snack bar', () {
+      final snack = theme.snackBarTheme;
+      aa(snack.contentTextStyle!.color!, snack.backgroundColor!, 'snack bar text');
+      aa(snack.actionTextColor!, snack.backgroundColor!, 'snack bar action');
+    });
+
+    test('tab labels and indicator on the surface', () {
+      final tabs = theme.tabBarTheme;
+      aa(tabs.labelColor!, cs.surface, 'selected tab label');
+      aa(tabs.unselectedLabelColor!, cs.surface, 'unselected tab label');
+      final indicator = (tabs.indicator! as BoxDecoration).border!.bottom.color;
+      ui(indicator, cs.surface, 'tab indicator');
+    });
+
+    test('filled, outlined and text buttons', () {
+      final filled = theme.elevatedButtonTheme.style!;
+      aa(filled.foregroundColor!.resolve({})!,
+          filled.backgroundColor!.resolve({})!, 'filled button');
+      aa(theme.outlinedButtonTheme.style!.foregroundColor!.resolve({})!,
+          cs.surface, 'outlined button');
+      aa(theme.textButtonTheme.style!.foregroundColor!.resolve({})!,
+          cs.surface, 'text button');
+    });
+
+    test('selection controls: the check and the thumb stand out from the fill', () {
+      final selected = {WidgetState.selected};
+      final fill = theme.checkboxTheme.fillColor!.resolve(selected)!;
+      ui(fill, cs.surface, 'checked box on the surface');
+      ui(Colors.white, fill, 'check mark on the checked box');
+      final track = theme.switchTheme.trackColor!.resolve(selected)!;
+      ui(theme.switchTheme.thumbColor!.resolve(selected)!, track, 'switch thumb on track');
+    });
+
+    test('Material navigation bar labels and icons on the bar', () {
+      final nav = theme.navigationBarTheme;
+      for (final states in [<WidgetState>{}, {WidgetState.selected}]) {
+        aa(nav.labelTextStyle!.resolve(states)!.color!, nav.backgroundColor!,
+            'nav label $states');
+        ui(nav.iconTheme!.resolve(states)!.color!, nav.backgroundColor!,
+            'nav icon $states');
+      }
+    });
+  });
+
+  // The destructive button and the floating nav pill draw their own colours; pump them and read
+  // what they paint.
+  group('Contrast guard — components that paint their own colours', () {
+    Widget host(Widget child) => MaterialApp(
+          theme: theme,
+          home: Directionality(
+            textDirection: TextDirection.rtl,
+            child: Scaffold(body: Center(child: child)),
+          ),
+        );
+
+    testWidgets('destructive button: white on an AA red', (tester) async {
+      await tester.pumpWidget(
+          host(AppButton.destructive(label: 'لغو نوبت', onPressed: () {})));
+      final style = tester.widget<ElevatedButton>(find.byType(ElevatedButton)).style!;
+      final bg = style.backgroundColor!.resolve({})!;
+      final fg = style.foregroundColor!.resolve({})!;
+      expect(bg, AppColors.errorText);
+      expect(contrastRatio(fg, bg), greaterThanOrEqualTo(kAaText));
+    });
+
+    testWidgets('bottom navigation: labels 4.5:1, icons 3:1 on the bar', (tester) async {
+      await tester.pumpWidget(host(const AppBottomBar(activeIndex: 0, items: [
+        AppBottomBarItem(
+          icon: Icons.home_outlined,
+          selectedIcon: Icons.home,
+          semanticLabel: AppStrings.tabHome,
+        ),
+        AppBottomBarItem(
+          icon: Icons.search_outlined,
+          selectedIcon: Icons.search,
+          semanticLabel: AppStrings.tabExplore,
+        ),
+      ])));
+
+      const bar = AppColors.appBar;
+      for (final label in [AppStrings.tabHome, AppStrings.tabExplore]) {
+        final paragraph = tester.renderObject<RenderParagraph>(find.text(label));
+        expect(contrastRatio(paragraph.text.style!.color!, bar),
+            greaterThanOrEqualTo(kAaText),
+            reason: '$label label on the bar');
+      }
+      final inactive = tester.widget<Icon>(find.byIcon(Icons.search_outlined));
+      expect(contrastRatio(inactive.color!, bar), greaterThanOrEqualTo(kAaNonText),
+          reason: 'inactive icon on the bar');
+      final active = tester.widget<Icon>(find.byIcon(Icons.home));
+      final underActive = Color.alphaBlend(AppColors.navIndicator, bar);
+      expect(contrastRatio(active.color!, underActive),
+          greaterThanOrEqualTo(kAaNonText),
+          reason: 'active icon on its indicator');
     });
   });
 }

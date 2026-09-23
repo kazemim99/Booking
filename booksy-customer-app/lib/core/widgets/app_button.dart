@@ -89,9 +89,11 @@ class AppButton extends StatelessWidget {
       case AppButtonVariant.destructive:
         button = ElevatedButton(
           onPressed: effectiveOnPressed,
+          // The AA red from the theme (white on it is 6.47:1); the coral AppColors.error
+          // (2.92:1) is for badges and fills, never a button.
           style: ElevatedButton.styleFrom(
-            backgroundColor: AppColors.error,
-            foregroundColor: Colors.white,
+            backgroundColor: Theme.of(context).colorScheme.error,
+            foregroundColor: Theme.of(context).colorScheme.onError,
           ),
           child: child,
         );

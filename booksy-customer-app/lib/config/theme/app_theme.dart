@@ -22,7 +22,12 @@ class AppTheme {
       onPrimaryContainer: Colors.white,
       secondary: AppColors.accent, // green — selection/success accent
       onSecondary: Colors.white,
-      error: AppColors.error,
+      // Set explicitly: unset, Flutter falls back to `secondary` (the green accent) and the selected
+      // segment / map notice / progress track became green with 2.38:1 text.
+      secondaryContainer: AppColors.accentContainer,
+      onSecondaryContainer: AppColors.onAccentContainer,
+      // The AA red (6.47:1 with white). The coral AppColors.error stays for badges and fills.
+      error: AppColors.errorText,
       onError: Colors.white,
       surface: AppColors.surface,
       onSurface: AppColors.textPrimary,
@@ -152,12 +157,14 @@ class AppTheme {
           fontSize: 14,
           fontWeight: AppTextStyles.bold,
         ),
+        // Hint ≥ 4.5:1 and icons ≥ 3:1 on white and on the soft pill fill — darker than the
+        // provider app's Coliride values on purpose (see AppColors.hint).
         hintStyle: AppTextStyles.caption.copyWith(color: AppColors.hint),
         errorStyle: AppTextStyles.small.copyWith(color: AppColors.errorText),
         helperMaxLines: 2,
-        prefixIconColor: AppColors.iconMuted,
-        suffixIconColor: AppColors.iconMuted,
-        iconColor: AppColors.iconMuted,
+        prefixIconColor: AppColors.fieldIcon,
+        suffixIconColor: AppColors.fieldIcon,
+        iconColor: AppColors.fieldIcon,
       ),
 
       // Flat card: no shadow, separated by a border.
@@ -184,10 +191,11 @@ class AppTheme {
         ),
       ),
 
-      // Flat Material nav bar (used until the floating pill lands in Phase 4).
+      // Flat Material nav bar (the shell draws AppBottomBar; this keeps any NavigationBar in step
+      // with it: white labels in both states, pale-blue inactive icons at ≥ 3:1).
       navigationBarTheme: NavigationBarThemeData(
         backgroundColor: AppColors.appBar,
-        indicatorColor: Colors.white.withValues(alpha: 0.18),
+        indicatorColor: AppColors.navIndicator,
         height: 64,
         elevation: AppElevation.none,
         labelBehavior: NavigationDestinationLabelBehavior.alwaysShow,
@@ -195,8 +203,8 @@ class AppTheme {
           (states) => IconThemeData(
             size: AppIconSize.md,
             color: states.contains(WidgetState.selected)
-                ? Colors.white
-                : Colors.white70,
+                ? AppColors.navIconActive
+                : AppColors.navIconInactive,
           ),
         ),
         labelTextStyle: WidgetStateProperty.resolveWith(
@@ -204,9 +212,7 @@ class AppTheme {
             fontWeight: states.contains(WidgetState.selected)
                 ? AppTextStyles.bold
                 : AppTextStyles.regular,
-            color: states.contains(WidgetState.selected)
-                ? Colors.white
-                : Colors.white70,
+            color: AppColors.navLabel,
           ),
         ),
       ),
@@ -215,7 +221,7 @@ class AppTheme {
         behavior: SnackBarBehavior.floating,
         backgroundColor: AppColors.textPrimary,
         contentTextStyle: AppTextStyles.caption.copyWith(color: Colors.white),
-        actionTextColor: AppColors.accent,
+        actionTextColor: AppColors.accentOnDark,
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(AppRadius.snackbar),
         ),
@@ -248,13 +254,13 @@ class AppTheme {
         contentTextStyle: AppTextStyles.body,
       ),
 
-      // Green selection controls (Coliride).
+      // Green selection controls (Coliride), in the AA green so the check and the thumb show.
       checkboxTheme: CheckboxThemeData(
         side: const BorderSide(color: AppColors.borderFocus, width: 2),
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(5)),
         fillColor: WidgetStateProperty.resolveWith(
           (states) => states.contains(WidgetState.selected)
-              ? AppColors.accent
+              ? AppColors.accentStrong
               : Colors.white,
         ),
       ),
@@ -266,15 +272,16 @@ class AppTheme {
         ),
         trackColor: WidgetStateProperty.resolveWith(
           (states) => states.contains(WidgetState.selected)
-              ? AppColors.accent
+              ? AppColors.accentStrong
               : AppColors.border,
         ),
         trackOutlineColor: const WidgetStatePropertyAll(Colors.transparent),
       ),
 
-      // Green active tab label + 2px green indicator over a hairline divider.
+      // Green active tab label + 2px green indicator over a hairline divider — the AA green
+      // (5.48:1); the accent green was 2.38:1 on white.
       tabBarTheme: const TabBarThemeData(
-        labelColor: AppColors.accent,
+        labelColor: AppColors.accentStrong,
         unselectedLabelColor: AppColors.textPrimary,
         labelStyle: TextStyle(
           fontFamily: AppTextStyles.fontFamily,
@@ -290,7 +297,7 @@ class AppTheme {
         indicatorSize: TabBarIndicatorSize.tab,
         indicator: BoxDecoration(
           border: Border(
-            bottom: BorderSide(color: AppColors.accent, width: 2),
+            bottom: BorderSide(color: AppColors.accentStrong, width: 2),
           ),
         ),
       ),

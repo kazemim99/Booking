@@ -1,4 +1,8 @@
+import 'dart:io';
+
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+import 'package:flutter/rendering.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 import 'package:booksy_customer_app/config/theme/app_theme.dart';
@@ -56,6 +60,17 @@ void main() {
       final size = tester.getSize(find.byType(ElevatedButton));
       expect(size.height, greaterThanOrEqualTo(48));
       expect(size.width, greaterThanOrEqualTo(48));
+    });
+
+    // A.2: the destructive button's fill is the AA red (white text 6.47:1), not the coral
+    // (2.92:1), which stays for badges and fills.
+    testWidgets('destructive variant is white on the AA error red', (tester) async {
+      await tester.pumpWidget(
+        _wrap(AppButton.destructive(label: 'لغو نوبت', onPressed: () {})),
+      );
+      final style = tester.widget<ElevatedButton>(find.byType(ElevatedButton)).style!;
+      expect(style.backgroundColor!.resolve({}), AppTheme.light.colorScheme.error);
+      expect(style.foregroundColor!.resolve({}), AppTheme.light.colorScheme.onError);
     });
 
     testWidgets('renders without overflow at 1.3x text scale', (tester) async {
@@ -170,6 +185,17 @@ void main() {
   });
 
   group('AppBottomBar', () {
+    // The layout checks measure real Persian text: the test font draws every glyph as a
+    // 1em square, which would make «پروفایل» twice as wide as it is on a phone.
+    setUpAll(() async {
+      final vazir = FontLoader('Vazir');
+      for (final file in ['Vazir.ttf', 'Vazir-Medium.ttf', 'Vazir-Bold.ttf']) {
+        final bytes = File('assets/fonts/vazir/$file').readAsBytesSync();
+        vazir.addFont(Future.value(ByteData.sublistView(bytes)));
+      }
+      await vazir.load();
+    });
+
     const items = [
       AppBottomBarItem(
         icon: Icons.home_outlined,
@@ -214,6 +240,124 @@ void main() {
       );
       await tester.tap(find.byIcon(Icons.calendar_today_outlined));
       expect(tapped, 2);
+    });
+
+    // customer-app-ux-review-fixes A.4 (decision 2, 2026-09-23): the bar shows a label under every
+    // icon. It replaces decision O1 (icons only, name in semantics alone), which this group used to
+    // pin — an icon-only bar left sighted customers guessing what «calendar» and «person» mean.
+    testWidgets('shows each tab name under its icon', (tester) async {
+      await tester.pumpWidget(
+        _wrap(const AppBottomBar(items: items, activeIndex: 1)),
+      );
+      for (final item in items) {
+        expect(find.text(item.semanticLabel), findsOneWidget);
+        final icon = tester.getRect(find.byIcon(
+            item == items[1] ? item.selectedIcon : item.icon));
+        final label = tester.getRect(find.text(item.semanticLabel));
+        expect(label.top, greaterThanOrEqualTo(icon.bottom),
+            reason: '${item.semanticLabel} sits under its icon');
+      }
+    });
+
+    testWidgets('marks the active tab by weight, filled icon and indicator — not by colour',
+        (tester) async {
+      await tester.pumpWidget(
+        _wrap(const AppBottomBar(items: items, activeIndex: 0)),
+      );
+      TextStyle styleOf(String label) =>
+          tester.renderObject<RenderParagraph>(find.text(label)).text.style!;
+
+      final active = styleOf(AppStrings.tabHome);
+      final inactive = styleOf(AppStrings.tabExplore);
+      expect(active.color, inactive.color,
+          reason: 'both labels are full white so both meet 4.5:1');
+      expect(active.fontWeight!.value, greaterThan(inactive.fontWeight!.value));
+      expect(find.byKey(const Key('app-bottom-bar-indicator-0')), findsOneWidget);
+      expect(find.byKey(const Key('app-bottom-bar-indicator-1')), findsNothing);
+    });
+
+    testWidgets('each tab is one semantics node: label, button, selected', (tester) async {
+      final handle = tester.ensureSemantics();
+      await tester.pumpWidget(
+        _wrap(AppBottomBar(items: items, activeIndex: 2, onTap: (_) {})),
+      );
+
+      expect(
+        tester.getSemantics(find.bySemanticsLabel(AppStrings.tabAppointments)),
+        matchesSemantics(
+          label: AppStrings.tabAppointments,
+          isButton: true,
+          isSelected: true,
+          hasSelectedState: true,
+          hasTapAction: true,
+          hasFocusAction: true,
+          isFocusable: true,
+        ),
+      );
+      expect(
+        tester.getSemantics(find.bySemanticsLabel(AppStrings.tabHome)),
+        matchesSemantics(
+          label: AppStrings.tabHome,
+          isButton: true,
+          hasSelectedState: true,
+          hasTapAction: true,
+          hasFocusAction: true,
+          isFocusable: true,
+        ),
+      );
+      // The visible label must not be announced a second time as its own node.
+      for (final item in items) {
+        expect(find.bySemanticsLabel(item.semanticLabel), findsOneWidget);
+      }
+      handle.dispose();
+    });
+
+    testWidgets('grows to fit its labels at 1.3x text on a 360x640 screen',
+        (tester) async {
+      tester.view.physicalSize = const Size(360, 640);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.reset);
+
+      await tester.pumpWidget(MaterialApp(
+        theme: AppTheme.light,
+        builder: (context, child) => MediaQuery(
+          data: MediaQuery.of(context)
+              .copyWith(textScaler: const TextScaler.linear(1.3)),
+          child: Directionality(textDirection: TextDirection.rtl, child: child!),
+        ),
+        home: const Scaffold(
+          body: SizedBox.expand(),
+          bottomNavigationBar: AppBottomBar(items: items, activeIndex: 0),
+        ),
+      ));
+
+      expect(tester.takeException(), isNull);
+      final bar = tester.getRect(find.byKey(const Key('app-bottom-bar')));
+      for (final item in items) {
+        final label = tester.getRect(find.text(item.semanticLabel));
+        expect(bar.contains(label.topLeft) && bar.contains(label.bottomRight - const Offset(0.01, 0.01)),
+            isTrue,
+            reason: '${item.semanticLabel} is drawn inside the bar');
+        final paragraph =
+            tester.renderObject<RenderParagraph>(find.text(item.semanticLabel));
+        expect(paragraph.didExceedMaxLines, isFalse,
+            reason: '${item.semanticLabel} is not cut off');
+      }
+      expect(bar.bottom, lessThanOrEqualTo(640));
+    });
+
+    testWidgets('each tab is at least 48dp tall and wide', (tester) async {
+      await tester.pumpWidget(
+        _wrap(const AppBottomBar(items: items, activeIndex: 0)),
+      );
+      for (final item in items) {
+        final size = tester.getSize(find.ancestor(
+          of: find.text(item.semanticLabel),
+          matching: find.byType(InkWell),
+        ));
+        expect(size.height, greaterThanOrEqualTo(48));
+        expect(size.width, greaterThanOrEqualTo(48));
+      }
     });
   });
 

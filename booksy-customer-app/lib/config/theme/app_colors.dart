@@ -17,6 +17,16 @@ class AppColors {
   /// App-bar / top-chrome blue (a hair different from [primary], per Coliride).
   static const Color appBar = Color(0xFF3777C0);
 
+  // Floating bottom navigation (on [appBar]). Labels are full white in every state (4.6:1) and the
+  // active tab is told apart by weight, filled icon and [navIndicator] — never by dimming the text,
+  // which put inactive labels at ~3:1. Inactive icons are an opaque pale blue at 3.17:1 on the bar.
+  static const Color navLabel = Color(0xFFFFFFFF);
+  static const Color navIconActive = Color(0xFFFFFFFF);
+  static const Color navIconInactive = Color(0xFFC7D8EE);
+
+  /// The pill behind the active bottom-navigation icon (white at 18% over [appBar]).
+  static const Color navIndicator = Color(0x2EFFFFFF);
+
   // Neutral Palette
   static const Color background = Color(0xFFFFFFFF); // White scaffold (flat look)
   static const Color backgroundDark = Color(0xFF0F1419);
@@ -33,18 +43,26 @@ class AppColors {
   static const Color textSecondary = Color(0xFF5A6B8C); // Navy-grey — 5.4:1 (AA)
   static const Color textTertiary = Color(0xFF667085); // 4.77:1 on white (AA)
 
-  // Input chrome (Coliride)
-  static const Color hint = Color(0xFFC3CAD9); // Field hint text
-  static const Color iconMuted = Color(0xFFD2DBEB); // Field prefix/suffix icons
+  // Input chrome. DECISION (customer-app-ux-review-fixes A.3): these deliberately diverge from the
+  // provider app's Coliride values (hint #C3CAD9 at 1.64:1, icons #D2DBEB at 1.39:1), which a
+  // customer cannot read. Hint text is AA (4.97:1 on white, 4.77:1 on [surfaceSoft]) and field
+  // icons are ≥ 3:1 on both (3.47 / 3.33).
+  static const Color hint = Color(0xFF667085); // Field hint text
+  static const Color fieldIcon = Color(0xFF808A9E); // Field prefix/suffix icons
+
+  /// Decorative only (empty-state illustrations) — never a field icon or anything that must be read.
+  static const Color iconMuted = Color(0xFFD2DBEB);
 
   // Semantic Colors — base tones for icons / fills / badges (white text on top)
   static const Color success = Color(0xFF0AC075); // Green - booking confirmed
   static const Color warning = Color(0xFFFFCB33); // Amber/yellow accent - fills only
-  static const Color error = Color(0xFFFF6171); // Coral - errors, cancellations
+  /// Coral — badges and fills only. White on it is 2.92:1, so it never carries text or backs a
+  /// button: `colorScheme.error` and destructive buttons use [errorText].
+  static const Color error = Color(0xFFFF6171);
   static const Color info = Color(0xFF3777BF); // Blue - informational (unified)
 
   /// Input error border only — the darker Coliride red used for field borders,
-  /// never [error] (which stays on badges/toasts/buttons).
+  /// never [error] (which stays on badges and fills).
   static const Color inputErrorBorder = Color(0xFFE74A3B);
 
   // Semantic text variants — ≥4.5:1 on white and on their tint backgrounds.
@@ -65,6 +83,18 @@ class AppColors {
   static const Color divider = Color(0xFFE5E9F2); // Coliride hairline divider
   static const Color shadowLight = Color(0x0F000000); // Retained; unused (flat)
 
-  // Selection / active-state accent — green, matching Coliride (checks, tabs).
+  // Selection / active-state accent — green, matching Coliride. It is 2.38:1 on white, so it only
+  // fills large shapes; anything that must be read or seen uses a darker/lighter partner below.
   static const Color accent = Color(0xFF0AC075);
+
+  /// The AA green (5.48:1 on white): tab labels, the tab indicator, selected checkboxes/switches.
+  static const Color accentStrong = successText;
+
+  /// `secondaryContainer`: a light green tint (selected segment, map notice, progress track) with
+  /// [onAccentContainer] text at 6.63:1 — so nothing falls back to the green [accent].
+  static const Color accentContainer = Color(0xFFD7F5E9);
+  static const Color onAccentContainer = Color(0xFF065F46);
+
+  /// Snack-bar action on the navy snack bar (5.07:1); the green [accent] there was 2.73:1.
+  static const Color accentOnDark = Color(0xFFA7F3D0);
 }

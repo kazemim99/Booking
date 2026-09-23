@@ -16,10 +16,25 @@ class JalaliFormatter {
     return buffer.toString();
   }
 
+  /// Weekday names, Saturday (Jalali weekDay 1) to Friday (7), in the single-word spelling the rest
+  /// of the app uses (working hours, business hours). shamsi_date's own `wN` spells some as two
+  /// words («یک شنبه», «چهار شنبه»), which read differently from the salon's hours next to them.
+  /// «سه‌شنبه» carries a zero-width non-joiner (U+200C).
+  static const List<String> _weekdayNames = [
+    'شنبه',
+    'یکشنبه',
+    'دوشنبه',
+    'سه‌شنبه',
+    'چهارشنبه',
+    'پنجشنبه',
+    'جمعه',
+  ];
+
   /// e.g. «شنبه ۲۳ تیر»
   static String formatDate(DateTime dateTime) {
-    final f = Jalali.fromDateTime(dateTime).formatter;
-    return toPersianDigits('${f.wN} ${f.d} ${f.mN}');
+    final j = Jalali.fromDateTime(dateTime);
+    final f = j.formatter;
+    return toPersianDigits('${_weekdayNames[j.weekDay - 1]} ${f.d} ${f.mN}');
   }
 
   /// e.g. «۱۴:۳۰»
@@ -40,7 +55,7 @@ class JalaliFormatter {
     return toPersianDigits('${f.d} ${f.mN}');
   }
 
-  /// Weekday name, e.g. «شنبه»
+  /// Weekday name, e.g. «شنبه», «یکشنبه», «سه‌شنبه» — always a single word.
   static String weekday(DateTime dateTime) =>
-      Jalali.fromDateTime(dateTime).formatter.wN;
+      _weekdayNames[Jalali.fromDateTime(dateTime).weekDay - 1];
 }
