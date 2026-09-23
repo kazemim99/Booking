@@ -82,6 +82,11 @@ Widget _shellApp() {
           ]),
         ],
       ),
+      // Booking covers the tabs (it is drawn above the shell), as in the app.
+      GoRoute(
+        path: '/providers/:id/book',
+        builder: (context, state) => Scaffold(body: Text('book ${state.pathParameters['id']}')),
+      ),
     ],
   );
 
@@ -240,6 +245,29 @@ void main() {
 
     expect(_bookings.listCalls, greaterThan(callsBefore));
     expect(find.text(AppStrings.cancelBooking), findsNothing);
+  });
+
+  // Review of the merged branch: the success screen's «مشاهده نوبت‌ها» goes to this tab, which stays alive in the
+  // shell; it must show the booking just made, not the list read before it.
+  testWidgets('a booking made since this tab was last shown is on it when the customer comes back', (tester) async {
+    await tester.pumpWidget(_shellApp());
+    await _settle(tester);
+    expect(find.text('کوتاهی مو'), findsNothing);
+
+    _router.go('/home');
+    await _settle(tester);
+    _router.push('/providers/p1/book');
+    await _settle(tester);
+    expect(find.text('book p1'), findsOneWidget);
+    // Booked there.
+    _bookings.upcoming = [fakeBooking('b1', status: 'Requested', start: DateTime(2030, 1, 5, 16, 30))];
+    final callsBefore = _bookings.listCalls;
+
+    _router.go('/appointments');
+    await _settle(tester);
+
+    expect(_bookings.listCalls, greaterThan(callsBefore));
+    expect(find.text('کوتاهی مو'), findsOneWidget);
   });
 
   testWidgets('switching tabs without opening a booking does not re-read the list', (tester) async {

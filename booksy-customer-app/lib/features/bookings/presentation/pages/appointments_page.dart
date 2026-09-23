@@ -119,7 +119,8 @@ class _AppointmentsViewState extends State<_AppointmentsView> {
   bool _showUpcoming = true;
   GoRouter? _router;
 
-  /// A booking's detail was shown since this list was last read.
+  /// A screen that can change the customer's bookings (a booking's detail, the booking flow, checkout) was shown
+  /// since this list was last read.
   bool _bookingVisited = false;
 
   @override
@@ -139,7 +140,16 @@ class _AppointmentsViewState extends State<_AppointmentsView> {
     super.dispose();
   }
 
-  bool _isOnBooking() => _visiblePath().startsWith('${Routes.appointments}/');
+  bool _isOnBooking() {
+    final path = _visiblePath();
+    return path.startsWith('${Routes.appointments}/') ||
+        // A booking made in the flow (or paid for at checkout) belongs on this list; the success screen even
+        // sends the customer here.
+        _bookingFlowPath.hasMatch(path) ||
+        path.startsWith('${Routes.checkout}/');
+  }
+
+  static final _bookingFlowPath = RegExp(r'^/providers/[^/]+/book(/|$)');
 
   /// The path of the screen on top. A pushed route (a notification opens a
   /// booking with `push`) does not change the router's own location, so it
@@ -155,6 +165,8 @@ class _AppointmentsViewState extends State<_AppointmentsView> {
   /// this list, the home card and notifications alike. Whichever way it was
   /// opened, the next time this list is shown it is re-read (keeping it on
   /// screen) so a card never offers an action the booking no longer allows.
+  /// The booking flow is treated the same way, so a booking just made is on
+  /// the list the success screen sends the customer to.
   /// A detail pushed from another tab returns to that tab, so "shown" is
   /// when the customer comes back to this tab, not when the detail closes.
   void _onLocationChanged() {
