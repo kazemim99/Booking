@@ -18,6 +18,13 @@ class AppointmentsRequested extends AppointmentsEvent {
   const AppointmentsRequested();
 }
 
+/// Reload without the skeleton — the list stays on screen while it runs.
+/// Used on return from a booking's detail, where it may have been cancelled
+/// or rescheduled.
+class AppointmentsRefreshed extends AppointmentsEvent {
+  const AppointmentsRefreshed();
+}
+
 /// Cancel with confirmation already given. Applies optimistically and
 /// rolls back on failure.
 class AppointmentCancelled extends AppointmentsEvent {
@@ -90,6 +97,7 @@ class AppointmentsBloc extends Bloc<AppointmentsEvent, AppointmentsState> {
 
   AppointmentsBloc(this.repository) : super(const AppointmentsState()) {
     on<AppointmentsRequested>(_onRequested);
+    on<AppointmentsRefreshed>(_onRefreshed);
     on<AppointmentCancelled>(_onCancelled);
     on<AppointmentRescheduled>(_onRescheduled);
   }
@@ -99,13 +107,32 @@ class AppointmentsBloc extends Bloc<AppointmentsEvent, AppointmentsState> {
     Emitter<AppointmentsState> emit,
   ) async {
     emit(state.copyWith(status: AppointmentsStatus.loading));
+    await _load(emit);
+  }
 
+  Future<void> _onRefreshed(
+    AppointmentsRefreshed event,
+    Emitter<AppointmentsState> emit,
+  ) async {
+    // Nothing on screen to keep yet: a normal load.
+    if (state.status == AppointmentsStatus.loading ||
+        state.status == AppointmentsStatus.error) {
+      return _onRequested(const AppointmentsRequested(), emit);
+    }
+    await _load(emit, keepOnFailure: true);
+  }
+
+  Future<void> _load(
+    Emitter<AppointmentsState> emit, {
+    bool keepOnFailure = false,
+  }) async {
     final results = await Future.wait([
       repository.getMyBookings(upcoming: true),
       repository.getMyBookings(upcoming: false),
     ]);
 
     if (results[0].isLeft() && results[1].isLeft()) {
+      if (keepOnFailure) return;
       final message = results[0]
           .swap()
           .getOrElse(() => throw StateError('unreachable'))
@@ -117,8 +144,11 @@ class AppointmentsBloc extends Bloc<AppointmentsEvent, AppointmentsState> {
       return;
     }
 
-    final upcoming = results[0].getOrElse(() => const []);
-    final past = results[1].getOrElse(() => const []);
+    // A refresh keeps whichever list could not be re-read.
+    final upcoming = results[0]
+        .getOrElse(() => keepOnFailure ? state.upcoming : const []);
+    final past =
+        results[1].getOrElse(() => keepOnFailure ? state.past : const []);
     emit(state.copyWith(
       status: upcoming.isEmpty && past.isEmpty
           ? AppointmentsStatus.empty

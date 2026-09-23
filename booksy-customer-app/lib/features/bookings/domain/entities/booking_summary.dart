@@ -42,6 +42,11 @@ class BookingSummary extends Equatable {
 
   bool get isUpcoming => startTime.isAfter(DateTime.now());
 
+  /// A visit that took place can be booked again at the same salon, with the
+  /// same service chosen.
+  bool get canRebook =>
+      status.toLowerCase() == 'completed' && providerId.isNotEmpty;
+
   BookingSummary copyWith({
     DateTime? startTime,
     String? status,

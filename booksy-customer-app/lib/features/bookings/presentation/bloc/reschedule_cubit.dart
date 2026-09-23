@@ -15,12 +15,23 @@ class RescheduleState extends Equatable {
   final TimeSlot? selectedSlot;
   final String? errorMessage;
 
+  /// The server's reason for an empty day (closed that weekday, too short
+  /// for the visit, ...); null when the day has times or gave none.
+  final String? slotsReason;
+
+  /// How far ahead the salon takes bookings — the day strip offers today
+  /// plus these, like the booking flow. Seven until the salon's profile
+  /// arrives (the customer booking window).
+  final int maxAdvanceBookingDays;
+
   const RescheduleState({
     required this.status,
     required this.selectedDate,
     this.slots = const [],
     this.selectedSlot,
     this.errorMessage,
+    this.slotsReason,
+    this.maxAdvanceBookingDays = RescheduleCubit.defaultBookingWindowDays,
   });
 
   RescheduleState copyWith({
@@ -29,6 +40,8 @@ class RescheduleState extends Equatable {
     List<TimeSlot>? slots,
     TimeSlot? Function()? selectedSlot,
     String? errorMessage,
+    String? Function()? slotsReason,
+    int? maxAdvanceBookingDays,
   }) {
     return RescheduleState(
       status: status ?? this.status,
@@ -37,12 +50,22 @@ class RescheduleState extends Equatable {
       selectedSlot:
           selectedSlot != null ? selectedSlot() : this.selectedSlot,
       errorMessage: errorMessage,
+      slotsReason: slotsReason != null ? slotsReason() : this.slotsReason,
+      maxAdvanceBookingDays:
+          maxAdvanceBookingDays ?? this.maxAdvanceBookingDays,
     );
   }
 
   @override
-  List<Object?> get props =>
-      [status, selectedDate, slots, selectedSlot, errorMessage];
+  List<Object?> get props => [
+        status,
+        selectedDate,
+        slots,
+        selectedSlot,
+        errorMessage,
+        slotsReason,
+        maxAdvanceBookingDays,
+      ];
 }
 
 /// Reschedule an existing booking by reusing the slot picker, scoped to
@@ -54,20 +77,37 @@ class RescheduleCubit extends Cubit<RescheduleState> {
   final BookingSummary booking;
   int _requestId = 0;
 
+  /// The customer booking window, used until the salon's own arrives.
+  static const int defaultBookingWindowDays = 7;
+
   RescheduleCubit({
     required this.bookingRepository,
     required this.bookingsRepository,
     required this.booking,
+    DateTime Function()? now,
   }) : super(RescheduleState(
           status: RescheduleStatus.loadingSlots,
-          selectedDate: _today(),
+          selectedDate: _dayOf((now ?? DateTime.now)()),
         )) {
-    loadSlots(_today());
+    loadSlots(state.selectedDate);
+    _loadBookingWindow();
   }
 
-  static DateTime _today() {
-    final now = DateTime.now();
-    return DateTime(now.year, now.month, now.day);
+  static DateTime _dayOf(DateTime t) => DateTime(t.year, t.month, t.day);
+
+  /// The salon's booking window, from the same profile the booking flow
+  /// reads. A failure keeps the default: the server still enforces the
+  /// real window on submit.
+  Future<void> _loadBookingWindow() async {
+    final result = await bookingRepository.getProviderDetail(booking.providerId);
+    if (isClosed) return;
+    result.fold(
+      (_) {},
+      (provider) => emit(state.copyWith(
+        maxAdvanceBookingDays: provider.maxAdvanceBookingDays,
+        errorMessage: state.errorMessage,
+      )),
+    );
   }
 
   Future<void> loadSlots(DateTime date) async {
@@ -77,6 +117,7 @@ class RescheduleCubit extends Cubit<RescheduleState> {
       selectedDate: date,
       slots: const [],
       selectedSlot: () => null,
+      slotsReason: () => null,
     ));
 
     final result = await bookingRepository.getAvailableSlots(
@@ -86,7 +127,7 @@ class RescheduleCubit extends Cubit<RescheduleState> {
       staffId: booking.staffId,
     );
 
-    if (id != _requestId) return; // stale day superseded
+    if (id != _requestId || isClosed) return; // stale day superseded
 
     result.fold(
       (failure) => emit(state.copyWith(
@@ -96,6 +137,7 @@ class RescheduleCubit extends Cubit<RescheduleState> {
       (day) => emit(state.copyWith(
         status: RescheduleStatus.pickingSlots,
         slots: day.slots,
+        slotsReason: () => day.slots.isEmpty ? day.reason : null,
       )),
     );
   }

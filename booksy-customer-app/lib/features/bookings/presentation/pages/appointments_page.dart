@@ -117,6 +117,43 @@ class _AppointmentsView extends StatefulWidget {
 
 class _AppointmentsViewState extends State<_AppointmentsView> {
   bool _showUpcoming = true;
+  GoRouter? _router;
+  bool _wasOnBooking = false;
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    final router = GoRouter.maybeOf(context);
+    if (router != _router) {
+      _router?.routerDelegate.removeListener(_onLocationChanged);
+      _router = router?..routerDelegate.addListener(_onLocationChanged);
+      _wasOnBooking = _isOnBooking();
+    }
+  }
+
+  @override
+  void dispose() {
+    _router?.routerDelegate.removeListener(_onLocationChanged);
+    super.dispose();
+  }
+
+  bool _isOnBooking() {
+    final path = _router?.routerDelegate.currentConfiguration.uri.path ?? '';
+    return path.startsWith('${Routes.appointments}/');
+  }
+
+  /// A booking's detail can cancel or reschedule it, and it is reached from
+  /// this list, the home card and notifications alike. Whichever way it was
+  /// opened, coming back from it re-reads the list (keeping it on screen) so
+  /// a card never offers an action the booking no longer allows.
+  void _onLocationChanged() {
+    final onBooking = _isOnBooking();
+    final path = _router?.routerDelegate.currentConfiguration.uri.path;
+    if (_wasOnBooking && !onBooking && path == Routes.appointments && mounted) {
+      context.read<AppointmentsBloc>().add(const AppointmentsRefreshed());
+    }
+    _wasOnBooking = onBooking;
+  }
 
   Future<void> _onRefresh() {
     final bloc = context.read<AppointmentsBloc>();
@@ -214,24 +251,12 @@ class _AppointmentsViewState extends State<_AppointmentsView> {
                         const EdgeInsets.symmetric(horizontal: AppSpacing.md),
                     child: SkeletonLoader.list(items: 3, itemHeight: 128),
                   ),
-                  empty: EmptyState(
-                    icon: Icons.event_available_outlined,
-                    title: AppStrings.appointmentsEmptyTitle,
-                    subtitle: AppStrings.appointmentsEmptySubtitle,
-                    ctaLabel: AppStrings.findProvider,
-                    onCta: () => context.go(Routes.explore),
-                  ),
+                  empty: _EmptyTab(upcoming: _showUpcoming),
                   contentBuilder: (context) {
                     final bookings =
                         _showUpcoming ? state.upcoming : state.past;
                     if (bookings.isEmpty) {
-                      return EmptyState(
-                        icon: Icons.event_available_outlined,
-                        title: AppStrings.appointmentsEmptyTitle,
-                        subtitle: AppStrings.appointmentsEmptySubtitle,
-                        ctaLabel: AppStrings.findProvider,
-                        onCta: () => context.go(Routes.explore),
-                      );
+                      return _EmptyTab(upcoming: _showUpcoming);
                     }
                     return RefreshIndicator(
                       onRefresh: _onRefresh,
@@ -262,6 +287,29 @@ class _AppointmentsViewState extends State<_AppointmentsView> {
           );
         },
       ),
+    );
+  }
+}
+
+/// Each tab speaks of its own appointments: "no upcoming" is wrong on the
+/// Past tab.
+class _EmptyTab extends StatelessWidget {
+  final bool upcoming;
+
+  const _EmptyTab({required this.upcoming});
+
+  @override
+  Widget build(BuildContext context) {
+    return EmptyState(
+      icon: upcoming ? Icons.event_available_outlined : Icons.history,
+      title: upcoming
+          ? AppStrings.appointmentsEmptyTitle
+          : AppStrings.appointmentsPastEmptyTitle,
+      subtitle: upcoming
+          ? AppStrings.appointmentsEmptySubtitle
+          : AppStrings.appointmentsPastEmptySubtitle,
+      ctaLabel: AppStrings.findProvider,
+      onCta: () => context.go(Routes.explore),
     );
   }
 }
@@ -320,17 +368,21 @@ class _BookingCard extends StatelessWidget {
                 color: theme.colorScheme.primary,
               ),
               const SizedBox(width: AppSpacing.xxs),
-              Text(
-                when,
-                style: theme.textTheme.titleSmall?.copyWith(
-                  color: theme.colorScheme.primary,
+              Flexible(
+                child: Text(
+                  when,
+                  style: theme.textTheme.titleSmall?.copyWith(
+                    color: theme.colorScheme.primary,
+                  ),
                 ),
               ),
             ],
           ),
           if (booking.canCancel || booking.canReschedule) ...[
             const SizedBox(height: AppSpacing.xs),
-            Row(
+            // Wraps rather than overflows when large text makes the two
+            // actions wider than the card.
+            Wrap(
               children: [
                 if (booking.canReschedule)
                   AppButton.text(
@@ -346,6 +398,22 @@ class _BookingCard extends StatelessWidget {
                     child: const Text(AppStrings.cancelBooking),
                   ),
               ],
+            ),
+          ],
+          // A visit that took place can be booked again: same salon, same
+          // service already chosen.
+          if (booking.canRebook) ...[
+            const SizedBox(height: AppSpacing.xs),
+            Align(
+              alignment: AlignmentDirectional.centerStart,
+              child: AppButton.text(
+                label: AppStrings.bookAgain,
+                onPressed: () => context.push(Routes.bookingFlow(
+                  booking.providerId,
+                  serviceId:
+                      booking.serviceId.isEmpty ? null : booking.serviceId,
+                )),
+              ),
             ),
           ],
         ],

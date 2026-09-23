@@ -1,4 +1,3 @@
-import 'package:equatable/equatable.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
@@ -8,65 +7,17 @@ import '../../../../config/theme/app_tokens.dart';
 import '../../../../core/constants/app_strings.dart';
 import '../../../../core/di/injection.dart';
 import '../../../../core/utils/jalali_formatter.dart';
-import '../../../../core/widgets/widgets.dart';
-import '../../domain/entities/booking_summary.dart';
-import '../../domain/repositories/bookings_repository.dart';
 import '../../../../core/utils/price_formatter.dart';
-import '../../../reviews/presentation/widgets/write_review_dialog.dart';
+import '../../../../core/widgets/widgets.dart';
 import '../../../reviews/domain/repositories/review_repository.dart';
-
-enum _DetailStatus { loading, loaded, error }
-
-class _DetailState extends Equatable {
-  final _DetailStatus status;
-  final BookingSummary? booking;
-  final String? errorMessage;
-
-  const _DetailState({
-    this.status = _DetailStatus.loading,
-    this.booking,
-    this.errorMessage,
-  });
-
-  @override
-  List<Object?> get props => [status, booking, errorMessage];
-}
-
-class _DetailCubit extends Cubit<_DetailState> {
-  final BookingsRepository repository;
-
-  _DetailCubit(this.repository) : super(const _DetailState());
-
-  /// The list endpoint's CustomerBookingDto is the only booking shape the
-  /// app consumes; the detail is found in the user's own lists.
-  Future<void> load(String bookingId) async {
-    emit(const _DetailState());
-    final results = await Future.wait([
-      repository.getMyBookings(upcoming: true),
-      repository.getMyBookings(upcoming: false),
-    ]);
-
-    for (final result in results) {
-      final match = result.fold<BookingSummary?>(
-        (_) => null,
-        (bookings) =>
-            bookings.where((b) => b.id == bookingId).firstOrNull,
-      );
-      if (match != null) {
-        emit(_DetailState(status: _DetailStatus.loaded, booking: match));
-        return;
-      }
-    }
-
-    emit(const _DetailState(
-      status: _DetailStatus.error,
-      errorMessage: AppStrings.genericError,
-    ));
-  }
-}
+import '../../../reviews/presentation/widgets/write_review_dialog.dart';
+import '../../domain/entities/booking_summary.dart';
+import '../bloc/appointment_detail_cubit.dart';
+import 'reschedule_page.dart';
 
 /// Appointment detail (deep-linkable at /appointments/:id, auth-gated by
-/// the router).
+/// the router). Opened from the list, the home "next booking" card and
+/// notifications, so it offers the same actions as the list cards.
 class AppointmentDetailPage extends StatelessWidget {
   final String bookingId;
 
@@ -75,25 +26,40 @@ class AppointmentDetailPage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return BlocProvider(
-      create: (_) => _DetailCubit(getIt())..load(bookingId),
+      create: (_) => AppointmentDetailCubit(getIt(), bookingId)..load(),
       child: Scaffold(
-        appBar: AppBar(title: const Text(AppStrings.appointmentsTitle)),
-        body: BlocBuilder<_DetailCubit, _DetailState>(
+        appBar: AppBar(title: const Text(AppStrings.appointmentDetailTitle)),
+        body: BlocConsumer<AppointmentDetailCubit, AppointmentDetailState>(
+          listenWhen: (prev, next) =>
+              next.notice != AppointmentDetailNotice.none &&
+              prev.notice != next.notice,
+          listener: (context, state) {
+            switch (state.notice) {
+              case AppointmentDetailNotice.cancelSuccess:
+                AppSnackbar.success(context, AppStrings.cancelBookingSuccess);
+              case AppointmentDetailNotice.cancelFailure:
+                AppSnackbar.error(
+                  context,
+                  state.errorMessage ?? AppStrings.genericError,
+                );
+              case AppointmentDetailNotice.none:
+                break;
+            }
+          },
           builder: (context, state) {
             return StateSwitcher(
               status: switch (state.status) {
-                _DetailStatus.loading => ViewStatus.loading,
-                _DetailStatus.loaded => ViewStatus.content,
-                _DetailStatus.error => ViewStatus.error,
+                AppointmentDetailStatus.loading => ViewStatus.loading,
+                AppointmentDetailStatus.loaded => ViewStatus.content,
+                AppointmentDetailStatus.error => ViewStatus.error,
               },
               errorMessage: state.errorMessage,
-              onRetry: () => context.read<_DetailCubit>().load(bookingId),
+              onRetry: () => context.read<AppointmentDetailCubit>().load(),
               skeleton: Padding(
                 padding: const EdgeInsets.all(AppSpacing.md),
                 child: SkeletonLoader.list(items: 1, itemHeight: 220),
               ),
-              contentBuilder: (context) =>
-                  _DetailContent(booking: state.booking!),
+              contentBuilder: (context) => _DetailContent(state: state),
             );
           },
         ),
@@ -103,11 +69,14 @@ class AppointmentDetailPage extends StatelessWidget {
 }
 
 class _DetailContent extends StatelessWidget {
-  final BookingSummary booking;
+  final AppointmentDetailState state;
 
-  const _DetailContent({required this.booking});
+  const _DetailContent({required this.state});
+
+  BookingSummary get booking => state.booking!;
 
   Future<void> _writeReview(BuildContext context) async {
+    final cubit = context.read<AppointmentDetailCubit>();
     final draft = await showWriteReviewDialog(context);
     if (draft == null || !context.mounted) return;
 
@@ -120,11 +89,32 @@ class _DetailContent extends StatelessWidget {
     );
     if (!context.mounted) return;
     result.fold(
-      (failure) => ScaffoldMessenger.of(context)
-          .showSnackBar(SnackBar(content: Text(failure.message))),
-      (_) => ScaffoldMessenger.of(context)
-          .showSnackBar(const SnackBar(content: Text(AppStrings.reviewSaved))),
+      (failure) => AppSnackbar.error(context, failure.message),
+      (_) {
+        cubit.reviewed();
+        AppSnackbar.success(context, AppStrings.reviewSaved);
+      },
     );
+  }
+
+  Future<void> _confirmCancel(BuildContext context) async {
+    final cubit = context.read<AppointmentDetailCubit>();
+    final confirmed = await ConfirmSheet.show(
+      context: context,
+      title: AppStrings.cancelBookingConfirmTitle,
+      body: AppStrings.cancelBookingConfirmBody,
+      confirmLabel: AppStrings.cancelBooking,
+      destructive: true,
+    );
+    if (confirmed) await cubit.cancel();
+  }
+
+  Future<void> _reschedule(BuildContext context) async {
+    final cubit = context.read<AppointmentDetailCubit>();
+    final newStartTime = await Navigator.of(context).push<DateTime>(
+      MaterialPageRoute(builder: (_) => ReschedulePage(booking: booking)),
+    );
+    if (newStartTime != null) await cubit.rescheduled(newStartTime);
   }
 
   @override
@@ -182,7 +172,7 @@ class _DetailContent extends StatelessWidget {
                         child: Text(
                           value,
                           style: theme.textTheme.titleSmall,
-                          textAlign: TextAlign.left,
+                          textAlign: TextAlign.end,
                         ),
                       ),
                     ],
@@ -199,10 +189,33 @@ class _DetailContent extends StatelessWidget {
           ),
         ),
         const SizedBox(height: AppSpacing.md),
-        // Only a visit that happened can be reviewed — the server checks the
-        // same thing, and offering it earlier would only earn a rejection.
-        if (StatusBadge.tryParse(booking.status) == BookingStatus.completed) ...[
+        // The same rules as the list cards: an active booking still ahead.
+        if (booking.canReschedule) ...[
           AppButton(
+            key: const Key('appointment-reschedule'),
+            label: AppStrings.rescheduleBooking,
+            icon: Icons.edit_calendar_outlined,
+            onPressed: state.cancelling ? null : () => _reschedule(context),
+          ),
+          const SizedBox(height: AppSpacing.sm),
+        ],
+        if (booking.canRebook) ...[
+          AppButton(
+            key: const Key('appointment-book-again'),
+            label: AppStrings.bookAgain,
+            icon: Icons.replay,
+            onPressed: () => context.push(Routes.bookingFlow(
+              booking.providerId,
+              serviceId: booking.serviceId.isEmpty ? null : booking.serviceId,
+            )),
+          ),
+          const SizedBox(height: AppSpacing.sm),
+        ],
+        // Only a visit that happened can be reviewed, and only once — the
+        // server checks the same, so offering it again would only earn a
+        // rejection.
+        if (state.canWriteReview) ...[
+          AppButton.secondary(
             key: const Key('appointment-write-review'),
             label: AppStrings.reviewWriteAction,
             icon: Icons.star_outline,
@@ -211,11 +224,24 @@ class _DetailContent extends StatelessWidget {
           const SizedBox(height: AppSpacing.sm),
         ],
         AppButton.secondary(
-          label: AppStrings.bookingProvider,
+          key: const Key('appointment-view-salon'),
+          label: AppStrings.appointmentViewSalon,
           icon: Icons.storefront_outlined,
           onPressed: () =>
               context.push(Routes.providerDetail(booking.providerId)),
         ),
+        if (booking.canCancel) ...[
+          const SizedBox(height: AppSpacing.sm),
+          TextButton(
+            key: const Key('appointment-cancel'),
+            onPressed: state.cancelling ? null : () => _confirmCancel(context),
+            style: TextButton.styleFrom(
+              foregroundColor: theme.colorScheme.error,
+              minimumSize: const Size.fromHeight(48),
+            ),
+            child: const Text(AppStrings.cancelBooking),
+          ),
+        ],
       ],
     );
   }

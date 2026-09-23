@@ -373,6 +373,13 @@ class AppStrings {
   // --- end of slice D ---
 
   // --- slice E: appointments ---
+  static const String appointmentDetailTitle = 'جزئیات نوبت';
+  static const String appointmentViewSalon = 'مشاهده سالن';
+  static const String appointmentsPastEmptyTitle = 'نوبت گذشته‌ای ندارید';
+  static const String appointmentsPastEmptySubtitle =
+      'نوبت‌هایی که انجام شوند اینجا نمایش داده می‌شوند';
+  static const String bookAgain = 'رزرو مجدد';
+  static String rescheduleCurrentTime(String when) => 'زمان فعلی: $when';
   // --- end of slice E ---
 
   // --- slice F: discovery cards, map, home ---

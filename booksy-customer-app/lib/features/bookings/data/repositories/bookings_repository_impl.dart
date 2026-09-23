@@ -6,18 +6,22 @@ import '../../../../core/errors/failures.dart';
 import '../../../../core/storage/secure_storage_service.dart';
 import '../../domain/entities/booking_summary.dart';
 import '../../domain/repositories/bookings_repository.dart';
+import '../booking_summary_json.dart';
 import '../datasources/bookings_remote_datasource.dart';
 
 class BookingsRepositoryImpl implements BookingsRepository {
   final BookingsRemoteDataSource remoteDataSource;
   final SecureStorageService storageService;
 
+  /// The clock that decides whether a booking is still ahead (injectable
+  /// for tests).
+  final DateTime Function() now;
+
   BookingsRepositoryImpl({
     required this.remoteDataSource,
     required this.storageService,
-  });
-
-  static const _cancellableStatuses = {'pending', 'requested', 'confirmed'};
+    DateTime Function()? now,
+  }) : now = now ?? DateTime.now;
 
   @override
   Future<Either<Failure, List<BookingSummary>>> getMyBookings({
@@ -29,7 +33,24 @@ class BookingsRepositoryImpl implements BookingsRepository {
         upcoming: upcoming,
         pageSize: pageSize,
       );
-      return Right(items.map(_parseSummary).toList());
+      final at = now();
+      return Right([
+        for (final item in items) BookingSummaryJson.fromListItem(item, now: at),
+      ]);
+    } on DioException catch (e) {
+      return Left(mapDioFailure(e));
+    } catch (e) {
+      return const Left(ServerFailure(AppStrings.genericError));
+    }
+  }
+
+  @override
+  Future<Either<Failure, BookingSummary>> getBookingById(
+    String bookingId,
+  ) async {
+    try {
+      final json = await remoteDataSource.getBookingById(bookingId);
+      return Right(BookingSummaryJson.fromDetails(json, now: now()));
     } on DioException catch (e) {
       return Left(mapDioFailure(e));
     } catch (e) {
@@ -75,36 +96,5 @@ class BookingsRepositoryImpl implements BookingsRepository {
     } catch (e) {
       return const Left(ServerFailure(AppStrings.genericError));
     }
-  }
-
-  /// Maps the backend CustomerBookingDto. Cancel/reschedule eligibility is
-  /// derived from what the API allows: an active status and a future start.
-  BookingSummary _parseSummary(Map<String, dynamic> json) {
-    final startTime =
-        DateTime.parse(json['startTime'] as String).toLocal();
-    final status = (json['status'] ?? '').toString();
-    final actionable = _cancellableStatuses.contains(status.toLowerCase()) &&
-        startTime.isAfter(DateTime.now());
-
-    return BookingSummary(
-      id: (json['bookingId'] ?? json['id']).toString(),
-      providerId: (json['providerId'] ?? '').toString(),
-      providerName: json['providerName'] as String? ?? '',
-      providerImageUrl: json['providerImageUrl'] as String?,
-      serviceId: (json['serviceId'] ?? '').toString(),
-      serviceName: json['serviceName'] as String? ?? '',
-      staffId: json['staffId']?.toString(),
-      startTime: startTime,
-      durationMinutes: (json['durationMinutes'] as num?)?.toInt() ?? 0,
-      price: (json['totalPrice'] as num?)?.toDouble() ??
-          (json['totalAmount'] as num?)?.toDouble() ??
-          0,
-      currency: json['currency'] as String? ?? '',
-      status: status,
-      canCancel: actionable,
-      canReschedule: actionable,
-      canReview: status.toLowerCase() == 'completed',
-      cancellationReason: json['cancellationReason'] as String?,
-    );
   }
 }

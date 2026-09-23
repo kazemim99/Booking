@@ -53,6 +53,23 @@ class BookingsRemoteDataSource {
     );
   }
 
+  /// One booking by id (`BookingDetailsResponse`). Used when a booking is not
+  /// among the newest of either list; the server answers 403 unless the
+  /// caller is the booking's customer, its salon or an admin.
+  Future<Map<String, dynamic>> getBookingById(String bookingId) async {
+    final response = await serviceCatalogDio.get(ApiConstants.bookingById(bookingId));
+    final data = _unwrap(response.data);
+    if (response.statusCode == 200 && data is Map<String, dynamic>) {
+      return data;
+    }
+    throw DioException(
+      requestOptions: response.requestOptions,
+      response: response,
+      type: DioExceptionType.badResponse,
+      message: 'Failed to load booking',
+    );
+  }
+
   Future<void> cancelBooking({
     required String bookingId,
     required String reason,

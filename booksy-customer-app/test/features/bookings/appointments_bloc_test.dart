@@ -38,6 +38,10 @@ class FakeBookingsRepository implements BookingsRepository {
       upcoming ? upcomingResult! : pastResult!;
 
   @override
+  Future<Either<Failure, BookingSummary>> getBookingById(String bookingId) async =>
+      const Left(ServerFailure('not used by the list'));
+
+  @override
   Future<Either<Failure, Unit>> cancelBooking({
     required String bookingId,
     required String reason,
@@ -138,6 +142,30 @@ void main() {
 
       expect(failureState.upcoming.single.status, 'Confirmed');
       expect(failureState.upcoming.single.canCancel, isTrue);
+      await bloc.close();
+    });
+
+    test('a refresh on return from a booking keeps the list on screen and picks up changes', () async {
+      final repo = FakeBookingsRepository()
+        ..upcomingResult = Right([_booking('b1')])
+        ..pastResult = const Right([]);
+      final bloc = AppointmentsBloc(repo);
+
+      bloc.add(const AppointmentsRequested());
+      await _pump();
+
+      // Cancelled on the detail screen meanwhile.
+      repo.upcomingResult = Right([
+        _booking('b1').copyWith(status: 'Cancelled', canCancel: false, canReschedule: false),
+      ]);
+      final statuses = <AppointmentsStatus>[];
+      final sub = bloc.stream.listen((s) => statuses.add(s.status));
+      bloc.add(const AppointmentsRefreshed());
+      await _pump();
+      await sub.cancel();
+
+      expect(statuses, isNot(contains(AppointmentsStatus.loading)));
+      expect(bloc.state.upcoming.single.status, 'Cancelled');
       await bloc.close();
     });
 

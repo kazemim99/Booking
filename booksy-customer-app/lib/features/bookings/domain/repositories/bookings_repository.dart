@@ -9,6 +9,10 @@ abstract class BookingsRepository {
     int pageSize,
   });
 
+  /// One booking by id — for a booking missing from both lists (older than
+  /// the newest of either).
+  Future<Either<Failure, BookingSummary>> getBookingById(String bookingId);
+
   Future<Either<Failure, Unit>> cancelBooking({
     required String bookingId,
     required String reason,
