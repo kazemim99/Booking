@@ -95,6 +95,15 @@ class AppointmentsState extends Equatable {
 class AppointmentsBloc extends Bloc<AppointmentsEvent, AppointmentsState> {
   final BookingsRepository repository;
 
+  /// Bumped when a cancel or reschedule on this screen starts and when it
+  /// ends. Handlers run concurrently, so a refresh that read the lists
+  /// before (or during) such a change must not overwrite it with the old
+  /// copy of the booking.
+  int _changes = 0;
+
+  /// Cancels still waiting for the server.
+  int _changesInFlight = 0;
+
   AppointmentsBloc(this.repository) : super(const AppointmentsState()) {
     on<AppointmentsRequested>(_onRequested);
     on<AppointmentsRefreshed>(_onRefreshed);
@@ -122,14 +131,22 @@ class AppointmentsBloc extends Bloc<AppointmentsEvent, AppointmentsState> {
     await _load(emit, keepOnFailure: true);
   }
 
+  /// [keepOnFailure] is a refresh: the list is on screen, so a failed read
+  /// keeps it, and a read overtaken by a change made here is dropped (the
+  /// screen already shows the change; the next refresh reads the server's
+  /// copy).
   Future<void> _load(
     Emitter<AppointmentsState> emit, {
     bool keepOnFailure = false,
   }) async {
+    final changesBefore = _changes;
     final results = await Future.wait([
       repository.getMyBookings(upcoming: true),
       repository.getMyBookings(upcoming: false),
     ]);
+    if (keepOnFailure && (_changes != changesBefore || _changesInFlight > 0)) {
+      return;
+    }
 
     if (results[0].isLeft() && results[1].isLeft()) {
       if (keepOnFailure) return;
@@ -145,8 +162,8 @@ class AppointmentsBloc extends Bloc<AppointmentsEvent, AppointmentsState> {
     }
 
     // A refresh keeps whichever list could not be re-read.
-    final upcoming = results[0]
-        .getOrElse(() => keepOnFailure ? state.upcoming : const []);
+    final upcoming =
+        results[0].getOrElse(() => keepOnFailure ? state.upcoming : const []);
     final past =
         results[1].getOrElse(() => keepOnFailure ? state.past : const []);
     emit(state.copyWith(
@@ -163,6 +180,8 @@ class AppointmentsBloc extends Bloc<AppointmentsEvent, AppointmentsState> {
     Emitter<AppointmentsState> emit,
   ) async {
     final before = state.upcoming;
+    _changes++;
+    _changesInFlight++;
 
     // Optimistic: flip the card immediately.
     emit(state.copyWith(
@@ -185,6 +204,8 @@ class AppointmentsBloc extends Bloc<AppointmentsEvent, AppointmentsState> {
           ? AppStrings.cancelBookingConfirmTitle
           : event.reason,
     );
+    _changes++;
+    _changesInFlight--;
 
     result.fold(
       // Roll back on failure.
@@ -201,6 +222,7 @@ class AppointmentsBloc extends Bloc<AppointmentsEvent, AppointmentsState> {
     AppointmentRescheduled event,
     Emitter<AppointmentsState> emit,
   ) {
+    _changes++;
     emit(state.copyWith(
       upcoming: [
         for (final b in state.upcoming)

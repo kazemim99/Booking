@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:dartz/dartz.dart';
 import 'package:flutter_test/flutter_test.dart';
 
@@ -30,12 +32,22 @@ class FakeBookingsRepository implements BookingsRepository {
   Either<Failure, Unit>? rescheduleResult;
   int cancelCalls = 0;
 
+  /// When set, list reads answer only once it completes, with the lists as
+  /// they were when the read was sent (a slow network).
+  Completer<void>? listGate;
+
+  /// When set, a cancel is answered only once it completes.
+  Completer<void>? cancelGate;
+
   @override
   Future<Either<Failure, List<BookingSummary>>> getMyBookings({
     required bool upcoming,
     int pageSize = 50,
-  }) async =>
-      upcoming ? upcomingResult! : pastResult!;
+  }) async {
+    final answer = upcoming ? upcomingResult! : pastResult!;
+    await listGate?.future;
+    return answer;
+  }
 
   @override
   Future<Either<Failure, BookingSummary>> getBookingById(String bookingId) async =>
@@ -47,6 +59,7 @@ class FakeBookingsRepository implements BookingsRepository {
     required String reason,
   }) async {
     cancelCalls++;
+    await cancelGate?.future;
     return cancelResult!;
   }
 
@@ -60,6 +73,13 @@ class FakeBookingsRepository implements BookingsRepository {
 }
 
 Future<void> _pump() => Future<void>.delayed(const Duration(milliseconds: 20));
+
+/// Lets queued events and answered futures run, without the wall clock.
+Future<void> _settle() async {
+  for (var i = 0; i < 50; i++) {
+    await Future<void>.value();
+  }
+}
 
 void main() {
   group('AppointmentsBloc', () {
@@ -167,6 +187,85 @@ void main() {
       expect(statuses, isNot(contains(AppointmentsStatus.loading)));
       expect(bloc.state.upcoming.single.status, 'Cancelled');
       await bloc.close();
+    });
+
+    group('a refresh that overlaps a change on this screen', () {
+      final cancelled = _booking('b1').copyWith(status: 'Cancelled', canCancel: false, canReschedule: false);
+
+      Future<(FakeBookingsRepository, AppointmentsBloc)> loaded() async {
+        final repo = FakeBookingsRepository()
+          ..upcomingResult = Right([_booking('b1')])
+          ..pastResult = const Right([])
+          ..cancelResult = const Right(unit);
+        final bloc = AppointmentsBloc(repo)..add(const AppointmentsRequested());
+        await _settle();
+        return (repo, bloc);
+      }
+
+      test('a refresh read before a cancel does not offer cancel again when it lands after', () async {
+        final (repo, bloc) = await loaded();
+
+        repo.listGate = Completer<void>();
+        bloc.add(const AppointmentsRefreshed());
+        await _settle();
+        // The server now has it cancelled, but the refresh already read it.
+        bloc.add(AppointmentCancelled(bloc.state.upcoming.single));
+        await _settle();
+        repo
+          ..upcomingResult = Right([cancelled])
+          ..listGate!.complete();
+        await _settle();
+
+        expect(bloc.state.upcoming.single.status, 'Cancelled');
+        expect(bloc.state.upcoming.single.canCancel, isFalse);
+        await bloc.close();
+      });
+
+      test('a refresh that starts and lands while a cancel is in flight does not undo it', () async {
+        final (repo, bloc) = await loaded();
+
+        repo.cancelGate = Completer<void>();
+        bloc.add(AppointmentCancelled(bloc.state.upcoming.single));
+        await _settle();
+        bloc.add(const AppointmentsRefreshed());
+        await _settle();
+        repo.cancelGate!.complete();
+        await _settle();
+
+        expect(bloc.state.upcoming.single.status, 'Cancelled');
+        expect(bloc.state.upcoming.single.canCancel, isFalse);
+        await bloc.close();
+      });
+
+      test('a refresh read before a reschedule does not bring the old time back', () async {
+        final (repo, bloc) = await loaded();
+        final newTime = bloc.state.upcoming.single.startTime.add(const Duration(days: 1));
+
+        repo.listGate = Completer<void>();
+        bloc.add(const AppointmentsRefreshed());
+        await _settle();
+        bloc.add(AppointmentRescheduled('b1', newTime));
+        await _settle();
+        repo.listGate!.complete();
+        await _settle();
+
+        expect(bloc.state.upcoming.single.startTime, newTime);
+        await bloc.close();
+      });
+
+      test('a refresh after the change has settled is applied', () async {
+        final (repo, bloc) = await loaded();
+
+        bloc.add(AppointmentCancelled(bloc.state.upcoming.single));
+        await _settle();
+        // Completed elsewhere meanwhile: the server's copy wins.
+        repo.upcomingResult = Right([_booking('b1', status: 'Completed')]);
+        bloc.add(const AppointmentsRefreshed());
+        await _settle();
+
+        expect(bloc.state.upcoming.single.status, 'Completed');
+        await bloc.close();
+      });
     });
 
     test('reschedule event updates the card start time in place', () async {
