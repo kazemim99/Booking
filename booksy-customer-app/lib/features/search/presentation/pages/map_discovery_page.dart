@@ -35,7 +35,16 @@ class MapDiscoveryPage extends StatefulWidget {
   /// `null` uses flutter_map's default network provider.
   final TileProvider? tileProvider;
 
-  const MapDiscoveryPage({super.key, this.cubit, this.tileProvider});
+  /// Today, for reading the cards' free-slot day as «امروز»/«فردا».
+  /// Injected by tests; `null` reads the clock.
+  final DateTime? now;
+
+  const MapDiscoveryPage({
+    super.key,
+    this.cubit,
+    this.tileProvider,
+    this.now,
+  });
 
   /// OSM raster tiles: keyless, and the only source that works unchanged on
   /// Android, iOS and Flutter web.
@@ -273,47 +282,71 @@ class _MapDiscoveryPageState extends State<MapDiscoveryPage> {
               children: [
                 _AreaSearchField(
                   controller: _searchController,
-                  suggestions: _suggestions,
                   onChanged: _onSearchChanged,
-                  onSuggestionSelected: (place) {
-                    FocusScope.of(context).unfocus();
-                    setState(() => _suggestions = const []);
-                    _searchController.text = place.label;
-                    _cubit.goToPlace(place);
-                  },
                   onSubmitted: (value) {
                     FocusScope.of(context).unfocus();
                     setState(() => _suggestions = const []);
                     _cubit.searchArea(value);
                   },
                 ),
-                const SizedBox(height: AppSpacing.xs),
-                BlocBuilder<MapDiscoveryCubit, MapDiscoveryState>(
-                  buildWhen: (previous, current) =>
-                      previous.category != current.category,
-                  builder: (context, state) => CategoryFilterRow(
-                    selected: state.category,
-                    onSelected: _cubit.selectCategory,
-                  ),
-                ),
-                const SizedBox(height: AppSpacing.xs),
+                // Suggestions float over the chips and the map, so opening them
+                // never shoves the map down under the customer's finger.
                 Expanded(
-                  child: BlocBuilder<MapDiscoveryCubit, MapDiscoveryState>(
-                    builder: (context, state) => _MapSurface(
-                      state: state,
-                      mapController: _mapController,
-                      pageController: _pageController,
-                      tileProvider: widget.tileProvider,
-                      onMapReady: _onMapReady,
-                      onPositionChanged: _onPositionChanged,
-                      onPinTapped: _onPinTapped,
-                      onCardSelected: _cubit.selectProvider,
-                      onRetry: _cubit.retry,
-                      onMyLocation: _cubit.useMyLocation,
-                      onDismissNotice: _cubit.dismissNotice,
-                      searchAreaOffered: _searchAreaOffered,
-                      onSearchThisArea: _searchVisibleArea,
-                    ),
+                  child: Stack(
+                    children: [
+                      Positioned.fill(
+                        child: Column(
+                          children: [
+                            const SizedBox(height: AppSpacing.xs),
+                            BlocBuilder<MapDiscoveryCubit, MapDiscoveryState>(
+                              buildWhen: (previous, current) =>
+                                  previous.category != current.category,
+                              builder: (context, state) => CategoryFilterRow(
+                                selected: state.category,
+                                onSelected: _cubit.selectCategory,
+                              ),
+                            ),
+                            const SizedBox(height: AppSpacing.xs),
+                            Expanded(
+                              child: BlocBuilder<MapDiscoveryCubit,
+                                  MapDiscoveryState>(
+                                builder: (context, state) => _MapSurface(
+                                  state: state,
+                                  now: widget.now,
+                                  mapController: _mapController,
+                                  pageController: _pageController,
+                                  tileProvider: widget.tileProvider,
+                                  onMapReady: _onMapReady,
+                                  onPositionChanged: _onPositionChanged,
+                                  onPinTapped: _onPinTapped,
+                                  onCardSelected: _cubit.selectProvider,
+                                  onRetry: _cubit.retry,
+                                  onMyLocation: _cubit.useMyLocation,
+                                  onDismissNotice: _cubit.dismissNotice,
+                                  searchAreaOffered: _searchAreaOffered,
+                                  onSearchThisArea: _searchVisibleArea,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      if (_suggestions.isNotEmpty)
+                        Positioned.fill(
+                          child: Align(
+                            alignment: AlignmentDirectional.topCenter,
+                            child: _AreaSuggestions(
+                              suggestions: _suggestions,
+                              onSelected: (place) {
+                                FocusScope.of(context).unfocus();
+                                setState(() => _suggestions = const []);
+                                _searchController.text = place.label;
+                                _cubit.goToPlace(place);
+                              },
+                            ),
+                          ),
+                        ),
+                    ],
                   ),
                 ),
               ],
@@ -328,110 +361,145 @@ class _MapDiscoveryPageState extends State<MapDiscoveryPage> {
 /// Rounded pill search field. The customer types a city, village or province
 /// and picks from what the catalogue's place search suggests; the cubit
 /// re-centres the map on it.
+///
+/// The pill draws the only border. The app theme gives every field an outlined
+/// enabled and focused border, so switching off `border` alone left a second
+/// box inside the pill; every state is switched off here.
 class _AreaSearchField extends StatelessWidget {
   final TextEditingController controller;
   final ValueChanged<String> onSubmitted;
   final ValueChanged<String> onChanged;
-  final List<PlaceSuggestion> suggestions;
-  final ValueChanged<PlaceSuggestion> onSuggestionSelected;
 
   const _AreaSearchField({
     required this.controller,
     required this.onSubmitted,
     required this.onChanged,
-    required this.onSuggestionSelected,
-    this.suggestions = const [],
   });
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    return Column(children: [
-    Padding(
-      padding: const EdgeInsets.fromLTRB(
+    return Padding(
+      padding: const EdgeInsetsDirectional.fromSTEB(
         AppSpacing.md,
         AppSpacing.sm,
         AppSpacing.md,
         AppSpacing.xxs,
       ),
       child: Material(
+        key: const Key('map-area-search-pill'),
         color: theme.colorScheme.surfaceContainerHighest,
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(AppRadius.full),
           side: BorderSide(color: theme.dividerColor),
         ),
         clipBehavior: Clip.antiAlias,
-        child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md),
-          child: Row(
-            children: [
-              Icon(
-                Icons.public,
-                size: AppIconSize.action,
-                color: theme.colorScheme.onSurfaceVariant,
-              ),
-              const SizedBox(width: AppSpacing.sm),
-              Expanded(
-                child: TextField(
-                  key: const Key('map-area-search-field'),
-                  controller: controller,
-                  textInputAction: TextInputAction.search,
-                  onSubmitted: onSubmitted,
-                  onChanged: onChanged,
-                  style: theme.textTheme.bodyMedium,
-                  decoration: const InputDecoration(
-                    hintText: AppStrings.mapAreaSearchHint,
-                    border: InputBorder.none,
-                    isDense: true,
-                    contentPadding:
-                        EdgeInsets.symmetric(vertical: AppSpacing.sm),
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(minHeight: 48),
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md),
+            child: Row(
+              children: [
+                Icon(
+                  Icons.search,
+                  size: AppIconSize.action,
+                  color: theme.colorScheme.onSurfaceVariant,
+                ),
+                const SizedBox(width: AppSpacing.sm),
+                Expanded(
+                  child: TextField(
+                    key: const Key('map-area-search-field'),
+                    controller: controller,
+                    textInputAction: TextInputAction.search,
+                    onSubmitted: onSubmitted,
+                    onChanged: onChanged,
+                    style: theme.textTheme.bodyMedium,
+                    decoration: const InputDecoration(
+                      hintText: AppStrings.mapAreaSearchHint,
+                      border: InputBorder.none,
+                      enabledBorder: InputBorder.none,
+                      focusedBorder: InputBorder.none,
+                      disabledBorder: InputBorder.none,
+                      errorBorder: InputBorder.none,
+                      focusedErrorBorder: InputBorder.none,
+                      filled: false,
+                      isDense: true,
+                      contentPadding:
+                          EdgeInsets.symmetric(vertical: AppSpacing.sm),
+                    ),
                   ),
                 ),
-              ),
-            ],
+              ],
+            ),
           ),
         ),
       ),
-    ),
-    if (suggestions.isNotEmpty)
-      Padding(
-        padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md),
+    );
+  }
+}
+
+/// The places suggested for what is typed, floating under the search field.
+/// A labelled container, so a screen reader announces the list before its
+/// items; each item is a tappable list tile.
+class _AreaSuggestions extends StatelessWidget {
+  final List<PlaceSuggestion> suggestions;
+  final ValueChanged<PlaceSuggestion> onSelected;
+
+  const _AreaSuggestions({
+    required this.suggestions,
+    required this.onSelected,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md),
+      child: Semantics(
+        key: const Key('map-area-suggestions'),
+        container: true,
+        explicitChildNodes: true,
+        label: AppStrings.mapAreaSuggestionsLabel,
         child: Material(
           color: theme.colorScheme.surface,
-          elevation: 2,
+          elevation: AppElevation.medium,
           borderRadius: BorderRadius.circular(AppRadius.md),
-          child: Column(
-            key: const Key('map-area-suggestions'),
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              for (final place in suggestions)
-                ListTile(
-                  key: Key('map-area-suggestion-${place.label}'),
-                  dense: true,
-                  leading: Icon(
-                    Icons.place_outlined,
-                    size: AppIconSize.action,
-                    color: theme.colorScheme.onSurfaceVariant,
+          clipBehavior: Clip.antiAlias,
+          child: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                for (final place in suggestions)
+                  ListTile(
+                    key: Key('map-area-suggestion-${place.label}'),
+                    dense: true,
+                    minTileHeight: 48,
+                    leading: Icon(
+                      Icons.place_outlined,
+                      size: AppIconSize.action,
+                      color: theme.colorScheme.onSurfaceVariant,
+                    ),
+                    title: Text(
+                      place.label,
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                      style: theme.textTheme.bodySmall,
+                    ),
+                    onTap: () => onSelected(place),
                   ),
-                  title: Text(
-                    place.label,
-                    maxLines: 2,
-                    overflow: TextOverflow.ellipsis,
-                    style: theme.textTheme.bodySmall,
-                  ),
-                  onTap: () => onSuggestionSelected(place),
-                ),
-            ],
+              ],
+            ),
           ),
         ),
       ),
-    ]);
+    );
   }
 }
 
 /// The map itself plus everything floating over it.
 class _MapSurface extends StatelessWidget {
   final MapDiscoveryState state;
+  final DateTime? now;
   final MapController mapController;
   final PageController pageController;
   final TileProvider? tileProvider;
@@ -447,6 +515,7 @@ class _MapSurface extends StatelessWidget {
 
   const _MapSurface({
     required this.state,
+    required this.now,
     required this.mapController,
     required this.pageController,
     required this.tileProvider,
@@ -540,13 +609,17 @@ class _MapSurface extends StatelessWidget {
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   crossAxisAlignment: CrossAxisAlignment.end,
                   children: [
-                    const _MapAttribution(),
+                    // Flexible: on a narrow phone at a large text scale the
+                    // credit wraps instead of pushing the button off screen.
+                    const Flexible(child: _MapAttribution()),
+                    const SizedBox(width: AppSpacing.xs),
                     _MyLocationButton(onPressed: onMyLocation),
                   ],
                 ),
               ),
               _BottomPanel(
                 state: state,
+                now: now,
                 pageController: pageController,
                 onCardSelected: onCardSelected,
                 onRetry: onRetry,
@@ -699,8 +772,8 @@ class _MapAttribution extends StatelessWidget {
       child: Text(
         '© ${AppStrings.mapAttribution}',
         style: theme.textTheme.bodySmall,
-        maxLines: 1,
-        overflow: TextOverflow.ellipsis,
+        // OpenStreetMap's credit must stay readable: wrap, never cut.
+        maxLines: 2,
       ),
     );
   }
@@ -769,12 +842,14 @@ class _MapNoticeBar extends StatelessWidget {
 /// whichever of these is showing.
 class _BottomPanel extends StatelessWidget {
   final MapDiscoveryState state;
+  final DateTime? now;
   final PageController pageController;
   final ValueChanged<String> onCardSelected;
   final VoidCallback onRetry;
 
   const _BottomPanel({
     required this.state,
+    required this.now,
     required this.pageController,
     required this.onCardSelected,
     required this.onRetry,
@@ -815,7 +890,9 @@ class _BottomPanel extends StatelessWidget {
 
     return _BottomBand(
       child: SizedBox(
-        height: 148,
+        // Sized to the card at the current text scale: a PageView needs a
+        // fixed height, and a fixed 148 clipped the card at 1.3x.
+        height: MapProviderCard.bandHeight(MediaQuery.textScalerOf(context)),
         child: Semantics(
           container: true,
           label: AppStrings.mapProvidersCarouselLabel,
@@ -836,7 +913,7 @@ class _BottomPanel extends StatelessWidget {
                     key: Key('map-card-${provider.id}'),
                     provider: provider,
                     selected: provider.id == state.selectedProviderId,
-                    onTap: () => onCardSelected(provider.id),
+                    now: now,
                   ),
                 ),
               );

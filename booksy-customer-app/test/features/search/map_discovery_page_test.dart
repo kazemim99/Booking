@@ -50,6 +50,24 @@ class _UnusedGeocodingService implements GeocodingService {
   Future<List<PlaceSuggestion>> suggest(String term) async => const [];
 }
 
+/// Suggests two places for anything typed.
+class _SuggestingGeocodingService implements GeocodingService {
+  @override
+  Future<GeoCoordinates?> geocode(String term) async => null;
+
+  @override
+  Future<List<PlaceSuggestion>> suggest(String term) async => const [
+        PlaceSuggestion(
+          label: 'اردبیل، ایران',
+          coordinates: GeoCoordinates(38.25, 48.29),
+        ),
+        PlaceSuggestion(
+          label: 'اردبیل، مشکین‌شهر',
+          coordinates: GeoCoordinates(38.39, 47.68),
+        ),
+      ];
+}
+
 /// Every tile resolves to a 1x1 transparent PNG straight from memory, so the
 /// widget tree never reaches the tile network.
 class _FakeTileProvider extends TileProvider {
@@ -64,15 +82,17 @@ class _StubMapDiscoveryCubit extends MapDiscoveryCubit {
   int dismissNoticeCalls = 0;
   final List<String?> categoryCalls = [];
   String? lastSearchAreaTerm;
+  PlaceSuggestion? lastPlace;
   double? lastVisibleLat;
   double? lastVisibleLng;
   double? lastVisibleRadius;
 
-  _StubMapDiscoveryCubit(MapDiscoveryState initial)
+  _StubMapDiscoveryCubit(MapDiscoveryState initial,
+      {GeocodingService? geocodingService})
       : super(
           repository: _UnusedSearchRepository(),
           locationService: _UnusedLocationService(),
-          geocodingService: _UnusedGeocodingService(),
+          geocodingService: geocodingService ?? _UnusedGeocodingService(),
         ) {
     emit(initial);
   }
@@ -102,6 +122,11 @@ class _StubMapDiscoveryCubit extends MapDiscoveryCubit {
   }
 
   @override
+  Future<void> goToPlace(PlaceSuggestion place) async {
+    lastPlace = place;
+  }
+
+  @override
   Future<void> useMyLocation() async => useMyLocationCalls++;
 
   @override
@@ -116,6 +141,9 @@ ProviderSummary _provider(
   double? distance,
   double rating = 0,
   int reviewCount = 0,
+  DateTime? nextFreeDate,
+  int freeSlotCount = 0,
+  String? addressLine,
 }) =>
     ProviderSummary(
       id: id,
@@ -127,9 +155,16 @@ ProviderSummary _provider(
       isOpen: true,
       latitude: lat,
       longitude: lon,
+      nextFreeDate: nextFreeDate,
+      freeSlotCount: freeSlotCount,
+      addressLine: addressLine,
     );
 
-Widget _app({required MapDiscoveryCubit cubit, double textScale = 1.0}) {
+Widget _app({
+  required MapDiscoveryCubit cubit,
+  double textScale = 1.0,
+  DateTime? now,
+}) {
   final router = GoRouter(
     initialLocation: '/explore/map',
     routes: [
@@ -138,6 +173,7 @@ Widget _app({required MapDiscoveryCubit cubit, double textScale = 1.0}) {
         builder: (context, state) => MapDiscoveryPage(
           cubit: cubit,
           tileProvider: _FakeTileProvider(),
+          now: now,
         ),
       ),
       GoRoute(
@@ -318,6 +354,99 @@ void main() {
 
       expect(cubit.lastSearchAreaTerm, 'اردبیل');
     });
+
+    // customer-app-ux-review-fixes F.4: the field set `border: none`, but the
+    // theme's enabled/focused borders still drew a second box inside the pill.
+    testWidgets('draws only the pill border, focused or not', (tester) async {
+      final cubit = _StubMapDiscoveryCubit(loadedState(
+        providers: [_provider(providerA, 'سالن الف')],
+      ));
+
+      await tester.pumpWidget(_app(cubit: cubit));
+      await tester.pump();
+
+      InputDecoration decoration() => tester
+          .widget<InputDecorator>(find.descendant(
+            of: find.byKey(const Key('map-area-search-field')),
+            matching: find.byType(InputDecorator),
+          ))
+          .decoration;
+      bool noBorder(InputBorder? border) =>
+          border == null || border == InputBorder.none;
+
+      expect(noBorder(decoration().border), isTrue);
+      expect(noBorder(decoration().enabledBorder), isTrue);
+      expect(noBorder(decoration().focusedBorder), isTrue);
+      expect(decoration().filled, isNot(true));
+
+      await tester.tap(find.byKey(const Key('map-area-search-field')));
+      await tester.pump();
+      expect(noBorder(decoration().focusedBorder), isTrue);
+    });
+
+    testWidgets('leads with a search icon, not a globe', (tester) async {
+      final cubit = _StubMapDiscoveryCubit(loadedState(
+        providers: [_provider(providerA, 'سالن الف')],
+      ));
+
+      await tester.pumpWidget(_app(cubit: cubit));
+      await tester.pump();
+
+      expect(find.byIcon(Icons.search), findsOneWidget);
+      expect(find.byIcon(Icons.public), findsNothing);
+      expect(
+        tester.getSize(find.byKey(const Key('map-area-search-pill'))).height,
+        greaterThanOrEqualTo(48),
+      );
+    });
+
+    testWidgets('suggestions float over the map instead of pushing it down',
+        (tester) async {
+      final semantics = tester.ensureSemantics();
+      final cubit = _StubMapDiscoveryCubit(
+        loadedState(providers: [_provider(providerA, 'سالن الف')]),
+        geocodingService: _SuggestingGeocodingService(),
+      );
+
+      await tester.pumpWidget(_app(cubit: cubit));
+      await tester.pump();
+
+      final mapTop = tester.getTopLeft(find.byKey(const Key('map-canvas')));
+      final categoriesTop =
+          tester.getTopLeft(find.byKey(const Key('map-category-all')));
+
+      await tester.enterText(
+        find.byKey(const Key('map-area-search-field')),
+        'اردبیل',
+      );
+      await tester.pump(const Duration(milliseconds: 400));
+      await tester.pump();
+
+      expect(find.byKey(const Key('map-area-suggestions')), findsOneWidget);
+      expect(find.text('اردبیل، مشکین‌شهر'), findsOneWidget);
+      // Nothing under the field moved.
+      expect(tester.getTopLeft(find.byKey(const Key('map-canvas'))), mapTop);
+      expect(
+        tester.getTopLeft(find.byKey(const Key('map-category-all'))),
+        categoriesTop,
+      );
+      // The list lies over the chips and the map rather than above them.
+      expect(
+        tester.getRect(find.byKey(const Key('map-area-suggestions'))).bottom,
+        greaterThan(categoriesTop.dy),
+      );
+      expect(
+        tester.getSemantics(find.byKey(const Key('map-area-suggestions'))),
+        isSemantics(label: AppStrings.mapAreaSuggestionsLabel),
+      );
+
+      await tester.tap(find.text('اردبیل، مشکین‌شهر'));
+      await tester.pump();
+
+      expect(cubit.lastPlace?.label, 'اردبیل، مشکین‌شهر');
+      expect(find.byKey(const Key('map-area-suggestions')), findsNothing);
+      semantics.dispose();
+    });
   });
 
   group('search this area', () {
@@ -394,7 +523,10 @@ void main() {
       );
     });
 
-    testWidgets('tapping a card selects it (the same path a carousel scroll uses)',
+    // customer-app-ux-review-fixes F.3: the requirement changed. Tapping a
+    // card used to only select it (a full-width «مشاهده پروفایل» button opened
+    // the salon); the card now opens the salon, and selecting is the swipe's job.
+    testWidgets('swiping the carousel selects the matching pin',
         (tester) async {
       final cubit = _StubMapDiscoveryCubit(loadedState(
         providers: [
@@ -408,25 +540,24 @@ void main() {
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 50));
 
-      // Card b starts only partially on screen (RTL reverses the carousel's
-      // paging order, and viewportFraction < 1 means neighbours peek in from
-      // the edge) — bring it fully into view before tapping it, exactly as a
-      // real swipe would.
-      await tester.ensureVisible(find.byKey(const Key('map-card-$providerB')));
-      await tester.pumpAndSettle();
-
-      // Tap the card body (its title), not the "مشاهده پروفایل" CTA nested
-      // inside it — the card's own onTap is what PageView.onPageChanged also
-      // calls when a scroll lands on this page, so this exercises the same
-      // selection path a carousel swipe would.
-      await tester.tap(find.text('سالن ب'));
+      // RTL: the next page lies to the left, so the finger moves right.
+      await tester.fling(
+        find.byKey(const Key('map-provider-carousel')),
+        const Offset(500, 0),
+        1500,
+      );
       await tester.pumpAndSettle();
 
       expect(cubit.state.selectedProviderId, providerB);
+      expect(
+        tester.widget<MapProviderCard>(find.byKey(const Key('map-card-$providerB'))).selected,
+        isTrue,
+      );
+      // A swipe selects; it never navigates.
+      expect(find.text('provider-detail-$providerB'), findsNothing);
     });
 
-    testWidgets('the "مشاهده پروفایل" button opens the provider profile',
-        (tester) async {
+    testWidgets('tapping a card opens the salon profile', (tester) async {
       final cubit = _StubMapDiscoveryCubit(loadedState(
         providers: [_provider(providerA, 'سالن الف')],
         selectedProviderId: providerA,
@@ -436,7 +567,9 @@ void main() {
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 50));
 
-      await tester.tap(find.byKey(const Key('map-card-profile-$providerA')));
+      expect(find.text(AppStrings.viewProfile), findsNothing);
+
+      await tester.tap(find.text('سالن الف'));
       await tester.pumpAndSettle();
 
       expect(find.text('provider-detail-$providerA'), findsOneWidget);
@@ -496,6 +629,42 @@ void main() {
       await tester.pump(const Duration(milliseconds: 50));
 
       expect(tester.takeException(), isNull);
+    });
+
+    testWidgets('a 360x640 phone at 1.3x text fits the whole card in the band',
+        (tester) async {
+      tester.view.physicalSize = const Size(360, 640);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.reset);
+
+      final today = DateTime(2026, 9, 23, 10);
+      final cubit = _StubMapDiscoveryCubit(loadedState(
+        providers: [
+          _provider(
+            providerA,
+            'سالن آرایش و زیبایی مغان',
+            distance: 12.7,
+            rating: 4.8,
+            reviewCount: 120,
+            nextFreeDate: today.add(const Duration(days: 3)),
+            freeSlotCount: 12,
+            addressLine: 'پارس‌آباد، خیابان امام، کوچه ۱۲',
+          ),
+          _provider(providerB, 'سالن ب', lat: 39.665, lon: 47.935),
+        ],
+        selectedProviderId: providerA,
+      ));
+
+      await tester.pumpWidget(_app(cubit: cubit, textScale: 1.3, now: today));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 50));
+
+      expect(tester.takeException(), isNull);
+      final band =
+          tester.getRect(find.byKey(const Key('map-provider-carousel')));
+      final card = tester.getRect(find.byKey(const Key('map-card-$providerA')));
+      expect(card.top, greaterThanOrEqualTo(band.top));
+      expect(card.bottom, lessThanOrEqualTo(band.bottom));
     });
   });
 }

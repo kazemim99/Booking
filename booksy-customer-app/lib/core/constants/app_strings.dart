@@ -383,6 +383,7 @@ class AppStrings {
   // --- end of slice E ---
 
   // --- slice F: discovery cards, map, home ---
+  static const String mapAreaSuggestionsLabel = 'پیشنهادهای شهر و محله';
   // --- end of slice F ---
 
   // --- slice G: reviews, inbox, profile, auth ---
