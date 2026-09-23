@@ -96,7 +96,7 @@ wall-clock booking times (`wallClockIso`), the 7-day customer booking window, To
 - [x] I.0 Public listings (search, by-location) return Active salons only, as the specification's own comment says
 - [x] I.1 deployment/sql/deactivate-test-salons.sql: idempotent, two ids only, integration-tested on the real schema
 - [x] I.2 Run the script on production and flush the provider cache
-- [-] I.3 Apply the customer vhost change on the box (root) and reload nginx — BLOCKED: root on the shared box; auto-mode blocks remote writes
+- [x] I.3 Apply the customer vhost change on the box (root) and reload nginx
 
 ### Z Finish
 - [x] Z.1 Adversarial review of the merged diff against the review findings; fix what it confirms
@@ -157,6 +157,10 @@ wall-clock booking times (`wallClockIso`), the 7-day customer booking window, To
   (GetActiveSalonCardsAsync), implemented in the Host; a new architecture test forbids UserManagement.Application from
   depending on ServiceCatalog assemblies. Runbook: install the customer vhost BEFORE deploying this change.
 ## Log
+
+- 2026-09-23 I.3 on the user's "deploy and push": vhost uploaded, diffed against the live file (only our gzip block
+  differed), backed up to /root/booksy-customer.conf.bak-2026-09-23, installed, nginx -t ok, reloaded. The live
+  main.dart.<hash>.js now transfers 1.15 MB (gzip) instead of 3.88 MB; back./provider. still 200.
 
 - 2026-09-23 Z.2 FULL verify PASS on 88704f65 (13 steps, 309 s): build, 9 unit/architecture projects (1,266 tests),
   integration 809/809, flutter analyze clean, flutter test 653/653. Branch feat/customer-app-ux-review-fixes is NOT pushed
