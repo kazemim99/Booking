@@ -99,7 +99,7 @@ wall-clock booking times (`wallClockIso`), the 7-day customer booking window, To
 - [-] I.3 Apply the customer vhost change on the box (root) and reload nginx — BLOCKED: root on the shared box; auto-mode blocks remote writes
 
 ### Z Finish
-- [ ] Z.1 Adversarial review of the merged diff against the review findings; fix what it confirms
+- [x] Z.1 Adversarial review of the merged diff against the review findings; fix what it confirms
 - [ ] Z.2 FULL verify green; runbook and memory updated
 
 ### Parked
@@ -147,7 +147,21 @@ wall-clock booking times (`wallClockIso`), the 7-day customer booking window, To
 - T2 Found during merge: favourites/recently-visited responses carry only ids, so the client's parser threw on any
   non-empty list — and C.4 makes every signed-in customer have visits. Fixed end to end in the polish pass (Z.1).
 
+- T2 Z.1 (combined-review fixes): a notification opens with push when the tab shell is on top and with go when a
+  task page (booking, checkout, sign-in) covers it — push over a root-level page duplicated the shell's navigator keys
+  and crashed (reproduced with the real AppRouter). Reschedule is drawn on the root navigator (covers the tab bar).
+  Checkout keeps NO offline banner on purpose (its transport-failure state is money behaviour); the booking wizard has it.
+  Stars use a new AppColors.star #B98300 (3.33:1) instead of #FFCB33 (1.5:1); three test assertions changed for it.
+  Rejected finding: 409/404 on favourite add/remove ARE real (ConflictException/NotFoundException, integration-tested).
+- T2 Z.1 (backend): favourites/recent-visits salon cards go through UserManagement's IProviderInfoService port
+  (GetActiveSalonCardsAsync), implemented in the Host; a new architecture test forbids UserManagement.Application from
+  depending on ServiceCatalog assemblies. Runbook: install the customer vhost BEFORE deploying this change.
 ## Log
+
+- 2026-09-23 Z.1: polish pass (5 groups, 20 commits) merged; two read-only reviewers over the whole merged diff found
+  1 blocking (push-while-booking crash) + 13 should-fix/nits (Flutter) and 2 should-fix + 4 nits (backend). All fixed or
+  rejected with evidence (18 commits). Not fixed, out of scope: a notification tapped at cold start loses its target
+  (pre-existing); booking_flow_page still has two inline Persian literals (pre-existing).
 
 - 2026-09-23 I.2 ran on production (ssh as booksy): UPDATE 2 — «TEST notification check 6417131» Active→Archived,
   «سالن تست خودکار» Drafted→Archived; cache flush found no keys (production's provider cache is likely not Redis — see
